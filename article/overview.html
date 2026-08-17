@@ -21,10 +21,62 @@
 </header>
 
 <main>
-  <section class="intro">
-    <p><em>Not written yet.</em> This page holds the section's slug, which is a permanent
-    URL, and the figures the prose will be built around. The code it describes is in
-    <a href="https://github.com/techmatt/fractal-wallpapers">fractal-wallpapers</a>.</p>
+  <section class="prose">
+      <figure class="figure figure-pending" data-figure="overview-gallery-hook">
+        <p class="pending"><span class="pending-label">Figure pending</span>A single full-bleed strip, one finished wallpaper from each fractal family.</p>
+        <figcaption>One finished wallpaper per family, and nothing else about them is hand-made: each was found by a walk, drawn in one of the rendering modes, colored from a chosen palette, and kept by a judge. <span class="credit">Rendered with fractal-wallpapers</span></figcaption>
+      </figure>
+
+    <p>For many years my desktop background has cycled through a collection of fractal
+    wallpapers gathered from around the internet — but seeing the same wallpapers over and
+    over grew a bit repetitive, so I've spent some time thinking about writing a program to
+    automatically find, colorize, and stylize fractals. A great fractal wallpaper is the
+    product of several artistic stages — choosing a location and a framing, picking and
+    aligning palettes, stylizing, clever post-processing — craft that is usually done by
+    hand, in tools like UltraFractal or Chaotica. This project doesn't try to match that
+    level of hand-tuned artistry on any single image. The goal is a system that produces a
+    rich and growing set of good wallpapers, spanning a wide range of structures, fractal
+    types, color styles, and rendering effects.</p>
+
+    <p>Everything here is backed by a working open-source repository,
+    <a href="https://github.com/techmatt/fractal-wallpapers">fractal-wallpapers</a>, and
+    every image on this site came out of it. You can run it yourself, browse the
+    <a href="../galleries/index.html">galleries</a>, download collections of my favorite
+    wallpapers at full resolution, freely use the trained models and the labeled datasets
+    behind them, or read on for more technical details.</p>
+
+    <p>Making this work means answering a few genuinely interesting questions. Where in an
+    infinite plane do you point the camera — and how far do you zoom — to find a beautiful
+    fractal? Given a view, which of many possible rendering styles and palettes will suit
+    it? And out of thousands of candidates, which handful is worth keeping? The system that
+    answers them is a pipeline, and the rest of this site walks through it stage by stage:</p>
+
+      <figure class="figure figure-pending" data-figure="overview-pipeline">
+        <p class="pending"><span class="pending-label">Figure pending</span>The four stages as a diagram: search feeds render, render feeds color, color feeds select.</p>
+        <figcaption>The pipeline end to end. Search proposes locations, render draws them at quality, color dresses them, and select keeps the few worth keeping — the four stages the rest of this site takes one at a time.</figcaption>
+      </figure>
+
+    <p><strong>Search</strong> — a guided walk through each fractal family descends toward
+    structure and away from both emptiness and pure chaos, scoring neighborhoods as it goes
+    with a small neural network trained on my labels for what makes promising wallpaper
+    material (<a href="finding-good-locations.html">Finding good locations</a>,
+    <a href="training-judges.html">Training judges</a>). <strong>Render</strong> — each
+    promising location is drawn at high quality in one of a catalog of rendering modes, from
+    the classic smooth coloring to stranger styles
+    (<a href="rendering-fundamentals.html">Rendering fundamentals</a>,
+    <a href="rendering-modes.html">Rendering modes</a>). <strong>Color</strong> — a palette
+    is chosen to suit the image and its tones are balanced automatically
+    (<a href="color-palettes.html">Color palettes</a>). <strong>Select</strong> — finished
+    renders are scored by judges trained on my ratings, and a final set is chosen for
+    quality and diversity — avoiding twenty near-duplicates of the single best view or a
+    single class of color styles
+    (<a href="from-locations-to-wallpapers.html">From locations to wallpapers</a>).</p>
+
+    <p>Each section is written to be readable independently. Nothing here requires more than
+    a single desktop machine with one ordinary GPU. The whole system — search, rendering,
+    training, selection — was built to run overnight on fairly standard hardware. All my
+    fractals are rendered at 2560×1440 with heavy supersampling, but it's easy to re-render
+    at different resolutions.</p>
   </section>
 
   <nav class="section-nav">

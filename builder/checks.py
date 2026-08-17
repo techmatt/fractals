@@ -135,6 +135,8 @@ def check_figures() -> list[str]:
                 )
 
     for figure in registry.values():
+        if figure.pending:
+            continue
         if not figure.path.is_file():
             problems.append(f"figures.jsonl: {figure.id} names a missing {figure.file}")
         elif images.available():

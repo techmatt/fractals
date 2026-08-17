@@ -81,6 +81,10 @@ Each prompt in this project ends the same way:
 ## Rules
 
 - Commit to `main` only.
+- **Completed prompt work is committed, without being asked.** Finishing a prompt means
+  the work is on `main` — no branches, no PRs, no waiting for approval, in this repo as
+  in every repo of this project. The only exception is a very good reason not to, and
+  that reason belongs in the report.
 - **No commit ≥20 MB** — single blob or aggregate — without Matt's explicit prior
   confirmation. This repo carries images, so the aggregate half of that gate is the
   one that will bite: check the total added size of an image drop before staging it,

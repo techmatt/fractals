@@ -42,6 +42,12 @@ figure *block*: `assets/images/figures/figures.jsonl` holds one row per figure, 
 markup and asserts the page carries it verbatim, so a caption lives in one place and a
 page that has drifted is a failing check rather than something noticed later.
 
+A figure can be registered before its picture exists. Such a row carries `"status":
+"pending"` and names no file, width or height, and the block it derives is a well holding
+the description of the picture to come. Prose gets written before pictures get made, and a
+page that says what is coming beats a broken image or a silent gap; `check` prints what is
+still owed. When the asset lands, drop the status, add the file and its size, and re-paste.
+
 ## What `check` checks
 
 - **links** — every internal `href` and `src` on every page resolves, and none is
@@ -51,7 +57,7 @@ page that has drifted is a failing check rather than something noticed later.
 - **pages** — the committed HTML under `galleries/` is byte-identical to what the
   builder produces now, and no page there is unaccounted for.
 - **figures** — every figure block matches its registry row; every registered file
-  exists at the size it claims.
+  exists at the size it claims, a pending figure excepted until its asset lands.
 - **assets** — every image the metadata names exists at its stated size, every
   thumbnail is current, and no orphan file is sitting in a gallery directory.
 

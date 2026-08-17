@@ -20,6 +20,7 @@
   --well-ink: #eae8e5;
   --well-ink-dim: #a7a29b;
   --well-link: #9ec5ff;
+  --well-pending: #3b3f4a;
 
   --measure: 38rem;
   --wide: 56rem;
@@ -158,6 +159,28 @@ a:hover { color: var(--ink); }
 
 @media (min-width: 62rem) {
   .figure { width: 52rem; margin-left: calc((var(--measure) - 52rem) / 2); }
+}
+
+/* A figure registered before its picture exists. Prose gets written before pictures get
+   made, so the well stays where it will be and says what will fill it — a dashed hole
+   the page owns up to, rather than a broken image or a silent gap. */
+.figure-pending .pending {
+  margin: 0;
+  padding: 2.75rem 1.5rem;
+  border: 1px dashed var(--well-pending);
+  text-align: center;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: var(--well-ink-dim);
+}
+
+.pending-label {
+  display: block;
+  margin-bottom: 0.4rem;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--well-ink);
 }
 
 .section-nav {

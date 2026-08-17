@@ -81,6 +81,9 @@ def _do_check() -> int:
                 print(f"  {problem}")
         else:
             print(f"{name}: ok")
+    pending = sorted(figure.id for figure in figures.load_all().values() if figure.pending)
+    if pending:
+        print(f"note: {len(pending)} figure(s) still to make: {', '.join(pending)}")
     if not images.available():
         print("note: Pillow is not installed, so image sizes were not verified")
     if total:

@@ -53,6 +53,14 @@ class Record:
             raise RecordError(f"{self.where}: {key} must be a positive integer")
         return value
 
+    def optional_count(self, key: str) -> int | None:
+        value = self.fields.get(key)
+        if value is None:
+            return None
+        if not isinstance(value, int) or isinstance(value, bool) or value <= 0:
+            raise RecordError(f"{self.where}: {key} must be a positive integer when present")
+        return value
+
     def expect_kind(self, kind: str) -> None:
         if self.kind != kind:
             raise RecordError(f"{self.where}: expected a {kind!r} record, found {self.kind!r}")
