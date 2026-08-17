@@ -27,16 +27,25 @@
         <figcaption>One finished wallpaper per family, and nothing else about them is hand-made: each was found by a walk, drawn in one of the rendering modes, colored from a chosen palette, and kept by a judge. <span class="credit">Rendered with fractal-wallpapers</span></figcaption>
       </figure>
 
-    <p>For many years my desktop background has cycled through a collection of fractal
+    <p>For many years my desktop background has cycled through a collection of
+    <a href="https://en.wikipedia.org/wiki/Fractal">fractal</a>
     wallpapers gathered from around the internet — but seeing the same wallpapers over and
     over grew a bit repetitive, so I've spent some time thinking about writing a program to
     automatically find, colorize, and stylize fractals. A great fractal wallpaper is the
     product of several artistic stages — choosing a location and a framing, picking and
     aligning palettes, stylizing, clever post-processing — craft that is usually done by
-    hand, in tools like UltraFractal or Chaotica. This project doesn't try to match that
-    level of hand-tuned artistry on any single image. The goal is a system that produces a
-    rich and growing set of good wallpapers, spanning a wide range of structures, fractal
-    types, color styles, and rendering effects.</p>
+    hand, in tools like <a href="https://en.wikipedia.org/wiki/Ultra_Fractal">UltraFractal</a>
+    or <a href="https://www.chaoticafractals.com/">Chaotica</a>. This project doesn't try to
+    match that level of hand-tuned artistry on any single image. The goal is a system that
+    produces a rich and growing set of good wallpapers, spanning a wide range of structures,
+    fractal types, color styles, and rendering effects. Everything on this site lives in the
+    flat complex plane — two-dimensional
+    <a href="escape-time-fractals.html">escape-time fractals</a>. There are other beautiful
+    fractal worlds this project doesn't touch, among them the 3D
+    <a href="https://en.wikipedia.org/wiki/Mandelbulb">Mandelbulb</a>,
+    <a href="https://en.wikipedia.org/wiki/Fractal_flame">fractal flames</a>, and quaternion
+    <a href="https://paulbourke.net/fractals/quatjulia/">Julia sets</a> rendered in four
+    dimensions.</p>
 
     <p>Everything here is backed by a working open-source repository,
     <a href="https://github.com/techmatt/fractal-wallpapers">fractal-wallpapers</a>, and
@@ -58,7 +67,8 @@
 
     <p><strong>Search</strong> — a guided walk through each fractal family descends toward
     structure and away from both emptiness and pure chaos, scoring neighborhoods as it goes
-    with a small neural network trained on my labels for what makes promising wallpaper
+    with a small <a href="https://en.wikipedia.org/wiki/Neural_network_(machine_learning)">neural
+    network</a> trained on my labels for what makes promising wallpaper
     material (<a href="finding-good-locations.html">Finding good locations</a>,
     <a href="training-judges.html">Training judges</a>). <strong>Render</strong> — each
     promising location is drawn at high quality in one of a catalog of rendering modes, from

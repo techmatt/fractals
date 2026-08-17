@@ -17,22 +17,176 @@
 <header class="masthead">
   <p class="kicker">Section 2 of 10</p>
   <h1>Escape-time fractals</h1>
-  <p class="standfirst">The recurrences every picture here comes from — Mandelbrot, the multibrots, Julia, Phoenix — and what a set is when you can only ever sample it.</p>
+  <p class="standfirst">The recurrences every picture here comes from — Mandelbrot, the
+  multibrots, Julia, Phoenix — and the locations that pin one down inside them.</p>
 </header>
 
 <main>
-  <section class="intro">
-    <p><em>Not written yet.</em> This page holds the section's slug, which is a permanent
-    URL, and the figures the prose will be built around. The code it describes is in
-    <a href="https://github.com/techmatt/fractal-wallpapers">fractal-wallpapers</a>.</p>
-  </section>
+  <section class="prose">
+    <p>All the fractals I render in
+    <a href="https://github.com/techmatt/fractal-wallpapers">fractal-wallpapers</a> come from
+    a single kind of mathematical object — the two-dimensional escape-time fractal. This page
+    covers what these objects are and the variants the project draws from.</p>
 
-  <section class="figures">
-    <h2>Figures</h2>
+    <h2>Iterating in the complex plane</h2>
+
+    <p>The images are built in the
+    <a href="https://en.wikipedia.org/wiki/Complex_plane">complex plane</a>: numbers of the
+    form x + yi. Multiplication is the part that matters here — multiplying complex numbers
+    multiplies their lengths and <em>adds their angles</em>, so squaring a number stretches
+    and rotates it at once. Iterate a rule built on squaring and orbits don't simply grow or
+    settle the way real-valued sequences tend to: they spiral, fold back across themselves,
+    and become extraordinarily sensitive to where they started. All the structure on this
+    site comes from that sensitivity.</p>
+
+    <h2>The Mandelbrot set</h2>
+
+    <p>The most famous escape-time rule is also the simplest. Pick a constant c, start at
+    z = 0, and repeat:</p>
+
+    <pre class="formula">z = z*z + c</pre>
+
+    <p>Only two fates are possible: the sequence stays bounded forever, or it escapes to
+    infinity — and once |z| exceeds 2 it is gone for good, so escape is easy to detect. Count
+    the steps until that happens and you have the orbit's escape time. That count is the
+    entire algorithm, and escape-time fractals are named for it.</p>
+
+      <figure class="figure figure-pending" data-figure="escape-orbit-race">
+        <p class="pending"><span class="pending-label">Figure pending</span>Animated: three starting points advancing in step across the plane — one escaping fast, one bounded, one lingering near the boundary — with a |z|-versus-step chart alongside.</p>
+        <figcaption>Three orbits under the same rule, stepping together. One is past |z| = 2 within a few steps and gone for good, one stays bounded forever, and one hangs near the boundary for dozens of steps before it commits. The step where a track crosses the line on the chart is that orbit's escape time — the whole of what the picture is painted from.</figcaption>
+      </figure>
+
+    <p>To turn the loop into a picture, let each pixel be a different constant c and run the
+    loop at every one. Paint the never-escaping points black and the rest by how long they
+    held out, and the
+    <a href="https://en.wikipedia.org/wiki/Mandelbrot_set">Mandelbrot set</a> appears: a black
+    interior wrapped in a halo of escape times that carries all of the visible structure.</p>
+
+    <p>The remarkable part is where the detail comes from. Deep inside the set, nothing
+    escapes; far outside, everything escapes in a few steps and the image is a bland gradient.
+    Near the boundary, though, the tiniest nudge to c flips a point between the two fates, and
+    the escape time varies wildly at every scale you can reach. Zoom in anywhere along the
+    boundary and structure keeps arriving — spirals, filament tangles, even miniature copies
+    of the full set — without end. All of the beauty in this project lives in that boundary
+    zone, and the search half of the pipeline
+    (<a href="finding-good-locations.html">Finding good locations</a>) exists to navigate
+    it.</p>
+
+      <figure class="figure figure-pending" data-figure="escape-zoom-strip">
+        <p class="pending"><span class="pending-label">Figure pending</span>A strip of successive zooms into one point on the Mandelbrot boundary, each frame the marked box of the frame before it.</p>
+        <figcaption>One point on the boundary, magnified in stages, each frame drawn from the marked box of the one before. Nothing simplifies on the way down: spirals, filament tangles and miniature copies of the whole set keep arriving. The strip ends because the page does, not because the detail ran out. <span class="credit">Rendered with fractal-wallpapers</span></figcaption>
+      </figure>
+
+    <h2>Julia sets</h2>
+
+    <p>The same formula draws a second kind of picture. In the Mandelbrot set, every pixel is
+    a different c and every orbit starts at z = 0. Flip that: fix one c, and let each pixel be
+    a different starting z. The image now shows which starting points survive under that
+    particular c — a <a href="https://en.wikipedia.org/wiki/Julia_set">Julia set</a>. Every
+    point of the complex plane has one, and the Mandelbrot set works as an atlas of them all.
+    Choose c deep inside the set and its Julia set is a solid, rounded blob; choose it far
+    outside and the set shatters into disconnected dust; choose it near the boundary and the
+    Julia set takes on the character of its neighborhood, unfurling the local spirals and
+    filaments across the whole image. The pipeline uses this directly: when the search finds a
+    rich neighborhood in the Mandelbrot set, the c values there are seeded as Julia-set
+    candidates too.</p>
+
+    <p>The blob-versus-dust split is not a matter of degree — it is a sharp theorem: a Julia
+    set is connected, one unbroken piece, exactly when its c lies inside the Mandelbrot set,
+    and it shatters the moment c leaves. In fact the Mandelbrot set can be defined as exactly
+    the set of c values whose Julia sets are connected — its
+    <a href="https://en.wikipedia.org/wiki/Connectedness_locus">connectedness locus</a>.</p>
+
+      <figure class="figure figure-pending" data-figure="escape-julia-map">
+        <p class="pending"><span class="pending-label">Figure pending</span>The Mandelbrot set as an atlas: several c values marked on it, each with the Julia set it produces beside it — a solid blob from deep inside, disconnected dust from outside, a filigree from the boundary.</p>
+        <figcaption>The Mandelbrot set read as an atlas of Julia sets. A c from deep inside gives a solid, rounded blob; a c from outside shatters into dust; a c from the boundary unfurls its neighborhood's spirals and filaments across the whole frame. The blob-versus-dust split is not a matter of degree — a Julia set is connected exactly when its c lies in the Mandelbrot set. <span class="credit">Rendered with fractal-wallpapers</span></figcaption>
+      </figure>
+
+    <h2>Multibrot sets</h2>
+
+    <p>Nothing about the loop is specific to squaring. Raising the power gives the
+    <a href="https://en.wikipedia.org/wiki/Multibrot_set">multibrot sets</a>, z → z^d + c,
+    which add rotational symmetry the classic set doesn't have — degree 3 renders with
+    two-fold symmetry, degree 4 with three-fold, degree 5 with four-fold, and so on — and each
+    degree has its own Julia sets, made exactly the same way as before.</p>
+
+      <figure class="figure figure-pending" data-figure="escape-multibrot-degrees">
+        <p class="pending"><span class="pending-label">Figure pending</span>The degree-3, degree-4 and degree-5 multibrot sets beside the classic degree-2 set, with one zoom each.</p>
+        <figcaption>Raising the power in z → z^d + c, with one zoom under each set. Every degree adds a rotational symmetry the classic set doesn't have — one fold fewer than the degree — and each carries its own Julia sets, made exactly the same way as before. <span class="credit">Rendered with fractal-wallpapers</span></figcaption>
+      </figure>
+
+    <h2>Fractional degrees</h2>
+
+    <p>The degree doesn't have to be a whole number — z^2.5 + c is a perfectly computable
+    rule, and the resulting sets morph continuously between the integer shapes. But
+    non-integer powers come at a price: raising a complex number to a fractional power goes
+    through the complex logarithm, which has no single consistent value. You have to cut the
+    plane somewhere and pick a branch, and every orbit that crosses the cut jumps. The renders
+    carry sharp seam lines that are artifacts of that choice rather than of the dynamics —
+    ambiguous, since a different branch gives a different picture, and visually stark. They're
+    interesting, but I find the sharp discontinuities a bit jarring and don't use them as one
+    of the core fractal types that this project uses when searching for beautiful wallpaper
+    locations.</p>
+
+      <figure class="figure figure-pending" data-figure="escape-fractional-degrees">
+        <p class="pending"><span class="pending-label">Figure pending</span>Sets at fractional degrees d = 0.5, 1.5, 1.9, 2.1, 2.5 and 2.9, with a zoom or two showing the branch-cut seams.</p>
+        <figcaption>Between the whole numbers the shapes morph continuously, and the renders carry sharp seams where orbits cross the branch cut. The seam is a consequence of having to pick a branch of the complex logarithm rather than of the dynamics — a different branch is a different picture, which is why these are not one of the project's core families. <span class="credit">Rendered with fractal-wallpapers</span></figcaption>
+      </figure>
+
+    <h2>Phoenix fractals</h2>
+
+    <p>The phoenix fractals change the rule itself rather than the power. In every family
+    above, the next value depends only on the current one. The phoenix iteration adds memory —
+    the update uses the previous value as well:</p>
+
+    <pre class="formula">z_next = z*z + c + p*z_prev</pre>
+
+    <p>where the new constant p sets how strongly the past feeds back into each step. The
+    extra term dramatically changes the character of the images: orbits are steered by where
+    they just were, and the renders grow feathery, plume-like structures that none of the
+    memoryless families produce. A phoenix image is drawn the way a Julia set is — fix the
+    constants, let each pixel be a starting z — so there is no separate "phoenix Julia"
+    variant; the family is already that kind of picture. The classic render uses one
+    celebrated pair of constants found by
+    <a href="https://doi.org/10.1109/31.1825">Shigehiro Ushiki in 1988</a>; this project treats
+    (c, p) as a whole plane of possibilities and hunts it the same way it hunts everything
+    else.</p>
+
+      <figure class="figure figure-pending" data-figure="escape-phoenix">
+        <p class="pending"><span class="pending-label">Figure pending</span>The classic Ushiki phoenix render beside several finds from elsewhere in the (c, p) plane.</p>
+        <figcaption>The celebrated Ushiki constants beside finds from elsewhere in the (c, p) plane. Each orbit is steered by where it just was, and the feathery plumes are what that produces — structure none of the memoryless families draw. <span class="credit">Rendered with fractal-wallpapers</span></figcaption>
+      </figure>
+
+    <h2>The project's families</h2>
+
+    <p>Altogether, the wallpapers here come from the Mandelbrot set and its Julia sets, the
+    multibrot sets of degrees 3 through 5 and theirs, and the phoenix plane. These vary
+    enormously in how easily they give up good images — some produce striking material almost
+    anywhere along the boundary, others need real hunting — so a single quality bar applied
+    across all of them would quietly fill every gallery with whichever family is easiest to
+    photograph. The pipeline instead tracks each kind separately and balances the released mix
+    across them; how that works is covered in
+    <a href="finding-good-locations.html">Finding good locations</a> and
+    <a href="from-locations-to-wallpapers.html">From locations to wallpapers</a>.</p>
+
       <figure class="figure" data-figure="family-home-views">
         <img src="../assets/images/figures/family-home-views.png" width="1316" height="1250" alt="Six panels, one per family, each showing the whole set inside its own frame.">
         <figcaption>Every family at its home view — the frame it draws when no viewport is given. Five of the six are derived by measuring the set and giving it a 16:9 frame with a tenth of the deciding axis to spare; a Julia set's extent depends on its constant, so it keeps the whole-plane view by exception. <span class="credit">Rendered with fractal-wallpapers</span></figcaption>
       </figure>
+
+    <h2>Locations</h2>
+
+    <p>One last piece of vocabulary the rest of the site leans on: a location. Every image
+    above is pinned down by a family and its constants, a center point, and a zoom level —
+    expressed as the width of the plane the frame spans, with the height following from the
+    fixed 16:9 aspect ratio. Halving the width zooms in 2×, and since the boundary is detailed
+    at every scale, you can keep halving essentially forever; ordinary double-precision
+    arithmetic gives out first, at magnifications around ten trillion to one
+    (<a href="deep-zoom.html">Deep zoom</a> covers going further). The rest of this site is
+    about working in that space: <a href="finding-good-locations.html">Finding good
+    locations</a> covers the search through it, and
+    <a href="rendering-fundamentals.html">Rendering fundamentals</a> covers turning raw escape
+    counts into images worth keeping.</p>
   </section>
 
   <nav class="section-nav">
