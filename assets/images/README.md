@@ -18,5 +18,9 @@ downscales, crops if asked, and writes the format the destination's suffix names
 source path is a command-line argument and is never recorded: originals live outside
 this repository.
 
+The two figures that are diagrams rather than renders — `escape-orbit-race.png`, an
+APNG, and `overview-pipeline.png` — are the exception: `python -m builder diagram <id>`
+draws them here from `builder/diagrams.py`, so there is no original anywhere.
+
 Before staging an image drop, check its aggregate size against the 20 MB commit gate in
 `CLAUDE.md`.

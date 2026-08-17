@@ -9,6 +9,7 @@ Python. A build is done here and reviewed in a diff.
 python -m builder build     regenerate gallery pages, the gallery index, thumbnails
 python -m builder check     links, page sync, figure blocks, image assets (read-only)
 python -m builder figure ID print a figure's markup block, to paste into an article page
+python -m builder diagram ID draw one of the two figures that are diagrams, not renders
 python -m builder import SRC DEST [--crop l,t,r,b] [--max-width N]
 ```
 
@@ -47,6 +48,14 @@ A figure can be registered before its picture exists. Such a row carries `"statu
 the description of the picture to come. Prose gets written before pictures get made, and a
 page that says what is coming beats a broken image or a silent gap; `check` prints what is
 still owed. When the asset lands, drop the status, add the file and its size, and re-paste.
+
+Two figures are an exception, and they are diagrams rather than pictures of a location:
+the orbit race and the pipeline explain a mechanism, so there is nothing to render and
+nothing outside this repository to read. `diagram` draws those two from `diagrams.py`, in
+the stylesheet's own colours, straight into `assets/images/figures/`. It is deliberately a
+separate command from `build` and is not part of `check`: type is rasterized through
+whatever font the machine has, so two machines agree about the picture and not about its
+bytes. Every other figure asset arrived through `import`.
 
 ## What `check` checks
 

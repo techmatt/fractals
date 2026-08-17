@@ -1,8 +1,9 @@
 """The one entry point: `python -m builder <command>`.
 
 `build` writes, `check` only reads and exits 1 on a problem, `figure` prints markup to
-paste, and `import` is the one command that reaches outside the repository — for the
-full-size original an asset is derived from. Run `python -m builder --help` for the list.
+paste, `diagram` draws the two figures that are diagrams rather than renders, and
+`import` is the one command that reaches outside the repository — for the full-size
+original an asset is derived from. Run `python -m builder --help` for the list.
 """
 
 import argparse
@@ -10,7 +11,7 @@ import sys
 from pathlib import Path
 
 from . import build as build_module
-from . import checks, figures, images, records
+from . import checks, diagrams, figures, images, records
 from .paths import IMAGES_DIR, SITE_ROOT
 
 
@@ -44,6 +45,9 @@ def _parser() -> argparse.ArgumentParser:
 
     figure = commands.add_parser("figure", help="print a figure's markup block")
     figure.add_argument("id", help="the figure id, as registered in figures.jsonl")
+
+    drawn = commands.add_parser("diagram", help="draw one of the figures that is not a render")
+    drawn.add_argument("id", choices=sorted(diagrams.DIAGRAMS), help="the diagram's figure id")
 
     brought = commands.add_parser("import", help="bring an image in as a web-res asset")
     brought.add_argument("source", type=Path, help="the full-size original, from anywhere on disk")
@@ -103,6 +107,14 @@ def _do_figure(identifier: str) -> int:
     return 0
 
 
+def _do_diagram(identifier: str) -> int:
+    destination, width, height = diagrams.draw(identifier)
+    relative = destination.relative_to(SITE_ROOT).as_posix()
+    size = destination.stat().st_size
+    print(f'wrote {relative}  "width": {width}, "height": {height}  ({size / 1024:.0f} KB)')
+    return 0
+
+
 def _do_import(options: argparse.Namespace) -> int:
     destination = (SITE_ROOT / options.destination).resolve()
     try:
@@ -131,6 +143,8 @@ def main(argv: list[str] | None = None) -> int:
             return _do_check()
         if options.command == "figure":
             return _do_figure(options.id)
+        if options.command == "diagram":
+            return _do_diagram(options.id)
         return _do_import(options)
     except (records.RecordError, images.ImageError) as error:
         print(f"error: {error}", file=sys.stderr)
