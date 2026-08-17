@@ -1,21 +1,36 @@
-/* One stylesheet for the whole site. Dark by default: these are wallpapers, and a
-   bright page next to them lies about how they look on a screen. */
+/* One stylesheet for the whole site. A light reading surface with dark image wells:
+   prose wants a page you can sit with, and the wallpapers — most of them dark — want a
+   mat rather than a white void to float in. So the dark treatment stays local to the
+   containers that hold pictures, and nothing else on the page goes with them. */
 
 :root {
-  --ink: #e8e6e3;
-  --ink-dim: #a8a29b;
-  --ground: #14151a;
-  --panel: #1c1e25;
-  --rule: #2c2f38;
-  --link: #8fb8ff;
+  --ink: #1b1c1f;
+  --ink-dim: #5a5f68;
+  --ground: #ffffff;
+  --bar: #fafaf8;
+  --rule: #e3e2de;
+  --link: #1a56b8;
+  /* Quiet enough for a heading to stay a heading, dark enough to still say "link". */
+  --underline: #b0b4bb;
+
+  /* Image wells: every container that holds a render stays dark whatever the page
+     around it does, so a picture is read against a mat and not against the paper. */
+  --well: #16171c;
+  --well-rule: #2b2e36;
+  --well-ink: #eae8e5;
+  --well-ink-dim: #a7a29b;
+  --well-link: #9ec5ff;
+
   --measure: 38rem;
+  --wide: 56rem;
+  --gutter: 1.5rem;
 }
 
 *, *::before, *::after { box-sizing: border-box; }
 
 body {
   margin: 0;
-  padding: 0 1.5rem 4rem;
+  padding: 0 var(--gutter) 4rem;
   background: var(--ground);
   color: var(--ink);
   font: 1rem/1.65 "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
@@ -23,7 +38,32 @@ body {
 
 main, header, footer { max-width: var(--measure); margin: 0 auto; }
 
-.masthead { padding: 4rem 0 2rem; border-bottom: 1px solid var(--rule); }
+/* The site bar: one text-height line, the same on every page. It is a way back to the
+   front page and out to the code, not a masthead — the article is the thing here. */
+.topbar {
+  margin: 0 calc(-1 * var(--gutter));
+  padding: 0 var(--gutter);
+  background: var(--bar);
+  border-bottom: 1px solid var(--rule);
+  font-size: 0.85rem;
+}
+
+.topbar-inner {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1.5rem;
+  max-width: var(--wide);
+  margin: 0 auto;
+  padding: 0.55rem 0;
+}
+
+.topbar a { color: var(--ink-dim); text-decoration: none; }
+.topbar .topbar-site { color: var(--ink); font-weight: 600; }
+.topbar a:hover { color: var(--link); text-decoration: underline; }
+.topbar-links a + a { margin-left: 1.1rem; }
+
+.masthead { padding: 2.2rem 0 1.6rem; border-bottom: 1px solid var(--rule); }
 
 h1 {
   margin: 0 0 0.6rem;
@@ -62,6 +102,15 @@ h3 { margin: 0 0 0.3rem; font-size: 1.15rem; }
 a { color: var(--link); }
 a:hover { color: var(--ink); }
 
+/* A heading that happens to be a link is still a heading: on a white page ten blue
+   underlined lines read as a link list rather than as a table of contents. */
+.toc h3 a { color: var(--ink); text-decoration-color: var(--underline); text-underline-offset: 0.15em; }
+.toc h3 a:hover { color: var(--link); text-decoration-color: currentColor; }
+
+/* The kicker is a place-marker above the title, not somewhere to click first. */
+.kicker a { color: inherit; text-decoration-color: var(--underline); }
+.kicker a:hover { color: var(--link); text-decoration-color: currentColor; }
+
 /* Galleries: web-res images on the page, full size behind a release link. */
 .grid {
   display: grid;
@@ -72,21 +121,40 @@ a:hover { color: var(--ink); }
 /* The measure is set for prose. A grid of pictures is not prose, so once there is
    room the grid takes it. */
 @media (min-width: 62rem) {
-  .images .grid { width: 56rem; margin-left: calc((var(--measure) - 56rem) / 2); }
+  .images .grid { width: var(--wide); margin-left: calc((var(--measure) - var(--wide)) / 2); }
 }
 
-.tile { background: var(--panel); border: 1px solid var(--rule); margin: 0; }
+.tile {
+  background: var(--well);
+  border: 1px solid var(--well-rule);
+  margin: 0;
+  color: var(--well-ink-dim);
+}
 .tile img { display: block; width: 100%; height: auto; }
-.tile figcaption { padding: 0.6rem 0.8rem; font-size: 0.85rem; color: var(--ink-dim); }
-.tile strong { color: var(--ink); font-weight: 600; }
+.tile figcaption { padding: 0.6rem 0.8rem; font-size: 0.85rem; color: var(--well-ink-dim); }
+.tile strong { color: var(--well-ink); font-weight: 600; }
+.tile a { color: var(--well-link); }
+.tile a:hover { color: var(--well-ink); }
 
 .credit { display: block; margin-top: 0.3rem; font-size: 0.8rem; opacity: 0.75; }
 
 /* Figures break out of the measure once there is room for them: a side-by-side
-   comparison squeezed into a column of prose is not a comparison. */
-.figure { margin: 2.5rem 0; }
+   comparison squeezed into a column of prose is not a comparison. The mat is the same
+   dark well the gallery tiles use — a render is a render wherever it appears. */
+.figure {
+  margin: 2.5rem 0;
+  padding: 0.75rem;
+  background: var(--well);
+  border: 1px solid var(--well-rule);
+}
 .figure img { display: block; width: 100%; height: auto; }
-.figure figcaption { margin-top: 0.6rem; font-size: 0.85rem; color: var(--ink-dim); }
+.figure figcaption {
+  margin-top: 0.6rem;
+  font-size: 0.85rem;
+  color: var(--well-ink-dim);
+}
+.figure a { color: var(--well-link); }
+.figure a:hover { color: var(--well-ink); }
 
 @media (min-width: 62rem) {
   .figure { width: 52rem; margin-left: calc((var(--measure) - 52rem) / 2); }
@@ -107,3 +175,4 @@ footer {
   font-size: 0.85rem;
   color: var(--ink-dim);
 }
+footer p { margin: 0; }
