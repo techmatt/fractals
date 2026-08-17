@@ -16,8 +16,8 @@
 
 <main>
   <section class="intro">
-    <p><em>Placeholder page.</em> The article is being written; the sections below are
-    its outline. The code is in
+    <p><em>Placeholder page.</em> The article is being written; the ten sections below
+    are its outline and each has a page waiting behind it. The code is in
     <a href="https://github.com/techmatt/fractal-wallpapers">fractal-wallpapers</a>.</p>
   </section>
 
@@ -25,56 +25,61 @@
     <h2>Contents</h2>
     <ol class="toc">
       <li>
-        <h3>The picture and the problem</h3>
-        <p>What separates a wallpaper from a screenshot of a fractal, and why finding
-        one is a search problem rather than a rendering problem.</p>
+        <h3><a href="article/overview.html">Overview</a></h3>
+        <p>What this project makes, and why the hard part is not drawing a fractal but
+        finding one worth drawing.</p>
       </li>
       <li>
-        <h3>The engine</h3>
-        <p>Escape-time fields in Rust: what a pixel costs, where precision runs out,
-        and why every pixel is made in one place.</p>
+        <h3><a href="article/escape-time-fractals.html">Escape-time fractals</a></h3>
+        <p>The recurrences every picture here comes from — Mandelbrot, the multibrots,
+        Julia, Phoenix — and what a set is when you can only ever sample it.</p>
       </li>
       <li>
-        <h3>Discovery</h3>
-        <p>Seeded walks that descend into the plane one rung at a time, the geometric
-        gates that admit a frame, and the record every candidate leaves behind.</p>
+        <h3><a href="article/rendering-fundamentals.html">Rendering fundamentals</a></h3>
+        <p>What a pixel costs, what the iteration cap decides, and the point in a zoom
+        where double precision stops telling the truth.</p>
       </li>
       <li>
-        <h3>Coloring</h3>
-        <p>Palettes as data, the tone band measured off wallpapers that already work,
-        and the correction that is measured on the picture and applied on the palette.</p>
+        <h3><a href="article/rendering-modes.html">Rendering modes</a></h3>
+        <p>The escape count, smooth and discrete, and the frame-relative stretch that
+        turns a field of numbers into a picture.</p>
       </li>
       <li>
-        <h3>Labeling</h3>
-        <p>Collecting human taste at a scale a model can learn from: the rig, the
-        append-only store, and the holdout that does not move when the corpus grows.</p>
+        <h3><a href="article/finding-good-locations.html">Finding good locations</a></h3>
+        <p>Seeded walks that descend into the plane one rung at a time, the gates that
+        admit a frame, and the record every candidate leaves behind.</p>
       </li>
       <li>
-        <h3>The judges</h3>
-        <p>Four small heads — one for a place, two for a finished render, one for a
-        palette choice — and the bar each was made to clear, written down beforehand.</p>
+        <h3><a href="article/training-judges.html">Training judges</a></h3>
+        <p>Collecting human taste at a scale a model can learn from, and the small heads
+        trained on it: one for a place, two for a finished render, one for a palette.</p>
       </li>
       <li>
-        <h3>Supply</h3>
-        <p>Spending hours of compute where good material is scarcest: a census, a
-        measured price per find, and an allocation that keeps its promises.</p>
+        <h3><a href="article/color-palettes.html">Color palettes</a></h3>
+        <p>Palettes as data, the tone band measured off wallpapers that already work, and
+        a correction measured on the picture but applied to the palette.</p>
       </li>
       <li>
-        <h3>Curation</h3>
-        <p>Turning the union of every walk into a small set of finished wallpapers,
-        and a durable account of why those and not the others.</p>
+        <h3><a href="article/from-locations-to-wallpapers.html">From locations to wallpapers</a></h3>
+        <p>Turning the union of every walk into a small set of finished pictures, and a
+        durable account of why those and not the others.</p>
       </li>
       <li>
-        <h3>The release</h3>
-        <p>What shipped, at full size, and how to re-derive any of it from the record
-        it carries.</p>
+        <h3><a href="article/running-at-scale.html">Running at scale</a></h3>
+        <p>Spending hours of compute where good material is scarcest: a census, a measured
+        price per find, and an allocation that keeps its promises.</p>
+      </li>
+      <li>
+        <h3><a href="article/deep-zoom.html">Deep zoom</a></h3>
+        <p>What breaks once a view is narrower than double precision can address, and what
+        it takes to keep descending past that.</p>
       </li>
     </ol>
   </section>
 
   <section class="galleries-teaser">
     <h2>Galleries</h2>
-    <p><a href="galleries/">The finished wallpapers</a> — web-res on the page,
+    <p><a href="galleries/index.html">The finished wallpapers</a> — web-res on the page,
     full-size as release downloads.</p>
   </section>
 </main>

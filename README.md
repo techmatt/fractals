@@ -8,4 +8,9 @@ Live at **https://techmatt.github.io/fractal-website/**. Plain static HTML and C
 deployed from `main` by GitHub Actions. Full-size wallpapers ship as Releases assets;
 only web-res images live in this repository.
 
+Gallery pages are written by `builder/`, a local Python program whose output is
+committed — Pages serves the commit and never runs a build. `python -m builder check`
+verifies that the committed HTML is what the builder produces and that every internal
+link resolves.
+
 Companion code repository: [techmatt/fractal-wallpapers](https://github.com/techmatt/fractal-wallpapers).

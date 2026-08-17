@@ -57,14 +57,15 @@ scratch/        working files, reports, anything untracked (gitignored)
 
 ## Checks to run before committing
 
-Once `builder/` has code in it:
-
 ```
-python -m ruff check . && python -m ruff format --check .
+python -m ruff check . && python -m ruff format --check . && python -m builder check
 ```
 
-Until then the check is by hand: every internal link resolves, and every page opens
-from the filesystem.
+`builder check` is read-only. It resolves every internal link, refuses root-absolute
+and bare-directory hrefs, regenerates the gallery HTML and compares it byte for byte
+with what is committed, and holds every figure block to its registry row. The same
+three commands run in CI (`.github/workflows/checks.yml`), which is a check and not a
+deploy dependency.
 
 ## Standing prompt contract
 

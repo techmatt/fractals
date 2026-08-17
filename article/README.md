@@ -1,10 +1,22 @@
 # article
 
-One page per section, in reading order, named for the section slug the front page
-links to (`engine.html`, `discovery.html`, `coloring.html`, …). Empty until the
-article is written; the outline it will follow is the table of contents in
-`../index.html`.
+One page per section, in reading order, named for the section slug the front page links
+to. The ten sections, ratified:
 
-Slugs here become permanent URLs, so they answer to the naming rule in `CLAUDE.md`
-before anything else: a section is named for what it does, in vocabulary the article
-itself teaches.
+```
+overview.html                     rendering-modes.html      color-palettes.html
+escape-time-fractals.html         finding-good-locations.html
+rendering-fundamentals.html       training-judges.html      running-at-scale.html
+                                  from-locations-to-wallpapers.html
+                                  deep-zoom.html
+```
+
+Every page is currently a stub: the slug, the standfirst, the section navigation, and
+whatever figures the prose will be built around. Slugs here are permanent URLs, so they
+answer to the naming rule in `CLAUDE.md` before anything else — a section is named for
+what it does, in vocabulary the article itself teaches.
+
+**These pages are hand-written and the builder does not generate them.** The one part
+it owns is the figure block: `python -m builder figure <id>` prints the markup to paste,
+and `python -m builder check` asserts the page still matches the registry in
+`../assets/images/figures/figures.jsonl`.

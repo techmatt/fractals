@@ -1,0 +1,35 @@
+# Checks the committed tree. Deliberately not a dependency of `pages.yml`: the site is
+# served from the commit, so a red check here means the next commit needs work, never
+# that the live site is down.
+#
+# `python -m builder check` regenerates the gallery HTML from today's metadata and
+# compares it byte for byte with what is committed — the sync check that keeps
+# "committed output" from quietly meaning "output from some earlier version of the
+# builder". It writes nothing.
+
+name: checks
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - run: pip install -r builder/requirements.txt
+      - name: ruff lint
+        run: ruff check .
+      - name: ruff format
+        run: ruff format --check .
+      - name: links, page sync, figure blocks, image assets
+        run: python -m builder check

@@ -44,6 +44,14 @@ h3 { margin: 0 0 0.3rem; font-size: 1.15rem; }
 
 .standfirst { margin: 0; color: var(--ink-dim); font-size: 1.15rem; }
 
+.kicker {
+  margin: 0 0 0.8rem;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ink-dim);
+}
+
 .intro { margin-top: 2rem; color: var(--ink-dim); }
 
 .toc { padding-left: 1.6rem; }
@@ -61,9 +69,36 @@ a:hover { color: var(--ink); }
   gap: 1rem;
 }
 
-.tile { background: var(--panel); border: 1px solid var(--rule); }
+/* The measure is set for prose. A grid of pictures is not prose, so once there is
+   room the grid takes it. */
+@media (min-width: 62rem) {
+  .images .grid { width: 56rem; margin-left: calc((var(--measure) - 56rem) / 2); }
+}
+
+.tile { background: var(--panel); border: 1px solid var(--rule); margin: 0; }
 .tile img { display: block; width: 100%; height: auto; }
 .tile figcaption { padding: 0.6rem 0.8rem; font-size: 0.85rem; color: var(--ink-dim); }
+.tile strong { color: var(--ink); font-weight: 600; }
+
+.credit { display: block; margin-top: 0.3rem; font-size: 0.8rem; opacity: 0.75; }
+
+/* Figures break out of the measure once there is room for them: a side-by-side
+   comparison squeezed into a column of prose is not a comparison. */
+.figure { margin: 2.5rem 0; }
+.figure img { display: block; width: 100%; height: auto; }
+.figure figcaption { margin-top: 0.6rem; font-size: 0.85rem; color: var(--ink-dim); }
+
+@media (min-width: 62rem) {
+  .figure { width: 52rem; margin-left: calc((var(--measure) - 52rem) / 2); }
+}
+
+.section-nav {
+  margin-top: 3rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--rule);
+  font-size: 0.9rem;
+}
+.section-nav p { margin: 0; color: var(--ink-dim); }
 
 footer {
   margin-top: 4rem;

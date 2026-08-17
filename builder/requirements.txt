@@ -1,0 +1,4 @@
+# Pinned so CI and a workstation run the same checks. Nothing here is needed to serve
+# the site: GitHub Pages publishes the commit, and the builder's output is committed.
+pillow==12.2.0
+ruff==0.16.3
