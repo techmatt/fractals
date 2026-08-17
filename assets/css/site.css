@@ -1,0 +1,74 @@
+/* One stylesheet for the whole site. Dark by default: these are wallpapers, and a
+   bright page next to them lies about how they look on a screen. */
+
+:root {
+  --ink: #e8e6e3;
+  --ink-dim: #a8a29b;
+  --ground: #14151a;
+  --panel: #1c1e25;
+  --rule: #2c2f38;
+  --link: #8fb8ff;
+  --measure: 38rem;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  padding: 0 1.5rem 4rem;
+  background: var(--ground);
+  color: var(--ink);
+  font: 1rem/1.65 "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+}
+
+main, header, footer { max-width: var(--measure); margin: 0 auto; }
+
+.masthead { padding: 4rem 0 2rem; border-bottom: 1px solid var(--rule); }
+
+h1 {
+  margin: 0 0 0.6rem;
+  font-size: 2.4rem;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+}
+
+h2 {
+  margin: 3rem 0 1rem;
+  font-size: 1.3rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ink-dim);
+}
+
+h3 { margin: 0 0 0.3rem; font-size: 1.15rem; }
+
+.standfirst { margin: 0; color: var(--ink-dim); font-size: 1.15rem; }
+
+.intro { margin-top: 2rem; color: var(--ink-dim); }
+
+.toc { padding-left: 1.6rem; }
+.toc > li { margin-bottom: 1.6rem; }
+.toc > li::marker { color: var(--ink-dim); }
+.toc p { margin: 0; color: var(--ink-dim); }
+
+a { color: var(--link); }
+a:hover { color: var(--ink); }
+
+/* Galleries: web-res images on the page, full size behind a release link. */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+  gap: 1rem;
+}
+
+.tile { background: var(--panel); border: 1px solid var(--rule); }
+.tile img { display: block; width: 100%; height: auto; }
+.tile figcaption { padding: 0.6rem 0.8rem; font-size: 0.85rem; color: var(--ink-dim); }
+
+footer {
+  margin-top: 4rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--rule);
+  font-size: 0.85rem;
+  color: var(--ink-dim);
+}

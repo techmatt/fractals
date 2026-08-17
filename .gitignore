@@ -1,0 +1,21 @@
+scratch/
+artifacts/
+
+# Prompt working copies. Prompts live in C:\Code\fractal-drive-sync\prompts and
+# never land in this repo; a copy dropped here for a session stays untracked.
+/website_bootstrap.md
+
+# Builder output that is regenerated rather than reviewed.
+builder/__pycache__/
+__pycache__/
+*.egg-info/
+.venv/
+.ruff_cache/
+.pytest_cache/
+
+# OS junk
+Thumbs.db
+ehthumbs.db
+desktop.ini
+.DS_Store
+._*

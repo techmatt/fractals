@@ -1,0 +1,10 @@
+# There is no package here. This file exists so the page builder in `builder/` is
+# governed by the same formatter and lint rules as the code repository from the
+# first line it is written, rather than acquiring them after it has a shape.
+
+[tool.ruff]
+line-length = 100
+src = ["builder"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM", "PTH"]

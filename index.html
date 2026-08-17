@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Making Fractal Wallpapers</title>
+<meta name="description" content="Rendering escape-time fractals, finding views worth keeping, and teaching models to judge them.">
+<link rel="stylesheet" href="assets/css/site.css">
+</head>
+<body>
+<header class="masthead">
+  <h1>Making Fractal Wallpapers</h1>
+  <p class="standfirst">Rendering escape-time fractals fast, walking the plane for
+  places worth rendering, and teaching small models to judge what comes back.</p>
+</header>
+
+<main>
+  <section class="intro">
+    <p><em>Placeholder page.</em> The article is being written; the sections below are
+    its outline. The code is in
+    <a href="https://github.com/techmatt/fractal-wallpapers">fractal-wallpapers</a>.</p>
+  </section>
+
+  <section class="contents">
+    <h2>Contents</h2>
+    <ol class="toc">
+      <li>
+        <h3>The picture and the problem</h3>
+        <p>What separates a wallpaper from a screenshot of a fractal, and why finding
+        one is a search problem rather than a rendering problem.</p>
+      </li>
+      <li>
+        <h3>The engine</h3>
+        <p>Escape-time fields in Rust: what a pixel costs, where precision runs out,
+        and why every pixel is made in one place.</p>
+      </li>
+      <li>
+        <h3>Discovery</h3>
+        <p>Seeded walks that descend into the plane one rung at a time, the geometric
+        gates that admit a frame, and the record every candidate leaves behind.</p>
+      </li>
+      <li>
+        <h3>Coloring</h3>
+        <p>Palettes as data, the tone band measured off wallpapers that already work,
+        and the correction that is measured on the picture and applied on the palette.</p>
+      </li>
+      <li>
+        <h3>Labeling</h3>
+        <p>Collecting human taste at a scale a model can learn from: the rig, the
+        append-only store, and the holdout that does not move when the corpus grows.</p>
+      </li>
+      <li>
+        <h3>The judges</h3>
+        <p>Four small heads — one for a place, two for a finished render, one for a
+        palette choice — and the bar each was made to clear, written down beforehand.</p>
+      </li>
+      <li>
+        <h3>Supply</h3>
+        <p>Spending hours of compute where good material is scarcest: a census, a
+        measured price per find, and an allocation that keeps its promises.</p>
+      </li>
+      <li>
+        <h3>Curation</h3>
+        <p>Turning the union of every walk into a small set of finished wallpapers,
+        and a durable account of why those and not the others.</p>
+      </li>
+      <li>
+        <h3>The release</h3>
+        <p>What shipped, at full size, and how to re-derive any of it from the record
+        it carries.</p>
+      </li>
+    </ol>
+  </section>
+
+  <section class="galleries-teaser">
+    <h2>Galleries</h2>
+    <p><a href="galleries/">The finished wallpapers</a> — web-res on the page,
+    full-size as release downloads.</p>
+  </section>
+</main>
+
+<footer>
+  <p>By Matt Fisher · <a href="https://github.com/techmatt/fractal-wallpapers">Code</a>
+  · <a href="https://github.com/techmatt/fractal-website">This site</a> · MIT</p>
+</footer>
+</body>
+</html>
