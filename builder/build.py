@@ -7,7 +7,7 @@ over unchanged inputs reports nothing.
 
 from pathlib import Path
 
-from . import galleries, images, pages
+from . import galleries, images, pages, sections
 from .paths import SITE_ROOT
 
 
@@ -50,14 +50,34 @@ def _thumbs(gallery: galleries.Gallery) -> list[str]:
     return written
 
 
+def _hand_written(article: list[sections.Section]) -> list[str]:
+    """The two things the builder owns inside a hand-written page.
+
+    The prose is nobody's business but the writer's. The contents rail between the
+    markers is derived from all ten pages at once, and a prose `<h2>` gets the id its
+    rail entry links to — both would be a chore to keep by hand and neither is prose.
+    """
+    changed = []
+    for path in sections.hand_written(article):
+        page = sections.read_page(path)
+        written = _write_page(
+            path, sections.with_rail(path, sections.with_heading_ids(page), article)
+        )
+        if written:
+            changed.append(written)
+    return changed
+
+
 def build(*, thumbnails: bool = True) -> list[str]:
     """Regenerate the pages and thumbnails the builder owns; report what moved."""
     loaded = galleries.load_all()
+    article = sections.load_all()
     changed = []
     if thumbnails:
         for gallery in loaded:
             changed.extend(_thumbs(gallery))
-    for path, html in pages.generated_pages(loaded).items():
+    changed.extend(_hand_written(article))
+    for path, html in pages.generated_pages(loaded, article).items():
         written = _write_page(path, html)
         if written:
             changed.append(written)

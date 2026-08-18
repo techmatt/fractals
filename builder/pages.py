@@ -6,6 +6,7 @@ the one the metadata gives. That is what makes `check`'s regenerate-and-compare 
 check rather than a coin toss.
 """
 
+from . import sections as sections_module
 from .escape import attribute, text
 from .galleries import Gallery
 from .paths import GALLERIES_DIR, SITE_ROOT, relative_href
@@ -53,8 +54,13 @@ def topbar(home: str, galleries_index: str) -> str:
     )
 
 
-def _shell(*, title: str, css: str, bar: str, header: str, sections: list[str]) -> str:
-    body = "\n\n".join(sections)
+def _shell(*, title: str, css: str, bar: str, rail: str, header: str, blocks: list[str]) -> str:
+    """The shape every page has: the site bar, the contents rail, the column beside it.
+
+    A gallery is not an article section, so no entry in the rail is the current one
+    here — on these pages the rail is the way back into the article.
+    """
+    body = "\n\n".join(blocks)
     return (
         "\n".join(
             [
@@ -70,6 +76,10 @@ def _shell(*, title: str, css: str, bar: str, header: str, sections: list[str]) 
                 "<body>",
                 bar,
                 "",
+                '<div class="page">',
+                rail,
+                "",
+                '<div class="page-body">',
                 header,
                 "",
                 "<main>",
@@ -77,6 +87,8 @@ def _shell(*, title: str, css: str, bar: str, header: str, sections: list[str]) 
                 "</main>",
                 "",
                 FOOTER,
+                "</div>",
+                "</div>",
                 "</body>",
                 "</html>",
             ]
@@ -126,7 +138,7 @@ def _count(images: int) -> str:
     return "1 image" if images == 1 else f"{images} images"
 
 
-def gallery_page(gallery: Gallery) -> str:
+def gallery_page(gallery: Gallery, sections: list[sections_module.Section]) -> str:
     """The HTML for one gallery."""
     page = gallery_page_path(gallery)
     css = relative_href(page, SITE_ROOT / "assets" / "css" / "site.css")
@@ -165,12 +177,13 @@ def gallery_page(gallery: Gallery) -> str:
         title=f"{gallery.title} — Making Fractal Wallpapers",
         css=css,
         bar=topbar(article, index_path()),
+        rail=sections_module.block(page, sections),
         header=header,
-        sections=["\n".join(intro), _grid(tiles)],
+        blocks=["\n".join(intro), _grid(tiles)],
     )
 
 
-def gallery_index(galleries: list[Gallery]) -> str:
+def gallery_index(galleries: list[Gallery], sections: list[sections_module.Section]) -> str:
     """The HTML for the gallery index: one cover tile per gallery."""
     page = GALLERIES_DIR / "index.html"
     css = relative_href(page, SITE_ROOT / "assets" / "css" / "site.css")
@@ -189,7 +202,7 @@ def gallery_index(galleries: list[Gallery]) -> str:
     intro.append(f'    <p><a href="{attribute(article)}">Back to the article</a></p>')
     intro.append("  </section>")
 
-    sections = ["\n".join(intro)]
+    blocks = ["\n".join(intro)]
     if galleries:
         tiles = []
         for gallery in galleries:
@@ -209,20 +222,21 @@ def gallery_index(galleries: list[Gallery]) -> str:
                     caption=caption,
                 )
             )
-        sections.append(_grid(tiles))
+        blocks.append(_grid(tiles))
 
     return _shell(
         title="Galleries — Making Fractal Wallpapers",
         css=css,
         bar=topbar(article, index_path()),
+        rail=sections_module.block(page, sections),
         header=header,
-        sections=sections,
+        blocks=blocks,
     )
 
 
-def generated_pages(galleries: list[Gallery]) -> dict:
+def generated_pages(galleries: list[Gallery], sections: list[sections_module.Section]) -> dict:
     """Every page the builder owns, as {path: html}. The set `check` compares against."""
-    pages = {GALLERIES_DIR / "index.html": gallery_index(galleries)}
+    pages = {GALLERIES_DIR / "index.html": gallery_index(galleries, sections)}
     for gallery in galleries:
-        pages[gallery_page_path(gallery)] = gallery_page(gallery)
+        pages[gallery_page_path(gallery)] = gallery_page(gallery, sections)
     return pages

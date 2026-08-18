@@ -1,6 +1,6 @@
 """The checks the bootstrap did by hand, made mechanical.
 
-Four of them, all read-only:
+Five of them, all read-only:
 
 - **links** — every internal href and src on every page resolves to a file that exists,
   and none is root-absolute. The site is served from `/fractal-website/`, so a rooted
@@ -11,6 +11,9 @@ Four of them, all read-only:
   builder produces from today's metadata. What is committed is what is served, so the
   commit is the thing worth checking.
 - **figures** — every figure block on an article page matches its registry row exactly.
+- **contents** — every hand-written page carries the contents rail the builder derives,
+  every prose heading carries the id its own words give it, and the front page's contents
+  list marks the same sections done that `sections.jsonl` calls written.
 - **assets** — every image the metadata names exists at the size it claims, every
   thumbnail is current, and no orphan file is sitting in a gallery directory.
 """
@@ -20,11 +23,12 @@ from html.parser import HTMLParser
 from pathlib import Path
 from urllib.parse import unquote, urldefrag
 
-from . import figures, galleries, images, pages
+from . import figures, galleries, images, pages, sections
 from .paths import (
     ARTICLE_DIR,
     GALLERIES_DIR,
     GALLERY_METADATA_NAME,
+    SITE_INDEX,
     SITE_ROOT,
     THUMBS_DIR_NAME,
     site_pages,
@@ -101,9 +105,9 @@ def _shown_missing(path: Path) -> str:
         return "outside the site"
 
 
-def check_pages(loaded: list[galleries.Gallery]) -> list[str]:
+def check_pages(loaded: list[galleries.Gallery], article: list[sections.Section]) -> list[str]:
     problems = []
-    expected = pages.generated_pages(loaded)
+    expected = pages.generated_pages(loaded, article)
     for path, html in expected.items():
         if not path.is_file():
             problems.append(f"{_shown(path)}: missing — run `python -m builder build`")
@@ -146,6 +150,51 @@ def check_figures() -> list[str]:
                     f"figures.jsonl: {figure.id} says {figure.width}x{figure.height}, "
                     f"{figure.file} is {actual[0]}x{actual[1]}"
                 )
+    return problems
+
+
+def check_contents(article: list[sections.Section]) -> list[str]:
+    problems = []
+    listed = {section.page for section in article}
+    for path in sorted(ARTICLE_DIR.glob("*.html")):
+        if path.name not in listed:
+            problems.append(f"{_shown(path)}: not in sections.jsonl, so the rail would skip it")
+
+    for path in sections.hand_written(article):
+        html = _read(path)
+        where = _shown(path)
+        if sections.RAIL_START not in html or sections.RAIL_END not in html:
+            problems.append(f"{where}: no contents-rail markers — the page skeleton carries them")
+            continue
+        if sections.with_heading_ids(html) != html:
+            problems.append(
+                f"{where}: a prose heading's id is not the one its words give it — run `build`"
+            )
+        if sections.with_rail(path, html, article) != html:
+            problems.append(f"{where}: the contents rail is not today's — run `build`")
+
+    return problems + _index_markers(article)
+
+
+def _index_markers(article: list[sections.Section]) -> list[str]:
+    """The front page's contents list marks what `sections.jsonl` calls written.
+
+    The rail is generated; these markers are typed, because they sit inside prose the
+    builder does not touch. So the flag still lives in one place and drifting from it is a
+    failing check rather than something a reader notices. An entry is one `<h3>` on one
+    line — the same shape the contents list has always had, and what makes the marker
+    findable without parsing the page.
+    """
+    problems = []
+    lines = _read(SITE_INDEX).splitlines()
+    for section in article:
+        href = f'href="article/{section.page}"'
+        entry = next((line for line in lines if "<h3>" in line and href in line), None)
+        if entry is None:
+            problems.append(f"index.html: no one-line <h3> entry in the contents links {href}")
+        elif (sections.DONE in entry) != section.written:
+            wanted = "carry the done marker" if section.written else "not be marked done"
+            problems.append(f"index.html: the {section.title} entry should {wanted}")
     return problems
 
 
@@ -193,9 +242,11 @@ def _orphans(gallery: galleries.Gallery, named: set[str]) -> list[str]:
 def run_all() -> dict[str, list[str]]:
     """Every check, named, so a failure says which one."""
     loaded = galleries.load_all()
+    article = sections.load_all()
     return {
         "links": check_links(),
-        "pages": check_pages(loaded),
+        "pages": check_pages(loaded, article),
+        "contents": check_contents(article),
         "figures": check_figures(),
         "assets": check_assets(loaded),
     }

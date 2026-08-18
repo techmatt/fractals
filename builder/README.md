@@ -6,8 +6,9 @@ HTML: the site never depends on the builder having run, and GitHub Pages never r
 Python. A build is done here and reviewed in a diff.
 
 ```
-python -m builder build     regenerate gallery pages, the gallery index, thumbnails
-python -m builder check     links, page sync, figure blocks, image assets (read-only)
+python -m builder build     regenerate gallery pages, the gallery index, thumbnails,
+                            and the contents rail every page carries
+python -m builder check     links, page sync, contents, figure blocks, assets (read-only)
 python -m builder figure ID print a figure's markup block, to paste into an article page
 python -m builder diagram ID draw one of the two figures that are diagrams, not renders
 python -m builder import SRC DEST [--crop l,t,r,b] [--max-width N]
@@ -34,6 +35,22 @@ pure function of text, and it gives `check` something to hold the files to.
 
 Metadata is JSONL with an integer `schema` on every line. A line announcing a schema
 this builder does not read is an error, not a guess.
+
+## The contents rail is derived, never kept
+
+`article/sections.jsonl` gives the ten sections their reading order and says which are
+written; everything else the rail shows comes off the pages themselves. A section's name
+is its `<h1>`, and the entries that open under the current page are the `<h2>`s of its
+prose — a stub's *Figures* block is scaffolding, not reading, so it is not listed.
+
+Every page carries the rail between two marker comments. `build` writes what sits
+between them and gives each prose `<h2>` the id its rail entry links to, derived from the
+heading's own words; `check` re-derives both and compares. A fragment is a permanent URL,
+so it is spelled by rule rather than by hand.
+
+The front page's contents list is prose and stays hand-written, so its done markers are
+typed rather than generated — and held to `sections.jsonl` by `check`, which is what
+keeps the flag living in one place.
 
 ## Figures are a registry, not a generator
 
@@ -65,6 +82,9 @@ bytes. Every other figure asset arrived through `import`.
   here has to open from the filesystem, where `galleries/` is a directory listing.
 - **pages** — the committed HTML under `galleries/` is byte-identical to what the
   builder produces now, and no page there is unaccounted for.
+- **contents** — every hand-written page carries today's rail, every prose heading carries
+  the id its words give it, every article page is listed in `sections.jsonl`, and the
+  front page marks the same sections done that the registry calls written.
 - **figures** — every figure block matches its registry row; every registered file
   exists at the size it claims, a pending figure excepted until its asset lands.
 - **assets** — every image the metadata names exists at its stated size, every

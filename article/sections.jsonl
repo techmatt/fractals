@@ -1,0 +1,10 @@
+{"schema": 1, "kind": "section", "page": "overview.html", "status": "written"}
+{"schema": 1, "kind": "section", "page": "escape-time-fractals.html", "status": "written"}
+{"schema": 1, "kind": "section", "page": "rendering-fundamentals.html"}
+{"schema": 1, "kind": "section", "page": "rendering-modes.html"}
+{"schema": 1, "kind": "section", "page": "finding-good-locations.html"}
+{"schema": 1, "kind": "section", "page": "training-judges.html"}
+{"schema": 1, "kind": "section", "page": "color-palettes.html"}
+{"schema": 1, "kind": "section", "page": "from-locations-to-wallpapers.html"}
+{"schema": 1, "kind": "section", "page": "running-at-scale.html"}
+{"schema": 1, "kind": "section", "page": "deep-zoom.html"}

@@ -1,7 +1,11 @@
 /* One stylesheet for the whole site. A light reading surface with dark image wells:
    prose wants a page you can sit with, and the wallpapers — most of them dark — want a
    mat rather than a white void to float in. So the dark treatment stays local to the
-   containers that hold pictures, and nothing else on the page goes with them. */
+   containers that hold pictures, and nothing else on the page goes with them.
+
+   The layout is Wikipedia's: a sticky rail of contents on the left, the reading column
+   beside it. So are the type metrics — sizes, line-height, spacing, measure — but only
+   the metrics. The serif and the heading treatment are this site's own. */
 
 /* Text is near-black on white, and the quiet gray is only one step off it. A reading
    surface earns nothing by being soft: --ink is 18:1 against the page and --ink-dim is
@@ -26,8 +30,14 @@
   --well-link: #9ec5ff;
   --well-pending: #3b3f4a;
 
-  --measure: 38rem;
-  --wide: 56rem;
+  /* The measure caps text and nothing else: about seventy-two characters of this serif
+     at this size. Figures and grids of pictures are not prose and run to --wide, which
+     is what the reading column is worth once the rail has taken its share. */
+  --rail: 15.5rem;
+  --rail-gap: 2.75rem;
+  --measure: 40rem;
+  --wide: 54rem;
+  --page: calc(var(--rail) + var(--rail-gap) + var(--wide));
   --gutter: 1.5rem;
 }
 
@@ -35,13 +45,35 @@
 
 body {
   margin: 0;
-  padding: 0 var(--gutter) 4rem;
+  padding: 0 var(--gutter) 3rem;
   background: var(--ground);
   color: var(--ink);
-  font: 1rem/1.65 "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  font: 1rem/1.6 "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
 }
 
-main, header, footer { max-width: var(--measure); margin: 0 auto; }
+/* One column until there is room for two. Below the breakpoint the rail is not shown at
+   all rather than folded into a control: every page still carries the site bar back to
+   the contents and its own previous/next line, so nothing is only reachable through it,
+   and the site keeps working with scripting off — which it does entirely, since there
+   is none. */
+.page { max-width: var(--page); margin: 0 auto; }
+.page-body { max-width: var(--measure); margin: 0 auto; }
+.contents-rail { display: none; }
+
+@media (min-width: 62.5rem) {
+  .page { display: flex; align-items: flex-start; gap: var(--rail-gap); }
+  .page-body { flex: 1 1 auto; min-width: 0; max-width: var(--wide); margin: 0; }
+  .contents-rail {
+    display: block;
+    position: sticky;
+    top: 1.5rem;
+    flex: 0 0 var(--rail);
+    margin-top: 2.6rem;
+    padding-bottom: 1.5rem;
+    max-height: calc(100vh - 3rem);
+    overflow-y: auto;
+  }
+}
 
 /* The site bar: one text-height line, the same on every page. It is a way back to the
    front page and out to the code, not a masthead — the article is the thing here. */
@@ -50,7 +82,7 @@ main, header, footer { max-width: var(--measure); margin: 0 auto; }
   padding: 0 var(--gutter);
   background: var(--bar);
   border-bottom: 1px solid var(--rule);
-  font-size: 0.85rem;
+  font-size: 0.875rem;
 }
 
 .topbar-inner {
@@ -58,9 +90,9 @@ main, header, footer { max-width: var(--measure); margin: 0 auto; }
   align-items: baseline;
   justify-content: space-between;
   gap: 1.5rem;
-  max-width: var(--wide);
+  max-width: var(--page);
   margin: 0 auto;
-  padding: 0.55rem 0;
+  padding: 0.5rem 0;
 }
 
 .topbar a { color: var(--ink-dim); text-decoration: none; }
@@ -68,63 +100,129 @@ main, header, footer { max-width: var(--measure); margin: 0 auto; }
 .topbar a:hover { color: var(--link); text-decoration: underline; }
 .topbar-links a + a { margin-left: 1.1rem; }
 
-.masthead { padding: 2.2rem 0 1.6rem; border-bottom: 1px solid var(--rule); }
-
-h1 {
-  margin: 0 0 0.6rem;
-  font-size: 2.4rem;
-  line-height: 1.15;
-  letter-spacing: -0.01em;
-}
-
-h2 {
-  margin: 3rem 0 1rem;
-  font-size: 1.3rem;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--ink-dim);
-}
-
-h3 { margin: 0 0 0.3rem; font-size: 1.15rem; }
-
-/* The h2 above is a label for a utility block — Contents, Galleries, Figures. Inside
-   prose a subhead is part of the reading, so it keeps its own case and the body's ink. */
-.prose h2 {
-  margin: 2.8rem 0 0.9rem;
-  font-size: 1.35rem;
-  text-transform: none;
-  letter-spacing: -0.005em;
-  color: var(--ink);
-}
-
-/* An iteration, written the way the code writes it: its own line, out of the paragraph
-   rhythm, and monospaced so z*z reads as multiplication and not as emphasis. */
-.formula {
-  margin: 1.5rem 0;
-  padding: 0.7rem 1rem;
-  border-left: 3px solid var(--rule);
-  background: var(--bar);
-  overflow-x: auto;
-  font-family: ui-monospace, "SFMono-Regular", Consolas, "Liberation Mono", monospace;
-  font-size: 0.95rem;
-}
-
-.standfirst { margin: 0; color: var(--ink-dim); font-size: 1.15rem; }
-
-.kicker {
-  margin: 0 0 0.8rem;
+/* The contents rail. Ten sections in reading order, the current one open to its own
+   headings; the builder writes it, so it cannot fall behind the article. Dark ink and
+   no underlines: a column of ten blue links reads as a link list, not as contents. */
+.rail-title {
+  margin: 0 0 0.5rem;
   font-size: 0.8rem;
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: var(--ink-dim);
 }
 
-.intro { margin-top: 2rem; color: var(--ink-dim); }
+.rail-sections {
+  margin: 0 0 0 1.5rem;
+  padding: 0;
+  font-size: 0.875rem;
+  line-height: 1.45;
+}
+.rail-sections > li { margin-bottom: 0.55rem; }
+.rail-sections > li::marker { color: var(--ink-dim); font-size: 0.85em; }
 
-.toc { padding-left: 1.6rem; }
-.toc > li { margin-bottom: 1.6rem; }
+.contents-rail a { color: var(--ink); text-decoration: none; }
+.contents-rail a:hover { color: var(--link); text-decoration: underline; }
+.rail-current > a { font-weight: 600; }
+
+.rail-headings {
+  list-style: none;
+  margin: 0.4rem 0 0.2rem;
+  padding: 0;
+  border-left: 2px solid var(--rule);
+}
+.rail-headings li { margin: 0 0 0.3rem; padding-left: 0.7rem; }
+.rail-headings a { color: var(--ink-dim); }
+
+/* A section that is written, marked in the rail and in the front page's contents. What
+   is marked comes from sections.jsonl either way — the rail is generated from it and
+   the front page's markers are held to it by `builder check`. */
+.done { font-size: 0.75em; color: var(--ink-dim); }
+
+.masthead { padding: 1.8rem 0 1.2rem; border-bottom: 1px solid var(--rule); }
+
+/* Wikipedia's metrics, heading by heading: the scale, the line-height, and the tight
+   space above and below that keeps a long page from drifting apart. */
+h1, h2, h3 { line-height: 1.3; }
+
+h1 {
+  margin: 0 0 0.25em;
+  font-size: 1.75rem;
+  letter-spacing: -0.01em;
+}
+
+/* This h2 labels a utility block — Contents, Galleries, Figures — rather than opening a
+   section of the article, so it takes the size below the section heading's and keeps the
+   small-caps treatment that says "label". */
+h2 {
+  margin: 1.4em 0 0.4em;
+  font-size: 1.25rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ink-dim);
+}
+
+h3 { margin: 0.3em 0 0; font-size: 1.25rem; }
+
+/* Inside prose a subhead is part of the reading: it keeps its own case, the body's ink,
+   and the size Wikipedia gives a section heading. It is also what the rail links to, so
+   it leaves room above itself for the jump to land in. */
+.prose h2 {
+  margin: 1em 0 0.25em;
+  padding-top: 0.5em;
+  scroll-margin-top: 1rem;
+  font-size: 1.5rem;
+  text-transform: none;
+  letter-spacing: -0.005em;
+  color: var(--ink);
+}
+
+p { margin: 0.4em 0 0.5em; }
+ul, ol { margin: 0.3em 0 0 1.6em; padding: 0; }
+li { margin-bottom: 0.1em; }
+
+/* The measure holds the text and lets the pictures out. Everything a reader reads in
+   lines stops at --measure; a figure or a grid of renders takes the column. */
+.masthead > *,
+.intro > *,
+.prose > *,
+.contents > *,
+.galleries-teaser > *,
+.figures > h2,
+.section-nav > *,
+footer > * {
+  max-width: var(--measure);
+}
+
+.figure, .images .grid { max-width: none; }
+
+/* An iteration, written the way the code writes it: its own line, out of the paragraph
+   rhythm, and monospaced so z*z reads as multiplication and not as emphasis. */
+.formula {
+  margin: 1.2em 0;
+  padding: 0.7rem 1rem;
+  border-left: 3px solid var(--rule);
+  background: var(--bar);
+  overflow-x: auto;
+  font-family: ui-monospace, "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 0.9375rem;
+}
+
+.standfirst { margin: 0; color: var(--ink-dim); font-size: 1.125rem; line-height: 1.5; }
+
+.kicker {
+  margin: 0 0 0.6rem;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ink-dim);
+}
+
+.intro { margin-top: 1.5rem; color: var(--ink-dim); }
+
+.toc { margin: 0.6rem 0 0 1.6em; }
+.toc > li { margin-bottom: 1.2rem; }
 .toc > li::marker { color: var(--ink-dim); }
-.toc p { margin: 0; color: var(--ink-dim); }
+.toc p { margin: 0.2em 0 0; color: var(--ink-dim); }
 
 a { color: var(--link); }
 a:hover { color: var(--ink); }
@@ -143,12 +241,7 @@ a:hover { color: var(--ink); }
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
   gap: 1rem;
-}
-
-/* The measure is set for prose. A grid of pictures is not prose, so once there is
-   room the grid takes it. */
-@media (min-width: 62rem) {
-  .images .grid { width: var(--wide); margin-left: calc((var(--measure) - var(--wide)) / 2); }
+  margin-top: 1rem;
 }
 
 .tile {
@@ -158,18 +251,23 @@ a:hover { color: var(--ink); }
   color: var(--well-ink-dim);
 }
 .tile img { display: block; width: 100%; height: auto; }
-.tile figcaption { padding: 0.6rem 0.8rem; font-size: 0.85rem; color: var(--well-ink-dim); }
+.tile figcaption {
+  padding: 0.6rem 0.8rem;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: var(--well-ink-dim);
+}
 .tile strong { color: var(--well-ink); font-weight: 600; }
 .tile a { color: var(--well-link); }
 .tile a:hover { color: var(--well-ink); }
 
-.credit { display: block; margin-top: 0.3rem; font-size: 0.8rem; opacity: 0.75; }
+.credit { display: block; margin-top: 0.3rem; font-size: 0.8125rem; opacity: 0.8; }
 
-/* Figures break out of the measure once there is room for them: a side-by-side
-   comparison squeezed into a column of prose is not a comparison. The mat is the same
-   dark well the gallery tiles use — a render is a render wherever it appears. */
+/* A figure runs past the measure to the width of the column: a side-by-side comparison
+   squeezed into a column of prose is not a comparison. The mat is the same dark well the
+   gallery tiles use — a render is a render wherever it appears. */
 .figure {
-  margin: 2.5rem 0;
+  margin: 1.5em 0 1.75em;
   padding: 0.75rem;
   background: var(--well);
   border: 1px solid var(--well-rule);
@@ -177,15 +275,12 @@ a:hover { color: var(--ink); }
 .figure img { display: block; width: 100%; height: auto; }
 .figure figcaption {
   margin-top: 0.6rem;
-  font-size: 0.85rem;
+  font-size: 0.875rem;
+  line-height: 1.5;
   color: var(--well-ink-dim);
 }
 .figure a { color: var(--well-link); }
 .figure a:hover { color: var(--well-ink); }
-
-@media (min-width: 62rem) {
-  .figure { width: 52rem; margin-left: calc((var(--measure) - 52rem) / 2); }
-}
 
 /* A figure registered before its picture exists. Prose gets written before pictures get
    made, so the well stays where it will be and says what will fill it — a dashed hole
@@ -195,7 +290,7 @@ a:hover { color: var(--ink); }
   padding: 2.75rem 1.5rem;
   border: 1px dashed var(--well-pending);
   text-align: center;
-  font-size: 0.9rem;
+  font-size: 0.9375rem;
   line-height: 1.5;
   color: var(--well-ink-dim);
 }
@@ -210,18 +305,18 @@ a:hover { color: var(--ink); }
 }
 
 .section-nav {
-  margin-top: 3rem;
-  padding-top: 1.5rem;
+  margin-top: 2.5rem;
+  padding-top: 1.2rem;
   border-top: 1px solid var(--rule);
-  font-size: 0.9rem;
+  font-size: 0.875rem;
 }
 .section-nav p { margin: 0; color: var(--ink-dim); }
 
 footer {
-  margin-top: 4rem;
-  padding-top: 1.5rem;
+  margin-top: 3rem;
+  padding-top: 1.2rem;
   border-top: 1px solid var(--rule);
-  font-size: 0.85rem;
+  font-size: 0.875rem;
   color: var(--ink-dim);
 }
 footer p { margin: 0; }

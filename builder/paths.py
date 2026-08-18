@@ -8,12 +8,14 @@ from pathlib import Path
 
 SITE_ROOT = Path(__file__).resolve().parent.parent
 
+SITE_INDEX = SITE_ROOT / "index.html"
 ARTICLE_DIR = SITE_ROOT / "article"
 GALLERIES_DIR = SITE_ROOT / "galleries"
 IMAGES_DIR = SITE_ROOT / "assets" / "images"
 GALLERY_IMAGES_DIR = IMAGES_DIR / "galleries"
 FIGURE_IMAGES_DIR = IMAGES_DIR / "figures"
 FIGURE_REGISTRY = FIGURE_IMAGES_DIR / "figures.jsonl"
+SECTION_REGISTRY = ARTICLE_DIR / "sections.jsonl"
 
 GALLERY_METADATA_NAME = "gallery.jsonl"
 THUMBS_DIR_NAME = "thumbs"

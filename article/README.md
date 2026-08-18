@@ -29,7 +29,16 @@ Two conventions the written pages follow:
   its page whether or not that page is written yet, spelled relative
   (`finding-good-locations.html`) and with the section's ratified name as the link text.
 
-**These pages are hand-written and the builder does not generate them.** The one part
-it owns is the figure block: `python -m builder figure <id>` prints the markup to paste,
-and `python -m builder check` asserts the page still matches the registry in
-`../assets/images/figures/figures.jsonl`.
+**These pages are hand-written and the builder does not generate them.** Two parts of one
+are the builder's:
+
+- **the figure block** — `python -m builder figure <id>` prints the markup to paste, and
+  `python -m builder check` asserts the page still matches the registry in
+  `../assets/images/figures/figures.jsonl`;
+- **the contents rail**, between the `contents-rail` marker comments, and the `id` on
+  every prose `<h2>`, which is derived from the heading's own words. `python -m builder
+  build` writes both; nothing between the markers is worth typing.
+
+`sections.jsonl` here gives the ten pages their reading order and marks the ones that are
+written — the flag behind the done marker in the rail and on the front page. A new page
+goes in that file, or the rail will not know about it and `check` will say so.
