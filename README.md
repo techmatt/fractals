@@ -13,4 +13,8 @@ local Python program whose output is committed — Pages serves the commit and n
 build. `python -m builder check` verifies that the committed HTML is what the builder
 produces and that every internal link resolves.
 
+Preview locally with `python -m builder serve` and read the site at
+`http://localhost:8000/index.html` rather than opening the files directly — Chrome does not
+persist page zoom for `file://` URLs, so a disk preview resets it at every navigation.
+
 Companion code repository: [techmatt/fractal-wallpapers](https://github.com/techmatt/fractal-wallpapers).

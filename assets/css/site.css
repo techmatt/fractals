@@ -86,7 +86,9 @@ body {
 }
 
 /* The site bar: one text-height line, the same on every page. It is a way back to the
-   front page and out to the code, not a masthead — the article is the thing here. */
+   front page, out to the code, and up to the homepage this project sits under — not a
+   masthead; the article is the thing here. The links wrap rather than overflow, which is
+   what a narrow phone does with three of them beside the title. */
 .topbar {
   margin: 0 calc(-1 * var(--gutter));
   padding: 0 var(--gutter);
@@ -97,9 +99,10 @@ body {
 
 .topbar-inner {
   display: flex;
+  flex-wrap: wrap;
   align-items: baseline;
   justify-content: space-between;
-  gap: 1.5rem;
+  gap: 0.15rem 1.5rem;
   max-width: var(--page);
   margin: 0 auto;
   padding: 0.5rem 0;
@@ -108,7 +111,11 @@ body {
 .topbar a { color: var(--ink-dim); text-decoration: none; }
 .topbar .topbar-site { color: var(--ink); font-weight: 600; }
 .topbar a:hover { color: var(--link); text-decoration: underline; }
-.topbar-links a + a { margin-left: 1.1rem; }
+
+/* The links are laid out rather than spaced by margins so that each one is a place the
+   row can break: three of them beside the site title do not fit a narrow phone, and a
+   bar that overflows drags the whole page sideways with it. */
+.topbar-links { display: flex; flex-wrap: wrap; gap: 0 1.1rem; }
 
 /* The contents rail. Ten sections in reading order, the current one open to its own
    headings; the builder writes it, so it cannot fall behind the article. Dark ink and
@@ -221,7 +228,9 @@ footer > * {
   font-size: 0.9375rem;
 }
 
-.standfirst { margin: 0; color: var(--ink-dim); font-size: 1.125rem; line-height: 1.5; }
+/* The lead sits at body size, as Wikipedia's does: only headings change size in prose,
+   and a standfirst is already a different voice through its ink. */
+.standfirst { margin: 0; color: var(--ink-dim); }
 
 .kicker {
   margin: 0 0 0.6rem;

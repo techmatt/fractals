@@ -20,6 +20,18 @@ words that say what the thing does. Internal shorthand and vocabulary from earli
 private versions of this project do not transfer; rename on the way in. A URL is
 permanent in a way a variable name is not, so a slug is worth the extra minute.
 
+## Editorial conventions
+
+- **A term's first mention is italic.** Where the article introduces a piece of its own
+  vocabulary — defines it, or first puts it to work — that mention is wrapped in `<i>`:
+  *pipeline*, *location*, *escape time*, *palette*, a mode name. This is Wikipedia's
+  words-as-words style; never bold, never a class. Once for the whole article in reading
+  order, not once per page — a term italicized in Overview is plain everywhere after.
+  `<em>` keeps its own job, real emphasis, which is why the two are spelled differently.
+  Sparingly: a page speckled with italics has stopped marking anything. Figure captions
+  sit outside the count — a caption may use a term the prose has not reached yet, and the
+  prose still gets the italic when it does.
+
 ## Locked conventions
 
 - **Plain static HTML and CSS. No framework, no bundler, no npm.** A page in this

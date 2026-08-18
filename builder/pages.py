@@ -36,7 +36,8 @@ def gallery_page_path(gallery: Gallery):
 
 
 def topbar(home: str, galleries_index: str) -> str:
-    """The site bar every page carries: back to the front page, out to the code.
+    """The site bar every page carries: back to the front page, out to the code and
+    to the author's homepage — this site is one project of several living under it.
 
     Both hrefs are passed in already relative to the page that will hold them — the
     bar is the same line everywhere, and only its depth differs.
@@ -47,7 +48,8 @@ def topbar(home: str, galleries_index: str) -> str:
             '  <div class="topbar-inner">',
             f'    <a class="topbar-site" href="{attribute(home)}">{text(SITE_TITLE)}</a>',
             '    <span class="topbar-links"><a href="'
-            f'{attribute(galleries_index)}">Galleries</a><a href="{CODE_REPO}">GitHub</a></span>',
+            f'{attribute(galleries_index)}">Galleries</a><a href="{CODE_REPO}">GitHub</a>'
+            f'<a href="{AUTHOR_SITE}">Matt Fisher</a></span>',
             "  </div>",
             "</nav>",
         ]

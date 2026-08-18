@@ -1,9 +1,10 @@
 """The one entry point: `python -m builder <command>`.
 
 `build` writes, `check` only reads and exits 1 on a problem, `figure` prints markup to
-paste, `diagram` draws the two figures that are diagrams rather than renders, and
-`import` is the one command that reaches outside the repository — for the full-size
-original an asset is derived from. Run `python -m builder --help` for the list.
+paste, `diagram` draws the two figures that are diagrams rather than renders, `serve`
+puts the committed tree on localhost for previewing, and `import` is the one command
+that reaches outside the repository — for the full-size original an asset is derived
+from. Run `python -m builder --help` for the list.
 """
 
 import argparse
@@ -12,6 +13,7 @@ from pathlib import Path
 
 from . import build as build_module
 from . import checks, diagrams, figures, images, records
+from . import serve as serve_module
 from .paths import IMAGES_DIR, SITE_ROOT
 
 
@@ -48,6 +50,14 @@ def _parser() -> argparse.ArgumentParser:
 
     drawn = commands.add_parser("diagram", help="draw one of the figures that is not a render")
     drawn.add_argument("id", choices=sorted(diagrams.DIAGRAMS), help="the diagram's figure id")
+
+    served = commands.add_parser("serve", help="preview the committed tree over localhost")
+    served.add_argument(
+        "--port",
+        type=int,
+        default=serve_module.DEFAULT_PORT,
+        help=f"the port to listen on (default {serve_module.DEFAULT_PORT})",
+    )
 
     brought = commands.add_parser("import", help="bring an image in as a web-res asset")
     brought.add_argument("source", type=Path, help="the full-size original, from anywhere on disk")
@@ -115,6 +125,11 @@ def _do_diagram(identifier: str) -> int:
     return 0
 
 
+def _do_serve(options: argparse.Namespace) -> int:
+    serve_module.serve(options.port)
+    return 0
+
+
 def _do_import(options: argparse.Namespace) -> int:
     destination = (SITE_ROOT / options.destination).resolve()
     try:
@@ -145,8 +160,10 @@ def main(argv: list[str] | None = None) -> int:
             return _do_figure(options.id)
         if options.command == "diagram":
             return _do_diagram(options.id)
+        if options.command == "serve":
+            return _do_serve(options)
         return _do_import(options)
-    except (records.RecordError, images.ImageError) as error:
+    except (records.RecordError, images.ImageError, OSError) as error:
         print(f"error: {error}", file=sys.stderr)
         return 1
 

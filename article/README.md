@@ -19,8 +19,13 @@ and its prose lives in `<section class="prose">`. Slugs here are permanent URLs,
 answer to the naming rule in `CLAUDE.md` before anything else — a section is named for
 what it does, in vocabulary the article itself teaches.
 
-Two conventions the written pages follow:
+Three conventions the written pages follow:
 
+- **First mention gets the italic.** The first time the article introduces a piece of its
+  own vocabulary — *pipeline*, *location*, *escape time*, *palette*, a mode name — that
+  mention is wrapped in `<i>`, Wikipedia's words-as-words style. Once across the whole
+  article in reading order, not once per page, and `<em>` stays reserved for emphasis.
+  `CLAUDE.md` carries the full rule.
 - **First mention gets the link.** The first time a page names a topic it does not itself
   teach — the complex plane, Ultra Fractal, a Mandelbulb — that mention carries an outside
   reference, usually Wikipedia. Later mentions are plain. Sparingly: a paragraph of blue is

@@ -11,8 +11,14 @@ python -m builder build     regenerate gallery pages, the gallery index, thumbna
 python -m builder check     links, page sync, contents, figure blocks, assets (read-only)
 python -m builder figure ID print a figure's markup block, to paste into an article page
 python -m builder diagram ID draw one of the two figures that are diagrams, not renders
+python -m builder serve [--port N]  preview the committed tree at http://localhost:8000/
 python -m builder import SRC DEST [--crop l,t,r,b] [--max-width N]
 ```
+
+`serve` is the way to look at the site locally. The pages open from the filesystem too —
+that is a rule and it stays true — but Chrome does not keep a zoom level for `file://`,
+so a preview opened from disk resets to 100% at every click. Over localhost the whole
+site is one origin and the zoom holds. It serves the committed bytes and builds nothing.
 
 Install what it needs with `pip install -r builder/requirements.txt`. `check` needs no
 image library for the parts that read HTML; Pillow only lets it verify pixel sizes too.
