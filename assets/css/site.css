@@ -4,8 +4,8 @@
    containers that hold pictures, and nothing else on the page goes with them.
 
    The layout is Wikipedia's: a sticky rail of contents on the left, the reading column
-   beside it. So are the type metrics — sizes, line-height, spacing, measure — but only
-   the metrics. The serif and the heading treatment are this site's own. */
+   beside it. So are the type metrics — sizes, line-height, spacing, measure — and so is
+   the serif on the headings. The heading treatment is this site's own. */
 
 /* Text is near-black on white, and the quiet gray is only one step off it. A reading
    surface earns nothing by being soft: --ink is 18:1 against the page and --ink-dim is
@@ -21,6 +21,16 @@
   /* Quiet enough for a heading to stay a heading, dark enough to still say "link". */
   --underline: #b0b4bb;
 
+  /* Two families and no webfont: whatever a reader already has, rendered by the engine
+     that knows it best. The sans is the system stack GitHub uses and carries the body
+     and every piece of furniture — rail, utility labels, nav. The serif is Wikipedia's
+     and is spent only where a heading opens something: the page title and a subhead
+     inside prose. Below those, headings stay sans with the rest of the machinery. */
+  --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial,
+    sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+  --serif: "Linux Libertine", Georgia, Times, serif;
+  --mono: ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+
   /* Image wells: every container that holds a render stays dark whatever the page
      around it does, so a picture is read against a mat and not against the paper. */
   --well: #16171c;
@@ -30,7 +40,7 @@
   --well-link: #9ec5ff;
   --well-pending: #3b3f4a;
 
-  /* The measure caps text and nothing else: about seventy-two characters of this serif
+  /* The measure caps text and nothing else: about seventy characters of the body face
      at this size. Figures and grids of pictures are not prose and run to --wide, which
      is what the reading column is worth once the rail has taken its share. */
   --rail: 15.5rem;
@@ -48,7 +58,7 @@ body {
   padding: 0 var(--gutter) 3rem;
   background: var(--ground);
   color: var(--ink);
-  font: 1rem/1.6 "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  font: 1rem/1.6 var(--sans);
 }
 
 /* One column until there is room for two. Below the breakpoint the rail is not shown at
@@ -146,6 +156,7 @@ h1, h2, h3 { line-height: 1.3; }
 
 h1 {
   margin: 0 0 0.25em;
+  font-family: var(--serif);
   font-size: 1.75rem;
   letter-spacing: -0.01em;
 }
@@ -170,11 +181,14 @@ h3 { margin: 0.3em 0 0; font-size: 1.25rem; }
   margin: 1em 0 0.25em;
   padding-top: 0.5em;
   scroll-margin-top: 1rem;
+  font-family: var(--serif);
   font-size: 1.5rem;
   text-transform: none;
   letter-spacing: -0.005em;
   color: var(--ink);
 }
+
+code, kbd, samp, pre { font-family: var(--mono); }
 
 p { margin: 0.4em 0 0.5em; }
 ul, ol { margin: 0.3em 0 0 1.6em; padding: 0; }
@@ -203,7 +217,7 @@ footer > * {
   border-left: 3px solid var(--rule);
   background: var(--bar);
   overflow-x: auto;
-  font-family: ui-monospace, "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-family: var(--mono);
   font-size: 0.9375rem;
 }
 

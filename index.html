@@ -55,53 +55,60 @@
     <ol class="toc">
       <li>
         <h3><a href="article/overview.html">Overview</a> <span class="done" role="img" aria-label="written">✓</span></h3>
-        <p>What this project makes, and why the hard part is not drawing a fractal but
-        finding one worth drawing.</p>
+        <p>A pipeline that searches fractals for views worth rendering and turns the
+        best into wallpapers — and why the finding, not the drawing, is the hard part.</p>
       </li>
       <li>
         <h3><a href="article/escape-time-fractals.html">Escape-time fractals</a> <span class="done" role="img" aria-label="written">✓</span></h3>
-        <p>The recurrences every picture here comes from — Mandelbrot, the multibrots,
-        Julia, Phoenix — and the locations that pin one down inside them.</p>
+        <p>The four families behind every picture here — Mandelbrot, the multibrots,
+        Julia, Phoenix — what it means to iterate a formula on the complex plane, and
+        how a "location" specifies one exact view into a set.</p>
       </li>
       <li>
         <h3><a href="article/rendering-fundamentals.html">Rendering fundamentals</a></h3>
-        <p>What a pixel costs, what the iteration cap decides, and the point in a zoom
-        where double precision stops telling the truth.</p>
+        <p>How an image is actually computed: iterate every pixel until its orbit
+        escapes or hits a cap, choose that cap, and know the zoom depth where double
+        precision stops telling the truth.</p>
       </li>
       <li>
         <h3><a href="article/rendering-modes.html">Rendering modes</a></h3>
-        <p>The escape count, smooth and discrete, and the frame-relative stretch that
-        turns a field of numbers into a picture.</p>
+        <p>Different ways to draw the same escape data: hard bands versus smooth
+        gradients, styles built from the orbit's whole path rather than just its exit,
+        and the contrast stretch that fits raw values to an image.</p>
       </li>
       <li>
         <h3><a href="article/finding-good-locations.html">Finding good locations</a></h3>
-        <p>Seeded walks that descend into the plane one rung at a time, the gates that
-        admit a frame, and the record every candidate leaves behind.</p>
+        <p>The automated search: walks that zoom into the plane one step at a time,
+        tests that decide whether a frame is worth keeping, and a record of every
+        candidate — kept or not.</p>
       </li>
       <li>
         <h3><a href="article/training-judges.html">Training judges</a></h3>
-        <p>Collecting human taste at a scale a model can learn from, and the small heads
-        trained on it: one for a place, two for a finished render, one for a palette.</p>
+        <p>Collecting human judgments of real renders and training small networks on
+        them: one scores locations, two judge finished renders, one picks palettes.</p>
       </li>
       <li>
         <h3><a href="article/color-palettes.html">Color palettes</a></h3>
-        <p>Palettes as data, the tone band measured off wallpapers that already work, and
-        a correction measured on the picture but applied to the palette.</p>
+        <p>Palettes as data: how one is chosen to suit each image, and how its tones are
+        corrected against the range measured from wallpapers that already work.</p>
       </li>
       <li>
         <h3><a href="article/from-locations-to-wallpapers.html">From locations to wallpapers</a></h3>
-        <p>Turning the union of every walk into a small set of finished pictures, and a
-        durable account of why those and not the others.</p>
+        <p>The final selection: scoring every surviving candidate, choosing a small set
+        across families and styles, and writing down why each picture was released,
+        rejected, or passed over.</p>
       </li>
       <li>
         <h3><a href="article/running-at-scale.html">Running at scale</a></h3>
-        <p>Spending hours of compute where good material is scarcest: a census, a measured
-        price per find, and an allocation that keeps its promises.</p>
+        <p>What multi-hour runs require: measuring how rare good material is in each
+        family, putting a compute price on each find, and splitting the time budget so
+        scarce families still get their share.</p>
       </li>
       <li>
         <h3><a href="article/deep-zoom.html">Deep zoom</a></h3>
-        <p>What breaks once a view is narrower than double precision can address, and what
-        it takes to keep descending past that.</p>
+        <p>Past the limits of double precision: why ordinary arithmetic fails at extreme
+        magnification, and the perturbation trick that keeps rendering possible far
+        beyond it.</p>
       </li>
     </ol>
   </section>
