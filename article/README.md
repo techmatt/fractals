@@ -11,11 +11,11 @@ rendering-fundamentals.html       training-judges.html      running-at-scale.htm
                                   deep-zoom.html
 ```
 
-`overview.html` and `escape-time-fractals.html` are written. Every other page is still a
-stub: the slug, the standfirst, the section navigation, and whatever figures the prose will
-be built around. A page that has been written loses the *Not written yet* standfirst
-treatment along with its `intro` section, and its prose lives in `<section class="prose">`.
-Slugs here are permanent URLs, so they
+`overview.html`, `escape-time-fractals.html` and `rendering-fundamentals.html` are
+written. Every other page is still a stub: the slug, the standfirst, the section
+navigation, and whatever figures the prose will be built around. A page that has been
+written loses the *Not written yet* standfirst treatment along with its `intro` section,
+and its prose lives in `<section class="prose">`. Slugs here are permanent URLs, so they
 answer to the naming rule in `CLAUDE.md` before anything else — a section is named for
 what it does, in vocabulary the article itself teaches.
 

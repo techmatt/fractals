@@ -21,7 +21,16 @@
   <ol class="rail-sections">
     <li><a href="overview.html">Overview</a> <span class="done" role="img" aria-label="written">✓</span></li>
     <li><a href="escape-time-fractals.html">Escape-time fractals</a> <span class="done" role="img" aria-label="written">✓</span></li>
-    <li class="rail-current"><a href="rendering-fundamentals.html" aria-current="page">Rendering fundamentals</a></li>
+    <li class="rail-current"><a href="rendering-fundamentals.html" aria-current="page">Rendering fundamentals</a> <span class="done" role="img" aria-label="written">✓</span>
+      <ol class="rail-headings">
+        <li><a href="#from-counts-to-colors">From counts to colors</a></li>
+        <li><a href="#the-smooth-iteration-count">The smooth iteration count</a></li>
+        <li><a href="#iteration-caps">Iteration caps</a></li>
+        <li><a href="#supersampling">Supersampling</a></li>
+        <li><a href="#dynamic-range">Dynamic range</a></li>
+        <li><a href="#the-smooth-rendering">The smooth rendering</a></li>
+      </ol>
+    </li>
     <li><a href="rendering-modes.html">Rendering modes</a></li>
     <li><a href="finding-good-locations.html">Finding good locations</a></li>
     <li><a href="training-judges.html">Training judges</a></li>
@@ -38,14 +47,176 @@
 <header class="masthead">
   <p class="kicker">Section 3 of 10</p>
   <h1>Rendering fundamentals</h1>
-  <p class="standfirst">What a pixel costs, what the iteration cap decides, and the point in a zoom where double precision stops telling the truth.</p>
+  <p class="standfirst">How a grid of integer escape counts becomes a smooth field, what the
+  iteration cap and the sample count each decide, and why the palette is fitted to the frame
+  rather than to the arithmetic.</p>
 </header>
 
 <main>
-  <section class="intro">
-    <p><em>Not written yet.</em> This page holds the section's slug, which is a permanent
-    URL, and the figures the prose will be built around. The code it describes is in
-    <a href="https://github.com/techmatt/fractal-wallpapers">fractal-wallpapers</a>.</p>
+  <section class="prose">
+    <p><a href="escape-time-fractals.html">Escape-time fractals</a> produces, for a given
+    location in a fractal, a 2D grid of integer escape counts — one per pixel, each the number
+    of steps that pixel's orbit took to escape, or a special "infinite" label indicating the
+    orbit never escaped. This page covers the fundamentals of rendering: how those integer
+    counts become a smooth field, and how that field becomes a finished image. The smooth
+    fields look beautiful in their own right, and they are also the foundation the more
+    advanced <a href="rendering-modes.html">Rendering modes</a> build on. Throughout, we'll
+    assume we're already handed a one-dimensional color palette;
+    <a href="color-palettes.html">Color palettes</a> covers how a good palette is chosen for
+    each image.</p>
+
+    <h2 id="from-counts-to-colors">From counts to colors</h2>
+
+    <p>The simplest rendering method maps the integer escape time straight to color. A palette
+    is colors laid along a number line — dark blue at zero, say, sweeping toward white at a
+    hundred — so paint each pixel with the color sitting at its escape count. This works, and
+    it is how most first Mandelbrot programs are written. But the count is an integer: a pixel
+    that escaped in 40 steps and its neighbor that escaped in 41 land on two flatly different
+    colors with a hard edge between them, and the whole image comes out terraced into bands of
+    solid color instead of continuous shading.</p>
+
+      <figure class="figure" data-figure="render-two-palettes">
+        <img src="../assets/images/figures/render-two-palettes.jpg" width="1316" height="812" alt="The whole Mandelbrot set drawn in two different palettes, with one boxed cutout shown below in the same two.">
+        <figcaption>One escape field, four pictures. The top row is the whole set in two palettes; the bottom row is the boxed cutout in the same two. Nothing about the fractal changed between the columns — the palette is a decision made after the location, and this page is about the numbers that sit under all four. <span class="credit">Rendered with fractal-wallpapers</span></figcaption>
+      </figure>
+
+      <figure class="figure" data-figure="render-banding">
+        <img src="../assets/images/figures/render-banding.jpg" width="1316" height="412" alt="One Mandelbrot location at a cap of 50, twice: terraced into flat bands on the left, continuously shaded on the right.">
+        <figcaption>The integer escape count beside the smooth count of the next section, at one location, one palette and one cap. Every pixel that escaped on the same step takes the same color, so the field terraces into flat contours. The cap here is a deliberately low 50: at the caps a real render uses, the terraces are finer than a pixel and the left-hand picture is the right-hand one. <span class="credit">Rendered with fractal-wallpapers</span></figcaption>
+      </figure>
+
+    <h2 id="the-smooth-iteration-count">The smooth iteration count</h2>
+
+    <p>To convert the discrete escape time into a continuous one, start from what the integer
+    count discards. It records that the orbit crossed the escape radius <em>during</em> step 40
+    — not whether it barely crossed or shot far past, which is exactly the missing fractional
+    part. And that fraction is recoverable from the orbit's final value. Once |z| is large, the
+    squaring dominates the update, so each further step roughly squares |z|. Squaring |z|
+    doubles log |z|, and doubling log |z| adds one to log log |z| — so log log |z| behaves like
+    a clock that ticks once per iteration. Reading that clock at the moment of escape tells you
+    <em>where within the final step</em> the crossing really happened, and gives the classic
+    <a href="https://en.wikipedia.org/wiki/Plotting_algorithms_for_the_Mandelbrot_set">smooth
+    iteration count</a>:</p>
+
+    <pre class="formula">smooth = n + 1 − log₂(log₂ |z|)</pre>
+
+    <p>where n is the integer count and z is the orbit's value when the loop stopped. The
+    subtracted term lands between 0 and 1 and supplies the fractional part, and the convention
+    is arranged so that the floor of the smooth count is the integer count, exactly. The same
+    idea covers the
+    <a href="escape-time-fractals.html#multibrot-sets">multibrot families</a>, with the
+    logarithm adjusted to the degree. One practical wrinkle: the formula is only accurate when
+    the orbit has traveled well past the escape circle before the loop stops, so the engine
+    tests escape against a radius comfortably larger than the mathematical minimum of 2 —
+    radius 2 is enough to <em>decide</em> escape, but measuring it smoothly wants more
+    room.</p>
+
+    <p>Rendered this way, the terraces melt into continuous ramps. Each pixel now carries one
+    continuously varying number — a floating-point <em>field</em> — and turning that field into
+    colors is a separate, later decision. This page is about producing good fields;
+    <a href="rendering-modes.html">Rendering modes</a> covers converting fields into different
+    rendering styles.</p>
+
+      <figure class="figure" data-figure="render-field-anatomy">
+        <img src="../assets/images/figures/render-field-anatomy.jpg" width="1316" height="412" alt="A finished multibrot wallpaper beside the same frame's escape field drawn as grayscale.">
+        <figcaption>A finished wallpaper and the field underneath it: the same numbers, once through the picture's own palette and once as plain lightness over the same working range. All of the structure is the field's. What the palette decides is which part of the field's range you get to see — which is the last section on this page. A degree-4 multibrot at a location I scored 4 of 4, colored the way I scored 4 of 4. <span class="credit">Rendered with fractal-wallpapers</span></figcaption>
+      </figure>
+
+    <h2 id="iteration-caps">Iteration caps</h2>
+
+    <p>The introduction's special infinite label is the loop's remaining problem: points inside
+    the set never escape, so left alone the loop would run on them forever. In practice,
+    infinite means a cap was reached. Every renderer picks one — iterate each orbit at most N
+    steps — and any orbit still bounded after N steps is declared interior and painted with the
+    flat interior tone.</p>
+
+    <p>The choice matters more than it first appears. Too low a cap misclassifies: points near
+    the boundary that would have escaped at step 5,000 get declared interior, the flat region
+    swells outward, and it swallows exactly the filigree the image exists to show. Too high a
+    cap is pure cost, and the cost lands unevenly — a pixel that escapes in a dozen steps is
+    indifferent to the cap, but every pixel that reaches it pays for it in full, so a frame with
+    real interior in view gets linearly more expensive as the cap climbs.</p>
+
+    <p>The right cap also depends on the zoom. The deeper the magnification, the closer the
+    frame presses against the boundary and the longer typical orbits wander before escaping —
+    and those long-wandering regions are often where escape-time fractals are at their most
+    beautiful. So the engine needs to raise the cap automatically as the frame width shrinks —
+    logarithmically, each halving of the width buying a constant increment of extra steps —
+    clamped between a floor and a ceiling.</p>
+
+      <figure class="figure" data-figure="render-maxiter">
+        <img src="../assets/images/figures/render-maxiter.jpg" width="1316" height="412" alt="One deep Mandelbrot location at a cap of 300 beside the same location at the automatic cap of 32,474.">
+        <figcaption>One location, one palette, two caps. At 300 every orbit that would have escaped in the low thousands is declared interior instead, and the flat region swells across the middle of the frame and swallows the spiral the picture exists to show. At 32,474 — what the depth policy chooses for a frame this wide — the same spiral resolves into filaments. <span class="credit">Rendered with fractal-wallpapers</span></figcaption>
+      </figure>
+
+    <h2 id="supersampling">Supersampling</h2>
+
+    <p>Everything so far computes one orbit per pixel, from the pixel's center. But a pixel is
+    not a point — it is a small rectangle of the complex plane, and near the boundary the
+    fractal has structure far below pixel scale, at every scale. A single sample through the
+    middle of that rectangle is a coin flip: filaments thinner than a pixel show up as scattered
+    speckle, and fine features shimmer or break apart. This is
+    <a href="https://en.wikipedia.org/wiki/Aliasing">aliasing</a>, the same phenomenon that puts
+    staircase edges on computer-drawn lines.</p>
+
+    <p>The cure is
+    <a href="https://en.wikipedia.org/wiki/Supersampling">supersampling</a>: compute several
+    orbits at different positions inside each pixel's rectangle and average them. It multiplies
+    the render's cost by the number of samples — a costly step, but a critical one: averaging
+    real samples is what separates a crisp wallpaper from a noisy one, and no later step can put
+    back detail the sampling missed.</p>
+
+      <figure class="figure" data-figure="render-supersample">
+        <img src="../assets/images/figures/render-supersample.jpg" width="1316" height="412" alt="A filament-rich Julia crop at one sample per pixel beside sixteen, both enlarged so that single pixels are visible.">
+        <figcaption>One crop at one sample per pixel and at the production setting of 4 × 4 = 16, both enlarged to twice size so single pixels are visible. A filament thinner than a pixel is a coin flip at one sample: the arms break into speckle and the spiral's dotted beads come apart. Nothing later in the pipeline can put back what the sampling missed. <span class="credit">Rendered with fractal-wallpapers</span></figcaption>
+      </figure>
+
+    <h2 id="dynamic-range">Dynamic range</h2>
+
+    <p>The field that comes out of all this is numerically wild. Near the boundary, values climb
+    toward the cap itself — thousands of steps — while most of the frame escapes almost
+    immediately, and the structure worth looking at is often compressed into a thin slice of
+    that range. Map the palette across that whole range linearly — lowest value at one end, the
+    cap at the other — and most of the palette goes unused: the image reads as a nearly flat
+    wash with a bright seam along the boundary.</p>
+
+    <p>Fractal software has classic escapes from this squeeze. The most common is to repeat the
+    palette — cycle it every fixed number of steps, or mirror it end-to-end so the repeats join
+    smoothly — so that no single sweep of the palette has to cover the whole range. That is why
+    so many classic Mandelbrot renders look striped with rings of repeating color.</p>
+
+      <figure class="figure" data-figure="render-cyclic-repeats">
+        <img src="../assets/images/figures/render-cyclic-repeats.jpg" width="1316" height="812" alt="One Julia location under a cyclic ice palette at one, two, three and four sweeps of the gradient.">
+        <figcaption>One location and one cyclic palette, swept across the frame's range k times. At k = 1 the gradient is spent once over a range most of the frame does not occupy, and wide areas come out nearly flat; each further sweep spends it again and pulls more of the structure apart. Repetition is the classic escape from a squeezed range, and it is why so many older Mandelbrot renders are striped with rings. <span class="credit">Rendered with fractal-wallpapers</span></figcaption>
+      </figure>
+
+    <p>This project keeps repetition but removes the guesswork underneath it. A data-driven
+    leveling step examines the distribution of values actually present in the frame and sets the
+    working range from that distribution rather than from the theoretical extremes — the
+    automatic cousin of dragging the levels sliders in a photo editor. The operator is a
+    percentile stretch: the 0.5th and 99.5th percentiles of the frame's own values become the
+    two ends of the working range, and the half a per cent past each end is clipped flat. How
+    many times the palette sweeps that leveled range is then a deliberate choice, made per image
+    as one of the palette parameters covered in
+    <a href="color-palettes.html">Color palettes</a>, rather than a fixed step guessed against
+    an unknown range. This leveling acts on the field, before any color exists; the finished,
+    colored image gets its own gentler level adjustment later in the pipeline.</p>
+
+      <figure class="figure" data-figure="render-autolevel">
+        <img src="../assets/images/figures/render-autolevel.jpg" width="1316" height="412" alt="One Mandelbrot location with the palette spread linearly across the frame's whole range, beside the same field leveled against its own distribution.">
+        <figcaption>The same field twice. On the left the palette is spread linearly from the frame's lowest value to its highest, 11 to 8,504. Ninety-nine per cent of the frame lies between 11 and 64, so almost the whole picture is drawn from the first 0.6% of the gradient and the rest of the palette is spent on a handful of samples along the boundary. On the right the working range is measured from the distribution instead, and the picture was there the whole time. <span class="credit">Rendered with fractal-wallpapers</span></figcaption>
+      </figure>
+
+    <h2 id="the-smooth-rendering">The smooth rendering</h2>
+
+    <p>Taken together, a render is a location plus a short list of choices: iterate to an
+    automatically chosen cap, keep smooth values rather than integer counts, sample each pixel
+    several times, level the field against its own distribution, and map a palette across it.
+    What this produces is the project's <em>smooth</em> rendering — the clean, classic look of
+    these fractals — and it is one style among several.
+    <a href="rendering-modes.html">Rendering modes</a> catalogs the others, built on the same
+    machinery, and <a href="color-palettes.html">Color palettes</a> covers how the palette
+    itself is chosen.</p>
   </section>
 
   <nav class="section-nav">
