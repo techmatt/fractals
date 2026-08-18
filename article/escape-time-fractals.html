@@ -128,9 +128,9 @@
     of the core fractal types that this project uses when searching for beautiful wallpaper
     locations.</p>
 
-      <figure class="figure figure-pending" data-figure="escape-fractional-degrees">
-        <p class="pending"><span class="pending-label">Figure pending</span>Sets at fractional degrees d = 0.5, 1.5, 1.9, 2.1, 2.5 and 2.9, with a zoom or two showing the branch-cut seams.</p>
-        <figcaption>Between the whole numbers the shapes morph continuously, and the renders carry sharp seams where orbits cross the branch cut. The seam is a consequence of having to pick a branch of the complex logarithm rather than of the dynamics — a different branch is a different picture, which is why these are not one of the project's core families. <span class="credit">Rendered with fractal-wallpapers</span></figcaption>
+      <figure class="figure" data-figure="escape-fractional-degrees">
+        <img src="../assets/images/figures/escape-fractional-degrees.jpg" width="1344" height="614" alt="Five sets at fractional degrees — d = 2.1, 2.5, 2.9, 3.5 and 4.5 — each whole in its own frame, with a close-up of the branch-cut seam at d = 3.5.">
+        <figcaption>Five degrees between the whole ones, each framed by the rule that gives the other families their home views. A whole degree carries its lobes in even rotation, one fewer than the degree; a fractional one is caught mid-turn between two of those arrangements, with the next lobe part-grown. Where that lobe happens to sit decides how much the branch cut shows: at 2.9 the negative real axis runs through the gap between two lobes and the render is clean, while at 3.5 the arriving lobe sits astride the axis and the halo flares where escape times jump across the cut. The close-up is that edge at eight times the frame — rays ending mid-stroke along a straight line no dynamics put there. <span class="credit">Rendered with fractal-wallpapers</span></figcaption>
       </figure>
 
     <h2>Phoenix fractals</h2>
@@ -150,7 +150,9 @@
     celebrated pair of constants found by
     <a href="https://doi.org/10.1109/31.1825">Shigehiro Ushiki in 1988</a>; this project treats
     (c, p) as a whole plane of possibilities and hunts it the same way it hunts everything
-    else.</p>
+    else. One detail the formula hides: on the very first step there is no previous value
+    yet, so z_prev needs a starting seed of its own — quietly a third constant alongside c
+    and p. The classic picture seeds it at zero; this project varies it too.</p>
 
       <figure class="figure" data-figure="escape-phoenix">
         <img src="../assets/images/figures/escape-phoenix.jpg" width="1316" height="1266" alt="The classic Ushiki phoenix render beside several finds from elsewhere in the (c, p) plane.">
