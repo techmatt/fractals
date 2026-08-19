@@ -47,6 +47,16 @@ class Record:
             raise RecordError(f"{self.where}: {key} must be a non-empty string when present")
         return value
 
+    def lines(self, key: str) -> tuple[str, ...]:
+        """A list of non-empty strings — one line each, order kept."""
+        value = self.fields.get(key)
+        if not isinstance(value, list) or not value:
+            raise RecordError(f"{self.where}: {key} must be a non-empty list of strings")
+        for entry in value:
+            if not isinstance(entry, str) or not entry.strip():
+                raise RecordError(f"{self.where}: every {key} entry must be a non-empty string")
+        return tuple(value)
+
     def count(self, key: str) -> int:
         value = self.fields.get(key)
         if not isinstance(value, int) or isinstance(value, bool) or value <= 0:

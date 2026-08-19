@@ -14,6 +14,14 @@ A figure can be registered before its asset exists. Such a row carries `"status"
 description of the picture that will go there. Prose gets written before pictures get
 made, and a page that says "this is coming, and here is what it will show" is honest in
 a way an empty space or a broken image is not.
+
+**Every made figure records how it was made.** A row's `provenance` is one line per
+panel, and a line says everything a person would need to draw that panel again: the
+family and its constants, the centre and width of the frame, the mode, the palette, the
+cap, the sample count — or, for a one-off, the command that was run. It is not published
+anywhere; it is the answer to "where did this picture come from?" asked a year later,
+and the registry is the only place that answer keeps. `check` holds every non-pending
+row to having one.
 """
 
 from dataclasses import dataclass
@@ -37,6 +45,7 @@ class Figure:
     width: int | None
     height: int | None
     credit: str | None
+    provenance: tuple[str, ...]
 
     @property
     def pending(self) -> bool:
@@ -114,6 +123,8 @@ def _figure(row: records.Record, identifier: str) -> Figure:
         raise records.RecordError(
             f'{row.where}: a figure needs file, width and height, or "status": "{PENDING}"'
         )
+    # A pending figure has nothing to record yet; a made one has no excuse.
+    provenance = () if status == PENDING else row.lines("provenance")
     file, width, height = asset
     return Figure(
         id=identifier,
@@ -123,4 +134,5 @@ def _figure(row: records.Record, identifier: str) -> Figure:
         width=width,
         height=height,
         credit=row.optional_text("credit"),
+        provenance=provenance,
     )

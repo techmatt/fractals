@@ -216,6 +216,26 @@ footer > * {
 
 .figure, .images .grid { max-width: none; }
 
+/* A table in prose is a small scoreboard, not a layout: Wikipedia's rules and quiet
+   header row, sized to the numbers rather than to the column. It stays inside the
+   measure with the paragraphs, and scrolls inside itself on a narrow screen. */
+.prose table {
+  margin: 1em 0;
+  border-collapse: collapse;
+  font-size: 0.9375rem;
+}
+
+.prose th, .prose td {
+  padding: 0.3em 1.4em 0.3em 0;
+  border-bottom: 1px solid var(--rule);
+  text-align: left;
+  vertical-align: baseline;
+}
+
+.prose th { color: var(--ink-dim); font-weight: 600; }
+
+.prose td:not(:first-child) { font-variant-numeric: tabular-nums; }
+
 /* An iteration, written the way the code writes it: its own line, out of the paragraph
    rhythm, and monospaced so z*z reads as multiplication and not as emphasis. */
 .formula {

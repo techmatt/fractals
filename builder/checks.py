@@ -10,7 +10,8 @@ Five of them, all read-only:
 - **pages** — the committed HTML under `galleries/` is byte-identical to what the
   builder produces from today's metadata. What is committed is what is served, so the
   commit is the thing worth checking.
-- **figures** — every figure block on an article page matches its registry row exactly.
+- **figures** — every figure block on an article page matches its registry row exactly,
+  and every made figure carries the provenance its picture can be drawn again from.
 - **contents** — every hand-written page carries the contents rail the builder derives,
   every prose heading carries the id its own words give it, and the front page's contents
   list marks the same sections done that `sections.jsonl` calls written.

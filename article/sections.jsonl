@@ -1,7 +1,7 @@
 {"schema": 1, "kind": "section", "page": "overview.html", "status": "written"}
 {"schema": 1, "kind": "section", "page": "escape-time-fractals.html", "status": "written"}
 {"schema": 1, "kind": "section", "page": "rendering-fundamentals.html", "status": "written"}
-{"schema": 1, "kind": "section", "page": "rendering-modes.html"}
+{"schema": 1, "kind": "section", "page": "rendering-modes.html", "status": "written"}
 {"schema": 1, "kind": "section", "page": "finding-good-locations.html"}
 {"schema": 1, "kind": "section", "page": "training-judges.html"}
 {"schema": 1, "kind": "section", "page": "color-palettes.html"}

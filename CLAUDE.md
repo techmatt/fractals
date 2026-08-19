@@ -43,6 +43,15 @@ permanent in a way a variable name is not, so a slug is worth the extra minute.
 - **Images here are web-res only.** Full-size wallpapers ship as **GitHub Releases
   assets** and never enter git history. `assets/images/` holds what a page displays;
   anything a reader would download at full size is a release link.
+- **Every figure records how it was made.** A figure's registry row carries a
+  `provenance` list — one line per panel — and a line holds everything needed to draw
+  that panel again: the family and its constants, the frame's centre and width, the
+  mode, the palette, the cap, the sample count, the crop. A one-off may record the
+  command that was run instead. Nothing about it is published: it is what answers
+  "where did this picture come from?" a year later, and the registry is the only place
+  that answer survives, because the scripts that draw figures live in ignored
+  `scratch/`. A made figure without one is a failing `builder check`. Where a value is
+  genuinely lost, the line says so — the record never guesses.
 - **Relative links, always.** The site lives under a project-Pages subpath
   (`/fractal-website/`), so a root-absolute `/assets/...` href is broken in
   production and fine locally — the worst kind of bug. Every internal href and src is
