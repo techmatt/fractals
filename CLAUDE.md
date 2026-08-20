@@ -99,6 +99,10 @@ Each prompt in this project ends the same way:
 - Report findings, numbers, decisions, and surprises only. No process narration, no
   restating the prompt back.
 - Then copy the report to `C:\Code\fractal-drive-sync\reports\`.
+- **Say where the report landed, in the last line of the console reply** — the copied
+  path, spelled out: `Report written to fractal-drive-sync/reports/<name>_report.md`.
+  The report is the deliverable, and a reply that summarizes it without naming it
+  leaves the reader hunting for the file.
 
 ## Rules
 
