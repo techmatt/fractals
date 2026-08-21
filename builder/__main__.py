@@ -3,9 +3,11 @@
 `build` writes, `check` only reads and exits 1 on a problem, `figure` prints markup to
 paste, `figures` lists what is still to make and lands a finished one, `diagram` draws
 the two figures that are diagrams rather than renders, `serve` puts the committed tree
-on localhost for previewing, and `import` is the one command that reaches outside the
-repository — for the full-size original an asset is derived from. Run
-`python -m builder --help` for the list.
+on localhost for previewing, `prose` holds each page to the approved document it was
+placed from, and `review` builds the doc a page is marked up in and reads it back.
+`import`, `prose` and `review` are the commands that reach outside the repository — for
+a full-size original, for the approved prose, and for the Drive-synced review folder.
+Run `python -m builder --help` for the list.
 """
 
 import argparse
@@ -15,6 +17,9 @@ from pathlib import Path
 from . import build as build_module
 from . import checks, diagrams, figures, images, records
 from . import locations as locations_module
+from . import prose as prose_module
+from . import review as review_module
+from . import sections as sections_module
 from . import serve as serve_module
 from .paths import FIGURE_IMAGES_DIR, IMAGES_DIR, SITE_ROOT
 
@@ -105,6 +110,33 @@ def _parser() -> argparse.ArgumentParser:
         type=int,
         default=serve_module.DEFAULT_PORT,
         help=f"the port to listen on (default {serve_module.DEFAULT_PORT})",
+    )
+
+    held = commands.add_parser("prose", help="hold a placed page to the prose it was placed from")
+    held.add_argument(
+        "page",
+        nargs="*",
+        help="which pages to check; every page with a registered master by default",
+    )
+
+    marked = commands.add_parser("review", help="build the doc a page is reviewed in, or read it")
+    marked.add_argument("page", nargs="?", help="the page, named with or without .html")
+    marked.add_argument(
+        "--read", action="store_true", help="print the marked-up doc back, edits and notes first"
+    )
+    marked.add_argument(
+        "--full", action="store_true", help="with --read, print every paragraph as well"
+    )
+    marked.add_argument(
+        "--consume",
+        action="store_true",
+        help="move an applied doc into review/applied/, so it cannot be applied twice",
+    )
+    marked.add_argument(
+        "--force", action="store_true", help="overwrite a doc that is already waiting"
+    )
+    marked.add_argument(
+        "--list", action="store_true", help="what is waiting for review and what was applied"
     )
 
     brought = commands.add_parser("import", help="bring an image in as a web-res asset")
@@ -259,6 +291,87 @@ def _do_diagram(identifier: str) -> int:
     return 0
 
 
+def _do_prose(options: argparse.Namespace) -> int:
+    """Hold each placed page to its approved master, word for word."""
+    masters = prose_module.load_all()
+    wanted = [_page_name(page) for page in options.page] if options.page else sorted(masters)
+    if not wanted:
+        print(f"no page has a registered master — {prose_module.PROSE_REGISTRY.name} is empty")
+        return 0
+    problems = 0
+    for page in wanted:
+        master = masters.get(page)
+        if master is None:
+            print(f"{page}: no master registered — this page's HTML is its own master")
+            continue
+        comparison = prose_module.compare(page, master)
+        if comparison.matches:
+            print(f"{page}: verbatim — {comparison.words} words match {master.file}")
+            continue
+        problems += 1
+        print(f"{page}: drifted from {master.file}")
+        print("  " + comparison.difference.replace("\n", "\n  "))
+    return 1 if problems else 0
+
+
+def _page_name(page: str) -> str:
+    """A page named either way — `overview` or `overview.html` — as the registry spells it."""
+    return page if page.endswith(".html") else f"{page}.html"
+
+
+def _do_review(options: argparse.Namespace) -> int:
+    if options.list or not options.page:
+        return _do_review_list()
+    page = _page_name(options.page)
+    if options.consume:
+        moved = review_module.consume(page)
+        print(f"moved to {moved}")
+        return 0
+    if options.read:
+        return _do_review_read(page, full=options.full)
+    written = review_module.create(page, force=options.force)
+    paragraphs = review_module.read_doc(written)
+    print(f"wrote {written}")
+    print(f"{len(paragraphs)} paragraphs — mark it up in Google Docs, then apply it")
+    return 0
+
+
+def _do_review_list() -> int:
+    """What is waiting for a mark-up pass, and what has already been through one."""
+    for section in sections_module.load_all():
+        state = review_module.state_of(section.page)
+        if state.waiting is None and not state.applied:
+            continue
+        waiting = state.waiting.name if state.waiting else "—"
+        applied = ", ".join(path.name for path in state.applied) or "none"
+        print(f"{section.page:34} waiting: {waiting:34} applied: {applied}")
+    print(f"in {prose_module.review_dir()}")
+    return 0
+
+
+def _do_review_read(page: str, *, full: bool) -> int:
+    """The marked-up doc, as the edits it makes and the notes it carries."""
+    state = review_module.state_of(page)
+    if state.waiting is None:
+        print(f"no review doc for {page} in {prose_module.review_dir()}", file=sys.stderr)
+        return 1
+    paragraphs = review_module.read_doc(state.waiting)
+    print(f"{state.waiting.name}: {len(paragraphs)} paragraphs")
+    notes = review_module.notes_in(paragraphs)
+    changes = review_module.changes(page, paragraphs)
+    print(f"\n{len(changes)} changed paragraph(s), {len(notes)} note(s)\n")
+    for change in changes:
+        print(f"— {change.kind}: {change.inline}\n")
+    for note in notes:
+        print(f"— note: {note}")
+    if full:
+        print("\n--- the whole doc ---")
+        for paragraph in paragraphs:
+            prefix = "" if paragraph.style == review_module.NORMAL else f"[{paragraph.style}] "
+            print(f"{prefix}{paragraph.text}")
+    return 0
+
+
 def _do_serve(options: argparse.Namespace) -> int:
     serve_module.serve(options.port)
     return 0
@@ -298,10 +411,20 @@ def main(argv: list[str] | None = None) -> int:
             return _do_locations(options)
         if options.command == "diagram":
             return _do_diagram(options.id)
+        if options.command == "prose":
+            return _do_prose(options)
+        if options.command == "review":
+            return _do_review(options)
         if options.command == "serve":
             return _do_serve(options)
         return _do_import(options)
-    except (records.RecordError, images.ImageError, OSError) as error:
+    except (
+        records.RecordError,
+        images.ImageError,
+        prose_module.ProseError,
+        review_module.ReviewError,
+        OSError,
+    ) as error:
         print(f"error: {error}", file=sys.stderr)
         return 1
 

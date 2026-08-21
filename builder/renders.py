@@ -46,17 +46,13 @@ from __future__ import annotations
 
 import hashlib
 import json
-import os
 import subprocess
 import time
-import tomllib
 from dataclasses import dataclass
 from pathlib import Path
 
 from .paths import SITE_ROOT
-
-#: This repository's own untracked settings, read from the checkout root.
-LOCAL_SETTINGS = SITE_ROOT / "local.toml"
+from .settings import LOCAL_SETTINGS, configured, read_settings
 
 #: Where the wallpaper project is checked out. The variable wins over the file.
 WALLPAPERS_KEY = "wallpapers_root"
@@ -88,45 +84,19 @@ class EngineError(RuntimeError):
 # ------------------------------------------------------------------------ the settings
 
 
-def _settings(path: Path) -> dict:
-    """One TOML settings file, or an empty mapping where there is none.
-
-    Read fresh every time. Caching would mean a process that started with a disk
-    unplugged could never be told it is plugged in now, and the read is one small file.
-    """
-    if not path.is_file():
-        return {}
-    return tomllib.loads(path.read_text(encoding="utf-8"))
-
-
-def _configured(settings: dict, key: str, variable: str) -> Path | None:
-    """A path from the environment or the settings file, with the environment winning.
-
-    Set to nothing is a statement, not an absence: it says *this machine has no such
-    root*, overriding a file that says otherwise.
-    """
-    stated = os.environ.get(variable)
-    if stated is not None:
-        return Path(stated) if stated.strip() else None
-    value = settings.get(key)
-    return Path(str(value)) if value else None
-
-
 def wallpapers_root() -> Path:
     """Where the wallpaper project is checked out, or a refusal naming both ways to say."""
-    configured = _configured(_settings(LOCAL_SETTINGS), WALLPAPERS_KEY, WALLPAPERS_VARIABLE)
-    if configured is None:
+    root = configured(read_settings(LOCAL_SETTINGS), WALLPAPERS_KEY, WALLPAPERS_VARIABLE)
+    if root is None:
         raise EngineError(
             "the fractal-wallpapers checkout is not configured. Set the "
             f"{WALLPAPERS_VARIABLE} environment variable, or put "
             f'`{WALLPAPERS_KEY} = "..."` in {LOCAL_SETTINGS.name} at the root of this '
             "repository — untracked, because no absolute path is committed here."
         )
-    if not configured.is_dir():
-        raise EngineError(
-            f"{configured} is configured as the wallpapers checkout, and is not there"
-        )
-    return configured
+    if not root.is_dir():
+        raise EngineError(f"{root} is configured as the wallpapers checkout, and is not there")
+    return root
 
 
 def engine_binary() -> Path:
@@ -161,9 +131,9 @@ class Tiers:
     def current(cls) -> Tiers:
         """The tiers as this machine is configured this second."""
         root = wallpapers_root()
-        settings = _settings(root / "local.toml")
-        hot = _configured(settings, HOT_ROOT_KEY, HOT_ROOT_VARIABLE) or root / ARTIFACTS_NAME
-        return cls(hot, _configured(settings, ARCHIVE_ROOT_KEY, ARCHIVE_ROOT_VARIABLE))
+        settings = read_settings(root / "local.toml")
+        hot = configured(settings, HOT_ROOT_KEY, HOT_ROOT_VARIABLE) or root / ARTIFACTS_NAME
+        return cls(hot, configured(settings, ARCHIVE_ROOT_KEY, ARCHIVE_ROOT_VARIABLE))
 
     @property
     def archive_is_reachable(self) -> bool:
@@ -421,8 +391,8 @@ class Cache:
 
 def default_cache_root() -> Path:
     """Where cached renders go unless this machine says otherwise."""
-    configured = _configured(_settings(LOCAL_SETTINGS), CACHE_KEY, CACHE_VARIABLE)
-    return configured if configured is not None else SITE_ROOT / "artifacts" / "renders"
+    root = configured(read_settings(LOCAL_SETTINGS), CACHE_KEY, CACHE_VARIABLE)
+    return root if root is not None else SITE_ROOT / "artifacts" / "renders"
 
 
 def spec_key(subcommand: str, spec: dict) -> str:

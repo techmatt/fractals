@@ -16,6 +16,7 @@ GALLERY_IMAGES_DIR = IMAGES_DIR / "galleries"
 FIGURE_IMAGES_DIR = IMAGES_DIR / "figures"
 FIGURE_REGISTRY = FIGURE_IMAGES_DIR / "figures.jsonl"
 SECTION_REGISTRY = ARTICLE_DIR / "sections.jsonl"
+PROSE_REGISTRY = ARTICLE_DIR / "prose.jsonl"
 
 GALLERY_METADATA_NAME = "gallery.jsonl"
 THUMBS_DIR_NAME = "thumbs"

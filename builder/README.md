@@ -8,13 +8,17 @@ Python. A build is done here and reviewed in a diff.
 ```
 python -m builder build     regenerate gallery pages, the gallery index, thumbnails,
                             and the contents rail every page carries
-python -m builder check     links, page sync, contents, figure blocks, assets, theme
+python -m builder check     links, page sync, contents, figure blocks, assets, prose,
+                            theme
 python -m builder figure ID print a figure's markup block, to paste into an article page
 python -m builder figures [--all]   what is still to make, grouped by page
 python -m builder figures --place ID SRC [--crop l,t,r,b] [--max-width N] [--lossless]
                             [--provenance FILE]   land a finished figure in one step
 python -m builder diagram ID draw one of the two figures that are diagrams, not renders
 python -m builder serve [--port N]  preview the committed tree at http://localhost:8000/
+python -m builder prose [PAGE ...]  hold a placed page to the document it was placed from
+python -m builder review PAGE [--read [--full]] [--consume] [--force] [--list]
+                            build the doc a page is reviewed in, or read one back
 python -m builder import SRC DEST [--crop l,t,r,b] [--max-width N]
 ```
 
@@ -114,9 +118,30 @@ bytes. Every other figure asset arrived through `import`.
   names one that is still there.
 - **assets** — every image the metadata names exists at its stated size, every
   thumbnail is current, and no orphan file is sitting in a gallery directory.
+- **prose** — every row of `article/prose.jsonl` names a page that is in this article and
+  is written. The masters themselves are on a synced drive that a clone need not have, so
+  `check` holds the registry and `prose` holds the documents.
 - **theme** — the well colours a drawn figure is made of are the ones `site.css`
   declares. Pillow cannot read CSS, so they are transcribed into `theme.py`; this is what
   keeps a restyle from moving the well and leaving every diagram on the old one.
+
+## Prose has a master, and a page is held to it
+
+A written section is drafted and reviewed as a document — a markdown master in the
+Drive-synced working folder — and then placed as hand-written HTML. Two copies of the
+same words drift, so `prose.py` reduces both sides the same way (tags out, markdown
+markers out, whitespace collapsed) and `python -m builder prose` names the first word
+they disagree on. `article/prose.jsonl` says which master belongs to which page, and may
+record *sanctioned divergences*: the master's words, the page's words, and why the page
+is deliberately different. A page with no row is one whose HTML is its own master.
+
+`review.py` is the other half: `python -m builder review <page>` writes a `.docx` of the
+page's prose as served, plus its figure captions by slug, into the synced `review/`
+folder, where Matt marks it up in Google Docs. `--read` diffs the marked-up copy against
+the page and prints his edits inline with every `[M: ...]` note; `--consume` files an
+applied doc away so it cannot be applied twice. The format is written by hand — a `.docx`
+is a zip of XML, and the parts a document like this needs are small enough to spell out,
+so there is nothing to install. The whole workflow is `docs/page-review.md`.
 
 ## Drawing a figure: three modules, one seam
 

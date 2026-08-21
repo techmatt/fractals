@@ -1,6 +1,6 @@
 """The checks the bootstrap did by hand, made mechanical.
 
-Five of them, all read-only:
+Every one of them read-only:
 
 - **links** — every internal href and src on every page resolves to a file that exists,
   and none is root-absolute. The site is served from `/fractal-website/`, so a rooted
@@ -19,6 +19,10 @@ Five of them, all read-only:
   list marks the same sections done that `sections.jsonl` calls written.
 - **assets** — every image the metadata names exists at the size it claims, every
   thumbnail is current, and no orphan file is sitting in a gallery directory.
+- **prose** — every row of `article/prose.jsonl` names a page that is in the article and
+  is written. The master itself lives in the Drive-synced working folder, which is not
+  in a clone and never in CI, so what is checked here is the registry and not the
+  document: `python -m builder prose` is what holds the two texts together.
 - **theme** — the well colours a drawn figure is made of are the stylesheet's own. They
   have to be transcribed, because Pillow cannot read CSS; this is what keeps a restyle
   from moving the well and leaving every diagram sitting on the old one.
@@ -29,7 +33,7 @@ from html.parser import HTMLParser
 from pathlib import Path
 from urllib.parse import unquote, urldefrag
 
-from . import figures, galleries, images, pages, sections, theme
+from . import figures, galleries, images, pages, prose, sections, theme
 from .paths import (
     ARTICLE_DIR,
     GALLERIES_DIR,
@@ -286,6 +290,26 @@ def _orphans(gallery: galleries.Gallery, named: set[str]) -> list[str]:
     return problems
 
 
+def check_prose(article: list[sections.Section]) -> list[str]:
+    """Every registered prose master belongs to a written page of this article.
+
+    Deliberately reads nothing outside the repository. The masters are on a synced
+    drive that a clone need not have and CI certainly does not, so the check that runs
+    everywhere is the one about the registry, and the check that needs the document is
+    a command someone runs where the document is.
+    """
+    problems = []
+    written = {section.page: section.written for section in article}
+    for page, master in prose.load_all().items():
+        if page not in written:
+            problems.append(f"prose.jsonl: {page} is not a section of this article")
+        elif not written[page]:
+            problems.append(f"prose.jsonl: {page} names a master, and is not written yet")
+        if master.file != master.file.strip() or not master.file.endswith(".md"):
+            problems.append(f"prose.jsonl: {page}'s master {master.file!r} is not a .md file")
+    return problems
+
+
 def check_theme() -> list[str]:
     """`theme.py`'s well tokens are the ones `site.css` declares."""
     stylesheet = SITE_ROOT / "assets" / "css" / "site.css"
@@ -317,5 +341,6 @@ def run_all() -> dict[str, list[str]]:
         "contents": check_contents(article),
         "figures": check_figures(),
         "assets": check_assets(loaded),
+        "prose": check_prose(article),
         "theme": check_theme(),
     }
