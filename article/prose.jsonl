@@ -1,1 +1,1 @@
-{"schema": 1, "kind": "prose", "page": "finding-good-locations.html", "file": "Finding good locations v4.md", "divergences": [{"master": "scoring steering views", "page": "scoring candidates", "why": "the master's closing paragraph still named the steering view after the mechanism fix that removed it (fractal-wallpapers record walk_node_scoring); the page says what the walk actually scores"}]}
+{"schema": 1, "kind": "prose", "page": "finding-good-locations.html", "file": "Finding good locations v4.md"}
