@@ -44,7 +44,8 @@ What the doc contains, in order:
 
 - the page's title, and a line naming the page, the master, and the build date;
 - the annotation convention, spelled out;
-- the standfirst, then the prose **as served** — headings, paragraphs, bullets, code
+- the standfirst where the page still carries one, then the prose **as served** —
+  headings, paragraphs, bullets, code
   lines, table rows as `| cell | cell |`, and a `[figure: slug]` marker standing where
   each picture sits;
 - every figure caption on the page, one line per slug, read off the figure registry.
@@ -94,7 +95,7 @@ round starts from a page that no longer matches its master.
 | --- | --- |
 | A sentence of prose | `article/<page>.html`, **and** the placement script's literal under `scratch/` if one exists for that page, **and** the prose master in `prose\` |
 | A figure caption | the figure's row in `assets/images/figures/figures.jsonl` — never the page. `python -m builder check` re-derives the block and will say so if the page was edited instead |
-| The standfirst | the page's masthead. The front page's blurb for that section is separate prose that often says the same thing — read it, and change it if the edit applies there too |
+| The standfirst | the page's masthead — and cutting it is an edit like any other, since the tone ruling in `writing-guidance.md` says a page opens on its lead. The front page's blurb for that section is separate prose that often says the same thing — read it, and change it if the edit applies there too |
 | A heading | the page. `python -m builder build` regenerates its id and every rail that lists it |
 
 The placement scripts live in ignored `scratch/`, so one may simply not be there on this
@@ -124,33 +125,43 @@ be applied a second time onto a page that already has it.
 Then the report, per the standing prompt contract in `CLAUDE.md`: what changed, an answer
 to every `[M: ...]` question, and anything flagged rather than applied. Commit the work.
 
+### Every round ends by distilling its guidance
+
+The last step of an apply, before the report is written, is to read that round's `[M: ...]`
+notes again and ask of each one: **is this a rule, or is it this sentence?**
+
+A rule goes into `writing-guidance.md` — attributed to Matt and dated, phrased so it
+governs a page nobody has written yet, and consolidated with anything already there that
+says the same thing. A note about this sentence goes into the page and the report and
+nowhere else.
+
+This is what stops the loop from re-litigating the same ruling every round. A principle
+Matt states once is a principle every later session already knows, and a round that
+applies its edits without distilling them has thrown that away. Nothing is deleted or
+weakened there without Matt's explicit word; adding and consolidating need nobody's
+permission.
+
 ## The editorial rules
 
-These govern every edit an apply session makes, whether or not the annotation mentions
-them. An edit that satisfies Matt's note and breaks one of these is not done.
+They are **not in this repository**. The single editorial authority for the website is
 
-- **Audience**: an advanced high-school CS student who knows calculus, or a college CS
-  student. Assume that much and no more.
-- **Wikipedia's structure**: descriptive section titles that say what the section covers,
-  so a reader can skip on the title alone.
-- **Wikipedia links on first mention** of a genuinely new topic, and sparingly — a page
-  of blue is a page nobody clicks.
-- **Always "complex plane"**, spelled out, never "the plane" on its own.
-- **Unpack dense sentences.** Two clear sentences beat one that has to be read twice.
-- **Never artificial counts.** "Three things make this work" is a promise the prose then
-  has to keep; write what is true instead.
-- **Set a claim up before asserting it.** The reader meets the reason, then the claim.
-- **No falsely-discrete conclusions.** Where the truth is a spectrum or a judgment call,
-  the sentence says so.
-- **Figures teach**, and they are a fixed 16:9. A figure that only decorates comes out.
-- **First mention of the article's own vocabulary is `<i>`**, once for the whole article
-  in reading order — the convention in `CLAUDE.md`. Captions sit outside that count.
-- **Index and section blurbs are concrete and active**: what the section does or teaches,
-  in words the reader already has. No pipeline jargon before the pipeline is taught.
-- **No light-gray text.** The quiet voice is `--ink-dim`, one step off `--ink` and 10:1
-  against the page; both values live in `assets/css/site.css` and nowhere else.
-- **A figure that wants a high-quality location** uses only rows Matt explicitly rated 4.
-  Never a machine pick, however high it scored.
+```
+C:\Code\fractal-drive-sync\prose\writing-guidance.md
+```
+
+read through `drive_sync_root` in the untracked `local.toml`, the same way the review
+docs and the prose masters are. It is a curated living document — audience, register,
+structure, links, claims, figures, blurbs, contrast, and which locations a figure may
+use — and it governs every edit an apply session makes, whether or not the annotation
+mentions it. **An edit that satisfies Matt's note and breaks one of those rules is not
+done.**
+
+It lives on the synced drive rather than here because both halves of this project write
+to it: the claude.ai design sessions that draft a page, the Claude Code sessions that
+apply a review round, and Matt at any time. A copy in the repo would be a second answer
+to what the house style is, free to drift from the one the drafting sessions read.
+
+Read it before applying anything.
 
 ## When the doc comes back as a Google-native document
 

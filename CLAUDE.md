@@ -22,6 +22,10 @@ permanent in a way a variable name is not, so a slug is worth the extra minute.
 
 ## Editorial conventions
 
+The naming rule above and the italic rule below are the two that touch markup and
+filenames, so they are stated here where a session meets them. `writing-guidance.md` on
+the synced drive is the authority for everything else the prose is held to.
+
 - **A term's first mention is italic.** Where the article introduces a piece of its own
   vocabulary — defines it, or first puts it to work — that mention is wrapped in `<i>`:
   *pipeline*, *location*, *escape time*, *palette*, a mode name. This is Wikipedia's
@@ -52,9 +56,13 @@ workflow — read it before running either.**
   claim is verified from code or records before it lands, or it is flagged and left out.
   Then `--consume`, so a stale doc can never be applied twice.
 
-`docs/page-review.md` also carries the **editorial rules that govern every edit** —
-audience, structure, links, claims, figures, blurbs, contrast, and which locations a
-figure may use. They apply whether or not an annotation mentions them.
+The **editorial rules that govern every edit** — audience, register, structure, links,
+claims, figures, blurbs, contrast, and which locations a figure may use — are not in this
+repository. They live in `C:\Code\fractal-drive-sync\prose\writing-guidance.md`, a
+curated living document the claude.ai design sessions and Matt write to as well, and they
+apply whether or not an annotation mentions them. `docs/page-review.md` points at it and
+keeps the mechanics. **Every apply round ends by distilling that round's generalizable
+`[M:]` guidance back into it.**
 
 ## Locked conventions
 

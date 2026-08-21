@@ -143,8 +143,13 @@ def paragraphs_for(page: str, master: prose.Master | None) -> list[Paragraph]:
         Paragraph(HEADING, "How to mark this doc"),
         *(Paragraph(NORMAL, line) for line in CONVENTION),
         Paragraph(HEADING, "Prose"),
-        Paragraph(NORMAL, STANDFIRST_LINE.format(text=prose.standfirst_of(page_html))),
     ]
+    # A page need not carry a standfirst — the 2026-08-21 review ruled the device off
+    # `finding-good-locations`, and an empty "Standfirst:" line in the doc is a line
+    # Matt can mark up that stands for nothing.
+    standfirst = prose.standfirst_of(page_html)
+    if standfirst:
+        written.append(Paragraph(NORMAL, STANDFIRST_LINE.format(text=standfirst)))
     written.extend(_prose_paragraphs(blocks))
     written.extend(_caption_paragraphs(blocks))
     return written

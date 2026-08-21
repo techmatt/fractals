@@ -250,6 +250,7 @@ def place(
     *,
     provenance: list[str] | None = None,
     recipe: dict | None = None,
+    replace: bool = False,
 ) -> Figure:
     """Turn a pending row into a made one, and heal the well its page is still showing.
 
@@ -258,6 +259,13 @@ def place(
     the page by hand. A size typed one digit wrong is a failing `check` at best and a
     stretched picture at worst, so none of it is typed here.
 
+    `replace` is the same landing for a figure that is already made and has been **drawn
+    again** — a review round that redesigns a picture, which is the only way a made
+    figure legitimately changes. It is opt-in because the far commoner call is a first
+    placement, and a redraw that lands by accident is a picture nobody chose to change;
+    the row and the page are rewritten exactly as a first placement writes them, so a
+    new size reaches the `<img>` rather than stretching the old one.
+
     Everything that can refuse refuses *before* anything is written: a made row with no
     provenance is a row `load_all` will not read back, and writing one would leave the
     registry unloadable rather than merely wrong.
@@ -265,9 +273,10 @@ def place(
     figure = load_all().get(identifier)
     if figure is None:
         raise records.RecordError(f"no figure {identifier!r} in the registry")
-    if not figure.pending:
+    if not figure.pending and not replace:
         raise records.RecordError(
-            f"{identifier} is already made, as {figure.file} — place is for a pending row"
+            f"{identifier} is already made, as {figure.file} — place is for a pending row. "
+            "Pass --replace to land a redraw of a figure that is already on the page."
         )
     lines = [line for line in FIGURE_REGISTRY.read_text(encoding="utf-8").splitlines() if line]
     rows = [json.loads(line) for line in lines]

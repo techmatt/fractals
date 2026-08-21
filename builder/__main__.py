@@ -100,6 +100,11 @@ def _parser() -> argparse.ArgumentParser:
         action="store_true",
         help="import each drawn sheet as its figure's asset and fill its registry row",
     )
+    made.add_argument(
+        "--replace",
+        action="store_true",
+        help="land the redraw over a figure that is already made, page and row together",
+    )
 
     drawn = commands.add_parser("diagram", help="draw one of the figures that is not a render")
     drawn.add_argument("id", choices=sorted(diagrams.DIAGRAMS), help="the diagram's figure id")
@@ -277,6 +282,7 @@ def _do_locations(options: argparse.Namespace) -> int:
             height,
             provenance=list(drawn.provenance),
             recipe=locations_module.recipe(identifier),
+            replace=options.replace,
         )
         size = destination.stat().st_size / 1024
         print(f"  {destination.name}  {width}x{height}  ({size:.0f} KB) — {placed.page}")

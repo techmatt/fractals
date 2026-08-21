@@ -1117,6 +1117,18 @@ RUNGS = {
     4: "exceptional — wallpaper material as it stands",
 }
 
+#: One colour per rung, so the four buckets read as four buckets before a word is read.
+#: A rating is ordinal, so this is a cool-to-warm ramp rather than four unrelated hues:
+#: the eye can put an unlabelled row in its place on the scale. Three of the four are
+#: the figure hues already on this page (`SEEDED_INK`, and the pair `diagrams.py` runs
+#: its orbit tracks in); the fourth is a slate quiet enough to say *nothing here*.
+RUNG_INK = {
+    1: (0x76, 0x7D, 0x8C),
+    2: (0x6F, 0xB3, 0xFF),
+    3: (0xE3, 0xC6, 0x5A),
+    4: (0xE8, 0x73, 0x4A),
+}
+
 
 def style_spectrum() -> Drawn:
     """Six locations in order of how full the frame is, with no verdict attached."""
@@ -1137,39 +1149,53 @@ def style_spectrum() -> Drawn:
     return Drawn(destination, _store_provenance("sparser to busier", SPECTRUM, picks, size, False))
 
 
+#: How tall the numeral that names a row is, and how much room its band needs.
+RUNG_NUMERAL = 34
+RUNG_BAND = 46
+
+
 def rating_examples() -> Drawn:
-    """The four-point scale by example, one row per rung, three locations each."""
+    """The four-point scale by example, one row per rung, three locations each.
+
+    Four buckets and nothing else. The figure used to print a family, a frame width and
+    a labelling date under every panel, which is a provenance record standing where a
+    reader's eye goes first — and none of it is what the figure is for. A reader wants
+    to know what a 1 looks like beside what a 4 looks like, so the rung is what is
+    loud: a numeral in the rung's own colour, the band it sits in, and a border in the
+    same colour around every panel that earned it. Where each panel came from is in the
+    registry's provenance, which is where a frame belongs.
+    """
     order = sorted(RATED)
     picks = {score: [label_row(*pick) for pick in RATED[score]] for score in order}
     size = panels(3)
-    cell = 26 + size[1] + 8 + 2 * 20
+    cell = RUNG_BAND + size[1]
     height = sheets.PAD + len(order) * (cell + sheets.PAD) + sheets.PAD
     sheet, draw = sheets.canvas(SHEET_WIDTH, height)
     for row_index, score in enumerate(order):
         y = sheets.PAD + row_index * (cell + sheets.PAD)
-        if row_index:
-            rule(draw, y - 8)
-        heading(draw, sheets.PAD, y, f"{score} — {RUNGS[score]}", size=16)
+        _rung_band(draw, y, score)
         for column, row in enumerate(picks[score]):
             x = sheets.PAD + column * (size[0] + sheets.PAD)
             picture = cache().render(f"rated-{score}-{column}", location(row), size)
-            sheet.paste(sheets.fitted(picture.path, size), (x, y + 26))
-            stack(
-                draw,
-                x,
-                y + 26 + size[1] + 8,
-                [
-                    _family_name(row["family"]),
-                    f"width {sheets.width_text(row['viewport']['width'])}"
-                    f"{sheets.MIDDOT}rated {_day(row['recorded_at'])}",
-                ],
-                size=14,
-                lead=WELL_INK_DIM,
+            sheet.paste(sheets.fitted(picture.path, size), (x, y + RUNG_BAND))
+            draw.rectangle(
+                [x, y + RUNG_BAND, x + size[0] - 1, y + RUNG_BAND + size[1] - 1],
+                outline=RUNG_INK[score],
+                width=2,
             )
     destination = sheets.save(sheet, sheet_path("locations-rating-examples"))
     flat = [pick for score in order for pick in RATED[score]]
     rows = [row for score in order for row in picks[score]]
     return Drawn(destination, _store_provenance("by rating, 1 to 4", flat, rows, size, True))
+
+
+def _rung_band(draw, y: int, score: int) -> None:
+    """The numeral that names a rung, and the sentence that says what earns it."""
+    face = font(RUNG_NUMERAL, SEMIBOLD)
+    draw.text((sheets.PAD, y), str(score), fill=RUNG_INK[score], font=face)
+    x = sheets.PAD + round(text_width(draw, str(score), face)) + 14
+    draw.line([x - 7, y + 6, x - 7, y + RUNG_NUMERAL + 2], fill=RUNG_INK[score], width=2)
+    draw.text((x, y + 10), RUNGS[score], fill=WELL_INK, font=font(17))
 
 
 def _day(stamp: str) -> str:

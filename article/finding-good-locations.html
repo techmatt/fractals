@@ -49,10 +49,6 @@
 <header class="masthead">
   <p class="kicker">Section 5 of 10</p>
   <h1>Finding good locations</h1>
-  <p class="standfirst">What makes one view of a fractal worth keeping and another
-  worthless, and the guided walk that goes looking: roots drawn from pools, cheap
-  renders, structural gates, a judge that reads geometry, and the minibrots the search
-  navigates by.</p>
 </header>
 
 <main>
@@ -71,8 +67,8 @@
     <p>Whether a location is geometrically beautiful is, in the end, an aesthetic call. A view
     that is too busy for one person is delightful to another; a lone filament crossing open
     space might be dull in a gallery but exactly right on a desktop, where sparse geometry
-    leaves room for icons and text, while a dense tangle that prints beautifully can be
-    exhausting behind an already busy desktop. A few famous neighborhoods —
+    leaves room for icons and text, while an intricate spiral that prints beautifully
+    can be exhausting behind an already busy desktop. A few famous neighborhoods —
     <a href="https://en.wikipedia.org/wiki/Mandelbrot_set#Image_gallery_of_a_zoom_sequence">Seahorse
     Valley</a>, Elephant Valley — are beautiful by broad consensus, but they are tiny slivers
     of the territory worth exploring. The views below span that spectrum, and whether each
@@ -94,7 +90,7 @@
     examples from each category:</p>
 
       <figure class="figure" data-figure="locations-rating-examples">
-        <img src="../assets/images/figures/locations-rating-examples.jpg" width="1316" height="1316" alt="Four rows of locations, one row per rating from 1 to 4, three examples in each.">
+        <img src="../assets/images/figures/locations-rating-examples.jpg" width="1316" height="1204" alt="Four rows of locations, one row per rating from 1 to 4, three examples in each.">
         <figcaption>The four-point scale by example, with a line on each row saying what earns the score. What is being rated is the geometry, not the picture as drawn — the question is whether the place could make a good wallpaper across the modes and palettes available to it. <span class="credit">Rendered with fractal-wallpapers</span></figcaption>
       </figure>
 
@@ -128,16 +124,17 @@
 
     <h2 id="minibrots">Minibrots</h2>
 
-    <p>Before the walk itself, meet the landmark it navigates by. Escape-time sets have a
-    wonderful property: a set can contain miniature copies of itself. For the Mandelbrot set
-    we call these copies <i>minibrots</i>, and they are everywhere, at every scale; its
+    <p>Escape-time sets have a wonderful property: they contain infinitely many miniature
+    copies of themselves. For the Mandelbrot set we call these copies <i>minibrots</i>, and
+    they are everywhere, at every scale; its
     multibrot cousins carry miniature copies of their own. Two facts make them special to a
     search. First, each copy has an exact center — its <i>nucleus</i> — a point whose orbit
     repeats in a perfect cycle, which makes the nucleus the root of an equation that
     <a href="https://en.wikipedia.org/wiki/Newton%27s_method">Newton's method</a> can solve to
     full precision: a minibrot is not just a shape but an addressable coordinate at a known
-    scale. Second, the richest filament structure in the plane grows in the halo
-    <em>around</em> a copy — minibrots mark treasure.</p>
+    scale. Second, the richest filament structure in the complex plane grows in the
+    halo <em>around</em> a copy, and minibrots are often near aesthetically beautiful
+    locations.</p>
 
     <h2 id="the-walk">The walk</h2>
 
@@ -147,10 +144,12 @@
     <a href="escape-time-fractals.html">Escape-time fractals</a> — the Mandelbrot set as a map
     of all Julia sets — made literal); for the phoenix family, a pool of seed constants placed
     where the family's scarce plume structure is known to grow; for the parameter planes — the
-    Mandelbrot set and its multibrot cousins — a grid of a few hundred minibrot nuclei per
-    plane, plus each plane's home view. None of these pools is frozen: ratings and finds flow
-    back into them as new roots while the project runs, and
-    <a href="#seeds-from-labels">Seeds from labels</a> below is about exactly that.</p>
+    Mandelbrot set and its multibrot cousins — a grid of about five hundred minibrot nuclei
+    per plane, plus each plane's home view. Those pools are fixed files: a run walks a cursor
+    forward through one and can exhaust it. What is not fixed is the supply as a whole —
+    ratings and finds flow back as new roots through separate channels while the project
+    runs, and <a href="#seeds-from-labels">Seeds from labels</a> below is about exactly
+    that.</p>
 
       <figure class="figure" data-figure="phoenix-walk-root">
         <img src="../assets/images/figures/phoenix-walk-root.png" width="1316" height="446" alt="A Phoenix set framed two ways: cropped at both lobes on the left, wholly contained on the right.">
@@ -187,9 +186,9 @@
     <p>Score. The judge scores the very render the gates just examined — nothing larger is
     drawn, and that render is always in the same neutral palette, so the judge compares
     geometry and never coloring. The location judge returns the probability that the view would
-    be rated at least a 3 on the four-point scale above. At 0.385 or higher the frame is
-    <i>admitted</i>: recorded as a find and placed on the frontier. Between 0.1 and 0.385 it is
-    <i>expandable</i> — a stepping stone the walk may explore through, but never a find. Below
+    be rated at least a 3 on the four-point scale above. At about 0.4 or higher the frame is
+    <i>admitted</i>: recorded as a find and placed on the frontier. Between 0.1 and that floor
+    it is <i>expandable</i> — a stepping stone the walk may explore through, but never a find. Below
     that it is refused. One allowance keeps the parameter planes viable: a plane descent starts
     wide and bland before it gets good, so its first few steps get a waiver of the expandable
     bar rather than dying at the top.</p>
