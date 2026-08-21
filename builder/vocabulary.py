@@ -4,27 +4,32 @@
 nothing ships under a name the article would not teach. Both were enforced by whoever
 happened to be reading. This sweeps every tracked file instead.
 
-Two terms are on the list today:
+Two terms are on the list today, and neither is spelled plainly anywhere in this file —
+each is written with one character in a class, so the module that bans a word is not
+itself a hit. The compiled patterns are unaffected.
 
-* **"sitting"** — filler wherever it appears, and an old drop name from a private
+* **`sittin[g]`** — filler wherever it appears, and an old drop name from a private
   version of this project.
-* **"fractal type"** — banned in both of the senses it was covering *(Matt,
+* **`fractal typ[e]`** — banned in both of the senses it was covering *(Matt,
   2026-08-21)*. The engine concept is a **family**: mandelbrot, julia, phoenix,
   multibrot, as Overview teaches it. The supply-allocation bucket is a **partition**:
-  one per family at one degree, with a parameter plane counted apart from its
-  dynamical twin. "Type" merged the two, and a reader who met it in one sense carried
-  the wrong idea into the other.
+  one per family at one degree, with a parameter plane counted apart from its dynamical
+  twin. "Type" merged the two, and a reader who met it in one sense carried the wrong
+  idea into the other.
 
-The wallpaper project's `tests/test_banned_vocabulary.py` guards a longer list, and the
-extra entries there are all *code* names out of an older codebase. None of them can
-reach this repository — nothing is copied across without being rewritten — so this list
-is the prose half of the shared one rather than a second copy of the whole thing.
+The wallpaper project's `tests/test_banned_vocabulary.py` guards a longer list, and its
+extra entries are all *code* names out of an older codebase. None of them can reach this
+repository — nothing is copied across without being rewritten — so this is the prose half
+of the shared list rather than a second copy of the whole thing.
 
-A term is banned as a **name**, not as a substring: a hit is a match whose neighbours
-are not letters. `\\b` would be wrong, because `_` is a word character and snake_case is
-a form these names take. `scratch/` and `artifacts/` are exempt by construction rather
-than by exception — they are untracked, so a report may discuss the old vocabulary
-freely, which is the whole reason this walks the git index and not the tree.
+A term is banned as a **name**, not as a substring: a hit is a match whose neighbours are
+not letters. `\\b` would be wrong, because `_` is a word character and snake_case is a
+form these names take. There are no exceptions and there is no allowlist. `scratch/` and
+`artifacts/` are exempt *by construction* rather than by exception — they are untracked,
+so a report may discuss the old vocabulary freely, and that is why this walks the git
+index rather than the tree. The cost of that choice: a file only becomes visible to this
+sweep once it is staged, so the run that first stages a new file is the run that first
+checks it.
 """
 
 import re
@@ -32,24 +37,35 @@ import subprocess
 
 from .paths import SITE_ROOT
 
-#: Each term's last character is written as a character class, so this file is not
-#: itself a match for the pattern it compiles. The compiled regex is unaffected.
+#: Each term with one character written as a class, so this file is not a hit for its
+#: own list. Nothing here spells a banned term plainly, and nothing may: a guard that
+#: needs an exception for itself is one exception away from needing another.
 BANNED_TERMS = (
     "sittin[g]",
-    "fractal[ _\\-]typ[e]s?",
+    "fractal typ[e]",
 )
-
-#: A letter on either side means this is a longer word and not the term. Anything else —
-#: a separator, a digit, a space, the end of the line — means the term is there.
-BANNED = tuple(re.compile(rf"(?<![a-z]){term}(?![a-z])", re.IGNORECASE) for term in BANNED_TERMS)
-
-#: Suffixes that are not text. Reading one costs nothing but says nothing either.
-BINARY_SUFFIXES = frozenset({".png", ".jpg", ".jpeg", ".gif", ".webp", ".ico", ".wasm"})
 
 
 def spelled_out(term: str) -> str:
-    """The term as a person writes it, with the escaping brackets removed."""
+    """The term as a person writes it, for a message naming something recognizable."""
     return term.replace("[", "").replace("]", "")
+
+
+def pattern_for(term: str) -> re.Pattern:
+    r"""The term as it is looked for: any separator between its words, and a plural.
+
+    A letter on either side means this is a longer word and not the term. Anything else —
+    a separator, a digit, a space, the end of the line — means the term is there. Not
+    `\b`: `_` is a word character, and snake_case is a form these names take.
+    """
+    body = term.replace(" ", "[ _-]")
+    return re.compile(rf"(?<![a-z]){body}s?(?![a-z])", re.IGNORECASE)
+
+
+BANNED = tuple((spelled_out(term), pattern_for(term)) for term in BANNED_TERMS)
+
+#: Suffixes that are not text. Reading one costs nothing but says nothing either.
+BINARY_SUFFIXES = frozenset({".png", ".jpg", ".jpeg", ".gif", ".webp", ".ico", ".wasm"})
 
 
 def tracked_files() -> list[str]:
@@ -67,9 +83,9 @@ def tracked_files() -> list[str]:
 def offenders_in(name: str, text: str) -> list[str]:
     """Every banned name in one file, as `file:line: the term`."""
     return [
-        f"{name}:{number}: {spelled_out(BANNED_TERMS[index])}"
+        f"{name}:{number}: {term}"
         for number, line in enumerate(text.splitlines(), start=1)
-        for index, pattern in enumerate(BANNED)
+        for term, pattern in BANNED
         if pattern.search(line)
     ]
 
