@@ -62,7 +62,11 @@ v · f · m · x · y · w · a · p · gamma · cycles · phase · reverse · m
 `v=1` is required. An unknown version, an unknown key, a family or a mode this draft
 does not draw, a palette outside the curated set — every one of them is **refused with a
 visible message**, never guessed at. Defaults are left out on emit, so the canonical
-string carries what somebody actually chose. `x`, `y` and `w` are echoed back verbatim:
+string carries what somebody actually chose — except `p`, which is **always** emitted.
+The palette is the one default whose meaning lives outside `permalink.js`, in the baked
+set, and a bare link that inherited it would change colour the day that set is rebuilt.
+Reading a link with no `p` is unchanged and still means the default, so nothing about
+what a v1 link means has moved. `x`, `y` and `w` are echoed back verbatim:
 the decimal string is the identity of a location, and a round trip through a double
 would quietly rewrite a link that was more precise than today's renderer.
 

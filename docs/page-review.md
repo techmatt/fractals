@@ -64,7 +64,7 @@ Stated at the top of every doc, and it is the whole contract:
 
 - **A direct edit means "roughly this wording."** Apply it in spirit — it is a note about
   what the sentence should say, not text to paste in. Keep the page's voice, the
-  surrounding rhythm, and the markup the words are sitting in.
+  surrounding rhythm, and the markup the words are wrapped in.
 - **`[M: ...]` is an instruction, a question, or a comment.** Carry it out. If it is a
   question, answer it in the report — that is the only place the answer will be seen.
 

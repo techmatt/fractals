@@ -40,6 +40,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from . import records, renders, sheets
+from . import theme as theme_module
 from .paths import SITE_ROOT
 from .theme import (
     REGULAR,
@@ -460,7 +461,7 @@ def _overlay(size: tuple[int, int]):
 
     Marks belong *to* the panel, so they are drawn on a layer of its size and clipped by
     it: a proposal that runs off the parent's edge stops at the edge rather than spilling
-    onto the sheet, and a focus sitting on the top row of the tile does not put half a
+    onto the sheet, and a focus on the top row of the tile does not put half a
     ring in the margin above the picture.
     """
     from PIL import Image, ImageDraw
@@ -1132,17 +1133,10 @@ RUNGS = {
     4: "exceptional — wallpaper material as it stands",
 }
 
-#: One colour per rung, so the four buckets read as four buckets before a word is read.
-#: A rating is ordinal, so this is a cool-to-warm ramp rather than four unrelated hues:
-#: the eye can put an unlabelled row in its place on the scale. Three of the four are
-#: the figure hues already on this page (`SEEDED_INK`, and the pair `diagrams.py` runs
-#: its orbit tracks in); the fourth is a slate quiet enough to say *nothing here*.
-RUNG_INK = {
-    1: (0x76, 0x7D, 0x8C),
-    2: (0x6F, 0xB3, 0xFF),
-    3: (0xE3, 0xC6, 0x5A),
-    4: (0xE8, 0x73, 0x4A),
-}
+#: The site's rating palette, from `theme.py`. Not restated here: the page that teaches
+#: the four-point scale and the page that evaluates a judge against it have to colour a
+#: 3 the same way, or the second one is teaching a different scale.
+RUNG_INK = theme_module.RATING_INK
 
 
 #: How big the step numeral on a panel is, and how far in from its corner it sits.

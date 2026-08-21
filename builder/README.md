@@ -9,12 +9,17 @@ Python. A build is done here and reviewed in a diff.
 python -m builder build     regenerate gallery pages, the gallery index, thumbnails,
                             and the contents rail every page carries
 python -m builder check     links, page sync, contents, figure blocks, assets, prose,
-                            theme
+                            theme, banned vocabulary
 python -m builder figure ID print a figure's markup block, to paste into an article page
 python -m builder figures [--all]   what is still to make, grouped by page
 python -m builder figures --place ID SRC [--crop l,t,r,b] [--max-width N] [--lossless]
                             [--provenance FILE]   land a finished figure in one step
+python -m builder locations [ID ...] [--place] [--replace]
+                            draw the figures of the Finding good locations page
+python -m builder judges [ID ...] [--place] [--replace]
+                            draw the figures of the Training judges page
 python -m builder diagram ID draw one of the two figures that are diagrams, not renders
+python -m builder explorer [--palettes-only]  bake the explorer's palettes, wasm, manifest
 python -m builder serve [--port N]  preview the committed tree at http://localhost:8000/
 python -m builder prose [PAGE ...]  hold a placed page to the document it was placed from
 python -m builder review PAGE [--read [--full]] [--consume] [--force] [--list]
@@ -123,7 +128,7 @@ bytes. Every other figure asset arrived through `import`.
   figure excepted until its asset lands; and a recipe naming a maker inside `builder`
   names one that is still there.
 - **assets** — every image the metadata names exists at its stated size, every
-  thumbnail is current, and no orphan file is sitting in a gallery directory.
+  thumbnail is current, and no orphan file is left in a gallery directory.
 - **prose** — every row of `article/prose.jsonl` names a page that is in this article and
   is written. The masters themselves are on a synced drive that a clone need not have, so
   `check` holds the registry and `prose` holds the documents.

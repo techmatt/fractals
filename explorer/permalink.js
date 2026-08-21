@@ -14,7 +14,13 @@
 //   * An unknown key is refused. A typo that silently rendered the default view
 //     would look exactly like the link working.
 //   * Defaults are omitted on emit, so the canonical string carries what somebody
-//     actually chose and nothing else.
+//     actually chose and nothing else. `p` is the one exception and is ALWAYS
+//     emitted: the palette is the only default whose meaning lives outside this
+//     file, in the baked set, and a bare link that inherited `DEFAULT_PALETTE`
+//     would quietly change colour the day that set is rebuilt. Naming it costs a
+//     key and buys a link that draws the same picture forever. Parsing is
+//     unchanged — a link with no `p` still means the default — so this adds no key
+//     and changes no meaning, and `v` stays 1.
 //   * `x`, `y` and `w` are echoed back VERBATIM. The decimal string is the
 //     identity of a location; `f64` is a lossy view of it that stops being enough
 //     the moment deep zoom arrives, and a round trip through a double would
@@ -274,7 +280,8 @@ export function emit(view, context) {
   if (view.aspect.across !== DEFAULT_ASPECT.across || view.aspect.down !== DEFAULT_ASPECT.down) {
     parts.push(`a=${view.aspect.across}:${view.aspect.down}`);
   }
-  if (view.palette !== context.defaultPalette) parts.push(`p=${encode(view.palette)}`);
+  // Never conditional: see the contract note at the top of this file.
+  parts.push(`p=${encode(view.palette)}`);
   for (const spec of SHADE_KEYS) {
     const value = view.shade[spec.key];
     if (spec.same(value, spec.fallback)) continue;

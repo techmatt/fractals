@@ -19,7 +19,7 @@ text.
 
 Formatting does not survive the round trip and is not asked to. Links, italics and code
 spans are flattened on the way out; the apply session re-applies each edit to the HTML,
-where that markup is still sitting. What a review doc carries is words.
+where that markup still is. What a review doc carries is words.
 """
 
 import difflib

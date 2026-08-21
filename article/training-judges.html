@@ -84,13 +84,13 @@
     twelve thousand locations, about five thousand smooth renders, and about three thousand
     renders in the other modes.</p>
 
-      <figure class="figure figure-pending" data-figure="judges-rating-views">
-        <p class="pending"><span class="pending-label">Figure pending</span>One location drawn twice side by side: the same frame in a neutral palette and in a vivid one.</p>
-        <figcaption>One location as it is rated: the neutral render the judge is shown beside the vivid render a person judges from. <span class="credit">Rendered with fractal-wallpapers</span></figcaption>
+      <figure class="figure" data-figure="judges-rating-views">
+        <img src="../assets/images/figures/judges-rating-views.jpg" width="1316" height="432" alt="One location drawn twice side by side: the same frame in the neutral palette the judge is shown, and in a vivid one.">
+        <figcaption>One location as it is rated. The judge only ever sees the left panel, in one fixed neutral map; the person answering sees both, and answers for the geometry rather than for either picture. <span class="credit">Rendered with fractal-wallpapers</span></figcaption>
       </figure>
 
     <p>The ratings were gathered iteratively: rate a few hundred, retrain, use the new judge to
-    explore further, and repeat across fractal types, locations, and descent strategies. That
+    explore further, and repeat across fractal families, locations, and descent strategies. That
     history leaves a bias — the judges know best the regions the search has already visited —
     and the bias shows up downstream as a narrower distribution of final wallpapers than the
     fractals themselves would support. The last section returns to this.</p>
@@ -106,9 +106,9 @@
     at this: composition, framing, and density survive downsampling well, and a judge that has
     only ever seen the thumbnail still recovers most of what a person sees at full size.</p>
 
-      <figure class="figure figure-pending" data-figure="judges-what-the-judge-sees">
-        <p class="pending"><span class="pending-label">Figure pending</span>The same location twice: the small 384 by 216 render the judge scores, and the full-size tile beside it.</p>
-        <figcaption>One location at the walk's 384×216 thumbnail and at the full-size tile it was rated on. <span class="credit">Rendered with fractal-wallpapers</span></figcaption>
+      <figure class="figure" data-figure="judges-what-the-judge-sees">
+        <img src="../assets/images/figures/judges-what-the-judge-sees.jpg" width="1600" height="533" alt="The same location at three sizes, drawn to scale: a small thumbnail, a mid-size render, and one four times wider than the thumbnail.">
+        <figcaption>One location at the three sizes its judge is trained over, drawn to scale. The walk scores the smallest of them and a person rated the largest. Composition and density survive the shrink, which is why one judge can read all three. <span class="credit">Rendered with fractal-wallpapers</span></figcaption>
       </figure>
 
     <p>The two render judges see the actual picture, stretched to the network's input size,
@@ -155,28 +155,31 @@
     <p>A judge is evaluated on ratings it never trained on, and the held-out set has to be
     drawn without the judge's help: a set of locations a judge scored well is not a test of that
     judge. The held-out sets are therefore drawn by methods that never consult a score — a
-    uniform grid across a parameter plane, a flat draw along the boundary — and held out by
+    uniform draw over a parameter plane with no gate in front of it, a systematic sweep of a
+    family's parameter space, a uniform draw over everything one walk recorded — and held out by
     neighborhood rather than by frame, because nearby frames are near-duplicates and a judge
     could otherwise pass by memorizing a location's neighbor.</p>
 
-    <p>The figures below show held-out results for each judge: four examples at every human
-    rating, each panel marked with the judge's own verdict. The agreement is good, and where the
-    judge disagrees it is nearly always by one step — the same shape the human ratings take,
-    since two ratings of the same frame rarely differ by more than one class.</p>
+    <p>The figures below show held-out results for each judge: one row per human rating, four
+    examples spread evenly across each row's own held-out set, and the judge's own verdict
+    marked on every panel. Where a rating has fewer than four held-out examples the row is short
+    rather than padded. The agreement is good, and where the judge disagrees it is nearly always
+    by one step — the same shape the human ratings take, since two ratings of the same frame
+    rarely differ by more than one class.</p>
 
-      <figure class="figure figure-pending" data-figure="judges-results-location">
-        <p class="pending"><span class="pending-label">Figure pending</span>A four-by-four grid of held-out locations, one row per human rating from 1 to 4, each panel carrying the judge's own rating.</p>
-        <figcaption>A 4×4 grid of held-out locations, one row per human rating 1–4, each panel with the location judge's rating. <span class="credit">Rendered with fractal-wallpapers</span></figcaption>
+      <figure class="figure" data-figure="judges-results-location">
+        <img src="../assets/images/figures/judges-results-location.jpg" width="1316" height="958" alt="A four-by-four grid of held-out locations, one row per human rating from 1 to 4, each panel carrying the judge's own rating.">
+        <figcaption>Held-out locations, one row per hand rating, four spread evenly across each rating's own held-out set. Every panel carries the location judge's own class in that class's colour, and every row says how often the judge agrees over the whole set behind its four panels. <span class="credit">Rendered with fractal-wallpapers</span></figcaption>
       </figure>
 
-      <figure class="figure figure-pending" data-figure="judges-results-smooth">
-        <p class="pending"><span class="pending-label">Figure pending</span>The same four-by-four grid for held-out smooth renders, each panel carrying the smooth judge's rating.</p>
-        <figcaption>The same for held-out smooth renders and the smooth judge. <span class="credit">Rendered with fractal-wallpapers</span></figcaption>
+      <figure class="figure" data-figure="judges-results-smooth">
+        <img src="../assets/images/figures/judges-results-smooth.jpg" width="1316" height="958" alt="The same grid for held-out smooth renders, each panel carrying the smooth judge's rating.">
+        <figcaption>The same for held-out smooth renders and the smooth judge, every panel redrawn from the record its rating was given to, palette included. Nothing in this held-out set was rated 1, so that row comes from the training side and shows only what a 1 looks like and where the judge puts one. <span class="credit">Rendered with fractal-wallpapers</span></figcaption>
       </figure>
 
-      <figure class="figure figure-pending" data-figure="judges-results-modes">
-        <p class="pending"><span class="pending-label">Figure pending</span>The same four-by-four grid for held-out renders in the other modes, each panel carrying the mode judge's rating.</p>
-        <figcaption>The same for held-out renders in the other modes and the mode judge. <span class="credit">Rendered with fractal-wallpapers</span></figcaption>
+      <figure class="figure" data-figure="judges-results-modes">
+        <img src="../assets/images/figures/judges-results-modes.jpg" width="1316" height="958" alt="The same grid for held-out renders in the other modes, each panel carrying the mode judge's rating.">
+        <figcaption>The same for held-out renders in the other modes and the mode judge. Only two held-out frames carry a 3, so that row is two panels rather than four — padding it would have meant showing something nobody rated a 3. <span class="credit">Rendered with fractal-wallpapers</span></figcaption>
       </figure>
 
     <p>Each judge's probabilities are also checked against the held-out ratings for
@@ -189,10 +192,12 @@
     <p>A judge returns a probability; the pipeline acts on thresholds. Where each threshold
     comes from matters, because a judge's numbers shift every time it is retrained.</p>
 
-    <p>The location judge has three thresholds, all on P(≥3). Above the <i>admission floor</i>
-    a frame is recorded as a find; between the <i>expansion floor</i> and the admission floor it
-    may be explored through but is not a find; and above a separate <i>great cut</i>, a find is
-    counted as exceptional when the supply is balanced across fractal types
+    <p>The location judge has three thresholds: two on P(≥3), and one on P(≥4). Above the
+    <i>admission floor</i> a frame is recorded as a find; between the <i>expansion floor</i> and
+    the admission floor it may be explored through but is not a find; and above a separate
+    <i>great cut</i> — the one read on P(≥4) — a find is counted as exceptional when the supply
+    is balanced across <i>partitions</i>, the buckets the project keeps its books in: one per
+    family at one degree, with a parameter plane counted apart from its dynamical twin
     (<a href="from-locations-to-wallpapers.html">From locations to wallpapers</a>). Each was set
     once, and after every retrain the three are <i>restated by volume</i>: over a fixed
     reference pool of tens of thousands of locations, the new threshold is the score on the new
@@ -208,10 +213,10 @@
     the bar is left unfilled rather than padded. The smooth judge carries only an advisory at
     its natural midpoint; it can rank, it cannot remove. When the two judges' pictures are
     ranked together for selection, their probabilities are never compared with each other or
-    across fractal types: each picture is ranked within its own type and judge, and the lists
-    are interleaved by position — every type's best, then every second-best. Every threshold is
-    stamped with the exact judge it was measured on, and a threshold is never applied to a judge
-    it was not measured against.</p>
+    across partitions: each picture is ranked within its own partition and judge, and the lists
+    are interleaved by position — every partition's best, then every second-best. Every threshold
+    is stamped with the exact judge it was measured on, and a threshold is never applied to a
+    judge it was not measured against.</p>
 
     <h2 id="generalization-and-its-limits">Generalization and its limits</h2>
 

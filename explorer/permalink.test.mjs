@@ -8,6 +8,11 @@
 // written today still means the same picture in ten years, which comes down to
 // three properties: every key survives a round trip unchanged, canonicalization
 // is a fixed point, and a coordinate is echoed rather than reformatted.
+//
+// `p` is the one key emitted whether or not it was chosen, so a canonical string
+// always names its palette. That is a property worth its own tests: an old link
+// without `p` still parses to the default, and every canonical string carries the
+// name of the map it was drawn in.
 
 import assert from "node:assert/strict";
 import test from "node:test";
@@ -35,7 +40,11 @@ const HOME = {
 
 const CONTEXT = { home: HOME, palettes: PALETTES, defaultPalette: DEFAULT_PALETTE };
 
-/** The location the wasm spike was benchmarked at — the one deep-ish anchor on record. */
+/** `p` as every canonical string carries it, when nobody picked a palette. */
+const HOUSE = `p=${encodeURIComponent(DEFAULT_PALETTE)}`;
+
+/** The location the wasm spike was benchmarked at — the one deep-ish anchor on record.
+ *  Written as it was written then, before `p` was always emitted. */
 const ANCHOR = "v=1&x=0.4104135054546244&y=0.20967482476903096&w=0.5622541254857749";
 
 /** Every key the contract has, each set to something that is not its default. */
@@ -43,21 +52,36 @@ const EVERYTHING =
   "v=1&x=-0.1&y=0.85&w=0.44&a=21:9&p=cmr.wildfire" +
   "&gamma=0.75&cycles=3&phase=0.25&reverse=1&mirror=1&transfer=edge:1.5&rolloff=soft_knee:0.6";
 
-test("an empty query is the home view, and canonicalizes to the bare version", () => {
+test("an empty query is the home view, and emits the version and the palette", () => {
   const view = parse("", CONTEXT);
   assert.equal(view.x.text, "-0.77");
   assert.equal(view.palette, DEFAULT_PALETTE);
   assert.deepEqual(view.shade, defaultShade());
-  assert.equal(emit(view, CONTEXT), `v=${VERSION}`);
+  assert.equal(emit(view, CONTEXT), `v=${VERSION}&${HOUSE}`);
 });
 
-test("the home view written out in full canonicalizes back to the bare version", () => {
-  assert.equal(canonicalize("?v=1&f=mandelbrot&m=smooth&x=-0.77&y=0&w=4.4&a=16:9", CONTEXT), "v=1");
+test("the home view written out in full canonicalizes to the version and the palette", () => {
+  const spelled = "?v=1&f=mandelbrot&m=smooth&x=-0.77&y=0&w=4.4&a=16:9";
+  assert.equal(canonicalize(spelled, CONTEXT), `v=1&${HOUSE}`);
 });
 
-test("the spike's anchor re-emits byte for byte", () => {
-  assert.equal(canonicalize(ANCHOR, CONTEXT), ANCHOR);
-  assert.equal(canonicalize(`?${ANCHOR}`, CONTEXT), ANCHOR);
+test("the spike's anchor keeps its coordinates and gains the palette it was drawn in", () => {
+  assert.equal(canonicalize(ANCHOR, CONTEXT), `${ANCHOR}&${HOUSE}`);
+  assert.equal(canonicalize(`?${ANCHOR}`, CONTEXT), `${ANCHOR}&${HOUSE}`);
+  // And that is where it settles: canonicalization is still a fixed point.
+  assert.equal(canonicalize(`${ANCHOR}&${HOUSE}`, CONTEXT), `${ANCHOR}&${HOUSE}`);
+});
+
+test("p is emitted whether or not anybody chose it, and reading one is unchanged", () => {
+  // The whole of the ruling, in one place. A link that names no palette still
+  // means the default — parsing did not move — and every string this module
+  // writes says which map it means, so a rebaked set cannot recolour a saved link.
+  const bare = parse("v=1&x=-0.1", CONTEXT);
+  assert.equal(bare.palette, DEFAULT_PALETTE);
+  assert.equal(emit(bare, CONTEXT), `v=1&x=-0.1&${HOUSE}`);
+  for (const query of ["", "v=1", ANCHOR, "v=1&p=viridis", "v=1&a=21:9&gamma=2"]) {
+    assert.match(canonicalize(query, CONTEXT), /(^|&)p=/, query);
+  }
 });
 
 test("every key round-trips, and comes back in contract order", () => {
@@ -80,12 +104,11 @@ test("keys given out of order come back in contract order", () => {
   );
 });
 
-test("a key set to its engine default is dropped on emit", () => {
+test("a key set to its engine default is dropped on emit, and p is the exception", () => {
   const spelled =
-    "v=1&f=mandelbrot&m=smooth&a=16:9&p=" +
-    encodeURIComponent(DEFAULT_PALETTE) +
+    `v=1&f=mandelbrot&m=smooth&a=16:9&${HOUSE}` +
     "&gamma=1&cycles=1&phase=0&reverse=0&mirror=0&transfer=value&rolloff=none";
-  assert.equal(canonicalize(spelled, CONTEXT), "v=1");
+  assert.equal(canonicalize(spelled, CONTEXT), `v=1&${HOUSE}`);
 });
 
 test("a coordinate is echoed verbatim, not reformatted through a double", () => {
@@ -93,11 +116,11 @@ test("a coordinate is echoed verbatim, not reformatted through a double", () => 
   // back exactly as written: the string is the identity of the location, and this
   // page is not the thing that gets to decide it was too precise.
   const wordy = "v=1&x=0.40000000000000000000000000001&y=-0.0e0&w=1.250e-3";
-  assert.equal(canonicalize(wordy, CONTEXT), wordy);
+  assert.equal(canonicalize(wordy, CONTEXT), `${wordy}&${HOUSE}`);
 });
 
 test("an exponent's plus sign is encoded, because a raw one in a query means a space", () => {
-  assert.equal(canonicalize("v=1&w=1.25e%2B3", CONTEXT), "v=1&w=1.25e%2B3");
+  assert.equal(canonicalize("v=1&w=1.25e%2B3", CONTEXT), `v=1&w=1.25e%2B3&${HOUSE}`);
   assert.throws(() => parse("v=1&w=1.25e+3", CONTEXT), /decimal number/);
 });
 

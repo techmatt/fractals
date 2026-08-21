@@ -33,6 +33,22 @@ WELL_PANEL = (0x1D, 0x1F, 0x26)
 #: that name where a panel came from rather than what it shows.
 SECTION_INK = (0x8F, 0x8A, 0x84)
 
+#: One colour per rung of the four-point rating scale, so the buckets read as buckets
+#: before a word is read. A rating is ordinal, so this is a cool-to-warm ramp rather
+#: than four unrelated hues: the eye can put an unlabelled row in its place on the
+#: scale. Three of the four are figure hues already in use on the site; the fourth is a
+#: slate quiet enough to say *nothing here*.
+#:
+#: Here rather than beside one page's figures because a reader learns the buckets on the
+#: page that teaches the scale and reads them again on the page that evaluates a judge.
+#: Two copies of this would be two rating scales the day one of them was adjusted.
+RATING_INK = {
+    1: (0x76, 0x7D, 0x8C),
+    2: (0x6F, 0xB3, 0xFF),
+    3: (0xE3, 0xC6, 0x5A),
+    4: (0xE8, 0x73, 0x4A),
+}
+
 #: The CSS custom property each well token is transcribed from, for the check.
 CSS_TOKENS = {
     "--well": WELL,

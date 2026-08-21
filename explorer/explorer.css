@@ -92,7 +92,7 @@
 .readout { font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
 
 /* A refused link, or a page that could not start. It replaces the picture rather
-   than sitting beside it: there is nothing to look at, and saying so plainly beats
+   than standing beside it: there is nothing to look at, and saying so plainly beats
    a blank rectangle. */
 .notice {
   margin: 1.25rem 0 0;

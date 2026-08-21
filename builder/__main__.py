@@ -1,14 +1,15 @@
 """The one entry point: `python -m builder <command>`.
 
 `build` writes, `check` only reads and exits 1 on a problem, `figure` prints markup to
-paste, `figures` lists what is still to make and lands a finished one, `diagram` draws
+paste, `figures` lists what is still to make and lands a finished one, `locations` and
+`judges` draw the figures of those two sections, `diagram` draws
 the two figures that are diagrams rather than renders, `serve` puts the committed tree
 on localhost for previewing, `prose` holds each page to the approved document it was
 placed from, and `review` builds the doc a page is marked up in and reads it back.
 `explorer` bakes the explorer page's palettes, wasm module and manifest. `import`,
-`prose`, `review` and `explorer` are the commands that reach outside the repository — for
-a full-size original, for the approved prose, for the Drive-synced review folder, and for
-the engine and colormaps next door.
+`prose`, `review`, `explorer`, `locations` and `judges` are the commands that reach
+outside the repository — for a full-size original, for the approved prose, for the
+Drive-synced review folder, and for the engine, the records and the judges next door.
 Run `python -m builder --help` for the list.
 """
 
@@ -19,6 +20,7 @@ from pathlib import Path
 from . import build as build_module
 from . import checks, diagrams, figures, images, records, renders
 from . import explorer as explorer_module
+from . import judges as judges_module
 from . import locations as locations_module
 from . import prose as prose_module
 from . import review as review_module
@@ -113,6 +115,25 @@ def _parser() -> argparse.ArgumentParser:
         help="import each drawn sheet as its figure's asset and fill its registry row",
     )
     made.add_argument(
+        "--replace",
+        action="store_true",
+        help="land the redraw over a figure that is already made, page and row together",
+    )
+
+    judged = commands.add_parser("judges", help="draw the figures of the Training judges page")
+    judged.add_argument(
+        "id",
+        nargs="*",
+        choices=sorted(judges_module.MAKERS) or None,
+        help="which figures to draw; all of them by default",
+        metavar="ID",
+    )
+    judged.add_argument(
+        "--place",
+        action="store_true",
+        help="import each drawn sheet as its figure's asset and fill its registry row",
+    )
+    judged.add_argument(
         "--replace",
         action="store_true",
         help="land the redraw over a figure that is already made, page and row together",
@@ -311,6 +332,34 @@ def _do_locations(options: argparse.Namespace) -> int:
     return 0
 
 
+def _do_judges(options: argparse.Namespace) -> int:
+    """Draw section 6's figures, and optionally land each one where it belongs.
+
+    The same two steps `locations` takes, and deliberately the same flags: a rig that is
+    driven differently from the one beside it is a rig somebody drives wrong once.
+    """
+    wanted = options.id or sorted(judges_module.MAKERS)
+    for identifier in wanted:
+        drawn = judges_module.draw(identifier)
+        print(f"wrote {drawn.path.relative_to(SITE_ROOT).as_posix()}")
+        if not (options.place or options.replace):
+            continue
+        destination = FIGURE_IMAGES_DIR / f"{identifier}.jpg"
+        width, height = images.import_web_res(drawn.path, destination)
+        placed = figures.place(
+            identifier,
+            destination.name,
+            width,
+            height,
+            provenance=list(drawn.provenance),
+            recipe=judges_module.recipe(identifier),
+            replace=options.replace,
+        )
+        size = destination.stat().st_size / 1024
+        print(f"  {destination.name}  {width}x{height}  ({size:.0f} KB) — {placed.page}")
+    return 0
+
+
 def _do_diagram(identifier: str) -> int:
     destination, width, height = diagrams.draw(identifier)
     relative = destination.relative_to(SITE_ROOT).as_posix()
@@ -439,6 +488,8 @@ def main(argv: list[str] | None = None) -> int:
             return _do_figures(options)
         if options.command == "locations":
             return _do_locations(options)
+        if options.command == "judges":
+            return _do_judges(options)
         if options.command == "diagram":
             return _do_diagram(options.id)
         if options.command == "prose":

@@ -427,8 +427,9 @@ def cli_binary() -> Path:
 
     Some of what a figure needs is not the engine: the boundary sampler, the structural
     gates run over a frame somebody named, the judge asked about a list of locations.
-    Those live in that project's Python entry point, which is the second and last thing
-    this repository shells.
+    Those live in that project's Python entry point, which is the second of the three
+    things this repository shells — the engine, this, and that project's bare interpreter
+    for the one job neither of them has a door for.
     """
     root = wallpapers_root()
     for directory in CLI_DIRS:
@@ -457,6 +458,136 @@ def cli(subcommand: str, *arguments) -> str:
             f"{CLI_NAME} {subcommand} failed: {completed.stderr.strip() or completed.stdout[-800:]}"
         )
     return completed.stdout
+
+
+#: The one thing that project does that neither its engine nor its console script has a
+#: door for: reading a picture through a trained judge. `head score` exists, and it
+#: rewrites a tracked scores file inside that checkout — which this repository may not
+#: do. So the third and last thing shelled here is that project's own interpreter,
+#: running the program below: its loader, its checkpoint, its deploy transform, its
+#: reading of the ordinal head. No policy is restated here and nothing is written there.
+SCORE_PROGRAM = """
+import json, sys
+from pathlib import Path
+
+from fractal_wallpapers.models import finished_scoring, finished_train, train
+from fractal_wallpapers.models import head as head_module
+
+ask = json.load(sys.stdin)
+checkpoint = finished_train.checkpoint_path(ask["head"], ask["which"], ask["run"])
+model, config, where = finished_scoring.load(checkpoint)
+transform = head_module.Transform(
+    tuple(config["mean"]), tuple(config["std"]), config["interpolation"], train=False
+)
+paths = [Path(name) for name in ask["pictures"]]
+classes = int(config["classes"])
+probabilities = train.score(model, paths, transform, where, classes, config)
+with open(ask["out"], "w", encoding="utf-8", newline=chr(10)) as handle:
+    for index, row in enumerate(probabilities):
+        found = {f"p_ge{step + 2}": float(value) for step, value in enumerate(row)}
+        handle.write(json.dumps({"schema": 1, "index": index, **found}) + chr(10))
+print(json.dumps({"pictures": len(paths), "checkpoint": checkpoint.name, "device": where}))
+"""
+
+
+CROP_PROGRAM = """
+import json, sys
+
+from fractal_wallpapers.models import renders
+
+ask = json.load(sys.stdin)
+found = [str(renders.crop_of(ask["head"], row)) for row in ask["rows"]]
+print(json.dumps(found))
+"""
+
+
+def corpus_crops(head: str, rows) -> list[Path]:
+    """Where that project keeps the picture each of these rows was judged on.
+
+    Its own answer, asked of its own module. A crop's file name is a digest of the whole
+    render spec, so spelling it here would be a second spelling, free to drift from the
+    first the next time a field enters that spec. Asked in that project's interpreter
+    rather than by importing it into this one: this repository's builder depends on
+    Pillow and nothing else, and that is worth keeping true.
+    """
+    wanted = [
+        {key: value for key, value in row.items() if not key.startswith(chr(95))} for row in rows
+    ]
+    completed = subprocess.run(
+        [str(venv_python()), "-c", CROP_PROGRAM],
+        input=json.dumps({"head": head, "rows": wanted}),
+        capture_output=True,
+        text=True,
+        cwd=str(wallpapers_root()),
+        check=False,
+    )
+    if completed.returncode != 0:
+        raise EngineError(
+            f"resolving {len(wanted)} corpus crop(s) for {head} failed: "
+            f"{completed.stderr.strip()[-2000:]}"
+        )
+    return [Path(name) for name in json.loads(completed.stdout)]
+
+
+def venv_python() -> Path:
+    """That project's interpreter, where its models and their weights can be loaded."""
+    root = wallpapers_root()
+    for directory in CLI_DIRS:
+        for name in ("python.exe", "python", "python3"):
+            candidate = root / VENV_NAME / directory / name
+            if candidate.is_file():
+                return candidate
+    raise EngineError(
+        f"no interpreter under {root / VENV_NAME} — create the wallpaper project's "
+        'virtualenv and `pip install -e ".[dev,models]"` into it'
+    )
+
+
+def judge_probabilities(
+    head: str,
+    pictures,
+    *,
+    which: str = "best",
+    run: str | None = None,
+    root: Path | None = None,
+) -> list[dict]:
+    """`P(≥2)`, `P(≥3)`, `P(≥4)` for a list of pictures, read through a trained judge.
+
+    The pictures are paths, in order, and they are the corpus crops — the files the
+    judge was scored on — not a fresh render of the same row. A figure re-renders for
+    its panel and reads the verdict here, because a verdict is about the picture that
+    was actually put in front of the network.
+
+    Cached on what was asked, in this repository's own artifacts. The wallpaper
+    project's committed scores are the check on this: re-reading a side it has already
+    published reproduces its numbers, which is what `builder judges --verify` does.
+    """
+    wanted = [str(Path(picture)) for picture in pictures]
+    root = Path(root) if root is not None else default_cache_root()
+    key = spec_key("judge", {"head": head, "which": which, "run": run, "pictures": wanted})
+    out = root / f"judged-{head}-{key}.jsonl"
+    if not out.is_file():
+        out.parent.mkdir(parents=True, exist_ok=True)
+        ask = {"head": head, "which": which, "run": run, "pictures": wanted, "out": str(out)}
+        completed = subprocess.run(
+            [str(venv_python()), "-c", SCORE_PROGRAM],
+            input=json.dumps(ask),
+            capture_output=True,
+            text=True,
+            cwd=str(wallpapers_root()),
+            check=False,
+        )
+        if completed.returncode != 0:
+            raise EngineError(
+                f"reading {len(wanted)} picture(s) through the {head} judge failed: "
+                f"{completed.stderr.strip()[-2000:]}"
+            )
+        echo = json.loads(completed.stdout.strip().splitlines()[-1])
+        print(
+            f"  judged {echo['pictures']} picture(s) through {echo['checkpoint']} "
+            f"on {echo['device']}"
+        )
+    return jsonl(out)
 
 
 def jsonl(path: Path) -> list[dict]:

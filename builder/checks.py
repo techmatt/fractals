@@ -18,14 +18,16 @@ Every one of them read-only:
   every prose heading carries the id its own words give it, and the front page's contents
   list marks the same sections done that `sections.jsonl` calls written.
 - **assets** — every image the metadata names exists at the size it claims, every
-  thumbnail is current, and no orphan file is sitting in a gallery directory.
+  thumbnail is current, and no orphan file is left in a gallery directory.
 - **prose** — every row of `article/prose.jsonl` names a page that is in the article and
   is written. The master itself lives in the Drive-synced working folder, which is not
   in a clone and never in CI, so what is checked here is the registry and not the
   document: `python -m builder prose` is what holds the two texts together.
 - **theme** — the well colours a drawn figure is made of are the stylesheet's own. They
   have to be transcribed, because Pillow cannot read CSS; this is what keeps a restyle
-  from moving the well and leaving every diagram sitting on the old one.
+  from moving the well and leaving every diagram drawn against the old one.
+- **vocabulary** — no tracked file uses a word this site has banned. `vocabulary.py`
+  holds the list and says why each term is on it.
 """
 
 import re
@@ -33,7 +35,7 @@ from html.parser import HTMLParser
 from pathlib import Path
 from urllib.parse import unquote, urldefrag
 
-from . import figures, galleries, images, pages, prose, sections, theme
+from . import figures, galleries, images, pages, prose, sections, theme, vocabulary
 from .paths import (
     ARTICLE_DIR,
     GALLERIES_DIR,
@@ -343,4 +345,5 @@ def run_all() -> dict[str, list[str]]:
         "assets": check_assets(loaded),
         "prose": check_prose(article),
         "theme": check_theme(),
+        "vocabulary": vocabulary.sweep(),
     }
