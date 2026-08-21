@@ -435,3 +435,160 @@ def spec_key(subcommand: str, spec: dict) -> str:
 def _slug(name: str) -> str:
     kept = [character if character.isalnum() else "-" for character in name.lower()]
     return "".join(kept).strip("-") or "panel"
+
+
+# ----------------------------------------------------------------------- the other CLI
+
+#: The wallpaper project's own entry point, inside its virtualenv. Windows puts console
+#: scripts in `Scripts`, everything else in `bin`; both are tried, and neither is a path
+#: this repository commits — it is derived from where that checkout is.
+CLI_NAME = "fractal-wallpapers"
+CLI_DIRS = ("Scripts", "bin")
+VENV_NAME = ".venv"
+
+#: The geometry the walk's own judge reads. A score printed under a figure is read at
+#: this unless the figure says otherwise, so it is the number the run itself recorded
+#: rather than a second opinion taken at a different size.
+NODE_REGIME = "384x216ss1"
+
+
+def cli_binary() -> Path:
+    """The wallpaper project's console script, or a refusal saying where it looked.
+
+    Some of what a figure needs is not the engine: the boundary sampler, the structural
+    gates run over a frame somebody named, the judge asked about a list of locations.
+    Those live in that project's Python entry point, which is the second and last thing
+    this repository shells.
+    """
+    root = wallpapers_root()
+    for directory in CLI_DIRS:
+        for name in (CLI_NAME, f"{CLI_NAME}.exe"):
+            candidate = root / VENV_NAME / directory / name
+            if candidate.is_file():
+                return candidate
+    raise EngineError(
+        f"no {CLI_NAME} entry point under {root / VENV_NAME} — create the wallpaper "
+        'project\'s virtualenv and `pip install -e ".[dev,models]"` into it'
+    )
+
+
+def cli(subcommand: str, *arguments) -> str:
+    """One invocation of that entry point, with its stdout returned."""
+    binary = cli_binary()
+    completed = subprocess.run(
+        [str(binary), subcommand, *(str(argument) for argument in arguments)],
+        capture_output=True,
+        text=True,
+        cwd=str(wallpapers_root()),
+        check=False,
+    )
+    if completed.returncode != 0:
+        raise EngineError(
+            f"{CLI_NAME} {subcommand} failed: {completed.stderr.strip() or completed.stdout[-800:]}"
+        )
+    return completed.stdout
+
+
+def jsonl(path: Path) -> list[dict]:
+    """Every row of a JSONL file, in order."""
+    with Path(path).open(encoding="utf-8") as handle:
+        return [json.loads(line) for line in handle if line.strip()]
+
+
+def write_jsonl(rows, path: Path) -> Path:
+    """A JSONL file, written with the line ending this repository normalizes to."""
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("w", encoding="utf-8", newline="\n") as handle:
+        for row in rows:
+            handle.write(json.dumps(row, ensure_ascii=False) + "\n")
+    return path
+
+
+def scores(locations, *, regime: str = NODE_REGIME, root: Path | None = None) -> list[dict]:
+    """The judge's estimate for each of a list of locations, cached on what was asked.
+
+    `curate score` and `score-parity` both read a ledger; nothing in that project reads
+    a list of locations until this subcommand, and a panel that prints `P(>=3)` under a
+    picture needs exactly that — including for a frame the run proposed and never popped,
+    which has no ledger row of its own to carry a score.
+
+    Every returned row names the sha256 of the head that produced it and the regime it
+    was read at, because heads are re-shipped and the floors that read them move with
+    them. A figure that prints a score records both.
+    """
+    wanted = [dict(location) for location in locations]
+    root = Path(root) if root is not None else default_cache_root()
+    key = spec_key("score-locations", {"regime": regime, "locations": wanted})
+    out = root / f"scores-{key}.jsonl"
+    if not out.is_file():
+        manifest = write_jsonl(wanted, root / f"scores-{key}-manifest.jsonl")
+        cli("score-locations", "--manifest", manifest, "--out", out, "--regime", regime)
+        print(f"  scored {len(wanted)} location(s) at {regime}")
+    return jsonl(out)
+
+
+def screened(locations, *, node_width: int = 384, root: Path | None = None) -> list[dict]:
+    """What each structural gate read on each of these frames, and which way it went.
+
+    The same battery `expand` spends on a proposal, run over frames somebody named. A
+    gate that a refusal came before reports nothing, because it did not run.
+    """
+    wanted = [dict(location) for location in locations]
+    root = Path(root) if root is not None else default_cache_root()
+    key = spec_key("screen", {"node_width": node_width, "locations": wanted})
+    out = root / f"screened-{key}.jsonl"
+    if not out.is_file():
+        manifest = write_jsonl(wanted, root / f"screened-{key}-manifest.jsonl")
+        cli("screen", "--manifest", manifest, "--out", out, "--node-width", node_width)
+        print(f"  screened {len(wanted)} frame(s) at node width {node_width}")
+    return jsonl(out)
+
+
+def boundary_draw(
+    *,
+    seed: int,
+    keep: int = 12,
+    family: str = "mandelbrot",
+    degree: int | None = None,
+    attempts: int = 4000,
+    root: Path | None = None,
+) -> tuple[list[dict], list[dict]]:
+    """A seeded uniform draw over a family, screened: every attempt, and the survivors.
+
+    An unscreened uniform draw plus the structural gates *is* a boundary sampler —
+    nothing clears all three gates without straddling the boundary — and this is that
+    subcommand. The whole draw comes back, not only the keepers, because the yield is
+    the measurement the figure is about.
+    """
+    root = Path(root) if root is not None else default_cache_root()
+    key = spec_key(
+        "sample-boundary",
+        {
+            "seed": seed,
+            "keep": keep,
+            "family": family,
+            "degree": degree,
+            "attempts": attempts,
+        },
+    )
+    out = root / f"boundary-{key}"
+    if not (out / "draws.jsonl").is_file():
+        arguments = [
+            "--family",
+            family,
+            "--seed",
+            seed,
+            "--keep",
+            keep,
+            "--attempts",
+            attempts,
+            "--out-dir",
+            out,
+            "--no-images",
+        ]
+        if degree is not None:
+            arguments += ["--degree", degree]
+        cli("sample-boundary", *arguments)
+        print(f"  drew {family} at seed {seed} until {keep} survived")
+    return jsonl(out / "draws.jsonl"), jsonl(out / "kept.jsonl")

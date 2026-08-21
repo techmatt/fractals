@@ -14,6 +14,7 @@ from pathlib import Path
 
 from . import build as build_module
 from . import checks, diagrams, figures, images, records
+from . import locations as locations_module
 from . import serve as serve_module
 from .paths import FIGURE_IMAGES_DIR, IMAGES_DIR, SITE_ROOT
 
@@ -77,6 +78,22 @@ def _parser() -> argparse.ArgumentParser:
         "--provenance",
         type=Path,
         help="a text file, one line per panel, saying how each was made",
+    )
+
+    made = commands.add_parser(
+        "locations", help="draw the figures of the Finding good locations page"
+    )
+    made.add_argument(
+        "id",
+        nargs="*",
+        choices=sorted(locations_module.MAKERS) or None,
+        help="which figures to draw; all of them by default",
+        metavar="ID",
+    )
+    made.add_argument(
+        "--place",
+        action="store_true",
+        help="import each drawn sheet as its figure's asset and fill its registry row",
     )
 
     drawn = commands.add_parser("diagram", help="draw one of the figures that is not a render")
@@ -198,6 +215,42 @@ def _do_place(options: argparse.Namespace) -> int:
     return 0
 
 
+def _do_locations(options: argparse.Namespace) -> int:
+    """Draw section 5's figures, and optionally land each one where it belongs.
+
+    Drawing writes a lossless sheet and its provenance into `artifacts/figures/`;
+    `--place` then does what `figures --place` does, with the provenance and the recipe
+    filled in from the maker rather than typed.
+    """
+    wanted = options.id or sorted(locations_module.MAKERS)
+    for identifier in wanted:
+        drawn = locations_module.draw(identifier)
+        relative = drawn.path.relative_to(SITE_ROOT).as_posix()
+        print(f"wrote {relative}")
+        if not options.place:
+            continue
+        lossless = identifier in locations_module.LOSSLESS
+        destination = FIGURE_IMAGES_DIR / f"{identifier}{'.png' if lossless else '.jpg'}"
+        if identifier in locations_module.ANIMATED:
+            # An animation is copied, never imported: Pillow's one-image read keeps the
+            # first frame and silently drops the rest, and the sheet is already web-res.
+            destination.write_bytes(drawn.path.read_bytes())
+            width, height = images.dimensions(destination)
+        else:
+            width, height = images.import_web_res(drawn.path, destination)
+        placed = figures.place(
+            identifier,
+            destination.name,
+            width,
+            height,
+            provenance=list(drawn.provenance),
+            recipe=locations_module.recipe(identifier),
+        )
+        size = destination.stat().st_size / 1024
+        print(f"  {destination.name}  {width}x{height}  ({size:.0f} KB) — {placed.page}")
+    return 0
+
+
 def _do_diagram(identifier: str) -> int:
     destination, width, height = diagrams.draw(identifier)
     relative = destination.relative_to(SITE_ROOT).as_posix()
@@ -241,6 +294,8 @@ def main(argv: list[str] | None = None) -> int:
             return _do_figure(options.id)
         if options.command == "figures":
             return _do_figures(options)
+        if options.command == "locations":
+            return _do_locations(options)
         if options.command == "diagram":
             return _do_diagram(options.id)
         if options.command == "serve":

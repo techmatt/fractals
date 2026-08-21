@@ -78,9 +78,9 @@
     of the territory worth exploring. The views below span that spectrum, and whether each
     reads as too sparse, too busy, or just right is largely personal preference.</p>
 
-      <figure class="figure figure-pending" data-figure="locations-style-spectrum">
-        <p class="pending"><span class="pending-label">Figure pending</span>Several fractal locations in a row, spanning a lone filament in open space through to a tangle busy at every scale.</p>
-        <figcaption>The spectrum, deliberately without verdicts. A lone filament crossing open space leaves room for icons and text; a tangle that prints beautifully can be exhausting behind an already busy desktop. Which of these is too sparse, too busy, or exactly right is where reasonable people disagree. <span class="credit">Rendered with fractal-wallpapers</span></figcaption>
+      <figure class="figure" data-figure="locations-style-spectrum">
+        <img src="../assets/images/figures/locations-style-spectrum.jpg" width="1314" height="598" alt="Six fractal locations in reading order, from a lone dendrite in mostly empty space through to a tangle busy at every scale.">
+        <figcaption>The spectrum, deliberately without verdicts. A lone filament crossing open space leaves room for icons and text; a tangle that prints beautifully can be exhausting behind an already busy desktop. Which of these is too sparse, too busy, or exactly right is where reasonable people disagree — all six have been rated by hand, and the ratings are left off on purpose. <span class="credit">Rendered with fractal-wallpapers</span></figcaption>
       </figure>
 
     <p>To give the pipeline <em>some</em> definition of good, we use human judgment, applied
@@ -93,8 +93,8 @@
     to predict them (see <a href="training-judges.html">Training judges</a>); here are a few
     examples from each category:</p>
 
-      <figure class="figure figure-pending" data-figure="locations-rating-examples">
-        <p class="pending"><span class="pending-label">Figure pending</span>Four rows of locations, one row per rating from 1 to 4, two or three examples in each.</p>
+      <figure class="figure" data-figure="locations-rating-examples">
+        <img src="../assets/images/figures/locations-rating-examples.jpg" width="1316" height="1316" alt="Four rows of locations, one row per rating from 1 to 4, three examples in each.">
         <figcaption>The four-point scale by example, with a line on each row saying what earns the score. What is being rated is the geometry, not the picture as drawn — the question is whether the place could make a good wallpaper across the modes and palettes available to it. <span class="credit">Rendered with fractal-wallpapers</span></figcaption>
       </figure>
 
@@ -115,9 +115,9 @@
     filter, almost all of them are mediocre at best as wallpapers, in my opinion — and that
     pattern held across more than a hundred such draws.</p>
 
-      <figure class="figure figure-pending" data-figure="locations-random-samples">
-        <p class="pending"><span class="pending-label">Figure pending</span>Twelve small fractal views drawn at random along the boundary, in a grid.</p>
-        <figcaption>Twelve viewports drawn at random along the boundary, kept only because they passed the crude complexity check — not mostly interior, not escaped to blandness, something actually happening in the frame. That filter is the only thing standing between these and worse. <span class="credit">Rendered with fractal-wallpapers</span></figcaption>
+      <figure class="figure" data-figure="locations-random-samples">
+        <img src="../assets/images/figures/locations-random-samples.jpg" width="1316" height="719" alt="Twelve small fractal views drawn at random along the boundary, in a grid, under a line counting what the same draw threw away.">
+        <figcaption>One seeded draw, reported in full: 704 frames taken uniformly over the Mandelbrot home view, of which the structural gates refused 691 — mostly interior, already escaped to blandness, or too little of the frame carrying detail. These twelve are everything that survived, and that filter is the only thing standing between them and worse. <span class="credit">Rendered with fractal-wallpapers</span></figcaption>
       </figure>
 
     <p>Rarity plus clustering is the signature of a search problem, and a search needs three
@@ -173,9 +173,9 @@
     are placed at random or toward raw detail density, as insurance against the focus-finder's
     blind spots.</p>
 
-      <figure class="figure figure-pending" data-figure="locations-foci-proposals">
-        <p class="pending"><span class="pending-label">Figure pending</span>Two parent frames with four proposal rectangles marked on each, and the zoomed children beside them.</p>
-        <figcaption>One expansion's proposals, at two parents. Each carries the four candidate frames drawn inside it — most aimed at foci that survived blurring at every radius and kept spaced apart, the rest placed at random or toward raw detail density — with the zoomed children alongside. <span class="credit">Rendered with fractal-wallpapers</span></figcaption>
+      <figure class="figure" data-figure="locations-foci-proposals">
+        <img src="../assets/images/figures/locations-foci-proposals.jpg" width="1316" height="894" alt="One expanded frame with its kept foci ringed and its four proposals boxed, a table of those foci beside it, and the four children below.">
+        <figcaption>One expansion's proposals. The rings are the peaks that survived blurring — the run sweeps five radii and keeps the survivors spaced apart — and the boxes are the four child frames drawn inside the parent. Two are aimed at foci, one is placed at random and one toward raw detail density, which is the insurance against the focus-finder's blind spots; here the judge scored the insurance highest. <span class="credit">Rendered with fractal-wallpapers</span></figcaption>
       </figure>
 
     <p>Gate. Each candidate is rendered the same cheap way, and structural checks throw out the
@@ -208,9 +208,9 @@
     draw from (<a href="from-locations-to-wallpapers.html">From locations to
     wallpapers</a>).</p>
 
-      <figure class="figure figure-pending" data-figure="locations-walk-step">
-        <p class="pending"><span class="pending-label">Figure pending</span>Animated diagram: a parent frame proposing four children, a gate removing one, the judge scoring the rest, and the frontier reordering.</p>
-        <figcaption>One expansion, end to end. The parent is drawn cheaply, four children are proposed inside it, the structural gates throw out what is hopeless, the judge scores what survives, and the frontier reorders around the result.</figcaption>
+      <figure class="figure" data-figure="locations-walk-step">
+        <img src="../assets/images/figures/locations-walk-step.png" width="1316" height="668" alt="Animated diagram: a parent frame proposing four children, a gate removing one, the judge scoring the rest, and the frontier reordering.">
+        <figcaption>One expansion, end to end, over the frames one real expansion used. The parent is drawn cheaply, four children are proposed inside it, the structural gates throw out what is hopeless, the judge scores what survives, and the frontier reorders around the result.</figcaption>
       </figure>
 
     <h2 id="reframing-a-find">Reframing a find</h2>
@@ -239,9 +239,9 @@
     <p><code>expand_neighborhood</code> widens the net: sweep the surrounding disc for
     minibrots at the current scale or below, and propose the best two.</p>
 
-      <figure class="figure figure-pending" data-figure="locations-reframe-examples">
-        <p class="pending"><span class="pending-label">Figure pending</span>Three rows, one per reframing operator: the triggering view on the left and the operator's reframed result on the right.</p>
-        <figcaption>The three reframing operators, one row each: the view that triggered the operator on the left, what it proposed on the right. These are cases where the reframing clearly improved the composition — most attempts are refused outright, and what survives inherits the quality of whatever triggered it. <span class="credit">Rendered with fractal-wallpapers</span></figcaption>
+      <figure class="figure" data-figure="locations-reframe-examples">
+        <img src="../assets/images/figures/locations-reframe-examples.jpg" width="1316" height="1288" alt="Three rows, one per reframing operator: the triggering view, what the operator proposed, and the best frame admitted below it; then one frame reframed three ways.">
+        <figcaption>The three reframing operators, one row each. A reframing is a move rather than a find, and two of these three score lower than the frame that triggered them — the first thing a minibrot framing puts in the picture is the copy's black body. The payoff is the third column: the best frame the walk went on to admit underneath. Below, one frame all three operators fired on, answered three different ways. <span class="credit">Rendered with fractal-wallpapers</span></figcaption>
       </figure>
 
     <p>Every frame an operator proposes is then sized by the <i>framing ladder</i>: keep the
@@ -250,9 +250,9 @@
     outward on purpose: the payoff of a minibrot is its halo, not the copy itself. The figure
     below shows the same nucleus at all three framings.</p>
 
-      <figure class="figure figure-pending" data-figure="locations-framing-ladder">
-        <p class="pending"><span class="pending-label">Figure pending</span>One minibrot nucleus framed three ways: at the parent's own width, at four times the copy's own size, and at sixteen times.</p>
-        <figcaption>The framing ladder at one nucleus, labeled. The parent's own width, then 4× and 16× the copy's own size — never smaller, because a minibrot framed at its own size is mostly a black blob that never escapes. The ladder aims outward because the payoff is the halo, not the copy. <span class="credit">Rendered with fractal-wallpapers</span></figcaption>
+      <figure class="figure" data-figure="locations-framing-ladder">
+        <img src="../assets/images/figures/locations-framing-ladder.jpg" width="1316" height="355" alt="One minibrot nucleus framed three ways: at the parent's own width, at four times the copy's own size, and at sixteen times.">
+        <figcaption>The framing ladder at one nucleus. The parent's own width leaves the copy a speck; 4× the copy's own size is mostly its black body; 16× is the halo. The judge's estimate across the three runs 0.06, 0.00 and 0.84 — which is why the ladder aims outward, and why it has no rung below 4×. <span class="credit">Rendered with fractal-wallpapers</span></figcaption>
       </figure>
 
     <h2 id="seeds-from-labels">Seeds from labels</h2>
@@ -283,9 +283,9 @@
     Two more zoom steps refine the crop, and the final frame is admitted with a near-perfect
     score from the judge.</p>
 
-      <figure class="figure figure-pending" data-figure="locations-descent-chain">
-        <p class="pending"><span class="pending-label">Figure pending</span>Every frame of one seeded descent, in order, from the root beside a rated location to the admitted find.</p>
-        <figcaption>One seeded chain, end to end. A root placed beside a highly rated location, two zoom steps into its filaments, a reframing onto a minibrot spotted far below the current scale and recomposed at the ladder's widest framing, then two more steps to refine the crop before the judge admits the last frame. <span class="credit">Rendered with fractal-wallpapers</span></figcaption>
+      <figure class="figure" data-figure="locations-descent-chain">
+        <img src="../assets/images/figures/locations-descent-chain.jpg" width="1316" height="710" alt="Every frame of one seeded descent, in order, from a rated root through a reframing to the admitted find.">
+        <figcaption>One seeded chain, end to end. The root is a location I had rated 4 by hand; two zoom steps descend into its filaments; expand_neighborhood then spots a minibrot fifty times smaller than the current frame, and the ladder's widest framing recomposes the camera around it; two more zoom steps refine the crop. The judge admits the last frame at an estimate of 0.83. <span class="credit">Rendered with fractal-wallpapers</span></figcaption>
       </figure>
 
     <h2 id="where-the-walk-stops">Where the walk stops</h2>
@@ -310,20 +310,30 @@
          Matt's note: a paragraph or two of real statistics — how far walks run from a fresh
          exploration root versus one seeded beside existing ratings, and how walk quality
          distributes when a walk is judged by the best output it found — carrying two figures,
-         neither of them registered yet:
+         both now registered and drawn, and both still waiting on the prose:
            locations-walk-lengths  — walk length / expansions per root, seeded versus fresh
                                      roots, if the two arms compare cleanly.
            locations-walk-examples — several complete walks discussed individually, spanning
                                      best-find ratings 1 through 4, with a few 4s (q4 rule). -->
+
+      <figure class="figure" data-figure="locations-walk-lengths">
+        <img src="../assets/images/figures/locations-walk-lengths.png" width="1316" height="538" alt="Three bar charts of how deep each root's walk got, beside three bars of how many roots produced a find at all.">
+        <figcaption>How far a walk runs depends on where it starts. Both arms of the comparison ran in one run, under one frontier, competing for the same expansion budget: roots placed at locations a human had rated a keeper, and fresh roots off the minibrot grid and the home views. 98% of the seeded roots produced at least one admitted find against 22% of the fresh ones, and their walks reach deeper before stopping. The third row is a different run entirely, for scale. <span class="credit">Rendered with fractal-wallpapers</span></figcaption>
+      </figure>
+
+      <figure class="figure" data-figure="locations-walk-examples">
+        <img src="../assets/images/figures/locations-walk-examples.jpg" width="1316" height="615" alt="Three walks laid out rung by rung, one row each, ordered by the best hand rating anything they found received.">
+        <figcaption>Three walks from one run, laid out rung by rung and filed by the best rating a human gave anything they found. Every scored find of that run was scored in one batch, so the ordering is about the walks and not about which of them somebody happened to look at. All three run to a similar depth and admit dozens of frames; what differs is what is in the frame at the end. <span class="credit">Rendered with fractal-wallpapers</span></figcaption>
+      </figure>
 
     <p>The location judge has been doing quiet work all through this page — scoring candidates,
     setting fates, ordering the frontier. The next page
     (<a href="training-judges.html">Training judges</a>) is about where it comes from: the
     ratings, the training, and what a small network can and cannot be trusted to know.</p>
 
-      <figure class="figure figure-pending" data-figure="locations-q4-gallery">
-        <p class="pending"><span class="pending-label">Figure pending</span>One finished wallpaper from each fractal family, in a grid.</p>
-        <figcaption>One finished wallpaper per family, and a walk found the location of every one of them. All are drawn from the top of the rated pool — the same class 4 the location judge is trained to predict. <span class="credit">Rendered with fractal-wallpapers</span></figcaption>
+      <figure class="figure" data-figure="locations-found-and-finished">
+        <img src="../assets/images/figures/locations-found-and-finished.jpg" width="1316" height="801" alt="Five pairs, each a fractal location as the walk found it beside the finished wallpaper released from it.">
+        <figcaption>What a walk found, and what it became. Each pair is one released wallpaper beside its location as the walk recorded it — the same frame, at the walk's own 384×216 working size, with no palette and nothing chosen yet. Every location here carries a hand-written rating of 4, so the quality claim is a person's rather than the judge's; the families with no such rating behind a release are named in the figure instead of being filled in. <span class="credit">Rendered with fractal-wallpapers</span></figcaption>
       </figure>
   </section>
 
