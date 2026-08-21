@@ -264,7 +264,9 @@ def _do_locations(options: argparse.Namespace) -> int:
         drawn = locations_module.draw(identifier)
         relative = drawn.path.relative_to(SITE_ROOT).as_posix()
         print(f"wrote {relative}")
-        if not options.place:
+        # `--replace` is a landing, so it means `--place` too. Asking for both is a flag
+        # somebody will forget, and forgetting it draws the sheet and lands nothing.
+        if not (options.place or options.replace):
             continue
         lossless = identifier in locations_module.LOSSLESS
         destination = FIGURE_IMAGES_DIR / f"{identifier}{'.png' if lossless else '.jpg'}"

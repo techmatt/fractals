@@ -38,14 +38,14 @@
 
 <header class="masthead">
   <h1>Making Fractal Wallpapers</h1>
-  <p class="standfirst">Rendering escape-time fractals fast, walking the plane for
-  places worth rendering, and teaching small models to judge what comes back.</p>
 </header>
 
 <main>
   <section class="intro">
-    <p>The article is being written section by section — completed sections are marked
-    below; the rest show the outline. The code is in
+    <p>This site is about rendering escape-time fractals quickly, searching the complex
+    plane for the views worth rendering, and training small models to judge what comes back.
+    The article is being written section by section — completed sections are marked below;
+    the rest show the outline. The code is in
     <a href="https://github.com/techmatt/fractal-wallpapers">fractal-wallpapers</a>, and
     finished wallpapers are in the <a href="galleries/index.html">galleries</a>.</p>
   </section>
@@ -55,61 +55,70 @@
     <ol class="toc">
       <li>
         <h3><a href="article/overview.html">Overview</a> <span class="done" role="img" aria-label="written">✓</span></h3>
-        <p>A pipeline that searches fractals for views worth rendering and turns the
-        best into wallpapers — and why the finding, not the drawing, is the hard part.</p>
+        <p>What the project makes, and how a program finds views worth rendering and
+        turns the best of them into wallpapers. Drawing a fractal is the easy half; deciding
+        where to point the camera is the hard one.</p>
       </li>
       <li>
         <h3><a href="article/escape-time-fractals.html">Escape-time fractals</a> <span class="done" role="img" aria-label="written">✓</span></h3>
-        <p>The four families behind every picture here — Mandelbrot, the multibrots,
-        Julia, Phoenix — what it means to iterate a formula on the complex plane, and
-        how a "location" specifies one exact view into a set.</p>
+        <p>Iterating one short formula on the complex plane draws every picture on this
+        site. This section covers the four families the project uses — Mandelbrot, the
+        multibrots, Julia and Phoenix — and what it takes to name one exact view inside
+        one of them.</p>
       </li>
       <li>
         <h3><a href="article/rendering-fundamentals.html">Rendering fundamentals</a> <span class="done" role="img" aria-label="written">✓</span></h3>
-        <p>How an image is actually computed: turning integer escape counts into a
-        smooth field, choosing the iteration cap and the number of samples a pixel
-        deserves, and fitting the palette to the frame rather than to the arithmetic.</p>
+        <p>A render starts as a grid of integer escape counts. This section turns those
+        counts into a smooth field, works out how long to iterate and how many samples a
+        pixel deserves, and fits the palette to the frame rather than to the arithmetic.</p>
       </li>
       <li>
         <h3><a href="article/rendering-modes.html">Rendering modes</a> <span class="done" role="img" aria-label="written">✓</span></h3>
-        <p>Every other way to draw the same orbits: styles measured from the whole path
-        rather than the moment of escape, textures blended over the classic render, four
-        that paint while the iteration runs, and the record of which ones ship.</p>
+        <p>The escape count keeps one number out of a whole orbit, and there are many
+        other ways to reduce that orbit to a color. This section works through the catalog,
+        from styles measured along the orbit's path to the four that paint while the
+        iteration is still running.</p>
       </li>
       <li>
         <h3><a href="article/finding-good-locations.html">Finding good locations</a> <span class="done" role="img" aria-label="written">✓</span></h3>
-        <p>What makes one view of a fractal worth keeping and another worthless, and
-        the guided walk that goes looking: roots drawn from pools, cheap renders,
-        structural gates, a judge that reads geometry, and the minibrots the search
-        navigates by.</p>
+        <p>Point a camera at random into a fractal and almost everything you get back is
+        mediocre at best. This section is about what separates a view worth keeping from the
+        rest, and about the guided walk that goes looking — drawing each candidate cheaply,
+        throwing most of them away, and navigating by the miniature copies of the set that
+        good views tend to sit near.</p>
       </li>
       <li>
         <h3><a href="article/training-judges.html">Training judges</a></h3>
-        <p>Collecting human judgments of real renders and training small networks on
-        them: one scores locations, two judge finished renders, one picks palettes.</p>
+        <p>Whether a wallpaper is any good is a human verdict. This section collects
+        those verdicts at a scale a model can learn from and trains four small judges on
+        them — one scores a location, two score a finished render, one picks a palette.</p>
       </li>
       <li>
         <h3><a href="article/color-palettes.html">Color palettes</a></h3>
-        <p>Palettes as data: how one is chosen to suit each image, and how its tones are
-        corrected against the range measured from wallpapers that already work.</p>
+        <p>A colormap is drawn without knowing which fractal it will be spent on, so the
+        same palette that suits one render leaves the next muddy. This section chooses a
+        palette to suit each image and corrects its tones against the range measured from
+        wallpapers that already work.</p>
       </li>
       <li>
         <h3><a href="article/from-locations-to-wallpapers.html">From locations to wallpapers</a></h3>
-        <p>The final selection: scoring every surviving candidate, choosing a small set
-        across families and styles, and writing down why each picture was released,
-        rejected, or passed over.</p>
+        <p>A run ends with far more candidates than anyone wants. This section scores
+        every one of them, keeps a small set that spans families and styles, and writes down
+        why each picture was released, rejected or passed over.</p>
       </li>
       <li>
         <h3><a href="article/running-at-scale.html">Running at scale</a></h3>
-        <p>What multi-hour runs require: measuring how rare good material is in each
-        family, putting a compute price on each find, and splitting the time budget so
+        <p>Good material is far rarer in some families than in others, so an hour of
+        compute buys very different amounts depending on where it is spent. This section
+        measures how rare, puts a price on each find, and splits a long run's budget so the
         scarce families still get their share.</p>
       </li>
       <li>
         <h3><a href="article/deep-zoom.html">Deep zoom</a></h3>
-        <p>Past the limits of double precision: why ordinary arithmetic fails at extreme
-        magnification, and the perturbation trick that keeps rendering possible far
-        beyond it.</p>
+        <p>Zoom far enough and two neighboring samples round to the same number, and the
+        arithmetic an ordinary renderer runs in stops telling them apart. This section finds
+        where that wall actually sits, works right up against it, and is honest about what a
+        picture drawn there can and cannot be trusted to say.</p>
       </li>
     </ol>
   </section>

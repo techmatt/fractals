@@ -49,8 +49,6 @@
 <header class="masthead">
   <p class="kicker">Section 2 of 10</p>
   <h1>Escape-time fractals</h1>
-  <p class="standfirst">The recurrences every picture here comes from — Mandelbrot, the
-  multibrots, Julia, Phoenix — and the locations that pin one down inside them.</p>
 </header>
 
 <main>
@@ -58,7 +56,9 @@
     <p>All the fractals I render in
     <a href="https://github.com/techmatt/fractal-wallpapers">fractal-wallpapers</a> come from
     a single kind of mathematical object — the two-dimensional escape-time fractal. This page
-    covers what these objects are and the variants the project draws from.</p>
+    covers what these objects are, the four recurrences the project draws from — Mandelbrot,
+    the multibrots, Julia and Phoenix — and how one exact view inside one of them is pinned
+    down.</p>
 
     <h2 id="iterating-in-the-complex-plane">Iterating in the complex plane</h2>
 
@@ -84,7 +84,7 @@
     entire algorithm, and escape-time fractals are named for it.</p>
 
       <figure class="figure" data-figure="escape-orbit-race">
-        <img src="../assets/images/figures/escape-orbit-race.png" width="960" height="540" alt="Animated: three starting points advancing in step across the plane — one escaping fast, one bounded, one lingering near the boundary — with a |z|-versus-step chart alongside.">
+        <img src="../assets/images/figures/escape-orbit-race.png" width="960" height="540" alt="Animated: three starting points advancing in step across the complex plane — one escaping fast, one bounded, one lingering near the boundary — with a |z|-versus-step chart alongside.">
         <figcaption>Three orbits under the same rule, stepping together. One is past |z| = 2 within a few steps and gone for good, one stays bounded forever, and one hangs near the boundary for dozens of steps before it commits. The step where a track crosses the line on the chart is that orbit's escape time — the whole of what the picture is painted from.</figcaption>
       </figure>
 
@@ -212,7 +212,7 @@
 
     <p>One last piece of vocabulary the rest of the site leans on: a <i>location</i>. Every image
     above is pinned down by a family and its constants, a center point, and a zoom level —
-    expressed as the width of the plane the frame spans, with the height following from the
+    expressed as the width of the complex plane the frame spans, with the height following from the
     fixed 16:9 aspect ratio. Halving the width zooms in 2×, and since the boundary is detailed
     at every scale, you can keep halving essentially forever; ordinary double-precision
     arithmetic gives out first, at magnifications around ten trillion to one

@@ -562,3 +562,201 @@ def boundary_draw(
         cli("sample-boundary", *arguments)
         print(f"  drew {family} at seed {seed} until {keep} survived")
     return jsonl(out / "draws.jsonl"), jsonl(out / "kept.jsonl")
+
+
+# --------------------------------------------------------- the finished-render recipe
+
+#: The two finished-render label stores. A row in one of them is a *picture* rather than
+#: a place: the family, the frame, the mode with its own settings, the curve the field is
+#: read through, the map, and every knob of the palette pass, all on one line.
+FINISHED_HEADS = ("smooth_render", "strange_render")
+
+#: The one mode whose coloring is not the same on both planes, and where its address
+#: opens when the pixel is z₀. The wallpaper project's verdict of 2026-08-17.
+ITINERARY = "itinerary"
+Z1 = "z1"
+
+#: Which plane a family is on — the wallpaper project's `engine.DYNAMICAL_KINDS` and
+#: `PARAMETER_KINDS`. `fractional_multibrot` is deliberately in neither: it is render-only
+#: there and never enters a judge's corpus, so a row naming it is a row that cannot exist.
+DYNAMICAL_KINDS = frozenset({"julia", "phoenix"})
+PARAMETER_KINDS = frozenset({"mandelbrot", "multibrot"})
+
+
+def mode_catalog() -> dict[str, dict]:
+    """`{mode: its coloring}`, read out of the engine's own list.
+
+    The catalog is the engine's, so a mode cannot mean one thing here and another there.
+    `modes` answers with a JSON array and reads no spec, which is why it does not go
+    through `run`.
+    """
+    completed = subprocess.run(
+        [str(engine_binary()), "modes"],
+        capture_output=True,
+        text=True,
+        cwd=str(wallpapers_root()),
+        check=False,
+    )
+    if completed.returncode != 0:
+        raise EngineError(f"engine modes failed: {completed.stderr.strip()}")
+    return {mode["name"]: mode["coloring"] for mode in json.loads(completed.stdout)}
+
+
+#: What makes two rows of a finished-render store verdicts on the *same picture*. The
+#: store's own join, minus the verdict and the geometry: family, frame, mode and the whole
+#: coloring recipe. Two rows agreeing on all of it are one picture judged twice.
+FINISHED_IDENTITY = ("family", "viewport", "mode", "mode_params", "curve", "colormap", "recipe")
+
+
+def finished_row(head: str, batch: str, line: int) -> dict:
+    """One row of a finished-render label store, addressed by the file and line it is at.
+
+    Positional for the same reason `locations.label_row` is: the stores are append-only
+    tracked data, so a file and a line is a stable address.
+
+    **And a stable address is not the same as a current verdict.** These stores are
+    append-only and resolved at read time — a rating that changes is a *new row*, and the
+    canonical reader takes the latest per picture over `recorded_at`, then file name, then
+    line. So an address that was right when it was written can quietly become an address
+    to a superseded verdict, which is how a figure comes to caption a picture with a score
+    nobody holds any more. Reading one refuses in that case and names the row that
+    supersedes it, rather than handing back a row whose `score` is no longer the answer.
+    """
+    if head not in FINISHED_HEADS:
+        raise EngineError(
+            f"{head!r} is not a finished-render store; the heads are {FINISHED_HEADS}"
+        )
+    path = data_file("data", head, "rows", f"{batch}.jsonl")
+    with path.open(encoding="utf-8") as handle:
+        for index, text in enumerate(handle, start=1):
+            if index == line:
+                row = json.loads(text)
+                row["_head"], row["_batch"], row["_line"] = head, batch, line
+                _refuse_if_superseded(head, row)
+                return row
+    raise EngineError(f"{head}/{path.name} has no line {line}")
+
+
+def _refuse_if_superseded(head: str, row: dict) -> None:
+    """Refuse a row some later row of the same store has already overruled."""
+    wanted = json.dumps([row.get(name) for name in FINISHED_IDENTITY], sort_keys=True)
+    here = (str(row.get("recorded_at")), row["_batch"], row["_line"])
+    for path in sorted(data_file("data", head, "rows").glob("*.jsonl")):
+        with path.open(encoding="utf-8") as handle:
+            for index, text in enumerate(handle, start=1):
+                if not text.strip():
+                    continue
+                other = json.loads(text)
+                if json.dumps([other.get(name) for name in FINISHED_IDENTITY], sort_keys=True) != (
+                    wanted
+                ):
+                    continue
+                there = (str(other.get("recorded_at")), path.stem, index)
+                if there > here:
+                    raise EngineError(
+                        f"{head}/{row['_batch']}.jsonl line {row['_line']} scores "
+                        f"{row.get('score')}, and {path.stem}.jsonl line {index} is a later "
+                        f"verdict on the same picture scoring {other.get('score')}. The "
+                        "store resolves latest-wins, so this address is stale — pick the "
+                        "later row."
+                    )
+
+
+def wallpaper_coloring(row: dict, catalog: dict[str, dict] | None = None) -> dict:
+    """The mode's coloring with this row's curve, trap settings and plane written into it.
+
+    A finished-render row names a mode and a curve separately, because the curve
+    **replaces** the mode's own rather than composing with it — that is what the corpora
+    did, and a composed curve is a picture nobody judged. So a spec built from a row does
+    not name a mode to the engine: it takes the mode's coloring out of the catalog, puts
+    the row's curve in it, puts the row's trap settings in it, and hands over the result
+    in full.
+
+    This mirrors `fractal_wallpapers.models.renders.coloring_of`, which is library code
+    with no command-line door, and it is the only piece of that project's policy this
+    repository restates. It is held to the original by rendering a row at its own geometry
+    and comparing the picture against the corpus crop the judge was trained on — see
+    `scratch/verify_wallpaper_recipe.py` and the provenance of `locations-style-spectrum`.
+    """
+    known = catalog if catalog is not None else mode_catalog()
+    mode = row["mode"]
+    if mode not in known:
+        raise EngineError(f"the engine has no mode named {mode!r}")
+    coloring = json.loads(json.dumps(known[mode]))
+    settings = dict(row.get("mode_params") or {})
+    _open_the_address(coloring, row["family"])
+    if coloring["kind"] == "field":
+        coloring["transform"] = row["curve"]
+    elif coloring["kind"] in ("composite", "modulate"):
+        coloring["base"]["transform"] = row["curve"]
+    elif coloring["kind"] == "direct":
+        # No curve here, and that is what the corpora did: a direct trap has no field, so
+        # its colour key is how near the orbit came and the gradient is sampled at that
+        # key untouched.
+        for name, value in settings.items():
+            if name not in ("opacity", "threshold"):
+                raise EngineError(f"{mode}: no setting named {name!r}")
+            coloring[name] = value
+        settings = {}
+    if settings:
+        raise EngineError(f"{mode} takes no settings, and this row carries {settings}")
+    return coloring
+
+
+def _open_the_address(coloring: dict, family: dict) -> dict:
+    """Where an `itinerary` address opens on this row's plane, written in explicitly.
+
+    On a dynamical plane the z₀ address spells its leading symbol from the pixel's own
+    angular sector, which draws a hard wedge seam along the axes; z₁ opens the address one
+    step in. On a parameter plane z₀ = 0 for every pixel and the engine refuses `z1`.
+    """
+    kind = (family or {}).get("kind")
+    if kind not in DYNAMICAL_KINDS and kind not in PARAMETER_KINDS:
+        raise EngineError(f"family kind {kind!r} is not one a finished-render row carries")
+    if kind not in DYNAMICAL_KINDS:
+        return coloring
+    for field in _coloring_fields(coloring):
+        if field.get("kind") == ITINERARY:
+            field["start"] = Z1
+    return coloring
+
+
+def _coloring_fields(coloring: dict) -> list[dict]:
+    """Every field a coloring reads. A direct trap makes none."""
+    if coloring["kind"] == "field":
+        return [coloring["field"]]
+    if coloring["kind"] in ("composite", "modulate"):
+        return [coloring["base"]["field"], coloring["texture"]["field"]]
+    return []
+
+
+def wallpaper_spec(
+    row: dict,
+    *,
+    resolution,
+    supersample: int,
+    catalog: dict[str, dict] | None = None,
+) -> dict:
+    """The engine spec for one finished-render row, at whatever geometry is asked for.
+
+    Everything but the geometry comes off the row, so the picture is the one that was
+    judged; the geometry is the caller's, and has no default here because there is no
+    right one — a figure panel and a wallpaper want different sizes of the same picture.
+    The cap comes off the row: it is a policy on the frame's *width* and not on how many
+    pixels the frame is drawn into, so the same cap at a bigger size is the same picture
+    with more of it resolved.
+    """
+    return {
+        "schema": 1,
+        "family": row["family"],
+        "viewport": row["viewport"],
+        "resolution": [int(resolution[0]), int(resolution[1])],
+        "supersample": int(supersample),
+        "maxiter": int(row["render"]["maxiter"]),
+        "coloring": wallpaper_coloring(row, catalog),
+        "palette": {
+            key: row["recipe"][key]
+            for key in ("gamma", "cycles", "phase", "reverse", "mirror", "transfer", "rolloff")
+        },
+        "colormap": row["colormap"],
+    }

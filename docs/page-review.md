@@ -44,10 +44,8 @@ What the doc contains, in order:
 
 - the page's title, and a line naming the page, the master, and the build date;
 - the annotation convention, spelled out;
-- the standfirst where the page still carries one, then the prose **as served** —
-  headings, paragraphs, bullets, code
-  lines, table rows as `| cell | cell |`, and a `[figure: slug]` marker standing where
-  each picture sits;
+- the prose **as served** — headings, paragraphs, bullets, code lines, table rows as
+  `| cell | cell |`, and a `[figure: slug]` marker standing where each picture sits;
 - every figure caption on the page, one line per slug, read off the figure registry.
   A figure still pending also shows the text its well displays in the meantime.
 
@@ -95,7 +93,7 @@ round starts from a page that no longer matches its master.
 | --- | --- |
 | A sentence of prose | `article/<page>.html`, **and** the placement script's literal under `scratch/` if one exists for that page, **and** the prose master in `prose\` |
 | A figure caption | the figure's row in `assets/images/figures/figures.jsonl` — never the page. `python -m builder check` re-derives the block and will say so if the page was edited instead |
-| The standfirst | the page's masthead — and cutting it is an edit like any other, since the tone ruling in `writing-guidance.md` says a page opens on its lead. The front page's blurb for that section is separate prose that often says the same thing — read it, and change it if the edit applies there too |
+| A page's opening | the page's lead paragraph. There is no standfirst to edit — the ruling in `writing-guidance.md` cut the device site-wide — so an edit about how a page opens lands on the lead. The front page's blurb for that section is separate prose that often says the same thing; read it, and change it if the edit applies there too |
 | A heading | the page. `python -m builder build` regenerates its id and every rail that lists it |
 
 The placement scripts live in ignored `scratch/`, so one may simply not be there on this

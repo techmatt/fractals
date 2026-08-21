@@ -144,9 +144,10 @@ def paragraphs_for(page: str, master: prose.Master | None) -> list[Paragraph]:
         *(Paragraph(NORMAL, line) for line in CONVENTION),
         Paragraph(HEADING, "Prose"),
     ]
-    # A page need not carry a standfirst — the 2026-08-21 review ruled the device off
-    # `finding-good-locations`, and an empty "Standfirst:" line in the doc is a line
-    # Matt can mark up that stands for nothing.
+    # No page carries a standfirst: the 2026-08-21 ruling cut the device site-wide, and
+    # `writing-guidance.md` has it settled. The read stays as a tripwire — a page that
+    # somehow grows one puts it in front of Matt rather than hiding it from the round —
+    # and an empty "Standfirst:" line is a line he can mark up that stands for nothing.
     standfirst = prose.standfirst_of(page_html)
     if standfirst:
         written.append(Paragraph(NORMAL, STANDFIRST_LINE.format(text=standfirst)))
