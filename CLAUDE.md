@@ -36,6 +36,25 @@ the synced drive is the authority for everything else the prose is held to.
   sit outside the count — a caption may use a term the prose has not reached yet, and the
   prose still gets the italic when it does.
 
+## Where prose comes from
+
+Two paths, and a page arrives by one of them.
+
+- **A new section is drafted out of this repository** — a claude.ai design session writes
+  it against `writing-guidance.md` — and is then **placed verbatim** as hand-written HTML.
+  The approved markdown master goes on the synced drive and is registered in
+  `article/prose.jsonl`. A page with no row is a page whose HTML is its own master, which
+  is legitimate and is said out loud rather than assumed.
+- **A written page is revised by review round**, below.
+
+Either way, **placed prose has more than one edit site**: the page, the prose master, and
+any placement script's string literal under ignored `scratch/`. An edit that touches one
+and not the others is drift that the next review round refuses to work through.
+`python -m builder prose <page>` is the verifier — it reduces both sides the same way,
+tags and markdown markers out and whitespace collapsed, and names the first word they
+disagree on. **A verbatim comparison in this repository always strips tags and collapses
+whitespace**; comparing raw bytes across the HTML/markdown boundary means nothing.
+
 ## Reviewing a page
 
 Matt reviews the article by marking up a Google-Docs copy of a page; a session applies his
@@ -50,9 +69,8 @@ workflow — read it before running either.**
 - **"apply the review doc for `<page>`"** — `python -m builder review <page> --read`
   prints Matt's edits, marked inline, and every `[M: ...]` note. A direct edit means
   *roughly this wording*, applied in spirit; an `[M:]` note is an instruction to carry
-  out, and a question in one is answered in the report. Placed prose has several edit
-  sites — the page, the placement script under `scratch/`, the prose master — and an
-  apply touches all of them; caption edits go to the figure registry. Any new factual
+  out, and a question in one is answered in the report. An apply touches every edit site
+  placed prose has; caption edits go to the figure registry. Any new factual
   claim is verified from code or records before it lands, or it is flagged and left out.
   Then `--consume`, so a stale doc can never be applied twice.
 
@@ -113,6 +131,84 @@ docs/           how this repository's workflows are run — the page-review loop
 scratch/        working files, reports, anything untracked (gitignored)
 ```
 
+## How a page is put together
+
+Wikipedia's shape: a sticky contents rail on the left, the reading column beside it.
+
+- **The rail appears above one breakpoint and is not shown at all below it** — not folded
+  into a control. Every page carries the site bar back to the contents and its own
+  previous/next line, so nothing is only reachable through the rail, and an article page
+  keeps working with scripting off, which it does entirely.
+- **The measure caps text and nothing else.** Prose, headings, captions, the section nav
+  and the footer stop at the reading measure; figures and grids of pictures run to the
+  full column, which is what the page is worth once the rail has taken its share.
+- **Every metric value lives in `assets/css/site.css`**, as a custom property at the top —
+  rail width, rail gap, measure, wide, gutter, and the breakpoint itself. Never restate
+  one anywhere else, in this file included: a number written down twice is a restyle
+  waiting to break.
+- **Three font tokens, and each has exactly one job.** `--sans` is the body and every
+  piece of furniture — rail, utility labels, site bar, nav. `--serif` is spent only where
+  a heading opens something: the page title, and a subhead inside prose. `--mono` is code,
+  and the formula block. No webfont is loaded.
+- **JS where a page needs it**, per the locked convention above: article pages carry none
+  and open from the filesystem; the explorer is the first and so far only exception, and
+  brings its own stylesheet as well as its own script.
+
+**The rail is derived, never typed.** `article/sections.jsonl` gives the reading order and
+which sections are `"status": "written"`; a rail entry's name is the page's own `<h1>`,
+and the entries that open under the current page are that page's prose `<h2>`s. A prose
+`<h2>` also gets the id its rail entry links to, spelled from its own words by rule —
+a fragment is a permanent URL. `python -m builder build` writes the rail between two
+marker comments; `check`'s `contents` check re-derives the rail, the heading ids and the
+front page's typed done-markers, and fails on any drift. That check is tamper-tested: a
+renamed rail entry, a hand-edited heading id and a deleted done marker each produced
+exactly one problem and exit 1.
+
+## Figures and their assets
+
+The registry rule and the per-panel `provenance` requirement are locked conventions above.
+What a figure is made of:
+
+- **A render sheet is JPEG at quality 88 with no chroma subsampling** (4:4:4). Fractal
+  renders are full of saturated edges, and 4:2:0 is visible on them.
+- **A diagram is PNG**, and **an animation is an APNG** — which also carries a `.png`
+  extension and sits in the **same plain `<img>` block** as everything else. No video
+  element, no script, no second markup path.
+- **A render carries the credit `Rendered with fractal-wallpapers`; a drawn diagram
+  carries none.** The credit says the picture came out of the engine, so putting it on a
+  drawing would be a false claim about how the drawing was made.
+- **A figure may be registered before its asset exists**, with `"status": "pending"` and
+  no file or size. The block it derives is a well saying what the picture will show, which
+  is honest in a way an empty space or a broken image is not. `python -m builder figures`
+  lists what is still pending; `figures --place` turns a pending row into a made one and
+  heals the well its page is still showing.
+- **The block is regenerated and diffed, never trusted.** `check` re-derives every figure
+  block from its registry row and asserts the page carries it verbatim, so a caption or a
+  size lives in exactly one place. A caption edit goes to the registry row and never to
+  the page.
+- **`python -m builder diagram <id>` is deliberately unwired** from `build` and from
+  `check`. Text is rasterized through whatever font the machine has, so two machines agree
+  about the picture and not about its bytes; a regenerate-and-diff check would fail
+  everywhere but the machine that drew it.
+
+## Working on this machine
+
+`python -m builder serve [--port N]` puts the committed tree on `localhost:8000`. It
+builds nothing and writes nothing. Prefer it to opening files from disk: the explorer does
+not start over `file://` at all, and Chrome does not persist page zoom for `file://` URLs,
+so a disk preview snaps back to 100% at every navigation.
+
+Two Windows cautions that have each cost a session already:
+
+- **Headless Chrome clamps its window to roughly 480–500px wide.** A `--window-size=320`
+  screenshot is a clamped layout cropped, and reads as overflow that is not there. Check
+  sub-clamp widths by loading the *served* pages in fixed-width `<iframe>`s, or with real
+  device emulation — never with a narrow window size.
+- **Any script that rewrites a tracked file spells `newline="\n"`.** `Path.write_text` on
+  Windows translates `\n` back to `\r\n`, which silently converts a whole file to CRLF;
+  `.gitattributes` normalization only bites at commit time, so `builder check` fails first
+  and blames a rail nobody edited.
+
 ## Checks to run before committing
 
 ```
@@ -124,16 +220,15 @@ The second line is the permalink contract, held to itself. Node's own test runne
 nothing installed — a URL is the one permanent thing this site emits, and it is worth a
 test suite even though nothing else here has one.
 
-After touching placed prose, `python -m builder prose <page>` as well: it reduces the page
-and the approved master the same way — tags out, whitespace collapsed — and names the first
-word they disagree on.
+After touching placed prose, `python -m builder prose <page>` as well — see **Where prose
+comes from** above for what it holds together and why one edit has several sites.
 
 `builder check` is read-only. It resolves every internal link, refuses root-absolute
 and bare-directory hrefs, regenerates the gallery HTML and compares it byte for byte
 with what is committed, holds every figure block to its registry row, and holds every
-page's contents rail and prose heading ids to what the builder derives. It also prints a
-note — never a failure — when `explorer/engine.wasm` was built from a wallpapers commit
-that is no longer an ancestor of the sibling checkout's HEAD. The same commands run in CI
+page's contents rail and prose heading ids to what the builder derives. It also prints one
+note — never a failure — about the committed wasm module, described in
+`explorer/README.md`. The same commands run in CI
 (`.github/workflows/checks.yml`), which is a check and not a deploy dependency.
 
 ## Standing prompt contract
