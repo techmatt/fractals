@@ -9,7 +9,7 @@
 
 /* Text is near-black on white, and the quiet gray is only one step off it. A reading
    surface earns nothing by being soft: --ink is 18:1 against the page and --ink-dim is
-   10:1, so a standfirst, a caption or a footer reads as a different voice rather than as
+   10:1, so a caption, a credit or a footer reads as a different voice rather than as
    faded body text. */
 :root {
   --ink: #14151a;
@@ -247,10 +247,6 @@ footer > * {
   font-family: var(--mono);
   font-size: 0.9375rem;
 }
-
-/* The lead sits at body size, as Wikipedia's does: only headings change size in prose,
-   and a standfirst is already a different voice through its ink. */
-.standfirst { margin: 0; color: var(--ink-dim); }
 
 .kicker {
   margin: 0 0 0.6rem;

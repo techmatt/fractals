@@ -46,6 +46,12 @@ naming rule in `CLAUDE.md` first. `gallery.jsonl` records each image's pixel dim
 rather than the builder reading them off disk — that is what makes page generation a
 pure function of text, and it gives `check` something to hold the files to.
 
+The header record's `blurb` is one sentence saying what the collection is, and it does
+two jobs: it captions the gallery's cover tile on the index, and it is the first sentence
+of the gallery page's own lead. One sentence rather than two fields, because a second
+field saying nearly the same thing is a copy free to drift — and neither of them sits
+above the title, since `writing-guidance.md` cut the standfirst site-wide.
+
 Metadata is JSONL with an integer `schema` on every line. A line announcing a schema
 this builder does not read is an error, not a guess.
 

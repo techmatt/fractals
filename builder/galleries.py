@@ -48,7 +48,7 @@ class Gallery:
 
     slug: str
     title: str
-    standfirst: str
+    blurb: str
     note: str | None
     release: str | None
     images: tuple[Image, ...]
@@ -101,7 +101,7 @@ def load(slug: str) -> Gallery:
     return Gallery(
         slug=slug,
         title=header.text("title"),
-        standfirst=header.text("standfirst"),
+        blurb=header.text("blurb"),
         note=header.optional_text("note"),
         release=header.optional_text("release"),
         images=tuple(images),

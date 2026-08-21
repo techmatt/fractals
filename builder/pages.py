@@ -24,8 +24,6 @@ FOOTER = f"""<footer>
   · <a href="{CODE_REPO}">fractal-wallpapers</a> · MIT</p>
 </footer>"""
 
-INDEX_STANDFIRST = "Finished work: web-res on the page, full size behind a release link."
-
 
 def index_path() -> str:
     return "index.html"
@@ -99,19 +97,19 @@ def _shell(*, title: str, css: str, bar: str, rail: str, header: str, blocks: li
     )
 
 
-def _masthead(kicker: str | None, heading: str, standfirst: str) -> str:
-    """The page's own title block. Site branding lives in the bar above it, so a page
-    whose kicker would only have repeated the site title carries no kicker at all."""
+def _masthead(kicker: str | None, heading: str) -> str:
+    """The page's own title block: a kicker where one earns its place, and the title.
+
+    Nothing else. Site branding lives in the bar above it, so a page whose kicker would
+    only have repeated the site title carries no kicker at all — and no page here carries
+    a standfirst, because the ruling in `writing-guidance.md` cut the device site-wide.
+    A gallery opens on its lead like every other page, and the sentence that used to sit
+    under the title is the first sentence of that lead.
+    """
     lines = ['<header class="masthead">']
     if kicker:
         lines.append(f'  <p class="kicker">{kicker}</p>')
-    lines.extend(
-        [
-            f"  <h1>{text(heading)}</h1>",
-            f'  <p class="standfirst">{text(standfirst)}</p>',
-            "</header>",
-        ]
-    )
+    lines.extend([f"  <h1>{text(heading)}</h1>", "</header>"])
     return "\n".join(lines)
 
 
@@ -146,9 +144,9 @@ def gallery_page(gallery: Gallery, sections: list[sections_module.Section]) -> s
     css = relative_href(page, SITE_ROOT / "assets" / "css" / "site.css")
     article = relative_href(page, SITE_ROOT / "index.html")
 
-    header = _masthead(f'<a href="{index_path()}">Galleries</a>', gallery.title, gallery.standfirst)
+    header = _masthead(f'<a href="{index_path()}">Galleries</a>', gallery.title)
 
-    intro = ['  <section class="intro">']
+    intro = ['  <section class="intro">', f"    <p>{text(gallery.blurb)}</p>"]
     if gallery.note:
         intro.append(f"    <p>{text(gallery.note)}</p>")
     if gallery.release:
@@ -191,7 +189,7 @@ def gallery_index(galleries: list[Gallery], sections: list[sections_module.Secti
     css = relative_href(page, SITE_ROOT / "assets" / "css" / "site.css")
     article = relative_href(page, SITE_ROOT / "index.html")
 
-    header = _masthead(None, "Galleries", INDEX_STANDFIRST)
+    header = _masthead(None, "Galleries")
 
     intro = ['  <section class="intro">']
     if galleries:
@@ -212,7 +210,7 @@ def gallery_index(galleries: list[Gallery], sections: list[sections_module.Secti
             link = f"{gallery.slug}.html"
             caption = (
                 f'<strong><a href="{link}">{text(gallery.title)}</a></strong> — '
-                f"{text(gallery.standfirst)} "
+                f"{text(gallery.blurb)} "
                 f'<span class="credit">{_count(len(gallery.images))}</span>'
             )
             tiles.append(
