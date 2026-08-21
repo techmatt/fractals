@@ -1,0 +1,107 @@
+/* The explorer's own layout, on top of the site stylesheet rather than inside it.
+   Every colour here is a token `site.css` already declares: a render is read
+   against the same dark well the figures and the gallery tiles use, and the
+   controls under it are the same quiet furniture as the rest of the site.
+
+   Loaded only by this page. The article does not run code and does not need the
+   rules for a page that does. */
+
+/* The explorer is a picture with a strip under it, so it takes the width the rail
+   would otherwise share — the whole page, not the reading column. What is read in
+   lines still stops at the measure; the picture and its controls do not, because a
+   fractal squeezed into a column of prose is a thumbnail. */
+.explorer-page { max-width: var(--page); margin: 0 auto; }
+.explorer-page .masthead > *,
+.explorer-page .intro,
+.explorer-page .notice,
+.explorer-page .status,
+.explorer-page .readout,
+.explorer-page .provenance,
+.explorer-page .section-nav > *,
+.explorer-page footer > * { max-width: var(--measure); }
+
+/* The stage holds the canvas at the aspect the link asks for, so the picture's
+   shape is the link's and not the window's. The canvas fills it and is rendered at
+   its own display size — the picture is made at the resolution it is shown at. */
+.stage {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  margin: 1.25rem 0 0;
+  background: var(--well);
+  border: 1px solid var(--well-rule);
+}
+
+.stage canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  cursor: grab;
+  touch-action: none;
+}
+.stage canvas:active { cursor: grabbing; }
+
+/* `hidden` has to win over the `display` an element is given here. The attribute's
+   `display: none` comes from the browser's own stylesheet, and any author rule beats
+   it — so a bar declared `display: flex` stays on the page while the notice explaining
+   why there is nothing to show sits above it. */
+[hidden] { display: none !important; }
+
+/* One line of controls under the picture. It wraps rather than overflows: a
+   palette name can be forty characters long. */
+.bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1rem;
+  margin-top: 0.6rem;
+  font-size: 0.875rem;
+}
+
+.bar label { color: var(--ink-dim); }
+
+.bar select {
+  max-width: 22rem;
+  padding: 0.2rem 0.3rem;
+  border: 1px solid var(--rule);
+  border-radius: 2px;
+  background: var(--bar);
+  color: var(--ink);
+  font: inherit;
+}
+
+.bar button {
+  padding: 0.25rem 0.7rem;
+  border: 1px solid var(--rule);
+  border-radius: 2px;
+  background: var(--bar);
+  color: var(--ink);
+  font: inherit;
+  cursor: pointer;
+}
+.bar button:hover { border-color: var(--underline); color: var(--link); }
+
+/* What the renderer is doing, and where the view is. Tabular figures so a
+   coordinate does not jitter sideways as its digits change under the cursor. */
+.status, .readout {
+  margin: 0.35rem 0 0;
+  font-family: var(--mono);
+  font-size: 0.8125rem;
+  color: var(--ink-dim);
+}
+.readout { font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+
+/* A refused link, or a page that could not start. It replaces the picture rather
+   than sitting beside it: there is nothing to look at, and saying so plainly beats
+   a blank rectangle. */
+.notice {
+  margin: 1.25rem 0 0;
+  padding: 1rem 1.2rem;
+  border-left: 3px solid var(--rule);
+  background: var(--bar);
+}
+.notice p { margin: 0 0 0.5em; }
+.notice p:last-child { margin-bottom: 0; }
+.notice code { font-size: 0.9em; }
+
+.provenance { margin-top: 1.5rem; font-size: 0.8125rem; color: var(--ink-dim); }

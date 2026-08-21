@@ -64,8 +64,9 @@ body {
 /* One column until there is room for two. Below the breakpoint the rail is not shown at
    all rather than folded into a control: every page still carries the site bar back to
    the contents and its own previous/next line, so nothing is only reachable through it,
-   and the site keeps working with scripting off — which it does entirely, since there
-   is none. */
+   and the article keeps working with scripting off — which it does entirely, since it
+   carries none. The explorer is the one page that runs code, and it brings its own
+   stylesheet as well as its own script. */
 .page { max-width: var(--page); margin: 0 auto; }
 .page-body { max-width: var(--measure); margin: 0 auto; }
 .contents-rail { display: none; }

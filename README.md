@@ -8,13 +8,18 @@ Live at **https://techmatt.github.io/fractal-website/**. Plain static HTML and C
 deployed from `main` by GitHub Actions. Full-size wallpapers ship as Releases assets;
 only web-res images live in this repository.
 
+One page runs code: the [explorer](explorer/), which draws the Mandelbrot set in the
+browser with the wallpaper project's own renderer compiled to wasm, and gives every view
+a permanent link. The article itself stays script-free.
+
 Gallery pages, and the contents rail every page carries, are written by `builder/`, a
 local Python program whose output is committed — Pages serves the commit and never runs a
 build. `python -m builder check` verifies that the committed HTML is what the builder
 produces and that every internal link resolves.
 
 Preview locally with `python -m builder serve` and read the site at
-`http://localhost:8000/index.html` rather than opening the files directly — Chrome does not
-persist page zoom for `file://` URLs, so a disk preview resets it at every navigation.
+`http://localhost:8000/index.html` rather than opening the files directly — the explorer
+does not start over `file://` at all, and Chrome does not persist page zoom for `file://`
+URLs, so a disk preview resets it at every navigation.
 
 Companion code repository: [techmatt/fractal-wallpapers](https://github.com/techmatt/fractal-wallpapers).

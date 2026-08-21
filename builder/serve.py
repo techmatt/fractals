@@ -1,8 +1,10 @@
 """Previewing the committed tree over localhost.
 
-Nothing the site does needs a server — every page here opens from the filesystem, and
-that is a rule. But a browser is not neutral about which one you use: Chrome keys page
-zoom to an origin, and it does not persist a zoom level for `file://` at all, so a
+Every page a reader *reads* opens from the filesystem, and that is a rule. Two things
+still want a server. The explorer runs code, and a browser will not load a page's module,
+its workers or its wasm over `file://` at all — so that one page has to be served or it
+does not start. And a browser is not neutral about the origin even for the pages that do
+open: Chrome keys page zoom to one, and does not persist a zoom level for `file://`, so a
 preview opened from disk snaps back to 100% at every navigation. Served from here the
 whole site is one origin, and a zoom set on the first page is still there on the tenth.
 

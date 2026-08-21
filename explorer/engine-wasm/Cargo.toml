@@ -1,0 +1,28 @@
+[package]
+name = "explorer-engine-wasm"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+# The site's copy of the renderer, as a raw wasm module. Two exports carry the
+# whole page — one computes a band of the field, one shades an assembled field —
+# because that seam is what makes a palette change instant.
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+# A path dependency on the sibling checkout, and deliberately not a git one: the
+# engine crate is versioned `0.1.0` and never bumped, so a git dependency could
+# not tell two revisions apart, and it would drag the whole wallpaper project —
+# Python, data, labels — into a build that wants one Rust library. `build.rs`
+# says so plainly when the sibling is not there.
+fractal-engine = { path = "../../../fractal-wallpapers/engine" }
+num-complex = "0.4"
+
+# Release only; the module is a committed artifact and there is no debug build of
+# it. LTO is what dead-strips png, jpeg-encoder and flate2 out of the module.
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+panic = "abort"

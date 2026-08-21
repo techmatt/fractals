@@ -6,6 +6,9 @@
 # compares it byte for byte with what is committed — the sync check that keeps
 # "committed output" from quietly meaning "output from some earlier version of the
 # builder". It writes nothing.
+#
+# The node step runs the explorer's permalink tests with node's own test runner. Nothing
+# is installed for it: there is no package.json here and there is not going to be one.
 
 name: checks
 
@@ -33,3 +36,8 @@ jobs:
         run: ruff format --check .
       - name: links, page sync, figure blocks, image assets
         run: python -m builder check
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: the explorer's permalink contract
+        run: node --test explorer/permalink.test.mjs

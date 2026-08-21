@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Explorer — Making Fractal Wallpapers</title>
+<meta name="description" content="Pan and zoom the Mandelbrot set in the browser, in the same renderer the wallpapers are made with. Every view has a link.">
+<link rel="stylesheet" href="../assets/css/site.css">
+<link rel="stylesheet" href="explorer.css">
+</head>
+<body>
+<nav class="topbar">
+  <div class="topbar-inner">
+    <a class="topbar-site" href="../index.html">Making Fractal Wallpapers</a>
+    <span class="topbar-links"><a href="../galleries/index.html">Galleries</a><a href="https://github.com/techmatt/fractal-wallpapers">GitHub</a><a href="https://techmatt.github.io/">Matt Fisher</a></span>
+  </div>
+</nav>
+
+<div class="explorer-page">
+
+<header class="masthead">
+  <p class="kicker">Explorer</p>
+  <h1>The Mandelbrot set, in the browser</h1>
+</header>
+
+<main>
+  <p class="intro">The renderer the wallpapers are made with, compiled to run here: the same
+  escape-time arithmetic, the same iteration policy, the same palettes. Drag to move, scroll to
+  zoom, pick a palette. The address bar always names the view you are looking at, so a link is
+  the whole picture.</p>
+
+  <div class="notice" id="notice">
+    <p>Starting the renderer…</p>
+    <p>If this message stays, the page is being opened straight off the filesystem. A browser
+    will not load a page's module, its workers or its renderer over <code>file://</code>, so the
+    explorer needs to be served — <code>python -m builder serve</code> puts this tree on
+    localhost — or read at
+    <a href="https://techmatt.github.io/fractal-website/explorer/">techmatt.github.io</a>.</p>
+  </div>
+
+  <div class="stage" id="stage" hidden>
+    <canvas id="canvas" tabindex="0" aria-label="The Mandelbrot set, drawn at the current view"></canvas>
+  </div>
+
+  <div class="bar" id="bar" hidden>
+    <label for="palette">Palette</label>
+    <select id="palette"></select>
+    <button type="button" id="copy">Copy link</button>
+  </div>
+
+  <p class="status" id="status"></p>
+  <p class="readout" id="readout"></p>
+
+  <p class="provenance" id="provenance"></p>
+
+  <nav class="section-nav">
+    <p><a href="../index.html">Contents</a>
+    · <a href="../galleries/index.html">Galleries</a>
+    · <a href="../article/escape-time-fractals.html">What is being drawn</a>
+    · <a href="../article/rendering-fundamentals.html">How it is drawn</a></p>
+  </nav>
+</main>
+
+<footer>
+  <p><a href="https://techmatt.github.io/">Matt Fisher</a>
+  · <a href="https://github.com/techmatt/fractal-wallpapers">fractal-wallpapers</a> · MIT</p>
+</footer>
+</div>
+
+<script type="module" src="explorer.js"></script>
+</body>
+</html>

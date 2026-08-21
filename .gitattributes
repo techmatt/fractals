@@ -6,3 +6,4 @@
 *.webp binary
 *.avif binary
 *.ico binary
+*.wasm binary

@@ -5,8 +5,10 @@ paste, `figures` lists what is still to make and lands a finished one, `diagram`
 the two figures that are diagrams rather than renders, `serve` puts the committed tree
 on localhost for previewing, `prose` holds each page to the approved document it was
 placed from, and `review` builds the doc a page is marked up in and reads it back.
-`import`, `prose` and `review` are the commands that reach outside the repository — for
-a full-size original, for the approved prose, and for the Drive-synced review folder.
+`explorer` bakes the explorer page's palettes, wasm module and manifest. `import`,
+`prose`, `review` and `explorer` are the commands that reach outside the repository — for
+a full-size original, for the approved prose, for the Drive-synced review folder, and for
+the engine and colormaps next door.
 Run `python -m builder --help` for the list.
 """
 
@@ -15,7 +17,8 @@ import sys
 from pathlib import Path
 
 from . import build as build_module
-from . import checks, diagrams, figures, images, records
+from . import checks, diagrams, figures, images, records, renders
+from . import explorer as explorer_module
 from . import locations as locations_module
 from . import prose as prose_module
 from . import review as review_module
@@ -51,6 +54,15 @@ def _parser() -> argparse.ArgumentParser:
     )
 
     commands.add_parser("check", help="verify the committed tree; writes nothing")
+
+    baked = commands.add_parser(
+        "explorer", help="bake the explorer's palettes, wasm module and manifest"
+    )
+    baked.add_argument(
+        "--palettes-only",
+        action="store_true",
+        help="rebake palettes.js alone; leave the wasm module and its manifest alone",
+    )
 
     figure = commands.add_parser("figure", help="print a figure's markup block")
     figure.add_argument("id", help="the figure id, as registered in figures.jsonl")
@@ -180,6 +192,8 @@ def _do_check() -> int:
                 print(f"  {problem}")
         else:
             print(f"{name}: ok")
+    for note in explorer_module.manifest_notes():
+        print(f"note: {note}")
     pending = sorted(figure.id for figure in figures.load_all().values() if figure.pending)
     if pending:
         print(f"note: {len(pending)} figure(s) still to make: {', '.join(pending)}")
@@ -188,6 +202,12 @@ def _do_check() -> int:
     if total:
         print(f"\n{total} problem(s)")
         return 1
+    return 0
+
+
+def _do_explorer(options: argparse.Namespace) -> int:
+    for line in explorer_module.bake(palettes_only=options.palettes_only):
+        print(f"wrote {line}")
     return 0
 
 
@@ -411,6 +431,8 @@ def main(argv: list[str] | None = None) -> int:
             return _do_build(options)
         if options.command == "check":
             return _do_check()
+        if options.command == "explorer":
+            return _do_explorer(options)
         if options.command == "figure":
             return _do_figure(options.id)
         if options.command == "figures":
@@ -429,6 +451,8 @@ def main(argv: list[str] | None = None) -> int:
     except (
         records.RecordError,
         images.ImageError,
+        explorer_module.ExplorerError,
+        renders.EngineError,
         prose_module.ProseError,
         review_module.ReviewError,
         OSError,

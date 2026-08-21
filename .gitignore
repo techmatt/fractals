@@ -9,6 +9,10 @@ local.toml
 # never land in this repo; a copy dropped here for a session stays untracked.
 /website_*.md
 
+# The wasm crate's build tree. `engine.wasm` beside the page is the committed
+# artifact; this is the several hundred megabytes cargo needs to produce it.
+explorer/engine-wasm/target/
+
 # Builder output that is regenerated rather than reviewed.
 builder/__pycache__/
 __pycache__/
