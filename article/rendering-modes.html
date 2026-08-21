@@ -141,8 +141,8 @@
     came, so a pixel whose orbit grazed the axes a dozen times reads differently from one that
     grazed once — and the result is laid <em>additively</em> over the smooth base: sparse
     bright filaments tracing the orbit's near-misses, stacked on top of the classic rendering
-    rather than mixed into it. Additive blending is why the filaments glow. It is also the
-    most expensive mode in the catalog: the trap distance is evaluated at every iteration of
+    rather than mixed into it. Additive blending is why the filaments glow. It is also among the
+    most expensive modes in the catalog: the trap distance is evaluated at every iteration of
     every orbit, with no early exit.</p>
 
       <figure class="figure" data-figure="modes-composite">
@@ -233,31 +233,39 @@
     every other mode enters later, when the pipeline takes a discovered location and tries
     renderings of it, drawing a mode at random for each attempt.</p>
 
-    <p>The scoreboard so far, over the project's 101 released wallpapers:</p>
+    <p>The scoreboard so far, over the project's 101 released wallpapers, with what each
+    mode costs to draw beside it — measured against smooth on one machine, and
+    approximate:</p>
+
+    <!-- TODO: measure per-mode cost. The column is one machine's numbers: every mode
+         drawn at 384×216 over three frames, at one sample per pixel and at nine, so
+         that the per-sample slope drops the fixed cost of a process, a palette and a
+         PNG; two such passes, means pooled and rounded to the nearest half. Run-to-run
+         scatter is about a tenth, which is why nothing here carries a second decimal. -->
 
     <table>
       <thead>
-        <tr><th>mode</th><th>released</th><th>of candidates tried</th></tr>
+        <tr><th>mode</th><th>released</th><th>of candidates tried</th><th>cost (approx.)</th></tr>
       </thead>
       <tbody>
-        <tr><td>smooth</td><td>61</td><td>245</td></tr>
-        <tr><td>stripe</td><td>7</td><td>21</td></tr>
-        <tr><td>exp_smoothing</td><td>6</td><td>15</td></tr>
-        <tr><td>tia</td><td>5</td><td>16</td></tr>
-        <tr><td>smooth_stripe</td><td>5</td><td>14</td></tr>
-        <tr><td>smooth_curvature</td><td>4</td><td>16</td></tr>
-        <tr><td>smooth_angle_min</td><td>2</td><td>18</td></tr>
-        <tr><td>smooth_mean_angle</td><td>2</td><td>16</td></tr>
-        <tr><td>direct_trap_screen</td><td>2</td><td>21</td></tr>
-        <tr><td>itinerary</td><td>2</td><td>5</td></tr>
-        <tr><td>smooth_trap_circle</td><td>1</td><td>20</td></tr>
-        <tr><td>trap_circle</td><td>1</td><td>7</td></tr>
-        <tr><td>direct_trap_multiply</td><td>1</td><td>9</td></tr>
-        <tr><td>threads</td><td>1</td><td>6</td></tr>
-        <tr><td>gaussian_int</td><td>1</td><td>18</td></tr>
-        <tr><td>curvature</td><td>0</td><td>16</td></tr>
-        <tr><td>direct_trap_ring</td><td>0</td><td>21</td></tr>
-        <tr><td>direct_trap_lines</td><td>0</td><td>21</td></tr>
+        <tr><td>smooth</td><td>61</td><td>245</td><td>1×</td></tr>
+        <tr><td>stripe</td><td>7</td><td>21</td><td>4×</td></tr>
+        <tr><td>exp_smoothing</td><td>6</td><td>15</td><td>1.5×</td></tr>
+        <tr><td>tia</td><td>5</td><td>16</td><td>2×</td></tr>
+        <tr><td>smooth_stripe</td><td>5</td><td>14</td><td>4×</td></tr>
+        <tr><td>smooth_curvature</td><td>4</td><td>16</td><td>3×</td></tr>
+        <tr><td>smooth_angle_min</td><td>2</td><td>18</td><td>3×</td></tr>
+        <tr><td>smooth_mean_angle</td><td>2</td><td>16</td><td>3×</td></tr>
+        <tr><td>direct_trap_screen</td><td>2</td><td>21</td><td>1×</td></tr>
+        <tr><td>itinerary</td><td>2</td><td>5</td><td>1.5×</td></tr>
+        <tr><td>smooth_trap_circle</td><td>1</td><td>20</td><td>1×</td></tr>
+        <tr><td>trap_circle</td><td>1</td><td>7</td><td>1×</td></tr>
+        <tr><td>direct_trap_multiply</td><td>1</td><td>9</td><td>1.5×</td></tr>
+        <tr><td>threads</td><td>1</td><td>6</td><td>2×</td></tr>
+        <tr><td>gaussian_int</td><td>1</td><td>18</td><td>3×</td></tr>
+        <tr><td>curvature</td><td>0</td><td>16</td><td>2.5×</td></tr>
+        <tr><td>direct_trap_ring</td><td>0</td><td>21</td><td>1×</td></tr>
+        <tr><td>direct_trap_lines</td><td>0</td><td>21</td><td>1×</td></tr>
       </tbody>
     </table>
 

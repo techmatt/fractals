@@ -307,21 +307,34 @@
     exist precisely because a few rich roots would otherwise consume a whole run while others
     sit untouched.</p>
 
-    <!-- PENDING — a walk-stats audit of the run ledgers is required before the rest of this
-         section can be written, and no claim lands here until it reports. Planned shape, per
-         Matt's note: a paragraph or two of real statistics — how far walks run from a fresh
-         exploration root versus one seeded beside existing ratings, and how walk quality
-         distributes when a walk is judged by the best output it found — carrying two figures,
-         both now registered and drawn, and both still waiting on the prose:
-           locations-walk-lengths  — walk length / expansions per root, seeded versus fresh
-                                     roots, if the two arms compare cleanly.
-           locations-walk-examples — several complete walks discussed individually, spanning
-                                     best-find ratings 1 through 4, with a few 4s (q4 rule). -->
+    <p>The walk's output is a ledger of fates: every frame it considered, what it scored,
+    and whether it was admitted, kept open for further expansion, or refused. Reading that
+    ledger answers two different questions — does the walk find good locations, and does it
+    find them efficiently — and the answer to the first is mostly a fact about where it
+    starts.</p>
+
+    <p>The figure below splits one run's roots by origin. Roots seeded from locations a
+    person had already rated well almost all lead somewhere: nearly every one of them admits
+    at least one frame. Roots drawn fresh from the boundary mostly do not, and the gap is not
+    a matter of persistence — both kinds of root are walked to about the same depth before the
+    walk gives up or runs out of budget. A good neighborhood is productive; an arbitrary one
+    usually is not, however hard it is searched. This is why the pipeline invests in seeding
+    (<a href="#seeds-from-labels">Seeds from labels</a>, above) rather than in walking
+    longer.</p>
 
       <figure class="figure" data-figure="locations-walk-lengths">
         <img src="../assets/images/figures/locations-walk-lengths.png" width="1316" height="538" alt="Three bar charts of how deep each root's walk got, beside three bars of how many roots produced a find at all.">
-        <figcaption>How far a walk runs depends on where it starts. Both arms of the comparison ran in one run, under one frontier, competing for the same expansion budget: roots placed at locations a human had rated a keeper, and fresh roots off the minibrot grid and the home views. 98% of the seeded roots produced at least one admitted find against 22% of the fresh ones, and their walks reach deeper before stopping. The third row is a different run entirely, for scale. <span class="credit">Rendered with fractal-wallpapers</span></figcaption>
+        <figcaption>Whether a walk finds anything depends on where it starts. Both arms of the comparison ran in one run, under one frontier, competing for the same expansion budget: roots placed at locations a human had rated a keeper, and fresh roots off the minibrot grid and the home views. 98% of the seeded roots produced at least one admitted find against 22% of the fresh ones, while both arms are walked to about the same depth — a median of six rungs either way. The third row is a different run entirely, for scale. <span class="credit">Rendered with fractal-wallpapers</span></figcaption>
       </figure>
+
+    <p>The figure below shows the other side: for a set of roots, the best frame each walk
+    reached, ordered by a person's rating of that best frame. The walk's refusals are reliable
+    — frames it turns away are, on inspection, the flat and interior ones it was built to
+    exclude. Where it is looser is in what it keeps open: a frame judged worth expanding
+    further often leads nowhere, so budget is spent below frames that a stricter reading of
+    the score would have closed. The two walk figures together describe the current trade: the
+    gate is tight and the promotion is generous, and the cost of that generosity is walked
+    frames, not bad admissions.</p>
 
       <figure class="figure" data-figure="locations-walk-examples">
         <img src="../assets/images/figures/locations-walk-examples.jpg" width="1316" height="615" alt="Three walks laid out rung by rung, one row each, ordered by the best hand rating anything they found received.">

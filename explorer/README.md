@@ -116,8 +116,18 @@ rather than the whole frame's, and it is what bounds how long a cancel takes.
 
 A band's coordinates are formed from the **whole** viewport, with the global row index —
 so the assembled field is bit for bit what a whole-frame pass through the same module
-produces, and there are no seams between bands. (That is an argument from the code, not a
-measurement: no byte-for-byte comparison against a native render has been run.)
+produces, and there are no seams between bands. What is measured and what is argued are
+two different links of one chain, and it is worth keeping them apart. **Measured:** a
+whole frame out of wasm is a whole frame out of the native engine. The spike that
+established the port — `C:\Code\fractal-drive-sync\reports\wasm_spike_report.md`,
+2026-08-21 — drew the 1280×720 anchor frame through its single `render_smooth` export
+and through `fractal-engine render` of the same spec, and **0 of 921,600 pixels
+differ**; it is the same f64 code over the same inputs, and wasm's f64 is IEEE-754
+with no x87 excess precision to diverge through.
+**Argued:** the banded assembly equals that whole-frame pass, from the global row indices
+above — not measured, and the spike's module was the one-export one rather than this
+page's. **Not compared at all:** the explorer end to end against a native render of the
+same view.
 
 **Shade takes the whole field, never a band.** The engine normalizes a frame against its
 own distribution, and at the shipped default (`Transfer::Value`) that is a percentile

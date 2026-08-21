@@ -221,6 +221,10 @@ footer > * {
    header row, sized to the numbers rather than to the column. It stays inside the
    measure with the paragraphs, and scrolls inside itself on a narrow screen. */
 .prose table {
+  display: block;
+  width: fit-content;
+  max-width: 100%;
+  overflow-x: auto;
   margin: 1em 0;
   border-collapse: collapse;
   font-size: 0.9375rem;
