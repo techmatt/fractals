@@ -1,6 +1,10 @@
 scratch/
 artifacts/
 
+# This machine's own settings: where the companion code repository is checked out.
+# No absolute path is committed here, so the one that exists is untracked.
+local.toml
+
 # Prompt working copies. Prompts live in C:\Code\fractal-drive-sync\prompts and
 # never land in this repo; a copy dropped here for a session stays untracked.
 /website_*.md

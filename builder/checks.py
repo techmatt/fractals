@@ -11,12 +11,17 @@ Five of them, all read-only:
   builder produces from today's metadata. What is committed is what is served, so the
   commit is the thing worth checking.
 - **figures** — every figure block on an article page matches its registry row exactly,
-  and every made figure carries the provenance its picture can be drawn again from.
+  every row names the page that actually carries it, every made figure carries the
+  provenance its picture can be drawn again from, and a recipe naming a maker inside
+  `builder` names one that is still there.
 - **contents** — every hand-written page carries the contents rail the builder derives,
   every prose heading carries the id its own words give it, and the front page's contents
   list marks the same sections done that `sections.jsonl` calls written.
 - **assets** — every image the metadata names exists at the size it claims, every
   thumbnail is current, and no orphan file is sitting in a gallery directory.
+- **theme** — the well colours a drawn figure is made of are the stylesheet's own. They
+  have to be transcribed, because Pillow cannot read CSS; this is what keeps a restyle
+  from moving the well and leaving every diagram sitting on the old one.
 """
 
 import re
@@ -24,7 +29,7 @@ from html.parser import HTMLParser
 from pathlib import Path
 from urllib.parse import unquote, urldefrag
 
-from . import figures, galleries, images, pages, sections
+from . import figures, galleries, images, pages, sections, theme
 from .paths import (
     ARTICLE_DIR,
     GALLERIES_DIR,
@@ -38,6 +43,7 @@ from .paths import (
 _SCHEME = re.compile(r"^[a-zA-Z][a-zA-Z0-9+.\-]*:")
 _FIGURE_ID = re.compile(r'data-figure="([^"]*)"')
 _FIGURE_OPEN = re.compile(r"<figure class=\"figure\"(?![^>]*data-figure=)")
+_CSS_TOKEN = re.compile(r"(--[a-z-]+):\s*#([0-9a-fA-F]{6})\s*;")
 
 
 class _Links(HTMLParser):
@@ -123,6 +129,7 @@ def check_pages(loaded: list[galleries.Gallery], article: list[sections.Section]
 def check_figures() -> list[str]:
     problems = []
     registry = figures.load_all()
+    carried: dict[str, str] = {}
 
     for page in sorted(ARTICLE_DIR.glob("*.html")):
         html = _read(page)
@@ -130,6 +137,7 @@ def check_figures() -> list[str]:
         if _FIGURE_OPEN.search(html):
             problems.append(f"{where}: a figure without a data-figure id")
         for identifier in _FIGURE_ID.findall(html):
+            carried[identifier] = page.name
             figure = registry.get(identifier)
             if figure is None:
                 problems.append(f"{where}: figure {identifier!r} is not in the registry")
@@ -140,6 +148,8 @@ def check_figures() -> list[str]:
                 )
 
     for figure in registry.values():
+        problems.extend(_figure_page(figure, carried))
+        problems.extend(_figure_recipe(figure))
         if figure.pending:
             continue
         if not figure.path.is_file():
@@ -152,6 +162,42 @@ def check_figures() -> list[str]:
                     f"{figure.file} is {actual[0]}x{actual[1]}"
                 )
     return problems
+
+
+def _figure_page(figure: figures.Figure, carried: dict[str, str]) -> list[str]:
+    """A row is on the page it says, and on a page at all.
+
+    A figure exists to be on a page. A row nobody placed — a rename that landed in the
+    registry and not in the prose, a figure planned and then cut — used to pass this
+    check in silence, and would go on being listed as pending work forever.
+    """
+    if not figure.page_path.is_file():
+        return [f"figures.jsonl: {figure.id} names page {figure.page!r}, which is not in article/"]
+    where = carried.get(figure.id)
+    if where is None:
+        return [
+            f"figures.jsonl: {figure.id} is registered on {figure.page} and no page carries it "
+            f"— place `python -m builder figure {figure.id}`, or drop the row"
+        ]
+    if where != figure.page:
+        return [f"figures.jsonl: {figure.id} says {figure.page}, and {where} is what carries it"]
+    return []
+
+
+def _figure_recipe(figure: figures.Figure) -> list[str]:
+    """A recipe naming a maker this repository commits names one that is still there.
+
+    A recipe pointing into `scratch/` is recorded and not resolved: untracked code is
+    exactly what the registry cannot vouch for, and saying so beats pretending.
+    """
+    recipe = figure.recipe
+    if recipe is None or not recipe.is_tracked:
+        return []
+    try:
+        recipe.resolve()
+    except (ImportError, AttributeError):
+        return [f"figures.jsonl: {figure.id} has a recipe for {recipe.maker}, which is not there"]
+    return []
 
 
 def check_contents(article: list[sections.Section]) -> list[str]:
@@ -240,6 +286,27 @@ def _orphans(gallery: galleries.Gallery, named: set[str]) -> list[str]:
     return problems
 
 
+def check_theme() -> list[str]:
+    """`theme.py`'s well tokens are the ones `site.css` declares."""
+    stylesheet = SITE_ROOT / "assets" / "css" / "site.css"
+    if not stylesheet.is_file():
+        return [f"{_shown(stylesheet)}: missing — theme.py has nothing to be held to"]
+    declared = {
+        name: tuple(int(value[index : index + 2], 16) for index in (0, 2, 4))
+        for name, value in _CSS_TOKEN.findall(_read(stylesheet))
+    }
+    problems = []
+    for name, transcribed in theme.CSS_TOKENS.items():
+        if name not in declared:
+            problems.append(f"site.css: no {name}, and theme.py transcribes one")
+        elif declared[name] != transcribed:
+            problems.append(
+                f"theme.py: {name} is {theme.hex_token(transcribed)}, "
+                f"site.css says {theme.hex_token(declared[name])}"
+            )
+    return problems
+
+
 def run_all() -> dict[str, list[str]]:
     """Every check, named, so a failure says which one."""
     loaded = galleries.load_all()
@@ -250,4 +317,5 @@ def run_all() -> dict[str, list[str]]:
         "contents": check_contents(article),
         "figures": check_figures(),
         "assets": check_assets(loaded),
+        "theme": check_theme(),
     }

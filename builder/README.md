@@ -8,8 +8,11 @@ Python. A build is done here and reviewed in a diff.
 ```
 python -m builder build     regenerate gallery pages, the gallery index, thumbnails,
                             and the contents rail every page carries
-python -m builder check     links, page sync, contents, figure blocks, assets (read-only)
+python -m builder check     links, page sync, contents, figure blocks, assets, theme
 python -m builder figure ID print a figure's markup block, to paste into an article page
+python -m builder figures [--all]   what is still to make, grouped by page
+python -m builder figures --place ID SRC [--crop l,t,r,b] [--max-width N] [--lossless]
+                            [--provenance FILE]   land a finished figure in one step
 python -m builder diagram ID draw one of the two figures that are diagrams, not renders
 python -m builder serve [--port N]  preview the committed tree at http://localhost:8000/
 python -m builder import SRC DEST [--crop l,t,r,b] [--max-width N]
@@ -69,8 +72,22 @@ page that has drifted is a failing check rather than something noticed later.
 A figure can be registered before its picture exists. Such a row carries `"status":
 "pending"` and names no file, width or height, and the block it derives is a well holding
 the description of the picture to come. Prose gets written before pictures get made, and a
-page that says what is coming beats a broken image or a silent gap; `check` prints what is
-still owed. When the asset lands, drop the status, add the file and its size, and re-paste.
+page that says what is coming beats a broken image or a silent gap; `figures` lists what
+is still owed, grouped by the page it is owed on.
+
+When the asset lands, `figures --place` does the whole of what used to be four steps with
+two numbers retyped: it imports the picture as a web-res asset, writes the file and the
+measured size back into the row, and replaces the pending well on the page with the block
+the filled row derives. Nothing about the size is typed, so nothing about it can be typed
+wrong.
+
+Three fields travel with every row beyond its words. `page` names the article page that
+carries it — a row on no page is a failing check, where before it was silence. `provenance`
+is one line per panel in prose, saying what would have to be re-rendered to draw that panel
+again; a made row without one is a failing check too. `recipe` names the maker and its
+arguments — `module:function` — which is what actually redraws the figure today; where that
+module is inside `builder`, `check` holds the name to still existing. Prose outlives code
+and code is what runs, which is why both are kept.
 
 Two figures are an exception, and they are diagrams rather than pictures of a location:
 the orbit race and the pipeline explain a mechanism, so there is nothing to render and
@@ -91,10 +108,47 @@ bytes. Every other figure asset arrived through `import`.
 - **contents** — every hand-written page carries today's rail, every prose heading carries
   the id its words give it, every article page is listed in `sections.jsonl`, and the
   front page marks the same sections done that the registry calls written.
-- **figures** — every figure block matches its registry row; every registered file
-  exists at the size it claims, a pending figure excepted until its asset lands.
+- **figures** — every figure block matches its registry row; every row names the page
+  that actually carries it; every registered file exists at the size it claims, a pending
+  figure excepted until its asset lands; and a recipe naming a maker inside `builder`
+  names one that is still there.
 - **assets** — every image the metadata names exists at its stated size, every
   thumbnail is current, and no orphan file is sitting in a gallery directory.
+- **theme** — the well colours a drawn figure is made of are the ones `site.css`
+  declares. Pillow cannot read CSS, so they are transcribed into `theme.py`; this is what
+  keeps a restyle from moving the well and leaving every diagram on the old one.
+
+## Drawing a figure: three modules, one seam
+
+A figure that shows a location is made in two halves, and the split is deliberate.
+
+- **`theme.py`** — the well's colours and the font fallback chain, in one place. Four
+  copies of these five hex triples used to sit in four files.
+- **`sheets.py`** — the composition half, Pillow only, no engine anywhere in it: the
+  panel grid, the label ranks, the box marking what the next panel zooms into, the
+  numbered ring marker, the number formatters that typeset a real minus sign, and APNG
+  assembly on a built palette. It takes paths and gives back a picture, so it neither
+  knows nor cares whether a panel came out of the engine, off a curation run, or out of
+  `diagrams.py` — and adjusting a composition, which is the thing done most, needs
+  nothing outside this repository.
+- **`renders.py`** — the one seam to the fractal engine next door, and the only module
+  here that shells anything. Where that checkout is comes from the `FRACTAL_WALLPAPERS_ROOT`
+  environment variable or an untracked `local.toml` at this repository's root, never from
+  a literal: no absolute path is committed here, and the project is not in the same place
+  on two machines. Names under the wallpaper project's regenerable tree resolve through
+  **both storage tiers**, hot and archive, by that project's own settings — several of its
+  subtrees now live on an external disk, and a path built from the checkout root and a
+  string finds only the hot one.
+
+`renders.Cache` keys a render on its spec and records it in a manifest beside the files.
+Renders are the expensive half and compositions are the half that gets adjusted, so
+adjusting a label never re-renders a panel; a changed constant is a new key rather than a
+stale file; and the manifest holds every spec, which is what makes the tree re-derivable
+rather than merely disposable. It defaults to `artifacts/renders/`, which is ignored.
+
+The rigs that compose the article's figures live in `scratch/` and are untracked — that
+is what `scratch/` is for — but everything they used to re-implement is here now, and a
+figure made a year ago can be redrawn without reconstructing the session that made it.
 
 ## Two rules that predate the code
 

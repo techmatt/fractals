@@ -187,8 +187,8 @@
     <p>Score. The judge scores the very render the gates just examined — nothing larger is
     drawn, and that render is always in the same neutral palette, so the judge compares
     geometry and never coloring. The location judge returns the probability that the view would
-    be rated at least a 3 on the four-point scale above. At 0.5 or higher the frame is
-    <i>admitted</i>: recorded as a find and placed on the frontier. Between 0.2 and 0.5 it is
+    be rated at least a 3 on the four-point scale above. At 0.385 or higher the frame is
+    <i>admitted</i>: recorded as a find and placed on the frontier. Between 0.1 and 0.385 it is
     <i>expandable</i> — a stepping stone the walk may explore through, but never a find. Below
     that it is refused. One allowance keeps the parameter planes viable: a plane descent starts
     wide and bland before it gets good, so its first few steps get a waiver of the expandable
@@ -291,7 +291,7 @@
     <h2 id="where-the-walk-stops">Where the walk stops</h2>
 
     <p>A walk has three stopping conditions. First, a frame that gets too narrow stops: the
-    walk enforces a width floor set comfortably above the point, around 10⁻¹³, where adjacent
+    walk enforces a width floor of 10⁻⁹, set comfortably above the point where adjacent
     pixels collide in double-precision arithmetic and there is nothing left to render. Letting
     walks push closer to that wall would be easy engineering; for now the floor is simply a
     chosen stopping rule. Rendering <em>past</em> the wall takes genuinely different machinery,

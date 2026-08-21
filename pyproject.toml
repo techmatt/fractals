@@ -5,6 +5,9 @@
 [tool.ruff]
 line-length = 100
 src = ["builder"]
+# The builder reads TOML with `tomllib` and is run on a workstation, never in CI's
+# deploy path; saying so is what lets the linter sort a standard-library import.
+target-version = "py311"
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "SIM", "PTH"]

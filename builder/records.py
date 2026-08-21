@@ -57,6 +57,15 @@ class Record:
                 raise RecordError(f"{self.where}: every {key} entry must be a non-empty string")
         return tuple(value)
 
+    def optional_mapping(self, key: str) -> dict | None:
+        """A nested object, or `None` where the record does not carry one."""
+        value = self.fields.get(key)
+        if value is None:
+            return None
+        if not isinstance(value, dict) or not value:
+            raise RecordError(f"{self.where}: {key} must be a non-empty object when present")
+        return value
+
     def count(self, key: str) -> int:
         value = self.fields.get(key)
         if not isinstance(value, int) or isinstance(value, bool) or value <= 0:

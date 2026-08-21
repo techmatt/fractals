@@ -20,18 +20,20 @@ import math
 from dataclasses import dataclass
 from pathlib import Path
 
+from . import sheets
 from .paths import FIGURE_IMAGES_DIR
-
-# The stylesheet's image-well tokens. A diagram is furniture for the same dark mat the
-# renders sit on, so it takes its colours from there rather than inventing a second set.
-WELL = (0x16, 0x17, 0x1C)
-WELL_RULE = (0x2B, 0x2E, 0x36)
-WELL_INK = (0xEA, 0xE8, 0xE5)
-WELL_INK_DIM = (0xC2, 0xBC, 0xB4)
-WELL_PANEL = (0x1D, 0x1F, 0x26)
-WELL_PENDING = (0x3B, 0x3F, 0x4A)
-#: Quieter than a caption, louder than a rule: the section names under the pipeline.
-SECTION_INK = (0x8F, 0x8A, 0x84)
+from .theme import (
+    SECTION_INK,
+    SEMIBOLD,
+    WELL,
+    WELL_INK,
+    WELL_INK_DIM,
+    WELL_PANEL,
+    WELL_PENDING,
+    WELL_RULE,
+    font,
+    text_width,
+)
 
 # Three tracks that have to stay apart at a glance, and legible on the well.
 TRACK_FAST = (0xE8, 0x73, 0x4A)
@@ -39,25 +41,9 @@ TRACK_BOUND = (0x6F, 0xB3, 0xFF)
 TRACK_SLOW = (0xE3, 0xC6, 0x5A)
 TRACKS = (TRACK_FAST, TRACK_BOUND, TRACK_SLOW)
 
-REGULAR = ("segoeui.ttf", "arial.ttf", "DejaVuSans.ttf")
-SEMIBOLD = ("seguisb.ttf", "arialbd.ttf", "DejaVuSans-Bold.ttf")
-
-
-def _font(size: int, faces: tuple[str, ...] = REGULAR):
-    from PIL import ImageFont
-
-    for name in faces:
-        try:
-            return ImageFont.truetype(name, size)
-        except OSError:
-            continue
-    return ImageFont.load_default(size)
-
-
-def _text_width(draw, text: str, face) -> float:
-    left, _, right, _ = draw.textbbox((0, 0), text, font=face)
-    return right - left
-
+#: Every ink the orbit race is drawn with, for the palette its frames share. Flat art
+#: on a flat ground: a ramp from the well to each of these covers every pixel.
+ORBIT_INKS = (WELL_RULE, WELL_PENDING, SECTION_INK, WELL_INK_DIM, WELL_INK, *TRACKS)
 
 # --------------------------------------------------------------------------- orbit race
 
@@ -134,7 +120,7 @@ def _orbit_background(box: _Frame):
     scale = box.scale
     image = Image.new("RGB", (ORBIT_SIZE[0] * scale, ORBIT_SIZE[1] * scale), WELL)
     draw = ImageDraw.Draw(image)
-    small = _font(15 * scale)
+    small = font(15 * scale)
 
     for index, (constant, colour, note) in enumerate(RUNNERS):
         y = (12 + index * 21) * scale
@@ -144,7 +130,7 @@ def _orbit_background(box: _Frame):
         )
         draw.text(
             (24 * scale + swatch + 9 * scale, y),
-            f"c = {_complex_text(constant)} — {note}",
+            f"c = {sheets.complex_text(constant)} — {note}",
             fill=WELL_INK_DIM,
             font=small,
         )
@@ -175,11 +161,6 @@ def _orbit_background(box: _Frame):
     )
     draw.text((left + 9 * scale, line_y - 36 * scale), "|z| = 2", fill=WELL_INK_DIM, font=small)
     return image
-
-
-def _complex_text(value: complex) -> str:
-    sign = "+" if value.imag >= 0 else "−"
-    return f"{value.real:.4f}".replace("-", "−") + f" {sign} {abs(value.imag):.4f}i"
 
 
 def _dashed_line(draw, x0: float, y0: float, x1: float, y1: float, colour, width, dash) -> None:
@@ -242,9 +223,9 @@ def _draw_step(image, box: _Frame, tracks: list[list[complex]], step: int) -> No
             _escape_time(draw, box, len(track) - 1, colour, scale)
 
     caption = f"step {min(step, STEPS)}"
-    face = _font(17 * scale, SEMIBOLD)
+    face = font(17 * scale, SEMIBOLD)
     draw.text(
-        (box.chart[2] - _text_width(draw, caption, face), 16 * scale),
+        (box.chart[2] - text_width(draw, caption, face), 16 * scale),
         caption,
         fill=WELL_INK,
         font=face,
@@ -270,7 +251,7 @@ def _escape_time(draw, box: _Frame, step: int, colour, scale: int) -> None:
         [x - radius, y - radius, x + radius, y + radius], fill=WELL, outline=colour, width=2 * scale
     )
     draw.text(
-        (x + radius + 5 * scale, y + 3 * scale), str(step), fill=colour, font=_font(15 * scale)
+        (x + radius + 5 * scale, y + 3 * scale), str(step), fill=colour, font=font(15 * scale)
     )
 
 
@@ -311,49 +292,17 @@ def orbit_race(destination: Path) -> tuple[int, int]:
         frame = background.copy()
         _draw_step(frame, box, tracks, step)
         frames.append(frame.resize(ORBIT_SIZE, Image.LANCZOS))
-    frames = _shared_palette(frames)
-    durations = [FRAME_MS] * len(frames)
-    durations[-1] = HOLD_MS
-    destination.parent.mkdir(parents=True, exist_ok=True)
-    frames[0].save(
+    return sheets.animate(
+        frames,
         destination,
-        format="PNG",
-        save_all=True,
-        append_images=frames[1:],
-        duration=durations,
-        loop=0,
-        optimize=True,
+        frame_ms=FRAME_MS,
+        hold_ms=HOLD_MS,
+        inks=ORBIT_INKS,
+        extra=[
+            sheets.mix(TRACK_FAST, TRACK_SLOW, 0.5),
+            sheets.mix(TRACK_SLOW, TRACK_BOUND, 0.5),
+        ],
     )
-    return ORBIT_SIZE
-
-
-def _shared_palette(frames: list) -> list:
-    """One palette for every frame: flat art, and a third of the bytes of full colour.
-
-    The palette is built rather than measured. Everything here is one of eight inks laid
-    on the well, so eight ramps from the well to each ink cover the antialiasing exactly —
-    where a palette *sampled* from a frame spends its entries on whatever happens to cover
-    the most pixels, and renders a two-word caption in the nearest track colour.
-    """
-    from PIL import Image
-
-    entries = [WELL]
-    for ink in (WELL_RULE, WELL_PENDING, SECTION_INK, WELL_INK_DIM, WELL_INK, *TRACKS):
-        entries.extend(_ramp(WELL, ink, 8))
-    for first, second in ((TRACK_FAST, TRACK_SLOW), (TRACK_SLOW, TRACK_BOUND)):
-        entries.append(_mix(first, second, 0.5))
-    reference = Image.new("P", (1, 1))
-    flat = [channel for colour in entries for channel in colour]
-    reference.putpalette(flat + [0] * (768 - len(flat)))
-    return [frame.quantize(palette=reference, dither=Image.Dither.NONE) for frame in frames]
-
-
-def _ramp(ground: tuple[int, int, int], ink: tuple[int, int, int], steps: int) -> list:
-    return [_mix(ground, ink, (index + 1) / steps) for index in range(steps)]
-
-
-def _mix(first: tuple[int, int, int], second: tuple[int, int, int], amount: float) -> tuple:
-    return tuple(round(a + (b - a) * amount) for a, b in zip(first, second, strict=True))
 
 
 # ----------------------------------------------------------------------------- pipeline
@@ -392,9 +341,9 @@ def pipeline(destination: Path) -> tuple[int, int]:
 
     columns = len(STAGES)
     box_width = (PIPELINE_WIDTH - 2 * PIPELINE_MARGIN - (columns - 1) * PIPELINE_GAP) // columns
-    name_font = _font(30, SEMIBOLD)
-    body_font = _font(17)
-    section_font = _font(15)
+    name_font = font(30, SEMIBOLD)
+    body_font = font(17)
+    section_font = font(15)
     section_lines = max(len(sections) for _, _, sections in STAGES)
     height = PIPELINE_MARGIN + PIPELINE_BOX + 12 + section_lines * 21 + PIPELINE_MARGIN
 
