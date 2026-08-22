@@ -32,9 +32,18 @@
 
 import { PALETTES } from "./palettes.js";
 
-/** Workers, capped. Past eight the bands get short enough that the messaging
- *  starts to show, and a visitor's machine has other things to do. */
-export const MAX_WORKERS = 8;
+/** The pool is the machine's, up to this. Eight was a guess and it cost a twelve-core
+ *  machine a third of its frame; the ceiling is here because the returns stop, not
+ *  because anything breaks above it — a frame is cut into at most `height /
+ *  MIN_BAND_ROWS` bands, so past about sixteen workers on a laptop-sized canvas the
+ *  extra ones are queueing for a band that is not there. */
+export const MAX_WORKERS = 16;
+
+/** What the pool is sized at when the browser will not say how many cores it has.
+ *  Every engine in circulation reports it, and the ones that do not are the ones
+ *  reporting nothing on purpose — a machine with cores worth using, told to look
+ *  like it has none. One worker was the old answer and it is the wrong guess. */
+export const DEFAULT_WORKERS = 8;
 
 /** How much finer the band queue is than the pool. More bands than workers is
  *  what makes an interior-heavy row band cost somebody else's idle time instead
@@ -43,6 +52,31 @@ const BANDS_PER_WORKER = 4;
 
 /** No band shorter than this, however many workers there are. */
 const MIN_BAND_ROWS = 8;
+
+/**
+ * How a frame of `height` OUTPUT rows is cut up for a pool of this many workers.
+ *
+ * The pool's one claim on the byte-identity chain lives here: a band is a range of
+ * output rows, a band's coordinates are formed from the whole viewport with the
+ * global row index, and so nothing about *where* the cuts fall reaches the
+ * arithmetic. Two pools of different sizes cut the same frame differently and
+ * assemble the same bytes.
+ *
+ * Exported so `bands.test.mjs` can hold that claim to the committed module rather
+ * than to a second copy of this function.
+ */
+export function bandsOf(height, workers) {
+  const target = Math.max(
+    1,
+    Math.min(Math.ceil(height / MIN_BAND_ROWS), workers * BANDS_PER_WORKER),
+  );
+  const rows = Math.ceil(height / target);
+  const bands = [];
+  for (let start = 0; start < height; start += rows) {
+    bands.push([start, Math.min(height, start + rows)]);
+  }
+  return bands;
+}
 
 /** Each axis of the preview, as a fraction of the full pass. */
 export const PREVIEW_DIVISOR = 4;
@@ -159,7 +193,8 @@ export class Renderer {
     const module = await WebAssembly.compile(await response.arrayBuffer());
     const shader = new WebAssembly.Instance(module, {}).exports;
 
-    const count = wanted ?? Math.min(MAX_WORKERS, navigator.hardwareConcurrency || 1);
+    const count =
+      wanted ?? Math.min(MAX_WORKERS, navigator.hardwareConcurrency || DEFAULT_WORKERS);
     const workers = [];
     for (let index = 0; index < Math.max(1, count); index++) {
       const worker = new Worker(new URL("./worker.js", import.meta.url), { type: "module" });
@@ -291,18 +326,7 @@ export class Renderer {
       ? new Uint8ClampedArray(width * height * 4)
       : new Float64Array(sampleWidth * sampleHeight * shape.lanes);
 
-    const bands = [];
-    const target = Math.max(
-      1,
-      Math.min(
-        Math.ceil(height / MIN_BAND_ROWS),
-        this.workers.length * BANDS_PER_WORKER,
-      ),
-    );
-    const rows = Math.ceil(height / target);
-    for (let start = 0; start < height; start += rows) {
-      bands.push([start, Math.min(height, start + rows)]);
-    }
+    const bands = bandsOf(height, this.workers.length);
 
     return new Promise((resolve, reject) => {
       this.job = {

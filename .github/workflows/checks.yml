@@ -7,8 +7,11 @@
 # "committed output" from quietly meaning "output from some earlier version of the
 # builder". It writes nothing.
 #
-# The node step runs the explorer's permalink tests with node's own test runner. Nothing
-# is installed for it: there is no package.json here and there is not going to be one.
+# The node steps run the explorer's own tests with node's own test runner — the permalink
+# contract, and the pool's claim that a band is a range of output rows however many
+# workers cut the frame. Nothing is installed for either: there is no package.json here
+# and there is not going to be one. The second one instantiates the committed wasm and
+# draws the anchor at 320x180 four times over, which is a few seconds.
 
 name: checks
 
@@ -41,3 +44,5 @@ jobs:
           node-version: "22"
       - name: the explorer's permalink contract
         run: node --test explorer/permalink.test.mjs
+      - name: the pool's bands, against the committed module
+        run: node --test explorer/bands.test.mjs
