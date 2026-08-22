@@ -307,6 +307,31 @@ a:hover { color: var(--ink); }
 
 .credit { display: block; margin-top: 0.3rem; font-size: 0.8125rem; opacity: 0.8; }
 
+/* The palette library: seven hundred gradients, each with its name under it. A strip is a
+   picture of a ramp and not of a location, so it takes the well the way a figure does but
+   fills its cell rather than being fitted to one. */
+.palette-group > h2 { max-width: var(--measure); }
+.palette-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(13rem, 1fr));
+  gap: 0.75rem;
+  margin: 1rem 0 2rem;
+  max-width: none;
+}
+.palette {
+  background: var(--well);
+  border: 1px solid var(--well-rule);
+  margin: 0;
+}
+.palette img { display: block; width: 100%; height: auto; }
+.palette figcaption {
+  padding: 0.35rem 0.55rem;
+  font-size: 0.8125rem;
+  line-height: 1.4;
+  color: var(--well-ink-dim);
+  overflow-wrap: anywhere;
+}
+
 /* The way back into the explorer, from a picture the explorer can draw again. On its own
    line under the caption and the credit, at the credit's size, because it is a way out of
    the page rather than something the caption says. */

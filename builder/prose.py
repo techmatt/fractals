@@ -29,7 +29,7 @@ from html.parser import HTMLParser
 from pathlib import Path
 
 from . import records
-from .paths import ARTICLE_DIR, PROSE_REGISTRY
+from .paths import PROSE_REGISTRY, carrier_path
 from .settings import local
 
 #: Where the Drive-synced working folder is. The variable wins over `local.toml`.
@@ -80,7 +80,7 @@ class Master:
 
     @property
     def page_path(self) -> Path:
-        return ARTICLE_DIR / self.page
+        return carrier_path(self.page)
 
     @property
     def path(self) -> Path:
@@ -152,9 +152,9 @@ def _divergences(row: records.Record) -> tuple[Divergence, ...]:
 
 
 def read_page(page: str) -> str:
-    path = ARTICLE_DIR / page
+    path = carrier_path(page)
     if not path.is_file():
-        raise ProseError(f"no article/{page}")
+        raise ProseError(f"no page at {page}")
     with path.open(encoding="utf-8", newline="") as handle:
         return handle.read()
 

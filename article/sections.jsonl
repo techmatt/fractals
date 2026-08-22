@@ -4,7 +4,7 @@
 {"schema": 1, "kind": "section", "page": "rendering-modes.html", "status": "written"}
 {"schema": 1, "kind": "section", "page": "finding-good-locations.html", "status": "written"}
 {"schema": 1, "kind": "section", "page": "training-judges.html", "status": "written"}
-{"schema": 1, "kind": "section", "page": "color-palettes.html"}
+{"schema": 1, "kind": "section", "page": "color-palettes.html", "status": "written"}
 {"schema": 1, "kind": "section", "page": "from-locations-to-wallpapers.html"}
 {"schema": 1, "kind": "section", "page": "running-at-scale.html"}
 {"schema": 1, "kind": "section", "page": "deep-zoom.html"}

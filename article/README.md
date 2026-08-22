@@ -48,6 +48,12 @@ are the builder's:
   every prose `<h2>`, which is derived from the heading's own words. `python -m builder
   build` writes both; nothing between the markers is worth typing.
 
+Two pages hang off **Color palettes** without being sections of their own, and they live
+in `../palettes/` rather than here: `all-palettes.html`, which the builder generates —
+every palette in the library as a strip, grouped the way the section groups them — and
+`make-your-own.html`, the generator brief, which is hand-written the way a section is.
+A registry names either of them with its slash: `palettes/make-your-own.html`.
+
 `sections.jsonl` here gives the ten pages their reading order and marks the ones that are
 written — the flag behind the done marker in the rail and on the front page. A new page
 goes in that file, or the rail will not know about it and `check` will say so.

@@ -590,6 +590,128 @@ def judge_probabilities(
     return jsonl(out)
 
 
+#: The palette head, over a list of already-coloured pictures. Its own loader, its own
+#: shipped checkpoint, its own deploy transform, and the same `scored_with` a colorize
+#: attempt calls — so a figure reads the candidates the way the pipeline reads them.
+#: A score means nothing on its own: only the order inside one location's set does.
+PALETTE_PROGRAM = """
+import json, sys
+from pathlib import Path
+
+from fractal_wallpapers.models import palette_head, palette_scoring, palette_teacher, ship
+
+ask = json.load(sys.stdin)
+model, config, where = palette_scoring.load(ship.shipped_path("palette"), "auto")
+pictures = [Path(name) for name in ask["pictures"]]
+look = palette_head.Transform(train=False)
+scores = palette_teacher.scored_with(model, pictures, look, where, 64)
+with open(ask["out"], "w", encoding="utf-8", newline=chr(10)) as handle:
+    for index, value in enumerate(scores):
+        handle.write(json.dumps({"schema": 1, "index": index, "score": float(value)}) + chr(10))
+print(json.dumps({"pictures": len(pictures), "device": where}))
+"""
+
+#: Palette space, asked of the module that owns it. `neighbourhood` is the candidate set
+#: a colorize builds; `medoid` is the member of a named group nearest the rest of it,
+#: which is how a figure picks one palette to stand for a mood family. Both are pure
+#: functions of the tracked library, and neither is spelled a second time here.
+SPACE_PROGRAM = """
+import json, sys
+
+from fractal_wallpapers.palettes import space
+
+ask = json.load(sys.stdin)
+if ask["what"] == "neighbourhood":
+    print(json.dumps(space.neighbourhood(ask["anchor"], ask["names"], ask["size"])))
+else:
+    names = list(ask["names"])
+    matrix = space.distances(names)
+    totals = [sum(row) for row in matrix]
+    best = min(range(len(names)), key=lambda index: (totals[index], names[index]))
+    print(json.dumps(names[best]))
+"""
+
+
+def palette_scores(pictures, *, root: Path | None = None) -> list[float]:
+    """Every candidate picture's utility, read through the shipped palette head.
+
+    Cached on the list that was asked, the way `judge_probabilities` is: the pictures
+    are the expensive half and the read is the cheap one, but loading a checkpoint per
+    figure is a second of GPU for an answer that cannot change.
+    """
+    wanted = [str(Path(picture)) for picture in pictures]
+    root = Path(root) if root is not None else default_cache_root()
+    out = root / f"palette-{spec_key('palette', {'pictures': wanted})}.jsonl"
+    if not out.is_file():
+        out.parent.mkdir(parents=True, exist_ok=True)
+        completed = subprocess.run(
+            [str(venv_python()), "-c", PALETTE_PROGRAM],
+            input=json.dumps({"pictures": wanted, "out": str(out)}),
+            capture_output=True,
+            text=True,
+            cwd=str(wallpapers_root()),
+            check=False,
+        )
+        if completed.returncode != 0:
+            raise EngineError(
+                f"reading {len(wanted)} candidate(s) through the palette head failed: "
+                f"{completed.stderr.strip()[-2000:]}"
+            )
+        echo = json.loads(completed.stdout.strip().splitlines()[-1])
+        print(f"  scored {echo['pictures']} candidate(s) on {echo['device']}")
+    return [row["score"] for row in jsonl(out)]
+
+
+#: The levelled stop list one release's autolevel stamp rebuilds, and the map's own kind.
+#: `stops_from_stamp` is the only thing that knows how to replay a curve, and replaying it
+#: here in Python would be a second operator free to disagree with the one that acted.
+LEVELLED_PROGRAM = """
+import json, sys
+
+from fractal_wallpapers.coloring import autolevel
+from fractal_wallpapers import paths
+
+ask = json.load(sys.stdin)
+loaded = json.loads(
+    (paths.colormap_dir() / (ask["colormap"] + ".json")).read_text(encoding="utf-8")
+)
+print(json.dumps({
+    "kind": loaded["kind"],
+    "stops": autolevel.stops_from_stamp(ask["stamp"], loaded["stops"]),
+}))
+"""
+
+
+def levelled_stops(colormap: str, stamp: dict) -> dict:
+    """One acted stamp replayed: `{"kind", "stops"}`, from that project's own operator."""
+    completed = subprocess.run(
+        [str(venv_python()), "-c", LEVELLED_PROGRAM],
+        input=json.dumps({"colormap": colormap, "stamp": stamp}),
+        capture_output=True,
+        text=True,
+        cwd=str(wallpapers_root()),
+        check=False,
+    )
+    if completed.returncode != 0:
+        raise EngineError(f"replaying the autolevel stamp failed: {completed.stderr.strip()}")
+    return json.loads(completed.stdout)
+
+
+def palette_space(what: str, **ask):
+    """One question about palette space, answered by the module that defines it."""
+    completed = subprocess.run(
+        [str(venv_python()), "-c", SPACE_PROGRAM],
+        input=json.dumps({"what": what, **ask}),
+        capture_output=True,
+        text=True,
+        cwd=str(wallpapers_root()),
+        check=False,
+    )
+    if completed.returncode != 0:
+        raise EngineError(f"asking palette space for {what} failed: {completed.stderr.strip()}")
+    return json.loads(completed.stdout)
+
+
 def jsonl(path: Path) -> list[dict]:
     """Every row of a JSONL file, in order."""
     with Path(path).open(encoding="utf-8") as handle:

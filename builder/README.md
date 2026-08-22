@@ -18,6 +18,9 @@ python -m builder locations [ID ...] [--place] [--replace]
                             draw the figures of the Finding good locations page
 python -m builder judges [ID ...] [--place] [--replace]
                             draw the figures of the Training judges page
+python -m builder palettes [ID ...] [--place] [--replace]
+                            draw the figures of the Color palettes page and the
+                            pages that hang off it
 python -m builder diagram ID draw one of the two figures that are diagrams, not renders
 python -m builder explorer [--palettes-only]  bake the explorer's palettes, wasm, manifest
 python -m builder links [--write]   derive every picture's explorer link from its
@@ -61,6 +64,20 @@ above the title, since `writing-guidance.md` cut the standfirst site-wide.
 
 Metadata is JSONL with an integer `schema` on every line. A line announcing a schema
 this builder does not read is an error, not a guess.
+
+## A page may hang off a section without being one
+
+`article/` holds exactly the ten ratified sections, and `check` refuses an HTML file
+there that `sections.jsonl` does not list. A page that belongs to a section without being
+part of the reading order — the palette library, the generator brief — lives in its own
+directory and is named with a slash wherever a registry names a page:
+`palettes/make-your-own.html`. `paths.carrier_path` is the one place that resolves the
+two spellings, and a bare file name still means an article section, which is what every
+row said before these pages existed.
+
+Such a page carries the rail like a gallery does, with no current entry, and `check`
+holds it to today's rail. `sections.HANGING` is what makes it hold: there is nothing to
+derive the list from, because a page cannot ask to be checked and be believed.
 
 ## The contents rail is derived, never kept
 

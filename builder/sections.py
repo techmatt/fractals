@@ -18,7 +18,7 @@ from pathlib import Path
 
 from . import records
 from .escape import attribute, text
-from .paths import ARTICLE_DIR, SECTION_REGISTRY, SITE_INDEX, relative_href
+from .paths import ARTICLE_DIR, SECTION_REGISTRY, SITE_INDEX, SITE_ROOT, relative_href
 
 WRITTEN = "written"
 
@@ -190,6 +190,15 @@ def with_rail(page: Path, page_html: str, sections: list[Section]) -> str:
     return _BLOCK.sub(lambda _: block(page, sections), page_html, count=1)
 
 
+#: Pages that are written by hand and carry the rail without being one of the ten
+#: sections — they hang off a section rather than taking a place in the reading order. Written
+#: down here because there is nothing to derive them from: a page's own HTML cannot say
+#: "check my rail" and be believed, and the alternative is a rail nothing re-derives.
+HANGING = ("palettes/make-your-own.html",)
+
+
 def hand_written(sections: list[Section]) -> list[Path]:
-    """The pages a person writes and the builder only reaches into: index, then sections."""
-    return [SITE_INDEX, *(section.path for section in sections)]
+    """The pages a person writes and the builder only reaches into: index, the sections,
+    and the pages that hang off one."""
+    hanging = [SITE_ROOT / page for page in HANGING]
+    return [SITE_INDEX, *(section.path for section in sections), *hanging]

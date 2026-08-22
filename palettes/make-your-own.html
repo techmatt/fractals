@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Make your own palettes — Making Fractal Wallpapers</title>
+<link rel="stylesheet" href="../assets/css/site.css">
+</head>
+<body>
+<nav class="topbar">
+  <div class="topbar-inner">
+    <a class="topbar-site" href="../index.html">Making Fractal Wallpapers</a>
+    <span class="topbar-links"><a href="../galleries/index.html">Galleries</a><a href="https://github.com/techmatt/fractal-wallpapers">GitHub</a><a href="https://techmatt.github.io/">Matt Fisher</a></span>
+  </div>
+</nav>
+
+<div class="page">
+<!-- contents-rail:start — written by builder/. Run `python -m builder build`. -->
+<nav class="contents-rail" aria-label="Contents">
+  <p class="rail-title">Contents</p>
+  <ol class="rail-sections">
+    <li><a href="../article/overview.html">Overview</a> <span class="done" role="img" aria-label="written">✓</span></li>
+    <li><a href="../article/escape-time-fractals.html">Escape-time fractals</a> <span class="done" role="img" aria-label="written">✓</span></li>
+    <li><a href="../article/rendering-fundamentals.html">Rendering fundamentals</a> <span class="done" role="img" aria-label="written">✓</span></li>
+    <li><a href="../article/rendering-modes.html">Rendering modes</a> <span class="done" role="img" aria-label="written">✓</span></li>
+    <li><a href="../article/finding-good-locations.html">Finding good locations</a> <span class="done" role="img" aria-label="written">✓</span></li>
+    <li><a href="../article/training-judges.html">Training judges</a> <span class="done" role="img" aria-label="written">✓</span></li>
+    <li><a href="../article/color-palettes.html">Color palettes</a> <span class="done" role="img" aria-label="written">✓</span></li>
+    <li><a href="../article/from-locations-to-wallpapers.html">From locations to wallpapers</a></li>
+    <li><a href="../article/running-at-scale.html">Running at scale</a></li>
+    <li><a href="../article/deep-zoom.html">Deep zoom</a></li>
+  </ol>
+</nav>
+<!-- contents-rail:end -->
+
+<div class="page-body">
+
+<header class="masthead">
+  <p class="kicker"><a href="../article/color-palettes.html">Color palettes</a></p>
+  <h1>Make your own palettes</h1>
+</header>
+
+<main>
+  <section class="prose">
+    <p>The 175 authored palettes in the library were written by Claude from a technical
+    description of the problem. The brief is short enough to read and specific enough to
+    run: it says what "dramatic" means in measurable terms, spreads each batch across a set
+    of structural templates so the batch is not twenty versions of one idea, and ends with a
+    schema. Paste it into a Claude conversation, set the four lines at the top — batch size,
+    mood family, complexity band, value key — and you get a JSON array of palettes, each
+    stop in <a href="https://en.wikipedia.org/wiki/Oklab_color_space">OKLCH</a>. Run the
+    validator on the result. It checks the mechanical rules — the loop closes, the number of
+    stops fits the complexity band, the bright band is feathered rather than cut, a hard
+    edge carries only a small step, a big hue jump routes through black or white — and
+    nothing aesthetic on purpose: the failure it guards against is <em>samey</em> palettes,
+    not broken ones, so it never talks you out of a good strange one. A validated batch
+    dropped into data/palettes/ is a palette like any other.</p>
+
+    <ul>
+      <li>The brief: data/palettes/generator_prompt.md (v3.1)</li>
+      <li>The validator: data/palettes/validate_palettes.py</li>
+      <li>What each authored palette was made from: data/palettes/provenance.jsonl</li>
+    </ul>
+
+    <p>Mood families in the brief: fire-ice · jewel-earth · atmospheric-deep · antique-faded
+    · high-key-luminous · pastel-iridescent · autumn-ember · oceanic · orchid-twilight ·
+    verdigris-copper · ember-in-ash · tonal-restrained · sapphire-rose. Both the mood-family
+    and the value-key lines also accept span, which asks the batch to vary that axis instead
+    of holding it; four of the seventeen shipped batches set the mood family that way.</p>
+
+      <figure class="figure" data-figure="palette-generator-batch">
+        <img src="../assets/images/figures/palette-generator-batch.jpg" width="1316" height="372" alt="Eighteen gradient strips from one generated batch, each labeled with the palette's name.">
+        <figcaption>One shipped batch of the brief, as gradients: eighteen palettes from a single run, spread across the structural templates rather than one idea eighteen times over. <span class="credit">Rendered with fractal-wallpapers</span></figcaption>
+      </figure>
+  </section>
+
+  <nav class="section-nav">
+    <p><a href="../index.html">Contents</a>
+    · Back to: <a href="../article/color-palettes.html">Color palettes</a>
+    · Also: <a href="all-palettes.html">All palettes</a></p>
+  </nav>
+</main>
+
+<footer>
+  <p><a href="https://techmatt.github.io/">Matt Fisher</a>
+  · <a href="https://github.com/techmatt/fractal-wallpapers">fractal-wallpapers</a> · MIT</p>
+</footer>
+</div>
+</div>
+</body>
+</html>

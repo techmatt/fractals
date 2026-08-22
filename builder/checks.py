@@ -48,6 +48,7 @@ from .paths import (
     SITE_INDEX,
     SITE_ROOT,
     THUMBS_DIR_NAME,
+    carrier_path,
     site_pages,
 )
 
@@ -164,14 +165,18 @@ def check_figures() -> list[str]:
     registry = figures.load_all()
     carried: dict[str, str] = {}
 
-    for page in sorted(ARTICLE_DIR.glob("*.html")):
+    sections_first = sorted(ARTICLE_DIR.glob("*.html"))
+    hanging = sorted({figure.page_path for figure in registry.values()} - set(sections_first))
+    for page in [*sections_first, *hanging]:
+        if not page.is_file():
+            continue
         html = _read(page)
         where = _shown(page)
         opened = links.opened(page)
         if _FIGURE_OPEN.search(html):
             problems.append(f"{where}: a figure without a data-figure id")
         for identifier in _FIGURE_ID.findall(html):
-            carried[identifier] = page.name
+            carried[identifier] = figures.page_name(page)
             figure = registry.get(identifier)
             if figure is None:
                 problems.append(f"{where}: figure {identifier!r} is not in the registry")
@@ -206,7 +211,7 @@ def _figure_page(figure: figures.Figure, carried: dict[str, str]) -> list[str]:
     check in silence, and would go on being listed as pending work forever.
     """
     if not figure.page_path.is_file():
-        return [f"figures.jsonl: {figure.id} names page {figure.page!r}, which is not in article/"]
+        return [f"figures.jsonl: {figure.id} names page {figure.page!r}, which is not on this site"]
     where = carried.get(figure.id)
     if where is None:
         return [
@@ -331,7 +336,12 @@ def check_prose(article: list[sections.Section]) -> list[str]:
     problems = []
     written = {section.page: section.written for section in article}
     for page, master in prose.load_all().items():
-        if page not in written:
+        if "/" in page:
+            # A page that hangs off a section rather than being one: there is no written
+            # flag to hold it to, so what is checked is that the page it names is here.
+            if not carrier_path(page).is_file():
+                problems.append(f"prose.jsonl: {page} is not a page of this site")
+        elif page not in written:
             problems.append(f"prose.jsonl: {page} is not a section of this article")
         elif not written[page]:
             problems.append(f"prose.jsonl: {page} names a master, and is not written yet")

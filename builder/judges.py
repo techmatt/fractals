@@ -73,6 +73,29 @@ GRID_COLUMNS = 4
 #: is a 1 too. The numeral and its colour name the bucket, and nothing else is claimed.
 BAND_LEAD = "rated {score} by hand"
 
+#: Where the wallpaper project leaves the four decision frames, and the record beside
+#: them. Under its own ignored `artifacts/` tree, which is where its figure commands are
+#: told to write: nothing tracked over there is touched to draw a figure here.
+DECISION_FIGURE = ("figures", "judges_score_to_decision")
+DECISION_SIDECAR = "frames.jsonl"
+
+#: How each outcome is named on the sheet. The prose names the thresholds; these name
+#: what a frame on either side of one becomes, in the page's own words.
+DECISION_WORDS = {
+    "refused": "refused",
+    "expandable": "expandable",
+    "find": "a find",
+    "exceptional": "exceptional",
+}
+
+#: Room under a decision panel: the outcome, then two lines of the numbers behind it.
+DECISION_CAPTION = 74
+
+
+def _decision_frames() -> Path:
+    """Where that command's output is, resolved through both storage tiers."""
+    return renders.artifact(*DECISION_FIGURE)
+
 
 # ------------------------------------------------------------------------- the records
 
@@ -603,9 +626,72 @@ def judges_results_modes() -> Drawn:
     return results_grid(GRIDS[2])
 
 
+def score_to_decision() -> Drawn:
+    """One frame per outcome the location judge's score decides, in score order.
+
+    The frames are the wallpaper project's own — `fractal-wallpapers figures
+    judges-score-to-decision` picks one held-out row per outcome from the one partition
+    healthy in all four buckets, and renders each as the canonical location view. Picked
+    on the head's score, never on the human class, which is why the class a person gave
+    is shown beside it rather than used: the find and the exceptional find were both
+    rated 4, and the head separates them on P(≥4) alone.
+
+    Nothing is re-rendered here. The pictures are that command's output under its own
+    ignored `artifacts/` tree, and this side composes them.
+    """
+    frames = renders.jsonl(_decision_frames() / DECISION_SIDECAR)
+    panel = panels(len(frames))
+    sheet, draw = sheets.canvas(SHEET_WIDTH, sheets.PAD + panel[1] + DECISION_CAPTION + sheets.PAD)
+    for index, frame in enumerate(frames):
+        x = sheets.PAD + index * (panel[0] + sheets.PAD)
+        picture = _decision_frames() / f"{index}_{frame['decision']}.jpg"
+        sheet.paste(sheets.fitted(picture, panel), (x, sheets.PAD))
+        top = sheets.PAD + panel[1] + 6
+        draw.text(
+            (x, top),
+            DECISION_WORDS[frame["decision"]],
+            fill=RATING_INK[index + 1],
+            font=font(17, SEMIBOLD),
+        )
+        sheets.label(
+            draw,
+            x,
+            top + 22,
+            [
+                f"P(≥3) {sheets.number(frame['p_ge3'], 3)}{sheets.MIDDOT}"
+                f"P(≥4) {sheets.number(frame['p_ge4'], 3)}",
+                f"a person rated it {frame['human_class']}",
+            ],
+            size=14,
+            lead=WELL_INK_DIM,
+        )
+    provenance = [
+        "The four frames the wallpaper project's own `fractal-wallpapers figures "
+        "judges-score-to-decision` draws, composed here and not re-rendered. It takes the "
+        "shipped location head's held-out rows for one partition and picks the median row "
+        "of each outcome bucket by P(≥3), ties by row key; the partition is julia:multibrot3, "
+        "the only one with rows in all four buckets. Every panel is the canonical location "
+        "view — mode smooth, curve linear, colormap twilight_shifted, 640x360 supersample 2, "
+        "maxiter from that project's depth-aware policy — which the command reports as its "
+        "`view` record; the sidecar it writes beside the frames does not carry it.",
+    ]
+    for index, frame in enumerate(frames):
+        family = frame["family"]
+        view = frame["viewport"]
+        provenance.append(
+            f"Panel {index + 1} ({frame['decision']}): julia, degree {family['degree']}, "
+            f"c = {family['c'][0]} + {family['c'][1]}i, centre {view['center_re']} + "
+            f"{view['center_im']}i, width {view['width']}; location {frame['location_id']} of "
+            f"batch {frame['batch']}, rated {frame['human_class']} by hand, scored P(≥2) "
+            f"{frame['p_ge2']:.6f}, P(≥3) {frame['p_ge3']:.6f}, P(≥4) {frame['p_ge4']:.6f}."
+        )
+    return Drawn(sheets.save(sheet, sheet_path("judges-score-to-decision")), provenance)
+
+
 MAKERS = {
     "judges-rating-views": rating_views,
     "judges-what-the-judge-sees": what_the_judge_sees,
+    "judges-score-to-decision": score_to_decision,
     "judges-results-location": judges_results_location,
     "judges-results-smooth": judges_results_smooth,
     "judges-results-modes": judges_results_modes,

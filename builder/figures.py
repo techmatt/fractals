@@ -33,10 +33,11 @@ before this field both passed `check` in silence.
 import importlib
 import json
 from dataclasses import dataclass
+from pathlib import Path
 
 from . import records
 from .escape import attribute, text
-from .paths import ARTICLE_DIR, FIGURE_IMAGES_DIR, FIGURE_REGISTRY, relative_href
+from .paths import FIGURE_IMAGES_DIR, FIGURE_REGISTRY, SITE_ROOT, carrier_path, relative_href
 
 INDENT = " " * 6
 PENDING = "pending"
@@ -117,13 +118,19 @@ class Figure:
 
     @property
     def page_path(self):
-        """The article page this figure is registered on."""
-        return ARTICLE_DIR / self.page
+        """The page this figure is registered on — a section, or a page hanging off one."""
+        return carrier_path(self.page)
 
     @property
     def src(self) -> str:
         """The figure's src as an article page must spell it: relative, never rooted."""
         return relative_href(self.page_path, self.path)
+
+
+def page_name(path) -> str:
+    """How a registry row spells this page — the inverse of `paths.carrier_path`."""
+    relative = Path(path).resolve().relative_to(SITE_ROOT)
+    return relative.name if relative.parent.name == "article" else relative.as_posix()
 
 
 def markup(figure: Figure, opened: str | None = None) -> str:
