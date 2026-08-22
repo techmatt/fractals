@@ -237,16 +237,58 @@ export class PermalinkError extends Error {
 }
 
 /**
+ * The two tagged shade values' vocabularies: a kind, and the one parameter it takes.
+ *
+ * Declared above the recipe rather than beside the readers, because the recipe names
+ * them: a control that offers a reader the kinds a key may take reads them from here,
+ * so the menu on the page and the values a link may carry are one list.
+ */
+const TRANSFERS = {
+  value: {},
+  edge: {
+    parameter: "weight",
+    check: (value, text) => {
+      if (!(value >= 0)) {
+        throw new PermalinkError(`the edge transfer's weight is at least 0; the link says ${text}.`);
+      }
+    },
+  },
+  rank: {},
+};
+
+const ROLLOFFS = {
+  none: {},
+  soft_knee: {
+    parameter: "knee",
+    check: (value, text) => {
+      if (!(value >= 0 && value < 1)) {
+        throw new PermalinkError(`the rolloff's knee is at least 0 and below 1; the link says ${text}.`);
+      }
+    },
+  },
+  reinhard: {},
+  aces: {},
+};
+
+/**
  * The engine's palette recipe, key by key: what it is called in a link, what the
  * engine's own default is, and how a value is read and written.
  *
  * One key per real engine parameter and no others. What is here is the shade side:
  * the palette recipe the engine records beside every render it makes, which is
  * independent of the mode and whose every default is the identity.
+ *
+ * **Exported because the page's controls are derived from it.** `shade.js` builds a
+ * control per row — which widget from `control`, which menu from `table`, and what it
+ * opens at from `fallback`, which is the engine's default and not a number the page
+ * types. A control that read a value one way and a link another is the one failure a
+ * URL contract cannot survive, so there is one reader and one writer per key and they
+ * are these.
  */
-const SHADE_KEYS = [
+export const SHADE_KEYS = [
   {
     key: "gamma",
+    control: "number",
     read: (text) => positive(text, "gamma"),
     write: (value) => number(value),
     fallback: 1,
@@ -254,6 +296,7 @@ const SHADE_KEYS = [
   },
   {
     key: "cycles",
+    control: "number",
     read: (text) => positive(text, "cycles"),
     write: (value) => number(value),
     fallback: 1,
@@ -261,6 +304,7 @@ const SHADE_KEYS = [
   },
   {
     key: "phase",
+    control: "number",
     read: (text) => finite(text, "phase"),
     write: (value) => number(value),
     fallback: 0,
@@ -268,6 +312,7 @@ const SHADE_KEYS = [
   },
   {
     key: "reverse",
+    control: "flag",
     read: (text) => flag(text, "reverse"),
     write: (value) => (value ? "1" : "0"),
     fallback: false,
@@ -275,6 +320,7 @@ const SHADE_KEYS = [
   },
   {
     key: "mirror",
+    control: "flag",
     read: (text) => flag(text, "mirror"),
     write: (value) => (value ? "1" : "0"),
     fallback: false,
@@ -282,6 +328,8 @@ const SHADE_KEYS = [
   },
   {
     key: "transfer",
+    control: "tagged",
+    table: TRANSFERS,
     read: readTransfer,
     write: writeTagged,
     fallback: { kind: "value" },
@@ -289,12 +337,21 @@ const SHADE_KEYS = [
   },
   {
     key: "rolloff",
+    control: "tagged",
+    table: ROLLOFFS,
     read: readRolloff,
     write: writeTagged,
     fallback: { kind: "none" },
     same: sameTagged,
   },
 ];
+
+/** One key's row of the recipe, by the name a link spells it with. */
+export function shadeKey(key) {
+  const spec = SHADE_KEYS.find((held) => held.key === key);
+  if (spec === undefined) throw new PermalinkError(`there is no shade key called ${key}.`);
+  return spec;
+}
 
 /** The shade parameters as they are when nobody has said otherwise. */
 export function defaultShade() {
@@ -602,33 +659,6 @@ function tagged(text, key, table) {
   entry.check(value, text);
   return { kind, [entry.parameter]: value };
 }
-
-const TRANSFERS = {
-  value: {},
-  edge: {
-    parameter: "weight",
-    check: (value, text) => {
-      if (!(value >= 0)) {
-        throw new PermalinkError(`the edge transfer's weight is at least 0; the link says ${text}.`);
-      }
-    },
-  },
-  rank: {},
-};
-
-const ROLLOFFS = {
-  none: {},
-  soft_knee: {
-    parameter: "knee",
-    check: (value, text) => {
-      if (!(value >= 0 && value < 1)) {
-        throw new PermalinkError(`the rolloff's knee is at least 0 and below 1; the link says ${text}.`);
-      }
-    },
-  },
-  reinhard: {},
-  aces: {},
-};
 
 function readTransfer(text) {
   return tagged(text, "transfer", TRANSFERS);

@@ -104,6 +104,36 @@
 }
 .bar button:hover { border-color: var(--underline); color: var(--link); }
 
+/* The shade recipe. Seven controls a link could always set and the page could not,
+   folded away because a reader wants a palette far more often than a recipe — and
+   folded by a `<details>`, so the one page on this site that runs code does not spend
+   any of it on opening a group. Inside it is the same strip and the same furniture as
+   the pickers above; what is different is that it says how many of the seven are set,
+   because a group that is closed has to say when it is not empty. */
+.shade { margin-top: 0.75rem; }
+
+.shade > summary {
+  /* Left at `list-item`, which is what carries the disclosure triangle — a summary
+     given any other display loses its marker and stops looking like something that
+     opens. `fit-content` is what keeps the hit area to the words. */
+  width: fit-content;
+  cursor: pointer;
+  font-size: 0.875rem;
+  color: var(--ink-dim);
+}
+.shade > summary:hover { color: var(--link); }
+.shade-count { font-variant-numeric: tabular-nums; }
+.shade .bar { margin-top: 0.4rem; }
+
+/* A flag is a checkbox and wants none of the box a number gets — it is not a field
+   with a value in it, and the border around one reads as an empty text box. */
+.bar input.flag {
+  width: auto;
+  padding: 0;
+  border: 0;
+  accent-color: var(--link);
+}
+
 /* The download's own line: what a size will cost before it is asked for, how far
    along it is while it runs, and what it actually took. Prose rather than
    monospace, because it is a sentence and not a coordinate. */

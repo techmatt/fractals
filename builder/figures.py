@@ -327,7 +327,7 @@ def place(
             "Give one line per panel — family and constants, centre and width, mode, "
             "palette, cap, samples, crop — or the command that was run."
         )
-    was = markup(figure, _opened(figure))
+    was = landing_block(figure)
     # The page is checked before the registry is written, not after: a heal that fails
     # once the row is filled leaves the registry a size ahead of the page, and the next
     # attempt cannot even find the block it was going to replace.
@@ -357,6 +357,19 @@ def place(
     return placed
 
 
+def landing_block(figure: Figure) -> str:
+    """The block on the page a landing has to find before it may replace anything.
+
+    `place` looks for exactly this and refuses when the page is not carrying it, so it is
+    the one derivation a redraw stands on. It was once `markup(figure)` with no link,
+    which refused `--replace` on every figure the explorer can reopen — very nearly every
+    render figure on the site — and nothing failed until somebody redrew one. `check`'s
+    `landing` check holds this function's answer to the page for every made figure, so
+    the next time it drifts a check says so instead of a redraw.
+    """
+    return markup(figure, _opened(figure))
+
+
 def _opened(figure: Figure) -> str | None:
     """The explorer link this figure's block carries, where the link registry has one.
 
@@ -384,7 +397,7 @@ def _heal(figure: Figure, was: str) -> None:
             f"`python -m builder figure {figure.id}` by hand"
         )
     with page.open("w", encoding="utf-8", newline=LF) as handle:
-        handle.write(html.replace(was, markup(figure, _opened(figure)), 1))
+        handle.write(html.replace(was, landing_block(figure), 1))
 
 
 def by_page(registry: dict[str, Figure]) -> dict[str, list[Figure]]:

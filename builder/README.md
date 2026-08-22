@@ -8,8 +8,8 @@ Python. A build is done here and reviewed in a diff.
 ```
 python -m builder build     regenerate gallery pages, the gallery index, thumbnails,
                             and the contents rail every page carries
-python -m builder check     links, page sync, contents, figure blocks, explorer links,
-                            assets, prose, theme, banned vocabulary
+python -m builder check     links, page sync, contents, figure blocks, landings,
+                            explorer links, assets, prose, theme, banned vocabulary
 python -m builder figure ID print a figure's markup block, to paste into an article page
 python -m builder figures [--all]   what is still to make, grouped by page
 python -m builder figures --place ID SRC [--crop l,t,r,b] [--max-width N] [--lossless]
@@ -146,6 +146,12 @@ bytes. Every other figure asset arrived through `import`.
   that actually carries it; every registered file exists at the size it claims, a pending
   figure excepted until its asset lands; and a recipe naming a maker inside `builder`
   names one that is still there.
+- **landing** — every made figure is a block a redraw could land on. `--replace` finds
+  the block it is about to swap by deriving it and refuses when the page is not carrying
+  exactly that, so the derivation is load-bearing in a way the figure check does not
+  reach: it once left the explorer link out, which refused a redraw of every picture that
+  carries one while everything else stayed green. A linked figure's landing block is held
+  to carrying the link as well.
 - **assets** — every image the metadata names exists at its stated size, every
   thumbnail is current, and no orphan file is left in a gallery directory.
 - **prose** — every row of `article/prose.jsonl` names a page that is in this article and

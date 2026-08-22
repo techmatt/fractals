@@ -203,6 +203,40 @@ def check_figures() -> list[str]:
     return problems
 
 
+def check_landing() -> list[str]:
+    """Every made figure is a block a redraw could actually land on.
+
+    A redraw — `figures --replace`, and the `--replace` the four drawing commands
+    take — finds the block it is about to swap by **deriving** it, and refuses when the
+    page is not carrying exactly that. So the derivation is load-bearing in a way the
+    figure check above does not reach: `figures.landing_block` once left the explorer
+    link out, which refused a redraw of every picture that carries one — very nearly
+    every render figure here — while everything else stayed green, and it was found by
+    somebody redrawing a figure rather than by a check.
+
+    Held for every made figure, and specially for the linked ones: a landing block for a
+    picture the registry gives a link has to carry the anchor, or the derivation has
+    quietly gone back to what it was.
+    """
+    problems = []
+    linked = {identifier for identifier, link in links.load_all().items() if link.linked}
+    for figure in figures.load_all().values():
+        if figure.pending or not figure.page_path.is_file():
+            continue
+        block = figures.landing_block(figure)
+        if f"figure:{figure.id}" in linked and figures.OPEN_TEXT not in block:
+            problems.append(
+                f"figures.jsonl: {figure.id} has an explorer link and the block a redraw "
+                "would look for does not carry it — `--replace` would refuse this figure"
+            )
+        if block not in _read(figure.page_path):
+            problems.append(
+                f"{_shown(figure.page_path)}: {figure.id} is not a block a redraw could "
+                f"land on — reprint it with `python -m builder figure {figure.id}`"
+            )
+    return problems
+
+
 def _figure_page(figure: figures.Figure, carried: dict[str, str]) -> list[str]:
     """A row is on the page it says, and on a page at all.
 
@@ -380,6 +414,7 @@ def run_all() -> dict[str, list[str]]:
         "pages": check_pages(loaded, article),
         "contents": check_contents(article),
         "figures": check_figures(),
+        "landing": check_landing(),
         "explorer": check_explorer(),
         "assets": check_assets(loaded),
         "prose": check_prose(article),

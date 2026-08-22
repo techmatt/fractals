@@ -282,8 +282,9 @@ comes from** above for what it holds together and why one edit has several sites
 
 `builder check` is read-only. It resolves every internal link, refuses root-absolute
 and bare-directory hrefs, regenerates the gallery HTML and compares it byte for byte
-with what is committed, holds every figure block to its registry row, and holds every
-page's contents rail and prose heading ids to what the builder derives. It also prints one
+with what is committed, holds every figure block to its registry row, holds every made
+figure to being a block a redraw could land on, and holds every page's contents rail and
+prose heading ids to what the builder derives. It also prints one
 note — never a failure — about the committed wasm module, described in
 `explorer/README.md`. The same commands run in CI
 (`.github/workflows/checks.yml`), which is a check and not a deploy dependency.

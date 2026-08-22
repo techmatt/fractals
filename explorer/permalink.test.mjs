@@ -34,9 +34,11 @@ import {
   MODES,
   parse,
   PermalinkError,
+  SHADE_KEYS,
   VERSION,
 } from "./permalink.js";
 import { CONSTANTS, CURVES, MODES as IDENTITIES } from "./catalog.js";
+import * as shade from "./shade.js";
 import { DEFAULT_PALETTE, PALETTES } from "./palettes.js";
 
 import { readFileSync } from "node:fs";
@@ -349,6 +351,125 @@ test("a tagged shade value needs exactly the parameter its kind takes", () => {
   assert.throws(() => parse(`v=${VERSION}&transfer=edge:-1`, CONTEXT), /at least 0/);
   assert.throws(() => parse(`v=${VERSION}&rolloff=soft_knee:1`, CONTEXT), /below 1/);
   assert.throws(() => parse(`v=${VERSION}&rolloff=filmic`, CONTEXT), /none, soft_knee, reinhard, aces/);
+});
+
+// ------------------------------------------------------------ the recipe's controls
+//
+// The seven shade keys were link-only for two drafts and now have controls, so what a
+// control says and what a link says have to be the same statement. `shade.js` is where
+// a control's value crosses into the recipe; these hold that crossing to the contract
+// rather than to a second reading of it.
+
+/** A control value per key, spelled the way its control holds it. Every key of the
+ *  recipe is here, and a key added without a spelling fails the first test below —
+ *  which is the point: a new knob arrives with its coverage or it does not arrive. */
+const TYPED = {
+  gamma: ["0.75", "2.5"],
+  cycles: ["3", "0.5"],
+  phase: ["0.25", "-0.5"],
+  reverse: ["1"],
+  mirror: ["1"],
+  transfer: ["rank", "edge:1.5"],
+  rolloff: ["aces", "soft_knee:0.35"],
+};
+
+test("every shade key has a control, and it opens at the engine's own default", () => {
+  assert.deepEqual(
+    shade.CONTROLS.map((control) => control.key),
+    SHADE_KEYS.map((spec) => spec.key),
+  );
+  const engine = defaultShade();
+  for (const spec of SHADE_KEYS) {
+    assert.ok(TYPED[spec.key], `${spec.key} has no control value under test`);
+    // What the control shows when a link says nothing is what a link that says nothing
+    // means — read out of the contract, not typed a second time on the page.
+    assert.equal(shade.isDefault(engine, spec.key), true, spec.key);
+    assert.equal(shade.spelling(engine, spec.key), spec.write(spec.fallback), spec.key);
+  }
+  assert.deepEqual(shade.chosen(engine), []);
+  // A tagged control's menu is the contract's own vocabulary, in its own order.
+  const transfer = shade.CONTROLS.find((control) => control.key === "transfer");
+  assert.deepEqual(
+    transfer.kinds.map((kind) => kind.kind),
+    ["value", "edge", "rank"],
+  );
+  assert.equal(transfer.kinds.find((kind) => kind.kind === "edge").parameter, "weight");
+  assert.equal(transfer.kinds.find((kind) => kind.kind === "rank").parameter, null);
+});
+
+test("every shade key round-trips from its control, through a link, back to its control", () => {
+  // The whole property, key by key: what a reader types into a control is what the
+  // address bar carries, and a link somebody sends back shows the same thing in the
+  // same control. `viridis` because it is sequential — a cyclic map refuses the fold.
+  const base = parse(`v=${VERSION}&p=viridis`, CONTEXT);
+  for (const spec of SHADE_KEYS) {
+    for (const typed of TYPED[spec.key]) {
+      const where = `${spec.key}=${typed}`;
+      const view = { ...base, shade: shade.withKey(base.shade, spec.key, typed) };
+      const emitted = emit(view, CONTEXT);
+      assert.match(emitted, new RegExp(`(^|&)${spec.key}=`), where);
+      const back = parse(emitted, CONTEXT);
+      assert.equal(shade.spelling(back.shade, spec.key), typed, where);
+      assert.deepEqual(shade.chosen(back.shade), [spec.key], where);
+      // And the reason a control can be instant: not one of the seven is on the field
+      // side of the cache, so every one of them re-shades what is already computed.
+      assert.equal(
+        fieldKey(view, CONTEXT, 1280, 720),
+        fieldKey(base, CONTEXT, 1280, 720),
+        where,
+      );
+    }
+  }
+});
+
+test("a direct trap is the one mode shape a shade key re-iterates under", () => {
+  // Those four composite gradient samples as they iterate and have no field to
+  // recolour, so their key carries the recipe — the same ruling the palette picker
+  // already pays there, and the reason the page says so under the strip.
+  const trap = parse(`v=${VERSION}&m=direct_trap_ring&p=viridis`, CONTEXT);
+  for (const spec of SHADE_KEYS) {
+    const moved = { ...trap, shade: shade.withKey(trap.shade, spec.key, TYPED[spec.key][0]) };
+    assert.notEqual(
+      fieldKey(moved, CONTEXT, 640, 360, true),
+      fieldKey(trap, CONTEXT, 640, 360, true),
+      spec.key,
+    );
+  }
+});
+
+test("a control out of range is refused in the contract's own words", () => {
+  // The control never phrases a refusal of its own: it hands the text to the contract
+  // and shows the sentence a refused link would be shown.
+  const view = parse(`v=${VERSION}&p=viridis`, CONTEXT);
+  assert.throws(() => shade.withKey(view.shade, "gamma", "0"), /gamma has to be positive/);
+  assert.throws(() => shade.withKey(view.shade, "cycles", "-1"), /cycles has to be positive/);
+  assert.throws(() => shade.withKey(view.shade, "phase", "over"), /phase has to be a number/);
+  assert.throws(() => shade.withKey(view.shade, "reverse", "2"), /reverse is 0 or 1/);
+  assert.throws(() => shade.withKey(view.shade, "transfer", "edge"), /needs its weight/);
+  assert.throws(() => shade.withKey(view.shade, "rolloff", "soft_knee:1"), /below 1/);
+  assert.throws(() => shade.withKey(view.shade, "gamma", ""), /gamma has to be a number/);
+  assert.throws(() => shade.withKey(view.shade, "sweep", "1"), /no shade key called sweep/);
+});
+
+test("a tagged control's two halves spell exactly one link value", () => {
+  // The menu holds the kind and the box beside it holds the one number that kind takes,
+  // and between them they write the string a link carries. A kind that takes nothing
+  // writes nothing, which is why the box is not shown beside it.
+  assert.deepEqual(shade.parts("soft_knee:0.35"), { kind: "soft_knee", value: "0.35" });
+  assert.deepEqual(shade.parts("aces"), { kind: "aces", value: "" });
+  assert.equal(shade.spell("soft_knee", "0.35"), "soft_knee:0.35");
+  assert.equal(shade.spell("aces", ""), "aces");
+  // A kind that takes a number has no default to open at — the contract refuses it
+  // without one — so the menu opens it at a value the wallpaper project itself renders,
+  // and that value has to be one the contract takes.
+  const view = parse(`v=${VERSION}&p=viridis`, CONTEXT);
+  for (const control of shade.CONTROLS) {
+    for (const kind of control.kinds ?? []) {
+      assert.equal(kind.parameter === null, kind.opening === null, kind.kind);
+      const spelled = shade.spell(kind.kind, kind.opening ?? "");
+      assert.equal(shade.spelling(shade.withKey(view.shade, control.key, spelled), control.key), spelled);
+    }
+  }
 });
 
 test("an aspect is a shape, and both sides are bounded", () => {

@@ -40,22 +40,18 @@ superseded, and these are the places the two have come apart:
 - **"Draft-1 scope (mandelbrot smooth only)"** — long since passed: nine families,
   eighteen modes, every mode parameter the engine's catalog writes down.
 
-One thing the doc rules that the tree does not have: **"every palette/sweep/exposure
-change is an instant re-shade"** describes controls for the seven shade keys, and they
-are link-only — the page gives them none. The field cache and the re-shade path they
-would use are both built, and the palette picker uses them on every change.
-
 ## What is here
 
 ```
 index.html            the page
 explorer.css          its own stylesheet, on top of the site's
 explorer.js           what a reader touches: drag, wheel, keys, pickers, copy link
+shade.js              the recipe's controls, apart from the boxes they are drawn in
 download.js           the same render at a wallpaper's size, and what caps it
 render.js             the worker pool, the plan, the field passes, the shade
 worker.js             one worker: one wasm instance, one band of rows
 permalink.js          the link contract — parse, validate, canonicalize
-permalink.test.mjs    29 tests, `node --test explorer/permalink.test.mjs`
+permalink.test.mjs    34 tests, `node --test explorer/permalink.test.mjs`
 bands.test.mjs        3 tests: the pool cuts the frame, never what is in it
 palettes.js           generated: the colormaps, by name, curated or drawn-in
 catalog.js            generated: the mode roster, its curves, the anchors' constants
@@ -468,55 +464,58 @@ recurrence and a small share of an expensive one, and mandelbrot's 7.9x is the c
 recurrence there is here. It is consistent with it and it is not established by it, and
 nothing below rests on the explanation.
 
-**The older generic figure does not reproduce.** This section used to say the generic loop
-drew the mandelbrot home frame in **6 330 ms**, four times slower than specialized; the
-measurement above is **12 088 ms**, nearer eight times. The generic module was checked
-against the committed one on `tia`, a mode that takes the generic loop in both — 6 124 ms
-against 5 887 ms at 640x360, the same engine with one dispatch changed — so the number
-above is what this tree does. The 6 330 came from a scratch experiment that is gone and
-cannot be re-run. **The `x generic` column of the per-mode table below is 6 330 as its
-divisor**, so it reads roughly twice as high as this tree would give it. It is left as it
-was recorded rather than rescaled against a set of field times taken under a different
-convention; re-measuring that table is its own run.
+**The generic figure this section used to carry does not reproduce.** It was recorded by a
+scratch experiment that is gone and cannot be re-run, it was about half the measurement
+above, and it read as a fourfold specialization rather than the near-eightfold one the
+table gives. **12 088 ms** is what this tree does: the generic module was checked against
+the committed one on `tia`, a mode that takes the generic loop in both — 6 124 ms against
+5 887 ms at 640x360, the same engine with one dispatch changed — so the two modules differ
+in the dispatch and not in the arithmetic. The `x generic` column of the per-mode table
+below divides by the measured figure, and the header says so.
 
 **Per mode**, same harness, mandelbrot home at 1280x720, one thread. The `field` column
 is `compute_band` over the whole frame; `shade` is the colouring pass, which a palette
 change pays again and nothing else does. A direct trap has no shade because its band
 arrives painted.
 
-| mode | field | shade | x smooth | x generic | native |
+| mode | field | shade | x smooth | x generic, 12 088 ms | native |
 | --- | --- | --- | --- | --- | --- |
-| smooth | 2.27 s | 157 ms | 1.00 | 0.36 | 1.00 |
-| direct_trap_lines | 6.12 s | — | 2.70 | 0.97 | 0.93 |
-| direct_trap_multiply | 7.85 s | — | 3.46 | 1.24 | 1.24 |
-| direct_trap_screen | 8.20 s | — | 3.61 | 1.30 | 0.91 |
-| direct_trap_ring | 10.35 s | — | 4.56 | 1.63 | 1.08 |
-| itinerary | 12.12 s | 694 ms | 5.34 | 1.92 | 1.26 |
-| trap_circle | 13.08 s | 309 ms | 5.76 | 2.07 | 1.01 |
-| smooth_trap_circle | 13.32 s | 372 ms | 5.87 | 2.10 | 1.06 |
-| curvature | 19.86 s | 485 ms | 8.75 | 3.14 | 2.45 |
-| smooth_curvature | 20.75 s | 357 ms | 9.14 | 3.28 | 2.60 |
-| smooth_mean_angle | 23.38 s | 492 ms | 10.30 | 3.69 | 2.81 |
-| smooth_angle_min | 24.10 s | 530 ms | 10.62 | 3.81 | 2.73 |
-| threads | 25.35 s | 227 ms | 11.17 | 4.00 | 2.06 |
-| tia | 26.67 s | 351 ms | 11.75 | 4.21 | 1.79 |
-| exp_smoothing | 27.65 s | 171 ms | 12.18 | 4.37 | 1.58 |
-| gaussian_int | 28.30 s | 467 ms | 12.47 | 4.47 | 2.66 |
-| smooth_stripe | 43.35 s | 473 ms | 19.10 | 6.85 | 3.88 |
-| stripe | 46.06 s | 454 ms | 20.29 | 7.28 | 3.92 |
+| smooth | 2.27 s | 157 ms | 1.00 | 0.19 | 1.00 |
+| direct_trap_lines | 6.12 s | — | 2.70 | 0.51 | 0.93 |
+| direct_trap_multiply | 7.85 s | — | 3.46 | 0.65 | 1.24 |
+| direct_trap_screen | 8.20 s | — | 3.61 | 0.68 | 0.91 |
+| direct_trap_ring | 10.35 s | — | 4.56 | 0.86 | 1.08 |
+| itinerary | 12.12 s | 694 ms | 5.34 | 1.00 | 1.26 |
+| trap_circle | 13.08 s | 309 ms | 5.76 | 1.08 | 1.01 |
+| smooth_trap_circle | 13.32 s | 372 ms | 5.87 | 1.10 | 1.06 |
+| curvature | 19.86 s | 485 ms | 8.75 | 1.64 | 2.45 |
+| smooth_curvature | 20.75 s | 357 ms | 9.14 | 1.72 | 2.60 |
+| smooth_mean_angle | 23.38 s | 492 ms | 10.30 | 1.93 | 2.81 |
+| smooth_angle_min | 24.10 s | 530 ms | 10.62 | 1.99 | 2.73 |
+| threads | 25.35 s | 227 ms | 11.17 | 2.10 | 2.06 |
+| tia | 26.67 s | 351 ms | 11.75 | 2.21 | 1.79 |
+| exp_smoothing | 27.65 s | 171 ms | 12.18 | 2.29 | 1.58 |
+| gaussian_int | 28.30 s | 467 ms | 12.47 | 2.34 | 2.66 |
+| smooth_stripe | 43.35 s | 473 ms | 19.10 | 3.59 | 3.88 |
+| stripe | 46.06 s | 454 ms | 20.29 | 3.81 | 3.92 |
 
-**The wallpaper project's relative-cost column does not transfer, and the answer is no in
-two different ways.** Against the smooth this page actually draws, every other mode is
-2.7x to 20x rather than the native column's 0.9x to 3.9x — but most of that is smooth's
-own specialization, so the honest comparison is the `x generic` column, both loops
-generic. Even there every mode costs **1.4x to 2.8x more of its smooth than it does
-natively**: stripe 7.3 against 3.9, tia 4.2 against 1.8, trap_circle 2.1 against 1.0.
-Two candidates and no measurement to separate them — wasm has no transcendental
-instructions, so the `atan2`, `sin` and `exp` the averaging channels run per iteration go
-through a compiled libm rather than the platform's; and the native column is wall-clock on
-twelve threads, where a mode that adds arithmetic but not memory traffic scales better and
-its ratio compresses. The prompt's remembered figures were `threads` 2.2x and `stripe` 4x;
-the recorded native slopes are 2.06 and 3.92.
+**The wallpaper project's relative-cost column mostly does transfer, and reading it
+against a dead baseline is what said otherwise.** Against the smooth this page actually
+draws, every other mode is 2.7x to 20x rather than the native column's 0.9x to 3.9x — but
+most of that is smooth's own specialization, so the honest comparison is the `x generic`
+column, both loops generic. On the measured baseline every mode there lands between
+**0.5x and 1.5x of its native slope**: stripe 3.81 against 3.92, threads 2.10 against
+2.06, trap_circle 1.08 against 1.01, with `direct_trap_multiply` at 0.65 against 1.24 and
+`exp_smoothing` at 2.29 against 1.58 at the two ends. That is a spread and not an offset.
+This section used to read it as one — against the old divisor every ratio was about twice
+what it is here, which looked like a systematic wasm tax and was an arithmetic error.
+Two things remain true of the comparison and neither is measured, and neither is now
+being asked to explain anything: wasm has no transcendental instructions, so the `atan2`,
+`sin` and `exp` the averaging channels run per iteration go through a compiled libm rather
+than the platform's; and the native column is wall-clock on twelve threads, where a mode
+that adds arithmetic but not memory traffic scales better and its ratio compresses. The
+prompt's remembered figures were `threads` 2.2x and `stripe` 4x; the recorded native
+slopes are 2.06 and 3.92.
 
 **On a real machine with a real pool** the wait is much shorter than that table reads,
 because a canvas is smaller than 1280x720 and a pool is not one thread. Chrome 151
@@ -620,8 +619,9 @@ v · f · cx · cy · px · py · m · the mode's parameters · x · y · w · a
   would widen a distinction this repository does not own. A link arriving on an unoffered
   map draws it, and the picker shows that map for as long as it is the one on the screen.
 - **The seven shade keys** are the engine's own `Palette` recipe, one key per real engine
-  parameter, at the engine's defaults. They are **link-only**: the page gives them no
-  control, and they are handed to the module exactly as they are read here.
+  parameter, at the engine's defaults, handed to the module exactly as they are read
+  here. They were **link-only** for two drafts and are not any more — see *The controls
+  for the recipe* below.
 
 | key | default | values |
 | --- | --- | --- |
@@ -643,6 +643,41 @@ there that folds, and it folds every non-cyclic map because a repeated sequentia
 slams its last colour against its first; this page repeats nothing unless somebody asks
 for `cycles`, so it leaves the map as drawn. **`mirror=1` on a cyclic map is refused**
 with the engine's own reason — folding it would halve the cycle it was drawn to have.
+
+### The controls for the recipe
+
+The seven were link-only until the strip under the picture gained a folded **Shade
+recipe** group, and the design doc had ruled them from the start. What is worth writing
+down is the shape rather than the widgets:
+
+- **A control's value and a link's spelling of it are the same string.** A number box
+  holds `0.75` and the link says `gamma=0.75`; a menu holds `soft_knee` beside a box
+  holding `0.35` and the link says `rolloff=soft_knee:0.35`. Every control hands its text
+  to this module's own reader, so a value out of range is refused **in the contract's own
+  sentence** and the box goes back to what is still in force. There is no second reader.
+- **A control is named for the key, not for what it does.** Gamma, Cycles, Phase,
+  Reverse, Mirror, Transfer, Rolloff — every other control on the page is named for its
+  job, and these are named so that a reader who has just read `rolloff=aces` in the
+  address bar finds Rolloff on the page rather than Highlights.
+- **What a control opens at is the engine's default**, read out of the recipe above and
+  never typed twice. The one number the engine has no default for is the parameter of a
+  tagged kind — the contract refuses `transfer=edge` without its weight — so a menu that
+  offers `edge` opens it at a value the wallpaper project itself renders: 0.5 for the
+  edge weight, and 0.35 for the soft knee, which is the only knee its records hold.
+- **Every change is a re-shade and not a re-iterate**, which is what `fieldKey`
+  guarantees: none of the seven is on the field side of the cache, so a moved gamma is
+  the 250 ms the palette picker costs and not the seconds a frame does. The four direct
+  traps are the exception they always were — no field, so the cache keys on the colour
+  too — and there they are also *inert*: the engine refuses to spend a gamma or a
+  transfer on a trap distance that is already a fraction of a threshold, and only the
+  bake and the rolloff reach one. The strip says so under itself when a direct trap is
+  the mode.
+- **A cyclic map's fold is refused before it is asked for.** `mirror` on a map that
+  closes on the colour it opens with is a refusal in `parse`, so the control is disabled
+  and says which map and why rather than letting a reader write a link that will not open.
+- **A group that is closed says when it is not empty.** The recipe is folded away by a
+  `<details>` — no script, on the one page that has some — and its summary carries how
+  many of the seven are set. A link that set any of them opens the group.
 
 ### The rules the keys are read under
 
@@ -677,7 +712,7 @@ list of what a link may *say*. Two lists on purpose — a contract that read its
 from a generated file could be widened by rebuilding it — and the test suite asserts they
 are the same roster in the same order, which is where a promoted or retired mode shows up.
 
-`permalink.test.mjs` holds all of that: **29 tests**, Node's own runner, nothing
+`permalink.test.mjs` holds all of that: **34 tests**, Node's own runner, nothing
 installed. Among them, encode-then-decode is the identity for **every family crossed with
 a mode of each of the engine's four coloring shapes**, parameters and constants included.
 
@@ -733,13 +768,7 @@ Listed, not designed:
   thread and about a sixth of that on a pool. Specializing the loop per family and mode
   would recover a third of it and cost a few hundred KB of module; nothing cheaper than
   that has turned up.
-- **Controls for the seven shade keys.** The design doc rules them and they are link-only
-  here: `gamma`, `cycles`, `phase`, `reverse`, `mirror`, `transfer`, `rolloff`. Everything
-  under them is already built — each round-trips through the contract, each is handed to
-  `shade` as it stands, and each is an instant re-shade off the cached field, which is
-  what the palette picker already does. What is missing is the strip of controls and the
-  question of how much of a recipe belongs in front of a reader at all.
 - **Re-measuring the per-mode table.** Its field times are a median of two, which on a
-  wasm frame is the *slower* of two, and its `x generic` column divides by a generic
-  baseline this tree does not reproduce. Both are one bench run to fix and neither is
-  wrong about which modes are expensive.
+  wasm frame is the *slower* of two. Its `x generic` column now divides by a measured
+  baseline, so what is left is one bench run over the field times, and they are not wrong
+  about which modes are expensive.

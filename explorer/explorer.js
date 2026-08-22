@@ -14,6 +14,7 @@
 // about the engine's catalog, so a mode retuned over there arrives by rebuilding.
 
 import * as link from "./permalink.js";
+import * as shade from "./shade.js";
 import { CONSTANTS as ANCHORS, MODES as IDENTITIES } from "./catalog.js";
 import { DEFAULT_PALETTE, PALETTES, PROVENANCE } from "./palettes.js";
 import * as download from "./download.js";
@@ -59,6 +60,10 @@ const paramStrip = document.getElementById("params");
 const copyButton = document.getElementById("copy");
 const notice = document.getElementById("notice");
 const downloadBar = document.getElementById("download");
+const shadeGroup = document.getElementById("shade");
+const shadeBar = document.getElementById("shade-bar");
+const shadeCount = document.getElementById("shade-count");
+const shadeNote = document.getElementById("shade-note");
 
 let renderer = null;
 let contract = null;
@@ -89,6 +94,10 @@ function setBusy(on) {
   for (const control of [familyPicker, modePicker, picker, copyButton]) control.disabled = on;
   for (const control of constantStrip.querySelectorAll("input")) control.disabled = on;
   for (const control of paramStrip.querySelectorAll("input")) control.disabled = on;
+  for (const control of shadeBar.querySelectorAll("input, select, button")) control.disabled = on;
+  // Released, the fold is not simply enabled again: whether it may be touched at all
+  // is the current map's business, and the sync is what knows.
+  if (shadeWidgets.size > 0) syncShade();
 }
 
 // ------------------------------------------------------------------- what to say
@@ -104,6 +113,7 @@ function refuse(message) {
   stage.hidden = true;
   bar.hidden = true;
   downloadBar.hidden = true;
+  shadeGroup.hidden = true;
 }
 
 function clearNotice() {
@@ -229,6 +239,7 @@ let drawing = 0;
 /** The whole pass: preview, then full resolution, either served from the cache. */
 async function draw() {
   updateReadout();
+  syncShade();
   const pass = ++drawing;
   renderer.cancel();
 
@@ -237,7 +248,6 @@ async function draw() {
     say(shape.why);
     return;
   }
-  if (reshade(shape.direct)) return;
 
   const previewGrid = {
     width: grid.width / PREVIEW_DIVISOR,
@@ -247,6 +257,12 @@ async function draw() {
   const fullKey = link.fieldKey(view, contract, grid.width, grid.height, shape.direct);
 
   try {
+    // Inside the try, because a recipe the engine refuses — a rank transfer under the
+    // modulate, which spends its base by rank already — throws from `shade` rather than
+    // from the plan, and a refusal a reader caused with a control has to be said rather
+    // than left to the console.
+    if (reshade(shape.direct)) return;
+
     const cachedPreview = renderer.cached(previewKey);
     if (cachedPreview !== undefined) {
       stretch(renderer.shade(cachedPreview, view).image);
@@ -270,6 +286,10 @@ async function draw() {
     );
     settle();
   } catch (error) {
+    // Including a recipe the engine refuses outright — a rank transfer under the
+    // modulate, which spends its base by rank already. The control keeps what was
+    // asked for, so a reader can see what to change; the address bar keeps naming the
+    // picture that is still on the screen, because a refused recipe is not a view.
     say(String(error.message ?? error));
   }
 }
@@ -386,6 +406,168 @@ function buildParams() {
     });
     paramStrip.append(label, input);
   }
+}
+
+/**
+ * The controls for the engine's palette recipe, and the recipe's own strip.
+ *
+ * The seven shade keys were link-only for two drafts: a figure's link could set them
+ * and a reader could not. What each one is and how a value crosses between a control
+ * and the recipe lives in `shade.js`; what is here is the boxes and the events.
+ *
+ * **Built once and then synced**, never rebuilt. The seven keys do not change with the
+ * family or the mode, and a strip rebuilt under a reader's cursor loses whatever they
+ * were half way through typing.
+ */
+const shadeWidgets = new Map();
+
+function buildShade() {
+  shadeBar.replaceChildren();
+  for (const control of shade.CONTROLS) {
+    const group = document.createElement("span");
+    group.className = "group";
+    const label = document.createElement("label");
+    label.textContent = control.label;
+    label.htmlFor = `shade-${control.key}`;
+    group.append(label);
+    const held = { group };
+
+    if (control.control === "flag") {
+      const box = document.createElement("input");
+      box.type = "checkbox";
+      box.id = `shade-${control.key}`;
+      box.className = "flag";
+      box.addEventListener("change", () => setShade(control.key, box.checked ? "1" : "0"));
+      group.append(box);
+      held.box = box;
+    } else if (control.control === "number") {
+      const box = document.createElement("input");
+      box.type = "number";
+      box.id = `shade-${control.key}`;
+      box.className = "param";
+      box.step = control.step;
+      box.addEventListener("change", () => setShade(control.key, box.value.trim()));
+      group.append(box);
+      held.box = box;
+    } else {
+      // A tagged key is two controls for one value: the kind, and the one number that
+      // kind takes. They write one string between them, which is the string a link
+      // carries — `soft_knee:0.35` — so there is nothing here that knows what a knee is.
+      const menu = document.createElement("select");
+      menu.id = `shade-${control.key}`;
+      fill(
+        menu,
+        control.kinds.map((kind) => kind.kind),
+      );
+      const name = document.createElement("label");
+      name.htmlFor = `shade-${control.key}-value`;
+      const box = document.createElement("input");
+      box.type = "number";
+      box.id = `shade-${control.key}-value`;
+      box.className = "param";
+      box.step = control.step;
+      menu.addEventListener("change", () => {
+        // A kind that takes a number has no default to fall back on — the contract
+        // refuses `transfer=edge` without its weight — so the menu opens it at the
+        // value the wallpaper project's own records use, and the reader moves it.
+        const wanted = control.kinds.find((kind) => kind.kind === menu.value);
+        const carried = wanted.parameter === null ? "" : box.value.trim() || wanted.opening;
+        setShade(control.key, shade.spell(menu.value, carried));
+      });
+      box.addEventListener("change", () =>
+        setShade(control.key, shade.spell(menu.value, box.value.trim())),
+      );
+      group.append(menu, name, box);
+      held.menu = menu;
+      held.name = name;
+      held.box = box;
+    }
+
+    shadeWidgets.set(control.key, held);
+    shadeBar.append(group);
+  }
+
+  const reset = document.createElement("button");
+  reset.type = "button";
+  reset.id = "shade-reset";
+  reset.textContent = "Engine defaults";
+  reset.title = "Put every one of the seven back to what the engine ships";
+  reset.addEventListener("click", () => {
+    if (locked()) return;
+    view = { ...view, shade: shade.defaultShade() };
+    syncShade();
+    draw();
+  });
+  shadeBar.append(reset);
+}
+
+/**
+ * One key of the recipe, as its control now says it.
+ *
+ * The text a control holds is the text a link carries, so what happens to it here is
+ * the contract's own reader — and a refusal is the contract's own sentence, shown as
+ * it stands and the control put back to the value that is still in force.
+ */
+function setShade(key, text) {
+  if (locked()) {
+    syncShade();
+    return;
+  }
+  try {
+    view = { ...view, shade: shade.withKey(view.shade, key, text) };
+  } catch (error) {
+    say(error.message);
+    syncShade();
+    return;
+  }
+  syncShade();
+  draw();
+}
+
+/** Show what the recipe now says, in every control that carries a piece of it. */
+function syncShade() {
+  for (const control of shade.CONTROLS) {
+    const held = shadeWidgets.get(control.key);
+    const text = shade.spelling(view.shade, control.key);
+    if (control.control === "flag") {
+      held.box.checked = text === "1";
+    } else if (control.control === "number") {
+      held.box.value = text;
+    } else {
+      const said = shade.parts(text);
+      held.menu.value = said.kind;
+      const takes = control.kinds.find((kind) => kind.kind === said.kind).parameter;
+      held.name.textContent = takes ?? "";
+      held.name.hidden = takes === null;
+      held.box.value = said.value;
+      held.box.hidden = takes === null;
+    }
+  }
+
+  // Folding a cyclic map is refused by the contract, because it would halve the cycle
+  // the map was drawn to have. The control says so where a reader meets it rather than
+  // leaving them to find out from a link that will not open.
+  const fold = shadeWidgets.get("mirror");
+  const cyclic = PALETTES.get(view.palette).cyclic;
+  fold.box.disabled = busy || cyclic;
+  fold.box.title = cyclic
+    ? `${view.palette} closes on the colour it opens with, so there is no seam to fold out`
+    : "";
+
+  const set = shade.chosen(view.shade);
+  shadeCount.textContent = set.length === 0 ? "" : ` · ${set.length} of 7 set`;
+
+  // Four of the seven are inert under a direct trap, and the engine says so where it
+  // paints: those modes composite gradient samples as they iterate and never make a
+  // field, so there is no distribution for a gamma or a transfer to spend. What does
+  // reach them is the bake — a reversed or folded map is a different gradient — and the
+  // rolloff, which acts after a colour has been chosen.
+  shadeNote.textContent = planOf(view).direct
+    ? `${view.mode} paints as it iterates and never makes a field, so gamma, cycles, ` +
+      "phase and transfer have no distribution to spend and the engine ignores them " +
+      "here. Reverse, mirror and rolloff do reach it — and each of the three re-iterates " +
+      "the frame rather than recolouring it, because there is no field to recolour."
+    : "";
 }
 
 /**
@@ -628,6 +810,12 @@ async function main() {
   stage.hidden = false;
   bar.hidden = false;
   downloadBar.hidden = false;
+  shadeGroup.hidden = false;
+  buildShade();
+  // A link that set part of the recipe opens the group it set. Folded away is the right
+  // resting state for seven knobs most readers will not want; folded away over values
+  // somebody sent in a link is the page hiding what it was asked to show.
+  shadeGroup.open = shade.chosen(view.shade).length > 0;
   panel = download.install({
     renderer,
     currentView: () => view,
