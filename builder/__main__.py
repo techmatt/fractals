@@ -254,7 +254,11 @@ def _do_links(options: argparse.Namespace) -> int:
     if options.write:
         path = links.write(found)
         print(f"wrote {path.relative_to(SITE_ROOT).as_posix()}")
-        print("the figure blocks derive from it — place them with `python -m builder build`")
+        print(
+            "a figure block derives from it, so a link that moved is a page that has to "
+            "move with it — `python -m builder check` names each one, and "
+            "`python -m builder figure ID` prints the block to paste"
+        )
     return 0
 
 
