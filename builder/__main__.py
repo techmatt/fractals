@@ -108,6 +108,11 @@ def _parser() -> argparse.ArgumentParser:
         type=Path,
         help="a text file, one line per panel, saying how each was made",
     )
+    listed.add_argument(
+        "--replace",
+        action="store_true",
+        help="land the redraw over a figure that is already made, page and row together",
+    )
 
     made = commands.add_parser(
         "locations", help="draw the figures of the Finding good locations page"
@@ -339,7 +344,14 @@ def _do_place(options: argparse.Namespace) -> int:
             for line in options.provenance.read_text(encoding="utf-8").splitlines()
             if line.strip()
         ]
-    placed = figures.place(identifier, destination.name, width, height, provenance=provenance)
+    placed = figures.place(
+        identifier,
+        destination.name,
+        width,
+        height,
+        provenance=provenance,
+        replace=options.replace,
+    )
     size = destination.stat().st_size / 1024
     print(f"{destination.name}  {width}x{height}  ({size:.0f} KB)")
     print(f"filled figures.jsonl and healed {placed.page}")

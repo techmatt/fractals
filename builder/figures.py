@@ -327,7 +327,17 @@ def place(
             "Give one line per panel — family and constants, centre and width, mode, "
             "palette, cap, samples, crop — or the command that was run."
         )
-    was = markup(figure)
+    was = markup(figure, _opened(figure))
+    # The page is checked before the registry is written, not after: a heal that fails
+    # once the row is filled leaves the registry a size ahead of the page, and the next
+    # attempt cannot even find the block it was going to replace.
+    page = figure.page_path
+    with page.open(encoding="utf-8", newline="") as handle:
+        if was not in handle.read():
+            raise records.RecordError(
+                f"{page.name} is not carrying {identifier}'s block — place the block "
+                f"`python -m builder figure {identifier}` by hand"
+            )
 
     row.pop("status", None)
     row["file"], row["width"], row["height"] = file, width, height
@@ -347,8 +357,20 @@ def place(
     return placed
 
 
+def _opened(figure: Figure) -> str | None:
+    """The explorer link this figure's block carries, where the link registry has one.
+
+    Derived rather than assumed: a picture the explorer can draw again *is* the link, so
+    the block on the page has an anchor around it and the block a redraw has to find and
+    replace has to have one too.
+    """
+    from . import links
+
+    return links.opened(figure.page_path).get(f"figure:{figure.id}")
+
+
 def _heal(figure: Figure, was: str) -> None:
-    """Swap the pending well on the figure's page for the block the filled row derives.
+    """Swap the block the figure's page is showing for the one the filled row derives.
 
     The page is hand-written prose and stays that way; this replaces exactly the block
     the registry already owned, and fails loudly if the page is not carrying it.
@@ -358,11 +380,11 @@ def _heal(figure: Figure, was: str) -> None:
         html = handle.read()
     if was not in html:
         raise records.RecordError(
-            f"{page.name} is not carrying {figure.id}'s pending block — place the block "
+            f"{page.name} is not carrying {figure.id}'s block — place the block "
             f"`python -m builder figure {figure.id}` by hand"
         )
     with page.open("w", encoding="utf-8", newline=LF) as handle:
-        handle.write(html.replace(was, markup(figure), 1))
+        handle.write(html.replace(was, markup(figure, _opened(figure)), 1))
 
 
 def by_page(registry: dict[str, Figure]) -> dict[str, list[Figure]]:

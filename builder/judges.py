@@ -88,9 +88,6 @@ DECISION_WORDS = {
     "exceptional": "exceptional",
 }
 
-#: Room under a decision panel: the outcome, then two lines of the numbers behind it.
-DECISION_CAPTION = 74
-
 
 def _decision_frames() -> Path:
     """Where that command's output is, resolved through both storage tiers."""
@@ -471,9 +468,6 @@ THREE_SIZES = (
     ((1280, 720), 2, "What a person rated", "the labeling rig's own render"),
 )
 
-#: Room under the common baseline for two lines of label.
-SIZES_CAPTION = 52
-
 
 def what_the_judge_sees() -> Drawn:
     """One location at all three of the geometries its judge is trained over, to scale.
@@ -487,7 +481,8 @@ def what_the_judge_sees() -> Drawn:
     _refuse_unless_rated_four(row, THREE_SIZES_LOCATION)
     tallest = max(size[1] for size, _, _, _ in THREE_SIZES)
     width = sheets.PAD + sum(size[0] + sheets.PAD for size, _, _, _ in THREE_SIZES)
-    sheet, draw = sheets.canvas(width, sheets.PAD + tallest + SIZES_CAPTION)
+    band = sheets.caption_band(tallest, width, 3)
+    sheet, draw = sheets.canvas(width, sheets.PAD + tallest + band)
     x = sheets.PAD
     for size, supersample, lead, note in THREE_SIZES:
         picture = cache().render(
@@ -500,16 +495,22 @@ def what_the_judge_sees() -> Drawn:
         sheets.paste(sheet, picture.path, (x, top))
         # A 384-wide panel on a dark well needs an edge, or it reads as a hole in the sheet.
         draw.rectangle([x, top, x + size[0] - 1, top + size[1] - 1], outline=WELL_RULE, width=1)
-        sheets.label(
-            draw,
-            x,
-            sheets.PAD + tallest + 8,
-            [lead, f"{size[0]}×{size[1]}{sheets.MIDDOT}{note}"],
-            size=17,
-        )
+        # Every panel shares the baseline, so every label sits under its own tile and
+        # under the same line. The rule gives all three the same size: the sheet floor
+        # is what applies at this width, and three sizes on one row would read as a bug.
+        sheets.tile_label(draw, (x, top), size, [lead, geometry(size), note], width)
         x += size[0] + sheets.PAD
     destination = sheets.save(sheet, sheet_path("judges-what-the-judge-sees"))
     return Drawn(destination, _sizes_provenance(row))
+
+
+def geometry(size: tuple[int, int]) -> str:
+    """A panel's geometry, on a line of its own.
+
+    Its own line and not appended to the note: the smallest panel here is 384 wide and
+    the two facts on one line will not go under it at a size anybody reads.
+    """
+    return f"{size[0]}×{size[1]}"
 
 
 def _sizes_provenance(row: dict) -> list[str]:
@@ -641,29 +642,27 @@ def score_to_decision() -> Drawn:
     """
     frames = renders.jsonl(_decision_frames() / DECISION_SIDECAR)
     panel = panels(len(frames))
-    sheet, draw = sheets.canvas(SHEET_WIDTH, sheets.PAD + panel[1] + DECISION_CAPTION + sheets.PAD)
+    band = sheets.caption_band(panel[1], SHEET_WIDTH, 3)
+    sheet, draw = sheets.canvas(SHEET_WIDTH, sheets.PAD + panel[1] + band + sheets.PAD)
     for index, frame in enumerate(frames):
         x = sheets.PAD + index * (panel[0] + sheets.PAD)
         picture = _decision_frames() / f"{index}_{frame['decision']}.jpg"
         sheet.paste(sheets.fitted(picture, panel), (x, sheets.PAD))
-        top = sheets.PAD + panel[1] + 6
-        draw.text(
-            (x, top),
-            DECISION_WORDS[frame["decision"]],
-            fill=RATING_INK[index + 1],
-            font=font(17, SEMIBOLD),
-        )
-        sheets.label(
+        # The outcome is the label's own lead line here rather than a heading over it:
+        # it is what the panel is, and it carries the rung's colour and weight.
+        sheets.tile_label(
             draw,
-            x,
-            top + 22,
+            (x, sheets.PAD),
+            panel,
             [
+                DECISION_WORDS[frame["decision"]],
                 f"P(≥3) {sheets.number(frame['p_ge3'], 3)}{sheets.MIDDOT}"
                 f"P(≥4) {sheets.number(frame['p_ge4'], 3)}",
                 f"a person rated it {frame['human_class']}",
             ],
-            size=14,
-            lead=WELL_INK_DIM,
+            SHEET_WIDTH,
+            inks=(RATING_INK[index + 1], WELL_INK_DIM, WELL_INK_DIM),
+            semibold_lead=True,
         )
     provenance = [
         "The four frames the wallpaper project's own `fractal-wallpapers figures "

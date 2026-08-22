@@ -295,8 +295,21 @@ def node_panel(name: str, row: dict) -> Path:
 
 
 def stack(draw, x: int, y: int, lines, *, size: int = 15, lead=WELL_INK) -> None:
-    """A label whose first line leads and whose rest are a rank quieter."""
+    """A note beside a picture: first line leading, the rest a rank quieter, ranged left.
+
+    Not the label under a tile — that is `under`, which centres and owns its own size.
+    """
     sheets.label(draw, x, y, lines, size=size, lead=lead)
+
+
+def under(draw, origin, tile, lines, *, lead=WELL_INK, inks=None) -> None:
+    """The label under one tile, by the site's one rule for them. No size to pass."""
+    sheets.tile_label(draw, origin, tile, lines, SHEET_WIDTH, lead=lead, inks=inks)
+
+
+def band(tile_height: int, lines: int = 1) -> int:
+    """The room that label needs, for the arithmetic that lays a sheet out around it."""
+    return sheets.caption_band(tile_height, SHEET_WIDTH, lines)
 
 
 def rule(draw, y: int, *, width: int = SHEET_WIDTH, inset: int = sheets.PAD) -> None:
@@ -410,9 +423,8 @@ def foci_proposals() -> Drawn:
     ]
 
     top = sheets.PAD
-    caption = 3 * 20 + 8
-    block_b = top + big[1] + 8 + caption + sheets.PAD
-    height = block_b + 22 + small[1] + 8 + 4 * 20 + sheets.PAD
+    block_b = top + big[1] + band(big[1], 3) + sheets.PAD
+    height = block_b + 22 + small[1] + band(small[1], 3) + sheets.PAD
     sheet, draw = sheets.canvas(SHEET_WIDTH, height)
 
     box = (0, 0, big[0], big[1])
@@ -429,10 +441,10 @@ def foci_proposals() -> Drawn:
     _paste_marked(sheet, sheets.fitted(parent_render, big), marked, (sheets.PAD, top))
     box = (sheets.PAD, top, sheets.PAD + big[0], top + big[1])
 
-    stack(
+    under(
         draw,
-        box[0],
-        box[1] + big[1] + 8,
+        (box[0], box[1]),
+        big,
         [
             f"Parent frame · node {FOCI_NODE}, depth {parent['depth']} of a "
             f"{_family_name(parent['family'])} walk",
@@ -449,7 +461,7 @@ def foci_proposals() -> Drawn:
         x = sheets.PAD + index * (small[0] + sheets.PAD)
         y = block_b + 22
         sheet.paste(sheets.fitted(render, small), (x, y))
-        stack(draw, x, y + small[1] + 8, _child_lines(child, kept), size=14)
+        under(draw, (x, y), small, _child_lines(child, kept))
     heading(draw, sheets.PAD, block_b + 2, "The four children this expansion proposed")
 
     destination = sheets.save(sheet, sheet_path("locations-foci-proposals"))
@@ -682,9 +694,9 @@ def reframe_examples() -> Drawn:
 
     big = panels(3)
     small = panels(4)
-    row_height = 24 + big[1] + 8 + 2 * 20 + sheets.PAD + 8
+    row_height = 24 + big[1] + band(big[1], 2) + sheets.PAD + 8
     strip_top = sheets.PAD + 3 * row_height + 6
-    height = strip_top + 26 + small[1] + 8 + 3 * 20 + sheets.PAD
+    height = strip_top + 26 + small[1] + band(small[1], 3) + sheets.PAD
     sheet, draw = sheets.canvas(SHEET_WIDTH, height)
 
     for index, (operator, node, row, found) in enumerate(picks):
@@ -723,7 +735,7 @@ def reframe_examples() -> Drawn:
         for column, (picture, lines) in enumerate(cells):
             x = sheets.PAD + column * (big[0] + sheets.PAD)
             sheet.paste(sheets.fitted(picture, big), (x, y + 24))
-            stack(draw, x, y + 24 + big[1] + 8, lines, size=14)
+            under(draw, (x, y + 24), big, lines)
 
     rule(draw, strip_top - 12)
     heading(
@@ -754,7 +766,7 @@ def reframe_examples() -> Drawn:
         y = strip_top + 26
         picture = cache().render(f"reframe-three-{index}", spec, small).path
         sheet.paste(sheets.fitted(picture, small), (x, y))
-        stack(draw, x, y + small[1] + 8, lines, size=14)
+        under(draw, (x, y), small, lines)
 
     destination = sheets.save(sheet, sheet_path("locations-reframe-examples"))
     return Drawn(destination, _reframe_provenance(picks, trigger, three, big, small, head, forest))
@@ -899,7 +911,7 @@ def framing_ladder() -> Drawn:
     judged = renders.scores(wanted)
 
     size = panels(3)
-    height = sheets.PAD + 26 + size[1] + 8 + 3 * 20 + sheets.PAD
+    height = sheets.PAD + 26 + size[1] + band(size[1], 3) + sheets.PAD
     sheet, draw = sheets.canvas(SHEET_WIDTH, height)
     heading(
         draw,
@@ -916,10 +928,10 @@ def framing_ladder() -> Drawn:
         picture = cache().render(f"ladder-{framing}", as_location(trigger["family"], row), size)
         sheet.paste(sheets.fitted(picture.path, size), (x, y))
         width = float(row["viewport"]["width"])
-        stack(
+        under(
             draw,
-            x,
-            y + size[1] + 8,
+            (x, y),
+            size,
             [
                 FRAMINGS[framing],
                 f"width {sheets.width_text(width)}{sheets.MIDDOT}"
@@ -930,7 +942,6 @@ def framing_ladder() -> Drawn:
                 ),
                 _judged(judged[index]["score"]),
             ],
-            size=14,
         )
     destination = sheets.save(sheet, sheet_path("locations-framing-ladder"))
     return Drawn(destination, _ladder_provenance(trigger, rungs, size, judged))
@@ -989,7 +1000,7 @@ def descent_chain() -> Drawn:
     size = panels(3)
     columns = 3
     rows_down = (len(chain) + columns - 1) // columns
-    cell = 26 + size[1] + 8 + 3 * 20
+    cell = 26 + size[1] + band(size[1], 3)
     height = sheets.PAD + rows_down * (cell + sheets.PAD) + sheets.PAD
     sheet, draw = sheets.canvas(SHEET_WIDTH, height)
     for index, entry in enumerate(chain):
@@ -999,7 +1010,7 @@ def descent_chain() -> Drawn:
         heading(draw, x, y, f"{index + 1} of {len(chain)}{sheets.MIDDOT}{_rung(entry)}", size=15)
         picture = cache().render(f"chain-{index}", _chain_location(root, entry), size)
         sheet.paste(sheets.fitted(picture.path, size), (x, y + 26))
-        stack(draw, x, y + 26 + size[1] + 8, _chain_lines(entry, judged[index], rated), size=14)
+        under(draw, (x, y + 26), size, _chain_lines(entry, judged[index], rated))
     destination = sheets.save(sheet, sheet_path("locations-descent-chain"))
     return Drawn(destination, _chain_provenance(root, chain, judged, rated, size))
 
@@ -1342,7 +1353,7 @@ def random_samples() -> Drawn:
 
     size = panels(BOUNDARY_COLUMNS)
     rows_down = (len(kept) + BOUNDARY_COLUMNS - 1) // BOUNDARY_COLUMNS
-    cell = size[1] + 8 + 20
+    cell = size[1] + band(size[1], 1)
     height = sheets.PAD + 44 + rows_down * (cell + sheets.PAD) + sheets.PAD
     sheet, draw = sheets.canvas(SHEET_WIDTH, height)
     heading(
@@ -1373,12 +1384,11 @@ def random_samples() -> Drawn:
         y = sheets.PAD + 44 + down * (cell + sheets.PAD)
         picture = cache().render(f"boundary-{BOUNDARY_SEED}-{index}", location(row), size)
         sheet.paste(sheets.fitted(picture.path, size), (x, y))
-        stack(
+        under(
             draw,
-            x,
-            y + size[1] + 8,
+            (x, y),
+            size,
             [f"width {sheets.width_text(row['viewport']['width'])}"],
-            size=14,
             lead=WELL_INK_DIM,
         )
     destination = sheets.save(sheet, sheet_path("locations-random-samples"))
@@ -1450,7 +1460,7 @@ def found_and_finished() -> Drawn:
         pairs.append((release, rated))
 
     size = panels(4)
-    cell = 22 + size[1] + 8 + 2 * 20
+    cell = 22 + size[1] + band(size[1], 2)
     rows_down = (len(pairs) + 1) // 2
     height = sheets.PAD + rows_down * (cell + sheets.PAD) + sheets.PAD
     sheet, draw = sheets.canvas(SHEET_WIDTH, height)
@@ -1473,30 +1483,28 @@ def found_and_finished() -> Drawn:
             supersample=NODE_SUPERSAMPLE,
         )
         sheet.paste(sheets.fitted(found.path, size), (left, y + 22))
-        stack(
+        under(
             draw,
-            left,
-            y + 22 + size[1] + 8,
+            (left, y + 22),
+            size,
             [
                 "As the walk found it",
                 f"width {sheets.width_text(release['location']['viewport']['width'])}"
                 f"{sheets.MIDDOT}{NODE_TILE[0]}\u00d7{NODE_TILE[1]}, no palette",
             ],
-            size=14,
         )
         x = left + size[0] + sheets.PAD
         sheet.paste(sheets.fitted(release["_picture"], size), (x, y + 22))
         recipe = release["recipe"]
-        stack(
+        under(
             draw,
-            x,
-            y + 22 + size[1] + 8,
+            (x, y + 22),
+            size,
             [
                 "The wallpaper released from it",
                 f"{recipe['mode']}{sheets.MIDDOT}{recipe['colormap']}"
                 + (f"{sheets.MIDDOT}mirrored" if recipe.get("mirror") else ""),
             ],
-            size=14,
         )
     spare = sheets.PAD + 2 * (size[0] + sheets.PAD)
     stack(
@@ -1843,12 +1851,14 @@ BEATS = (
 STEP_MS = 2600
 STEP_HOLD_MS = 5200
 
-#: Where each thing sits on the diagram's canvas.
-STEP_SIZE = (SHEET_WIDTH, 668)
+#: Where each thing sits on the diagram's canvas. The two rows under the children are
+#: measured off the label band rather than typed: the band is the tile-label rule's to
+#: size now, and a typed 534 is a verdict line drawn through a caption.
 STEP_PARENT = (sheets.PAD, 54)
 STEP_KIDS_TOP = 300
-STEP_VERDICT = 534
-STEP_QUEUE = 610
+STEP_VERDICT = STEP_KIDS_TOP + panels(4)[1] + band(panels(4)[1], 2) + 8
+STEP_QUEUE = STEP_VERDICT + 76
+STEP_SIZE = (SHEET_WIDTH, STEP_QUEUE + 58)
 
 ADMITTED_INK = SEEDED_INK
 REFUSED_INK = FRESH_INK
@@ -2005,15 +2015,14 @@ def _render_of(sheet):
 def _kid_marks(draw, beat: int, index: int, kid: dict, x: int, small) -> None:
     """One child's caption, and whatever verdict the beats so far have reached."""
     refused = kid["fate"] in FATES
-    stack(
+    under(
         draw,
-        x,
-        STEP_KIDS_TOP + small[1] + 8,
+        (x, STEP_KIDS_TOP),
+        small,
         [
             f"{index + 1}{sheets.MIDDOT}{_branch_line(kid)}",
             f"width {sheets.width_text(kid['viewport']['width'])}",
         ],
-        size=14,
     )
     if beat < 2:
         return
@@ -2186,7 +2195,7 @@ def walk_examples() -> Drawn:
         walks.append((rating, root_id, chain, rated, _walk_tally(rows, root_id)))
 
     size = panels(EXAMPLE_COLUMNS)
-    cell = 24 + size[1] + 8 + 2 * 19
+    cell = 24 + size[1] + band(size[1], 2)
     height = sheets.PAD + len(walks) * (cell + sheets.PAD) + sheets.PAD
     sheet, draw = sheets.canvas(SHEET_WIDTH, height)
     for index, (rating, root_id, chain, _rated, tally) in enumerate(walks):
@@ -2209,16 +2218,15 @@ def walk_examples() -> Drawn:
             picture = cache().render(f"walk-{root_id}-{column}", location(entry), size)
             sheet.paste(sheets.fitted(picture.path, size), (x, y + 24))
             last = entry is chain[-1]
-            stack(
+            under(
                 draw,
-                x,
-                y + 24 + size[1] + 8,
+                (x, y + 24),
+                size,
                 [
                     ("the root" if entry["kind"] == "root" else f"rung {entry['depth'] - 1}")
                     + (f"{sheets.MIDDOT}rated {rating} by hand" if last else ""),
                     sheets.width_text(entry["viewport"]["width"]),
                 ],
-                size=14,
                 lead=WELL_INK if last else WELL_INK_DIM,
             )
     destination = sheets.save(sheet, sheet_path("locations-walk-examples"))

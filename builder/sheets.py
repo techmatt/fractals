@@ -21,7 +21,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from .theme import SECTION_INK, WELL, WELL_INK, WELL_INK_DIM, font
+from .theme import SECTION_INK, SEMIBOLD, WELL, WELL_INK, WELL_INK_DIM, font, text_width
 
 #: A real minus sign, not a hyphen. Every number a figure prints goes through here:
 #: the labels are typeset, not code, and `-0.8038` in a caption reads as a dash.
@@ -34,11 +34,123 @@ MIDDOT = " · "
 #: sheet with a different margin than gutter looks like a mistake at every size.
 PAD = 12
 
-#: How much room one and two label lines need under a panel.
-CAPTION_ONE = 28
-CAPTION_TWO = 46
-
+#: The size a label not under a tile is drawn at — a note beside a panel, a block's own
+#: name. The label *under* a tile is not this; it is `label_size` below, and there is no
+#: per-figure knob for it.
 LABEL_SIZE = 16
+
+
+# ------------------------------------------------------------------- the tile-label rule
+#
+# **One rule for every label drawn under a tile, site-wide** *(Matt, 2026-08-22)*. Every
+# sheet used to name its own label size — 13 here, 17 there — and every one of them was
+# chosen by looking at the sheet at the size it was composed at. Nothing is ever read at
+# that size. A figure is displayed at the article column's width whatever it was composed
+# at, and the sheets are composed at anything from 1316 to 2688 wide, so the same 17px
+# label is ten reading pixels under one figure and seven under another. Seven is not a
+# size; it is a smudge that happens to have been a sentence.
+#
+# So the size is derived twice and the larger wins:
+#
+# - **from the tile**, at `LABEL_TILE_SHARE` of its height, so a label stays in
+#   proportion to the picture it names — a big panel earns a bigger label;
+# - **from the sheet**, at `LABEL_SHEET_SHARE` of its width, which is the floor. A
+#   sheet's width is what the column's width divides by, so this share is the one number
+#   that means the same thing on every figure: about twelve reading pixels, a step under
+#   the figure's own caption, whatever the sheet was composed at. A floor typed in the
+#   sheet's own pixels cannot do that — 20 is legible on a 1316-wide sheet and half a
+#   size too small on a 2688-wide one.
+#
+# The tile share is Matt's 2.5–3%, and it is what a big panel gets: the map panel of
+# `escape-julia-map` is 738 tall and takes 20px by it. Everywhere the tiles are small
+# relative to their sheet — which is most of the site — the sheet floor is what applies.
+
+#: A tile label's size as a share of the tile's height.
+LABEL_TILE_SHARE = 0.0275
+
+#: The floor, as a share of the composed sheet's width. See above for why it is a share.
+LABEL_SHEET_SHARE = 0.0145
+
+#: The air between a tile and its label, and one line of label with its leading — both
+#: as shares of the label's own size, so the band under a tile grows with the type in it.
+LABEL_GAP_SHARE = 0.4
+LABEL_LINE_SHARE = 1.35
+
+#: Nothing steps down past this, however long the line is. A label that will not fit its
+#: tile at a readable size is a label somebody has to shorten, not a size to keep cutting.
+LABEL_FLOOR = 14
+
+
+def label_size(tile_height: int, sheet_width: int) -> int:
+    """The size the label under a tile of this shape is drawn at. The only answer."""
+    return max(
+        round(LABEL_TILE_SHARE * tile_height),
+        round(LABEL_SHEET_SHARE * sheet_width),
+    )
+
+
+def fitted_size(draw, lines, tile_width: int, size: int) -> int:
+    """That size, stepped down until the longest line stops running past the tile.
+
+    **A tile label is never wider than its tile.** Centred, an overlong line runs into
+    the gutter on both sides and collides with the label beside it, which is worse than
+    a size smaller. The band the caller laid out is still the unstepped size's, so a row
+    of tiles keeps one baseline even where one label in it had to give way.
+    """
+    while size > LABEL_FLOOR:
+        face = font(size)
+        if all(text_width(draw, line, face) <= tile_width for line in lines):
+            break
+        size -= 1
+    return size
+
+
+def caption_band(tile_height: int, sheet_width: int, lines: int = 1) -> int:
+    """How much room that label needs under the tile, for a caller laying out around it."""
+    size = label_size(tile_height, sheet_width)
+    return round(size * (LABEL_GAP_SHARE + lines * LABEL_LINE_SHARE))
+
+
+def centred(draw, x: int, y: int, room: int, text: str, face, fill) -> None:
+    """One line, centred in a box of this width. The primitive under every tile label."""
+    left, _, right, _ = draw.textbbox((0, 0), text, font=face)
+    draw.text((x + (room - (right - left)) / 2, y), text, fill=fill, font=face)
+
+
+def tile_label(
+    draw,
+    origin: tuple[int, int],
+    tile: tuple[int, int],
+    lines,
+    sheet_width: int,
+    *,
+    lead=WELL_INK,
+    inks=None,
+    semibold_lead: bool = False,
+) -> None:
+    """The label under one tile: centred on it, sized by the rule above.
+
+    `origin` is the tile's own top-left and `tile` its size, so a caller says where the
+    picture is and never where the lettering goes. The first line leads and the rest are
+    a rank quieter, which is what lets a label say what the panel *is* and then what it
+    was made from; `inks` overrides the fills line by line where a figure colours a label
+    to match something in the picture, and `semibold_lead` is for the one figure whose
+    first line names an outcome rather than describing a panel.
+    """
+    if isinstance(lines, str):
+        lines = [lines]
+    x, y = origin
+    tile_width, tile_height = tile
+    size = label_size(tile_height, sheet_width)
+    step = round(size * LABEL_LINE_SHARE)
+    top = y + tile_height + round(size * LABEL_GAP_SHARE)
+    size = fitted_size(draw, lines, tile_width, size)
+    face, strong = font(size), font(size, SEMIBOLD)
+    for index, line in enumerate(lines):
+        ranked = lead if index == 0 else WELL_INK_DIM
+        fill = ranked if inks is None else inks[index]
+        chosen = strong if index == 0 and semibold_lead else face
+        centred(draw, x, top + index * step, tile_width, line, chosen, fill)
 
 
 # ------------------------------------------------------------------- number formatting
@@ -91,12 +203,16 @@ def canvas(width: int, height: int):
 
 
 def label(draw, x: int, y: int, lines, size: int = LABEL_SIZE, lead=WELL_INK) -> None:
-    """A panel's label: the first line in caption ink, the rest a rank quieter.
+    """Ranged-left lettering: the first line in caption ink, the rest a rank quieter.
 
-    One string is one line; the ranks are what let a label say what the panel *is* and
-    then what it was made from, without the second half competing with the first. A sheet
-    whose labels are all one line and all the same kind of fact passes `lead=WELL_INK_DIM`
-    and gets one quiet rank, which is what the rendering figures do.
+    One string is one line; the ranks are what let a note say what a thing *is* and then
+    what it was made from, without the second half competing with the first.
+
+    **This is not the label under a tile** — that is `tile_label`, which owns its own
+    size and centres. What is left here is the lettering that stands beside a picture
+    rather than under it: a note next to a table, the settings a run used, the sentence
+    an animation's beat is explaining. Those are prose set in a column and stay ranged
+    left, at the size their sheet asks for.
     """
     if isinstance(lines, str):
         lines = [lines]
@@ -111,9 +227,7 @@ def provenance_line(draw, x: int, y: int, text: str, size: int = 15) -> None:
     draw.text((x, y), text, fill=SECTION_INK, font=font(size))
 
 
-def grid_size(
-    panel: tuple[int, int], columns: int, rows: int, caption: int = CAPTION_ONE
-) -> tuple[int, int]:
+def grid_size(panel: tuple[int, int], columns: int, rows: int, caption: int) -> tuple[int, int]:
     """The sheet a grid of this shape needs — for a caller laying out around it."""
     panel_width, panel_height = panel
     return (
@@ -122,9 +236,7 @@ def grid_size(
     )
 
 
-def panel_origin(
-    index: int, panel: tuple[int, int], columns: int, caption: int = CAPTION_ONE
-) -> tuple[int, int]:
+def panel_origin(index: int, panel: tuple[int, int], columns: int, caption: int) -> tuple[int, int]:
     """Where the index-th panel's top-left corner lands, filling rows left to right."""
     panel_width, panel_height = panel
     row, column = divmod(index, columns)
@@ -173,20 +285,21 @@ def panel_grid(
     columns: int,
     *,
     panel: tuple[int, int] | None = None,
-    caption: int | None = None,
-    label_size: int = LABEL_SIZE,
     lead=WELL_INK,
+    inks=None,
     after=None,
 ):
     """Panels in a grid on the well, one label under each. The commonest figure there is.
 
     `panels` is `(path, lines)` per panel, where `lines` is a string or a list of them.
-    The panel size is the first panel's unless one is given, and the caption band is
-    sized to the tallest label unless one is given — so the ordinary call is two
-    arguments and a sheet whose label band fits its labels.
+    The panel size is the first panel's unless one is given, and the label band is what
+    the tile-label rule asks for at that panel's height — so the ordinary call is two
+    arguments and there is nothing to get wrong.
 
     `after(draw, index, x, y, panel_width, panel_height)` runs once per panel with the
-    panel already pasted, which is where a marked box or a marker goes.
+    panel already pasted, which is where a marked box or a marker goes. `inks` is a fill
+    per label line, for a sheet that colours a label to match something in its picture,
+    and may be given per panel as a dict keyed by panel index.
     """
     from PIL import Image
 
@@ -196,9 +309,9 @@ def panel_grid(
     if panel is None:
         with Image.open(entries[0][0]) as first:
             panel = first.size
-    if caption is None:
-        deepest = max(len(lines) for _, lines in entries)
-        caption = CAPTION_ONE if deepest <= 1 else 6 + deepest * (label_size + 5)
+    width = PAD + columns * (panel[0] + PAD)
+    deepest = max(len(lines) for _, lines in entries)
+    caption = caption_band(panel[1], width, deepest)
     rows = (len(entries) + columns - 1) // columns
     sheet, draw = canvas(*grid_size(panel, columns, rows, caption))
     panel_width, panel_height = panel
@@ -207,7 +320,8 @@ def panel_grid(
         paste(sheet, path, (x, y), panel)
         if after is not None:
             after(draw, index, x, y, panel_width, panel_height)
-        label(draw, x, y + panel_height + 6, lines, size=label_size, lead=lead)
+        chosen = inks.get(index) if isinstance(inks, dict) else inks
+        tile_label(draw, (x, y), panel, lines, width, lead=lead, inks=chosen)
     return sheet, draw
 
 

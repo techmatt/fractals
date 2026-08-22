@@ -288,8 +288,26 @@ def elided(draw, text: str, face, room: float) -> str:
 
 
 def _name_under(draw, x: int, y: int, name: str, room: int, *, size: int = 14, ink=WELL_INK_DIM):
+    """A name ranged left in a column of its own — the mood table, and nothing else."""
     face = font(size)
     draw.text((x, y), elided(draw, name, face, room), fill=ink, font=face)
+
+
+def _tile_name(draw, origin, tile, name: str, *, ink=WELL_INK_DIM) -> None:
+    """A name under one tile, by the site's one rule for a tile label.
+
+    `tile` is everything the name is under — a picture and the strip beneath it are one
+    tile here, because the name belongs to both. Long names are still cut to the tile's
+    width, at whatever size the rule gives them.
+    """
+    face = font(sheets.label_size(tile[1], SHEET_WIDTH))
+    cut = [elided(draw, name, face, tile[0])]
+    sheets.tile_label(draw, origin, tile, cut, SHEET_WIDTH, lead=ink)
+
+
+def _tile_band(tile_height: int) -> int:
+    """The room that name needs, for the arithmetic that lays a sheet out around it."""
+    return sheets.caption_band(tile_height, SHEET_WIDTH)
 
 
 def _band(draw, x: int, y: int, text: str, *, size: int = 15) -> None:
@@ -334,7 +352,7 @@ def locations_by_palettes() -> Drawn:
     maps = [held[name] for name in OPENING_PALETTES]
     rows = [frame(which) for which in ("mandelbrot", "julia", "phoenix")]
     panel = panels(3)
-    head = STRIP_HEIGHT + 22
+    head = STRIP_HEIGHT + _tile_band(STRIP_HEIGHT)
     sheet, draw = sheets.canvas(
         SHEET_WIDTH, sheets.PAD + head + sheets.PAD + 3 * (panel[1] + sheets.PAD)
     )
@@ -342,7 +360,7 @@ def locations_by_palettes() -> Drawn:
         x = sheets.PAD + column * (panel[0] + sheets.PAD)
         head_strip = strip(palette.name, panel[0])
         sheets.paste(sheet, head_strip, (x, sheets.PAD), (panel[0], STRIP_HEIGHT))
-        _name_under(draw, x, sheets.PAD + STRIP_HEIGHT + 5, palette.name, panel[0], ink=WELL_INK)
+        _tile_name(draw, (x, sheets.PAD), (panel[0], STRIP_HEIGHT), palette.name, ink=WELL_INK)
     top = sheets.PAD + head + sheets.PAD
     for index, row in enumerate(rows):
         field = field_of(row)
@@ -412,7 +430,8 @@ def fire_ice() -> Drawn:
     row = frame("fire_ice")
     field = field_of(row)
     panel = panels(4)
-    cell = panel[1] + 4 + TILE_STRIP_HEIGHT + 22
+    tile = (panel[0], panel[1] + 4 + TILE_STRIP_HEIGHT)
+    cell = tile[1] + _tile_band(tile[1])
     rows = (len(names) + 3) // 4
     sheet, draw = sheets.canvas(SHEET_WIDTH, sheets.PAD + rows * (cell + sheets.PAD))
     for index, name in enumerate(names):
@@ -426,7 +445,7 @@ def fire_ice() -> Drawn:
             (x, y + panel[1] + 4),
             (panel[0], TILE_STRIP_HEIGHT),
         )
-        _name_under(draw, x, y + panel[1] + 4 + TILE_STRIP_HEIGHT + 5, name, panel[0])
+        _tile_name(draw, (x, y), tile, name)
     provenance = [
         "One frame, dumped once as a smooth field and recolored through every palette the "
         f"fire-ice batch shipped; a strip of each palette sits under its own tile. The "
@@ -447,8 +466,8 @@ def palette_params() -> Drawn:
     row = frame("params")
     field = field_of(row)
     panel = panels(5)
-    head = STRIP_HEIGHT + 22
-    cell = panel[1] + 24
+    head = STRIP_HEIGHT + _tile_band(STRIP_HEIGHT)
+    cell = panel[1] + _tile_band(panel[1])
     sheet, draw = sheets.canvas(
         SHEET_WIDTH, sheets.PAD + head + sheets.PAD + 2 * (cell + sheets.PAD)
     )
@@ -458,23 +477,27 @@ def palette_params() -> Drawn:
         (sheets.PAD, sheets.PAD),
         (SHEET_WIDTH - 2 * sheets.PAD, STRIP_HEIGHT),
     )
-    _name_under(draw, sheets.PAD, sheets.PAD + STRIP_HEIGHT + 5, palette.name, 600, ink=WELL_INK)
+    _tile_name(
+        draw,
+        (sheets.PAD, sheets.PAD),
+        (SHEET_WIDTH - 2 * sheets.PAD, STRIP_HEIGHT),
+        palette.name,
+        ink=WELL_INK,
+    )
     top = sheets.PAD + head + sheets.PAD
     made = []
     for column, cycles in enumerate(KNOB_CYCLES):
         picture = coloured(field, palette, cycles=float(cycles))
         x = sheets.PAD + column * (panel[0] + sheets.PAD)
         sheet.paste(sheets.fitted(picture, panel), (x, top))
-        _name_under(draw, x, top + panel[1] + 6, f"cycles {cycles}", panel[0], ink=WELL_INK_DIM)
+        _tile_name(draw, (x, top), panel, f"cycles {cycles}")
         made.append(f"cycles {cycles}, phase 0")
     second = top + cell + sheets.PAD
     for column, phase in enumerate(KNOB_PHASES):
         picture = coloured(field, palette, cycles=float(KNOB_PHASE_CYCLES), phase=phase)
         x = sheets.PAD + column * (panel[0] + sheets.PAD)
         sheet.paste(sheets.fitted(picture, panel), (x, second))
-        _name_under(
-            draw, x, second + panel[1] + 6, f"phase {phase:.1f}", panel[0], ink=WELL_INK_DIM
-        )
+        _tile_name(draw, (x, second), panel, f"phase {phase:.1f}")
         made.append(f"cycles {KNOB_PHASE_CYCLES}, phase {phase}")
     provenance = [
         "One frame, dumped once as a smooth field and recolored ten times through one "
@@ -502,7 +525,8 @@ def palette_spread() -> Drawn:
     scores = renders.palette_scores(pictures)
     best = max(range(len(names)), key=lambda index: scores[index])
     panel = panels(SPREAD_COLUMNS)
-    cell = panel[1] + 4 + TILE_STRIP_HEIGHT + 22
+    tile = (panel[0], panel[1] + 4 + TILE_STRIP_HEIGHT)
+    cell = tile[1] + _tile_band(tile[1])
     rows = (len(names) + SPREAD_COLUMNS - 1) // SPREAD_COLUMNS
     sheet, drawer = sheets.canvas(SHEET_WIDTH, sheets.PAD + rows * (cell + sheets.PAD))
     for index, name in enumerate(names):
@@ -517,7 +541,7 @@ def palette_spread() -> Drawn:
         )
         lead = WELL_INK if index == best else WELL_INK_DIM
         label = f"the pick — {name}" if index == best else name
-        _name_under(drawer, x, y + panel[1] + 4 + TILE_STRIP_HEIGHT + 5, label, panel[0], ink=lead)
+        _tile_name(drawer, (x, y), tile, label, ink=lead)
         if index == best:
             _outline(drawer, (x, y, x + panel[0] - 1, y + panel[1] - 1))
     provenance = [
@@ -611,7 +635,7 @@ def autolevel_pairs() -> Drawn:
     """
     rows = [_acted_release(run, candidate) for run, candidate in ACTED]
     panel = panels(2)
-    cell = panel[1] + sheets.CAPTION_TWO
+    cell = panel[1] + sheets.caption_band(panel[1], SHEET_WIDTH, 2)
     sheet, drawer = sheets.canvas(SHEET_WIDTH, sheets.PAD + len(rows) * (cell + sheets.PAD))
     provenance = [
         "Two release records, each drawn twice: the picture as the chosen palette renders "
@@ -640,7 +664,7 @@ def autolevel_pairs() -> Drawn:
         ):
             x = sheets.PAD + column * (panel[0] + sheets.PAD)
             sheet.paste(sheets.fitted(path, panel), (x, top))
-            sheets.label(drawer, x, top + panel[1] + 6, lines)
+            sheets.tile_label(drawer, (x, top), panel, lines, SHEET_WIDTH)
         provenance.extend(_autolevel_provenance(record, stamp, index, name=index == 0))
     return Drawn(sheets.save(sheet, sheet_path("palette-autolevel")), provenance)
 
@@ -715,14 +739,14 @@ def generator_batch() -> Drawn:
     names = batches()[GENERATOR_BATCH]
     columns = 3
     width = (SHEET_WIDTH - (columns + 1) * sheets.PAD) // columns
-    cell = STRIP_HEIGHT + 24
+    cell = STRIP_HEIGHT + _tile_band(STRIP_HEIGHT)
     rows = (len(names) + columns - 1) // columns
     sheet, drawer = sheets.canvas(SHEET_WIDTH, sheets.PAD + rows * (cell + sheets.PAD))
     for index, name in enumerate(names):
         x = sheets.PAD + (index % columns) * (width + sheets.PAD)
         y = sheets.PAD + (index // columns) * (cell + sheets.PAD)
         sheets.paste(sheet, strip(name, width), (x, y), (width, STRIP_HEIGHT))
-        _name_under(drawer, x, y + STRIP_HEIGHT + 5, name, width)
+        _tile_name(drawer, (x, y), (width, STRIP_HEIGHT), name)
     provenance = [
         "No render: every panel is a gradient rather than a picture of a location. Strips "
         "are `fractal-wallpapers palettes strip` at the cell's own width.",

@@ -212,6 +212,14 @@ What a figure is made of:
   gradient strip is a label rather than a caption, and centres. Both live in
   `assets/css/site.css` and there is no per-figure knob: the `align` field a row used to
   ask with is gone.
+- **A label drawn into a sheet is centred under its tile, and one rule sizes it**
+  *(Matt, 2026-08-22)*. The labels a maker draws into the picture are past CSS's reach,
+  and every sheet used to name its own size — 13 here, 17 there, each chosen against the
+  sheet at the size it was composed at, which is not the size anybody reads it at. The
+  rule is `builder/sheets.py`'s `label_size`: the larger of a share of the tile's height
+  and a share of the composed sheet's width, the second being the floor that makes the
+  size mean the same thing on a sheet composed at 1316 and one at 2688. It steps down
+  where a line would run past its tile, and there is no per-figure size to pass.
 - **A figure may be registered before its asset exists**, with `"status": "pending"` and
   no file or size. The block it derives is a well saying what the picture will show, which
   is honest in a way an empty space or a broken image is not. `python -m builder figures`
