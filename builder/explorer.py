@@ -85,6 +85,19 @@ WASM_ARTIFACT = ("target", WASM_TARGET, "release", "explorer_engine_wasm.wasm")
 #: The manifest's schema, in the same spirit as every JSONL record here.
 SCHEMA = 1
 
+#: Every change this consumer has needed in the sibling engine, one line each. CLAUDE.md
+#: allows a website prompt a zero-behaviour engine change — visibility, inlining, `cfg` —
+#: only on condition that it is named here, because a committed module nobody can rebuild
+#: from the sibling checkout is a dead end. Typed rather than derived: nothing in the
+#: sibling repository marks a commit as one of these, and a list that guessed would be
+#: worse than no list. A change lands here in the same commit that bakes it in.
+ENGINE_CHANGES = [
+    "coloring::composite, coloring::modulate and direct_trap::Painter::trace are pub: "
+    "visibility only, no signature moved, engine tests unmoved.",
+    "iterate::run is #[inline(always)]: the specialization cascade the nine call sites "
+    "in the wasm crate depend on.",
+]
+
 _RUSTC_VERSION = re.compile(r"^rustc (\S+ \([0-9a-f]+ \d{4}-\d{2}-\d{2}\))")
 
 
@@ -329,6 +342,7 @@ def write_manifest(raw_bytes: int, gzip_bytes: int) -> Path:
         "schema": SCHEMA,
         "built": date.today().isoformat(),
         "crate": CRATE_DIR.relative_to(SITE_ROOT).as_posix(),
+        "engine_changes": list(ENGINE_CHANGES),
         "engine_version": _engine_version(),
         "gzip_bytes": gzip_bytes,
         "raw_bytes": raw_bytes,

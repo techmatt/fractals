@@ -1,6 +1,10 @@
 {
   "built": "2026-08-21",
   "crate": "explorer/engine-wasm",
+  "engine_changes": [
+    "coloring::composite, coloring::modulate and direct_trap::Painter::trace are pub: visibility only, no signature moved, engine tests unmoved.",
+    "iterate::run is #[inline(always)]: the specialization cascade the nine call sites in the wasm crate depend on."
+  ],
   "engine_version": "0.1.0",
   "gzip_bytes": 161358,
   "raw_bytes": 470300,

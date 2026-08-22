@@ -6,9 +6,24 @@ training judges to pick between them — plus the galleries of finished work tha
 the case the article is arguing. It is served by GitHub Pages at
 `https://techmatt.github.io/fractal-website/`.
 
-The companion code repository is `C:\Code\fractal-wallpapers` (**read-only** from
-here). The article links into it per section; nothing is copied across without being
-rewritten to read as prose.
+The companion code repository is `C:\Code\fractal-wallpapers`. The article links into it
+per section; nothing is copied across without being rewritten to read as prose.
+
+**It is read-only from here, with one carve-out** *(Matt, 2026-08-21, after
+`explorer_generalize` landed engine changes under the old rule)*. A website prompt may
+make **minimal engine changes that serve the wasm consumer**, and only where every one of
+these holds:
+
+- **zero behaviour** — visibility, inlining, `cfg`, and nothing else;
+- **no new dependency and no new feature** in the default build;
+- **the engine's tests and the native anchor unmoved**;
+- **committed in `fractal-wallpapers` by explicit file path only** — never `git add -A`,
+  never `git commit -a`, because another prompt may be running in that repository;
+- **named in `engine.manifest.json`**, so that a committed wasm nobody can rebuild is
+  never how this ends.
+
+Everything else in that repository stays read-only to a website prompt: its code and its
+records are read, and a change to either is somebody else's prompt.
 
 ## The naming rule
 

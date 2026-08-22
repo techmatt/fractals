@@ -77,7 +77,13 @@ Committed beside the module, `engine.manifest.json` records what it was built fr
 | `engine_version` | the engine crate's own version, read from its `Cargo.toml` |
 | `rustc` | the compiler, with its commit and date |
 | `wallpapers_commit` | the sibling checkout's `HEAD` at bake time |
+| `engine_changes` | every change this consumer has needed in the engine, one line each |
 | `raw_bytes` / `gzip_bytes` | 470,300 raw, **161,358 gzipped** |
+
+`engine_changes` is typed, in `builder/explorer.py`, and is the condition CLAUDE.md puts
+on a website prompt touching the sibling engine at all: a zero-behaviour change is allowed
+there only if it is named here. Nothing in the sibling repository marks a commit as one of
+these, so a derived list would be a guessed one.
 
 `python -m builder check` reads the manifest back and prints a **note** when
 `wallpapers_commit` is no longer an ancestor of the sibling checkout's `HEAD`. A note and
@@ -244,10 +250,25 @@ GitHub Pages.
 
 Two harnesses, and they answer two different questions.
 
-**The kernel, one thread, no browser.** `scratch/explorer_bench/kernel.mjs` instantiates
-the committed module under Node and asks for one whole frame, so the number is the
-arithmetic and not the pool. `home` is the mandelbrot home view; `anchor` is a hard
-location deep in the spike. Both in mode `smooth` at 1280x720.
+**The kernel, one thread, no browser.** `explorer/bench/kernel.mjs` instantiates the
+committed module under Node and asks for one whole frame, so the number is the arithmetic
+and not the pool. `home` is the mandelbrot home view; `anchor` is a hard location deep in
+the spike. Both in mode `smooth` at 1280x720.
+
+```
+node explorer/bench/kernel.mjs kernel.json          # both views, 3 runs each
+node explorer/bench/modes.mjs                       # every mode, mandelbrot home
+node explorer/bench/sweep.mjs                       # every family x mode pair
+```
+
+**This harness is tracked, and it is the regression guard for the specialization
+cascade** — `iterate::run` inlined into nine specialized call sites is worth 4x on the
+field, and nothing else in this repository would notice if a rebuild lost it. It started
+under `scratch/`, which is wiped, and a guard that a wipe can delete is not one; the four
+modules moved here and `output.mjs` sends every run's numbers to `artifacts/`, which is
+ignored. Code is committed, measurements are not — a number here is this machine on this
+day. The browser-driven rig that produced the pool figures below stays under `scratch/`:
+it is a session's worth of driver scripts and probe pages, not a guard.
 
 | frame | cap | draft 1 | now |
 | --- | --- | --- | --- |

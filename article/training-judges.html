@@ -69,20 +69,20 @@
     where it is available.</p>
 
     <p>A few extremes are obvious — a frame that is practically all black, or practically flat
-    — and everything else depends on taste and on use. I rated everything according to my own
-    preferences for desktop wallpapers, so the judges are trained toward one person's taste;
+    — and everything in between depends on taste and on use. I rated everything according to my
+    own preferences for desktop wallpapers, so the judges are trained toward one person's taste;
     fine-tuning them toward a different taste would be straightforward, and the labeled
     datasets are published for exactly that purpose
     (<a href="overview.html">Overview</a>).</p>
 
-    <p>What is rated differs by judge. A location rating asks whether a <em>place</em> could
-    make a good wallpaper, so the rating is made from two renders of it at once — one in the
-    neutral palette the judge will see, and one in a vivid palette that shows what the geometry
-    can become — and answers for the geometry, not for either picture. A render rating asks
-    whether <em>this picture</em> is worth keeping, and is made from exactly the picture that
-    was rendered: its mode, its settings, its palette. The corpus holds ratings for nearly
-    twelve thousand locations, about five thousand smooth renders, and about three thousand
-    renders in the other modes.</p>
+    <p>What is rated differs from judge to judge. A location rating asks whether a
+    <em>place</em> could make a good wallpaper, so the rating is made from two renders of it at
+    once — one in the neutral palette the judge will see, and one in a vivid palette that shows
+    what the geometry can become — and answers for the geometry, not for either picture. A
+    render rating asks whether <em>this picture</em> is worth keeping, and is made from exactly
+    the picture that was rendered: its mode, its settings, its palette. The corpus holds ratings
+    for nearly twelve thousand locations, about five thousand smooth renders, and about three
+    thousand renders in the other modes.</p>
 
       <figure class="figure" data-figure="judges-rating-views">
         <img src="../assets/images/figures/judges-rating-views.jpg" width="1316" height="432" alt="One location drawn twice side by side: the same frame in the neutral palette the judge is shown, and in a vivid one.">
@@ -111,8 +111,10 @@
         <figcaption>One location at the three sizes its judge is trained over, drawn to scale. The walk scores the smallest of them and a person rated the largest. Composition and density survive the shrink, which is why one judge can read all three. <span class="credit">Rendered with fractal-wallpapers</span></figcaption>
       </figure>
 
-    <p>The two render judges see the actual picture, stretched to the network's input size,
-    palette included. They divide the catalog as
+    <p>The two render judges see the picture that was drawn to be judged — its mode, its
+    settings and its palette, but drawn small, at 640 by 360, and stretched from there to the
+    network's input. Nothing is judged at wallpaper size; a full-resolution render is what a
+    passing score buys. They divide the catalog as
     <a href="rendering-modes.html">Rendering modes</a> described: the <i>smooth judge</i>
     handles the plain smooth rendering and the <i>mode judge</i> handles the seventeen other
     production modes. A judge trained on smooth renders would have something to say about the
@@ -126,66 +128,58 @@
     <a href="https://arxiv.org/abs/2404.10518">MobileNetV4</a> convolutional network pretrained
     on ImageNet — about eight million parameters for the location and smooth judges, a variant
     a third that size for the mode judge — with its final layer replaced and the whole network
-    then fine-tuned on the ratings. This is standard transfer learning, and a reader who wants
-    the mechanics will find them in any introductory treatment (for example the
+    then fine-tuned on the ratings. This is standard transfer learning, and its mechanics and
+    its engineering specifics are covered thoroughly elsewhere — the
     <a href="https://pytorch.org/tutorials/beginner/transfer_learning_tutorial.html">PyTorch
-    transfer-learning tutorial</a>); nothing in the recipe is unusual. Larger architectures
-    were tried, including vision transformers; none beat MobileNetV4 by more than noise, and it
-    was the fastest and smallest, so it stayed.</p>
+    transfer-learning tutorial</a> is one good place to start. Nothing in the recipe is unusual.
+    Larger architectures were tried, including vision transformers; none beat MobileNetV4 by
+    more than noise, and it was the fastest and smallest, so it stayed.</p>
 
-    <p>The one choice that fits the problem specifically is the training target. A four-point
-    rating is ordered, not categorical: a 3 is closer to a 4 than a 1 is, and an ordinary
-    classifier discards that. The judges are trained by
-    <a href="https://arxiv.org/abs/2111.08851">ordinal regression</a> instead — three
+    <p>A four-point rating is ordered, not categorical: a 3 is closer to a 4 than a 1 is, and
+    an ordinary classifier throws that ordering away. Keeping it is the one place the recipe is
+    fitted to this problem rather than taken off the shelf. The judges are trained by
+    <a href="https://arxiv.org/abs/2111.08851">ordinal regression</a> — three
     yes-or-no questions, "at least a 2?", "at least a 3?", "at least a 4?", each asked only of
     pictures that already passed the one before, so the three answers can never contradict each
-    other. Multiplying them gives the probabilities the pipeline uses: P(≥3), the chance a
-    picture would be rated at least good, and P(≥4), the chance it would be rated exceptional.
-    The walk's floors on the previous page are thresholds on the first of those.</p>
+    other. Multiplying them gives the two probabilities the pipeline acts on: P(≥3), the chance
+    a picture would be rated at least good, which is what the walk's floors on the previous page
+    are thresholds on, and P(≥4), the chance it would be rated exceptional.</p>
 
     <p>The rest of the recipe is ordinary: forty epochs, a cosine learning-rate schedule, under
     two hours on one GPU for the location judge and under an hour for each of the others.
-    Augmentation is conservative, and deliberately color-preserving, because the palette is
-    part of what was rated. The location judge sees small border crops, flips, re-encoding, and
-    brightness and contrast changes of a few percent — never a change of hue or saturation. The
-    two render judges see crops and flips only.</p>
+    Augmentation is deliberately narrow. The location judge is only ever shown one fixed
+    neutral palette, so jittering hue or saturation would train it on colors it will never be
+    given; what it gets instead is the variation that is real at deployment — small border
+    crops, flips, JPEG re-encoding around the quality its renders are cached at, and brightness
+    and contrast changes of a few percent. The two render judges get crops and flips and nothing
+    else, because for them the coloring is the question, and any change to it edits what is
+    being asked.</p>
 
     <h2 id="evaluating-a-judge">Evaluating a judge</h2>
 
     <p>A judge is evaluated on ratings it never trained on, and the held-out set has to be
     drawn without the judge's help: a set of locations a judge scored well is not a test of that
-    judge. The held-out sets are therefore drawn by methods that never consult a score — a
-    uniform draw over a parameter plane with no gate in front of it, a systematic sweep of a
-    family's parameter space, a uniform draw over everything one walk recorded — and held out by
+    judge. Those sets are drawn by methods that never consult a score, and are held out by
     neighborhood rather than by frame, because nearby frames are near-duplicates and a judge
     could otherwise pass by memorizing a location's neighbor.</p>
 
-    <p>The figures below show held-out results for each judge: one row per human rating, four
-    examples spread evenly across each row's own held-out set, and the judge's own verdict
-    marked on every panel. Where a rating has fewer than four held-out examples the row is short
-    rather than padded. The agreement is good, and where the judge disagrees it is nearly always
-    by one step — the same shape the human ratings take, since two ratings of the same frame
-    rarely differ by more than one class.</p>
+    <p>Agreement with those ratings is the plain way to say how well that goes, and it separates
+    the judges. The location judge picks the person's own class most of the time, and lands
+    within one class of it almost always. The two render judges are within one class about as
+    reliably and hit the exact class much less often; the smooth judge in particular reads
+    well-rated pictures low, calling a 4 a 3 far more often than the reverse. One class of
+    disagreement is the shape the ratings take among themselves, since two ratings of the same
+    frame rarely differ by more than one class — but a judge that is off by a class in one
+    direction more than the other cannot have its probability read as the rating it stands
+    for.</p>
 
-      <figure class="figure" data-figure="judges-results-location">
-        <img src="../assets/images/figures/judges-results-location.jpg" width="1316" height="958" alt="A four-by-four grid of held-out locations, one row per human rating from 1 to 4, each panel carrying the judge's own rating.">
-        <figcaption>Held-out locations, one row per hand rating, four spread evenly across each rating's own held-out set. Every panel carries the location judge's own class in that class's colour, and every row says how often the judge agrees over the whole set behind its four panels. <span class="credit">Rendered with fractal-wallpapers</span></figcaption>
-      </figure>
-
-      <figure class="figure" data-figure="judges-results-smooth">
-        <img src="../assets/images/figures/judges-results-smooth.jpg" width="1316" height="958" alt="The same grid for held-out smooth renders, each panel carrying the smooth judge's rating.">
-        <figcaption>The same for held-out smooth renders and the smooth judge, every panel redrawn from the record its rating was given to, palette included. Nothing in this held-out set was rated 1, so that row comes from the training side and shows only what a 1 looks like and where the judge puts one. <span class="credit">Rendered with fractal-wallpapers</span></figcaption>
-      </figure>
-
-      <figure class="figure" data-figure="judges-results-modes">
-        <img src="../assets/images/figures/judges-results-modes.jpg" width="1316" height="958" alt="The same grid for held-out renders in the other modes, each panel carrying the mode judge's rating.">
-        <figcaption>The same for held-out renders in the other modes and the mode judge. Only two held-out frames carry a 3, so that row is two panels rather than four — padding it would have meant showing something nobody rated a 3. <span class="credit">Rendered with fractal-wallpapers</span></figcaption>
-      </figure>
-
-    <p>Each judge's probabilities are also checked against the held-out ratings for
-    calibration. They are not always well calibrated — a raw P(≥3) of 0.5 is not reliably even
-    odds — so the pipeline treats a judge's output as a ranking and sets its thresholds
-    separately, which is the subject of the next section.</p>
+    <p>That is what calibration measures, and the judges are not always well calibrated: a raw
+    P(≥3) of 0.5 is not reliably even odds. A threshold read off a probability as though it
+    meant what it says therefore lands in the wrong place, and lands wrong in both directions —
+    set too high, a bar starves the pipeline, and a slot with nothing above it goes unfilled
+    rather than being padded; set too low, it spends rendering and coloring time on frames that
+    were never going to be kept. So the pipeline treats a judge's output as a ranking and sets
+    each threshold by measurement, which is the subject of the next section.</p>
 
     <h2 id="from-a-score-to-a-decision">From a score to a decision</h2>
 
@@ -198,13 +192,18 @@
     <i>great cut</i> — the one read on P(≥4) — a find is counted as exceptional when the supply
     is balanced across <i>partitions</i>, the buckets the project keeps its books in: one per
     family at one degree, with a parameter plane counted apart from its dynamical twin
-    (<a href="from-locations-to-wallpapers.html">From locations to wallpapers</a>). Each was set
-    once, and after every retrain the three are <i>restated by volume</i>: over a fixed
-    reference pool of tens of thousands of locations, the new threshold is the score on the new
-    judge that passes the same fraction of the pool as the old threshold passed on the old
-    judge, rounded down so that a restated floor never removes supply the old one admitted. The
-    restatement reads no ratings; it preserves how much flows, not which frames. The "about
-    0.4" and "about 0.1" on the previous page are the current restated floors.</p>
+    (<a href="from-locations-to-wallpapers.html">From locations to wallpapers</a>).</p>
+
+      <figure class="figure figure-pending" data-figure="judges-score-to-decision">
+        <p class="pending"><span class="pending-label">Figure pending</span>Four frames from one fractal family, in score order, each labeled with the decision its score buys: refused, expandable, a find, and an exceptional find.</p>
+        <figcaption>One family, one frame per outcome the location judge's score decides. Below the expansion floor the frame is refused; between the two floors the walk may explore through it but records nothing; above the admission floor it is booked as a find; above the great cut it counts as exceptional when supply is balanced. <span class="credit">Rendered with fractal-wallpapers</span></figcaption>
+      </figure>
+
+    <p>Each was set once, and after every retrain the three are <i>restated by volume</i>: over
+    a fixed reference pool of tens of thousands of locations, the new threshold is the score on
+    the new judge that passes the same fraction of the pool as the old threshold passed on the
+    old judge. The restatement reads no ratings; it preserves how much flows, not which
+    frames.</p>
 
     <p>The two render judges act differently. The mode judge carries a release bar that was
     read off ratings directly: the score above which a picture had been rated at least good more
