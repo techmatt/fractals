@@ -216,9 +216,8 @@ def derive() -> list[Link]:
                     key,
                     "incomplete_provenance",
                     "a gallery tile carries no provenance of its own, and this gallery's "
-                    "pictures were cropped from a contact sheet whose generator is gone — "
-                    "the same record `family-home-views` is refused on, and no mode is "
-                    "written down anywhere for them",
+                    "pictures were cropped from a contact sheet whose generator is gone: "
+                    "no mode is written down anywhere for them",
                 )
             )
 

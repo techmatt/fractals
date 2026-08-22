@@ -43,8 +43,24 @@ INDENT = " " * 6
 PENDING = "pending"
 
 #: The words the explorer link is spelled with, here and on a gallery tile. One string,
-#: because a link a reader learns to recognize has to read the same everywhere.
+#: because a link a reader learns to recognize has to read the same everywhere. On a
+#: figure it is the link's accessible name rather than its visible text *(Matt,
+#: 2026-08-21)*: the way back into the explorer is a mark on the picture, not a sentence
+#: under it, so the words are what a screen reader and a hover both say.
 OPEN_TEXT = "open in fractal explorer"
+
+#: The mark that carries the link on a picture. A glyph and not an image file: the site
+#: loads no webfont and commits no icon set, and an arrow out of a box is the one shape
+#: every reader already reads as "this opens somewhere else".
+OPEN_MARK = "\u2197"
+
+#: How a row asks for its caption to be set flush left instead of centred *(Matt,
+#: 2026-08-21)*. Centred is the default and carries most of the site: at the reading
+#: measure a caption of up to about three hundred characters is four lines or fewer, and
+#: a centred block that shallow reads well under a picture. Past that it is set flush
+#: left, which is where the wide multi-panel sheets land — they are the figures with the
+#: most to say. The threshold is a judgement, applied once, rather than argued per figure.
+ALIGN_LEFT = "left"
 
 #: `.gitattributes` normalizes this repository to LF, so anything that rewrites a
 #: tracked file spells the line ending rather than taking the platform's.
@@ -101,7 +117,7 @@ class Figure:
     file: str | None
     width: int | None
     height: int | None
-    credit: str | None
+    align: str | None
     provenance: tuple[str, ...]
     recipe: Recipe | None
 
@@ -139,33 +155,52 @@ def markup(figure: Figure, opened: str | None = None) -> str:
     `opened` is the explorer link this figure reopens at, where the link registry holds
     one — see `builder/links.py`. A figure the explorer cannot reproduce carries no
     link at all rather than one that lands somewhere near it.
+
+    **The caption is the caption and nothing else** *(Matt, 2026-08-21)*. It used to end
+    with two more sentences that were not about the picture: a credit saying the engine
+    drew it, which every render on the site said identically, and the way into the
+    explorer written out as a line of prose. The credit is gone and the link is a mark on
+    the corner of the picture, so what is left under a figure is what a reader is looking
+    at.
     """
-    caption = text(figure.caption)
-    if figure.credit:
-        caption += f' <span class="credit">{text(figure.credit)}</span>'
-    if opened:
-        caption += f' <a class="open" href="{attribute(opened)}">{OPEN_TEXT}</a>'
-    classes = "figure figure-pending" if figure.pending else "figure"
+    classes = ["figure"]
+    if figure.pending:
+        classes.append("figure-pending")
+    if figure.align == ALIGN_LEFT:
+        classes.append("figure-ranged")
     return "\n".join(
         [
-            f'{INDENT}<figure class="{classes}" data-figure="{attribute(figure.id)}">',
-            _well(figure),
-            f"{INDENT}  <figcaption>{caption}</figcaption>",
+            f'{INDENT}<figure class="{" ".join(classes)}" data-figure="{attribute(figure.id)}">',
+            _well(figure, opened),
+            f"{INDENT}  <figcaption>{text(figure.caption)}</figcaption>",
             f"{INDENT}</figure>",
         ]
     )
 
 
-def _well(figure: Figure) -> str:
-    """What sits in the figure's well: the picture, or a note saying what will."""
+def _well(figure: Figure, opened: str | None = None) -> str:
+    """What sits in the figure's well: the picture, or a note saying what will.
+
+    A picture the explorer can draw again *is* the link. The mark in its corner is the
+    affordance — the picture on its own gives a reader nothing to notice — and the words
+    ride on the anchor, where a screen reader and a hover both find them.
+    """
     if figure.pending:
         return (
             f'{INDENT}  <p class="pending"><span class="pending-label">Figure pending</span>'
             f"{text(figure.alt)}</p>"
         )
-    return (
-        f'{INDENT}  <img src="{attribute(figure.src)}" width="{figure.width}" '
+    picture = (
+        f'<img src="{attribute(figure.src)}" width="{figure.width}" '
         f'height="{figure.height}" alt="{attribute(figure.alt)}">'
+    )
+    if not opened:
+        return f"{INDENT}  {picture}"
+    mark = f'<span class="figure-open-mark" aria-hidden="true">{OPEN_MARK}</span>'
+    return (
+        f'{INDENT}  <a class="figure-open" href="{attribute(opened)}" '
+        f'title="{attribute(OPEN_TEXT)}" aria-label="{attribute(OPEN_TEXT)}">'
+        f"{picture}{mark}</a>"
     )
 
 
@@ -210,10 +245,21 @@ def _figure(row: records.Record, identifier: str) -> Figure:
         file=file,
         width=width,
         height=height,
-        credit=row.optional_text("credit"),
+        align=_align(row),
         provenance=provenance,
         recipe=_recipe(row),
     )
+
+
+def _align(row: records.Record) -> str | None:
+    """How a row asks for its caption to be set, held to the one value there is."""
+    stated = row.optional_text("align")
+    if stated is not None and stated != ALIGN_LEFT:
+        raise records.RecordError(
+            f"{row.where}: align {stated!r} — a caption is centred unless it says "
+            f"{ALIGN_LEFT!r}, which is the only thing to say"
+        )
+    return stated
 
 
 def _recipe(row: records.Record) -> Recipe | None:
@@ -254,7 +300,7 @@ KEY_ORDER = (
     "height",
     "alt",
     "caption",
-    "credit",
+    "align",
     "recipe",
     "provenance",
 )

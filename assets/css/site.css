@@ -129,6 +129,11 @@ body {
   color: var(--ink-dim);
 }
 
+/* The title is the way back to the front page, so it is a link — and it stays a label
+   rather than becoming the loudest thing in the rail, which is why it inherits the
+   dim ink instead of taking the link colour. */
+.rail-title a { color: inherit; }
+
 .rail-sections {
   margin: 0 0 0 1.5rem;
   padding: 0;
@@ -150,6 +155,18 @@ body {
 }
 .rail-headings li { margin: 0 0 0.3rem; padding-left: 0.7rem; }
 .rail-headings a { color: var(--ink-dim); }
+
+/* Under the ten sections: the page that runs the engine, and the code behind all of it.
+   Ruled off, because these leave the article rather than moving inside it. */
+.rail-links {
+  list-style: none;
+  margin: 1.1rem 0 0;
+  padding: 0.9rem 0 0;
+  border-top: 1px solid var(--rule);
+  font-size: 0.875rem;
+  line-height: 1.45;
+}
+.rail-links li { margin: 0 0 0.45rem; }
 
 /* A section that is written, marked in the rail and in the front page's contents. What
    is marked comes from sections.jsonl either way — the rail is generated from it and
@@ -332,9 +349,10 @@ a:hover { color: var(--ink); }
   overflow-wrap: anywhere;
 }
 
-/* The way back into the explorer, from a picture the explorer can draw again. On its own
-   line under the caption and the credit, at the credit's size, because it is a way out of
-   the page rather than something the caption says. */
+/* The way back into the explorer, from a gallery tile the explorer can draw again. On
+   its own line under the caption and the credit, at the credit's size, because it is a
+   way out of the page rather than something the caption says. A figure spells it
+   differently — see .figure-open below. */
 .open {
   display: block;
   margin-top: 0.3rem;
@@ -353,14 +371,51 @@ a:hover { color: var(--ink); }
   border: 1px solid var(--well-rule);
 }
 .figure img { display: block; width: 100%; height: auto; }
+
+/* The caption sits under the middle of the picture, at a size a step above the site's
+   other small print: it is the second thing a reader looks at, after the figure itself,
+   and it used to be set at the footer's size. It is held to the reading measure however
+   wide the figure runs — a caption spread across the full column is a line nobody tracks
+   back — and a caption long enough to need several of those lines is ranged left
+   instead, which the registry row asks for. */
 .figure figcaption {
-  margin-top: 0.6rem;
-  font-size: 0.875rem;
-  line-height: 1.5;
+  margin: 0.7rem auto 0.1rem;
+  max-width: var(--measure);
+  font-size: 0.9375rem;
+  line-height: 1.55;
   color: var(--well-ink-dim);
+  text-align: center;
+  text-wrap: pretty;
 }
+.figure-ranged figcaption { margin-left: 0; text-align: left; }
 .figure a { color: var(--well-link); }
 .figure a:hover { color: var(--well-ink); }
+
+/* A picture the explorer can draw again is itself the way into it. The mark in the
+   corner is the affordance — a picture that is quietly a link is a link nobody finds —
+   and the words ride on the anchor, where a hover and a screen reader both reach them.
+   Deliberately small and quiet: the figure is the thing here, and the mark is a door. */
+.figure-open { display: block; position: relative; }
+.figure-open .figure-open-mark {
+  position: absolute;
+  right: 0.5rem;
+  bottom: 0.5rem;
+  width: 1.65rem;
+  height: 1.65rem;
+  border: 1px solid var(--well-rule);
+  border-radius: 0.25rem;
+  background: rgba(22, 23, 28, 0.72);
+  color: var(--well-ink-dim);
+  font-size: 0.9375rem;
+  line-height: 1.55rem;
+  text-align: center;
+}
+.figure-open:hover .figure-open-mark,
+.figure-open:focus-visible .figure-open-mark {
+  border-color: var(--well-link);
+  background: rgba(22, 23, 28, 0.92);
+  color: var(--well-link);
+}
 
 /* A figure registered before its picture exists. Prose gets written before pictures get
    made, so the well stays where it will be and says what will fill it — a dashed hole

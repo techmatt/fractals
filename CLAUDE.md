@@ -179,7 +179,9 @@ page and the rail has no current entry on it, which is what the gallery pages al
 
 **The rail is derived, never typed.** `article/sections.jsonl` gives the reading order and
 which sections are `"status": "written"`; a rail entry's name is the page's own `<h1>`,
-and the entries that open under the current page are that page's prose `<h2>`s. A prose
+and the entries that open under the current page are that page's prose `<h2>`s. Its title
+is the way back to the front page, and under the ten sections it carries the two links
+that leave the article — the explorer and the code *(Matt, 2026-08-21)*. A prose
 `<h2>` also gets the id its rail entry links to, spelled from its own words by rule —
 a fragment is a permanent URL. `python -m builder build` writes the rail between two
 marker comments; `check`'s `contents` check re-derives the rail, the heading ids and the
@@ -197,9 +199,17 @@ What a figure is made of:
 - **A diagram is PNG**, and **an animation is an APNG** — which also carries a `.png`
   extension and sits in the **same plain `<img>` block** as everything else. No video
   element, no script, no second markup path.
-- **A render carries the credit `Rendered with fractal-wallpapers`; a drawn diagram
-  carries none.** The credit says the picture came out of the engine, so putting it on a
-  drawing would be a false claim about how the drawing was made.
+- **A figure's caption is the caption and nothing else** *(Matt, 2026-08-21, replacing
+  the credit rule)*. It used to end with two sentences that were not about the picture: a
+  credit saying the engine drew it, identical under every render on the site, and the way
+  into the explorer written out as prose. Both are gone from `.figure`. A gallery tile
+  still carries its credit, which is where a reader meets a wallpaper without the article
+  around it.
+- **A caption is centred under the picture, and ranged left once it is long.** Centred is
+  the default and suits the one- to four-line caption most figures carry; a caption past
+  about three hundred characters is set flush left, which the row asks for with
+  `"align": "left"`. The caption is held to the reading measure however wide the figure
+  runs.
 - **A figure may be registered before its asset exists**, with `"status": "pending"` and
   no file or size. The block it derives is a well saying what the picture will show, which
   is honest in a way an empty space or a broken image is not. `python -m builder figures`
@@ -211,8 +221,10 @@ What a figure is made of:
   the page.
 - **A picture the explorer can draw again carries a link into it.** `explorer/links.jsonl`
   has one row per figure and per gallery tile: a permalink derived from that picture's own
-  provenance, or an explicit `no_link` with which of four reasons it is. The link is
-  spelled *open in fractal explorer* wherever it appears, and it is derived and never
+  provenance, or an explicit `no_link` with which of four reasons it is. The words are
+  *open in fractal explorer* wherever it appears — on a figure they are the accessible
+  name of a small mark in the picture's corner, and the picture itself is the link; on a
+  gallery tile they are still a line of text. The link is derived and never
   typed — `python -m builder links --write`, and `check` holds the registry to the site's
   own roster. **A link that is nearly the figure is worse than none**, so anything the
   contract cannot say exactly — a chosen iteration cap, a curve a mode's catalog does not

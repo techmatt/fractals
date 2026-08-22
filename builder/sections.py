@@ -149,10 +149,17 @@ def load_all() -> list[Section]:
 
 
 def rail(page: Path, sections: list[Section]) -> str:
-    """The rail as one page carries it: ten sections, this page's own headings open."""
+    """The rail as one page carries it: ten sections, this page's own headings open,
+    and under them the two places a reader leaves the article for.
+
+    The title is the way back to the front page. It was the one word in the rail that
+    named a destination and did not go there, and a reader deep in section six has no
+    other one-click way home from the rail itself.
+    """
+    home = attribute(relative_href(page, SITE_INDEX))
     lines = [
         '<nav class="contents-rail" aria-label="Contents">',
-        '  <p class="rail-title">Contents</p>',
+        f'  <p class="rail-title"><a href="{home}">Contents</a></p>',
         '  <ol class="rail-sections">',
     ]
     for section in sections:
@@ -172,8 +179,30 @@ def rail(page: Path, sections: list[Section]) -> str:
                 f'        <li><a href="#{attribute(heading.id)}">{text(heading.title)}</a></li>'
             )
         lines.extend(["      </ol>", "    </li>"])
-    lines.extend(["  </ol>", "</nav>"])
+    lines.append("  </ol>")
+    lines.extend(_offsite(page))
+    lines.append("</nav>")
     return "\n".join(lines)
+
+
+#: What the rail carries under the ten sections: the page that runs the engine, and the
+#: code the article is about. Both are in the site bar too, and the bar is one line at
+#: the very top of a page the reader has scrolled away from — the rail is where a reader
+#: is looking when the question "can I try this myself?" arrives.
+OFFSITE = (
+    ("explorer/index.html", "Fractal explorer"),
+    ("https://github.com/techmatt/fractal-wallpapers", "fractal-wallpapers on GitHub"),
+)
+
+
+def _offsite(page: Path) -> list[str]:
+    """The two links under the sections, each spelled from the page that carries it."""
+    lines = ['  <ul class="rail-links">']
+    for target, name in OFFSITE:
+        href = target if "//" in target else relative_href(page, SITE_ROOT / target)
+        lines.append(f'    <li><a href="{attribute(href)}">{text(name)}</a></li>')
+    lines.append("  </ul>")
+    return lines
 
 
 def block(page: Path, sections: list[Section]) -> str:

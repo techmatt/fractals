@@ -17,7 +17,7 @@
 <div class="page">
 <!-- contents-rail:start — written by builder/. Run `python -m builder build`. -->
 <nav class="contents-rail" aria-label="Contents">
-  <p class="rail-title">Contents</p>
+  <p class="rail-title"><a href="../index.html">Contents</a></p>
   <ol class="rail-sections">
     <li><a href="overview.html">Overview</a> <span class="done" role="img" aria-label="written">✓</span></li>
     <li class="rail-current"><a href="escape-time-fractals.html" aria-current="page">Escape-time fractals</a> <span class="done" role="img" aria-label="written">✓</span>
@@ -41,6 +41,10 @@
     <li><a href="running-at-scale.html">Running at scale</a></li>
     <li><a href="deep-zoom.html">Deep zoom</a></li>
   </ol>
+  <ul class="rail-links">
+    <li><a href="../explorer/index.html">Fractal explorer</a></li>
+    <li><a href="https://github.com/techmatt/fractal-wallpapers">fractal-wallpapers on GitHub</a></li>
+  </ul>
 </nav>
 <!-- contents-rail:end -->
 
@@ -59,6 +63,11 @@
     covers what these objects are, the four recurrences the project draws from — Mandelbrot,
     the multibrots, Julia and Phoenix — and how one exact view inside one of them is pinned
     down.</p>
+
+      <figure class="figure figure-ranged" data-figure="escape-families">
+        <a class="figure-open" href="../explorer/index.html?v=2&amp;y=0.0&amp;p=twilight_shifted" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/escape-families.jpg" width="1344" height="1381" alt="Fifteen panels: the Mandelbrot set and the degree-3, 4 and 5 multibrot sets, each with two marked points and the two Julia sets those points produce, and a bottom row of three Phoenix views."><span class="figure-open-mark" aria-hidden="true">↗</span></a>
+        <figcaption>Every family the project draws, each parameter plane shown whole. Two points are marked on each, and beside it are the Julia sets those two points produce — every point of the plane has one, and a mark is colored to match the frame it belongs to. Phoenix, on the last row, is drawn the way a Julia set is and so has no plane to mark: the celebrated constants first, then two views from elsewhere in its parameter space.</figcaption>
+      </figure>
 
     <h2 id="iterating-in-the-complex-plane">Iterating in the complex plane</h2>
 
@@ -83,7 +92,7 @@
     the steps until that happens and you have the orbit's <i>escape time</i>. That count is the
     entire algorithm, and escape-time fractals are named for it.</p>
 
-      <figure class="figure" data-figure="escape-orbit-race">
+      <figure class="figure figure-ranged" data-figure="escape-orbit-race">
         <img src="../assets/images/figures/escape-orbit-race.png" width="960" height="540" alt="Animated: three starting points advancing in step across the complex plane — one escaping fast, one bounded, one lingering near the boundary — with a |z|-versus-step chart alongside.">
         <figcaption>Three orbits under the same rule, stepping together. One is past |z| = 2 within a few steps and gone for good, one stays bounded forever, and one hangs near the boundary for dozens of steps before it commits. The step where a track crosses the line on the chart is that orbit's escape time — the whole of what the picture is painted from.</figcaption>
       </figure>
@@ -101,12 +110,12 @@
     boundary and structure keeps arriving — spirals, filament tangles, even miniature copies
     of the full set — without end. All of the beauty in this project lives in that boundary
     zone, and the search half of the pipeline
-    (<a href="finding-good-locations.html">Finding good locations</a>) exists to navigate
+    (<a href="finding-good-locations.html">finding good locations</a>) exists to navigate
     it.</p>
 
       <figure class="figure" data-figure="escape-zoom-strip">
-        <img src="../assets/images/figures/escape-zoom-strip.jpg" width="1344" height="915" alt="Nine successive zooms into one point on the Mandelbrot boundary, each frame the marked box of the frame before it.">
-        <figcaption>One point on the boundary, magnified in stages, each frame drawn from the marked box of the one before. Nothing simplifies on the way down: spirals, filament tangles and miniature copies of the whole set keep arriving. The strip ends because the page does, not because the detail ran out. <span class="credit">Rendered with fractal-wallpapers</span> <a class="open" href="../explorer/index.html?v=2&amp;x=-0.8038460387836429&amp;y=0.18284000541838608&amp;p=twilight_shifted">open in fractal explorer</a></figcaption>
+        <a class="figure-open" href="../explorer/index.html?v=2&amp;x=-0.8038460387836429&amp;y=0.18284000541838608&amp;p=twilight_shifted" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/escape-zoom-strip.jpg" width="1344" height="915" alt="Nine successive zooms into one point on the Mandelbrot boundary, each frame the marked box of the frame before it."><span class="figure-open-mark" aria-hidden="true">↗</span></a>
+        <figcaption>One point on the boundary, magnified in stages, each frame drawn from the marked box of the one before. Nothing simplifies on the way down: spirals, filament tangles and miniature copies of the whole set keep arriving. The strip ends because the page does, not because the detail ran out.</figcaption>
       </figure>
 
     <h2 id="julia-sets">Julia sets</h2>
@@ -129,9 +138,9 @@
     the set of c values whose Julia sets are connected — its
     <a href="https://en.wikipedia.org/wiki/Connectedness_locus">connectedness locus</a>.</p>
 
-      <figure class="figure" data-figure="escape-julia-map">
-        <img src="../assets/images/figures/escape-julia-map.jpg" width="1340" height="1032" alt="The Mandelbrot set as an atlas: four c values marked on it, each with the Julia set it produces below — a solid blob from deep inside, disconnected dust from outside, a filigree from the boundary.">
-        <figcaption>The Mandelbrot set read as an atlas of Julia sets. A c from deep inside gives a solid, rounded blob; a c from outside shatters into dust; a c from the boundary unfurls its neighborhood's spirals and filaments across the whole frame. The blob-versus-dust split is not a matter of degree — a Julia set is connected exactly when its c lies in the Mandelbrot set. <span class="credit">Rendered with fractal-wallpapers</span> <a class="open" href="../explorer/index.html?v=2&amp;y=0.0&amp;p=twilight_shifted">open in fractal explorer</a></figcaption>
+      <figure class="figure figure-ranged" data-figure="escape-julia-map">
+        <a class="figure-open" href="../explorer/index.html?v=2&amp;y=0.0&amp;p=twilight_shifted" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/escape-julia-map.jpg" width="1340" height="1032" alt="The Mandelbrot set as an atlas: four c values marked on it, each with the Julia set it produces below — a solid blob from deep inside, disconnected dust from outside, a filigree from the boundary."><span class="figure-open-mark" aria-hidden="true">↗</span></a>
+        <figcaption>The Mandelbrot set read as an atlas of Julia sets. A c from deep inside gives a solid, rounded blob; a c from outside shatters into dust; a c from the boundary unfurls its neighborhood's spirals and filaments across the whole frame. The blob-versus-dust split is not a matter of degree — a Julia set is connected exactly when its c lies in the Mandelbrot set.</figcaption>
       </figure>
 
     <h2 id="multibrot-sets">Multibrot sets</h2>
@@ -143,8 +152,8 @@
     degree has its own Julia sets, made exactly the same way as before.</p>
 
       <figure class="figure" data-figure="escape-multibrot-degrees">
-        <img src="../assets/images/figures/escape-multibrot-degrees.jpg" width="1340" height="488" alt="The degree-3, degree-4 and degree-5 multibrot sets beside the classic degree-2 set, with one zoom each.">
-        <figcaption>Raising the power in z → z^d + c, with one zoom under each set. Every degree adds a rotational symmetry the classic set doesn't have — one fold fewer than the degree — and each carries its own Julia sets, made exactly the same way as before. <span class="credit">Rendered with fractal-wallpapers</span> <a class="open" href="../explorer/index.html?v=2&amp;y=0.0&amp;p=twilight_shifted">open in fractal explorer</a></figcaption>
+        <a class="figure-open" href="../explorer/index.html?v=2&amp;y=0.0&amp;p=twilight_shifted" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/escape-multibrot-degrees.jpg" width="1340" height="488" alt="The degree-3, degree-4 and degree-5 multibrot sets beside the classic degree-2 set, with one zoom each."><span class="figure-open-mark" aria-hidden="true">↗</span></a>
+        <figcaption>Raising the power in z → z^d + c, with one zoom under each set. Every degree adds a rotational symmetry the classic set doesn't have — one fold fewer than the degree — and each carries its own Julia sets, made exactly the same way as before.</figcaption>
       </figure>
 
     <h2 id="fractional-degrees">Fractional degrees</h2>
@@ -160,9 +169,9 @@
     of the core fractal families that this project uses when searching for beautiful wallpaper
     locations.</p>
 
-      <figure class="figure" data-figure="escape-fractional-degrees">
+      <figure class="figure figure-ranged" data-figure="escape-fractional-degrees">
         <img src="../assets/images/figures/escape-fractional-degrees.jpg" width="1344" height="614" alt="Five sets at fractional degrees — d = 2.1, 2.5, 2.9, 3.5 and 4.5 — each whole in its own frame, with a close-up of the branch-cut seam at d = 3.5.">
-        <figcaption>Five degrees between the whole ones, each framed by the rule that gives the other families their home views. A whole degree carries its lobes in even rotation, one fewer than the degree; a fractional one is caught mid-turn between two of those arrangements, with the next lobe part-grown. Where that lobe happens to sit decides how much the branch cut shows: at 2.9 the negative real axis runs through the gap between two lobes and the render is clean, while at 3.5 the arriving lobe sits astride the axis and the halo flares where escape times jump across the cut. The close-up is that edge at eight times the frame — rays ending mid-stroke along a straight line no dynamics put there. <span class="credit">Rendered with fractal-wallpapers</span></figcaption>
+        <figcaption>Five degrees between the whole ones, each framed by the rule that gives the other families their home views. A whole degree carries its lobes in even rotation, one fewer than the degree; a fractional one is caught mid-turn between two of those arrangements, with the next lobe part-grown. Where that lobe happens to sit decides how much the branch cut shows: at 2.9 the negative real axis runs through the gap between two lobes and the render is clean, while at 3.5 the arriving lobe sits astride the axis and the halo flares where escape times jump across the cut. The close-up is that edge at eight times the frame — rays ending mid-stroke along a straight line no dynamics put there.</figcaption>
       </figure>
 
     <h2 id="phoenix-fractals">Phoenix fractals</h2>
@@ -187,8 +196,8 @@
     and p. The classic picture seeds it at zero; this project varies it too.</p>
 
       <figure class="figure" data-figure="escape-phoenix">
-        <img src="../assets/images/figures/escape-phoenix.jpg" width="1316" height="1266" alt="The classic Ushiki phoenix render beside several finds from elsewhere in the (c, p) plane.">
-        <figcaption>The celebrated Ushiki constants beside finds from elsewhere in the (c, p) plane. Each orbit is steered by where it just was, and the feathery plumes are what that produces — structure none of the memoryless families draw. <span class="credit">Rendered with fractal-wallpapers</span> <a class="open" href="../explorer/index.html?v=2&amp;f=phoenix&amp;cx=0.5667&amp;cy=0.0&amp;px=-0.5&amp;py=0.0&amp;zx=0&amp;zy=0&amp;y=0.0&amp;w=5.0&amp;p=twilight_shifted">open in fractal explorer</a></figcaption>
+        <a class="figure-open" href="../explorer/index.html?v=2&amp;f=phoenix&amp;cx=0.5667&amp;cy=0.0&amp;px=-0.5&amp;py=0.0&amp;zx=0&amp;zy=0&amp;y=0.0&amp;w=5.0&amp;p=twilight_shifted" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/escape-phoenix.jpg" width="1316" height="1266" alt="The classic Ushiki phoenix render beside several finds from elsewhere in the (c, p) plane."><span class="figure-open-mark" aria-hidden="true">↗</span></a>
+        <figcaption>The celebrated Ushiki constants beside finds from elsewhere in the (c, p) plane. Each orbit is steered by where it just was, and the feathery plumes are what that produces — structure none of the memoryless families draw.</figcaption>
       </figure>
 
     <h2 id="the-projects-families">The project's families</h2>
@@ -200,13 +209,9 @@
     across all of them would quietly fill every gallery with whichever family is easiest to
     photograph. The pipeline instead tracks each kind separately and balances the released mix
     across them; how that works is covered in
-    <a href="finding-good-locations.html">Finding good locations</a> and
+    <a href="finding-good-locations.html">finding good locations</a> and
     <a href="from-locations-to-wallpapers.html">From locations to wallpapers</a>.</p>
 
-      <figure class="figure" data-figure="family-home-views">
-        <img src="../assets/images/figures/family-home-views.png" width="1316" height="1250" alt="Six panels, one per family, each showing the whole set inside its own frame.">
-        <figcaption>Every family at its home view — the frame it draws when no viewport is given. Five of the six are derived by measuring the set and giving it a 16:9 frame with a tenth of the deciding axis to spare; a Julia set's extent depends on its constant, so it keeps the whole-plane view by exception. <span class="credit">Rendered with fractal-wallpapers</span></figcaption>
-      </figure>
 
     <h2 id="locations">Locations</h2>
 

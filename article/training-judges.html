@@ -17,7 +17,7 @@
 <div class="page">
 <!-- contents-rail:start — written by builder/. Run `python -m builder build`. -->
 <nav class="contents-rail" aria-label="Contents">
-  <p class="rail-title">Contents</p>
+  <p class="rail-title"><a href="../index.html">Contents</a></p>
   <ol class="rail-sections">
     <li><a href="overview.html">Overview</a> <span class="done" role="img" aria-label="written">✓</span></li>
     <li><a href="escape-time-fractals.html">Escape-time fractals</a> <span class="done" role="img" aria-label="written">✓</span></li>
@@ -39,6 +39,10 @@
     <li><a href="running-at-scale.html">Running at scale</a></li>
     <li><a href="deep-zoom.html">Deep zoom</a></li>
   </ol>
+  <ul class="rail-links">
+    <li><a href="../explorer/index.html">Fractal explorer</a></li>
+    <li><a href="https://github.com/techmatt/fractal-wallpapers">fractal-wallpapers on GitHub</a></li>
+  </ul>
 </nav>
 <!-- contents-rail:end -->
 
@@ -58,7 +62,7 @@
     locations and two for finished renders — and they share one rating scale, one network
     design, and one training recipe. A fourth, smaller network chooses palettes rather than
     rating quality; it is trained by a different method and is covered in
-    <a href="color-palettes.html">Color palettes</a>.</p>
+    <a href="color-palettes.html">color palettes</a>.</p>
 
     <h2 id="the-rating-scale">The rating scale</h2>
 
@@ -85,8 +89,8 @@
     thousand renders in the other modes.</p>
 
       <figure class="figure" data-figure="judges-rating-views">
-        <img src="../assets/images/figures/judges-rating-views.jpg" width="1316" height="432" alt="One location drawn twice side by side: the same frame in the neutral palette the judge is shown, and in a vivid one.">
-        <figcaption>One location as it is rated. The judge only ever sees the left panel, in one fixed neutral map; the person answering sees both, and answers for the geometry rather than for either picture. <span class="credit">Rendered with fractal-wallpapers</span> <a class="open" href="../explorer/index.html?v=2&amp;x=-0.0777245787904019&amp;y=-0.6514053976217481&amp;w=2.246912508617025e-05&amp;p=twilight_shifted">open in fractal explorer</a></figcaption>
+        <a class="figure-open" href="../explorer/index.html?v=2&amp;x=-0.0777245787904019&amp;y=-0.6514053976217481&amp;w=2.246912508617025e-05&amp;p=twilight_shifted" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/judges-rating-views.jpg" width="1316" height="432" alt="One location drawn twice side by side: the same frame in the neutral palette the judge is shown, and in a vivid one."><span class="figure-open-mark" aria-hidden="true">↗</span></a>
+        <figcaption>One location as it is rated. The judge only ever sees the left panel, in one fixed neutral map; the person answering sees both, and answers for the geometry rather than for either picture.</figcaption>
       </figure>
 
     <p>The ratings were gathered iteratively: rate a few hundred, retrain, use the new judge to
@@ -107,8 +111,8 @@
     only ever seen the thumbnail still recovers most of what a person sees at full size.</p>
 
       <figure class="figure" data-figure="judges-what-the-judge-sees">
-        <img src="../assets/images/figures/judges-what-the-judge-sees.jpg" width="1600" height="533" alt="The same location at three sizes, drawn to scale: a small thumbnail, a mid-size render, and one four times wider than the thumbnail.">
-        <figcaption>One location at the three sizes its judge is trained over, drawn to scale. The walk scores the smallest of them and a person rated the largest. Composition and density survive the shrink, which is why one judge can read all three. <span class="credit">Rendered with fractal-wallpapers</span> <a class="open" href="../explorer/index.html?v=2&amp;x=0.2869760101232717&amp;y=0.4680510345013121&amp;w=2.1585146387249553e-07&amp;p=twilight_shifted">open in fractal explorer</a></figcaption>
+        <a class="figure-open" href="../explorer/index.html?v=2&amp;x=0.2869760101232717&amp;y=0.4680510345013121&amp;w=2.1585146387249553e-07&amp;p=twilight_shifted" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/judges-what-the-judge-sees.jpg" width="1600" height="533" alt="The same location at three sizes, drawn to scale: a small thumbnail, a mid-size render, and one four times wider than the thumbnail."><span class="figure-open-mark" aria-hidden="true">↗</span></a>
+        <figcaption>One location at the three sizes its judge is trained over, drawn to scale. The walk scores the smallest of them and a person rated the largest. Composition and density survive the shrink, which is why one judge can read all three.</figcaption>
       </figure>
 
     <p>The two render judges see the picture that was drawn to be judged — its mode, its
@@ -194,9 +198,9 @@
     family at one degree, with a parameter plane counted apart from its dynamical twin
     (<a href="from-locations-to-wallpapers.html">From locations to wallpapers</a>).</p>
 
-      <figure class="figure" data-figure="judges-score-to-decision">
-        <img src="../assets/images/figures/judges-score-to-decision.jpg" width="1316" height="275" alt="Four frames from one fractal family, in score order, each labeled with the decision its score buys: refused, expandable, a find, and an exceptional find.">
-        <figcaption>One family, one frame per outcome the location judge's score decides. Below the expansion floor the frame is refused; between the two floors the walk may explore through it but records nothing; above the admission floor it is booked as a find; above the great cut it counts as exceptional when supply is balanced. <span class="credit">Rendered with fractal-wallpapers</span> <a class="open" href="../explorer/index.html?v=2&amp;f=julia3&amp;cx=-0.31883391428477204&amp;cy=0.6947471708446521&amp;x=0.0&amp;y=0.0&amp;w=0.5630695633670507&amp;p=twilight_shifted">open in fractal explorer</a></figcaption>
+      <figure class="figure figure-ranged" data-figure="judges-score-to-decision">
+        <a class="figure-open" href="../explorer/index.html?v=2&amp;f=julia3&amp;cx=-0.31883391428477204&amp;cy=0.6947471708446521&amp;x=0.0&amp;y=0.0&amp;w=0.5630695633670507&amp;p=twilight_shifted" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/judges-score-to-decision.jpg" width="1316" height="275" alt="Four frames from one fractal family, in score order, each labeled with the decision its score buys: refused, expandable, a find, and an exceptional find."><span class="figure-open-mark" aria-hidden="true">↗</span></a>
+        <figcaption>One family, one frame per outcome the location judge's score decides. Below the expansion floor the frame is refused; between the two floors the walk may explore through it but records nothing; above the admission floor it is booked as a find; above the great cut it counts as exceptional when supply is balanced.</figcaption>
       </figure>
 
     <p>Each was set once, and after every retrain the three are <i>restated by volume</i>: over
@@ -231,7 +235,7 @@
     for beautiful things with a learned judge therefore needs care: if the judge's taste drifts
     toward what it has already seen, the search narrows to the regions the corpus already
     covers. The walk's reserved share of every batch for untouched roots
-    (<a href="finding-good-locations.html#the-walk">Finding good locations</a>, Prioritize)
+    (<a href="finding-good-locations.html#the-walk">finding good locations</a>, Prioritize)
     exists for this reason, and the same concern governs how new batches of locations are chosen
     for rating.</p>
   </section>

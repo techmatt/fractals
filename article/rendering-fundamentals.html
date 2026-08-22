@@ -17,7 +17,7 @@
 <div class="page">
 <!-- contents-rail:start — written by builder/. Run `python -m builder build`. -->
 <nav class="contents-rail" aria-label="Contents">
-  <p class="rail-title">Contents</p>
+  <p class="rail-title"><a href="../index.html">Contents</a></p>
   <ol class="rail-sections">
     <li><a href="overview.html">Overview</a> <span class="done" role="img" aria-label="written">✓</span></li>
     <li><a href="escape-time-fractals.html">Escape-time fractals</a> <span class="done" role="img" aria-label="written">✓</span></li>
@@ -39,6 +39,10 @@
     <li><a href="running-at-scale.html">Running at scale</a></li>
     <li><a href="deep-zoom.html">Deep zoom</a></li>
   </ol>
+  <ul class="rail-links">
+    <li><a href="../explorer/index.html">Fractal explorer</a></li>
+    <li><a href="https://github.com/techmatt/fractal-wallpapers">fractal-wallpapers on GitHub</a></li>
+  </ul>
 </nav>
 <!-- contents-rail:end -->
 
@@ -59,7 +63,7 @@
     and how that field becomes a finished image, with the palette fitted to the frame rather
     than to the arithmetic. The smooth
     fields look beautiful in their own right, and they are also the foundation the more
-    advanced <a href="rendering-modes.html">Rendering modes</a> build on. Throughout, we'll
+    advanced <a href="rendering-modes.html">rendering modes</a> build on. Throughout, we'll
     assume we're already handed a one-dimensional color palette;
     <a href="color-palettes.html">Color palettes</a> covers how a good palette is chosen for
     each image.</p>
@@ -74,14 +78,9 @@
     colors with a hard edge between them, and the whole image comes out terraced into bands of
     solid color instead of continuous shading.</p>
 
-      <figure class="figure" data-figure="render-two-palettes">
-        <img src="../assets/images/figures/render-two-palettes.jpg" width="1316" height="812" alt="The whole Mandelbrot set drawn in two different palettes, with one boxed cutout shown below in the same two.">
-        <figcaption>One escape field, four pictures. The top row is the whole set in two palettes; the bottom row is the boxed cutout in the same two. Nothing about the fractal changed between the columns — the palette is a decision made after the location, and this page is about the numbers that sit under all four. <span class="credit">Rendered with fractal-wallpapers</span> <a class="open" href="../explorer/index.html?v=2&amp;y=0.0&amp;p=Ice%20Walk">open in fractal explorer</a></figcaption>
-      </figure>
-
-      <figure class="figure" data-figure="render-banding">
-        <img src="../assets/images/figures/render-banding.jpg" width="1316" height="412" alt="One Mandelbrot location at a cap of 50, twice: terraced into flat bands on the left, continuously shaded on the right.">
-        <figcaption>The integer escape count beside the smooth count of the next section, at one location, one palette and one cap. Every pixel that escaped on the same step takes the same color, so the field terraces into flat contours. The cap here is a deliberately low 50: at the caps a real render uses, the terraces are finer than a pixel and the left-hand picture is the right-hand one. <span class="credit">Rendered with fractal-wallpapers</span></figcaption>
+      <figure class="figure figure-ranged" data-figure="render-discrete-and-smooth">
+        <img src="../assets/images/figures/render-discrete-and-smooth.jpg" width="1316" height="900" alt="Two palettes as flat gradients, and under each the same Mandelbrot frame twice: terraced into bands by the integer escape count, then continuously shaded by the smooth count.">
+        <figcaption>One location, two palettes. Each column opens with the palette itself, drawn as the flat gradient the renderer spends; under it the same escape field colored by the integer escape count, and under that by the smooth count of the next section. Every pixel that escaped on the same step takes the same color, so the middle row terraces into flat contours. The cap here is a deliberately low 50: at the caps a real render uses the terraces are finer than a pixel, and the middle row is the bottom one.</figcaption>
       </figure>
 
     <h2 id="the-smooth-iteration-count">The smooth iteration count</h2>
@@ -116,9 +115,9 @@
     <a href="rendering-modes.html">Rendering modes</a> covers converting fields into different
     rendering styles.</p>
 
-      <figure class="figure" data-figure="render-field-anatomy">
-        <img src="../assets/images/figures/render-field-anatomy.jpg" width="1316" height="412" alt="A finished multibrot wallpaper beside the same frame's escape field drawn as grayscale.">
-        <figcaption>A finished wallpaper and the field underneath it: the same numbers, once through the picture's own palette and once as plain lightness over the same working range. All of the structure is the field's. What the palette decides is which part of the field's range you get to see — which is the last section on this page. A degree-4 multibrot at a location I scored 4 of 4, colored the way I scored 4 of 4. <span class="credit">Rendered with fractal-wallpapers</span> <a class="open" href="../explorer/index.html?v=2&amp;f=multibrot4&amp;x=0.31215622070747834&amp;y=0.7310275499716895&amp;w=0.000009171415720687774&amp;p=dessert-union-25">open in fractal explorer</a></figcaption>
+      <figure class="figure figure-ranged" data-figure="render-field-anatomy">
+        <img src="../assets/images/figures/render-field-anatomy.jpg" width="1316" height="316" alt="A finished multibrot wallpaper beside the same frame's escape field drawn as grayscale.">
+        <figcaption>One field, three columns, and above each the gradient it is read through. On the left there is no palette at all: the value is the lightness. The other two are the same numbers under two different maps, and nothing but the lookup table changed between them — the structure is identical in all three, while the warmth, the contrast and where the eye is pulled are not.</figcaption>
       </figure>
 
     <h2 id="iteration-caps">Iteration caps</h2>
@@ -143,9 +142,9 @@
     logarithmically, each halving of the width buying a constant increment of extra steps —
     clamped between a floor and a ceiling.</p>
 
-      <figure class="figure" data-figure="render-maxiter">
+      <figure class="figure figure-ranged" data-figure="render-maxiter">
         <img src="../assets/images/figures/render-maxiter.jpg" width="1316" height="412" alt="One deep Mandelbrot location at a cap of 300 beside the same location at the automatic cap of 32,474.">
-        <figcaption>One location, one palette, two caps. At 300 every orbit that would have escaped in the low thousands is declared interior instead, and the flat region swells across the middle of the frame and swallows the spiral the picture exists to show. At 32,474 — what the depth policy chooses for a frame this wide — the same spiral resolves into filaments. <span class="credit">Rendered with fractal-wallpapers</span></figcaption>
+        <figcaption>One location, one palette, two caps. At 300 every orbit that would have escaped in the low thousands is declared interior instead, and the flat region swells across the middle of the frame and swallows the spiral the picture exists to show. At 32,474 — what the depth policy chooses for a frame this wide — the same spiral resolves into filaments.</figcaption>
       </figure>
 
     <h2 id="supersampling">Supersampling</h2>
@@ -165,9 +164,9 @@
     real samples is what separates a crisp wallpaper from a noisy one, and no later step can put
     back detail the sampling missed.</p>
 
-      <figure class="figure" data-figure="render-supersample">
-        <img src="../assets/images/figures/render-supersample.jpg" width="1316" height="412" alt="A filament-rich Julia crop at one sample per pixel beside sixteen, both enlarged so that single pixels are visible.">
-        <figcaption>One crop at one sample per pixel and at the production setting of 4 × 4 = 16, both enlarged to twice size so single pixels are visible. A filament thinner than a pixel is a coin flip at one sample: the arms break into speckle and the spiral's dotted beads come apart. Nothing later in the pipeline can put back what the sampling missed. <span class="credit">Rendered with fractal-wallpapers</span> <a class="open" href="../explorer/index.html?v=2&amp;f=julia&amp;cx=-0.07810228973371881&amp;cy=-0.6514609012382414&amp;x=0.0&amp;y=0.45&amp;w=0.50&amp;p=Ice%20Walk">open in fractal explorer</a></figcaption>
+      <figure class="figure figure-ranged" data-figure="render-supersample">
+        <a class="figure-open" href="../explorer/index.html?v=2&amp;f=julia&amp;cx=-0.07810228973371881&amp;cy=-0.6514609012382414&amp;x=0.0&amp;y=0.45&amp;w=0.50&amp;p=Verdigris%20Flare" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/render-supersample.jpg" width="1316" height="412" alt="A filament-rich Julia crop at one sample per pixel beside sixteen, both enlarged so that single pixels are visible."><span class="figure-open-mark" aria-hidden="true">↗</span></a>
+        <figcaption>One crop at one sample per pixel and at the production setting of 4 × 4 = 16, both enlarged to twice size so single pixels are visible. A filament thinner than a pixel is a coin flip at one sample: the arms break into speckle and the spiral's dotted beads come apart. Nothing later in the pipeline can put back what the sampling missed.</figcaption>
       </figure>
 
     <h2 id="dynamic-range">Dynamic range</h2>
@@ -184,9 +183,9 @@
     smoothly — so that no single sweep of the palette has to cover the whole range. That is why
     so many classic Mandelbrot renders look striped with rings of repeating color.</p>
 
-      <figure class="figure" data-figure="render-cyclic-repeats">
-        <img src="../assets/images/figures/render-cyclic-repeats.jpg" width="1316" height="812" alt="One Julia location under a cyclic ice palette at one, two, three and four sweeps of the gradient.">
-        <figcaption>One location and one cyclic palette, swept across the frame's range k times. At k = 1 the gradient is spent once over a range most of the frame does not occupy, and wide areas come out nearly flat; each further sweep spends it again and pulls more of the structure apart. Repetition is the classic escape from a squeezed range, and it is why so many older Mandelbrot renders are striped with rings. <span class="credit">Rendered with fractal-wallpapers</span> <a class="open" href="../explorer/index.html?v=2&amp;f=julia&amp;cx=-0.07810228973371881&amp;cy=-0.6514609012382414&amp;w=3.0&amp;p=Ice%20Walk">open in fractal explorer</a></figcaption>
+      <figure class="figure figure-ranged" data-figure="render-cyclic-repeats">
+        <a class="figure-open" href="../explorer/index.html?v=2&amp;f=julia&amp;cx=-0.07810228973371881&amp;cy=-0.6514609012382414&amp;w=3.0&amp;p=Reef%20Triad" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/render-cyclic-repeats.jpg" width="1316" height="812" alt="One Julia location under a cyclic ice palette at one, two, three and four sweeps of the gradient."><span class="figure-open-mark" aria-hidden="true">↗</span></a>
+        <figcaption>One location and one cyclic palette, swept across the frame's range k times. At k = 1 the gradient is spent once over a range most of the frame does not occupy, and wide areas come out nearly flat; each further sweep spends it again and pulls more of the structure apart. Repetition is the classic escape from a squeezed range, and it is why so many older Mandelbrot renders are striped with rings.</figcaption>
       </figure>
 
     <p>This project keeps repetition but removes the guesswork underneath it. A data-driven
@@ -196,13 +195,13 @@
     percentile stretch: the 0.5th and 99.5th percentiles of the frame's own values become the
     two ends of the working range, and the half a per cent past each end is clipped flat. How
     many times the palette sweeps that leveled range is then one of the palette settings a
-    render records, covered in <a href="color-palettes.html">Color palettes</a>, rather than a
+    render records, covered in <a href="color-palettes.html">color palettes</a>, rather than a
     fixed step guessed against an unknown range. This leveling acts on the field, before any color exists; the finished,
     colored image gets its own gentler level adjustment later in the pipeline.</p>
 
-      <figure class="figure" data-figure="render-autolevel">
-        <img src="../assets/images/figures/render-autolevel.jpg" width="1316" height="412" alt="One Mandelbrot location with the palette spread linearly across the frame's whole range, beside the same field leveled against its own distribution.">
-        <figcaption>The same field twice. On the left the palette is spread linearly from the frame's lowest value to its highest, 11 to 8,504. Ninety-nine per cent of the frame lies between 11 and 64, so almost the whole picture is drawn from the first 0.6% of the gradient and the rest of the palette is spent on a handful of samples along the boundary. On the right the working range is measured from the distribution instead, and the picture was there the whole time. <span class="credit">Rendered with fractal-wallpapers</span> <a class="open" href="../explorer/index.html?v=2&amp;x=-0.1592&amp;y=1.0341&amp;w=0.10&amp;p=Ice%20Walk">open in fractal explorer</a></figcaption>
+      <figure class="figure figure-ranged" data-figure="render-autolevel">
+        <a class="figure-open" href="../explorer/index.html?v=2&amp;x=-0.1592&amp;y=1.0341&amp;w=0.10&amp;p=Gold%20Field%2C%20Blood%20Spark" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/render-autolevel.jpg" width="1316" height="412" alt="One Mandelbrot location with the palette spread linearly across the frame's whole range, beside the same field leveled against its own distribution."><span class="figure-open-mark" aria-hidden="true">↗</span></a>
+        <figcaption>The same field twice. On the left the palette is spread linearly from the frame's lowest value to its highest, 11 to 8,503. Ninety-nine per cent of the frame lies between 11 and 64, so almost the whole picture is drawn from the first 0.6% of the gradient and the rest of the palette is spent on a handful of samples along the boundary. On the right the working range is measured from the distribution instead, and the picture was there the whole time.</figcaption>
       </figure>
 
     <h2 id="the-smooth-rendering">The smooth rendering</h2>

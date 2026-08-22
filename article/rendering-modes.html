@@ -17,7 +17,7 @@
 <div class="page">
 <!-- contents-rail:start — written by builder/. Run `python -m builder build`. -->
 <nav class="contents-rail" aria-label="Contents">
-  <p class="rail-title">Contents</p>
+  <p class="rail-title"><a href="../index.html">Contents</a></p>
   <ol class="rail-sections">
     <li><a href="overview.html">Overview</a> <span class="done" role="img" aria-label="written">✓</span></li>
     <li><a href="escape-time-fractals.html">Escape-time fractals</a> <span class="done" role="img" aria-label="written">✓</span></li>
@@ -42,6 +42,10 @@
     <li><a href="running-at-scale.html">Running at scale</a></li>
     <li><a href="deep-zoom.html">Deep zoom</a></li>
   </ol>
+  <ul class="rail-links">
+    <li><a href="../explorer/index.html">Fractal explorer</a></li>
+    <li><a href="https://github.com/techmatt/fractal-wallpapers">fractal-wallpapers on GitHub</a></li>
+  </ul>
 </nav>
 <!-- contents-rail:end -->
 
@@ -96,8 +100,8 @@
     accumulate a large total; orbits that bolt immediately barely register.</p>
 
       <figure class="figure" data-figure="modes-field-family">
-        <img src="../assets/images/figures/modes-field-family.jpg" width="1344" height="756" alt="One location drawn seven times — smooth, tia, stripe, curvature, exponential smoothing, the Gaussian-integer trap and the circle trap — in one palette.">
-        <figcaption>One location, one palette, seven modes. Every panel is the same frame and the same gradient; what changes is which number the orbit is reduced to. Smooth reads the clock, the next four measure the path, and the last two ask how close the orbit came to a shape. <span class="credit">Rendered with fractal-wallpapers</span> <a class="open" href="../explorer/index.html?v=2&amp;f=julia&amp;cx=-0.7713889686976524&amp;cy=-0.10762203592208013&amp;x=0.0706762546690206&amp;y=-0.2927011990100217&amp;w=0.228854055444611&amp;p=cmr.voltage">open in fractal explorer</a></figcaption>
+        <a class="figure-open" href="../explorer/index.html?v=2&amp;f=julia&amp;cx=-0.7713889686976524&amp;cy=-0.10762203592208013&amp;x=0.0706762546690206&amp;y=-0.2927011990100217&amp;w=0.228854055444611&amp;p=cmr.voltage" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/modes-field-family.jpg" width="1344" height="756" alt="One location drawn seven times — smooth, tia, stripe, curvature, exponential smoothing, the Gaussian-integer trap and the circle trap — in one palette."><span class="figure-open-mark" aria-hidden="true">↗</span></a>
+        <figcaption>One location, one palette, seven modes. Every panel is the same frame and the same gradient; what changes is which number the orbit is reduced to. Smooth reads the clock, the next four measure the path, and the last two ask how close the orbit came to a shape.</figcaption>
       </figure>
 
     <h2 id="orbit-traps">Orbit traps</h2>
@@ -146,13 +150,13 @@
     every orbit, with no early exit.</p>
 
       <figure class="figure" data-figure="modes-composite">
-        <img src="../assets/images/figures/modes-composite.jpg" width="1344" height="756" alt="One location as a plain smooth render, as smooth_stripe, and as threads.">
-        <figcaption>What compositing adds, at one location. The smooth base on its own, the stripe average screened over it at 85%, and the accumulated cross trap laid additively on top — the same escape structure underneath all three. <span class="credit">Rendered with fractal-wallpapers</span> <a class="open" href="../explorer/index.html?v=2&amp;f=julia&amp;cx=-1.2517612129804818&amp;cy=0.038979112285470574&amp;x=0.6065281485846471&amp;y=-0.03208288189871235&amp;w=0.041058389658137996&amp;p=cmr.voltage">open in fractal explorer</a></figcaption>
+        <a class="figure-open" href="../explorer/index.html?v=2&amp;f=julia&amp;cx=-1.2517612129804818&amp;cy=0.038979112285470574&amp;x=0.6065281485846471&amp;y=-0.03208288189871235&amp;w=0.041058389658137996&amp;p=cmr.voltage" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/modes-composite.jpg" width="1344" height="756" alt="One location as a plain smooth render, as smooth_stripe, and as threads."><span class="figure-open-mark" aria-hidden="true">↗</span></a>
+        <figcaption>What compositing adds, at one location. The smooth base on its own, the stripe average screened over it at 85%, and the accumulated cross trap laid additively on top — the same escape structure underneath all three.</figcaption>
       </figure>
 
       <figure class="figure" data-figure="modes-threads">
-        <img src="../assets/images/figures/modes-threads.jpg" width="1344" height="756" alt="A released threads wallpaper: a pale gold and slate spiral laced with bright feathered filaments.">
-        <figcaption>The project's one released threads wallpaper. The feathered brightness threading the spiral is the cross trap, accumulated over each orbit and added to the smooth render rather than mixed into it — which is why it glows instead of tinting. <span class="credit">Rendered with fractal-wallpapers</span> <a class="open" href="../explorer/index.html?v=2&amp;f=julia&amp;cx=-0.7464215353014425&amp;cy=-0.17137095012889225&amp;m=threads&amp;x=0.49581122671984723&amp;y=0.08304296620540672&amp;w=0.6843014715416367&amp;p=debutalis">open in fractal explorer</a></figcaption>
+        <a class="figure-open" href="../explorer/index.html?v=2&amp;f=julia&amp;cx=-0.7464215353014425&amp;cy=-0.17137095012889225&amp;m=threads&amp;x=0.49581122671984723&amp;y=0.08304296620540672&amp;w=0.6843014715416367&amp;p=debutalis" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/modes-threads.jpg" width="1344" height="756" alt="A released threads wallpaper: a pale gold and slate spiral laced with bright feathered filaments."><span class="figure-open-mark" aria-hidden="true">↗</span></a>
+        <figcaption>The project's one released threads wallpaper. The feathered brightness threading the spiral is the cross trap, accumulated over each orbit and added to the smooth render rather than mixed into it — which is why it glows instead of tinting.</figcaption>
       </figure>
 
     <h2 id="the-itinerary-mode">The itinerary mode</h2>
@@ -186,8 +190,8 @@
     images every orbit starts from the same point and the question never arises.</p>
 
       <figure class="figure" data-figure="modes-itinerary">
-        <img src="../assets/images/figures/modes-itinerary.jpg" width="1344" height="756" alt="A released itinerary wallpaper: blue and steel spirals cut into sharp-edged territories of red and blue.">
-        <figcaption>A released itinerary wallpaper. The hard-edged regions are territories of shared history — inside one, every orbit opened with the same route through the four sectors — and each territory rotates the palette rather than replacing it, so the classic structure runs on underneath the recoloring. <span class="credit">Rendered with fractal-wallpapers</span> <a class="open" href="../explorer/index.html?v=2&amp;f=julia4&amp;cx=-0.8000969197766781&amp;cy=0.07666925698290561&amp;m=itinerary&amp;x=0.18538548497519108&amp;y=0.2586240719056594&amp;w=0.01675262842141681&amp;p=Ember%20Against%20Steel">open in fractal explorer</a></figcaption>
+        <a class="figure-open" href="../explorer/index.html?v=2&amp;f=julia4&amp;cx=-0.8000969197766781&amp;cy=0.07666925698290561&amp;m=itinerary&amp;x=0.18538548497519108&amp;y=0.2586240719056594&amp;w=0.01675262842141681&amp;p=Ember%20Against%20Steel" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/modes-itinerary.jpg" width="1344" height="756" alt="A released itinerary wallpaper: blue and steel spirals cut into sharp-edged territories of red and blue."><span class="figure-open-mark" aria-hidden="true">↗</span></a>
+        <figcaption>A released itinerary wallpaper. The hard-edged regions are territories of shared history — inside one, every orbit opened with the same route through the four sectors — and each territory rotates the palette rather than replacing it, so the classic structure runs on underneath the recoloring.</figcaption>
       </figure>
 
     <h2 id="direct-traps">Direct traps</h2>
@@ -208,14 +212,14 @@
     wash out. They are drawn like every other mode and simply live or die by the judge.</p>
 
       <figure class="figure" data-figure="modes-direct-traps">
-        <img src="../assets/images/figures/modes-direct-traps.jpg" width="1344" height="756" alt="One location painted by all four direct-trap modes: the ring, the cross screened over black, the cross multiplied over white, and the real axis alone.">
-        <figcaption>One location, four direct traps. Nothing here is a field: each orbit paints as it iterates, taking a sample from the colormap at every near-miss of the trap shape. The same geometry over a black ground and over a white one produces two entirely different pictures. <span class="credit">Rendered with fractal-wallpapers</span> <a class="open" href="../explorer/index.html?v=2&amp;f=julia&amp;cx=-0.7752816563344589&amp;cy=0.11060370315867907&amp;m=direct_trap_ring&amp;x=1.41031913164428&amp;y=-0.0677854357876097&amp;w=0.18319667527863442&amp;p=cmr.voltage">open in fractal explorer</a></figcaption>
+        <a class="figure-open" href="../explorer/index.html?v=2&amp;f=julia&amp;cx=-0.7752816563344589&amp;cy=0.11060370315867907&amp;m=direct_trap_ring&amp;x=1.41031913164428&amp;y=-0.0677854357876097&amp;w=0.18319667527863442&amp;p=cmr.voltage" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/modes-direct-traps.jpg" width="1344" height="756" alt="One location painted by all four direct-trap modes: the ring, the cross screened over black, the cross multiplied over white, and the real axis alone."><span class="figure-open-mark" aria-hidden="true">↗</span></a>
+        <figcaption>One location, four direct traps. Nothing here is a field: each orbit paints as it iterates, taking a sample from the colormap at every near-miss of the trap shape. The same geometry over a black ground and over a white one produces two entirely different pictures.</figcaption>
       </figure>
 
     <h2 id="two-judges">Two judges</h2>
 
     <p>Later in the pipeline, trained judges score finished renders
-    (<a href="training-judges.html">Training judges</a>), and the judging splits the catalog
+    (<a href="training-judges.html">training judges</a>), and the judging splits the catalog
     in two: one judge handles the plain smooth rendering, and a second handles
     <em>everything else</em> — every field, composite, and trap variation on this page. The
     project calls the first kind smooth and the whole of the second kind <i>strange</i>.
@@ -229,7 +233,7 @@
     rotation; the nineteenth, a classical distance-estimation coloring, is supported and
     renderable but in practice doesn't produce wallpapers worth keeping, so nothing ever draws
     it. One structural fact shapes everything: the <em>search</em> for good locations
-    (<a href="finding-good-locations.html">Finding good locations</a>) renders only smooth —
+    (<a href="finding-good-locations.html">finding good locations</a>) renders only smooth —
     every other mode enters later, when the pipeline takes a discovered location and tries
     renderings of it, drawing a mode at random for each attempt.</p>
 
@@ -276,8 +280,8 @@
     means nothing yet.</p>
 
       <figure class="figure" data-figure="modes-gallery">
-        <img src="../assets/images/figures/modes-gallery.jpg" width="1344" height="756" alt="Eighteen labeled thumbnails, one for each mode in the production rotation.">
-        <figcaption>The production rotation, one example each, in the engine's own catalog order. Ten are released wallpapers. The other eight were drawn for this figure and chosen by the same judge: three of those modes have never released at all, and the five that have released did so before the strange judge's bar was made to act — today's head scores every one of them below it. <span class="credit">Rendered with fractal-wallpapers</span> <a class="open" href="../explorer/index.html?v=2&amp;f=julia&amp;cx=-0.7752816563344589&amp;cy=0.11060370315867907&amp;x=1.41031913164428&amp;y=-0.0677854357876097&amp;w=0.18319667527863442&amp;p=chaidai">open in fractal explorer</a></figcaption>
+        <a class="figure-open" href="../explorer/index.html?v=2&amp;f=julia&amp;cx=-0.7752816563344589&amp;cy=0.11060370315867907&amp;x=1.41031913164428&amp;y=-0.0677854357876097&amp;w=0.18319667527863442&amp;p=chaidai" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/modes-gallery.jpg" width="1344" height="756" alt="Eighteen labeled thumbnails, one for each mode in the production rotation."><span class="figure-open-mark" aria-hidden="true">↗</span></a>
+        <figcaption>The production rotation, one example each, in the engine's own catalog order. Ten are released wallpapers; the other eight were drawn for this figure, three of them in modes nothing has ever been released from.</figcaption>
       </figure>
 
     <h2 id="beyond-this-catalog">Beyond this catalog</h2>
@@ -306,7 +310,7 @@
       <li><i><a href="https://en.wikipedia.org/wiki/Plotting_algorithms_for_the_Mandelbrot_set#Histogram_coloring">Histogram
       coloring</a></i> re-spreads the palette by rank rather than by raw value, so every color
       gets used in proportion to how much of the image wants it — a cousin of the leveling step
-      from <a href="rendering-fundamentals.html">Rendering fundamentals</a>, solving the same
+      from <a href="rendering-fundamentals.html">rendering fundamentals</a>, solving the same
       problem a different way.</li>
       <li><i><a href="https://en.wikipedia.org/wiki/Fractal_flame">Fractal flames</a></i> leave
       escape-time fractals altogether: they iterate a system of nonlinear functions and

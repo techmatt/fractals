@@ -17,7 +17,7 @@
 <div class="page">
 <!-- contents-rail:start — written by builder/. Run `python -m builder build`. -->
 <nav class="contents-rail" aria-label="Contents">
-  <p class="rail-title">Contents</p>
+  <p class="rail-title"><a href="../index.html">Contents</a></p>
   <ol class="rail-sections">
     <li><a href="overview.html">Overview</a> <span class="done" role="img" aria-label="written">✓</span></li>
     <li><a href="escape-time-fractals.html">Escape-time fractals</a> <span class="done" role="img" aria-label="written">✓</span></li>
@@ -37,6 +37,10 @@
     <li><a href="running-at-scale.html">Running at scale</a></li>
     <li><a href="deep-zoom.html">Deep zoom</a></li>
   </ol>
+  <ul class="rail-links">
+    <li><a href="../explorer/index.html">Fractal explorer</a></li>
+    <li><a href="https://github.com/techmatt/fractal-wallpapers">fractal-wallpapers on GitHub</a></li>
+  </ul>
 </nav>
 <!-- contents-rail:end -->
 
@@ -51,7 +55,7 @@
   <section class="prose">
     <p>Finding a good location is slow; coloring it is fast. For each pixel the renderer
     computes a field — the smooth escape value from
-    <a href="rendering-fundamentals.html">Rendering fundamentals</a>, or whatever the
+    <a href="rendering-fundamentals.html">rendering fundamentals</a>, or whatever the
     rendering mode measures — and that is where nearly all the work goes. For the eight
     modes that read one scalar field, coloring is a separate step over stored numbers, so
     the field can be kept and every palette tried on it is a lookup over the same array.
@@ -61,8 +65,8 @@
     everything in this section is affordable.</p>
 
       <figure class="figure" data-figure="palette-locations">
-        <img src="../assets/images/figures/palette-locations.jpg" width="1316" height="817" alt="Three fractal locations down, three palettes across: nine renders in a grid, with a gradient strip above each column.">
-        <figcaption>Three locations, three palettes. Each row is one stored field recolored down the columns, and the strip above a column is the palette that column is drawn in. Along a row nothing changes but the lookup table the same numbers are read through. <span class="credit">Rendered with fractal-wallpapers</span> <a class="open" href="../explorer/index.html?v=2&amp;x=0.36589157992999566&amp;y=0.3142062593823041&amp;w=0.0005254752858165241&amp;p=Amber%20Highlands">open in fractal explorer</a></figcaption>
+        <a class="figure-open" href="../explorer/index.html?v=2&amp;x=0.36589157992999566&amp;y=0.3142062593823041&amp;w=0.0005254752858165241&amp;p=Amber%20Highlands" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/palette-locations.jpg" width="1316" height="817" alt="Three fractal locations down, three palettes across: nine renders in a grid, with a gradient strip above each column."><span class="figure-open-mark" aria-hidden="true">↗</span></a>
+        <figcaption>Three locations, three palettes. Each row is one stored field recolored down the columns, and the strip above a column is the palette that column is drawn in. Along a row nothing changes but the lookup table the same numbers are read through.</figcaption>
       </figure>
 
     <p>A palette is a short list of <i>stops</i>: positions from 0 to 1, each with a color.
@@ -106,12 +110,12 @@
 
       <figure class="figure" data-figure="palette-moods">
         <img src="../assets/images/figures/palette-moods.jpg" width="1316" height="622" alt="Thirteen gradient strips, one per mood family the generator brief names, each labeled with its family and the palette shown.">
-        <figcaption>One palette from each mood family the brief names, drawn as the gradient the renderer spends. Each is its family's most central member by the same distance the library is clustered on. <span class="credit">Rendered with fractal-wallpapers</span></figcaption>
+        <figcaption>One palette from each mood family the brief names, drawn as the gradient the renderer spends. Each is its family's most central member by the same distance the library is clustered on.</figcaption>
       </figure>
 
       <figure class="figure" data-figure="palette-fire-ice">
-        <img src="../assets/images/figures/palette-fire-ice.jpg" width="1316" height="693" alt="One Mandelbrot location drawn eleven times, once under each fire-ice palette, with a strip of the palette under every tile.">
-        <figcaption>One field under every palette the fire-ice batch produced. The geometry is fixed and the ramp beneath each tile is the whole of what changed; a mood family is a hue vocabulary rather than a look. <span class="credit">Rendered with fractal-wallpapers</span> <a class="open" href="../explorer/index.html?v=2&amp;x=-0.7466411371311648&amp;y=-0.11370180258878615&amp;w=7.873162460422087e-05&amp;p=Cobalt%20%26%20Coal">open in fractal explorer</a></figcaption>
+        <a class="figure-open" href="../explorer/index.html?v=2&amp;x=-0.7466411371311648&amp;y=-0.11370180258878615&amp;w=7.873162460422087e-05&amp;p=Cobalt%20%26%20Coal" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/palette-fire-ice.jpg" width="1316" height="693" alt="One Mandelbrot location drawn eleven times, once under each fire-ice palette, with a strip of the palette under every tile."><span class="figure-open-mark" aria-hidden="true">↗</span></a>
+        <figcaption>One field under every palette the fire-ice batch produced. The geometry is fixed and the ramp beneath each tile is the whole of what changed; a mood family is a hue vocabulary rather than a look.</figcaption>
       </figure>
 
     <p>Seven hundred palettes do not fit on a page, and a list is the wrong shape for them
@@ -129,7 +133,7 @@
 
       <figure class="figure" data-figure="palette-clusters">
         <img src="../assets/images/figures/palette-clusters.jpg" width="1316" height="632" alt="Sixteen rows of five gradient strips, one row per cluster, each row labeled with how many palettes that cluster holds.">
-        <figcaption>The library in sixteen groups, each shown by its five most central palettes. The label is how many palettes the group holds, so the shape of the library is legible before a single name is read. <span class="credit">Rendered with fractal-wallpapers</span></figcaption>
+        <figcaption>The library in sixteen groups, each shown by its five most central palettes. The label is how many palettes the group holds, so the shape of the library is legible before a single name is read.</figcaption>
       </figure>
 
     <h2 id="applying-a-palette">Applying a palette</h2>
@@ -143,8 +147,8 @@
     location and one palette under several of those settings.</p>
 
       <figure class="figure" data-figure="palette-params">
-        <img src="../assets/images/figures/palette-params.jpg" width="1316" height="422" alt="One location and one palette in two rows of five renders: the top row traverses the ramp one to eight times, the bottom row rotates where it starts.">
-        <figcaption>One location and one palette under the recipe that places the field on the ramp. Along the top row the ramp is traversed more times; along the bottom it is traversed three times and rotated. Nothing about the location moves. <span class="credit">Rendered with fractal-wallpapers</span> <a class="open" href="../explorer/index.html?v=2&amp;f=julia&amp;cx=-0.04993036639924727&amp;cy=0.6719657771206978&amp;x=-0.375&amp;y=0.375&amp;w=1.5&amp;p=Ember%20Rising">open in fractal explorer</a></figcaption>
+        <a class="figure-open" href="../explorer/index.html?v=2&amp;f=julia&amp;cx=-0.04993036639924727&amp;cy=0.6719657771206978&amp;x=-0.375&amp;y=0.375&amp;w=1.5&amp;p=Ember%20Rising" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/palette-params.jpg" width="1316" height="422" alt="One location and one palette in two rows of five renders: the top row traverses the ramp one to eight times, the bottom row rotates where it starts."><span class="figure-open-mark" aria-hidden="true">↗</span></a>
+        <figcaption>One location and one palette under the recipe that places the field on the ramp. Along the top row the ramp is traversed more times; along the bottom it is traversed three times and rotated. Nothing about the location moves.</figcaption>
       </figure>
 
     <p>Not every palette sits well on every location. The field decides how much of the ramp
@@ -154,8 +158,8 @@
     and invisible to any rule about the ramp alone.</p>
 
       <figure class="figure" data-figure="palette-spread">
-        <img src="../assets/images/figures/palette-spread.jpg" width="1316" height="342" alt="One location drawn twelve times under twelve different palettes, one of them outlined as the palette judge's pick.">
-        <figcaption>One location under twelve palettes drawn at random from the pool, and the one the palette judge scores highest of them. Most colorings of a good location are not good, and no rule about the ramp alone separates them. <span class="credit">Rendered with fractal-wallpapers</span> <a class="open" href="../explorer/index.html?v=2&amp;f=multibrot3&amp;x=-0.4561033363983932&amp;y=0.5492015096676741&amp;w=4.7117926342068356e-05&amp;p=Amethyst%20Veil">open in fractal explorer</a></figcaption>
+        <a class="figure-open" href="../explorer/index.html?v=2&amp;f=multibrot3&amp;x=-0.4561033363983932&amp;y=0.5492015096676741&amp;w=4.7117926342068356e-05&amp;p=Amethyst%20Veil" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/palette-spread.jpg" width="1316" height="342" alt="One location drawn twelve times under twelve different palettes, one of them outlined as the palette judge's pick."><span class="figure-open-mark" aria-hidden="true">↗</span></a>
+        <figcaption>One location under twelve palettes drawn at random from the pool, and the one the palette judge scores highest of them. Most colorings of a good location are not good, and no rule about the ramp alone separates them.</figcaption>
       </figure>
 
     <p>To make that call automatically, the pipeline trains a palette judge for exactly this
@@ -177,7 +181,7 @@
     originally picked only that often, and a judge cannot be asked to track its teacher more
     closely than the teacher tracks itself. That is below the bar I set, and it ships
     regardless; the figure at the end of the next section is the case for it. The lesson
-    from the lost labels appears in <a href="training-judges.html">Training judges</a> as a
+    from the lost labels appears in <a href="training-judges.html">training judges</a> as a
     rule: a label must carry everything needed to reproduce what it labels.</p>
 
     <h2 id="why-diversity-has-to-be-built-in">Why diversity has to be built in</h2>
@@ -198,8 +202,8 @@
     palette — across the tracked runs, 149 released pictures used 92 distinct palettes.</p>
 
       <figure class="figure" data-figure="palette-neighborhood">
-        <img src="../assets/images/figures/palette-neighborhood.jpg" width="1316" height="964" alt="Two blocks of thirty-two small renders of one location: the judge's ranked candidate set above, and thirty-two uniformly drawn palettes below.">
-        <figcaption>The 32 candidates a colorize would ask about, in the judge's own order with its pick first, above 32 palettes drawn uniformly from the same pool. The set the judge is really shown is meant to be a hard question, not an obvious one. <span class="credit">Rendered with fractal-wallpapers</span> <a class="open" href="../explorer/index.html?v=2&amp;x=-0.7482800116735308&amp;y=-0.13563763985784028&amp;w=0.0007193954637897842&amp;p=Ember%20Against%20Steel">open in fractal explorer</a></figcaption>
+        <a class="figure-open" href="../explorer/index.html?v=2&amp;x=-0.7482800116735308&amp;y=-0.13563763985784028&amp;w=0.0007193954637897842&amp;p=Ember%20Against%20Steel" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/palette-neighborhood.jpg" width="1316" height="964" alt="Two blocks of thirty-two small renders of one location: the judge's ranked candidate set above, and thirty-two uniformly drawn palettes below."><span class="figure-open-mark" aria-hidden="true">↗</span></a>
+        <figcaption>The 32 candidates a colorize would ask about, in the judge's own order with its pick first, above 32 palettes drawn uniformly from the same pool. The set the judge is really shown is meant to be a hard question, not an obvious one.</figcaption>
       </figure>
 
     <h2 id="leveling">Leveling</h2>
@@ -216,8 +220,8 @@
     reads a different place in the ramp at every sample.</p>
 
       <figure class="figure" data-figure="palette-autolevel">
-        <img src="../assets/images/figures/palette-autolevel.jpg" width="1316" height="430" alt="One released wallpaper twice: as the chosen palette rendered it, and after the leveling operator moved its tone.">
-        <figcaption>One released wallpaper before and after the operator acted, with the three statistics it measured on the first. Inside the band it does nothing at all and hands back the render it was given. <span class="credit">Rendered with fractal-wallpapers</span> <a class="open" href="../explorer/index.html?v=2&amp;f=julia&amp;cx=-1.2517612129804818&amp;cy=0.038979112285470574&amp;x=-0.17270050515969365&amp;y=-0.0039062499999999237&amp;w=1.2387394870317157&amp;p=jadanti">open in fractal explorer</a></figcaption>
+        <a class="figure-open" href="../explorer/index.html?v=2&amp;f=julia&amp;cx=-1.2517612129804818&amp;cy=0.038979112285470574&amp;x=-0.17270050515969365&amp;y=-0.0039062499999999237&amp;w=1.2387394870317157&amp;p=jadanti" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/palette-autolevel.jpg" width="1316" height="430" alt="One released wallpaper twice: as the chosen palette rendered it, and after the leveling operator moved its tone."><span class="figure-open-mark" aria-hidden="true">↗</span></a>
+        <figcaption>One released wallpaper before and after the operator acted, with the three statistics it measured on the first. Inside the band it does nothing at all and hands back the render it was given.</figcaption>
       </figure>
   </section>
 

@@ -17,7 +17,7 @@
 <div class="page">
 <!-- contents-rail:start — written by builder/. Run `python -m builder build`. -->
 <nav class="contents-rail" aria-label="Contents">
-  <p class="rail-title">Contents</p>
+  <p class="rail-title"><a href="../index.html">Contents</a></p>
   <ol class="rail-sections">
     <li class="rail-current"><a href="overview.html" aria-current="page">Overview</a> <span class="done" role="img" aria-label="written">✓</span></li>
     <li><a href="escape-time-fractals.html">Escape-time fractals</a> <span class="done" role="img" aria-label="written">✓</span></li>
@@ -30,6 +30,10 @@
     <li><a href="running-at-scale.html">Running at scale</a></li>
     <li><a href="deep-zoom.html">Deep zoom</a></li>
   </ol>
+  <ul class="rail-links">
+    <li><a href="../explorer/index.html">Fractal explorer</a></li>
+    <li><a href="https://github.com/techmatt/fractal-wallpapers">fractal-wallpapers on GitHub</a></li>
+  </ul>
 </nav>
 <!-- contents-rail:end -->
 
@@ -43,8 +47,8 @@
 <main>
   <section class="prose">
       <figure class="figure" data-figure="overview-gallery-hook">
-        <img src="../assets/images/figures/overview-gallery-hook.jpg" width="1344" height="578" alt="A grid of six finished wallpapers, one from each fractal family.">
-        <figcaption>One finished wallpaper per family, and nothing else about them is hand-made: each was found by a walk, drawn in one of the rendering modes, colored from a chosen palette, and kept by a judge. <span class="credit">Rendered with fractal-wallpapers</span> <a class="open" href="../explorer/index.html?v=2&amp;x=-0.803832500338032&amp;y=0.18284218893827717&amp;w=0.000029290495407453673&amp;p=along-the-starry-way-25">open in fractal explorer</a></figcaption>
+        <a class="figure-open" href="../explorer/index.html?v=2&amp;x=-0.803832500338032&amp;y=0.18284218893827717&amp;w=0.000029290495407453673&amp;p=along-the-starry-way-25" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/overview-gallery-hook.jpg" width="1344" height="578" alt="A grid of six finished wallpapers, one from each fractal family."><span class="figure-open-mark" aria-hidden="true">↗</span></a>
+        <figcaption>One finished wallpaper per family, and nothing else about them is hand-made: each was found by a walk, drawn in one of the rendering modes, colored from a chosen palette, and kept by a judge.</figcaption>
       </figure>
 
     <p>For many years my desktop background has cycled through a collection of
@@ -92,14 +96,14 @@
     structure and away from both emptiness and pure chaos, scoring neighborhoods as it goes
     with a small <a href="https://en.wikipedia.org/wiki/Neural_network_(machine_learning)">neural
     network</a> trained on my labels for what makes promising wallpaper
-    material (<a href="finding-good-locations.html">Finding good locations</a>,
-    <a href="training-judges.html">Training judges</a>). <strong>Render</strong> — each
+    material (<a href="finding-good-locations.html">finding good locations</a>,
+    <a href="training-judges.html">training judges</a>). <strong>Render</strong> — each
     promising location is drawn at high quality in one of a catalog of rendering modes, from
     the classic smooth coloring to stranger styles
-    (<a href="rendering-fundamentals.html">Rendering fundamentals</a>,
-    <a href="rendering-modes.html">Rendering modes</a>). <strong>Color</strong> — a palette
+    (<a href="rendering-fundamentals.html">rendering fundamentals</a>,
+    <a href="rendering-modes.html">rendering modes</a>). <strong>Color</strong> — a palette
     is chosen to suit the image and its tones are balanced automatically
-    (<a href="color-palettes.html">Color palettes</a>). <strong>Select</strong> — finished
+    (<a href="color-palettes.html">color palettes</a>). <strong>Select</strong> — finished
     renders are scored by <i>judges</i> trained on my ratings, and a final set is chosen for
     quality and diversity — avoiding twenty near-duplicates of the single best view or a
     single class of color styles
