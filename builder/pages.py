@@ -194,7 +194,12 @@ def gallery_page(gallery: Gallery, sections: list[sections_module.Section]) -> s
 
 
 def gallery_index(galleries: list[Gallery], sections: list[sections_module.Section]) -> str:
-    """The HTML for the gallery index: one cover tile per gallery."""
+    """The HTML for the gallery index: one cover tile per gallery.
+
+    With no galleries it is the register standing empty, which is a page the site
+    genuinely has: the front page and the site bar both link here, so this has to be
+    somewhere a reader can arrive rather than a page that is missing.
+    """
     page = GALLERIES_DIR / "index.html"
     css = relative_href(page, SITE_ROOT / "assets" / "css" / "site.css")
     article = relative_href(page, SITE_ROOT / "index.html")
@@ -208,7 +213,13 @@ def gallery_index(galleries: list[Gallery], sections: list[sections_module.Secti
             "full size is a release download.</p>"
         )
     else:
-        intro.append("    <p>No galleries have been built yet.</p>")
+        # The register with nothing in it yet. It says what is coming and stops there:
+        # a date would be a promise and a count would be a number nobody has, and both
+        # are the kind of thing a reader is entitled to hold the page to.
+        intro.append(
+            "    <p>The finished wallpapers are still to come. They will be web-res on "
+            "the page, and full size will be a release download.</p>"
+        )
     intro.append(f'    <p><a href="{attribute(article)}">Back to the article</a></p>')
     intro.append("  </section>")
 
