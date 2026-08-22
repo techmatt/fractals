@@ -29,7 +29,7 @@ def carrier_path(page: str) -> Path:
     """The page a figure row or a prose row names.
 
     A bare file name is an article section — the case every row was until the palette
-    library and the generator brief arrived, and the one a row should keep saying. A
+    library and the palette prompt arrived, and the one a row should keep saying. A
     name with a `/` in it is site-relative, which is how a page that hangs off a section
     without being one of the ten is addressed. Two spellings, and the slash is what
     tells them apart, so no row has to say which kind it is.

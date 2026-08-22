@@ -341,11 +341,14 @@ a:hover { color: var(--ink); }
   margin: 0;
 }
 .palette img { display: block; width: 100%; height: auto; }
+/* A strip's name is a label and not a caption, so it is centred under its picture — the
+   other half of the rule that ranges a figure's caption left *(Matt, 2026-08-22)*. */
 .palette figcaption {
   padding: 0.35rem 0.55rem;
   font-size: 0.8125rem;
   line-height: 1.4;
   color: var(--well-ink-dim);
+  text-align: center;
   overflow-wrap: anywhere;
 }
 
@@ -372,22 +375,22 @@ a:hover { color: var(--ink); }
 }
 .figure img { display: block; width: 100%; height: auto; }
 
-/* The caption sits under the middle of the picture, at a size a step above the site's
+/* The caption sits under the left edge of the picture, at a size a step above the site's
    other small print: it is the second thing a reader looks at, after the figure itself,
    and it used to be set at the footer's size. It is held to the reading measure however
    wide the figure runs — a caption spread across the full column is a line nobody tracks
-   back — and a caption long enough to need several of those lines is ranged left
-   instead, which the registry row asks for. */
+   back. **Ranged left whatever its length** *(Matt, 2026-08-22, replacing the rule that
+   centred a caption until it passed about three hundred characters)*: a caption is prose
+   and reads as prose, and the centring belongs to the short labels under a picture. */
 .figure figcaption {
-  margin: 0.7rem auto 0.1rem;
+  margin: 0.7rem 0 0.1rem;
   max-width: var(--measure);
   font-size: 0.9375rem;
   line-height: 1.55;
   color: var(--well-ink-dim);
-  text-align: center;
+  text-align: left;
   text-wrap: pretty;
 }
-.figure-ranged figcaption { margin-left: 0; text-align: left; }
 .figure a { color: var(--well-link); }
 .figure a:hover { color: var(--well-ink); }
 

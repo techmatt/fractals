@@ -47,12 +47,12 @@
 <main>
   <section class="prose">
     <p>The 175 authored palettes in the library were written by Claude from a technical
-    description of the problem. The brief is short enough to read and specific enough to
-    run: it says what "dramatic" means in measurable terms, spreads each batch across a set
-    of structural templates so the batch is not twenty versions of one idea, and ends with a
-    schema. Paste it into a Claude conversation, set the four lines at the top — batch size,
-    mood family, complexity band, value key — and you get a JSON array of palettes, each
-    stop in <a href="https://en.wikipedia.org/wiki/Oklab_color_space">OKLCH</a>. Run the
+    description of the problem. The palette prompt is short enough to read and specific
+    enough to run: it says what "dramatic" means in measurable terms, spreads each batch
+    across a set of structural templates so the batch is not twenty versions of one idea,
+    and ends with a schema. Paste it into a Claude conversation, set the four lines at the
+    top — batch size, mood family, complexity band, value key — and you get a JSON array
+    of palettes, each stop in <a href="https://en.wikipedia.org/wiki/Oklab_color_space">OKLCH</a>. Run the
     validator on the result. It checks the mechanical rules — the loop closes, the number of
     stops fits the complexity band, the bright band is feathered rather than cut, a hard
     edge carries only a small step, a big hue jump routes through black or white — and
@@ -61,12 +61,12 @@
     dropped into data/palettes/ is a palette like any other.</p>
 
     <ul>
-      <li>The brief: data/palettes/generator_prompt.md (v3.1)</li>
+      <li>The palette prompt: data/palettes/generator_prompt.md (v3.1)</li>
       <li>The validator: data/palettes/validate_palettes.py</li>
       <li>What each authored palette was made from: data/palettes/provenance.jsonl</li>
     </ul>
 
-    <p>Mood families in the brief: fire-ice · jewel-earth · atmospheric-deep · antique-faded
+    <p>Mood families in the prompt: fire-ice · jewel-earth · atmospheric-deep · antique-faded
     · high-key-luminous · pastel-iridescent · autumn-ember · oceanic · orchid-twilight ·
     verdigris-copper · ember-in-ash · tonal-restrained · sapphire-rose. Both the mood-family
     and the value-key lines also accept span, which asks the batch to vary that axis instead
@@ -74,7 +74,7 @@
 
       <figure class="figure" data-figure="palette-generator-batch">
         <img src="../assets/images/figures/palette-generator-batch.jpg" width="1316" height="372" alt="Eighteen gradient strips from one generated batch, each labeled with the palette's name.">
-        <figcaption>One shipped batch of the brief, as gradients: eighteen palettes from a single run, spread across the structural templates rather than one idea eighteen times over.</figcaption>
+        <figcaption>One shipped batch of the palette prompt, as gradients: eighteen palettes from a single run, spread across the structural templates rather than one idea eighteen times over.</figcaption>
       </figure>
   </section>
 

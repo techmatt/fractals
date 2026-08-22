@@ -5,7 +5,7 @@ modules read walk ledgers and score files. This page's subject is the *library*,
 module reads four things next door and nothing else:
 
 * the **colormap library** itself — one JSON per palette, and the `provenance.jsonl`
-  saying which of them were authored against the brief and under which mood family;
+  saying which of them were authored against the palette prompt and under which mood family;
 * the **clustering** that repository ships, `clusters.jsonl`, which is a reading of the
   library rather than something the pipeline consumes;
 * the **finished-render label stores**, for the locations: every single-location figure
@@ -41,8 +41,8 @@ in, and bakes each one into `palettes.js` so a link can name it. It finds them b
 word `colormap` in front of a name. A sheet here shows up to eighty palettes and gets
 **one** link, at its representative panel, so exactly one line of each row's provenance
 says `colormap`; every other line names its palette without that word. The alternative
-is a browser page carrying seven hundred gradients so that a figure of sixteen rows of
-strips could be opened at a picture it does not show.
+is a browser page carrying seven hundred gradients so that a sheet of strips could be
+opened at a picture it does not show.
 """
 
 from __future__ import annotations
@@ -107,8 +107,14 @@ NEIGHBORHOOD_SEED = 20260821
 SPREAD_SEED = 20260822
 SPREAD_WIDE = 12
 
+#: How the spread figure's twelve panels are laid out *(Matt, 2026-08-22, replacing six
+#: across by two down)*. Four across gives each panel half again the width, which is what
+#: a reader needs to see that most of these colorings are wrong; the twelve and their
+#: order are untouched.
+SPREAD_COLUMNS = 4
+
 #: The batch the generator page shows: the largest one shipped, so a reader sees what a
-#: single run of the brief actually produces rather than a trimmed version of it.
+#: single run of the prompt actually produces rather than a trimmed version of it.
 GENERATOR_BATCH = "sapphire-rose_c3-4_v3_1.json"
 
 #: A mood family that shipped no batch cannot be represented, and the roster is read off
@@ -189,7 +195,7 @@ def mood_families(held: dict[str, Palette]) -> dict[str, list[str]]:
 
 
 def strip(name: str, width: int, height: int = STRIP_HEIGHT) -> Path:
-    """One palette's gradient as the renderer spends it, drawn by the engine.
+    """One palette's gradient as a render sweeps through it, drawn by the engine.
 
     Never in Python: a second densifier is how a strip and the picture beside it come to
     disagree about the same palette. Skipped where the file is already there, so a sheet
@@ -353,7 +359,7 @@ def locations_by_palettes() -> Drawn:
 
 
 def mood_family_strips() -> Drawn:
-    """One strip per mood family the brief names, at that family's most central member."""
+    """One strip per mood family the prompt names, at that family's most central member."""
     held = library()
     families = mood_families(held)
     label_width = 268
@@ -424,41 +430,6 @@ def fire_ice() -> Drawn:
     return Drawn(sheets.save(sheet, sheet_path("palette-fire-ice")), provenance)
 
 
-def cluster_shorthand() -> Drawn:
-    """Sixteen clusters, five strips each: what the library looks like, grouped."""
-    groups = clusters()
-    label_width = 128
-    columns = 5
-    strip_width = (SHEET_WIDTH - label_width - (columns + 1) * sheets.PAD) // columns
-    row_height = STRIP_HEIGHT + 14
-    sheet, draw = sheets.canvas(SHEET_WIDTH, sheets.PAD + len(groups) * row_height + sheets.PAD)
-    for index, group in enumerate(groups):
-        y = sheets.PAD + index * row_height
-        draw.text(
-            (sheets.PAD, y + 4),
-            f"{group['size']} palettes",
-            fill=WELL_INK_DIM,
-            font=font(14),
-        )
-        for column, name in enumerate(group["central"][:columns]):
-            x = label_width + sheets.PAD + column * (strip_width + sheets.PAD)
-            sheets.paste(sheet, strip(name, strip_width), (x, y), (strip_width, STRIP_HEIGHT))
-    provenance = [
-        "No render: every panel is a gradient rather than a picture of a location. Strips "
-        "are `fractal-wallpapers palettes strip`, so each is the engine's own bake of the "
-        "map, folded where the map is sequential.",
-        "Rows are data/palettes/clusters.jsonl in cluster order — Ward's linkage over "
-        "palettes.space.distances cut at sixteen — and each row's five strips are that "
-        "cluster's `central` list, its five medoids, in the order the record holds them. "
-        "The row label is the cluster's size.",
-    ] + [
-        f"Cluster {group['cluster']} ({group['size']}): "
-        + ", ".join(f"palette {name}" for name in group["central"][:columns])
-        for group in groups
-    ]
-    return Drawn(sheets.save(sheet, sheet_path("palette-clusters")), provenance)
-
-
 def palette_params() -> Drawn:
     """One location and one palette, under the two knobs a reader can see."""
     held = library()
@@ -520,12 +491,13 @@ def palette_spread() -> Drawn:
     pictures = [coloured(field, held[name]) for name in names]
     scores = renders.palette_scores(pictures)
     best = max(range(len(names)), key=lambda index: scores[index])
-    panel = panels(6)
+    panel = panels(SPREAD_COLUMNS)
     cell = panel[1] + 4 + TILE_STRIP_HEIGHT + 22
-    sheet, drawer = sheets.canvas(SHEET_WIDTH, sheets.PAD + 2 * (cell + sheets.PAD))
+    rows = (len(names) + SPREAD_COLUMNS - 1) // SPREAD_COLUMNS
+    sheet, drawer = sheets.canvas(SHEET_WIDTH, sheets.PAD + rows * (cell + sheets.PAD))
     for index, name in enumerate(names):
-        x = sheets.PAD + (index % 6) * (panel[0] + sheets.PAD)
-        y = sheets.PAD + (index // 6) * (cell + sheets.PAD)
+        x = sheets.PAD + (index % SPREAD_COLUMNS) * (panel[0] + sheets.PAD)
+        y = sheets.PAD + (index // SPREAD_COLUMNS) * (cell + sheets.PAD)
         sheet.paste(sheets.fitted(pictures[index], panel), (x, y))
         sheets.paste(
             sheet,
@@ -678,7 +650,7 @@ def autolevel_pair() -> Drawn:
 
 
 def generator_batch() -> Drawn:
-    """One shipped batch of the brief, as strips: what a single run produces."""
+    """One shipped batch of the prompt, as strips: what a single run produces."""
     names = batches()[GENERATOR_BATCH]
     columns = 3
     width = (SHEET_WIDTH - (columns + 1) * sheets.PAD) // columns
@@ -695,7 +667,7 @@ def generator_batch() -> Drawn:
         "are `fractal-wallpapers palettes strip` at the cell's own width.",
         f"Every palette of the {GENERATOR_BATCH} batch that shipped, in name order, read off "
         f"data/palettes/provenance.jsonl — {len(names)} of them. The batch is the largest the "
-        "brief produced; the brief's own batch size is a run knob and the batches that ship "
+        "prompt produced; the prompt's own batch size is a run knob and the batches that ship "
         "are what survived the validator and the pool.",
         "Panels in reading order: " + ", ".join(f"palette {name}" for name in names) + ".",
     ]
@@ -808,7 +780,6 @@ MAKERS = {
     "palette-locations": locations_by_palettes,
     "palette-moods": mood_family_strips,
     "palette-fire-ice": fire_ice,
-    "palette-clusters": cluster_shorthand,
     "palette-params": palette_params,
     "palette-spread": palette_spread,
     "palette-neighborhood": neighborhood_ranked,
@@ -844,7 +815,7 @@ LIBRARY_TITLE = "All palettes"
 
 LIBRARY_LEAD = (
     "Every palette the project ships, grouped the way the section groups them: sixteen "
-    "groups by distance in palette space. Each is drawn here as the renderer spends it — "
+    "groups by distance in palette space. Each is drawn here as a render sweeps through it — "
     "folded where it does not close on the color it opened with — so what is on the page "
     "is the gradient a picture is read through, and not the handful of stops it was "
     "written as."

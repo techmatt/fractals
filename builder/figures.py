@@ -54,14 +54,6 @@ OPEN_TEXT = "open in fractal explorer"
 #: every reader already reads as "this opens somewhere else".
 OPEN_MARK = "\u2197"
 
-#: How a row asks for its caption to be set flush left instead of centred *(Matt,
-#: 2026-08-21)*. Centred is the default and carries most of the site: at the reading
-#: measure a caption of up to about three hundred characters is four lines or fewer, and
-#: a centred block that shallow reads well under a picture. Past that it is set flush
-#: left, which is where the wide multi-panel sheets land — they are the figures with the
-#: most to say. The threshold is a judgement, applied once, rather than argued per figure.
-ALIGN_LEFT = "left"
-
 #: `.gitattributes` normalizes this repository to LF, so anything that rewrites a
 #: tracked file spells the line ending rather than taking the platform's.
 LF = "\n"
@@ -117,7 +109,6 @@ class Figure:
     file: str | None
     width: int | None
     height: int | None
-    align: str | None
     provenance: tuple[str, ...]
     recipe: Recipe | None
 
@@ -166,8 +157,6 @@ def markup(figure: Figure, opened: str | None = None) -> str:
     classes = ["figure"]
     if figure.pending:
         classes.append("figure-pending")
-    if figure.align == ALIGN_LEFT:
-        classes.append("figure-ranged")
     return "\n".join(
         [
             f'{INDENT}<figure class="{" ".join(classes)}" data-figure="{attribute(figure.id)}">',
@@ -245,21 +234,9 @@ def _figure(row: records.Record, identifier: str) -> Figure:
         file=file,
         width=width,
         height=height,
-        align=_align(row),
         provenance=provenance,
         recipe=_recipe(row),
     )
-
-
-def _align(row: records.Record) -> str | None:
-    """How a row asks for its caption to be set, held to the one value there is."""
-    stated = row.optional_text("align")
-    if stated is not None and stated != ALIGN_LEFT:
-        raise records.RecordError(
-            f"{row.where}: align {stated!r} — a caption is centred unless it says "
-            f"{ALIGN_LEFT!r}, which is the only thing to say"
-        )
-    return stated
 
 
 def _recipe(row: records.Record) -> Recipe | None:
@@ -300,7 +277,6 @@ KEY_ORDER = (
     "height",
     "alt",
     "caption",
-    "align",
     "recipe",
     "provenance",
 )

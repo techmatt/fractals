@@ -51,7 +51,7 @@ are the builder's:
 Two pages hang off **Color palettes** without being sections of their own, and they live
 in `../palettes/` rather than here: `all-palettes.html`, which the builder generates —
 every palette in the library as a strip, grouped the way the section groups them — and
-`make-your-own.html`, the generator brief, which is hand-written the way a section is.
+`make-your-own.html`, the palette prompt, which is hand-written the way a section is.
 A registry names either of them with its slash: `palettes/make-your-own.html`.
 
 `sections.jsonl` here gives the ten pages their reading order and marks the ones that are

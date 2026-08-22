@@ -69,7 +69,7 @@ this builder does not read is an error, not a guess.
 
 `article/` holds exactly the ten ratified sections, and `check` refuses an HTML file
 there that `sections.jsonl` does not list. A page that belongs to a section without being
-part of the reading order — the palette library, the generator brief — lives in its own
+part of the reading order — the palette library, the palette prompt — lives in its own
 directory and is named with a slash wherever a registry names a page:
 `palettes/make-your-own.html`. `paths.carrier_path` is the one place that resolves the
 two spellings, and a bare file name still means an article section, which is what every

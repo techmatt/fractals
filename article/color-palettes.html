@@ -98,19 +98,19 @@
     built to: a wide range of lightness; darks and lights that still carry a hue; a bright
     band that reads as light; and at least one of pure-hue contrast, a big warm-to-cool
     swing, or several hues held in balance. The remaining 175 were written by Claude. The
-    brief states those properties as rules, names a mood family (fire-ice, jewel-earth,
-    oceanic, and so on), gives each batch a handful of structural templates to spread
-    across, and ends with a schema. A request looks like: twenty palettes, fire-ice,
+    <i>palette prompt</i> states those properties as rules, names a mood family (fire-ice,
+    jewel-earth, oceanic, and so on), gives each batch a handful of structural templates to
+    spread across, and ends with a schema. A request looks like: twenty palettes, fire-ice,
     moderate complexity, bright on dark. A small script checks the mechanical rules before
-    anything is rendered. The brief, the script, and each authored palette's record — its
+    anything is rendered. The prompt, the script, and each authored palette's record — its
     mood family, its templates, and its stops as written — ship with the repository
-    (data/palettes/generator_prompt.md, validate_palettes.py, provenance.jsonl). The brief
+    (data/palettes/generator_prompt.md, validate_palettes.py, provenance.jsonl). The prompt
     runs as-is in Claude; see
     <a href="../palettes/make-your-own.html">make your own palettes</a>.</p>
 
       <figure class="figure" data-figure="palette-moods">
-        <img src="../assets/images/figures/palette-moods.jpg" width="1316" height="622" alt="Thirteen gradient strips, one per mood family the generator brief names, each labeled with its family and the palette shown.">
-        <figcaption>One palette from each mood family the brief names, drawn as the gradient the renderer spends. Each is its family's most central member by the same distance the library is clustered on.</figcaption>
+        <img src="../assets/images/figures/palette-moods.jpg" width="1316" height="622" alt="Thirteen gradient strips, one per mood family the palette prompt names, each labeled with its family and the palette shown.">
+        <figcaption>One representative palette from each mood family the palette prompt names, drawn as the gradient the renderer sweeps through.</figcaption>
       </figure>
 
       <figure class="figure" data-figure="palette-fire-ice">
@@ -118,23 +118,18 @@
         <figcaption>One field under every palette the fire-ice batch produced. The geometry is fixed and the ramp beneath each tile is the whole of what changed; a mood family is a hue vocabulary rather than a look.</figcaption>
       </figure>
 
-    <p>Seven hundred palettes do not fit on a page, and a list is the wrong shape for them
-    anyway; what a reader wants is the library grouped by what the palettes look like. To
-    group them, each palette gets a descriptor: the ramp is rendered the way the engine
-    spends it, folded if it is sequential, 32 colors are sampled evenly along it, and each
+    <p>The library is one pool — converted ramps, extracted palettes and authored ones
+    together, cyclic beside sequential — and what organizes it is not where a palette came
+    from but what it looks like. Seven hundred names in source order would say nothing about
+    that. Each palette therefore gets a descriptor: the ramp is drawn as a render sweeps
+    through it, folded if it is sequential, 32 colors are sampled evenly along it, and each
     is written in OKLab — 96 numbers per palette. Distance between two descriptors is
     distance between two palettes, and it is the same distance the pipeline uses when it
     assembles candidate sets, below.
     <a href="https://en.wikipedia.org/wiki/Hierarchical_clustering">Clustering</a> on that
-    distance splits the library into sixteen groups (data/palettes/clusters.jsonl). The
-    figure below shows each cluster by its five most central members; the whole library, one
-    strip per palette, grouped the same way, is on
+    distance splits the library into sixteen groups (data/palettes/clusters.jsonl). The whole
+    library, one strip per palette, grouped the same way, is on
     <a href="../palettes/all-palettes.html">its own page</a>.</p>
-
-      <figure class="figure" data-figure="palette-clusters">
-        <img src="../assets/images/figures/palette-clusters.jpg" width="1316" height="632" alt="Sixteen rows of five gradient strips, one row per cluster, each row labeled with how many palettes that cluster holds.">
-        <figcaption>The library in sixteen groups, each shown by its five most central palettes. The label is how many palettes the group holds, so the shape of the library is legible before a single name is read.</figcaption>
-      </figure>
 
     <h2 id="applying-a-palette">Applying a palette</h2>
 
@@ -154,11 +149,11 @@
     <p>Not every palette sits well on every location. The field decides how much of the ramp
     a picture uses and where its mass falls, so a palette that is luminous on one location
     is a dark smear on the next. The figure below shows one location under a spread of
-    palettes; a few are right and most are not, and the difference is obvious to a person
-    and invisible to any rule about the ramp alone.</p>
+    palettes; a few are right and most are not. A person will usually see which is which;
+    no rule about the ramp alone will.</p>
 
       <figure class="figure" data-figure="palette-spread">
-        <a class="figure-open" href="../explorer/index.html?v=2&amp;f=multibrot3&amp;x=-0.4561033363983932&amp;y=0.5492015096676741&amp;w=4.7117926342068356e-05&amp;p=Amethyst%20Veil" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/palette-spread.jpg" width="1316" height="342" alt="One location drawn twelve times under twelve different palettes, one of them outlined as the palette judge's pick."><span class="figure-open-mark" aria-hidden="true">↗</span></a>
+        <a class="figure-open" href="../explorer/index.html?v=2&amp;f=multibrot3&amp;x=-0.4561033363983932&amp;y=0.5492015096676741&amp;w=4.7117926342068356e-05&amp;p=Amethyst%20Veil" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/palette-spread.jpg" width="1316" height="693" alt="One location drawn twelve times under twelve different palettes, one of them outlined as the palette judge's pick."><span class="figure-open-mark" aria-hidden="true">↗</span></a>
         <figcaption>One location under twelve palettes drawn at random from the pool, and the one the palette judge scores highest of them. Most colorings of a good location are not good, and no rule about the ramp alone separates them.</figcaption>
       </figure>
 
@@ -168,21 +163,15 @@
     else — each is the same stored field at gamma 1, one cycle, phase 0. The judge sees the
     rendered frame only, never a description of the palette, and it is trained to order the
     candidates of a single location, so its scores mean nothing across locations; they are a
-    ranking inside one set (models/palette/). It is also the one judge not trained on this
-    project's own labels. Its predecessor learned from human verdicts of a different shape:
-    a thousand locations, six colorings of each shown together and sorted by hand into bad,
-    okay and good. Those labels did not survive the rebuild — each was stored against the
-    name of a render file, and when the files went, the labels became rows with nothing to
-    point at. The judge that ships was trained to reproduce its predecessor's scores over
-    2,000 locations, 32 candidates each, held out by location; and on 377 real candidate
-    sets its top pick matches the old judge's 53% of the time, with a median rank
-    correlation of 0.91 (models/palette/acceptance.json). The ceiling for that comparison is
-    59%: shown this engine's renders of the same candidates, the old judge picks what it
-    originally picked only that often, and a judge cannot be asked to track its teacher more
-    closely than the teacher tracks itself. That is below the bar I set, and it ships
-    regardless; the figure at the end of the next section is the case for it. The lesson
-    from the lost labels appears in <a href="training-judges.html">training judges</a> as a
-    rule: a label must carry everything needed to reproduce what it labels.</p>
+    ranking inside one set (models/palette/). The judge that ships was trained to reproduce
+    the scores of an earlier palette judge, over 2,000 locations, 32 candidates each, held
+    out by location; and on 377 real candidate sets its top pick matches that judge's 53% of
+    the time, with a median rank correlation of 0.91 (models/palette/acceptance.json). The
+    ceiling for that comparison is 59%: shown this engine's renders of the same candidates,
+    the teacher picks what it originally picked only that often, and a judge cannot be asked
+    to track its teacher more closely than the teacher tracks itself. That is below the bar
+    I set, and it ships regardless; the figure at the end of the next section is the case
+    for it.</p>
 
     <h2 id="why-diversity-has-to-be-built-in">Why diversity has to be built in</h2>
 
