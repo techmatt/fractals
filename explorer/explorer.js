@@ -297,7 +297,9 @@ function buildConstants() {
   constantStrip.replaceChildren();
   for (const key of link.CONSTANTS[view.family]) {
     const label = document.createElement("label");
-    label.textContent = { cx: "c re", cy: "c im", px: "p re", py: "p im" }[key];
+    label.textContent = {
+      cx: "c re", cy: "c im", px: "p re", py: "p im", zx: "z₋₁ re", zy: "z₋₁ im",
+    }[key];
     label.htmlFor = `constant-${key}`;
     const input = document.createElement("input");
     input.type = "text";
@@ -355,10 +357,26 @@ function buildParams() {
   }
 }
 
+/**
+ * The palette picker's options: the offered maps, and whatever is drawn right now.
+ *
+ * A few baked maps are not offered — they are here so that a figure of the article can
+ * be opened at the map it was drawn in, and not to widen a curated set this site does
+ * not own. A link arriving on one still has to be shown truthfully, so it joins the
+ * list while it is in force and leaves again the moment the reader picks something
+ * else. A select that quietly showed a different name than the picture is drawn in
+ * would be worse than either.
+ */
+function paletteNames() {
+  const names = [...PALETTES].filter(([, map]) => map.offered).map(([name]) => name);
+  return names.includes(view.palette) ? names : [view.palette, ...names];
+}
+
 /** Whatever the reader just chose, drawn — and the strips rebuilt around it. */
 function rebuild() {
   familyPicker.value = view.family;
   modePicker.value = view.mode;
+  fill(picker, paletteNames());
   picker.value = view.palette;
   buildConstants();
   buildParams();
@@ -514,6 +532,10 @@ picker.addEventListener("change", () => {
   if (view.shade.mirror && PALETTES.get(view.palette).cyclic) {
     view = { ...view, shade: { ...view.shade, mirror: false } };
   }
+  // Refilled because the map just left may have been an unoffered one, and the picker
+  // carries such a map only while it is the one on the screen.
+  fill(picker, paletteNames());
+  picker.value = view.palette;
   draw();
 });
 
@@ -551,7 +573,6 @@ async function main() {
 
   fill(familyPicker, link.FAMILIES);
   fill(modePicker, link.MODES, IDENTITIES);
-  fill(picker, [...PALETTES.keys()]);
 
   try {
     view = link.parse(window.location.search, contract);
@@ -561,7 +582,7 @@ async function main() {
   }
 
   document.getElementById("provenance").textContent =
-    `${PROVENANCE.count} curated palettes and ${IDENTITIES.size} production modes, baked from ` +
+    `${PROVENANCE.offered} curated palettes and ${IDENTITIES.size} production modes, baked from ` +
     `fractal-wallpapers ${PROVENANCE.wallpapers_commit.slice(0, 12)} on ${PROVENANCE.baked}.`;
 
   clearNotice();

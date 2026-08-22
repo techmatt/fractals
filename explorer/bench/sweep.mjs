@@ -19,6 +19,15 @@ const FAMILIES = {
   julia3: { kind: "julia", degree: 3, c: JULIA_C },
   julia5: { kind: "julia", degree: 5, c: JULIA_C },
   phoenix: { kind: "phoenix", c: ["0.5667", "0"], p: ["-0.5", "0"] },
+  // The classic slice's twin, one step of memory away from it. Most of the Phoenix
+  // work the wallpaper project holds has a non-zero z₋₁, and a spec that carried the
+  // constant and drew the classic set anyway would look exactly like one that worked.
+  phoenix_memory: {
+    kind: "phoenix",
+    c: ["-0.5266783574752247", "-0.652322729101436"],
+    p: ["-0.28353182998131243", "-0.02545285599096059"],
+    z_prev: ["-0.10324356398202189", "0.43684294503006016"],
+  },
 };
 const MODES = [
   "smooth", "tia", "stripe", "exp_smoothing", "gaussian_int", "trap_circle", "curvature",

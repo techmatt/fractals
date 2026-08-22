@@ -2,7 +2,8 @@
 
 One page that runs the wallpaper project's own renderer in the browser: pan and zoom
 every family the wallpapers are drawn from, in every mode the pipeline ships, under any
-of the 77 curated palettes, and copy a link to whatever is on screen.
+of the 77 curated palettes, and copy a link to whatever is on screen. Every figure of the
+article that this page can draw again carries a link straight into it.
 
 **Nine families, eighteen modes, `f64`.** The parameter planes `mandelbrot` and
 `multibrot3`–`multibrot5`, the dynamical planes `julia`–`julia5` and `phoenix`, the
@@ -27,15 +28,16 @@ explorer.js           what a reader touches: drag, wheel, keys, pickers, copy li
 render.js             the worker pool, the plan, the field passes, the shade
 worker.js             one worker: one wasm instance, one band of rows
 permalink.js          the link contract — parse, validate, canonicalize
-permalink.test.mjs    27 tests, `node --test explorer/permalink.test.mjs`
-palettes.js           generated: the curated colormaps, by name
-catalog.js            generated: the mode roster, and the anchors' family constants
+permalink.test.mjs    29 tests, `node --test explorer/permalink.test.mjs`
+palettes.js           generated: the colormaps, by name, curated or drawn-in
+catalog.js            generated: the mode roster, its curves, the anchors' constants
+links.jsonl           generated: every figure and tile, as a link here or a reason not
 engine.wasm           generated: the engine, compiled
 engine.manifest.json  generated: what engine.wasm was built from
 engine-wasm/          the crate that produces engine.wasm
 ```
 
-The four generated files are **committed artifacts**. The site never builds; a clone
+The five generated files are **committed artifacts**. The site never builds; a clone
 with no wallpaper project beside it serves this page exactly as this checkout does. Only
 *regenerating* them needs the sibling checkout and a Rust toolchain.
 
@@ -367,14 +369,19 @@ v · f · cx · cy · px · py · m · the mode's parameters · x · y · w · a
   Mandelbrot set — spelled the way a reader would say it. `fractional_multibrot` is named
   and refused: it is a real family the article draws, but a non-integer degree needs a
   branch cut and the engine gives it no home view, so there is nowhere to open it at.
-- **`cx`, `cy`, `px`, `py`** — the family's own constants, as decimal strings. `c` is half
-  of a dynamical location's identity, the same `c` the wallpaper project's walk requires
-  and refuses to guess; `p` is Ushiki's Phoenix memory coefficient. A constant key on a
-  family that has no such constant is refused, and says which constants that family does
-  have. **`z₋₁` is deliberately absent**: the engine admits it and a non-zero one is a
-  different set rather than a different view of the same one, the shipped anchor is the
-  classic slice, and a key with no visible effect on this page would be a knob rather than
-  a control.
+- **`cx`, `cy`, `px`, `py`, `zx`, `zy`** — the family's own constants, as decimal
+  strings. `c` is half of a dynamical location's identity, the same `c` the wallpaper
+  project's walk requires and refuses to guess; `p` is Ushiki's Phoenix memory
+  coefficient; `z₋₁` is the previous iterate its recurrence starts with. A constant key
+  on a family that has no such constant is refused, and says which constants that family
+  does have. **`z₋₁` was left out of v2's first draft, and the reason was wrong.** It is
+  true that a non-zero `z₋₁` is a different set rather than a different view of one —
+  and that is the argument for spelling it, not against. Of the 48 distinct `(c, p, z₋₁)`
+  triples the wallpaper project's walk ledgers hold, **39 carry a non-zero one**; a
+  contract that could not say it would have drawn the classic slice under a name that
+  meant something else, silently, for four fifths of the Phoenix work there is. Absent
+  still means the origin, so every link written before the key existed draws exactly what
+  it drew — which is why this is a widening and not a version 3.
 - **`m`** — the mode, one of the engine's eighteen production names. `de` is named and
   refused with its own reason: it is niche rather than broken, the engine renders it by
   name, and no production draw picks it.
@@ -401,8 +408,15 @@ v · f · cx · cy · px · py · m · the mode's parameters · x · y · w · a
   and 10000. An aspect is a shape. **Pixel dimensions are not a field of the contract**:
   the canvas is drawn at whatever size the reader's window gives it, and a link does not
   carry a resolution.
-- **`p`** — a palette **name**, which must be in the curated set. Names and never
-  indices: a colormap added next year must not repaint a link saved this year.
+- **`p`** — a palette **name**, which must be one the page carries. Names and never
+  indices: a colormap added next year must not repaint a link saved this year. **The set
+  a link may name is wider than the set the picker offers**: every curated map is
+  offered, and baked alongside them are the maps this site's own figures were drawn in,
+  most of which arrived in the wallpaper project by mechanical conversion and are not
+  curated. A map the article publishes a picture in has to be nameable or that picture
+  cannot be opened here at all; it does not have to be on the menu, and putting it there
+  would widen a distinction this repository does not own. A link arriving on an unoffered
+  map draws it, and the picker shows that map for as long as it is the one on the screen.
 - **The seven shade keys** are the engine's own `Palette` recipe, one key per real engine
   parameter, at the engine's defaults. They are **link-only**: the page gives them no
   control, and they are handed to the module exactly as they are read here.
@@ -461,7 +475,7 @@ list of what a link may *say*. Two lists on purpose — a contract that read its
 from a generated file could be widened by rebuilding it — and the test suite asserts they
 are the same roster in the same order, which is where a promoted or retired mode shows up.
 
-`permalink.test.mjs` holds all of that: **27 tests**, Node's own runner, nothing
+`permalink.test.mjs` holds all of that: **29 tests**, Node's own runner, nothing
 installed. Among them, encode-then-decode is the identity for **every family crossed with
 a mode of each of the engine's four coloring shapes**, parameters and constants included.
 
@@ -469,11 +483,36 @@ a mode of each of the engine's four coloring shapes**, parameters and constants 
 node --test explorer/permalink.test.mjs
 ```
 
+## The link registry
+
+Every figure of the article and every gallery tile is in `links.jsonl`, as a link into
+this page or as a stated reason there is none. `python -m builder links --write` derives
+it; `builder/links.py` is where the rules are, and the short version is:
+
+- **A spec is never typed.** It comes off the figure's own `provenance` — the wallpapers
+  records those lines cite, read whole, and the prose where they do not.
+- **A sheet gets one link, at its first panel**, because a link is one picture and a
+  sheet is many. The rest of the sheet is what this page's own controls do: a degree row
+  is the family picker, a mode grid is the mode picker, a zoom strip is the wheel.
+- **Nearly is refused.** Four reasons, and each is a thing the contract deliberately does
+  not carry — a drawn diagram, a frame past the `f64` wall, a record that does not say
+  enough, or a picture that needs something this page does not offer: a fractional
+  degree, a curve the mode's own catalog does not give it, a fold on a cyclic map, **a
+  cap somebody chose**. That last is the one that surprises: the depth policy owns the
+  iteration cap and a link carries a place rather than a budget, so the figure drawn at
+  300 iterations to show what banding looks like is a figure this page cannot reopen.
+
+The links are held to the contract in `permalink.test.mjs`, where the contract lives —
+every row parses, and every row is the canonical spelling of its own view. `builder
+check`'s `explorer` check holds the other half: every picture on the site has a row, and
+every row is a picture on the site.
+
 ## Rebuilding
 
 ```
 python -m builder explorer                 # palettes, wasm, manifest
 python -m builder explorer --palettes-only # when only the colormaps moved
+python -m builder links --write            # the link registry, from figure provenance
 ```
 
 Needs the sibling checkout, `cargo`, and the `wasm32-unknown-unknown` target
@@ -487,9 +526,6 @@ arrived by mechanical conversion says so in its `source` line, and the rest were
 
 Listed, not designed:
 
-- **Tutorial deep links.** Article pages linking into the explorer at a named view, with
-  a tracked registry of those links and a `builder check` that every registered link
-  parses — so a contract change cannot quietly break a link the article itself carries.
 - **Download at chosen dimensions**, which needs a render path that is not the canvas.
 - **Deep zoom**, which needs perturbation and is a different renderer, not a wider one.
 - **The expensive modes' wait.** `stripe` over a whole 1280x720 frame is 46 s on one

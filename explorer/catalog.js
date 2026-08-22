@@ -11,7 +11,7 @@ export const PROVENANCE = {
   "baked": "2026-08-21",
   "constants_from": "data/anchors.jsonl",
   "modes_from": "fractal-engine modes",
-  "wallpapers_commit": "8028a8a15f2c40ac124d162efd689a0bebacf18e"
+  "wallpapers_commit": "f275e13687532f8bd0b15f268c31077dbe917048"
 };
 
 export const MODES = new Map([
@@ -56,6 +56,29 @@ export const CONSTANTS = {
     "cx": "0.5667",
     "cy": "0",
     "px": "-0.5",
-    "py": "0"
+    "py": "0",
+    "zx": "0",
+    "zy": "0"
   }
+};
+
+export const CURVES = {
+  "curvature": "linear",
+  "direct_trap_lines": "linear",
+  "direct_trap_multiply": "linear",
+  "direct_trap_ring": "linear",
+  "direct_trap_screen": "linear",
+  "exp_smoothing": "linear",
+  "gaussian_int": "linear",
+  "itinerary": "linear",
+  "smooth": "linear",
+  "smooth_angle_min": "linear",
+  "smooth_curvature": "linear",
+  "smooth_mean_angle": "linear",
+  "smooth_stripe": "linear",
+  "smooth_trap_circle": "linear",
+  "stripe": "linear",
+  "threads": "linear",
+  "tia": "linear",
+  "trap_circle": "log"
 };

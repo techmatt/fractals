@@ -6,6 +6,7 @@ the one the metadata gives. That is what makes `check`'s regenerate-and-compare 
 check rather than a coin toss.
 """
 
+from . import figures, links
 from . import sections as sections_module
 from .escape import attribute, text
 from .galleries import Gallery
@@ -156,6 +157,7 @@ def gallery_page(gallery: Gallery, sections: list[sections_module.Section]) -> s
     intro.append(f'    <p><a href="{index_path()}">All galleries</a></p>')
     intro.append("  </section>")
 
+    reopened = links.opened(page)
     tiles = []
     for image in gallery.images:
         web_res = gallery.directory / image.file
@@ -163,6 +165,9 @@ def gallery_page(gallery: Gallery, sections: list[sections_module.Section]) -> s
         caption = f"<strong>{text(image.title)}</strong> — {text(image.caption)}"
         if image.credit:
             caption += f' <span class="credit">{text(image.credit)}</span>'
+        opened = reopened.get(f"gallery:{gallery.slug}/{image.file}")
+        if opened:
+            caption += f' <a class="open" href="{attribute(opened)}">{figures.OPEN_TEXT}</a>'
         tiles.append(
             _tile(
                 link=relative_href(page, web_res),

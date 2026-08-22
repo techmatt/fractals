@@ -307,6 +307,17 @@ a:hover { color: var(--ink); }
 
 .credit { display: block; margin-top: 0.3rem; font-size: 0.8125rem; opacity: 0.8; }
 
+/* The way back into the explorer, from a picture the explorer can draw again. On its own
+   line under the caption and the credit, at the credit's size, because it is a way out of
+   the page rather than something the caption says. */
+.open {
+  display: block;
+  margin-top: 0.3rem;
+  font-size: 0.8125rem;
+  color: var(--well-link);
+}
+.open::before { content: "→ "; }
+
 /* A figure runs past the measure to the width of the column: a side-by-side comparison
    squeezed into a column of prose is not a comparison. The mat is the same dark well the
    gallery tiles use — a render is a render wherever it appears. */

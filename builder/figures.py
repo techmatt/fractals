@@ -41,6 +41,10 @@ from .paths import ARTICLE_DIR, FIGURE_IMAGES_DIR, FIGURE_REGISTRY, relative_hre
 INDENT = " " * 6
 PENDING = "pending"
 
+#: The words the explorer link is spelled with, here and on a gallery tile. One string,
+#: because a link a reader learns to recognize has to read the same everywhere.
+OPEN_TEXT = "open in fractal explorer"
+
 #: `.gitattributes` normalizes this repository to LF, so anything that rewrites a
 #: tracked file spells the line ending rather than taking the platform's.
 LF = "\n"
@@ -122,11 +126,18 @@ class Figure:
         return relative_href(self.page_path, self.path)
 
 
-def markup(figure: Figure) -> str:
-    """The canonical figure block: what an article page must contain, exactly."""
+def markup(figure: Figure, opened: str | None = None) -> str:
+    """The canonical figure block: what an article page must contain, exactly.
+
+    `opened` is the explorer link this figure reopens at, where the link registry holds
+    one — see `builder/links.py`. A figure the explorer cannot reproduce carries no
+    link at all rather than one that lands somewhere near it.
+    """
     caption = text(figure.caption)
     if figure.credit:
         caption += f' <span class="credit">{text(figure.credit)}</span>'
+    if opened:
+        caption += f' <a class="open" href="{attribute(opened)}">{OPEN_TEXT}</a>'
     classes = "figure figure-pending" if figure.pending else "figure"
     return "\n".join(
         [

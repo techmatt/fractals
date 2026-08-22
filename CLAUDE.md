@@ -201,6 +201,14 @@ What a figure is made of:
   block from its registry row and asserts the page carries it verbatim, so a caption or a
   size lives in exactly one place. A caption edit goes to the registry row and never to
   the page.
+- **A picture the explorer can draw again carries a link into it.** `explorer/links.jsonl`
+  has one row per figure and per gallery tile: a permalink derived from that picture's own
+  provenance, or an explicit `no_link` with which of four reasons it is. The link is
+  spelled *open in fractal explorer* wherever it appears, and it is derived and never
+  typed — `python -m builder links --write`, and `check` holds the registry to the site's
+  own roster. **A link that is nearly the figure is worse than none**, so anything the
+  contract cannot say exactly — a chosen iteration cap, a curve a mode's catalog does not
+  give it, a fractional degree — is a refusal rather than an approximation.
 - **`python -m builder diagram <id>` is deliberately unwired** from `build` and from
   `check`. Text is rasterized through whatever font the machine has, so two machines agree
   about the picture and not about its bytes; a regenerate-and-diff check would fail

@@ -36,8 +36,10 @@ import {
   PermalinkError,
   VERSION,
 } from "./permalink.js";
-import { CONSTANTS, MODES as IDENTITIES } from "./catalog.js";
+import { CONSTANTS, CURVES, MODES as IDENTITIES } from "./catalog.js";
 import { DEFAULT_PALETTE, PALETTES } from "./palettes.js";
+
+import { readFileSync } from "node:fs";
 
 // Each family's own home view, as `Family::home_view()` gives it and as the page
 // reads it back out of the wasm module at load. Written here as text because that
@@ -177,11 +179,33 @@ test("encode then decode is the identity, for every family and a mode of each sh
 });
 
 test("a constant is echoed verbatim, and belongs to the family that has one", () => {
-  const spelled = `v=${VERSION}&f=phoenix&cx=0.56670000000000000001&cy=-0.0e0&px=-0.5&py=0`;
+  const spelled =
+    `v=${VERSION}&f=phoenix&cx=0.56670000000000000001&cy=-0.0e0&px=-0.5&py=0&zx=0&zy=0`;
   assert.equal(canonicalize(spelled, CONTEXT), `${spelled}&${HOUSE}`);
   assert.throws(() => parse(`v=${VERSION}&cx=0.3`, CONTEXT), /mandelbrot has none/);
   assert.throws(() => parse(`v=${VERSION}&f=julia&px=0.3`, CONTEXT), /julia has cx and cy/);
   assert.throws(() => parse(`v=${VERSION}&f=julia&cx=0x10`, CONTEXT), /decimal number/);
+});
+
+test("z₋₁ is a phoenix constant, and a link written before it existed still means zero", () => {
+  // The one key version 2 gained after it shipped, and the whole reason it is a
+  // widening rather than a version 3: absent means the origin, which is what every
+  // link written without it already drew. Most of the Phoenix work the wallpaper
+  // project holds carries a non-zero one, so a contract that could not say it would
+  // quietly draw the classic slice under a name that meant something else.
+  const classic = `v=${VERSION}&f=phoenix&${seeds("phoenix")}`;
+  assert.equal(canonicalize(`v=${VERSION}&f=phoenix`, CONTEXT), `${classic}&${HOUSE}`);
+  assert.equal(canonicalize("v=1&f=phoenix", CONTEXT), `${classic}&${HOUSE}`);
+  assert.equal(parse(`v=${VERSION}&f=phoenix`, CONTEXT).constants.zx.text, "0");
+
+  const memory = `v=${VERSION}&f=phoenix&cx=0.5667&cy=0&px=-0.5&py=0&zx=0.2398&zy=-0.4506`;
+  const view = parse(memory, CONTEXT);
+  assert.equal(view.constants.zx.text, "0.2398");
+  assert.equal(view.constants.zy.value, -0.4506);
+  assert.equal(emit(view, CONTEXT), `${memory}&${HOUSE}`);
+
+  assert.throws(() => parse(`v=${VERSION}&zx=0.3`, CONTEXT), /mandelbrot has none/);
+  assert.throws(() => parse(`v=${VERSION}&f=julia&zy=0.3`, CONTEXT), /julia has cx and cy/);
 });
 
 test("a mode's parameters are its own, and a mode with none refuses them all", () => {
@@ -298,9 +322,15 @@ test("the same key twice is refused, because there is no rule for which wins", (
   assert.throws(() => parse(`v=${VERSION}&x=0&x=1`, CONTEXT), /twice/);
 });
 
-test("a palette outside the curated set is refused", () => {
-  assert.throws(() => parse(`v=${VERSION}&p=Ice%20Walk`, CONTEXT), /no palette called Ice Walk/);
+test("a palette outside the baked set is refused, and an unoffered one is not", () => {
+  assert.throws(() => parse(`v=${VERSION}&p=no_such_map`, CONTEXT), /no palette called no_such_map/);
   assert.ok(PALETTES.has(DEFAULT_PALETTE));
+  assert.equal(PALETTES.get(DEFAULT_PALETTE).offered, true);
+  // The baked set is wider than the offered one: a map this site drew a figure in has
+  // to be nameable, or the explorer cannot open that figure at all. It is still not on
+  // the menu — see the note in `builder/explorer.py`.
+  assert.equal(PALETTES.get("Ice Walk").offered, false);
+  assert.equal(parse(`v=${VERSION}&p=Ice%20Walk`, CONTEXT).palette, "Ice Walk");
 });
 
 test("folding a cyclic map is refused, because there is no seam to fix", () => {
@@ -335,12 +365,38 @@ test("every palette the picker offers is one a link may name", () => {
   }
 });
 
+test("every link the site carries parses, and is the canonical spelling of its view", () => {
+  // `explorer/links.jsonl` is what an article page's "open in fractal explorer" points
+  // at, one row per figure and per gallery tile. A link that stopped parsing would look
+  // exactly like a link that worked until somebody clicked it, and a contract change is
+  // precisely what could stop one — so the registry is held to the contract here, where
+  // the contract lives, rather than in a second reading of it somewhere else.
+  const rows = readFileSync(new URL("./links.jsonl", import.meta.url), "utf8")
+    .split("\n")
+    .filter((line) => line.trim())
+    .map((line) => JSON.parse(line));
+  assert.ok(rows.length > 0);
+  let linked = 0;
+  for (const row of rows) {
+    assert.equal(row.schema, 1, row.id);
+    assert.equal(row.kind, "link", row.id);
+    assert.equal(row.link === undefined, row.no_link !== undefined, row.id);
+    if (row.link === undefined) continue;
+    linked++;
+    const view = parse(row.link, CONTEXT);
+    assert.equal(emit(view, CONTEXT), row.link, row.id);
+    assert.equal(view.version, VERSION, row.id);
+  }
+  assert.ok(linked > 0, "no row of the registry carries a link");
+});
+
 test("the contract's roster is the engine's production roster, in the same order", () => {
   // The one place the two lists meet. `catalog.js` is baked from `fractal-engine
   // modes` and this one is typed, deliberately — a contract that read its own
   // vocabulary from a generated file could be widened by rebuilding it — so they
   // are compared instead.
   assert.deepEqual(MODES, [...IDENTITIES.keys()]);
+  assert.deepEqual([...MODES].sort(), Object.keys(CURVES).sort());
   for (const mode of Object.keys(MODE_PARAMETERS)) assert.ok(MODES.includes(mode), mode);
   for (const family of FAMILIES) assert.ok(HOMES[family], family);
 });

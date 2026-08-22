@@ -18,7 +18,7 @@ import sys
 from pathlib import Path
 
 from . import build as build_module
-from . import checks, diagrams, figures, images, records, renders
+from . import checks, diagrams, figures, images, links, records, renders
 from . import explorer as explorer_module
 from . import judges as judges_module
 from . import locations as locations_module
@@ -64,6 +64,15 @@ def _parser() -> argparse.ArgumentParser:
         "--palettes-only",
         action="store_true",
         help="rebake palettes.js alone; leave the wasm module and its manifest alone",
+    )
+
+    opened = commands.add_parser(
+        "links", help="derive the explorer link registry from every picture's provenance"
+    )
+    opened.add_argument(
+        "--write",
+        action="store_true",
+        help="write explorer/links.jsonl; without it the derivation is only printed",
     )
 
     figure = commands.add_parser("figure", help="print a figure's markup block")
@@ -232,6 +241,23 @@ def _do_explorer(options: argparse.Namespace) -> int:
     return 0
 
 
+def _do_links(options: argparse.Namespace) -> int:
+    found = links.derive()
+    linked = [link for link in found if link.linked]
+    for link in found:
+        if link.linked:
+            print(f"{link.id}  {link.source}  ?{link.link}")
+        else:
+            print(f"{link.id}  no_link {link.reason}: {link.why}")
+    print("")
+    print(f"{len(linked)} linked, {len(found) - len(linked)} not, of {len(found)} picture(s)")
+    if options.write:
+        path = links.write(found)
+        print(f"wrote {path.relative_to(SITE_ROOT).as_posix()}")
+        print("the figure blocks derive from it — place them with `python -m builder build`")
+    return 0
+
+
 def _do_figure(identifier: str) -> int:
     registry = figures.load_all()
     figure = registry.get(identifier)
@@ -239,7 +265,8 @@ def _do_figure(identifier: str) -> int:
         known = ", ".join(sorted(registry)) or "none registered"
         print(f"no figure {identifier!r} — known: {known}", file=sys.stderr)
         return 1
-    print(figures.markup(figure))
+    opened = links.opened(figure.page_path)
+    print(figures.markup(figure, opened.get(f"figure:{identifier}")))
     return 0
 
 
@@ -482,6 +509,8 @@ def main(argv: list[str] | None = None) -> int:
             return _do_check()
         if options.command == "explorer":
             return _do_explorer(options)
+        if options.command == "links":
+            return _do_links(options)
         if options.command == "figure":
             return _do_figure(options.id)
         if options.command == "figures":

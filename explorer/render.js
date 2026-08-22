@@ -74,7 +74,14 @@ export function familySpecOf(family, constants) {
     case "julia5":
       return { kind: "julia", degree: Number(family.slice(-1)), c: c() };
     case "phoenix":
-      return { kind: "phoenix", c: c(), p: [constants.px.text, constants.py.text] };
+      // `z_prev` is the engine's own key for the previous iterate the recurrence
+      // starts with, and it crosses as a decimal pair like every other constant.
+      return {
+        kind: "phoenix",
+        c: c(),
+        p: [constants.px.text, constants.py.text],
+        z_prev: [constants.zx.text, constants.zy.text],
+      };
     default:
       throw new Error(`no engine family for ${family}`);
   }

@@ -28,6 +28,11 @@ Every one of them read-only:
   from moving the well and leaving every diagram drawn against the old one.
 - **vocabulary** — no tracked file uses a word this site has banned. `vocabulary.py`
   holds the list and says why each term is on it.
+- **explorer** — every figure and every gallery tile is in the explorer link registry,
+  as a link or as a stated reason there is none, and every link the registry holds is
+  the one the page carries. Whether a link *parses* is asked of the permalink contract
+  itself, by `permalink.test.mjs`, because the contract is written in JavaScript and a
+  second reading of it in Python is exactly what a URL contract cannot survive.
 """
 
 import re
@@ -35,7 +40,7 @@ from html.parser import HTMLParser
 from pathlib import Path
 from urllib.parse import unquote, urldefrag
 
-from . import figures, galleries, images, pages, prose, sections, theme, vocabulary
+from . import figures, galleries, images, links, pages, prose, sections, theme, vocabulary
 from .paths import (
     ARTICLE_DIR,
     GALLERIES_DIR,
@@ -132,6 +137,28 @@ def check_pages(loaded: list[galleries.Gallery], article: list[sections.Section]
     return problems
 
 
+def check_explorer() -> list[str]:
+    """The link registry covers every picture, and says what the pages say.
+
+    Coverage first: a figure or a tile with no row is a picture nobody decided about,
+    which is the state this registry exists to end. Then agreement — a row that changed
+    and a page that did not is a link pointing at the wrong view, and it looks exactly
+    like a link that works.
+    """
+    problems = []
+    registered = links.load_all()
+    for identifier in links.picture_ids():
+        if identifier not in registered:
+            problems.append(
+                f"links.jsonl: {identifier} is on the site and not in the registry — "
+                "`python -m builder links --write`"
+            )
+    for identifier in registered:
+        if identifier not in set(links.picture_ids()):
+            problems.append(f"links.jsonl: {identifier} is registered and is not on the site")
+    return problems
+
+
 def check_figures() -> list[str]:
     problems = []
     registry = figures.load_all()
@@ -140,6 +167,7 @@ def check_figures() -> list[str]:
     for page in sorted(ARTICLE_DIR.glob("*.html")):
         html = _read(page)
         where = _shown(page)
+        opened = links.opened(page)
         if _FIGURE_OPEN.search(html):
             problems.append(f"{where}: a figure without a data-figure id")
         for identifier in _FIGURE_ID.findall(html):
@@ -147,7 +175,7 @@ def check_figures() -> list[str]:
             figure = registry.get(identifier)
             if figure is None:
                 problems.append(f"{where}: figure {identifier!r} is not in the registry")
-            elif figures.markup(figure) not in html:
+            elif figures.markup(figure, opened.get(f"figure:{identifier}")) not in html:
                 problems.append(
                     f"{where}: figure {identifier!r} does not match the registry — "
                     f"`python -m builder figure {identifier}`"
@@ -342,6 +370,7 @@ def run_all() -> dict[str, list[str]]:
         "pages": check_pages(loaded, article),
         "contents": check_contents(article),
         "figures": check_figures(),
+        "explorer": check_explorer(),
         "assets": check_assets(loaded),
         "prose": check_prose(article),
         "theme": check_theme(),

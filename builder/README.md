@@ -8,8 +8,8 @@ Python. A build is done here and reviewed in a diff.
 ```
 python -m builder build     regenerate gallery pages, the gallery index, thumbnails,
                             and the contents rail every page carries
-python -m builder check     links, page sync, contents, figure blocks, assets, prose,
-                            theme, banned vocabulary
+python -m builder check     links, page sync, contents, figure blocks, explorer links,
+                            assets, prose, theme, banned vocabulary
 python -m builder figure ID print a figure's markup block, to paste into an article page
 python -m builder figures [--all]   what is still to make, grouped by page
 python -m builder figures --place ID SRC [--crop l,t,r,b] [--max-width N] [--lossless]
@@ -20,6 +20,8 @@ python -m builder judges [ID ...] [--place] [--replace]
                             draw the figures of the Training judges page
 python -m builder diagram ID draw one of the two figures that are diagrams, not renders
 python -m builder explorer [--palettes-only]  bake the explorer's palettes, wasm, manifest
+python -m builder links [--write]   derive every picture's explorer link from its
+                            provenance, or the reason it has none
 python -m builder serve [--port N]  preview the committed tree at http://localhost:8000/
 python -m builder prose [PAGE ...]  hold a placed page to the document it was placed from
 python -m builder review PAGE [--read [--full]] [--consume] [--force] [--list]
@@ -135,6 +137,11 @@ bytes. Every other figure asset arrived through `import`.
 - **theme** — the well colours a drawn figure is made of are the ones `site.css`
   declares. Pillow cannot read CSS, so they are transcribed into `theme.py`; this is what
   keeps a restyle from moving the well and leaving every diagram on the old one.
+- **explorer** — every figure and every gallery tile has a row in `explorer/links.jsonl`,
+  and every row is a picture the site actually carries. Whether a link *parses* is not
+  asked here: the permalink contract is written in JavaScript, `permalink.test.mjs` holds
+  the registry to it, and a second reading of a URL contract in Python is the one thing a
+  URL contract cannot survive.
 
 ## Prose has a master, and a page is held to it
 

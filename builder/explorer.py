@@ -28,6 +28,16 @@ Which colormaps count as curated is the wallpaper project's own distinction, wri
 every map it holds: a map that arrived by mechanical conversion — brought across only
 because a labeled corpus names it — says so in its `source` line, and the rest were
 chosen. `CONVERTED_MARKER` is the tail of that sentence.
+
+**The baked set is wider than the offered one**, and the difference is what a link may
+say against what a picker may choose *(Matt, 2026-08-21)*. Every curated map is offered.
+Baked alongside them, and not offered, is every map one of this site's own pictures was
+drawn in — most of them converted, because that is what the corpora the article draws
+from were colored through. A map the article publishes a picture in has to be nameable,
+or the explorer cannot open that picture at all; it does not have to be on the menu, and
+putting it there would widen a curated set this repository does not own. So `offered`
+travels with each baked map, the picker reads it, and a link arriving on an unoffered map
+draws it and shows it in the picker for as long as it is in force.
 """
 
 from __future__ import annotations
@@ -78,6 +88,9 @@ COLORMAP_SOURCE = "data/palettes"
 #: See `src/fractal_wallpapers/palettes/library_import.py` over there.
 CONVERTED_MARKER = "not because it was curated"
 
+#: The word a provenance line puts in front of a colormap's name.
+COLORMAP_WORD = "colormap "
+
 #: The wasm target and the file cargo leaves the module at.
 WASM_TARGET = "wasm32-unknown-unknown"
 WASM_ARTIFACT = ("target", WASM_TARGET, "release", "explorer_engine_wasm.wasm")
@@ -110,15 +123,22 @@ class ExplorerError(RuntimeError):
 
 @dataclass(frozen=True)
 class Colormap:
-    """One curated map: the name a link carries, and the gradient it names."""
+    """One baked map: the name a link carries, and the gradient it names.
+
+    `offered` is whether the picker lists it. A curated map is offered; a map baked
+    only because one of this site's pictures was drawn in it is not — see the note at
+    the top on why the two sets differ.
+    """
 
     name: str
     cyclic: bool
     stops: tuple[tuple[float, tuple[int, int, int]], ...]
+    offered: bool
 
 
-def curated() -> list[Colormap]:
-    """Every curated colormap the wallpaper project holds, in name order.
+def baked() -> list[Colormap]:
+    """Every colormap the explorer carries, in name order: the curated set, and the
+    maps this site's own pictures were drawn in.
 
     Name order is `sorted`'s — codepoint, so the capitalized matplotlib names lead. The
     order is what the picker shows and what "first by name" means where the default has
@@ -127,15 +147,54 @@ def curated() -> list[Colormap]:
     directory = wallpapers_root() / COLORMAP_SOURCE
     if not directory.is_dir():
         raise ExplorerError(f"no colormaps at {directory}")
-    found = []
+    held = {}
     for path in sorted(directory.glob("*.json")):
         loaded = json.loads(path.read_text(encoding="utf-8"))
-        if CONVERTED_MARKER in loaded.get("source", ""):
+        held[loaded["name"]] = loaded
+    wanted = drawn_in(set(held))
+
+    found = []
+    for name, loaded in held.items():
+        offered = CONVERTED_MARKER not in loaded.get("source", "")
+        if not offered and name not in wanted:
             continue
         stops = tuple((float(at), tuple(int(c) for c in rgb)) for at, rgb in loaded["stops"])
-        found.append(Colormap(loaded["name"], loaded["kind"] == "cyclic", stops))
-    if not found:
+        found.append(Colormap(name, loaded["kind"] == "cyclic", stops, offered))
+    if not any(colormap.offered for colormap in found):
         raise ExplorerError(f"{directory} holds no curated colormap")
+    return sorted(found, key=lambda colormap: colormap.name)
+
+
+def drawn_in(held: set[str]) -> set[str]:
+    """Every colormap this site's own pictures name in their provenance.
+
+    Read off the figure registry, which is where the answer survives: the scripts that
+    drew the figures live in ignored `scratch/`.
+
+    **A name is matched against the maps the project holds, longest first**, rather than
+    read off as whatever follows the word. Map names carry spaces and dots — `Ice Walk`,
+    `Ember Against Steel`, `cmr.voltage` — so there is no punctuation rule that ends one
+    reliably, and `colormap Ice Walk over the leveled range` proves it: a rule that read
+    to the comma invented a map nobody has. Matching against the roster cannot.
+    """
+    ordered = sorted(held, key=len, reverse=True)
+    named = set()
+    for figure in figures.load_all().values():
+        for line in figure.provenance:
+            for at in _occurrences(line, COLORMAP_WORD):
+                tail = line[at + len(COLORMAP_WORD) :]
+                match = next((name for name in ordered if tail.startswith(name)), None)
+                if match is not None:
+                    named.add(match)
+    return named
+
+
+def _occurrences(line: str, word: str) -> list[int]:
+    """Where a word starts, every time it appears."""
+    found, at = [], line.find(word)
+    while at != -1:
+        found.append(at)
+        at = line.find(word, at + 1)
     return found
 
 
@@ -178,26 +237,33 @@ def _article_smooth_colormaps() -> list[str]:
     return named
 
 
-def write_palettes() -> tuple[Path, int, str]:
-    """Bake the curated set into `palettes.js`, with the stamp that says where from."""
-    maps = curated()
-    names = [colormap.name for colormap in maps]
+def write_palettes() -> tuple[Path, int, int, str]:
+    """Bake the maps into `palettes.js`, with the stamp that says where from."""
+    maps = baked()
+    names = [colormap.name for colormap in maps if colormap.offered]
     chosen, why = default_palette(names)
     stamp = {
         "source": f"{COLORMAP_SOURCE}/*.json",
         "wallpapers_commit": _wallpapers_commit(),
         "baked": date.today().isoformat(),
         "count": len(maps),
+        "offered": len(names),
         "default_because": why,
     }
 
     lines = [
-        "// The curated colormaps, baked from the wallpaper project at build time.",
+        "// The colormaps the explorer carries, baked from the wallpaper project at",
+        "// build time.",
         "//",
         "// Generated by `python -m builder explorer` — edit that, not this. A map is",
         "// addressed by NAME everywhere, in this file and in a permalink, because a name",
         "// is stable and a position in a list is not: a colormap added next year must not",
         "// silently repaint a link somebody saved this year.",
+        "//",
+        "// `offered` is whether the picker lists it. Every curated map is offered; a map",
+        "// baked only because one of this site's own pictures was drawn in it is not, so",
+        "// that a figure of this article can be opened here without widening a curated",
+        "// set this repository does not own.",
         "//",
         "// Positions are the map's own, not assumed evenly spaced. Colors are sRGB8.",
         "",
@@ -212,6 +278,7 @@ def write_palettes() -> tuple[Path, int, str]:
         colors = ", ".join(str(value) for _, rgb in colormap.stops for value in rgb)
         lines.append(f"  [{json.dumps(colormap.name)}, {{")
         lines.append(f"    cyclic: {'true' if colormap.cyclic else 'false'},")
+        lines.append(f"    offered: {'true' if colormap.offered else 'false'},")
         lines.append(f"    positions: [{positions}],")
         lines.append(f"    colors: [{colors}],")
         lines.append("  }],")
@@ -219,7 +286,7 @@ def write_palettes() -> tuple[Path, int, str]:
     lines.append("")
 
     PALETTES_MODULE.write_text("\n".join(lines), encoding="utf-8", newline="\n")
-    return PALETTES_MODULE, len(maps), chosen
+    return PALETTES_MODULE, len(maps), len(names), chosen
 
 
 # --------------------------------------------------------------------------- the catalog
@@ -272,8 +339,29 @@ def anchor_constants() -> dict[str, dict[str, str]]:
         held = {"cx": found["c"][0], "cy": found["c"][1]}
         if "p" in found:
             held |= {"px": found["p"][0], "py": found["p"][1]}
+            # An anchor that says nothing about the previous iterate means the classic
+            # slice, which is `FamilySpec::Phoenix`'s own `origin` default over there.
+            z_prev = found.get("z_prev", ["0", "0"])
+            held |= {"zx": z_prev[0], "zy": z_prev[1]}
         constants[family] = held
     return constants
+
+
+def curves(modes: list[dict]) -> dict[str, str]:
+    """The curve each mode's coloring reads its field through, by mode name.
+
+    The **curve is part of a mode's identity and is not a permalink key** — naming a
+    mode is asking for the picture the catalog settled on, curve included. What this
+    table is for is telling a *record* apart from that settlement: the wallpaper
+    project's stores hold renders that overrode the curve, and one of those is not a
+    view this page can open. Asked of the catalog rather than restated, so a retuned
+    mode arrives by rebuilding.
+
+    A composite and a modulate carry no curve of their own — each half of the pair
+    carries one, and both are the catalog's `linear` — so they answer `linear`, which
+    is what a record that left the curve alone says too.
+    """
+    return {mode["name"]: mode["coloring"].get("transform", "linear") for mode in modes}
 
 
 def write_catalog() -> tuple[Path, int]:
@@ -306,6 +394,8 @@ def write_catalog() -> tuple[Path, int]:
     lines.append("]);")
     lines.append("")
     lines.append(f"export const CONSTANTS = {json.dumps(constants, indent=2, sort_keys=True)};")
+    lines.append("")
+    lines.append(f"export const CURVES = {json.dumps(curves(modes), indent=2, sort_keys=True)};")
     lines.append("")
 
     CATALOG_MODULE.write_text("\n".join(lines), encoding="utf-8", newline="\n")
@@ -430,8 +520,11 @@ def _rustc_version() -> str:
 def bake(*, palettes_only: bool = False) -> list[str]:
     """Everything the explorer is generated from, in one pass."""
     written = []
-    path, count, chosen = write_palettes()
-    written.append(f"{path.relative_to(SITE_ROOT).as_posix()}  {count} palettes, default {chosen}")
+    path, count, offered, chosen = write_palettes()
+    written.append(
+        f"{path.relative_to(SITE_ROOT).as_posix()}  {count} palettes ({offered} offered), "
+        f"default {chosen}"
+    )
     path, modes = write_catalog()
     written.append(f"{path.relative_to(SITE_ROOT).as_posix()}  {modes} production modes")
     if palettes_only:

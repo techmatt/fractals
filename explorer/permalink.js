@@ -56,7 +56,7 @@
 // "the stripe mode", not for "a stripe mode at 6". If the catalog ever retunes a
 // mode, that link should move with it — that is what naming a mode is for.
 //
-// Emit order: v · f · cx · cy · px · py · m · the mode's parameters · x · y · w ·
+// Emit order: v · f · cx · cy · px · py · zx · zy · m · the mode's parameters · x · y · w ·
 // a · p · then the shade parameters, in the order the engine's own palette recipe
 // declares them.
 
@@ -105,13 +105,17 @@ export const RENDER_ONLY_FAMILIES = {
  * The family constants a link may carry, by the family that has them.
  *
  * `c` is half a dynamical location's identity — the same `c` the wallpaper
- * project's walk requires and refuses to guess — and `p` is the Phoenix memory
- * coefficient. Both are decimal strings for the same reason a coordinate is.
+ * project's walk requires and refuses to guess — `p` is the Phoenix memory
+ * coefficient, and `z₋₁` is the previous iterate its recurrence starts with. All
+ * three are decimal strings for the same reason a coordinate is.
  *
- * `z₋₁` is deliberately absent. The engine admits it, and a non-zero one is a
- * different set from the same `(c, p)` rather than a different view of it; the
- * shipped anchor is the classic slice, and a key nobody can see the effect of on
- * this page would be a knob rather than a control.
+ * **`z₋₁` was absent from v2's first draft and is now a key**, because the reason
+ * for leaving it out was wrong. A non-zero `z₋₁` is indeed a different set rather
+ * than a different view of one — but that is the argument FOR spelling it, not
+ * against: most of the Phoenix work the wallpaper project holds carries one, so a
+ * link that could not say it would quietly draw the classic slice under a name
+ * that meant something else. Absent still means the origin, so every link written
+ * before this key existed still draws exactly what it drew.
  */
 export const CONSTANTS = {
   mandelbrot: [],
@@ -122,11 +126,11 @@ export const CONSTANTS = {
   julia3: ["cx", "cy"],
   julia4: ["cx", "cy"],
   julia5: ["cx", "cy"],
-  phoenix: ["cx", "cy", "px", "py"],
+  phoenix: ["cx", "cy", "px", "py", "zx", "zy"],
 };
 
 /** Every constant key the contract spells, in emit order. */
-const CONSTANT_KEYS = ["cx", "cy", "px", "py"];
+const CONSTANT_KEYS = ["cx", "cy", "px", "py", "zx", "zy"];
 
 /** The modes this page draws: the engine's production roster, in catalog order. */
 export const MODES = [
@@ -382,7 +386,7 @@ export function parse(search, context) {
 
   const palette = params.get("p") ?? context.defaultPalette;
   if (!context.palettes.has(palette)) {
-    throw new PermalinkError(`there is no palette called ${palette} in the curated set.`);
+    throw new PermalinkError(`there is no palette called ${palette} among the ones this page carries.`);
   }
 
   const values = {};
