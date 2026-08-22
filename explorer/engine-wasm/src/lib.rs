@@ -508,7 +508,7 @@ pub extern "C" fn compute_band(
 /// measured. `iterate::run` is a long loop with eleven per-iteration channel
 /// checks and a match over the families, and it collapses to the bare recurrence
 /// only when the compiler can see *both* the family and the channel set at the
-/// call site — 1.5 s against 6.3 s on the 1280×720 home frame, and neither half
+/// call site — 1.5 s against 12.1 s on the 1280×720 home frame, and neither half
 /// alone buys more than a tenth of that. Draft 1 got the collapse for free by
 /// rendering one family in one mode; a spec-struct boundary hands both in at
 /// runtime and loses it.
@@ -558,8 +558,8 @@ fn compute_lanes(plan: &Plan, row_start: u32, row_end: u32) -> Vec<u8> {
 
     // The degrees are the ones the spec admits — 2 through 5 on both planes — so
     // this table is total over what can reach here, and the fallthrough is the
-    // generic loop rather than a refusal.
-    match (wants == Wants::default(), plan.family) {
+    // generic loop — which `--cfg generic_loop` takes for everything, to measure it.
+    match (wants == Wants::default() && !cfg!(generic_loop), plan.family) {
         (true, Family::Multibrot { degree: 2 }) => {
             sweep!(Family::Multibrot { degree: 2 }, Wants::default())
         }

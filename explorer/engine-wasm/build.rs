@@ -9,6 +9,11 @@ use std::path::Path;
 fn main() {
     let engine = Path::new("../../../fractal-wallpapers/engine/Cargo.toml");
     println!("cargo:rerun-if-changed=../../../fractal-wallpapers/engine/src");
+    // `generic_loop` is a bench-only cfg, never a cargo feature. A feature would put
+    // itself in the crate's metadata hash and the committed module would stop
+    // rebuilding to its own bytes; a bare `--cfg` leaves the default build exactly
+    // where it was. Declared here only so the compiler knows it is expected.
+    println!("cargo::rustc-check-cfg=cfg(generic_loop)");
     if !engine.exists() {
         panic!(
             "\n\n  the fractal-wallpapers checkout is not beside this one.\n\n  \
