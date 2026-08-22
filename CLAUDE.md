@@ -120,6 +120,15 @@ keeps the mechanics. **Every apply round ends by distilling that round's general
   that answer survives, because the scripts that draw figures live in ignored
   `scratch/`. A made figure without one is a failing `builder check`. Where a value is
   genuinely lost, the line says so — the record never guesses.
+- **A maker addresses a location by its record, never by its position.** A rig that
+  resolves a stored pick through an index into a pool derived from the wallpaper
+  project's live data is drawing at a moving target: that pool grows, the index comes to
+  land somewhere else, and a rerun rewrites provenance under pictures that never changed
+  — the worst shape this can take, because nothing on the page looks wrong.
+  *(Matt, 2026-08-22, after eleven render lines across the four Rendering modes figures
+  were found rewritten that way.)* A choice freezes the family, the frame and the cap it
+  chose; the pool's own name for it survives as the note of where it was found, and a
+  rerun says out loud when that name has gone stale.
 - **Relative links, always.** The site lives under a project-Pages subpath
   (`/fractal-website/`), so a root-absolute `/assets/...` href is broken in
   production and fine locally — the worst kind of bug. Every internal href and src is
