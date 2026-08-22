@@ -1,5 +1,5 @@
 // The renderer: a pool of workers that compute field bands, and a main-thread
-// wasm instance that shades the assembled field.
+// wasm instance that plans a pass and shades the assembled field.
 //
 // Split from the page itself so that what draws a picture and what handles a
 // mouse are two different files, and so that the timing harness under `scratch/`
@@ -7,18 +7,28 @@
 //
 // The shape of a pass:
 //
-//   1. A quarter-resolution field, each axis divided by four. It is a SEPARATE
+//   1. Ask the module what this view implies — how many lanes the mode's coloring
+//      reads, whether it paints during the iteration instead, what the iteration
+//      cap is, and whether the view is drawable at all.
+//   2. A quarter-resolution field, each axis divided by four. It is a SEPARATE
 //      field of the same rectangle rather than a subsample of the full one, so it
 //      is normalized against its own samples — which is why the preview can be a
 //      shade off the picture that replaces it.
-//   2. The full-resolution field, in bands, dispatched from a queue.
-//   3. Both are cached by geometry, so a palette change re-shades and never
-//      re-iterates.
+//   3. The full-resolution field, in bands, dispatched from a queue.
+//   4. Both are cached by geometry, so a palette change re-shades and never
+//      re-iterates — except under the four direct-trap modes, which have no field
+//      to re-shade and are cached on the colour too.
 //
 // Cancellation is by generation rather than by termination: a pan bumps the
 // generation, no further bands are dispatched, and the band still in flight is
 // finished and thrown away. Killing a worker mid-band would cost a wasm
 // instantiation to save at most one band of work.
+//
+// **One spec, and the module answers what it implies.** Everything below builds
+// the same JSON object and hands it to `plan`, `compute_band` or `shade`. There is
+// no table here of which mode reads how many fields, which family takes a
+// constant, or what a mode's parameters default to: the module is asked. That is
+// what keeps adding a family to the engine from being a change to this file.
 
 import { PALETTES } from "./palettes.js";
 
@@ -37,15 +47,78 @@ const MIN_BAND_ROWS = 8;
 /** Each axis of the preview, as a fraction of the full pass. */
 export const PREVIEW_DIVISOR = 4;
 
-/** The one family and the one mode this draft renders, as the wasm module ids them. */
-const FAMILY_MANDELBROT = 0;
-const MODE_SMOOTH = 0;
-
-const TRANSFER_IDS = { value: 0, edge: 1, rank: 2 };
-const ROLLOFF_IDS = { none: 0, soft_knee: 1, reinhard: 2, aces: 3 };
-
 /** How many fields to keep. Two passes of the current view, and one view back. */
 const CACHE_LIMIT = 4;
+
+/** The engine's family spec for each name the permalink carries.
+ *
+ *  The one place the contract's vocabulary meets the engine's, and it is a
+ *  renaming rather than a decision: a permalink says `multibrot3` because a name
+ *  should carry its exponent, and the engine says `{kind, degree}` because it
+ *  matches on the recurrence. The constants are passed through as the decimal
+ *  strings they arrived as — they are half of a dynamical location's identity, and
+ *  a round trip through a double would rewrite them. */
+export function familySpecOf(family, constants) {
+  const c = () => [constants.cx.text, constants.cy.text];
+  switch (family) {
+    case "mandelbrot":
+      return { kind: "mandelbrot" };
+    case "multibrot3":
+    case "multibrot4":
+    case "multibrot5":
+      return { kind: "multibrot", degree: Number(family.slice(-1)) };
+    case "julia":
+      return { kind: "julia", degree: 2, c: c() };
+    case "julia3":
+    case "julia4":
+    case "julia5":
+      return { kind: "julia", degree: Number(family.slice(-1)), c: c() };
+    case "phoenix":
+      return { kind: "phoenix", c: c(), p: [constants.px.text, constants.py.text] };
+    default:
+      throw new Error(`no engine family for ${family}`);
+  }
+}
+
+/** The curated maps as the engine's control points, baked once per name. */
+const STOPS = new Map();
+function colormapOf(name) {
+  if (!STOPS.has(name)) {
+    const map = PALETTES.get(name);
+    const stops = map.positions.map((at, index) => [
+      at,
+      [map.colors[index * 3], map.colors[index * 3 + 1], map.colors[index * 3 + 2]],
+    ]);
+    STOPS.set(name, { kind: map.cyclic ? "cyclic" : "sequential", stops });
+  }
+  return STOPS.get(name);
+}
+
+/**
+ * One view as the module's spec.
+ *
+ * `palette` is handed over as it stands, because the permalink's seven shade keys
+ * ARE the engine's palette recipe — same names, same shapes, same defaults — and
+ * translating between two spellings of one thing is how they drift apart.
+ *
+ * The colormap is left out of a field pass that does not need it. Only the direct
+ * traps read the gradient while they iterate; for every other mode the map is a
+ * shade-time input, and baking a lookup table into every band would be a table per
+ * band.
+ */
+export function specOf(view, width, height, { colormap = true } = {}) {
+  const spec = {
+    schema: 1,
+    family: familySpecOf(view.family, view.constants),
+    viewport: { center_re: view.x.text, center_im: view.y.text, width: view.w.text },
+    resolution: [width, height],
+    mode: view.mode,
+    palette: view.shade,
+  };
+  if (Object.keys(view.params).length > 0) spec.params = view.params;
+  if (colormap) spec.colormap = colormapOf(view.palette);
+  return spec;
+}
 
 /**
  * Everything the page needs to draw, once the module is compiled and the pool is up.
@@ -60,10 +133,12 @@ export class Renderer {
     this.queue = [];
     this.job = null;
     this.fields = new Map();
+    this.plans = new Map();
   }
 
   /**
-   * Compile the module once, instantiate it here for shading, and start the pool.
+   * Compile the module once, instantiate it here for planning and shading, and
+   * start the pool.
    *
    * `wanted` is for the timing harness; the page passes nothing and gets what the
    * machine says it has, capped.
@@ -94,13 +169,43 @@ export class Renderer {
     return this.workers.length;
   }
 
-  /** The engine's own home view, read out rather than restated here. */
-  home() {
-    return {
-      x: this.shader.home_center_re(),
-      y: this.shader.home_center_im(),
-      w: this.shader.home_width(),
-    };
+  /** Write a string into the module's heap, and hand back what frees it. */
+  #put(text) {
+    const raw = new TextEncoder().encode(text);
+    const pointer = this.shader.alloc(raw.length);
+    new Uint8Array(this.shader.memory.buffer, pointer, raw.length).set(raw);
+    return [pointer, raw.length];
+  }
+
+  /**
+   * What this spec implies, or why it cannot be drawn.
+   *
+   * Memoized on the spec itself: the page asks on every pass and every re-shade,
+   * and the answer is a property of the spec.
+   */
+  plan(spec) {
+    const text = JSON.stringify(spec);
+    const held = this.plans.get(text);
+    if (held !== undefined) return held;
+
+    const [pointer, length] = this.#put(text);
+    const out = this.shader.plan(pointer, length);
+    this.shader.dealloc(pointer, length);
+    const size = new DataView(this.shader.memory.buffer).getUint32(out, true);
+    const body = new TextDecoder().decode(new Uint8Array(this.shader.memory.buffer, out + 4, size));
+    this.shader.dealloc(out, size + 4);
+
+    const answer = JSON.parse(body);
+    if (this.plans.size > 64) this.plans.clear();
+    this.plans.set(text, answer);
+    return answer;
+  }
+
+  /** The family's own home view, read out of the module rather than restated here. */
+  home(familySpec) {
+    const answer = this.plan({ schema: 1, family: familySpec });
+    if (!answer.ok) throw new Error(answer.why);
+    return answer.home;
   }
 
   /** The iteration cap the engine's policy gives a view of this width. */
@@ -153,11 +258,23 @@ export class Renderer {
    * Resolves with `null` if a newer generation started while this one was running:
    * the caller's answer is no longer wanted, and saying so is cheaper than
    * checking a stale generation everywhere downstream.
+   *
+   * What comes back is lane-major `f64` for a mode that makes a field, and finished
+   * RGBA for one that paints during the iteration. Which it is comes from the plan,
+   * and both are assembled by rows the same way.
    */
   field(view, width, height, onProgress) {
     this.cancel();
     const generation = this.generation;
-    const values = new Float32Array(width * height);
+
+    const shape = this.plan(specOf(view, width, height, { colormap: false }));
+    if (!shape.ok) return Promise.reject(new Error(shape.why));
+    // A direct trap composites samples from the gradient as it iterates, so its
+    // band is already coloured and its spec needs the map in it.
+    const spec = JSON.stringify(specOf(view, width, height, { colormap: shape.direct }));
+    const values = shape.direct
+      ? new Uint8ClampedArray(width * height * 4)
+      : new Float64Array(width * height * shape.lanes);
 
     const bands = [];
     const target = Math.max(
@@ -175,7 +292,8 @@ export class Renderer {
     return new Promise((resolve, reject) => {
       this.job = {
         generation,
-        view,
+        spec,
+        shape,
         width,
         height,
         values,
@@ -200,18 +318,16 @@ export class Renderer {
     const [rowStart, rowEnd] = this.queue.shift();
     const index = this.idle.indexOf(worker);
     if (index !== -1) this.idle.splice(index, 1);
+    const span = rowEnd - rowStart;
     worker.onmessage = (event) => this.#collect(worker, event.data, job);
     worker.postMessage({
       job: job.generation,
-      family: FAMILY_MANDELBROT,
-      mode: MODE_SMOOTH,
-      cx: job.view.x.value,
-      cy: job.view.y.value,
-      fw: job.view.w.value,
-      width: job.width,
-      height: job.height,
+      spec: job.spec,
       rowStart,
       rowEnd,
+      bytes: job.shape.direct
+        ? span * job.width * 4
+        : span * job.width * job.shape.lanes * 8,
     });
   }
 
@@ -229,12 +345,18 @@ export class Renderer {
       this.job = null;
       return;
     }
-    job.values.set(new Float32Array(message.band), message.rowStart * job.width);
+    this.#place(job, message);
     job.pending -= 1;
     if (job.onProgress) job.onProgress((job.total - job.pending) / job.total);
     if (job.pending === 0) {
       this.job = null;
-      job.resolve({ values: job.values, width: job.width, height: job.height, elapsed: performance.now() - job.started });
+      job.resolve({
+        values: job.values,
+        width: job.width,
+        height: job.height,
+        shape: job.shape,
+        elapsed: performance.now() - job.started,
+      });
       if (!this.idle.includes(worker)) this.idle.push(worker);
       return;
     }
@@ -242,61 +364,65 @@ export class Renderer {
   }
 
   /**
-   * Color an assembled field, on this thread, and return it as `ImageData`.
+   * Write one band into the assembled frame.
+   *
+   * A field band is **lane-major** — lane 0's rows, then lane 1's — so it lands in
+   * as many pieces as the coloring has fields, one per lane's own stride. A
+   * painted band is one run of RGBA.
+   */
+  #place(job, message) {
+    const span = message.rowEnd - message.rowStart;
+    if (job.shape.direct) {
+      job.values.set(new Uint8ClampedArray(message.band), message.rowStart * job.width * 4);
+      return;
+    }
+    const band = new Float64Array(message.band);
+    const stride = job.width * job.height;
+    for (let lane = 0; lane < job.shape.lanes; lane++) {
+      job.values.set(
+        band.subarray(lane * span * job.width, (lane + 1) * span * job.width),
+        lane * stride + message.rowStart * job.width,
+      );
+    }
+  }
+
+  /**
+   * Colour an assembled field, on this thread, and return it as `ImageData`.
    *
    * On this thread and not in a worker because the field is already here and the
-   * shade is milliseconds: the whole reason the field and the color are separate
-   * exports is that one of them is cheap.
+   * shade is milliseconds: the whole reason the field and the colour are separate
+   * exports is that one of them is cheap. A direct trap arrives already painted —
+   * it never made a field — so there is nothing to do but hand the pixels over.
    */
   shade(field, view) {
-    const wasm = this.shader;
-    const map = PALETTES.get(view.palette);
-    const count = field.width * field.height;
-
-    const fieldBytes = new Uint8Array(field.values.buffer, field.values.byteOffset, count * 4);
-    const fieldPointer = wasm.alloc(fieldBytes.length);
-    new Uint8Array(wasm.memory.buffer, fieldPointer, fieldBytes.length).set(fieldBytes);
-
-    const positions = new Float64Array(map.positions);
-    const positionsPointer = wasm.alloc(positions.byteLength);
-    new Uint8Array(wasm.memory.buffer, positionsPointer, positions.byteLength).set(
-      new Uint8Array(positions.buffer),
-    );
-    const colors = new Uint8Array(map.colors);
-    const colorsPointer = wasm.alloc(colors.length);
-    new Uint8Array(wasm.memory.buffer, colorsPointer, colors.length).set(colors);
-
-    const shade = view.shade;
     const started = performance.now();
-    const pointer = wasm.shade(
-      MODE_SMOOTH,
-      fieldPointer,
-      field.width,
-      field.height,
-      positionsPointer,
-      colorsPointer,
-      map.positions.length,
-      map.cyclic ? 1 : 0,
-      shade.gamma,
-      shade.cycles,
-      shade.phase,
-      shade.reverse ? 1 : 0,
-      shade.mirror ? 1 : 0,
-      TRANSFER_IDS[shade.transfer.kind],
-      shade.transfer.weight ?? 0,
-      ROLLOFF_IDS[shade.rolloff.kind],
-      shade.rolloff.knee ?? 0,
+    if (field.shape.direct) {
+      return {
+        image: new ImageData(field.values.slice(), field.width, field.height),
+        elapsed: performance.now() - started,
+      };
+    }
+
+    const wasm = this.shader;
+    const [pointer, length] = this.#put(
+      JSON.stringify(specOf(view, field.width, field.height)),
     );
-    const elapsed = performance.now() - started;
+    const lanes = new Uint8Array(field.values.buffer, field.values.byteOffset, field.values.byteLength);
+    const lanePointer = wasm.alloc(lanes.length);
+    new Uint8Array(wasm.memory.buffer, lanePointer, lanes.length).set(lanes);
 
-    wasm.dealloc(fieldPointer, fieldBytes.length);
-    wasm.dealloc(positionsPointer, positions.byteLength);
-    wasm.dealloc(colorsPointer, colors.length);
-    if (pointer === 0) throw new Error("the renderer refused this palette recipe");
+    const out = wasm.shade(pointer, length, lanePointer);
+    wasm.dealloc(pointer, length);
+    wasm.dealloc(lanePointer, lanes.length);
+    if (out === 0) throw new Error("the renderer refused this palette recipe");
 
-    const rgba = new Uint8ClampedArray(wasm.memory.buffer, pointer, count * 4).slice();
-    wasm.dealloc(pointer, count * 4);
-    return { image: new ImageData(rgba, field.width, field.height), elapsed };
+    const count = field.width * field.height;
+    const rgba = new Uint8ClampedArray(wasm.memory.buffer, out, count * 4).slice();
+    wasm.dealloc(out, count * 4);
+    return {
+      image: new ImageData(rgba, field.width, field.height),
+      elapsed: performance.now() - started,
+    };
   }
 }
 

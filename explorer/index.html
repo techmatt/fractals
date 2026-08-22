@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Explorer — Making Fractal Wallpapers</title>
-<meta name="description" content="Pan and zoom the Mandelbrot set in the browser, in the same renderer the wallpapers are made with. Every view has a link.">
+<meta name="description" content="Pan and zoom every fractal family the wallpapers are drawn from, in every rendering mode, in the same renderer that makes them. Every view has a link.">
 <link rel="stylesheet" href="../assets/css/site.css">
 <link rel="stylesheet" href="explorer.css">
 </head>
@@ -20,13 +20,14 @@
 
 <header class="masthead">
   <p class="kicker">Explorer</p>
-  <h1>The Mandelbrot set, in the browser</h1>
+  <h1>Every family, every mode, in the browser</h1>
 </header>
 
 <main>
   <p class="intro">The renderer the wallpapers are made with, compiled to run here: the same
-  escape-time arithmetic, the same iteration policy, the same palettes. Drag to move, scroll to
-  zoom, pick a palette. The address bar always names the view you are looking at, so a link is
+  escape-time arithmetic, the same iteration policy, the same modes and palettes. Drag to move,
+  scroll to zoom, then pick a family, a mode and a colour and see what the same place looks like
+  through each of them. The address bar always names the view you are looking at, so a link is
   the whole picture.</p>
 
   <div class="notice" id="notice">
@@ -39,12 +40,24 @@
   </div>
 
   <div class="stage" id="stage" hidden>
-    <canvas id="canvas" tabindex="0" aria-label="The Mandelbrot set, drawn at the current view"></canvas>
+    <canvas id="canvas" tabindex="0" aria-label="The fractal at the current family, mode and view"></canvas>
   </div>
 
   <div class="bar" id="bar" hidden>
-    <label for="palette">Palette</label>
-    <select id="palette"></select>
+    <span class="group">
+      <label for="family">Family</label>
+      <select id="family"></select>
+    </span>
+    <span class="group" id="constants"></span>
+    <span class="group">
+      <label for="mode">Mode</label>
+      <select id="mode"></select>
+    </span>
+    <span class="group" id="params"></span>
+    <span class="group">
+      <label for="palette">Palette</label>
+      <select id="palette"></select>
+    </span>
     <button type="button" id="copy">Copy link</button>
   </div>
 

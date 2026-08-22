@@ -18,6 +18,12 @@ crate-type = ["cdylib"]
 # says so plainly when the sibling is not there.
 fractal-engine = { path = "../../../fractal-wallpapers/engine" }
 num-complex = "0.4"
+# The spec crosses the boundary as JSON so that a family, a mode, a mode parameter
+# and a palette recipe have one spelling here and one over there: the engine's own.
+# Neither of these is a new dependency of anything — the engine already carries
+# both, and this crate is the only thing built from that tree.
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
 
 # Release only; the module is a committed artifact and there is no debug build of
 # it. LTO is what dead-strips png, jpeg-encoder and flate2 out of the module.

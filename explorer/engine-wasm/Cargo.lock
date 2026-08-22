@@ -72,6 +72,8 @@ version = "0.1.0"
 dependencies = [
  "fractal-engine",
  "num-complex",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]

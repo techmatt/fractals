@@ -6,11 +6,17 @@ site is held to still holds: **the builder generates; it never becomes the site.
 with no wallpaper project beside it serves the explorer exactly as this one does; only
 *regenerating* those three files needs the sibling checkout and a Rust toolchain.
 
-Three things are baked, and each for its own reason:
+Four things are baked, and each for its own reason:
 
 - **The palettes** — the curated colormaps, name to stops, as an ES module. Names are
   the ids a permalink carries, so they are baked as names and never as indices: a
   colormap added to the wallpaper project must not silently renumber somebody's link.
+- **The catalog** — the engine's mode roster with the line that says what each mode is
+  for, and the family constants a dynamical plane needs. Both are facts the wallpaper
+  project owns: the modes come out of `fractal-engine modes`, and the constants out of
+  its shipped anchors, so neither is typed here. What the *permalink* will accept is
+  still `permalink.js`'s own business — a contract that read its vocabulary from a
+  generated file could be widened by rebuilding it.
 - **The wasm** — `explorer/engine-wasm/` compiled for `wasm32-unknown-unknown` and
   copied in. The crate depends on the engine by path, so the module is the engine's own
   arithmetic and not a second implementation of it.
@@ -42,9 +48,27 @@ from .renders import EngineError, wallpapers_root
 #: Where the explorer's committed artifacts live.
 EXPLORER_DIR = SITE_ROOT / "explorer"
 PALETTES_MODULE = EXPLORER_DIR / "palettes.js"
+CATALOG_MODULE = EXPLORER_DIR / "catalog.js"
 WASM_MODULE = EXPLORER_DIR / "engine.wasm"
 MANIFEST = EXPLORER_DIR / "engine.manifest.json"
 CRATE_DIR = EXPLORER_DIR / "engine-wasm"
+
+#: The wallpaper project's shipped anchors, relative to its checkout root. Three rows,
+#: one per family that has constants to remember — a known-good quadratic Julia `c` and
+#: Ushiki's Phoenix pair — and they are what the explorer opens a dynamical plane at.
+ANCHOR_SOURCE = "data/anchors.jsonl"
+
+#: Which permalink family names take their constants from which anchor row. The Julia
+#: degrees share the degree-2 anchor's `c`: the tracked pool is degree 2, and that `c`
+#: is a fine picture at any degree — it is a starting point rather than a claim about
+#: the higher-degree planes.
+CONSTANT_FAMILIES = {
+    "julia": "julia",
+    "julia3": "julia",
+    "julia4": "julia",
+    "julia5": "julia",
+    "phoenix": "phoenix",
+}
 
 #: The wallpaper project's colormap directory, relative to its checkout root. Recorded
 #: in the provenance stamp, so a reader can go and look at what was baked.
@@ -185,6 +209,96 @@ def write_palettes() -> tuple[Path, int, str]:
     return PALETTES_MODULE, len(maps), chosen
 
 
+# --------------------------------------------------------------------------- the catalog
+
+
+def catalogued_modes() -> list[dict]:
+    """The engine's mode roster, as `fractal-engine modes` prints it.
+
+    Asked rather than restated. The roster carries each mode's tier, and the page
+    offers the production ones; a mode promoted or retired in the wallpaper project
+    arrives here by rebuilding rather than by somebody remembering.
+
+    Shelled directly rather than through `renders.run`, because `modes` is the one
+    subcommand that takes no spec and answers with a bare list.
+    """
+    from .renders import engine_binary
+
+    finished = subprocess.run(
+        [str(engine_binary()), "modes"],
+        capture_output=True,
+        text=True,
+        cwd=str(wallpapers_root()),
+    )
+    if finished.returncode != 0:
+        raise ExplorerError(f"engine modes failed: {finished.stderr.strip()}")
+    return json.loads(finished.stdout)
+
+
+def anchor_constants() -> dict[str, dict[str, str]]:
+    """The family constants the explorer opens a dynamical plane at.
+
+    Decimal strings throughout, because a constant is half of a dynamical location's
+    identity in exactly the way a coordinate is the other half — the wallpaper
+    project's own walk refuses to guess one, and this does not round one either.
+    """
+    rows = {}
+    path = wallpapers_root() / ANCHOR_SOURCE
+    if not path.is_file():
+        raise ExplorerError(f"no anchors at {path}")
+    for line in path.read_text(encoding="utf-8").splitlines():
+        if line.strip():
+            row = json.loads(line)
+            rows[row["anchor"]] = row["family"]
+
+    constants = {}
+    for family, anchor in CONSTANT_FAMILIES.items():
+        found = rows.get(anchor)
+        if found is None:
+            raise ExplorerError(f"{ANCHOR_SOURCE} has no {anchor} anchor")
+        held = {"cx": found["c"][0], "cy": found["c"][1]}
+        if "p" in found:
+            held |= {"px": found["p"][0], "py": found["p"][1]}
+        constants[family] = held
+    return constants
+
+
+def write_catalog() -> tuple[Path, int]:
+    """Bake the mode roster and the family constants into `catalog.js`."""
+    modes = [mode for mode in catalogued_modes() if mode["tier"] == "production"]
+    constants = anchor_constants()
+    stamp = {
+        "modes_from": "fractal-engine modes",
+        "constants_from": ANCHOR_SOURCE,
+        "wallpapers_commit": _wallpapers_commit(),
+        "baked": date.today().isoformat(),
+    }
+
+    lines = [
+        "// The engine's mode roster and the anchors' family constants, baked from the",
+        "// wallpaper project at build time.",
+        "//",
+        "// Generated by `python -m builder explorer` — edit that, not this. What a",
+        "// permalink will ACCEPT is not here: `permalink.js` keeps its own vocabulary, so",
+        "// that rebuilding this file can never widen the contract. What is here is what",
+        "// those names mean — the line under each mode in the picker, and the constant a",
+        "// dynamical plane opens at.",
+        "",
+        f"export const PROVENANCE = {json.dumps(stamp, indent=2, sort_keys=True)};",
+        "",
+        "export const MODES = new Map([",
+    ]
+    for mode in modes:
+        lines.append(f"  [{json.dumps(mode['name'])}, {json.dumps(mode['identity'])}],")
+    lines.append("]);")
+    lines.append("")
+    lines.append(f"export const CONSTANTS = {json.dumps(constants, indent=2, sort_keys=True)};")
+    lines.append("")
+
+    CATALOG_MODULE.write_text("\n".join(lines), encoding="utf-8", newline="\n")
+    return CATALOG_MODULE, len(modes)
+
+
 # ------------------------------------------------------------------------------ the wasm
 
 
@@ -304,6 +418,8 @@ def bake(*, palettes_only: bool = False) -> list[str]:
     written = []
     path, count, chosen = write_palettes()
     written.append(f"{path.relative_to(SITE_ROOT).as_posix()}  {count} palettes, default {chosen}")
+    path, modes = write_catalog()
+    written.append(f"{path.relative_to(SITE_ROOT).as_posix()}  {modes} production modes")
     if palettes_only:
         return written
     path, raw_bytes, gzip_bytes = build_wasm()

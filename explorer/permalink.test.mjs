@@ -9,10 +9,15 @@
 // three properties: every key survives a round trip unchanged, canonicalization
 // is a fixed point, and a coordinate is echoed rather than reformatted.
 //
-// `p` is the one key emitted whether or not it was chosen, so a canonical string
-// always names its palette. That is a property worth its own tests: an old link
-// without `p` still parses to the default, and every canonical string carries the
-// name of the map it was drawn in.
+// Three keys are emitted whether or not they were chosen — `p`, and a family's own
+// constants — because their defaults live outside this module, in the baked
+// colormap set and the wallpaper project's shipped anchors. That is a property
+// worth its own tests: an old link without them still parses to the default, and
+// every canonical string names what it was drawn from.
+//
+// Version 1 links still parse and re-emit as version 2. There are tests for that
+// too, because "the old links still work" is the only promise a URL contract makes
+// that anybody will check a decade later.
 
 import assert from "node:assert/strict";
 import test from "node:test";
@@ -22,73 +27,189 @@ import {
   coordinateOf,
   defaultShade,
   emit,
+  FAMILIES,
   fieldKey,
+  fresh,
+  MODE_PARAMETERS,
+  MODES,
   parse,
   PermalinkError,
   VERSION,
 } from "./permalink.js";
+import { CONSTANTS, MODES as IDENTITIES } from "./catalog.js";
 import { DEFAULT_PALETTE, PALETTES } from "./palettes.js";
 
-// The mandelbrot's own home view, as `Family::Multibrot { degree: 2 }.home_view()`
-// gives it and as the page reads it back out of the wasm module at load. Written
-// here as text because that is what the contract handles: strings in, strings out.
-const HOME = {
-  x: { text: "-0.77", value: -0.77 },
-  y: { text: "0", value: 0 },
-  w: { text: "4.4", value: 4.4 },
+// Each family's own home view, as `Family::home_view()` gives it and as the page
+// reads it back out of the wasm module at load. Written here as text because that
+// is what the contract handles: strings in, strings out. Every row but the Julias'
+// is `Extent::frame` evaluated on a measured bounding box; the dynamical planes
+// come home to the whole plane by the engine's stated exception, because a Julia
+// set is a different shape for every `c` and there is nothing to measure.
+const HOMES = {
+  mandelbrot: ["-0.77", "0", "4.4"],
+  multibrot3: ["0", "0", "5.2"],
+  multibrot4: ["-0.23", "0", "4.4"],
+  multibrot5: ["0", "0", "3.6"],
+  julia: ["0", "0", "3"],
+  julia3: ["0", "0", "3"],
+  julia4: ["0", "0", "3"],
+  julia5: ["0", "0", "3"],
+  phoenix: ["0.04", "0", "5"],
 };
 
-const CONTEXT = { home: HOME, palettes: PALETTES, defaultPalette: DEFAULT_PALETTE };
+const written = (text) => ({ text, value: Number(text) });
+
+function homeOf(family) {
+  const [x, y, w] = HOMES[family];
+  return { x: written(x), y: written(y), w: written(w) };
+}
+
+function constantsOf(family) {
+  const held = {};
+  for (const [key, text] of Object.entries(CONSTANTS[family] ?? {})) held[key] = written(text);
+  return held;
+}
+
+const CONTEXT = {
+  home: homeOf,
+  constants: constantsOf,
+  palettes: PALETTES,
+  defaultPalette: DEFAULT_PALETTE,
+};
 
 /** `p` as every canonical string carries it, when nobody picked a palette. */
 const HOUSE = `p=${encodeURIComponent(DEFAULT_PALETTE)}`;
 
-/** The location the wasm spike was benchmarked at — the one deep-ish anchor on record.
- *  Written as it was written then, before `p` was always emitted. */
-const ANCHOR = "v=1&x=0.4104135054546244&y=0.20967482476903096&w=0.5622541254857749";
+/** The constants a family's canonical string always carries, in emit order. */
+function seeds(family) {
+  return Object.entries(constantsOf(family))
+    .map(([key, held]) => `${key}=${encodeURIComponent(held.text)}`)
+    .join("&");
+}
 
-/** Every key the contract has, each set to something that is not its default. */
+/** The location the wasm spike was benchmarked at — the one deep-ish anchor on record.
+ *  Written as it was written then, under version 1 and before `p` was always emitted. */
+const ANCHOR = "x=0.4104135054546244&y=0.20967482476903096&w=0.5622541254857749";
+
+/** Every key a mandelbrot link can have, each set to something that is not its default. */
 const EVERYTHING =
-  "v=1&x=-0.1&y=0.85&w=0.44&a=21:9&p=cmr.wildfire" +
+  `v=${VERSION}&m=smooth_stripe&density=9&weight=0.6&x=-0.1&y=0.85&w=0.44&a=21:9&p=cmr.wildfire` +
   "&gamma=0.75&cycles=3&phase=0.25&reverse=1&mirror=1&transfer=edge:1.5&rolloff=soft_knee:0.6";
 
 test("an empty query is the home view, and emits the version and the palette", () => {
   const view = parse("", CONTEXT);
+  assert.equal(view.family, "mandelbrot");
+  assert.equal(view.mode, "smooth");
   assert.equal(view.x.text, "-0.77");
   assert.equal(view.palette, DEFAULT_PALETTE);
   assert.deepEqual(view.shade, defaultShade());
+  assert.deepEqual(view.params, {});
   assert.equal(emit(view, CONTEXT), `v=${VERSION}&${HOUSE}`);
 });
 
 test("the home view written out in full canonicalizes to the version and the palette", () => {
-  const spelled = "?v=1&f=mandelbrot&m=smooth&x=-0.77&y=0&w=4.4&a=16:9";
-  assert.equal(canonicalize(spelled, CONTEXT), `v=1&${HOUSE}`);
+  const spelled = `?v=${VERSION}&f=mandelbrot&m=smooth&x=-0.77&y=0&w=4.4&a=16:9`;
+  assert.equal(canonicalize(spelled, CONTEXT), `v=${VERSION}&${HOUSE}`);
+});
+
+test("a version 1 link still parses, and settles as version 2", () => {
+  // Nothing a v1 link could say has changed meaning, so the whole of the upgrade is
+  // the number: the same coordinates, the same palette rule, the same defaults.
+  assert.equal(canonicalize(`v=1&${ANCHOR}`, CONTEXT), `v=${VERSION}&${ANCHOR}&${HOUSE}`);
+  assert.equal(canonicalize("v=1&p=viridis&gamma=2", CONTEXT), `v=${VERSION}&p=viridis&gamma=2`);
+  assert.equal(parse("v=1&f=mandelbrot&m=smooth", CONTEXT).mode, "smooth");
+  // And a version nobody has written yet is still refused rather than read hopefully.
+  assert.throws(() => parse("v=3&x=0", CONTEXT), PermalinkError);
+  assert.throws(() => parse("v=1.0&x=0", CONTEXT), PermalinkError);
+  assert.throws(() => parse("x=0&y=0", CONTEXT), /carries no v/);
 });
 
 test("the spike's anchor keeps its coordinates and gains the palette it was drawn in", () => {
-  assert.equal(canonicalize(ANCHOR, CONTEXT), `${ANCHOR}&${HOUSE}`);
-  assert.equal(canonicalize(`?${ANCHOR}`, CONTEXT), `${ANCHOR}&${HOUSE}`);
-  // And that is where it settles: canonicalization is still a fixed point.
-  assert.equal(canonicalize(`${ANCHOR}&${HOUSE}`, CONTEXT), `${ANCHOR}&${HOUSE}`);
+  const settled = `v=${VERSION}&${ANCHOR}&${HOUSE}`;
+  assert.equal(canonicalize(`v=${VERSION}&${ANCHOR}`, CONTEXT), settled);
+  assert.equal(canonicalize(`?${settled}`, CONTEXT), settled);
 });
 
-test("p is emitted whether or not anybody chose it, and reading one is unchanged", () => {
-  // The whole of the ruling, in one place. A link that names no palette still
-  // means the default — parsing did not move — and every string this module
-  // writes says which map it means, so a rebaked set cannot recolour a saved link.
-  const bare = parse("v=1&x=-0.1", CONTEXT);
-  assert.equal(bare.palette, DEFAULT_PALETTE);
-  assert.equal(emit(bare, CONTEXT), `v=1&x=-0.1&${HOUSE}`);
-  for (const query of ["", "v=1", ANCHOR, "v=1&p=viridis", "v=1&a=21:9&gamma=2"]) {
-    assert.match(canonicalize(query, CONTEXT), /(^|&)p=/, query);
+test("every family draws, and its constants are emitted whether or not anybody chose them", () => {
+  for (const family of FAMILIES) {
+    const view = parse(`v=${VERSION}&f=${family}`, CONTEXT);
+    assert.equal(view.family, family);
+    assert.equal(view.x.text, HOMES[family][0], family);
+    const carried = seeds(family);
+    const expected = [`v=${VERSION}`, family === "mandelbrot" ? null : `f=${family}`, carried || null, HOUSE]
+      .filter(Boolean)
+      .join("&");
+    assert.equal(emit(view, CONTEXT), expected, family);
+    // Which is the point of always emitting them: the constants survive a rebake of
+    // the anchors, so a saved link keeps drawing the set it was saved on.
+    if (carried) assert.match(emit(view, CONTEXT), /(^|&)cx=/, family);
   }
+});
+
+test("encode then decode is the identity, for every family and a mode of each shape", () => {
+  // The four shapes of coloring the engine has — one field, a composite, the
+  // modulate, a direct trap — over every plane, which is the whole cross product
+  // the renderer has to speak. Each carries a moved parameter where the mode has
+  // one, so the parameter is in the round trip rather than beside it.
+  const REPRESENTATIVE = [
+    ["smooth", {}],
+    ["stripe", { density: 9 }],
+    ["gaussian_int", {}],
+    ["smooth_stripe", { density: 9, weight: 0.6 }],
+    ["smooth_trap_circle", { radius: 0.8 }],
+    ["threads", { sigma: 0.2, weight: 0.7 }],
+    ["itinerary", { shift: 0.8 }],
+    ["direct_trap_ring", { radius: 1.2, threshold: 0.07, opacity: 0.5 }],
+    ["direct_trap_multiply", { threshold: 0.12 }],
+  ];
+  for (const family of FAMILIES) {
+    for (const [mode, params] of REPRESENTATIVE) {
+      const view = { ...fresh(family, mode, CONTEXT), params };
+      const emitted = emit(view, CONTEXT);
+      const back = parse(emitted, CONTEXT);
+      assert.deepEqual(back.params, params, `${family} ${mode}`);
+      assert.equal(back.family, family);
+      assert.equal(back.mode, mode);
+      assert.deepEqual(back.constants, view.constants, `${family} ${mode}`);
+      assert.equal(emit(back, CONTEXT), emitted, `${family} ${mode}`);
+    }
+  }
+});
+
+test("a constant is echoed verbatim, and belongs to the family that has one", () => {
+  const spelled = `v=${VERSION}&f=phoenix&cx=0.56670000000000000001&cy=-0.0e0&px=-0.5&py=0`;
+  assert.equal(canonicalize(spelled, CONTEXT), `${spelled}&${HOUSE}`);
+  assert.throws(() => parse(`v=${VERSION}&cx=0.3`, CONTEXT), /mandelbrot has none/);
+  assert.throws(() => parse(`v=${VERSION}&f=julia&px=0.3`, CONTEXT), /julia has cx and cy/);
+  assert.throws(() => parse(`v=${VERSION}&f=julia&cx=0x10`, CONTEXT), /decimal number/);
+});
+
+test("a mode's parameters are its own, and a mode with none refuses them all", () => {
+  assert.deepEqual(parse(`v=${VERSION}&m=stripe&density=9`, CONTEXT).params, { density: 9 });
+  assert.throws(() => parse(`v=${VERSION}&density=9`, CONTEXT), /the smooth mode has no density/);
+  assert.throws(() => parse(`v=${VERSION}&m=stripe&weight=0.5`, CONTEXT), /stripe mode has no weight/);
+  assert.throws(() => parse(`v=${VERSION}&m=smooth_stripe&sigma=0.2`, CONTEXT), /has no sigma/);
+  assert.throws(() => parse(`v=${VERSION}&m=stripe&density=0`, CONTEXT), /has to be positive/);
+  assert.throws(() => parse(`v=${VERSION}&m=threads&weight=2`, CONTEXT), /between 0 and 1/);
+});
+
+test("a parameter nobody moved stays out of the link, so a retuned mode moves with it", () => {
+  // The opposite ruling from `p` and the constants, and the reason is that a mode's
+  // defaults live in the same catalog its identity does: a link that says `stripe`
+  // and nothing else is asking for the stripe mode, not for a stripe mode at 6.
+  assert.equal(canonicalize(`v=${VERSION}&m=stripe`, CONTEXT), `v=${VERSION}&m=stripe&${HOUSE}`);
+  assert.equal(
+    canonicalize(`v=${VERSION}&m=stripe&density=6`, CONTEXT),
+    `v=${VERSION}&m=stripe&density=6&${HOUSE}`,
+  );
 });
 
 test("every key round-trips, and comes back in contract order", () => {
   assert.equal(canonicalize(EVERYTHING, CONTEXT), EVERYTHING);
   const view = parse(EVERYTHING, CONTEXT);
+  assert.equal(view.mode, "smooth_stripe");
+  assert.deepEqual(view.params, { density: 9, weight: 0.6 });
   assert.equal(view.aspect.across, 21);
-  assert.equal(view.aspect.down, 9);
   assert.equal(view.palette, "cmr.wildfire");
   assert.deepEqual(view.shade.transfer, { kind: "edge", weight: 1.5 });
   assert.deepEqual(view.shade.rolloff, { kind: "soft_knee", knee: 0.6 });
@@ -97,31 +218,31 @@ test("every key round-trips, and comes back in contract order", () => {
 });
 
 test("keys given out of order come back in contract order", () => {
-  const shuffled = "v=1&rolloff=aces&p=viridis&w=0.44&transfer=rank&y=0.85&gamma=2&x=-0.1";
+  const shuffled = `v=${VERSION}&rolloff=aces&p=viridis&w=0.44&cy=0.3&transfer=rank&f=julia&cx=-0.5&y=0.85&gamma=2&x=-0.1`;
   assert.equal(
     canonicalize(shuffled, CONTEXT),
-    "v=1&x=-0.1&y=0.85&w=0.44&p=viridis&gamma=2&transfer=rank&rolloff=aces",
+    `v=${VERSION}&f=julia&cx=-0.5&cy=0.3&x=-0.1&y=0.85&w=0.44&p=viridis&gamma=2&transfer=rank&rolloff=aces`,
   );
 });
 
 test("a key set to its engine default is dropped on emit, and p is the exception", () => {
   const spelled =
-    `v=1&f=mandelbrot&m=smooth&a=16:9&${HOUSE}` +
+    `v=${VERSION}&f=mandelbrot&m=smooth&a=16:9&${HOUSE}` +
     "&gamma=1&cycles=1&phase=0&reverse=0&mirror=0&transfer=value&rolloff=none";
-  assert.equal(canonicalize(spelled, CONTEXT), `v=1&${HOUSE}`);
+  assert.equal(canonicalize(spelled, CONTEXT), `v=${VERSION}&${HOUSE}`);
 });
 
 test("a coordinate is echoed verbatim, not reformatted through a double", () => {
   // More digits than `f64` carries, and a needlessly explicit exponent. Both come
   // back exactly as written: the string is the identity of the location, and this
   // page is not the thing that gets to decide it was too precise.
-  const wordy = "v=1&x=0.40000000000000000000000000001&y=-0.0e0&w=1.250e-3";
+  const wordy = `v=${VERSION}&x=0.40000000000000000000000000001&y=-0.0e0&w=1.250e-3`;
   assert.equal(canonicalize(wordy, CONTEXT), `${wordy}&${HOUSE}`);
 });
 
 test("an exponent's plus sign is encoded, because a raw one in a query means a space", () => {
-  assert.equal(canonicalize("v=1&w=1.25e%2B3", CONTEXT), `v=1&w=1.25e%2B3&${HOUSE}`);
-  assert.throws(() => parse("v=1&w=1.25e+3", CONTEXT), /decimal number/);
+  assert.equal(canonicalize(`v=${VERSION}&w=1.25e%2B3`, CONTEXT), `v=${VERSION}&w=1.25e%2B3&${HOUSE}`);
+  assert.throws(() => parse(`v=${VERSION}&w=1.25e+3`, CONTEXT), /decimal number/);
 });
 
 test("a coordinate this page generates is the shortest string that reads back the same", () => {
@@ -132,77 +253,94 @@ test("a coordinate this page generates is the shortest string that reads back th
 });
 
 test("the field key ignores everything that cannot change the field", () => {
-  const one = parse("v=1&x=-0.1&y=0.85&w=0.44&p=viridis&gamma=2", CONTEXT);
-  const two = parse("v=1&x=-0.1&y=0.85&w=0.44&p=magma&rolloff=aces", CONTEXT);
+  const one = parse(`v=${VERSION}&x=-0.1&y=0.85&w=0.44&p=viridis&gamma=2`, CONTEXT);
+  const two = parse(`v=${VERSION}&x=-0.1&y=0.85&w=0.44&p=magma&rolloff=aces`, CONTEXT);
   assert.equal(fieldKey(one, CONTEXT, 1280, 720), fieldKey(two, CONTEXT, 1280, 720));
-  const elsewhere = parse("v=1&x=-0.2&y=0.85&w=0.44", CONTEXT);
+  const elsewhere = parse(`v=${VERSION}&x=-0.2&y=0.85&w=0.44`, CONTEXT);
   assert.notEqual(fieldKey(one, CONTEXT, 1280, 720), fieldKey(elsewhere, CONTEXT, 1280, 720));
   assert.notEqual(fieldKey(one, CONTEXT, 1280, 720), fieldKey(one, CONTEXT, 640, 360));
+  // A family, a mode and a mode's parameter all decide the arithmetic.
+  const julia = parse(`v=${VERSION}&f=julia&x=-0.1&y=0.85&w=0.44&p=viridis`, CONTEXT);
+  assert.notEqual(fieldKey(one, CONTEXT, 1280, 720), fieldKey(julia, CONTEXT, 1280, 720));
+  const dense = parse(`v=${VERSION}&m=stripe&density=9`, CONTEXT);
+  const plain = parse(`v=${VERSION}&m=stripe`, CONTEXT);
+  assert.notEqual(fieldKey(dense, CONTEXT, 640, 360), fieldKey(plain, CONTEXT, 640, 360));
 });
 
-test("a version this page does not speak is refused rather than read hopefully", () => {
-  assert.throws(() => parse("v=2&x=0", CONTEXT), PermalinkError);
-  assert.throws(() => parse("x=0&y=0", CONTEXT), /carries no v/);
+test("a direct trap is keyed on its colour too, because it has no field to recolour", () => {
+  const one = parse(`v=${VERSION}&m=direct_trap_ring&p=viridis`, CONTEXT);
+  const two = parse(`v=${VERSION}&m=direct_trap_ring&p=magma`, CONTEXT);
+  assert.equal(fieldKey(one, CONTEXT, 640, 360, false), fieldKey(two, CONTEXT, 640, 360, false));
+  assert.notEqual(fieldKey(one, CONTEXT, 640, 360, true), fieldKey(two, CONTEXT, 640, 360, true));
 });
 
 test("an unknown key is refused", () => {
-  assert.throws(() => parse("v=1&zoom=3", CONTEXT), /does not know: zoom/);
+  assert.throws(() => parse(`v=${VERSION}&zoom=3`, CONTEXT), /does not know: zoom/);
+  assert.throws(() => parse(`v=${VERSION}&pp=0.5`, CONTEXT), /does not know: pp/);
 });
 
-test("a reserved key says which half of the problem it has", () => {
-  assert.throws(() => parse("v=1&cx=0.3", CONTEXT), /reserved and not yet read/);
-  assert.throws(() => parse("v=1&pp=0.5", CONTEXT), /reserved and not yet read/);
-});
-
-test("a reserved family or mode is not yet, and a made-up one does not exist", () => {
-  assert.throws(() => parse("v=1&f=julia", CONTEXT), /julia is not yet/);
-  assert.throws(() => parse("v=1&m=threads", CONTEXT), /threads is not yet/);
-  assert.throws(() => parse("v=1&f=burningship", CONTEXT), /no family called burningship/);
-  assert.throws(() => parse("v=1&m=lighting", CONTEXT), /no mode called lighting/);
+test("a family or a mode this page does not draw says which kind of no it is", () => {
+  assert.throws(() => parse(`v=${VERSION}&f=fractional_multibrot`, CONTEXT), /render-only/);
+  assert.throws(() => parse(`v=${VERSION}&f=burningship`, CONTEXT), /no family called burningship/);
+  assert.throws(() => parse(`v=${VERSION}&m=de`, CONTEXT), /niche mode/);
+  assert.throws(() => parse(`v=${VERSION}&m=lighting`, CONTEXT), /no mode called lighting/);
 });
 
 test("a coordinate is a decimal string, capped, and a width is positive", () => {
-  assert.throws(() => parse("v=1&x=0x10", CONTEXT), /decimal number/);
-  assert.throws(() => parse("v=1&x=NaN", CONTEXT), /decimal number/);
-  assert.throws(() => parse(`v=1&x=0.${"1".repeat(70)}`, CONTEXT), /capped at 64/);
-  assert.throws(() => parse("v=1&w=0", CONTEXT), /has to be positive/);
-  assert.throws(() => parse("v=1&w=-1", CONTEXT), /has to be positive/);
+  assert.throws(() => parse(`v=${VERSION}&x=0x10`, CONTEXT), /decimal number/);
+  assert.throws(() => parse(`v=${VERSION}&x=NaN`, CONTEXT), /decimal number/);
+  assert.throws(() => parse(`v=${VERSION}&x=0.${"1".repeat(70)}`, CONTEXT), /capped at 64/);
+  assert.throws(() => parse(`v=${VERSION}&w=0`, CONTEXT), /has to be positive/);
+  assert.throws(() => parse(`v=${VERSION}&w=-1`, CONTEXT), /has to be positive/);
 });
 
 test("the same key twice is refused, because there is no rule for which wins", () => {
-  assert.throws(() => parse("v=1&x=0&x=1", CONTEXT), /twice/);
+  assert.throws(() => parse(`v=${VERSION}&x=0&x=1`, CONTEXT), /twice/);
 });
 
 test("a palette outside the curated set is refused", () => {
-  assert.throws(() => parse("v=1&p=Ice%20Walk", CONTEXT), /no palette called Ice Walk/);
+  assert.throws(() => parse(`v=${VERSION}&p=Ice%20Walk`, CONTEXT), /no palette called Ice Walk/);
   assert.ok(PALETTES.has(DEFAULT_PALETTE));
 });
 
 test("folding a cyclic map is refused, because there is no seam to fix", () => {
   assert.equal(PALETTES.get("twilight").cyclic, true);
-  assert.throws(() => parse("v=1&p=twilight&mirror=1", CONTEXT), /halve the cycle/);
+  assert.throws(() => parse(`v=${VERSION}&p=twilight&mirror=1`, CONTEXT), /halve the cycle/);
   assert.equal(PALETTES.get("viridis").cyclic, false);
-  assert.equal(canonicalize("v=1&p=viridis&mirror=1", CONTEXT), "v=1&p=viridis&mirror=1");
+  assert.equal(
+    canonicalize(`v=${VERSION}&p=viridis&mirror=1`, CONTEXT),
+    `v=${VERSION}&p=viridis&mirror=1`,
+  );
 });
 
 test("a tagged shade value needs exactly the parameter its kind takes", () => {
-  assert.throws(() => parse("v=1&transfer=edge", CONTEXT), /needs its weight/);
-  assert.throws(() => parse("v=1&transfer=rank:2", CONTEXT), /takes no value/);
-  assert.throws(() => parse("v=1&transfer=edge:-1", CONTEXT), /at least 0/);
-  assert.throws(() => parse("v=1&rolloff=soft_knee:1", CONTEXT), /below 1/);
-  assert.throws(() => parse("v=1&rolloff=filmic", CONTEXT), /none, soft_knee, reinhard, aces/);
+  assert.throws(() => parse(`v=${VERSION}&transfer=edge`, CONTEXT), /needs its weight/);
+  assert.throws(() => parse(`v=${VERSION}&transfer=rank:2`, CONTEXT), /takes no value/);
+  assert.throws(() => parse(`v=${VERSION}&transfer=edge:-1`, CONTEXT), /at least 0/);
+  assert.throws(() => parse(`v=${VERSION}&rolloff=soft_knee:1`, CONTEXT), /below 1/);
+  assert.throws(() => parse(`v=${VERSION}&rolloff=filmic`, CONTEXT), /none, soft_knee, reinhard, aces/);
 });
 
 test("an aspect is a shape, and both sides are bounded", () => {
-  assert.equal(parse("v=1&a=4:3", CONTEXT).aspect.down, 3);
-  assert.throws(() => parse("v=1&a=16x9", CONTEXT), /across:down/);
-  assert.throws(() => parse("v=1&a=0:9", CONTEXT), /between 1 and 10000/);
+  assert.equal(parse(`v=${VERSION}&a=4:3`, CONTEXT).aspect.down, 3);
+  assert.throws(() => parse(`v=${VERSION}&a=16x9`, CONTEXT), /across:down/);
+  assert.throws(() => parse(`v=${VERSION}&a=0:9`, CONTEXT), /between 1 and 10000/);
 });
 
 test("every palette the picker offers is one a link may name", () => {
   for (const name of PALETTES.keys()) {
-    const view = parse(`v=1&p=${encodeURIComponent(name)}`, CONTEXT);
+    const view = parse(`v=${VERSION}&p=${encodeURIComponent(name)}`, CONTEXT);
     assert.equal(view.palette, name);
     assert.equal(canonicalize(emit(view, CONTEXT), CONTEXT), emit(view, CONTEXT));
   }
+});
+
+test("the contract's roster is the engine's production roster, in the same order", () => {
+  // The one place the two lists meet. `catalog.js` is baked from `fractal-engine
+  // modes` and this one is typed, deliberately — a contract that read its own
+  // vocabulary from a generated file could be widened by rebuilding it — so they
+  // are compared instead.
+  assert.deepEqual(MODES, [...IDENTITIES.keys()]);
+  for (const mode of Object.keys(MODE_PARAMETERS)) assert.ok(MODES.includes(mode), mode);
+  for (const family of FAMILIES) assert.ok(HOMES[family], family);
 });

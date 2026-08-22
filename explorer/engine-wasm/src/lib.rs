@@ -1,10 +1,12 @@
 //! The renderer the explorer page runs, as a raw `wasm32-unknown-unknown` module.
 //!
-//! Two exports carry the page, and the seam between them is the whole design:
+//! Three exports carry the page, and the seam between the last two is the whole
+//! design:
 //!
 //! ```text
-//! compute_field(spec, row_start, row_end) -> f32 bytes   expensive, split over workers
-//! shade(field, palette, shade params)     -> RGBA bytes  cheap, main thread, instant
+//! plan(spec)                -> JSON        what this spec implies, or why not
+//! compute_band(spec, rows)  -> f64 lanes   expensive, split over workers
+//! shade(spec, lanes)        -> RGBA bytes  cheap, main thread, instant
 //! ```
 //!
 //! A field is what costs seconds; a color is what costs milliseconds. Computing
@@ -14,249 +16,728 @@
 //! `coloring` modules, held open one level further out so that JavaScript sits in
 //! it.
 //!
+//! **One spec, and the module answers what it implies.** Every export above takes
+//! the same JSON object — the engine's own render spec, minus the two keys that
+//! name files — so a family, a degree, a constant, a mode, a mode parameter, a
+//! palette recipe and a colormap have exactly one spelling on this boundary, and
+//! adding a family is not adding an export. `plan` is what JavaScript reads first:
+//! it says how many lanes the coloring needs, which of them may not be narrowed to
+//! `f32`, whether the mode paints during the iteration instead of making a field
+//! at all, and where the family comes home to. Everything the page would otherwise
+//! have to know about the mode catalog it asks for instead.
+//!
 //! No wasm-bindgen. The module is the engine plus this file, JS owns every buffer
 //! through [`alloc`] and [`dealloc`], and nothing is generated.
 //!
 //! **The engine decides everything a picture depends on.** The iteration cap is
-//! `maxiter::for_width`, the coloring is whatever `mode::resolve` says `smooth`
-//! is, the stretch and the colormap bake are the engine's, and the last pass is
-//! `resample::downsample` at one sample per pixel. This file chooses a row range
-//! and nothing else.
+//! `maxiter::for_width`, the coloring is whatever `mode::resolve` says a mode is,
+//! the blend of a composite and the perturbation of the modulate are
+//! `coloring::composite` and `coloring::modulate`, a direct trap's stroke is
+//! `direct_trap::Painter::trace`, and the last pass is `resample::downsample` at
+//! one sample per pixel. This file chooses a row range and nothing else.
+//!
+//! ## The one call site
+//!
+//! [`compute_band`] runs `iterate::run` in exactly one place and reduces every
+//! lane of the coloring from that one orbit — which is what
+//! [`fractal_engine::field::sample`] does for a whole frame, written out here
+//! because a band's coordinates have to be formed from the *whole* viewport. A
+//! second generic call site into `iterate::run` or `FieldSpec::reduce` costs about
+//! three times the field time, measured: the two of them monomorphize into one hot
+//! loop, and splitting that loop is not free. So the two-field modes do not get a
+//! loop of their own — they get the same loop with two lanes.
 
-use fractal_engine::coloring::{Coloring, Palette, Rolloff, Transfer, Transform};
-use fractal_engine::colormap::{Bake, Colormap, Kind};
-use fractal_engine::family::Family;
-use fractal_engine::field::{Field, FieldSpec};
+use std::collections::BTreeMap;
+
+use fractal_engine::coloring::{self, Coloring, Layer, Palette, Rolloff};
+use fractal_engine::colormap::{Colormap, Kind};
+use fractal_engine::direct_trap;
+use fractal_engine::family::{Family, HomeView};
+use fractal_engine::field::{Exact, Field, FieldSpec};
+use fractal_engine::iterate::Wants;
+use fractal_engine::spec::{FamilySpec, ViewportSpec};
 use fractal_engine::viewport::Viewport;
-use fractal_engine::{coloring, iterate, maxiter, mode, resample};
+use fractal_engine::{iterate, maxiter, mode, resample};
 use num_complex::Complex;
+use serde::Deserialize;
 
 /// Samples per output pixel per axis. One: an explorer draws at the resolution it
 /// shows, and a finished wallpaper is what supersampling is for.
 const SUPERSAMPLE: u32 = 1;
 
-/// The one family this module renders. Every other name the permalink reserves is
-/// refused in JavaScript before it reaches here; this is the second refusal.
-const FAMILY_MANDELBROT: u32 = 0;
-/// The one mode this module renders.
-const MODE_SMOOTH: u32 = 0;
+/// The name a colormap baked from control points is given. It exists only to
+/// appear in the engine's own refusal messages — the page addresses maps by the
+/// name a permalink carries, and never asks this module to look one up.
+const COLORMAP_NAME: &str = "explorer";
 
-fn family_of(id: u32) -> Option<Family> {
-    (id == FAMILY_MANDELBROT).then_some(Family::Multibrot { degree: 2 })
+// ----------------------------------------------------------------------- the spec
+
+/// One picture, as JSON. The engine's own render spec minus `output` and
+/// `colormap_dir`, plus the two things a page needs that a file render does not:
+/// the colormap by value rather than by name, and the mode's parameters apart from
+/// the mode.
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct Spec {
+    schema: u32,
+    family: FamilySpec,
+    /// Anything omitted falls back to the family's home view, exactly as a render
+    /// spec's does — which is also how the page asks what that home view is.
+    #[serde(default)]
+    viewport: ViewportSpec,
+    #[serde(default = "one_by_one")]
+    resolution: [u32; 2],
+    #[serde(default = "smooth")]
+    mode: String,
+    /// The mode's own constants, by the name the permalink gives them. A key the
+    /// mode has no room for is refused rather than ignored: a knob that silently
+    /// did nothing would look exactly like a knob that worked.
+    #[serde(default)]
+    params: BTreeMap<String, f64>,
+    #[serde(default)]
+    palette: Palette,
+    /// Absent is legal, and means *this spec is a question rather than a render*:
+    /// the page asks for a home view before it has a picture to color.
+    #[serde(default)]
+    colormap: Option<ColormapSpec>,
 }
 
-fn coloring_of(id: u32, family: &Family) -> Option<Coloring> {
-    (id == MODE_SMOOTH)
-        .then(|| mode::resolve("smooth", Some(family)).ok())
-        .flatten()
-}
-
-/// The field a coloring reads, and the curve it reads it through.
+/// A colormap as its control points, because the page has no filesystem to load
+/// one from.
 ///
-/// Draft-1's one mode is a single-field coloring, so this destructuring is total
-/// for what ships. A composite or a direct trap has neither shape, which is
-/// exactly why the reserved mode names are refused rather than approximated.
-fn single_field(coloring: &Coloring) -> Option<(FieldSpec, Transform)> {
-    match coloring {
-        Coloring::Field { field, transform } => Some((*field, *transform)),
-        _ => None,
-    }
-}
-
-fn viewport(cx: f64, cy: f64, fw: f64, px_w: u32, px_h: u32) -> Viewport {
-    Viewport {
-        center: Complex::new(cx, cy),
-        width: fw,
-        out_width: px_w,
-        out_height: px_h,
-        supersample: SUPERSAMPLE,
-    }
-}
-
-/// Hand a `Vec` to JavaScript and forget it: the caller owns it until `dealloc`.
-fn release(mut bytes: Vec<u8>) -> *mut u8 {
-    let ptr = bytes.as_mut_ptr();
-    std::mem::forget(bytes);
-    ptr
-}
-
-/// Compute rows `[row_start, row_end)` of the field, as little-endian `f32`.
-///
-/// The coordinates are formed from the **whole** viewport — `sample_point(col,
-/// row)` with the global row index — so a band is bit for bit the rows the
-/// engine's own whole-frame pass would have produced. A band that re-derived its
-/// own sub-viewport would land on almost the same coordinates and draw seams
-/// between the bands at the last place of the arithmetic.
-///
-/// Returns `(row_end - row_start) * px_w * 4` bytes, or null if the family or the
-/// mode is one this module does not render. `NaN` marks a sample with no value,
-/// which is the engine's own spelling for the interior.
-#[unsafe(no_mangle)]
-#[allow(clippy::too_many_arguments)]
-pub extern "C" fn compute_field(
-    family_id: u32,
-    mode_id: u32,
-    cx: f64,
-    cy: f64,
-    fw: f64,
-    px_w: u32,
-    px_h: u32,
-    row_start: u32,
-    row_end: u32,
-) -> *mut u8 {
-    let Some(family) = family_of(family_id) else {
-        return std::ptr::null_mut();
-    };
-    let Some((spec, _)) = coloring_of(mode_id, &family).as_ref().and_then(single_field) else {
-        return std::ptr::null_mut();
-    };
-    if px_w == 0 || row_end > px_h || row_start >= row_end {
-        return std::ptr::null_mut();
-    }
-
-    let view = viewport(cx, cy, fw, px_w, px_h);
-    let maxiter = maxiter::for_width(fw);
-    let wants = spec.wants();
-
-    let mut bytes = Vec::with_capacity(((row_end - row_start) * px_w) as usize * 4);
-    for row in row_start..row_end {
-        for col in 0..px_w {
-            let orbit = iterate::run(&family, view.sample_point(col, row), maxiter, &wants);
-            let value = spec.reduce(&orbit).map_or(f32::NAN, |value| value as f32);
-            bytes.extend_from_slice(&value.to_le_bytes());
-        }
-    }
-    release(bytes)
-}
-
-/// Color an assembled field, and return `px_w * px_h * 4` RGBA bytes.
-///
-/// **The whole field, and not a band.** The engine normalizes a frame against its
-/// own distribution — the 0.5th and 99.5th percentiles of its valid samples — so a
-/// band shaded alone would be stretched against its own histogram and would not
-/// match its neighbours. That percentile pair is the only whole-field statistic on
-/// this path at the shipped transfer; the other two transfers the palette recipe
-/// can ask for bring one each, and both are equally frame-wide.
-///
-/// The colormap arrives as its control points rather than as a name, because the
-/// page has no filesystem to load one from: `positions_ptr` addresses `stops_len`
-/// `f64` positions over `[0, 1]`, and `colors_ptr` the same many sRGB8 triples.
 /// The positions are `f64` and not a quantized byte — the engine does not require
 /// a map's stops to be evenly spaced, and rounding them would bend every gradient
 /// slightly rather than fail loudly.
-#[unsafe(no_mangle)]
-#[allow(clippy::too_many_arguments)]
-pub extern "C" fn shade(
-    mode_id: u32,
-    field_ptr: *const u8,
-    px_w: u32,
-    px_h: u32,
-    positions_ptr: *const f64,
-    colors_ptr: *const u8,
-    stops_len: u32,
-    cyclic: u32,
-    gamma: f64,
-    cycles: f64,
-    phase: f64,
-    reverse: u32,
-    mirror: u32,
-    transfer_kind: u32,
-    transfer_weight: f64,
-    rolloff_kind: u32,
-    rolloff_knee: f64,
-) -> *mut u8 {
-    let Some(family) = family_of(FAMILY_MANDELBROT) else {
-        return std::ptr::null_mut();
-    };
-    let Some((_, transform)) = coloring_of(mode_id, &family).as_ref().and_then(single_field) else {
-        return std::ptr::null_mut();
-    };
-    if px_w == 0 || px_h == 0 || field_ptr.is_null() || stops_len < 2 {
-        return std::ptr::null_mut();
-    }
-    if positions_ptr.is_null() || colors_ptr.is_null() {
-        return std::ptr::null_mut();
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct ColormapSpec {
+    kind: Kind,
+    stops: Vec<(f64, [u8; 3])>,
+}
+
+fn one_by_one() -> [u32; 2] {
+    [1, 1]
+}
+
+fn smooth() -> String {
+    "smooth".to_string()
+}
+
+// -------------------------------------------------------------------- the resolve
+
+/// A spec with every string parsed, every default filled in, and every refusal
+/// already made.
+struct Plan {
+    family: Family,
+    home: HomeView,
+    view: Viewport,
+    maxiter: u32,
+    coloring: Coloring,
+    palette: Palette,
+    colormap: Option<Colormap>,
+    /// The fields this coloring reads, in the order this module stores them: base
+    /// first, texture second. Empty for a direct trap, which reads none.
+    lanes: Vec<Layer>,
+    /// Which lanes must not be narrowed to `f32`. One coloring needs this — see
+    /// [`fractal_engine::field::Exact`].
+    exact: Vec<bool>,
+}
+
+impl Plan {
+    fn direct(&self) -> bool {
+        matches!(self.coloring, Coloring::Direct { .. })
     }
 
-    let count = (px_w as usize) * (px_h as usize);
-    let raw = unsafe { std::slice::from_raw_parts(field_ptr, count * 4) };
-    let field = Field {
-        values: raw
-            .chunks_exact(4)
-            .map(|four| f32::from_le_bytes([four[0], four[1], four[2], four[3]]))
-            .collect(),
-        width: px_w,
-        height: px_h,
+    /// Samples in one band of rows.
+    fn band_samples(&self, row_start: u32, row_end: u32) -> usize {
+        (row_end - row_start) as usize * self.view.sample_width() as usize
+    }
+}
+
+fn resolve(text: &str) -> Result<Plan, String> {
+    let spec: Spec = serde_json::from_str(text).map_err(|e| format!("spec: {e}"))?;
+    if spec.schema != 1 {
+        return Err(format!("spec has schema {}, expected 1", spec.schema));
+    }
+
+    let resolved = spec.family.resolve()?;
+    let family = resolved.family;
+    // A render-only family has no home view and no place in anything but a written
+    // render — see `Family::is_render_only`. The explorer is a door, so it refuses.
+    let home = family.home_view().ok_or_else(|| {
+        "this family is render-only: it draws pictures by written spec and has no home view, so \
+         there is nowhere for an explorer to open it at"
+            .to_string()
+    })?;
+
+    let read = |written: Option<String>, at: f64, key: &str| match written {
+        Some(text) => decimal(&text, key),
+        None => Ok(at),
+    };
+    let center = Complex::new(
+        read(spec.viewport.center_re, home.center.re, "center_re")?,
+        read(spec.viewport.center_im, home.center.im, "center_im")?,
+    );
+    let width = read(spec.viewport.width, home.width, "width")?;
+    if !(width > 0.0) {
+        return Err(format!("the view's width has to be positive, got {width}"));
+    }
+
+    let [out_width, out_height] = spec.resolution;
+    if out_width == 0 || out_height == 0 {
+        return Err("the resolution has to be positive in both dimensions".into());
+    }
+    let view = Viewport {
+        center,
+        width,
+        out_width,
+        out_height,
+        supersample: SUPERSAMPLE,
+    };
+    // The engine's own floor, asked the engine's own way. The page reads
+    // `resolution_ulps` against `resolution_ulps_floor` before it zooms, so this is
+    // the second refusal and not the first.
+    if !view.is_resolvable_in_f64() {
+        return Err(format!(
+            "the samples of this view are {:.2} of a unit of last place apart, so neighbouring \
+             samples would round to the same number and the picture would be of the arithmetic",
+            view.resolution_ulps()
+        ));
+    }
+
+    let coloring = tune(
+        &spec.mode,
+        mode::resolve(&spec.mode, Some(&family))?,
+        &spec.params,
+    )?;
+    coloring.validate()?;
+    spec.palette.validate()?;
+    coloring.agrees_with(&spec.palette)?;
+    coloring.agrees_with_family(&family)?;
+
+    let colormap = match spec.colormap {
+        Some(map) => Some(Colormap::from_stops_baked(
+            COLORMAP_NAME,
+            map.kind,
+            &map.stops,
+            spec.palette.bake,
+        )?),
+        None => None,
     };
 
-    let positions = unsafe { std::slice::from_raw_parts(positions_ptr, stops_len as usize) };
-    let colors = unsafe { std::slice::from_raw_parts(colors_ptr, stops_len as usize * 3) };
-    let stops: Vec<(f64, [u8; 3])> = positions
-        .iter()
-        .zip(colors.chunks_exact(3))
-        .map(|(&position, rgb)| (position, [rgb[0], rgb[1], rgb[2]]))
+    let lanes = lanes_of(&coloring);
+    // The modulate's texture is a base-`k` expansion whose deep digits are the
+    // picture, so it is the one lane the engine never narrows. Everything else
+    // crosses at the `f32` a dumped field would have been stored as, which is what
+    // keeps this module's picture the engine's picture rather than a finer one.
+    let exact = (0..lanes.len())
+        .map(|lane| matches!(coloring, Coloring::Modulate { .. }) && lane == 1)
         .collect();
-    let kind = if cyclic == 1 {
-        Kind::Cyclic
-    } else {
-        Kind::Sequential
-    };
-    let bake = Bake {
-        reverse: reverse == 1,
-        mirror: mirror == 1,
-    };
-    let Ok(colormap) = Colormap::from_stops_baked("explorer", kind, &stops, bake) else {
-        return std::ptr::null_mut();
-    };
 
-    let palette = Palette {
-        gamma,
-        cycles,
-        phase,
-        bake,
-        transfer: match transfer_kind {
-            1 => Transfer::Edge {
-                weight: transfer_weight,
-            },
-            2 => Transfer::Rank,
-            _ => Transfer::Value,
-        },
-        rolloff: match rolloff_kind {
-            1 => Rolloff::SoftKnee { knee: rolloff_knee },
-            2 => Rolloff::Reinhard,
-            3 => Rolloff::Aces,
-            _ => Rolloff::None,
-        },
-    };
-    if palette.validate().is_err() {
-        return std::ptr::null_mut();
+    Ok(Plan {
+        family,
+        home,
+        view,
+        maxiter: maxiter::for_width(width),
+        coloring,
+        palette: spec.palette,
+        colormap,
+        lanes,
+        exact,
+    })
+}
+
+fn decimal(text: &str, key: &str) -> Result<f64, String> {
+    text.trim()
+        .parse::<f64>()
+        .ok()
+        .filter(|value| value.is_finite())
+        .ok_or_else(|| format!("{key} is not a number this arithmetic can hold: '{text}'"))
+}
+
+/// The fields a coloring reads, in the order this module stores them.
+fn lanes_of(coloring: &Coloring) -> Vec<Layer> {
+    match coloring {
+        Coloring::Field { field, transform } => vec![Layer {
+            field: *field,
+            transform: *transform,
+        }],
+        Coloring::Composite { base, texture, .. } | Coloring::Modulate { base, texture, .. } => {
+            vec![*base, *texture]
+        }
+        Coloring::Direct { .. } => Vec::new(),
     }
+}
 
-    let mut linear = coloring::shade(&field, transform, &palette, &colormap);
-    if palette.rolloff != Rolloff::None {
-        // `coloring::paint` rolls the highlights off after it colors and before
-        // anything averages them. This path calls `coloring::shade` directly — it
-        // has a field already — so the same last step is taken here rather than
-        // dropped on the way past.
-        for pixel in &mut linear {
-            *pixel = palette.rolloff.shade(*pixel);
+/// Apply the mode's own parameters to the coloring the catalog resolved.
+///
+/// **A parameter is a number `mode::resolve` writes down for that mode**, and
+/// nothing else. The *shape* of the coloring is the mode's identity — which field,
+/// which blend, which trap shape, which start color — and moving any of those
+/// would put a different picture on the screen under the first one's name, so none
+/// of them is reachable here at all. What is left is the settled constants: how
+/// dense the stripes are, how wide the threads kernel is, how much of a texture is
+/// let through, how close a trap has to come.
+///
+/// A key the mode has no room for is an error. There is no default to fall back to
+/// that would not be a lie about what the reader asked for.
+fn tune(
+    name: &str,
+    mut coloring: Coloring,
+    params: &BTreeMap<String, f64>,
+) -> Result<Coloring, String> {
+    for (key, &value) in params {
+        if !value.is_finite() {
+            return Err(format!("{key} has to be a number, got {value}"));
+        }
+        set(name, &mut coloring, key, value)?;
+    }
+    Ok(coloring)
+}
+
+fn set(name: &str, coloring: &mut Coloring, key: &str, value: f64) -> Result<(), String> {
+    // The knobs the coloring itself carries: how a pair is mixed, how far an
+    // address pushes, how a trap paints.
+    match (key, &mut *coloring) {
+        ("weight", Coloring::Composite { texture_weight, .. }) => {
+            *texture_weight = value;
+            return Ok(());
+        }
+        ("shift", Coloring::Modulate { shift, .. }) => {
+            *shift = value;
+            return Ok(());
+        }
+        ("threshold", Coloring::Direct { threshold, .. }) => {
+            *threshold = Some(value);
+            return Ok(());
+        }
+        ("opacity", Coloring::Direct { opacity, .. }) => {
+            *opacity = value;
+            return Ok(());
+        }
+        ("radius", Coloring::Direct { trap_radius, .. }) => {
+            *trap_radius = value;
+            return Ok(());
+        }
+        _ => {}
+    }
+    // The knobs the mode's own field carries. The *characteristic* field: a plain
+    // field mode has one, and a composite's is its texture — the smooth base is
+    // shared by every composite and has no constants of its own, so there is
+    // nothing there to name.
+    if let Some(field) = characteristic_field(coloring) {
+        match (key, field) {
+            ("density", FieldSpec::Stripe { density }) => {
+                *density = value;
+                return Ok(());
+            }
+            ("radius", FieldSpec::TrapCircle { radius }) => {
+                *radius = value;
+                return Ok(());
+            }
+            ("sigma", FieldSpec::Threads { sigma }) => {
+                *sigma = value;
+                return Ok(());
+            }
+            _ => {}
         }
     }
-    let rgb = resample::downsample(
-        &linear,
-        px_w as usize,
-        px_h as usize,
-        px_w as usize,
-        px_h as usize,
-        SUPERSAMPLE,
-    );
+    Err(format!("the {name} mode has no {key} parameter"))
+}
 
-    let mut rgba = Vec::with_capacity(count * 4);
-    for pixel in rgb.chunks_exact(3) {
-        rgba.extend_from_slice(pixel);
-        rgba.push(255);
+/// What the parameters of this coloring currently are, by the name [`set`] takes.
+///
+/// The page reads this to seed its controls, so the number under a slider is the
+/// catalog's own settled value rather than a copy of it kept in JavaScript. It is
+/// the read half of [`set`] and is written beside it for the same reason a getter
+/// sits beside its setter: the pair is one fact about each mode, and splitting them
+/// across two files is how one of them gets a knob the other has never heard of.
+fn params_of(coloring: &Coloring) -> BTreeMap<&'static str, f64> {
+    let mut params = BTreeMap::new();
+    match coloring {
+        Coloring::Composite { texture_weight, .. } => {
+            params.insert("weight", *texture_weight);
+        }
+        Coloring::Modulate { shift, .. } => {
+            params.insert("shift", *shift);
+        }
+        Coloring::Direct {
+            shape,
+            trap_radius,
+            threshold,
+            opacity,
+            ..
+        } => {
+            params.insert("radius", *trap_radius);
+            // Absent means the shape's own calibrated distance, which is a number
+            // the engine holds and the page would otherwise have to guess at.
+            params.insert("threshold", threshold.unwrap_or_else(|| shape.default_threshold()));
+            params.insert("opacity", *opacity);
+        }
+        Coloring::Field { .. } => {}
     }
-    release(rgba)
+    // The characteristic field is the last one the coloring reads: the only one a
+    // plain field mode has, and the texture of a pair — which is the same rule
+    // `characteristic_field` applies to write it.
+    match coloring.fields().last() {
+        Some(FieldSpec::Stripe { density }) => {
+            params.insert("density", *density);
+        }
+        Some(FieldSpec::TrapCircle { radius }) => {
+            params.insert("radius", *radius);
+        }
+        Some(FieldSpec::Threads { sigma }) => {
+            params.insert("sigma", *sigma);
+        }
+        _ => {}
+    }
+    params
+}
+
+fn characteristic_field(coloring: &mut Coloring) -> Option<&mut FieldSpec> {
+    match coloring {
+        Coloring::Field { field, .. } => Some(field),
+        Coloring::Composite { texture, .. } | Coloring::Modulate { texture, .. } => {
+            Some(&mut texture.field)
+        }
+        Coloring::Direct { .. } => None,
+    }
+}
+
+// -------------------------------------------------------------------- the exports
+
+/// What this spec implies, or why it cannot be drawn, as JSON.
+///
+/// The page calls this before anything else and reads the whole shape of a pass
+/// out of it: how many lanes to allocate, how many bytes a band will be, whether
+/// the mode paints color during the iteration instead of making a field, and where
+/// this family comes home to. A refusal carries the engine's own sentence, which is
+/// what the page puts in front of a reader.
+///
+/// Returns a buffer whose first four bytes are the UTF-8 length, little-endian.
+#[unsafe(no_mangle)]
+pub extern "C" fn plan(spec_ptr: *const u8, spec_len: usize) -> *mut u8 {
+    let report = match text(spec_ptr, spec_len).and_then(|text| resolve(&text)) {
+        Ok(plan) => serde_json::json!({
+            "ok": true,
+            "home": {"x": plan.home.center.re, "y": plan.home.center.im, "w": plan.home.width},
+            "maxiter": plan.maxiter,
+            "lanes": plan.lanes.len(),
+            "exact": plan.exact,
+            "direct": plan.direct(),
+            "params": params_of(&plan.coloring),
+            "resolution_ulps": plan.view.resolution_ulps(),
+        }),
+        Err(why) => serde_json::json!({"ok": false, "why": why}),
+    };
+    release_text(&report.to_string())
+}
+
+/// Compute rows `[row_start, row_end)`, as little-endian `f64`, lane by lane.
+///
+/// The coordinates are formed from the **whole** viewport — `sample_point(col,
+/// row)` with the global row index — so a band is bit for bit the rows the engine's
+/// own whole-frame pass would have produced. A band that re-derived its own
+/// sub-viewport would land on almost the same coordinates and draw seams between
+/// the bands at the last place of the arithmetic.
+///
+/// The buffer is **lane-major**: lane 0's whole band, then lane 1's. `NaN` marks a
+/// sample with no value, which is the engine's own spelling for the interior. A
+/// narrow lane is reduced at `f64` and rounded through `f32` here, because that is
+/// what the engine stores a field as and the picture wanted is the one it draws.
+///
+/// For a direct trap there are no lanes: the mode paints during the iteration, so
+/// the band comes back as `rows * width * 4` finished RGBA bytes and there is
+/// nothing left for [`shade`] to do. That is also why a palette change re-iterates
+/// under those four modes and under no others.
+#[unsafe(no_mangle)]
+pub extern "C" fn compute_band(
+    spec_ptr: *const u8,
+    spec_len: usize,
+    row_start: u32,
+    row_end: u32,
+) -> *mut u8 {
+    let Ok(spec) = text(spec_ptr, spec_len) else {
+        return std::ptr::null_mut();
+    };
+    let Ok(plan) = resolve(&spec) else {
+        return std::ptr::null_mut();
+    };
+    if row_end > plan.view.sample_height() || row_start >= row_end {
+        return std::ptr::null_mut();
+    }
+    let band = if plan.direct() {
+        paint_band(&plan, row_start, row_end)
+    } else {
+        Some(compute_lanes(&plan, row_start, row_end))
+    };
+    match band {
+        Some(bytes) => release(bytes),
+        None => std::ptr::null_mut(),
+    }
+}
+
+/// The loop, and the one call into `iterate::run` — written twice, on purpose.
+///
+/// Every lane of the coloring is reduced from the same orbit, in the order
+/// [`lanes_of`] put them, which is what makes a two-field composite cost one
+/// iteration rather than two.
+///
+/// **The spine is specialized and everything else is not**, and the reason is
+/// measured. `iterate::run` is a long loop with eleven per-iteration channel
+/// checks and a match over the families, and it collapses to the bare recurrence
+/// only when the compiler can see *both* the family and the channel set at the
+/// call site — 1.5 s against 6.3 s on the 1280×720 home frame, and neither half
+/// alone buys more than a tenth of that. Draft 1 got the collapse for free by
+/// rendering one family in one mode; a spec-struct boundary hands both in at
+/// runtime and loses it.
+///
+/// So the one mode whose channel set is *empty* — `smooth`, the spine every
+/// composite is built on and the only catalogued mode that asks the loop for
+/// nothing but the escape — gets a call site per family, where the loop really is
+/// `z ← z^d + c` and a magnitude test. Every other mode is already doing per-
+/// iteration work of its own that the checks are a small share of, and takes the
+/// generic loop. Specializing the whole catalog would mean a copy of this loop per
+/// family and mode, which is the module's size spent on the cases that need it
+/// least.
+fn compute_lanes(plan: &Plan, row_start: u32, row_end: u32) -> Vec<u8> {
+    let width = plan.view.sample_width();
+    let wants = plan
+        .lanes
+        .iter()
+        .map(|layer| layer.field.wants())
+        .fold(Wants::default(), Wants::union);
+    let per_lane = plan.band_samples(row_start, row_end);
+    let mut lanes: Vec<Vec<f64>> = vec![Vec::with_capacity(per_lane); plan.lanes.len()];
+
+    macro_rules! sweep {
+        ($family:expr, $wants:expr) => {{
+            let family = $family;
+            let wants = $wants;
+            for row in row_start..row_end {
+                for col in 0..width {
+                    let orbit = iterate::run(
+                        &family,
+                        plan.view.sample_point(col, row),
+                        plan.maxiter,
+                        &wants,
+                    );
+                    for (index, lane) in lanes.iter_mut().enumerate() {
+                        let value = plan.lanes[index].field.reduce(&orbit);
+                        lane.push(if plan.exact[index] {
+                            value.unwrap_or(f64::NAN)
+                        } else {
+                            value.map_or(f32::NAN, |value| value as f32) as f64
+                        });
+                    }
+                }
+            }
+        }};
+    }
+
+    // The degrees are the ones the spec admits — 2 through 5 on both planes — so
+    // this table is total over what can reach here, and the fallthrough is the
+    // generic loop rather than a refusal.
+    match (wants == Wants::default(), plan.family) {
+        (true, Family::Multibrot { degree: 2 }) => {
+            sweep!(Family::Multibrot { degree: 2 }, Wants::default())
+        }
+        (true, Family::Multibrot { degree: 3 }) => {
+            sweep!(Family::Multibrot { degree: 3 }, Wants::default())
+        }
+        (true, Family::Multibrot { degree: 4 }) => {
+            sweep!(Family::Multibrot { degree: 4 }, Wants::default())
+        }
+        (true, Family::Multibrot { degree: 5 }) => {
+            sweep!(Family::Multibrot { degree: 5 }, Wants::default())
+        }
+        (true, Family::Julia { degree: 2, c }) => {
+            sweep!(Family::Julia { degree: 2, c }, Wants::default())
+        }
+        (true, Family::Julia { degree: 3, c }) => {
+            sweep!(Family::Julia { degree: 3, c }, Wants::default())
+        }
+        (true, Family::Julia { degree: 4, c }) => {
+            sweep!(Family::Julia { degree: 4, c }, Wants::default())
+        }
+        (true, Family::Julia { degree: 5, c }) => {
+            sweep!(Family::Julia { degree: 5, c }, Wants::default())
+        }
+        (true, Family::Phoenix { c, p, z_prev }) => {
+            sweep!(Family::Phoenix { c, p, z_prev }, Wants::default())
+        }
+        _ => sweep!(plan.family, wants),
+    }
+
+    let mut bytes = Vec::with_capacity(per_lane * lanes.len() * 8);
+    for lane in lanes {
+        for value in lane {
+            bytes.extend_from_slice(&value.to_le_bytes());
+        }
+    }
+    bytes
+}
+
+/// One band of a direct trap: the color is built during the iteration and there is
+/// no field to keep.
+///
+/// The last two steps are the engine's, taken here rather than dropped on the way
+/// past: the rolloff acts on the finished linear color, and `resample::downsample`
+/// is what encodes it. A band may be encoded on its own because neither step reads
+/// anything outside its own pixel — which is exactly what is *not* true of a field
+/// mode, whose stretch is measured over the whole frame.
+fn paint_band(plan: &Plan, row_start: u32, row_end: u32) -> Option<Vec<u8>> {
+    let Coloring::Direct {
+        shape,
+        trap_radius,
+        threshold,
+        opacity,
+        merge,
+        merge_order,
+        start_color,
+        transform,
+    } = &plan.coloring
+    else {
+        return None;
+    };
+    let colormap = plan.colormap.as_ref()?;
+    let painter = direct_trap::Painter::new(
+        *shape,
+        *trap_radius,
+        *threshold,
+        *opacity,
+        *merge,
+        *merge_order,
+        start_color,
+        *transform,
+    )
+    .ok()?;
+
+    let width = plan.view.sample_width();
+    let rows = (row_end - row_start) as usize;
+    let mut linear = Vec::with_capacity(plan.band_samples(row_start, row_end));
+    for row in row_start..row_end {
+        for col in 0..width {
+            let (color, _escaped) = painter.trace(
+                &plan.family,
+                plan.view.sample_point(col, row),
+                plan.maxiter,
+                colormap,
+            );
+            linear.push(color);
+        }
+    }
+    if plan.palette.rolloff != Rolloff::None {
+        for pixel in &mut linear {
+            *pixel = plan.palette.rolloff.shade(*pixel);
+        }
+    }
+    Some(rgba(&resample::downsample(
+        &linear,
+        width as usize,
+        rows,
+        width as usize,
+        rows,
+        SUPERSAMPLE,
+    )))
+}
+
+/// Color an assembled set of lanes, and return `width * height * 4` RGBA bytes.
+///
+/// **The whole frame, and never a band.** The engine normalizes a frame against its
+/// own distribution — the 0.5th and 99.5th percentiles of its valid samples at the
+/// shipped transfer — so a band shaded alone would be stretched against its own
+/// histogram and would not match its neighbours. The other two transfers the
+/// palette recipe can ask for bring one frame-wide statistic each, and both are
+/// equally frame-wide.
+///
+/// Which of the engine's three colorings runs is the coloring's own shape, and all
+/// three are the engine's: one field through the map, two fields blended, or a base
+/// whose palette position the second field perturbs.
+#[unsafe(no_mangle)]
+pub extern "C" fn shade(spec_ptr: *const u8, spec_len: usize, lanes_ptr: *const u8) -> *mut u8 {
+    let Ok(spec) = text(spec_ptr, spec_len) else {
+        return std::ptr::null_mut();
+    };
+    let Ok(plan) = resolve(&spec) else {
+        return std::ptr::null_mut();
+    };
+    let Some(colormap) = plan.colormap.as_ref() else {
+        return std::ptr::null_mut();
+    };
+    if lanes_ptr.is_null() || plan.lanes.is_empty() {
+        return std::ptr::null_mut();
+    }
+
+    let width = plan.view.sample_width();
+    let height = plan.view.sample_height();
+    let count = width as usize * height as usize;
+    let raw = unsafe { std::slice::from_raw_parts(lanes_ptr, count * plan.lanes.len() * 8) };
+    let lane = |index: usize| -> Vec<f64> {
+        raw[index * count * 8..(index + 1) * count * 8]
+            .chunks_exact(8)
+            .map(|eight| f64::from_le_bytes(eight.try_into().expect("eight bytes")))
+            .collect()
+    };
+    let narrow = |values: Vec<f64>| Field {
+        values: values.into_iter().map(|value| value as f32).collect(),
+        width,
+        height,
+    };
+
+    let base = narrow(lane(0));
+    let mut linear = match &plan.coloring {
+        Coloring::Field { transform, .. } => {
+            coloring::shade(&base, *transform, &plan.palette, colormap)
+        }
+        Coloring::Composite {
+            blend,
+            texture_weight,
+            texture_gamma,
+            ..
+        } => coloring::composite(
+            &base,
+            &narrow(lane(1)),
+            plan.lanes[0].transform,
+            plan.lanes[1].transform,
+            *blend,
+            *texture_weight,
+            *texture_gamma,
+            &plan.palette,
+            colormap,
+        ),
+        Coloring::Modulate { shift, .. } => coloring::modulate(
+            &base,
+            &Exact {
+                values: lane(1),
+                width,
+                height,
+            },
+            plan.lanes[0].transform,
+            plan.lanes[1].transform,
+            *shift,
+            &plan.palette,
+            colormap,
+        ),
+        Coloring::Direct { .. } => return std::ptr::null_mut(),
+    };
+    if plan.palette.rolloff != Rolloff::None {
+        // `coloring::paint` rolls the highlights off after it colors and before
+        // anything averages them. This path calls the colorings directly — it has
+        // the fields already — so the same last step is taken here rather than
+        // dropped on the way past.
+        for pixel in &mut linear {
+            *pixel = plan.palette.rolloff.shade(*pixel);
+        }
+    }
+    release(rgba(&resample::downsample(
+        &linear,
+        width as usize,
+        height as usize,
+        width as usize,
+        height as usize,
+        SUPERSAMPLE,
+    )))
 }
 
 /// The iteration cap the engine's own policy gives this view.
@@ -269,36 +750,24 @@ pub extern "C" fn maxiter_for_width(fw: f64) -> u32 {
 ///
 /// Below [`fractal_engine::viewport::RESOLUTION_ULPS`] two neighbouring sample
 /// centers are the same number, and the page stops zooming rather than draw the
-/// arithmetic.
+/// arithmetic. Asked as bare geometry rather than through a spec because the page
+/// asks it of a view it has not moved to yet.
 #[unsafe(no_mangle)]
 pub extern "C" fn resolution_ulps(cx: f64, cy: f64, fw: f64, px_w: u32, px_h: u32) -> f64 {
-    viewport(cx, cy, fw, px_w, px_h).resolution_ulps()
+    Viewport {
+        center: Complex::new(cx, cy),
+        width: fw,
+        out_width: px_w,
+        out_height: px_h,
+        supersample: SUPERSAMPLE,
+    }
+    .resolution_ulps()
 }
 
 /// The floor `resolution_ulps` is read against, so the page does not restate it.
 #[unsafe(no_mangle)]
 pub extern "C" fn resolution_ulps_floor() -> f64 {
     fractal_engine::viewport::RESOLUTION_ULPS
-}
-
-/// The family's own home view, so the page does not hardcode one.
-#[unsafe(no_mangle)]
-pub extern "C" fn home_center_re() -> f64 {
-    home().center.re
-}
-#[unsafe(no_mangle)]
-pub extern "C" fn home_center_im() -> f64 {
-    home().center.im
-}
-#[unsafe(no_mangle)]
-pub extern "C" fn home_width() -> f64 {
-    home().width
-}
-
-fn home() -> fractal_engine::family::HomeView {
-    Family::Multibrot { degree: 2 }
-        .home_view()
-        .expect("the parameter plane has a home")
 }
 
 #[unsafe(no_mangle)]
@@ -312,4 +781,46 @@ pub extern "C" fn alloc(len: usize) -> *mut u8 {
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn dealloc(ptr: *mut u8, len: usize) {
     unsafe { drop(Vec::from_raw_parts(ptr, 0, len)) }
+}
+
+// ------------------------------------------------------------------- the plumbing
+
+/// Read a spec out of the heap JavaScript wrote it to.
+fn text(ptr: *const u8, len: usize) -> Result<String, String> {
+    if ptr.is_null() {
+        return Err("no spec was written to the heap".into());
+    }
+    let raw = unsafe { std::slice::from_raw_parts(ptr, len) };
+    std::str::from_utf8(raw)
+        .map(str::to_string)
+        .map_err(|_| "the spec is not valid UTF-8".into())
+}
+
+/// Hand a `Vec` to JavaScript and forget it: the caller owns it until `dealloc`.
+fn release(mut bytes: Vec<u8>) -> *mut u8 {
+    let ptr = bytes.as_mut_ptr();
+    std::mem::forget(bytes);
+    ptr
+}
+
+/// The same, for a string: four bytes of little-endian length, then the UTF-8.
+///
+/// A length prefix rather than a second export returning it, because a caller that
+/// has to ask twice can be told two different things.
+fn release_text(text: &str) -> *mut u8 {
+    let raw = text.as_bytes();
+    let mut bytes = Vec::with_capacity(raw.len() + 4);
+    bytes.extend_from_slice(&(raw.len() as u32).to_le_bytes());
+    bytes.extend_from_slice(raw);
+    release(bytes)
+}
+
+/// Opaque RGBA from the engine's RGB.
+fn rgba(rgb: &[u8]) -> Vec<u8> {
+    let mut out = Vec::with_capacity(rgb.len() / 3 * 4);
+    for pixel in rgb.chunks_exact(3) {
+        out.extend_from_slice(pixel);
+        out.push(255);
+    }
+    out
 }

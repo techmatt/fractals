@@ -47,8 +47,11 @@
    why there is nothing to show sits above it. */
 [hidden] { display: none !important; }
 
-/* One line of controls under the picture. It wraps rather than overflows: a
-   palette name can be forty characters long. */
+/* The controls under the picture. They wrap rather than overflow — a palette name
+   can be forty characters long, and a mode with parameters brings two more boxes —
+   and a group holds a label with the control it names so a wrap never splits one
+   from the other. The groups a family or a mode does not need are empty spans, so
+   the strip is as short as what is being drawn. */
 .bar {
   display: flex;
   flex-wrap: wrap;
@@ -58,9 +61,18 @@
   font-size: 0.875rem;
 }
 
+.bar .group {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 0.6rem;
+}
+.bar .group:empty { display: none; }
+
 .bar label { color: var(--ink-dim); }
 
-.bar select {
+.bar select,
+.bar input {
   max-width: 22rem;
   padding: 0.2rem 0.3rem;
   border: 1px solid var(--rule);
@@ -69,6 +81,16 @@
   color: var(--ink);
   font: inherit;
 }
+
+/* A constant is a decimal string that carries a location's identity, so its box is
+   wide enough to show one and monospaced so the digits line up under each other.
+   A parameter is a small number and gets a small box. */
+.bar input.constant {
+  width: 12rem;
+  font-family: var(--mono);
+  font-size: 0.8125rem;
+}
+.bar input.param { width: 5rem; }
 
 .bar button {
   padding: 0.25rem 0.7rem;

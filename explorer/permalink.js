@@ -1,4 +1,4 @@
-// The permalink contract, version 1. This module owns parse, validate and
+// The permalink contract, version 2. This module owns parse, validate and
 // canonicalize, and nothing else in the explorer is allowed a second opinion
 // about what a link means.
 //
@@ -14,44 +14,123 @@
 //   * An unknown key is refused. A typo that silently rendered the default view
 //     would look exactly like the link working.
 //   * Defaults are omitted on emit, so the canonical string carries what somebody
-//     actually chose and nothing else. `p` is the one exception and is ALWAYS
-//     emitted: the palette is the only default whose meaning lives outside this
-//     file, in the baked set, and a bare link that inherited `DEFAULT_PALETTE`
-//     would quietly change colour the day that set is rebuilt. Naming it costs a
-//     key and buys a link that draws the same picture forever. Parsing is
-//     unchanged — a link with no `p` still means the default — so this adds no key
-//     and changes no meaning, and `v` stays 1.
-//   * `x`, `y` and `w` are echoed back VERBATIM. The decimal string is the
-//     identity of a location; `f64` is a lossy view of it that stops being enough
-//     the moment deep zoom arrives, and a round trip through a double would
-//     rewrite a link that was more precise than today's renderer.
+//     actually chose and nothing else — EXCEPT for the values whose default lives
+//     outside this file. See "the always-emitted keys" below.
+//   * `x`, `y`, `w` and the family constants are echoed back VERBATIM. The decimal
+//     string is the identity of a location; `f64` is a lossy view of it that stops
+//     being enough the moment deep zoom arrives, and a round trip through a double
+//     would rewrite a link that was more precise than today's renderer.
 //
 // The names are the article's, because a URL is read by people: `mandelbrot`,
-// `smooth`, `twilight_shifted`, and the engine's own spelling for every knob.
+// `smooth_stripe`, `twilight_shifted`, and the engine's own spelling for every
+// knob.
 //
-// Emit order: v · f · m · x · y · w · a · p · then the shade parameters, in the
-// order the engine's own palette recipe declares them.
+// ## What version 2 added, and why it is a 2
+//
+// Draft 1 drew one family in one mode. Version 2 draws every production family and
+// every production mode, so `f` and `m` accept values v1 refused, the family
+// constants a dynamical plane needs became real keys, and a mode's own parameters
+// became keys of their own. None of that would bump the version on its own — a
+// key that has a default is a widening, and an old link is still a complete
+// statement.
+//
+// What bumps it is that **`v1` and `v2` links are read by the same rules**. A v1
+// link is still parsed, and every v1-legal value still means exactly what it
+// meant, so nothing anybody could have saved has changed meaning. But the answer a
+// v1 link gets for `f=julia` is no longer "not yet" — it is a picture — and this
+// module re-emits it as `v=2`. Saying that in the version is cheaper than leaving
+// a reader to discover it.
+//
+// ## The always-emitted keys
+//
+// `p` and the family constants are emitted even when they are the default, and
+// for one reason: their defaults are not written here. The palette default lives
+// in the baked colormap set and the constants in the wallpaper project's shipped
+// anchors, so a bare link that inherited either would change picture the day that
+// set is rebuilt. Naming them costs a few characters and buys a link that draws
+// the same thing forever.
+//
+// A mode's parameters are the opposite case and are NOT emitted unless somebody
+// set one: their defaults live in the engine's mode catalog, which is the same
+// place the mode's identity lives, so a link that omits `density` is asking for
+// "the stripe mode", not for "a stripe mode at 6". If the catalog ever retunes a
+// mode, that link should move with it — that is what naming a mode is for.
+//
+// Emit order: v · f · cx · cy · px · py · m · the mode's parameters · x · y · w ·
+// a · p · then the shade parameters, in the order the engine's own palette recipe
+// declares them.
 
-/** The contract version this module speaks. */
-export const VERSION = 1;
+/** The contract version this module emits. */
+export const VERSION = 2;
 
-/** Families this draft renders. */
-export const FAMILIES = ["mandelbrot"];
+/** The versions this module reads. See the note above on why 1 is still one of them. */
+export const READS = [1, 2];
 
 /**
- * Families the contract knows and this draft will not draw.
+ * The families this page draws, by the name a link carries.
  *
- * Reserved from day one rather than left unknown: a link written for one of these
- * is a link to a picture this page will eventually show, and "not yet" is a
- * different answer from "that is not a family".
+ * A name is the whole recurrence including its exponent, because one picture gets
+ * one name: `mandelbrot` is the degree-2 parameter plane and `multibrot3` is the
+ * degree-3 one, and the same rule gives the dynamical plane `julia` through
+ * `julia5`. That is the engine's own view of it too — a `Family::Multibrot` at
+ * degree 2 *is* the Mandelbrot set — spelled the way a reader would say it.
  */
-export const RESERVED_FAMILIES = ["julia", "multibrot3", "multibrot4", "multibrot5", "phoenix"];
+export const FAMILIES = [
+  "mandelbrot",
+  "multibrot3",
+  "multibrot4",
+  "multibrot5",
+  "julia",
+  "julia3",
+  "julia4",
+  "julia5",
+  "phoenix",
+];
 
-/** Modes this draft renders. */
-export const MODES = ["smooth"];
+/**
+ * The families that are not a place to look, with the reason.
+ *
+ * `fractional_multibrot` is a real family and is drawn in the article, but it is
+ * **render-only**: a non-integer degree needs a branch cut, so the engine gives it
+ * no home view and no place in anything but a written render. Named here so that a
+ * hopeful link is told which half of the problem it has.
+ */
+export const RENDER_ONLY_FAMILIES = {
+  fractional_multibrot:
+    "a non-integer degree is render-only — it has no home view to open at, because " +
+    "the picture is about the branch cut rather than about a place",
+};
 
-/** The engine's other production modes, reserved on the same terms as the families. */
-export const RESERVED_MODES = [
+/**
+ * The family constants a link may carry, by the family that has them.
+ *
+ * `c` is half a dynamical location's identity — the same `c` the wallpaper
+ * project's walk requires and refuses to guess — and `p` is the Phoenix memory
+ * coefficient. Both are decimal strings for the same reason a coordinate is.
+ *
+ * `z₋₁` is deliberately absent. The engine admits it, and a non-zero one is a
+ * different set from the same `(c, p)` rather than a different view of it; the
+ * shipped anchor is the classic slice, and a key nobody can see the effect of on
+ * this page would be a knob rather than a control.
+ */
+export const CONSTANTS = {
+  mandelbrot: [],
+  multibrot3: [],
+  multibrot4: [],
+  multibrot5: [],
+  julia: ["cx", "cy"],
+  julia3: ["cx", "cy"],
+  julia4: ["cx", "cy"],
+  julia5: ["cx", "cy"],
+  phoenix: ["cx", "cy", "px", "py"],
+};
+
+/** Every constant key the contract spells, in emit order. */
+const CONSTANT_KEYS = ["cx", "cy", "px", "py"];
+
+/** The modes this page draws: the engine's production roster, in catalog order. */
+export const MODES = [
+  "smooth",
   "tia",
   "stripe",
   "exp_smoothing",
@@ -72,18 +151,65 @@ export const RESERVED_MODES = [
 ];
 
 /**
- * Keys the contract has spelled and v1 refuses.
+ * The modes the engine has and production does not draw, with the reason.
  *
- * `cx` and `cy` are the dynamical-plane constant a Julia set needs and `pp` is
- * the Phoenix `p`. They are named here so that adding them later is filling in a
- * hole rather than widening the contract, and so that a hopeful link carrying one
- * gets told which half of the problem it has.
+ * One entry. `de` is niche rather than broken — the engine renders it on demand by
+ * name — and it stays out of here because this page offers what the project ships.
  */
-export const RESERVED_KEYS = {
-  cx: "the dynamical-plane constant belongs to a family this draft does not render",
-  cy: "the dynamical-plane constant belongs to a family this draft does not render",
-  pp: "the Phoenix memory constant belongs to a family this draft does not render",
+export const NICHE_MODES = {
+  de: "the distance estimate is a niche mode: the engine renders it by name, and no " +
+    "production draw picks it, so this page does not offer it either",
 };
+
+/**
+ * How a number a mode's parameter carries is checked.
+ *
+ * These bounds are the contract's, not the engine's. The engine has its own — a
+ * texture weight is in `[0, 1]` there too — and this is the first refusal rather
+ * than the only one, which is why a bound here is never tighter than the engine's:
+ * a link this module accepted and the renderer refused would still say so.
+ */
+const PARAMETERS = {
+  density: { check: (value) => value > 0, says: "positive" },
+  radius: { check: (value) => value > 0, says: "positive" },
+  sigma: { check: (value) => value > 0, says: "positive" },
+  threshold: { check: (value) => value > 0, says: "positive" },
+  weight: { check: (value) => value >= 0 && value <= 1, says: "between 0 and 1" },
+  opacity: { check: (value) => value >= 0 && value <= 1, says: "between 0 and 1" },
+  shift: { check: () => true, says: "a number" },
+};
+
+/**
+ * Which parameters each mode has, and in what order they are emitted.
+ *
+ * **A parameter is a number the engine's mode catalog writes down for that mode.**
+ * The shape of a coloring is the mode's identity — which field, which blend, which
+ * trap shape, which start colour — so none of those is here; what is left is the
+ * settled constants. A mode with no row has none, which is most of them: the
+ * escape count and the averaging fields have nothing to set.
+ *
+ * The defaults are the catalog's and are not restated here. See the note at the
+ * top on why a mode's parameter is omitted on emit when nobody set it.
+ */
+export const MODE_PARAMETERS = {
+  stripe: ["density"],
+  trap_circle: ["radius"],
+  smooth_mean_angle: ["weight"],
+  smooth_angle_min: ["weight"],
+  smooth_trap_circle: ["radius", "weight"],
+  smooth_stripe: ["density", "weight"],
+  smooth_curvature: ["weight"],
+  direct_trap_ring: ["radius", "threshold", "opacity"],
+  direct_trap_screen: ["threshold", "opacity"],
+  direct_trap_multiply: ["threshold", "opacity"],
+  direct_trap_lines: ["threshold", "opacity"],
+  threads: ["sigma", "weight"],
+  itinerary: ["shift"],
+};
+
+/** Every parameter key the contract spells, so an unknown key is told apart from
+ *  a key the current mode has no room for. */
+const PARAMETER_KEYS = new Set(Object.values(MODE_PARAMETERS).flat());
 
 /** The aspect a link means when it says nothing. */
 export const DEFAULT_ASPECT = { across: 16, down: 9 };
@@ -110,11 +236,9 @@ export class PermalinkError extends Error {
  * The engine's palette recipe, key by key: what it is called in a link, what the
  * engine's own default is, and how a value is read and written.
  *
- * One key per real engine parameter and no others. The smooth coloring itself has
- * no parameter to expose — `mode::resolve("smooth", …)` is a field and a curve,
- * both fixed by the mode — so there is no sweep key and none is reserved. What is
- * here is the shade side: the palette recipe the engine records beside every
- * render it makes.
+ * One key per real engine parameter and no others. What is here is the shade side:
+ * the palette recipe the engine records beside every render it makes, which is
+ * independent of the mode and whose every default is the identity.
  */
 const SHADE_KEYS = [
   {
@@ -180,14 +304,14 @@ export function defaultShade() {
 /**
  * Read a query string into a view, or throw a `PermalinkError` saying why not.
  *
- * `context.home` supplies the coordinate defaults as the strings they will be
- * echoed as — the engine's own home view, formatted once by the caller, so this
- * module never restates a number the engine owns. `context.palettes` is the baked
- * set, which is what makes `p` checkable at all.
+ * `context.home(family)` supplies the coordinate defaults as the strings they will
+ * be echoed as — the engine's own home view for that family, formatted once by the
+ * caller, so this module never restates a number the engine owns.
+ * `context.constants(family)` does the same for a family's own constants, from the
+ * wallpaper project's shipped anchors. `context.palettes` is the baked set, which
+ * is what makes `p` checkable at all.
  */
 export function parse(search, context) {
-  const home = context.home;
-  const palettes = context.palettes;
   const params = new URLSearchParams(stripLeadingQuestion(search));
 
   const seen = new Set();
@@ -198,43 +322,55 @@ export function parse(search, context) {
     seen.add(key);
   }
 
-  if (seen.size === 0) {
-    return { version: VERSION, family: FAMILIES[0], mode: MODES[0], ...home, aspect: { ...DEFAULT_ASPECT }, palette: context.defaultPalette, shade: defaultShade() };
-  }
+  if (seen.size === 0) return fresh(FAMILIES[0], MODES[0], context);
 
   const version = params.get("v");
   if (version === null) {
     throw new PermalinkError("the link carries no v, so there is no way to know which set of rules it was written against.");
   }
-  if (version !== String(VERSION)) {
+  if (!READS.includes(Number(version)) || !/^\d+$/.test(version)) {
     throw new PermalinkError(`this page speaks permalink v${VERSION} and the link says v=${version}. It was written for a version of this page that no longer exists, or for one that does not exist yet.`);
-  }
-
-  const known = new Set(["v", "f", "m", "x", "y", "w", "a", "p", ...SHADE_KEYS.map((s) => s.key)]);
-  for (const key of seen) {
-    if (known.has(key)) continue;
-    if (key in RESERVED_KEYS) {
-      throw new PermalinkError(`${key} is reserved and not yet read: ${RESERVED_KEYS[key]}.`);
-    }
-    throw new PermalinkError(`the link carries a key this page does not know: ${key}.`);
   }
 
   const family = params.get("f") ?? FAMILIES[0];
   if (!FAMILIES.includes(family)) {
-    if (RESERVED_FAMILIES.includes(family)) {
-      throw new PermalinkError(`${family} is not yet — this explorer draws mandelbrot, and the other families are reserved.`);
+    if (family in RENDER_ONLY_FAMILIES) {
+      throw new PermalinkError(`${family} is not a view: ${RENDER_ONLY_FAMILIES[family]}.`);
     }
     throw new PermalinkError(`there is no family called ${family}.`);
   }
 
   const mode = params.get("m") ?? MODES[0];
   if (!MODES.includes(mode)) {
-    if (RESERVED_MODES.includes(mode)) {
-      throw new PermalinkError(`${mode} is not yet — this explorer draws the smooth mode, and the engine's other production modes are reserved.`);
+    if (mode in NICHE_MODES) {
+      throw new PermalinkError(`${mode} is not offered here: ${NICHE_MODES[mode]}.`);
     }
     throw new PermalinkError(`there is no mode called ${mode}.`);
   }
 
+  const wanted = MODE_PARAMETERS[mode] ?? [];
+  const known = new Set([
+    "v", "f", "m", "x", "y", "w", "a", "p",
+    ...CONSTANTS[family], ...wanted, ...SHADE_KEYS.map((spec) => spec.key),
+  ]);
+  for (const key of seen) {
+    if (known.has(key)) continue;
+    if (CONSTANT_KEYS.includes(key)) {
+      throw new PermalinkError(`${key} is a constant of a family this link does not name — ${family} has ${CONSTANTS[family].length === 0 ? "none" : CONSTANTS[family].join(" and ")}.`);
+    }
+    if (PARAMETER_KEYS.has(key)) {
+      throw new PermalinkError(`the ${mode} mode has no ${key} parameter.`);
+    }
+    throw new PermalinkError(`the link carries a key this page does not know: ${key}.`);
+  }
+
+  const constants = {};
+  const seeds = context.constants(family);
+  for (const key of CONSTANTS[family]) {
+    constants[key] = coordinate(params.get(key), key) ?? seeds[key];
+  }
+
+  const home = context.home(family);
   const x = coordinate(params.get("x"), "x") ?? home.x;
   const y = coordinate(params.get("y"), "y") ?? home.y;
   const w = coordinate(params.get("w"), "w") ?? home.w;
@@ -245,8 +381,19 @@ export function parse(search, context) {
   const aspect = readAspect(params.get("a"));
 
   const palette = params.get("p") ?? context.defaultPalette;
-  if (!palettes.has(palette)) {
+  if (!context.palettes.has(palette)) {
     throw new PermalinkError(`there is no palette called ${palette} in the curated set.`);
+  }
+
+  const values = {};
+  for (const key of wanted) {
+    const text = params.get(key);
+    if (text === null) continue;
+    const value = finite(text, key);
+    if (!PARAMETERS[key].check(value)) {
+      throw new PermalinkError(`${key} has to be ${PARAMETERS[key].says}; the link says ${text}.`);
+    }
+    values[key] = value;
   }
 
   const shade = defaultShade();
@@ -254,33 +401,56 @@ export function parse(search, context) {
     const text = params.get(spec.key);
     if (text !== null) shade[spec.key] = spec.read(text);
   }
-  if (shade.mirror && palettes.get(palette).cyclic) {
+  if (shade.mirror && context.palettes.get(palette).cyclic) {
     throw new PermalinkError(`${palette} is cyclic, so folding it would halve the cycle it was drawn to have. Folding is the seam fix for a map that has a seam.`);
   }
 
-  return { version: VERSION, family, mode, x, y, w, aspect, palette, shade };
+  return { version: VERSION, family, constants, mode, params: values, x, y, w, aspect, palette, shade };
+}
+
+/** A view nobody has said anything about: this family, this mode, at home. */
+export function fresh(family, mode, context) {
+  const constants = {};
+  const seeds = context.constants(family);
+  for (const key of CONSTANTS[family]) constants[key] = seeds[key];
+  return {
+    version: VERSION,
+    family,
+    constants,
+    mode,
+    params: {},
+    ...context.home(family),
+    aspect: { ...DEFAULT_ASPECT },
+    palette: context.defaultPalette,
+    shade: defaultShade(),
+  };
 }
 
 /**
  * The canonical query string for a view: keys in contract order, defaults left out.
  *
  * This is what goes in the address bar, what "copy link" copies, and — over the
- * keys that decide the arithmetic rather than the color — what the field cache is
+ * keys that decide the arithmetic rather than the colour — what the field cache is
  * keyed on. Returned without a leading `?` so a caller can decide whether an empty
- * canonical string means `?v=1` or nothing at all.
+ * canonical string means `?v=2` or nothing at all.
  */
 export function emit(view, context) {
-  const home = context.home;
+  const home = context.home(view.family);
   const parts = [`v=${VERSION}`];
   if (view.family !== FAMILIES[0]) parts.push(`f=${encode(view.family)}`);
+  // Never conditional: see the contract note at the top of this file.
+  for (const key of CONSTANTS[view.family]) parts.push(`${key}=${encode(view.constants[key].text)}`);
   if (view.mode !== MODES[0]) parts.push(`m=${encode(view.mode)}`);
+  for (const key of MODE_PARAMETERS[view.mode] ?? []) {
+    const value = view.params[key];
+    if (value !== undefined) parts.push(`${key}=${encode(number(value))}`);
+  }
   for (const key of ["x", "y", "w"]) {
     if (view[key].text !== home[key].text) parts.push(`${key}=${encode(view[key].text)}`);
   }
   if (view.aspect.across !== DEFAULT_ASPECT.across || view.aspect.down !== DEFAULT_ASPECT.down) {
     parts.push(`a=${view.aspect.across}:${view.aspect.down}`);
   }
-  // Never conditional: see the contract note at the top of this file.
   parts.push(`p=${encode(view.palette)}`);
   for (const spec of SHADE_KEYS) {
     const value = view.shade[spec.key];
@@ -311,13 +481,22 @@ export function canonicalize(search, context) {
 /**
  * The part of the canonical string that decides the arithmetic.
  *
- * The field is what costs seconds, and none of the palette or shade keys can
- * change it — that is the whole point of computing the field apart from the
- * color. So the cache is keyed on the geometry alone, plus the pixel grid it was
- * sampled on, and changing a palette hits a field that is already there.
+ * The field is what costs seconds, and for every mode but four none of the palette
+ * or shade keys can change it — that is the whole point of computing the field
+ * apart from the colour. So the cache is keyed on the geometry alone, plus the
+ * pixel grid it was sampled on, and changing a palette hits a field that is already
+ * there.
+ *
+ * **A direct trap is the exception and is keyed on everything.** Those four modes
+ * composite samples *from* the gradient during the iteration and never produce a
+ * field, so their colour is not separable from their arithmetic and a recolor is a
+ * re-render. `direct` is the plan's own answer to that question, so this module
+ * does not have to hold a list of which modes they are.
  */
-export function fieldKey(view, context, pixelWidth, pixelHeight) {
-  const geometry = { ...view, palette: context.defaultPalette, shade: defaultShade() };
+export function fieldKey(view, context, pixelWidth, pixelHeight, direct = false) {
+  const geometry = direct
+    ? view
+    : { ...view, palette: context.defaultPalette, shade: defaultShade() };
   return `${emit(geometry, context)}&px=${pixelWidth}x${pixelHeight}`;
 }
 
@@ -344,7 +523,7 @@ function stripLeadingQuestion(search) {
 }
 
 function coordinate(text, key) {
-  if (text === null) return null;
+  if (text === null || text === undefined) return null;
   if (text.length > COORDINATE_LIMIT) {
     throw new PermalinkError(`${key} is ${text.length} characters, and a coordinate is capped at ${COORDINATE_LIMIT}.`);
   }

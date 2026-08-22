@@ -2,9 +2,9 @@
   "built": "2026-08-21",
   "crate": "explorer/engine-wasm",
   "engine_version": "0.1.0",
-  "gzip_bytes": 70639,
-  "raw_bytes": 190240,
+  "gzip_bytes": 161358,
+  "raw_bytes": 470300,
   "rustc": "1.96.0 (ac68faa20 2026-05-25)",
   "schema": 1,
-  "wallpapers_commit": "b6be9e085683874340b650069fd935433ce7512b"
+  "wallpapers_commit": "8028a8a15f2c40ac124d162efd689a0bebacf18e"
 }

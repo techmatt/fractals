@@ -1,15 +1,22 @@
-// The explorer page: a canvas, a small bar, and an address bar that is always a
-// valid permalink.
+// The explorer page: a canvas, a strip of controls, and an address bar that is
+// always a valid permalink.
 //
 // Everything about what a link MEANS lives in `permalink.js` and everything about
 // how a picture is MADE lives in `render.js`. What is here is the part a reader
-// touches — dragging, the wheel, the keys, the picker — and the one rule that
+// touches — dragging, the wheel, the keys, the pickers — and the one rule that
 // binds them together: after every settled view the URL is rewritten to the
 // canonical string, so the thing in the address bar is the thing to send somebody.
+//
+// The controls are **derived, never typed**. Which families exist and which modes
+// are offered come from the contract; what a mode is for comes from the baked
+// catalog; which parameters a mode has comes from the contract and what they are
+// set to comes from the module's own plan. Nothing here holds a second opinion
+// about the engine's catalog, so a mode retuned over there arrives by rebuilding.
 
 import * as link from "./permalink.js";
+import { CONSTANTS as ANCHORS, MODES as IDENTITIES } from "./catalog.js";
 import { DEFAULT_PALETTE, PALETTES, PROVENANCE } from "./palettes.js";
-import { PREVIEW_DIVISOR, Renderer, pixelGrid } from "./render.js";
+import { PREVIEW_DIVISOR, Renderer, familySpecOf, pixelGrid, specOf } from "./render.js";
 
 /** How far one arrow key moves the view, as a share of its width. */
 const PAN_STEP = 0.1;
@@ -17,6 +24,22 @@ const PAN_STEP = 0.1;
 const KEY_ZOOM = 1.4;
 /** How much one wheel notch multiplies the width by. */
 const WHEEL_ZOOM = 1.15;
+
+/** How a mode's parameter is stepped in its control, and what it is called.
+ *
+ *  The label is the reader's word for it and the step is a sensible nudge; neither
+ *  is an engine constant and neither bounds anything — the contract refuses a value
+ *  out of range and the engine refuses it again. What a parameter is SET to when
+ *  nobody has moved it comes from the module's plan, never from here. */
+const CONTROLS = {
+  density: { label: "Stripe density", step: 1 },
+  radius: { label: "Trap radius", step: 0.1 },
+  sigma: { label: "Kernel width", step: 0.05 },
+  weight: { label: "Texture", step: 0.05 },
+  shift: { label: "Shift", step: 0.1 },
+  threshold: { label: "Threshold", step: 0.01 },
+  opacity: { label: "Opacity", step: 0.05 },
+};
 
 const canvas = document.getElementById("canvas");
 const screen = canvas.getContext("2d", { alpha: false });
@@ -27,7 +50,11 @@ const stage = document.getElementById("stage");
 const bar = document.getElementById("bar");
 const status = document.getElementById("status");
 const readout = document.getElementById("readout");
+const familyPicker = document.getElementById("family");
+const modePicker = document.getElementById("mode");
 const picker = document.getElementById("palette");
+const constantStrip = document.getElementById("constants");
+const paramStrip = document.getElementById("params");
 const copyButton = document.getElementById("copy");
 const notice = document.getElementById("notice");
 
@@ -36,6 +63,7 @@ let contract = null;
 let view = null;
 let grid = { width: 0, height: 0 };
 let settleTimer = 0;
+const homes = new Map();
 
 // ------------------------------------------------------------------- what to say
 
@@ -54,6 +82,42 @@ function refuse(message) {
 function clearNotice() {
   notice.hidden = true;
   notice.textContent = "";
+}
+
+// ------------------------------------------------------------------- the contract
+
+/** A family's shipped constants, as the decimal strings they were recorded as. */
+function seedConstants(family) {
+  const held = {};
+  for (const [key, text] of Object.entries(ANCHORS[family] ?? {})) {
+    held[key] = { text, value: Number(text) };
+  }
+  return held;
+}
+
+/**
+ * A family's home view, asked of the module once and remembered.
+ *
+ * The constants are handed over because the engine's family spec wants them, not
+ * because the answer depends on them: a Julia set is a different shape for every
+ * `c`, so no one frame contains every member and the whole plane is where it comes
+ * home to whatever `c` it is.
+ */
+function homeOf(family) {
+  if (!homes.has(family)) {
+    const raw = renderer.home(familySpecOf(family, seedConstants(family)));
+    homes.set(family, {
+      x: link.coordinateOf(raw.x),
+      y: link.coordinateOf(raw.y),
+      w: link.coordinateOf(raw.w),
+    });
+  }
+  return homes.get(family);
+}
+
+/** What the module makes of the current view, at a size that does not matter. */
+function planOf(current) {
+  return renderer.plan(specOf(current, 16, 9, { colormap: false }));
 }
 
 // ------------------------------------------------------------------- the geometry
@@ -121,14 +185,14 @@ function present(image) {
   screen.drawImage(frame, 0, 0);
 }
 
-/** Re-color the picture already on the screen, with no field computed. */
-function reshade() {
-  const key = link.fieldKey(view, contract, grid.width, grid.height);
+/** Re-colour the picture already on the screen, with no field computed. */
+function reshade(direct) {
+  const key = link.fieldKey(view, contract, grid.width, grid.height, direct);
   const field = renderer.cached(key);
   if (field === undefined) return false;
   const shaded = renderer.shade(field, view);
   present(shaded.image);
-  say(`recolored in ${shaded.elapsed.toFixed(0)} ms`);
+  say(`recoloured in ${shaded.elapsed.toFixed(0)} ms`);
   settle();
   return true;
 }
@@ -141,14 +205,19 @@ async function draw() {
   const pass = ++drawing;
   renderer.cancel();
 
-  if (reshade()) return;
+  const shape = planOf(view);
+  if (!shape.ok) {
+    say(shape.why);
+    return;
+  }
+  if (reshade(shape.direct)) return;
 
   const previewGrid = {
     width: grid.width / PREVIEW_DIVISOR,
     height: grid.height / PREVIEW_DIVISOR,
   };
-  const previewKey = link.fieldKey(view, contract, previewGrid.width, previewGrid.height);
-  const fullKey = link.fieldKey(view, contract, grid.width, grid.height);
+  const previewKey = link.fieldKey(view, contract, previewGrid.width, previewGrid.height, shape.direct);
+  const fullKey = link.fieldKey(view, contract, grid.width, grid.height, shape.direct);
 
   try {
     const cachedPreview = renderer.cached(previewKey);
@@ -201,6 +270,99 @@ function settle() {
   settleTimer = setTimeout(() => {
     history.replaceState(null, "", `?${link.emit(view, contract)}`);
   }, 0);
+}
+
+// ------------------------------------------------------------------- the controls
+
+/** Fill a select with names, showing what each one is for where that is known. */
+function fill(select, names, titles) {
+  select.replaceChildren();
+  for (const name of names) {
+    const option = document.createElement("option");
+    option.value = name;
+    option.textContent = name;
+    if (titles && titles.get(name)) option.title = titles.get(name);
+    select.append(option);
+  }
+}
+
+/**
+ * The text boxes for a family's own constants, or nothing where it has none.
+ *
+ * A constant is typed rather than dragged because it is half of a dynamical
+ * location's identity: what belongs in the box is the decimal string a record
+ * carries, and a slider cannot spell one.
+ */
+function buildConstants() {
+  constantStrip.replaceChildren();
+  for (const key of link.CONSTANTS[view.family]) {
+    const label = document.createElement("label");
+    label.textContent = { cx: "c re", cy: "c im", px: "p re", py: "p im" }[key];
+    label.htmlFor = `constant-${key}`;
+    const input = document.createElement("input");
+    input.type = "text";
+    input.id = `constant-${key}`;
+    input.className = "constant";
+    input.value = view.constants[key].text;
+    input.addEventListener("change", () => {
+      const text = input.value.trim();
+      const value = Number(text);
+      if (text === "" || !Number.isFinite(value)) {
+        say(`${label.textContent} has to be a decimal number — “${input.value}” is not one`);
+        input.value = view.constants[key].text;
+        return;
+      }
+      view = { ...view, constants: { ...view.constants, [key]: { text, value } } };
+      homes.delete(view.family);
+      draw();
+    });
+    constantStrip.append(label, input);
+  }
+}
+
+/**
+ * The number boxes for the current mode's own parameters.
+ *
+ * The set comes from the contract and the value from the module's plan, so a box
+ * opens at whatever the engine's catalog settled on. A box the reader has not
+ * touched stays out of the link — see the note in `permalink.js` on why a mode's
+ * parameter is not an always-emitted key.
+ */
+function buildParams() {
+  paramStrip.replaceChildren();
+  const settled = planOf(view).params ?? {};
+  for (const key of link.MODE_PARAMETERS[view.mode] ?? []) {
+    const control = CONTROLS[key];
+    const label = document.createElement("label");
+    label.textContent = control.label;
+    label.htmlFor = `param-${key}`;
+    const input = document.createElement("input");
+    input.type = "number";
+    input.id = `param-${key}`;
+    input.className = "param";
+    input.step = control.step;
+    input.value = view.params[key] ?? settled[key] ?? "";
+    input.addEventListener("change", () => {
+      const value = Number(input.value);
+      if (!Number.isFinite(value)) {
+        input.value = view.params[key] ?? settled[key] ?? "";
+        return;
+      }
+      view = { ...view, params: { ...view.params, [key]: value } };
+      draw();
+    });
+    paramStrip.append(label, input);
+  }
+}
+
+/** Whatever the reader just chose, drawn — and the strips rebuilt around it. */
+function rebuild() {
+  familyPicker.value = view.family;
+  modePicker.value = view.mode;
+  picker.value = view.palette;
+  buildConstants();
+  buildParams();
+  stage.style.aspectRatio = `${view.aspect.across} / ${view.aspect.down}`;
 }
 
 // ------------------------------------------------------------------- the gestures
@@ -295,8 +457,8 @@ canvas.addEventListener(
   { passive: false },
 );
 
-/** Form controls keep their own keys: the palette list is a select, and a reader
- *  arrowing through it is picking a colour, not panning the plane. */
+/** Form controls keep their own keys: the pickers are selects and the constants are
+ *  text boxes, and a reader typing in one is not panning the plane. */
 const TYPING = new Set(["SELECT", "INPUT", "TEXTAREA", "BUTTON", "OPTION"]);
 
 window.addEventListener("keydown", (event) => {
@@ -321,6 +483,28 @@ window.addEventListener("keydown", (event) => {
     event.preventDefault();
     zoomAbout(grid.width / 2, grid.height / 2, KEY_ZOOM);
   }
+});
+
+/** A new family is a new plane, so it opens at that plane's own home view. The
+ *  mode, the palette and the shade recipe are the reader's and travel with them. */
+familyPicker.addEventListener("change", () => {
+  view = {
+    ...link.fresh(familyPicker.value, view.mode, contract),
+    params: view.params,
+    aspect: view.aspect,
+    palette: view.palette,
+    shade: view.shade,
+  };
+  rebuild();
+  draw();
+});
+
+/** A new mode keeps the place and drops the parameters, because they belonged to
+ *  the mode that is being left. */
+modePicker.addEventListener("change", () => {
+  view = { ...view, mode: modePicker.value, params: {} };
+  buildParams();
+  draw();
 });
 
 picker.addEventListener("change", () => {
@@ -358,23 +542,16 @@ window.addEventListener("resize", () => {
 async function main() {
   renderer = await Renderer.start(new URL("./engine.wasm", import.meta.url));
 
-  const home = renderer.home();
   contract = {
-    home: {
-      x: link.coordinateOf(home.x),
-      y: link.coordinateOf(home.y),
-      w: link.coordinateOf(home.w),
-    },
+    home: homeOf,
+    constants: seedConstants,
     palettes: PALETTES,
     defaultPalette: DEFAULT_PALETTE,
   };
 
-  for (const name of PALETTES.keys()) {
-    const option = document.createElement("option");
-    option.value = name;
-    option.textContent = name;
-    picker.append(option);
-  }
+  fill(familyPicker, link.FAMILIES);
+  fill(modePicker, link.MODES, IDENTITIES);
+  fill(picker, [...PALETTES.keys()]);
 
   try {
     view = link.parse(window.location.search, contract);
@@ -383,15 +560,14 @@ async function main() {
     return;
   }
 
-  picker.value = view.palette;
-  stage.style.aspectRatio = `${view.aspect.across} / ${view.aspect.down}`;
   document.getElementById("provenance").textContent =
-    `${PROVENANCE.count} curated palettes, baked from fractal-wallpapers ` +
-    `${PROVENANCE.wallpapers_commit.slice(0, 12)} on ${PROVENANCE.baked}.`;
+    `${PROVENANCE.count} curated palettes and ${IDENTITIES.size} production modes, baked from ` +
+    `fractal-wallpapers ${PROVENANCE.wallpapers_commit.slice(0, 12)} on ${PROVENANCE.baked}.`;
 
   clearNotice();
   stage.hidden = false;
   bar.hidden = false;
+  rebuild();
   resize();
   draw();
 }
