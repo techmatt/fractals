@@ -11,7 +11,7 @@ export const PROVENANCE = {
   "baked": "2026-08-21",
   "constants_from": "data/anchors.jsonl",
   "modes_from": "fractal-engine modes",
-  "wallpapers_commit": "f275e13687532f8bd0b15f268c31077dbe917048"
+  "wallpapers_commit": "8db947410f4704cc92d744ce568e82af6bdeb48a"
 };
 
 export const MODES = new Map([

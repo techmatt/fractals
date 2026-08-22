@@ -19,7 +19,7 @@ export const PROVENANCE = {
   "default_because": "the article's mandelbrot smooth figures are colored through twilight_shifted",
   "offered": 77,
   "source": "data/palettes/*.json",
-  "wallpapers_commit": "f275e13687532f8bd0b15f268c31077dbe917048"
+  "wallpapers_commit": "8db947410f4704cc92d744ce568e82af6bdeb48a"
 };
 
 export const DEFAULT_PALETTE = "twilight_shifted";

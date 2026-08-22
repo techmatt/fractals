@@ -61,6 +61,28 @@
     <button type="button" id="copy">Copy link</button>
   </div>
 
+  <div class="bar" id="download" hidden>
+    <span class="group">
+      <label for="download-size">Download</label>
+      <select id="download-size"></select>
+    </span>
+    <span class="group" id="download-custom" hidden>
+      <label for="download-width">Width</label>
+      <input type="number" id="download-width" class="param" min="16" max="8192" step="16">
+      <label for="download-height">Height</label>
+      <input type="number" id="download-height" class="param" min="16" max="8192" step="16">
+    </span>
+    <span class="group">
+      <label for="download-supersample">Samples per pixel</label>
+      <select id="download-supersample"></select>
+    </span>
+    <button type="button" id="download-go">Download PNG</button>
+    <button type="button" id="download-cancel" hidden>Cancel</button>
+    <progress id="download-progress" max="1" value="0" hidden></progress>
+  </div>
+
+  <p class="help" id="download-help"></p>
+
   <p class="status" id="status"></p>
   <p class="readout" id="readout"></p>
 

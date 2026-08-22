@@ -113,7 +113,7 @@ function colormapOf(name) {
  * shade-time input, and baking a lookup table into every band would be a table per
  * band.
  */
-export function specOf(view, width, height, { colormap = true } = {}) {
+export function specOf(view, width, height, { colormap = true, supersample = 1 } = {}) {
   const spec = {
     schema: 1,
     family: familySpecOf(view.family, view.constants),
@@ -122,6 +122,9 @@ export function specOf(view, width, height, { colormap = true } = {}) {
     mode: view.mode,
     palette: view.shade,
   };
+  // Omitted at one, which is the module's own default, so the screen's specs are
+  // the strings they have always been and the plan cache does not split in two.
+  if (supersample > 1) spec.supersample = supersample;
   if (Object.keys(view.params).length > 0) spec.params = view.params;
   if (colormap) spec.colormap = colormapOf(view.palette);
   return spec;
@@ -270,18 +273,23 @@ export class Renderer {
    * RGBA for one that paints during the iteration. Which it is comes from the plan,
    * and both are assembled by rows the same way.
    */
-  field(view, width, height, onProgress) {
+  field(view, width, height, { supersample = 1, onProgress } = {}) {
     this.cancel();
     const generation = this.generation;
 
-    const shape = this.plan(specOf(view, width, height, { colormap: false }));
+    const shape = this.plan(specOf(view, width, height, { colormap: false, supersample }));
     if (!shape.ok) return Promise.reject(new Error(shape.why));
     // A direct trap composites samples from the gradient as it iterates, so its
     // band is already coloured and its spec needs the map in it.
-    const spec = JSON.stringify(specOf(view, width, height, { colormap: shape.direct }));
+    const spec = JSON.stringify(specOf(view, width, height, { colormap: shape.direct, supersample }));
+    // A band is a range of OUTPUT rows at every supersample, which is what lets a
+    // direct trap reduce its own band. What comes back behind those rows is the
+    // sample grid, and that is what the lanes are sized on.
+    const sampleWidth = width * supersample;
+    const sampleHeight = height * supersample;
     const values = shape.direct
       ? new Uint8ClampedArray(width * height * 4)
-      : new Float64Array(width * height * shape.lanes);
+      : new Float64Array(sampleWidth * sampleHeight * shape.lanes);
 
     const bands = [];
     const target = Math.max(
@@ -303,6 +311,9 @@ export class Renderer {
         shape,
         width,
         height,
+        supersample,
+        sampleWidth,
+        sampleHeight,
         values,
         total: bands.length,
         pending: bands.length,
@@ -334,7 +345,7 @@ export class Renderer {
       rowEnd,
       bytes: job.shape.direct
         ? span * job.width * 4
-        : span * job.width * job.shape.lanes * 8,
+        : span * job.supersample * job.sampleWidth * job.shape.lanes * 8,
     });
   }
 
@@ -361,6 +372,7 @@ export class Renderer {
         values: job.values,
         width: job.width,
         height: job.height,
+        supersample: job.supersample,
         shape: job.shape,
         elapsed: performance.now() - job.started,
       });
@@ -378,17 +390,17 @@ export class Renderer {
    * painted band is one run of RGBA.
    */
   #place(job, message) {
-    const span = message.rowEnd - message.rowStart;
     if (job.shape.direct) {
       job.values.set(new Uint8ClampedArray(message.band), message.rowStart * job.width * 4);
       return;
     }
+    const span = (message.rowEnd - message.rowStart) * job.supersample;
     const band = new Float64Array(message.band);
-    const stride = job.width * job.height;
+    const stride = job.sampleWidth * job.sampleHeight;
     for (let lane = 0; lane < job.shape.lanes; lane++) {
       job.values.set(
-        band.subarray(lane * span * job.width, (lane + 1) * span * job.width),
-        lane * stride + message.rowStart * job.width,
+        band.subarray(lane * span * job.sampleWidth, (lane + 1) * span * job.sampleWidth),
+        lane * stride + message.rowStart * job.supersample * job.sampleWidth,
       );
     }
   }
@@ -412,15 +424,16 @@ export class Renderer {
 
     const wasm = this.shader;
     const [pointer, length] = this.#put(
-      JSON.stringify(specOf(view, field.width, field.height)),
+      JSON.stringify(specOf(view, field.width, field.height, { supersample: field.supersample })),
     );
     const lanes = new Uint8Array(field.values.buffer, field.values.byteOffset, field.values.byteLength);
     const lanePointer = wasm.alloc(lanes.length);
     new Uint8Array(wasm.memory.buffer, lanePointer, lanes.length).set(lanes);
 
-    const out = wasm.shade(pointer, length, lanePointer);
+    // `shade` takes the lanes buffer and frees it — see its doc comment — so the
+    // spec is deallocated here and the lanes deliberately are not.
+    const out = wasm.shade(pointer, length, lanePointer, lanes.length);
     wasm.dealloc(pointer, length);
-    wasm.dealloc(lanePointer, lanes.length);
     if (out === 0) throw new Error("the renderer refused this palette recipe");
 
     const count = field.width * field.height;
@@ -431,6 +444,74 @@ export class Renderer {
       elapsed: performance.now() - started,
     };
   }
+}
+
+/**
+ * Colour an assembled field in a worker of its own, and throw the worker away.
+ *
+ * The download's shade, and only the download's. On this thread it is
+ * milliseconds at a canvas's size and **seconds at a wallpaper's** — a 2560x1440
+ * at four samples per pixel is sixty-four times a screen's samples — and a page
+ * whose whole architecture is that the main thread never blocks cannot spend ten
+ * of those seconds unable to repaint its own cancel button.
+ *
+ * A worker of its own, and not one of the pool's, because a wasm heap **never
+ * gives memory back**: the instance that colours a fifty-nine-million-sample
+ * frame grows to a couple of gigabytes and stays there for the rest of the
+ * session. Terminating the worker is the only way to hand that back, and it costs
+ * one instantiation of a module that is already compiled.
+ *
+ * `holder` is given a `stop` that ends the colouring for real — this is the one
+ * place on the page where terminating a worker is the right answer rather than
+ * the lazy one. A field band is cancelled by generation because killing a worker
+ * mid-band would cost a wasm instantiation to save one band; a shade is a single
+ * indivisible pass of many seconds, there is nothing to let it finish for, and it
+ * is holding the memory. A stopped shade resolves with `null`.
+ */
+export function shadeApart(module, field, view, holder = {}) {
+  return new Promise((resolve, reject) => {
+    const worker = new Worker(new URL("./worker.js", import.meta.url), { type: "module" });
+    const started = performance.now();
+    holder.stop = () => {
+      worker.terminate();
+      resolve(null);
+    };
+    worker.onerror = (event) => {
+      worker.terminate();
+      reject(new Error(event.message ?? "the shade worker stopped"));
+    };
+    worker.onmessage = (event) => {
+      if (event.data.kind === "ready") {
+        const lanes = field.values;
+        worker.postMessage(
+          {
+            kind: "shade",
+            spec: JSON.stringify(
+              specOf(view, field.width, field.height, { supersample: field.supersample }),
+            ),
+            lanes: lanes.buffer,
+            bytes: field.width * field.height * 4,
+          },
+          [lanes.buffer],
+        );
+        return;
+      }
+      worker.terminate();
+      if (event.data.refused) {
+        reject(new Error("the renderer refused this palette recipe"));
+        return;
+      }
+      resolve({
+        image: new ImageData(
+          new Uint8ClampedArray(event.data.image),
+          field.width,
+          field.height,
+        ),
+        elapsed: performance.now() - started,
+      });
+    };
+    worker.postMessage({ kind: "start", module });
+  });
 }
 
 /**

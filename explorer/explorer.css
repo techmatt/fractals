@@ -16,6 +16,7 @@
 .explorer-page .notice,
 .explorer-page .status,
 .explorer-page .readout,
+.explorer-page .help,
 .explorer-page .provenance,
 .explorer-page .section-nav > *,
 .explorer-page footer > * { max-width: var(--measure); }
@@ -102,6 +103,34 @@
   cursor: pointer;
 }
 .bar button:hover { border-color: var(--underline); color: var(--link); }
+
+/* The download's own line: what a size will cost before it is asked for, how far
+   along it is while it runs, and what it actually took. Prose rather than
+   monospace, because it is a sentence and not a coordinate. */
+.help {
+  margin: 0.5rem 0 0;
+  font-size: 0.875rem;
+  color: var(--ink-dim);
+}
+.help:empty { display: none; }
+
+/* The bar's progress, at the height of the controls beside it so a running
+   download does not change how tall the strip is. */
+.bar progress {
+  width: 12rem;
+  height: 0.5rem;
+  accent-color: var(--link);
+}
+
+/* A control that cannot be used says so by fading, and stops answering the
+   pointer: while a download is drawing, the view it is drawing may not move. */
+.bar select:disabled,
+.bar input:disabled,
+.bar button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.bar button:disabled:hover { border-color: var(--rule); color: var(--ink); }
 
 /* What the renderer is doing, and where the view is. Tabular figures so a
    coordinate does not jitter sideways as its digits change under the cursor. */

@@ -25,6 +25,7 @@ design doc is what was intended.
 index.html            the page
 explorer.css          its own stylesheet, on top of the site's
 explorer.js           what a reader touches: drag, wheel, keys, pickers, copy link
+download.js           the same render at a wallpaper's size, and what caps it
 render.js             the worker pool, the plan, the field passes, the shade
 worker.js             one worker: one wasm instance, one band of rows
 permalink.js          the link contract — parse, validate, canonicalize
@@ -80,7 +81,7 @@ Committed beside the module, `engine.manifest.json` records what it was built fr
 | `rustc` | the compiler, with its commit and date |
 | `wallpapers_commit` | the sibling checkout's `HEAD` at bake time |
 | `engine_changes` | every change this consumer has needed in the engine, one line each |
-| `raw_bytes` / `gzip_bytes` | 470,300 raw, **161,358 gzipped** |
+| `raw_bytes` / `gzip_bytes` | 473,427 raw, **162,338 gzipped** |
 
 `engine_changes` is typed, in `builder/explorer.py`, and is the condition CLAUDE.md puts
 on a website prompt touching the sibling engine at all: a zero-behaviour change is allowed
@@ -133,7 +134,7 @@ so that JavaScript sits in it:
 ```
 plan(spec)                -> JSON        what this spec implies, or why not
 compute_band(spec, rows)  -> f64 lanes   in a worker, a band at a time
-shade(spec, lanes)        -> RGBA bytes  on the main thread, milliseconds
+shade(spec, lanes)        -> RGBA bytes  a frame at a time, and it owns them
 ```
 
 **All three take the same object**: the engine's own render spec, minus the two keys that
@@ -194,6 +195,12 @@ rather than the whole frame's, and it is what bounds how long a cancel takes. A 
 knows nothing about families or modes: it is handed the spec as text and the number of
 bytes its answer will be, both worked out on the main thread from the plan.
 
+**A band is a range of output rows, never of samples.** At one sample per pixel the two
+are the same range, which is what this page has always drawn; above it a band is the
+`ss` sample rows behind those output rows. One rule rather than two, because a caller
+that had to know which of the two a row index meant would get it wrong exactly once —
+and it is the cut that lets a direct trap reduce its own band before sending it.
+
 A band's coordinates are formed from the **whole** viewport, with the global row index —
 so the assembled field is bit for bit what a whole-frame pass through the same module
 produces, and there are no seams between bands. What is measured and what is argued are
@@ -208,7 +215,16 @@ pass, from the global row indices above — not measured, and the spike's module
 one-export one rather than this page's. **Not compared at all:** the explorer end to end
 against a native render of the same view, at any family or mode.
 
-**Shade takes the whole frame, never a band.** The engine normalizes a frame against its
+**Shade takes the whole frame, and takes the buffer with it.** It is the one place on
+this boundary where JavaScript hands a buffer over rather than lending it, and a
+download is the reason: the lanes are eight bytes for every sample of every lane, the
+linear-light colour made from them is twenty-four bytes for every sample, and holding
+both at once is what puts a two-lane mode at a wallpaper's size past what a 32-bit
+address space has. `shade` frees the lanes the moment their numbers have been read into
+fields — before a byte of colour is allocated — and frees them on every path including
+a refusal, because a caller cannot be told sometimes.
+
+**And never a band.** The engine normalizes a frame against its
 own distribution, and at the shipped default (`Transfer::Value`) that is a percentile
 stretch — the 0.5th and 99.5th percentiles of the frame's valid samples. A band shaded
 alone would be stretched against the wrong histogram and would not match its neighbours.
@@ -241,12 +257,73 @@ nothing, which is the whole point of computing the two apart.
 **`resample::downsample` at one sample per pixel is the identity** — the Lanczos taps
 collapse to 1 at integer offsets — and it still runs both tap passes over a
 24-byte-per-pixel linear buffer. It is most of the shade cost. Kept, because the last
-step of a picture is the engine's and not this page's.
+step of a picture is the engine's and not this page's — and above one sample per pixel
+it stops being the identity and becomes the whole reason a download is worth taking.
+
+**A direct trap's band is padded, and every other band is not.** A field is shaded whole,
+so a band of it is just rows; a direct trap arrives *encoded*, and Lanczos-3 reaches
+three output pixels either side, which is `3 * ss` sample rows past the band's own. So
+above one sample per pixel such a band iterates that many rows past itself on each side,
+reduces through `resample::build_taps_at` at an origin saying where its first output row
+sits in what it computed, and keeps only its own. Without it every pair of bands would
+show a darker line where two clipped kernels were renormalized. At one sample per pixel
+the pad is zero, because the taps read nothing but their own row.
 
 **Nothing shared.** No `SharedArrayBuffer`, no cross-origin-isolation headers, no COOP,
 no COEP, no service worker to install them. A worker's band is copied off the wasm heap
 and transferred once, when it is done. That is what lets this page be plain files on
 GitHub Pages.
+
+## The download
+
+The view on the screen, drawn again at a wallpaper's size, and it is **the same render**:
+`Renderer.field` over the same pool, the same spec, the same iteration cap, with two
+numbers changed. There is no second render path, deliberately — a download that drew the
+picture its own way would eventually draw a different picture, and nobody would know
+which of the two was the renderer's.
+
+**Supersampling is the engine's.** At `ss` the frame is iterated on a grid `ss` times
+finer on each axis and reduced by `resample::downsample` inside wasm: Lanczos-3 in linear
+light, the filter a finished wallpaper is written through. Scaling a canvas would be a box
+average over gamma-encoded bytes, which is a different picture and a worse one. Held to
+the strongest check there is — a 2560x1440 at `ss=4` downloaded from this page and the
+same spec through `fractal-engine render` differ in **0 of 3,686,400 pixels**. That is
+the comparison the port never had: the spike measured one export against the CLI, and
+this is the page's own pool, its own banding and its own shade against it.
+
+**Shape is not resolution.** A link carries an aspect and never a pixel count, and the
+plane *width* is what a view is, so downloading at a different shape keeps that width and
+shows more or less height rather than cropping. The control says so in one line.
+
+**Off the main thread, both halves.** The field is the pool as always. The shade is
+milliseconds at a canvas's size and *seconds* at a wallpaper's — a 2560x1440 at `ss=4` is
+sixty-four times a screen's samples — so it goes to a worker of its own, which is then
+**terminated**. A wasm heap never gives memory back, and the instance that colours a
+fifty-nine-million-sample frame grows to a couple of gigabytes and would hold them for
+the rest of the session. One instantiation of an already-compiled module is what that
+costs.
+
+**The cap is memory, not patience.** Colouring holds the whole frame in one heap at once,
+and the linear-light buffer is twenty-four bytes for every *sample*. That is the engine's
+own shape and a native render carries it too; what is different is that `wasm32` has a
+four-gigabyte address space and nowhere to spill, and `panic = "abort"` turns an
+allocation failure into a trap. Measured: 2560x1440 at `ss=4` — **59.0 M samples** —
+completes for every coloring shape, including the modulate, whose texture lane is the one
+the engine never narrows. 3840x2160 at `ss=4` is 132.7 M and traps. So the ceiling is
+**60 million samples**, and it is on samples rather than pixels because a supersample
+costs its square. Output is capped separately at 8192 a side and 33.5 M pixels, which is
+the canvas a PNG is encoded on and is far under the lowest browser cap in circulation.
+A view that `f64` still resolves on the screen can be one it does not resolve on a grid
+four times finer, and that refusal is the engine's own sentence, shown as it stands.
+
+**The estimate is a table until it is a measurement.** Before a render the wait is the
+per-mode field cost below, scaled by sample count and divided by the pool; from the first
+band that lands it is the measured rate, and the table is not consulted again. The bar
+advances by band, and cancel is by generation exactly as a pan is.
+
+While a download is drawing, **the view is held still** — a wheel notch would cancel the
+pass it is waiting on, and losing a two-minute render to a stray scroll is not a trade
+anybody would make. The cancel button is the way out and is the only live control.
 
 ## Measured
 
@@ -329,10 +406,12 @@ mandelbrot `smooth_trap_circle` 1.47 s, and the worst seen, julia5 `threads` at 
 0.25, 7.77 s. Shade is main-thread and pool-independent at 150–500 ms, and a preview
 lands at a sixteenth of the samples before any of it.
 
-**The module** is 470,300 bytes raw and 161,358 gzipped, against draft 1's 190,240 and
+**The module** is 473,427 bytes raw and 162,338 gzipped, against draft 1's 190,240 and
 70,639. The extra is the eighteen modes' worth of engine that is now reachable — every
 field reduction, both blends, the trap painter, all nine families — plus `serde_json` and
-the derived readers for the spec. 12.6 KB of it is the nine specialized loops.
+the derived readers for the spec. 12.6 KB of it is the nine specialized loops, and 3.1 KB
+is the download: a supersample in the spec, a padded direct-trap band, and a `shade` that
+frees what it was handed.
 
 ## The permalink contract, version 2
 
@@ -526,7 +605,6 @@ arrived by mechanical conversion says so in its `source` line, and the rest were
 
 Listed, not designed:
 
-- **Download at chosen dimensions**, which needs a render path that is not the canvas.
 - **Deep zoom**, which needs perturbation and is a different renderer, not a wider one.
 - **The expensive modes' wait.** `stripe` over a whole 1280x720 frame is 46 s on one
   thread and about a sixth of that on a pool. Specializing the loop per family and mode

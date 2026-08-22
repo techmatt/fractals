@@ -16,6 +16,7 @@
 import * as link from "./permalink.js";
 import { CONSTANTS as ANCHORS, MODES as IDENTITIES } from "./catalog.js";
 import { DEFAULT_PALETTE, PALETTES, PROVENANCE } from "./palettes.js";
+import * as download from "./download.js";
 import { PREVIEW_DIVISOR, Renderer, familySpecOf, pixelGrid, specOf } from "./render.js";
 
 /** How far one arrow key moves the view, as a share of its width. */
@@ -57,13 +58,38 @@ const constantStrip = document.getElementById("constants");
 const paramStrip = document.getElementById("params");
 const copyButton = document.getElementById("copy");
 const notice = document.getElementById("notice");
+const downloadBar = document.getElementById("download");
 
 let renderer = null;
 let contract = null;
 let view = null;
 let grid = { width: 0, height: 0 };
 let settleTimer = 0;
+let panel = null;
 const homes = new Map();
+
+/** Whether a download is drawing the current view.
+ *
+ *  While one is, the view is **held still**: a wheel notch that pans the canvas
+ *  would cancel the pass the download is waiting on, and a reader who has been
+ *  watching a two-minute render would lose it to a scroll they did not mean.
+ *  Everything that would move the view checks this and says so; the cancel button
+ *  is the way out and is the only control in the strip still live. */
+let busy = false;
+
+function locked() {
+  if (!busy) return false;
+  say("a download is rendering this view — cancel it to move");
+  return true;
+}
+
+/** Freeze or release every control that would change what is being drawn. */
+function setBusy(on) {
+  busy = on;
+  for (const control of [familyPicker, modePicker, picker, copyButton]) control.disabled = on;
+  for (const control of constantStrip.querySelectorAll("input")) control.disabled = on;
+  for (const control of paramStrip.querySelectorAll("input")) control.disabled = on;
+}
 
 // ------------------------------------------------------------------- what to say
 
@@ -77,6 +103,7 @@ function refuse(message) {
   notice.hidden = false;
   stage.hidden = true;
   bar.hidden = true;
+  downloadBar.hidden = true;
 }
 
 function clearNotice() {
@@ -264,8 +291,12 @@ function updateReadout() {
     `x ${view.x.text}  ·  y ${view.y.text}  ·  w ${view.w.text}  ·  ${cap} iterations`;
 }
 
-/** Write the canonical permalink into the address bar. */
+/** Write the canonical permalink into the address bar, and re-price a download.
+ *
+ *  Both are properties of the settled view: the estimate is per mode, and whether
+ *  a supersampled grid still resolves in `f64` is per width. */
 function settle() {
+  panel?.describe();
   clearTimeout(settleTimer);
   settleTimer = setTimeout(() => {
     history.replaceState(null, "", `?${link.emit(view, contract)}`);
@@ -407,6 +438,7 @@ function preview(dx, dy, scale = 1) {
 }
 
 canvas.addEventListener("pointerdown", (event) => {
+  if (locked()) return;
   canvas.setPointerCapture(event.pointerId);
   pointers.set(event.pointerId, canvasPoint(event));
   if (pointers.size === 1) {
@@ -469,6 +501,7 @@ canvas.addEventListener(
   "wheel",
   (event) => {
     event.preventDefault();
+    if (locked()) return;
     const at = canvasPoint(event);
     zoomAbout(at.x, at.y, event.deltaY > 0 ? WHEEL_ZOOM : 1 / WHEEL_ZOOM);
   },
@@ -481,6 +514,7 @@ const TYPING = new Set(["SELECT", "INPUT", "TEXTAREA", "BUTTON", "OPTION"]);
 
 window.addEventListener("keydown", (event) => {
   if (event.target instanceof Element && TYPING.has(event.target.tagName)) return;
+  if (busy) return;
   const step = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, 1], ArrowDown: [0, -1] }[
     event.key
   ];
@@ -506,6 +540,7 @@ window.addEventListener("keydown", (event) => {
 /** A new family is a new plane, so it opens at that plane's own home view. The
  *  mode, the palette and the shade recipe are the reader's and travel with them. */
 familyPicker.addEventListener("change", () => {
+  if (locked()) return;
   view = {
     ...link.fresh(familyPicker.value, view.mode, contract),
     params: view.params,
@@ -522,6 +557,9 @@ familyPicker.addEventListener("change", () => {
 modePicker.addEventListener("change", () => {
   view = { ...view, mode: modePicker.value, params: {} };
   buildParams();
+  // What a download of this view would cost is per mode, so the line under the
+  // control moves with the picker rather than at the moment somebody presses it.
+  panel?.describe();
   draw();
 });
 
@@ -555,6 +593,7 @@ let resizing = 0;
 window.addEventListener("resize", () => {
   clearTimeout(resizing);
   resizing = setTimeout(() => {
+    if (busy) return;
     if (resize()) draw();
   }, 200);
 });
@@ -588,6 +627,14 @@ async function main() {
   clearNotice();
   stage.hidden = false;
   bar.hidden = false;
+  downloadBar.hidden = false;
+  panel = download.install({
+    renderer,
+    currentView: () => view,
+    say,
+    setBusy,
+  });
+  panel.describe();
   rebuild();
   resize();
   draw();

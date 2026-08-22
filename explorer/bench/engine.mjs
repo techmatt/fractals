@@ -30,6 +30,9 @@ export async function load(url = new URL("../engine.wasm", import.meta.url)) {
     return JSON.parse(text);
   };
 
+  // Rows are OUTPUT rows, at every supersample: a direct trap's band comes back
+  // already reduced to them, and a field's comes back as the `ss × ss` samples
+  // behind them.
   const band = (spec, shape, rowStart, rowEnd) => {
     const [pointer, length] = put(JSON.stringify(spec));
     const out = wasm.compute_band(pointer, length, rowStart, rowEnd);
@@ -37,7 +40,10 @@ export async function load(url = new URL("../engine.wasm", import.meta.url)) {
     if (out === 0) throw new Error("compute_band refused");
     const rows = rowEnd - rowStart;
     const [width] = spec.resolution;
-    const bytes = shape.direct ? rows * width * 4 : rows * width * shape.lanes * 8;
+    const ss = spec.supersample ?? 1;
+    const bytes = shape.direct
+      ? rows * width * 4
+      : rows * ss * width * ss * shape.lanes * 8;
     const copy = new Uint8Array(wasm.memory.buffer, out, bytes).slice();
     wasm.dealloc(out, bytes);
     return copy;
@@ -47,9 +53,9 @@ export async function load(url = new URL("../engine.wasm", import.meta.url)) {
     const [pointer, length] = put(JSON.stringify(spec));
     const lanePointer = wasm.alloc(lanes.length);
     new Uint8Array(wasm.memory.buffer, lanePointer, lanes.length).set(lanes);
-    const out = wasm.shade(pointer, length, lanePointer);
+    // `shade` frees the lanes buffer; only the spec is this caller's to release.
+    const out = wasm.shade(pointer, length, lanePointer, lanes.length);
     wasm.dealloc(pointer, length);
-    wasm.dealloc(lanePointer, lanes.length);
     if (out === 0) throw new Error("shade refused");
     const [width, height] = spec.resolution;
     const bytes = width * height * 4;
