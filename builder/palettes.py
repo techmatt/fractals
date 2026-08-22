@@ -76,11 +76,21 @@ SUPERSAMPLE = 2
 
 #: The frames every single-location figure stands on, addressed by the store file and
 #: the line inside it. All seven are rows Matt rated 4 by hand; none is a machine pick.
+#: `fire_ice` is deliberately not a spiral *(Matt, 2026-08-22)*: the rated-4 mandelbrot
+#: rows are overwhelmingly spirals, and a page whose figures are all one shape teaches
+#: the shape rather than the subject.
+#:
+#: `phoenix` is chosen for how much of a ramp it spends *(Matt, 2026-08-22)*. The frame
+#: this row used to carry covered 0.176 of the stretched range between its 5th and 95th
+#: percentiles, so each of its three panels showed a sliver of its column's map and the
+#: row taught nothing; this one covers 0.57, which is what the mandelbrot and julia rows
+#: above it cover. Of the 33 phoenix frames rated 4, the old one ranked 25th by that
+#: measure.
 FRAMES = {
     "mandelbrot": ("pool_draw_human_good", 451),
     "julia": ("bucketed_correction", 57),
-    "phoenix": ("dramatic_palettes", 258),
-    "fire_ice": ("bucketed_correction", 136),
+    "phoenix": ("released_top_end", 39),
+    "fire_ice": ("blind_minibrot", 17),
     "params": ("dramatic_palettes", 48),
     "spread": ("blind_minibrot", 56),
     "neighborhood": ("pool_draw_human_good", 683),
@@ -590,63 +600,114 @@ def neighborhood_ranked() -> Drawn:
     return Drawn(sheets.save(sheet, sheet_path("palette-neighborhood")), provenance)
 
 
-def autolevel_pair() -> Drawn:
-    """One release the operator acted on, as rendered and after it moved the tone."""
-    record, stamp = _acted_release()
-    before, after = _autolevel_panels(record, stamp)
+def autolevel_pairs() -> Drawn:
+    """Two releases the operator acted on, as rendered and after it moved the tone.
+
+    Stacked rather than side by side *(Matt, 2026-08-22)*: one pair says the operator
+    moved something, and two say what it is *for* — the same band pulls a picture that
+    came out too light down and lifts one that came out too dark, and a reader sees a rule
+    rather than an adjustment. Both rows are released rows, and both are drawn exactly as
+    their record says.
+    """
+    rows = [_acted_release(run, candidate) for run, candidate in ACTED]
     panel = panels(2)
-    sheet, drawer = sheets.canvas(
-        SHEET_WIDTH, sheets.PAD + panel[1] + sheets.CAPTION_TWO + sheets.PAD
-    )
-    measured = stamp["measured"]
-    curve = stamp["curve"]
-    for index, (path, lines) in enumerate(
-        (
-            (
-                before,
-                [
-                    "as rendered",
-                    f"black {measured['black_pt']:.2f} · white {measured['white_pt']:.2f}"
-                    f" · median {measured['mid']:.2f}",
-                ],
-            ),
-            (
-                after,
-                [
-                    "after leveling",
-                    f"median {_moved(measured['mid'], curve['mid_target'])} to "
-                    f"{curve['mid_target']:.2f} · both ends held",
-                ],
-            ),
-        )
-    ):
-        x = sheets.PAD + index * (panel[0] + sheets.PAD)
-        sheet.paste(sheets.fitted(path, panel), (x, sheets.PAD))
-        sheets.label(drawer, x, sheets.PAD + panel[1] + 6, lines)
-    band = stamp["band"]
+    cell = panel[1] + sheets.CAPTION_TWO
+    sheet, drawer = sheets.canvas(SHEET_WIDTH, sheets.PAD + len(rows) * (cell + sheets.PAD))
     provenance = [
-        "One release record, drawn twice: the picture as the chosen palette renders it, and "
-        "the picture the autolevel operator returned. Both are that row's own recipe at the "
-        "size the run drew, so this is the only figure of this page whose panels are the "
-        "pictures a record describes rather than a neutral redraw.",
-        f"Left panel: released wallpaper {record['run']}|release|{record['candidate']} — "
-        f"colormap {record['recipe']['colormap']}, mode {record['recipe']['mode']}, mirror "
+        "Two release records, each drawn twice: the picture as the chosen palette renders "
+        "it, and the picture the autolevel operator returned. Every panel is that row's own "
+        "recipe at the size the run drew, so this is the only figure of this page whose "
+        "panels are the pictures a record describes rather than a neutral redraw. The "
+        "representative panel is the first row's left, colormap "
+        f"{rows[0][0]['recipe']['colormap']}."
+    ]
+    for index, (record, stamp) in enumerate(rows):
+        before, after = _autolevel_panels(record, stamp)
+        measured, curve = stamp["measured"], stamp["curve"]
+        top = sheets.PAD + index * (cell + sheets.PAD)
+        for column, (path, lines) in enumerate(
+            (
+                (
+                    before,
+                    [
+                        "as rendered",
+                        f"black {measured['black_pt']:.2f} · white {measured['white_pt']:.2f}"
+                        f" · median {measured['mid']:.2f}",
+                    ],
+                ),
+                (after, ["after leveling", _what_moved(measured, curve)]),
+            )
+        ):
+            x = sheets.PAD + column * (panel[0] + sheets.PAD)
+            sheet.paste(sheets.fitted(path, panel), (x, top))
+            sheets.label(drawer, x, top + panel[1] + 6, lines)
+        provenance.extend(_autolevel_provenance(record, stamp, index, name=index == 0))
+    return Drawn(sheets.save(sheet, sheet_path("palette-autolevel")), provenance)
+
+
+#: How a row of the figure is named in its own provenance, so a line says which picture
+#: it is about without a reader counting panels.
+ROW_WORDS = ("Top row", "Bottom row")
+
+
+def _what_moved(measured: dict, curve: dict) -> str:
+    """The second label line: which of the three statistics the operator took, and where.
+
+    Built from the stamp's own `sides` rather than written down, because the two rows
+    are out of band on different statistics — which is the reason there are two.
+    """
+    moved = []
+    if curve["sides"].get("black_pt"):
+        moved.append(
+            f"black point {_moved(measured['black_pt'], curve['out_ends'][0])} to "
+            f"{curve['out_ends'][0]:.2f}"
+        )
+    if curve["sides"].get("white_pt"):
+        moved.append(
+            f"white point {_moved(measured['white_pt'], curve['out_ends'][1])} to "
+            f"{curve['out_ends'][1]:.2f}"
+        )
+    if curve["sides"].get("mid"):
+        moved.append(
+            f"median {_moved(measured['mid'], curve['mid_target'])} to {curve['mid_target']:.2f}"
+        )
+    ends = [name for name in ("black_pt", "white_pt") if not curve["sides"].get(name)]
+    if len(ends) == 2:
+        moved.append("both ends held")
+    elif ends:
+        moved.append(f"{'black' if ends[0] == 'black_pt' else 'white'} point held")
+    return " · ".join(moved)
+
+
+def _autolevel_provenance(record: dict, stamp: dict, index: int, *, name: bool) -> list[str]:
+    """The three lines one row of the figure records.
+
+    Only the first row spells the word `colormap`. A sheet gets one link, at its
+    representative panel, and `explorer.py` bakes a map into the browser page for every
+    line that says the word — see this module's docstring.
+    """
+    measured, curve, band = stamp["measured"], stamp["curve"], stamp["band"]
+    where = ROW_WORDS[index]
+    geometry = record["recipe"]["render"]
+    return [
+        f"{where}, left panel: released wallpaper "
+        f"{record['run']}|release|{record['candidate']} — "
+        f"{'colormap' if name else 'palette'} {record['recipe']['colormap']}, mode "
+        f"{record['recipe']['mode']}, mirror "
         f"{str(record['recipe'].get('mirror', False)).lower()}, maxiter "
-        f"{record['recipe']['render']['maxiter']}, {record['recipe']['render']['resolution'][0]}x"
-        f"{record['recipe']['render']['resolution'][1]} supersample "
-        f"{record['recipe']['render']['supersample']}.",
-        "Right panel: the same field and the same map, rendered again through the levelled "
-        "stops the row's autolevel stamp rebuilds — operator "
+        f"{geometry['maxiter']}, {geometry['resolution'][0]}x{geometry['resolution'][1]} "
+        f"supersample {geometry['supersample']}.",
+        f"{where}, right panel: the same field and the same map, rendered again through the "
+        "levelled stops the row's autolevel stamp rebuilds — operator "
         f"{stamp['operator']}, band {band['path']} sha256 {band['sha256'][:16]}… derived "
         f"{band['derived']} over {band['n_images']} pictures; exponent "
         f"{curve['exponent']:.4f}, out_ends {curve['out_ends'][0]:.4f}/"
         f"{curve['out_ends'][1]:.4f}, chroma retain {stamp['chroma_cap']['retain']}.",
-        f"Measured on the left panel: black_pt {measured['black_pt']:.6f}, white_pt "
+        f"{where}, measured on the left panel: black_pt {measured['black_pt']:.6f}, white_pt "
         f"{measured['white_pt']:.6f}, mid {measured['mid']:.6f}. Out of band on "
         + ", ".join(name for name, side in curve["sides"].items() if side)
         + ".",
     ]
-    return Drawn(sheets.save(sheet, sheet_path("palette-autolevel")), provenance)
 
 
 def generator_batch() -> Drawn:
@@ -682,25 +743,28 @@ def _moved(was: float, now: float) -> str:
     return "lifted" if now > was else "pulled down"
 
 
-def _acted_release() -> tuple[dict, dict]:
+def _acted_release(run: str, candidate: str) -> tuple[dict, dict]:
     """A released row the operator acted on, and its stamp. Named, not searched for.
 
-    The row is written down rather than picked by a rule, because "the first acted row in
-    file order" is a rule whose answer moves the day a run is added, and a figure's subject
-    should not.
+    The rows are written down rather than picked by a rule, because "the acted rows the
+    operator moved furthest" is a rule whose answer moves the day a run is added, and a
+    figure's subject should not.
     """
-    record = release_record(ACTED_RUN, ACTED_CANDIDATE)
+    record = release_record(run, candidate)
     stamp = record.get("autolevel")
     if not stamp or not stamp.get("acted"):
+        raise PaletteError(f"{run}|release|{candidate} carries no autolevel stamp that acted")
+    if record.get("verdict") != "released":
         raise PaletteError(
-            f"{ACTED_RUN}|release|{ACTED_CANDIDATE} carries no autolevel stamp that acted"
+            f"{run}|release|{candidate} is {record.get('verdict')}, and the caption says released"
         )
     return record, stamp
 
 
-#: The release the leveling figure is drawn from.
-ACTED_RUN = "run3"
-ACTED_CANDIDATE = "0025"
+#: The two releases the leveling figure is drawn from *(Matt, 2026-08-22, picked off
+#: `sheet-autolevel-pairs`)*. One came out too light and is pulled down; the other came
+#: out too dark and is lifted, and the second is why there are two rows.
+ACTED = (("release_v1", "0023"), ("run10", "0127"))
 
 
 def _autolevel_panels(record: dict, stamp: dict) -> tuple[Path, Path]:
@@ -783,7 +847,7 @@ MAKERS = {
     "palette-params": palette_params,
     "palette-spread": palette_spread,
     "palette-neighborhood": neighborhood_ranked,
-    "palette-autolevel": autolevel_pair,
+    "palette-autolevel": autolevel_pairs,
     "palette-generator-batch": generator_batch,
 }
 

@@ -8,10 +8,10 @@
 // dynamical plane opens at.
 
 export const PROVENANCE = {
-  "baked": "2026-08-21",
+  "baked": "2026-08-22",
   "constants_from": "data/anchors.jsonl",
   "modes_from": "fractal-engine modes",
-  "wallpapers_commit": "889fc7673bc4c608a0ad5476b1816e2287f5618a"
+  "wallpapers_commit": "a771e6a2fa4d2fec0003580d6cb8f914d81dac58"
 };
 
 export const MODES = new Map([

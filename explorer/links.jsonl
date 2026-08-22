@@ -36,9 +36,9 @@
 {"schema": 1, "kind": "link", "id": "figure:judges-score-to-decision", "link": "v=2&f=julia3&cx=-0.31883391428477204&cy=0.6947471708446521&x=0.0&y=0.0&w=0.5630695633670507&p=twilight_shifted", "from": "panel 1"}
 {"schema": 1, "kind": "link", "id": "figure:palette-locations", "link": "v=2&x=0.36589157992999566&y=0.3142062593823041&w=0.0005254752858165241&p=Amber%20Highlands", "from": "panel 1"}
 {"schema": 1, "kind": "link", "id": "figure:palette-moods", "no_link": "drawn", "why": "a drawn diagram or chart, with no engine render behind it to reopen"}
-{"schema": 1, "kind": "link", "id": "figure:palette-fire-ice", "link": "v=2&x=-0.7466411371311648&y=-0.11370180258878615&w=7.873162460422087e-05&p=Cobalt%20%26%20Coal", "from": "panel 1"}
+{"schema": 1, "kind": "link", "id": "figure:palette-fire-ice", "link": "v=2&x=-0.745664851251208303163536352617&y=0.112994057903853818971697158017&w=2.734974e-08&p=Cobalt%20%26%20Coal", "from": "panel 1"}
 {"schema": 1, "kind": "link", "id": "figure:palette-params", "link": "v=2&f=julia&cx=-0.04993036639924727&cy=0.6719657771206978&x=-0.375&y=0.375&w=1.5&p=Ember%20Rising", "from": "panel 1"}
 {"schema": 1, "kind": "link", "id": "figure:palette-spread", "link": "v=2&f=multibrot3&x=-0.4561033363983932&y=0.5492015096676741&w=4.7117926342068356e-05&p=Amethyst%20Veil", "from": "panel 1"}
 {"schema": 1, "kind": "link", "id": "figure:palette-neighborhood", "link": "v=2&x=-0.7482800116735308&y=-0.13563763985784028&w=0.0007193954637897842&p=Ember%20Against%20Steel", "from": "panel 1"}
-{"schema": 1, "kind": "link", "id": "figure:palette-autolevel", "link": "v=2&f=julia&cx=-1.2517612129804818&cy=0.038979112285470574&x=-0.17270050515969365&y=-0.0039062499999999237&w=1.2387394870317157&p=jadanti", "from": "panel 1"}
+{"schema": 1, "kind": "link", "id": "figure:palette-autolevel", "link": "v=2&x=-0.800778181691469&y=0.18229482640825037&w=0.0003856391990486722&p=wheelance", "from": "panel 1"}
 {"schema": 1, "kind": "link", "id": "figure:palette-generator-batch", "no_link": "drawn", "why": "a drawn diagram or chart, with no engine render behind it to reopen"}
