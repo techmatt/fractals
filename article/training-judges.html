@@ -56,12 +56,12 @@
 <main>
   <section class="prose">
     <p><a href="finding-good-locations.html">Finding good locations</a> used the location
-    judge on every candidate frame without saying where it came from. This page describes the
-    judges: the ratings they are trained on, the networks, how they are evaluated, and where
-    they generalize and where they do not. Three judges answer quality questions — one for
-    locations and two for finished renders — and they share one rating scale, one network
-    design, and one training recipe. A fourth, smaller network chooses palettes rather than
-    rating quality; it is trained by a different method and is covered in
+    judge on every candidate frame without saying where it came from. This page describes
+    the judges: the ratings they are trained on, the networks, how they are evaluated, and
+    where they generalize and where they do not. Two judges answer quality questions — one
+    for locations and one for finished renders — and they share one rating scale, one
+    network design, and one training recipe. A third, smaller network chooses palettes
+    rather than rating quality; it is trained by a different method and is covered in
     <a href="color-palettes.html">color palettes</a>.</p>
 
     <h2 id="the-rating-scale">The rating scale</h2>
@@ -115,29 +115,35 @@
         <figcaption>One location at the three sizes its judge is trained over, drawn to scale. The walk scores the smallest of them and a person rated the largest. Composition and density survive the shrink, which is why one judge can read all three.</figcaption>
       </figure>
 
-    <p>The two render judges see the picture that was drawn to be judged — its mode, its
-    settings and its palette, but drawn small, at 640 by 360, and stretched from there to the
-    network's input. Nothing is judged at wallpaper size; a full-resolution render is what a
-    passing score buys. They divide the catalog as
-    <a href="rendering-modes.html">rendering modes</a> described: the <i>smooth judge</i>
-    handles the plain smooth rendering and the <i>mode judge</i> handles the seventeen other
-    modes the pipeline draws. A judge trained on smooth renders would have something to say about the
-    others — the two questions overlap — but they are trained independently, on their own
-    ratings, because what makes a classic smooth render good is not quite what makes an
-    engraved or thread-laced one good.</p>
+    <p>The render judge sees the picture that was drawn to be judged — its mode, its
+    settings and its palette, but drawn small, at 640 by 360, and stretched from there to
+    the network's input. Nothing is judged at wallpaper size; a full-resolution render is
+    what a passing score buys. One judge covers the whole catalog
+    <a href="rendering-modes.html">rendering modes</a> described, the plain smooth
+    rendering and the seventeen other modes alike: the two kinds are rated separately and
+    keep separate bars downstream, but the judging itself is one network, trained on both
+    collections of ratings at once. Scoring the two kinds with separate networks was
+    explored as well; a single network performed as well or better despite the visual
+    differences between the kinds, so one judge does both.</p>
 
     <h2 id="network-design-and-training">Network design and training</h2>
 
     <p>The network is small on purpose. Each judge is a
-    <a href="https://arxiv.org/abs/2404.10518">MobileNetV4</a> convolutional network pretrained
-    on ImageNet — about eight million parameters for the location and smooth judges, a variant
-    a third that size for the mode judge — with its final layer replaced and the whole network
-    then fine-tuned on the ratings. This is standard transfer learning, and its mechanics and
-    its engineering specifics are covered thoroughly elsewhere — the
+    <a href="https://arxiv.org/abs/2404.10518">MobileNetV4</a> convolutional network
+    pretrained on ImageNet — about eight million parameters for the location judge, a
+    variant a third that size for the render judge — with its final layer replaced and the
+    whole network then fine-tuned on the ratings. This is standard transfer learning, and
+    its mechanics and its engineering specifics are covered thoroughly elsewhere — the
     <a href="https://pytorch.org/tutorials/beginner/transfer_learning_tutorial.html">PyTorch
-    transfer-learning tutorial</a> is one good place to start. Nothing in the recipe is unusual.
-    Larger architectures were tried, including vision transformers; none beat MobileNetV4 by
-    more than noise, and it was the fastest and smallest, so it stayed.</p>
+    transfer-learning tutorial</a> is one good place to start. Nothing in the recipe is
+    unusual. Larger architectures were tried, including vision transformers; none beat
+    MobileNetV4 by more than noise, and it was the fastest and smallest, so it stayed. The
+    size is a finding, not a convenience: with a few thousand ratings behind each
+    question, capacity works against a judge. A medium-sized variant of the same network,
+    trained the same way on the same ratings, was reliably worse on the seventeen modes —
+    the kind with the fewest ratings — and the deficit vanished when the backbone shrank.
+    At this scale of data the real fight is overfitting, and the smallest network that can
+    still see composition and framing wins it.</p>
 
     <p>A four-point rating is ordered, not categorical: a 3 is closer to a 4 than a 1 is, and
     an ordinary classifier throws that ordering away. Keeping it is the one place the recipe is
@@ -149,15 +155,15 @@
     a picture would be rated at least good, which is what the walk's floors on the previous page
     are thresholds on, and P(≥4), the chance it would be rated exceptional.</p>
 
-    <p>The rest of the recipe is ordinary: forty epochs, a cosine learning-rate schedule, under
-    two hours on one GPU for the location judge and under an hour for each of the others.
-    Augmentation is deliberately narrow. The location judge is only ever shown one fixed
-    neutral palette, so jittering hue or saturation would train it on colors it will never be
-    given; what it gets instead is the variation that is real at deployment — small border
-    crops, flips, JPEG re-encoding around the quality its renders are cached at, and brightness
-    and contrast changes of a few percent. The two render judges get crops and flips and nothing
-    else, because for them the coloring is the question, and any change to it edits what is
-    being asked.</p>
+    <p>The rest of the recipe is ordinary: forty epochs, a cosine learning-rate schedule,
+    under two hours on one GPU for the location judge and under an hour for the render
+    judge. Augmentation is deliberately narrow. The location judge is only ever shown one
+    fixed neutral palette, so jittering hue or saturation would train it on colors it will
+    never be given; what it gets instead is the variation that is real at deployment —
+    small border crops, flips, JPEG re-encoding around the quality its renders are cached
+    at, and brightness and contrast changes of a few percent. The render judge gets crops
+    and flips and nothing else, because for it the coloring is the question, and any
+    change to it edits what is being asked.</p>
 
     <h2 id="evaluating-a-judge">Evaluating a judge</h2>
 
@@ -167,23 +173,35 @@
     neighborhood rather than by frame, because nearby frames are near-duplicates and a judge
     could otherwise pass by memorizing a location's neighbor.</p>
 
-    <p>Agreement with those ratings is the plain way to say how well that goes, and it separates
-    the judges. The location judge picks the person's own class most of the time, and lands
-    within one class of it almost always. The two render judges are within one class about as
-    reliably and hit the exact class much less often; the smooth judge in particular reads
-    well-rated pictures low, calling a 4 a 3 far more often than the reverse. One class of
-    disagreement is the shape the ratings take among themselves, since two ratings of the same
-    frame rarely differ by more than one class — but a judge that is off by a class in one
-    direction more than the other cannot have its probability read as the rating it stands
-    for.</p>
+    <p>Agreement with those ratings is the plain way to say how well that goes. The
+    location judge picks the person's own class most of the time, and lands within one
+    class of it almost always. The render judge is within one class about as reliably and
+    hits the exact class less often. One class of disagreement is the shape the ratings
+    take among themselves, since two ratings of the same frame rarely differ by more than
+    one class. But agreement only counts how often the judge and the person land together;
+    it says nothing about whether the judge's probabilities mean what they say, and the
+    pipeline acts on probabilities.</p>
 
-    <p>That is what calibration measures, and the judges are not always well calibrated: a raw
-    P(≥3) of 0.5 is not reliably even odds. A threshold read off a probability as though it
-    meant what it says therefore lands in the wrong place, and lands wrong in both directions —
-    set too high, a bar starves the pipeline, and a slot with nothing above it goes unfilled
-    rather than being padded; set too low, it spends rendering and coloring time on frames that
-    were never going to be kept. So the pipeline treats a judge's output as a ranking and sets
-    each threshold by measurement, which is the subject of the next section.</p>
+    <p>One more thing keeps an evaluation honest: training is stochastic. Retrain the same
+    design on the same ratings with a different random seed and every number moves a
+    little, so no verdict about a design is read off a single training run. A design is
+    trained under a handful of seeds and a claim has to hold across the whole band;
+    quoting the best seed flatters any design, and demanding that every seed pass
+    separately fails a perfectly good one by luck alone. What ships is one training run
+    from the band, chosen by a rule written down before the runs were scored.</p>
+
+    <p>Whether a probability can be trusted at the value it names is what calibration
+    measures, and it is measured, never assumed. Training runs are selected on a proper
+    scoring rule — one that rewards a probability for being right at its stated odds, not
+    merely for ranking well — but every retrain still moves the whole probability scale:
+    the next judge scores the same picture differently even when both judges would rank it
+    the same. A threshold read off a probability as though the number were permanent
+    therefore lands in the wrong place after a retrain, and lands wrong in both directions
+    — set too high, a bar starves the pipeline, and a slot with nothing above it goes
+    unfilled rather than being padded; set too low, it spends rendering and coloring time
+    on frames that were never going to be kept. So the pipeline sets each threshold by
+    measurement against the judge that will act on it, which is the subject of the next
+    section.</p>
 
     <h2 id="from-a-score-to-a-decision">From a score to a decision</h2>
 
@@ -209,17 +227,19 @@
     old judge. The restatement reads no ratings; it preserves how much flows, not which
     frames.</p>
 
-    <p>The two render judges act differently. The mode judge carries a release bar that was
-    read off ratings directly: the score above which a picture had been rated at least good more
-    often than not, found by fitting a monotone curve through the three thousand rated pictures,
-    and rounded up, because a bar is a floor. A slot for one of those modes with no picture over
-    the bar is left unfilled rather than padded. The smooth judge carries only an advisory at
-    its natural midpoint; it can rank, it cannot remove. When the two judges' pictures are
-    ranked together for selection, their probabilities are never compared with each other or
-    across partitions: each picture is ranked within its own partition and judge, and the lists
-    are interleaved by position — every partition's best, then every second-best. Every threshold
-    is stamped with the exact judge it was measured on, and a threshold is never applied to a
-    judge it was not measured against.</p>
+    <p>The render judge acts through two bars, one for each kind, because a score is only
+    ever compared within its own kind: the same number can clear one kind's bar and fall
+    short of the other's, and neither reading is wrong. Each bar is read off ratings
+    directly — the score above which a picture had been rated at least good more often
+    than not, found by fitting a monotone curve through that kind's rated pictures, and
+    rounded up, because a bar is a floor. The bar on the seventeen modes removes: a slot
+    for one of those modes with no picture over it is left unfilled rather than padded.
+    The bar for smooth renders is advisory; it can rank, it cannot remove. When pictures
+    are ranked for selection, probabilities are never compared across kinds or partitions:
+    each picture is ranked within its own partition and kind, and the lists are
+    interleaved by position — every partition's best, then every second-best. Each bar is
+    stamped with the exact judge it was measured against, and a bar is never applied to a
+    judge it was not measured on.</p>
 
     <h2 id="generalization-and-its-limits">Generalization and its limits</h2>
 
