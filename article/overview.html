@@ -47,8 +47,8 @@
 <main>
   <section class="prose">
       <figure class="figure" data-figure="overview-gallery-hook">
-        <a class="figure-open" href="../explorer/index.html?v=2&amp;x=-0.803832500338032&amp;y=0.18284218893827717&amp;w=0.000029290495407453673&amp;p=along-the-starry-way-25" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/overview-gallery-hook.jpg" width="1344" height="588" alt="A grid of six finished wallpapers, one from each fractal family."><span class="figure-open-mark" aria-hidden="true">↗</span></a>
-        <figcaption>One finished wallpaper per family, and nothing else about them is hand-made: each was found by a walk, drawn in one of the rendering modes, colored from a chosen palette, and kept by a judge.</figcaption>
+        <a class="figure-open" href="../explorer/index.html?v=2&amp;x=-0.803832500338032&amp;y=0.18284218893827717&amp;w=0.000029290495407453673&amp;p=along-the-starry-way-25" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/overview-gallery-hook.jpg" width="1344" height="640" alt="Six finished wallpapers: three drawn in the smooth rendering along the top row, three in stranger rendering modes below."><span class="figure-open-mark" aria-hidden="true">↗</span></a>
+        <figcaption>Wallpapers found by this project's fractal search. Nothing about them is hand-made: the search finds a good location on its own, a rendering mode draws it, a palette colors it, and a trained judge decides it is worth keeping. The top row is the classic smooth rendering; the bottom row is three of the stranger modes.</figcaption>
       </figure>
 
     <p>For many years my desktop background has cycled through a collection of
@@ -70,16 +70,20 @@
     <a href="escape-time-fractals.html">escape-time fractals</a>. There are other beautiful
     fractal worlds this project doesn't touch, among them the 3D
     <a href="https://en.wikipedia.org/wiki/Mandelbulb">Mandelbulb</a>,
-    <a href="https://en.wikipedia.org/wiki/Fractal_flame">fractal flames</a>, and quaternion
-    <a href="https://paulbourke.net/fractals/quatjulia/">Julia sets</a> rendered in four
-    dimensions.</p>
+    <a href="https://en.wikipedia.org/wiki/Fractal_flame">fractal flames</a>, and
+    <a href="https://paulbourke.net/fractals/quatjulia/">quaternion Julia sets</a> rendered in
+    four dimensions.</p>
 
     <p>Everything here is backed by a working open-source repository,
     <a href="https://github.com/techmatt/fractal-wallpapers">fractal-wallpapers</a>, and
-    every image on this site came out of it. You can run it yourself, browse the
-    <a href="../galleries/index.html">galleries</a>, download collections of my favorite
-    wallpapers at full resolution, freely use the trained models and the labeled datasets
-    behind them, or read on for more technical details.</p>
+    every image on this site came out of it. The same renderer is also compiled to run in a
+    browser, so the <a href="../explorer/index.html">fractal explorer</a> draws these
+    fractals live on this site — every family, every rendering mode, every palette, panned
+    and zoomed by hand — and nearly every picture on these pages carries a link that opens
+    the explorer at exactly the view you are looking at. You can also run the project
+    yourself, browse the <a href="../galleries/index.html">galleries</a>, download
+    collections of my favorite wallpapers at full resolution, freely use the trained models
+    and the labeled datasets behind them, or read on for more technical details.</p>
 
     <p>Making this work means answering a few genuinely interesting questions. Where in an
     infinite plane do you point the camera — and how far do you zoom — to find a beautiful
@@ -88,8 +92,8 @@
     answers them is a <i>pipeline</i>, and the rest of this site walks through it stage by stage:</p>
 
       <figure class="figure" data-figure="overview-pipeline">
-        <img src="../assets/images/figures/overview-pipeline.png" width="1316" height="244" alt="The four stages as a diagram: search feeds render, render feeds color, color feeds select.">
-        <figcaption>The pipeline end to end. Search proposes locations, render draws them at quality, color dresses them, and select keeps the few worth keeping — the four stages the rest of this site takes one at a time.</figcaption>
+        <a class="figure-open" href="../explorer/index.html?v=2&amp;f=multibrot4&amp;x=0.31215622070747834&amp;y=0.7310275499716895&amp;w=0.000009171415720687774&amp;p=dessert-union-25" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/overview-pipeline.jpg" width="1340" height="443" alt="The four pipeline stages side by side, each above the parts it is made of: a walk frame of one multibrot location, the same location's escape field in grayscale, the field colored through a gradient, and four candidate colorings with the kept one framed."><span class="figure-open-mark" aria-hidden="true">↗</span></a>
+        <figcaption>The pipeline end to end, on one location. A guided walk finds the frame and the location judge scores it; the renderer draws it at quality into a field, one number per pixel and no color yet; a palette is chosen from a neighborhood of the library and the tones are balanced; and the two render judges score the finished candidates, of which a few are kept. Every picture here is that same multibrot frame at a different stage, and the framed panel is the coloring the run kept.</figcaption>
       </figure>
 
     <p><strong>Search</strong> — a guided walk through each fractal family descends toward
@@ -107,7 +111,7 @@
     renders are scored by <i>judges</i> trained on my ratings, and a final set is chosen for
     quality and diversity — avoiding twenty near-duplicates of the single best view or a
     single class of color styles
-    (<a href="from-locations-to-wallpapers.html">From locations to wallpapers</a>).</p>
+    (<a href="from-locations-to-wallpapers.html">from locations to wallpapers</a>).</p>
 
     <p>Each section is written to be readable independently. Nothing here requires more than
     a single desktop machine with one ordinary GPU. The whole system — search, rendering,

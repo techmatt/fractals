@@ -82,10 +82,10 @@
 
     <h2 id="the-mandelbrot-set">The Mandelbrot set</h2>
 
-    <p>The most famous escape-time rule is also the simplest. Pick a constant c, start at
-    z = 0, and repeat:</p>
+    <p>The most famous escape-time rule is also the simplest. Pick a constant c, start the
+    orbit at z<sub>0</sub> = 0, and iterate:</p>
 
-    <pre class="formula">z = z*z + c</pre>
+    <pre class="formula">z<sub>n+1</sub> = z<sub>n</sub><sup>2</sup> + c</pre>
 
     <p>Only two fates are possible: the sequence stays bounded forever, or it escapes to
     infinity — and once |z| exceeds 2 it is gone for good, so escape is easy to detect. Count
@@ -139,26 +139,26 @@
     <a href="https://en.wikipedia.org/wiki/Connectedness_locus">connectedness locus</a>.</p>
 
       <figure class="figure" data-figure="escape-julia-map">
-        <a class="figure-open" href="../explorer/index.html?v=2&amp;y=0.0&amp;p=twilight_shifted" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/escape-julia-map.jpg" width="1340" height="1048" alt="The Mandelbrot set as an atlas: four c values marked on it, each with the Julia set it produces below — a solid blob from deep inside, disconnected dust from outside, a filigree from the boundary."><span class="figure-open-mark" aria-hidden="true">↗</span></a>
-        <figcaption>The Mandelbrot set read as an atlas of Julia sets. A c from deep inside gives a solid, rounded blob; a c from outside shatters into dust; a c from the boundary unfurls its neighborhood's spirals and filaments across the whole frame. The blob-versus-dust split is not a matter of degree — a Julia set is connected exactly when its c lies in the Mandelbrot set.</figcaption>
+        <a class="figure-open" href="../explorer/index.html?v=2&amp;y=0.0&amp;p=twilight_shifted" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/escape-julia-map.jpg" width="1340" height="1022" alt="The Mandelbrot set with its real and imaginary axes marked and four colored rings on it, each ring's Julia set below in a frame of the same color — a solid blob from deep inside, filigree from the boundary, disconnected dust from outside."><span class="figure-open-mark" aria-hidden="true">↗</span></a>
+        <figcaption>The Mandelbrot set read as an atlas of Julia sets. Each ring marks one value of c, and the Julia set that value draws is the panel below wearing the same color. A c from deep inside gives a solid, rounded blob; a c from outside shatters into dust; a c from the boundary unfurls its neighborhood's spirals and filaments across the whole frame. The blob-versus-dust split is not a matter of degree — a Julia set is connected exactly when its c lies in the Mandelbrot set.</figcaption>
       </figure>
 
     <h2 id="multibrot-sets">Multibrot sets</h2>
 
     <p>Nothing about the loop is specific to squaring. Raising the power gives the
-    <a href="https://en.wikipedia.org/wiki/Multibrot_set">multibrot sets</a>, z → z^d + c,
+    <a href="https://en.wikipedia.org/wiki/Multibrot_set">multibrot sets</a>, z<sub>n+1</sub> = z<sub>n</sub><sup>d</sup> + c,
     which add rotational symmetry the classic set doesn't have — degree 3 renders with
     two-fold symmetry, degree 4 with three-fold, degree 5 with four-fold, and so on — and each
     degree has its own Julia sets, made exactly the same way as before.</p>
 
       <figure class="figure" data-figure="escape-multibrot-degrees">
-        <a class="figure-open" href="../explorer/index.html?v=2&amp;y=0.0&amp;p=twilight_shifted" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/escape-multibrot-degrees.jpg" width="1340" height="514" alt="The degree-3, degree-4 and degree-5 multibrot sets beside the classic degree-2 set, with one zoom each."><span class="figure-open-mark" aria-hidden="true">↗</span></a>
-        <figcaption>Raising the power in z → z^d + c, with one zoom under each set. Every degree adds a rotational symmetry the classic set doesn't have — one fold fewer than the degree — and each carries its own Julia sets, made exactly the same way as before.</figcaption>
+        <a class="figure-open" href="../explorer/index.html?v=2&amp;y=0.0&amp;p=twilight_shifted" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/escape-multibrot-degrees.jpg" width="1340" height="263" alt="The degree-3, degree-4 and degree-5 multibrot sets beside the classic degree-2 set."><span class="figure-open-mark" aria-hidden="true">↗</span></a>
+        <figcaption>Raising the power in the same loop, one degree per panel. Every degree adds a rotational symmetry the classic set doesn't have — one fold fewer than the degree — and each carries its own Julia sets, made exactly the same way as before.</figcaption>
       </figure>
 
     <h2 id="fractional-degrees">Fractional degrees</h2>
 
-    <p>The degree doesn't have to be a whole number — z^2.5 + c is a perfectly computable
+    <p>The degree doesn't have to be a whole number — z<sup>2.5</sup> + c is a perfectly computable
     rule, and the resulting sets morph continuously between the integer shapes. But
     non-integer powers come at a price: raising a complex number to a fractional power goes
     through the complex logarithm, which has no single consistent value. You have to cut the
@@ -171,7 +171,7 @@
 
       <figure class="figure" data-figure="escape-fractional-degrees">
         <img src="../assets/images/figures/escape-fractional-degrees.jpg" width="1344" height="640" alt="Five sets at fractional degrees — d = 2.1, 2.5, 2.9, 3.5 and 4.5 — each whole in its own frame, with a close-up of the branch-cut seam at d = 3.5.">
-        <figcaption>Five degrees between the whole ones, each framed by the rule that gives the other families their home views. A whole degree carries its lobes in even rotation, one fewer than the degree; a fractional one is caught mid-turn between two of those arrangements, with the next lobe part-grown. Where that lobe happens to sit decides how much the branch cut shows: at 2.9 the negative real axis runs through the gap between two lobes and the render is clean, while at 3.5 the arriving lobe sits astride the axis and the halo flares where escape times jump across the cut. The close-up is that edge at eight times the frame — rays ending mid-stroke along a straight line no dynamics put there.</figcaption>
+        <figcaption>Five sets at fractional degrees, each in its home view, with a close-up of the seam at d = 3.5. A fractional degree is caught between two lobe arrangements, with the next lobe part-grown. The straight line across the close-up is the branch cut, where escape times jump: an artifact of which branch of the complex logarithm was chosen, and not of the dynamics.</figcaption>
       </figure>
 
     <h2 id="phoenix-fractals">Phoenix fractals</h2>
@@ -180,7 +180,7 @@
     above, the next value depends only on the current one. The phoenix iteration adds memory —
     the update uses the previous value as well:</p>
 
-    <pre class="formula">z_next = z*z + c + p*z_prev</pre>
+    <pre class="formula">z<sub>n+1</sub> = z<sub>n</sub><sup>2</sup> + c + p·z<sub>n−1</sub></pre>
 
     <p>where the new constant p sets how strongly the past feeds back into each step. The
     extra term dramatically changes the character of the images: orbits are steered by where
@@ -191,9 +191,10 @@
     celebrated pair of constants found by
     <a href="https://doi.org/10.1109/31.1825">Shigehiro Ushiki in 1988</a>; this project treats
     (c, p) as a whole plane of possibilities and hunts it the same way it hunts everything
-    else. One detail the formula hides: on the very first step there is no previous value
-    yet, so z_prev needs a starting seed of its own — quietly a third constant alongside c
-    and p. The classic picture seeds it at zero; this project varies it too.</p>
+    else. One detail the formula hides: the very first step has no previous value to reach
+    back to, so z<sub>−1</sub> — the value before the orbit began — needs a seed of its own, quietly a
+    third constant alongside c and p. The classic picture seeds it at zero; this project
+    varies it too.</p>
 
       <figure class="figure" data-figure="escape-phoenix">
         <a class="figure-open" href="../explorer/index.html?v=2&amp;f=phoenix&amp;cx=0.5667&amp;cy=0.0&amp;px=-0.5&amp;py=0.0&amp;zx=0&amp;zy=0&amp;y=0.0&amp;w=5.0&amp;p=twilight_shifted" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/escape-phoenix.jpg" width="1316" height="1305" alt="The classic Ushiki phoenix render beside several finds from elsewhere in the (c, p) plane."><span class="figure-open-mark" aria-hidden="true">↗</span></a>
@@ -203,14 +204,14 @@
     <h2 id="the-projects-families">The project's families</h2>
 
     <p>Altogether, the wallpapers here come from the Mandelbrot set and its Julia sets, the
-    multibrot sets of degrees 3 through 5 and theirs, and the phoenix plane. These vary
+    multibrot sets of degrees 3 through 5 and their Julia sets, and the phoenix plane. These vary
     enormously in how easily they give up good images — some produce striking material almost
     anywhere along the boundary, others need real hunting — so a single quality bar applied
     across all of them would quietly fill every gallery with whichever family is easiest to
     photograph. The pipeline instead tracks each kind separately and balances the released mix
     across them; how that works is covered in
     <a href="finding-good-locations.html">finding good locations</a> and
-    <a href="from-locations-to-wallpapers.html">From locations to wallpapers</a>.</p>
+    <a href="from-locations-to-wallpapers.html">from locations to wallpapers</a>.</p>
 
 
     <h2 id="locations">Locations</h2>
@@ -221,10 +222,10 @@
     fixed 16:9 aspect ratio. Halving the width zooms in 2×, and since the boundary is detailed
     at every scale, you can keep halving essentially forever; ordinary double-precision
     arithmetic gives out first, at magnifications around ten trillion to one
-    (<a href="deep-zoom.html">Deep zoom</a> covers going further). The rest of this site is
+    (<a href="deep-zoom.html">deep zoom</a> covers going further). The rest of this site is
     about working in that space: <a href="finding-good-locations.html">Finding good
     locations</a> covers the search through it, and
-    <a href="rendering-fundamentals.html">Rendering fundamentals</a> covers turning raw escape
+    <a href="rendering-fundamentals.html">rendering fundamentals</a> covers turning raw escape
     counts into images worth keeping.</p>
   </section>
 

@@ -65,7 +65,7 @@
     fields look beautiful in their own right, and they are also the foundation the more
     advanced <a href="rendering-modes.html">rendering modes</a> build on. Throughout, we'll
     assume we're already handed a one-dimensional color palette;
-    <a href="color-palettes.html">Color palettes</a> covers how a good palette is chosen for
+    <a href="color-palettes.html">color palettes</a> covers how a good palette is chosen for
     each image.</p>
 
     <h2 id="from-counts-to-colors">From counts to colors</h2>
@@ -80,7 +80,7 @@
 
       <figure class="figure" data-figure="render-discrete-and-smooth">
         <img src="../assets/images/figures/render-discrete-and-smooth.jpg" width="1316" height="915" alt="Two palettes as flat gradients, and under each the same Mandelbrot frame twice: terraced into bands by the integer escape count, then continuously shaded by the smooth count.">
-        <figcaption>One location, two palettes. Each column opens with the palette itself, drawn as the flat gradient the renderer spends; under it the same escape field colored by the integer escape count, and under that by the smooth count of the next section. Every pixel that escaped on the same step takes the same color, so the middle row terraces into flat contours. The cap here is a deliberately low 50: at the caps a real render uses the terraces are finer than a pixel, and the middle row is the bottom one.</figcaption>
+        <figcaption>One location, two palettes. Each column opens with the palette itself, drawn as the flat gradient the renderer spends; under it the same escape field colored by the integer escape count, and under that by the smooth count of the next section. Every pixel that escaped on the same step takes the same color, so the middle row terraces into flat contours.</figcaption>
       </figure>
 
     <h2 id="the-smooth-iteration-count">The smooth iteration count</h2>
@@ -96,7 +96,7 @@
     <a href="https://en.wikipedia.org/wiki/Plotting_algorithms_for_the_Mandelbrot_set">smooth
     iteration count</a>:</p>
 
-    <pre class="formula">smooth = n + 1 − log₂(log₂ |z|)</pre>
+    <pre class="formula">smooth = n + 1 − log<sub>2</sub>(log<sub>2</sub> |z|)</pre>
 
     <p>where n is the integer count and z is the orbit's value when the loop stopped. The
     subtracted term lands between 0 and 1 and supplies the fractional part, and the convention
@@ -112,12 +112,12 @@
     <p>Rendered this way, the terraces melt into continuous ramps. Each pixel now carries one
     continuously varying number — a floating-point <i>field</i> — and turning that field into
     colors is a separate, later decision. This page is about producing good fields;
-    <a href="rendering-modes.html">Rendering modes</a> covers converting fields into different
+    <a href="rendering-modes.html">rendering modes</a> covers converting fields into different
     rendering styles.</p>
 
       <figure class="figure" data-figure="render-field-anatomy">
-        <img src="../assets/images/figures/render-field-anatomy.jpg" width="1316" height="331" alt="A finished multibrot wallpaper beside the same frame's escape field drawn as grayscale.">
-        <figcaption>One field, three columns, and above each the gradient it is read through. On the left there is no palette at all: the value is the lightness. The other two are the same numbers under two different maps, and nothing but the lookup table changed between them — the structure is identical in all three, while the warmth, the contrast and where the eye is pulled are not.</figcaption>
+        <img src="../assets/images/figures/render-field-anatomy.jpg" width="1600" height="361" alt="One escape field in three columns, each under the gradient it is read through: plain lightness, a warm palette, and a green one.">
+        <figcaption>One field rendered with three different palettes. The recoloring is extremely fast once the smooth field is computed.</figcaption>
       </figure>
 
     <h2 id="iteration-caps">Iteration caps</h2>
@@ -166,7 +166,7 @@
 
       <figure class="figure" data-figure="render-supersample">
         <a class="figure-open" href="../explorer/index.html?v=2&amp;f=julia&amp;cx=-0.07810228973371881&amp;cy=-0.6514609012382414&amp;x=0.0&amp;y=0.45&amp;w=0.50&amp;p=Verdigris%20Flare" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/render-supersample.jpg" width="1316" height="417" alt="A filament-rich Julia crop at one sample per pixel beside sixteen, both enlarged so that single pixels are visible."><span class="figure-open-mark" aria-hidden="true">↗</span></a>
-        <figcaption>One crop at one sample per pixel and at the production setting of 4 × 4 = 16, both enlarged to twice size so single pixels are visible. A filament thinner than a pixel is a coin flip at one sample: the arms break into speckle and the spiral's dotted beads come apart. Nothing later in the pipeline can put back what the sampling missed.</figcaption>
+        <figcaption>One crop at one sample per pixel and at the pipeline's setting of 4 × 4 = 16, both enlarged to twice size so single pixels are visible. A filament thinner than a pixel is a coin flip at one sample: the arms break into speckle and the spiral's dotted beads come apart. Nothing later in the pipeline can put back what the sampling missed.</figcaption>
       </figure>
 
     <h2 id="dynamic-range">Dynamic range</h2>
@@ -212,7 +212,7 @@
     What this produces is the project's <i>smooth</i> rendering — the clean, classic look of
     these fractals — and it is one style among several.
     <a href="rendering-modes.html">Rendering modes</a> catalogs the others, built on the same
-    machinery, and <a href="color-palettes.html">Color palettes</a> covers how the palette
+    machinery, and <a href="color-palettes.html">color palettes</a> covers how the palette
     itself is chosen.</p>
   </section>
 

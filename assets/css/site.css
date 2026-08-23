@@ -258,8 +258,9 @@ footer > * {
 
 .prose td:not(:first-child) { font-variant-numeric: tabular-nums; }
 
-/* An iteration, written the way the code writes it: its own line, out of the paragraph
-   rhythm, and monospaced so z*z reads as multiplication and not as emphasis. */
+/* An iteration, set the way a paper sets one: its own line, out of the paragraph
+   rhythm, and monospaced, with indices and powers as real subscripts and superscripts.
+   Zeroing their line-height keeps a formula's line from growing taller than the rest. */
 .formula {
   margin: 1.2em 0;
   padding: 0.7rem 1rem;
@@ -269,6 +270,16 @@ footer > * {
   font-family: var(--mono);
   font-size: 0.9375rem;
 }
+
+sub, sup {
+  font-size: 0.72em;
+  line-height: 0;
+  position: relative;
+  vertical-align: baseline;
+}
+
+sup { top: -0.5em; }
+sub { bottom: -0.25em; }
 
 .kicker {
   margin: 0 0 0.6rem;

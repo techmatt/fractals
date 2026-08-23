@@ -49,6 +49,17 @@ RATING_INK = {
     4: (0xE8, 0x73, 0x4A),
 }
 
+#: One colour per marked point on a map, for a figure whose whole claim is *this spot
+#: made that picture*. A number in a ring asks the reader to hold four numbers and look
+#: four times; a hue asks them to look once. Four hues far enough apart to name at a
+#: glance, and each bright enough to read over a fractal, which can be any colour at all.
+MARK_INK = (
+    (0xFF, 0xC4, 0x3D),
+    (0x5B, 0xC8, 0xFF),
+    (0x5F, 0xDD, 0x8F),
+    (0xFF, 0x6B, 0x5B),
+)
+
 #: The CSS custom property each well token is transcribed from, for the check.
 CSS_TOKENS = {
     "--well": WELL,

@@ -1,10 +1,16 @@
 """The figures that are drawn rather than rendered.
 
-Two of the article's figures are diagrams: they explain a mechanism instead of showing a
+One of the article's figures is a diagram: it explains a mechanism instead of showing a
 location, so no fractal engine is involved and nothing outside this repository is read.
-Those two are drawn here, from the stylesheet's own colours, so the picture in the well
-matches the well it sits in — and so a wording change is an edit to this file rather than
-to an image somebody has to find again.
+It is drawn here, from the stylesheet's own colours, so the picture in the well matches
+the well it sits in — and so a wording change is an edit to this file rather than to an
+image somebody has to find again.
+
+The overview's pipeline teaser used to be the second *(Matt, 2026-08-22)*. It is a paper
+teaser now — real renders of one location at each stage, with the stages' parts drawn
+around them — so it is composed where every other sheet of renders is composed, in
+`scratch/figures/make_sheets.py`, and this module keeps its rule that no engine is
+reached from here.
 
     python -m builder diagram escape-orbit-race
 
@@ -28,7 +34,6 @@ from .theme import (
     WELL,
     WELL_INK,
     WELL_INK_DIM,
-    WELL_PANEL,
     WELL_PENDING,
     WELL_RULE,
     font,
@@ -335,64 +340,8 @@ PIPELINE_GAP = 34
 PIPELINE_BOX = 150
 
 
-def pipeline(destination: Path) -> tuple[int, int]:
-    """The four stages as boxes, each naming the sections that take it one at a time."""
-    from PIL import Image, ImageDraw
-
-    columns = len(STAGES)
-    box_width = (PIPELINE_WIDTH - 2 * PIPELINE_MARGIN - (columns - 1) * PIPELINE_GAP) // columns
-    name_font = font(30, SEMIBOLD)
-    body_font = font(17)
-    section_font = font(15)
-    section_lines = max(len(sections) for _, _, sections in STAGES)
-    height = PIPELINE_MARGIN + PIPELINE_BOX + 12 + section_lines * 21 + PIPELINE_MARGIN
-
-    image = Image.new("RGB", (PIPELINE_WIDTH, height), WELL)
-    draw = ImageDraw.Draw(image)
-    for index, (name, body, sections) in enumerate(STAGES):
-        left = PIPELINE_MARGIN + index * (box_width + PIPELINE_GAP)
-        right = left + box_width
-        draw.rounded_rectangle(
-            [left, PIPELINE_MARGIN, right, PIPELINE_MARGIN + PIPELINE_BOX],
-            radius=7,
-            fill=WELL_PANEL,
-            outline=WELL_RULE,
-            width=1,
-        )
-        draw.text((left + 20, PIPELINE_MARGIN + 22), name, fill=WELL_INK, font=name_font)
-        for line_index, line in enumerate(body):
-            draw.text(
-                (left + 20, PIPELINE_MARGIN + 76 + line_index * 25),
-                line,
-                fill=WELL_INK_DIM,
-                font=body_font,
-            )
-        for line_index, section in enumerate(sections):
-            draw.text(
-                (left + 20, PIPELINE_MARGIN + PIPELINE_BOX + 12 + line_index * 21),
-                section,
-                fill=SECTION_INK,
-                font=section_font,
-            )
-        if index + 1 < columns:
-            _arrow(draw, right + 8, right + PIPELINE_GAP - 8, PIPELINE_MARGIN + PIPELINE_BOX / 2)
-
-    destination.parent.mkdir(parents=True, exist_ok=True)
-    image.save(destination, format="PNG", optimize=True)
-    return image.size
-
-
-def _arrow(draw, start: float, finish: float, y: float) -> None:
-    draw.line([start, y, finish - 5, y], fill=WELL_INK_DIM, width=2)
-    draw.polygon(
-        [(finish, y), (finish - 9, y - 5), (finish - 9, y + 5)],
-        fill=WELL_INK_DIM,
-    )
-
-
 DIAGRAMS = {
     "escape-orbit-race": ("escape-orbit-race.png", orbit_race),
-    "overview-pipeline": ("overview-pipeline.png", pipeline),
 }
 
 

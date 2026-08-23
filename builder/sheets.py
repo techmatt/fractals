@@ -360,6 +360,100 @@ def marker(draw, x: float, y: float, text: str, *, radius: int = 11, size: int =
     draw.text((badge_x - (right - left) / 2, badge_y), text, fill=WELL_INK, font=face)
 
 
+def ring(draw, x: float, y: float, colour, *, radius: int = 13, width: int = 3) -> None:
+    """A coloured ring on a picture: this spot, and the panel wearing the same colour.
+
+    Drawn dark under colour for the reason `marked_box` is: the thing under a mark is a
+    fractal and can be any colour at all, so a single stroke of anything vanishes
+    somewhere. The hue carries the correspondence and no number is needed.
+    """
+    draw.ellipse(
+        [x - radius - width, y - radius - width, x + radius + width, y + radius + width],
+        outline=(0, 0, 0),
+        width=width + 2,
+    )
+    draw.ellipse([x - radius, y - radius, x + radius, y + radius], outline=colour, width=width)
+
+
+def framed(draw, origin: tuple[int, int], tile: tuple[int, int], colour, *, width: int = 4) -> None:
+    """A coloured frame drawn just inside a panel's edge, to match a ring on a map."""
+    x, y = origin
+    tile_width, tile_height = tile
+    right, bottom = x + tile_width - 1, y + tile_height - 1
+    draw.rectangle([x, y, right, bottom], outline=colour, width=width)
+
+
+def plane_axes(
+    draw,
+    box: tuple[int, int, int, int],
+    centre: tuple[float, float],
+    width: float,
+    *,
+    real=(),
+    imaginary=(),
+    dash: tuple[int, int] = (7, 7),
+    size: int = 19,
+) -> None:
+    """The real and imaginary axes over a panel of the plane, with a few units named.
+
+    A frame of the complex plane is the one thing a fractal render never says out loud —
+    how wide the view is, and where the origin sits in it. Dashed rather than solid so
+    the picture stays the subject, and only the units a reader needs to take the scale:
+    a tick every whole number would be a graph, and this is a picture with a scale on it.
+    """
+    left, top, right, bottom = box
+    height = width * (bottom - top) / (right - left)
+    centre_re, centre_im = centre
+    axis_y = top + ((centre_im + height / 2) - 0.0) / height * (bottom - top)
+    axis_x = left + (0.0 - (centre_re - width / 2)) / width * (right - left)
+    face = font(size)
+    for start, finish in ((left, right),):
+        _dashed(draw, start, axis_y, finish, axis_y, dash)
+    _dashed(draw, axis_x, top, axis_x, bottom, dash)
+    for value in real:
+        x, _ = plane_point((value, 0.0), box, centre, width)
+        _stroke(draw, x, axis_y - 7, x, axis_y + 7)
+        _stamp(draw, x, axis_y + 11, _unit(value), face, centre_x=True)
+    for value in imaginary:
+        _, y = plane_point((0.0, value), box, centre, width)
+        _stroke(draw, axis_x - 7, y, axis_x + 7, y)
+        _stamp(draw, axis_x + 11, y - size * 0.7, _unit(value, imaginary=True), face)
+    _stamp(draw, axis_x + 11, axis_y + 8, "0", face)
+
+
+def _unit(value: float, *, imaginary: bool = False) -> str:
+    """A whole-number tick, typeset: real minus, and `i` where the axis is imaginary."""
+    whole = int(round(value))
+    text = f"{MINUS if whole < 0 else ''}{abs(whole) if abs(whole) != 1 or not imaginary else ''}"
+    return text + ("i" if imaginary else "")
+
+
+def _dashed(draw, x0: float, y0: float, x1: float, y1: float, dash: tuple[int, int]) -> None:
+    """One dashed run, dark under light, so it survives whatever is under it."""
+    span = ((x1 - x0) ** 2 + (y1 - y0) ** 2) ** 0.5
+    on, off = dash
+    at = 0.0
+    while at < span:
+        end = min(at + on, span)
+        sx, sy = x0 + (x1 - x0) * at / span, y0 + (y1 - y0) * at / span
+        ex, ey = x0 + (x1 - x0) * end / span, y0 + (y1 - y0) * end / span
+        _stroke(draw, sx, sy, ex, ey)
+        at = end + off
+
+
+def _stroke(draw, x0: float, y0: float, x1: float, y1: float) -> None:
+    draw.line([x0, y0, x1, y1], fill=(0, 0, 0), width=4)
+    draw.line([x0, y0, x1, y1], fill=WELL_INK, width=2)
+
+
+def _stamp(draw, x: float, y: float, text: str, face, *, centre_x: bool = False) -> None:
+    if centre_x:
+        left, _, right, _ = draw.textbbox((0, 0), text, font=face)
+        x -= (right - left) / 2
+    draw.text((x + 1, y + 1), text, fill=(0, 0, 0), font=face)
+    draw.text((x, y), text, fill=WELL_INK, font=face)
+
+
 def plane_point(
     value,
     box: tuple[int, int, int, int],
