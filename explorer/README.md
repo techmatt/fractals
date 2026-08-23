@@ -15,6 +15,18 @@ renders by name and no production draw picks; and deep zoom, because a picture t
 perturbation needs a renderer this page does not carry. The article's deep-zoom figures
 stay baked rasters.
 
+Two more things are outside the contract **by ruling**, and each is a refusal a figure can
+run into. **The iteration cap is not a link key.** The depth a picture is drawn to is the
+engine's own depth-aware policy at that width, and a key for it would let a link say "this
+frame, but shallower" — a different picture wearing the same name. The article's
+`render-maxiter` figure was drawn at a cap of 300 where the policy gives 32,474 at its
+width, so it stays unlinked by design rather than opening at something near it. **A mode
+parameter left alone is not emitted.** Its default lives in the engine's mode catalog,
+which is the same place the mode's identity lives, so a link that omits `density` is asking
+for "the stripe mode" rather than for "a stripe mode at 6" — and it should move if the
+catalog ever retunes that mode. `permalink.js` states both sides of that, and
+`builder/links.py`'s `REASONS` is where a refusal gets its name.
+
 The design draft 1 was built to is `preserve\visitor_explorer_design.md` on the synced
 drive. It is not restated here; where the two disagree, the tree is what is true and the
 design doc is what was intended. Everything it rules is built or deliberately

@@ -23,6 +23,10 @@ Every one of them read-only:
   is written. The master itself lives in the Drive-synced working folder, which is not
   in a clone and never in CI, so what is checked here is the registry and not the
   document: `python -m builder prose` is what holds the two texts together.
+- **guidance** — `CLAUDE.md` names `writing-guidance.md`, the editorial authority. That
+  document is not in this repository and cannot be: both halves of the project write to
+  it. So the one thing a clone can be held to is that the file every prompt does read
+  points at it, and a rename or a tidy-up that drops the pointer fails here.
 - **theme** — the well colours a drawn figure is made of are the stylesheet's own. They
   have to be transcribed, because Pillow cannot read CSS; this is what keeps a restyle
   from moving the well and leaving every diagram drawn against the old one.
@@ -405,6 +409,25 @@ def check_theme() -> list[str]:
     return problems
 
 
+#: The editorial authority for the website, which lives on the synced drive rather than
+#: here. What is checked is that `CLAUDE.md` names it: a session reads that file first,
+#: and rules it never hears of are rules it writes against nothing.
+GUIDANCE = "writing-guidance.md"
+
+
+def check_guidance() -> list[str]:
+    """`CLAUDE.md` points at the editorial authority."""
+    instructions = SITE_ROOT / "CLAUDE.md"
+    if not instructions.is_file():
+        return ["CLAUDE.md: missing — nothing here points a prompt at the editorial rules"]
+    if GUIDANCE not in _read(instructions):
+        return [
+            f"CLAUDE.md: never names {GUIDANCE} — the editorial rules live on the synced "
+            "drive, and a prompt that is not sent there writes against nothing"
+        ]
+    return []
+
+
 def run_all() -> dict[str, list[str]]:
     """Every check, named, so a failure says which one."""
     loaded = galleries.load_all()
@@ -418,6 +441,7 @@ def run_all() -> dict[str, list[str]]:
         "explorer": check_explorer(),
         "assets": check_assets(loaded),
         "prose": check_prose(article),
+        "guidance": check_guidance(),
         "theme": check_theme(),
         "vocabulary": vocabulary.sweep(),
     }

@@ -60,7 +60,17 @@ Two paths, and a page arrives by one of them.
   The approved markdown master goes on the synced drive and is registered in
   `article/prose.jsonl`. A page with no row is a page whose HTML is its own master, which
   is legitimate and is said out loud rather than assumed.
-- **A written page is revised by review round**, below.
+- **A written page is revised by review round**, below. Once a page is placed, a round
+  reads **the site**: the doc is built from the page as served, and the master is what the
+  page is held to rather than what is reviewed.
+
+A master lives at the **root** of `prose\` on the synced drive, and `prose\old\` is what
+has been superseded — a registry row naming a master under `old\` is either a stale row or
+a file in the wrong folder, and which one it is worth saying. A draft may arrive with a
+**verification list at its foot**, headed *VERIFY AT PLACEMENT*: every number, ratio,
+constant and file name the prose leans on. Placement is where that list is worked — each
+line checked against the source it names, the prose corrected where the source disagrees,
+and every correction named in the report. The list is not itself placed.
 
 Either way, **placed prose has more than one edit site**: the page, the prose master, and
 any placement script's string literal under ignored `scratch/`. An edit that touches one
@@ -111,6 +121,23 @@ keeps the mechanics. **Every apply round ends by distilling that round's general
 - **Images here are web-res only.** Full-size wallpapers ship as **GitHub Releases
   assets** and never enter git history. `assets/images/` holds what a page displays;
   anything a reader would download at full size is a release link.
+- **Matt picks the tile; a session lays the choices out.** Where a figure needs one
+  frame out of many, the maker builds a numbered contact sheet under ignored `scratch/`
+  and Matt names the tile he wants; the prompt's addendum records which one it was. A
+  session never picks for him, however clearly one panel looks best — the article's claim
+  is that a person chose these pictures, and a machine pick standing in for one makes that
+  claim quietly false.
+- **A figure's id opens with its page's prefix** — `escape-`, `render-`, `modes-`,
+  `locations-`, `judges-`, `palette-` — so a slug says where it lives before anything
+  looks it up. The prose never uses that slug: a reference from the text is **positional**
+  (*the figure below*), because this site numbers no figures and anchors none.
+- **Exactly one line of a figure's `provenance` puts the word `colormap` in front of a
+  map's name.** That word is what `builder/explorer.py`'s `drawn_in` reads to bake a map
+  into `explorer/palettes.js` so a link may name it, and `builder/links.py` reads the same
+  word to derive the link itself. Every other line of the row says `palette <name>`
+  instead. A sheet of eighty strips is one link at its representative panel; a row that
+  writes `colormap` on every line asks the explorer to carry hundreds of gradients so that
+  one figure could be opened at a picture it does not even show.
 - **Every figure records how it was made.** A figure's registry row carries a
   `provenance` list — one line per panel — and a line holds everything needed to draw
   that panel again: the family and its constants, the frame's centre and width, the
@@ -315,6 +342,13 @@ Each prompt in this project ends the same way:
 
 ## Rules
 
+- **Everything on this site is a draft.** No page, figure, name or record here is
+  finished, and none of it is owed deference for having been written already. An argument
+  for a change is made from what the final article should be — never from how much rework
+  it would cost, how recently something landed, or how many rounds it has already been
+  through. "We just changed that" is not a reason to keep it, and neither is "that would
+  undo last week's work". The converse is not a licence to churn: a draft is still held to
+  every convention above, and a change still has to be argued for on the article's terms.
 - Commit to `main` only.
 - **Completed prompt work is committed, without being asked.** Finishing a prompt means
   the work is on `main` — no branches, no PRs, no waiting for approval, in this repo as

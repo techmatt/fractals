@@ -181,6 +181,11 @@ Microsoft Word (.docx)** back into the same folder.
 A page with no row is a page whose HTML is its own master — legitimate for a section
 written straight into the page, and the review doc is built from the page alone.
 
+The masters themselves live at the **root** of `prose\` in the synced folder;
+`prose\old\` holds what has been superseded. A row that names a master under `old\` is
+saying the page is held to a document the drafting side has already moved past — report
+it rather than reading around it.
+
 A **divergence** is a place where the page deliberately says something the master does
 not, because the master was approved before a correction landed. Each one records the
 master's words, the page's words, and why. Nothing else is allowed to differ, and a

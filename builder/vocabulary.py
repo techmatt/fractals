@@ -4,7 +4,7 @@
 nothing ships under a name the article would not teach. Both were enforced by whoever
 happened to be reading. This sweeps every tracked file instead.
 
-Two terms are on the list today, and neither is spelled plainly anywhere in this file —
+Three terms are on the list today, and none is spelled plainly anywhere in this file —
 each is written with one character in a class, so the module that bans a word is not
 itself a hit. The compiled patterns are unaffected.
 
@@ -16,6 +16,20 @@ itself a hit. The compiled patterns are unaffected.
   one per family at one degree, with a parameter plane counted apart from its dynamical
   twin. "Type" merged the two, and a reader who met it in one sense carried the wrong
   idea into the other.
+* **`emissio[n]`** — vocabulary from a private version of this project with nothing on
+  this site behind it *(Matt, 2026-08-22)*. It has been on the wallpaper project's list
+  since that repository's own sweep, and it enters this one because a name does not have
+  to be copied across to arrive: it can be written fresh by somebody who met it in a
+  report.
+
+One banned word is deliberately **not** here. `writing-guidance.md` bans **colormap** in
+reader-facing text — the article's word for the thing is *palette*, and a reader who meets
+both learns two names for one idea — and it stops at the reader, because the same word is
+the engine's own field name. A figure's `provenance`, the link registry, the permalink
+contract and the wasm all spell it, and one of this repository's rules depends on its being
+spelled: the single `colormap` line of a figure's provenance is what bakes that map into
+the explorer. A sweep over tracked files cannot tell prose from a field name, so that ban
+is held editorially and this list stays the part a machine can decide.
 
 The wallpaper project's `tests/test_banned_vocabulary.py` guards a longer list, and its
 extra entries are all *code* names out of an older codebase. None of them can reach this
@@ -43,6 +57,7 @@ from .paths import SITE_ROOT
 BANNED_TERMS = (
     "sittin[g]",
     "fractal typ[e]",
+    "emissio[n]",
 )
 
 
