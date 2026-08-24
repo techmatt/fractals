@@ -1,6 +1,11 @@
 """The checks the bootstrap did by hand, made mechanical.
 
-Every one of them read-only:
+Every one of them read-only, and every one of them runs on a clone with nothing beside
+it. Two want things a clone need not have — the wallpaper project's checkout, and
+Pillow — and what they do without is report a **named skip**: which check, which half of
+it, and why. Never a crash before the other checks, and never a silent pass. `check`
+used to build the palette library page straight off the checkout, so the first thing it
+did on a machine without one was raise, and every check after it went unrun.
 
 - **links** — every internal href and src on every page resolves to a file that exists,
   and none is root-absolute. The site is served from `/fractal-website/`, so a rooted
@@ -27,6 +32,10 @@ Every one of them read-only:
   is written. The master itself lives in the Drive-synced working folder, which is not
   in a clone and never in CI, so what is checked here is the registry and not the
   document: `python -m builder prose` is what holds the two texts together.
+- **library** — this repository's palette record still says what the wallpaper project's
+  own library says: the same maps, in the same groups, in the same order. The page is
+  held to the record by **pages**, everywhere; the record is held to the library here,
+  and only where that checkout is configured.
 - **guidance** — `CLAUDE.md` names `writing-guidance.md`, the editorial authority. That
   document is not in this repository and cannot be: both halves of the project write to
   it. So the one thing a clone can be held to is that the file every prompt does read
@@ -44,11 +53,24 @@ Every one of them read-only:
 """
 
 import re
+from dataclasses import dataclass
 from html.parser import HTMLParser
 from pathlib import Path
 from urllib.parse import unquote, urldefrag
 
-from . import figures, galleries, images, links, pages, prose, sections, theme, vocabulary
+from . import (
+    figures,
+    galleries,
+    images,
+    links,
+    pages,
+    palettes,
+    prose,
+    renders,
+    sections,
+    theme,
+    vocabulary,
+)
 from .paths import (
     ARTICLE_DIR,
     GALLERIES_DIR,
@@ -461,20 +483,103 @@ def check_guidance() -> list[str]:
     return []
 
 
-def run_all() -> dict[str, list[str]]:
-    """Every check, named, so a failure says which one."""
+def check_library() -> list[str]:
+    """The palette record against the library it was written from.
+
+    Nothing here on a machine without the checkout: the record *is* what the page is held
+    to, everywhere, and this is the one question that needs the thing next door. A
+    configured checkout that cannot answer is reported rather than raised — a broken
+    machine is a problem this can name, and it is not a reason for every other check to
+    go unrun.
+    """
+    if not figures.stores_available():
+        return []
+    try:
+        return palettes.library_drift()
+    except (renders.EngineError, palettes.PaletteError, OSError) as error:
+        return [f"library.jsonl: the configured checkout could not be read — {error}"]
+
+
+#: Why a skip happened, spelled once. Both are states of the machine rather than of the
+#: site, which is exactly why neither may fail a check and neither may pass one silently.
+NO_CHECKOUT = "the fractal-wallpapers checkout is not configured here"
+NO_PILLOW = "Pillow is not installed here"
+
+
+@dataclass(frozen=True)
+class Skip:
+    """A check that could not run in full, named rather than passed over in silence.
+
+    `whole` is the difference between a check that asked half its questions and one that
+    asked none: the first still reports `ok`, and the second must never, because `ok` for
+    a check nobody ran is the shape of the bug this whole file just came out of.
+    """
+
+    check: str
+    what: str
+    why: str
+    whole: bool = False
+
+    def __str__(self) -> str:
+        return f"{self.what} ({self.why})"
+
+
+@dataclass(frozen=True)
+class Report:
+    """What every check found, and what none of them could ask here."""
+
+    problems: dict[str, list[str]]
+    skipped: tuple[Skip, ...]
+
+    @property
+    def total(self) -> int:
+        return sum(len(found) for found in self.problems.values())
+
+    @property
+    def unrun(self) -> dict[str, Skip]:
+        """The checks that asked nothing at all here, by name."""
+        return {skip.check: skip for skip in self.skipped if skip.whole}
+
+
+def skips() -> tuple[Skip, ...]:
+    """Which halves of which checks this machine cannot ask, and why."""
+    found = []
+    if not figures.stores_available():
+        found.append(
+            Skip("figures", "every source key against the store its kind names", NO_CHECKOUT)
+        )
+        found.append(
+            Skip(
+                "library",
+                "the palette record against the project's own library",
+                NO_CHECKOUT,
+                whole=True,
+            )
+        )
+    if not images.available():
+        found.append(Skip("figures", "each figure's size on disk", NO_PILLOW))
+        found.append(Skip("assets", "each image's and each thumbnail's size on disk", NO_PILLOW))
+    return tuple(found)
+
+
+def run_all() -> Report:
+    """Every check, named, so a failure says which one — and every skip, for the same reason."""
     loaded = galleries.load_all()
     article = sections.load_all()
-    return {
-        "links": check_links(),
-        "pages": check_pages(loaded, article),
-        "contents": check_contents(article),
-        "figures": check_figures(),
-        "landing": check_landing(),
-        "explorer": check_explorer(),
-        "assets": check_assets(loaded),
-        "prose": check_prose(article),
-        "guidance": check_guidance(),
-        "theme": check_theme(),
-        "vocabulary": vocabulary.sweep(),
-    }
+    return Report(
+        {
+            "links": check_links(),
+            "pages": check_pages(loaded, article),
+            "contents": check_contents(article),
+            "figures": check_figures(),
+            "landing": check_landing(),
+            "explorer": check_explorer(),
+            "assets": check_assets(loaded),
+            "library": check_library(),
+            "prose": check_prose(article),
+            "guidance": check_guidance(),
+            "theme": check_theme(),
+            "vocabulary": vocabulary.sweep(),
+        },
+        skips(),
+    )

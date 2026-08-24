@@ -258,12 +258,14 @@ def gallery_index(galleries: list[Gallery], sections: list[sections_module.Secti
 def library_page(sections: list[sections_module.Section]) -> str:
     """The palette library, every map as a strip, grouped the way the section groups them.
 
-    Generated rather than written because it is seven hundred rows of the same shape, and
+    Generated rather than written because it is nine hundred rows of the same shape, and
     the shape is a record: `check` re-derives it and compares, so a palette that entered
-    the library and not the page is a failing check rather than a gap nobody looks at.
+    the record and not the page is a failing check rather than a gap nobody looks at. The
+    record is this repository's own — `palettes/library.jsonl`, the way a gallery has its
+    `gallery.jsonl` — so the page derives from committed text here and the checkout next
+    door is what the *record* is held to, by the `library` check, where there is one.
     """
     page = palettes_module.library_page_path()
-    held = palettes_module.library()
     directory = palettes_module.library_assets_dir()
     width, height = palettes_module.LIBRARY_STRIP
     article = relative_href(page, SITE_ROOT / "article" / "color-palettes.html")
@@ -278,20 +280,20 @@ def library_page(sections: list[sections_module.Section]) -> str:
             ]
         )
     ]
-    for index, group in enumerate(palettes_module.clusters(), start=1):
+    for number, group in palettes_module.held_groups():
         lines = [
             '  <section class="palette-group">',
-            f'    <h2 id="group-{index}">Group {index} — {len(group["members"])} palettes</h2>',
+            f'    <h2 id="group-{number}">Group {number} — {len(group)} palettes</h2>',
             '    <div class="palette-grid">',
         ]
-        for name in group["members"]:
-            source = relative_href(page, directory / palettes_module.library_strip_name(name))
+        for held in group:
+            source = relative_href(page, directory / held.strip)
             lines.extend(
                 [
                     '      <figure class="palette">',
                     f'        <img src="{attribute(source)}" width="{width}" height="{height}" '
-                    f'alt="{attribute(palettes_module.strip_alt(held[name]))}" loading="lazy">',
-                    f"        <figcaption>{text(name)}</figcaption>",
+                    f'alt="{attribute(held.alt)}" loading="lazy">',
+                    f"        <figcaption>{text(held.name)}</figcaption>",
                     "      </figure>",
                 ]
             )

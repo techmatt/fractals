@@ -66,6 +66,13 @@ class Record:
             raise RecordError(f"{self.where}: {key} must be a non-empty object when present")
         return value
 
+    def flag(self, key: str) -> bool:
+        """A true/false field. Spelled out, because `0` and `"no"` are not a boolean."""
+        value = self.fields.get(key)
+        if not isinstance(value, bool):
+            raise RecordError(f"{self.where}: {key} must be true or false")
+        return value
+
     def count(self, key: str) -> int:
         value = self.fields.get(key)
         if not isinstance(value, int) or isinstance(value, bool) or value <= 0:

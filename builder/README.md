@@ -9,7 +9,8 @@ Python. A build is done here and reviewed in a diff.
 python -m builder build     regenerate gallery pages, the gallery index, thumbnails,
                             and the contents rail every page carries
 python -m builder check     links, page sync, contents, figure blocks, landings,
-                            explorer links, assets, prose, theme, banned vocabulary
+                            explorer links, assets, the palette record, prose, theme,
+                            banned vocabulary
 python -m builder figure ID print a figure's markup block, to paste into an article page
 python -m builder figures [--all]   what is still to make, grouped by page
 python -m builder figures --place ID SRC [--crop l,t,r,b] [--max-width N] [--lossless]
@@ -21,6 +22,8 @@ python -m builder judges [ID ...] [--place] [--replace]
 python -m builder palettes [ID ...] [--place] [--replace]
                             draw the figures of the Color palettes page and the
                             pages that hang off it
+python -m builder palettes --library   refresh palettes/library.jsonl and land any
+                            strip the all-palettes page is missing
 python -m builder diagram ID draw one of the two figures that are diagrams, not renders
 python -m builder explorer [--palettes-only]  bake the explorer's palettes, wasm, manifest
 python -m builder links [--write]   derive every picture's explorer link from its
@@ -37,8 +40,18 @@ that is a rule and it stays true — but Chrome does not keep a zoom level for `
 so a preview opened from disk resets to 100% at every click. Over localhost the whole
 site is one origin and the zoom holds. It serves the committed bytes and builds nothing.
 
-Install what it needs with `pip install -r builder/requirements.txt`. `check` needs no
-image library for the parts that read HTML; Pillow only lets it verify pixel sizes too.
+Install what it needs with `pip install -r builder/requirements.txt`.
+
+**`check` runs on a bare clone.** Every check it makes runs against this repository and
+nothing else — that is the whole contract, because CI clones this repository alone and
+a check that cannot run there is a check nobody runs. Two things it will use if they are
+here and does not need: the wallpaper project's checkout, which is what the `library`
+check and the source-key half of `figures` want; and Pillow, which is what lets `figures`
+and `assets` verify pixel sizes. Missing either is a **named skip** — the check line says
+`skipped` rather than `ok`, and the exit summary counts them — never a failure and never
+a silent pass. `check` once built the palette library page straight off that checkout, so
+on a machine without one it raised before the first check ran and every check after it
+went unrun; the page is built from a committed record now, and this is why.
 
 ## A gallery is a directory
 
@@ -158,14 +171,34 @@ separate command from `build` and is not part of `check`: type is rasterized thr
 whatever font the machine has, so two machines agree about the picture and not about its
 bytes. Every other figure asset arrived through `import`.
 
+## The palette library has a record, the way a gallery does
+
+`palettes/all-palettes.html` is nine hundred rows of the same shape, so it is generated
+rather than written. What it is generated *from* is `palettes/library.jsonl` — one row
+per palette, carrying the three facts the page is made of and nothing else: the name, the
+figcaption and the strip's file name both; whether the map closes on the colour it opened
+with, which is the alt text and, in a render, the fold; and which of the sixteen groups it
+is in, counted along the wallpaper project's clustering in the order the page lays them
+out.
+
+That record is this repository's, exactly as `gallery.jsonl` is, and for the same reason:
+page generation is a pure function of committed text, so `check` can hold the largest
+page on the site to its record on a machine that has nothing beside it. `python -m builder
+palettes --library` is the one command that reads the library next door — it lands any
+strip the page is missing under `assets/images/palettes/` and rewrites the record — and
+the `library` check is what holds the record to that library where a checkout is
+configured. A palette entering the library next door costs one `--library` and one
+`build` on this side.
+
 ## What `check` checks
 
 - **links** — every internal `href` and `src` on every page resolves, and none is
   root-absolute. The site is served from `/fractal-website/`, so a rooted href works
   locally and breaks only in production. A link to a bare directory fails too: a page
   here has to open from the filesystem, where `galleries/` is a directory listing.
-- **pages** — the committed HTML under `galleries/` is byte-identical to what the
-  builder produces now, and no page there is unaccounted for.
+- **pages** — the committed HTML the builder owns — `galleries/`, and the palette
+  library page — is byte-identical to what the builder produces now, and no page under
+  `galleries/` is unaccounted for.
 - **contents** — every hand-written page carries today's rail, every prose heading carries
   the id its words give it, every article page is listed in `sections.jsonl`, and the
   front page marks the same sections done that the registry calls written.
@@ -181,6 +214,11 @@ bytes. Every other figure asset arrived through `import`.
   to carrying the link as well.
 - **assets** — every image the metadata names exists at its stated size, every
   thumbnail is current, and no orphan file is left in a gallery directory.
+- **library** — `palettes/library.jsonl` still says what the wallpaper project's own
+  palette library says: the same maps, in the same groups, in the same order, and no map
+  in the library that the clustering leaves out of every group. This is the one check
+  that needs the checkout, and the one that is skipped by name without it. The page
+  itself is held to the record by **pages**, on every machine.
 - **prose** — every row of `article/prose.jsonl` names a page that is in this article and
   is written. The masters themselves are on a synced drive that a clone need not have, so
   `check` holds the registry and `prose` holds the documents.

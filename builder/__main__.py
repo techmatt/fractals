@@ -174,6 +174,11 @@ def _parser() -> argparse.ArgumentParser:
         action="store_true",
         help="land the redraw over a figure that is already made, page and row together",
     )
+    coloured.add_argument(
+        "--library",
+        action="store_true",
+        help="refresh palettes/library.jsonl and land any missing strip, from the library",
+    )
 
     drawn = commands.add_parser("diagram", help="draw one of the figures that is not a render")
     drawn.add_argument("id", choices=sorted(diagrams.DIAGRAMS), help="the diagram's figure id")
@@ -239,16 +244,20 @@ def _do_build(options: argparse.Namespace) -> int:
 
 
 def _do_check() -> int:
-    results = checks.run_all()
-    total = 0
-    for name, problems in results.items():
-        total += len(problems)
+    report = checks.run_all()
+    unrun = report.unrun
+    for name, problems in report.problems.items():
         if problems:
             print(f"{name}: {len(problems)} problem(s)")
             for problem in problems:
                 print(f"  {problem}")
+        elif name in unrun:
+            print(f"{name}: skipped — {unrun[name]}")
         else:
             print(f"{name}: ok")
+    for skip in report.skipped:
+        if not skip.whole:
+            print(f"{skip.check}: skipped — {skip}")
     for note in explorer_module.manifest_notes():
         print(f"note: {note}")
     registry = figures.load_all()
@@ -261,13 +270,14 @@ def _do_check() -> int:
         if figure.stale_when:
             was = "is stale" if figure.status == figures.STALE else "goes stale on"
             print(f"note: {figure.id} {was} {figure.stale_when}")
-    if not figures.stores_available():
-        print("note: the wallpapers checkout is not configured, so no source key was resolved")
-    if not images.available():
-        print("note: Pillow is not installed, so image sizes were not verified")
-    if total:
-        print(f"\n{total} problem(s)")
+    skipped = ""
+    if report.skipped:
+        named = ", ".join(sorted({skip.check for skip in report.skipped}))
+        skipped = f", {len(report.skipped)} skip(s): {named}"
+    if report.total:
+        print(f"\n{report.total} problem(s){skipped}")
         return 1
+    print("\nno problems" + (skipped or ", nothing skipped"))
     return 0
 
 
@@ -452,8 +462,12 @@ def _do_judges(options: argparse.Namespace) -> int:
 def _do_palettes(options: argparse.Namespace) -> int:
     """Draw section 7's figures, and optionally land each one where it belongs.
 
-    The same two steps `locations` and `judges` take, and deliberately the same flags.
+    The same two steps `locations` and `judges` take, and deliberately the same flags —
+    plus `--library`, which is not a figure at all: it is the one command that reads the
+    wallpaper project's library and writes down what this site's own page is made of.
     """
+    if options.library:
+        return _do_library()
     wanted = options.id or sorted(palettes_module.MAKERS)
     for identifier in wanted:
         drawn = palettes_module.draw(identifier)
@@ -473,6 +487,21 @@ def _do_palettes(options: argparse.Namespace) -> int:
         )
         size = destination.stat().st_size / 1024
         print(f"  {destination.name}  {width}x{height}  ({size:.0f} KB) — {placed.page}")
+    return 0
+
+
+def _do_library() -> int:
+    """The palette library page's two committed halves: its strips, and its record.
+
+    Everything else about that page is derived from the record, `check` included, so this
+    is the only place the checkout is needed for it — and running it is what a palette
+    entering the library next door costs on this side.
+    """
+    written, total, moved = palettes_module.refresh_library()
+    path = palettes_module.library_registry_path().relative_to(SITE_ROOT).as_posix()
+    print(f"{written} strip(s) written, {total} palette(s) in the library")
+    print(f"{'wrote' if moved else 'already current'} {path}")
+    print("`python -m builder build` writes the page the record makes")
     return 0
 
 

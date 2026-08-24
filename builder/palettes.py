@@ -962,7 +962,165 @@ def place_library_strips() -> tuple[int, int]:
     return len(wanted), len(held)
 
 
-def strip_alt(palette: Palette) -> str:
-    """What a strip is, for a reader who cannot see it."""
-    closing = "closes on the color it opens with" if palette.cyclic else "drawn folded"
-    return f"The gradient {palette.name}, {closing}."
+# ------------------------------------------------------ the library, as this repository has it
+
+#: This repository's own record of the library page: one row per palette, in the order the
+#: page lays them out, carrying the three facts the page is made of and nothing else.
+#: Written from the wallpaper project by `palettes --library` and read by everything else,
+#: so the largest generated page here is a function of committed text — which is what every
+#: other generated page on this site already is, and what lets `check` hold it to its record
+#: on a machine with no checkout, CI included.
+LIBRARY_REGISTRY = ("palettes", "library.jsonl")
+LIBRARY_ROW = "palette"
+
+#: How many disagreements a drift report names one by one before it starts counting. A
+#: library that grew by two hundred is one instruction, not two hundred lines of it.
+DRIFT_NAMED = 8
+
+
+@dataclass(frozen=True)
+class Held:
+    """One palette as the library page needs it: its name, whether it closes, its group."""
+
+    name: str
+    cyclic: bool
+    group: int
+
+    @property
+    def strip(self) -> str:
+        return library_strip_name(self.name)
+
+    @property
+    def alt(self) -> str:
+        """What a strip is, for a reader who cannot see it."""
+        closing = "closes on the color it opens with" if self.cyclic else "drawn folded"
+        return f"The gradient {self.name}, {closing}."
+
+    def row(self) -> dict:
+        return {
+            "schema": records.SCHEMA,
+            "kind": LIBRARY_ROW,
+            "name": self.name,
+            "cyclic": self.cyclic,
+            "group": self.group,
+        }
+
+
+def library_registry_path() -> Path:
+    return SITE_ROOT.joinpath(*LIBRARY_REGISTRY)
+
+
+def held_library() -> tuple[Held, ...]:
+    """The library as this repository records it, in the order the page shows it."""
+    found = []
+    for record in records.read(library_registry_path()):
+        record.expect_kind(LIBRARY_ROW)
+        found.append(Held(record.text("name"), record.flag("cyclic"), record.count("group")))
+    return tuple(found)
+
+
+def held_groups() -> list[tuple[int, tuple[Held, ...]]]:
+    """The record's rows as the page's groups, in number order."""
+    grouped: dict[int, list[Held]] = {}
+    for entry in held_library():
+        grouped.setdefault(entry.group, []).append(entry)
+    return [(number, tuple(grouped[number])) for number in sorted(grouped)]
+
+
+def derive_library() -> tuple[Held, ...]:
+    """The same rows, read off the wallpaper project — the record's one source.
+
+    The group number is the page's, counted along the clustering rather than taken from
+    it: what the record owes the page is the order the page renders, and the clustering's
+    own numbering is that repository's business.
+    """
+    held = library()
+    found = []
+    for number, group in enumerate(clusters(), start=1):
+        for name in group["members"]:
+            palette = held.get(name)
+            if palette is None:
+                raise PaletteError(
+                    f"the clustering names {name!r}, and the library holds no such map"
+                )
+            found.append(Held(name, palette.cyclic, number))
+    return tuple(found)
+
+
+def write_library(derived: tuple[Held, ...]) -> Path:
+    """Land the record. LF, spelled out, because this is a tracked file on Windows."""
+    path = library_registry_path()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    body = LF.join(json.dumps(entry.row(), ensure_ascii=False) for entry in derived)
+    path.write_text(body + LF, encoding="utf-8", newline=LF)
+    return path
+
+
+def library_drift() -> list[str]:
+    """Where this repository's record and the project's own library disagree.
+
+    The half of the library check that needs the checkout. The page is held to the record
+    everywhere; the record is held to the library here, and a palette that entered the
+    library and never reached the page is what this is for.
+    """
+    recorded = held_library()
+    derived = derive_library()
+    if recorded == derived:
+        return _unclustered()
+    fix = "`python -m builder palettes --library`"
+    by_recorded = {entry.name: entry for entry in recorded}
+    by_derived = {entry.name: entry for entry in derived}
+    problems = [
+        f"library.jsonl: {name} is in the project's library and not in this record — {fix}"
+        for name in sorted(set(by_derived) - set(by_recorded))
+    ]
+    problems += [
+        f"library.jsonl: {name} is in this record and not in the project's library — {fix}"
+        for name in sorted(set(by_recorded) - set(by_derived))
+    ]
+    problems += [
+        f"library.jsonl: {name} is recorded {_shape(by_recorded[name])}, the library says "
+        f"{_shape(by_derived[name])} — {fix}"
+        for name in sorted(set(by_recorded) & set(by_derived))
+        if by_recorded[name] != by_derived[name]
+    ]
+    if not problems:
+        problems = [f"library.jsonl: the record's order is not the library's — {fix}"]
+    return _capped(problems) + _unclustered()
+
+
+def _shape(entry: Held) -> str:
+    return f"group {entry.group}, {'cyclic' if entry.cyclic else 'folded'}"
+
+
+def _unclustered() -> list[str]:
+    """A palette the library holds and the clustering never names reaches no page at all."""
+    named = {name for group in clusters() for name in group["members"]}
+    missing = sorted(set(library()) - named)
+    if not missing:
+        return []
+    return _capped(
+        [
+            f"clusters.jsonl: {name} is in the library and in no group, so no page shows it"
+            for name in missing
+        ]
+    )
+
+
+def _capped(problems: list[str]) -> list[str]:
+    if len(problems) <= DRIFT_NAMED:
+        return problems
+    return [*problems[:DRIFT_NAMED], f"… and {len(problems) - DRIFT_NAMED} more of the same"]
+
+
+def refresh_library() -> tuple[int, int, bool]:
+    """Land every strip the library page shows, and the record the page is built from.
+
+    Returns `(strips written, palettes, the record moved)`.
+    """
+    written, total = place_library_strips()
+    derived = derive_library()
+    before = library_registry_path()
+    had = before.read_text(encoding="utf-8") if before.is_file() else None
+    write_library(derived)
+    return written, total, before.read_text(encoding="utf-8") != had

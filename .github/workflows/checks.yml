@@ -2,10 +2,18 @@
 # served from the commit, so a red check here means the next commit needs work, never
 # that the live site is down.
 #
-# `python -m builder check` regenerates the gallery HTML from today's metadata and
-# compares it byte for byte with what is committed — the sync check that keeps
+# `python -m builder check` regenerates every page the builder owns from today's metadata
+# and compares it byte for byte with what is committed — the sync check that keeps
 # "committed output" from quietly meaning "output from some earlier version of the
 # builder". It writes nothing.
+#
+# This job is a bare clone: the wallpaper project is not here and never will be, and
+# `FRACTAL_WALLPAPERS_ROOT` is set empty to say so rather than leave it to the absence of
+# an untracked `local.toml`. Every check runs anyway; the two that want that checkout
+# report a named skip. A red on this step therefore means a check failed. It has meant
+# something else once: `check` built the palette library page straight off the checkout,
+# so this step raised before the first check and stayed red for a reason that was about
+# this runner and not about the site.
 #
 # The node steps run the explorer's own tests with node's own test runner — the permalink
 # contract, and the pool's claim that a band is a range of output rows however many
@@ -38,6 +46,9 @@ jobs:
       - name: ruff format
         run: ruff format --check .
       - name: links, page sync, figure blocks, image assets
+        env:
+          # Empty is a statement: this machine has no wallpapers checkout. See above.
+          FRACTAL_WALLPAPERS_ROOT: ""
         run: python -m builder check
       - uses: actions/setup-node@v4
         with:
