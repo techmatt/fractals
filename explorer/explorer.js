@@ -189,7 +189,7 @@ function zoomAbout(px, py, factor) {
   const anchor = planeAt(px, py);
   const width = view.w.value * factor;
   if (factor < 1 && !renderer.resolves(view.x.value, view.y.value, width, grid.width, grid.height)) {
-    say("this is as deep as f64 goes — two neighbouring samples would be the same number");
+    say("this is as deep as f64 goes — two neighboring samples would be the same number");
     return;
   }
   const scale = width / view.w.value;
@@ -229,7 +229,7 @@ function reshade(direct) {
   if (field === undefined) return false;
   const shaded = renderer.shade(field, view);
   present(shaded.image);
-  say(`recoloured in ${shaded.elapsed.toFixed(0)} ms`);
+  say(`recolored in ${shaded.elapsed.toFixed(0)} ms`);
   settle();
   return true;
 }
@@ -551,7 +551,7 @@ function syncShade() {
   const cyclic = PALETTES.get(view.palette).cyclic;
   fold.box.disabled = busy || cyclic;
   fold.box.title = cyclic
-    ? `${view.palette} closes on the colour it opens with, so there is no seam to fold out`
+    ? `${view.palette} closes on the color it opens with, so there is no seam to fold out`
     : "";
 
   const set = shade.chosen(view.shade);
@@ -566,7 +566,7 @@ function syncShade() {
     ? `${view.mode} paints as it iterates and never makes a field, so gamma, cycles, ` +
       "phase and transfer have no distribution to spend and the engine ignores them " +
       "here. Reverse, mirror and rolloff do reach it — and each of the three re-iterates " +
-      "the frame rather than recolouring it, because there is no field to recolour."
+      "the frame rather than recoloring it, because there is no field to recolor."
     : "";
 }
 

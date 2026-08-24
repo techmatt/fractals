@@ -133,7 +133,7 @@ export function withinLimits(width, height, supersample) {
   const samples = width * height * supersample * supersample;
   if (samples > MAX_SAMPLES) {
     return (
-      `${saidAsCount(samples)} samples is past what a browser survives — colouring a frame holds all of it ` +
+      `${saidAsCount(samples)} samples is past what a browser survives — coloring a frame holds all of it ` +
       `in one 32-bit address space at once, and ${saidAsCount(MAX_SAMPLES)} is the ceiling. ` +
       `Ask for fewer samples per pixel, or a smaller size.`
     );
@@ -309,7 +309,7 @@ export function install(context) {
       if (shape.direct) {
         image = new ImageData(field.values, field.width, field.height);
       } else {
-        help.textContent = `colouring ${width}×${height}…`;
+        help.textContent = `coloring ${width}×${height}…`;
         meter.value = 1 - shadeShare;
         const shaded = await shadeApart(renderer.module, field, view, mine);
         if (shaded === null || mine.cancelled) {

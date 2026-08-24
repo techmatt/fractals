@@ -29,7 +29,7 @@
         <li><a href="#blending-modes-together">Blending modes together</a></li>
         <li><a href="#the-itinerary-mode">The itinerary mode</a></li>
         <li><a href="#direct-traps">Direct traps</a></li>
-        <li><a href="#two-judges">Two judges</a></li>
+        <li><a href="#one-judge-two-kinds">One judge, two kinds</a></li>
         <li><a href="#the-modes-the-pipeline-draws">The modes the pipeline draws</a></li>
         <li><a href="#beyond-this-catalog">Beyond this catalog</a></li>
         <li><a href="#one-discovery-many-wallpapers">One discovery, many wallpapers</a></li>
@@ -118,7 +118,7 @@
     <h2 id="orbit-traps">Orbit traps</h2>
 
     <p>An <i>orbit trap</i> places a fixed shape in the complex plane and asks each orbit how close it
-    ever came to the shape. In this engine every trap is centred on the origin, and two of
+    ever came to the shape. In this engine every trap is centered on the origin, and two of
     them are modes in their own right.</p>
 
     <p>The <i>circle trap</i> (trap_circle) uses the unit circle: the field is each orbit's
@@ -130,7 +130,7 @@
 
     <p>The <i>Gaussian-integer trap</i> (gaussian_int) traps against the grid of points with
     whole-number real and imaginary parts. There is one trap cell repeating across the entire
-    plane rather than one shape at the centre, so the stamped echoes tile instead of radiating
+    plane rather than one shape at the center, so the stamped echoes tile instead of radiating
     — a texture with the granularity of graph paper crumpled along the fractal's folds.</p>
 
     <p>One more trap exists that no mode uses directly: the <i>cross trap</i>, distance to the
@@ -227,16 +227,18 @@
         <figcaption>One location, four direct traps. Nothing here is a field: each orbit paints as it iterates, taking a sample from the palette at every near-miss of the trap shape. The same geometry over a black ground and over a white one produces two entirely different pictures.</figcaption>
       </figure>
 
-    <h2 id="two-judges">Two judges</h2>
+    <h2 id="one-judge-two-kinds">One judge, two kinds</h2>
 
-    <p>Later in the pipeline, trained judges score finished renders
-    (<a href="training-judges.html">training judges</a>), and the judging splits the catalog
-    in two: one judge handles the plain smooth rendering, and a second handles
-    <em>everything else</em> — every field, composite, and trap variation on this page. The
-    project calls the first kind smooth and the whole of the second kind <i>strange</i>.
-    The split exists because the two questions turn out to be different: what makes a classic
-    smooth render beautiful is not what makes an engraved, striped, or thread-laced render
-    beautiful, and a judge trained on one kind has nothing useful to say about the other.</p>
+    <p>Later in the pipeline, a trained judge scores finished renders
+    (<a href="training-judges.html">training judges</a>), and one judge covers this whole
+    catalog. What splits in two is not the judge but what it is rating: the plain smooth
+    rendering is one <i>kind</i>, and <em>everything else</em> — every field, composite, and
+    trap variation on this page — is the other. The two kinds are rated separately, out of
+    pools kept apart, because the two questions turn out to be different: what makes a
+    classic smooth render beautiful is not what makes an engraved, striped, or thread-laced
+    render beautiful. Each kind keeps its own bar downstream, and the scale the two share is
+    nominal only — the same score can clear one kind's bar and fall short of the other's, and
+    neither reading is wrong.</p>
 
     <h2 id="the-modes-the-pipeline-draws">The modes the pipeline draws</h2>
 
