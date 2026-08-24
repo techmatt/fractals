@@ -116,7 +116,7 @@ Committed beside the module, `engine.manifest.json` records what it was built fr
 | `rustc` | the compiler, with its commit and date |
 | `wallpapers_commit` | the sibling checkout's `HEAD` at bake time |
 | `engine_changes` | every change this consumer has needed in the engine, one line each |
-| `raw_bytes` / `gzip_bytes` | 473,427 raw, **162,338 gzipped** |
+| `raw_bytes` / `gzip_bytes` | 480,813 raw, **163,845 gzipped** |
 
 `engine_changes` is typed, in `builder/explorer.py`, and is the condition CLAUDE.md puts
 on a website prompt touching the sibling engine at all: a zero-behaviour change is allowed
@@ -162,6 +162,12 @@ because a committed artifact nobody can rebuild from the sibling checkout is a d
   seam between the bands. Visibility only — no signature moved and no test did.
 - **`iterate::run` is `#[inline(always)]`**, and it is worth about four times the field
   time. See *the one call site* below.
+
+**That second one is no longer this consumer's alone.** The engine has since written its
+own escape loop out per family and per channel set — `field::sweep_row` — and the
+attribute is what that table is buying, so the engine now depends on it for its own
+reasons. The manifest line stays as it is: it records a change this consumer needed, which
+is still true, and a future engine prompt is not bound by it.
 
 Two things about the port are unchanged and still worth knowing:
 
@@ -233,7 +239,7 @@ So `compute_band` writes its loop twice. The one mode whose channel set is **emp
 loop for nothing but the escape — gets a call site per family, nine in all, where the loop
 really is the recurrence and a magnitude test. Every other mode is already doing
 per-iteration work of its own that the checks are a small share of, and takes the generic
-loop. The nine cost **12.6 KB of module** and hold the anchor frame to draft 1's time;
+loop. The nine cost **13.4 KB of module** and hold the anchor frame to draft 1's time;
 specializing the whole catalog would be a copy of the loop per family and per mode, which
 is the module's size spent on the cases that need it least.
 
@@ -332,11 +338,14 @@ everything, because for them it can. Four fields are kept: two passes of the cur
 and one view back. So a palette change re-shades what is already here and iterates
 nothing, which is the whole point of computing the two apart.
 
-**`resample::downsample` at one sample per pixel is the identity** — the Lanczos taps
-collapse to 1 at integer offsets — and it still runs both tap passes over a
-24-byte-per-pixel linear buffer. It is most of the shade cost. Kept, because the last
-step of a picture is the engine's and not this page's — and above one sample per pixel
-it stops being the identity and becomes the whole reason a download is worth taking.
+**`resample::downsample` at one sample per pixel is the identity, and now skips itself**
+— the Lanczos taps collapse to 1 at integer offsets and 0 at every other one, so both
+passes over the 24-byte-per-pixel linear buffer are a long way to copy it. The engine
+skips them, byte-identically, and it lands on the screen path, where a palette change pays
+the shade again and nothing else. Measured against the module built before the skip:
+**1.60x** on `smooth`'s shade at 1280x720 — 71 ms to 44 — 1.30x on `threads`, and 1.08x on
+the modulate, whose own arithmetic is most of its shade. Above one sample per pixel the
+filter stops being the identity and becomes the whole reason a download is worth taking.
 
 **A direct trap's band is padded, and every other band is not.** A field is shaded whole,
 so a band of it is just rows; a direct trap arrives *encoded*, and Lanczos-3 reaches
@@ -367,7 +376,11 @@ average over gamma-encoded bytes, which is a different picture and a worse one. 
 the strongest check there is — a 2560x1440 at `ss=4` downloaded from this page and the
 same spec through `fractal-engine render` differ in **0 of 3,686,400 pixels**. That is
 the comparison the port never had: the spike measured one export against the CLI, and
-this is the page's own pool, its own banding and its own shade against it.
+this is the page's own pool, its own banding and its own shade against it. It is also
+two *different* code paths agreeing rather than one: since `field::sweep_row` landed, the
+native side takes a table of specialized call sites the wasm crate does not compile, and
+the wasm side takes the nine of its own that the native side has no use for. Re-checked at
+0 of 3,686,400 after the rebuild that put that table on the other side of the comparison.
 
 **Shape is not resolution.** A link carries an aspect and never a pixel count, and the
 plane *width* is what a view is, so downloading at a different shape keeps that width and
@@ -430,8 +443,8 @@ it is a session's worth of driver scripts and probe pages, not a guard.
 
 | frame | cap | draft 1 | now |
 | --- | --- | --- | --- |
-| home | 3 336 | 1 567 ms | 1 544 ms |
-| anchor | 6 898 | 9 724 ms | 9 440 ms |
+| home | 3 336 | 1 567 ms | 1 537 ms |
+| anchor | 6 898 | 9 724 ms | 9 365 ms |
 
 That is the whole point of the nine specialized call sites, and draft 1's numbers were a
 single-family single-mode build's.
@@ -440,8 +453,19 @@ single-family single-mode build's.
 home is the frame it comes back with when nobody names one, and holding nine families
 over one rectangle would mostly measure how much of each is off screen. One thread,
 median of three, `explorer/bench/families.mjs`. **These are this machine on this day**,
-and it was a machine with other work on it; the ratios are the arithmetic and the
+and this reading was taken on a quiet one; the ratios are the arithmetic and the
 milliseconds are not a spec.
+
+The reading before this one was not taken on a quiet machine, and what that cost is worth
+knowing, because it is not what a loaded machine usually costs. The specialized column
+reproduced to the millisecond across the two — mandelbrot 1 538 ms then, 1 533 now — while
+every generic figure of that session came in **about 2.3x high**, mandelbrot's at 12 088 ms
+against 6 355. The two loops are not equally exposed: the specialized one is the bare
+recurrence and lives in registers, and the generic one builds a whole `Orbit` per iteration
+and reads eleven channel flags, so contention for memory reaches one and barely touches the
+other. That is consistent with the shape of it and is not established by it. What is
+established is that **a ratio between these two columns is only as good as the noisier of
+the two readings**, which is why both are measured in one run.
 
 The `generic` column is the same frame through a module built with `--cfg generic_loop`,
 which sends `smooth` down the fallthrough with every other mode. That column is what the
@@ -449,78 +473,79 @@ nine call sites are worth, per family, measured rather than remembered.
 
 | family | cap | field | x cheapest | generic | x |
 | --- | --- | --- | --- | --- | --- |
-| julia | 4 000 | 288 ms | 1.00 | 992 ms | 3.45 |
-| phoenix | 3 115 | 703 ms | 2.44 | 1 978 ms | 2.81 |
-| mandelbrot | 3 336 | 1 538 ms | 5.35 | 12 088 ms | 7.86 |
-| multibrot3 | 3 047 | 1 988 ms | 6.91 | 10 900 ms | 5.48 |
-| multibrot4 | 3 336 | 4 521 ms | 15.72 | 9 583 ms | 2.12 |
-| julia3 | 4 000 | 9 914 ms | 34.48 | 28 402 ms | 2.86 |
-| multibrot5 | 3 684 | 10 949 ms | 38.08 | 17 942 ms | 1.64 |
-| julia5 | 4 000 | 13 098 ms | 45.55 | 32 946 ms | 2.52 |
-| julia4 | 4 000 | 13 235 ms | 46.02 | 48 568 ms | 3.67 |
+| julia | 4 000 | 283 ms | 1.00 | 940 ms | 3.33 |
+| phoenix | 3 115 | 439 ms | 1.55 | 1 361 ms | 3.10 |
+| mandelbrot | 3 336 | 1 533 ms | 5.43 | 6 355 ms | 4.15 |
+| multibrot3 | 3 047 | 1 967 ms | 6.96 | 5 302 ms | 2.70 |
+| multibrot4 | 3 336 | 4 509 ms | 15.96 | 9 549 ms | 2.12 |
+| julia3 | 4 000 | 9 841 ms | 34.83 | 26 939 ms | 2.74 |
+| multibrot5 | 3 684 | 10 029 ms | 35.50 | 17 513 ms | 1.75 |
+| julia5 | 4 000 | 10 552 ms | 37.35 | 19 842 ms | 1.88 |
+| julia4 | 4 000 | 13 189 ms | 46.68 | 28 089 ms | 2.13 |
 
 **The family costs more than the mode does.** Across the eighteen modes on one family the
-spread is 20x; across the nine families in one mode it is **46x**, `julia` at its home to
+spread is 13x; across the nine families in one mode it is **47x**, `julia` at its home to
 `julia4` at its. Part of that is the cap, which is the engine's `maxiter::for_width` and
 comes from the plane width a home view has: every dynamical plane opens at 4 000 and the
 parameter planes at 3 047 to 3 684. The rest is how much of a home frame runs to the cap
 instead of escaping, and that is a property of the family rather than of anything this
 page chose.
 
-**What the specialization buys is not one number.** It runs 1.6x to 7.9x, and the two
+**What the specialization buys is not one number.** It runs 1.7x to 4.2x, and the two
 columns do not even order the families the same way: specialized, cost rises with degree,
-which is the arithmetic; generic, `multibrot4` and `multibrot5` come in under `julia3`,
-which it does not. The shape is consistent with a fixed per-iteration overhead — eleven
-channel checks, the family match, the `Orbit` built — that is a large share of a cheap
-recurrence and a small share of an expensive one, and mandelbrot's 7.9x is the cheapest
-recurrence there is here. It is consistent with it and it is not established by it, and
+which is the arithmetic; generic, `multibrot4` and `multibrot5` come in under `julia3` and
+`multibrot3` comes in under `mandelbrot`, neither of which it does. The shape is consistent
+with a fixed per-iteration overhead — eleven channel checks, the family match, the `Orbit`
+built — that is a large share of a cheap recurrence and a small share of an expensive one,
+and mandelbrot's 4.2x is the cheapest recurrence there is here. It is consistent with it and it is not established by it, and
 nothing below rests on the explanation.
 
-**The generic figure this section used to carry does not reproduce.** It was recorded by a
-scratch experiment that is gone and cannot be re-run, it was about half the measurement
-above, and it read as a fourfold specialization rather than the near-eightfold one the
-table gives. **12 088 ms** is what this tree does: the generic module was checked against
-the committed one on `tia`, a mode that takes the generic loop in both — 6 124 ms against
-5 887 ms at 640x360, the same engine with one dispatch changed — so the two modules differ
-in the dispatch and not in the arithmetic. The `x generic` column of the per-mode table
-below divides by the measured figure, and the header says so.
+**Two generic figures have been retired here, and the fourfold one was right.** A scratch
+experiment that is gone read the specialization as fourfold; the loaded-machine reading
+above read it as near-eightfold and this section argued the fourfold one away; a quiet
+machine reads **4.15x**, and the retired figure was the honest one. **6 355 ms** is what
+this tree does. The generic module is checked against the committed one on `tia`, a mode
+that takes the generic loop in both — 2 576 ms against 2 621 ms at 640x360, 1.02x, the same
+engine with one dispatch changed — so the two modules differ in the dispatch and not in the
+arithmetic. The `x generic` column of the per-mode table below divides by the measured
+figure, and the header says so.
 
 **Per mode**, same harness, mandelbrot home at 1280x720, one thread. The `field` column
 is `compute_band` over the whole frame; `shade` is the colouring pass, which a palette
 change pays again and nothing else does. A direct trap has no shade because its band
 arrives painted.
 
-| mode | field | shade | x smooth | x generic, 12 088 ms | native |
+| mode | field | shade | x smooth | x generic, 6 355 ms | native |
 | --- | --- | --- | --- | --- | --- |
-| smooth | 2.27 s | 157 ms | 1.00 | 0.19 | 1.00 |
-| direct_trap_lines | 6.12 s | — | 2.70 | 0.51 | 0.93 |
-| direct_trap_multiply | 7.85 s | — | 3.46 | 0.65 | 1.24 |
-| direct_trap_screen | 8.20 s | — | 3.61 | 0.68 | 0.91 |
-| direct_trap_ring | 10.35 s | — | 4.56 | 0.86 | 1.08 |
-| itinerary | 12.12 s | 694 ms | 5.34 | 1.00 | 1.26 |
-| trap_circle | 13.08 s | 309 ms | 5.76 | 1.08 | 1.01 |
-| smooth_trap_circle | 13.32 s | 372 ms | 5.87 | 1.10 | 1.06 |
-| curvature | 19.86 s | 485 ms | 8.75 | 1.64 | 2.45 |
-| smooth_curvature | 20.75 s | 357 ms | 9.14 | 1.72 | 2.60 |
-| smooth_mean_angle | 23.38 s | 492 ms | 10.30 | 1.93 | 2.81 |
-| smooth_angle_min | 24.10 s | 530 ms | 10.62 | 1.99 | 2.73 |
-| threads | 25.35 s | 227 ms | 11.17 | 2.10 | 2.06 |
-| tia | 26.67 s | 351 ms | 11.75 | 2.21 | 1.79 |
-| exp_smoothing | 27.65 s | 171 ms | 12.18 | 2.29 | 1.58 |
-| gaussian_int | 28.30 s | 467 ms | 12.47 | 2.34 | 2.66 |
-| smooth_stripe | 43.35 s | 473 ms | 19.10 | 3.59 | 3.88 |
-| stripe | 46.06 s | 454 ms | 20.29 | 3.81 | 3.92 |
+| smooth | 2.24 s | 63 ms | 1.00 | 0.35 | 1.00 |
+| direct_trap_lines | 3.85 s | — | 1.72 | 0.61 | 0.93 |
+| direct_trap_screen | 4.30 s | — | 1.92 | 0.68 | 0.91 |
+| direct_trap_multiply | 5.25 s | — | 2.35 | 0.83 | 1.24 |
+| trap_circle | 6.73 s | 181 ms | 3.01 | 1.06 | 1.01 |
+| smooth_trap_circle | 6.73 s | 173 ms | 3.01 | 1.06 | 1.06 |
+| itinerary | 6.84 s | 423 ms | 3.06 | 1.08 | 1.26 |
+| direct_trap_ring | 6.87 s | — | 3.07 | 1.08 | 1.08 |
+| tia | 11.51 s | 214 ms | 5.14 | 1.81 | 1.79 |
+| smooth_curvature | 12.93 s | 221 ms | 5.78 | 2.03 | 2.60 |
+| curvature | 12.98 s | 208 ms | 5.80 | 2.04 | 2.45 |
+| exp_smoothing | 13.25 s | 41 ms | 5.92 | 2.09 | 1.58 |
+| gaussian_int | 14.44 s | 231 ms | 6.45 | 2.27 | 2.66 |
+| smooth_angle_min | 14.50 s | 230 ms | 6.48 | 2.28 | 2.73 |
+| smooth_mean_angle | 14.84 s | 263 ms | 6.63 | 2.34 | 2.81 |
+| threads | 18.10 s | 91 ms | 8.09 | 2.85 | 2.06 |
+| smooth_stripe | 26.47 s | 219 ms | 11.84 | 4.17 | 3.88 |
+| stripe | 28.53 s | 209 ms | 12.76 | 4.49 | 3.92 |
 
 **The wallpaper project's relative-cost column mostly does transfer, and reading it
 against a dead baseline is what said otherwise.** Against the smooth this page actually
-draws, every other mode is 2.7x to 20x rather than the native column's 0.9x to 3.9x — but
+draws, every other mode is 1.7x to 13x rather than the native column's 0.9x to 3.9x — but
 most of that is smooth's own specialization, so the honest comparison is the `x generic`
 column, both loops generic. On the measured baseline every mode there lands between
-**0.5x and 1.5x of its native slope**: stripe 3.81 against 3.92, threads 2.10 against
-2.06, trap_circle 1.08 against 1.01, with `direct_trap_multiply` at 0.65 against 1.24 and
-`exp_smoothing` at 2.29 against 1.58 at the two ends. That is a spread and not an offset.
-This section used to read it as one — against the old divisor every ratio was about twice
-what it is here, which looked like a systematic wasm tax and was an arithmetic error.
+**0.65x and 1.4x of its native slope**: stripe 4.49 against 3.92, tia 1.81 against 1.79,
+trap_circle 1.06 against 1.01, with `direct_trap_lines` at 0.61 against 0.93 and `threads`
+at 2.85 against 2.06 at the two ends. That is a spread and not an offset. This section used
+to read it as one — against a dead divisor every ratio was about twice what it is here,
+which looked like a systematic wasm tax and was an arithmetic error.
 Two things remain true of the comparison and neither is measured, and neither is now
 being asked to explain anything: wasm has no transcendental instructions, so the `atan2`,
 `sin` and `exp` the averaging channels run per iteration go through a compiled libm rather
@@ -540,10 +565,11 @@ mandelbrot `smooth_trap_circle` 1.47 s, and the worst seen, julia5 `threads` at 
 0.25, 7.77 s. Shade is main-thread and pool-independent at 150–500 ms, and a preview
 lands at a sixteenth of the samples before any of it.
 
-**The module** is 473,427 bytes raw and 162,338 gzipped, against draft 1's 190,240 and
+**The module** is 480,813 bytes raw and 163,845 gzipped, against draft 1's 190,240 and
 70,639. The extra is the eighteen modes' worth of engine that is now reachable — every
 field reduction, both blends, the trap painter, all nine families — plus `serde_json` and
-the derived readers for the spec. 12.6 KB of it is the nine specialized loops, and 3.1 KB
+the derived readers for the spec. 13.4 KB of it is the nine specialized loops — the
+committed module against the `generic_loop` one, 480,813 against 467,078 — and 3.1 KB
 is the download: a supersample in the spec, a padded direct-trap band, and a `shade` that
 frees what it was handed.
 
@@ -766,7 +792,7 @@ python -m builder links --write            # the link registry, from figure prov
 
 Needs the sibling checkout, `cargo`, and the `wasm32-unknown-unknown` target
 (`rustup target add wasm32-unknown-unknown`). `engine-wasm/target/` is gitignored — it is
-the several hundred megabytes cargo needs to produce a 190 KB file.
+the several hundred megabytes cargo needs to produce a 480 KB file.
 
 Which colormaps count as curated is the wallpaper project's own distinction: a map that
 arrived by mechanical conversion says so in its `source` line, and the rest were chosen.
@@ -776,11 +802,15 @@ arrived by mechanical conversion says so in its `source` line, and the rest were
 Listed, not designed:
 
 - **Deep zoom**, which needs perturbation and is a different renderer, not a wider one.
-- **The expensive modes' wait.** `stripe` over a whole 1280x720 frame is 46 s on one
-  thread and about a sixth of that on a pool. Specializing the loop per family and mode
-  would recover a third of it and cost a few hundred KB of module; nothing cheaper than
-  that has turned up.
-- **Re-measuring the per-mode table.** Its field times are a median of two, which on a
-  wasm frame is the *slower* of two. Its `x generic` column now divides by a measured
-  baseline, so what is left is one bench run over the field times, and they are not wrong
-  about which modes are expensive.
+- **The expensive modes' wait, and the table that now exists.** `stripe` over a whole
+  1280x720 frame is 28.5 s on one thread and about a sixth of that on a pool, and this
+  page reaches it down the generic fallthrough: the nine specialized call sites cover the
+  one mode whose channel set is empty. The engine has since written the whole table out
+  for itself — `field::sweep_row`, twelve channel sets over nine families, +175 KB of
+  native binary for 1.0x to 2.5x — and it forms its coordinates the way this page needs
+  them, from the whole viewport with a global row index. So "a copy of the loop per family
+  and per mode" is no longer a thing to be built; it is a thing to be reached, and what
+  stands between is that `sweep_row` and `Channels` are private. Opening them is the shape
+  of engine change CLAUDE.md's carve-out allows, and it would let `compute_lanes` drop its
+  own nine and specialize all eighteen modes. What that is worth **here** is unmeasured,
+  and the native figure does not transfer: the same +175 KB is a third of this module.

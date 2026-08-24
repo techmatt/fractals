@@ -1,14 +1,14 @@
 {
-  "built": "2026-08-21",
+  "built": "2026-08-23",
   "crate": "explorer/engine-wasm",
   "engine_changes": [
     "coloring::composite, coloring::modulate and direct_trap::Painter::trace are pub: visibility only, no signature moved, engine tests unmoved.",
     "iterate::run is #[inline(always)]: the specialization cascade the nine call sites in the wasm crate depend on."
   ],
   "engine_version": "0.1.0",
-  "gzip_bytes": 162338,
-  "raw_bytes": 473427,
+  "gzip_bytes": 163845,
+  "raw_bytes": 480813,
   "rustc": "1.96.0 (ac68faa20 2026-05-25)",
   "schema": 1,
-  "wallpapers_commit": "8db947410f4704cc92d744ce568e82af6bdeb48a"
+  "wallpapers_commit": "c3c3fa35e9cff00ba33b798ae4a601876823121f"
 }
