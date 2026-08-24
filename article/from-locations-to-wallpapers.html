@@ -32,7 +32,7 @@
         <li><a href="#trying-rendering-modes-and-palettes-on-a-location">Trying rendering modes and palettes on a location</a></li>
         <li><a href="#choosing-the-gallery-from-the-whole-pool">Choosing the gallery from the whole pool</a></li>
         <li><a href="#slots-per-fractal-family">Slots per fractal family</a></li>
-        <li><a href="#diversity-in-what-the-geometry-looks-like">Diversity in what the geometry looks like</a></li>
+        <li><a href="#geometric-diversity">Geometric diversity</a></li>
         <li><a href="#rendering-many-candidates-for-each-chosen-location">Rendering many candidates for each chosen location</a></li>
         <li><a href="#floors-ranking-and-the-empty-slot">Floors, ranking, and the empty slot</a></li>
         <li><a href="#rendering-the-gallery-at-full-resolution">Rendering the gallery at full resolution</a></li>
@@ -70,7 +70,7 @@
     chosen pictures at wallpaper resolution. Keeping the two apart matters because they want
     different things — a run wants to find and judge as much as it can in its time, and the
     gallery pass wants the best set, which is a property of the whole collection and not of
-    any one night's work.</p>
+    any one run.</p>
 
       <figure class="figure figure-pending" data-figure="pool-stages">
         <p class="pending"><span class="pending-label">Figure pending</span>A flow diagram in two halves: walk ledgers feeding scored locations and small judged renders into a pool that grows across runs, and a gallery pass drawing from that pool through slots, chosen locations and many judged renders to a set of finished wallpapers.</p>
@@ -99,9 +99,6 @@
     calls good (<a href="training-judges.html">training judges</a>, From a score to a
     decision).</p>
 
-    <p>A run does not wait on a person: it reads whatever ratings exist when it starts, and
-    new ratings change the next run, not this one.</p>
-
     <h2 id="trying-rendering-modes-and-palettes-on-a-location">Trying rendering modes and palettes on a location</h2>
 
     <p>Every location a run takes is rendered small several times, once per <i>attempt</i>. An
@@ -113,7 +110,7 @@
     two-by-two supersampling. The render judge scores it, and that score — P(≥3) and P(≥4) —
     is what the <i>candidate</i> is worth from here on. Within a run each location gets one
     smooth attempt and two attempts in distinct modes from the other seventeen; an attempt
-    costs a few seconds, so a few hundred fit inside a night. Every candidate's row carries
+    costs a few seconds, so a few hundred fit inside an hour. Every candidate's row carries
     its location, its mode and settings, its palette, its kind, the judge that scored it, and
     the small picture itself, so a candidate can be re-scored by a retrained judge without
     being redrawn, and redrawn at any size from its row alone.</p>
@@ -122,11 +119,6 @@
         <p class="pending"><span class="pending-label">Figure pending</span>One location in four steps: its smooth field in grayscale, the same location drawn in a rendering mode, a block of thirty-two colorings with one outlined, and the finished small render that is judged.</p>
         <figcaption>One location through one attempt. The field is dumped once and every candidate coloring is a lookup over it; the outlined coloring is the palette judge's pick, and the last panel is the picture the render judge scores.</figcaption>
       </figure>
-
-    <p>A run ends with a small <i>diagnostic</i> release — about ten candidates, rendered at
-    full size so that a night's work can be looked at — stamped as diagnostic and never as
-    gallery. The pictures a run produces are for my eye and for calibration; the gallery is
-    for the gallery pass to choose.</p>
 
     <h2 id="choosing-the-gallery-from-the-whole-pool">Choosing the gallery from the whole pool</h2>
 
@@ -143,14 +135,14 @@
     a partition the slots are split between the two kinds, with the larger share going to the
     seventeen modes — about three in five: I prefer a collection in which the plain smooth
     rendering is the minority. A partition whose supply runs out leaves its slots empty rather
-    than borrowing from a richer one; that is what the share means.</p>
+    than borrowing from a richer one.</p>
 
       <figure class="figure figure-pending" data-figure="gallery-slots">
         <p class="pending"><span class="pending-label">Figure pending</span>A bar chart with one bar per partition, each bar divided into a smaller share for the smooth rendering and a larger share for the other seventeen modes.</p>
         <figcaption>A gallery of fifty divided into slots. Each bar is one partition's share of the collection, split between the plain smooth rendering and the seventeen other modes; the modes take the larger part of every bar on purpose.</figcaption>
       </figure>
 
-    <h2 id="diversity-in-what-the-geometry-looks-like">Diversity in what the geometry looks like</h2>
+    <h2 id="geometric-diversity">Geometric diversity</h2>
 
     <p>A desktop that cycles through wallpapers should show a diverse range of fractal
     families, locations within each family, colors, and rendering styles. Families and, to a
@@ -217,10 +209,10 @@
     picture had been rated at least good more often than not — and each is stamped with the
     exact judge it was measured against, so that a bar measured on one judge is never applied
     to another. In the gallery pass both bars remove: a candidate below its own kind's bar
-    does not take a slot. A run's diagnostic release is gated more loosely, and only the bar
-    on the seventeen modes acts there; the difference is deliberate, because a run is deciding
-    how much of one night's work is worth looking at where the pass is deciding what the
-    collection ships. Above the bar, candidates are ordered by P(≥4), the judge's own answer
+    does not take a slot. Only the bar on the seventeen modes acts on what a run itself puts
+    out, which is gated more loosely on purpose: a run is deciding how much of its own output
+    is worth a look, where the pass is deciding what the collection ships. Above the bar,
+    candidates are ordered by P(≥4), the judge's own answer
     to which of the good pictures are exceptional; P(≥3) has no resolution left at the top of
     the scale, and P(≥4) does. The interleaving across partitions is the one
     <a href="training-judges.html">training judges</a> described: every partition's best, then
