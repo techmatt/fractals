@@ -98,14 +98,19 @@ keeps the flag living in one place.
 ## Figures are a registry, not a generator
 
 Article prose is hand-written HTML and stays that way. What the builder owns is the
-figure *block*: `assets/images/figures/figures.jsonl` holds one row per figure, and
+figure *block*: `article/figures.jsonl` holds one row per figure, and
 `python -m builder figure <id>` prints the markup to paste. `check` re-derives that
 markup and asserts the page carries it verbatim, so a caption lives in one place and a
 page that has drifted is a failing check rather than something noticed later.
 
-A figure can be registered before its picture exists. Such a row carries `"status":
-"pending"` and names no file, width or height, and the block it derives is a well holding
-the description of the picture to come. Prose gets written before pictures get made, and a
+Every row says where it stands, in `status`. **`placed`** is made and on its page.
+**`pending`** is planned: the row names no file, width or height, and the block it derives
+is a well holding the description of the picture to come. **`held`** is the one status
+that is registered and deliberately *not* on a page — it is blocked on something outside
+this repository, and it says what in `held_reason`. **`stale`** is made, on its page, and
+overtaken by the event its `stale_when` names; a `placed` row may carry a `stale_when`
+too, which is the standing warning about an event that has not happened yet and is the
+point at which somebody can still act on it. Prose gets written before pictures get made, and a
 page that says what is coming beats a broken image or a silent gap; `figures` lists what
 is still owed, grouped by the page it is owed on.
 
@@ -115,13 +120,35 @@ measured size back into the row, and replaces the pending well on the page with 
 the filled row derives. Nothing about the size is typed, so nothing about it can be typed
 wrong.
 
-Three fields travel with every row beyond its words. `page` names the article page that
+Four fields travel with every row beyond its words. `page` names the article page that
 carries it — a row on no page is a failing check, where before it was silence. `provenance`
 is one line per panel in prose, saying what would have to be re-rendered to draw that panel
 again; a made row without one is a failing check too. `recipe` names the maker and its
 arguments — `module:function` — which is what actually redraws the figure today; where that
 module is inside `builder`, `check` holds the name to still existing. Prose outlives code
 and code is what runs, which is why both are kept.
+
+`sources` is the fourth, and it is the one the prose cannot do. It is a list of
+`{"kind", "keys"}`, where a **key is a string that addresses a record by its own name**:
+
+```
+run_row     <run>|release|<candidate>          data/curation/release/**/*.jsonl
+            <head>/<batch>.jsonl:<line>        data/<head>/rows/<batch>.jsonl
+location    labels/<batch>.jsonl:<line>        data/labels/rows/<batch>.jsonl
+            <ledger>/walk.jsonl[#<node_id>]    the artifacts tree, through renders.artifact
+synthetic   no keys — drawn here, or rendered for this article alone
+none        no keys — the picture cannot be reconstructed, and held_reason says why
+```
+
+**An integer is refused at load.** That is the whole reason the field exists: a pool index
+retargeted four figures' provenance in one afternoon, because the pool grew underneath it
+and a rerun rewrote the record under pictures nobody had touched. `check` resolves every
+key against the store its kind names, where the wallpapers checkout is configured, and
+says so and moves on where it is not.
+
+`facts` is optional and holds the load-bearing claims a figure's caption or its prose
+makes — each one a `claim` and the `source` it was checked against. It is the answer to
+"who checked this, against what?" asked of a number the article states as settled.
 
 Two figures are an exception, and they are diagrams rather than pictures of a location:
 the orbit race and the pipeline explain a mechanism, so there is nothing to render and

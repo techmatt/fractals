@@ -14,7 +14,7 @@ GALLERIES_DIR = SITE_ROOT / "galleries"
 IMAGES_DIR = SITE_ROOT / "assets" / "images"
 GALLERY_IMAGES_DIR = IMAGES_DIR / "galleries"
 FIGURE_IMAGES_DIR = IMAGES_DIR / "figures"
-FIGURE_REGISTRY = FIGURE_IMAGES_DIR / "figures.jsonl"
+FIGURE_REGISTRY = ARTICLE_DIR / "figures.jsonl"
 SECTION_REGISTRY = ARTICLE_DIR / "sections.jsonl"
 PROSE_REGISTRY = ARTICLE_DIR / "prose.jsonl"
 

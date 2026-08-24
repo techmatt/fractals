@@ -13,7 +13,11 @@ Every one of them read-only:
 - **figures** — every figure block on an article page matches its registry row exactly,
   every row names the page that actually carries it, every made figure carries the
   provenance its picture can be drawn again from, and a recipe naming a maker inside
-  `builder` names one that is still there.
+  `builder` names one that is still there. Every source key resolves against the store
+  its kind names, where the wallpaper project is checked out — a note rather than a
+  failure where it is not, because CI clones this repository alone. A `held` row is the
+  one row that is registered and deliberately not on a page, and it says what it is
+  held on.
 - **contents** — every hand-written page carries the contents rail the builder derives,
   every prose heading carries the id its own words give it, and the front page's contents
   list marks the same sections done that `sections.jsonl` calls written.
@@ -195,6 +199,7 @@ def check_figures() -> list[str]:
         problems.extend(_figure_recipe(figure))
         if figure.pending:
             continue
+        problems.extend(_figure_facts(figure))
         if not figure.path.is_file():
             problems.append(f"figures.jsonl: {figure.id} names a missing {figure.file}")
         elif images.available():
@@ -204,7 +209,26 @@ def check_figures() -> list[str]:
                     f"figures.jsonl: {figure.id} says {figure.width}x{figure.height}, "
                     f"{figure.file} is {actual[0]}x{actual[1]}"
                 )
+    if figures.stores_available():
+        problems.extend(figures.unresolved(registry))
     return problems
+
+
+def _figure_facts(figure: figures.Figure) -> list[str]:
+    """A row that records no source at all records nothing, and says so out loud.
+
+    `sources` is required at load, so what is left to check here is the one combination
+    the loader cannot see: a made picture whose only source is `none` has to carry the
+    reason, or the gap it is admitting to is not written down anywhere.
+    """
+    if all(source.kind == figures.NO_SOURCE for source in figure.sources) and (
+        not figure.held_reason
+    ):
+        return [
+            f"figures.jsonl: {figure.id} records no source and no held_reason — "
+            "an unreconstructible picture says why, or the gap is invisible"
+        ]
+    return []
 
 
 def check_landing() -> list[str]:
@@ -251,6 +275,15 @@ def _figure_page(figure: figures.Figure, carried: dict[str, str]) -> list[str]:
     if not figure.page_path.is_file():
         return [f"figures.jsonl: {figure.id} names page {figure.page!r}, which is not on this site"]
     where = carried.get(figure.id)
+    if figure.held:
+        # The one row that is registered and deliberately not on its page. What it owes
+        # instead is its reason, which the loader has already required.
+        if where is not None:
+            return [
+                f"figures.jsonl: {figure.id} is held and {where} is carrying it — lift the "
+                "hold, or take the block off the page"
+            ]
+        return []
     if where is None:
         return [
             f"figures.jsonl: {figure.id} is registered on {figure.page} and no page carries it "

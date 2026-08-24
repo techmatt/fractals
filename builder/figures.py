@@ -40,7 +40,36 @@ from .escape import attribute, text
 from .paths import FIGURE_IMAGES_DIR, FIGURE_REGISTRY, SITE_ROOT, carrier_path, relative_href
 
 INDENT = " " * 6
-PENDING = "pending"
+
+#: What a row's `status` may say, and what each one means.
+#:
+#: - `placed` — the picture is made and its block is on the page.
+#: - `pending` — planned; the page carries a well saying what will go there.
+#: - `held` — registered and deliberately **not** on the page, blocked on something
+#:   outside this repository. A held row names what it is waiting for.
+#: - `stale` — made and on the page, and the event its `stale_when` names has happened.
+#:
+#: `stale_when` is not only for a row that is already stale: it is the standing warning a
+#: placed row carries about the event that will overtake it, which is the point at which
+#: somebody can still do something about it.
+PLACED, PENDING, HELD, STALE = "placed", "pending", "held", "stale"
+STATUSES = (PLACED, PENDING, HELD, STALE)
+
+#: Where a figure's pictures came from, as a kind and the keys that address them.
+#:
+#: - `run_row` — a curation release record, `<run>|release|<candidate>`, or a
+#:   finished-render label row, `<head>/<batch>.jsonl:<line>`.
+#: - `location` — a location label row, `labels/<batch>.jsonl:<line>`, or a walk
+#:   ledger, `<ledger>/walk.jsonl` with `#<node_id>` where one node is meant.
+#: - `synthetic` — nothing stored stands behind it: drawn here, or rendered for this
+#:   article alone. The row's own `provenance` is the record, and it carries no keys.
+#: - `none` — the picture cannot be reconstructed. The row says why, in `held_reason`.
+RUN_ROW, LOCATION, SYNTHETIC, NO_SOURCE = "run_row", "location", "synthetic", "none"
+SOURCE_KINDS = (RUN_ROW, LOCATION, SYNTHETIC, NO_SOURCE)
+
+#: The kinds that carry keys at all. A `synthetic` or `none` row naming one is a row
+#: claiming a record it does not have.
+KEYED_KINDS = (RUN_ROW, LOCATION)
 
 #: The words the explorer link is spelled with, here and on a gallery tile. One string,
 #: because a link a reader learns to recognize has to read the same everywhere. On a
@@ -99,11 +128,38 @@ class Recipe:
 
 
 @dataclass(frozen=True)
+class Source:
+    """One kind of record a figure's pictures came out of, and the keys addressing them.
+
+    **A key is a string, and never a number.** A pool index retargeted four figures'
+    provenance in one afternoon — the pool grew, the index came to land somewhere else,
+    and a rerun rewrote the record under pictures nobody had touched. An integer here is
+    refused at load, so that shape of record cannot be written down again.
+    """
+
+    kind: str
+    keys: tuple[str, ...]
+
+
+@dataclass(frozen=True)
+class Fact:
+    """One load-bearing claim a figure's caption or prose makes, and where it comes from.
+
+    Not published, and not a substitute for the prose: it is the answer to "who checked
+    this, against what?" asked of a number the article states as if it were settled.
+    """
+
+    claim: str
+    source: str
+
+
+@dataclass(frozen=True)
 class Figure:
     """One registered figure and the words that travel with it; the asset is optional."""
 
     id: str
     page: str
+    status: str
     alt: str
     caption: str
     file: str | None
@@ -111,11 +167,26 @@ class Figure:
     height: int | None
     provenance: tuple[str, ...]
     recipe: Recipe | None
+    sources: tuple[Source, ...]
+    params: dict
+    facts: tuple[Fact, ...]
+    held_reason: str | None
+    stale_when: str | None
 
     @property
     def pending(self) -> bool:
         """True while the picture is planned but not yet made."""
         return self.file is None
+
+    @property
+    def held(self) -> bool:
+        """True while the row is deliberately not on its page."""
+        return self.status == HELD
+
+    @property
+    def on_page(self) -> bool:
+        """Whether a page is expected to be carrying this figure's block at all."""
+        return self.status != HELD
 
     @property
     def path(self):
@@ -208,27 +279,36 @@ def load_all() -> dict[str, Figure]:
 
 
 def _figure(row: records.Record, identifier: str) -> Figure:
-    """One registry row, held to being either a made picture or a planned one."""
-    status = row.optional_text("status")
-    if status is not None and status != PENDING:
+    """One registry row, held to being either a made picture or one that is not made yet."""
+    status = row.text("status")
+    if status not in STATUSES:
         raise records.RecordError(
-            f"{row.where}: status {status!r} — the only status is {PENDING!r}"
+            f"{row.where}: status {status!r} — the statuses are {', '.join(STATUSES)}"
         )
+    made = status in (PLACED, STALE)
     asset = (row.optional_text("file"), row.optional_count("width"), row.optional_count("height"))
-    if status == PENDING and any(field is not None for field in asset):
+    if not made and any(field is not None for field in asset):
         raise records.RecordError(
-            f"{row.where}: a pending figure names no file or size — the asset does not exist yet"
+            f"{row.where}: a {status} figure names no file or size — the asset does not exist yet"
         )
-    if status is None and any(field is None for field in asset):
+    if made and any(field is None for field in asset):
+        raise records.RecordError(f"{row.where}: a {status} figure needs file, width and height")
+    held_reason = row.optional_text("held_reason")
+    if status == HELD and held_reason is None:
         raise records.RecordError(
-            f'{row.where}: a figure needs file, width and height, or "status": "{PENDING}"'
+            f"{row.where}: a held figure says what it is held on, in held_reason"
         )
-    # A pending figure has nothing to record yet; a made one has no excuse.
-    provenance = () if status == PENDING else row.lines("provenance")
+    if status == STALE and row.optional_text("stale_when") is None:
+        raise records.RecordError(
+            f"{row.where}: a stale figure names the event that staled it, in stale_when"
+        )
+    # A picture that is not made yet has nothing to record; a made one has no excuse.
+    provenance = row.lines("provenance") if made else ()
     file, width, height = asset
     return Figure(
         id=identifier,
         page=row.text("page"),
+        status=status,
         alt=row.text("alt"),
         caption=row.text("caption"),
         file=file,
@@ -236,7 +316,91 @@ def _figure(row: records.Record, identifier: str) -> Figure:
         height=height,
         provenance=provenance,
         recipe=_recipe(row),
+        sources=_sources(row),
+        params=_params(row),
+        facts=_facts(row),
+        held_reason=held_reason,
+        stale_when=row.optional_text("stale_when"),
     )
+
+
+def _sources(row: records.Record) -> tuple[Source, ...]:
+    """A row's `sources`, held to naming kinds this repository can answer for.
+
+    A figure may draw on more than one kind at once — the modes gallery is ten kept
+    wallpapers and eight panels drawn for the figure alone — so this is a list, and the
+    synthetic half is stated rather than left to be inferred from a shorter list of keys.
+    """
+    stated = row.fields.get("sources")
+    if not isinstance(stated, list) or not stated:
+        raise records.RecordError(f"{row.where}: sources must be a non-empty list")
+    found = []
+    for entry in stated:
+        if not isinstance(entry, dict):
+            raise records.RecordError(f"{row.where}: every sources entry is an object")
+        unknown = set(entry) - {"kind", "keys"}
+        if unknown:
+            raise records.RecordError(
+                f"{row.where}: a sources entry is kind and keys, not {', '.join(sorted(unknown))}"
+            )
+        kind = entry.get("kind")
+        if kind not in SOURCE_KINDS:
+            raise records.RecordError(
+                f"{row.where}: source kind {kind!r} — the kinds are {', '.join(SOURCE_KINDS)}"
+            )
+        keys = entry.get("keys", [])
+        if not isinstance(keys, list):
+            raise records.RecordError(f"{row.where}: a sources entry's keys is a list")
+        for key in keys:
+            # The whole reason this field exists. An index into live data is a moving
+            # target, and a record written against one is rewritten under a picture
+            # nobody changed — so a key is a string, and a number is refused here.
+            if not isinstance(key, str) or not key.strip():
+                raise records.RecordError(
+                    f"{row.where}: source key {key!r} is not a string — a key addresses a "
+                    "record by its own name, never by its position in live data"
+                )
+        if keys and kind not in KEYED_KINDS:
+            raise records.RecordError(
+                f"{row.where}: a {kind} source carries no keys, and this one names {len(keys)}"
+            )
+        if not keys and kind in KEYED_KINDS:
+            raise records.RecordError(f"{row.where}: a {kind} source with no keys says nothing")
+        found.append(Source(kind=kind, keys=tuple(keys)))
+    return tuple(found)
+
+
+def _params(row: records.Record) -> dict:
+    """What the maker takes that its recipe's args do not already spell.
+
+    Deliberately thin. Everything a panel is drawn from is in `provenance`, one line
+    each, and a second copy of it here would be a second place to edit — which is the
+    drift this registry exists to refuse.
+    """
+    stated = row.fields.get("params")
+    if stated is None:
+        return {}
+    if not isinstance(stated, dict) or not stated:
+        raise records.RecordError(f"{row.where}: params must be a non-empty object when present")
+    return stated
+
+
+def _facts(row: records.Record) -> tuple[Fact, ...]:
+    """The claims this figure carries, each with the source it was checked against."""
+    stated = row.fields.get("facts")
+    if stated is None:
+        return ()
+    if not isinstance(stated, list) or not stated:
+        raise records.RecordError(f"{row.where}: facts must be a non-empty list when present")
+    found = []
+    for entry in stated:
+        if not isinstance(entry, dict) or set(entry) != {"claim", "source"}:
+            raise records.RecordError(f"{row.where}: a fact is a claim and its source, both")
+        for name in ("claim", "source"):
+            if not isinstance(entry[name], str) or not entry[name].strip():
+                raise records.RecordError(f"{row.where}: a fact's {name} is a non-empty string")
+        found.append(Fact(claim=entry["claim"], source=entry["source"]))
+    return tuple(found)
 
 
 def _recipe(row: records.Record) -> Recipe | None:
@@ -272,12 +436,17 @@ KEY_ORDER = (
     "id",
     "page",
     "status",
+    "held_reason",
+    "stale_when",
     "file",
     "width",
     "height",
     "alt",
     "caption",
     "recipe",
+    "sources",
+    "params",
+    "facts",
     "provenance",
 )
 
@@ -313,6 +482,11 @@ def place(
     figure = load_all().get(identifier)
     if figure is None:
         raise records.RecordError(f"no figure {identifier!r} in the registry")
+    if figure.held:
+        raise records.RecordError(
+            f"{identifier} is held: {figure.held_reason}. Lift the hold in the registry "
+            "first — a held figure is one nobody has decided to draw yet."
+        )
     if not figure.pending and not replace:
         raise records.RecordError(
             f"{identifier} is already made, as {figure.file} — place is for a pending row. "
@@ -339,7 +513,8 @@ def place(
                 f"`python -m builder figure {identifier}` by hand"
             )
 
-    row.pop("status", None)
+    row["status"] = PLACED
+    row.pop("held_reason", None)
     row["file"], row["width"], row["height"] = file, width, height
     if provenance:
         row["provenance"] = list(provenance)
@@ -413,3 +588,165 @@ def by_page(registry: dict[str, Figure]) -> dict[str, list[Figure]]:
     for figure in registry.values():
         grouped.setdefault(figure.page, []).append(figure)
     return {page: found for page, found in grouped.items() if found}
+
+
+# --------------------------------------------------------------- resolving the keys
+
+#: How each kind of key is spelled, and which store answers it.
+#:
+#: The stores are the wallpaper project's, read-only and next door, so this half of the
+#: check only runs where that checkout is configured — `check` says so and moves on
+#: where it is not, exactly as it does for Pillow. CI clones this repository alone.
+KEY_FORMS = {
+    RUN_ROW: (
+        "<run>|release|<candidate>  → data/curation/release/**/*.jsonl",
+        "<head>/<batch>.jsonl:<line>  → data/<head>/rows/<batch>.jsonl",
+    ),
+    LOCATION: (
+        "labels/<batch>.jsonl:<line>  → data/labels/rows/<batch>.jsonl",
+        "<ledger>/walk.jsonl[#<node_id>]  → the artifacts tree, through renders.artifact",
+    ),
+}
+
+FINISHED_HEADS = ("smooth_render", "strange_render")
+
+
+class _Stores:
+    """The wallpaper project's stores, opened once and asked many times.
+
+    Every resolver below is line-counting or a set membership, deliberately: the readers
+    a *maker* uses — `renders.finished_row`, `locations.release_record` — each walk a
+    whole store to answer one question, which is right for one row and hopeless for the
+    sixty this registry holds.
+    """
+
+    def __init__(self) -> None:
+        from . import locations, renders
+
+        self._renders = renders
+        self._locations = locations
+        self._release: set[str] | None = None
+        self._lines: dict[Path, int] = {}
+        self._nodes: dict[str, set[int] | None] = {}
+
+    def release_keys(self) -> set[str]:
+        if self._release is None:
+            found = set()
+            root = self._renders.data_file("data", "curation", "release")
+            for path in sorted(root.rglob("*.jsonl")):
+                with path.open(encoding="utf-8") as handle:
+                    for raw in handle:
+                        if not raw.strip():
+                            continue
+                        row = json.loads(raw)
+                        found.add(f"{row.get('run')}|release|{row.get('candidate')}")
+            self._release = found
+        return self._release
+
+    def lines_in(self, path: Path) -> int | None:
+        """How many lines a store file has, or `None` where the file is not there."""
+        if path not in self._lines:
+            if not path.is_file():
+                self._lines[path] = -1
+            else:
+                with path.open(encoding="utf-8") as handle:
+                    self._lines[path] = sum(1 for raw in handle if raw.strip())
+        found = self._lines[path]
+        return None if found < 0 else found
+
+    def ledger_nodes(self, name: str) -> set[int] | None:
+        """Every node id one walk ledger holds, or `None` where the ledger is not there."""
+        if name not in self._nodes:
+            path = self._renders.artifact(name, "walk.jsonl")
+            if not path.is_file():
+                self._nodes[name] = None
+            else:
+                rows = self._locations.ledger(name)
+                self._nodes[name] = set(self._locations.nodes(rows))
+        return self._nodes[name]
+
+    def rows_file(self, head: str, batch: str) -> Path:
+        return self._renders.data_file("data", head, "rows", f"{batch}.jsonl")
+
+    def labels_file(self, batch: str) -> Path:
+        return self._renders.data_file("data", "labels", "rows", f"{batch}.jsonl")
+
+
+def stores_available() -> bool:
+    """Whether the wallpaper project's checkout is configured on this machine."""
+    from . import renders
+
+    try:
+        renders.wallpapers_root()
+    except renders.EngineError:
+        return False
+    return True
+
+
+def unresolved(registry: dict[str, Figure] | None = None) -> list[str]:
+    """Every source key of every row that does not answer to the store its kind names.
+
+    The half of the figures check that needs the wallpaper project. A key that resolves
+    is a picture somebody can still find; one that does not is a record that has quietly
+    come loose from what it describes, which is the state this registry exists to end.
+    """
+    stores = _Stores()
+    problems = []
+    for figure in (registry or load_all()).values():
+        for source in figure.sources:
+            for key in source.keys:
+                problem = _unresolved_key(stores, source.kind, key)
+                if problem:
+                    problems.append(f"figures.jsonl: {figure.id} {problem}")
+    return problems
+
+
+def _unresolved_key(stores: _Stores, kind: str, key: str) -> str | None:
+    if kind == RUN_ROW:
+        return _unresolved_run_row(stores, key)
+    if kind == LOCATION:
+        return _unresolved_location(stores, key)
+    return None
+
+
+def _unresolved_run_row(stores: _Stores, key: str) -> str | None:
+    if "|release|" in key:
+        if key not in stores.release_keys():
+            return f"names {key}, and no curation release record has that run and candidate"
+        return None
+    head, _, address = key.partition("/")
+    if head not in FINISHED_HEADS:
+        return f"names {key}, which is neither a release key nor a {'/'.join(FINISHED_HEADS)} row"
+    return _unresolved_line(stores, key, stores.rows_file(head, _batch(address)), address)
+
+
+def _unresolved_location(stores: _Stores, key: str) -> str | None:
+    if key.startswith("labels/"):
+        address = key[len("labels/") :]
+        return _unresolved_line(stores, key, stores.labels_file(_batch(address)), address)
+    ledger, _, node = key.partition("#")
+    if not ledger.endswith("/walk.jsonl"):
+        return f"names {key}, which is neither a label row nor a walk ledger"
+    name = ledger[: -len("/walk.jsonl")]
+    nodes = stores.ledger_nodes(name)
+    if nodes is None:
+        return f"names {key}, and there is no {name}/walk.jsonl under the artifacts tree"
+    if node and int(node) not in nodes:
+        return f"names {key}, and that ledger has no node {node}"
+    return None
+
+
+def _batch(address: str) -> str:
+    return address.rsplit(".jsonl", 1)[0]
+
+
+def _unresolved_line(stores: _Stores, key: str, path: Path, address: str) -> str | None:
+    at = address.rsplit(":", 1)
+    if len(at) != 2 or not at[1].isdigit():
+        return f"names {key}, and a store row is addressed <batch>.jsonl:<line>"
+    held = stores.lines_in(path)
+    if held is None:
+        return f"names {key}, and there is no {path.name} in that store"
+    if not 1 <= int(at[1]) <= held:
+        return f"names {key}, and {path.name} has {held} lines"
+    return None

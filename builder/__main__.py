@@ -251,9 +251,18 @@ def _do_check() -> int:
             print(f"{name}: ok")
     for note in explorer_module.manifest_notes():
         print(f"note: {note}")
-    pending = sorted(figure.id for figure in figures.load_all().values() if figure.pending)
+    registry = figures.load_all()
+    pending = sorted(f.id for f in registry.values() if f.status == figures.PENDING)
     if pending:
         print(f"note: {len(pending)} figure(s) still to make: {', '.join(pending)}")
+    for figure in registry.values():
+        if figure.status == figures.HELD:
+            print(f"note: {figure.id} is held — {figure.held_reason}")
+        if figure.stale_when:
+            was = "is stale" if figure.status == figures.STALE else "goes stale on"
+            print(f"note: {figure.id} {was} {figure.stale_when}")
+    if not figures.stores_available():
+        print("note: the wallpapers checkout is not configured, so no source key was resolved")
     if not images.available():
         print("note: Pillow is not installed, so image sizes were not verified")
     if total:
@@ -305,7 +314,11 @@ def _do_figures(options: argparse.Namespace) -> int:
     if options.place:
         return _do_place(options)
     registry = figures.load_all()
-    wanted = [figure for figure in registry.values() if options.all or figure.pending]
+    wanted = [
+        figure
+        for figure in registry.values()
+        if options.all or figure.status in (figures.PENDING, figures.HELD, figures.STALE)
+    ]
     if not wanted:
         print("every registered figure is made")
         return 0
@@ -313,13 +326,24 @@ def _do_figures(options: argparse.Namespace) -> int:
     for page, found in grouped.items():
         print(f"{page}  ({len(found)})")
         for figure in found:
-            state = "pending" if figure.pending else f"{figure.width}x{figure.height}"
+            size = f"{figure.width}x{figure.height}" if not figure.pending else "—"
             recipe = figure.recipe.maker if figure.recipe else "no recipe"
-            print(f"  {figure.id:<28} {state:<12} {recipe}")
-            if figure.pending:
+            keys = sum(len(source.keys) for source in figure.sources)
+            kinds = "+".join(source.kind for source in figure.sources)
+            print(f"  {figure.id:<28} {figure.status:<8} {size:<12} {kinds} ({keys}) {recipe}")
+            if figure.held:
+                print(f"    held: {figure.held_reason}")
+            elif figure.stale_when:
+                print(f"    stale when: {figure.stale_when}")
+            elif figure.pending:
                 print(f"    {figure.alt}")
-    total = sum(1 for figure in wanted if figure.pending)
+    total = sum(1 for figure in wanted if figure.status == figures.PENDING)
     print(f"{total} figure(s) still to make")
+    if options.all and figures.stores_available():
+        problems = figures.unresolved()
+        for problem in problems:
+            print(problem)
+        print(f"{problems and len(problems) or 0} unresolved source key(s)")
     return 0
 
 

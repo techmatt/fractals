@@ -147,6 +147,18 @@ keeps the mechanics. **Every apply round ends by distilling that round's general
   that answer survives, because the scripts that draw figures live in ignored
   `scratch/`. A made figure without one is a failing `builder check`. Where a value is
   genuinely lost, the line says so — the record never guesses.
+- **The figure registry is `article/figures.jsonl`**, beside `sections.jsonl` and
+  `prose.jsonl`. Every row says where it stands in `status` — `placed`, `pending`, `held`
+  (registered and deliberately not on a page, with a `held_reason`) or `stale` (overtaken
+  by the event its `stale_when` names; a placed row may carry a `stale_when` as a standing
+  warning). Every row also carries `sources`: a list of `{kind, keys}` naming the records
+  its pictures came out of, where **a key is a string that addresses a record by its own
+  name and an integer is refused at load**. `builder check` resolves every key against the
+  store its kind names — `run_row` against the curation release records and the
+  finished-render stores, `location` against the location label store and the walk
+  ledgers — and says so and moves on where the wallpapers checkout is not configured.
+  `docs/page-review.md` carries the page-by-page table of what is written, mastered,
+  reviewed and held; nothing else keeps a copy of it.
 - **A maker addresses a location by its record, never by its position.** A rig that
   resolves a stored pick through an index into a pool derived from the wallpaper
   project's live data is drawing at a moving target: that pool grows, the index comes to

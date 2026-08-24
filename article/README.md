@@ -43,7 +43,7 @@ are the builder's:
 
 - **the figure block** — `python -m builder figure <id>` prints the markup to paste, and
   `python -m builder check` asserts the page still matches the registry in
-  `../assets/images/figures/figures.jsonl`;
+  `figures.jsonl`, beside this file;
 - **the contents rail**, between the `contents-rail` marker comments, and the `id` on
   every prose `<h2>`, which is derived from the heading's own words. `python -m builder
   build` writes both; nothing between the markers is worth typing.
@@ -54,6 +54,11 @@ every palette in the library as a strip, grouped the way the section groups them
 `make-your-own.html`, the palette prompt, which is hand-written the way a section is.
 A registry names either of them with its slash: `palettes/make-your-own.html`.
 
-`sections.jsonl` here gives the ten pages their reading order and marks the ones that are
-written — the flag behind the done marker in the rail and on the front page. A new page
-goes in that file, or the rail will not know about it and `check` will say so.
+Three registries live here, one per thing a page is held to. `sections.jsonl` gives the
+ten pages their reading order and marks the ones that are written — the flag behind the
+done marker in the rail and on the front page. A new page goes in that file, or the rail
+will not know about it and `check` will say so. `prose.jsonl` names the approved master a
+placed page is held to. `figures.jsonl` holds one row per figure: its words, its status,
+the maker that redraws it, the records its pictures came out of, and the prose provenance
+a redraw would work from. `docs/page-review.md` reads all three into one table of where
+every page stands.

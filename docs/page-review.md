@@ -92,7 +92,7 @@ round starts from a page that no longer matches its master.
 | What changed | Where it lands |
 | --- | --- |
 | A sentence of prose | `article/<page>.html`, **and** the placement script's literal under `scratch/` if one exists for that page, **and** the prose master in `prose\` |
-| A figure caption | the figure's row in `assets/images/figures/figures.jsonl` — never the page. `python -m builder check` re-derives the block and will say so if the page was edited instead |
+| A figure caption | the figure's row in `article/figures.jsonl` — never the page. `python -m builder check` re-derives the block and will say so if the page was edited instead |
 | A page's opening | the page's lead paragraph. There is no standfirst to edit — the ruling in `writing-guidance.md` cut the device site-wide — so an edit about how a page opens lands on the lead. The front page's blurb for that section is separate prose that often says the same thing; read it, and change it if the edit applies there too |
 | A heading | the page. `python -m builder build` regenerates its id and every rail that lists it |
 
@@ -167,6 +167,34 @@ If Matt converts the `.docx` to a Google Doc, what lands in the synced folder is
 `.gdoc` — a pointer holding a document id, with the words on Drive. The commands say so
 and print the id. Read it with the Drive tools, or ask Matt to use **File → Download →
 Microsoft Word (.docx)** back into the same folder.
+
+## Where every page stands
+
+The one place this is written down. The handoff documents point here rather than carrying
+a copy, because a status copied into prose is a status that goes stale without anybody
+noticing. Everything in the table is read off `article/sections.jsonl`,
+`article/prose.jsonl`, `article/figures.jsonl` and the review folder — regenerate it with
+`python -m builder review --list` and `python -m builder figures --all` rather than
+editing a cell by hand.
+
+| page | written | prose master | last review round | figures | what is held, and why |
+| --- | --- | --- | --- | --- | --- |
+| `overview.html` | yes | none — the HTML is its own master | none | 2 placed | — |
+| `escape-time-fractals.html` | yes | none — the HTML is its own master | none | 7 placed | — |
+| `rendering-fundamentals.html` | yes | none — the HTML is its own master | none | 6 placed | — |
+| `rendering-modes.html` | yes | none — the HTML is its own master | none | 6 placed | — |
+| `finding-good-locations.html` | yes | `Finding good locations v4.md` | applied 2026-08-21 | 12 placed | — |
+| `training-judges.html` | yes | `Training judges v4.md` | applied 2026-08-21 | 3 placed | — |
+| `color-palettes.html` | yes | `Color palettes v4.md` | none | 7 placed | two rows carry a `stale_when`: `palette-moods` and `palette-neighborhood` both count the pool at seven hundred, and admitting the 200-map rare-color drop makes that nine hundred |
+| `from-locations-to-wallpapers.html` | yes | `From locations to wallpapers v5.md` | none | 7 pending, 1 held | every figure on the page is still to be made; `gallery-output` is **held** — it needs a gallery3 full-size render on live floors, gallery1 having been seated on retired floors and gallery2 never rendered at all |
+| `running-at-scale.html` | no | none | none | none | the section is not written |
+| `deep-zoom.html` | no | none | none | none | the section is not written |
+| `palettes/make-your-own.html` | hangs off Color palettes | `Make your own palettes v4.md` | none | 1 placed | — |
+| `palettes/all-palettes.html` | hangs off Color palettes | generated | n/a | 901 palette strips, none a registry figure | the strips are generated from the wallpaper project's library and are not figures |
+
+"Last review round" is what `python -m builder review --list` reports as **applied**; a
+doc **waiting** in the review folder is a round somebody started and did not finish, and
+`--list` is the only place that says so.
 
 ## The prose registry
 

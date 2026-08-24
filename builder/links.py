@@ -172,9 +172,15 @@ def picture_ids() -> list[str]:
 
     Figures first, in the order the registry holds them; then each gallery's tiles in
     the order the gallery shows them. A pending figure is in the list — it is a picture
-    the site has planned, and a row saying so is what stops it being forgotten.
+    the site has planned, and a row saying so is what stops it being forgotten. A **held**
+    figure is not: it is registered and deliberately not on a page, so there is no picture
+    for a link to sit in the corner of and nothing for a reader to open.
     """
-    found = [f"figure:{identifier}" for identifier in figures.load_all()]
+    found = [
+        f"figure:{identifier}"
+        for identifier, figure in figures.load_all().items()
+        if figure.on_page
+    ]
     for gallery in galleries.load_all():
         found.extend(f"gallery:{gallery.slug}/{image.file}" for image in gallery.images)
     return found
@@ -197,6 +203,8 @@ def derive() -> list[Link]:
 
     for identifier, figure in figures.load_all().items():
         key = f"figure:{identifier}"
+        if not figure.on_page:
+            continue
         if figure.pending:
             wanted.append(_refused(key, "incomplete_provenance", "the picture is not made yet"))
             continue

@@ -7,8 +7,8 @@ reader would want the actual wallpaper, the page links to a release download; if
 page needs to show it, a derivative goes here.
 
 ```
-figures/     one image per article figure, plus figures.jsonl — the registry the
-             figure blocks on article pages are checked against
+figures/     one image per article figure. The registry that names them is
+             article/figures.jsonl, beside the other two article registries
 galleries/<slug>/
              a gallery: web-res images, gallery.jsonl, and a generated thumbs/
 ```
