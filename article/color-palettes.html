@@ -108,9 +108,24 @@
     runs as-is in Claude; see
     <a href="../palettes/make-your-own.html">make your own palettes</a>.</p>
 
+    <p>Two hundred of the authored palettes were written to a second aim. Sorting a finished
+    wallpaper into fifty-two named colors and measuring how much of the frame each one takes
+    says which colors the collection actually reaches, and over 246 finished renders it
+    reaches very few: the average picture gives a tenth or more of itself to about three of
+    the fifty-two, and eight of them — a band of greens, limes, teals, cyans and yellows — to
+    none at all. A batch aimed at one of those is the same request with the mood family named
+    for a color instead of a mood, and the figure below shows ten such families beside the
+    thirteen written for mood. Aiming works where the color can be made: the thinnest green,
+    lime and teal cells roughly doubled the number of palettes that carry them. It does not
+    work everywhere — a batch aimed at a dark vivid teal or cyan lands on the muted twin
+    beside it, which sits close enough in OKLab that the measurement cannot tell the two
+    apart, and the muted blues, which no batch was aimed at, gained nothing. All two hundred
+    are in the library; none is yet among the seven hundred maps a candidate set may be drawn
+    from.</p>
+
       <figure class="figure" data-figure="palette-moods">
-        <img src="../assets/images/figures/palette-moods.jpg" width="1316" height="622" alt="Thirteen gradient strips, one per mood family the palette prompt names, each labeled with its family and the palette shown.">
-        <figcaption>One representative palette from each mood family the palette prompt names, drawn as the gradient the renderer sweeps through.</figcaption>
+        <img src="../assets/images/figures/palette-moods.jpg" width="1316" height="1082" alt="Twenty-three gradient strips, one per mood family the palette prompt names, each labeled with its family and the palette shown.">
+        <figcaption>One representative palette from each mood family the palette prompt names, drawn as the gradient the renderer sweeps through. The ten families named for a color rather than a mood are the batches written to reach colors the collection was short of.</figcaption>
       </figure>
 
       <figure class="figure" data-figure="palette-fire-ice">
@@ -183,8 +198,8 @@
     is built. The set for a location is a <i>neighborhood</i> in palette space: one anchor
     palette and its 31 nearest neighbors by the descriptor distance above, so the judge
     always chooses among palettes that belong together rather than among 32 unrelated ones.
-    Anchors are drawn without replacement across a run, so no anchor repeats until the
-    library is spent, and two locations in one release are asked about different regions of
+    Anchors are drawn without replacement across a run, so no map anchors twice until all
+    seven hundred have anchored once, and two locations in one release are asked about different regions of
     palette space. Nothing downstream adds to that: the diversity rule in
     <a href="from-locations-to-wallpapers.html">from locations to wallpapers</a> caps
     near-duplicate locations rather than palettes, and two released wallpapers may share a
