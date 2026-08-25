@@ -186,8 +186,9 @@ editing a cell by hand.
 | `finding-good-locations.html` | yes | `Finding good locations v4.md` | applied 2026-08-21 | 12 placed | — |
 | `training-judges.html` | yes | `Training judges v4.md` | applied 2026-08-21 | 3 placed | — |
 | `color-palettes.html` | yes | `Color palettes v4.md` | none | 7 placed | — |
-| `from-locations-to-wallpapers.html` | yes | `From locations to wallpapers v5.md` | none | 3 placed, 4 pending, 1 held | `pool-stages`, `pool-attempt` and `finishing-release` are placed, the last two off Matt's tile picks; the four `gallery-*` rows need a pass's own seating and embedding records, which `builder/pool.py` does not read yet; `gallery-output` is **held** |
-| `running-at-scale.html` | no | none | none | none | the section is not written |
+| `from-locations-to-wallpapers.html` | yes | `From locations to wallpapers v6.md` | none | 3 placed, 4 pending, 1 held | `pool-stages`, `pool-attempt` and `finishing-release` are placed, the last two off Matt's tile picks; the four `gallery-*` rows need a pass's own seating and embedding records, which `builder/pool.py` does not read yet; `gallery-output` is **held** on gallery4 |
+| `full-pipeline.html` | no | none — `Full pipeline v1.md` is drafted and under review, not placed | none | none | the section is not written |
+| `fractal-atlases.html` | no | none | none | none | the section is not written |
 | `deep-zoom.html` | no | none | none | none | the section is not written |
 | `palettes/make-your-own.html` | hangs off Color palettes | `Make your own palettes v4.md` | none | 1 placed | — |
 | `palettes/all-palettes.html` | hangs off Color palettes | generated | n/a | 901 palette strips in 823 entries, none a registry figure | the strips are generated from the wallpaper project's library and are not figures; 65 sets of near-duplicates are gathered under one entry each |

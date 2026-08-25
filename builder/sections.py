@@ -149,7 +149,7 @@ def load_all() -> list[Section]:
 
 
 def rail(page: Path, sections: list[Section]) -> str:
-    """The rail as one page carries it: ten sections, this page's own headings open,
+    """The rail as one page carries it: eleven sections, this page's own headings open,
     and under them the two places a reader leaves the article for.
 
     The title is the way back to the front page. It was the one word in the rail that
@@ -185,7 +185,7 @@ def rail(page: Path, sections: list[Section]) -> str:
     return "\n".join(lines)
 
 
-#: What the rail carries under the ten sections: the page that runs the engine, and the
+#: What the rail carries under the eleven sections: the page that runs the engine, and the
 #: code the article is about. Both are in the site bar too, and the bar is one line at
 #: the very top of a page the reader has scrolled away from — the rail is where a reader
 #: is looking when the question "can I try this myself?" arrives.

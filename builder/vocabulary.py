@@ -36,6 +36,19 @@ extra entries are all *code* names out of an older codebase. None of them can re
 repository — nothing is copied across without being rewritten — so this is the prose half
 of the shared list rather than a second copy of the whole thing.
 
+A second list bans **framing a run by the clock** *(Matt, 2026-08-25, site-wide)*. A run
+is described by its budget in hours and by what it produced, never by what time of day it
+was still going: the word for the dark half of a day, the one that runs through it, and
+the one for the start of the next are all off. They are on this list rather than held
+editorially because the shape they arrive in is a sentence somebody writes once — "left it
+running, and by then it had found forty" — and nobody re-reads a page looking for it.
+
+Those three are matched with a boundary of their own: a neighbouring hyphen means the word
+is part of a **name**, and names are the naming rule's business rather than this one's. The
+palette library next door holds maps whose authors called them after the time of day, and
+this repository records the map a picture was drawn in exactly as the library spells it.
+The ban is on a sentence framing a run, not on a gradient's name.
+
 A term is banned as a **name**, not as a substring: a hit is a match whose neighbours are
 not letters. `\\b` would be wrong, because `_` is a word character and snake_case is a
 form these names take. There are no exceptions and there is no allowlist. `scratch/` and
@@ -60,6 +73,15 @@ BANNED_TERMS = (
     "emissio[n]",
 )
 
+#: The clock terms, written the same way. Reader-facing text never frames a run by the
+#: hour of the day it was still running *(Matt, 2026-08-25)* — a run has a budget in
+#: hours and a set of admissions, and neither of those is a time on a clock.
+CLOCK_TERMS = (
+    "nigh[t]",
+    "overnigh[t]",
+    "mornin[g]",
+)
+
 
 def spelled_out(term: str) -> str:
     """The term as a person writes it, for a message naming something recognizable."""
@@ -77,7 +99,20 @@ def pattern_for(term: str) -> re.Pattern:
     return re.compile(rf"(?<![a-z]){body}s?(?![a-z])", re.IGNORECASE)
 
 
-BANNED = tuple((spelled_out(term), pattern_for(term)) for term in BANNED_TERMS)
+def clock_pattern_for(term: str) -> re.Pattern:
+    """A clock term as it is looked for: the word itself, and never inside a name.
+
+    A hyphen on either side is the difference between a sentence and a name. The palette
+    library holds maps their authors named after the time of day, and a figure's
+    provenance spells the map exactly as the library does — those are names, and the
+    naming rule governs them. What this catches is the word standing on its own.
+    """
+    return re.compile(rf"(?<![a-z-]){term}s?(?![a-z-])", re.IGNORECASE)
+
+
+BANNED = tuple((spelled_out(term), pattern_for(term)) for term in BANNED_TERMS) + tuple(
+    (spelled_out(term), clock_pattern_for(term)) for term in CLOCK_TERMS
+)
 
 #: Suffixes that are not text. Reading one costs nothing but says nothing either.
 BINARY_SUFFIXES = frozenset({".png", ".jpg", ".jpeg", ".gif", ".webp", ".ico", ".wasm"})

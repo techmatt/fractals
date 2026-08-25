@@ -94,7 +94,7 @@ derive the list from, because a page cannot ask to be checked and be believed.
 
 ## The contents rail is derived, never kept
 
-`article/sections.jsonl` gives the ten sections their reading order and says which are
+`article/sections.jsonl` gives the eleven sections their reading order and says which are
 written; everything else the rail shows comes off the pages themselves. A section's name
 is its `<h1>`, and the entries that open under the current page are the `<h2>`s of its
 prose — a stub's *Figures* block is scaffolding, not reading, so it is not listed.

@@ -229,8 +229,8 @@ Wikipedia's shape: a sticky contents rail on the left, the reading column beside
   and open from the filesystem; the explorer is the first and so far only exception, and
   brings its own stylesheet as well as its own script.
 
-**A page may hang off a section without being one.** The ten sections are ratified and
-`article/` holds exactly those ten; a page that belongs to a section but is not part of
+**A page may hang off a section without being one.** The eleven sections are ratified
+and `article/` holds exactly those eleven; a page that belongs to a section but is not part of
 the reading order lives in its own directory and says so in the registries by naming
 itself with a slash — `palettes/make-your-own.html`. It carries the rail like any other
 page and the rail has no current entry on it, which is what the gallery pages already do.
