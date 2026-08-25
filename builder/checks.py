@@ -50,8 +50,17 @@ did on a machine without one was raise, and every check after it went unrun.
   the one the page carries. Whether a link *parses* is asked of the permalink contract
   itself, by `permalink.test.mjs`, because the contract is written in JavaScript and a
   second reading of it in Python is exactly what a URL contract cannot survive.
+- **bake** — the explorer's two generated modules are what a rebake produces from the
+  committed roster and the library next door. `palettes.js` byte for byte, because its
+  stamp is read off `explorer/palettes.jsonl` rather than off the clock; `catalog.js`
+  below its stamp, because the mode roster is the engine's and has no record here to
+  date. It also holds the roster to the figures: a picture drawn in a map the roster
+  does not carry is a picture the explorer cannot open. Only where the checkout is
+  configured — a clone has no library to bake from, and the modules it serves are the
+  committed ones either way.
 """
 
+import json
 import re
 from dataclasses import dataclass
 from html.parser import HTMLParser
@@ -59,6 +68,7 @@ from pathlib import Path
 from urllib.parse import unquote, urldefrag
 
 from . import (
+    explorer,
     figures,
     galleries,
     images,
@@ -66,6 +76,7 @@ from . import (
     pages,
     palettes,
     prose,
+    records,
     renders,
     sections,
     theme,
@@ -86,6 +97,11 @@ _SCHEME = re.compile(r"^[a-zA-Z][a-zA-Z0-9+.\-]*:")
 _FIGURE_ID = re.compile(r'data-figure="([^"]*)"')
 _FIGURE_OPEN = re.compile(r"<figure class=\"figure\"(?![^>]*data-figure=)")
 _CSS_TOKEN = re.compile(r"(--[a-z-]+):\s*#([0-9a-fA-F]{6})\s*;")
+
+#: `.gitattributes` normalizes this repository to LF, and a generated module is compared
+#: to a committed one line by line, so the split is spelled rather than taken from the
+#: platform.
+LF = "\n"
 
 
 class _Links(HTMLParser):
@@ -483,6 +499,82 @@ def check_guidance() -> list[str]:
     return []
 
 
+def check_bake() -> list[str]:
+    """The explorer's generated modules against a rebake of them.
+
+    The picker is a thing a reader is offered, and it changed once by accident: the bake
+    read "every curated map" out of the library next door, that library took a drop of
+    two hundred authored maps, and a rebake nobody ran on purpose would have grown the
+    picker from 77 entries to 277. The roster is committed here now, and this is what
+    says the committed module is still what it bakes to.
+
+    Nothing here without the checkout: a bake reads the gradients out of the library, so
+    a clone cannot ask the question at all — and the module it serves is the committed
+    one regardless, which is the whole point of committing it.
+    """
+    if not figures.stores_available():
+        return []
+    try:
+        return _bake_problems()
+    except (renders.EngineError, explorer.ExplorerError, records.RecordError, OSError) as error:
+        return [f"explorer: the bake could not be reproduced here — {error}"]
+
+
+def _bake_problems() -> list[str]:
+    problems = []
+    baked, _count, _offered, _chosen = explorer.palettes_module_text()
+    committed = _read(explorer.PALETTES_MODULE)
+    if baked != committed:
+        problems.append(
+            f"{_shown(explorer.PALETTES_MODULE)}: not what "
+            "`python -m builder explorer --palettes-only` bakes from "
+            f"{_shown(explorer.PICKS_RECORD)} — {_first_difference(baked, committed)}"
+        )
+    catalogued, _modes = explorer.catalog_module_text()
+    if _without_clock(catalogued) != _without_clock(_read(explorer.CATALOG_MODULE)):
+        problems.append(
+            f"{_shown(explorer.CATALOG_MODULE)}: not what `python -m builder explorer` bakes "
+            "from the engine beside it — rebake it"
+        )
+    return problems + _unbakeable()
+
+
+def _without_clock(text: str) -> str:
+    """A generated module with the stamp lines that say *when* taken out."""
+    held = tuple(f'  "{field}": ' for field in explorer.CATALOG_CLOCK)
+    return LF.join(line for line in text.split(LF) if not line.startswith(held))
+
+
+def _first_difference(baked: str, committed: str) -> str:
+    """Where two texts part company, as a line number and both lines."""
+    left, right = baked.split(LF), committed.split(LF)
+    for number, (one, other) in enumerate(zip(left, right, strict=False), start=1):
+        if one != other:
+            return f"line {number} bakes to {one.strip()[:60]!r}, committed {other.strip()[:60]!r}"
+    return f"the bake is {len(left)} lines and the committed module is {len(right)}"
+
+
+def _unbakeable() -> list[str]:
+    """A colormap one of this site's pictures was drawn in and the roster does not carry.
+
+    The roster is what the bake reads, so a map outside it is not in `palettes.js`, so
+    the link that figure carries names a palette the page cannot draw. `links.py` derives
+    those links off the same word in the same provenance line, which is why this is the
+    one thing the roster owes the figure registry.
+    """
+    directory = renders.wallpapers_root() / explorer.COLORMAP_SOURCE
+    held = {
+        json.loads(path.read_text(encoding="utf-8"))["name"] for path in directory.glob("*.json")
+    }
+    carried = {name for name, _ in explorer.roster()[1]}
+    missing = sorted(explorer.drawn_in(held) - carried)
+    return [
+        f"{_shown(explorer.PICKS_RECORD)}: a figure is drawn in {name}, which the roster does "
+        "not carry, so the explorer cannot open that picture"
+        for name in missing
+    ]
+
+
 def check_library() -> list[str]:
     """The palette record against the library it was written from.
 
@@ -556,6 +648,14 @@ def skips() -> tuple[Skip, ...]:
                 whole=True,
             )
         )
+        found.append(
+            Skip(
+                "bake",
+                "the explorer's generated modules against a rebake of them",
+                NO_CHECKOUT,
+                whole=True,
+            )
+        )
     if not images.available():
         found.append(Skip("figures", "each figure's size on disk", NO_PILLOW))
         found.append(Skip("assets", "each image's and each thumbnail's size on disk", NO_PILLOW))
@@ -574,6 +674,7 @@ def run_all() -> Report:
             "figures": check_figures(),
             "landing": check_landing(),
             "explorer": check_explorer(),
+            "bake": check_bake(),
             "assets": check_assets(loaded),
             "library": check_library(),
             "prose": check_prose(article),

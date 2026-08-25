@@ -32,7 +32,7 @@ drive. It is not restated here; where the two disagree, the tree is what is true
 design doc is what was intended. Everything it rules is built or deliberately
 superseded, and these are the places the two have come apart:
 
-- **"the 76 curated q3 set ONLY"** — the picker offers **77**, and a link may name **108**.
+- **"the 76 curated q3 set ONLY"** — the picker offers **77**, and a link may name **107**.
   The wider set is every map the article's own figures were drawn in, most of them
   mechanical conversions rather than curated choices: a picture the article publishes has
   to be openable here, and it does not have to be on the menu.
@@ -65,6 +65,7 @@ worker.js             one worker: one wasm instance, one band of rows
 permalink.js          the link contract — parse, validate, canonicalize
 permalink.test.mjs    34 tests, `node --test explorer/permalink.test.mjs`
 bands.test.mjs        3 tests: the pool cuts the frame, never what is in it
+palettes.jsonl        the roster palettes.js is baked from: 107 maps, 77 offered
 palettes.js           generated: the colormaps, by name, curated or drawn-in
 catalog.js            generated: the mode roster, its curves, the anchors' constants
 links.jsonl           generated: every figure and tile, as a link here or a reason not
@@ -849,6 +850,16 @@ the several hundred megabytes cargo needs to produce a 480 KB file.
 
 Which colormaps count as curated is the wallpaper project's own distinction: a map that
 arrived by mechanical conversion says so in its `source` line, and the rest were chosen.
+
+**What the bake reads is `palettes.jsonl`, not that distinction.** The roster used to be
+derived — every curated map, plus every map a figure of this article names — and it grew
+by two hundred the day the wallpaper project admitted an authored drop into its library.
+A rebake nobody ran on purpose would have taken the picker from 77 entries to 277, which
+is a change to what a reader is offered arriving as a build artifact. So the 107 names
+and their `offered` flags are a committed record here; the bake reads the gradients next
+door and the roster from the record, and `builder check`'s **bake** check asserts that
+the committed `palettes.js` is byte for byte what that produces. Widening the picker is
+an edit to the record, made on purpose, in a commit that says so.
 
 ## Next
 

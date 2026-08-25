@@ -1,0 +1,109 @@
+{"schema": 1, "kind": "method", "source": "data/palettes/*.json", "baked": "2026-08-25", "wallpapers_commit": "f9d6938f9dc089826e612bf42df6d3e1c3604360", "rule": "the maps the explorer carries, and which of them the picker offers. The 77 curated maps the picker lists are the set as it stood on 2026-08-23 and are frozen there: the wallpaper project's library took a drop of two hundred authored maps afterwards, and a bake that read `every curated map` out of that library would have grown the picker to 277 entries without anybody deciding to. Baked alongside them and not offered are the 31 further maps one of this site's own published pictures was drawn in, which a permalink may name and the picker does not list — a picture the article publishes has to be openable here. Nothing is ever removed: a name that has been in a link is a name that has to keep resolving. This record is what `python -m builder explorer` bakes from, and `builder check`'s bake check holds the committed module to it."}
+{"schema": 1, "kind": "palette", "name": "Amber Highlands", "offered": false}
+{"schema": 1, "kind": "palette", "name": "Amethyst Veil", "offered": false}
+{"schema": 1, "kind": "palette", "name": "Blues", "offered": true}
+{"schema": 1, "kind": "palette", "name": "BrBG", "offered": true}
+{"schema": 1, "kind": "palette", "name": "CMRmap", "offered": true}
+{"schema": 1, "kind": "palette", "name": "Cobalt & Coal", "offered": false}
+{"schema": 1, "kind": "palette", "name": "Ember Against Steel", "offered": false}
+{"schema": 1, "kind": "palette", "name": "Ember Gradient", "offered": false}
+{"schema": 1, "kind": "palette", "name": "Ember Rising", "offered": false}
+{"schema": 1, "kind": "palette", "name": "GnBu", "offered": true}
+{"schema": 1, "kind": "palette", "name": "Gold Field, Blood Spark", "offered": false}
+{"schema": 1, "kind": "palette", "name": "Ice Spire", "offered": false}
+{"schema": 1, "kind": "palette", "name": "Ice Walk", "offered": false}
+{"schema": 1, "kind": "palette", "name": "Indigo Nocturne", "offered": false}
+{"schema": 1, "kind": "palette", "name": "Oranges", "offered": false}
+{"schema": 1, "kind": "palette", "name": "PuOr", "offered": true}
+{"schema": 1, "kind": "palette", "name": "RdBu", "offered": true}
+{"schema": 1, "kind": "palette", "name": "RdGy", "offered": true}
+{"schema": 1, "kind": "palette", "name": "RdPu", "offered": true}
+{"schema": 1, "kind": "palette", "name": "RdYlBu", "offered": true}
+{"schema": 1, "kind": "palette", "name": "Reef Triad", "offered": false}
+{"schema": 1, "kind": "palette", "name": "Rust to Plum", "offered": false}
+{"schema": 1, "kind": "palette", "name": "Sage Ascending", "offered": false}
+{"schema": 1, "kind": "palette", "name": "Spectral", "offered": true}
+{"schema": 1, "kind": "palette", "name": "Verdigris Flare", "offered": false}
+{"schema": 1, "kind": "palette", "name": "YlGnBu", "offered": true}
+{"schema": 1, "kind": "palette", "name": "YlOrBr", "offered": true}
+{"schema": 1, "kind": "palette", "name": "YlOrRd", "offered": true}
+{"schema": 1, "kind": "palette", "name": "afmhot", "offered": true}
+{"schema": 1, "kind": "palette", "name": "along-the-starry-way-25", "offered": false}
+{"schema": 1, "kind": "palette", "name": "berlin", "offered": true}
+{"schema": 1, "kind": "palette", "name": "blue_orange", "offered": true}
+{"schema": 1, "kind": "palette", "name": "blueroot", "offered": false}
+{"schema": 1, "kind": "palette", "name": "bwr", "offered": true}
+{"schema": 1, "kind": "palette", "name": "cet_cyclic_mybm_20_100_c48_s25", "offered": true}
+{"schema": 1, "kind": "palette", "name": "cet_cyclic_protanopic_deuteranopic_bwyk_16_96_c31", "offered": true}
+{"schema": 1, "kind": "palette", "name": "cet_cyclic_protanopic_deuteranopic_wywb_55_96_c33", "offered": true}
+{"schema": 1, "kind": "palette", "name": "cet_cyclic_rygcbmr_50_90_c64_s25", "offered": true}
+{"schema": 1, "kind": "palette", "name": "cet_cyclic_wrkbw_10_90_c43", "offered": true}
+{"schema": 1, "kind": "palette", "name": "cet_cyclic_wrkbw_10_90_c43_s25", "offered": true}
+{"schema": 1, "kind": "palette", "name": "cet_cyclic_wrwbw_40_90_c42", "offered": true}
+{"schema": 1, "kind": "palette", "name": "cet_diverging_bwr_40_95_c42", "offered": true}
+{"schema": 1, "kind": "palette", "name": "cet_linear_bgyw_15_100_c68", "offered": true}
+{"schema": 1, "kind": "palette", "name": "cet_linear_bmw_5_95_c86", "offered": true}
+{"schema": 1, "kind": "palette", "name": "cet_linear_bmy_10_95_c71", "offered": true}
+{"schema": 1, "kind": "palette", "name": "cet_linear_bmy_10_95_c78", "offered": true}
+{"schema": 1, "kind": "palette", "name": "cet_linear_kry_0_97_c73", "offered": true}
+{"schema": 1, "kind": "palette", "name": "cet_linear_kry_5_95_c72", "offered": true}
+{"schema": 1, "kind": "palette", "name": "cet_linear_kry_5_98_c75", "offered": true}
+{"schema": 1, "kind": "palette", "name": "cet_linear_kryw_0_100_c71", "offered": true}
+{"schema": 1, "kind": "palette", "name": "cet_linear_kryw_5_100_c64", "offered": true}
+{"schema": 1, "kind": "palette", "name": "cet_linear_kryw_5_100_c67", "offered": true}
+{"schema": 1, "kind": "palette", "name": "cet_linear_protanopic_deuteranopic_kbjyw_5_95_c25", "offered": true}
+{"schema": 1, "kind": "palette", "name": "cet_linear_protanopic_deuteranopic_kbw_5_95_c34", "offered": true}
+{"schema": 1, "kind": "palette", "name": "cet_linear_protanopic_deuteranopic_kbw_5_98_c40", "offered": true}
+{"schema": 1, "kind": "palette", "name": "cet_linear_tritanopic_krjcw_5_98_c46", "offered": true}
+{"schema": 1, "kind": "palette", "name": "cet_linear_tritanopic_krw_5_95_c46", "offered": true}
+{"schema": 1, "kind": "palette", "name": "chaidai", "offered": false}
+{"schema": 1, "kind": "palette", "name": "cividis", "offered": true}
+{"schema": 1, "kind": "palette", "name": "cmr.amber", "offered": true}
+{"schema": 1, "kind": "palette", "name": "cmr.amethyst", "offered": false}
+{"schema": 1, "kind": "palette", "name": "cmr.copper", "offered": true}
+{"schema": 1, "kind": "palette", "name": "cmr.ember", "offered": true}
+{"schema": 1, "kind": "palette", "name": "cmr.emergency_s", "offered": true}
+{"schema": 1, "kind": "palette", "name": "cmr.fall", "offered": true}
+{"schema": 1, "kind": "palette", "name": "cmr.fusion", "offered": true}
+{"schema": 1, "kind": "palette", "name": "cmr.jungle", "offered": true}
+{"schema": 1, "kind": "palette", "name": "cmr.lilac", "offered": true}
+{"schema": 1, "kind": "palette", "name": "cmr.ocean", "offered": true}
+{"schema": 1, "kind": "palette", "name": "cmr.pride", "offered": true}
+{"schema": 1, "kind": "palette", "name": "cmr.prinsenvlag", "offered": true}
+{"schema": 1, "kind": "palette", "name": "cmr.rainforest", "offered": true}
+{"schema": 1, "kind": "palette", "name": "cmr.redshift", "offered": true}
+{"schema": 1, "kind": "palette", "name": "cmr.savanna", "offered": true}
+{"schema": 1, "kind": "palette", "name": "cmr.seasons", "offered": true}
+{"schema": 1, "kind": "palette", "name": "cmr.seasons_s", "offered": true}
+{"schema": 1, "kind": "palette", "name": "cmr.sunburst", "offered": true}
+{"schema": 1, "kind": "palette", "name": "cmr.swamp", "offered": true}
+{"schema": 1, "kind": "palette", "name": "cmr.torch", "offered": true}
+{"schema": 1, "kind": "palette", "name": "cmr.toxic", "offered": true}
+{"schema": 1, "kind": "palette", "name": "cmr.viola", "offered": true}
+{"schema": 1, "kind": "palette", "name": "cmr.voltage", "offered": true}
+{"schema": 1, "kind": "palette", "name": "cmr.waterlily", "offered": true}
+{"schema": 1, "kind": "palette", "name": "cmr.wildfire", "offered": true}
+{"schema": 1, "kind": "palette", "name": "consequences-25", "offered": false}
+{"schema": 1, "kind": "palette", "name": "coolwarm", "offered": true}
+{"schema": 1, "kind": "palette", "name": "curlv", "offered": false}
+{"schema": 1, "kind": "palette", "name": "debutalis", "offered": false}
+{"schema": 1, "kind": "palette", "name": "dessert-union-25", "offered": false}
+{"schema": 1, "kind": "palette", "name": "fractal_stripes_bends_lines_116839_2560x1600", "offered": false}
+{"schema": 1, "kind": "palette", "name": "gist_heat", "offered": true}
+{"schema": 1, "kind": "palette", "name": "gist_stern", "offered": true}
+{"schema": 1, "kind": "palette", "name": "inferno", "offered": true}
+{"schema": 1, "kind": "palette", "name": "magma", "offered": true}
+{"schema": 1, "kind": "palette", "name": "managua", "offered": true}
+{"schema": 1, "kind": "palette", "name": "morning-at-misty-vale-25", "offered": false}
+{"schema": 1, "kind": "palette", "name": "plasma", "offered": true}
+{"schema": 1, "kind": "palette", "name": "red-octavo-25", "offered": false}
+{"schema": 1, "kind": "palette", "name": "seismic", "offered": true}
+{"schema": 1, "kind": "palette", "name": "sparks", "offered": false}
+{"schema": 1, "kind": "palette", "name": "the_light_fantastic", "offered": false}
+{"schema": 1, "kind": "palette", "name": "torque-25", "offered": false}
+{"schema": 1, "kind": "palette", "name": "turbo", "offered": true}
+{"schema": 1, "kind": "palette", "name": "twilight", "offered": true}
+{"schema": 1, "kind": "palette", "name": "twilight_shifted", "offered": true}
+{"schema": 1, "kind": "palette", "name": "viridis", "offered": true}
+{"schema": 1, "kind": "palette", "name": "wallhaven_wallhaven-nm6938", "offered": false}
+{"schema": 1, "kind": "palette", "name": "wheelance", "offered": false}

@@ -185,12 +185,12 @@ editing a cell by hand.
 | `rendering-modes.html` | yes | none — the HTML is its own master | none | 6 placed | — |
 | `finding-good-locations.html` | yes | `Finding good locations v4.md` | applied 2026-08-21 | 12 placed | — |
 | `training-judges.html` | yes | `Training judges v4.md` | applied 2026-08-21 | 3 placed | — |
-| `color-palettes.html` | yes | `Color palettes v4.md` | none | 7 placed | two rows carry a `stale_when`: `palette-moods` and `palette-neighborhood` both count the pool at seven hundred, and admitting the 200-map rare-color drop makes that nine hundred |
-| `from-locations-to-wallpapers.html` | yes | `From locations to wallpapers v5.md` | none | 7 pending, 1 held | every figure on the page is still to be made; `gallery-output` is **held** — it needs a gallery3 full-size render on live floors, gallery1 having been seated on retired floors and gallery2 never rendered at all |
+| `color-palettes.html` | yes | `Color palettes v4.md` | none | 7 placed | — |
+| `from-locations-to-wallpapers.html` | yes | `From locations to wallpapers v5.md` | none | 1 placed, 6 pending, 1 held | `pool-stages` is drawn and placed; `pool-attempt` and `finishing-release` wait on Matt naming a tile off the contact sheets their rows name; the four `gallery-*` rows need pass records this repository does not read yet; `gallery-output` is **held** |
 | `running-at-scale.html` | no | none | none | none | the section is not written |
 | `deep-zoom.html` | no | none | none | none | the section is not written |
 | `palettes/make-your-own.html` | hangs off Color palettes | `Make your own palettes v4.md` | none | 1 placed | — |
-| `palettes/all-palettes.html` | hangs off Color palettes | generated | n/a | 901 palette strips, none a registry figure | the strips are generated from the wallpaper project's library and are not figures |
+| `palettes/all-palettes.html` | hangs off Color palettes | generated | n/a | 901 palette strips in 823 entries, none a registry figure | the strips are generated from the wallpaper project's library and are not figures; 65 sets of near-duplicates are gathered under one entry each |
 
 "Last review round" is what `python -m builder review --list` reports as **applied**; a
 doc **waiting** in the review folder is a round somebody started and did not finish, and

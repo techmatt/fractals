@@ -1,6 +1,6 @@
 """The figures that are drawn rather than rendered.
 
-One of the article's figures is a diagram: it explains a mechanism instead of showing a
+Two of the article's figures are diagrams: each explains a mechanism instead of showing a
 location, so no fractal engine is involved and nothing outside this repository is read.
 It is drawn here, from the stylesheet's own colours, so the picture in the well matches
 the well it sits in — and so a wording change is an edit to this file rather than to an
@@ -34,6 +34,7 @@ from .theme import (
     WELL,
     WELL_INK,
     WELL_INK_DIM,
+    WELL_PANEL,
     WELL_PENDING,
     WELL_RULE,
     font,
@@ -340,8 +341,179 @@ PIPELINE_GAP = 34
 PIPELINE_BOX = 150
 
 
+# --------------------------------------------------------------------------- pool stages
+
+#: The sheet this diagram is composed at — the width every figure of this article is
+#: composed at, so a diagram and a sheet of renders sit at the same size in the column.
+POOL_WIDTH = 1316
+
+#: The two processes, each as a name in the left gutter and the stages it runs through.
+#: A stage is a title and the two quiet lines under it, and nothing here is a count: every
+#: other figure of this page that carries a number reads it off a record, and this one is
+#: about the *shape* of the two processes, which is the thing no record holds.
+RUN_LANE = ("A run", ["hours or days at a time,", "and it happens again"])
+RUN_STAGES = [
+    ("Walk ledgers", ["every partition's search,", "one judge score a location"]),
+    ("Locations to draw", ["ordered inside a partition,", "the junk floor cutting it off"]),
+    ("Judged small renders", ["one smooth attempt and two", "of the other seventeen"]),
+]
+PASS_LANE = ("A gallery pass", ["one selection over the", "whole pool, at a size"])
+PASS_STAGES = [
+    ("Slots", ["the gallery size split by", "share, then between kinds"]),
+    ("Chosen locations", ["farthest point in the", "embedding, and a radius"]),
+    ("More judged renders", ["several modes and palettes", "at each point a slot took"]),
+    ("Finished wallpapers", ["seated over the kind's bar,", "drawn again and unjudged"]),
+]
+
+#: What the band between the two says. The pool is the subject: both processes write into
+#: it, neither reads the other, and that is the whole claim of the picture.
+POOL_TITLE = "The pool"
+POOL_LINES = [
+    "every candidate every run and every pass has judged — its location, its recipe, its "
+    "palette, its scores, and the small picture itself",
+    "nothing a run makes is discarded, and nothing a run makes is a wallpaper",
+]
+
+#: The one arrow that runs the other way: a pass's own attempts are ordinary candidates
+#: and join the pool like any others.
+RETURN_TEXT = "a pass's own attempts join the pool"
+
+POOL_PAD = 24
+POOL_GUTTER = 186
+POOL_GAP = 16
+POOL_BOX = 112
+POOL_BAND = 104
+POOL_JOIN = 52
+POOL_TITLE_SIZE = 21
+POOL_SUB_SIZE = 17
+
+
+def _pool_box(draw, x: int, y: int, width: int, height: int, title: str, lines) -> None:
+    """One stage: a panel of well, its name, and the two quiet lines under it."""
+    draw.rounded_rectangle(
+        (x, y, x + width - 1, y + height - 1),
+        radius=6,
+        fill=WELL_PANEL,
+        outline=WELL_RULE,
+        width=1,
+    )
+    draw.text((x + 14, y + 14), title, fill=WELL_INK, font=font(POOL_TITLE_SIZE, SEMIBOLD))
+    for index, line in enumerate(lines):
+        draw.text(
+            (x + 14, y + 48 + index * (POOL_SUB_SIZE + 7)),
+            line,
+            fill=WELL_INK_DIM,
+            font=font(POOL_SUB_SIZE),
+        )
+
+
+def _pool_arrow(draw, start, end, colour=WELL_INK_DIM) -> None:
+    """A straight arrow with a solid head, horizontal or vertical."""
+    x0, y0 = start
+    x1, y1 = end
+    draw.line((x0, y0, x1, y1), fill=colour, width=2)
+    head = 6
+    if y0 == y1:
+        step = head if x1 > x0 else -head
+        draw.polygon(
+            [(x1, y1), (x1 - step, y1 - head + 1), (x1 - step, y1 + head - 1)], fill=colour
+        )
+    else:
+        step = head if y1 > y0 else -head
+        draw.polygon(
+            [(x1, y1), (x1 - head + 1, y1 - step), (x1 + head - 1, y1 - step)], fill=colour
+        )
+
+
+def _pool_lane(draw, top: int, lane, stages, inner: int) -> tuple[int, int]:
+    """One process: its name in the left gutter, its stages across the rest."""
+    name, under = lane
+    draw.text((POOL_PAD, top + 12), name, fill=WELL_INK, font=font(POOL_TITLE_SIZE, SEMIBOLD))
+    for index, line in enumerate(under):
+        draw.text(
+            (POOL_PAD, top + 46 + index * (POOL_SUB_SIZE + 6)),
+            line,
+            fill=SECTION_INK,
+            font=font(POOL_SUB_SIZE),
+        )
+    left = POOL_PAD + POOL_GUTTER
+    room = inner - POOL_GUTTER
+    width = (room - (len(stages) - 1) * POOL_GAP) // len(stages)
+    for index, (title, lines) in enumerate(stages):
+        x = left + index * (width + POOL_GAP)
+        _pool_box(draw, x, top, width, POOL_BOX, title, lines)
+        if index:
+            _pool_arrow(draw, (x - POOL_GAP + 2, top + POOL_BOX // 2), (x - 3, top + POOL_BOX // 2))
+    return left, width
+
+
+def pool_stages(destination: Path) -> tuple[int, int]:
+    """The two processes that stand between a stock of locations and a gallery.
+
+    A run reads left to right and empties into the pool; a gallery pass reads the whole
+    pool at once, and its own attempts go back into it. Drawn rather than rendered:
+    there is no picture of a process, and the two arrows meeting in the middle are the
+    only thing the reader is being asked to see.
+    """
+    height = POOL_PAD + POOL_BOX + POOL_JOIN + POOL_BAND + POOL_JOIN + POOL_BOX + POOL_PAD
+    sheet, draw = sheets.canvas(POOL_WIDTH, height)
+    inner = POOL_WIDTH - 2 * POOL_PAD
+
+    run_top = POOL_PAD
+    run_left, run_width = _pool_lane(draw, run_top, RUN_LANE, RUN_STAGES, inner)
+
+    band_top = run_top + POOL_BOX + POOL_JOIN
+    draw.rounded_rectangle(
+        (POOL_PAD, band_top, POOL_PAD + inner - 1, band_top + POOL_BAND - 1),
+        radius=8,
+        fill=WELL_PANEL,
+        outline=SECTION_INK,
+        width=2,
+    )
+    draw.text((POOL_PAD + 18, band_top + 14), POOL_TITLE, fill=WELL_INK, font=font(23, SEMIBOLD))
+    for index, line in enumerate(POOL_LINES):
+        draw.text(
+            (POOL_PAD + 18, band_top + 50 + index * (POOL_SUB_SIZE + 7)),
+            line,
+            fill=WELL_INK_DIM,
+            font=font(POOL_SUB_SIZE),
+        )
+
+    pass_top = band_top + POOL_BAND + POOL_JOIN
+    pass_left, pass_width = _pool_lane(draw, pass_top, PASS_LANE, PASS_STAGES, inner)
+
+    # A run empties into the pool out of its last stage; a pass draws from it into its
+    # first, and puts its own attempts back in out of its third.
+    down = run_left + (len(RUN_STAGES) - 1) * (run_width + POOL_GAP) + run_width // 2
+    _pool_arrow(draw, (down, run_top + POOL_BOX + 4), (down, band_top - 4))
+    draws_from = pass_left + pass_width // 2
+    _pool_arrow(
+        draw,
+        (draws_from, band_top + POOL_BAND + 4),
+        (draws_from, pass_top - 4),
+        colour=SECTION_INK,
+    )
+    returns = pass_left + 2 * (pass_width + POOL_GAP) + pass_width // 2
+    _pool_arrow(
+        draw,
+        (returns, pass_top - 4),
+        (returns, band_top + POOL_BAND + 4),
+        colour=WELL_PENDING,
+    )
+    draw.text(
+        (returns + 12, band_top + POOL_BAND + POOL_JOIN // 2 - 9),
+        RETURN_TEXT,
+        fill=SECTION_INK,
+        font=font(15),
+    )
+
+    sheets.save(sheet, destination)
+    return sheet.width, sheet.height
+
+
 DIAGRAMS = {
     "escape-orbit-race": ("escape-orbit-race.png", orbit_race),
+    "pool-stages": ("pool-stages.png", pool_stages),
 }
 
 

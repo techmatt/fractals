@@ -132,12 +132,21 @@ keeps the mechanics. **Every apply round ends by distilling that round's general
   looks it up. The prose never uses that slug: a reference from the text is **positional**
   (*the figure below*), because this site numbers no figures and anchors none.
 - **Exactly one line of a figure's `provenance` puts the word `colormap` in front of a
-  map's name.** That word is what `builder/explorer.py`'s `drawn_in` reads to bake a map
-  into `explorer/palettes.js` so a link may name it, and `builder/links.py` reads the same
+  map's name.** That word is what `builder/explorer.py`'s `drawn_in` reads to say which
+  maps the explorer owes a gradient to — `builder check`'s `bake` fails on a picture drawn
+  in a map the explorer's roster does not carry — and `builder/links.py` reads the same
   word to derive the link itself. Every other line of the row says `palette <name>`
   instead. A sheet of eighty strips is one link at its representative panel; a row that
   writes `colormap` on every line asks the explorer to carry hundreds of gradients so that
   one figure could be opened at a picture it does not even show.
+- **What the explorer's picker offers is a committed record, never a derivation**
+  *(2026-08-25)*. `explorer/palettes.jsonl` names the 107 maps `palettes.js` is baked from
+  and which 77 of them the picker lists; `python -m builder explorer` reads the names from
+  it and the gradients from the library next door, and `check`'s `bake` holds the
+  committed module to being byte for byte what that produces. The bake used to ask the
+  library "which of you are curated", and a two-hundred-map drop next door answered
+  differently — a rebake nobody ran on purpose would have taken the picker from 77 entries
+  to 277. Widening it is an edit to the record.
 - **Every figure records how it was made.** A figure's registry row carries a
   `provenance` list — one line per panel — and a line holds everything needed to draw
   that panel again: the family and its constants, the frame's centre and width, the
@@ -332,18 +341,19 @@ comes from** above for what it holds together and why one edit has several sites
 `builder check` is read-only. It resolves every internal link, refuses root-absolute
 and bare-directory hrefs, regenerates the gallery HTML and compares it byte for byte
 with what is committed, holds every figure block to its registry row, holds every made
-figure to being a block a redraw could land on, and holds every page's contents rail and
-prose heading ids to what the builder derives. It also prints one
+figure to being a block a redraw could land on, rebakes the explorer's two generated
+modules and compares them with what is committed, and holds every page's contents rail
+and prose heading ids to what the builder derives. It also prints one
 note — never a failure — about the committed wasm module, described in
 `explorer/README.md`. The same commands run in CI
 (`.github/workflows/checks.yml`), which is a check and not a deploy dependency.
 
 **Every check runs on a bare clone, and what cannot run says so by name.** CI clones this
 repository alone, so a check that needs the wallpapers checkout is a check CI never makes.
-Two of them want it — `library`, which holds `palettes/library.jsonl` to the palette
-library next door, and the source-key half of `figures` — and without it each reports a
-**named skip**: `skipped` rather than `ok` on its own line, and counted in the exit
-summary. Pillow's absence is the same shape, for pixel sizes. Never a crash before the
+Three of them want it — `library`, which holds `palettes/library.jsonl` to the palette
+library next door; `bake`, which rebakes the explorer's modules; and the source-key half
+of `figures` — and without it each reports a **named skip**: `skipped` rather than `ok`
+on its own line, and counted in the exit summary. Pillow's absence is the same shape, for pixel sizes. Never a crash before the
 other checks, and never a silent pass. *(This is a rule because it was broken: `check`
 built the palette library page straight off the checkout, so on a machine without one it
 raised before the first check, and CI's check step spent that whole time red for a reason

@@ -6,6 +6,8 @@ the one the metadata gives. That is what makes `check`'s regenerate-and-compare 
 check rather than a coin toss.
 """
 
+from pathlib import Path
+
 from . import figures, links
 from . import palettes as palettes_module
 from . import sections as sections_module
@@ -274,29 +276,21 @@ def library_page(sections: list[sections_module.Section]) -> str:
         NEWLINE.join(
             [
                 '  <section class="intro">',
-                f"    <p>{text(palettes_module.LIBRARY_LEAD)}</p>",
+                f"    <p>{text(palettes_module.library_lead())}</p>",
                 f'    <p><a href="{attribute(article)}">Back to Color palettes</a></p>',
                 "  </section>",
             ]
         )
     ]
     for number, group in palettes_module.held_groups():
+        shown = sum(1 + len(entry.variants) for entry in group)
         lines = [
             '  <section class="palette-group">',
-            f'    <h2 id="group-{number}">Group {number} — {len(group)} palettes</h2>',
+            f'    <h2 id="group-{number}">Group {number} — {shown} palettes</h2>',
             '    <div class="palette-grid">',
         ]
-        for held in group:
-            source = relative_href(page, directory / held.strip)
-            lines.extend(
-                [
-                    '      <figure class="palette">',
-                    f'        <img src="{attribute(source)}" width="{width}" height="{height}" '
-                    f'alt="{attribute(held.alt)}" loading="lazy">',
-                    f"        <figcaption>{text(held.name)}</figcaption>",
-                    "      </figure>",
-                ]
-            )
+        for entry in group:
+            lines.extend(_palette_entry(entry, page, directory, width, height))
         lines.extend(["    </div>", "  </section>"])
         blocks.append(NEWLINE.join(lines))
 
@@ -312,6 +306,46 @@ def library_page(sections: list[sections_module.Section]) -> str:
             f'<a href="{attribute(article)}">Color palettes</a>', palettes_module.LIBRARY_TITLE
         ),
         blocks=blocks,
+    )
+
+
+def _palette_entry(entry, page: Path, directory: Path, width: int, height: int) -> list[str]:
+    """One cell of the library grid: a palette, and the variants gathered under it.
+
+    The disclosure is `<details>`, which is HTML and not a script — an article page here
+    carries no JavaScript and opens from the filesystem, and a fold that needed one would
+    have been a fold that hid 78 palettes from a reader with scripting off. Only one
+    `<figcaption>` is allowed inside a `<figure>`, so a variant's name is a `<span>`; it
+    is the same label, and `.variant span` is styled from the same rule the caption is.
+    """
+    lines = [
+        '      <figure class="palette">',
+        f"        {_strip(entry.lead, page, directory, width, height)}",
+        f"        <figcaption>{text(entry.lead.name)}</figcaption>",
+    ]
+    if entry.variants:
+        lines.append('        <details class="variants">')
+        lines.append(f"          <summary>{text(entry.summary)}</summary>")
+        for held in entry.variants:
+            lines.extend(
+                [
+                    '          <div class="variant">',
+                    f"            {_strip(held, page, directory, width, height)}",
+                    f"            <span>{text(held.name)}</span>",
+                    "          </div>",
+                ]
+            )
+        lines.append("        </details>")
+    lines.append("      </figure>")
+    return lines
+
+
+def _strip(held, page: Path, directory: Path, width: int, height: int) -> str:
+    """One gradient, at the size the library page draws every one of them."""
+    source = relative_href(page, directory / held.strip)
+    return (
+        f'<img src="{attribute(source)}" width="{width}" height="{height}" '
+        f'alt="{attribute(held.alt)}" loading="lazy">'
     )
 
 

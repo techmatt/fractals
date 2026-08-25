@@ -335,7 +335,7 @@ a:hover { color: var(--ink); }
 
 .credit { display: block; margin-top: 0.3rem; font-size: 0.8125rem; opacity: 0.8; }
 
-/* The palette library: seven hundred gradients, each with its name under it. A strip is a
+/* The palette library: nine hundred gradients, each with its name under it. A strip is a
    picture of a ramp and not of a location, so it takes the well the way a figure does but
    fills its cell rather than being fitted to one. */
 .palette-group > h2 { max-width: var(--measure); }
@@ -354,7 +354,9 @@ a:hover { color: var(--ink); }
 .palette img { display: block; width: 100%; height: auto; }
 /* A strip's name is a label and not a caption, so it is centred under its picture — the
    other half of the rule that ranges a figure's caption left *(Matt, 2026-08-22)*. */
-.palette figcaption {
+.palette figcaption,
+.variant span {
+  display: block;
   padding: 0.35rem 0.55rem;
   font-size: 0.8125rem;
   line-height: 1.4;
@@ -362,6 +364,26 @@ a:hover { color: var(--ink); }
   text-align: center;
   overflow-wrap: anywhere;
 }
+
+/* The variants a palette is shown with: maps the project's own reading says are the same
+   choice twice. `<details>` and not a control, because an article page here runs no
+   script and has to open from the filesystem — a fold that needed one would have hidden
+   seventy-eight palettes from a reader who has scripting off. */
+.variants {
+  border-top: 1px solid var(--well-rule);
+}
+.variants > summary {
+  padding: 0.3rem 0.55rem;
+  font-size: 0.75rem;
+  line-height: 1.4;
+  color: var(--well-link);
+  text-align: center;
+  cursor: pointer;
+}
+.variant {
+  border-top: 1px solid var(--well-rule);
+}
+.variant img { display: block; width: 100%; height: auto; }
 
 /* The way back into the explorer, from a gallery tile the explorer can draw again. On
    its own line under the caption and the credit, at the credit's size, because it is a

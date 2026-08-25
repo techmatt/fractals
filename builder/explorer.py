@@ -38,6 +38,17 @@ or the explorer cannot open that picture at all; it does not have to be on the m
 putting it there would widen a curated set this repository does not own. So `offered`
 travels with each baked map, the picker reads it, and a link arriving on an unoffered map
 draws it and shows it in the picker for as long as it is in force.
+
+**Which maps those are is a committed record here, not a question asked next door**
+*(2026-08-25)*. It used to be derived: every map whose `source` line did not say it was
+converted, plus every map a figure names. That derivation read "everything curated", and
+when the wallpaper project admitted two hundred authored maps in one drop the picker
+silently went from 77 entries to 277 — a bake nobody ran deliberately changing what a
+reader is offered. `explorer/palettes.jsonl` is the roster instead: one row per map the
+explorer carries, saying whether the picker lists it. The bake reads the names from that
+record and the gradients from the library next door, so growing the picker is an edit
+somebody made on purpose and a rebake on an unchanged tree reproduces the committed
+module byte for byte — which `builder check` asserts.
 """
 
 from __future__ import annotations
@@ -51,7 +62,7 @@ from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
 
-from . import figures
+from . import figures, records
 from .paths import SITE_ROOT
 from .renders import EngineError, wallpapers_root
 
@@ -84,8 +95,18 @@ CONSTANT_FAMILIES = {
 #: in the provenance stamp, so a reader can go and look at what was baked.
 COLORMAP_SOURCE = "data/palettes"
 
+#: The roster the bake reads: one row per map the explorer carries, beside the module it
+#: is baked into, the way `gallery.jsonl` sits beside the gallery page it writes. Its
+#: first row is the method row, carrying the two facts the provenance stamp cannot
+#: recompute — when the roster was fixed, and against which commit of the library.
+PICKS_RECORD = EXPLORER_DIR / "palettes.jsonl"
+PICKS_METHOD = "method"
+PICKS_ROW = "palette"
+
 #: The tail of the sentence a mechanically-converted map carries in its `source` line.
-#: See `src/fractal_wallpapers/palettes/library_import.py` over there.
+#: See `src/fractal_wallpapers/palettes/library_import.py` over there. Nothing bakes off
+#: this any more — the roster does — and it is kept because it is still the sentence that
+#: says which maps a *widening* of the roster would be reaching for.
 CONVERTED_MARKER = "not because it was curated"
 
 #: The word a provenance line puts in front of a colormap's name.
@@ -140,13 +161,41 @@ class Colormap:
     offered: bool
 
 
+def roster() -> tuple[dict, tuple[tuple[str, bool], ...]]:
+    """The committed roster: its method row, and one `(name, offered)` per map.
+
+    Read in file order, which is name order, which is what the picker shows — the same
+    `sorted` order the bake used to produce, kept as the record's own so that a rebake
+    and a hand edit cannot disagree about it.
+    """
+    rows = records.read(PICKS_RECORD)
+    head, rest = rows[0], rows[1:]
+    head.expect_kind(PICKS_METHOD)
+    found = []
+    for record in rest:
+        record.expect_kind(PICKS_ROW)
+        found.append((record.text("name"), record.flag("offered")))
+    if not found:
+        raise ExplorerError(f"{PICKS_RECORD.name} names no palette")
+    if not any(offered for _, offered in found):
+        raise ExplorerError(f"{PICKS_RECORD.name} offers nothing, so the picker would be empty")
+    names = [name for name, _ in found]
+    if names != sorted(names):
+        raise ExplorerError(f"{PICKS_RECORD.name} is not in name order, and the picker shows it")
+    return head.fields, tuple(found)
+
+
 def baked() -> list[Colormap]:
-    """Every colormap the explorer carries, in name order: the curated set, and the
-    maps this site's own pictures were drawn in.
+    """Every colormap the explorer carries, in the roster's order: its gradient, read
+    from the library next door, under the name and the `offered` flag the record fixes.
 
     Name order is `sorted`'s — codepoint, so the capitalized matplotlib names lead. The
     order is what the picker shows and what "first by name" means where the default has
     to fall back to it, so it is one rule and not two.
+
+    A name the record holds and the library no longer does is an **error**, not a map
+    quietly dropped: it is either a rename next door or a deletion, and both are things
+    somebody has to look at before a link that used to resolve stops resolving.
     """
     directory = wallpapers_root() / COLORMAP_SOURCE
     if not directory.is_dir():
@@ -155,18 +204,17 @@ def baked() -> list[Colormap]:
     for path in sorted(directory.glob("*.json")):
         loaded = json.loads(path.read_text(encoding="utf-8"))
         held[loaded["name"]] = loaded
-    wanted = drawn_in(set(held))
 
     found = []
-    for name, loaded in held.items():
-        offered = CONVERTED_MARKER not in loaded.get("source", "")
-        if not offered and name not in wanted:
-            continue
+    for name, offered in roster()[1]:
+        loaded = held.get(name)
+        if loaded is None:
+            raise ExplorerError(
+                f"{PICKS_RECORD.name} names {name!r}, and {COLORMAP_SOURCE} holds no such map"
+            )
         stops = tuple((float(at), tuple(int(c) for c in rgb)) for at, rgb in loaded["stops"])
         found.append(Colormap(name, loaded["kind"] == "cyclic", stops, offered))
-    if not any(colormap.offered for colormap in found):
-        raise ExplorerError(f"{directory} holds no curated colormap")
-    return sorted(found, key=lambda colormap: colormap.name)
+    return found
 
 
 def drawn_in(held: set[str]) -> set[str]:
@@ -241,15 +289,23 @@ def _article_smooth_colormaps() -> list[str]:
     return named
 
 
-def write_palettes() -> tuple[Path, int, int, str]:
-    """Bake the maps into `palettes.js`, with the stamp that says where from."""
+def palettes_module_text() -> tuple[str, int, int, str]:
+    """The text of `palettes.js`, and the counts and default that go in the report line.
+
+    Split out from writing it so that `check` can bake into memory and compare, which is
+    the whole reason the stamp below is read off the roster rather than off the clock:
+    `baked` and `wallpapers_commit` say when the roster was fixed and against which
+    commit of the library, so two bakes of one tree are the same bytes. A gradient that
+    moved next door is then a failing check rather than a diff nobody looks at.
+    """
+    stated, _picks = roster()
     maps = baked()
     names = [colormap.name for colormap in maps if colormap.offered]
     chosen, why = default_palette(names)
     stamp = {
-        "source": f"{COLORMAP_SOURCE}/*.json",
-        "wallpapers_commit": _wallpapers_commit(),
-        "baked": date.today().isoformat(),
+        "source": str(stated["source"]),
+        "wallpapers_commit": str(stated["wallpapers_commit"]),
+        "baked": str(stated["baked"]),
         "count": len(maps),
         "offered": len(names),
         "default_because": why,
@@ -288,9 +344,14 @@ def write_palettes() -> tuple[Path, int, int, str]:
         lines.append("  }],")
     lines.append("]);")
     lines.append("")
+    return "\n".join(lines), len(maps), len(names), chosen
 
-    PALETTES_MODULE.write_text("\n".join(lines), encoding="utf-8", newline="\n")
-    return PALETTES_MODULE, len(maps), len(names), chosen
+
+def write_palettes() -> tuple[Path, int, int, str]:
+    """Bake the maps into `palettes.js`, with the stamp that says where from."""
+    text, count, offered, chosen = palettes_module_text()
+    PALETTES_MODULE.write_text(text, encoding="utf-8", newline="\n")
+    return PALETTES_MODULE, count, offered, chosen
 
 
 # --------------------------------------------------------------------------- the catalog
@@ -368,8 +429,16 @@ def curves(modes: list[dict]) -> dict[str, str]:
     return {mode["name"]: mode["coloring"].get("transform", "linear") for mode in modes}
 
 
-def write_catalog() -> tuple[Path, int]:
-    """Bake the mode roster and the family constants into `catalog.js`."""
+#: The two fields of the catalog's stamp that say *when* rather than *what*. The mode
+#: roster is the engine's and has no committed record here to hang a date on, so these
+#: move on every bake; `check` holds the catalog to its content and reports a stamp that
+#: moved alone as a note. `palettes.js` needs no such carve-out — its stamp is read off
+#: `palettes.jsonl`, so the whole module is content.
+CATALOG_CLOCK = ("baked", "wallpapers_commit")
+
+
+def catalog_module_text() -> tuple[str, int]:
+    """The text of `catalog.js`, and how many production modes went into it."""
     modes = [mode for mode in catalogued_modes() if mode["tier"] == "production"]
     constants = anchor_constants()
     stamp = {
@@ -401,9 +470,14 @@ def write_catalog() -> tuple[Path, int]:
     lines.append("")
     lines.append(f"export const CURVES = {json.dumps(curves(modes), indent=2, sort_keys=True)};")
     lines.append("")
+    return "\n".join(lines), len(modes)
 
-    CATALOG_MODULE.write_text("\n".join(lines), encoding="utf-8", newline="\n")
-    return CATALOG_MODULE, len(modes)
+
+def write_catalog() -> tuple[Path, int]:
+    """Bake the mode roster and the family constants into `catalog.js`."""
+    text, modes = catalog_module_text()
+    CATALOG_MODULE.write_text(text, encoding="utf-8", newline="\n")
+    return CATALOG_MODULE, modes
 
 
 # ------------------------------------------------------------------------------ the wasm

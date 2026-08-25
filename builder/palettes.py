@@ -41,7 +41,7 @@ in, and bakes each one into `palettes.js` so a link can name it. It finds them b
 word `colormap` in front of a name. A sheet here shows up to eighty palettes and gets
 **one** link, at its representative panel, so exactly one line of each row's provenance
 says `colormap`; every other line names its palette without that word. The alternative
-is a browser page carrying seven hundred gradients so that a sheet of strips could be
+is a browser page carrying hundreds of gradients so that a sheet of strips could be
 opened at a picture it does not show.
 """
 
@@ -62,7 +62,9 @@ from .theme import WELL_INK, WELL_INK_DIM, font, text_width
 #: Where the tracked colormap library is, in the wallpaper project.
 LIBRARY = ("data", "palettes")
 
-#: The shipped pool a colorize may draw from: 700 of the 701 maps, `blue_orange` apart.
+#: The shipped pool a colorize may draw from: 900 of the 901 maps, `blue_orange` apart.
+#: What a run actually *draws* from is narrower again — `variant_sets` below stands one
+#: member of each set of near-duplicates, which takes 900 to 822.
 POOL = ("data", "palette_choice", "pool.json")
 
 #: What a strip is drawn at inside a full-width sheet, and inside a panel's own cell.
@@ -173,6 +175,24 @@ def clusters() -> list[dict]:
     """The tracked clustering, its method row dropped: one row per group, in order."""
     rows = renders.jsonl(renders.data_file(*LIBRARY) / "clusters.jsonl")
     return sorted((row for row in rows if row.get("kind") == "cluster"), key=lambda r: r["cluster"])
+
+
+def variant_sets() -> list[list[str]]:
+    """The project's own reading of which maps are the same choice twice.
+
+    `data/palettes/groups.jsonl` next door: average linkage over the sliced Wasserstein
+    distance between two maps' colour clouds, cut where Matt's calibration sheet put the
+    line between *same* and *different*. Sixty-five sets over 143 maps; the other 758 the
+    library holds are alone, and being alone is not a claim that a map is unique — only
+    that nothing else came within the cut of it.
+
+    **The word here is `variant`, not `group`.** That repository calls these groups, and
+    this page already spends the word on the sixteen clusters its sections are; a reader
+    who meets two kinds of group on one page has been taught nothing. Renaming on the way
+    in is the naming rule, and this is the case it is for.
+    """
+    rows = renders.jsonl(renders.data_file(*LIBRARY) / "groups.jsonl")
+    return [list(row["members"]) for row in rows if row.get("kind") == "group"]
 
 
 def pool() -> list[str]:
@@ -892,7 +912,7 @@ def draw(identifier: str) -> Drawn:
 # ------------------------------------------------------------------ the all-palettes page
 
 #: Where the library page's strips live, and what one is drawn at. Small, because there
-#: are seven hundred of them and a gradient is the one picture PNG compresses perfectly.
+#: are nine hundred of them and a gradient is the one picture PNG compresses perfectly.
 LIBRARY_ASSETS = ("assets", "images", "palettes")
 LIBRARY_STRIP = (420, 28)
 
@@ -901,13 +921,27 @@ LIBRARY_STRIP = (420, 28)
 LIBRARY_PAGE = ("palettes", "all-palettes.html")
 LIBRARY_TITLE = "All palettes"
 
+#: The page's opening paragraph. The two counts are derived and formatted in, because a
+#: library that grows is a page that has to say so without anybody remembering to.
 LIBRARY_LEAD = (
     "Every palette the project ships, grouped the way the section groups them: sixteen "
-    "groups by distance in palette space. Each is drawn here as a render sweeps through it — "
-    "folded where it does not close on the color it opened with — so what is on the page "
-    "is the gradient a picture is read through, and not the handful of stops it was "
-    "written as."
+    "groups by distance in palette space. {palettes} palettes in {entries} entries: "
+    "{sets} sets of them sit close enough together that nothing looking at a wallpaper "
+    "could tell one from another, so each set is shown once and its variants open "
+    "underneath. Each is drawn here as a render sweeps through it — folded where it does "
+    "not close on the color it opened with — so what is on the page is the gradient a "
+    "picture is read through, and not the handful of stops it was written as."
 )
+
+
+def library_lead() -> str:
+    """The lead with this record's own numbers in it."""
+    rows = held_library()
+    return LIBRARY_LEAD.format(
+        palettes=len(rows),
+        entries=sum(1 for held in rows if held.leads),
+        sets=len({held.variant for held in rows if not held.leads}),
+    )
 
 
 def library_page_path():
@@ -930,7 +964,7 @@ def place_library_strips() -> tuple[int, int]:
     is copied rather than imported: it is already a PNG at the size the page shows it, and
     a re-encode would be new bytes for the same picture.
 
-    **One invocation, not seven hundred.** `palettes strip` takes a manifest for exactly
+    **One invocation, not nine hundred.** `palettes strip` takes a manifest for exactly
     this reason: drawing a ramp is three milliseconds and starting that project's
     interpreter is a third of a second, so the per-name form spends two hundred times the
     figure's own cost on process start.
@@ -980,11 +1014,26 @@ DRIFT_NAMED = 8
 
 @dataclass(frozen=True)
 class Held:
-    """One palette as the library page needs it: its name, whether it closes, its group."""
+    """One palette as the library page needs it: its name, whether it closes, its group,
+    and which entry of the page it is shown under.
+
+    `variant` is the name of the palette this one is a variant of — its own name where
+    nothing in the library came within the cut of it, which is the case for 758 of the
+    901. Addressed by name and never by position, the way every other key in this
+    repository is: the project's own sets are numbered `m01`, `m02` and so on, and that
+    numbering is regenerated whenever the cut moves, so a record that carried it would
+    silently repoint every row the next time somebody recalibrated next door.
+    """
 
     name: str
     cyclic: bool
     group: int
+    variant: str
+
+    @property
+    def leads(self) -> bool:
+        """Whether the page shows this palette in its own right, or under another."""
+        return self.variant == self.name
 
     @property
     def strip(self) -> str:
@@ -1003,6 +1052,7 @@ class Held:
             "name": self.name,
             "cyclic": self.cyclic,
             "group": self.group,
+            "variant": self.variant,
         }
 
 
@@ -1015,16 +1065,58 @@ def held_library() -> tuple[Held, ...]:
     found = []
     for record in records.read(library_registry_path()):
         record.expect_kind(LIBRARY_ROW)
-        found.append(Held(record.text("name"), record.flag("cyclic"), record.count("group")))
+        found.append(
+            Held(
+                record.text("name"),
+                record.flag("cyclic"),
+                record.count("group"),
+                record.text("variant"),
+            )
+        )
     return tuple(found)
 
 
-def held_groups() -> list[tuple[int, tuple[Held, ...]]]:
-    """The record's rows as the page's groups, in number order."""
-    grouped: dict[int, list[Held]] = {}
-    for entry in held_library():
-        grouped.setdefault(entry.group, []).append(entry)
-    return [(number, tuple(grouped[number])) for number in sorted(grouped)]
+@dataclass(frozen=True)
+class Entry:
+    """One thing the page shows: a palette, and the variants gathered under it."""
+
+    lead: Held
+    variants: tuple[Held, ...]
+
+    @property
+    def group(self) -> int:
+        return self.lead.group
+
+    @property
+    def summary(self) -> str:
+        """What the disclosure says before it is opened."""
+        count = len(self.variants)
+        return f"{count} variant" if count == 1 else f"{count} variants"
+
+
+def held_groups() -> list[tuple[int, tuple[Entry, ...]]]:
+    """The record's rows as the page's sections, in number order: the sixteen clusters,
+    and inside each the entries it shows.
+
+    A variant is shown under the palette it is a variant of, **wherever that palette
+    sits**, and 37 of the 65 sets straddle two clusters — the two readings of the library
+    are different measurements and were never going to agree. So a section holds the
+    entries its own members lead, and a member led from another section is shown there
+    rather than twice. Nothing leaves the page; what moves is which disclosure it is
+    behind.
+    """
+    rows = held_library()
+    gathered: dict[str, list[Held]] = {}
+    for held in rows:
+        if not held.leads:
+            gathered.setdefault(held.variant, []).append(held)
+    ordered: dict[int, list[Entry]] = {}
+    for held in rows:
+        if held.leads:
+            ordered.setdefault(held.group, []).append(
+                Entry(held, tuple(gathered.get(held.name, ())))
+            )
+    return [(number, tuple(ordered[number])) for number in sorted(ordered)]
 
 
 def derive_library() -> tuple[Held, ...]:
@@ -1032,10 +1124,21 @@ def derive_library() -> tuple[Held, ...]:
 
     The group number is the page's, counted along the clustering rather than taken from
     it: what the record owes the page is the order the page renders, and the clustering's
-    own numbering is that repository's business.
+    own numbering is that repository's business. So is the variant sets' numbering, and
+    for a sharper reason — see `Held.variant` — so a set is addressed by the member the
+    page reaches first, which is a name and stays put.
+
+    **A set of variants is kept whole, and sits in the group its first member is in.**
+    The two readings disagree about 37 of the 65 sets: the clustering measures a
+    gradient at 32 positions in Oklab and the variant cut measures the *cloud* of colour
+    a map can put on a picture, so `twilight` and `twilight_shifted` land in groups 2 and
+    3 while being, to the eye, one palette. A page that honoured both would show one of
+    them as a variant of a palette four screens away, which teaches nobody anything. So
+    the record's order is the page's reading order — each entry, then what is gathered
+    under it — and every row's `group` is the section it is shown in.
     """
     held = library()
-    found = []
+    placed = []
     for number, group in enumerate(clusters(), start=1):
         for name in group["members"]:
             palette = held.get(name)
@@ -1043,7 +1146,31 @@ def derive_library() -> tuple[Held, ...]:
                 raise PaletteError(
                     f"the clustering names {name!r}, and the library holds no such map"
                 )
-            found.append(Held(name, palette.cyclic, number))
+            placed.append((name, palette.cyclic, number))
+
+    where = {name: at for at, (name, _, _) in enumerate(placed)}
+    leader, gathered = {}, {}
+    for members in variant_sets():
+        for name in members:
+            if name not in where:
+                raise PaletteError(f"a variant set names {name!r}, and no cluster holds it")
+        ordered = sorted(members, key=lambda name: where[name])
+        for name in ordered:
+            leader[name] = ordered[0]
+        gathered[ordered[0]] = ordered[1:]
+
+    cyclic = {name: closes for name, closes, _ in placed}
+    section = {name: number for name, _, number in placed}
+    found = []
+    for name, closes, number in placed:
+        if leader.get(name, name) != name:
+            continue
+        found.append(Held(name, closes, number, name))
+        for other in gathered.get(name, ()):
+            found.append(Held(other, cyclic[other], number, name))
+    if len(found) != len(placed):
+        missing = sorted(set(section) - {entry.name for entry in found})
+        raise PaletteError(f"the fold lost {len(missing)} palette(s): {missing[:4]}")
     return tuple(found)
 
 
@@ -1090,7 +1217,8 @@ def library_drift() -> list[str]:
 
 
 def _shape(entry: Held) -> str:
-    return f"group {entry.group}, {'cyclic' if entry.cyclic else 'folded'}"
+    under = "on its own" if entry.leads else f"a variant of {entry.variant}"
+    return f"group {entry.group}, {'cyclic' if entry.cyclic else 'folded'}, {under}"
 
 
 def _unclustered() -> list[str]:
