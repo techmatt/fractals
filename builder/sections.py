@@ -219,7 +219,7 @@ def with_rail(page: Path, page_html: str, sections: list[Section]) -> str:
     return _BLOCK.sub(lambda _: block(page, sections), page_html, count=1)
 
 
-#: Pages that are written by hand and carry the rail without being one of the ten
+#: Pages that are written by hand and carry the rail without being one of the eleven
 #: sections — they hang off a section rather than taking a place in the reading order. Written
 #: down here because there is nothing to derive them from: a page's own HTML cannot say
 #: "check my rail" and be believed, and the alternative is a rail nothing re-derives.

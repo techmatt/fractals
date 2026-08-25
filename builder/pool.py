@@ -2,16 +2,33 @@
 
 Section 8's subject is the two processes either side of one store: a **run**, which
 searches and judges and empties everything it makes into the pool, and a **gallery
-pass**, which reads the whole pool at once and ships a few of them. So this module reads
-one thing next door and nothing else — the **curation release records**, `data/curation/
-release/<run>/*.jsonl`, one row per candidate every run and every pass has judged.
+pass**, which reads the whole pool at once and ships a few of them.
 
-That record is the whole recipe. A row carries the location, the mode and the curve, the
-palette anchor and the thirty-two maps of the candidate set with the palette head's score
-against each, the map that won, the geometry it was drawn at, the autolevel stamp, and
-the finished-render judge's verdict. **A figure here is addressed by a release key** —
-`run10|release|0078` — which is a name a record answers to and not a position in a list,
-so a pool that grows cannot quietly repoint a picture at something else.
+## What this module reads today
+
+The **curation release records** carry it, `data/curation/release/<run>/*.jsonl`, one row
+per candidate every run and every pass has judged. A row is the whole recipe: the
+location, the mode and the curve, the palette anchor and the thirty-two maps of the
+candidate set with the palette head's score against each, the map that won, the geometry
+it was drawn at, the autolevel stamp, and the finished-render judge's verdict. **A figure
+here is addressed by a release key** — `run10|release|0078` — which is a name a record
+answers to and not a position in a list, so a pool that grows cannot quietly repoint a
+picture at something else.
+
+Two smaller reads hang off a seated row, and they are named because "the release records
+and nothing else" stopped being true when `finishing-release` landed. `pass_record` opens
+`data/curation/gallery/<pass>/pass.json` for the geometry a pass rendered its slots at,
+so no figure of this page restates it; and the judged picture itself comes off the
+artifacts tree at `curation/runs/<run>/pictures/<candidate>.jpg`, because it is copied
+rather than redrawn.
+
+**What is not read, and what waits on it.** A pass's **seating** — which candidate took
+which slot, and what it beat — and the **embedding** the clustering was cut on are both
+records this module does not open. That is the whole of why `gallery-slots`,
+`gallery-embedding`, `gallery-cluster-attempts` and `gallery-floors` are `pending` and
+`gallery-output` is `held`: four figures of section 8 are about a pass's own choosing, and
+a release row says what a pass decided without saying how. Reaching them is a reader for
+those two records, not a composition.
 
 ## What is redrawn, and what is copied
 

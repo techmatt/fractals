@@ -19,8 +19,18 @@ source path is a command-line argument and is never recorded: originals live out
 this repository.
 
 The two figures that are diagrams rather than renders — `escape-orbit-race.png`, an
-APNG, and `overview-pipeline.png` — are the exception: `python -m builder diagram <id>`
-draws them here from `builder/diagrams.py`, so there is no original anywhere.
+APNG, and `pool-stages.png` — are the exception: `python -m builder diagram <id>` draws
+them here from `builder/diagrams.py`, so there is no original anywhere.
+`overview-pipeline.jpg` is not one of them: it reads as a diagram and is a composed sheet
+with four real renders in it, drawn by a rig under ignored `scratch/`.
+
+**An animation is copied, never imported.** Pillow's one-image read keeps the first frame
+and silently drops the rest, so an APNG that went through `import_web_res` would land as
+a still nobody would notice was still. A maker that draws one names it in its own
+`ANIMATED` set — `locations.ANIMATED` today, holding `locations-walk-step` — and
+`--place` writes the bytes across and measures the file rather than reopening it. The
+sheet is already web-res, which is what makes that safe. `escape-orbit-race` never meets
+the question: `diagram` writes it here directly.
 
 Before staging an image drop, check its aggregate size against the 20 MB commit gate in
 `CLAUDE.md`.

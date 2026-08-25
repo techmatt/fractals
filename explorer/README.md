@@ -32,7 +32,7 @@ drive. It is not restated here; where the two disagree, the tree is what is true
 design doc is what was intended. Everything it rules is built or deliberately
 superseded, and these are the places the two have come apart:
 
-- **"the 76 curated q3 set ONLY"** — the picker offers **77**, and a link may name **107**.
+- **"the 76 curated q3 set ONLY"** — the picker offers **77**, and a link may name **110**.
   The wider set is every map the article's own figures were drawn in, most of them
   mechanical conversions rather than curated choices: a picture the article publishes has
   to be openable here, and it does not have to be on the menu.
@@ -65,7 +65,7 @@ worker.js             one worker: one wasm instance, one band of rows
 permalink.js          the link contract — parse, validate, canonicalize
 permalink.test.mjs    34 tests, `node --test explorer/permalink.test.mjs`
 bands.test.mjs        3 tests: the pool cuts the frame, never what is in it
-palettes.jsonl        the roster palettes.js is baked from: 107 maps, 77 offered
+palettes.jsonl        the roster palettes.js is baked from: 110 maps, 77 offered
 palettes.js           generated: the colormaps, by name, curated or drawn-in
 catalog.js            generated: the mode roster, its curves, the anchors' constants
 links.jsonl           generated: every figure and tile, as a link here or a reason not
@@ -202,6 +202,13 @@ plan(spec)                -> JSON        what this spec implies, or why not
 compute_band(spec, rows)  -> f64 lanes   in a worker, a band at a time
 shade(spec, lanes)        -> RGBA bytes  a frame at a time, and it owns them
 ```
+
+Five more are exported and none of them is a fourth render path: `alloc` and `dealloc`,
+through which JavaScript owns every buffer that crosses, and `maxiter_for_width`,
+`resolution_ulps` and `resolution_ulps_floor`, which are the engine's own depth policy and
+its own `f64` wall asked as questions. Those three are what let the page say *this zoom is
+as far as double precision goes* in the engine's numbers rather than in a constant typed
+here.
 
 **All three take the same object**: the engine's own render spec, minus the two keys that
 name files, plus the colormap by value and the mode's parameters by themselves. So a
@@ -454,6 +461,14 @@ node explorer/bench/sweep.mjs                       # every family x mode pair
 node explorer/bench/families.mjs [generic.wasm]     # every family, smooth, at its home
 ```
 
+**Every figure below is the specialized build, and a figure from before it is not a
+number about this tree.** The rewrite that put `field::sweep_row` under `compute_band`
+moved thirteen of the eighteen modes by 1.41x to 4.18x, so a pre-specialization reading —
+draft 1's, the `x generic` column that has been retired, anything in a report written
+before the manifest's third `engine_changes` line — describes a module this repository no
+longer serves. Re-measure rather than quote: the four harnesses below are here so that
+there is always something to re-measure with.
+
 **This harness is tracked, and it is the regression guard for the specialization
 cascade** — `iterate::run` inlined into a call site that can see its family and its
 channel set is worth 4x on the field, and nothing else in this repository would notice if
@@ -649,7 +664,7 @@ the version is cheaper than leaving a reader to find it out.
 ### The keys, in emit order
 
 ```
-v · f · cx · cy · px · py · m · the mode's parameters · x · y · w · a · p · the shade keys
+v · f · cx · cy · px · py · zx · zy · m · the mode's parameters · x · y · w · a · p · the shade keys
 ```
 
 - **`v`** — required. `1` and `2` both parse; every string this page writes says `v=2`.
@@ -855,11 +870,24 @@ arrived by mechanical conversion says so in its `source` line, and the rest were
 derived — every curated map, plus every map a figure of this article names — and it grew
 by two hundred the day the wallpaper project admitted an authored drop into its library.
 A rebake nobody ran on purpose would have taken the picker from 77 entries to 277, which
-is a change to what a reader is offered arriving as a build artifact. So the 107 names
+is a change to what a reader is offered arriving as a build artifact. So the 110 names
 and their `offered` flags are a committed record here; the bake reads the gradients next
 door and the roster from the record, and `builder check`'s **bake** check asserts that
 the committed `palettes.js` is byte for byte what that produces. Widening the picker is
 an edit to the record, made on purpose, in a commit that says so.
+
+**`catalog.js` has no such record, and that was decided rather than overlooked.** It
+bakes from `fractal-engine modes` and the project's shipped anchors, and it reproduces
+byte for byte **except its two stamp fields** — `baked`, the date, and
+`wallpapers_commit` — which say *when* and are different on every bake by construction.
+`check`'s `bake` strips those two lines from both sides before comparing, which is
+`checks._without_clock` reading `explorer.CATALOG_CLOCK`. Pinning the roster the way the
+picker's is pinned was **declined**: the modes and their curves are the engine's own
+identity rather than a choice this repository makes, a second copy of them here would be
+a second answer to what the engine ships, and the permalink's vocabulary — the thing a
+widening would actually endanger — is typed in `permalink.js` and held to the catalog by
+the test suite. The caveat that comes with that: **a retuned or retired mode arrives on
+this page by rebuilding**, with nothing here to say it moved except the diff.
 
 ## Next
 

@@ -9,8 +9,9 @@ Python. A build is done here and reviewed in a diff.
 python -m builder build     regenerate gallery pages, the gallery index, thumbnails,
                             and the contents rail every page carries
 python -m builder check     links, page sync, contents, figure blocks, landings,
-                            explorer links, assets, the palette record, prose, theme,
-                            banned vocabulary
+                            explorer links, the explorer's bake, assets, the palette
+                            record, prose, the editorial pointer, theme, banned
+                            vocabulary
 python -m builder figure ID print a figure's markup block, to paste into an article page
 python -m builder figures [--all]   what is still to make, grouped by page
 python -m builder figures --place ID SRC [--crop l,t,r,b] [--max-width N] [--lossless]
@@ -46,12 +47,19 @@ Install what it needs with `pip install -r builder/requirements.txt`.
 nothing else — that is the whole contract, because CI clones this repository alone and
 a check that cannot run there is a check nobody runs. Two things it will use if they are
 here and does not need: the wallpaper project's checkout, which is what the `library`
-check and the source-key half of `figures` want; and Pillow, which is what lets `figures`
-and `assets` verify pixel sizes. Missing either is a **named skip** — the check line says
-`skipped` rather than `ok`, and the exit summary counts them — never a failure and never
-a silent pass. `check` once built the palette library page straight off that checkout, so
-on a machine without one it raised before the first check ran and every check after it
-went unrun; the page is built from a committed record now, and this is why.
+check, the `bake` check and the source-key half of `figures` want; and Pillow, which is
+what lets `figures` and `assets` verify pixel sizes. Missing either is a **named skip** —
+the check line says `skipped` rather than `ok`, and the exit summary counts them — never a
+failure and never a silent pass. `check` once built the palette library page straight off
+that checkout, so on a machine without one it raised before the first check ran and every
+check after it went unrun; the page is built from a committed record now, and this is why.
+
+**So a green CI is not a green tree.** `library` and `bake` ask nothing on a bare clone
+and `figures` asks half, which means the palette record, the explorer's generated modules
+and every source key a figure cites are certified **only on a machine that has the
+checkout**. Run `python -m builder check` here, with `FRACTAL_WALLPAPERS_ROOT` set or
+`local.toml` in place, before a checkpoint — and read the exit summary's skip count, which
+is what says whether the run that just passed was the whole question or two thirds of it.
 
 ## A gallery is a directory
 
@@ -80,7 +88,7 @@ this builder does not read is an error, not a guess.
 
 ## A page may hang off a section without being one
 
-`article/` holds exactly the ten ratified sections, and `check` refuses an HTML file
+`article/` holds exactly the eleven ratified sections, and `check` refuses an HTML file
 there that `sections.jsonl` does not list. A page that belongs to a section without being
 part of the reading order — the palette library, the palette prompt — lives in its own
 directory and is named with a slash wherever a registry names a page:
@@ -164,22 +172,36 @@ makes — each one a `claim` and the `source` it was checked against. It is the 
 "who checked this, against what?" asked of a number the article states as settled.
 
 Two figures are an exception, and they are diagrams rather than pictures of a location:
-the orbit race and the pipeline explain a mechanism, so there is nothing to render and
-nothing outside this repository to read. `diagram` draws those two from `diagrams.py`, in
-the stylesheet's own colours, straight into `assets/images/figures/`. It is deliberately a
-separate command from `build` and is not part of `check`: type is rasterized through
-whatever font the machine has, so two machines agree about the picture and not about its
-bytes. Every other figure asset arrived through `import`.
+`escape-orbit-race` and `pool-stages` explain a mechanism, so there is nothing to render
+and nothing outside this repository to read. Those two are `diagrams.DIAGRAMS`, and
+`diagram` draws them from `diagrams.py`, in the stylesheet's own colours, straight into
+`assets/images/figures/`. It is deliberately a separate command from `build` and is not
+part of `check`: type is rasterized through whatever font the machine has, so two machines
+agree about the picture and not about its bytes. `overview-pipeline` looks like a third
+and is not one — it is a composed sheet with four real renders in it, made by a rig under
+ignored `scratch/`, which is what its `recipe` and its `sources` say. Every other figure
+asset arrived through `import`.
 
 ## The palette library has a record, the way a gallery does
 
 `palettes/all-palettes.html` is nine hundred rows of the same shape, so it is generated
-rather than written. What it is generated *from* is `palettes/library.jsonl` — one row
-per palette, carrying the three facts the page is made of and nothing else: the name, the
-figcaption and the strip's file name both; whether the map closes on the colour it opened
-with, which is the alt text and, in a render, the fold; and which of the sixteen groups it
-is in, counted along the wallpaper project's clustering in the order the page lays them
-out.
+rather than written. What it is generated *from* is `palettes/library.jsonl` — **901 rows,
+one per palette**, carrying the four facts the page is made of and nothing else: the name,
+the figcaption and the strip's file name both; whether the map closes on the colour it
+opened with, which is the alt text and, in a render, the fold; which of the sixteen groups
+it is in, counted along the wallpaper project's clustering in the order the page lays them
+out; and `variant`, the name of the palette this one is a variant of — its own name where
+it leads.
+
+**`variant` is a name, never a group number**, for the reason a source key is a name: the
+wallpaper project numbers its variant sets, and a number is a position in something that
+grows. So a set is addressed by the member that heads it, and the page folds on that: the
+901 rows become **823 entries**, because **65 sets** of near-duplicates are gathered under
+one entry each and the rest lead alone. **A set is kept whole, in the group its first
+member is in** — the two readings of the library disagree, the clustering measures a
+gradient at 32 positions and the variant cut measures the cloud of colour a map holds, and
+**37 of the 65 sets straddle two clusters**. Splitting them would show a reader a strip
+called a variant of a palette four screens away, which teaches nobody anything.
 
 That record is this repository's, exactly as `gallery.jsonl` is, and for the same reason:
 page generation is a pure function of committed text, so `check` can hold the largest
@@ -230,6 +252,19 @@ configured. A palette entering the library next door costs one `--library` and o
   asked here: the permalink contract is written in JavaScript, `permalink.test.mjs` holds
   the registry to it, and a second reading of a URL contract in Python is the one thing a
   URL contract cannot survive.
+- **bake** — the explorer's two generated modules are byte for byte what a rebake here
+  produces: `palettes.js` off `explorer/palettes.jsonl` and the library next door, and
+  `catalog.js` off the engine beside it, **its two stamp lines excepted**. With `library`,
+  it is one of the two checks that ask nothing at all on a bare clone and say so by name,
+  and it is what stands between the picker and a rebake nobody ran deliberately.
+- **guidance** — `CLAUDE.md` names `writing-guidance.md`. The editorial authority is on
+  the synced drive and a clone need not have it, so what is checkable here is the pointer:
+  a prompt that is never sent there writes against nothing.
+- **vocabulary** — no tracked file spells a banned term. Two lists, in
+  `builder/vocabulary.py`: the reader-facing terms this site does not ship, and the words
+  that frame a run by the clock. It walks the **git index** rather than the tree, so
+  `scratch/` and `artifacts/` are exempt by construction and a new file is first checked
+  by the run that first stages it.
 
 ## Prose has a master, and a page is held to it
 

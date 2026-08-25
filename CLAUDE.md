@@ -23,7 +23,11 @@ these holds:
   never how this ends.
 
 Everything else in that repository stays read-only to a website prompt: its code and its
-records are read, and a change to either is somebody else's prompt.
+records are read, and a change to either is somebody else's prompt. **Running its CLI is
+reading** — `builder/renders.py` shells `fractal-engine` to draw a figure's panels, and
+every byte of that lands in this repository's ignored `artifacts/`, never next door. The
+render cache defaults to `artifacts/renders/` and `FRACTAL_WEBSITE_RENDER_CACHE` moves it,
+which is the only knob involved.
 
 ## The naming rule
 
@@ -177,6 +181,21 @@ keeps the mechanics. **Every apply round ends by distilling that round's general
   were found rewritten that way.)* A choice freezes the family, the frame and the cap it
   chose; the pool's own name for it survives as the note of where it was found, and a
   rerun says out loud when that name has gone stale.
+- **A white reading surface, and dark image wells.** Prose wants a page a reader can sit
+  with; the wallpapers, most of them dark, want a mat rather than a white void to float
+  in. So the dark treatment stays **local to the containers that hold pictures** and
+  nothing else on the page goes with it, and there is no dark mode to write a second
+  palette for. The well's five tokens are `site.css`'s `:root`, transcribed into
+  `builder/theme.py` because Pillow cannot read CSS, and `check`'s `theme` check holds
+  the copy to the original — a drawn figure is furniture for the well it sits in, and a
+  restyle that moves `--well` and forgets the figures is a failing check rather than a
+  seam somebody notices in a picture months later.
+- **American spelling, in everything a reader sees.** Page prose, headings, figure
+  captions, alt text, gallery blurbs: *color*, *coloring*, *gray*, *normalize*. The one
+  place a British spelling survives is **inside a name** — a palette is recorded exactly
+  as the library next door spells it, so `watercolours-in-the-rain-25` is written that
+  way wherever it appears, the same carve-out the naming rule and the clock ban both
+  make for a name. Nothing enforces this, which is why it is written down.
 - **Relative links, always.** The site lives under a project-Pages subpath
   (`/fractal-website/`), so a root-absolute `/assets/...` href is broken in
   production and fine locally — the worst kind of bug. Every internal href and src is
@@ -238,7 +257,7 @@ page and the rail has no current entry on it, which is what the gallery pages al
 **The rail is derived, never typed.** `article/sections.jsonl` gives the reading order and
 which sections are `"status": "written"`; a rail entry's name is the page's own `<h1>`,
 and the entries that open under the current page are that page's prose `<h2>`s. Its title
-is the way back to the front page, and under the ten sections it carries the two links
+is the way back to the front page, and under the eleven sections it carries the two links
 that leave the article — the explorer and the code *(Matt, 2026-08-21)*. A prose
 `<h2>` also gets the id its rail entry links to, spelled from its own words by rule —
 a fragment is a permanent URL. `python -m builder build` writes the rail between two
@@ -360,6 +379,14 @@ raised before the first check, and CI's check step spent that whole time red for
 that had nothing to do with the site.)* The one command that needs the checkout on that
 page's behalf is `python -m builder palettes --library`, which rewrites the record and
 lands any missing strip.
+
+**Which is why a checkpoint runs `check` here, not in CI.** A green CI says every check
+that a bare clone can ask came back clean; it says nothing about the palette record, the
+explorer's generated modules, or a single one of the source keys a figure cites, because
+those three questions were skipped by name. Before a prompt is called done, run
+`python -m builder check` on this machine with the checkout configured and read the skip
+count in the exit summary — a run that reports skips is a run that answered part of the
+question.
 
 ## Standing prompt contract
 
