@@ -1528,6 +1528,35 @@ def found_and_finished() -> Drawn:
     return Drawn(destination, _pair_provenance(pairs, size))
 
 
+def _released_at(release: dict) -> str:
+    """How big the released wallpaper is, stated and never guessed.
+
+    A release row's `recipe.render` is the **candidate** geometry — the small
+    render the curation verdict was cast on, 640x360 at supersample 2 — and this
+    line read it as the wallpaper's own size, so every provenance line here said
+    640x360 about a picture that is 2560x1440.
+
+    The wallpapers project records `release_geometry` on a release row since
+    2026-08-25, when a gallery pass's release regime became a per-pass decision
+    and the answer stopped being inferable at all. A row older than that field
+    does not carry one, so the frame is read off the shipped PNG this figure is
+    pasting anyway — a fact, not an inference — and the supersample is reported
+    as unrecorded rather than filled in from a constant in another repository.
+    """
+    from PIL import Image
+
+    geometry = release.get("release_geometry") or {}
+    resolution, supersample = geometry.get("resolution"), geometry.get("supersample")
+    if resolution and supersample is not None:
+        return f"at {resolution[0]}x{resolution[1]} supersample {supersample}"
+    with Image.open(release["_picture"]) as opened:
+        width, height = opened.size
+    return (
+        f"at {width}x{height}, read off the shipped PNG — the record predates the "
+        f"release-geometry field and does not carry its supersample"
+    )
+
+
 def _pair_provenance(pairs, size) -> list[str]:
     lines = [
         "Each row is one release record of a curation run beside the location it was "
@@ -1551,9 +1580,7 @@ def _pair_provenance(pairs, size) -> list[str]:
             f"width {place['viewport']['width']}, maxiter {place.get('maxiter')}; found in "
             f"{place.get('ledger')}. Released as mode {recipe['mode']}, curve "
             f"{recipe['curve']}, colormap {recipe['colormap']}, mirror "
-            f"{bool(recipe.get('mirror'))}, at {recipe['render']['resolution'][0]}x"
-            f"{recipe['render']['resolution'][1]} supersample "
-            f"{recipe['render']['supersample']}. The location is scored "
+            f"{bool(recipe.get('mirror'))}, {_released_at(release)}. The location is scored "
             f"{rated['score']} by {rated['labeler']} on {_day(rated['recorded_at'])}, "
             f"recorded at data/labels/rows/{rated['_batch']}.jsonl line {rated['_line']}."
         )
