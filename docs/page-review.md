@@ -186,7 +186,7 @@ editing a cell by hand.
 | `finding-good-locations.html` | yes | `Finding good locations v4.md` | applied 2026-08-21 | 12 placed | — |
 | `training-judges.html` | yes | `Training judges v4.md` | applied 2026-08-21 | 3 placed | — |
 | `color-palettes.html` | yes | `Color palettes v4.md` | none | 7 placed | — |
-| `from-locations-to-wallpapers.html` | yes | `From locations to wallpapers v5.md` | none | 1 placed, 6 pending, 1 held | `pool-stages` is drawn and placed; `pool-attempt` and `finishing-release` wait on Matt naming a tile off the contact sheets their rows name; the four `gallery-*` rows need pass records this repository does not read yet; `gallery-output` is **held** |
+| `from-locations-to-wallpapers.html` | yes | `From locations to wallpapers v5.md` | none | 3 placed, 4 pending, 1 held | `pool-stages`, `pool-attempt` and `finishing-release` are placed, the last two off Matt's tile picks; the four `gallery-*` rows need a pass's own seating and embedding records, which `builder/pool.py` does not read yet; `gallery-output` is **held** |
 | `running-at-scale.html` | no | none | none | none | the section is not written |
 | `deep-zoom.html` | no | none | none | none | the section is not written |
 | `palettes/make-your-own.html` | hangs off Color palettes | `Make your own palettes v4.md` | none | 1 placed | — |

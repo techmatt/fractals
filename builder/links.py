@@ -297,8 +297,13 @@ class LinkError(RuntimeError):
 
 NUMBER = r"[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?"
 
-#: How a released wallpaper is cited: the curation run, and the candidate inside it.
-RELEASED = re.compile(r"released wallpaper ([A-Za-z0-9_]+)\|release\|(\d+)")
+#: How a curation release record is cited: its own key, `<run>|release|<candidate>`,
+#: wherever a provenance line spells it. The words in front of it used to be part of the
+#: pattern and the candidate had to be digits, which meant a row a *gallery pass* seated
+#: — whose id carries the run that made it, `gallery1_0441` — could not be cited at all.
+#: The key is distinctive enough to stand on its own: no sentence holds two pipes and the
+#: word `release` between them by accident.
+RELEASED = re.compile(r"\b([A-Za-z0-9_]+)\|release\|([A-Za-z0-9_]+)\b")
 
 #: How a finished-render store row is cited: the head, the batch file, and the line.
 FINISHED = re.compile(r"\b(smooth_render|strange_render)/([A-Za-z0-9_]+)\.jsonl line (\d+)")
@@ -464,6 +469,12 @@ def _cited(line: str) -> dict | None:
     found = RELEASED.search(line)
     if found:
         row = locations.release_record(found.group(1), found.group(2))
+        if row is None:
+            # A key-shaped string the release store does not answer to. The pattern is
+            # deliberately loose about what a candidate id looks like, so a line that
+            # merely resembles a citation falls back to the prose around it rather than
+            # taking the whole derivation down with it.
+            return None
         recipe = row["recipe"]
         return {
             "family": row["location"]["family"],

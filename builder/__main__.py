@@ -23,6 +23,7 @@ from . import explorer as explorer_module
 from . import judges as judges_module
 from . import locations as locations_module
 from . import palettes as palettes_module
+from . import pool as pool_module
 from . import prose as prose_module
 from . import review as review_module
 from . import sections as sections_module
@@ -178,6 +179,27 @@ def _parser() -> argparse.ArgumentParser:
         "--library",
         action="store_true",
         help="refresh palettes/library.jsonl and land any missing strip, from the library",
+    )
+
+    pooled = commands.add_parser(
+        "pool", help="draw the figures of the From locations to wallpapers page"
+    )
+    pooled.add_argument(
+        "id",
+        nargs="*",
+        choices=sorted(pool_module.MAKERS) or None,
+        help="which figures to draw; all of them by default",
+        metavar="ID",
+    )
+    pooled.add_argument(
+        "--place",
+        action="store_true",
+        help="import each drawn sheet as its figure's asset and fill its registry row",
+    )
+    pooled.add_argument(
+        "--replace",
+        action="store_true",
+        help="land the redraw over a figure that is already made, page and row together",
     )
 
     drawn = commands.add_parser("diagram", help="draw one of the figures that is not a render")
@@ -490,6 +512,29 @@ def _do_palettes(options: argparse.Namespace) -> int:
     return 0
 
 
+def _do_pool(options: argparse.Namespace) -> int:
+    """Draw section 8's figures, and optionally land each one where it belongs."""
+    for identifier in options.id or sorted(pool_module.MAKERS):
+        drawn = pool_module.draw(identifier)
+        print(f"wrote {drawn.path.relative_to(SITE_ROOT).as_posix()}")
+        if not (options.place or options.replace):
+            continue
+        destination = FIGURE_IMAGES_DIR / f"{identifier}.jpg"
+        width, height = images.import_web_res(drawn.path, destination)
+        placed = figures.place(
+            identifier,
+            destination.name,
+            width,
+            height,
+            provenance=list(drawn.provenance),
+            recipe=pool_module.recipe(identifier),
+            replace=options.replace,
+        )
+        size = destination.stat().st_size / 1024
+        print(f"  {destination.name}  {width}x{height}  ({size:.0f} KB) — {placed.page}")
+    return 0
+
+
 def _do_library() -> int:
     """The palette library page's two committed halves: its strips, and its record.
 
@@ -639,6 +684,8 @@ def main(argv: list[str] | None = None) -> int:
             return _do_judges(options)
         if options.command == "palettes":
             return _do_palettes(options)
+        if options.command == "pool":
+            return _do_pool(options)
         if options.command == "diagram":
             return _do_diagram(options.id)
         if options.command == "prose":
@@ -653,6 +700,7 @@ def main(argv: list[str] | None = None) -> int:
         images.ImageError,
         explorer_module.ExplorerError,
         renders.EngineError,
+        pool_module.PoolError,
         prose_module.ProseError,
         review_module.ReviewError,
         OSError,
