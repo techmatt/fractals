@@ -1,14 +1,15 @@
 {
-  "built": "2026-08-23",
+  "built": "2026-08-24",
   "crate": "explorer/engine-wasm",
   "engine_changes": [
     "coloring::composite, coloring::modulate and direct_trap::Painter::trace are pub: visibility only, no signature moved, engine tests unmoved.",
-    "iterate::run is #[inline(always)]: the specialization cascade the nine call sites in the wasm crate depend on."
+    "iterate::run is #[inline(always)]: the specialization cascade this crate depended on for its own call sites, and now depends on through the engine's table.",
+    "field::sweep_row and field::Channels are pub: the engine's own table of specialized call sites, twelve channel sets over nine families, which compute_lanes now calls instead of keeping a hand-written copy of nine of them. Visibility only, no signature moved, engine tests unmoved."
   ],
   "engine_version": "0.1.0",
-  "gzip_bytes": 163845,
-  "raw_bytes": 480813,
+  "gzip_bytes": 177908,
+  "raw_bytes": 614666,
   "rustc": "1.96.0 (ac68faa20 2026-05-25)",
   "schema": 1,
-  "wallpapers_commit": "c3c3fa35e9cff00ba33b798ae4a601876823121f"
+  "wallpapers_commit": "3df7f46dc8dd3e69ec2ffbb6065719f3cd494179"
 }

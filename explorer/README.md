@@ -116,7 +116,7 @@ Committed beside the module, `engine.manifest.json` records what it was built fr
 | `rustc` | the compiler, with its commit and date |
 | `wallpapers_commit` | the sibling checkout's `HEAD` at bake time |
 | `engine_changes` | every change this consumer has needed in the engine, one line each |
-| `raw_bytes` / `gzip_bytes` | 480,813 raw, **163,845 gzipped** |
+| `raw_bytes` / `gzip_bytes` | 614,666 raw, **177,908 gzipped** |
 
 `engine_changes` is typed, in `builder/explorer.py`, and is the condition CLAUDE.md puts
 on a website prompt touching the sibling engine at all: a zero-behaviour change is allowed
@@ -137,13 +137,14 @@ artifact the source beside it".
 
 That is also why **`generic_loop` is a bare `--cfg` and not a cargo feature**. A feature
 enters the crate's metadata hash and the module stops reproducing; a `--cfg` the default
-build never sets leaves it exactly where it was. It exists for `bench/families.mjs`, it
-sends `smooth` down the generic fallthrough with every other mode, and nothing ships with
-it on. It is declared in `build.rs` so the compiler expects the name. Even the *shape* of
-the switch is chosen for this: it reads `!cfg!(generic_loop)` inside the existing match
-rather than an `#[cfg]` attribute above it, because an attribute is a line, a line moves
-every panic location under it, and nineteen bytes of `Location` line numbers is the
-difference between a module that reproduces and one that nearly does.
+build never sets leaves it exactly where it was. It exists for `bench/families.mjs`,
+it hands the engine's table `Channels::Many` so that every mode takes the generic loop,
+and nothing ships with it on. It is declared in `build.rs` so the compiler expects the
+name. Even the *shape* of the switch is chosen for this: it reads `cfg!(generic_loop)` as
+an expression choosing the channel set rather than an `#[cfg]` attribute above it, because
+an attribute is a line, a line moves every panic location under it, and nineteen bytes of
+`Location` line numbers is the difference between a module that reproduces and one that
+nearly does.
 
 ### What the engine needed
 
@@ -161,13 +162,20 @@ because a committed artifact nobody can rebuild from the sibling checkout is a d
   frame's own height, so a band viewport lands on almost the same numbers and draws a
   seam between the bands. Visibility only — no signature moved and no test did.
 - **`iterate::run` is `#[inline(always)]`**, and it is worth about four times the field
-  time. See *the one call site* below.
+  time. See *no loop of its own* below.
+- **`field::sweep_row` and `field::Channels` are public.** Both were private, so the
+  engine's own table of specialized call sites — twelve channel sets over nine families,
+  held bit-for-bit against its generic loop by its own tests — was unreachable from here,
+  and this crate carried a hand-written stand-in: nine call sites covering the one mode
+  whose channel set is empty, and every other mode down the generic fallthrough. Nothing
+  held that copy to the engine's recurrence, which is the real defect: a change to the
+  engine would have left this page rendering the old one with no test going red.
+  Visibility only — no signature moved and no test did.
 
-**That second one is no longer this consumer's alone.** The engine has since written its
-own escape loop out per family and per channel set — `field::sweep_row` — and the
-attribute is what that table is buying, so the engine now depends on it for its own
-reasons. The manifest line stays as it is: it records a change this consumer needed, which
-is still true, and a future engine prompt is not bound by it.
+**That second one is no longer this consumer's alone**, and the third is why. The engine
+wrote its own escape loop out per family and per channel set, and the `inline(always)` is
+what that table is buying, so the engine depends on the attribute for its own reasons and
+this crate now reaches the specialization through the engine rather than beside it.
 
 Two things about the port are unchanged and still worth knowing:
 
@@ -224,24 +232,31 @@ iteration and never make a field, so their band comes back as finished RGBA and 
 has nothing to do. It is also why a palette change re-iterates under those four modes and
 under no others, and why the field cache keys them on their colour too.
 
-**The one call site, and what it is really about.** Draft 1 carried a rule: keep exactly
-one call site into `iterate::run`, because a second one measured about three times the
-field time. The rule was right and the reason was not. What that loop needs is not to be
-alone — it is to be **inlined with its family and its channel set visible as constants**.
-Then the eleven per-iteration channel checks fold away, the match over the families
-becomes one multiply, and the `Orbit` stops being built at all: 1.5 s against 12.1 s on
-the same 1280x720 frame, measured per family under *Measured* below. Draft 1 got that collapse for free by rendering one family in one
-mode. A spec-struct boundary hands both in at runtime and loses it, and neither half alone
-buys back more than a tenth of it.
+**No loop of its own, and what that took.** Draft 1 carried a rule: keep exactly one
+call site into `iterate::run`, because a second one measured about three times the field
+time. The rule was right and the reason was not. What that loop needs is not to be alone —
+it is to be **inlined with its family and its channel set visible as constants**. Then the
+eleven per-iteration channel checks fold away, the match over the families becomes one
+multiply, and the `Orbit` stops being built at all. Draft 1 got that collapse for free by
+rendering one family in one mode. A spec-struct boundary hands both in at runtime and
+loses it, and neither half alone buys back more than a tenth of it.
 
-So `compute_band` writes its loop twice. The one mode whose channel set is **empty** —
-`smooth`, the spine every composite is built on and the only catalogued mode that asks the
-loop for nothing but the escape — gets a call site per family, nine in all, where the loop
-really is the recurrence and a magnitude test. Every other mode is already doing
-per-iteration work of its own that the checks are a small share of, and takes the generic
-loop. The nine cost **13.4 KB of module** and hold the anchor frame to draft 1's time;
-specializing the whole catalog would be a copy of the loop per family and per mode, which
-is the module's size spent on the cases that need it least.
+For a long time this crate bought the collapse back by hand, for one mode: `smooth`, the
+spine every composite is built on and the only catalogued mode that asks the loop for
+nothing but the escape, got a call site per family, nine in all. Every other mode took the
+generic fallthrough. **That copy is gone.** `compute_band` calls
+`fractal_engine::field::sweep_row` a row at a time — the engine's own table, twelve
+channel sets over nine families, which the engine holds bit-for-bit against its generic
+loop in its own tests and which forms coordinates from the whole viewport with a global
+row index, the one thing a band needs. So all eighteen modes are specialized, and there is
+no second spelling of the recurrence on this side of the boundary to drift out of step
+with the engine's. What that is worth per mode is the before/after table under *Measured*;
+what it costs is 133,853 bytes of module, and neither is a gate the other decided.
+
+The engine reduces at `f64` and leaves the narrowing to whoever called it, so that step is
+the only arithmetic still written here: every lane crosses at the `f32` a dumped field
+would have been stored as, except the modulate's texture, which the engine does not narrow
+either.
 
 **Bands.** `Math.min(16, navigator.hardwareConcurrency || 8)` workers, each with its own
 instance of one compiled module — the module is compiled once on the main thread and
@@ -283,21 +298,27 @@ A band's coordinates are formed from the **whole** viewport, with the global row
 so the assembled field is bit for bit what a whole-frame pass through the same module
 produces, and there are no seams between bands. What is measured and what is not are
 different links of one chain, and it is worth keeping them apart. **Measured:** a
-whole frame out of wasm is a whole frame out of the native engine. The spike that
-established the port — `fractal-drive-sync/reports/wasm_spike_report.md`, 2026-08-21 —
-drew the 1280x720 anchor frame through its single `render_smooth` export and through
-`fractal-engine render` of the same spec, and **0 of 921,600 pixels differ**; it is the
-same f64 code over the same inputs, and wasm's f64 is IEEE-754 with no x87 excess
-precision to diverge through. **Measured too, where it used to be argued:** the banded
+whole frame out of wasm is a whole frame out of the native engine, **in every mode**.
+The spike that established the port — `fractal-drive-sync/reports/wasm_spike_report.md`,
+2026-08-21 — drew the 1280x720 anchor frame through its single `render_smooth` export and
+through `fractal-engine render` of the same spec, and **0 of 921,600 pixels differ**; it
+is the same f64 code over the same inputs, and wasm's f64 is IEEE-754 with no x87 excess
+precision to diverge through. That leg was `smooth` alone until the table landed, and it
+is now the whole catalog: each of the eighteen modes drawn on the parameter plane and on a
+dynamical one, at one and at two samples per pixel, against `fractal-engine render` of the
+same spec — **72 of 72 frames byte-identical**, measured both before the rewire and after
+it, so a divergence would have been attributable. **Measured too, where it used to be argued:** the banded
 assembly equals a whole-frame pass through *this* module. `bands.test.mjs` draws the
 anchor at 320x180 three ways — whole, the eight bands a two-worker pool cuts, the
 twenty-three a sixteen-worker pool cuts — and asserts the three are the same bytes; then
 the two pools again at two samples per pixel, where a band's output rows and its sample
 rows come apart. It cuts with `render.js`'s own `bandsOf`, so what is held is the cut the
 page makes and not a second copy of it. That link matters more than it did: the pool is
-sized from the machine now, so how many cuts a frame gets is the reader's. **Still not
-compared at all:** the explorer end to end against a native render of the same view, at
-any family or mode.
+sized from the machine now, so how many cuts a frame gets is the reader's. **What the
+chain still does not reach:** a frame at a download's size, at more than two samples per
+pixel, and the families between mandelbrot and phoenix — the native leg is two families
+because a run of it costs a native render per frame, and the case it is proving is the
+dispatch rather than the plane.
 
 **Shade takes the whole frame, and takes the buffer with it.** It is the one place on
 this boundary where JavaScript hands a buffer over rather than lending it, and a
@@ -433,8 +454,9 @@ node explorer/bench/families.mjs [generic.wasm]     # every family, smooth, at i
 ```
 
 **This harness is tracked, and it is the regression guard for the specialization
-cascade** — `iterate::run` inlined into nine specialized call sites is worth 4x on the
-field, and nothing else in this repository would notice if a rebuild lost it. It started
+cascade** — `iterate::run` inlined into a call site that can see its family and its
+channel set is worth 4x on the field, and nothing else in this repository would notice if
+a rebuild lost it. It started
 under `scratch/`, which is wiped, and a guard that a wipe can delete is not one; the four
 modules moved here and `output.mjs` sends every run's numbers to `artifacts/`, which is
 ignored. Code is committed, measurements are not — a number here is this machine on this
@@ -446,8 +468,10 @@ it is a session's worth of driver scripts and probe pages, not a guard.
 | home | 3 336 | 1 567 ms | 1 537 ms |
 | anchor | 6 898 | 9 724 ms | 9 365 ms |
 
-That is the whole point of the nine specialized call sites, and draft 1's numbers were a
-single-family single-mode build's.
+That is the whole point of the specialization, and draft 1's numbers were a single-family
+single-mode build's. Both rows are `smooth`, the one mode that was specialized before the
+engine's table was reached, so they moved by the 1.2% the per-mode table below records and
+are not re-measured here.
 
 **Per family**, `smooth` at 1280x720, each family at **its own home view** — a family's
 home is the frame it comes back with when nobody names one, and holding nine families
@@ -468,8 +492,10 @@ established is that **a ratio between these two columns is only as good as the n
 the two readings**, which is why both are measured in one run.
 
 The `generic` column is the same frame through a module built with `--cfg generic_loop`,
-which sends `smooth` down the fallthrough with every other mode. That column is what the
-nine call sites are worth, per family, measured rather than remembered.
+which sends every mode down the fallthrough. That column is what the specialization is
+worth, per family, measured rather than remembered. It was read on the module that carried
+this crate's own nine call sites; `smooth`'s dispatch reaches the same generic loop either
+way, and the 1.2% the per-mode table records is the whole of what moved under it.
 
 | family | cap | field | x cheapest | generic | x |
 | --- | --- | --- | --- | --- | --- |
@@ -510,49 +536,70 @@ engine with one dispatch changed — so the two modules differ in the dispatch a
 arithmetic. The `x generic` column of the per-mode table below divides by the measured
 figure, and the header says so.
 
-**Per mode**, same harness, mandelbrot home at 1280x720, one thread. The `field` column
-is `compute_band` over the whole frame; `shade` is the colouring pass, which a palette
-change pays again and nothing else does. A direct trap has no shade because its band
-arrives painted.
+**Per mode, before and after the table landed.** Mandelbrot home at 1280x720, one
+thread, median of three, the two modules **alternated within a run and the order flipped
+between runs** — a ratio between two columns is only as good as the noisier of the two
+readings, and measuring one column now and the other later is how a loaded machine gets
+read as a code change. `before` is the committed module with its own nine call sites;
+`after` is the same source calling `field::sweep_row`. The `field` column is
+`compute_band` over the whole frame; `shade` is the colouring pass, which a palette change
+pays again and nothing else does, and which this change does not touch. A direct trap has
+no shade because its band arrives painted. Rows are in the order the page now pays for
+them.
 
-| mode | field | shade | x smooth | x generic, 6 355 ms | native |
+| mode | before | after | x | x smooth | shade |
 | --- | --- | --- | --- | --- | --- |
-| smooth | 2.24 s | 63 ms | 1.00 | 0.35 | 1.00 |
-| direct_trap_lines | 3.85 s | — | 1.72 | 0.61 | 0.93 |
-| direct_trap_screen | 4.30 s | — | 1.92 | 0.68 | 0.91 |
-| direct_trap_multiply | 5.25 s | — | 2.35 | 0.83 | 1.24 |
-| trap_circle | 6.73 s | 181 ms | 3.01 | 1.06 | 1.01 |
-| smooth_trap_circle | 6.73 s | 173 ms | 3.01 | 1.06 | 1.06 |
-| itinerary | 6.84 s | 423 ms | 3.06 | 1.08 | 1.26 |
-| direct_trap_ring | 6.87 s | — | 3.07 | 1.08 | 1.08 |
-| tia | 11.51 s | 214 ms | 5.14 | 1.81 | 1.79 |
-| smooth_curvature | 12.93 s | 221 ms | 5.78 | 2.03 | 2.60 |
-| curvature | 12.98 s | 208 ms | 5.80 | 2.04 | 2.45 |
-| exp_smoothing | 13.25 s | 41 ms | 5.92 | 2.09 | 1.58 |
-| gaussian_int | 14.44 s | 231 ms | 6.45 | 2.27 | 2.66 |
-| smooth_angle_min | 14.50 s | 230 ms | 6.48 | 2.28 | 2.73 |
-| smooth_mean_angle | 14.84 s | 263 ms | 6.63 | 2.34 | 2.81 |
-| threads | 18.10 s | 91 ms | 8.09 | 2.85 | 2.06 |
-| smooth_stripe | 26.47 s | 219 ms | 11.84 | 4.17 | 3.88 |
-| stripe | 28.53 s | 209 ms | 12.76 | 4.49 | 3.92 |
+| `smooth` | 1.54 s | 1.55 s | 0.99 | 1.00 | 44 ms |
+| `smooth_trap_circle` | 7.15 s | 1.71 s | **4.18** | 1.10 | 180 ms |
+| `trap_circle` | 7.09 s | 1.71 s | **4.14** | 1.10 | 188 ms |
+| `itinerary` | 7.09 s | 1.86 s | **3.82** | 1.19 | 397 ms |
+| `direct_trap_lines` | 4.20 s | 3.98 s | 1.06 | 2.56 | — |
+| `direct_trap_screen` | 4.41 s | 4.51 s | 0.98 | 2.90 | — |
+| `direct_trap_multiply` | 5.44 s | 5.65 s | 0.96 | 3.64 | — |
+| `exp_smoothing` | 13.35 s | 6.45 s | 2.07 | 4.15 | 44 ms |
+| `tia` | 10.93 s | 6.77 s | 1.61 | 4.36 | 208 ms |
+| `threads` | 17.74 s | 7.03 s | 2.52 | 4.52 | 91 ms |
+| `direct_trap_ring` | 7.13 s | 7.10 s | 1.00 | 4.57 | — |
+| `smooth_curvature` | 13.29 s | 7.32 s | 1.81 | 4.71 | 227 ms |
+| `curvature` | 13.41 s | 7.38 s | 1.82 | 4.75 | 206 ms |
+| `gaussian_int` | 14.78 s | 10.51 s | 1.41 | 6.76 | 232 ms |
+| `smooth_angle_min` | 14.94 s | 10.52 s | 1.42 | 6.78 | 236 ms |
+| `smooth_mean_angle` | 15.05 s | 10.64 s | 1.41 | 6.85 | 263 ms |
+| `stripe` | 26.93 s | 18.55 s | 1.45 | 11.94 | 203 ms |
+| `smooth_stripe` | 27.49 s | 19.05 s | 1.44 | 12.26 | 221 ms |
 
-**The wallpaper project's relative-cost column mostly does transfer, and reading it
-against a dead baseline is what said otherwise.** Against the smooth this page actually
-draws, every other mode is 1.7x to 13x rather than the native column's 0.9x to 3.9x — but
-most of that is smooth's own specialization, so the honest comparison is the `x generic`
-column, both loops generic. On the measured baseline every mode there lands between
-**0.65x and 1.4x of its native slope**: stripe 4.49 against 3.92, tia 1.81 against 1.79,
-trap_circle 1.06 against 1.01, with `direct_trap_lines` at 0.61 against 0.93 and `threads`
-at 2.85 against 2.06 at the two ends. That is a spread and not an offset. This section used
-to read it as one — against a dead divisor every ratio was about twice what it is here,
-which looked like a systematic wasm tax and was an arithmetic error.
-Two things remain true of the comparison and neither is measured, and neither is now
-being asked to explain anything: wasm has no transcendental instructions, so the `atan2`,
-`sin` and `exp` the averaging channels run per iteration go through a compiled libm rather
-than the platform's; and the native column is wall-clock on twelve threads, where a mode
-that adds arithmetic but not memory traffic scales better and its ratio compresses. The
-prompt's remembered figures were `threads` 2.2x and `stripe` 4x; the recorded native
-slopes are 2.06 and 3.92.
+**Thirteen modes got faster and the range is 1.41x to 4.18x**, which is not one number and
+was never going to be: what the collapse is worth to a mode is what share of its
+per-iteration work the eleven channel checks and the `Orbit` were. `trap_circle` and its
+composite are the extreme — a trap test is a couple of comparisons, so the overhead was
+most of the loop, and both land at **4.1x**. `itinerary` is 3.8x and is now the fourth
+cheapest thing on the page. At the other end `stripe` reads 1.45x: an `atan2` and a `sin`
+per iteration through a compiled libm are real arithmetic the checks were only ever a
+fraction of. It is still the **8.4 seconds** that came off the mode this was run for.
+
+**The four direct traps did not change and their column says so.** They paint during the
+iteration and never reach `compute_lanes` at all, so 0.96x to 1.06x across them is this
+harness's own spread at three runs and nothing else — a useful control, because it is
+measured on code that provably did not move.
+
+**`smooth` is 1.2% slower, and that one is real.** It is the mode that was already
+specialized, so it had nothing to gain, and seven alternated runs put it at **1 538 ms
+against 1 556 ms** — reproducible to the millisecond, with `direct_trap_ring` run beside
+it as a control at 1.001x. The engine's `sweep_row` counts each row's interior samples for
+its own caller's sake and this page throws that number away, which is a branch and an
+increment per sample the hand-written loop did not run; the dispatch is also re-taken per
+row rather than once per band, which is 720 matches against 921,600 samples and not where
+18 ms comes from. Both are the price of calling the engine's function instead of keeping a
+copy of it, and the carve-out this change lands under is visibility only — a signature
+that let a caller decline the interior count is an engine prompt, not this one.
+
+**The `x generic` column is retired rather than refreshed.** It existed because `smooth`
+was specialized here and nothing else was, so a per-mode comparison against native needed
+a baseline with both loops generic to divide by. Every mode is specialized now, on both
+sides, which is what that column was a workaround for — but the native per-mode column it
+was compared against was carried rather than re-derived, and this reading does not re-derive
+it either. What would close it is a native per-mode pass on this machine, and it is
+unmeasured here rather than estimated.
 
 **On a real machine with a real pool** the wait is much shorter than that table reads,
 because a canvas is smaller than 1280x720 and a pool is not one thread. Chrome 151
@@ -565,13 +612,19 @@ mandelbrot `smooth_trap_circle` 1.47 s, and the worst seen, julia5 `threads` at 
 0.25, 7.77 s. Shade is main-thread and pool-independent at 150–500 ms, and a preview
 lands at a sixteenth of the samples before any of it.
 
-**The module** is 480,813 bytes raw and 163,845 gzipped, against draft 1's 190,240 and
-70,639. The extra is the eighteen modes' worth of engine that is now reachable — every
-field reduction, both blends, the trap painter, all nine families — plus `serde_json` and
-the derived readers for the spec. 13.4 KB of it is the nine specialized loops — the
-committed module against the `generic_loop` one, 480,813 against 467,078 — and 3.1 KB
-is the download: a supersample in the spec, a padded direct-trap band, and a `shade` that
-frees what it was handed.
+**The module** is 614,666 bytes raw and 177,908 gzipped, against draft 1's 190,240 and
+70,639. Most of that is the eighteen modes' worth of engine that is reachable at all —
+every field reduction, both blends, the trap painter, all nine families — plus
+`serde_json` and the derived readers for the spec.
+
+**Reaching the engine's table cost 133,853 bytes raw and 14,063 gzipped**, 480,813 to
+614,666: the whole table is twelve channel sets over nine families and it arrives whole,
+where the nine call sites it replaced were 13.4 KB. That is a plain fact and not a gate —
+no size outcome was going to block this, and the alternative, instantiating by hand only
+the nine channel sets the explorer's eighteen modes actually reach, is a hand-written copy
+of the table again, which is the thing the change is for. **A tenth of the raw growth is
+what a reader downloads**: the transfer is gzipped, and 14 KB on 164 is the honest figure
+to compare against 8.4 seconds off `stripe`.
 
 ## The permalink contract, version 2
 
@@ -802,15 +855,15 @@ arrived by mechanical conversion says so in its `source` line, and the rest were
 Listed, not designed:
 
 - **Deep zoom**, which needs perturbation and is a different renderer, not a wider one.
-- **The expensive modes' wait, and the table that now exists.** `stripe` over a whole
-  1280x720 frame is 28.5 s on one thread and about a sixth of that on a pool, and this
-  page reaches it down the generic fallthrough: the nine specialized call sites cover the
-  one mode whose channel set is empty. The engine has since written the whole table out
-  for itself — `field::sweep_row`, twelve channel sets over nine families, +175 KB of
-  native binary for 1.0x to 2.5x — and it forms its coordinates the way this page needs
-  them, from the whole viewport with a global row index. So "a copy of the loop per family
-  and per mode" is no longer a thing to be built; it is a thing to be reached, and what
-  stands between is that `sweep_row` and `Channels` are private. Opening them is the shape
-  of engine change CLAUDE.md's carve-out allows, and it would let `compute_lanes` drop its
-  own nine and specialize all eighteen modes. What that is worth **here** is unmeasured,
-  and the native figure does not transfer: the same +175 KB is a third of this module.
+- **A native per-mode column measured on this machine.** The one comparison the
+  per-mode table above can no longer make: what each mode costs `fractal-engine render`
+  at the same frame, so the wasm/native slope is read off two readings of the same day
+  rather than one of them carried. Both sides take the specialized table now, which is
+  what makes the comparison worth having and is why the `x generic` workaround is gone.
+- **The expensive modes' wait, after the table.** `stripe` is 18.6 s over a whole
+  1280x720 frame on one thread and about a sixth of that on a pool, down from 26.9 s —
+  the largest absolute saving on the page and still the longest wait on it. What is left
+  is arithmetic rather than dispatch: an `atan2` and a `sin` per iteration, through a
+  compiled libm because wasm has no transcendental instructions. Nothing here shortens
+  that; a coarser preview or a cheaper approximation of the channel would, and both are
+  changes to the picture.

@@ -107,8 +107,12 @@ SCHEMA = 1
 ENGINE_CHANGES = [
     "coloring::composite, coloring::modulate and direct_trap::Painter::trace are pub: "
     "visibility only, no signature moved, engine tests unmoved.",
-    "iterate::run is #[inline(always)]: the specialization cascade the nine call sites "
-    "in the wasm crate depend on.",
+    "iterate::run is #[inline(always)]: the specialization cascade this crate depended on "
+    "for its own call sites, and now depends on through the engine's table.",
+    "field::sweep_row and field::Channels are pub: the engine's own table of specialized "
+    "call sites, twelve channel sets over nine families, which compute_lanes now calls "
+    "instead of keeping a hand-written copy of nine of them. Visibility only, no signature "
+    "moved, engine tests unmoved.",
 ]
 
 _RUSTC_VERSION = re.compile(r"^rustc (\S+ \([0-9a-f]+ \d{4}-\d{2}-\d{2}\))")

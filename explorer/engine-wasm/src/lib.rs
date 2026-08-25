@@ -38,16 +38,17 @@
 //! why a download from this page is the wallpaper pipeline's own picture and not a
 //! canvas scaled. This file chooses a row range and nothing else.
 //!
-//! ## The one call site
+//! ## No loop of its own
 //!
-//! [`compute_band`] runs `iterate::run` in exactly one place and reduces every
-//! lane of the coloring from that one orbit — which is what
-//! [`fractal_engine::field::sample`] does for a whole frame, written out here
-//! because a band's coordinates have to be formed from the *whole* viewport. A
-//! second generic call site into `iterate::run` or `FieldSpec::reduce` costs about
-//! three times the field time, measured: the two of them monomorphize into one hot
-//! loop, and splitting that loop is not free. So the two-field modes do not get a
-//! loop of their own — they get the same loop with two lanes.
+//! [`compute_band`] does not iterate anything: it calls
+//! [`fractal_engine::field::sweep_row`], the engine's own table of specialized
+//! call sites, a row at a time. That table forms its coordinates from the *whole*
+//! viewport with a global row index — which is exactly what a band needs, and the
+//! reason this file used to carry a hand-written copy of the escape loop instead.
+//! Every lane of the coloring is reduced from one orbit inside that table, so a
+//! two-field composite costs one iteration rather than two, and there is no second
+//! spelling of the recurrence on this side of the boundary to drift out of step
+//! with the engine's.
 
 use std::collections::BTreeMap;
 
@@ -55,11 +56,11 @@ use fractal_engine::coloring::{self, Coloring, Layer, Palette, Rolloff};
 use fractal_engine::colormap::{Colormap, Kind};
 use fractal_engine::direct_trap;
 use fractal_engine::family::{Family, HomeView};
-use fractal_engine::field::{Exact, Field, FieldSpec};
+use fractal_engine::field::{self, Channels, Exact, Field, FieldSpec};
 use fractal_engine::iterate::Wants;
 use fractal_engine::spec::{FamilySpec, ViewportSpec};
 use fractal_engine::viewport::Viewport;
-use fractal_engine::{iterate, maxiter, mode, resample};
+use fractal_engine::{maxiter, mode, resample};
 use num_complex::Complex;
 use serde::Deserialize;
 
@@ -498,101 +499,71 @@ pub extern "C" fn compute_band(
     }
 }
 
-/// The loop, and the one call into `iterate::run` — written twice, on purpose.
+/// One band of every lane of the coloring, through the engine's own specialized
+/// escape loop.
 ///
-/// Every lane of the coloring is reduced from the same orbit, in the order
-/// [`lanes_of`] put them, which is what makes a two-field composite cost one
-/// iteration rather than two.
+/// Every lane is reduced from the same orbit, in the order [`lanes_of`] put them,
+/// which is what makes a two-field composite cost one iteration rather than two.
 ///
-/// **The spine is specialized and everything else is not**, and the reason is
-/// measured. `iterate::run` is a long loop with eleven per-iteration channel
-/// checks and a match over the families, and it collapses to the bare recurrence
-/// only when the compiler can see *both* the family and the channel set at the
-/// call site — 1.5 s against 12.1 s on the 1280×720 home frame, and neither half
-/// alone buys more than a tenth of that. Draft 1 got the collapse for free by
-/// rendering one family in one mode; a spec-struct boundary hands both in at
-/// runtime and loses it.
+/// **The table is [`field::sweep_row`]'s and this crate keeps none of its own.**
+/// `iterate::run` is a long loop with eleven per-iteration channel checks and a
+/// match over the families, and it collapses to the bare recurrence only when the
+/// compiler can see *both* the family and the channel set at the call site. The
+/// engine writes that pair out for itself — twelve channel sets over nine
+/// families, held bit-for-bit against the generic loop by its own tests — and it
+/// forms coordinates from the **whole** viewport with a global row index, which is
+/// the one thing a band needs and the reason this function used to be a
+/// hand-written copy. A copy is what it was: nine call sites covering the one mode
+/// whose channel set is empty, and every other mode down the generic fallthrough.
+/// Nothing held that copy to the engine's recurrence, so a change there would have
+/// left this page rendering the old one with no test going red.
 ///
-/// So the one mode whose channel set is *empty* — `smooth`, the spine every
-/// composite is built on and the only catalogued mode that asks the loop for
-/// nothing but the escape — gets a call site per family, where the loop really is
-/// `z ← z^d + c` and a magnitude test. Every other mode is already doing per-
-/// iteration work of its own that the checks are a small share of, and takes the
-/// generic loop. Specializing the whole catalog would mean a copy of this loop per
-/// family and mode, which is the module's size spent on the cases that need it
-/// least.
+/// A band is a range of rows and a row appends to `lanes`, so the whole band goes
+/// into one buffer a row at a time and the dispatch is re-taken per row — nothing
+/// against a row of thousands of iterations per sample.
+///
+/// The engine reduces at `f64` and leaves the narrowing to its caller, which is
+/// this: every lane crosses at the `f32` a dumped field would have been stored as,
+/// except the modulate's texture — an address whose deep digits are the picture,
+/// and the one lane the engine never narrows either.
 fn compute_lanes(plan: &Plan, row_start: u32, row_end: u32) -> Vec<u8> {
-    let width = plan.view.sample_width();
-    let wants = plan
-        .lanes
+    let fields: Vec<FieldSpec> = plan.lanes.iter().map(|layer| layer.field).collect();
+    let wants = fields
         .iter()
-        .map(|layer| layer.field.wants())
+        .map(FieldSpec::wants)
         .fold(Wants::default(), Wants::union);
+    // The engine's own dispatch, except under the bench cfg, which sends every mode
+    // to the generic loop so that the table can be priced against it. Written as an
+    // `if cfg!` rather than an `#[cfg]` attribute for the reason README gives: an
+    // attribute is a line, and a line moves every panic `Location` under it.
+    let channels = if cfg!(generic_loop) {
+        Channels::Many(wants)
+    } else {
+        Channels::of(wants)
+    };
+
     let per_lane = plan.band_samples(row_start, row_end);
-    let mut lanes: Vec<Vec<f64>> = vec![Vec::with_capacity(per_lane); plan.lanes.len()];
-
-    macro_rules! sweep {
-        ($family:expr, $wants:expr) => {{
-            let family = $family;
-            let wants = $wants;
-            for row in row_start..row_end {
-                for col in 0..width {
-                    let orbit = iterate::run(
-                        &family,
-                        plan.view.sample_point(col, row),
-                        plan.maxiter,
-                        &wants,
-                    );
-                    for (index, lane) in lanes.iter_mut().enumerate() {
-                        let value = plan.lanes[index].field.reduce(&orbit);
-                        lane.push(if plan.exact[index] {
-                            value.unwrap_or(f64::NAN)
-                        } else {
-                            value.map_or(f32::NAN, |value| value as f32) as f64
-                        });
-                    }
-                }
-            }
-        }};
-    }
-
-    // The degrees are the ones the spec admits — 2 through 5 on both planes — so
-    // this table is total over what can reach here, and the fallthrough is the
-    // generic loop — which `--cfg generic_loop` takes for everything, to measure it.
-    match (wants == Wants::default() && !cfg!(generic_loop), plan.family) {
-        (true, Family::Multibrot { degree: 2 }) => {
-            sweep!(Family::Multibrot { degree: 2 }, Wants::default())
-        }
-        (true, Family::Multibrot { degree: 3 }) => {
-            sweep!(Family::Multibrot { degree: 3 }, Wants::default())
-        }
-        (true, Family::Multibrot { degree: 4 }) => {
-            sweep!(Family::Multibrot { degree: 4 }, Wants::default())
-        }
-        (true, Family::Multibrot { degree: 5 }) => {
-            sweep!(Family::Multibrot { degree: 5 }, Wants::default())
-        }
-        (true, Family::Julia { degree: 2, c }) => {
-            sweep!(Family::Julia { degree: 2, c }, Wants::default())
-        }
-        (true, Family::Julia { degree: 3, c }) => {
-            sweep!(Family::Julia { degree: 3, c }, Wants::default())
-        }
-        (true, Family::Julia { degree: 4, c }) => {
-            sweep!(Family::Julia { degree: 4, c }, Wants::default())
-        }
-        (true, Family::Julia { degree: 5, c }) => {
-            sweep!(Family::Julia { degree: 5, c }, Wants::default())
-        }
-        (true, Family::Phoenix { c, p, z_prev }) => {
-            sweep!(Family::Phoenix { c, p, z_prev }, Wants::default())
-        }
-        _ => sweep!(plan.family, wants),
+    let mut lanes: Vec<Vec<f64>> = vec![Vec::with_capacity(per_lane); fields.len()];
+    for row in row_start..row_end {
+        field::sweep_row(
+            &plan.view,
+            &plan.family,
+            plan.maxiter,
+            &fields,
+            channels,
+            row,
+            &mut lanes,
+        );
     }
 
     let mut bytes = Vec::with_capacity(per_lane * lanes.len() * 8);
-    for lane in lanes {
+    for (index, lane) in lanes.into_iter().enumerate() {
         for value in lane {
+            let value = if plan.exact[index] {
+                value
+            } else {
+                value as f32 as f64
+            };
             bytes.extend_from_slice(&value.to_le_bytes());
         }
     }

@@ -61,8 +61,11 @@ const MAX_PIXELS = 33_554_432;
 const MAX_SIDE = 8192;
 const MIN_SIDE = 16;
 
-/** What a mode costs, as the seconds `explorer/bench/modes.mjs` measured over one
- *  1280x720 frame on one thread — the table in `explorer/README.md`, typed.
+/** What a mode costs, as the seconds measured over one 1280x720 frame on one thread —
+ *  the `after` column of the per-mode table in `explorer/README.md`, typed. It is typed
+ *  and so it goes stale silently: this table was last left behind by a re-measure that
+ *  refreshed the README and not it, and every field cost here was about twice what the
+ *  module did.
  *
  *  It is a **prior and not a promise**: it is one machine on one day, at the
  *  mandelbrot home view and so at that view's iteration cap, and a deep frame
@@ -72,24 +75,24 @@ const MIN_SIDE = 16;
  *  consulted again. A direct trap has no shade, because its bands arrive painted. */
 const FRAME = 1280 * 720;
 const COST = {
-  smooth: { field: 2.27, shade: 0.157 },
-  direct_trap_lines: { field: 6.12, shade: 0 },
-  direct_trap_multiply: { field: 7.85, shade: 0 },
-  direct_trap_screen: { field: 8.2, shade: 0 },
-  direct_trap_ring: { field: 10.35, shade: 0 },
-  itinerary: { field: 12.12, shade: 0.694 },
-  trap_circle: { field: 13.08, shade: 0.309 },
-  smooth_trap_circle: { field: 13.32, shade: 0.372 },
-  curvature: { field: 19.86, shade: 0.485 },
-  smooth_curvature: { field: 20.75, shade: 0.357 },
-  smooth_mean_angle: { field: 23.38, shade: 0.492 },
-  smooth_angle_min: { field: 24.1, shade: 0.53 },
-  threads: { field: 25.35, shade: 0.227 },
-  tia: { field: 26.67, shade: 0.351 },
-  exp_smoothing: { field: 27.65, shade: 0.171 },
-  gaussian_int: { field: 28.3, shade: 0.467 },
-  smooth_stripe: { field: 43.35, shade: 0.473 },
-  stripe: { field: 46.06, shade: 0.454 },
+  smooth: { field: 1.55, shade: 0.044 },
+  smooth_trap_circle: { field: 1.71, shade: 0.18 },
+  trap_circle: { field: 1.71, shade: 0.188 },
+  itinerary: { field: 1.86, shade: 0.397 },
+  direct_trap_lines: { field: 3.98, shade: 0 },
+  direct_trap_screen: { field: 4.51, shade: 0 },
+  direct_trap_multiply: { field: 5.65, shade: 0 },
+  exp_smoothing: { field: 6.45, shade: 0.044 },
+  tia: { field: 6.77, shade: 0.208 },
+  threads: { field: 7.03, shade: 0.091 },
+  direct_trap_ring: { field: 7.1, shade: 0 },
+  smooth_curvature: { field: 7.32, shade: 0.227 },
+  curvature: { field: 7.38, shade: 0.206 },
+  gaussian_int: { field: 10.51, shade: 0.232 },
+  smooth_angle_min: { field: 10.52, shade: 0.236 },
+  smooth_mean_angle: { field: 10.64, shade: 0.263 },
+  stripe: { field: 18.55, shade: 0.203 },
+  smooth_stripe: { field: 19.05, shade: 0.221 },
 };
 
 /** Seconds this download is expected to take, before any of it has happened. */
