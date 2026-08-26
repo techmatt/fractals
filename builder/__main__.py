@@ -17,6 +17,7 @@ import argparse
 import sys
 from pathlib import Path
 
+from . import atlas as atlas_module
 from . import build as build_module
 from . import checks, diagrams, figures, images, links, records, renders
 from . import explorer as explorer_module
@@ -204,6 +205,18 @@ def _parser() -> argparse.ArgumentParser:
 
     drawn = commands.add_parser("diagram", help="draw one of the figures that is not a render")
     drawn.add_argument("id", choices=sorted(diagrams.DIAGRAMS), help="the diagram's figure id")
+
+    mapped = commands.add_parser("atlas", help="report the atlas record, or write its fixture")
+    mapped.add_argument(
+        "--fixture",
+        action="store_true",
+        help="rewrite the synthetic record the atlas page was designed against",
+    )
+    mapped.add_argument(
+        "--thumbs",
+        action="store_true",
+        help="draw every judged dot's picture through the link that opens it, and land it",
+    )
 
     served = commands.add_parser("serve", help="preview the committed tree over localhost")
     served.add_argument(
@@ -639,6 +652,22 @@ def _do_review_read(page: str, *, full: bool) -> int:
     return 0
 
 
+def _do_atlas(options: argparse.Namespace) -> int:
+    """What the atlas record holds — or, with a flag, the fixture it holds while it waits."""
+    if options.fixture:
+        for line in atlas_module.write_fixture():
+            print(line)
+    if options.thumbs:
+        for line in atlas_module.land_thumbs():
+            print(line)
+    for line in atlas_module.summary():
+        print(line)
+    found = atlas_module.problems()
+    for problem in found:
+        print(f"  problem: {problem}")
+    return 1 if found else 0
+
+
 def _do_serve(options: argparse.Namespace) -> int:
     serve_module.serve(options.port)
     return 0
@@ -692,11 +721,14 @@ def main(argv: list[str] | None = None) -> int:
             return _do_prose(options)
         if options.command == "review":
             return _do_review(options)
+        if options.command == "atlas":
+            return _do_atlas(options)
         if options.command == "serve":
             return _do_serve(options)
         return _do_import(options)
     except (
         records.RecordError,
+        atlas_module.AtlasError,
         images.ImageError,
         explorer_module.ExplorerError,
         renders.EngineError,

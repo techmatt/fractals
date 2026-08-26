@@ -50,6 +50,14 @@ def _save(image, destination: Path) -> None:
     destination.parent.mkdir(parents=True, exist_ok=True)
     suffix = destination.suffix.lower()
     if suffix in _JPEG_SUFFIXES:
+        # An optimized JPEG is encoded through one buffer, and libjpeg refuses to suspend
+        # when a scanline does not fit it: a small, densely detailed frame — a fractal at
+        # a thumbnail's size is the worst case this repository has — fails with "broken
+        # data stream" on Pillow's default. The buffer is a working size and never lands
+        # in the file, so raising it changes nothing about the bytes written.
+        from PIL import ImageFile
+
+        ImageFile.MAXBLOCK = max(ImageFile.MAXBLOCK, 4 * 1024 * 1024)
         image.convert("RGB").save(
             destination,
             format="JPEG",
@@ -100,3 +108,20 @@ def write_thumb(source: Path, destination: Path, size: tuple[int, int]) -> None:
     with _open(source) as image:
         thumb = image.copy() if image.size == size else image.resize(size, Image.LANCZOS)
         _save(thumb, destination)
+
+
+def write_rgba(raw: bytes, size: tuple[int, int], destination: Path) -> None:
+    """Write a frame the renderer handed over as raw bytes, in the format the suffix names.
+
+    The wasm module's `shade` returns RGBA and nothing else — there is no image encoder
+    on that side of the boundary, and there should not be one — so a picture drawn in the
+    browser's own renderer and landed in this repository comes through here.
+    """
+    from PIL import Image
+
+    width, height = size
+    if len(raw) != width * height * 4:
+        raise ImageError(
+            f"{destination.name}: {len(raw)} bytes is not a {width}x{height} RGBA frame"
+        )
+    _save(Image.frombytes("RGBA", size, raw), destination)

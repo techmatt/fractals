@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Atlas — Making Fractal Wallpapers</title>
+<meta name="description" content="Every place the fractal search has kept, marked on the plane it came out of, with the renderer that found it running in the browser. Each mark opens at the view it stands for.">
+<link rel="stylesheet" href="../assets/css/site.css">
+<link rel="stylesheet" href="atlas.css">
+</head>
+<body>
+<nav class="topbar">
+  <div class="topbar-inner">
+    <a class="topbar-site" href="../index.html">Making Fractal Wallpapers</a>
+    <span class="topbar-links"><a href="../galleries/index.html">Galleries</a><a href="https://github.com/techmatt/fractal-wallpapers">GitHub</a><a href="https://techmatt.github.io/">Matt Fisher</a></span>
+  </div>
+</nav>
+
+<div class="atlas-page">
+
+<header class="masthead">
+  <p class="kicker"><a href="../article/fractal-atlases.html">Fractal atlases</a></p>
+  <h1>Every place the search kept</h1>
+</header>
+
+<main>
+  <p class="intro">One mark for every location the search has found and a judge has kept,
+  drawn on the plane it came out of. The plane behind the marks is rendered here, in the
+  browser, by the same renderer that made the wallpapers; so is every place you settle on
+  that no render judge has looked at yet. Each mark is a link into the
+  <a href="../explorer/index.html">explorer</a> at the view it stands for.</p>
+
+  <div class="caution" id="caution" hidden></div>
+
+  <div class="notice" id="notice">
+    <p>Starting the renderer…</p>
+    <p>If this message stays, the page is being opened straight off the filesystem. A browser
+    will not load a page's modules, its workers or its renderer over <code>file://</code>, so
+    this page needs to be served — <code>python -m builder serve</code> puts this tree on
+    localhost — or read at
+    <a href="https://techmatt.github.io/fractal-website/atlas/">techmatt.github.io</a>.</p>
+  </div>
+
+  <div class="bar" id="bar" hidden>
+    <span class="group">
+      <label for="partition">Partition</label>
+      <select id="partition"></select>
+    </span>
+    <span class="group">
+      <label for="layout">Layout</label>
+      <select id="layout">
+        <option value="plates" selected>Plates</option>
+        <option value="plane">Plane</option>
+        <option value="spread">Spread</option>
+      </select>
+    </span>
+    <span class="group">
+      <label for="density">Density</label>
+      <select id="density">
+        <option value="off" selected>Off</option>
+        <option value="on">Heatmap</option>
+      </select>
+    </span>
+    <span class="group">
+      <label for="palette">Unjudged places</label>
+      <select id="palette">
+        <option value="random" selected>A palette apiece</option>
+        <option value="fixed">The one the search used</option>
+      </select>
+    </span>
+  </div>
+
+  <div class="legend" id="legend" hidden></div>
+
+  <div class="atlas-stage" id="stage" hidden>
+    <div class="plates" id="plates"></div>
+    <div class="panel">
+      <h2>The place under the pointer</h2>
+      <div id="chosen"></div>
+      <h2>Already judged <span id="judged-count"></span></h2>
+      <p class="panel-note">These places have a colored render a judge has already scored,
+      and their marks are the warm ones on the plates. Everything else is drawn on demand,
+      in a palette nobody has chosen.</p>
+      <div class="judged" id="judged"></div>
+    </div>
+  </div>
+
+  <p class="status" id="status"></p>
+  <p class="provenance" id="provenance"></p>
+
+  <nav class="section-nav">
+    <p><a href="../index.html">Contents</a>
+    · <a href="../article/fractal-atlases.html">Fractal atlases</a>
+    · <a href="../explorer/index.html">Fractal explorer</a>
+    · <a href="../galleries/index.html">Galleries</a></p>
+  </nav>
+</main>
+
+<footer>
+  <p><a href="https://techmatt.github.io/">Matt Fisher</a>
+  · <a href="https://github.com/techmatt/fractal-wallpapers">fractal-wallpapers</a> · MIT</p>
+</footer>
+</div>
+
+<script type="module" src="atlas.js"></script>
+</body>
+</html>

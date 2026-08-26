@@ -40,6 +40,12 @@ did on a machine without one was raise, and every check after it went unrun.
   document is not in this repository and cannot be: both halves of the project write to
   it. So the one thing a clone can be held to is that the file every prompt does read
   points at it, and a rename or a tidy-up that drops the pointer fails here.
+- **atlas** — the atlas record is the shape the atlas page reads: every dot carries its
+  own viewport keys as decimal strings, sits inside the plane its partition names and no
+  closer to its neighbours than the separation radius that partition claims, and every
+  pre-rendered thumbnail is on disk at the size its row gives. Whether a dot's *link*
+  parses is asked of the permalink contract itself, by `atlas/atlas.test.mjs`, for the
+  same reason the explorer's links are: the contract is written in JavaScript.
 - **theme** — the well colours a drawn figure is made of are the stylesheet's own. They
   have to be transcribed, because Pillow cannot read CSS; this is what keeps a restyle
   from moving the well and leaving every diagram drawn against the old one.
@@ -67,6 +73,9 @@ from html.parser import HTMLParser
 from pathlib import Path
 from urllib.parse import unquote, urldefrag
 
+from . import (
+    atlas as atlas_module,
+)
 from . import (
     explorer,
     figures,
@@ -674,6 +683,7 @@ def run_all() -> Report:
             "figures": check_figures(),
             "landing": check_landing(),
             "explorer": check_explorer(),
+            "atlas": atlas_module.problems(),
             "bake": check_bake(),
             "assets": check_assets(loaded),
             "library": check_library(),

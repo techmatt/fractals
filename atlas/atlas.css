@@ -1,0 +1,253 @@
+/* The atlas's own layout, on top of the site stylesheet rather than inside it — the same
+   arrangement the explorer has, and for the same reason: the article does not run code
+   and does not need the rules for a page that does.
+
+   Almost every colour here is a token `site.css` already declares. Two are not, and they
+   are declared below rather than there because they are not furniture: they are marks
+   drawn on top of a picture, they exist on this page and nowhere else, and putting them
+   in the site's root would make them look like part of a palette everything shares. */
+
+.atlas-page {
+  --dot: #a9b6c8;
+  --dot-judged: #ffb02e;
+  max-width: var(--page);
+  margin: 0 auto;
+}
+
+/* What is read in lines stops at the measure. The plot does not: an atlas squeezed into
+   a column of prose is a diagram of a diagram. */
+.atlas-page .masthead > *,
+.atlas-page .intro,
+.atlas-page .notice,
+.atlas-page .caution,
+.atlas-page .status,
+.atlas-page .provenance,
+.atlas-page .section-nav > *,
+.atlas-page footer > * { max-width: var(--measure); }
+
+[hidden] { display: none !important; }
+
+/* The fixture warning. It is not a refusal — the page works — so it sits above the plot
+   rather than replacing it, and it is the loudest thing on the page because every number
+   under it is made up. */
+.caution {
+  margin: 1.25rem 0 0;
+  padding: 0.7rem 1rem;
+  border-left: 3px solid var(--dot-judged);
+  background: var(--bar);
+  font-size: 0.9375rem;
+}
+.caution code { font-size: 0.9em; }
+
+.notice {
+  margin: 1.25rem 0 0;
+  padding: 1rem 1.2rem;
+  border-left: 3px solid var(--rule);
+  background: var(--bar);
+}
+.notice p { margin: 0 0 0.5em; }
+.notice p:last-child { margin-bottom: 0; }
+
+/* The controls, the same strip the explorer carries. */
+.bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1rem;
+  margin-top: 0.9rem;
+  font-size: 0.875rem;
+}
+.bar .group { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 0.35rem 0.6rem; }
+.bar label { color: var(--ink-dim); }
+.bar select {
+  max-width: 22rem;
+  padding: 0.2rem 0.3rem;
+  border: 1px solid var(--rule);
+  border-radius: 2px;
+  background: var(--bar);
+  color: var(--ink);
+  font: inherit;
+}
+
+/* The heatmap's key. A ramp of swatches rather than a gradient, because what it is a key
+   to is a set of bins and not a continuum. */
+.legend {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 0.6rem;
+  font-size: 0.8125rem;
+  color: var(--ink-dim);
+  font-variant-numeric: tabular-nums;
+}
+.legend .ramp { display: inline-flex; height: 0.7rem; }
+.legend .ramp i { display: block; width: 0.4rem; height: 100%; }
+.legend .legend-note { flex: 1 1 14rem; min-width: 0; }
+
+/* The plot and the panel beside it. One column until there is room for two — the panel
+   is a column of pictures, and a column of pictures under a plot is still a column of
+   pictures. */
+.atlas-stage {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.25rem;
+  margin-top: 1rem;
+}
+
+@media (min-width: 62.5rem) {
+  .atlas-stage { grid-template-columns: minmax(0, 1fr) 17rem; align-items: start; }
+}
+
+/* The plates. The whole plane runs the full width of the plot; the regional plates sit
+   two up under it, which is as small as a render can get and still be a picture. */
+.plates { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.9rem; }
+.plate-whole { grid-column: 1 / -1; }
+
+.plate { margin: 0; }
+
+.plate-stage {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  background: var(--well);
+  border: 1px solid var(--well-rule);
+  overflow: hidden;
+}
+
+.plate-render,
+.plate-heat,
+.plate-leaders,
+.plate-marks,
+.plate-dots {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+/* Until the renderer has been round, the well is a well rather than a white rectangle:
+   the page says what it is going to show before it can show it. */
+.plate-render { opacity: 0; transition: opacity 220ms ease-out; }
+.plate-render.drawn { opacity: 1; }
+.plate-render.past-the-wall { opacity: 0; }
+.plate-stage.heated .plate-render.drawn { opacity: 0.3; }
+
+/* Painted over the render rather than blended into it. `screen` was the obvious choice
+   and it is the wrong one: a blend group is the nearest stacking context, and this one
+   reaches the white page behind the plot, where screening anything gives white. Plain
+   alpha over the render is predictable and says the same thing. */
+.plate-heat { pointer-events: none; }
+.plate-leaders { pointer-events: none; }
+.plate-leaders line { stroke: var(--well-ink); stroke-width: 0.32; opacity: 0.8; }
+
+.plate-marks { pointer-events: none; }
+.plate-marks .mark {
+  position: absolute;
+  min-width: 12px;
+  min-height: 12px;
+  border: 1px solid var(--dot-judged);
+  border-radius: 2px;
+  color: var(--dot-judged);
+  font: 600 0.6875rem/1 var(--sans);
+  padding: 1px 3px;
+  text-align: left;
+}
+
+.plate-dots { pointer-events: none; }
+
+/* A dot is a link, and it behaves like one: the address bar shows where it goes, a
+   middle click opens it in a tab, and a right click copies it. What settling on it does
+   instead of opening it is fill the panel — a preview costs a render, and a reader who
+   wanted the whole thing clicks. */
+.dot {
+  position: absolute;
+  width: 9px;
+  height: 9px;
+  margin: -4.5px 0 0 -4.5px;
+  border-radius: 50%;
+  background: var(--dot);
+  box-shadow: 0 0 0 1.5px rgba(0, 0, 0, 0.75);
+  pointer-events: auto;
+  transition: transform 90ms ease-out;
+}
+.dot.judged { background: var(--dot-judged); }
+.dot.refused { background: var(--well-pending); }
+.dot:hover, .dot:focus-visible { transform: scale(1.65); outline: none; }
+.dot.is-current {
+  transform: scale(1.9);
+  box-shadow: 0 0 0 1.5px rgba(0, 0, 0, 0.9), 0 0 0 3px var(--well-ink);
+}
+
+.plate figcaption {
+  margin-top: 0.35rem;
+  font-size: 0.8125rem;
+  color: var(--ink-dim);
+  max-width: var(--measure);
+}
+.plate figcaption b { color: var(--ink); font-weight: 600; }
+.plate figcaption span { margin-left: 0.5em; }
+
+/* The panel. Everything in it is a dark well, because everything in it is a picture. */
+.panel { min-width: 0; }
+.panel h2:first-child { margin-top: 0; }
+.panel h2 {
+  margin: 1.4rem 0 0.4rem;
+  font: 600 0.9375rem/1.3 var(--sans);
+}
+.panel .panel-note { margin: 0 0 0.6rem; font-size: 0.8125rem; color: var(--ink-dim); }
+
+.chosen-well {
+  background: var(--well);
+  border: 1px solid var(--well-rule);
+  aspect-ratio: 16 / 9;
+}
+.chosen-well img, .chosen-render { display: block; width: 100%; height: 100%; }
+
+.panel .how, .panel .stands {
+  margin: 0.5rem 0 0;
+  font-size: 0.8125rem;
+  color: var(--ink-dim);
+}
+
+.keys {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 0 0.6rem;
+  margin: 0.5rem 0 0;
+  font-family: var(--mono);
+  font-size: 0.75rem;
+}
+.keys dt { color: var(--ink-dim); }
+.keys dd { margin: 0; overflow-wrap: anywhere; }
+
+.panel .open { display: inline-block; margin-top: 0.6rem; font-size: 0.875rem; }
+
+/* The judged strip. Two up, so a tile is big enough to tell one render from another and
+   the column is still a column. */
+.judged {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.35rem;
+  margin-top: 0.5rem;
+  max-height: 24rem;
+  overflow-y: auto;
+}
+.judged .tile { display: block; line-height: 0; border: 1px solid transparent; }
+.judged .tile img { display: block; width: 100%; height: auto; }
+.judged .tile:hover, .judged .tile:focus-visible { border-color: var(--link); outline: none; }
+.judged .tile.is-current { border-color: var(--dot-judged); }
+
+.status {
+  margin: 0.6rem 0 0;
+  font-family: var(--mono);
+  font-size: 0.8125rem;
+  color: var(--ink-dim);
+}
+
+.provenance { margin-top: 1.5rem; font-size: 0.8125rem; color: var(--ink-dim); }
+
+/* Below the breakpoint the plates stop being two up: half of a phone's width is not a
+   render, it is a swatch. */
+@media (max-width: 40rem) {
+  .plates { grid-template-columns: minmax(0, 1fr); }
+  .judged { max-height: none; }
+}
