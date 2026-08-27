@@ -330,7 +330,7 @@ builds nothing and writes nothing. Prefer it to opening files from disk: the exp
 not start over `file://` at all, and Chrome does not persist page zoom for `file://` URLs,
 so a disk preview snaps back to 100% at every navigation.
 
-Two Windows cautions that have each cost a session already:
+Three Windows cautions that have each cost a session already:
 
 - **Headless Chrome clamps its window to roughly 480–500px wide.** A `--window-size=320`
   screenshot is a clamped layout cropped, and reads as overflow that is not there. Check
@@ -340,6 +340,12 @@ Two Windows cautions that have each cost a session already:
   Windows translates `\n` back to `\r\n`, which silently converts a whole file to CRLF;
   `.gitattributes` normalization only bites at commit time, so `builder check` fails first
   and blames a rail nobody edited.
+- **A block of text carrying Windows paths moves under a quoted heredoc.** bash `printf`
+  reads `\f`, `\a`, `\t`, `\b` and friends as escapes even where the backslashes are
+  doubled, so `E:\FractalStorage\fractal-wallpapers\artifacts\location_views` lands as
+  `E:\FractalStorageractal-wallpapersrtifacts\location_views`, which is still plausible at
+  a glance; Python string literals eat the same escapes on the way in. `<<'EOF'` does no
+  escape processing at all, which is the only reason to reach for anything else.
 
 ## Checks to run before committing
 
