@@ -27,10 +27,10 @@ for "the stripe mode" rather than for "a stripe mode at 6" — and it should mov
 catalog ever retunes that mode. `permalink.js` states both sides of that, and
 `builder/links.py`'s `REASONS` is where a refusal gets its name.
 
-The design draft 1 was built to is `preserve\visitor_explorer_design.md` on the synced
-drive. It is not restated here; where the two disagree, the tree is what is true and the
-design doc is what was intended. Everything it rules is built or deliberately
-superseded, and these are the places the two have come apart:
+The design draft 1 was built to has been retired; this README and the tree are the
+record of what the explorer does. It is not restated here; where the two disagree, the
+tree is what is true and the design doc is what was intended. Everything it rules is
+built or deliberately superseded, and these are the places the two have come apart:
 
 - **"the 76 curated q3 set ONLY"** — the picker offers **77**, and a link may name **110**.
   The wider set is every map the article's own figures were drawn in, most of them
