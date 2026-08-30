@@ -318,15 +318,15 @@ so the assembled field is bit for bit what a whole-frame pass through the same m
 produces, and there are no seams between bands. What is measured and what is not are
 different links of one chain, and it is worth keeping them apart. **Measured:** a
 whole frame out of wasm is a whole frame out of the native engine, **in every mode**.
-The spike that established the port — `fractal-drive-sync/reports/wasm_spike_report.md`,
-2026-08-21 — drew the 1280x720 anchor frame through its single `render_smooth` export and
-through `fractal-engine render` of the same spec, and **0 of 921,600 pixels differ**; it
-is the same f64 code over the same inputs, and wasm's f64 is IEEE-754 with no x87 excess
-precision to diverge through. That leg was `smooth` alone until the table landed, and it
-is now the whole catalog: each of the eighteen modes drawn on the parameter plane and on a
-dynamical one, at one and at two samples per pixel, against `fractal-engine render` of the
-same spec — **72 of 72 frames byte-identical**, measured both before the rewire and after
-it, so a divergence would have been attributable. **Measured too, where it used to be argued:** the banded
+The spike that established the port, on 2026-08-21, drew the 1280x720 anchor frame
+through its single `render_smooth` export and through `fractal-engine render` of the same
+spec, and **0 of 921,600 pixels differ**; it is the same f64 code over the same inputs,
+and wasm's f64 is IEEE-754 with no x87 excess precision to diverge through. That leg was
+`smooth` alone until the table landed, and it is now the whole catalog: each of the
+eighteen modes drawn on the parameter plane and on a dynamical one, at one and at two
+samples per pixel, against `fractal-engine render` of the same spec — **72 of 72 frames
+byte-identical**, measured both before the rewire and after it, so a divergence would have
+been attributable. **Measured too, where it used to be argued:** the banded
 assembly equals a whole-frame pass through *this* module. `bands.test.mjs` draws the
 anchor at 320x180 three ways — whole, the eight bands a two-worker pool cuts, the
 twenty-three a sixteen-worker pool cuts — and asserts the three are the same bytes; then

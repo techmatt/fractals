@@ -144,7 +144,7 @@ keeps the mechanics. **Every apply round ends by distilling that round's general
   writes `colormap` on every line asks the explorer to carry hundreds of gradients so that
   one figure could be opened at a picture it does not even show.
 - **What the explorer's picker offers is a committed record, never a derivation**
-  *(2026-08-25)*. `explorer/palettes.jsonl` names the 107 maps `palettes.js` is baked from
+  *(2026-08-25)*. `explorer/palettes.jsonl` names the 110 maps `palettes.js` is baked from
   and which 77 of them the picker lists; `python -m builder explorer` reads the names from
   it and the gradients from the library next door, and `check`'s `bake` holds the
   committed module to being byte for byte what that produces. The bake used to ask the
