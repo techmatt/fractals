@@ -73,8 +73,8 @@
     gallery pass wants the best set, which is a property of the whole collection and not of
     any one run.</p>
 
-      <figure class="figure" data-figure="pool-stages">
-        <img src="../assets/images/figures/pool-stages.png" width="1316" height="480" alt="A flow diagram in two halves: walk ledgers feeding locations to draw and small judged renders into a pool that grows across runs, and a gallery pass drawing from that pool through slots, chosen locations and many judged renders to a set of finished wallpapers, with the pass's own renders joining the pool as well.">
+      <figure class="figure" data-figure="wallpapers-stages">
+        <img src="../assets/images/figures/wallpapers-stages.png" width="1316" height="480" alt="A flow diagram in two halves: walk ledgers feeding locations to draw and small judged renders into a pool that grows across runs, and a gallery pass drawing from that pool through slots, chosen locations and many judged renders to a set of finished wallpapers, with the pass's own renders joining the pool as well.">
         <figcaption>The two processes that stand between a stock of locations and a gallery. A run reads left to right and empties into the pool; the gallery pass reads the whole pool at once. Nothing a run makes is discarded, and nothing a run makes is a wallpaper.</figcaption>
       </figure>
 
@@ -116,8 +116,8 @@
     the small picture itself, so a candidate can be re-scored by a retrained judge without
     being redrawn, and redrawn at any size from its row alone.</p>
 
-      <figure class="figure" data-figure="pool-attempt">
-        <a class="figure-open" href="../explorer/index.html?v=2&amp;m=smooth_mean_angle&amp;x=-0.7894061466838949&amp;y=-0.16437809352996482&amp;w=0.0027914350318908217&amp;p=Forge%20Sweep" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/pool-attempt.jpg" width="1316" height="1336" alt="One location through one attempt: its smooth field as plain lightness beside the same location in the rendering mode the attempt drew, then a block of thirty-two colorings of that field with the chosen one outlined, and last the small render that is judged."><span class="figure-open-mark" aria-hidden="true">↗</span></a>
+      <figure class="figure" data-figure="wallpapers-attempt">
+        <a class="figure-open" href="../explorer/index.html?v=2&amp;m=smooth_mean_angle&amp;x=-0.7894061466838949&amp;y=-0.16437809352996482&amp;w=0.0027914350318908217&amp;p=Forge%20Sweep" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/wallpapers-attempt.jpg" width="1316" height="1336" alt="One location through one attempt: its smooth field as plain lightness beside the same location in the rendering mode the attempt drew, then a block of thirty-two colorings of that field with the chosen one outlined, and last the small render that is judged."><span class="figure-open-mark" aria-hidden="true">↗</span></a>
         <figcaption>One location through one attempt. The field is dumped once and every candidate coloring is a lookup over it; the mode beside it is what the picture will be drawn in, so the palette is chosen on one picture and spent on another. The outlined coloring is the palette judge's pick, and the last panel is the picture the render judge scores.</figcaption>
       </figure>
 
@@ -138,7 +138,7 @@
     rendering is the minority. A partition whose supply runs out leaves its slots empty rather
     than borrowing from a richer one.</p>
 
-      <figure class="figure figure-pending" data-figure="gallery-slots">
+      <figure class="figure figure-pending" data-figure="wallpapers-slots">
         <p class="pending"><span class="pending-label">Figure pending</span>A bar chart with one bar per partition, each bar divided into a smaller share for the smooth rendering and a larger share for the other seventeen modes.</p>
         <figcaption>A gallery of fifty divided into slots. Each bar is one partition's share of the collection, split between the plain smooth rendering and the seventeen other modes; the modes take the larger part of every bar on purpose.</figcaption>
       </figure>
@@ -171,7 +171,7 @@
     that come nearest to it are pairs from different partitions, which the pass keeps apart
     anyway. A sheet of the closest chosen pairs is what that gets checked against, by eye.</p>
 
-      <figure class="figure figure-pending" data-figure="gallery-embedding">
+      <figure class="figure figure-pending" data-figure="wallpapers-embedding">
         <p class="pending"><span class="pending-label">Figure pending</span>A scatter of one partition's admitted locations in two dimensions, with the chosen locations marked and a circle around each showing the radius inside which nothing else may be chosen.</p>
         <figcaption>One partition's admitted locations, projected down to two dimensions from the vector each was embedded at. The marked points are the ones a pass chose, and the circle around each is the radius inside which nothing else may be chosen. The crowded regions are where the walk spent its time rather than where the wallpapers are.</figcaption>
       </figure>
@@ -194,7 +194,7 @@
     at all — but a mode drawn at random and a palette picked once is not the same as looking
     for the picture. The gallery pass is where a location is looked at properly.</p>
 
-      <figure class="figure figure-pending" data-figure="gallery-cluster-attempts">
+      <figure class="figure figure-pending" data-figure="wallpapers-cluster-attempts">
         <p class="pending"><span class="pending-label">Figure pending</span>A grid of small renders: one row per location near the chosen point, each drawn several times under different modes and palettes, every panel labeled with the judge's score and the highest one outlined.</p>
         <figcaption>Every picture one slot paid for. The rows are the locations nearest the point the pass chose; along a row the same location is drawn in several modes and colorings, and the outlined panel is the one that took the slot.</figcaption>
       </figure>
@@ -234,7 +234,7 @@
     sends back: it names a partition where several separate neighborhoods had nothing to give,
     and that is where the next ratings and the next walk should go.</p>
 
-      <figure class="figure figure-pending" data-figure="gallery-floors">
+      <figure class="figure figure-pending" data-figure="wallpapers-floors">
         <p class="pending"><span class="pending-label">Figure pending</span>One partition's candidates of one kind in rank order, with the bar drawn as a line across them, the seated candidates marked, and one slot shown moving to a second neighborhood after its first held nothing above the line.</p>
         <figcaption>One partition's candidates of one kind, best first. The line is that kind's bar, the marked panels took slots, and the slot at the end found nothing above the line in its first neighborhood and was re-seated in another. No slot is filled from below the line.</figcaption>
       </figure>
@@ -260,15 +260,15 @@
     leveling stamp, and the pass that chose it, so any wallpaper can be drawn again from its
     record alone.</p>
 
-      <figure class="figure" data-figure="finishing-release">
-        <a class="figure-open" href="../explorer/index.html?v=2&amp;f=julia5&amp;cx=-0.8582951615064046&amp;cy=0.5903709776459439&amp;x=0.006105658486922464&amp;y=-0.021340431347201615&amp;w=0.03533391932886106&amp;p=amazing-25" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/finishing-release.jpg" width="1316" height="439" alt="A small judged render with one region marked on it, beside that same region taken from the finished wallpaper at four times the width, shown pixel for pixel."><span class="figure-open-mark" aria-hidden="true">↗</span></a>
+      <figure class="figure" data-figure="wallpapers-release">
+        <a class="figure-open" href="../explorer/index.html?v=2&amp;f=julia5&amp;cx=-0.8582951615064046&amp;cy=0.5903709776459439&amp;x=0.006105658486922464&amp;y=-0.021340431347201615&amp;w=0.03533391932886106&amp;p=amazing-25" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/wallpapers-release.jpg" width="1316" height="439" alt="A small judged render with one region marked on it, beside that same region taken from the finished wallpaper at four times the width, shown pixel for pixel."><span class="figure-open-mark" aria-hidden="true">↗</span></a>
         <figcaption>The picture a slot was decided on, and one region of the wallpaper it became. The decision is taken on the small render; the finished picture is drawn again from the location and the recipe, four times as wide and with sixteen samples a pixel, and no judge sees it. The marked region is the one where those extra samples show most.</figcaption>
       </figure>
 
     <p>What the two processes add up to, and what each is trying to achieve, is the
     subject of <a href="full-pipeline.html">full pipeline</a>.</p>
 
-    <!-- Held for the gallery-output round, with the gallery-output figure it belongs to:
+    <!-- Held for the wallpapers-output round, with the wallpapers-output figure it belongs to:
          "The pictures below are one pass's gallery." opens the paragraph above. Both need a
          gallery pass with real wallpapers behind them, which is gallery4: gallery1's
          forty-two were seated against the retired heads' floors, gallery2 ran with no

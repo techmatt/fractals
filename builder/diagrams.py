@@ -513,7 +513,7 @@ def pool_stages(destination: Path) -> tuple[int, int]:
 
 DIAGRAMS = {
     "escape-orbit-race": ("escape-orbit-race.png", orbit_race),
-    "pool-stages": ("pool-stages.png", pool_stages),
+    "wallpapers-stages": ("wallpapers-stages.png", pool_stages),
 }
 
 

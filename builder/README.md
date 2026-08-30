@@ -172,7 +172,7 @@ makes — each one a `claim` and the `source` it was checked against. It is the 
 "who checked this, against what?" asked of a number the article states as settled.
 
 Two figures are an exception, and they are diagrams rather than pictures of a location:
-`escape-orbit-race` and `pool-stages` explain a mechanism, so there is nothing to render
+`escape-orbit-race` and `wallpapers-stages` explain a mechanism, so there is nothing to render
 and nothing outside this repository to read. Those two are `diagrams.DIAGRAMS`, and
 `diagram` draws them from `diagrams.py`, in the stylesheet's own colours, straight into
 `assets/images/figures/`. It is deliberately a separate command from `build` and is not

@@ -131,10 +131,14 @@ keeps the mechanics. **Every apply round ends by distilling that round's general
   session never picks for him, however clearly one panel looks best — the article's claim
   is that a person chose these pictures, and a machine pick standing in for one makes that
   claim quietly false.
-- **A figure's id opens with its page's prefix** — `escape-`, `render-`, `modes-`,
-  `locations-`, `judges-`, `palette-` — so a slug says where it lives before anything
-  looks it up. The prose never uses that slug: a reference from the text is **positional**
-  (*the figure below*), because this site numbers no figures and anchors none.
+- **A figure's id opens with its page's prefix** — `overview-`, `escape-`, `render-`,
+  `modes-`, `locations-`, `judges-`, `palette-`, `wallpapers-` — so a slug says where it
+  lives before anything looks it up. One prefix to a page and one page to a prefix, with
+  the single carve-out that a page hanging off a section shares that section's prefix:
+  `palette-generator-batch` sits on `palettes/make-your-own.html`. The three unwritten
+  sections have no figures and so no prefix yet. The prose never uses that slug: a
+  reference from the text is **positional** (*the figure below*), because this site
+  numbers no figures and anchors none.
 - **Exactly one line of a figure's `provenance` puts the word `colormap` in front of a
   map's name.** That word is what `builder/explorer.py`'s `drawn_in` reads to say which
   maps the explorer owes a gradient to — `builder check`'s `bake` fails on a picture drawn
@@ -144,10 +148,12 @@ keeps the mechanics. **Every apply round ends by distilling that round's general
   writes `colormap` on every line asks the explorer to carry hundreds of gradients so that
   one figure could be opened at a picture it does not even show.
 - **What the explorer's picker offers is a committed record, never a derivation**
-  *(2026-08-25)*. `explorer/palettes.jsonl` names the 110 maps `palettes.js` is baked from
-  and which 77 of them the picker lists; `python -m builder explorer` reads the names from
-  it and the gradients from the library next door, and `check`'s `bake` holds the
-  committed module to being byte for byte what that produces. The bake used to ask the
+  *(2026-08-25)*. `explorer/palettes.jsonl` names every map `palettes.js` is baked from and
+  which of them the picker lists. **77 are offered, and that number is frozen**; the total
+  is the record's to say and is not written down here, because it grows every time a
+  figure lands in a map the roster did not carry. `python -m builder explorer` reads the
+  names from it and the gradients from the library next door, and `check`'s `bake` holds
+  the committed module to being byte for byte what that produces. The bake used to ask the
   library "which of you are curated", and a two-hundred-map drop next door answered
   differently — a rebake nobody ran on purpose would have taken the picker from 77 entries
   to 277. Widening it is an edit to the record.
@@ -185,11 +191,13 @@ keeps the mechanics. **Every apply round ends by distilling that round's general
   with; the wallpapers, most of them dark, want a mat rather than a white void to float
   in. So the dark treatment stays **local to the containers that hold pictures** and
   nothing else on the page goes with it, and there is no dark mode to write a second
-  palette for. The well's five tokens are `site.css`'s `:root`, transcribed into
-  `builder/theme.py` because Pillow cannot read CSS, and `check`'s `theme` check holds
-  the copy to the original — a drawn figure is furniture for the well it sits in, and a
-  restyle that moves `--well` and forgets the figures is a failing check rather than a
-  seam somebody notices in a picture months later.
+  palette for. `site.css`'s `:root` defines six well tokens, and five of them are
+  transcribed into `builder/theme.py` because Pillow cannot read CSS. The sixth is
+  `--well-link`, which stays CSS's alone: it colours the links a well carries and a drawn
+  sheet has none to colour. `check`'s `theme` check holds the five to the original — a
+  drawn figure is furniture for the well it sits in, and a restyle that moves `--well` and
+  forgets the figures is a failing check rather than a seam somebody notices in a picture
+  months later.
 - **American spelling, in everything a reader sees.** Page prose, headings, figure
   captions, alt text, gallery blurbs: *color*, *coloring*, *gray*, *normalize*. The one
   place a British spelling survives is **inside a name** — a palette is recorded exactly

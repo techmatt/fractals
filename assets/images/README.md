@@ -19,7 +19,7 @@ source path is a command-line argument and is never recorded: originals live out
 this repository.
 
 The two figures that are diagrams rather than renders — `escape-orbit-race.png`, an
-APNG, and `pool-stages.png` — are the exception: `python -m builder diagram <id>` draws
+APNG, and `wallpapers-stages.png` — are the exception: `python -m builder diagram <id>` draws
 them here from `builder/diagrams.py`, so there is no original anywhere.
 `overview-pipeline.jpg` is not one of them: it reads as a diagram and is a composed sheet
 with four real renders in it, drawn by a rig under ignored `scratch/`.
