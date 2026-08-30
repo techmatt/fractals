@@ -32,25 +32,36 @@ tree are now the only record of what the explorer does. Where the build departed
 what was originally planned the departure was deliberate, and those decisions are
 recorded here so the reasoning behind them is not lost:
 
-- **"the 76 curated q3 set ONLY"** — the picker offers **77**, and a link may name **110**.
-  The wider set is every map the article's own figures were drawn in, most of them
-  mechanical conversions rather than curated choices: a picture the article publishes has
-  to be openable here, and it does not have to be on the menu.
-- **"full-res computes in background, then ALL palette downloads are instant"** — a
-  download re-iterates, every time. A wallpaper-sized field is not cached and cannot be:
-  the lanes are eight bytes for every sample of every lane, the cache holds four fields,
-  and the download path goes to the trouble of *terminating* its shade worker precisely
-  so that memory comes back. Instant recolour is the screen's, and it is exactly as
-  designed there.
-- **"multithreaded wasm needs cross-origin-isolation headers; GitHub Pages needs a
-  service-worker shim"** — superseded, and no shim exists. Each worker instantiates its
-  own copy of one compiled module and its band is copied out and transferred; nothing is
-  shared, so no COOP, no COEP, and this page is plain files on Pages.
-- **"byte-accuracy NOT required"** — it turned out free, and the tree is held to more than
-  the doc asked: 0 of 3,686,400 pixels differ between a 2560x1440 `ss=4` download and
-  `fractal-engine render` of the same spec.
-- **"Draft-1 scope (mandelbrot smooth only)"** — long since passed: nine families,
-  eighteen modes, every mode parameter the engine's catalog writes down.
+- **The picker's set and the link's set are not the same set.** One set was to serve
+  both — the curated maps, and nothing else. The picker offers **77** of those; a link
+  may name **110**, because baked alongside them are the 33 maps this site's own
+  published pictures were drawn in, most of them mechanical conversions rather than
+  curated choices. A picture the article publishes has to be openable here, and it does
+  not have to be on the menu.
+- **A download re-iterates, every time.** The full-resolution field was to be computed
+  once in the background, after which every palette download came back off it instantly.
+  A wallpaper-sized field is not cached and cannot be: the lanes are eight bytes for
+  every sample of every lane, the cache holds four fields, and the download path goes to
+  the trouble of *terminating* its shade worker precisely so that memory comes back.
+  Instant recolour is the screen's, where a field is a canvas's worth and the cache is
+  the whole point of computing field and colour apart.
+- **Nothing is shared, so no shim was ever needed.** Multithreaded wasm was taken to mean
+  a `SharedArrayBuffer`, which needs cross-origin-isolation headers, which GitHub Pages
+  will not send — so a service-worker shim to install them was planned for. No shim
+  exists. Each worker instantiates its own copy of one compiled module, and its band is
+  copied off that worker's heap and transferred once; nothing crosses a thread boundary
+  that has to be shared, so no COOP, no COEP, and this page is plain files on Pages.
+- **The port is byte-accurate, and was never required to be.** The browser's picture was
+  allowed to differ from the engine's. It does not differ at all, and accuracy came free
+  rather than being bought: it is the same `f64` code over the same inputs, and wasm's
+  `f64` is IEEE-754 with no x87 excess precision to diverge through. **0 of 3,686,400
+  pixels** differ between a 2560x1440 `ss=4` download and `fractal-engine render` of the
+  same spec, and the tree is held to that.
+- **The scope is the whole production roster.** Draft 1 was scoped to one family in one
+  mode — mandelbrot in `smooth` — and that is long since passed: nine families, eighteen
+  modes, every mode parameter the engine's catalog writes down. What the widening cost is
+  *no loop of its own* below: the collapse draft 1 got for free by rendering one family
+  in one mode had to be bought back, first by hand and now from the engine's own table.
 
 ## What is here
 
@@ -754,8 +765,7 @@ with the engine's own reason — folding it would halve the cycle it was drawn t
 ### The controls for the recipe
 
 The seven were link-only until the strip under the picture gained a folded **Shade
-recipe** group, and the design doc had ruled them from the start. What is worth writing
-down is the shape rather than the widgets:
+recipe** group. What is worth writing down is the shape rather than the widgets:
 
 - **A control's value and a link's spelling of it are the same string.** A number box
   holds `0.75` and the link says `gamma=0.75`; a menu holds `soft_knee` beside a box
