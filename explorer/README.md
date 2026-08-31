@@ -492,9 +492,11 @@ deliberately not been made: the readings are this machine on this day, and a thr
 over them would be red on somebody else's.
 
 It is tracked for the half of the job it does do. It started under `scratch/`, which is
-wiped, and a record a wipe can delete is not a record; the four modules moved here and
-`output.mjs` sends every run's numbers to `artifacts/`, which is ignored. Code is
-committed, measurements are not. The browser-driven rig that produced the pool figures
+wiped, and a record a wipe can delete is not a record; three harnesses moved here —
+`kernel.mjs`, `modes.mjs`, `sweep.mjs` — with the two helpers they lean on, and
+`families.mjs` was written here the next day. `engine.mjs` is the wasm loader all four
+call, and `output.mjs` sends every run's numbers to `artifacts/`, which is ignored. Code
+is committed, measurements are not. The browser-driven rig that produced the pool figures
 below stays under `scratch/`: it is a session's worth of driver scripts and probe pages,
 and not even this much.
 
