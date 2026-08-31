@@ -41,7 +41,10 @@ import { CONSTANTS, CURVES, MODES as IDENTITIES } from "./catalog.js";
 import * as shade from "./shade.js";
 import { DEFAULT_PALETTE, PALETTES } from "./palettes.js";
 
+import { familySpecOf } from "./render.js";
+
 import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 
 // Each family's own home view, as `Family::home_view()` gives it and as the page
 // reads it back out of the wasm module at load. Written here as text because that
@@ -49,6 +52,13 @@ import { readFileSync } from "node:fs";
 // is `Extent::frame` evaluated on a measured bounding box; the dynamical planes
 // come home to the whole plane by the engine's stated exception, because a Julia
 // set is a different shape for every `c` and there is nothing to measure.
+//
+// **And held to the module, at the foot of this file.** Written here and read there,
+// this table was for a while the one thing on the page that could go quietly wrong: the
+// canonical spelling of a link omits `x`, `y` and `w` exactly when they are home, so a
+// rebuilt engine that moved a home view would change what every saved link means while
+// every test here still passed — the table fed itself in through `CONTEXT.home` and
+// nothing else asked. The module is instantiated below and the two are compared.
 const HOMES = {
   mandelbrot: ["-0.77", "0", "4.4"],
   multibrot3: ["0", "0", "5.2"],
@@ -520,4 +530,50 @@ test("the contract's roster is the engine's production roster, in the same order
   assert.deepEqual([...MODES].sort(), Object.keys(CURVES).sort());
   for (const mode of Object.keys(MODE_PARAMETERS)) assert.ok(MODES.includes(mode), mode);
   for (const family of FAMILIES) assert.ok(HOMES[family], family);
+});
+
+// ------------------------------------------------- the table, held to the module
+
+/** The committed module, instantiated for `plan` alone. Nothing below renders. */
+const engine = new WebAssembly.Instance(
+  new WebAssembly.Module(readFileSync(fileURLToPath(new URL("./engine.wasm", import.meta.url)))),
+  {},
+).exports;
+
+/** One `plan` call: JSON in, JSON out, through the module's own allocator. */
+function plan(spec) {
+  const raw = new TextEncoder().encode(JSON.stringify(spec));
+  const pointer = engine.alloc(raw.length);
+  new Uint8Array(engine.memory.buffer, pointer, raw.length).set(raw);
+  const out = engine.plan(pointer, raw.length);
+  engine.dealloc(pointer, raw.length);
+  const size = new DataView(engine.memory.buffer).getUint32(out, true);
+  const body = new TextDecoder().decode(new Uint8Array(engine.memory.buffer, out + 4, size));
+  engine.dealloc(out, size + 4);
+  return JSON.parse(body);
+}
+
+test("every home view above is the one the module answers with", () => {
+  // The whole point of the table, and the one claim in this file that reaches outside
+  // it. `HOMES` is fed to every other test through `CONTEXT.home`, so every other test
+  // would still pass if the engine moved a family home — and what would move with it is
+  // the meaning of every link ever saved, because a canonical string omits a coordinate
+  // exactly when it is home. So the table is compared with `Family::home_view()` here.
+  //
+  // Compared as **text**, through `coordinateOf`, because text is what the contract
+  // handles and what a link carries: two doubles that agree to the bit still disagree
+  // about how they are spelled, and the spelling is the thing a permalink promises.
+  //
+  // Every family in the roster, with no exception written by name. A Julia plane comes
+  // home to the whole plane rather than to a measured bounding box, but the module says
+  // so itself in the same field as everything else — there is no flag on the answer to
+  // read and nothing here needs to know which families are which.
+  for (const family of FAMILIES) {
+    const answer = plan({ schema: 1, family: familySpecOf(family, constantsOf(family)) });
+    assert.ok(answer.ok, `${family}: ${answer.why}`);
+    const spelled = [answer.home.x, answer.home.y, answer.home.w].map(
+      (value) => coordinateOf(value).text,
+    );
+    assert.deepEqual(spelled, HOMES[family], family);
+  }
 });

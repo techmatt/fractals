@@ -23,6 +23,11 @@ did on a machine without one was raise, and every check after it went unrun.
   failure where it is not, because CI clones this repository alone. A `held` row is the
   one row that is registered and deliberately not on a page, and it says what it is
   held on.
+- **landing** — every made figure's page carries a block a redraw could land on. `figures
+  --replace` and the four drawing commands find the block they are about to swap by
+  deriving it, so the derivation is load-bearing in a way **figures** does not reach:
+  `landing_block` once left the explorer link out and refused a redraw of nearly every
+  render here while every other check stayed green.
 - **contents** — every hand-written page carries the contents rail the builder derives,
   every prose heading carries the id its own words give it, and the front page's contents
   list marks the same sections done that `sections.jsonl` calls written.

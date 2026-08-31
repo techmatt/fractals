@@ -376,13 +376,15 @@ is the only reason a dot's picture and a dot's link agree.
 After touching placed prose, `python -m builder prose <page>` as well — see **Where prose
 comes from** above for what it holds together and why one edit has several sites.
 
-`builder check` is read-only. It resolves every internal link, refuses root-absolute
-and bare-directory hrefs, regenerates the gallery HTML and compares it byte for byte
-with what is committed, holds every figure block to its registry row, holds every made
-figure to being a block a redraw could land on, rebakes the explorer's two generated
-modules and compares them with what is committed, and holds every page's contents rail
-and prose heading ids to what the builder derives. It also prints one
-note — never a failure — about the committed wasm module, described in
+`builder check` is read-only, and it runs fourteen named checks. It resolves every
+internal link, refuses root-absolute and bare-directory hrefs, regenerates the gallery
+HTML and compares it byte for byte with what is committed, holds every figure block to
+its registry row, holds every made figure to being a block a redraw could land on —
+that is `landing`, whose subject is the derivation rather than the page, and the reason
+it is named here is that a redraw is refused by exactly this going wrong — rebakes the
+explorer's two generated modules and compares them with what is committed, and holds
+every page's contents rail and prose heading ids to what the builder derives. It also
+prints one note — never a failure — about the committed wasm module, described in
 `explorer/README.md`. The same commands run in CI
 (`.github/workflows/checks.yml`), which is a check and not a deploy dependency.
 

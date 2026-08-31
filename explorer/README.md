@@ -480,15 +480,23 @@ before the manifest's third `engine_changes` line — describes a module this re
 longer serves. Re-measure rather than quote: the four harnesses below are here so that
 there is always something to re-measure with.
 
-**This harness is tracked, and it is the regression guard for the specialization
-cascade** — `iterate::run` inlined into a call site that can see its family and its
-channel set is worth 4x on the field, and nothing else in this repository would notice if
-a rebuild lost it. It started
-under `scratch/`, which is wiped, and a guard that a wipe can delete is not one; the four
-modules moved here and `output.mjs` sends every run's numbers to `artifacts/`, which is
-ignored. Code is committed, measurements are not — a number here is this machine on this
-day. The browser-driven rig that produced the pool figures below stays under `scratch/`:
-it is a session's worth of driver scripts and probe pages, not a guard.
+**This harness is tracked, and it is a re-measure harness rather than a guard.** Nothing
+in it asserts anything: no script carries a threshold, no script exits non-zero, and
+nothing runs them — `bench/` is named in no check and in no CI step. What it is, is the
+measured record below plus the only way in this repository to take that reading again.
+So the specialization cascade — `iterate::run` inlined into a call site that can see its
+family and its channel set, worth 4x on the field — is not *guarded* here. It is
+**recorded** here, and a rebuild that lost it would go unnoticed until somebody chose to
+re-measure. Wiring an assertion to these numbers is the obvious next move and has
+deliberately not been made: the readings are this machine on this day, and a threshold
+over them would be red on somebody else's.
+
+It is tracked for the half of the job it does do. It started under `scratch/`, which is
+wiped, and a record a wipe can delete is not a record; the four modules moved here and
+`output.mjs` sends every run's numbers to `artifacts/`, which is ignored. Code is
+committed, measurements are not. The browser-driven rig that produced the pool figures
+below stays under `scratch/`: it is a session's worth of driver scripts and probe pages,
+and not even this much.
 
 | frame | cap | draft 1 | now |
 | --- | --- | --- | --- |
