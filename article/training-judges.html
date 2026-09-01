@@ -87,8 +87,8 @@
     what the geometry can become — and answers for the geometry, not for either picture. A
     render rating asks whether <em>this picture</em> is worth keeping, and is made from exactly
     the picture that was rendered: its mode, its settings, its palette. The corpus holds ratings
-    for nearly twelve thousand locations, about five thousand smooth renders, and about three
-    thousand renders in the other modes.</p>
+    for more than twelve thousand locations, about six thousand smooth renders, and about
+    five thousand renders in the other modes.</p>
 
       <figure class="figure" data-figure="judges-rating-views">
         <a class="figure-open" href="../explorer/index.html?v=2&amp;x=-0.0777245787904019&amp;y=-0.6514053976217481&amp;w=2.246912508617025e-05&amp;p=twilight_shifted" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/judges-rating-views.jpg" width="1316" height="443" alt="One location drawn twice side by side: the same frame in the neutral palette the judge is shown, and in a vivid one."><span class="figure-open-mark" aria-hidden="true">↗</span></a>
@@ -122,8 +122,8 @@
     the network's input. Nothing is judged at wallpaper size; a full-resolution render is
     what a passing score buys. One judge covers the whole catalog
     <a href="rendering-modes.html">rendering modes</a> described, the plain smooth
-    rendering and the seventeen other modes alike: the two kinds are rated separately and
-    keep separate bars downstream, but the judging itself is one network, trained on both
+    rendering and every other mode alike: the two kinds are rated separately and keep
+    separate bars downstream, but the judging itself is one network, trained on both
     collections of ratings at once. Scoring the two kinds with separate networks was
     explored as well; a single network performed as well or better despite the visual
     differences between the kinds, so one judge does both.</p>
@@ -132,18 +132,19 @@
 
     <p>The network is small on purpose. Each judge is a
     <a href="https://arxiv.org/abs/2404.10518">MobileNetV4</a> convolutional network
-    pretrained on ImageNet — about eight million parameters for the location judge, a
-    variant a third that size for the render judge — with its final layer replaced and the
-    whole network then fine-tuned on the ratings. This is standard transfer learning, and
-    its mechanics and its engineering specifics are covered thoroughly elsewhere — the
+    pretrained on ImageNet — on the order of ten million parameters for the location
+    judge, a variant less than half that size for the render judge — with its final layer
+    replaced and the whole network then fine-tuned on the ratings. This is standard
+    transfer learning, and its mechanics and its engineering specifics are covered
+    thoroughly elsewhere — the
     <a href="https://pytorch.org/tutorials/beginner/transfer_learning_tutorial.html">PyTorch
     transfer-learning tutorial</a> is one good place to start. Nothing in the recipe is
     unusual. Larger architectures were tried, including vision transformers; none beat
     MobileNetV4 by more than noise, and it was the fastest and smallest, so it stayed. The
     size is a finding, not a convenience: with a few thousand ratings behind each
     question, capacity works against a judge. A medium-sized variant of the same network,
-    trained the same way on the same ratings, was reliably worse on the seventeen modes —
-    the kind with the fewest ratings — and the deficit vanished when the backbone shrank.
+    trained the same way on the same ratings, was reliably worse on the many-mode kind —
+    the one with the fewest ratings — and the deficit vanished when the backbone shrank.
     At this scale of data the real fight is overfitting, and the smallest network that can
     still see composition and framing wins it.</p>
 
@@ -234,16 +235,17 @@
     other's do, so the judge's output is never pooled across them. Such a bar is fitted from
     that kind's own ratings — the lowest score whose agreement with a rating of good reaches
     even odds, found by fitting a monotone curve through the rated pictures and rounding up,
-    because a bar is a floor. One of the two is in use: it decides which of a run's own output
-    is worth keeping. The matching bar for the plain smooth rendering is measured and recorded
-    rather than used. Neither bar removes where the gallery is chosen: eligibility there is a
-    flat one half, and a slot with no picture over it is left unfilled rather than padded
-    (<a href="gallery-curation.html">gallery curation</a>). When pictures are ranked for
-    selection, probabilities are never compared across kinds or partitions: each picture is
-    ranked within its own partition and kind, and the lists are interleaved by position —
-    every partition's best, then every second-best. Each bar is stamped with the exact
-    judge it was measured against, and a bar is never applied to a judge it was not
-    measured on.</p>
+    so the bar errs toward refusing. One of the two is in use: it decides which of a run's own
+    output is worth keeping. The matching bar for the plain smooth rendering is measured and
+    recorded rather than used. Neither bar removes where the gallery is chosen: eligibility
+    there is a flat one half, and a slot with no picture over it is left unfilled rather than
+    padded (<a href="gallery-curation.html">gallery curation</a>). When pictures are ranked
+    for selection, scores are never compared across kinds, and the ranking reads a fitted
+    combination of several score columns rather than any single probability; the choosing
+    itself — what makes a gallery out of a pool — is
+    <a href="gallery-curation.html">gallery curation</a>'s subject. Each bar is stamped with
+    the exact judge it was measured against, and a bar is never applied to a judge it was
+    not measured on.</p>
 
     <h2 id="generalization-and-its-limits">Generalization and its limits</h2>
 
