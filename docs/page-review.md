@@ -182,7 +182,7 @@ editing a cell by hand.
 | `overview.html` | yes | `Overview v1.md` | none | 2 placed | — |
 | `escape-time-fractals.html` | yes | none — the HTML is its own master | none | 7 placed | — |
 | `rendering-fundamentals.html` | yes | none — the HTML is its own master | none | 6 placed | — |
-| `rendering-modes.html` | yes | none — the HTML is its own master | none | 6 placed | — |
+| `rendering-modes.html` | yes | `Rendering modes v1.md` | none | 6 placed | — |
 | `finding-good-locations.html` | yes | `Finding good locations v4.md` | applied 2026-08-21 | 12 placed | — |
 | `training-judges.html` | yes | `Training judges v4.md` | applied 2026-08-21 | 3 placed | — |
 | `color-palettes.html` | yes | `Color palettes v4.md` | none | 7 placed | — |

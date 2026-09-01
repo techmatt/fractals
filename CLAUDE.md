@@ -82,7 +82,11 @@ and not the others is drift that the next review round refuses to work through.
 `python -m builder prose <page>` is the verifier — it reduces both sides the same way,
 tags and markdown markers out and whitespace collapsed, and names the first word they
 disagree on. **A verbatim comparison in this repository always strips tags and collapses
-whitespace**; comparing raw bytes across the HTML/markdown boundary means nothing.
+whitespace**; comparing raw bytes across the HTML/markdown boundary means nothing. A
+table is the one structure with a rule of its own: a master spells it
+`[TABLE: a | b | c]` / rows / `[/TABLE]`, the head comes out on both sides because a
+`<th>`'s words are the page's own, and the cells compare with a space between them so
+that a wrong number cannot hide inside a right one.
 
 ## Reviewing a page
 

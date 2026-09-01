@@ -44,6 +44,8 @@ APPLIED_DIR_NAME = "applied"
 _PROSE_SECTION = re.compile(r'<section class="prose">(.*?)\n  </section>', re.S)
 _FIGURE = re.compile(r"<figure .*?</figure>", re.S)
 _COMMENT = re.compile(r"<!--.*?-->", re.S)
+_THEAD = re.compile(r"<thead>.*?</thead>", re.S)
+_CELL = re.compile(r"</t[dh]>")
 _TAG = re.compile(r"<[^>]*>")
 _STANDFIRST = re.compile(r'<p class="standfirst">(.*?)</p>', re.S)
 _TITLE = re.compile(r"<h1[^>]*>(.*?)</h1>", re.S)
@@ -51,6 +53,7 @@ _TITLE = re.compile(r"<h1[^>]*>(.*?)</h1>", re.S)
 _MASTER_TITLE = re.compile(r"^# .*?\n")
 _MASTER_EDITORIAL = re.compile(r"<editorial,.*?>\n", re.S)
 _MASTER_FIGURE = re.compile(r"^\[FIGURE:.*?\]$", re.M)
+_MASTER_TABLE = re.compile(r"^\[TABLE:[^\]]*\]\n(.*?)^\[/TABLE\]$", re.S | re.M)
 _MASTER_PENDING = re.compile(r"\[PENDING —.*?\]", re.S)
 _MARKDOWN_LINK = re.compile(r"\[([^\]]+)\]\([^)]*\)")
 _WIKI_LINK = re.compile(r"\[([^\]]+)\]")
@@ -171,18 +174,33 @@ def words_of_page(page_html: str) -> str:
     Figures are excluded because captions are written at placement rather than carried
     from the master, and comments because a page carries the master's pending notes on
     purpose.
+
+    A table's **body** is prose and is compared; its header row is not. A master spells a
+    table `[TABLE: a | b | c]`, rows, `[/TABLE]` — the marker line names the columns the
+    way `[FIGURE: id]` names a slug, and the words a `<th>` actually carries are the
+    page's own, chosen at placement. So the head comes out on both sides and the cells
+    are compared with a space between them, which is what a cell boundary is worth: `<td>`
+    tags vanish with every other tag, and without this `314` and `708` would reduce to
+    `314708` and a wrong number could hide inside a right one.
     """
     body = prose_html(page_html) or ""
     body = _FIGURE.sub("", body)
     body = _COMMENT.sub("", body)
+    body = _THEAD.sub("", body)
+    body = _CELL.sub(" ", body)
     return " ".join(html_module.unescape(_TAG.sub("", body)).split())
 
 
 def words_of_master(text: str, divergences: tuple[Divergence, ...] = ()) -> str:
-    """The master reduced the same way: title, editorial block and markers all out."""
+    """The master reduced the same way: title, editorial block and markers all out.
+
+    A `[TABLE: ...]` block keeps its rows and loses its two marker lines and its column
+    separators, so it lands on the same words the page's `<tbody>` does.
+    """
     text = _MASTER_TITLE.sub("", text, count=1)
     text = _MASTER_EDITORIAL.sub("", text)
     text = _MASTER_FIGURE.sub("", text)
+    text = _MASTER_TABLE.sub(lambda found: found.group(1).replace("|", " "), text)
     text = _MASTER_PENDING.sub("", text)
     for divergence in divergences:
         text = text.replace(divergence.master, divergence.page)
