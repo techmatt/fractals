@@ -154,7 +154,7 @@
     yes-or-no questions, "at least a 2?", "at least a 3?", "at least a 4?", each asked only of
     pictures that already passed the one before, so the three answers can never contradict each
     other. Multiplying them gives the two probabilities the pipeline acts on: P(≥3), the chance
-    a picture would be rated at least good, which is what the walk's floors on the previous page
+    a picture would be rated at least good, which is what the walk's bars on the previous page
     are thresholds on, and P(≥4), the chance it would be rated exceptional.</p>
 
     <p>The rest of the recipe is ordinary: forty epochs, a cosine learning-rate schedule,
@@ -211,8 +211,8 @@
     comes from matters, because a judge's numbers shift every time it is retrained.</p>
 
     <p>The location judge has three thresholds: two on P(≥3), and one on P(≥4). Above the
-    <i>admission floor</i> a frame is recorded as a find; between the <i>expansion floor</i> and
-    the admission floor it may be explored through but is not a find; and above a separate
+    <i>admission bar</i> a frame is recorded as a find; between the <i>expansion bar</i> and
+    the admission bar it may be explored through but is not a find; and above a separate
     <i>great cut</i> — the one read on P(≥4) — a find is counted as exceptional when the supply
     is balanced across <i>partitions</i>, the buckets the project keeps its books in: one per
     family at one degree, with a parameter plane counted apart from its dynamical twin
@@ -220,7 +220,7 @@
 
       <figure class="figure" data-figure="judges-score-to-decision">
         <a class="figure-open" href="../explorer/index.html?v=2&amp;f=julia3&amp;cx=-0.31883391428477204&amp;cy=0.6947471708446521&amp;x=0.0&amp;y=0.0&amp;w=0.5630695633670507&amp;p=twilight_shifted" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/judges-score-to-decision.jpg" width="1316" height="286" alt="Four frames from one fractal family, in score order, each labeled with the decision its score buys: refused, expandable, a find, and an exceptional find."><span class="figure-open-mark" aria-hidden="true">↗</span></a>
-        <figcaption>One family, one frame per outcome the location judge's score decides. Below the expansion floor the frame is refused; between the two floors the walk may explore through it but records nothing; above the admission floor it is booked as a find; above the great cut it counts as exceptional when supply is balanced.</figcaption>
+        <figcaption>One family, one frame per outcome the location judge's score decides. Below the expansion bar the frame is refused; between the two bars the walk may explore through it but records nothing; above the admission bar it is booked as a find; above the great cut it counts as exceptional when supply is balanced.</figcaption>
       </figure>
 
     <p>Each was set once, and after every retrain the three are <i>restated by volume</i>: over
@@ -231,18 +231,18 @@
 
     <p>A score is only meaningful within its own kind. The two kinds are rated separately,
     and the same number can sit above what one kind's ratings support and below what the
-    other's do, so the judge's output is never pooled across them. A floor fitted this way
-    — the lowest score whose agreement with a rating of good reaches even odds, rounded up,
-    because a floor is a floor — is therefore fitted per kind. One of them is in use: it
-    decides which of a run's own output is worth keeping. The matching floor for the plain
-    smooth rendering is measured and recorded rather than used. Neither floor removes where
-    the gallery is chosen: eligibility there is a flat one half, and a slot with no picture
-    over it is left unfilled rather than padded
+    other's do, so the judge's output is never pooled across them. Such a bar is fitted from
+    that kind's own ratings — the lowest score whose agreement with a rating of good reaches
+    even odds, found by fitting a monotone curve through the rated pictures and rounding up,
+    because a bar is a floor. One of the two is in use: it decides which of a run's own output
+    is worth keeping. The matching bar for the plain smooth rendering is measured and recorded
+    rather than used. Neither bar removes where the gallery is chosen: eligibility there is a
+    flat one half, and a slot with no picture over it is left unfilled rather than padded
     (<a href="gallery-curation.html">gallery curation</a>). When pictures are ranked for
     selection, probabilities are never compared across kinds or partitions: each picture is
     ranked within its own partition and kind, and the lists are interleaved by position —
-    every partition's best, then every second-best. Each floor is stamped with the exact
-    judge it was measured against, and a floor is never applied to a judge it was not
+    every partition's best, then every second-best. Each bar is stamped with the exact
+    judge it was measured against, and a bar is never applied to a judge it was not
     measured on.</p>
 
     <h2 id="generalization-and-its-limits">Generalization and its limits</h2>
