@@ -44,8 +44,10 @@
 {"schema": 1, "kind": "link", "id": "figure:palette-generator-batch", "no_link": "drawn", "why": "a drawn diagram or chart, with no engine render behind it to reopen"}
 {"schema": 1, "kind": "link", "id": "figure:wallpapers-stages", "no_link": "drawn", "why": "a drawn diagram or chart, with no engine render behind it to reopen"}
 {"schema": 1, "kind": "link", "id": "figure:wallpapers-attempt", "link": "v=2&m=smooth_mean_angle&x=-0.7894061466838949&y=-0.16437809352996482&w=0.0027914350318908217&p=Forge%20Sweep", "from": "panel 1"}
-{"schema": 1, "kind": "link", "id": "figure:wallpapers-slots", "no_link": "incomplete_provenance", "why": "the picture is not made yet"}
-{"schema": 1, "kind": "link", "id": "figure:wallpapers-embedding", "no_link": "incomplete_provenance", "why": "the picture is not made yet"}
-{"schema": 1, "kind": "link", "id": "figure:wallpapers-cluster-attempts", "no_link": "incomplete_provenance", "why": "the picture is not made yet"}
-{"schema": 1, "kind": "link", "id": "figure:wallpapers-floors", "no_link": "incomplete_provenance", "why": "the picture is not made yet"}
-{"schema": 1, "kind": "link", "id": "figure:wallpapers-release", "link": "v=2&f=julia5&cx=-0.8582951615064046&cy=0.5903709776459439&x=0.006105658486922464&y=-0.021340431347201615&w=0.03533391932886106&p=amazing-25", "from": "panel 1"}
+{"schema": 1, "kind": "link", "id": "figure:wallpapers-mine", "no_link": "incomplete_provenance", "why": "the picture is not made yet"}
+{"schema": 1, "kind": "link", "id": "figure:wallpapers-allocation", "no_link": "incomplete_provenance", "why": "the picture is not made yet"}
+{"schema": 1, "kind": "link", "id": "figure:gallery-pool", "no_link": "incomplete_provenance", "why": "the picture is not made yet"}
+{"schema": 1, "kind": "link", "id": "figure:gallery-allowance", "no_link": "incomplete_provenance", "why": "the picture is not made yet"}
+{"schema": 1, "kind": "link", "id": "figure:gallery-twins", "no_link": "incomplete_provenance", "why": "the picture is not made yet"}
+{"schema": 1, "kind": "link", "id": "figure:gallery-floors", "no_link": "incomplete_provenance", "why": "the picture is not made yet"}
+{"schema": 1, "kind": "link", "id": "figure:gallery-release", "link": "v=2&f=julia5&cx=-0.8582951615064046&cy=0.5903709776459439&x=0.006105658486922464&y=-0.021340431347201615&w=0.03533391932886106&p=amazing-25", "from": "panel 1"}

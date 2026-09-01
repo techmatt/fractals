@@ -27,7 +27,20 @@
     <li><a href="training-judges.html">Training judges</a> <span class="done" role="img" aria-label="written">✓</span></li>
     <li><a href="color-palettes.html">Color palettes</a> <span class="done" role="img" aria-label="written">✓</span></li>
     <li><a href="finding-good-wallpapers.html">Finding good wallpapers</a> <span class="done" role="img" aria-label="written">✓</span></li>
-    <li class="rail-current"><a href="gallery-curation.html" aria-current="page">Gallery curation</a></li>
+    <li class="rail-current"><a href="gallery-curation.html" aria-current="page">Gallery curation</a> <span class="done" role="img" aria-label="written">✓</span>
+      <ol class="rail-headings">
+        <li><a href="#what-is-eligible">What is eligible</a></li>
+        <li><a href="#two-pictures-of-the-same-place">Two pictures of the same place</a></li>
+        <li><a href="#how-much-of-a-collection-one-color-may-take">How much of a collection one color may take</a></li>
+        <li><a href="#pictures-that-read-as-one-wallpaper">Pictures that read as one wallpaper</a></li>
+        <li><a href="#asking-for-what-would-otherwise-not-be-there">Asking for what would otherwise not be there</a></li>
+        <li><a href="#what-the-pass-is-trying-to-do">What the pass is trying to do</a></li>
+        <li><a href="#building-the-set">Building the set</a></li>
+        <li><a href="#what-the-pass-does-not-decide">What the pass does not decide</a></li>
+        <li><a href="#what-comes-up-short">What comes up short</a></li>
+        <li><a href="#rendering-the-gallery">Rendering the gallery</a></li>
+      </ol>
+    </li>
     <li><a href="full-pipeline.html">Full pipeline</a></li>
     <li><a href="fractal-atlases.html">Fractal atlases</a></li>
     <li><a href="deep-zoom.html">Deep zoom</a></li>
@@ -48,16 +61,212 @@
 
 <main>
   <section class="prose">
-    <p>Gallery curation is the third part of the pipeline. Out of the pool of candidate
-    wallpapers that <a href="finding-good-wallpapers.html">finding good wallpapers</a>
-    builds, it chooses a gallery of any size — for quality first, and then under
-    constraints on the set as a whole: no near-duplicates of one view, no single family of
-    color crowding out the rest, and every rendering mode represented. This section is not
-    written yet.</p>
+    <p><a href="finding-good-wallpapers.html">Finding good wallpapers</a> ends with a pool:
+    every judged picture every mine has made, accumulated across all of them, and growing. A
+    pool is not a gallery. A gallery is a fixed number of wallpapers chosen to be looked at
+    together, and almost everything that makes a set of wallpapers good — that it is not the
+    same picture eight times, that it is not all blue, that it does not spend half its slots
+    on one corner of one fractal — is a property of the set and of no picture in it. So
+    curation is a single pass over the whole pool that chooses the whole set at once. Each
+    place in the finished gallery is a <i>seat</i>, and a gallery of a hundred has a hundred
+    seats to fill.</p>
 
-    <p><em>Not written yet.</em> This page holds the section's slug, which is a permanent
-    URL. The code it describes is in
-    <a href="https://github.com/techmatt/fractal-wallpapers">fractal-wallpapers</a>.</p>
+      <figure class="figure figure-pending" data-figure="gallery-pool">
+        <p class="pending"><span class="pending-label">Figure pending</span>Three bars with a count under each: every candidate in the ledger, the candidates above their own mode's bar, and what is left after near-identical locations are collapsed.</p>
+        <figcaption>What curation is choosing from. Every candidate any mine has made, then those above their own mode's bar, then what survives the collapse of near-identical locations. Only the last of the three is the pool a gallery is seated out of.</figcaption>
+      </figure>
+
+    <h2 id="what-is-eligible">What is eligible</h2>
+
+    <p>Not every judged picture is a candidate for a seat. Each rendering mode has its own
+    bar, read off ratings the way <a href="training-judges.html">training judges</a> described
+    — the score above which a picture had been rated at least good more often than not — and a
+    picture below its own mode's bar is not eligible, however the collection is doing
+    elsewhere. The bars are per mode because the modes are not equally easy to score and a
+    single number across all of them would quietly retire the harder ones. A mode with too few
+    rated locations to place a bar of its own falls back to the gentler of the two thresholds
+    rather than being locked out.</p>
+
+    <p>That is the only quality test in the whole pass. Curation never re-scores anything and
+    never lowers a bar to fill a seat; the pool is defined by the bars, and everything after
+    this is about the shape of the set.</p>
+
+    <h2 id="two-pictures-of-the-same-place">Two pictures of the same place</h2>
+
+    <p>Two locations can be nearby frames of one spiral, and nothing in their coordinates says
+    so. To tell, every admitted location is rendered once, small, in one fixed neutral palette
+    and passed through <a href="https://arxiv.org/abs/2304.07193">DINOv2</a> — a vision
+    network trained without labels, which turns a picture into a vector positioned so that
+    visually similar images land near one another. Two locations closer than a small fixed
+    distance in that space are the same place as far as the gallery is concerned, and only one
+    of them survives into the pool. On the current pool that collapses close to a fifth of the
+    locations.</p>
+
+    <p>A second rule then holds for the whole pass: <em>one wallpaper per location</em>. A
+    location that has produced four wonderful pictures in four different modes contributes
+    exactly one of them, and which one is decided by everything else the set needs.</p>
+
+    <h2 id="how-much-of-a-collection-one-color-may-take">How much of a collection one color may take</h2>
+
+    <p><a href="color-palettes.html">Color palettes</a> laid out the fifty-two named colors,
+    which group into twelve hue families. Curation reads, for each finished picture, which of
+    those colors it is actually <em>dominant</em> in — measured off the picture rather than
+    off its palette, since a map only colors what the fractal's own values reach — and a
+    picture may be dominant in two colors or in none.</p>
+
+    <p>Each color cell then gets an <i>allowance</i>: roughly twice its even share of the
+    gallery, so that a color can be over-represented but not by much, and the same rule one
+    level up for hue families. The rounding is generous on purpose. An allowance is a ceiling
+    and never a quota — nothing is obliged to reach it, and a color the pool cannot supply
+    simply does not appear.</p>
+
+    <p>One more count guards against a subtler repetition. Near-duplicate palettes in the
+    library are grouped, and a group may take only about one seat in every forty. Two
+    wallpapers drawn through two maps that differ only in a shade are two wallpapers a viewer
+    will read as one idea.</p>
+
+      <figure class="figure figure-pending" data-figure="gallery-allowance">
+        <p class="pending"><span class="pending-label">Figure pending</span>A column chart with one column per dominant color cell, each column stacked from the gallery's seats, and a line drawn across every column at that cell's allowance; a few columns reach the line and most fall well below it.</p>
+        <figcaption>One gallery's seats by the color each picture is dominant in, against the allowance each color is given. An allowance is a ceiling and never a quota, and the columns that stop well short are colors the pool does not supply.</figcaption>
+      </figure>
+
+    <h2 id="pictures-that-read-as-one-wallpaper">Pictures that read as one wallpaper</h2>
+
+    <p>Color allowances are about the collection's balance; they say nothing about two
+    particular pictures looking alike. That is a separate test, and it is the only rule in the
+    pass that opens a picture rather than reading a number off a record.</p>
+
+    <p>Each finished picture is reduced to the distribution of its colors: a few thousand
+    pixels converted into a perceptual color space, with the two color axes weighted several
+    times more heavily than lightness, since a viewer forgives a difference in brightness far
+    more readily than a difference in hue. Two such distributions are compared by projecting
+    both onto a large set of directions and measuring, along each, how far one would have to
+    move to become the other. No picture is seated if it is closer than a fixed threshold to
+    one already seated. Most pairs are settled by a cheap bound computed from a fraction of
+    the data; only the pairs that bound cannot separate are compared in full.</p>
+
+      <figure class="figure figure-pending" data-figure="gallery-twins">
+        <p class="pending"><span class="pending-label">Figure pending</span>Three pairs of finished wallpapers side by side, each pair labeled with the distance between them: the first pair refused as near-duplicates, the second admitted, and the third two obviously different pictures.</p>
+        <figcaption>Three pairs at increasing distance under the twin measure. The first sits under the threshold and is refused; the second is just the far side of it and is seated; the third is what two plainly different pictures measure.</figcaption>
+      </figure>
+
+    <h2 id="asking-for-what-would-otherwise-not-be-there">Asking for what would otherwise not be there</h2>
+
+    <p>Left to itself, a selection that maximizes quality picks whatever the pool happens to
+    be richest in, and the modes that are harder to score well fall out of the collection
+    entirely. So each mode carries a <i>floor</i>: a number of seats the gallery should hold
+    of that mode if the pool can supply them. A mode the project rates highly is floored at
+    twice one it rates ordinarily, and the floors deliberately sum to only half the seats they
+    are dividing — the point is to guarantee a presence, not to dictate the whole
+    composition.</p>
+
+    <p>A floor is not a ceiling in the other direction, and it never overrides the rules above
+    it. Where a mode's floor collides with a color allowance or a palette group's cap, the
+    ceiling wins and the floor goes unfilled and is recorded as such.</p>
+
+    <h2 id="what-the-pass-is-trying-to-do">What the pass is trying to do</h2>
+
+    <p>The pass has four goals in strict order, and a later one never buys an earlier one
+    back:</p>
+
+    <ol>
+      <li>fill the seats;</li>
+      <li>come as close as possible to every floor;</li>
+      <li>make the <em>worst</em> picture in the gallery as good as it can be;</li>
+      <li>and only then, make the gallery as good as it can be on the whole.</li>
+    </ol>
+
+    <p>The third goal is the one worth dwelling on. A gallery is looked at one wallpaper at a
+    time, so its weakest member is a fairer description of it than its average, and optimizing
+    the average would happily trade a mediocre picture for a wonderful one and a bad one.
+    Ordering the floors above the worst picture, in turn, is a judgment I made rather than a
+    fact about galleries: I would rather see a fair example of a mode I like than a slightly
+    better picture in a mode already well represented.</p>
+
+    <p>Nothing is ever padded. If the pool cannot fill a floor, or cannot fill the gallery,
+    the shortfall is recorded and the seat stays empty rather than being filled by something
+    below its bar.</p>
+
+    <h2 id="building-the-set">Building the set</h2>
+
+    <p>The gallery is built rather than searched exhaustively, because the pool is large and
+    the rules interact.</p>
+
+    <p>It starts greedily. Anything the gallery is obliged to hold — the mode floors, and any
+    color a particular gallery has been asked for — is seated first, scarcest first: a demand
+    that only three locations in the whole pool can satisfy has to be spent before those three
+    locations are taken for something else. What remains is filled by walking the eligible
+    pictures in rank order and seating each one the rules allow.</p>
+
+    <p>Then the set is improved by <i>swapping</i>: take one seated picture out, put one
+    unseated picture in, and keep the exchange only if it strictly improves the goals above,
+    in their order. Swaps run until a full pass over the gallery finds no exchange worth
+    making. The method is usable at every point along the way — there is a complete, valid
+    gallery from the moment the greedy pass finishes, and stopping early costs quality rather
+    than producing nothing.</p>
+
+    <h2 id="what-the-pass-does-not-decide">What the pass does not decide</h2>
+
+    <p>It is worth being plain about what is <em>not</em> constrained here. Nothing in the
+    selection reads which fractal family or which parameter plane a picture came from, or
+    which minibrot the location was found near, and nothing asks whether the finished gallery
+    struck a particular balance between the plain smooth rendering and the other modes. Those
+    things do come out reasonably mixed, but they come out that way because the pool is mixed
+    and because the rules above — one wallpaper per location, near-duplicates refused, color
+    spread — push hard against concentration, not because anything checks them.</p>
+
+    <p>That is a deliberate position rather than an oversight, and it is provisional.
+    Enforcing a mix directly is easy; knowing what mix is worth enforcing is not, and a
+    constraint added before there is evidence for it would lock in a guess. So the plan is to
+    keep mining, watch what emerges across families, planes, minibrots, modes and colors, and
+    add an explicit rule for any axis where the balance does not hold up on its own.</p>
+
+    <h2 id="what-comes-up-short">What comes up short</h2>
+
+    <p>A gallery of a hundred and fifty fills today. A gallery of a thousand does not: the
+    rules above refuse what is left of the pool well before the seats run out, and the demands
+    that go unfilled are all mode floors.</p>
+
+    <p>This is the most useful thing the pass produces. For every unfilled floor it records
+    what was available, which rule refused the pictures that were, and which locations could
+    have fed it — so the answer to "what should the next mine look for" is a readout rather
+    than a guess, and the mining allocation in <a href="finding-good-wallpapers.html">finding
+    good wallpapers</a> is priced against exactly this. A shortfall is not a failure of the
+    selection; it is the collection saying which ground has not been walked yet.</p>
+
+      <figure class="figure figure-pending" data-figure="gallery-floors">
+        <p class="pending"><span class="pending-label">Figure pending</span>Two grouped bar charts, one per gallery size, with one pair of bars per rendering mode: the seats that mode's floor asks for, and the seats the gallery actually gave it. Every mode meets its floor at the smaller size and several fall short at the larger.</p>
+        <figcaption>Every mode's floor against what the gallery could seat, at two sizes. The smaller gallery meets every floor; the larger runs several modes short, and that shortfall is what says where the next mining should go.</figcaption>
+      </figure>
+
+    <h2 id="rendering-the-gallery">Rendering the gallery</h2>
+
+    <p>A seated picture is not the wallpaper. What the judges scored is a small render, and
+    every wallpaper the gallery ships is drawn again from its record alone — the location, the
+    mode and its settings, the palette, the geometry — at full size. Nothing from the small
+    render is reused, and no judge sees the result: every probability attached to a gallery
+    row is a statement about the picture that was judged, not about the picture that
+    ships.</p>
+
+      <figure class="figure" data-figure="gallery-release">
+        <a class="figure-open" href="../explorer/index.html?v=2&amp;f=julia5&amp;cx=-0.8582951615064046&amp;cy=0.5903709776459439&amp;x=0.006105658486922464&amp;y=-0.021340431347201615&amp;w=0.03533391932886106&amp;p=amazing-25" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/gallery-release.jpg" width="1316" height="439" alt="A small judged render with one region marked on it, beside that same region taken from the finished wallpaper at four times the width, shown pixel for pixel."><span class="figure-open-mark" aria-hidden="true">↗</span></a>
+        <figcaption>The picture a seat was decided on, and one region of the wallpaper it became. The decision is taken on the small render; the finished picture is drawn again from the location and the recipe, four times as wide and with sixteen samples a pixel, and no judge sees it. The marked region is the one where those extra samples show most.</figcaption>
+      </figure>
+
+    <p>The leveling operator from <a href="color-palettes.html">color palettes</a> runs inside
+    that render. The picture is drawn, measured, and where its tones fall outside the band,
+    the palette's lightness is rebaked and it is drawn again — which happens to about four in
+    ten of the renders it applies to. It is skipped for the direct traps, whose figures sit on
+    a flat ground that its measurements would describe instead of the figure, and for the
+    modes that shift where each sample reads in the map, where rebaking the map does not mean
+    what it means elsewhere.</p>
+
+    <p>Every gallery row carries enough to draw its wallpaper again: the location, the recipe,
+    the palette choice, the scores it was seated on, its leveling stamp, and the pass that
+    chose it.</p>
+
+    <p>What the three parts add up to, and what each is for, is the subject of
+    <a href="full-pipeline.html">full pipeline</a>.</p>
   </section>
 
   <nav class="section-nav">

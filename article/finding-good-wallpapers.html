@@ -28,17 +28,15 @@
     <li><a href="color-palettes.html">Color palettes</a> <span class="done" role="img" aria-label="written">✓</span></li>
     <li class="rail-current"><a href="finding-good-wallpapers.html" aria-current="page">Finding good wallpapers</a> <span class="done" role="img" aria-label="written">✓</span>
       <ol class="rail-headings">
-        <li><a href="#what-a-run-adds-to-the-pool">What a run adds to the pool</a></li>
-        <li><a href="#trying-rendering-modes-and-palettes-on-a-location">Trying rendering modes and palettes on a location</a></li>
-        <li><a href="#choosing-the-gallery-from-the-whole-pool">Choosing the gallery from the whole pool</a></li>
-        <li><a href="#slots-per-fractal-family">Slots per fractal family</a></li>
-        <li><a href="#geometric-diversity">Geometric diversity</a></li>
-        <li><a href="#rendering-many-candidates-for-each-chosen-location">Rendering many candidates for each chosen location</a></li>
-        <li><a href="#floors-ranking-and-the-empty-slot">Floors, ranking, and the empty slot</a></li>
-        <li><a href="#rendering-the-gallery-at-full-resolution">Rendering the gallery at full resolution</a></li>
+        <li><a href="#what-one-attempt-is">What one attempt is</a></li>
+        <li><a href="#the-pool">The pool</a></li>
+        <li><a href="#deepening-a-location">Deepening a location</a></li>
+        <li><a href="#where-the-budget-goes">Where the budget goes</a></li>
+        <li><a href="#keeping-only-what-earns-its-place">Keeping only what earns its place</a></li>
+        <li><a href="#how-candidates-are-ranked">How candidates are ranked</a></li>
       </ol>
     </li>
-    <li><a href="gallery-curation.html">Gallery curation</a></li>
+    <li><a href="gallery-curation.html">Gallery curation</a> <span class="done" role="img" aria-label="written">✓</span></li>
     <li><a href="full-pipeline.html">Full pipeline</a></li>
     <li><a href="fractal-atlases.html">Fractal atlases</a></li>
     <li><a href="deep-zoom.html">Deep zoom</a></li>
@@ -60,220 +58,161 @@
 <main>
   <section class="prose">
     <p><a href="finding-good-locations.html">Finding good locations</a> ends with a stock of
-    admitted locations, and the sections since described the judge that rates a finished
-    picture and the judge that chooses its palette. Two separate processes turn that stock
-    into a gallery. A <i>run</i> executes for hours or days at a time: it searches each
-    fractal family for highly ranked locations, and for every location that passes the
-    location judge's quality bar it tries rendering modes and palettes and keeps the judged
-    results. Runs accumulate; everything a run finds and judges joins a <i>pool</i> that no
-    later run discards. The <i>gallery pass</i> is the second process: a single selection over
-    the whole pool for a gallery of a chosen size, balancing quality against diversity across
-    fractal families, locations, colors, and rendering styles, and only then rendering the
-    chosen pictures at wallpaper resolution. Keeping the two apart matters because they want
-    different things — a run wants to find and judge as much as it can in its time, and the
-    gallery pass wants the best set, which is a property of the whole collection and not of
-    any one run.</p>
+    admitted locations: frames the search thought were worth looking at, each rated once by
+    the location judge, none of them yet drawn as anything a person would want on a screen. A
+    location is not a wallpaper. It is a place, and the same place can be beautiful in one
+    rendering mode and dull in another, striking in one palette and muddy in the next. Turning
+    a stock of places into a stock of pictures is its own problem, and it is where most of the
+    project's rendering time goes.</p>
 
       <figure class="figure" data-figure="wallpapers-stages">
         <img src="../assets/images/figures/wallpapers-stages.png" width="1316" height="480" alt="A flow diagram in two halves: walk ledgers feeding locations to draw and small judged renders into a pool that grows across runs, and a gallery pass drawing from that pool through slots, chosen locations and many judged renders to a set of finished wallpapers, with the pass's own renders joining the pool as well.">
-        <figcaption>The two processes that stand between a stock of locations and a gallery. A run reads left to right and empties into the pool; the gallery pass reads the whole pool at once. Nothing a run makes is discarded, and nothing a run makes is a wallpaper.</figcaption>
+        <figcaption>The three parts, as one diagram. The search produces admitted locations; mining draws and judges candidates at them, which accumulate into the pool; and curation chooses a gallery out of the pool as it stands.</figcaption>
       </figure>
 
-    <h2 id="what-a-run-adds-to-the-pool">What a run adds to the pool</h2>
+    <h2 id="what-one-attempt-is">What one attempt is</h2>
 
-    <p>A run's first half is the walk from
-    <a href="finding-good-locations.html">finding good locations</a>; its second half takes
-    the locations that walk admitted and produces judged renders of them. The input is the
-    union of every walk ledger, each location scored once by the location judge. Within each
-    partition — the buckets <a href="training-judges.html">training judges</a> introduced, one
-    per family at one degree with a parameter plane counted apart from its Julia twin — the
-    locations are ordered best first, and everything below the junk floor is dropped. Nothing
-    in that list has been drawn beyond the walk's own thumbnail.</p>
+    <p>The unit of work is an <i>attempt</i>, and every attempt is the same four steps.</p>
 
-    <p>How much of a run's rendering time each partition receives comes from one table of
-    intended shares (data/supply/release_mix.json). There is no right answer here; the table
-    is my own preference for what mix of fractals makes the best collection. The Mandelbrot
-    set and its Julia sets carry three times the weight of any supporting family, and the
-    classic phoenix a small fraction. The same table steers the walk itself: it sets how much
-    keeping-quality stock each partition is owed, and the clock goes to whichever partitions
-    are furthest below what they are owed — where a find the location judge calls exceptional,
-    by the third of its thresholds and the one read on P(≥4), counts ten times one it merely
-    calls good (<a href="training-judges.html">training judges</a>, From a score to a
-    decision).</p>
+    <p>The location's smooth field is computed once, at a small size — 640 by 360, the
+    geometry the judges were trained at. A rendering mode turns that field into a picture, as
+    <a href="rendering-modes.html">rendering modes</a> described. The thirty-two-palette
+    neighborhood from <a href="color-palettes.html">color palettes</a> is built and the
+    palette judge picks one. The picture is drawn at that size with two-by-two supersampling,
+    and the render judge scores it.</p>
 
-    <h2 id="trying-rendering-modes-and-palettes-on-a-location">Trying rendering modes and palettes on a location</h2>
+    <p>What that produces is a <i>candidate</i>: one location, one mode with its settings, one
+    palette, the judge's scores, and the small picture itself. An attempt takes a few seconds.
+    Everything else on this page is about which attempts to make.</p>
 
-    <p>Every location a run takes is rendered small several times, once per <i>attempt</i>. An
-    attempt draws a rendering mode from one of the two kinds — either the plain smooth
-    rendering, or one of the seventeen other modes. It dumps the location's smooth field once
-    at 640 by 360, builds the 32-candidate palette neighborhood from
-    <a href="color-palettes.html">color palettes</a>, lets the palette judge pick one, and
-    draws the picture that will be judged: that mode, that palette, at 640 by 360 with
-    two-by-two supersampling. The render judge scores it, and that score — P(≥3) and P(≥4) —
-    is what the <i>candidate</i> is worth from here on. Within a run each location gets one
-    smooth attempt and two attempts in distinct modes from the other seventeen; an attempt
-    costs a few seconds, so a few hundred fit inside an hour. Every candidate's row carries
-    its location, its mode and settings, its palette, its kind, the judge that scored it, and
-    the small picture itself, so a candidate can be re-scored by a retrained judge without
-    being redrawn, and redrawn at any size from its row alone.</p>
+    <p>One economy shapes the whole thing. For the modes that read a single scalar field, the
+    field can be computed once and then colored many times over, so a second look at the same
+    place in the same mode costs almost nothing beyond the coloring. The composite modes, the
+    direct traps, and the mode that shifts where each sample reads in the map build their
+    pictures differently and have to be drawn in full each time. That is a real difference in
+    what a look costs, and it is a fact to price rather than a reason to prefer one kind of
+    picture over another.</p>
 
       <figure class="figure" data-figure="wallpapers-attempt">
         <a class="figure-open" href="../explorer/index.html?v=2&amp;m=smooth_mean_angle&amp;x=-0.7894061466838949&amp;y=-0.16437809352996482&amp;w=0.0027914350318908217&amp;p=Forge%20Sweep" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/wallpapers-attempt.jpg" width="1316" height="1336" alt="One location through one attempt: its smooth field as plain lightness beside the same location in the rendering mode the attempt drew, then a block of thirty-two colorings of that field with the chosen one outlined, and last the small render that is judged."><span class="figure-open-mark" aria-hidden="true">↗</span></a>
         <figcaption>One location through one attempt. The field is dumped once and every candidate coloring is a lookup over it; the mode beside it is what the picture will be drawn in, so the palette is chosen on one picture and spent on another. The outlined coloring is the palette judge's pick, and the last panel is the picture the render judge scores.</figcaption>
       </figure>
 
-    <h2 id="choosing-the-gallery-from-the-whole-pool">Choosing the gallery from the whole pool</h2>
+    <h2 id="the-pool">The pool</h2>
 
-    <p>The gallery pass takes a gallery size — fifty wallpapers, or a thousand — and chooses
-    that many pictures from everything every run has pooled. It selects over the pool as it
-    stands when the pass runs, and it is re-runnable: a retrained judge, a changed share, or a
-    widened diversity radius produces a new gallery, and the previous one is simply a
-    record.</p>
+    <p>Candidates accumulate. Every attempt any <i>mine</i> has ever made joins one
+    <i>pool</i> that nothing later discards, and a gallery is chosen out of the pool as it
+    stands rather than out of any one session's work.</p>
 
-    <h2 id="slots-per-fractal-family">Slots per fractal family</h2>
+    <p>Keeping that pool separate from the mining that fills it is what makes the arrangement
+    work. Locations are cumulative — a place found once is found for good — and pictures are
+    cumulative too. A mine is free to spend its whole budget on one question, because it is
+    adding to a store rather than producing a collection.</p>
 
-    <p>The gallery size is first divided among the partitions by the same table of shares the
-    run used, so the question becomes concrete — fifty degree-3 Julia wallpapers, say. Within
-    a partition the slots are split between the two kinds, with the larger share going to the
-    seventeen modes — about three in five: I prefer a collection in which the plain smooth
-    rendering is the minority. A partition whose supply runs out leaves its slots empty rather
-    than borrowing from a richer one.</p>
+    <h2 id="deepening-a-location">Deepening a location</h2>
 
-      <figure class="figure figure-pending" data-figure="wallpapers-slots">
-        <p class="pending"><span class="pending-label">Figure pending</span>A bar chart with one bar per partition, each bar divided into a smaller share for the smooth rendering and a larger share for the other seventeen modes.</p>
-        <figcaption>A gallery of fifty divided into slots. Each bar is one partition's share of the collection, split between the plain smooth rendering and the seventeen other modes; the modes take the larger part of every bar on purpose.</figcaption>
+    <p>A location that has been looked at once has been looked at in one mode, through one
+    palette the palette judge liked. That is enough to know the place is worth something. It
+    is not enough to have found its picture.</p>
+
+    <p>So a mine returns. At a chosen location it computes the field, then works through a few
+    dozen candidates there: modes cycled so no one mode takes the whole visit, palettes drawn
+    without repeating within a mode, so that no two candidates at that place are the same
+    recipe. Only the best few survive — see below — but the point of the visit is to see the
+    place several ways before deciding what it is.</p>
+
+    <p>The plan for a mining session is fixed before the first picture is drawn. Nothing reads
+    a score partway through and changes what it renders next. That is deliberate: a loop that
+    chases its own early results is a loop whose output cannot be read as a sample of
+    anything, and the whole value of the pool is that its rows mean the same thing whenever
+    they were made.</p>
+
+      <figure class="figure figure-pending" data-figure="wallpapers-mine">
+        <p class="pending"><span class="pending-label">Figure pending</span>One location visited: its computed field, then a few dozen small renders of that location across several rendering modes and palettes, each labeled with the judge's score, and the few that are kept outlined.</p>
+        <figcaption>One visit to one location. The field is computed once and every candidate at that place is a coloring over it; the modes are cycled and no palette repeats inside a mode, so no two candidates are the same recipe. Only the outlined few survive the ranking.</figcaption>
       </figure>
 
-    <h2 id="geometric-diversity">Geometric diversity</h2>
+    <h2 id="where-the-budget-goes">Where the budget goes</h2>
 
-    <p>A desktop that cycles through wallpapers should show a diverse range of fractal
-    families, locations within each family, colors, and rendering styles. Families and, to a
-    degree, rendering modes are discrete choices that are easy to keep distinct. Locations and
-    colors are subtle: two admitted locations can be nearby frames of one spiral, or frames of
-    two different families that happen to look alike, and nothing in a location's coordinates
-    says which. <a href="color-palettes.html">Color palettes</a> defined an embedding for
-    palettes — 32 OKLab samples along the ramp — so that distance between two palettes means
-    what it looks like it means. The gallery pass needs the same thing for locations. Each
-    admitted location above the junk floor is rendered once, small, in one fixed palette and
-    passed through <a href="https://arxiv.org/abs/2304.07193">DINOv2</a>, a vision network
-    trained without labels to produce a vector that places visually similar images near one
-    another; the vector is computed once per location and kept, and the leg that embedded the
-    first twenty-five thousand took about thirty-five minutes.</p>
+    <p>Mining time is finite and every hour of it is a choice about what the collection will
+    be able to contain. The question is not which mode or which place is best in the abstract;
+    it is where an hour buys the most of what the collection is currently short of.</p>
 
-    <p>Within a partition, the pass walks that space by <i>farthest point</i>: the first
-    location chosen is the partition's strongest by the location judge's P(≥4); each next
-    choice is the location farthest from everything already chosen, weighted by its own
-    quality so that a lone oddity does not win on distance alone; and a hard radius refuses
-    any location closer than that to one already taken. Walking by distance rather than
-    clustering by density is deliberate. A neighborhood the walk has visited a thousand times
-    is not a thousand wallpapers, and a method that follows density would hand it a thousand
-    slots. The radius refuses a great many locations and has yet to run a partition short of
-    picks, and the points a partition ends up choosing sit comfortably clear of it; the pairs
-    that come nearest to it are pairs from different partitions, which the pass keeps apart
-    anyway. A sheet of the closest chosen pairs is what that gets checked against, by eye.</p>
+    <p>That is answered the same way the location search answers it for its own supply — a
+    loop of five steps that runs each time a mine is planned:</p>
 
-      <figure class="figure figure-pending" data-figure="wallpapers-embedding">
-        <p class="pending"><span class="pending-label">Figure pending</span>A scatter of one partition's admitted locations in two dimensions, with the chosen locations marked and a circle around each showing the radius inside which nothing else may be chosen.</p>
-        <figcaption>One partition's admitted locations, projected down to two dimensions from the vector each was embedded at. The marked points are the ones a pass chose, and the circle around each is the radius inside which nothing else may be chosen. The crowded regions are where the walk spent its time rather than where the wallpapers are.</figcaption>
+    <p><i>Census.</i> Take stock of what the collection can and cannot currently field. The
+    most direct source is the last curation pass: it records, for every requirement it could
+    not meet, what was available and what refused it. A mode whose seats went unfilled, a
+    color the pool cannot supply, a family thinly represented — these are the deficits, and
+    they are measurements rather than guesses.</p>
+
+    <p><i>Price.</i> Measure what a unit of progress costs in each way of spending the budget,
+    from that way's own recent work rather than from a rate borrowed from another. The unit
+    that matters is a picture good enough to be seated, not a picture: a way of mining that
+    produces four times as many candidates per hour and almost none the collection can use is
+    the more expensive one. Deepening a location where the field can be reused is cheap per
+    candidate. Drawing a composite or a trap is not. Both prices are real and both get
+    measured.</p>
+
+    <p><i>Allocate.</i> Spend where the deficit is large and the price is low, so the budget
+    flows toward what is scarce. Two reservations sit above the contest. Some of it goes to
+    ground nobody has opened — otherwise the mine only ever deepens what is already known, and
+    the collection stops growing outward. And some goes to modes and colors nothing is
+    currently asking for, because a requirement only appears in the census once something has
+    enough supply to be <em>nearly</em> satisfied, and a mode with no supply at all is silent
+    rather than loud.</p>
+
+    <p><i>Serve.</i> Run the plan.</p>
+
+    <p><i>Credit.</i> Record what each way of spending returned, measured against its own
+    budget. This is the step it is easiest to skip and the most expensive to get wrong. A mode
+    that was mined at a tenth the rate of another will show a tenth the yield, and reading
+    that as a fact about the mode rather than about the budget is how a mode gets quietly
+    retired for the crime of not having been tried. Yields are recorded per way of spending,
+    with the budget that bought them, and a mode is never demoted on a number produced by
+    starving it.</p>
+
+    <p>The upshot is that there is no fixed split. The proportions come out of the census and
+    the prices each time, and they should be expected to move as the collection fills: early
+    on, most of the budget goes to breadth because almost everything is short; later, more of
+    it goes to the specific gaps a nearly-complete collection still has.</p>
+
+      <figure class="figure figure-pending" data-figure="wallpapers-allocation">
+        <p class="pending"><span class="pending-label">Figure pending</span>Three panels of one mining plan: a bar chart of the deficits the census found, a bar chart of the measured price of progress in each way of spending, and the split of the budget that comes out of the two.</p>
+        <figcaption>One mining plan, from the census to the clock. The deficits say what the collection is short of, the prices say what a unit of progress costs in each way of spending, and the split is what the two of them buy. There is no fixed proportion: it is worked out again every time a mine is planned.</figcaption>
       </figure>
 
-    <h2 id="rendering-many-candidates-for-each-chosen-location">Rendering many candidates for each chosen location</h2>
+    <h2 id="keeping-only-what-earns-its-place">Keeping only what earns its place</h2>
 
-    <p>A location chosen for its geometry is not yet a picture. The pass takes the top few
-    locations at each chosen point in the embedding — by location P(≥4) — and attempts each
-    under several modes and palettes: more than a run affords, because the cost that matters
-    is the wallpaper render at the end, not the seconds an attempt takes, and a location the
-    walk spent hours finding deserves to be seen in more than one way. Those attempts are
-    ordinary candidates, stamped with the pass that ordered them, and they join the pool like
-    any others.</p>
+    <p>A mine that visits a location a few dozen times produces a few dozen pictures of it,
+    and keeping them all would fill a disk with variations nobody will ever choose between. So
+    the pool keeps only the best few candidates per location and mode, ranked among
+    themselves.</p>
 
-    <p>That leg turns out to be where a gallery actually comes from: nearly every wallpaper a
-    pass seats is an attempt some gallery pass made rather than one a run had already made
-    there. Of the two passes run so far, the first seated four of its forty-two off run-era
-    candidates and the second two of its hundred. The attempts in a run are enough to
-    establish that a place is worth something — they are how it earned its way into the pool
-    at all — but a mode drawn at random and a palette picked once is not the same as looking
-    for the picture. The gallery pass is where a location is looked at properly.</p>
+    <p>Four things protect a candidate the ranking would otherwise drop: it is in a gallery
+    that has shipped, a person has rejected it, a person has rated it, or it is one of the
+    rows the ranking itself was fitted on. Everything else goes, and a picture is kept if and
+    only if its row is — the record and the image are deleted together, so the pool never
+    holds a row pointing at a file that is gone.</p>
 
-      <figure class="figure figure-pending" data-figure="wallpapers-cluster-attempts">
-        <p class="pending"><span class="pending-label">Figure pending</span>A grid of small renders: one row per location near the chosen point, each drawn several times under different modes and palettes, every panel labeled with the judge's score and the highest one outlined.</p>
-        <figcaption>Every picture one slot paid for. The rows are the locations nearest the point the pass chose; along a row the same location is drawn in several modes and colorings, and the outlined panel is the one that took the slot.</figcaption>
-      </figure>
+    <h2 id="how-candidates-are-ranked">How candidates are ranked</h2>
 
-    <h2 id="floors-ranking-and-the-empty-slot">Floors, ranking, and the empty slot</h2>
+    <p>Ranking candidates within a location, and later ordering them for a gallery, needs one
+    number, and no single judge's output is that number. The render judge's score at its top
+    threshold is the obvious candidate and is not sufficient on its own: it separates good
+    pictures from bad ones well and, as <a href="training-judges.html">training judges</a>
+    described, it does not have much resolution left among the good ones.</p>
 
-    <p>Candidates are ranked per kind and per partition. The two kinds are never placed in one
-    list. They are scored by the same judge on the same nominal scale, but they are rated
-    separately and their pools are separate, and a shared scale does not make the numbers
-    comparable: the same value can sit above one kind's bar and below the other's, and neither
-    reading is wrong. Each bar is read off ratings directly, as
-    <a href="training-judges.html">training judges</a> described — the score above which a
-    picture had been rated at least good more often than not — and each is stamped with the
-    exact judge it was measured against, so that a bar measured on one judge is never applied
-    to another. In the gallery pass both bars remove: a candidate below its own kind's bar
-    does not take a slot. Only the bar on the seventeen modes acts on what a run itself puts
-    out, which is gated more loosely on purpose: a run is deciding how much of its own output
-    is worth a look, where the pass is deciding what the collection ships. Above the bar,
-    candidates are ordered by P(≥4), the judge's own answer
-    to which of the good pictures are exceptional; P(≥3) has no resolution left at the top of
-    the scale, and P(≥4) does. The interleaving across partitions is the one
-    <a href="training-judges.html">training judges</a> described: every partition's best, then
-    every second-best.</p>
+    <p>So the ranking is a fitted combination: the location judge's own opinion of the place,
+    the render judge at both of its thresholds, whether the picture is a composite or a
+    thin-colored one, and a measure of how much of the frame is dead flat space. The weights
+    were fitted on rated pictures and are checked against held-out ratings; the combination
+    orders human judgments meaningfully better than the top-threshold score alone does, on
+    both kinds of picture.</p>
 
-    <p>A slot is married to the point in the embedding that was chosen for it, and that is
-    where slots go empty. The points chosen last are the most remote ones — that is what
-    farthest-point selection means — and the most remote neighborhoods are the least likely to
-    hold a picture over the bar. So a slot whose neighborhood yields nothing is re-seated: the
-    pass moves it to the next farthest point and tries again, up to three neighborhoods in
-    all. This is the one place worth being careful about what is being traded. Re-seating does
-    not lower a bar or seat a picture the judge would have refused; it gives the slot another
-    neighborhood, and a slot that has now failed in several distinct neighborhoods is a
-    different statement from one that failed in a single unlucky one. Doing this filled a
-    hundred-wallpaper gallery that had come up seven short at its first seating, without
-    moving any bar. What remains after that stays empty. An empty slot is never padded with a
-    picture the judge would not have kept, and it is also the most useful signal the gallery
-    sends back: it names a partition where several separate neighborhoods had nothing to give,
-    and that is where the next ratings and the next walk should go.</p>
-
-      <figure class="figure figure-pending" data-figure="wallpapers-floors">
-        <p class="pending"><span class="pending-label">Figure pending</span>One partition's candidates of one kind in rank order, with the bar drawn as a line across them, the seated candidates marked, and one slot shown moving to a second neighborhood after its first held nothing above the line.</p>
-        <figcaption>One partition's candidates of one kind, best first. The line is that kind's bar, the marked panels took slots, and the slot at the end found nothing above the line in its first neighborhood and was re-seated in another. No slot is filled from below the line.</figcaption>
-      </figure>
-
-    <h2 id="rendering-the-gallery-at-full-resolution">Rendering the gallery at full resolution</h2>
-
-    <p>A seated candidate is rendered again at 2560 by 1440 with four-by-four supersampling,
-    the same geometry for every partition, kind, and mode. Nothing from the attempt is reused
-    — the field it was judged on is 640 by 360 — so the finished wallpaper is a fresh render
-    from the location and recipe alone, and no judge looks at it. Every probability on a
-    gallery record is a statement about the small picture.</p>
-
-    <p>Leveling happens inside that render. The picture is drawn through the plain palette and
-    measured; if it falls outside the band <a href="color-palettes.html">color palettes</a>
-    described, the palette's lightness is re-baked and the picture drawn again. An acting row
-    costs two full-size renders, and the operator acts on about four in ten of the renders it
-    applies to. The direct traps and itinerary are excluded, as that section said.</p>
-
-    <p>These renders are the expensive step, and keeping them for the gallery alone is most of
-    why the two processes are separate. With four in flight a wallpaper finishes roughly every
-    half minute, and single renders have ranged from fifteen seconds to eighteen minutes.
-    Every gallery row carries its location, its recipe, its palette choice, its scores, its
-    leveling stamp, and the pass that chose it, so any wallpaper can be drawn again from its
-    record alone.</p>
-
-      <figure class="figure" data-figure="wallpapers-release">
-        <a class="figure-open" href="../explorer/index.html?v=2&amp;f=julia5&amp;cx=-0.8582951615064046&amp;cy=0.5903709776459439&amp;x=0.006105658486922464&amp;y=-0.021340431347201615&amp;w=0.03533391932886106&amp;p=amazing-25" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/wallpapers-release.jpg" width="1316" height="439" alt="A small judged render with one region marked on it, beside that same region taken from the finished wallpaper at four times the width, shown pixel for pixel."><span class="figure-open-mark" aria-hidden="true">↗</span></a>
-        <figcaption>The picture a slot was decided on, and one region of the wallpaper it became. The decision is taken on the small render; the finished picture is drawn again from the location and the recipe, four times as wide and with sixteen samples a pixel, and no judge sees it. The marked region is the one where those extra samples show most.</figcaption>
-      </figure>
-
-    <p>What the two processes add up to, and what each is trying to achieve, is the
-    subject of <a href="full-pipeline.html">full pipeline</a>.</p>
-
-    <!-- Held for the wallpapers-output round, with the wallpapers-output figure it belongs to:
-         "The pictures below are one pass's gallery." opens the paragraph above. Both need a
-         gallery pass with real wallpapers behind them, which is gallery4: gallery1's
-         forty-two were seated against the retired heads' floors, gallery2 ran with no
-         full-size renders, and gallery3 is not the pass this site will show. -->
+    <p>The pictures that make it through all of this are the pool that
+    <a href="gallery-curation.html">gallery curation</a> chooses from.</p>
   </section>
 
   <nav class="section-nav">

@@ -16,19 +16,19 @@ answers to and not a position in a list, so a pool that grows cannot quietly rep
 picture at something else.
 
 Two smaller reads hang off a seated row, and they are named because "the release records
-and nothing else" stopped being true when `wallpapers-release` landed. `pass_record` opens
+and nothing else" stopped being true when `gallery-release` landed. `pass_record` opens
 `data/curation/gallery/<pass>/pass.json` for the geometry a pass rendered its slots at,
 so no figure of this page restates it; and the judged picture itself comes off the
 artifacts tree at `curation/runs/<run>/pictures/<candidate>.jpg`, because it is copied
 rather than redrawn.
 
 **What is not read, and what waits on it.** A pass's **seating** — which candidate took
-which slot, and what it beat — and the **embedding** the clustering was cut on are both
-records this module does not open. That is the whole of why `wallpapers-slots`,
-`wallpapers-embedding`, `wallpapers-cluster-attempts` and `wallpapers-floors` are `pending` and
-`wallpapers-output` is `held`: four figures of section 8 are about a pass's own choosing, and
-a release row says what a pass decided without saying how. Reaching them is a reader for
-those two records, not a composition.
+which seat, and what it beat — and the **solve record** the demands and their shortfalls are
+written to are both records this module does not open. That is the whole of why
+`gallery-pool`, `gallery-allowance`, `gallery-twins` and `gallery-floors` are `pending` and
+`gallery-output` is `held`: the figures of section 9 are about a pass's own choosing, and a
+release row says what a pass decided without saying how. Reaching them is a reader for those
+records, not a composition.
 
 ## What is redrawn, and what is copied
 
@@ -59,7 +59,7 @@ from .theme import WELL_INK
 
 #: The two rows these figures stand on, by the key their release record answers to. Matt
 #: chose each off a numbered contact sheet — `scratch/contact/wallpapers-attempt.png` tile 40
-#: and `scratch/contact/wallpapers-release.png` tile 58 — and what is written down is the
+#: and `scratch/contact/gallery-release.png` tile 58 — and what is written down is the
 #: record's own name for what he picked, never the tile number, because the sheet is
 #: regenerated and the record is not.
 ATTEMPT = ("run10", "0078")
@@ -442,7 +442,7 @@ def crop_window(full: Path, small: Path, block: int = CROP_BLOCK) -> tuple[int, 
 
 
 def finished_beside_judged() -> Drawn:
-    """`wallpapers-release` — the picture a slot was decided on, and the wallpaper it became."""
+    """`gallery-release` — the picture a seat was decided on, and the wallpaper it became."""
     from PIL import Image
 
     row = released(*SEAT)
@@ -524,12 +524,12 @@ def finished_beside_judged() -> Drawn:
         f"{len(row['palette']['candidates'])}-map set around the anchor "
         f"{row['palette']['anchor']}.",
     ]
-    return Drawn(sheets.save(sheet, sheet_path("wallpapers-release")), provenance)
+    return Drawn(sheets.save(sheet, sheet_path("gallery-release")), provenance)
 
 
 MAKERS = {
     "wallpapers-attempt": attempt_steps,
-    "wallpapers-release": finished_beside_judged,
+    "gallery-release": finished_beside_judged,
 }
 
 
