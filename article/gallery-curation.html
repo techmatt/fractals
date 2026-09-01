@@ -78,14 +78,16 @@
 
     <h2 id="what-is-eligible">What is eligible</h2>
 
-    <p>Not every judged picture is a candidate for a seat. Each rendering mode has its own
-    bar, read off ratings the way <a href="training-judges.html">training judges</a> described
-    — the score above which a picture had been rated at least good more often than not — and a
-    picture below its own mode's bar is not eligible, however the collection is doing
-    elsewhere. The bars are per mode because the modes are not equally easy to score and a
-    single number across all of them would quietly retire the harder ones. A mode with too few
-    rated locations to place a bar of its own falls back to the gentler of the two thresholds
-    rather than being locked out.</p>
+    <p>Not every judged picture is a candidate for a seat. A picture is eligible if the
+    <a href="training-judges.html">render judge</a> gives it even odds or better of being rated
+    good — a probability of one half. Where a mode has enough rated locations to support the
+    reading, that is measured at the judge's top threshold; where it does not, the gentler of
+    its two thresholds is used instead, so a thinly rated mode is not locked out.</p>
+
+    <p>One half is a round number rather than a calibrated one, and it could be placed more
+    carefully. It matters less than it looks. The cutoff only decides which of a location's
+    pictures are worth considering at all, and once enough locations have been mined the
+    collection is built out of pictures well clear of it in either direction.</p>
 
     <p>That is the only quality test in the whole pass. Curation never re-scores anything and
     never lowers a bar to fill a seat; the pool is defined by the bars, and everything after
