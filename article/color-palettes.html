@@ -58,7 +58,7 @@
     <p>Finding a good location is slow; coloring it is fast. For each pixel the renderer
     computes a field — the smooth escape value from
     <a href="rendering-fundamentals.html">rendering fundamentals</a>, or whatever the
-    rendering mode measures — and that is where nearly all the work goes. For the eight
+    rendering mode measures — and that is where nearly all the work goes. For the rendering
     modes that read one scalar field, coloring is a separate step over stored numbers, so
     the field can be kept and every palette tried on it is a lookup over the same array.
     That is how the pipeline chooses a palette whatever mode it is about to draw: every
@@ -106,24 +106,24 @@
     moderate complexity, bright on dark. A small script checks the mechanical rules before
     anything is rendered. The prompt, the script, and each authored palette's record — its
     mood family, its templates, and its stops as written — ship with the repository
-    (data/palettes/generator_prompt.md, validate_palettes.py, provenance.jsonl). The prompt
-    runs as-is in Claude; see
+    (data/palette_authoring/generator_prompt.md, validate_palettes.py,
+    data/palettes/provenance.jsonl). The prompt runs as-is in Claude; see
     <a href="../palettes/make-your-own.html">make your own palettes</a>.</p>
 
     <p>Two hundred of the authored palettes were written to a second aim. Sorting a finished
-    wallpaper into fifty-two named colors and measuring how much of the frame each one takes
-    says which colors the collection actually reaches, and over 246 finished renders it
-    reaches very few: the average picture gives a tenth or more of itself to about three of
-    the fifty-two, and eight of them — a band of greens, limes, teals, cyans and yellows — to
-    none at all. A batch aimed at one of those is the same request with the mood family named
-    for a color instead of a mood, and the figure below shows ten such families beside the
-    thirteen written for mood. Aiming works where the color can be made: the thinnest green,
-    lime and teal cells roughly doubled the number of palettes that carry them. It does not
-    work everywhere — a batch aimed at a dark vivid teal or cyan lands on the muted twin
-    beside it, which sits close enough in OKLab that the measurement cannot tell the two
-    apart, and the muted blues, which no batch was aimed at, gained nothing. All two hundred
-    are in the library, and the pool a candidate set is drawn from has since admitted
-    them.</p>
+    wallpaper into fifty-two named colors and measuring which of them the frame actually
+    reaches says which colors the collection reaches as a whole, and the answer is: very
+    few. Most pictures concentrate their area on a small handful of the fifty-two, and a
+    whole band of them — greens, limes, teals, cyans and the dark yellows — went almost
+    unrepresented. A batch aimed at one of those is the same request with the mood family
+    named for a color instead of a mood, and the figure below shows ten such families beside
+    the thirteen written for mood. Aiming works where the color can be made: the thinnest
+    green, lime and teal cells roughly doubled the number of palettes that carry them. It
+    does not work everywhere — a batch aimed at a dark vivid teal or cyan lands on the muted
+    twin beside it, which sits close enough in OKLab that the measurement cannot tell the
+    two apart, and the muted blues, which no batch was aimed at, gained nothing. All two
+    hundred are in the library, and the pool a candidate set is drawn from has since
+    admitted them.</p>
 
       <figure class="figure" data-figure="palette-moods">
         <img src="../assets/images/figures/palette-moods.jpg" width="1316" height="1082" alt="Twenty-three gradient strips, one per mood family the palette prompt names, each labeled with its family and the palette shown.">
@@ -188,7 +188,9 @@
     the teacher picks what it originally picked only that often, and a judge cannot be asked
     to track its teacher more closely than the teacher tracks itself. That is below the bar
     I set, and it ships regardless; the figure at the end of the next section is the case
-    for it.</p>
+    for it. Unlike the two quality judges, which ship the best of their three seeds, this
+    judge ships the median seed by that top-pick measure — with a teacher this noisy, the
+    best of three is the luckiest of three.</p>
 
     <h2 id="why-diversity-has-to-be-built-in">Why diversity has to be built in</h2>
 
@@ -208,7 +210,8 @@
     regions of palette space. Nothing downstream adds to that: the diversity rule in
     <a href="gallery-curation.html">gallery curation</a> caps
     near-duplicate locations rather than palettes, and two released wallpapers may share a
-    palette — across the tracked runs, 149 released pictures used 92 distinct palettes.</p>
+    palette — across everything released so far, roughly six hundred and fifty released
+    pictures have used fewer than three hundred distinct palettes.</p>
 
       <figure class="figure" data-figure="palette-neighborhood">
         <a class="figure-open" href="../explorer/index.html?v=2&amp;x=-0.7482800116735308&amp;y=-0.13563763985784028&amp;w=0.0007193954637897842&amp;p=Rust%20to%20Plum" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/palette-neighborhood.jpg" width="1316" height="964" alt="Two blocks of thirty-two small renders of one location: the judge's ranked candidate set above, and thirty-two uniformly drawn palettes below."><span class="figure-open-mark" aria-hidden="true">↗</span></a>
@@ -223,10 +226,11 @@
     point, its white point, and its median lightness — against a band derived from 48
     finished wallpapers (data/coloring/levels_band.json). Inside the band it does nothing at
     all; outside it, it bends the palette's lightness along its own stops without reordering
-    them and renders once more. Across the tracked runs it acted on 39% of renders. It is
-    used only for rendering modes where the palette's tone is the picture's tone — not for
-    the direct traps, whose tone belongs to their flat ground, and not for itinerary, which
-    reads a different place in the ramp at every sample.</p>
+    them and renders once more. Across the tracked releases it has acted on about four in
+    ten of the renders it applies to. It is used only for rendering modes where the
+    palette's tone is the picture's tone — not for the direct traps, whose tone belongs to
+    their flat ground, and not for itinerary, which reads a different place in the ramp at
+    every sample.</p>
 
       <figure class="figure" data-figure="palette-autolevel">
         <a class="figure-open" href="../explorer/index.html?v=2&amp;x=-0.800778181691469&amp;y=0.18229482640825037&amp;w=0.0003856391990486722&amp;p=wheelance" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/palette-autolevel.jpg" width="1316" height="874" alt="Two kept wallpapers, one above the other, each drawn twice: as the chosen palette rendered it, and after the leveling operator moved its tone."><span class="figure-open-mark" aria-hidden="true">↗</span></a>
