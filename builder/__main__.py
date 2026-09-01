@@ -183,7 +183,7 @@ def _parser() -> argparse.ArgumentParser:
     )
 
     pooled = commands.add_parser(
-        "pool", help="draw the figures of the From locations to wallpapers page"
+        "pool", help="draw the figures of the Finding good wallpapers page"
     )
     pooled.add_argument(
         "id",

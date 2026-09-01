@@ -1,4 +1,4 @@
-"""The figures of *From locations to wallpapers*.
+"""The figures of *Finding good wallpapers*.
 
 Section 8's subject is the two processes either side of one store: a **run**, which
 searches and judges and empties everything it makes into the pool, and a **gallery

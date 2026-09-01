@@ -311,36 +311,6 @@ def orbit_race(destination: Path) -> tuple[int, int]:
     )
 
 
-# ----------------------------------------------------------------------------- pipeline
-
-STAGES = [
-    (
-        "Search",
-        ["A guided walk proposes", "locations worth drawing"],
-        ["Finding good locations", "Training judges"],
-    ),
-    (
-        "Render",
-        ["Each location is drawn at", "quality, in one of the modes"],
-        ["Rendering fundamentals", "Rendering modes"],
-    ),
-    (
-        "Color",
-        ["A palette is chosen and", "its tones are balanced"],
-        ["Color palettes"],
-    ),
-    (
-        "Select",
-        ["Judges score, and a few", "are kept for quality and range"],
-        ["From locations to wallpapers"],
-    ),
-]
-PIPELINE_WIDTH = 1316
-PIPELINE_MARGIN = 20
-PIPELINE_GAP = 34
-PIPELINE_BOX = 150
-
-
 # --------------------------------------------------------------------------- pool stages
 
 #: The sheet this diagram is composed at — the width every figure of this article is

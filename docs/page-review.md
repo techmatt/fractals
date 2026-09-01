@@ -179,14 +179,15 @@ editing a cell by hand.
 
 | page | written | prose master | last review round | figures | what is held, and why |
 | --- | --- | --- | --- | --- | --- |
-| `overview.html` | yes | none — the HTML is its own master | none | 2 placed | — |
+| `overview.html` | yes | `Overview v1.md` | none | 2 placed | — |
 | `escape-time-fractals.html` | yes | none — the HTML is its own master | none | 7 placed | — |
 | `rendering-fundamentals.html` | yes | none — the HTML is its own master | none | 6 placed | — |
 | `rendering-modes.html` | yes | none — the HTML is its own master | none | 6 placed | — |
 | `finding-good-locations.html` | yes | `Finding good locations v4.md` | applied 2026-08-21 | 12 placed | — |
 | `training-judges.html` | yes | `Training judges v4.md` | applied 2026-08-21 | 3 placed | — |
 | `color-palettes.html` | yes | `Color palettes v4.md` | none | 7 placed | — |
-| `from-locations-to-wallpapers.html` | yes | `From locations to wallpapers v6.md` | none | 3 placed, 4 pending, 1 held | `wallpapers-stages`, `wallpapers-attempt` and `wallpapers-release` are placed, the last two off Matt's tile picks; the four gallery-pass rows need a pass's own seating and embedding records, which `builder/pool.py` does not read yet; `wallpapers-output` is **held** on gallery4 |
+| `finding-good-wallpapers.html` | yes | `From locations to wallpapers v6.md` | none | 3 placed, 4 pending, 1 held | renamed from `from-locations-to-wallpapers.html` at the twelve-section split; the master and the figures' `wallpapers-` prefix still carry the old name, and both move when the two pages' prose lands. `wallpapers-stages`, `wallpapers-attempt` and `wallpapers-release` are placed, the last two off Matt's tile picks; the four gallery-pass rows need a pass's own seating and embedding records, which `builder/pool.py` does not read yet; `wallpapers-output` is **held** on gallery4 |
+| `gallery-curation.html` | no | none | none | none | the section is not written |
 | `full-pipeline.html` | no | none — `Full pipeline v1.md` is drafted and under review, not placed | none | none | the section is not written |
 | `fractal-atlases.html` | no | none | none | none | the section is not written |
 | `deep-zoom.html` | no | none | none | none | the section is not written |

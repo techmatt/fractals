@@ -26,7 +26,8 @@
     <li><a href="finding-good-locations.html">Finding good locations</a> <span class="done" role="img" aria-label="written">✓</span></li>
     <li><a href="training-judges.html">Training judges</a> <span class="done" role="img" aria-label="written">✓</span></li>
     <li><a href="color-palettes.html">Color palettes</a> <span class="done" role="img" aria-label="written">✓</span></li>
-    <li><a href="from-locations-to-wallpapers.html">From locations to wallpapers</a> <span class="done" role="img" aria-label="written">✓</span></li>
+    <li><a href="finding-good-wallpapers.html">Finding good wallpapers</a> <span class="done" role="img" aria-label="written">✓</span></li>
+    <li><a href="gallery-curation.html">Gallery curation</a></li>
     <li><a href="full-pipeline.html">Full pipeline</a></li>
     <li><a href="fractal-atlases.html">Fractal atlases</a></li>
     <li><a href="deep-zoom.html">Deep zoom</a></li>
@@ -41,7 +42,7 @@
 <div class="page-body">
 
 <header class="masthead">
-  <p class="kicker">Section 1 of 11</p>
+  <p class="kicker">Section 1 of 12</p>
   <h1>Overview</h1>
 </header>
 
@@ -63,11 +64,11 @@
     or <a href="https://www.chaoticafractals.com/">Chaotica</a>. This project doesn't try to
     match that level of hand-tuned artistry on any single image. The goal is a system that
     produces a rich and growing set of good wallpapers, spanning a wide range of structures,
-    <i>fractal families</i>, color styles, and rendering effects. Drawing a fractal turns out to
-    be the
-    easy half of that. The hard part is deciding where to point the camera, and most of this
-    site is about that decision. Everything on this site lives in the
-    flat complex plane — two-dimensional
+    <i>fractal families</i>, color styles, and rendering effects. Drawing a fractal turns out
+    to be the easy half of that. The hard parts are deciding where to point the camera, how
+    to draw what it sees, and which of the results are worth keeping — and most of this site
+    is about those three decisions. Everything on this site lives in the flat complex
+    plane — two-dimensional
     <a href="escape-time-fractals.html">escape-time fractals</a>. There are other beautiful
     fractal worlds this project doesn't touch, among them the 3D
     <a href="https://en.wikipedia.org/wiki/Mandelbulb">Mandelbulb</a>,
@@ -79,46 +80,62 @@
     <a href="https://github.com/techmatt/fractal-wallpapers">fractal-wallpapers</a>, and
     every image on this site came out of it. The same renderer is also compiled to run in a
     browser, so the <a href="../explorer/index.html">fractal explorer</a> draws these
-    fractals live on this site — every family, every rendering mode, every palette, panned
-    and zoomed by hand — and nearly every picture on these pages carries a link that opens
-    the explorer at exactly the view you are looking at. You can also run the project
-    yourself, browse the <a href="../galleries/index.html">galleries</a>, download
-    collections of my favorite wallpapers at full resolution, freely use the trained models
-    and the labeled datasets behind them, or read on for more technical details.</p>
+    fractals live on this site — every family, each rendering mode the article describes,
+    and a broad selection of palettes, panned and zoomed by hand — and most pictures on
+    these pages carry a link that opens the explorer at exactly the view you are looking
+    at. The finished wallpapers will be published here as
+    <a href="../galleries/index.html">galleries</a>, free to download at full resolution.
+    You can also run the project yourself, use the trained models and the labeled datasets
+    behind them, or read on for the technical details.</p>
 
-    <p>Making this work means answering a few genuinely interesting questions. Where in an
-    infinite plane do you point the camera — and how far do you zoom — to find a beautiful
-    fractal? Given a view, which of many possible rendering styles and palettes will suit
-    it? And out of thousands of candidates, which handful is worth keeping? The system that
-    answers them is a <i>pipeline</i>, and the rest of this site walks through it stage by stage:</p>
+    <p>Making this work means answering three genuinely interesting questions, and the
+    system is organized around them. Where in an infinite plane do you point the camera —
+    and how far do you zoom — to find promising material? Given a <i>location</i> — a center
+    and a width in the complex plane — which of many rendering styles and <i>palettes</i>
+    will suit it? And out of thousands of finished candidates, which set is worth keeping?
+    Each question is one part of a <i>pipeline</i>, and each part feeds the next:</p>
 
       <figure class="figure" data-figure="overview-pipeline">
-        <a class="figure-open" href="../explorer/index.html?v=2&amp;f=multibrot4&amp;x=0.31215622070747834&amp;y=0.7310275499716895&amp;w=0.000009171415720687774&amp;p=dessert-union-25" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/overview-pipeline.jpg" width="1340" height="443" alt="The four pipeline stages side by side, each above the parts it is made of: a walk frame of one multibrot location, the same location's escape field in grayscale, the field colored through a gradient, and four candidate colorings with the kept one framed."><span class="figure-open-mark" aria-hidden="true">↗</span></a>
-        <figcaption>The pipeline end to end, on one location. A guided walk finds the frame and the location judge scores it; the renderer draws it at quality into a field, one number per pixel and no color yet; a palette is chosen from a neighborhood of the library and the tones are balanced; and the two render judges score the finished candidates, of which a few are kept. Every picture here is that same multibrot frame at a different stage, and the framed panel is the coloring the run kept.</figcaption>
+        <a class="figure-open" href="../explorer/index.html?v=2&amp;f=multibrot4&amp;x=0.31215622070747834&amp;y=0.7310275499716895&amp;w=0.000009171415720687774&amp;p=dessert-union-25" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/overview-pipeline.jpg" width="1344" height="464" alt="The three parts of the pipeline side by side, each above the parts it is made of: a walk frame of one multibrot location, the same frame colored through a palette, and four candidate colorings of it with the kept one framed."><span class="figure-open-mark" aria-hidden="true">↗</span></a>
+        <figcaption>The pipeline end to end, on one location. A guided walk finds the frame and the location judge scores it; that same frame is then drawn many ways — a rendering mode and a palette to each attempt, with the tones balanced — and the render judge scores what comes back; and a gallery is chosen out of the pool those attempts fill. Every picture here is that same multibrot frame, and the framed panel is the coloring the run kept.</figcaption>
       </figure>
 
-    <p><strong>Search</strong> — a guided walk through each fractal family descends toward
+    <p>Finding good locations — a guided walk through each fractal family descends toward
     structure and away from both emptiness and pure chaos, scoring neighborhoods as it goes
-    with a small <a href="https://en.wikipedia.org/wiki/Neural_network_(machine_learning)">neural
-    network</a> trained on my labels for what makes promising wallpaper
-    material (<a href="finding-good-locations.html">finding good locations</a>,
-    <a href="training-judges.html">training judges</a>). <strong>Render</strong> — each
-    promising location is drawn at high quality in one of a catalog of rendering modes, from
-    the classic smooth coloring to stranger styles
+    with a small <a href="https://en.wikipedia.org/wiki/Neural_network_%28machine_learning%29">neural network</a> trained on my ratings of what makes
+    promising wallpaper material. What it keeps is a growing pool of locations, each
+    recorded as a frame in the complex plane and nothing more — no colors yet, no style
+    (<a href="finding-good-locations.html">finding good locations</a>,
+    <a href="training-judges.html">training judges</a>). Finding good wallpapers — each
+    location in the pool is then drawn many ways: in several <i>rendering modes</i>, from
+    the classic smooth coloring to stranger styles, and under a spread of palettes, with
+    the picture's tones balanced automatically. A second neural network, trained on my
+    ratings of finished pictures, scores each attempt, and every attempt joins a pool of
+    candidate wallpapers with its score attached
     (<a href="rendering-fundamentals.html">rendering fundamentals</a>,
-    <a href="rendering-modes.html">rendering modes</a>). <strong>Color</strong> — a palette
-    is chosen to suit the image and its tones are balanced automatically
-    (<a href="color-palettes.html">color palettes</a>). <strong>Select</strong> — finished
-    renders are scored by <i>judges</i> trained on my ratings, and a final set is chosen for
-    quality and diversity — avoiding twenty near-duplicates of the single best view or a
-    single class of color styles
-    (<a href="from-locations-to-wallpapers.html">from locations to wallpapers</a>).</p>
+    <a href="rendering-modes.html">rendering modes</a>,
+    <a href="color-palettes.html">color palettes</a>,
+    <a href="finding-good-wallpapers.html">finding good wallpapers</a>). Gallery curation —
+    a gallery of any size is chosen out of that pool, for quality first and then under
+    constraints on the set as a whole: no near-duplicates of one view, no single family of
+    color crowding out the rest, every rendering mode represented
+    (<a href="gallery-curation.html">gallery curation</a>). The
+    <a href="full-pipeline.html">full pipeline</a> page shows the three parts running end
+    to end.</p>
+
+    <p>Two ideas run through all three parts. The neural networks — the <i>judges</i> —
+    stand in for my taste at every point where a machine has to decide whether something is
+    good; I rated by my own wallpaper preferences, and fine-tuning toward other tastes would
+    be straightforward. And what the project finds, it keeps: the location pool only grows,
+    and the best candidates at every location are kept, so the curation part can always be
+    re-run over everything the project has ever found.</p>
 
     <p>Each section is written to be readable independently. Nothing here requires more than
     a single desktop machine with one ordinary GPU. The whole system — search, rendering,
-    training, selection — was built to run unattended on fairly standard hardware. All my
-    fractals are rendered at 2560×1440 with heavy supersampling, but it's easy to re-render
-    at different resolutions.</p>
+    training, curation — was built to run unattended on fairly standard hardware. Every
+    candidate the pipeline judges is drawn small; a wallpaper that ships is rendered again
+    on a larger frame, with several samples to a pixel, and re-rendering the collection at a
+    different resolution is easy.</p>
   </section>
 
   <nav class="section-nav">

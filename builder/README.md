@@ -88,7 +88,7 @@ this builder does not read is an error, not a guess.
 
 ## A page may hang off a section without being one
 
-`article/` holds exactly the eleven ratified sections, and `check` refuses an HTML file
+`article/` holds exactly the twelve ratified sections, and `check` refuses an HTML file
 there that `sections.jsonl` does not list. A page that belongs to a section without being
 part of the reading order — the palette library, the palette prompt — lives in its own
 directory and is named with a slash wherever a registry names a page:
@@ -102,7 +102,7 @@ derive the list from, because a page cannot ask to be checked and be believed.
 
 ## The contents rail is derived, never kept
 
-`article/sections.jsonl` gives the eleven sections their reading order and says which are
+`article/sections.jsonl` gives the twelve sections their reading order and says which are
 written; everything else the rail shows comes off the pages themselves. A section's name
 is its `<h1>`, and the entries that open under the current page are the `<h2>`s of its
 prose — a stub's *Figures* block is scaffolding, not reading, so it is not listed.
