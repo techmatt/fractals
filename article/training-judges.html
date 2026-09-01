@@ -229,20 +229,21 @@
     old judge. The restatement reads no ratings; it preserves how much flows, not which
     frames.</p>
 
-    <p>The render judge acts through two bars, one for each kind, because a score is only
-    ever compared within its own kind: the same number can clear one kind's bar and fall
-    short of the other's, and neither reading is wrong. Each bar is read off ratings
-    directly — the score above which a picture had been rated at least good more often
-    than not, found by fitting a monotone curve through that kind's rated pictures, and
-    rounded up, because a bar is a floor. Neither bar removes where the gallery is
-    chosen: eligibility there is a flat one half, and a slot with no picture over it is
-    left unfilled rather than padded (<a href="gallery-curation.html">gallery curation</a>). Only the bar on the seventeen modes acts on what a run
-    itself puts out, which is gated more loosely on purpose. When pictures
-    are ranked for selection, probabilities are never compared across kinds or partitions:
-    each picture is ranked within its own partition and kind, and the lists are
-    interleaved by position — every partition's best, then every second-best. Each bar is
-    stamped with the exact judge it was measured against, and a bar is never applied to a
-    judge it was not measured on.</p>
+    <p>A score is only meaningful within its own kind. The two kinds are rated separately,
+    and the same number can sit above what one kind's ratings support and below what the
+    other's do, so the judge's output is never pooled across them. A floor fitted this way
+    — the lowest score whose agreement with a rating of good reaches even odds, rounded up,
+    because a floor is a floor — is therefore fitted per kind. One of them is in use: it
+    decides which of a run's own output is worth keeping. The matching floor for the plain
+    smooth rendering is measured and recorded rather than used. Neither floor removes where
+    the gallery is chosen: eligibility there is a flat one half, and a slot with no picture
+    over it is left unfilled rather than padded
+    (<a href="gallery-curation.html">gallery curation</a>). When pictures are ranked for
+    selection, probabilities are never compared across kinds or partitions: each picture is
+    ranked within its own partition and kind, and the lists are interleaved by position —
+    every partition's best, then every second-best. Each floor is stamped with the exact
+    judge it was measured against, and a floor is never applied to a judge it was not
+    measured on.</p>
 
     <h2 id="generalization-and-its-limits">Generalization and its limits</h2>
 
