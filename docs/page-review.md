@@ -183,7 +183,7 @@ editing a cell by hand.
 | `escape-time-fractals.html` | yes | none — the HTML is its own master | none | 7 placed | — |
 | `rendering-fundamentals.html` | yes | none — the HTML is its own master | none | 6 placed | — |
 | `rendering-modes.html` | yes | `Rendering modes v1.md` | none | 6 placed | — |
-| `finding-good-locations.html` | yes | `Finding good locations v4.md` | applied 2026-08-21 | 12 placed | — |
+| `finding-good-locations.html` | yes | `Finding good locations v5.md` | applied 2026-08-21 | 12 placed | placed 2026-09-01 with the reframing channel; the master carries eleven `[FIGURE]` markers and the page twelve blocks — `locations-walk-root` landed after v4 was approved, and `locations-found-and-finished` stands where the marker says `locations-q4-gallery` |
 | `training-judges.html` | yes | `Training judges v5.md` | applied 2026-08-21 | 3 placed | — |
 | `color-palettes.html` | yes | `Color palettes v4.md` | none | 7 placed | — |
 | `finding-good-wallpapers.html` | yes | `Finding good wallpapers v1.md` | none | 1 placed, 1 stale, 2 pending | renamed from `from-locations-to-wallpapers.html` at the twelve-section split, and the figures' `wallpapers-` prefix still carries the old name. `wallpapers-attempt` is placed off Matt's tile pick; `wallpapers-stages` is **stale** — its asset draws two processes and the page now describes three parts; `wallpapers-mine` and `wallpapers-allocation` need a mine's own plan and profile records, which `builder/pool.py` does not read yet |
@@ -204,7 +204,7 @@ doc **waiting** in the review folder is a round somebody started and did not fin
 
 ```json
 {"schema": 1, "kind": "prose", "page": "finding-good-locations.html",
- "file": "Finding good locations v4.md",
+ "file": "Finding good locations v5.md",
  "divergences": [{"master": "...", "page": "...", "why": "..."}]}
 ```
 

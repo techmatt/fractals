@@ -203,11 +203,12 @@
     bar rather than dying at the top.</p>
 
     <p>Prioritize. Frontier order is the judge's score, plus a dash of random jitter so the
-    walk doesn't fixate, plus a slight bonus for depth. Expansion runs in batches of eight; a
-    quarter of each batch is reserved for roots that have never been touched, and every root is
-    capped at twelve expansions. Without the reservation and the cap, the handful of richest
-    roots would starve everything else — a lesson the project learned by watching it
-    happen.</p>
+    walk doesn't fixate, plus a slight bonus for depth. Expansion runs in batches of eight, and
+    two shares of each batch are reserved: a quarter for roots that have never been touched,
+    and a couple of slots for frames the reframing operators below proposed, so neither
+    newcomers nor reframings wait behind an established frontier. Every root is capped at
+    twelve expansions. Without the reservations and the cap, the handful of richest roots would
+    starve everything else — a lesson the project learned by watching it happen.</p>
 
     <p>The judge steers, but it never drives: it cannot move a frame or propose one, only
     reorder the queue and decide each candidate's fate. Where the camera can go is decided
@@ -281,8 +282,17 @@
     <p>Recycling needs one restraint. Two nearby c values give two nearly identical Julia sets,
     so a new twin is skipped if its c lies within a certain radius (0.032 units) of one already
     accepted. That radius is a cost dial, not a boundary in the mathematics: similarity between
-    neighboring Julia sets fades smoothly with distance, with no knee anywhere, so the floor
+    neighboring Julia sets fades smoothly with distance, with no knee anywhere, so the radius
     simply sets how much near-duplication a run is willing to pay for.</p>
+
+    <p>The reframing operators earn a second life outside the walk. Run as a channel of their
+    own, they fire directly at the best-rated roots on the books: sweep each one's neighborhood
+    for minibrots, solve every nucleus found, and record each as a new location in its own
+    right — centered exactly on the nucleus, and offered at a ladder of framings wider than the
+    walk's, aimed outward as ever, with the judge picking the framing the same way it scores
+    everything else. Because every seed already earned a high rating, the channel inherits
+    quality the way an in-walk reframing does, and it has become one of the strongest sources
+    of good locations the project has.</p>
 
     <p>One seeded chain, end to end, shows the whole page in miniature — the figure below walks
     it frame by frame. A root is placed at a location I had rated highly. Two zoom steps
@@ -299,9 +309,9 @@
     <h2 id="where-the-walk-stops">Where the walk stops</h2>
 
     <p>A walk has three stopping conditions. First, a frame that gets too narrow stops: the
-    walk enforces a width floor of 10⁻⁹, set comfortably above the point where adjacent
+    walk enforces a minimum width of 10⁻⁹, set comfortably above the point where adjacent
     pixels collide in double-precision arithmetic and there is nothing left to render. Letting
-    walks push closer to that wall would be easy engineering; for now the floor is simply a
+    walks push closer to that wall would be easy engineering; for now the minimum is simply a
     chosen stopping rule. Rendering <em>past</em> the wall takes genuinely different machinery,
     and that story has its own page — <a href="deep-zoom.html">deep zoom</a>. Second, a root
     that has been expanded twelve times retires, so no root monopolizes a run. And finally, the
@@ -309,7 +319,7 @@
 
     <h2 id="examining-walk-quality">Examining walk quality</h2>
 
-    <p>Walks are far from interchangeable: the reservation and the cap in the Prioritize beat
+    <p>Walks are far from interchangeable: the reservations and the cap in the Prioritize beat
     exist precisely because a few rich roots would otherwise consume a whole run while others
     sit untouched.</p>
 
