@@ -25,6 +25,9 @@ python -m builder palettes [ID ...] [--place] [--replace]
                             pages that hang off it
 python -m builder palettes --library   refresh palettes/library.jsonl and land any
                             strip the all-palettes page is missing
+python -m builder growth [ID ...] [--stamp S] [--place] [--replace]
+                            bake the growth figure from the curation growth
+                            instrument's latest stamped run next door
 python -m builder diagram ID draw one of the two figures that are diagrams, not renders
 python -m builder explorer [--palettes-only]  bake the explorer's palettes, wasm, manifest
 python -m builder links [--write]   derive every picture's explorer link from its
@@ -131,7 +134,12 @@ that is registered and deliberately *not* on a page — it is blocked on somethi
 this repository, and it says what in `held_reason`. **`stale`** is made, on its page, and
 overtaken by the event its `stale_when` names; a `placed` row may carry a `stale_when`
 too, which is the standing warning about an event that has not happened yet and is the
-point at which somebody can still act on it. Prose gets written before pictures get made, and a
+point at which somebody can still act on it. **`draft`** is made and on its page with its
+*numbers* unsettled — a reading of a measurement that is going to be taken again — and
+it says what re-bakes it in `note`, which is also what its caption's small `Draft` mark
+points at. Every page on this site is a draft and none of them says so; this status is
+the narrower claim, that a reader who copied a number off this picture would be copying
+something with a shelf life. Prose gets written before pictures get made, and a
 page that says what is coming beats a broken image or a silent gap; `figures` lists what
 is still owed, grouped by the page it is owed on.
 

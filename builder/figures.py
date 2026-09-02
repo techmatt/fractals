@@ -76,12 +76,22 @@ def _point(real: str, imaginary: str) -> str:
 #: - `held` — registered and deliberately **not** on the page, blocked on something
 #:   outside this repository. A held row names what it is waiting for.
 #: - `stale` — made and on the page, and the event its `stale_when` names has happened.
+#: - `draft` — made and on the page, and its **numbers** are expected to change. Every
+#:   page on this site is a draft and none of them says so; this status is for the
+#:   narrower case where the picture is a reading of a measurement that is going to be
+#:   taken again, and a reader who wrote a number down off it would be writing down
+#:   something that is about to be false. A draft row says in `note` what re-bakes it,
+#:   and its caption carries a small mark so the page says it too.
 #:
 #: `stale_when` is not only for a row that is already stale: it is the standing warning a
 #: placed row carries about the event that will overtake it, which is the point at which
 #: somebody can still do something about it.
-PLACED, PENDING, HELD, STALE = "placed", "pending", "held", "stale"
-STATUSES = (PLACED, PENDING, HELD, STALE)
+PLACED, PENDING, HELD, STALE, DRAFT = "placed", "pending", "held", "stale", "draft"
+STATUSES = (PLACED, PENDING, HELD, STALE, DRAFT)
+
+#: The statuses whose row owns a made asset — a file, a width and a height — as against
+#: one that is planned or deliberately off its page.
+MADE = (PLACED, STALE, DRAFT)
 
 #: Where a figure's pictures came from, as a kind and the keys that address them.
 #:
@@ -201,6 +211,12 @@ class Figure:
     held_reason: str | None
     stale_when: str | None
     reuse_reason: str | None
+    note: str | None
+
+    @property
+    def draft(self) -> bool:
+        """Whether the page should say out loud that these numbers are going to move."""
+        return self.status == DRAFT
 
     @property
     def frames(self) -> frozenset[str]:
@@ -314,10 +330,31 @@ def markup(figure: Figure, opened: str | None = None) -> str:
         [
             f'{INDENT}<figure class="{" ".join(classes)}" data-figure="{attribute(figure.id)}">',
             _well(figure, opened),
-            f"{INDENT}  <figcaption>{text(figure.caption)}</figcaption>",
+            f"{INDENT}  <figcaption>{_mark(figure)}{text(figure.caption)}</figcaption>",
             f"{INDENT}</figure>",
         ]
     )
+
+
+#: What a draft figure's mark says. A word, not an abbreviation: this is the one piece of
+#: the site's own bookkeeping a reader is ever shown, so it is shown in words they have.
+DRAFT_MARK = "Draft"
+
+
+def _mark(figure: Figure) -> str:
+    """The small stamp a draft figure's caption opens with, and nothing for any other.
+
+    The page around it is a draft too, and says so nowhere. What this marks is narrower:
+    the *numbers* in this picture are a reading of a measurement that will be taken
+    again, so a reader who copies one out is copying something with a shelf life.
+
+    Inside the caption rather than over the picture. A badge on a chart is furniture
+    competing with the chart, and the caption is where a reader already looks to find out
+    what a figure is.
+    """
+    if not figure.draft:
+        return ""
+    return f'<span class="figure-draft">{text(DRAFT_MARK)}</span> '
 
 
 def _well(figure: Figure, opened: str | None = None) -> str:
@@ -367,7 +404,7 @@ def _figure(row: records.Record, identifier: str) -> Figure:
         raise records.RecordError(
             f"{row.where}: status {status!r} — the statuses are {', '.join(STATUSES)}"
         )
-    made = status in (PLACED, STALE)
+    made = status in MADE
     asset = (row.optional_text("file"), row.optional_count("width"), row.optional_count("height"))
     if not made and any(field is not None for field in asset):
         raise records.RecordError(
@@ -383,6 +420,12 @@ def _figure(row: records.Record, identifier: str) -> Figure:
     if status == STALE and row.optional_text("stale_when") is None:
         raise records.RecordError(
             f"{row.where}: a stale figure names the event that staled it, in stale_when"
+        )
+    note = row.optional_text("note")
+    if status == DRAFT and note is None:
+        raise records.RecordError(
+            f"{row.where}: a draft figure says in note what re-bakes it — a mark on the "
+            "caption that points at nothing is worse than no mark"
         )
     # A picture that is not made yet has nothing to record; a made one has no excuse.
     provenance = row.lines("provenance") if made else ()
@@ -404,6 +447,7 @@ def _figure(row: records.Record, identifier: str) -> Figure:
         held_reason=held_reason,
         stale_when=row.optional_text("stale_when"),
         reuse_reason=row.optional_text("reuse_reason"),
+        note=note,
     )
 
 
@@ -522,6 +566,7 @@ KEY_ORDER = (
     "held_reason",
     "stale_when",
     "reuse_reason",
+    "note",
     "file",
     "width",
     "height",
@@ -544,6 +589,7 @@ def place(
     provenance: list[str] | None = None,
     recipe: dict | None = None,
     replace: bool = False,
+    status: str = PLACED,
 ) -> Figure:
     """Turn a pending row into a made one, and heal the well its page is still showing.
 
@@ -597,7 +643,16 @@ def place(
                 f"`python -m builder figure {identifier}` by hand"
             )
 
-    row["status"] = PLACED
+    if status not in MADE:
+        raise records.RecordError(
+            f"a landing lands a made figure — {status!r} is not one of {', '.join(MADE)}"
+        )
+    if status == DRAFT and not row.get("note"):
+        raise records.RecordError(
+            f"{identifier} would land as a draft and its row carries no note — a draft "
+            "says what re-bakes it before its mark goes onto a page"
+        )
+    row["status"] = status
     row.pop("held_reason", None)
     row["file"], row["width"], row["height"] = file, width, height
     if provenance:

@@ -2,13 +2,14 @@
 
 `build` writes, `check` only reads and exits 1 on a problem, `figure` prints markup to
 paste, `figures` lists what is still to make and lands a finished one, `locations` and
-`judges` draw the figures of those two sections, `diagram` draws
+`judges` draw the figures of those two sections, `growth` bakes the one figure that is a
+chart of a measurement rather than a picture of anything, `diagram` draws
 the two figures that are diagrams rather than renders, `serve` puts the committed tree
 on localhost for previewing, `prose` holds each page to the approved document it was
 placed from, and `review` builds the doc a page is marked up in and reads it back.
 `explorer` bakes the explorer page's palettes, wasm module and manifest. `import`,
-`prose`, `review`, `explorer`, `locations` and `judges` are the commands that reach
-outside the repository — for a full-size original, for the approved prose, for the
+`prose`, `review`, `explorer`, `locations`, `judges` and `growth` are the commands that
+reach outside the repository — for a full-size original, for the approved prose, for the
 Drive-synced review folder, and for the engine, the records and the judges next door.
 Run `python -m builder --help` for the list.
 """
@@ -21,6 +22,7 @@ from . import atlas as atlas_module
 from . import build as build_module
 from . import checks, diagrams, figures, images, links, records, renders
 from . import explorer as explorer_module
+from . import growth as growth_module
 from . import judges as judges_module
 from . import locations as locations_module
 from . import palettes as palettes_module
@@ -203,6 +205,31 @@ def _parser() -> argparse.ArgumentParser:
         help="land the redraw over a figure that is already made, page and row together",
     )
 
+    grown = commands.add_parser(
+        "growth", help="draw the growth figure, from the curation growth instrument next door"
+    )
+    grown.add_argument(
+        "id",
+        nargs="*",
+        choices=sorted(growth_module.MAKERS) or None,
+        help="which figures to draw; all of them by default",
+        metavar="ID",
+    )
+    grown.add_argument(
+        "--stamp",
+        help="which stamped growth run to bake from; the latest by default",
+    )
+    grown.add_argument(
+        "--place",
+        action="store_true",
+        help="import each drawn sheet as its figure's asset and fill its registry row",
+    )
+    grown.add_argument(
+        "--replace",
+        action="store_true",
+        help="land the redraw over a figure that is already made, page and row together",
+    )
+
     drawn = commands.add_parser("diagram", help="draw one of the figures that is not a render")
     drawn.add_argument("id", choices=sorted(diagrams.DIAGRAMS), help="the diagram's figure id")
 
@@ -302,6 +329,8 @@ def _do_check() -> int:
     for figure in registry.values():
         if figure.status == figures.HELD:
             print(f"note: {figure.id} is held — {figure.held_reason}")
+        if figure.status == figures.DRAFT:
+            print(f"note: {figure.id} is a draft — {figure.note}")
         if figure.stale_when:
             was = "is stale" if figure.status == figures.STALE else "goes stale on"
             print(f"note: {figure.id} {was} {figure.stale_when}")
@@ -362,7 +391,8 @@ def _do_figures(options: argparse.Namespace) -> int:
     wanted = [
         figure
         for figure in registry.values()
-        if options.all or figure.status in (figures.PENDING, figures.HELD, figures.STALE)
+        if options.all
+        or figure.status in (figures.PENDING, figures.HELD, figures.STALE, figures.DRAFT)
     ]
     if not wanted:
         print("every registered figure is made")
@@ -378,6 +408,8 @@ def _do_figures(options: argparse.Namespace) -> int:
             print(f"  {figure.id:<28} {figure.status:<8} {size:<12} {kinds} ({keys}) {recipe}")
             if figure.held:
                 print(f"    held: {figure.held_reason}")
+            elif figure.draft:
+                print(f"    draft: {figure.note}")
             elif figure.stale_when:
                 print(f"    stale when: {figure.stale_when}")
             elif figure.pending:
@@ -542,6 +574,37 @@ def _do_pool(options: argparse.Namespace) -> int:
             provenance=list(drawn.provenance),
             recipe=pool_module.recipe(identifier),
             replace=options.replace,
+        )
+        size = destination.stat().st_size / 1024
+        print(f"  {destination.name}  {width}x{height}  ({size:.0f} KB) — {placed.page}")
+    return 0
+
+
+def _do_growth(options: argparse.Namespace) -> int:
+    """Bake the growth figure, and optionally land it — as a draft, mark and all.
+
+    The same two steps every other maker takes, with two differences that are the
+    figure's own. The sheet lands as a **PNG**: it is drawn art rather than a render, and
+    JPEG rings every hairline of a chart. And it lands at `draft` rather than `placed`,
+    because the ladder behind it stops at the sizes this pool can seat and the numbers
+    move the next time the instrument is run.
+    """
+    for identifier in options.id or sorted(growth_module.MAKERS):
+        drawn = growth_module.MAKERS[identifier](options.stamp)
+        print(f"wrote {drawn.path.relative_to(SITE_ROOT).as_posix()}")
+        if not (options.place or options.replace):
+            continue
+        destination = FIGURE_IMAGES_DIR / f"{identifier}.png"
+        width, height = images.import_web_res(drawn.path, destination)
+        placed = figures.place(
+            identifier,
+            destination.name,
+            width,
+            height,
+            provenance=list(drawn.provenance),
+            recipe=growth_module.recipe(identifier),
+            replace=options.replace,
+            status=figures.DRAFT if identifier in growth_module.DRAFTS else figures.PLACED,
         )
         size = destination.stat().st_size / 1024
         print(f"  {destination.name}  {width}x{height}  ({size:.0f} KB) — {placed.page}")
@@ -715,6 +778,8 @@ def main(argv: list[str] | None = None) -> int:
             return _do_palettes(options)
         if options.command == "pool":
             return _do_pool(options)
+        if options.command == "growth":
+            return _do_growth(options)
         if options.command == "diagram":
             return _do_diagram(options.id)
         if options.command == "prose":
@@ -732,6 +797,7 @@ def main(argv: list[str] | None = None) -> int:
         images.ImageError,
         explorer_module.ExplorerError,
         renders.EngineError,
+        growth_module.GrowthError,
         pool_module.PoolError,
         prose_module.ProseError,
         review_module.ReviewError,

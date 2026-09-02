@@ -197,7 +197,11 @@ keeps the mechanics. **Every apply round ends by distilling that round's general
   `prose.jsonl`. Every row says where it stands in `status` — `placed`, `pending`, `held`
   (registered and deliberately not on a page, with a `held_reason`) or `stale` (overtaken
   by the event its `stale_when` names; a placed row may carry a `stale_when` as a standing
-  warning). Every row also carries `sources`: a list of `{kind, keys}` naming the records
+  warning) or `draft` (made and on its page, and its **numbers** are a reading of a
+  measurement that will be taken again; a `note` says what re-bakes it, and the caption
+  carries a small `Draft` mark — every page here is a draft and says so nowhere, and this
+  is the narrower claim, that a reader who copied a number off the picture would be
+  copying something with a shelf life). Every row also carries `sources`: a list of `{kind, keys}` naming the records
   its pictures came out of, where **a key is a string that addresses a record by its own
   name and an integer is refused at load**. `builder check` resolves every key against the
   store its kind names — `run_row` against the curation release records and the

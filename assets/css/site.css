@@ -475,6 +475,26 @@ a:hover { color: var(--ink); }
   color: var(--well-ink);
 }
 
+/* A figure whose picture is made and whose *numbers* are not settled: a reading of a
+   measurement that is going to be taken again. Every page here is a draft and none of
+   them says so; this mark is for the narrower case, where a reader who copied a number
+   off the chart would be copying something with a shelf life. It opens the caption
+   rather than riding on the picture — a badge over a chart competes with the chart —
+   and it is the pending label's lettering at the pending label's rank, because it is
+   the same kind of note about the same kind of gap. */
+.figure-draft {
+  display: inline-block;
+  margin-right: 0.45rem;
+  padding: 0.05rem 0.4rem;
+  border: 1px solid var(--well-pending);
+  border-radius: 0.2rem;
+  font-size: 0.6875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  vertical-align: 0.08em;
+  color: var(--well-ink);
+}
+
 .section-nav {
   margin-top: 2.5rem;
   padding-top: 1.2rem;
