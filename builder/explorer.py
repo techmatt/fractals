@@ -11,12 +11,13 @@ Four things are baked, and each for its own reason:
 - **The palettes** — the curated colormaps, name to stops, as an ES module. Names are
   the ids a permalink carries, so they are baked as names and never as indices: a
   colormap added to the wallpaper project must not silently renumber somebody's link.
-- **The catalog** — the engine's mode roster with the line that says what each mode is
-  for, and the family constants a dynamical plane needs. Both are facts the wallpaper
-  project owns: the modes come out of `fractal-engine modes`, and the constants out of
-  its shipped anchors, so neither is typed here. What the *permalink* will accept is
-  still `permalink.js`'s own business — a contract that read its vocabulary from a
-  generated file could be widened by rebuilding it.
+- **The catalog** — the modes the picker offers with the line that says what each one
+  is for, and the family constants a dynamical plane needs. What each mode *is* is a fact
+  the wallpaper project owns, and so are the constants: the identity lines come out of
+  `fractal-engine modes` and the constants out of the shipped anchors, so neither is
+  typed here. **Which** modes are offered is this repository's own record — see below.
+  What the *permalink* will accept is still `permalink.js`'s own business — a contract
+  that read its vocabulary from a generated file could be widened by rebuilding it.
 - **The wasm** — `explorer/engine-wasm/` compiled for `wasm32-unknown-unknown` and
   copied in. The crate depends on the engine by path, so the module is the engine's own
   arithmetic and not a second implementation of it.
@@ -49,6 +50,16 @@ explorer carries, saying whether the picker lists it. The bake reads the names f
 record and the gradients from the library next door, so growing the picker is an edit
 somebody made on purpose and a rebake on an unchanged tree reproduces the committed
 module byte for byte — which `builder check` asserts.
+
+**The mode roster is a committed record for the same reason** *(2026-09-01)*. It used to
+be derived — every mode the engine catalog called `production` — and the engine promoted
+`tail_itinerary`, so the next bake would have put a nineteenth entry in the picker and a
+nineteenth name in the contract without anybody deciding to. `explorer/modes.jsonl` names
+the eighteen the picker offers, in the order it shows them; the bake takes each mode's
+identity line and its curve from the catalog next door and offers nothing the record does
+not name. There are three copies of that list and all three are held together: the record
+is held to the module by `builder check`'s bake, and the module to `permalink.js`'s typed
+`MODES` by `permalink.test.mjs`.
 """
 
 from __future__ import annotations
@@ -102,6 +113,13 @@ COLORMAP_SOURCE = "data/palettes"
 PICKS_RECORD = EXPLORER_DIR / "palettes.jsonl"
 PICKS_METHOD = "method"
 PICKS_ROW = "palette"
+
+#: The same shape for the modes, and for the same reason: one row per mode the picker
+#: offers, in the order it shows them, beside the module the bake writes. Presence is the
+#: offer — there is no unoffered half here, because a mode outside the roster is a mode no
+#: link and no figure of this site names.
+MODES_RECORD = EXPLORER_DIR / "modes.jsonl"
+MODES_ROW = "mode"
 
 #: The tail of the sentence a mechanically-converted map carries in its `source` line.
 #: See `src/fractal_wallpapers/palettes/library_import.py` over there. Nothing bakes off
@@ -380,6 +398,58 @@ def catalogued_modes() -> list[dict]:
     return json.loads(finished.stdout)
 
 
+def mode_roster() -> tuple[dict, tuple[str, ...]]:
+    """The committed picker roster: its method row, and the modes it offers, in order.
+
+    Read in file order, which is the order the picker shows and the order `catalog.js`
+    bakes them in. The record decides what is offered; the engine catalog decides what
+    each of those modes *is*.
+    """
+    rows = records.read(MODES_RECORD)
+    head, rest = rows[0], rows[1:]
+    head.expect_kind(PICKS_METHOD)
+    found = []
+    for record in rest:
+        record.expect_kind(MODES_ROW)
+        found.append(record.text("name"))
+    if not found:
+        raise ExplorerError(f"{MODES_RECORD.name} names no mode, so the picker would be empty")
+    if len(set(found)) != len(found):
+        raise ExplorerError(f"{MODES_RECORD.name} names a mode twice")
+    return head.fields, tuple(found)
+
+
+def offered_modes(names: tuple[str, ...] | None = None) -> list[dict]:
+    """Each mode the roster offers, as the engine's catalog describes it, in roster order.
+
+    Two things are refused rather than worked around. A name the record holds and the
+    catalog does not is a **rename or a retirement next door**, and both are things
+    somebody has to look at before the picker loses an entry. A name the catalog holds
+    outside `production` is a mode the engine has **demoted**, and offering it would be
+    this repository publishing something the project has stopped shipping.
+
+    What is deliberately *not* refused is the other direction: a production mode the
+    record does not name is simply not offered. That is the whole point of the record —
+    the engine gained `tail_itinerary` and the picker did not, because widening what a
+    reader is offered is an edit somebody makes rather than a build artifact.
+    """
+    catalog = {mode["name"]: mode for mode in catalogued_modes()}
+    found = []
+    for name in mode_roster()[1] if names is None else names:
+        mode = catalog.get(name)
+        if mode is None:
+            raise ExplorerError(
+                f"{MODES_RECORD.name} offers {name!r}, and the engine catalog has no such mode"
+            )
+        if mode["tier"] != "production":
+            raise ExplorerError(
+                f"{MODES_RECORD.name} offers {name!r}, and the engine catalog now calls it "
+                f"{mode['tier']!r} rather than production"
+            )
+        found.append(mode)
+    return found
+
+
 def anchor_constants() -> dict[str, dict[str, str]]:
     """The family constants the explorer opens a dynamical plane at.
 
@@ -429,23 +499,23 @@ def curves(modes: list[dict]) -> dict[str, str]:
     return {mode["name"]: mode["coloring"].get("transform", "linear") for mode in modes}
 
 
-#: The two fields of the catalog's stamp that say *when* rather than *what*. The mode
-#: roster is the engine's and has no committed record here to hang a date on, so these
-#: move on every bake; `check` holds the catalog to its content and reports a stamp that
-#: moved alone as a note. `palettes.js` needs no such carve-out — its stamp is read off
-#: `palettes.jsonl`, so the whole module is content.
-CATALOG_CLOCK = ("baked", "wallpapers_commit")
-
-
 def catalog_module_text() -> tuple[str, int]:
-    """The text of `catalog.js`, and how many production modes went into it."""
-    modes = [mode for mode in catalogued_modes() if mode["tier"] == "production"]
+    """The text of `catalog.js`, and how many modes the picker offers.
+
+    The stamp is read off the roster's method row rather than off the clock, the way
+    `palettes.js`'s is: two bakes of one tree are then the same bytes, and an identity
+    line or an anchor constant that moved next door is a failing check rather than a
+    diff nobody looks at.
+    """
+    stated, offered = mode_roster()
+    modes = offered_modes(offered)
     constants = anchor_constants()
     stamp = {
-        "modes_from": "fractal-engine modes",
+        "modes_from": str(stated["source"]),
+        "roster_from": MODES_RECORD.name,
         "constants_from": ANCHOR_SOURCE,
-        "wallpapers_commit": _wallpapers_commit(),
-        "baked": date.today().isoformat(),
+        "wallpapers_commit": str(stated["wallpapers_commit"]),
+        "baked": str(stated["baked"]),
     }
 
     lines = [
@@ -457,6 +527,10 @@ def catalog_module_text() -> tuple[str, int]:
         "// that rebuilding this file can never widen the contract. What is here is what",
         "// those names mean — the line under each mode in the picker, and the constant a",
         "// dynamical plane opens at.",
+        "//",
+        "// WHICH modes those are is `explorer/modes.jsonl`, not the whole engine catalog:",
+        "// a mode the engine promotes arrives in the picker when somebody adds it to that",
+        "// record, and not by rebuilding this file.",
         "",
         f"export const PROVENANCE = {json.dumps(stamp, indent=2, sort_keys=True)};",
         "",
@@ -474,7 +548,7 @@ def catalog_module_text() -> tuple[str, int]:
 
 
 def write_catalog() -> tuple[Path, int]:
-    """Bake the mode roster and the family constants into `catalog.js`."""
+    """Bake the offered modes and the family constants into `catalog.js`."""
     text, modes = catalog_module_text()
     CATALOG_MODULE.write_text(text, encoding="utf-8", newline="\n")
     return CATALOG_MODULE, modes
@@ -604,7 +678,7 @@ def bake(*, palettes_only: bool = False) -> list[str]:
         f"default {chosen}"
     )
     path, modes = write_catalog()
-    written.append(f"{path.relative_to(SITE_ROOT).as_posix()}  {modes} production modes")
+    written.append(f"{path.relative_to(SITE_ROOT).as_posix()}  {modes} offered modes")
     if palettes_only:
         return written
     path, raw_bytes, gzip_bytes = build_wasm()

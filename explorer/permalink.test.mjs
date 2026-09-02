@@ -521,11 +521,13 @@ test("every link the site carries parses, and is the canonical spelling of its v
   assert.ok(linked > 0, "no row of the registry carries a link");
 });
 
-test("the contract's roster is the engine's production roster, in the same order", () => {
-  // The one place the two lists meet. `catalog.js` is baked from `fractal-engine
-  // modes` and this one is typed, deliberately — a contract that read its own
-  // vocabulary from a generated file could be widened by rebuilding it — so they
-  // are compared instead.
+test("the contract's roster is the offered roster, in the same order", () => {
+  // The one place the two lists meet. `catalog.js` is baked from `modes.jsonl` and
+  // this one is typed, deliberately — a contract that read its own vocabulary from
+  // a generated file could be widened by rebuilding it — so they are compared
+  // instead. Three copies of one list, and this is the second tie: `builder check`
+  // holds the record to the module, and this holds the module to the contract, so
+  // widening the picker means editing the record and this array on purpose.
   assert.deepEqual(MODES, [...IDENTITIES.keys()]);
   assert.deepEqual([...MODES].sort(), Object.keys(CURVES).sort());
   for (const mode of Object.keys(MODE_PARAMETERS)) assert.ok(MODES.includes(mode), mode);

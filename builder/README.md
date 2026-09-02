@@ -55,7 +55,7 @@ that checkout, so on a machine without one it raised before the first check ran 
 check after it went unrun; the page is built from a committed record now, and this is why.
 
 **So a green CI is not a green tree.** `library` and `bake` ask nothing on a bare clone
-and `figures` asks half, which means the palette record, the explorer's generated modules
+and `figures` asks half, which means the two explorer rosters, its generated modules
 and every source key a figure cites are certified **only on a machine that has the
 checkout**. Run `python -m builder check` here, with `FRACTAL_WALLPAPERS_ROOT` set or
 `local.toml` in place, before a checkpoint — and read the exit summary's skip count, which
@@ -253,10 +253,14 @@ configured. A palette entering the library next door costs one `--library` and o
   the registry to it, and a second reading of a URL contract in Python is the one thing a
   URL contract cannot survive.
 - **bake** — the explorer's two generated modules are byte for byte what a rebake here
-  produces: `palettes.js` off `explorer/palettes.jsonl` and the library next door, and
-  `catalog.js` off the engine beside it, **its two stamp lines excepted**. With `library`,
-  it is one of the two checks that ask nothing at all on a bare clone and say so by name,
-  and it is what stands between the picker and a rebake nobody ran deliberately.
+  produces, both of them and with nothing excepted: `palettes.js` off
+  `explorer/palettes.jsonl`, `catalog.js` off `explorer/modes.jsonl`, and the gradients,
+  identity lines and anchor constants off the wallpaper project next door. Each module's
+  stamp is read from its record's method row rather than from the clock, which is what
+  makes a whole-file comparison possible. With `library`, it is one of the two checks that
+  ask nothing at all on a bare clone and say so by name, and it is what stands between the
+  picker and a rebake nobody ran deliberately — once from a two-hundred-map drop in the
+  library, once from a mode the engine promoted.
 - **guidance** — `CLAUDE.md` names `writing-guidance.md`. The editorial authority is on
   the synced drive and a clone need not have it, so what is checkable here is the pointer:
   a prompt that is never sent there writes against nothing.

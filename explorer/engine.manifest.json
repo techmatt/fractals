@@ -1,5 +1,5 @@
 {
-  "built": "2026-08-24",
+  "built": "2026-09-01",
   "crate": "explorer/engine-wasm",
   "engine_changes": [
     "coloring::composite, coloring::modulate and direct_trap::Painter::trace are pub: visibility only, no signature moved, engine tests unmoved.",
@@ -7,9 +7,9 @@
     "field::sweep_row and field::Channels are pub: the engine's own table of specialized call sites, twelve channel sets over nine families, which compute_lanes now calls instead of keeping a hand-written copy of nine of them. Visibility only, no signature moved, engine tests unmoved."
   ],
   "engine_version": "0.1.0",
-  "gzip_bytes": 177908,
-  "raw_bytes": 614666,
+  "gzip_bytes": 178415,
+  "raw_bytes": 615869,
   "rustc": "1.96.0 (ac68faa20 2026-05-25)",
   "schema": 1,
-  "wallpapers_commit": "3df7f46dc8dd3e69ec2ffbb6065719f3cd494179"
+  "wallpapers_commit": "aa2611bebb9abc9592362a121b6b3f5ac19fa7dd"
 }

@@ -62,13 +62,15 @@ did on a machine without one was raise, and every check after it went unrun.
   itself, by `permalink.test.mjs`, because the contract is written in JavaScript and a
   second reading of it in Python is exactly what a URL contract cannot survive.
 - **bake** — the explorer's two generated modules are what a rebake produces from the
-  committed roster and the library next door. `palettes.js` byte for byte, because its
-  stamp is read off `explorer/palettes.jsonl` rather than off the clock; `catalog.js`
-  below its stamp, because the mode roster is the engine's and has no record here to
-  date. It also holds the roster to the figures: a picture drawn in a map the roster
-  does not carry is a picture the explorer cannot open. Only where the checkout is
-  configured — a clone has no library to bake from, and the modules it serves are the
-  committed ones either way.
+  committed rosters and the wallpaper project next door, both byte for byte, because both
+  stamps are read off a record — `explorer/palettes.jsonl` and `explorer/modes.jsonl` —
+  rather than off the clock. So a gradient, an identity line or an anchor constant that
+  moved next door fails here rather than arriving as a diff nobody looks at, and a mode
+  the engine promotes does not reach the picker at all until the record names it. It also
+  holds the palette roster to the figures: a picture drawn in a map the roster does not
+  carry is a picture the explorer cannot open. Only where the checkout is configured — a
+  clone has no library to bake from, and the modules it serves are the committed ones
+  either way.
 """
 
 import json
@@ -519,8 +521,10 @@ def check_bake() -> list[str]:
     The picker is a thing a reader is offered, and it changed once by accident: the bake
     read "every curated map" out of the library next door, that library took a drop of
     two hundred authored maps, and a rebake nobody ran on purpose would have grown the
-    picker from 77 entries to 277. The roster is committed here now, and this is what
-    says the committed module is still what it bakes to.
+    picker from 77 entries to 277. The mode half went the same way a fortnight later,
+    when the engine promoted `tail_itinerary` into a roster the bake was reading whole.
+    Both rosters are committed here now, and this is what says the committed modules are
+    still what they bake to.
 
     Nothing here without the checkout: a bake reads the gradients out of the library, so
     a clone cannot ask the question at all — and the module it serves is the committed
@@ -545,18 +549,14 @@ def _bake_problems() -> list[str]:
             f"{_shown(explorer.PICKS_RECORD)} — {_first_difference(baked, committed)}"
         )
     catalogued, _modes = explorer.catalog_module_text()
-    if _without_clock(catalogued) != _without_clock(_read(explorer.CATALOG_MODULE)):
+    committed = _read(explorer.CATALOG_MODULE)
+    if catalogued != committed:
         problems.append(
             f"{_shown(explorer.CATALOG_MODULE)}: not what `python -m builder explorer` bakes "
-            "from the engine beside it — rebake it"
+            f"from {_shown(explorer.MODES_RECORD)} and the engine beside it — "
+            f"{_first_difference(catalogued, committed)}"
         )
     return problems + _unbakeable()
-
-
-def _without_clock(text: str) -> str:
-    """A generated module with the stamp lines that say *when* taken out."""
-    held = tuple(f'  "{field}": ' for field in explorer.CATALOG_CLOCK)
-    return LF.join(line for line in text.split(LF) if not line.startswith(held))
 
 
 def _first_difference(baked: str, committed: str) -> str:

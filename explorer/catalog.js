@@ -6,12 +6,17 @@
 // that rebuilding this file can never widen the contract. What is here is what
 // those names mean — the line under each mode in the picker, and the constant a
 // dynamical plane opens at.
+//
+// WHICH modes those are is `explorer/modes.jsonl`, not the whole engine catalog:
+// a mode the engine promotes arrives in the picker when somebody adds it to that
+// record, and not by rebuilding this file.
 
 export const PROVENANCE = {
-  "baked": "2026-08-23",
+  "baked": "2026-09-01",
   "constants_from": "data/anchors.jsonl",
   "modes_from": "fractal-engine modes",
-  "wallpapers_commit": "c3c3fa35e9cff00ba33b798ae4a601876823121f"
+  "roster_from": "modes.jsonl",
+  "wallpapers_commit": "aa2611bebb9abc9592362a121b6b3f5ac19fa7dd"
 };
 
 export const MODES = new Map([

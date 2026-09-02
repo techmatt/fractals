@@ -77,8 +77,9 @@ permalink.js          the link contract — parse, validate, canonicalize
 permalink.test.mjs    34 tests, `node --test explorer/permalink.test.mjs`
 bands.test.mjs        3 tests: the pool cuts the frame, never what is in it
 palettes.jsonl        the roster palettes.js is baked from: 110 maps, 77 offered
+modes.jsonl           the roster catalog.js is baked from: the 18 modes the picker offers
 palettes.js           generated: the colormaps, by name, curated or drawn-in
-catalog.js            generated: the mode roster, its curves, the anchors' constants
+catalog.js            generated: the offered modes, their curves, the anchors' constants
 links.jsonl           generated: every figure and tile, as a link here or a reason not
 engine.wasm           generated: the engine, compiled
 engine.manifest.json  generated: what engine.wasm was built from
@@ -326,7 +327,10 @@ and wasm's f64 is IEEE-754 with no x87 excess precision to diverge through. That
 eighteen modes drawn on the parameter plane and on a dynamical one, at one and at two
 samples per pixel, against `fractal-engine render` of the same spec — **72 of 72 frames
 byte-identical**, measured both before the rewire and after it, so a divergence would have
-been attributable. **Measured too, where it used to be argued:** the banded
+been attributable. Run a third time on 2026-09-01, when `coloring::modulate` next door
+grew a second return value and this crate was rebuilt against it: **72 of 72 again**, at
+384x216 rather than the full frame, which is the same arithmetic over fewer samples and
+is what makes a re-run cheap enough to be worth doing after every engine move. **Measured too, where it used to be argued:** the banded
 assembly equals a whole-frame pass through *this* module. `bands.test.mjs` draws the
 anchor at 320x180 three ways — whole, the eight bands a two-worker pool cuts, the
 twenty-three a sixteen-worker pool cuts — and asserts the three are the same bytes; then
@@ -896,18 +900,27 @@ door and the roster from the record, and `builder check`'s **bake** check assert
 the committed `palettes.js` is byte for byte what that produces. Widening the picker is
 an edit to the record, made on purpose, in a commit that says so.
 
-**`catalog.js` has no such record, and that was decided rather than overlooked.** It
-bakes from `fractal-engine modes` and the project's shipped anchors, and it reproduces
-byte for byte **except its two stamp fields** — `baked`, the date, and
-`wallpapers_commit` — which say *when* and are different on every bake by construction.
-`check`'s `bake` strips those two lines from both sides before comparing, which is
-`checks._without_clock` reading `explorer.CATALOG_CLOCK`. Pinning the roster the way the
-picker's is pinned was **declined**: the modes and their curves are the engine's own
-identity rather than a choice this repository makes, a second copy of them here would be
-a second answer to what the engine ships, and the permalink's vocabulary — the thing a
-widening would actually endanger — is typed in `permalink.js` and held to the catalog by
-the test suite. The caveat that comes with that: **a retuned or retired mode arrives on
-this page by rebuilding**, with nothing here to say it moved except the diff.
+**`catalog.js` has the same shape of record now, and it did not always** *(2026-09-01)*.
+Pinning the mode roster the way the picker's palettes are pinned was declined once, on the
+argument that the modes are the engine's own identity rather than a choice this repository
+makes; the module bakes from `fractal-engine modes` and the project's shipped anchors, and
+`check` compared it below its two clock fields rather than byte for byte. Then the engine
+promoted `tail_itinerary`, and the next bake would have put a nineteenth entry in the
+picker and a nineteenth name in the contract — the palette drop's failure mode exactly,
+arriving from the other repository. So `modes.jsonl` names the eighteen the picker offers,
+in the order it shows them; the bake takes each mode's identity line and its curve from
+the catalog next door and offers nothing the record does not name, and its stamp is read
+off the record's method row, so `catalog.js` now reproduces **byte for byte** like
+`palettes.js` and there is no clock carve-out left.
+
+That is three copies of one list — the record, the baked module, `permalink.js`'s typed
+`MODES` — and both ties are held: `check`'s `bake` holds the record to the module, and
+`permalink.test.mjs` holds the module to the contract. Widening the picker is an edit to
+the record and to that array, both made on purpose. What the bake still refuses rather
+than absorbs is the other direction: a name the record holds that the catalog has renamed
+away, or one the engine has demoted out of `production`, stops the bake by name. **A
+retuned mode still arrives on this page by rebuilding** — its identity line and its curve
+are the engine's — but now with a failing check to announce it rather than only a diff.
 
 ## Next
 

@@ -740,15 +740,22 @@ pub extern "C" fn shade(
             &plan.palette,
             colormap,
         ),
-        (Coloring::Modulate { shift, .. }, Texture::Exact(second)) => coloring::modulate(
-            &base,
-            second,
-            plan.lanes[0].transform,
-            plan.lanes[1].transform,
-            *shift,
-            &plan.palette,
-            colormap,
-        ),
+        // `modulate` answers with the color and with whether the texture's stretch
+        // came back flat. The flat flag is a diagnostic the CLI reports beside a
+        // render; this boundary hands back pixels and nothing else, so it is read
+        // and dropped here rather than widened into the module's return.
+        (Coloring::Modulate { shift, .. }, Texture::Exact(second)) => {
+            coloring::modulate(
+                &base,
+                second,
+                plan.lanes[0].transform,
+                plan.lanes[1].transform,
+                *shift,
+                &plan.palette,
+                colormap,
+            )
+            .0
+        }
         _ => return std::ptr::null_mut(),
     };
     if plan.palette.rolloff != Rolloff::None {
