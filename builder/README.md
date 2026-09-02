@@ -28,7 +28,10 @@ python -m builder palettes --library   refresh palettes/library.jsonl and land a
 python -m builder growth [ID ...] [--stamp S] [--place] [--replace]
                             bake the growth figure from the curation growth
                             instrument's latest stamped run next door
-python -m builder diagram ID draw one of the two figures that are diagrams, not renders
+python -m builder pipeline [ID ...] [--run R] [--place] [--replace]
+                            bake the Full pipeline charts read off a run's own
+                            walk ledger next door
+python -m builder diagram ID draw one of the three figures that are diagrams, not renders
 python -m builder explorer [--palettes-only]  bake the explorer's palettes, wasm, manifest
 python -m builder links [--write]   derive every picture's explorer link from its
                             provenance, or the reason it has none
@@ -179,10 +182,11 @@ says so and moves on where it is not.
 makes — each one a `claim` and the `source` it was checked against. It is the answer to
 "who checked this, against what?" asked of a number the article states as settled.
 
-Two figures are an exception, and they are diagrams rather than pictures of a location:
-`escape-orbit-race` and `wallpapers-stages` explain a mechanism, so there is nothing to render
-and nothing outside this repository to read. Those two are `diagrams.DIAGRAMS`, and
-`diagram` draws them from `diagrams.py`, in the stylesheet's own colours, straight into
+Three figures are an exception, and they are diagrams rather than pictures of a location:
+`escape-orbit-race`, `wallpapers-stages` and `pipeline-overview` explain a mechanism, so there
+is nothing to render and nothing outside this repository to read. Those three are
+`diagrams.DIAGRAMS`, and `diagram` draws them from `diagrams.py`, in the stylesheet's own
+colours, straight into
 `assets/images/figures/`. It is deliberately a separate command from `build` and is not
 part of `check`: type is rasterized through whatever font the machine has, so two machines
 agree about the picture and not about its bytes. `overview-pipeline` looks like a third

@@ -3,13 +3,14 @@
 `build` writes, `check` only reads and exits 1 on a problem, `figure` prints markup to
 paste, `figures` lists what is still to make and lands a finished one, `locations` and
 `judges` draw the figures of those two sections, `picks` draws the figures whose panels
-are named by a tentative gallery's own IDs, `growth` bakes the one figure that is a
-chart of a measurement rather than a picture of anything, `diagram` draws
-the two figures that are diagrams rather than renders, `serve` puts the committed tree
+are named by a tentative gallery's own IDs, `growth` and `pipeline` bake the figures that
+are charts of a measurement rather than pictures of anything, `diagram` draws
+the three figures that are diagrams rather than renders, `serve` puts the committed tree
 on localhost for previewing, `prose` holds each page to the approved document it was
 placed from, and `review` builds the doc a page is marked up in and reads it back.
 `explorer` bakes the explorer page's palettes, wasm module and manifest. `import`,
-`prose`, `review`, `explorer`, `locations`, `judges`, `picks` and `growth` are the
+`prose`, `review`, `explorer`, `locations`, `judges`, `picks`, `growth` and
+`pipeline` are the
 commands that reach outside the repository — for a full-size original, for the approved
 prose, for the Drive-synced review folder, and for the engine, the records and the
 judges next door.
@@ -29,6 +30,7 @@ from . import judges as judges_module
 from . import locations as locations_module
 from . import palettes as palettes_module
 from . import picks as picks_module
+from . import pipeline as pipeline_module
 from . import pool as pool_module
 from . import prose as prose_module
 from . import review as review_module
@@ -249,6 +251,31 @@ def _parser() -> argparse.ArgumentParser:
         help="import each drawn sheet as its figure's asset and fill its registry row",
     )
     grown.add_argument(
+        "--replace",
+        action="store_true",
+        help="land the redraw over a figure that is already made, page and row together",
+    )
+
+    charted = commands.add_parser(
+        "pipeline", help="draw the full-pipeline charts read off a run's own walk ledger"
+    )
+    charted.add_argument(
+        "id",
+        nargs="*",
+        choices=sorted(pipeline_module.MAKERS) or None,
+        help="which figures to draw; all of them by default",
+        metavar="ID",
+    )
+    charted.add_argument(
+        "--run",
+        help=f"which run's walk ledger to read; {pipeline_module.RUN} by default",
+    )
+    charted.add_argument(
+        "--place",
+        action="store_true",
+        help="import each drawn sheet as its figure's asset and fill its registry row",
+    )
+    charted.add_argument(
         "--replace",
         action="store_true",
         help="land the redraw over a figure that is already made, page and row together",
@@ -664,6 +691,33 @@ def _do_growth(options: argparse.Namespace) -> int:
     return 0
 
 
+def _do_pipeline(options: argparse.Namespace) -> int:
+    """Bake a full-pipeline chart, and optionally land it.
+
+    A PNG for the same reason `growth` lands one: it is drawn art rather than a render,
+    and JPEG rings every hairline of a chart.
+    """
+    for identifier in options.id or sorted(pipeline_module.MAKERS):
+        drawn = pipeline_module.draw(identifier, options.run)
+        print(f"wrote {drawn.path.relative_to(SITE_ROOT).as_posix()}")
+        if not (options.place or options.replace):
+            continue
+        destination = FIGURE_IMAGES_DIR / f"{identifier}.png"
+        width, height = images.import_web_res(drawn.path, destination)
+        placed = figures.place(
+            identifier,
+            destination.name,
+            width,
+            height,
+            provenance=list(drawn.provenance),
+            recipe=pipeline_module.recipe(identifier),
+            replace=options.replace,
+        )
+        size = destination.stat().st_size / 1024
+        print(f"  {destination.name}  {width}x{height}  ({size:.0f} KB) — {placed.page}")
+    return 0
+
+
 def _do_library() -> int:
     """The palette library page's two committed halves: its strips, and its record.
 
@@ -835,6 +889,8 @@ def main(argv: list[str] | None = None) -> int:
             return _do_picks(options)
         if options.command == "growth":
             return _do_growth(options)
+        if options.command == "pipeline":
+            return _do_pipeline(options)
         if options.command == "diagram":
             return _do_diagram(options.id)
         if options.command == "prose":
@@ -853,6 +909,7 @@ def main(argv: list[str] | None = None) -> int:
         explorer_module.ExplorerError,
         renders.EngineError,
         growth_module.GrowthError,
+        pipeline_module.PipelineError,
         picks_module.PickError,
         pool_module.PoolError,
         prose_module.ProseError,

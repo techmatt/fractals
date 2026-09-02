@@ -1,8 +1,8 @@
 """The figures that are drawn rather than rendered.
 
-Two of the article's figures are diagrams: each explains a mechanism instead of showing a
+Three of the article's figures are diagrams: each explains a mechanism instead of showing a
 location, so no fractal engine is involved and nothing outside this repository is read.
-It is drawn here, from the stylesheet's own colours, so the picture in the well matches
+Each is drawn here, from the stylesheet's own colours, so the picture in the well matches
 the well it sits in — and so a wording change is an edit to this file rather than to an
 image somebody has to find again.
 
@@ -311,77 +311,95 @@ def orbit_race(destination: Path) -> tuple[int, int]:
     )
 
 
-# --------------------------------------------------------------------------- pool stages
+# ------------------------------------------------------------------------- flow figures
+#
+# Two diagrams share this section, and they are deliberately not one picture drawn twice.
+# The tenth section is about a **loop** — three parts, two stores between them, and one
+# arrow running the other way — so `pipeline-overview` is a spine read left to right with
+# the return path in its own lane underneath. The eighth is about the **material** — what
+# each part hands to the next — so `wallpapers-stages` is three bands read top to bottom,
+# each split into what a part does and what it produces. Same ink and same box, different
+# claim; a reader who has seen one is not being shown it again under another caption.
+#
+# Nothing in either is a count. Every other figure of these two pages that carries a
+# number reads it off a record, and these are about shape, which no record holds.
 
-#: The sheet this diagram is composed at — the width every figure of this article is
-#: composed at, so a diagram and a sheet of renders sit at the same size in the column.
-POOL_WIDTH = 1316
+#: The sheet both are composed at — the width every figure of this article is composed at,
+#: so a diagram and a sheet of renders sit at the same size in the column.
+FLOW_WIDTH = 1316
 
-#: The two processes, each as a name in the left gutter and the stages it runs through.
-#: A stage is a title and the two quiet lines under it, and nothing here is a count: every
-#: other figure of this page that carries a number reads it off a record, and this one is
-#: about the *shape* of the two processes, which is the thing no record holds.
-RUN_LANE = ("A run", ["hours or days at a time,", "and it happens again"])
-RUN_STAGES = [
-    ("Walk ledgers", ["every partition's search,", "one judge score a location"]),
-    ("Locations to draw", ["ordered inside a partition,", "the junk floor cutting it off"]),
-    ("Judged small renders", ["one smooth attempt and two", "of the other seventeen"]),
-]
-PASS_LANE = ("A gallery pass", ["one selection over the", "whole pool, at a size"])
-PASS_STAGES = [
-    ("Slots", ["the gallery size split by", "share, then between kinds"]),
-    ("Chosen locations", ["farthest point in the", "embedding, and a radius"]),
-    ("More judged renders", ["several modes and palettes", "at each point a slot took"]),
-    ("Finished wallpapers", ["seated over the kind's bar,", "drawn again and unjudged"]),
-]
+#: The margin around a flow diagram, and the corner every box is drawn with.
+FLOW_PAD = 24
+FLOW_RADIUS = 6
 
-#: What the band between the two says. The pool is the subject: both processes write into
-#: it, neither reads the other, and that is the whole claim of the picture.
-POOL_TITLE = "The pool"
-POOL_LINES = [
-    "every candidate every run and every pass has judged — its location, its recipe, its "
-    "palette, its scores, and the small picture itself",
-    "nothing a run makes is discarded, and nothing a run makes is a wallpaper",
-]
-
-#: The one arrow that runs the other way: a pass's own attempts are ordinary candidates
-#: and join the pool like any others.
-RETURN_TEXT = "a pass's own attempts join the pool"
-
-POOL_PAD = 24
-POOL_GUTTER = 186
-POOL_GAP = 16
-POOL_BOX = 112
-POOL_BAND = 104
-POOL_JOIN = 52
-POOL_TITLE_SIZE = 21
-POOL_SUB_SIZE = 17
+#: The three ranks of lettering a flow diagram carries: a box's name, its lines, and the
+#: small note that rides beside an arrow.
+FLOW_TITLE_SIZE = 21
+FLOW_SUB_SIZE = 16
+FLOW_NOTE_SIZE = 15
 
 
-def _pool_box(draw, x: int, y: int, width: int, height: int, title: str, lines) -> None:
-    """One stage: a panel of well, its name, and the two quiet lines under it."""
-    draw.rounded_rectangle(
-        (x, y, x + width - 1, y + height - 1),
-        radius=6,
-        fill=WELL_PANEL,
-        outline=WELL_RULE,
-        width=1,
-    )
-    draw.text((x + 14, y + 14), title, fill=WELL_INK, font=font(POOL_TITLE_SIZE, SEMIBOLD))
+#: The air a box keeps between its lettering and its own edge, on both sides.
+FLOW_INSET = 14
+
+
+def _flow_lines(draw, x: int, y: int, lines, size: int, room: int) -> None:
+    """A box's quiet lines, held to fitting inside the box that carries them.
+
+    The wording of these two figures is a constant at the top of this module and the boxes
+    are sized from the sheet, so a line that outgrows its box is an edit somebody made to
+    the words. It is a refusal rather than lettering that runs out over the well: an
+    overrun is invisible in a diff and obvious in the picture, which is the wrong way
+    round.
+    """
+    face = font(size)
     for index, line in enumerate(lines):
-        draw.text(
-            (x + 14, y + 48 + index * (POOL_SUB_SIZE + 7)),
-            line,
-            fill=WELL_INK_DIM,
-            font=font(POOL_SUB_SIZE),
-        )
+        span = text_width(draw, line, face)
+        if span > room:
+            raise ValueError(
+                f"{line!r} is {span:.0f}px at size {size} and its box holds {room}px — "
+                "shorten the line rather than letting it run over the well"
+            )
+        draw.text((x, y + index * (size + 7)), line, fill=WELL_INK_DIM, font=face)
 
 
-def _pool_arrow(draw, start, end, colour=WELL_INK_DIM) -> None:
-    """A straight arrow with a solid head, horizontal or vertical."""
-    x0, y0 = start
-    x1, y1 = end
-    draw.line((x0, y0, x1, y1), fill=colour, width=2)
+def _flow_box(
+    draw,
+    box: tuple[int, int, int, int],
+    title: str,
+    lines,
+    *,
+    outline=WELL_RULE,
+    width: int = 1,
+    title_size: int = FLOW_TITLE_SIZE,
+    sub_size: int = FLOW_SUB_SIZE,
+    fill=WELL_PANEL,
+) -> None:
+    """One panel of a flow diagram: a plate of well, its name, and its quiet lines."""
+    left, top, right, bottom = box
+    draw.rounded_rectangle(
+        (left, top, right - 1, bottom - 1),
+        radius=FLOW_RADIUS,
+        fill=fill,
+        outline=outline,
+        width=width,
+    )
+    draw.text((left + FLOW_INSET, top + 13), title, fill=WELL_INK, font=font(title_size, SEMIBOLD))
+    _flow_lines(
+        draw,
+        left + FLOW_INSET,
+        top + title_size + 25,
+        lines,
+        sub_size,
+        right - left - 2 * FLOW_INSET,
+    )
+
+
+def _flow_arrow(draw, points, colour=WELL_INK_DIM, width: int = 2) -> None:
+    """A run of horizontal and vertical segments, with a solid head on the last one."""
+    for start, end in zip(points, points[1:], strict=False):
+        draw.line((*start, *end), fill=colour, width=width)
+    (x0, y0), (x1, y1) = points[-2], points[-1]
     head = 6
     if y0 == y1:
         step = head if x1 > x0 else -head
@@ -395,87 +413,263 @@ def _pool_arrow(draw, start, end, colour=WELL_INK_DIM) -> None:
         )
 
 
-def _pool_lane(draw, top: int, lane, stages, inner: int) -> tuple[int, int]:
-    """One process: its name in the left gutter, its stages across the rest."""
-    name, under = lane
-    draw.text((POOL_PAD, top + 12), name, fill=WELL_INK, font=font(POOL_TITLE_SIZE, SEMIBOLD))
-    for index, line in enumerate(under):
-        draw.text(
-            (POOL_PAD, top + 46 + index * (POOL_SUB_SIZE + 6)),
-            line,
-            fill=SECTION_INK,
-            font=font(POOL_SUB_SIZE),
-        )
-    left = POOL_PAD + POOL_GUTTER
-    room = inner - POOL_GUTTER
-    width = (room - (len(stages) - 1) * POOL_GAP) // len(stages)
-    for index, (title, lines) in enumerate(stages):
-        x = left + index * (width + POOL_GAP)
-        _pool_box(draw, x, top, width, POOL_BOX, title, lines)
-        if index:
-            _pool_arrow(draw, (x - POOL_GAP + 2, top + POOL_BOX // 2), (x - 3, top + POOL_BOX // 2))
-    return left, width
+# ------------------------------------------------------------------- the pipeline's loop
+
+#: The three parts, in reading order, each with the lines that say what it does. The words
+#: are the tenth section's own prose reduced to a box.
+LOOP_PARTS = [
+    (
+        "Find locations",
+        [
+            "a guided walk in every family,",
+            "admitting the frames the",
+            "location judge rates good",
+        ],
+    ),
+    (
+        "Find wallpapers",
+        [
+            "a mine returns to locations",
+            "and draws each many ways,",
+            "every picture judged",
+        ],
+    ),
+    (
+        "Curate a gallery",
+        [
+            "one solve over the whole",
+            "candidate pool, at a size,",
+            "under the bar and the floors",
+        ],
+    ),
+]
+
+#: The two stores, each drawn between the parts that write it and read it. Both say the
+#: thing that makes them stores rather than steps.
+LOOP_STORES = [
+    ("The location pool", ["every admitted frame,", "from every run —", "never pruned"]),
+    (
+        "The candidate pool",
+        ["every judged picture,", "its recipe and its", "scores — never pruned"],
+    ),
+]
+
+#: What the solve writes down when it comes up short, and the arrow out of it. This box is
+#: the whole difference between a loop and a sequence.
+LOOP_READOUT = (
+    "The shortfall readout",
+    [
+        "for every seat it could not fill: what the pool",
+        "had to offer, which rule refused the pictures",
+        "that were there, and which locations could have fed it",
+    ],
+)
+LOOP_RETURN = "what the solve could not seat is what the next mine reads"
+
+LOOP_GAP = 20
+LOOP_PART_HEIGHT = 152
+LOOP_STORE_HEIGHT = 112
+LOOP_DROP = 54
+LOOP_READOUT_HEIGHT = 118
+
+#: How far under the readout the return arrow runs, and where the sheet then stops. The
+#: lane is the last thing on the sheet: nothing is drawn below the line a reader follows.
+LOOP_LANE = 46
+
+#: How wide a store is drawn against a part. A store holds rather than does, and the eye
+#: should be able to say which is which before it has read either.
+LOOP_STORE_SHARE = 0.78
+
+#: A store's lines are set a rank smaller than a part's: it is the narrower box, and what
+#: is in it is a caption on the store rather than a description of work.
+LOOP_STORE_SUB = 15
 
 
-def pool_stages(destination: Path) -> tuple[int, int]:
-    """The two processes that stand between a stock of locations and a gallery.
+def pipeline_loop(destination: Path) -> tuple[int, int]:
+    """`pipeline-overview` — the three parts, the two stores, and the way back.
 
-    A run reads left to right and empties into the pool; a gallery pass reads the whole
-    pool at once, and its own attempts go back into it. Drawn rather than rendered:
-    there is no picture of a process, and the two arrows meeting in the middle are the
-    only thing the reader is being asked to see.
+    Read left to right the picture is a sequence, which is the one thing the page says the
+    pipeline is not; the arrow underneath, out of the solve's own readout and into mining,
+    is the claim. So the return path gets its own lane rather than being threaded between
+    the boxes: it is the line of this figure a reader is meant to follow all the way back.
     """
-    height = POOL_PAD + POOL_BOX + POOL_JOIN + POOL_BAND + POOL_JOIN + POOL_BOX + POOL_PAD
-    sheet, draw = sheets.canvas(POOL_WIDTH, height)
-    inner = POOL_WIDTH - 2 * POOL_PAD
+    inner = FLOW_WIDTH - 2 * FLOW_PAD
+    content = inner - 4 * LOOP_GAP
+    part_width = round(content / (3 + 2 * LOOP_STORE_SHARE))
+    store_width = (content - 3 * part_width) // 2
 
-    run_top = POOL_PAD
-    run_left, run_width = _pool_lane(draw, run_top, RUN_LANE, RUN_STAGES, inner)
+    top = FLOW_PAD
+    bottom = top + LOOP_PART_HEIGHT
+    readout_top = bottom + LOOP_DROP
+    readout_bottom = readout_top + LOOP_READOUT_HEIGHT
+    back = readout_bottom + LOOP_LANE
+    height = back + FLOW_PAD
+    sheet, draw = sheets.canvas(FLOW_WIDTH, height)
 
-    band_top = run_top + POOL_BOX + POOL_JOIN
-    draw.rounded_rectangle(
-        (POOL_PAD, band_top, POOL_PAD + inner - 1, band_top + POOL_BAND - 1),
-        radius=8,
-        fill=WELL_PANEL,
-        outline=SECTION_INK,
-        width=2,
-    )
-    draw.text((POOL_PAD + 18, band_top + 14), POOL_TITLE, fill=WELL_INK, font=font(23, SEMIBOLD))
-    for index, line in enumerate(POOL_LINES):
-        draw.text(
-            (POOL_PAD + 18, band_top + 50 + index * (POOL_SUB_SIZE + 7)),
-            line,
-            fill=WELL_INK_DIM,
-            font=font(POOL_SUB_SIZE),
-        )
+    parts, stores = [], []
+    x = FLOW_PAD
+    for index, (title, lines) in enumerate(LOOP_PARTS):
+        parts.append((x, x + part_width))
+        _flow_box(draw, (x, top, x + part_width, bottom), title, lines)
+        x += part_width + LOOP_GAP
+        if index < len(LOOP_STORES):
+            store_top = top + (LOOP_PART_HEIGHT - LOOP_STORE_HEIGHT) // 2
+            stores.append((x, x + store_width))
+            _flow_box(
+                draw,
+                (x, store_top, x + store_width, store_top + LOOP_STORE_HEIGHT),
+                LOOP_STORES[index][0],
+                LOOP_STORES[index][1],
+                outline=SECTION_INK,
+                width=2,
+                title_size=FLOW_SUB_SIZE + 2,
+                sub_size=LOOP_STORE_SUB,
+            )
+            x += store_width + LOOP_GAP
 
-    pass_top = band_top + POOL_BAND + POOL_JOIN
-    pass_left, pass_width = _pool_lane(draw, pass_top, PASS_LANE, PASS_STAGES, inner)
+    spine = top + LOOP_PART_HEIGHT // 2
+    for left, right in zip(
+        [parts[0], stores[0], parts[1], stores[1]],
+        [stores[0], parts[1], stores[1], parts[2]],
+        strict=True,
+    ):
+        _flow_arrow(draw, [(left[1] + 3, spine), (right[0] - 4, spine)])
 
-    # A run empties into the pool out of its last stage; a pass draws from it into its
-    # first, and puts its own attempts back in out of its third.
-    down = run_left + (len(RUN_STAGES) - 1) * (run_width + POOL_GAP) + run_width // 2
-    _pool_arrow(draw, (down, run_top + POOL_BOX + 4), (down, band_top - 4))
-    draws_from = pass_left + pass_width // 2
-    _pool_arrow(
+    # The readout hangs under the solve that writes it and stops at the second store's
+    # left edge, so the lane the return arrow climbs is clear of it: an arrow crossing a
+    # plate it has nothing to do with is a line a reader has to work out rather than read.
+    third_left, third_right = parts[2]
+    _flow_box(
         draw,
-        (draws_from, band_top + POOL_BAND + 4),
-        (draws_from, pass_top - 4),
-        colour=SECTION_INK,
+        (stores[1][0], readout_top, third_right, readout_bottom),
+        LOOP_READOUT[0],
+        LOOP_READOUT[1],
+        title_size=FLOW_SUB_SIZE + 2,
     )
-    returns = pass_left + 2 * (pass_width + POOL_GAP) + pass_width // 2
-    _pool_arrow(
+    down = (third_left + third_right) // 2
+    _flow_arrow(draw, [(down, bottom + 4), (down, readout_top - 5)])
+
+    into = (parts[1][0] + parts[1][1]) // 2
+    # A rank heavier than the spine's arrows, and in the same ink: this is the one line
+    # of the figure a reader is asked to follow, and colouring it would make it a fourth
+    # thing to learn rather than the same arrow drawn louder.
+    _flow_arrow(
         draw,
-        (returns, pass_top - 4),
-        (returns, band_top + POOL_BAND + 4),
-        colour=WELL_PENDING,
+        [(down, readout_bottom + 4), (down, back), (into, back), (into, bottom + 5)],
+        width=3,
     )
     draw.text(
-        (returns + 12, band_top + POOL_BAND + POOL_JOIN // 2 - 9),
-        RETURN_TEXT,
+        (into + 18, back - FLOW_NOTE_SIZE - 11),
+        LOOP_RETURN,
         fill=SECTION_INK,
-        font=font(15),
+        font=font(FLOW_NOTE_SIZE),
     )
+
+    sheets.save(sheet, destination)
+    return sheet.width, sheet.height
+
+
+# -------------------------------------------------------------- the three parts, in turn
+
+#: One band a part: what it does on the left, what it hands on to the right. The right
+#: half is the subject — this figure is the material moving — and the arrows between bands
+#: run out of one band's product into the next band's process.
+STAGE_BANDS = [
+    (
+        (
+            "The search",
+            ["a guided walk through every family, the", "location judge scoring every frame"],
+        ),
+        (
+            "Admitted locations",
+            ["a family, a center and a width — a place,", "with nothing yet decided about color"],
+        ),
+    ),
+    (
+        (
+            "Mining",
+            ["returns to a location and draws it many", "ways, a mode and a palette an attempt"],
+        ),
+        (
+            "The candidate pool",
+            ["every judged picture any mine has made,", "its recipe and its scores, kept for good"],
+        ),
+    ),
+    (
+        (
+            "Curation",
+            ["one selection over the whole pool at a", "size, under the bar and the mode floors"],
+        ),
+        (
+            "A gallery",
+            ["the seated few, and the only pictures", "ever rendered at wallpaper size"],
+        ),
+    ),
+]
+
+#: Which band holds the store rather than a hand-off, outlined the way the two pools are
+#: outlined in the loop figure — one convention for a reader to learn, not two.
+STAGE_STORE = 1
+
+STAGE_HEIGHT = 118
+STAGE_JOIN = 52
+STAGE_SPLIT = 0.46
+
+#: The fill of the half that holds material, a step up from the plate the band is drawn
+#: on. One step and no second outline: the band is one thing split, not two things joined.
+STAGE_MADE = sheets.mix(WELL_PANEL, WELL_RULE, 0.55)
+
+
+def three_parts(destination: Path) -> tuple[int, int]:
+    """`wallpapers-stages` — the three parts as what each one hands to the next.
+
+    The loop figure of the tenth section is these same three parts and is not this
+    picture: there the subject is the arrow that runs backwards, and here there is none.
+    What a reader is shown instead is that the search's product is a place, mining's is a
+    judged picture and curation's is a set — three different kinds of thing, each made out
+    of the one above it.
+    """
+    inner = FLOW_WIDTH - 2 * FLOW_PAD
+    split = FLOW_PAD + round(inner * STAGE_SPLIT)
+    height = FLOW_PAD + 3 * STAGE_HEIGHT + 2 * STAGE_JOIN + FLOW_PAD
+    sheet, draw = sheets.canvas(FLOW_WIDTH, height)
+
+    working = FLOW_PAD + (split - FLOW_PAD) // 2
+    carrying = split + (FLOW_PAD + inner - split) // 2
+    for index, ((doing, does), (made, holds)) in enumerate(STAGE_BANDS):
+        top = FLOW_PAD + index * (STAGE_HEIGHT + STAGE_JOIN)
+        bottom = top + STAGE_HEIGHT
+        store = index == STAGE_STORE
+        _flow_box(draw, (FLOW_PAD, top, FLOW_PAD + inner, bottom), doing, does)
+        # The half that holds the material is a step lighter than the half that makes it,
+        # so the column a reader is meant to follow down the sheet reads as one column —
+        # and the one band whose material is a *store* is outlined the way the two pools
+        # are outlined in the loop figure, on that half alone. The band it sits in is a
+        # process like the other two, and outlining the whole band would say it is not.
+        draw.rectangle(
+            (split, top + 1, FLOW_PAD + inner - 2, bottom - 2),
+            fill=STAGE_MADE,
+            outline=SECTION_INK if store else WELL_RULE,
+            width=2 if store else 1,
+        )
+        draw.text(
+            (split + 22, top + 16), made, fill=WELL_INK, font=font(FLOW_SUB_SIZE + 2, SEMIBOLD)
+        )
+        _flow_lines(draw, split + 22, top + 46, holds, FLOW_SUB_SIZE, FLOW_PAD + inner - split - 44)
+        if index + 1 < len(STAGE_BANDS):
+            # Out of what this band produced and into what the next band does with it —
+            # never straight down into the next band's own product, which would say the
+            # locations became the pool rather than being what the pool was mined from.
+            turn = bottom + STAGE_JOIN // 2
+            _flow_arrow(
+                draw,
+                [
+                    (carrying, bottom + 4),
+                    (carrying, turn),
+                    (working, turn),
+                    (working, bottom + STAGE_JOIN - 5),
+                ],
+            )
 
     sheets.save(sheet, destination)
     return sheet.width, sheet.height
@@ -483,7 +677,8 @@ def pool_stages(destination: Path) -> tuple[int, int]:
 
 DIAGRAMS = {
     "escape-orbit-race": ("escape-orbit-race.png", orbit_race),
-    "wallpapers-stages": ("wallpapers-stages.png", pool_stages),
+    "wallpapers-stages": ("wallpapers-stages.png", three_parts),
+    "pipeline-overview": ("pipeline-overview.png", pipeline_loop),
 }
 
 
