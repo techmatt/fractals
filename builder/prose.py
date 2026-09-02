@@ -52,6 +52,7 @@ _TITLE = re.compile(r"<h1[^>]*>(.*?)</h1>", re.S)
 
 _MASTER_TITLE = re.compile(r"^# .*?\n")
 _MASTER_EDITORIAL = re.compile(r"<editorial,.*?>\n", re.S)
+_MASTER_COMMENT = re.compile(r"<!--.*?-->", re.S)
 _MASTER_FIGURE = re.compile(r"^\[FIGURE:.*?\]$", re.M)
 _MASTER_TABLE = re.compile(r"^\[TABLE:[^\]]*\]\n(.*?)^\[/TABLE\]$", re.S | re.M)
 _MASTER_PENDING = re.compile(r"\[PENDING —.*?\]", re.S)
@@ -196,9 +197,15 @@ def words_of_master(text: str, divergences: tuple[Divergence, ...] = ()) -> str:
 
     A `[TABLE: ...]` block keeps its rows and loses its two marker lines and its column
     separators, so it lands on the same words the page's `<tbody>` does.
+
+    An HTML comment goes out here for the reason it goes out of the page: a master's
+    standing note to whoever places it — *this number wants re-checking against a run
+    nobody has made yet* — is carried across to the page as a comment on purpose, and it
+    is prose on neither side.
     """
     text = _MASTER_TITLE.sub("", text, count=1)
     text = _MASTER_EDITORIAL.sub("", text)
+    text = _MASTER_COMMENT.sub("", text)
     text = _MASTER_FIGURE.sub("", text)
     text = _MASTER_TABLE.sub(lambda found: found.group(1).replace("|", " "), text)
     text = _MASTER_PENDING.sub("", text)
