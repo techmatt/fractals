@@ -8,8 +8,9 @@ Python. A build is done here and reviewed in a diff.
 ```
 python -m builder build     regenerate gallery pages, the gallery index, thumbnails,
                             and the contents rail every page carries
-python -m builder check     links, page sync, contents, figure blocks, landings,
-                            explorer links, the explorer's bake, assets, the palette
+python -m builder check     fifteen named checks: links, page sync, contents, figure
+                            blocks, landings, one location to one figure, explorer links,
+                            the atlas record, the explorer's bake, assets, the palette
                             record, prose, the editorial pointer, theme, banned
                             vocabulary
 python -m builder figure ID print a figure's markup block, to paste into an article page
@@ -28,6 +29,8 @@ python -m builder palettes --library   refresh palettes/library.jsonl and land a
 python -m builder growth [ID ...] [--stamp S] [--place] [--replace]
                             bake the growth figure from the curation growth
                             instrument's latest stamped run next door
+python -m builder picks [ID ...] [--place] [--replace]
+                            draw a figure whose panels are named by tentative-gallery ID
 python -m builder pipeline [ID ...] [--run R] [--place] [--replace]
                             bake the Full pipeline charts read off a run's own
                             walk ledger next door
@@ -140,7 +143,10 @@ too, which is the standing warning about an event that has not happened yet and 
 point at which somebody can still act on it. **`draft`** is made and on its page with its
 *numbers* unsettled — a reading of a measurement that is going to be taken again — and
 it says what re-bakes it in `note`, which is also what its caption's small `Draft` mark
-points at. Every page on this site is a draft and none of them says so; this status is
+points at — and the note is required rather than encouraged: a draft row without one is a
+failing check, and `--place` refuses to land a draft that has nothing to say about its own
+shelf life. `pipeline-growth` is the only draft on the site, and `python -m builder growth`
+re-bakes it from the curation growth instrument's own stamped record next door. Every page on this site is a draft and none of them says so; this status is
 the narrower claim, that a reader who copied a number off this picture would be copying
 something with a shelf life. Prose gets written before pictures get made, and a
 page that says what is coming beats a broken image or a silent gap; `figures` lists what
@@ -168,6 +174,7 @@ run_row     <run>|release|<candidate>          data/curation/release/**/*.jsonl
             <head>/<batch>.jsonl:<line>        data/<head>/rows/<batch>.jsonl
 location    labels/<batch>.jsonl:<line>        data/labels/rows/<batch>.jsonl
             <ledger>/walk.jsonl[#<node_id>]    the artifacts tree, through renders.artifact
+gallery_seat <stamp>|<recipe key>              a seat of a recorded tentative gallery
 synthetic   no keys — drawn here, or rendered for this article alone
 none        no keys — the picture cannot be reconstructed, and held_reason says why
 ```
@@ -177,6 +184,28 @@ retargeted four figures' provenance in one afternoon, because the pool grew unde
 and a rerun rewrote the record under pictures nobody had touched. `check` resolves every
 key against the store its kind names, where the wallpapers checkout is configured, and
 says so and moves on where it is not.
+
+## A figure may name its panels by tentative-gallery ID
+
+Matt picks wallpapers off the curation browser by the short alias printed under a tile, so
+`picks.py` takes those aliases and gives back pictures: a figure's registry row lists its
+`picks` as `<stamp>|<recipe key>`, and re-picking is **one edit to that list** followed by
+`python -m builder picks <id> --replace`. Nothing about the recipe is retyped, and the row
+is the source of truth — a list of IDs in a Python constant would be a second place the
+picks live, and a second list is a second thing to keep in step.
+
+Two reads resolve one pick, and the split matters because a solve may be running next door.
+The **seat** comes out of that stamp's own `gallery.jsonl`, a few hundred short lines
+carrying no palette at all; the **recipe** comes out of the candidate ledger, by a streamed
+lookup that stops as soon as it has the keys asked for. Never `headroom.population()`: a
+figure prompt has no business loading the pool a solve is solving over. `gallery_seat` is
+the source kind that addresses the result, and `fractal-wallpapers`' own
+`curate gallery resolve` does exactly these two reads.
+
+**A pick draws the recipe's frame, and that is not always the seat's location.** Picks are
+re-framed after seating, so the seat's `location` and the recipe's viewport can disagree —
+two of the six panels of `overview-gallery-hook` do. The recipe's frame is what the pixels
+are of, and it is what provenance records.
 
 `facts` is optional and holds the load-bearing claims a figure's caption or its prose
 makes — each one a `claim` and the `source` it was checked against. It is the answer to
@@ -246,6 +275,20 @@ configured. A palette entering the library next door costs one `--library` and o
   reach: it once left the explorer link out, which refused a redraw of every picture that
   carries one while everything else stayed green. A linked figure's landing block is held
   to carrying the link as well.
+- **locations** — no location stands under two figure slugs. The site's argument is
+  that the search keeps finding places worth looking at, and a place that turns up on
+  three pages quietly says the opposite. A row claims its repetition with `reuse_reason`,
+  and **the reason names the other figure by slug**, which is what scopes it: a row excused
+  for one frame stays under the guard for every other frame it stands on. The excuse is
+  held the other way too — one that excuses no collision, because the figure it names is no
+  longer on a shared frame, is stale and fails. A couple of rows say the repetition is
+  *not yet judged* and carry the collision so the guard is not blocked on it; those are
+  **Matt's own tracking list** for his figure pass, not verdicts, and each one comes out
+  when he decides which of the two figures re-picks.
+- **atlas** — the per-partition atlas record still has the shape `builder/atlas.py` holds
+  it to. `atlas/atlas.test.mjs` is the other half, and pins the one thing on that page that
+  could break in silence: the map its node views are drawn through is the explorer's own
+  `DEFAULT_PALETTE`.
 - **assets** — every image the metadata names exists at its stated size, every
   thumbnail is current, and no orphan file is left in a gallery directory.
 - **library** — `palettes/library.jsonl` still says what the wallpaper project's own
@@ -288,7 +331,10 @@ A written section is drafted and reviewed as a document — a markdown master in
 Drive-synced working folder — and then placed as hand-written HTML. Two copies of the
 same words drift, so `prose.py` reduces both sides the same way (tags out, markdown
 markers out, whitespace collapsed) and `python -m builder prose` names the first word
-they disagree on. `article/prose.jsonl` says which master belongs to which page, and may
+they disagree on. A markdown link is reduced by taking everything up to the **first** `)`, so a master
+whose URL carries a parenthesis leaves half of it in the text and `prose` reports a
+disagreement about a page that is fine. Percent-encode the parenthesis in the master.
+`article/prose.jsonl` says which master belongs to which page, and may
 record *sanctioned divergences*: the master's words, the page's words, and why the page
 is deliberately different. A page with no row is one whose HTML is its own master.
 
@@ -328,9 +374,52 @@ adjusting a label never re-renders a panel; a changed constant is a new key rath
 stale file; and the manifest holds every spec, which is what makes the tree re-derivable
 rather than merely disposable. It defaults to `artifacts/renders/`, which is ignored.
 
+**Anything derived on top of a cached render carries that render's key in its own name.**
+A rig that enlarges, crops or composites a panel and then skips the write because the
+output file is already there is caching on a name that says nothing about its input: the
+engine render underneath is spec-keyed and correct, and the file on top of it is the
+previous location's picture. `render-supersample` shipped that way once — the enlargement
+was the stale half, so the page carried the right provenance over the wrong pixels, which
+is the failure shape nothing on the page reveals.
+
 The rigs that compose the article's figures live in `scratch/` and are untracked — that
 is what `scratch/` is for — but everything they used to re-implement is here now, and a
 figure made a year ago can be redrawn without reconstructing the session that made it.
+
+## What refuses, on purpose
+
+Three of the makers would rather stop than hand back a picture nobody would look at twice.
+
+- **`pipeline` will not bake a yield decay it cannot vouch for.** A run writes a `summary`
+  row carrying its own tally of admissions per partition; the bake derives the same numbers
+  off the `candidate` rows and refuses where the two disagree. A chart that does not
+  reproduce the run's own arithmetic is a reading of something else.
+- **`diagrams.py`'s flow boxes refuse a line that outgrows its box.** The wording is a
+  constant at the top of the module and the boxes are sized from the sheet, so an overrun
+  is an edit somebody made to the words — and lettering running out over the well is
+  invisible in a diff and obvious in the picture, which is the wrong way round.
+- **`images.py` raises `ImageFile.MAXBLOCK`** before it writes. Pillow's default block is
+  too small for a scanline of a wide 4:4:4 JPEG, and the encoder fails at the sheet sizes
+  this site ships rather than at anything smaller anybody would have tried first.
+
+## Still hand-done, and shouldn't be
+
+Each of these is a step a person has to remember, and each has been forgotten once.
+
+- **A figure drawn in a map the explorer's roster does not carry needs that map added to
+  `explorer/palettes.jsonl` by hand**, unoffered, and a rebake. The link derivation answers
+  *no colormap is written down* rather than naming the map it could not carry, so the
+  symptom is a missing link rather than an error. The builder writes the provenance that
+  names the map; it could offer the missing name on the spot.
+- **After a re-pick the order is `picks --replace`, then `links --write`, then re-heal.**
+  `figures.place` heals the block using the link as it stood *before* the redraw, so a
+  figure whose representative panel changed lands with the old href and needs a second pass.
+- **Provenance spells the palette pass in words, not JSON.** `links.py` scans the prose for
+  `mirror true` and a `palette gamma …` clause, and the JSON form reads to it as *no fold
+  and every default* — which derives a link to the unmirrored picture, silently.
+  `picks.shade_words` writes the words. The fix is one rank up: `links._cited` learning the
+  `gallery seat <stamp>|<key>` form and reading the ledger recipe whole, the way it already
+  reads a release key, would stop the prose being load-bearing at all.
 
 ## Two rules that predate the code
 

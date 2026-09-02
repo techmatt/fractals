@@ -177,6 +177,17 @@ noticing. Everything in the table is read off `article/sections.jsonl`,
 `python -m builder review --list` and `python -m builder figures --all` rather than
 editing a cell by hand.
 
+**The whole-site prose refresh is complete, 2026-09-02.** Eight sections are placed and
+mastered — Overview v1, Rendering modes v1, Finding good wallpapers v2, Gallery curation
+v1, Training judges v5, Finding good locations v5, Color palettes v5, Full pipeline v3 —
+with every current master at the root of `prose\` and everything they superseded moved to
+`prose\old\`. `Running at scale` is dead: Matt trashed both its masters and no page
+answers to it. Escape-time fractals and Rendering fundamentals still hold their own HTML as
+their master. Fractal atlases and Deep zoom are stubs, and the gallery page waits for Matt.
+His first pass over the site was applied on 2026-09-01, and he is reviewing every figure
+himself now — which is why two rows of the figure registry carry a repetition marked *not
+yet judged* rather than a decision.
+
 | page | written | prose master | last review round | figures | what is held, and why |
 | --- | --- | --- | --- | --- | --- |
 | `overview.html` | yes | `Overview v1.md` | none | 2 placed | — |
@@ -189,7 +200,7 @@ editing a cell by hand.
 | `finding-good-wallpapers.html` | yes | `Finding good wallpapers v2.md` | none | 3 placed | renamed from `from-locations-to-wallpapers.html` at the twelve-section split, and the figures' `wallpapers-` prefix still carries the old name. `wallpapers-attempt` is placed off Matt's tile pick; `wallpapers-stages` was redrawn on 2026-09-02 as the three parts and the material each hands on, which lifted its stale mark; `wallpapers-mine` landed the same day off one mine's own visit records |
 | `gallery-curation.html` | yes | `Gallery curation v1.md` | none | 1 placed, 4 pending, 1 held | placed 2026-09-01 with the (b)/(c) seam; `gallery-release` came across from `wallpapers-release` with the full-size render it illustrates. The four pending rows need a solve's own record — the pool's narrowing, the color allowances, the twin pairs and the per-mode floors — which `builder/pool.py` does not read yet; `gallery-output` is **held** on a released gallery from the live selection leg, which writes only into the wallpaper project's ignored `artifacts/` |
 | `full-pipeline.html` | yes | `Full pipeline v3.md` | none | 2 placed, 1 draft, 1 held | `pipeline-overview` and `pipeline-yield-decay` landed 2026-09-02; `pipeline-growth` is a **draft** because its ladder stops at the gallery sizes this pool can seat; `pipeline-themed-galleries` is **held** on one pool solved twice, plain and under a color theme, which the solve leg writes only into the wallpaper project's ignored `artifacts/` |
-| `fractal-atlases.html` | no | none | none | none | the section is not written |
+| `fractal-atlases.html` | no | none | none | none | the section's prose is not drafted; the tool page it will hang off is shipped — see below |
 | `deep-zoom.html` | no | none | none | none | the section is not written |
 | `palettes/make-your-own.html` | hangs off Color palettes | `Make your own palettes v4.md` | none | 1 placed | — |
 | `palettes/all-palettes.html` | hangs off Color palettes | generated | n/a | 901 palette strips in 823 entries, none a registry figure | the strips are generated from the wallpaper project's library and are not figures; 65 sets of near-duplicates are gathered under one entry each |
@@ -197,6 +208,85 @@ editing a cell by hand.
 "Last review round" is what `python -m builder review --list` reports as **applied**; a
 doc **waiting** in the review folder is a round somebody started and did not finish, and
 `--list` is the only place that says so.
+
+**The twelve slugs are ratified, and the kicker is hand-typed** *(Matt, ckpt 97)*. The
+reading order in the table is that ratification. The *Section N of 12* line each page opens
+with is typed into the page rather than derived — the rail and the front page's done markers
+are what `build` writes and `check`'s `contents` re-derives, and the kicker is neither, so a
+thirteenth section would be twelve hand edits. `finding-good-wallpapers.html` was renamed
+from `from-locations-to-wallpapers.html` at that split, and **the old URL is dead with no
+stub at it**, which is the one permanent URL this site has spent.
+
+### What a slug still carries, and what retired
+
+Placing the (b)/(c) seam retired four figures with the mechanism they drew —
+`wallpapers-slots`, `wallpapers-embedding`, `wallpapers-cluster-attempts` and
+`wallpapers-floors` — and nothing on the site refers to any of them now.
+`wallpapers-release` moved across to Gallery curation as `gallery-release`, and **its asset
+file and its `explorer/links.jsonl` row were renamed with it**, so the old slug survives
+nowhere. `wallpapers-stages` kept its slug through the same move, and the redraw it then
+owed landed on 2026-09-02.
+
+Six rows are not on a page. Four are `pending` on Gallery curation — `gallery-pool`,
+`gallery-allowance`, `gallery-twins`, `gallery-floors` — and two are `held`,
+`gallery-output` and `pipeline-themed-galleries`. Both held rows are blocked on the same
+thing, and it is a `builder/pool.py` question rather than a figure one: the live selection
+leg writes its galleries only into the wallpaper project's ignored `artifacts/`, and
+nothing there is addressable from a clone. `pipeline-growth` is the site's one `draft` row.
+
+### The (b)/(c) seam
+
+Finding good wallpapers is (b) and Gallery curation is (c), and the seam is where the pool
+stops being built and starts being chosen from. As placed, (b) is mining — what one attempt
+is, the pool, deepening a location, where the budget goes, keeping only what earns its
+place, how candidates are ranked. (c) is the solve — what is eligible, two pictures of the
+same place, how much of a collection one color may take, pictures that read as one
+wallpaper, asking for what would otherwise not be there, what the pass is trying to do,
+building the set, what the pass does not decide, what comes up short, rendering the gallery.
+
+*Where the budget goes* used to describe the allocator design that is now dead, and its
+revision was slated for the Full pipeline round. **That round landed it**: the section
+describes the simple loop — mine until the pool holds what a gallery needs, let the gallery
+say when it does not — and nothing about the allocator is left on the page.
+
+### Fractal atlases has a tool page before it has prose
+
+`atlas/index.html` is built and shipped in the `plates` treatment, over a per-partition
+record; `atlas/README.md` is its contract. Two facts from there are worth knowing before
+the section is drafted: the page is built against a **fixture** record, which is what tells
+a maker the shape the real record owes, and `atlas/links.js`'s `opened` is **the only place
+a view is spelled**, which is the whole reason a dot's picture and a dot's link agree. The
+section's own prose is not drafted.
+
+Neither the atlas nor the explorer is in the table above. They are tool pages: no prose
+master, no review round, and nothing about them is reviewed as prose.
+
+## Rulings a page is held to
+
+`writing-guidance.md` is the editorial authority and `CLAUDE.md` holds this repository's
+conventions. What is collected here is the handful of rulings that govern **what the article
+says** rather than how it says it, and that neither of those two files carries.
+
+- **The site names and shows only the modes a gallery will ship** — `mode_policy.accepted()`
+  next door. A niche mode is never named and never drawn, with one carve-out: a trap shape
+  may be named as a texture, where the shape rather than the mode is what the sentence is
+  about.
+- **No page states a count of modes.** The roster is whatever the scoreboard lists; three
+  pages once carried three different counts, which is what a number typed into prose does.
+- **A cut's two sides are `keeper` and `junk`**, wherever a page names them.
+- **`partition` is defined once, on Training judges**, where it takes its italic; every
+  later page uses the word plain. The family/partition distinction itself is
+  `writing-guidance.md`'s.
+- **Numbers go in at their current values, and nothing schedules a refresh.** A corpus count
+  or a scoreboard reading is written as it stands. There is no number-upkeep prompt and
+  there will not be one until publishing is near.
+- **The eligibility bar is a flat one half, and the prose says it is a round number** rather
+  than a calibrated one — and then says why its exact placement stops mattering: once enough
+  locations have been mined, the collection is built out of pictures well clear of it in
+  either direction. `writing-guidance.md` carries the bar/floor vocabulary; this is the claim
+  the article makes about that one bar.
+- **No bar is described as a measured crossover.** There is no measured crossing behind any
+  of them, and prose implying one makes a claim the records do not support.
 
 ## The prose registry
 

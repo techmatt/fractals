@@ -33,11 +33,13 @@ what was originally planned the departure was deliberate, and those decisions ar
 recorded here so the reasoning behind them is not lost:
 
 - **The picker's set and the link's set are not the same set.** One set was to serve
-  both — the curated maps, and nothing else. The picker offers **77** of those; a link
-  may name **110**, because baked alongside them are the 33 maps this site's own
-  published pictures were drawn in, most of them mechanical conversions rather than
-  curated choices. A picture the article publishes has to be openable here, and it does
-  not have to be on the menu.
+  both — the curated maps, and nothing else. The picker offers **77** of those, and that
+  number is frozen; a link may name any of those plus every map one of this site's own
+  published pictures was drawn in, most of them mechanical conversions rather than curated
+  choices. A picture the article publishes has to be openable here, and it does not have to
+  be on the menu. **That second set has no fixed size and no count is written down** — it
+  grows every time a figure lands in a map the roster did not carry, so a number here would
+  be one more thing to keep in step. `explorer/palettes.jsonl` is where it is counted.
 - **A download re-iterates, every time.** The full-resolution field was to be computed
   once in the background, after which every palette download came back off it instantly.
   A wallpaper-sized field is not cached and cannot be: the lanes are eight bytes for
@@ -76,7 +78,7 @@ worker.js             one worker: one wasm instance, one band of rows
 permalink.js          the link contract — parse, validate, canonicalize
 permalink.test.mjs    34 tests, `node --test explorer/permalink.test.mjs`
 bands.test.mjs        3 tests: the pool cuts the frame, never what is in it
-palettes.jsonl        the roster palettes.js is baked from: 110 maps, 77 offered
+palettes.jsonl        the roster palettes.js is baked from; 77 of them offered
 modes.jsonl           the roster catalog.js is baked from: the 18 modes the picker offers
 palettes.js           generated: the colormaps, by name, curated or drawn-in
 catalog.js            generated: the offered modes, their curves, the anchors' constants
@@ -374,6 +376,13 @@ bands are dispatched, and the band still in flight is finished and thrown away �
 a worker mid-band would cost a wasm instantiation to save at most one band. The abandoned
 pass resolves with `null` rather than being left pending: a promise nobody settles holds
 its whole `await` chain alive, and a reader who drags across the set makes one per drag.
+
+**`Renderer.field` cancels whatever is in flight, so a caller queues rather than
+races.** Every call bumps the generation, which is what makes a pan responsive and what
+makes two overlapping calls wrong: the first resolves `null` and the second returns, so
+code that asks for two fields at once silently gets one. Anything wanting several — a
+contact sheet, a batch of thumbnails — awaits each in turn, or goes to `compute_band` and
+`shade` directly the way `builder/atlas_thumbs.mjs` does.
 
 **The field cache** is keyed on the canonical permalink *minus* the palette and the shade
 recipe, plus the pixel grid it was sampled on — geometry alone, because nothing on the
@@ -894,8 +903,8 @@ arrived by mechanical conversion says so in its `source` line, and the rest were
 derived — every curated map, plus every map a figure of this article names — and it grew
 by two hundred the day the wallpaper project admitted an authored drop into its library.
 A rebake nobody ran on purpose would have taken the picker from 77 entries to 277, which
-is a change to what a reader is offered arriving as a build artifact. So the 110 names
-and their `offered` flags are a committed record here; the bake reads the gradients next
+is a change to what a reader is offered arriving as a build artifact. So the names and
+their `offered` flags are a committed record here; the bake reads the gradients next
 door and the roster from the record, and `builder check`'s **bake** check asserts that
 the committed `palettes.js` is byte for byte what that produces. Widening the picker is
 an edit to the record, made on purpose, in a commit that says so.
