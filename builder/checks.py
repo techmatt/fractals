@@ -24,7 +24,7 @@ did on a machine without one was raise, and every check after it went unrun.
   one row that is registered and deliberately not on a page, and it says what it is
   held on.
 - **landing** — every made figure's page carries a block a redraw could land on. `figures
-  --replace` and the four drawing commands find the block they are about to swap by
+  --replace` and every drawing command find the block they are about to swap by
   deriving it, so the derivation is load-bearing in a way **figures** does not reach:
   `landing_block` once left the explorer link out and refused a redraw of nearly every
   render here while every other check stayed green.
@@ -298,7 +298,7 @@ def _figure_facts(figure: figures.Figure) -> list[str]:
 def check_landing() -> list[str]:
     """Every made figure is a block a redraw could actually land on.
 
-    A redraw — `figures --replace`, and the `--replace` the four drawing commands
+    A redraw — `figures --replace`, and the `--replace` every drawing command
     take — finds the block it is about to swap by **deriving** it, and refuses when the
     page is not carrying exactly that. So the derivation is load-bearing in a way the
     figure check above does not reach: `figures.landing_block` once left the explorer

@@ -1,4 +1,4 @@
-{"schema": 1, "kind": "link", "id": "figure:overview-gallery-hook", "link": "v=2&x=-0.803832500338032&y=0.18284218893827717&w=0.000029290495407453673&p=along-the-starry-way-25", "from": "panel 1"}
+{"schema": 1, "kind": "link", "id": "figure:overview-gallery-hook", "link": "v=2&f=multibrot4&x=0.3190049359670787&y=0.7493803355819899&w=0.00000030536169435018664&p=pink&mirror=1", "from": "panel 2"}
 {"schema": 1, "kind": "link", "id": "figure:overview-pipeline", "link": "v=2&f=multibrot4&x=0.31215622070747834&y=0.7310275499716895&w=0.000009171415720687774&p=dessert-union-25", "from": "panel 3"}
 {"schema": 1, "kind": "link", "id": "figure:escape-families", "link": "v=2&y=0.0&p=twilight_shifted", "from": "panel 1"}
 {"schema": 1, "kind": "link", "id": "figure:escape-orbit-race", "no_link": "drawn", "why": "a drawn diagram or chart, with no engine render behind it to reopen"}

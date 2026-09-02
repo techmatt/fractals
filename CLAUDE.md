@@ -206,9 +206,21 @@ keeps the mechanics. **Every apply round ends by distilling that round's general
   name and an integer is refused at load**. `builder check` resolves every key against the
   store its kind names — `run_row` against the curation release records and the
   finished-render stores, `location` against the location label store and the walk
-  ledgers — and says so and moves on where the wallpapers checkout is not configured.
+  ledgers, `gallery_seat` against the recorded tentative gallery its stamp names — and
+  says so and moves on where the wallpapers checkout is not configured.
   `docs/page-review.md` carries the page-by-page table of what is written, mastered,
   reviewed and held; nothing else keeps a copy of it.
+- **A figure may name its panels by tentative-gallery ID** *(2026-09-02)*. Matt picks
+  wallpapers off the curation browser by the alias under a tile; `builder/picks.py` turns
+  `<stamp>|<recipe key>` into a picture, so a re-pick is an edit to the `picks` list on the
+  figure's own registry row followed by `python -m builder picks <id> --replace`, and
+  nothing about the recipe is retyped. **The row is where the picks live** — the maker
+  reads them back off it rather than holding a list of its own, because a second list is a
+  second thing to keep in step. Two reads resolve one pick: the seat out of that stamp's
+  `gallery.jsonl`, which carries no palette at all, and the recipe out of the candidate
+  ledger **by a streamed lookup that stops as soon as it has its keys**. Never the pool —
+  a solve may be running next door, and a figure prompt has no business loading what it
+  is solving over.
 - **A maker addresses a location by its record, never by its position.** A rig that
   resolves a stored pick through an index into a pool derived from the wallpaper
   project's live data is drawing at a moving target: that pool grows, the index comes to

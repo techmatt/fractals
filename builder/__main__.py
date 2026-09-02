@@ -2,15 +2,17 @@
 
 `build` writes, `check` only reads and exits 1 on a problem, `figure` prints markup to
 paste, `figures` lists what is still to make and lands a finished one, `locations` and
-`judges` draw the figures of those two sections, `growth` bakes the one figure that is a
+`judges` draw the figures of those two sections, `picks` draws the figures whose panels
+are named by a tentative gallery's own IDs, `growth` bakes the one figure that is a
 chart of a measurement rather than a picture of anything, `diagram` draws
 the two figures that are diagrams rather than renders, `serve` puts the committed tree
 on localhost for previewing, `prose` holds each page to the approved document it was
 placed from, and `review` builds the doc a page is marked up in and reads it back.
 `explorer` bakes the explorer page's palettes, wasm module and manifest. `import`,
-`prose`, `review`, `explorer`, `locations`, `judges` and `growth` are the commands that
-reach outside the repository — for a full-size original, for the approved prose, for the
-Drive-synced review folder, and for the engine, the records and the judges next door.
+`prose`, `review`, `explorer`, `locations`, `judges`, `picks` and `growth` are the
+commands that reach outside the repository — for a full-size original, for the approved
+prose, for the Drive-synced review folder, and for the engine, the records and the
+judges next door.
 Run `python -m builder --help` for the list.
 """
 
@@ -26,6 +28,7 @@ from . import growth as growth_module
 from . import judges as judges_module
 from . import locations as locations_module
 from . import palettes as palettes_module
+from . import picks as picks_module
 from . import pool as pool_module
 from . import prose as prose_module
 from . import review as review_module
@@ -200,6 +203,27 @@ def _parser() -> argparse.ArgumentParser:
         help="import each drawn sheet as its figure's asset and fill its registry row",
     )
     pooled.add_argument(
+        "--replace",
+        action="store_true",
+        help="land the redraw over a figure that is already made, page and row together",
+    )
+
+    named = commands.add_parser(
+        "picks", help="draw the figures whose panels are named by tentative-gallery IDs"
+    )
+    named.add_argument(
+        "id",
+        nargs="*",
+        choices=sorted(picks_module.MAKERS) or None,
+        help="which figures to draw; all of them by default",
+        metavar="ID",
+    )
+    named.add_argument(
+        "--place",
+        action="store_true",
+        help="import each drawn sheet as its figure's asset and fill its registry row",
+    )
+    named.add_argument(
         "--replace",
         action="store_true",
         help="land the redraw over a figure that is already made, page and row together",
@@ -580,6 +604,35 @@ def _do_pool(options: argparse.Namespace) -> int:
     return 0
 
 
+def _do_picks(options: argparse.Namespace) -> int:
+    """Draw the figures whose panels are tentative-gallery IDs, and optionally land them.
+
+    The same two steps every other maker takes, and one more on landing: the row's
+    `sources` are rewritten as well, because for this maker the panels **are** the keys —
+    a re-pick that left them behind would leave the row citing the seats it used to show.
+    """
+    for identifier in options.id or sorted(picks_module.MAKERS):
+        drawn = picks_module.draw(identifier)
+        print(f"wrote {drawn.path.relative_to(SITE_ROOT).as_posix()}")
+        if not (options.place or options.replace):
+            continue
+        destination = FIGURE_IMAGES_DIR / f"{identifier}.jpg"
+        width, height = images.import_web_res(drawn.path, destination)
+        placed = figures.place(
+            identifier,
+            destination.name,
+            width,
+            height,
+            provenance=list(drawn.provenance),
+            recipe=picks_module.recipe(identifier),
+            sources=picks_module.sources(identifier),
+            replace=options.replace,
+        )
+        size = destination.stat().st_size / 1024
+        print(f"  {destination.name}  {width}x{height}  ({size:.0f} KB) — {placed.page}")
+    return 0
+
+
 def _do_growth(options: argparse.Namespace) -> int:
     """Bake the growth figure, and optionally land it — as a draft, mark and all.
 
@@ -778,6 +831,8 @@ def main(argv: list[str] | None = None) -> int:
             return _do_palettes(options)
         if options.command == "pool":
             return _do_pool(options)
+        if options.command == "picks":
+            return _do_picks(options)
         if options.command == "growth":
             return _do_growth(options)
         if options.command == "diagram":
@@ -798,6 +853,7 @@ def main(argv: list[str] | None = None) -> int:
         explorer_module.ExplorerError,
         renders.EngineError,
         growth_module.GrowthError,
+        picks_module.PickError,
         pool_module.PoolError,
         prose_module.ProseError,
         review_module.ReviewError,

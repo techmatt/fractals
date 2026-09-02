@@ -99,15 +99,19 @@ MADE = (PLACED, STALE, DRAFT)
 #:   finished-render label row, `<head>/<batch>.jsonl:<line>`.
 #: - `location` — a location label row, `labels/<batch>.jsonl:<line>`, or a walk
 #:   ledger, `<ledger>/walk.jsonl` with `#<node_id>` where one node is meant.
+#: - `gallery_seat` — a seat of a recorded tentative gallery, `<stamp>|<recipe key>`.
+#:   A seat is a location with a recipe already on it, the way a release row is, and it
+#:   is how a figure names a picture Matt chose off the curation browser.
 #: - `synthetic` — nothing stored stands behind it: drawn here, or rendered for this
 #:   article alone. The row's own `provenance` is the record, and it carries no keys.
 #: - `none` — the picture cannot be reconstructed. The row says why, in `held_reason`.
 RUN_ROW, LOCATION, SYNTHETIC, NO_SOURCE = "run_row", "location", "synthetic", "none"
-SOURCE_KINDS = (RUN_ROW, LOCATION, SYNTHETIC, NO_SOURCE)
+GALLERY_SEAT = "gallery_seat"
+SOURCE_KINDS = (RUN_ROW, LOCATION, GALLERY_SEAT, SYNTHETIC, NO_SOURCE)
 
 #: The kinds that carry keys at all. A `synthetic` or `none` row naming one is a row
 #: claiming a record it does not have.
-KEYED_KINDS = (RUN_ROW, LOCATION)
+KEYED_KINDS = (RUN_ROW, LOCATION, GALLERY_SEAT)
 
 #: The words the explorer link is spelled with, here and on a gallery tile. One string,
 #: because a link a reader learns to recognize has to read the same everywhere. On a
@@ -588,6 +592,7 @@ def place(
     *,
     provenance: list[str] | None = None,
     recipe: dict | None = None,
+    sources: list[dict] | None = None,
     replace: bool = False,
     status: str = PLACED,
 ) -> Figure:
@@ -604,6 +609,10 @@ def place(
     placement, and a redraw that lands by accident is a picture nobody chose to change;
     the row and the page are rewritten exactly as a first placement writes them, so a
     new size reaches the `<img>` rather than stretching the old one.
+
+    `sources` is for a maker whose panels **are** record keys: `builder.picks` names its
+    picks on the row and draws exactly those, so the row's sources are rewritten with the
+    picture rather than left saying what the last set of panels came from.
 
     Everything that can refuse refuses *before* anything is written: a made row with no
     provenance is a row `load_all` will not read back, and writing one would leave the
@@ -659,6 +668,8 @@ def place(
         row["provenance"] = list(provenance)
     if recipe:
         row["recipe"] = recipe
+    if sources:
+        row["sources"] = list(sources)
     ordered = {key: row[key] for key in KEY_ORDER if key in row}
     ordered.update({key: value for key, value in row.items() if key not in ordered})
     index = next(index for index, other in enumerate(rows) if other.get("id") == identifier)
@@ -745,6 +756,7 @@ KEY_FORMS = {
         "labels/<batch>.jsonl:<line>  → data/labels/rows/<batch>.jsonl",
         "<ledger>/walk.jsonl[#<node_id>]  → the artifacts tree, through renders.artifact",
     ),
+    GALLERY_SEAT: ("<stamp>|<recipe key>  → artifacts/curation/tentative/<stamp>/gallery.jsonl",),
 }
 
 FINISHED_HEADS = ("smooth_render", "strange_render")
@@ -767,6 +779,7 @@ class _Stores:
         self._release: set[str] | None = None
         self._lines: dict[Path, int] = {}
         self._nodes: dict[str, set[int] | None] = {}
+        self._seats: dict[str, set[str] | None] = {}
 
     def release_keys(self) -> set[str]:
         if self._release is None:
@@ -803,6 +816,24 @@ class _Stores:
                 rows = self._locations.ledger(name)
                 self._nodes[name] = set(self._locations.nodes(rows))
         return self._nodes[name]
+
+    def gallery_keys(self, stamp: str) -> set[str] | None:
+        """Every recipe key one recorded tentative gallery seats, or `None` for no record.
+
+        The record and never the ledger: what a `gallery_seat` key claims is a *seat*,
+        and the seats file is a few hundred short lines while the ledger is a quarter of
+        a gigabyte a solve next door may be reading.
+        """
+        if stamp not in self._seats:
+            path = self._renders.artifact("curation", "tentative", stamp, "gallery.jsonl")
+            if not path.is_file():
+                self._seats[stamp] = None
+            else:
+                with path.open(encoding="utf-8") as handle:
+                    self._seats[stamp] = {
+                        str(json.loads(raw)["key"]) for raw in handle if raw.strip()
+                    }
+        return self._seats[stamp]
 
     def rows_file(self, head: str, batch: str) -> Path:
         return self._renders.data_file("data", head, "rows", f"{batch}.jsonl")
@@ -845,6 +876,21 @@ def _unresolved_key(stores: _Stores, kind: str, key: str) -> str | None:
         return _unresolved_run_row(stores, key)
     if kind == LOCATION:
         return _unresolved_location(stores, key)
+    if kind == GALLERY_SEAT:
+        return _unresolved_gallery_seat(stores, key)
+    return None
+
+
+def _unresolved_gallery_seat(stores: _Stores, key: str) -> str | None:
+    """A seat key against the recorded gallery its stamp names."""
+    stamp, separator, recipe_key = key.partition("|")
+    if not separator or not stamp.strip() or not recipe_key.strip():
+        return f"names {key}, and a gallery seat is addressed <stamp>|<recipe key>"
+    seated = stores.gallery_keys(stamp.strip())
+    if seated is None:
+        return f"names {key}, and no tentative gallery is recorded under {stamp.strip()}"
+    if recipe_key.strip() not in seated:
+        return f"names {key}, and no seat of that recorded gallery has that key"
     return None
 
 
