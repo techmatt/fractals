@@ -171,6 +171,19 @@ keeps the mechanics. **Every apply round ends by distilling that round's general
   nineteenth mode in front of a reader. The list is written three times — the record, the
   baked module, and `permalink.js`'s typed `MODES` — and both ties are checked, `bake`
   holding the record to the module and `permalink.test.mjs` the module to the contract.
+- **No location is reused across the site unless the repetition is intentional**
+  *(Matt, 2026-09-01)*. A location gets one figure. Where the repetition is the point —
+  a family's home view, which is its identity rather than anything the search found; a
+  set the reader has just met, drawn again so the palette is the only thing changing —
+  the registry row carries a `reuse_reason` that says why **and names the figure it
+  repeats**, which is what stops one excused frame from excusing every other frame that
+  row stands on. `check`'s `locations` check reads each panel's frame out of
+  `provenance` — family, degree, constants, centre, width — and fails on a frame under
+  two slugs with nothing claiming it; a reason that excuses no collision fails the same
+  way, so a re-pick takes its excuse with it. Two figures at one centre and two widths
+  are two locations to the check and one place to a reader, and that gap is a judgement
+  call the record cannot make.
+
 - **Every figure records how it was made.** A figure's registry row carries a
   `provenance` list — one line per panel — and a line holds everything needed to draw
   that panel again: the family and its constants, the frame's centre and width, the
@@ -390,7 +403,7 @@ is the only reason a dot's picture and a dot's link agree.
 After touching placed prose, `python -m builder prose <page>` as well — see **Where prose
 comes from** above for what it holds together and why one edit has several sites.
 
-`builder check` is read-only, and it runs fourteen named checks. It resolves every
+`builder check` is read-only, and it runs fifteen named checks. It resolves every
 internal link, refuses root-absolute and bare-directory hrefs, regenerates the gallery
 HTML and compares it byte for byte with what is committed, holds every figure block to
 its registry row, holds every made figure to being a block a redraw could land on —

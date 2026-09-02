@@ -28,6 +28,16 @@ did on a machine without one was raise, and every check after it went unrun.
   deriving it, so the derivation is load-bearing in a way **figures** does not reach:
   `landing_block` once left the explorer link out and refused a redraw of nearly every
   render here while every other check stayed green.
+- **locations** — no location stands under two figures. A figure's `provenance` spells
+  out the frame each panel was drawn on, and **no location is reused across the site
+  unless the repetition is intentional** *(Matt, 2026-09-01)* — so a frame appearing
+  under two slugs fails here, and the way to keep it is a `reuse_reason` on the row that
+  says why the repetition is wanted and **names the figure it repeats** — which is what
+  keeps one excused frame from excusing every other frame that row stands on. The reason
+  is checked back: one that excuses no collision has outlived it, and comes out. What
+  the check compares is the frame written down — family, degree, constants, centre and
+  width — so a place drawn at two different zooms reads as two locations here and is a
+  judgement call the record cannot make for anybody.
 - **contents** — every hand-written page carries the contents rail the builder derives,
   every prose heading carries the id its own words give it, and the front page's contents
   list marks the same sections done that `sections.jsonl` calls written.
@@ -475,6 +485,60 @@ def check_prose(article: list[sections.Section]) -> list[str]:
     return problems
 
 
+def check_locations() -> list[str]:
+    """No location stands under two figure slugs unless a row says the repetition is wanted.
+
+    *No location is reused across the site unless the repetition is intentional* (Matt,
+    2026-09-01). The site's argument is that the search keeps finding places worth
+    looking at, and a place that turns up on three pages quietly says the opposite — so
+    the repetition has to be a decision somebody made rather than one nobody noticed.
+
+    A row claims its repetition with `reuse_reason`, and **the reason names the other
+    figure by slug**. That is what scopes it: a row excused for one frame stays under the
+    guard for every other frame it stands on. The first cut of this check took an excused
+    row out of the comparison altogether, which meant a reason written about a family's
+    home view silently excused the same figure's reuse of a Julia set on another page —
+    and the tamper test caught it by finding nothing.
+
+    The reason is held the other way too. One that excuses no collision — because the
+    figure it names is not on any frame this figure stands on, or because the collision
+    is gone — is stale, and stale is how a guard rots: the follow-up prompt that re-picks
+    a figure's location drops the collision, and the excuse has to come out with it.
+    """
+    registry = figures.load_all()
+    standing: dict[str, set[str]] = {}
+    for figure in registry.values():
+        for frame in figure.frames:
+            standing.setdefault(frame, set()).add(figure.id)
+
+    problems = []
+    honoured: set[str] = set()
+    for frame, slugs in sorted(standing.items()):
+        if len(slugs) < 2:
+            continue
+        claiming = {
+            slug
+            for slug in slugs
+            if (registry[slug].reuse_reason or "")
+            and any(other in registry[slug].reuse_reason for other in slugs - {slug})
+        }
+        if claiming:
+            honoured |= claiming
+            continue
+        problems.append(
+            f"figures.jsonl: the location `{frame}` stands under {', '.join(sorted(slugs))} — "
+            "one location to one figure, or the row that repeats it carries a reuse_reason "
+            "naming the figure it repeats"
+        )
+    for figure in sorted(registry.values(), key=lambda found: found.id):
+        if figure.reuse_reason and figure.id not in honoured:
+            problems.append(
+                f"figures.jsonl: {figure.id} carries a reuse_reason that excuses no "
+                "collision — the excuse has outlived the repetition, or never named it"
+            )
+    return problems
+
+
 def check_theme() -> list[str]:
     """`theme.py`'s well tokens are the ones `site.css` declares."""
     stylesheet = SITE_ROOT / "assets" / "css" / "site.css"
@@ -687,6 +751,7 @@ def run_all() -> Report:
             "contents": check_contents(article),
             "figures": check_figures(),
             "landing": check_landing(),
+            "locations": check_locations(),
             "explorer": check_explorer(),
             "atlas": atlas_module.problems(),
             "bake": check_bake(),

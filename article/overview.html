@@ -56,18 +56,18 @@
     <p>For many years my desktop background has cycled through a collection of
     <a href="https://en.wikipedia.org/wiki/Fractal">fractal</a>
     wallpapers gathered from around the internet — but seeing the same wallpapers over and
-    over grew a bit repetitive, so I've spent some time thinking about writing a program to
-    automatically find, colorize, and stylize fractals. A great fractal wallpaper is the
+    over grew a bit repetitive, and my daughter was fascinated specifically by dark pink
+    fractals, so I've spent some time thinking about writing a program to automatically
+    find, colorize, and stylize fractals. A great fractal wallpaper is the
     product of several artistic stages — choosing a location and a framing, picking and
-    aligning palettes, stylizing, clever post-processing — craft that is usually done by
+    aligning palettes, stylizing, layered post-processing — craft that is usually done by
     hand, in tools like <a href="https://en.wikipedia.org/wiki/Ultra_Fractal">UltraFractal</a>
     or <a href="https://www.chaoticafractals.com/">Chaotica</a>. This project doesn't try to
     match that level of hand-tuned artistry on any single image. The goal is a system that
     produces a rich and growing set of good wallpapers, spanning a wide range of structures,
     <i>fractal families</i>, color styles, and rendering effects. Drawing a fractal turns out
-    to be the easy half of that. The hard parts are deciding where to point the camera, how
-    to draw what it sees, and which of the results are worth keeping — and most of this site
-    is about those three decisions. Everything on this site lives in the flat complex
+    to be only a tiny part of that. This site goes over how we decide where to point the
+    camera, how to draw what it sees, and which of the results are worth keeping. Everything on this site lives in the flat complex
     plane — two-dimensional
     <a href="escape-time-fractals.html">escape-time fractals</a>. There are other beautiful
     fractal worlds this project doesn't touch, among them the 3D
@@ -100,13 +100,15 @@
         <figcaption>The pipeline end to end, on one location. A guided walk finds the frame and the location judge scores it; that same frame is then drawn many ways — a rendering mode and a palette to each attempt, with the tones balanced — and the render judge scores what comes back; and a gallery is chosen out of the pool those attempts fill. Every picture here is that same multibrot frame, and the framed panel is the coloring the run kept.</figcaption>
       </figure>
 
-    <p>Finding good locations — a guided walk through each fractal family descends toward
-    structure and away from both emptiness and pure chaos, scoring neighborhoods as it goes
+    <p><a href="finding-good-locations.html">Finding good locations</a> — a guided walk
+    through each fractal family descends toward structure and away from both emptiness and
+    pure chaos, scoring neighborhoods as it goes
     with a small <a href="https://en.wikipedia.org/wiki/Neural_network_%28machine_learning%29">neural network</a> trained on my ratings of what makes
     promising wallpaper material. What it keeps is a growing pool of locations, each
     recorded as a frame in the complex plane and nothing more — no colors yet, no style
-    (<a href="finding-good-locations.html">finding good locations</a>,
-    <a href="training-judges.html">training judges</a>). Finding good wallpapers — each
+    (<a href="training-judges.html">training judges</a>).</p>
+
+    <p><a href="finding-good-wallpapers.html">Finding good wallpapers</a> — each
     location in the pool is then drawn many ways: in several <i>rendering modes</i>, from
     the classic smooth coloring to stranger styles, and under a spread of palettes, with
     the picture's tones balanced automatically. A second neural network, trained on my
@@ -114,14 +116,15 @@
     candidate wallpapers with its score attached
     (<a href="rendering-fundamentals.html">rendering fundamentals</a>,
     <a href="rendering-modes.html">rendering modes</a>,
-    <a href="color-palettes.html">color palettes</a>,
-    <a href="finding-good-wallpapers.html">finding good wallpapers</a>). Gallery curation —
+    <a href="color-palettes.html">color palettes</a>).</p>
+
+    <p><a href="gallery-curation.html">Gallery curation</a> —
     a gallery of any size is chosen out of that pool, for quality first and then under
     constraints on the set as a whole: no near-duplicates of one view, no single family of
-    color crowding out the rest, every rendering mode represented
-    (<a href="gallery-curation.html">gallery curation</a>). The
-    <a href="full-pipeline.html">full pipeline</a> page shows the three parts running end
-    to end.</p>
+    color crowding out the rest, every rendering mode represented.</p>
+
+    <p>The <a href="full-pipeline.html">full pipeline</a> page shows the three parts
+    running end to end.</p>
 
     <p>Two ideas run through all three parts. The neural networks — the <i>judges</i> —
     stand in for my taste at every point where a machine has to decide whether something is

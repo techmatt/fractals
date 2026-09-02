@@ -32,6 +32,7 @@ before this field both passed `check` in silence.
 
 import importlib
 import json
+import re
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -40,6 +41,33 @@ from .escape import attribute, text
 from .paths import FIGURE_IMAGES_DIR, FIGURE_REGISTRY, SITE_ROOT, carrier_path, relative_href
 
 INDENT = " " * 6
+
+#: How a `provenance` line names the frame its panel was drawn on.
+#:
+#: Provenance is prose, deliberately — it has to survive the script that wrote it — but
+#: the frame inside it is written the same way everywhere, because every line of it came
+#: out of the same renderer: a family, sometimes a degree, sometimes a set of complex
+#: constants, and always `centre <re> + <im>i, width <w>`. These four patterns are what
+#: reads that back out, and `frames()` below is the only thing that uses them.
+_NUMBER = r"-?\d+(?:\.\d+)?(?:[eE]-?\d+)?"
+_CENTRE = re.compile(rf"cent(?:re|er)\s+({_NUMBER})\s*\+\s*({_NUMBER})i")
+_WIDTH = re.compile(rf"width\s+({_NUMBER})")
+_CONSTANT = re.compile(rf"\b([a-z_]+)\s*=\s*({_NUMBER})\s*\+\s*({_NUMBER})i")
+_FAMILY = re.compile(
+    r"\b(mandelbrot|julia|multibrot|phoenix|burning[_ ]ship|tricorn|celtic|nova)\b",
+    re.IGNORECASE,
+)
+_DEGREE = re.compile(r"degree\s+(\d+(?:\.\d+)?)")
+
+
+def _point(real: str, imaginary: str) -> str:
+    """One complex number, spelled the same way whatever the line it came out of.
+
+    `0.0`, `0` and `-0.0` are the same place, and provenance writes all three; the
+    comparison is between what the numbers mean, not how somebody typed them.
+    """
+    return f"{float(real) + 0.0:.12g}{float(imaginary) + 0.0:+.12g}i"
+
 
 #: What a row's `status` may say, and what each one means.
 #:
@@ -172,6 +200,60 @@ class Figure:
     facts: tuple[Fact, ...]
     held_reason: str | None
     stale_when: str | None
+    reuse_reason: str | None
+
+    @property
+    def frames(self) -> frozenset[str]:
+        """Every distinct frame this figure's panels stand on, as comparable keys.
+
+        A *frame* here is what the article calls a location, spelled out completely: the
+        family, its degree where it has one, whatever complex constants pin the formula
+        down, and the centre and width the camera was at. Two panels agree on a key when
+        they are literally the same picture of the same place, which is the only claim
+        the record can support — provenance is prose and this reads it, so anything
+        looser would be inventing an equivalence nobody wrote down.
+
+        A line that names a family starts a fresh reading; a line that names none —
+        `left:`, `rung 3`, `panel 7` — inherits the family, degree and constants of the
+        last line that did, because that is how a sheet's provenance is written.
+
+        A row's `sources` keys are the other half, and both keyed kinds count. A
+        `location` key is the record's own name for a place, which is the way a maker is
+        meant to address one. A `run_row` key is a released wallpaper — a location with a
+        recipe already on it — and two figures standing on one release row are two
+        figures standing on one location however differently they crop it. Without that
+        half the modes gallery could show the same released wallpaper as the threads
+        figure beside it and nothing would say so, because a panel taken from a release
+        row is recorded by its key rather than by its frame.
+        """
+        found: set[str] = set()
+        family = degree = None
+        constants: dict[str, str] = {}
+        for line in self.provenance:
+            named = _FAMILY.search(line)
+            if named:
+                family = named.group(1).lower().replace(" ", "_")
+                found_degree = _DEGREE.search(line)
+                degree = found_degree.group(1) if found_degree else None
+                constants = {
+                    name: _point(real, imaginary)
+                    for name, real, imaginary in _CONSTANT.findall(line)
+                }
+            centre = _CENTRE.search(line)
+            width = _WIDTH.search(line)
+            if not centre or not width:
+                continue
+            frame = [family or "?"]
+            if degree:
+                frame.append(f"d{degree}")
+            frame += [f"{name}={value}" for name, value in sorted(constants.items())]
+            frame.append(f"@ {_point(centre.group(1), centre.group(2))}")
+            frame.append(f"w {float(width.group(1)):.12g}")
+            found.add(" ".join(frame))
+        for source in self.sources:
+            if source.kind in KEYED_KINDS:
+                found.update(source.keys)
+        return frozenset(found)
 
     @property
     def pending(self) -> bool:
@@ -321,6 +403,7 @@ def _figure(row: records.Record, identifier: str) -> Figure:
         facts=_facts(row),
         held_reason=held_reason,
         stale_when=row.optional_text("stale_when"),
+        reuse_reason=row.optional_text("reuse_reason"),
     )
 
 
@@ -438,6 +521,7 @@ KEY_ORDER = (
     "status",
     "held_reason",
     "stale_when",
+    "reuse_reason",
     "file",
     "width",
     "height",
