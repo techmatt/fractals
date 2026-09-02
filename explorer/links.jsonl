@@ -10,7 +10,7 @@
 {"schema": 1, "kind": "link", "id": "figure:render-discrete-and-smooth", "no_link": "not_exposed", "why": "the picture was drawn from a coloring written out in full rather than from a named mode, and a link names a mode"}
 {"schema": 1, "kind": "link", "id": "figure:render-field-anatomy", "no_link": "incomplete_provenance", "why": "no colormap is written down"}
 {"schema": 1, "kind": "link", "id": "figure:render-maxiter", "no_link": "not_exposed", "why": "the picture was drawn at a cap of 300 and the depth policy gives 32,474 at this width — the cap is the engine's own and is not a key a link may carry, so the link would draw a different picture"}
-{"schema": 1, "kind": "link", "id": "figure:render-supersample", "link": "v=2&f=multibrot3&x=-0.0693668444165554&y=0.7786163029308374&w=5.6412438043129286e-08&p=Verdigris%20Flare", "from": "panel 1"}
+{"schema": 1, "kind": "link", "id": "figure:render-supersample", "link": "v=2&f=multibrot3&x=-0.0693668444165554&y=0.7786163029308374&w=5.6412438043129286e-08&p=Teal%20Against%20Coral", "from": "panel 1"}
 {"schema": 1, "kind": "link", "id": "figure:render-cyclic-repeats", "link": "v=2&f=julia&cx=-0.07810228973371881&cy=-0.6514609012382414&w=3.0&p=Reef%20Triad", "from": "panel 1"}
 {"schema": 1, "kind": "link", "id": "figure:render-autolevel", "link": "v=2&x=-0.1592&y=1.0341&w=0.10&p=Gold%20Field%2C%20Blood%20Spark", "from": "panel 1"}
 {"schema": 1, "kind": "link", "id": "figure:modes-field-family", "link": "v=2&x=-1.2514946371626112&y=0.041108581786355486&w=1.214842568782454e-06&p=cmr.voltage", "from": "panel 1"}

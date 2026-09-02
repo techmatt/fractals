@@ -24,6 +24,7 @@
 {"schema": 1, "kind": "palette", "name": "Rust to Plum", "offered": false}
 {"schema": 1, "kind": "palette", "name": "Sage Ascending", "offered": false}
 {"schema": 1, "kind": "palette", "name": "Spectral", "offered": true}
+{"schema": 1, "kind": "palette", "name": "Teal Against Coral", "offered": false}
 {"schema": 1, "kind": "palette", "name": "Verdigris Flare", "offered": false}
 {"schema": 1, "kind": "palette", "name": "YlGnBu", "offered": true}
 {"schema": 1, "kind": "palette", "name": "YlOrBr", "offered": true}
