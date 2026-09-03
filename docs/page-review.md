@@ -196,14 +196,14 @@ yet judged* rather than a decision.
 | `rendering-modes.html` | yes | `Rendering modes v1.md` | none | 6 placed | — |
 | `finding-good-locations.html` | yes | `Finding good locations v5.md` | applied 2026-08-21 | 12 placed | placed 2026-09-01 with the reframing channel; the master carries eleven `[FIGURE]` markers and the page twelve blocks — `locations-walk-root` landed after v4 was approved, and `locations-found-and-finished` stands where the marker says `locations-q4-gallery` |
 | `training-judges.html` | yes | `Training judges v5.md` | applied 2026-08-21 | 3 placed | — |
-| `color-palettes.html` | yes | `Color palettes v5.md` | none | 7 placed | — |
+| `color-palettes.html` | yes | `Color palettes v5.md` | applied 2026-09-02 | 7 placed | — |
 | `finding-good-wallpapers.html` | yes | `Finding good wallpapers v2.md` | none | 3 placed | renamed from `from-locations-to-wallpapers.html` at the twelve-section split, and the figures' `wallpapers-` prefix still carries the old name. `wallpapers-attempt` is placed off Matt's tile pick; `wallpapers-stages` was redrawn on 2026-09-02 as the three parts and the material each hands on, which lifted its stale mark; `wallpapers-mine` landed the same day off one mine's own visit records |
 | `gallery-curation.html` | yes | `Gallery curation v1.md` | none | 1 placed, 4 pending, 1 held | placed 2026-09-01 with the (b)/(c) seam; `gallery-release` came across from `wallpapers-release` with the full-size render it illustrates. The four pending rows need a solve's own record — the pool's narrowing, the color allowances, the twin pairs and the per-mode floors — which `builder/pool.py` does not read yet; `gallery-output` is **held** on a released gallery from the live selection leg, which writes only into the wallpaper project's ignored `artifacts/` |
 | `full-pipeline.html` | yes | `Full pipeline v3.md` | none | 2 placed, 1 draft, 1 held | `pipeline-overview` and `pipeline-yield-decay` landed 2026-09-02; `pipeline-growth` is a **draft** because its ladder stops at the gallery sizes this pool can seat; `pipeline-themed-galleries` is **held** on one pool solved twice, plain and under a color theme, which the solve leg writes only into the wallpaper project's ignored `artifacts/` |
 | `fractal-atlases.html` | no | none | none | none | the section's prose is not drafted; the tool page it will hang off is shipped — see below |
 | `deep-zoom.html` | no | none | none | none | the section is not written |
-| `palettes/make-your-own.html` | hangs off Color palettes | `Make your own palettes v4.md` | none | 1 placed | — |
-| `palettes/all-palettes.html` | hangs off Color palettes | generated | n/a | 901 palette strips in 823 entries, none a registry figure | the strips are generated from the wallpaper project's library and are not figures; 65 sets of near-duplicates are gathered under one entry each |
+| `palettes/make-your-own.html` | hangs off Color palettes | `Make your own palettes v4.md` | applied 2026-09-02 | 1 placed | — |
+| `palettes/all-palettes.html` | hangs off Color palettes | generated | n/a | 901 palette strips, none a registry figure | the strips are generated from the wallpaper project's library and are not figures; the page groups them by the hue each map is dominant in, twelve sections, every map shown in its own right |
 
 "Last review round" is what `python -m builder review --list` reports as **applied**; a
 doc **waiting** in the review folder is a round somebody started and did not finish, and

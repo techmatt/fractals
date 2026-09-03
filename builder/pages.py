@@ -258,7 +258,7 @@ def gallery_index(galleries: list[Gallery], sections: list[sections_module.Secti
 
 
 def library_page(sections: list[sections_module.Section]) -> str:
-    """The palette library, every map as a strip, grouped the way the section groups them.
+    """The palette library, every map as a strip, grouped by the colour it is dominant in.
 
     Generated rather than written because it is nine hundred rows of the same shape, and
     the shape is a record: `check` re-derives it and compares, so a palette that entered
@@ -282,15 +282,14 @@ def library_page(sections: list[sections_module.Section]) -> str:
             ]
         )
     ]
-    for number, group in palettes_module.held_groups():
-        shown = sum(1 + len(entry.variants) for entry in group)
+    for hue, group in palettes_module.held_hues():
         lines = [
             '  <section class="palette-group">',
-            f'    <h2 id="group-{number}">Group {number} — {shown} palettes</h2>',
+            f'    <h2 id="hue-{hue}">{text(hue.capitalize())} — {len(group)} palettes</h2>',
             '    <div class="palette-grid">',
         ]
-        for entry in group:
-            lines.extend(_palette_entry(entry, page, directory, width, height))
+        for held in group:
+            lines.extend(_palette_cell(held, page, directory, width, height))
         lines.extend(["    </div>", "  </section>"])
         blocks.append(NEWLINE.join(lines))
 
@@ -309,33 +308,21 @@ def library_page(sections: list[sections_module.Section]) -> str:
     )
 
 
-def _palette_entry(entry, page: Path, directory: Path, width: int, height: int) -> list[str]:
-    """One cell of the library grid: a palette, and the variants gathered under it.
+def _palette_cell(held, page: Path, directory: Path, width: int, height: int) -> list[str]:
+    """One cell of the hue grid: a palette's gradient, what the page calls it, and — where
+    those two differ — the id the library actually spells it with.
 
-    The disclosure is `<details>`, which is HTML and not a script — an article page here
-    carries no JavaScript and opens from the filesystem, and a fold that needed one would
-    have been a fold that hid 78 palettes from a reader with scripting off. Only one
-    `<figcaption>` is allowed inside a `<figure>`, so a variant's name is a `<span>`; it
-    is the same label, and `.variant span` is styled from the same rule the caption is.
+    The id is on the page rather than in a `title` attribute because it is the key a
+    permalink carries and the key a reader searching this page would type, and a tooltip
+    is invisible to a touch screen, to a keyboard and to the browser's own find.
     """
     lines = [
         '      <figure class="palette">',
-        f"        {_strip(entry.lead, page, directory, width, height)}",
-        f"        <figcaption>{text(entry.lead.name)}</figcaption>",
+        f"        {_strip(held, page, directory, width, height)}",
+        f"        <figcaption>{text(held.display)}</figcaption>",
     ]
-    if entry.variants:
-        lines.append('        <details class="variants">')
-        lines.append(f"          <summary>{text(entry.summary)}</summary>")
-        for held in entry.variants:
-            lines.extend(
-                [
-                    '          <div class="variant">',
-                    f"            {_strip(held, page, directory, width, height)}",
-                    f"            <span>{text(held.name)}</span>",
-                    "          </div>",
-                ]
-            )
-        lines.append("        </details>")
+    if held.renamed:
+        lines.append(f'        <p class="palette-id">{text(held.name)}</p>')
     lines.append("      </figure>")
     return lines
 

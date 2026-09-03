@@ -6,8 +6,9 @@ module reads four things next door and nothing else:
 
 * the **colormap library** itself — one JSON per palette, and the `provenance.jsonl`
   saying which of them were authored against the palette prompt and under which mood family;
-* the **clustering** that repository ships, `clusters.jsonl`, which is a reading of the
-  library rather than something the pipeline consumes;
+* the **carrier table** that repository ships, `carriers.jsonl`, which says which
+  codebook cell each map comes out dominant in — a reading of the library rather than
+  something the pipeline consumes, and the one thing the library page groups on;
 * the **finished-render label stores**, for the locations: every single-location figure
   here stands on a frame Matt rated 4, addressed by the file and line it sits at;
 * the **palette head**, for the two figures whose subject is a ranking — asked through
@@ -49,6 +50,7 @@ from __future__ import annotations
 
 import json
 import random
+import re
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -62,9 +64,34 @@ from .theme import WELL_INK, WELL_INK_DIM, font, text_width
 #: Where the tracked colormap library is, in the wallpaper project.
 LIBRARY = ("data", "palettes")
 
+#: The dominant-colour reading of every map in that library, one row per (map, cell) the
+#: map carries on at least one of three pinned reference fields. A row already names the
+#: hue family its cell rolls up to, so nothing here re-derives the codebook.
+CARRIERS = "carriers.jsonl"
+
+#: The twelve hue names of the codebook's chromatic half — 48 cells, twelve hues by
+#: {dark, light} by {muted, vivid} — in the wheel's own order, which is the order the
+#: library page lays its sections out in. Spelled here rather than imported: the codebook
+#: is that repository's module and this record has to build on a machine with no checkout.
+HUES = (
+    "rose",
+    "red",
+    "orange",
+    "yellow",
+    "lime",
+    "green",
+    "teal",
+    "cyan",
+    "azure",
+    "blue",
+    "purple",
+    "magenta",
+)
+
 #: The shipped pool a colorize may draw from: 900 of the 901 maps, `blue_orange` apart.
-#: What a run actually *draws* from is narrower again — `variant_sets` below stands one
-#: member of each set of near-duplicates, which takes 900 to 822.
+#: What a run actually *draws* from is narrower again — the project stands one member of
+#: each set of near-duplicates, which takes 900 to 822. That reading is the pipeline's and
+#: not the library page's: the page shows every map in its own right.
 POOL = ("data", "palette_choice", "pool.json")
 
 #: What a strip is drawn at inside a full-width sheet, and inside a panel's own cell.
@@ -98,8 +125,8 @@ FRAMES = {
     "neighborhood": ("pool_draw_human_good", 683),
 }
 
-#: The three palettes the opening figure's columns are: three authored maps, one from
-#: each of three clusters, so the columns differ by more than a hue.
+#: The three palettes the opening figure's columns are: three authored maps far apart by
+#: the descriptor distance, so the columns differ by more than a hue.
 OPENING_PALETTES = ("Amber Highlands", "Petrol & Coral", "Wisteria Nightfall")
 
 #: The palette the knobs figure is spent on, and what it is spent at. Cycles first,
@@ -171,28 +198,29 @@ def library() -> dict[str, Palette]:
     return found
 
 
-def clusters() -> list[dict]:
-    """The tracked clustering, its method row dropped: one row per group, in order."""
-    rows = renders.jsonl(renders.data_file(*LIBRARY) / "clusters.jsonl")
-    return sorted((row for row in rows if row.get("kind") == "cluster"), key=lambda r: r["cluster"])
+def dominant_hues() -> dict[str, str]:
+    """Every map's dominant hue, keyed by name: the one word the library page groups on.
 
+    The tracked carrier table next door reads each map onto three pinned reference fields
+    and writes a row for every codebook cell the map is *dominant* in on at least one of
+    them, with that cell's mean share across the three and the hue family it rolls up to.
+    A map's hue is the family of its largest such row — the colour it puts most of a
+    picture in, measured on pictures rather than on the ramp.
 
-def variant_sets() -> list[list[str]]:
-    """The project's own reading of which maps are the same choice twice.
-
-    `data/palettes/groups.jsonl` next door: average linkage over the sliced Wasserstein
-    distance between two maps' colour clouds, cut where Matt's calibration sheet put the
-    line between *same* and *different*. Sixty-five sets over 143 maps; the other 758 the
-    library holds are alone, and being alone is not a claim that a map is unique — only
-    that nothing else came within the cut of it.
-
-    **The word here is `variant`, not `group`.** That repository calls these groups, and
-    this page already spends the word on the sixteen clusters its sections are; a reader
-    who meets two kinds of group on one page has been taught nothing. Renaming on the way
-    in is the naming rule, and this is the case it is for.
+    Ties are broken by the cell's own name, so the answer cannot depend on the order the
+    rows were written; at the time of writing no map has one. Every one of the 901 maps
+    carries at least one cell, which is why the page needs no section for the colourless:
+    a map that carried none would reach no section at all, and `_uncarried` says so.
     """
-    rows = renders.jsonl(renders.data_file(*LIBRARY) / "groups.jsonl")
-    return [list(row["members"]) for row in rows if row.get("kind") == "group"]
+    best: dict[str, tuple[float, str, str]] = {}
+    for row in renders.jsonl(renders.data_file(*LIBRARY) / CARRIERS):
+        if row.get("kind") != "carrier":
+            continue
+        mark = (float(row["mean"]), str(row["cell"]))
+        held = best.get(row["map"])
+        if held is None or mark > (held[0], held[1]):
+            best[row["map"]] = (mark[0], mark[1], str(row["family"]))
+    return {name: family for name, (_, _, family) in best.items()}
 
 
 def pool() -> list[str]:
@@ -921,27 +949,21 @@ LIBRARY_STRIP = (420, 28)
 LIBRARY_PAGE = ("palettes", "all-palettes.html")
 LIBRARY_TITLE = "All palettes"
 
-#: The page's opening paragraph. The two counts are derived and formatted in, because a
-#: library that grows is a page that has to say so without anybody remembering to.
+#: The page's opening paragraph. The count is derived and formatted in, because a library
+#: that grows is a page that has to say so without anybody remembering to.
 LIBRARY_LEAD = (
-    "Every palette the project ships, grouped the way the section groups them: sixteen "
-    "groups by distance in palette space. {palettes} palettes in {entries} entries: "
-    "{sets} sets of them sit close enough together that nothing looking at a wallpaper "
-    "could tell one from another, so each set is shown once and its variants open "
-    "underneath. Each is drawn here as a render sweeps through it — folded where it does "
-    "not close on the color it opened with — so what is on the page is the gradient a "
-    "picture is read through, and not the handful of stops it was written as."
+    "Every palette the project ships — {palettes} of them — grouped by the color each one "
+    "is dominant in: a map is read onto three fixed pictures, and the hue it puts most of "
+    "a picture in is the section it sits in here. Each is drawn as a render sweeps through "
+    "it — folded where it does not close on the color it opened with — so what is on the "
+    "page is the gradient a picture is read through, and not the handful of stops it was "
+    "written as."
 )
 
 
 def library_lead() -> str:
-    """The lead with this record's own numbers in it."""
-    rows = held_library()
-    return LIBRARY_LEAD.format(
-        palettes=len(rows),
-        entries=sum(1 for held in rows if held.leads),
-        sets=len({held.variant for held in rows if not held.leads}),
-    )
+    """The lead with this record's own number in it."""
+    return LIBRARY_LEAD.format(palettes=len(held_library()))
 
 
 def library_page_path():
@@ -999,7 +1021,7 @@ def place_library_strips() -> tuple[int, int]:
 # ------------------------------------------------------ the library, as this repository has it
 
 #: This repository's own record of the library page: one row per palette, in the order the
-#: page lays them out, carrying the three facts the page is made of and nothing else.
+#: page lays them out, carrying the four facts the page is made of and nothing else.
 #: Written from the wallpaper project by `palettes --library` and read by everything else,
 #: so the largest generated page here is a function of committed text — which is what every
 #: other generated page on this site already is, and what lets `check` hold it to its record
@@ -1011,29 +1033,166 @@ LIBRARY_ROW = "palette"
 #: library that grew by two hundred is one instruction, not two hundred lines of it.
 DRIFT_NAMED = 8
 
+#: Where a map's name came from, which is the whole of what decides whether the page shows
+#: it under a display name — see `display_name`.
+EXTRACTED = "extracted"
+
+#: Words a filename carries that say nothing about the palette: the site a picture came
+#: off, the resolution words beside it, and `fractal`, which every map on a fractal site
+#: is. Dropped wherever they fall rather than only at the ends, because they turn up in the
+#: middle as often — `at-the-beach-hd-wallpaper-1920x1200`.
+NAME_NOISE = frozenset(
+    {
+        "hd",
+        "4k",
+        "8k",
+        "uhd",
+        "wallpaper",
+        "wallpapers",
+        "background",
+        "backgrounds",
+        "desktop",
+        "widescreen",
+        "image",
+        "images",
+        "photo",
+        "fractal",
+        "com",
+        "www",
+        "org",
+        "wallhaven",
+        "commons",
+        "imgur",
+        "deviantart",
+        "flickr",
+        "pixabay",
+        "unsplash",
+    }
+)
+
+#: The words a title keeps lower case anywhere but first, cut to what actually turns up in
+#: a wallpaper's filename.
+NAME_SMALL = frozenset(
+    {
+        "a",
+        "an",
+        "and",
+        "as",
+        "at",
+        "but",
+        "by",
+        "for",
+        "from",
+        "in",
+        "into",
+        "of",
+        "on",
+        "or",
+        "over",
+        "the",
+        "to",
+        "under",
+        "up",
+        "with",
+    }
+)
+
+_VOWELS = frozenset("aeiouyAEIOUY")
+
+#: A filename that arrived percent-encoded, its `%` written as `_`: two or more two-digit
+#: hex bytes in a row is UTF-8 the file system flattened, and there are twenty-three of
+#: them in the library — Wikimedia Commons titles in Vietnamese. Decoding them is guessing
+#: about a separator that is also a word break, and a wrong guess is mojibake in front of a
+#: reader, so these keep the name they have.
+PERCENT_ENCODED = re.compile(r"(?:_[0-9A-F]{2}){2}")
+
+
+def _hashish(word: str) -> bool:
+    """Whether a word is an identifier rather than a word: `dg6v93`, `2pi1Zz6`, `Jqmsl`."""
+    mixed = any(character.isdigit() for character in word) and any(
+        character.isalpha() for character in word
+    )
+    return mixed or (len(word) >= 4 and not _VOWELS & set(word))
+
+
+def display_name(name: str, source: str) -> str:
+    """What the page calls a palette, which is not always what the library calls it.
+
+    **The id is never renamed.** It is the key a permalink carries, the key the explorer
+    resolves and the key `provenance` writes down, and the page shows it under the strip
+    wherever the two differ. This is a reading label and nothing else.
+
+    Only an *extracted* map gets one. Those names are the filenames of the wallpapers the
+    maps were distilled out of — `02591_vermilionlakes_2560x1600`,
+    `along-the-starry-way-25` — and a filename is not a name a reader can use. A
+    *converted* ramp's name is the upstream library's own identifier,
+    `cet_cyclic_mrybm_35_75_c68`, which is the thing to look up and would be destroyed by
+    title-casing it; an *authored* map's name was written as prose in the first place.
+
+    The rule: drop resolution tokens and everything that is not a letter or a digit, drop
+    `NAME_NOISE` wherever it falls, collapse a token repeated straight after itself
+    (`wallhaven_wallhaven-…`), drop a leading id number and any trailing number, and title
+    what is left. **Where what survives is more identifier than words — over half of it a
+    hash or a bare number, or nothing at all — the name stands as it is.** That is the
+    honest answer for the maps whose filenames were only ever a hash, and it is what stops
+    `commons_Julia-Menge_-0.8_0.156i` from being read out as *Julia Menge 0 8 0 156i*.
+    """
+    if source != EXTRACTED or PERCENT_ENCODED.search(name):
+        return name
+    text = re.sub(r"\d{3,4}\s*x\s*\d{3,4}", " ", name)
+    words: list[str] = []
+    for word in re.sub(r"[^0-9A-Za-z]+", " ", text).split():
+        if word.lower() in NAME_NOISE:
+            continue
+        if words and word.lower() == words[-1].lower():
+            continue
+        words.append(word)
+    while words and words[0].isdigit():
+        words.pop(0)
+    while words and words[-1].isdigit():
+        words.pop()
+    kept = words
+    if not kept or sum(_hashish(word) or word.isdigit() for word in kept) * 2 > len(kept):
+        return name
+    return " ".join(
+        word.lower() if at and word.lower() in NAME_SMALL else word.lower().capitalize()
+        for at, word in enumerate(kept)
+    )
+
 
 @dataclass(frozen=True)
 class Held:
-    """One palette as the library page needs it: its name, whether it closes, its group,
-    and which entry of the page it is shown under.
+    """One palette as the library page needs it: its name, whether it closes, the hue it is
+    dominant in, and where its name came from.
 
-    `variant` is the name of the palette this one is a variant of — its own name where
-    nothing in the library came within the cut of it, which is the case for 758 of the
-    901. Addressed by name and never by position, the way every other key in this
-    repository is: the project's own sets are numbered `m01`, `m02` and so on, and that
-    numbering is regenerated whenever the cut moves, so a record that carried it would
-    silently repoint every row the next time somebody recalibrated next door.
+    `source` is on the row because the page's display name turns on it and on nothing else
+    — see `display_name` — and a page that is a pure function of committed text cannot go
+    next door to ask. `hue` is one of `HUES` and never a number: the section a map sits in
+    is a colour a reader can see, so it is spelled.
     """
 
     name: str
     cyclic: bool
-    group: int
-    variant: str
+    hue: str
+    source: str
 
     @property
-    def leads(self) -> bool:
-        """Whether the page shows this palette in its own right, or under another."""
-        return self.variant == self.name
+    def display(self) -> str:
+        """What the page calls it."""
+        return display_name(self.name, self.source)
+
+    @property
+    def renamed(self) -> bool:
+        """Whether the page owes the reader the true id as well as the display name.
+
+        Compared with case and punctuation squashed out, because `azarn` shown as *Azarn*
+        is the same string to anyone reading it or searching for it, and a line under nine
+        hundred strips repeating what the caption already says is noise. `Along the Starry
+        Way` against `along-the-starry-way-25` is a real difference and is shown.
+        """
+        squashed = "".join(character for character in self.display if character.isalnum())
+        was = "".join(character for character in self.name if character.isalnum())
+        return squashed.casefold() != was.casefold()
 
     @property
     def strip(self) -> str:
@@ -1051,8 +1210,8 @@ class Held:
             "kind": LIBRARY_ROW,
             "name": self.name,
             "cyclic": self.cyclic,
-            "group": self.group,
-            "variant": self.variant,
+            "hue": self.hue,
+            "source": self.source,
         }
 
 
@@ -1069,109 +1228,46 @@ def held_library() -> tuple[Held, ...]:
             Held(
                 record.text("name"),
                 record.flag("cyclic"),
-                record.count("group"),
-                record.text("variant"),
+                record.text("hue"),
+                record.text("source"),
             )
         )
     return tuple(found)
 
 
-@dataclass(frozen=True)
-class Entry:
-    """One thing the page shows: a palette, and the variants gathered under it."""
+def held_hues() -> list[tuple[str, tuple[Held, ...]]]:
+    """The record's rows as the page's sections: each hue some map is dominant in, in the
+    wheel's order, and inside it the maps in the order the record holds them.
 
-    lead: Held
-    variants: tuple[Held, ...]
-
-    @property
-    def group(self) -> int:
-        return self.lead.group
-
-    @property
-    def summary(self) -> str:
-        """What the disclosure says before it is opened."""
-        count = len(self.variants)
-        return f"{count} variant" if count == 1 else f"{count} variants"
-
-
-def held_groups() -> list[tuple[int, tuple[Entry, ...]]]:
-    """The record's rows as the page's sections, in number order: the sixteen clusters,
-    and inside each the entries it shows.
-
-    A variant is shown under the palette it is a variant of, **wherever that palette
-    sits**, and 37 of the 65 sets straddle two clusters — the two readings of the library
-    are different measurements and were never going to agree. So a section holds the
-    entries its own members lead, and a member led from another section is shown there
-    rather than twice. Nothing leaves the page; what moves is which disclosure it is
-    behind.
+    A hue no map is dominant in gets no section rather than an empty one — the sections are
+    a reading of the library and not a promise about the codebook.
     """
-    rows = held_library()
-    gathered: dict[str, list[Held]] = {}
-    for held in rows:
-        if not held.leads:
-            gathered.setdefault(held.variant, []).append(held)
-    ordered: dict[int, list[Entry]] = {}
-    for held in rows:
-        if held.leads:
-            ordered.setdefault(held.group, []).append(
-                Entry(held, tuple(gathered.get(held.name, ())))
-            )
-    return [(number, tuple(ordered[number])) for number in sorted(ordered)]
+    ordered: dict[str, list[Held]] = {}
+    for held in held_library():
+        ordered.setdefault(held.hue, []).append(held)
+    return [(hue, tuple(ordered[hue])) for hue in HUES if hue in ordered]
 
 
 def derive_library() -> tuple[Held, ...]:
     """The same rows, read off the wallpaper project — the record's one source.
 
-    The group number is the page's, counted along the clustering rather than taken from
-    it: what the record owes the page is the order the page renders, and the clustering's
-    own numbering is that repository's business. So is the variant sets' numbering, and
-    for a sharper reason — see `Held.variant` — so a set is addressed by the member the
-    page reaches first, which is a name and stays put.
-
-    **A set of variants is kept whole, and sits in the group its first member is in.**
-    The two readings disagree about 37 of the 65 sets: the clustering measures a
-    gradient at 32 positions in Oklab and the variant cut measures the *cloud* of colour
-    a map can put on a picture, so `twilight` and `twilight_shifted` land in groups 2 and
-    3 while being, to the eye, one palette. A page that honoured both would show one of
-    them as a variant of a palette four screens away, which teaches nobody anything. So
-    the record's order is the page's reading order — each entry, then what is gathered
-    under it — and every row's `group` is the section it is shown in.
+    The order is the page's reading order and is derived here rather than taken from
+    anything next door: the twelve hues in the wheel's own order, and inside a hue the maps
+    by name, case folded, so a section a reader is scrolling can be searched by eye.
     """
     held = library()
+    hues = dominant_hues()
     placed = []
-    for number, group in enumerate(clusters(), start=1):
-        for name in group["members"]:
-            palette = held.get(name)
-            if palette is None:
-                raise PaletteError(
-                    f"the clustering names {name!r}, and the library holds no such map"
-                )
-            placed.append((name, palette.cyclic, number))
-
-    where = {name: at for at, (name, _, _) in enumerate(placed)}
-    leader, gathered = {}, {}
-    for members in variant_sets():
-        for name in members:
-            if name not in where:
-                raise PaletteError(f"a variant set names {name!r}, and no cluster holds it")
-        ordered = sorted(members, key=lambda name: where[name])
-        for name in ordered:
-            leader[name] = ordered[0]
-        gathered[ordered[0]] = ordered[1:]
-
-    cyclic = {name: closes for name, closes, _ in placed}
-    section = {name: number for name, _, number in placed}
-    found = []
-    for name, closes, number in placed:
-        if leader.get(name, name) != name:
-            continue
-        found.append(Held(name, closes, number, name))
-        for other in gathered.get(name, ()):
-            found.append(Held(other, cyclic[other], number, name))
-    if len(found) != len(placed):
-        missing = sorted(set(section) - {entry.name for entry in found})
-        raise PaletteError(f"the fold lost {len(missing)} palette(s): {missing[:4]}")
-    return tuple(found)
+    for name in sorted(held, key=lambda name: (name.casefold(), name)):
+        hue = hues.get(name)
+        if hue is None:
+            raise PaletteError(
+                f"the carrier table names no dominant cell for {name!r}, so no page shows it"
+            )
+        if hue not in HUES:
+            raise PaletteError(f"{name!r} is dominant in {hue!r}, which is not one of HUES")
+        placed.append(Held(name, held[name].cyclic, hue, held[name].source))
+    return tuple(sorted(placed, key=lambda entry: HUES.index(entry.hue)))
 
 
 def write_library(derived: tuple[Held, ...]) -> Path:
@@ -1193,7 +1289,7 @@ def library_drift() -> list[str]:
     recorded = held_library()
     derived = derive_library()
     if recorded == derived:
-        return _unclustered()
+        return _uncarried()
     fix = "`python -m builder palettes --library`"
     by_recorded = {entry.name: entry for entry in recorded}
     by_derived = {entry.name: entry for entry in derived}
@@ -1213,23 +1309,22 @@ def library_drift() -> list[str]:
     ]
     if not problems:
         problems = [f"library.jsonl: the record's order is not the library's — {fix}"]
-    return _capped(problems) + _unclustered()
+    return _capped(problems) + _uncarried()
 
 
 def _shape(entry: Held) -> str:
-    under = "on its own" if entry.leads else f"a variant of {entry.variant}"
-    return f"group {entry.group}, {'cyclic' if entry.cyclic else 'folded'}, {under}"
+    return f"{entry.hue}, {'cyclic' if entry.cyclic else 'folded'}, {entry.source}"
 
 
-def _unclustered() -> list[str]:
-    """A palette the library holds and the clustering never names reaches no page at all."""
-    named = {name for group in clusters() for name in group["members"]}
-    missing = sorted(set(library()) - named)
+def _uncarried() -> list[str]:
+    """A map the carrier table reads as dominant in nothing reaches no section at all."""
+    missing = sorted(set(library()) - set(dominant_hues()))
     if not missing:
         return []
     return _capped(
         [
-            f"clusters.jsonl: {name} is in the library and in no group, so no page shows it"
+            f"carriers.jsonl: {name} is in the library and is dominant in no cell, so no "
+            "page shows it"
             for name in missing
         ]
     )

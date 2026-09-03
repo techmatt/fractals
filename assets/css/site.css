@@ -335,55 +335,49 @@ a:hover { color: var(--ink); }
 
 .credit { display: block; margin-top: 0.3rem; font-size: 0.8125rem; opacity: 0.8; }
 
-/* The palette library: nine hundred gradients, each with its name under it. A strip is a
-   picture of a ramp and not of a location, so it takes the well the way a figure does but
-   fills its cell rather than being fitted to one. */
+/* The palette library: nine hundred gradients, grouped by the colour each is dominant in.
+   A hue's grid is one dark panel — a strip is a picture and takes the well the way a
+   figure does, and nine hundred separate wells on white read as confetti. The heading
+   stays on the reading surface above it: the dark treatment is local to the containers
+   that hold pictures, and a heading is not one. */
 .palette-group > h2 { max-width: var(--measure); }
 .palette-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(13rem, 1fr));
   gap: 0.75rem;
   margin: 1rem 0 2rem;
+  padding: 0.75rem;
   max-width: none;
-}
-.palette {
   background: var(--well);
   border: 1px solid var(--well-rule);
+}
+.palette {
   margin: 0;
+  border: 1px solid var(--well-rule);
 }
 .palette img { display: block; width: 100%; height: auto; }
 /* A strip's name is a label and not a caption, so it is centred under its picture — the
    other half of the rule that ranges a figure's caption left *(Matt, 2026-08-22)*. */
-.palette figcaption,
-.variant span {
+.palette figcaption {
   display: block;
-  padding: 0.35rem 0.55rem;
+  padding: 0.35rem 0.55rem 0.2rem;
   font-size: 0.8125rem;
   line-height: 1.4;
+  color: var(--well-ink);
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+/* The name the library actually spells it with, under the name the page reads it by, and
+   only where the two differ. Dimmer and smaller: it is the key, not the label. */
+.palette-id {
+  margin: 0;
+  padding: 0 0.55rem 0.4rem;
+  font-size: 0.75rem;
+  line-height: 1.3;
   color: var(--well-ink-dim);
   text-align: center;
   overflow-wrap: anywhere;
 }
-
-/* The variants a palette is shown with: maps the project's own reading says are the same
-   choice twice. `<details>` and not a control, because an article page here runs no
-   script and has to open from the filesystem — a fold that needed one would have hidden
-   seventy-eight palettes from a reader who has scripting off. */
-.variants {
-  border-top: 1px solid var(--well-rule);
-}
-.variants > summary {
-  padding: 0.3rem 0.55rem;
-  font-size: 0.75rem;
-  line-height: 1.4;
-  color: var(--well-link);
-  text-align: center;
-  cursor: pointer;
-}
-.variant {
-  border-top: 1px solid var(--well-rule);
-}
-.variant img { display: block; width: 100%; height: auto; }
 
 /* The way back into the explorer, from a gallery tile the explorer can draw again. On
    its own line under the caption and the credit, at the credit's size, because it is a

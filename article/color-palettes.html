@@ -61,10 +61,10 @@
     rendering mode measures — and that is where nearly all the work goes. For the rendering
     modes that read one scalar field, coloring is a separate step over stored numbers, so
     the field can be kept and every palette tried on it is a lookup over the same array.
-    That is how the pipeline chooses a palette whatever mode it is about to draw: every
-    candidate it ranks is a recoloring of one stored smooth field. A location that took an
-    hour of searching to find can be shown in a hundred colorings in seconds, which is why
-    everything in this section is affordable.</p>
+    The pipeline chooses each location's palettes with a trained palette judge, which ranks
+    the library against that location's field. Because every candidate for a field mode is a
+    recoloring of one stored field, a location can be shown in a hundred colorings in
+    seconds, which is why everything in this section is affordable.</p>
 
       <figure class="figure" data-figure="palette-locations">
         <a class="figure-open" href="../explorer/index.html?v=2&amp;x=0.36589157992999566&amp;y=0.3142062593823041&amp;w=0.0005254752858165241&amp;p=Amber%20Highlands" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/palette-locations.jpg" width="1316" height="828" alt="Three fractal locations down, three palettes across: nine renders in a grid, with a gradient strip above each column."><span class="figure-open-mark" aria-hidden="true">↗</span></a>
@@ -105,9 +105,9 @@
     spread across, and ends with a schema. A request looks like: twenty palettes, fire-ice,
     moderate complexity, bright on dark. A small script checks the mechanical rules before
     anything is rendered. The prompt, the script, and each authored palette's record — its
-    mood family, its templates, and its stops as written — ship with the repository
-    (data/palette_authoring/generator_prompt.md, validate_palettes.py,
-    data/palettes/provenance.jsonl). The prompt runs as-is in Claude; see
+    mood family, its templates, and its stops as written — ship with
+    <a href="https://github.com/techmatt/fractal-wallpapers">the repository</a>. The prompt
+    runs as-is in Claude; see
     <a href="../palettes/make-your-own.html">make your own palettes</a>.</p>
 
     <p>Two hundred of the authored palettes were written to a second aim. Sorting a finished
@@ -115,24 +115,20 @@
     reaches says which colors the collection reaches as a whole, and the answer is: very
     few. Most pictures concentrate their area on a small handful of the fifty-two, and a
     whole band of them — greens, limes, teals, cyans and the dark yellows — went almost
-    unrepresented. A batch aimed at one of those is the same request with the mood family
-    named for a color instead of a mood, and the figure below shows ten such families beside
-    the thirteen written for mood. Aiming works where the color can be made: the thinnest
-    green, lime and teal cells roughly doubled the number of palettes that carry them. It
-    does not work everywhere — a batch aimed at a dark vivid teal or cyan lands on the muted
-    twin beside it, which sits close enough in OKLab that the measurement cannot tell the
-    two apart, and the muted blues, which no batch was aimed at, gained nothing. All two
-    hundred are in the library, and the pool a candidate set is drawn from has since
-    admitted them.</p>
+    unrepresented. I specifically targeted palettes at these under-represented regions
+    of color space to ensure that we would be able to hit the full gamut of colors that can
+    be rendered on a typical monitor.
+    <a href="https://en.wikipedia.org/wiki/Gamut">This is actually a subset of the full range
+    of colors our eyes can perceive.</a></p>
 
       <figure class="figure" data-figure="palette-moods">
         <img src="../assets/images/figures/palette-moods.jpg" width="1316" height="1082" alt="Twenty-three gradient strips, one per mood family the palette prompt names, each labeled with its family and the palette shown.">
-        <figcaption>One representative palette from each mood family the palette prompt names, drawn as the gradient the renderer sweeps through. The ten families named for a color rather than a mood are the batches written to reach colors the collection was short of.</figcaption>
+        <figcaption>One representative palette from each mood family the palette prompt names.</figcaption>
       </figure>
 
       <figure class="figure" data-figure="palette-fire-ice">
         <a class="figure-open" href="../explorer/index.html?v=2&amp;x=-0.745664851251208303163536352617&amp;y=0.112994057903853818971697158017&amp;w=2.734974e-08&amp;p=Cobalt%20%26%20Coal" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/palette-fire-ice.jpg" width="1316" height="726" alt="One Mandelbrot location drawn eleven times, once under each fire-ice palette, with a strip of the palette under every tile."><span class="figure-open-mark" aria-hidden="true">↗</span></a>
-        <figcaption>One field under every palette the fire-ice batch produced. The geometry is fixed and the ramp beneath each tile is the whole of what changed; a mood family is a hue vocabulary rather than a look.</figcaption>
+        <figcaption>One field under every palette the fire-ice batch produced.</figcaption>
       </figure>
 
     <p>The library is one pool — converted ramps, extracted palettes and authored ones
@@ -142,10 +138,8 @@
     through it, folded if it is sequential, 32 colors are sampled evenly along it, and each
     is written in OKLab — 96 numbers per palette. Distance between two descriptors is
     distance between two palettes, and it is the same distance the pipeline uses when it
-    assembles candidate sets, below.
-    <a href="https://en.wikipedia.org/wiki/Hierarchical_clustering">Clustering</a> on that
-    distance splits the library into sixteen groups (data/palettes/clusters.jsonl). The whole
-    library, one strip per palette, grouped the same way, is on
+    assembles candidate sets, below. The whole library, one strip per palette, grouped by
+    the color each palette is dominant in, is on
     <a href="../palettes/all-palettes.html">its own page</a>.</p>
 
     <h2 id="applying-a-palette">Applying a palette</h2>
@@ -160,14 +154,13 @@
 
       <figure class="figure" data-figure="palette-params">
         <a class="figure-open" href="../explorer/index.html?v=2&amp;f=julia&amp;cx=-0.04993036639924727&amp;cy=0.6719657771206978&amp;x=-0.375&amp;y=0.375&amp;w=1.5&amp;p=Ember%20Rising" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/palette-params.jpg" width="1316" height="451" alt="One location and one palette in two rows of five renders: the top row traverses the ramp one to eight times, the bottom row rotates where it starts."><span class="figure-open-mark" aria-hidden="true">↗</span></a>
-        <figcaption>One location and one palette under the recipe that places the field on the ramp. Along the top row the ramp is traversed more times; along the bottom it is traversed three times and rotated. Nothing about the location moves.</figcaption>
+        <figcaption>One location and one palette under the recipe that places the field on the ramp. Along the top row the ramp is traversed more times; along the bottom it is traversed three times and rotated.</figcaption>
       </figure>
 
     <p>Not every palette sits well on every location. The field decides how much of the ramp
     a picture uses and where its mass falls, so a palette that is luminous on one location
     is a dark smear on the next. The figure below shows one location under a spread of
-    palettes; a few are right and most are not. A person will usually see which is which;
-    no rule about the ramp alone will.</p>
+    palettes; a few are right and most are not.</p>
 
       <figure class="figure" data-figure="palette-spread">
         <a class="figure-open" href="../explorer/index.html?v=2&amp;f=multibrot3&amp;x=-0.4561033363983932&amp;y=0.5492015096676741&amp;w=4.7117926342068356e-05&amp;p=Amethyst%20Veil" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/palette-spread.jpg" width="1316" height="726" alt="One location drawn twelve times under twelve different palettes, one of them outlined as the palette judge's pick."><span class="figure-open-mark" aria-hidden="true">↗</span></a>

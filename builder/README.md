@@ -228,21 +228,44 @@ asset arrived through `import`.
 `palettes/all-palettes.html` is nine hundred rows of the same shape, so it is generated
 rather than written. What it is generated *from* is `palettes/library.jsonl` — **901 rows,
 one per palette**, carrying the four facts the page is made of and nothing else: the name,
-the figcaption and the strip's file name both; whether the map closes on the colour it
-opened with, which is the alt text and, in a render, the fold; which of the sixteen groups
-it is in, counted along the wallpaper project's clustering in the order the page lays them
-out; and `variant`, the name of the palette this one is a variant of — its own name where
-it leads.
+which is the strip's file name and the key everything else addresses it by; whether the
+map closes on the colour it opened with, which is the alt text and, in a render, the fold;
+the **hue** it is dominant in, which is the section it sits in; and its **source**, which
+is the whole of what decides what the page calls it.
 
-**`variant` is a name, never a group number**, for the reason a source key is a name: the
-wallpaper project numbers its variant sets, and a number is a position in something that
-grows. So a set is addressed by the member that heads it, and the page folds on that: the
-901 rows become **823 entries**, because **65 sets** of near-duplicates are gathered under
-one entry each and the rest lead alone. **A set is kept whole, in the group its first
-member is in** — the two readings of the library disagree, the clustering measures a
-gradient at 32 positions and the variant cut measures the cloud of colour a map holds, and
-**37 of the 65 sets straddle two clusters**. Splitting them would show a reader a strip
-called a variant of a palette four screens away, which teaches nobody anything.
+**The page groups by colour, and the hue is a word rather than a number** *(2026-09-02,
+replacing sixteen clusters and the variant fold)*. `data/palettes/carriers.jsonl` next door
+reads every map onto three pinned reference fields and writes a row for each codebook cell
+the map comes out *dominant* in, with that cell's mean share and the hue family it rolls up
+to. A map's hue is the family of its largest such row — the colour it actually puts most of
+a picture in — and the sections are the codebook's twelve hues in the wheel's own order:
+rose, red, orange, yellow, lime, green, teal, cyan, azure, blue, purple, magenta. All 901
+maps carry at least one cell and no map ties for its largest, so every map lands in exactly
+one section and none needs a bucket for the colourless; `_uncarried` is the check that says
+so if that ever stops being true. Inside a section the maps are in name order, case folded.
+
+What this replaced was a sixteen-way hierarchical clustering of a 96-number descriptor,
+which grouped maps by a distance nothing on the page could show, and a `<details>` fold
+that hid 78 near-duplicate maps under the 823 that led them. **The page shows all 901 in
+their own right now** — the near-duplicate reading is the pipeline's business, where it
+narrows the pool a run draws from, and it was never a thing a reader of a library page
+wanted done to it.
+
+**A name a reader can use, and the name the library spells** — `display_name` in
+`builder/palettes.py`, and the rule is worth stating because it only fires for one of the
+three sources. An *authored* map was named as prose and an upstream *converted* ramp's name
+(`cet_cyclic_mrybm_35_75_c68`) is the identifier somebody would look up, so both are shown
+exactly as the library spells them. An *extracted* map's name is the filename of the
+wallpaper it was distilled out of, and a filename is not a name: resolution tokens and the
+site a picture came off are dropped, so is `fractal`, a repeated leading token is collapsed
+(`wallhaven_wallhaven-…`), a leading id number and a trailing number go, and the rest is
+titled — `along-the-starry-way-25` reads as *Along the Starry Way*. **Where what survives is
+more identifier than words, the name stands as it is**: 71 of the 334 extracted maps were
+only ever a hash or a percent-encoded Wikimedia title, and a made-up reading of one would be
+worse than the id. The id is never renamed anywhere it matters — a permalink, the explorer,
+a figure's `provenance` — and where it differs from the display name the page carries it
+under the strip, in text rather than in a `title` attribute, so a reader can search for it.
+208 of the 901 carry that second line.
 
 That record is this repository's, exactly as `gallery.jsonl` is, and for the same reason:
 page generation is a pure function of committed text, so `check` can hold the largest
@@ -292,10 +315,11 @@ configured. A palette entering the library next door costs one `--library` and o
 - **assets** — every image the metadata names exists at its stated size, every
   thumbnail is current, and no orphan file is left in a gallery directory.
 - **library** — `palettes/library.jsonl` still says what the wallpaper project's own
-  palette library says: the same maps, in the same groups, in the same order, and no map
-  in the library that the clustering leaves out of every group. This is the one check
-  that needs the checkout, and the one that is skipped by name without it. The page
-  itself is held to the record by **pages**, on every machine.
+  palette library says: the same maps, each in the hue the carrier table reads it as
+  dominant in, in the same order, and no map in the library that the carrier table leaves
+  dominant in nothing. This is the one check that needs the checkout, and the one that is
+  skipped by name without it. The page itself is held to the record by **pages**, on every
+  machine.
 - **prose** — every row of `article/prose.jsonl` names a page that is in this article and
   is written. The masters themselves are on a synced drive that a clone need not have, so
   `check` holds the registry and `prose` holds the documents.

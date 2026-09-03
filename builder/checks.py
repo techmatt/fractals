@@ -48,7 +48,7 @@ did on a machine without one was raise, and every check after it went unrun.
   in a clone and never in CI, so what is checked here is the registry and not the
   document: `python -m builder prose` is what holds the two texts together.
 - **library** — this repository's palette record still says what the wallpaper project's
-  own library says: the same maps, in the same groups, in the same order. The page is
+  own library says: the same maps, in the same hues, in the same order. The page is
   held to the record by **pages**, everywhere; the record is held to the library here,
   and only where that checkout is configured.
 - **guidance** — `CLAUDE.md` names `writing-guidance.md`, the editorial authority. That

@@ -98,6 +98,7 @@
 {"schema": 1, "kind": "palette", "name": "magma", "offered": true}
 {"schema": 1, "kind": "palette", "name": "managua", "offered": true}
 {"schema": 1, "kind": "palette", "name": "morning-at-misty-vale-25", "offered": false}
+{"schema": 1, "kind": "palette", "name": "nova-25", "offered": false}
 {"schema": 1, "kind": "palette", "name": "pink", "offered": false}
 {"schema": 1, "kind": "palette", "name": "plasma", "offered": true}
 {"schema": 1, "kind": "palette", "name": "red-octavo-25", "offered": false}

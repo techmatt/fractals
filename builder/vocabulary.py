@@ -110,9 +110,23 @@ def clock_pattern_for(term: str) -> re.Pattern:
     return re.compile(rf"(?<![a-z-]){term}s?(?![a-z-])", re.IGNORECASE)
 
 
-BANNED = tuple((spelled_out(term), pattern_for(term)) for term in BANNED_TERMS) + tuple(
-    (spelled_out(term), clock_pattern_for(term)) for term in CLOCK_TERMS
+BANNED = tuple((spelled_out(term), pattern_for(term), False) for term in BANNED_TERMS) + tuple(
+    (spelled_out(term), clock_pattern_for(term), True) for term in CLOCK_TERMS
 )
+
+#: The generated palette library page, and the two lines on it that are a map's own name:
+#: what the page calls a palette, and — where the two differ — what the library spells it.
+#:
+#: Until that page titled the names it shows, the hyphens inside them did the work
+#: `clock_pattern_for` leans on: a map called `mornin[g]-at-misty-vale-25` is plainly a
+#: name to a regular expression, and the same name titled the way a person says it, spaces
+#: for hyphens, is plainly not. So for the clock words the exemption moves from the
+#: spelling to the place. It is only the clock list: those three are banned as a
+#: *framing*, and a map its author named after the hour is not one. The strict terms stay strict
+#: everywhere, and the
+#: page's own prose — its lead, its headings — is not exempt from anything.
+NAME_LINES = "palettes/all-palettes.html"
+NAME_LINE = re.compile(r'^\s*(?:<figcaption>|<p class="palette-id">)')
 
 #: Suffixes that are not text. Reading one costs nothing but says nothing either.
 BINARY_SUFFIXES = frozenset({".png", ".jpg", ".jpeg", ".gif", ".webp", ".ico", ".wasm"})
@@ -132,11 +146,12 @@ def tracked_files() -> list[str]:
 
 def offenders_in(name: str, text: str) -> list[str]:
     """Every banned name in one file, as `file:line: the term`."""
+    labels = name == NAME_LINES
     return [
         f"{name}:{number}: {term}"
         for number, line in enumerate(text.splitlines(), start=1)
-        for term, pattern in BANNED
-        if pattern.search(line)
+        for term, pattern, is_name_safe in BANNED
+        if pattern.search(line) and not (is_name_safe and labels and NAME_LINE.match(line))
     ]
 
 
