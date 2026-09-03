@@ -1125,15 +1125,30 @@ SPECTRUM_DENSITY = (0.032, 0.067, 0.087, 0.111, 0.152, 0.194)
 
 #: Three examples per rung of the four-point scale, all rated by hand, spread across
 #: families so no row reads as being about one fractal.
+#:
+#: Rung 1 runs empty, plain, formless — the three ways the rung's own wording says a
+#: frame is junk — and its third panel is a location whose detail is finer than the
+#: pixels it is drawn at, which reads as noise rather than as geometry. Rung 4 is held
+#: to being *geometrically* diverse as well: a rosette, a lace of ribbons and a field of
+#: beaded scrolls, in three different families, because three spirals side by side teach
+#: a reader that exceptional means spiral (Matt, 2026-09-02).
 RATED = {
-    1: (("minibrot_roster", 268), ("parameter_space_uniform", 132), ("guided_descent_rev4", 628)),
+    1: (
+        ("minibrot_roster", 268),
+        ("parameter_space_uniform", 132),
+        ("julia_parameter_ladder", 840),
+    ),
     2: (
         ("guided_descent_rev4_refiltered", 814),
         ("screened_queue_v2", 404),
         ("minibrot_roster", 451),
     ),
     3: (("screened_queue_v2", 917), ("twin_top_slices", 87), ("plane_deep_admissions", 21)),
-    4: (("correction_page", 39), ("plane_deep_admissions", 2), ("steady_state_ranked", 380)),
+    4: (
+        ("julia_multibrot45_score_band", 18),
+        ("twin_top_slices", 74),
+        ("phoenix_parameter_grid", 452),
+    ),
 }
 
 #: What each rung of the scale is for, in the labeler's own terms.
@@ -1308,11 +1323,10 @@ def _store_provenance(order: str, picks, rows, size, with_score: bool) -> list[s
         "so the geometry is what differs.",
     ]
     for (batch, line), row in zip(picks, rows, strict=True):
-        verdict = (
-            f"scored {row['score']} by {row['labeler']} on {row['recorded_at']}, "
-            if with_score
-            else ""
-        )
+        # Some batches of the store record no labeler at all, and "scored 4 by None" is
+        # a worse record than saying only what the row says.
+        by = f" by {row['labeler']}" if row.get("labeler") else ""
+        verdict = f"scored {row['score']}{by} on {row['recorded_at']}, " if with_score else ""
         lines.append(
             f"{batch}.jsonl line {line}: {_family_name(row['family'])}"
             + (
