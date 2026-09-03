@@ -341,6 +341,20 @@ FAMILY_WORDS = (
     ("phoenix", "phoenix"),
 )
 
+#: A line that names its family **in so many words** says so here, and this wins over the
+#: word scan above.
+#:
+#: The word scan takes the first family word anywhere in the line, which is a guess that a
+#: seat's own record breaks: `builder.picks` writes the curation partition into every panel
+#: line, and a Julia set of the Mandelbrot parameter plane is partitioned `julia:mandelbrot`
+#: — so a line reading `partition julia:mandelbrot - family julia, degree 2, c = ...` was
+#: read as a Mandelbrot, and a Mandelbrot takes no `c`, so the constants that make it that
+#: Julia set were dropped from the link. The picture the reader clicked and the picture the
+#: explorer opened were different objects, which is the one failure this registry exists to
+#: refuse. Held to the family names rather than to `[a-z_]+`, because `the field family` is
+#: a phrase this site's provenance also writes.
+FAMILY_NAMED = re.compile(r"\bfamily (fractional_multibrot|multibrot|mandelbrot|julia|phoenix)\b")
+
 #: The shade keys a prose provenance line spells out, and how each is read.
 PROSE_SHADE = {
     "gamma": re.compile(rf"\bgamma ({NUMBER})"),
@@ -362,11 +376,15 @@ def scan(line: str, roster: list[str], modes: set[str]) -> dict:
     colormap = named_colormap(line, roster)
     if colormap is not None:
         found["colormap"] = colormap
-    lowered = line.lower()
-    for word, family in FAMILY_WORDS:
-        if word in lowered:
-            found["family"] = family
-            break
+    named = FAMILY_NAMED.search(line.lower())
+    if named:
+        found["family"] = named.group(1)
+    else:
+        lowered = line.lower()
+        for word, family in FAMILY_WORDS:
+            if word in lowered:
+                found["family"] = family
+                break
     # A mode is a name the catalog holds. `Only the mode changes.` is a sentence about a
     # sheet and not a mode called `changes`, and a rule that read whatever followed the
     # word would put a mode nobody has into a link.

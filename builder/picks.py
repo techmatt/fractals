@@ -578,6 +578,57 @@ HOOK_ROWS = 2
 #: How many lines a tile label under the hook carries: the family, then the rendering.
 HOOK_LABEL_LINES = 2
 
+#: The Rendering modes roster, in the engine catalog's own order — the order the page's
+#: own scoreboard reads in, and the order the sheet draws. Spelled here rather than read
+#: out of the catalog next door for the reason the explorer's mode record is spelled out:
+#: a mode promoted to production over there is a panel somebody has to pick, never one a
+#: redraw quietly adds to a figure a reader has already been shown.
+MODES_ROSTER = (
+    "smooth",
+    "tia",
+    "stripe",
+    "exp_smoothing",
+    "curvature",
+    "smooth_mean_angle",
+    "smooth_angle_min",
+    "smooth_stripe",
+    "smooth_curvature",
+    "direct_trap_screen",
+    "direct_trap_multiply",
+    "direct_trap_lines",
+    "threads",
+    "itinerary",
+)
+
+#: The roster's shape: fourteen panels in fifteen cells, five across. The cell left over
+#: is well and nothing else. It used to carry a legend that said what the caption says a
+#: few lines below the picture, which is the same paragraph twice — the caption is the
+#: caption *(Matt, 2026-09-02, taking the last of these off the page)*.
+MODES_COLUMNS = 5
+MODES_ROWS = 3
+
+#: How a panel of the roster is labelled: the engine's own name for the mode, which is
+#: the name this page teaches and the name its scoreboard lists. Not `MODE_WORDS` — that
+#: is for the front page, which meets a rendering before the vocabulary exists.
+MODES_LABEL_LINES = 1
+
+#: How the fourteen seats were arrived at, which is the one thing the resolution cannot
+#: say for itself. Written down because a random draw is only a record if the draw is.
+MODES_DRAW = (
+    "Which seat stands for a mode is a uniform random draw over that mode's seats of the "
+    "stamp — scratch/modes/repick_gallery.py, seed 20260902 — rejecting any seat standing "
+    "on a location another figure already stands on, and any whose run recorded that the "
+    "autolevel operator acted without recording the curve it acted with. Nothing here was "
+    "chosen for how it looks: the figure's claim is that the roster draws wallpapers, and "
+    "a hand-picked panel per mode would be a claim about the picker instead.",
+    "A seat's mode is read off the ledger recipe and never off the seat row. The two "
+    "disagree on 18 of that gallery's 746 seats — every one a candidate of the "
+    "sm_comp_pilot depth run, seated as smooth and recipe'd as itinerary — and the recipe "
+    "is what the engine is handed, so grouping by the seat row would label a panel with a "
+    "mode its picture was not drawn in. That gap is the wallpaper project's record to "
+    "close and is only worked around here.",
+)
+
 
 def picks_of(identifier: str) -> list[str]:
     """The IDs a figure's own registry row names, which is where the picks live."""
@@ -625,6 +676,40 @@ def gallery_hook() -> Drawn:
         )
     destination = sheets.save(sheet, sheet_path(identifier))
     return Drawn(destination, provenance(resolved, size))
+
+
+def modes_gallery() -> Drawn:
+    """The Rendering modes roster: one gallery seat per mode, in the catalog's own order.
+
+    Which seat is not this module's choice any more than the hook's six are — the IDs are
+    on the registry row. What is fixed here is the roster: exactly one pick per mode of
+    `MODES_ROSTER` and in its order, so a row that has drifted out of the order the page's
+    scoreboard reads in is a refusal rather than a sheet whose labels run out of step with
+    the table above it.
+    """
+    identifier = "modes-gallery"
+    wanted = picks_of(identifier)
+    resolved = resolve(wanted)
+    drawn = [pick.mode for pick in resolved]
+    if drawn != list(MODES_ROSTER):
+        raise PickError(
+            f"{identifier} is one seat per mode in the engine catalog's order — "
+            f"{', '.join(MODES_ROSTER)} — and its row names {', '.join(drawn) or 'none'}"
+        )
+    catalog = renders.mode_catalog()
+    size = panels(MODES_COLUMNS)
+    caption = sheets.caption_band(size[1], SHEET_WIDTH, MODES_LABEL_LINES)
+    sheet, draw = sheets.canvas(*sheets.grid_size(size, MODES_COLUMNS, MODES_ROWS, caption))
+    for index, pick in enumerate(resolved):
+        picture = panel(pick, f"modes-{index + 1}-{pick.alias}", catalog)
+        origin = sheets.panel_origin(index, size, MODES_COLUMNS, caption)
+        sheet.paste(sheets.fitted(picture, size), origin)
+        sheets.tile_label(draw, origin, size, pick.mode, sheet.width)
+    destination = sheets.save(sheet, sheet_path(identifier))
+    return Drawn(
+        destination,
+        provenance(resolved, size, columns=MODES_COLUMNS, chosen=MODES_DRAW),
+    )
 
 
 # ---------------------------------------------------------------------- the provenance
@@ -765,8 +850,19 @@ def autolevel_line(picks: list[Pick], levellings: dict[str, Levelling] | None = 
     )
 
 
-def provenance(picks: list[Pick], size: tuple[int, int]) -> list[str]:
-    """The registry lines for a sheet of picks: the composition, then one line per panel."""
+def provenance(
+    picks: list[Pick],
+    size: tuple[int, int],
+    *,
+    columns: int = HOOK_COLUMNS,
+    chosen: tuple[str, ...] = (),
+) -> list[str]:
+    """The registry lines for a sheet of picks: the composition, then one line per panel.
+
+    `chosen` is where a figure says how its seats were arrived at, which is the one thing
+    the resolution above cannot say for itself — the hook's six are Matt's, and the modes
+    roster's fourteen are a seeded random draw.
+    """
     stamped = sorted({pick.stamp for pick in picks})
     lines = [
         f"builder.picks — every panel is a seat of a recorded tentative gallery, named on "
@@ -779,8 +875,9 @@ def provenance(picks: list[Pick], size: tuple[int, int]) -> list[str]:
         f"coloring is this figure's choice: mode, mode settings, curve, map, the whole "
         f"palette pass and the cap all come off the ledger's recipe. Stamp"
         f"{'s' if len(stamped) > 1 else ''} {', '.join(stamped)}; panels in reading order, "
-        f"{HOOK_COLUMNS} across.",
+        f"{columns} across.",
         autolevel_line(picks),
+        *chosen,
     ]
     lines += [frame_line(pick, representative=index == 0) for index, pick in enumerate(picks)]
     return lines
@@ -790,6 +887,7 @@ def provenance(picks: list[Pick], size: tuple[int, int]) -> list[str]:
 
 MAKERS = {
     "overview-gallery-hook": gallery_hook,
+    "modes-gallery": modes_gallery,
 }
 
 

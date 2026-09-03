@@ -95,6 +95,7 @@
 {"schema": 1, "kind": "palette", "name": "debutalis", "offered": false}
 {"schema": 1, "kind": "palette", "name": "dessert-union-25", "offered": false}
 {"schema": 1, "kind": "palette", "name": "fractal_stripes_bends_lines_116839_2560x1600", "offered": false}
+{"schema": 1, "kind": "palette", "name": "gist_earth", "offered": false}
 {"schema": 1, "kind": "palette", "name": "gist_heat", "offered": true}
 {"schema": 1, "kind": "palette", "name": "gist_stern", "offered": true}
 {"schema": 1, "kind": "palette", "name": "inferno", "offered": true}
