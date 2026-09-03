@@ -62,9 +62,9 @@
     modes that read one scalar field, coloring is a separate step over stored numbers, so
     the field can be kept and every palette tried on it is a lookup over the same array.
     The pipeline chooses each location's palettes with a trained palette judge, which ranks
-    the library against that location's field. Because every candidate for a field mode is a
-    recoloring of one stored field, a location can be shown in a hundred colorings in
-    seconds, which is why everything in this section is affordable.</p>
+    a neighborhood of the library against that location's field. Because every candidate for
+    a field mode is a recoloring of one stored field, a location can be shown in a hundred
+    colorings in seconds, which is why everything in this section is affordable.</p>
 
       <figure class="figure" data-figure="palette-locations">
         <a class="figure-open" href="../explorer/index.html?v=2&amp;x=0.36589157992999566&amp;y=0.3142062593823041&amp;w=0.0005254752858165241&amp;p=Amber%20Highlands" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/palette-locations.jpg" width="1316" height="828" alt="Three fractal locations down, three palettes across: nine renders in a grid, with a gradient strip above each column."><span class="figure-open-mark" aria-hidden="true">↗</span></a>
@@ -119,7 +119,8 @@
     of color space to ensure that we would be able to hit the full gamut of colors that can
     be rendered on a typical monitor.
     <a href="https://en.wikipedia.org/wiki/Gamut">This is actually a subset of the full range
-    of colors our eyes can perceive.</a></p>
+    of colors our eyes can perceive.</a> The figure below shows one palette from each family
+    the palette prompt names.</p>
 
       <figure class="figure" data-figure="palette-moods">
         <img src="../assets/images/figures/palette-moods.jpg" width="1316" height="1082" alt="Twenty-three gradient strips, one per mood family the palette prompt names, each labeled with its family and the palette shown.">
