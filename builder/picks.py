@@ -66,14 +66,21 @@ tried and is not equivalent: the same frame redrawn at the seat's own regime der
 black point of 0.634 where the run stamped 0.595, so a re-measurement would quietly
 publish a different picture from the one the gallery shows.
 
-**Three runs in three stores, and only two of them keep the curve.** A candidate made by
-a `reframe_draw` run or a gallery `runs` pass has its whole stamp on that run's record.
-A **`depth` run writes down `acted` and nothing else** — no curve, no band — so a seat of
-one that the operator acted on cannot be redrawn correctly from any record this project
-keeps. That is a gap in the wallpaper project's own records and is not this repository's
-to close; `run_stamp` reports it as `acted_unrecoverable` and `seat_picture` is the way
-out, copying the seat's shipped picture rather than publishing a render known to be the
-wrong colour.
+**Four run stores, and only two of them keep the curve.** A candidate made by a
+`reframe_draw` run or a gallery `runs` pass has its whole stamp on that run's record. The
+other two do not:
+
+- a **`depth` run writes down `acted` and nothing else** — no curve, no band — so a seat
+  it acted on cannot be redrawn correctly from any record this project keeps;
+- a **`mine` run does not write down even that**, keeping only the reduced stamp its
+  ledger row already carries, so nothing says whether the operator acted at all. A record
+  that does not say a picture was left alone is not a record that says it was, and the
+  answer here is the same as if it had acted.
+
+That is a gap in the wallpaper project's own records and is not this repository's to
+close; `run_stamp` reports both as `acted_unrecoverable` and `seat_picture` is the way
+out, copying the seat's shipped picture rather than publishing a render known to be — or
+merely not known not to be — the wrong colour.
 """
 
 from __future__ import annotations
@@ -101,6 +108,7 @@ LEDGER = ("curation", "candidate_ledger", "rows.jsonl")
 #: and the ledger's `picture` is the only name shared across both stores.
 RUN_RECORDS = {
     "depth": ("sequence.jsonl", "key"),
+    "mine": ("rows.jsonl", "key"),
     "reframe_draw": ("attempts.jsonl", "picture"),
     "runs": ("candidates.jsonl", "picture"),
 }
@@ -368,7 +376,12 @@ def run_stamp(pick: Pick) -> Levelling:
                 row = json.loads(line)
                 if str(row.get("key")) != pick.key:
                     continue
-                # A depth run stamps the fact and drops the curve.
+                # A depth run stamps the fact and drops the curve; a mine run does not
+                # stamp even the fact, and a record that does not say the operator left a
+                # picture alone is not a record that says it did. Both are unrecoverable
+                # here, and only the depth one is unrecoverable *knowing* it acted.
+                if "acted" not in row:
+                    return Levelling(UNRECOVERABLE, where, None)
                 acted = bool(row.get("acted"))
                 return Levelling(UNRECOVERABLE if acted else UNTOUCHED, where, None)
             if filename not in line:
