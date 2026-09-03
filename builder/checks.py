@@ -23,6 +23,17 @@ did on a machine without one was raise, and every check after it went unrun.
   failure where it is not, because CI clones this repository alone. A `held` row is the
   one row that is registered and deliberately not on a page, and it says what it is
   held on.
+- **seats** — every panel that is a gallery seat *at its own recipe* is that seat's own
+  picture, to a stated tolerance. The site draws such a panel by redrawing the recipe,
+  and a recipe is not the whole story: the autolevel operator may have pushed a tone
+  curve through the map's stops before the run wrote the picture the gallery ships. Where
+  it did and the site did not, the page publishes the right geometry in the wrong colour,
+  and every other check stays green — which is exactly what happened to
+  `overview-pipeline` on 2026-09-02. Held at the seat's own regime, so the number is
+  colour and not resampling. Exemptions are **on the record**: a `gallery_seat` source
+  says `recipe_changed` or `cited` and the check reads it, because a list of excused
+  figure ids inside the check is an exemption nothing can audit. Needs the wallpapers
+  checkout and Pillow, and says so by name where either is missing.
 - **landing** — every made figure's page carries a block a redraw could land on. `figures
   --replace` and every drawing command find the block they are about to swap by
   deriving it, so the derivation is load-bearing in a way **figures** does not reach:
@@ -101,6 +112,7 @@ from . import (
     links,
     pages,
     palettes,
+    picks,
     prose,
     records,
     renders,
@@ -293,6 +305,103 @@ def _figure_facts(figure: figures.Figure) -> list[str]:
             "an unreconstructible picture says why, or the gap is invisible"
         ]
     return []
+
+
+#: How far a panel drawn here may sit from the picture the gallery ships, as a mean
+#: absolute difference per channel out of 255, compared at the seat's own regime.
+#:
+#: Picked off a measurement of all twenty-one seat panels on the site *(2026-09-02)*
+#: rather than chosen: the codec floor — the shipped JPEG merely re-encoded at this
+#: site's own quality — runs 1.39 to 2.75, and a correctly drawn panel lands between
+#: 3.03 and 5.52, roughly twice the floor, which is the engine's own sampling against a
+#: stored JPEG and not a colour difference. Six is the round number above that spread.
+#: It is not a slack tolerance: the bug this check was written for measured 29.51, and
+#: `escape-families`' one unrecoverable seat measured 9.04, so the band that passes every
+#: reproducible panel still fails both by a wide margin.
+SEAT_TOLERANCE = 6.0
+
+#: What a seat panel is compared at. The seat's own picture is the size the run wrote it,
+#: and comparing there is what isolates colour from resampling — a panel drawn at the
+#: figure's own geometry and scaled would fold a resize into the number and make the
+#: tolerance mean nothing.
+SEAT_SUPERSAMPLE = 2
+
+
+def check_seats() -> list[str]:
+    """Every panel that is a gallery seat at its own recipe is that seat's own picture.
+
+    The check the colour bug of 2026-09-02 earned. `overview-pipeline` drew `a693d6c7`
+    from the ledger recipe alone, the autolevel operator had acted on the picture the
+    gallery ships, and the two were 29.51 apart on a scale where 2.4 is what re-encoding
+    the JPEG costs — a rust-red ground published as pale salmon, with every other check
+    green. Nothing compared a figure's pixels with the record's pixels, so nothing could
+    have caught it.
+
+    What is exempt is exempt **by the record**, never by name: a `gallery_seat` source
+    says how it is drawn, and `recipe_changed` or `cited` is a claim on the row that a
+    person can read and `figures` refuses to load misspelled. A figure that quietly stops
+    reproducing its seat cannot buy itself an exemption by being added to a list here.
+    """
+    problems: list[str] = []
+    if not figures.stores_available() or not images.available():
+        return problems
+    registry = figures.load_all()
+
+    wanted: list[tuple[str, str]] = []
+    for figure in registry.values():
+        if figure.pending:
+            continue
+        for source in figure.sources:
+            if source.kind == figures.GALLERY_SEAT and source.drawn == figures.OWN_RECIPE:
+                wanted.extend((figure.id, key) for key in source.keys)
+    if not wanted:
+        return problems
+
+    try:
+        resolved = {pick.identifier: pick for pick in picks.resolve(sorted({k for _, k in wanted}))}
+        catalog = renders.mode_catalog()
+    except (picks.PickError, renders.EngineError) as error:
+        return [f"seats: no panel could be held to its seat — {error}"]
+
+    cache = picks.cache()
+    for figure_id, identifier in wanted:
+        pick = resolved[identifier]
+        try:
+            levelling = picks.run_stamp(pick)
+            shipped = picks.seat_picture(pick)
+            if levelling.way == picks.UNRECOVERABLE:
+                # The rig's own answer here is the shipped file itself — `panel` refuses
+                # to draw one of these at all, so a maker either copies the seat or has
+                # no figure. Comparing the copy with itself is not a vacuous test: what it
+                # holds is that the seat *is* still on this machine and still addressable,
+                # which is the one way a copied panel can rot.
+                drawn = shipped
+            else:
+                drawn = cache.produce(
+                    f"seats-{pick.key[:8]}",
+                    "render",
+                    picks.panel_spec(
+                        pick,
+                        catalog,
+                        resolution=images.dimensions(shipped),
+                        supersample=SEAT_SUPERSAMPLE,
+                        levelling=levelling,
+                    ),
+                ).path
+        except (picks.PickError, renders.EngineError) as error:
+            problems.append(
+                f"figures.jsonl: {figure_id} cannot hold {identifier} to its seat — {error}"
+            )
+            continue
+        difference = images.mean_abs_difference(shipped, drawn)
+        if difference > SEAT_TOLERANCE:
+            problems.append(
+                f"figures.jsonl: {figure_id} draws {pick.alias} {difference:.2f} from the "
+                f"picture its seat ships, over the {SEAT_TOLERANCE:.1f} this site allows "
+                f"(the codec floor alone is about 2). The panel was drawn {levelling.way} "
+                f"off {levelling.where}."
+            )
+    return problems
 
 
 def check_landing() -> list[str]:
@@ -734,9 +843,26 @@ def skips() -> tuple[Skip, ...]:
                 whole=True,
             )
         )
+        found.append(
+            Skip(
+                "seats",
+                "every seat panel against the picture its gallery ships",
+                NO_CHECKOUT,
+                whole=True,
+            )
+        )
     if not images.available():
         found.append(Skip("figures", "each figure's size on disk", NO_PILLOW))
         found.append(Skip("assets", "each image's and each thumbnail's size on disk", NO_PILLOW))
+        if figures.stores_available():
+            found.append(
+                Skip(
+                    "seats",
+                    "every seat panel against the picture its gallery ships",
+                    NO_PILLOW,
+                    whole=True,
+                )
+            )
     return tuple(found)
 
 
@@ -750,6 +876,7 @@ def run_all() -> Report:
             "pages": check_pages(loaded, article),
             "contents": check_contents(article),
             "figures": check_figures(),
+            "seats": check_seats(),
             "landing": check_landing(),
             "locations": check_locations(),
             "explorer": check_explorer(),

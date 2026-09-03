@@ -113,6 +113,24 @@ SOURCE_KINDS = (RUN_ROW, LOCATION, GALLERY_SEAT, SYNTHETIC, NO_SOURCE)
 #: claiming a record it does not have.
 KEYED_KINDS = (RUN_ROW, LOCATION, GALLERY_SEAT)
 
+#: How a `gallery_seat` source's keys stand behind the figure's pictures. The word is
+#: what `check`'s `seats` reads to decide whether a panel is answerable to the seat's own
+#: shipped picture, and it exists because the alternative is a list of figure ids inside
+#: the check — an exemption by name, which nothing can audit and which goes stale the
+#: first time a figure is re-picked.
+#:
+#: - `own_recipe` — the default, and what a pick normally means: a panel is that seat,
+#:   drawn at the seat's own recipe, so the site's picture and the gallery's are the same
+#:   picture and `seats` holds them to that.
+#: - `recipe_changed` — the figure alters the recipe on purpose. `render-cyclic-repeats`
+#:   sweeps the palette's `cycles` across four panels; the frame and the map are the
+#:   seat's and the coloring deliberately is not, so there is nothing to hold to.
+#: - `cited` — the key says where a location came from and no panel claims the seat's
+#:   pixels at all. `wallpapers-mine` draws a visit of twenty attempts and cites the seat
+#:   because it is how that location was chosen, which is what a source key is for.
+OWN_RECIPE, RECIPE_CHANGED, CITED = "own_recipe", "recipe_changed", "cited"
+DRAWN_WAYS = (OWN_RECIPE, RECIPE_CHANGED, CITED)
+
 #: The words the explorer link is spelled with, here and on a gallery tile. One string,
 #: because a link a reader learns to recognize has to read the same everywhere. On a
 #: figure it is the link's accessible name rather than its visible text *(Matt,
@@ -181,6 +199,7 @@ class Source:
 
     kind: str
     keys: tuple[str, ...]
+    drawn: str | None = None
 
 
 @dataclass(frozen=True)
@@ -469,10 +488,11 @@ def _sources(row: records.Record) -> tuple[Source, ...]:
     for entry in stated:
         if not isinstance(entry, dict):
             raise records.RecordError(f"{row.where}: every sources entry is an object")
-        unknown = set(entry) - {"kind", "keys"}
+        unknown = set(entry) - {"kind", "keys", "drawn"}
         if unknown:
             raise records.RecordError(
-                f"{row.where}: a sources entry is kind and keys, not {', '.join(sorted(unknown))}"
+                f"{row.where}: a sources entry is kind, keys and drawn, "
+                f"not {', '.join(sorted(unknown))}"
             )
         kind = entry.get("kind")
         if kind not in SOURCE_KINDS:
@@ -497,7 +517,19 @@ def _sources(row: records.Record) -> tuple[Source, ...]:
             )
         if not keys and kind in KEYED_KINDS:
             raise records.RecordError(f"{row.where}: a {kind} source with no keys says nothing")
-        found.append(Source(kind=kind, keys=tuple(keys)))
+        drawn = entry.get("drawn")
+        if drawn is not None and kind != GALLERY_SEAT:
+            raise records.RecordError(
+                f"{row.where}: only a {GALLERY_SEAT} source says how it is drawn, and this "
+                f"one is {kind}"
+            )
+        if drawn is not None and drawn not in DRAWN_WAYS:
+            raise records.RecordError(
+                f"{row.where}: drawn {drawn!r} — the ways are {', '.join(DRAWN_WAYS)}"
+            )
+        if kind == GALLERY_SEAT and drawn is None:
+            drawn = OWN_RECIPE
+        found.append(Source(kind=kind, keys=tuple(keys), drawn=drawn))
     return tuple(found)
 
 

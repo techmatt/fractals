@@ -44,13 +44,36 @@ The engine, at the figure's own geometry, from the recipe's own coloring —
 crosses. The 640×360 thumbnails the record points at are the pictures the *judges* were
 shown; they are not a source for a figure, and nothing here opens one.
 
-**What a fresh render does not carry is the autolevel curve.** Every candidate of this
-pool was made with `band_autolevel/v1` switched on, and the ledger's recipe row keeps
-only the reduced stamp of it — the operator, the switch, and the band's sha256 — because
-that is what decides a recipe's *identity*. The curve itself is on the run's own record
-and is a function of the render it was measured on, which a panel drawn at another size
-is not. So a panel here is the engine's own render of the recipe, and the provenance
-says so rather than implying the operator ran.
+## The autolevel curve, and the third read that finds it
+
+Every candidate of this pool was made with `band_autolevel/v1` switched on. The operator
+measures a finished render's tone, and where that tone sits outside the band of finished
+wallpapers it pushes a curve through the **map's own stops** and renders again — so the
+picture a seat ships is drawn through a colormap that is not quite the one the recipe
+names. **A fresh render of the recipe alone is therefore the wrong picture whenever the
+operator acted**, and wrong by a lot: `a693d6c7` came back at mean absolute difference
+29.5 of 255 from its own gallery tile, a deep rust ground rendered as pale salmon.
+
+The ledger's recipe row cannot fix that on its own. It keeps the **reduced** stamp — the
+operator, the switch, and the band's sha256 — because that is what decides a recipe's
+*identity*, and the curve is not part of an identity. The curve is on the **run's** own
+record, which the ledger row names in `provenance.run` and addresses again by the file in
+`picture`. So a pick resolves through a third read, `run_stamp` below, and where that
+stamp acted the panel is rendered through the stops
+`fractal_wallpapers.coloring.autolevel.stops_from_stamp` rebuilds — the project's own
+operator replaying its own curve, never a second one measured here. Re-measuring was
+tried and is not equivalent: the same frame redrawn at the seat's own regime derives a
+black point of 0.634 where the run stamped 0.595, so a re-measurement would quietly
+publish a different picture from the one the gallery shows.
+
+**Three runs in three stores, and only two of them keep the curve.** A candidate made by
+a `reframe_draw` run or a gallery `runs` pass has its whole stamp on that run's record.
+A **`depth` run writes down `acted` and nothing else** — no curve, no band — so a seat of
+one that the operator acted on cannot be redrawn correctly from any record this project
+keeps. That is a gap in the wallpaper project's own records and is not this repository's
+to close; `run_stamp` reports it as `acted_unrecoverable` and `seat_picture` is the way
+out, copying the seat's shipped picture rather than publishing a render known to be the
+wrong colour.
 """
 
 from __future__ import annotations
@@ -72,9 +95,25 @@ SEATS_NAME = "gallery.jsonl"
 #: and never whole — see the module docstring.
 LEDGER = ("curation", "candidate_ledger", "rows.jsonl")
 
+#: Where each kind of run writes the record carrying its own autolevel stamp, and which
+#: field of that record addresses one row. A `depth` run is matched by the recipe key it
+#: drew; the other two by the picture file, because their rows are numbered by attempt
+#: and the ledger's `picture` is the only name shared across both stores.
+RUN_RECORDS = {
+    "depth": ("sequence.jsonl", "key"),
+    "reframe_draw": ("attempts.jsonl", "picture"),
+    "runs": ("candidates.jsonl", "picture"),
+}
+
+#: What `run_stamp` answers with, in the one word a caller has to branch on.
+UNTOUCHED, REPLAYED, UNRECOVERABLE = "untouched", "replayed", "acted_unrecoverable"
+
 #: What separates a stamp from a recipe key in a pick. The same separator a release key
 #: uses, because both are one address made of parts a record spells.
 PICK_SEPARATOR = "|"
+
+#: `.gitattributes` normalizes this repository to LF; anything written here spells it.
+LF = "\n"
 
 #: What a panel is rendered at before it is fitted into its cell, and how many samples a
 #: pixel each axis. Three times the cell's width for the same reason
@@ -83,19 +122,21 @@ PICK_SEPARATOR = "|"
 PANEL_RENDER = (1280, 720)
 PANEL_SUPERSAMPLE = 3
 
-#: What the recipe-to-render bridge was last measured to be worth, and how. Every pick
-#: of `overview-gallery-hook` was drawn again at the candidate's own regime — 640x360,
-#: supersample 2 — and compared with the stored picture its seat points at, the one the
-#: judges scored; beside it, what re-encoding that same JPEG at this site's own quality
-#: costs, which is the floor any comparison against a stored JPEG has. Read by hand on
-#: 2026-09-02 and quoted in provenance rather than recomputed on every redraw: the
-#: stored pictures live under the artifacts tree and a subtree of it may be archived,
-#: and a figure that cannot be drawn without the archive plugged in is a worse figure.
+#: What the recipe-to-render bridge is worth, and how it was read. **Every** seat panel
+#: on the site — all twenty-one — drawn again at the candidate's own regime, 640x360
+#: supersample 2, and compared with the stored picture its seat points at; beside it,
+#: what re-encoding that same JPEG at this site's own quality costs, which is the floor
+#: any comparison against a stored JPEG has. Measured 2026-09-02 and quoted in provenance
+#: rather than recomputed on every redraw: the stored pictures live under the artifacts
+#: tree and a subtree of it may be archived, and a figure that cannot be drawn without
+#: the archive plugged in is a worse figure.
 #:
 #: The reading is about twice the floor rather than at it, which is the honest shape of
-#: it: close enough to say the recipe *is* the picture, and not identical — which is
-#: where the autolevel curve would show if the operator had acted on any of the six.
-RECIPE_AGREEMENT = "mean absolute difference 2.9-4.9 of 255, codec floor 1.4-2.6"
+#: it: close enough to say the recipe *is* the picture, and not identical, because the
+#: engine's sampling and a stored JPEG never agree to the byte. What it is emphatically
+#: not is a band wide enough to hide a tone curve — `a693d6c7` unlevelled read 29.51.
+#: `check`'s `seats` is what holds this true rather than a note that was true once.
+RECIPE_AGREEMENT = "mean absolute difference 3.0-5.5 of 255, codec floor 1.4-2.8"
 
 #: Every mode a figure of this module may label, in the words a reader has. The article's
 #: first figure is met before the mode catalog exists, so a panel says what its rendering
@@ -133,6 +174,10 @@ class Pick:
     key: str
     seat: dict
     recipe: dict
+    #: The ledger row's own account of where the candidate came from: `provenance.run`
+    #: and `provenance.candidate`, and the `picture` that run wrote. It is what
+    #: `run_stamp` addresses the run's record by, and what `seat_picture` opens.
+    source: dict
 
     @property
     def alias(self) -> str:
@@ -175,12 +220,16 @@ def seats(stamp: str) -> dict[str, dict]:
     return rows
 
 
-def ledger_recipes(keys) -> dict[str, dict]:
-    """`{key: recipe}` for the keys asked for, in one streamed pass that stops early.
+def ledger_rows(keys) -> dict[str, dict]:
+    """`{key: row}` for the keys asked for, in one streamed pass that stops early.
 
     The ledger is a quarter of a gigabyte and a solve may be reading it, so this is a
     read of the file and never a load of the pool: it holds one line at a time and
     returns the moment every key asked for has been seen.
+
+    The whole row rather than just its recipe, because the recipe alone cannot say which
+    run drew the candidate — and without that there is no way to reach the autolevel
+    curve the run stamped, which the recipe deliberately does not carry.
     """
     wanted = {str(key) for key in keys}
     path = renders.artifact(*LEDGER)
@@ -194,7 +243,7 @@ def ledger_recipes(keys) -> dict[str, dict]:
             row = json.loads(line)
             key = str(row.get("key"))
             if key in wanted:
-                found[key] = row["recipe"]
+                found[key] = row
                 if len(found) == len(wanted):
                     break
     return found
@@ -230,8 +279,8 @@ def resolve(identifiers) -> list[Pick]:
             f"{', '.join(missing)}: no seat of that recorded gallery has that key. "
             "An alias is not an address here — a pick is the full recipe key."
         )
-    recipes = ledger_recipes({key for _, key in parts})
-    unrecorded = [key for _, key in parts if key not in recipes]
+    rows = ledger_rows({key for _, key in parts})
+    unrecorded = [key for _, key in parts if key not in rows]
     if unrecorded:
         raise PickError(
             f"{', '.join(unrecorded)}: seated in the gallery record and not in the candidate "
@@ -243,10 +292,150 @@ def resolve(identifiers) -> list[Pick]:
             stamp=stamp,
             key=key,
             seat=by_stamp[stamp][key],
-            recipe=recipes[key],
+            recipe=rows[key]["recipe"],
+            source={
+                "picture": rows[key].get("picture"),
+                **(rows[key].get("provenance") or {}),
+            },
         )
         for stamp, key in parts
     ]
+
+
+# ----------------------------------------------------------------------- the tone curve
+
+
+@dataclass(frozen=True)
+class Levelling:
+    """What the autolevel operator did to one seat's picture, read off the run's record.
+
+    `way` is the one word a caller branches on, and the rest is what the provenance line
+    needs so that a reader of the record can tell which of the three happened without
+    opening the wallpaper project at all.
+    """
+
+    way: str
+    #: Which record answered, as `<kind>/<run>` — named in provenance so that a person
+    #: chasing a colour can open the same file this did.
+    where: str
+    #: The full stamp, where the run kept one. `None` for a depth run, which does not.
+    stamp: dict | None
+
+    @property
+    def acted(self) -> bool:
+        return self.way in (REPLAYED, UNRECOVERABLE)
+
+
+def run_record(pick: Pick) -> tuple[str, Path, str]:
+    """Which of the run stores holds this candidate's own record, and how it is matched."""
+    stored = str(pick.source.get("picture") or "")
+    if not stored:
+        raise PickError(
+            f"{pick.identifier}: the ledger row names no picture, so nothing says which run "
+            "drew it or where that run wrote its autolevel stamp"
+        )
+    parts = [part for part in stored.replace("\\", "/").split("/") if part]
+    # artifacts / curation / <kind> / <run> / pictures / <file>
+    if len(parts) < 5 or parts[1] != "curation" or parts[2] not in RUN_RECORDS:
+        raise PickError(
+            f"{pick.identifier}: {stored} is not a picture under a run store this knows — "
+            f"the kinds are {', '.join(sorted(RUN_RECORDS))}"
+        )
+    kind, run = parts[2], parts[3]
+    name, match = RUN_RECORDS[kind]
+    return f"{kind}/{run}", renders.artifact("curation", kind, run, name), match
+
+
+def run_stamp(pick: Pick) -> Levelling:
+    """The autolevel stamp of the run that drew this candidate, and what it means here.
+
+    The third read of a pick, and the one that decides what colour the panel comes out.
+    See the module docstring: a `depth` run records only whether the operator acted, so a
+    seat it acted on is `acted_unrecoverable` and no render of the recipe is that seat's
+    picture.
+    """
+    where, path, match = run_record(pick)
+    if not path.is_file():
+        raise PickError(f"{pick.identifier}: {where} kept no {path.name}, so no stamp answers")
+    filename = str(pick.source["picture"]).replace("\\", "/").rsplit("/", 1)[-1]
+    with path.open(encoding="utf-8") as handle:
+        for line in handle:
+            if not line.strip():
+                continue
+            if match == "key":
+                if pick.key not in line:
+                    continue
+                row = json.loads(line)
+                if str(row.get("key")) != pick.key:
+                    continue
+                # A depth run stamps the fact and drops the curve.
+                acted = bool(row.get("acted"))
+                return Levelling(UNRECOVERABLE if acted else UNTOUCHED, where, None)
+            if filename not in line:
+                continue
+            row = json.loads(line)
+            if str(row.get("picture") or "").replace("\\", "/").rsplit("/", 1)[-1] != filename:
+                continue
+            stamp = row.get("autolevel") or {}
+            if not stamp.get("acted"):
+                return Levelling(UNTOUCHED, where, stamp or None)
+            if not stamp.get("curve"):
+                return Levelling(UNRECOVERABLE, where, stamp)
+            return Levelling(REPLAYED, where, stamp)
+    raise PickError(
+        f"{pick.identifier}: {where} has no row for {filename}, so nothing says whether the "
+        "autolevel operator acted on the picture the gallery ships"
+    )
+
+
+def levelled_colormap(pick: Pick, stamp: dict) -> Path:
+    """A directory holding this map, curved by the stops the run's own stamp rebuilds.
+
+    The same arrangement `builder/palettes.py` uses for the autolevel figure and the same
+    one the operator itself uses — one spec with one colormap directory changed — so the
+    engine's fold decision and its bake are the production call's, and only the stop
+    colours differ.
+    """
+    name = str(pick.recipe["colormap"])
+    replayed = renders.levelled_stops(name, stamp)
+    directory = (
+        renders.default_cache_root()
+        / "levelled"
+        / renders.spec_key("levelled", {"colormap": name, "curve": stamp["curve"]})
+    )
+    made = directory / f"{name}.json"
+    if not made.is_file():
+        directory.mkdir(parents=True, exist_ok=True)
+        made.write_text(
+            json.dumps(
+                {
+                    "schema": 1,
+                    "name": name,
+                    "kind": replayed["kind"],
+                    "source": f"{name}, levelled by the operator for one render",
+                    "stops": replayed["stops"],
+                }
+            ),
+            encoding="utf-8",
+            newline=LF,
+        )
+    return directory
+
+
+def seat_picture(pick: Pick) -> Path:
+    """The picture the gallery browser ships for this seat, on the disk it is on.
+
+    The way out of `acted_unrecoverable`: where no record carries the curve, the seat's
+    own file is the only thing that *is* the seat's picture, and copying it is honest in
+    a way redrawing the recipe and calling it the same picture is not.
+    """
+    stored = pick.seat.get("picture") or pick.source.get("picture")
+    if not stored:
+        raise PickError(f"{pick.identifier}: neither the seat nor the ledger row names a picture")
+    path = renders.rehome(stored)
+    if path is None or not path.is_file():
+        raise PickError(f"{pick.identifier}: {stored} is not on this machine")
+    return path
 
 
 # -------------------------------------------------------------------------- the panels
@@ -277,15 +466,80 @@ def wallpaper_row(pick: Pick) -> dict:
     }
 
 
-def panel(pick: Pick, name: str, catalog: dict[str, dict]) -> Path:
-    """One pick, rendered fresh through the engine at this module's panel geometry."""
+def panel_spec(
+    pick: Pick,
+    catalog: dict[str, dict],
+    *,
+    resolution=PANEL_RENDER,
+    supersample: int = PANEL_SUPERSAMPLE,
+    levelling: Levelling | None = None,
+) -> dict:
+    """The engine spec that draws this seat's picture, tone curve and all.
+
+    One place, because the check and the makers have to ask the engine for the *same*
+    picture — a guard that renders the seat differently from the rig is a guard that
+    passes while the page is wrong.
+    """
     spec = renders.wallpaper_spec(
         wallpaper_row(pick),
-        resolution=PANEL_RENDER,
-        supersample=PANEL_SUPERSAMPLE,
+        resolution=resolution,
+        supersample=supersample,
         catalog=catalog,
     )
+    levelling = levelling if levelling is not None else run_stamp(pick)
+    if levelling.way == REPLAYED:
+        spec = dict(spec, colormap_dir=str(levelled_colormap(pick, levelling.stamp)))
+    return spec
+
+
+def panel(pick: Pick, name: str, catalog: dict[str, dict]) -> Path:
+    """One pick at this module's panel geometry, drawn the way its seat was drawn.
+
+    Where the run's autolevel operator acted and the run kept its curve, the panel goes
+    through the levelled stops that curve rebuilds. Where it acted and the run kept no
+    curve, this refuses rather than publishing a render known to be the wrong colour —
+    the caller's answer is `seat_picture`, and it has to say so in provenance.
+    """
+    levelling = run_stamp(pick)
+    if levelling.way == UNRECOVERABLE:
+        raise PickError(
+            f"{pick.identifier}: the autolevel operator acted on this candidate and "
+            f"{levelling.where} did not record the curve, so no render of the recipe is the "
+            "picture the gallery ships. Copy it with `seat_picture`, or re-pick the seat."
+        )
+    spec = panel_spec(pick, catalog, levelling=levelling)
     return cache().produce(name, "render", spec).path
+
+
+def panel_or_seat(pick: Pick, name: str, catalog: dict[str, dict]) -> tuple[Path, Levelling]:
+    """The panel, or the seat's own shipped picture where nothing can reproduce it.
+
+    For a maker that would rather publish the gallery's picture than nothing. It hands
+    back what it did as well as the file, because a copied panel is not the same claim as
+    a drawn one and the row has to say which it is — `unrecoverable_line` is the sentence.
+    """
+    levelling = run_stamp(pick)
+    if levelling.way == UNRECOVERABLE:
+        return seat_picture(pick), levelling
+    return cache().produce(name, "render", panel_spec(pick, catalog, levelling=levelling)).path, (
+        levelling
+    )
+
+
+def unrecoverable_line(pick: Pick, levelling: Levelling) -> str:
+    """Why one panel is a copied file rather than a render, in the record's own terms."""
+    return (
+        f"{pick.alias} is the seat's own shipped picture, copied rather than redrawn: "
+        f"{pick.seat.get('picture')}. The autolevel operator acted on this candidate — it "
+        "pushed a tone curve through the map's stops and the run wrote the picture that "
+        f"came back — and {levelling.where} records only that it acted, never the curve, so "
+        "no render of the recipe is this seat's picture. A depth run keeps the fact and "
+        "drops the coefficients; the two stores that keep the whole stamp are reframe_draw "
+        "and a gallery pass. The cost is the panel's own sharpness — a stored 640x360 "
+        "supersample 2 JPEG where its neighbours are 1280x720 supersample 3 fitted down — "
+        "and it is the cheaper of the two errors, the other being a wallpaper published in "
+        "a colour the gallery does not show."
+    )
 
 
 def family_name(family: dict) -> str:
@@ -441,20 +695,68 @@ def frame_line(pick: Pick, *, representative: bool) -> str:
     )
 
 
-def autolevel_line(picks: list[Pick]) -> str:
+def autolevel_line(picks: list[Pick], levellings: dict[str, Levelling] | None = None) -> str:
     """What the operator did to the pictures Matt picked off, and what a panel here is."""
-    stamped = sorted({str((pick.recipe.get("autolevel") or {}).get("operator")) for pick in picks})
-    switches = sorted({str((pick.recipe.get("autolevel") or {}).get("switch")) for pick in picks})
+    stamped = sorted(
+        {
+            str((pick.recipe.get("autolevel") or {}).get("operator"))
+            for pick in picks
+            if pick.recipe.get("autolevel")
+        }
+    )
+    switches = sorted(
+        {
+            str((pick.recipe.get("autolevel") or {}).get("switch"))
+            for pick in picks
+            if pick.recipe.get("autolevel")
+        }
+    )
+    levellings = levellings or {pick.identifier: run_stamp(pick) for pick in picks}
+    replayed = [pick for pick in picks if levellings[pick.identifier].way == REPLAYED]
+    copied = [pick for pick in picks if levellings[pick.identifier].way == UNRECOVERABLE]
+    where = sorted({levellings[pick.identifier].where for pick in picks})
+
+    told = []
+    if replayed:
+        told.append(
+            "The operator acted on "
+            + ", ".join(
+                f"{pick.alias} (black point "
+                f"{levellings[pick.identifier].stamp['curve']['black_pt']:.4f}, white point "
+                f"{levellings[pick.identifier].stamp['curve']['white_pt']:.4f})"
+                for pick in replayed
+            )
+            + ", and those panels were drawn through the stops that curve rebuilds — the "
+            "wallpaper project's own `stops_from_stamp` replaying its own curve, never a "
+            "second one measured here."
+        )
+    if copied:
+        told.append(
+            "It also acted on "
+            + ", ".join(pick.alias for pick in copied)
+            + ", whose run recorded the fact and not the curve; "
+            + ("that panel is" if len(copied) == 1 else "those panels are")
+            + " the seat's own shipped picture rather than a render, and the line for "
+            + ("it says so" if len(copied) == 1 else "each says so")
+            + "."
+        )
+    if not replayed and not copied:
+        told.append(
+            "It acted on none of them, which by that operator's rule means it returned each "
+            "base render untouched, so every panel here is the engine's own render of the "
+            "recipe."
+        )
+    elif len(replayed) + len(copied) < len(picks):
+        told.append("It left the rest exactly alone, and those are the engine's own render.")
+
     return (
-        f"Autolevel: every candidate behind these seats was made with "
-        f"{', '.join(stamped)} switched {', '.join(switches)}, and a ledger recipe keeps only "
-        "the reduced stamp of that — the operator, the switch and the band's sha256. The tone "
-        "curve itself is a function of the render it was measured on, which a panel drawn at "
-        "another size is not, so every panel here is the engine's own render of the recipe and "
-        "no curve was replayed onto it. Held to that: each pick redrawn at the candidate's own "
-        f"640x360 supersample 2 reproduces the stored picture its seat points at to "
-        f"{RECIPE_AGREEMENT}, so the operator either did not act on any of the six or acted "
-        "under what that record's own compression costs."
+        f"Autolevel: every candidate behind these seats was made with {', '.join(stamped)} "
+        f"switched {', '.join(switches)}. A ledger recipe keeps only the reduced stamp of "
+        "that — the operator, the switch and the band's sha256 — so the curve is read from "
+        f"the run's own record instead, {', '.join(where)}. {' '.join(told)} Held to that: "
+        "each pick redrawn at the candidate's own 640x360 supersample 2 reproduces the "
+        f"stored picture its seat points at to {RECIPE_AGREEMENT}, and `builder check`'s "
+        "`seats` is what keeps it true."
     )
 
 

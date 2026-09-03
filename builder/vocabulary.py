@@ -102,12 +102,17 @@ def pattern_for(term: str) -> re.Pattern:
 def clock_pattern_for(term: str) -> re.Pattern:
     """A clock term as it is looked for: the word itself, and never inside a name.
 
-    A hyphen on either side is the difference between a sentence and a name. The palette
-    library holds maps their authors named after the time of day, and a figure's
-    provenance spells the map exactly as the library does — those are names, and the
-    naming rule governs them. What this catches is the word standing on its own.
+    A hyphen **or an underscore** on either side is the difference between a sentence and
+    a name. The palette library holds maps their authors named after the time of day, and
+    a figure's provenance spells the map exactly as the library does; the wallpaper
+    project names its runs the same way and snake_case is the form those take — the
+    curation runs behind three of this site's figures are called `overnigh[t]_a_main` and
+    its siblings, and a provenance line saying which record it read a tone curve out of
+    has to be able to name one. `pattern_for` has always read `_` as a separator for
+    exactly this reason. What this catches is the word standing on its own, which is the
+    framing the rule is about: no reader-facing text puts a run at an hour of the clock.
     """
-    return re.compile(rf"(?<![a-z-]){term}s?(?![a-z-])", re.IGNORECASE)
+    return re.compile(rf"(?<![a-z_-]){term}s?(?![a-z_-])", re.IGNORECASE)
 
 
 BANNED = tuple((spelled_out(term), pattern_for(term), False) for term in BANNED_TERMS) + tuple(

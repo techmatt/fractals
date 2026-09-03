@@ -45,6 +45,37 @@ def dimensions(path: Path) -> tuple[int, int]:
         return image.size
 
 
+def mean_abs_difference(one: Path, other: Path) -> float:
+    """How far two pictures of the same thing are apart, per channel, out of 255.
+
+    The plainest measure there is, and deliberately: `check`'s `seats` compares a panel
+    with the picture a gallery ships, and the question it asks is *has the colour moved*.
+    A perceptual metric would answer a more interesting question less legibly, and the
+    number here goes into a failure message a person has to act on.
+
+    The second picture is resampled to the first where they differ in size, so the caller
+    decides which side is the ruler; `seats` makes the shipped picture the ruler and draws
+    at its size, so no resize actually happens on that path.
+    """
+    with _open(one) as first, _open(other) as second:
+        left = first.convert("RGB")
+        right = second.convert("RGB")
+        if left.size != right.size:
+            from PIL import Image
+
+            right = right.resize(left.size, Image.LANCZOS)
+        try:
+            import numpy
+        except ImportError:
+            from PIL import ImageChops, ImageStat
+
+            return float(sum(ImageStat.Stat(ImageChops.difference(left, right)).mean)) / 3
+        difference = numpy.abs(
+            numpy.asarray(left, dtype=numpy.int16) - numpy.asarray(right, dtype=numpy.int16)
+        )
+    return float(difference.mean())
+
+
 def _save(image, destination: Path) -> None:
     """Write an image in the format its suffix names, with fixed, deterministic options."""
     destination.parent.mkdir(parents=True, exist_ok=True)
