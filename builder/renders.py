@@ -774,6 +774,100 @@ def colormap_directory(name: str, kind: str, stops: list, tag: str) -> Path:
     return directory
 
 
+#: The forty-eight named colors, asked of the codebook that defines them. A chart that
+#: draws a column in that color's own ink has no business restating an sRGB triple this
+#: side of the seam. The four neutrals the codebook also names carry no cell allowance
+#: and are not colors of the gallery's balance, so they are not asked for.
+SWATCH_PROGRAM = """
+import json
+
+from fractal_wallpapers.palettes import codebook
+
+print(
+    json.dumps(
+        {
+            row["swatch"]: row["srgb"]
+            for row in codebook.swatches()
+            if row.get("kind") == "hue"
+        }
+    )
+)
+"""
+
+
+#: The distance the curation pass calls two wallpapers the same wallpaper by, asked of
+#: the module that defines it. A figure that put a number under a pair of pictures and
+#: derived that number a second way here would be publishing a measurement the gallery
+#: was not chosen under; this is the pass's own metric, over the pass's own pictures.
+TWIN_PROGRAM = """
+import json, sys
+from pathlib import Path
+
+from fractal_wallpapers.palettes import pixel_clouds
+
+ask = json.load(sys.stdin)
+made = {}
+
+
+def signature(name):
+    if name not in made:
+        made[name] = pixel_clouds.of_picture(Path(name))
+    return made[name]
+
+
+print(
+    json.dumps(
+        [
+            float(pixel_clouds.distance(signature(one), signature(other)))
+            for one, other in ask["pairs"]
+        ]
+    )
+)
+"""
+
+
+def twin_distances(pairs) -> list[float]:
+    """The twin measure between each pair of finished pictures, in the order asked."""
+    wanted = [[str(one), str(other)] for one, other in pairs]
+    if not wanted:
+        return []
+    completed = subprocess.run(
+        [str(venv_python()), "-c", TWIN_PROGRAM],
+        input=json.dumps({"pairs": wanted}),
+        capture_output=True,
+        text=True,
+        cwd=str(wallpapers_root()),
+        check=False,
+    )
+    if completed.returncode != 0:
+        raise EngineError(f"measuring the twin distance failed: {completed.stderr.strip()}")
+    return [float(value) for value in json.loads(completed.stdout)]
+
+
+def swatch_colours() -> dict[str, tuple[int, int, int]]:
+    """Every named color's own sRGB, in the codebook's own order.
+
+    That order is hue family, then tone, then chroma, and it is the order a chart of the
+    fifty-two draws its columns in — so nothing here sorts, and a family is four
+    consecutive entries whose name ends in the family's own.
+    """
+    completed = subprocess.run(
+        [str(venv_python()), "-c", SWATCH_PROGRAM],
+        capture_output=True,
+        text=True,
+        cwd=str(wallpapers_root()),
+        check=False,
+    )
+    if completed.returncode != 0:
+        raise EngineError(
+            f"asking the codebook for its swatches failed: {completed.stderr.strip()}"
+        )
+    return {
+        name: tuple(int(value) for value in srgb)
+        for name, srgb in json.loads(completed.stdout).items()
+    }
+
+
 def palette_space(what: str, **ask):
     """One question about palette space, answered by the module that defines it."""
     completed = subprocess.run(

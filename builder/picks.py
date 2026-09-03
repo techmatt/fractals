@@ -630,6 +630,31 @@ MODES_DRAW = (
 )
 
 
+#: The grid the gallery figure ships: twenty-four seats, six across. A pass seats
+#: hundreds and a figure shows a sample of them, which the caption says out loud — the
+#: claim being made is about the collection's spread and not its size.
+OUTPUT_COLUMNS = 6
+OUTPUT_ROWS = 4
+
+#: How a tile of that grid is labelled: the fractal family it was found in, which is the
+#: axis the pass constrains nothing on and the page says so.
+OUTPUT_LABEL_LINES = 1
+
+#: How the twenty-four were arrived at, which the resolution cannot say for itself.
+OUTPUT_DRAW = (
+    "Which seats stand for the pass is a seeded shuffle of its whole seating — "
+    "scratch/curation/pick_output.py, seed 20260903 — taking the first that clear four "
+    "rejections: a seat another figure already stands on, by key and by frame; a seat "
+    "whose run recorded that the autolevel operator acted without recording the curve; "
+    "and the caps that keep one draw from being a picture of itself rather than of the "
+    "pass — at most four tiles of one rendering mode, three of one hue family, four of "
+    "one partition. Nothing here was chosen for how it looks.",
+    "The spread that came back: eleven of the pass's fourteen modes, nine partitions, "
+    "and all twelve hue families plus one picture the reading finds dominant in no "
+    "color at all.",
+)
+
+
 def picks_of(identifier: str) -> list[str]:
     """The IDs a figure's own registry row names, which is where the picks live."""
     figure = figures_module.load_all().get(identifier)
@@ -709,6 +734,37 @@ def modes_gallery() -> Drawn:
     return Drawn(
         destination,
         provenance(resolved, size, columns=MODES_COLUMNS, chosen=MODES_DRAW),
+    )
+
+
+def gallery_output() -> Drawn:
+    """`gallery-output` — a sample of what one curation pass ships, labelled by family.
+
+    The same shape as the roster above and a different claim: the roster is one seat a
+    mode and says so, this is a draw over the whole seating and says that. Which seats
+    is not this module's choice — they are the IDs on the registry row.
+    """
+    identifier = "gallery-output"
+    wanted = picks_of(identifier)
+    if len(wanted) != OUTPUT_COLUMNS * OUTPUT_ROWS:
+        raise PickError(
+            f"{identifier} is {OUTPUT_COLUMNS}x{OUTPUT_ROWS} and its row names "
+            f"{len(wanted)} pick(s)"
+        )
+    resolved = resolve(wanted)
+    catalog = renders.mode_catalog()
+    size = panels(OUTPUT_COLUMNS)
+    caption = sheets.caption_band(size[1], SHEET_WIDTH, OUTPUT_LABEL_LINES)
+    sheet, draw = sheets.canvas(*sheets.grid_size(size, OUTPUT_COLUMNS, OUTPUT_ROWS, caption))
+    for index, pick in enumerate(resolved):
+        picture = panel(pick, f"output-{index + 1}-{pick.alias}", catalog)
+        origin = sheets.panel_origin(index, size, OUTPUT_COLUMNS, caption)
+        sheet.paste(sheets.fitted(picture, size), origin)
+        sheets.tile_label(draw, origin, size, family_name(pick.family), sheet.width)
+    destination = sheets.save(sheet, sheet_path(identifier))
+    return Drawn(
+        destination,
+        provenance(resolved, size, columns=OUTPUT_COLUMNS, chosen=OUTPUT_DRAW),
     )
 
 
@@ -888,6 +944,7 @@ def provenance(
 MAKERS = {
     "overview-gallery-hook": gallery_hook,
     "modes-gallery": modes_gallery,
+    "gallery-output": gallery_output,
 }
 
 

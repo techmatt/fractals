@@ -114,5 +114,6 @@
 {"schema": 1, "kind": "palette", "name": "twilight", "offered": true}
 {"schema": 1, "kind": "palette", "name": "twilight_shifted", "offered": true}
 {"schema": 1, "kind": "palette", "name": "viridis", "offered": true}
+{"schema": 1, "kind": "palette", "name": "wallhaven_wallhaven-398e39", "offered": false}
 {"schema": 1, "kind": "palette", "name": "wallhaven_wallhaven-nm6938", "offered": false}
 {"schema": 1, "kind": "palette", "name": "wheelance", "offered": false}

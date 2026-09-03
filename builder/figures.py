@@ -102,16 +102,20 @@ MADE = (PLACED, STALE, DRAFT)
 #: - `gallery_seat` — a seat of a recorded tentative gallery, `<stamp>|<recipe key>`.
 #:   A seat is a location with a recipe already on it, the way a release row is, and it
 #:   is how a figure names a picture Matt chose off the curation browser.
+#: - `candidate` — a row of the curation candidate ledger, by its own recipe key. A
+#:   candidate is what a seat is chosen *from*, and a figure about the choosing shows
+#:   pictures the pass looked at and did not seat — which is a record and not a picture
+#:   with nothing behind it.
 #: - `synthetic` — nothing stored stands behind it: drawn here, or rendered for this
 #:   article alone. The row's own `provenance` is the record, and it carries no keys.
 #: - `none` — the picture cannot be reconstructed. The row says why, in `held_reason`.
 RUN_ROW, LOCATION, SYNTHETIC, NO_SOURCE = "run_row", "location", "synthetic", "none"
-GALLERY_SEAT = "gallery_seat"
-SOURCE_KINDS = (RUN_ROW, LOCATION, GALLERY_SEAT, SYNTHETIC, NO_SOURCE)
+GALLERY_SEAT, CANDIDATE = "gallery_seat", "candidate"
+SOURCE_KINDS = (RUN_ROW, LOCATION, GALLERY_SEAT, CANDIDATE, SYNTHETIC, NO_SOURCE)
 
 #: The kinds that carry keys at all. A `synthetic` or `none` row naming one is a row
 #: claiming a record it does not have.
-KEYED_KINDS = (RUN_ROW, LOCATION, GALLERY_SEAT)
+KEYED_KINDS = (RUN_ROW, LOCATION, GALLERY_SEAT, CANDIDATE)
 
 #: How a `gallery_seat` source's keys stand behind the figure's pictures. The word is
 #: what `check`'s `seats` reads to decide whether a panel is answerable to the seat's own
@@ -789,6 +793,7 @@ KEY_FORMS = {
         "<ledger>/walk.jsonl[#<node_id>]  → the artifacts tree, through renders.artifact",
     ),
     GALLERY_SEAT: ("<stamp>|<recipe key>  → artifacts/curation/tentative/<stamp>/gallery.jsonl",),
+    CANDIDATE: ("<recipe key>  → artifacts/curation/candidate_ledger/rows.jsonl",),
 }
 
 FINISHED_HEADS = ("smooth_render", "strange_render")
@@ -812,6 +817,11 @@ class _Stores:
         self._lines: dict[Path, int] = {}
         self._nodes: dict[str, set[int] | None] = {}
         self._seats: dict[str, set[str] | None] = {}
+
+    def candidate_keys(self, wanted) -> set[str]:
+        from . import picks
+
+        return set(picks.ledger_rows(wanted))
 
     def release_keys(self) -> set[str]:
         if self._release is None:
@@ -910,6 +920,22 @@ def _unresolved_key(stores: _Stores, kind: str, key: str) -> str | None:
         return _unresolved_location(stores, key)
     if kind == GALLERY_SEAT:
         return _unresolved_gallery_seat(stores, key)
+    if kind == CANDIDATE:
+        return _unresolved_candidate(stores, key)
+    return None
+
+
+def _unresolved_candidate(stores: _Stores, key: str) -> str | None:
+    """A bare recipe key against the candidate ledger, in one streamed pass.
+
+    Never the pool: a solve may be running next door, and a check has no business
+    loading what it is solving over. `picks.ledger_rows` stops as soon as it has the
+    keys it was asked for.
+    """
+    if "|" in key or not key.strip():
+        return f"names {key}, and a candidate is addressed by its recipe key alone"
+    if key not in stores.candidate_keys((key,)):
+        return f"names {key}, and the candidate ledger has no row with that recipe key"
     return None
 
 

@@ -206,7 +206,8 @@ keeps the mechanics. **Every apply round ends by distilling that round's general
   name and an integer is refused at load**. `builder check` resolves every key against the
   store its kind names — `run_row` against the curation release records and the
   finished-render stores, `location` against the location label store and the walk
-  ledgers, `gallery_seat` against the recorded tentative gallery its stamp names — and
+  ledgers, `gallery_seat` against the recorded tentative gallery its stamp names,
+  `candidate` against the candidate ledger — and
   says so and moves on where the wallpapers checkout is not configured.
   `docs/page-review.md` carries the page-by-page table of what is written, mastered,
   reviewed and held; nothing else keeps a copy of it.
@@ -419,7 +420,7 @@ is the only reason a dot's picture and a dot's link agree.
 After touching placed prose, `python -m builder prose <page>` as well — see **Where prose
 comes from** above for what it holds together and why one edit has several sites.
 
-`builder check` is read-only, and it runs fifteen named checks. It resolves every
+`builder check` is read-only, and it runs sixteen named checks. It resolves every
 internal link, refuses root-absolute and bare-directory hrefs, regenerates the gallery
 HTML and compares it byte for byte with what is committed, holds every figure block to
 its registry row, holds every made figure to being a block a redraw could land on —

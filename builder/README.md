@@ -175,6 +175,7 @@ run_row     <run>|release|<candidate>          data/curation/release/**/*.jsonl
 location    labels/<batch>.jsonl:<line>        data/labels/rows/<batch>.jsonl
             <ledger>/walk.jsonl[#<node_id>]    the artifacts tree, through renders.artifact
 gallery_seat <stamp>|<recipe key>              a seat of a recorded tentative gallery
+candidate   <recipe key>                       a row of the candidate ledger
 synthetic   no keys — drawn here, or rendered for this article alone
 none        no keys — the picture cannot be reconstructed, and held_reason says why
 ```
@@ -222,6 +223,28 @@ agree about the picture and not about its bytes. `overview-pipeline` looks like 
 and is not one — it is a composed sheet with four real renders in it, made by a rig under
 ignored `scratch/`, which is what its `recipe` and its `sources` say. Every other figure
 asset arrived through `import`.
+
+## A curation pass writes itself down twice, and one half is rolling
+
+`curation.py` draws the figures of *Gallery curation*, which are readings of one solve
+rather than pictures of a place, and it opens two records to draw any of them.
+
+- **The tentative gallery**, `artifacts/curation/tentative/<stamp>/` — the seating and its
+  tallies, **stamped and immutable**. A second solve writes a second stamp.
+- **The solve record**, `artifacts/curation/solve/<name>/solve.json` — the pool's own
+  narrowing, the geometric preselection, the twin refusals with their distances. It is
+  written under the *leg's* name, and a rerun **overwrites it**.
+
+So the module holds the two together before it draws: both halves say when their solve was
+taken, and a record that answers for a different pass is refused rather than drawn from.
+That refusal is not hypothetical — the pass this page originally stood on has no solve
+record left on this machine, because a second pass under the same leg name replaced it two
+minutes later. The stamped half survived; the rolling half did not.
+
+Where a figure needs one number that only the rolling half carries, the answer is to pin
+the page to a stamp whose record survives, and to say in provenance which pass that is.
+Both passes of 2026-09-02 chose over a pool with the same stamp, which is why moving this
+page to the later one moved no claim any earlier figure makes.
 
 ## The palette library has a record, the way a gallery does
 

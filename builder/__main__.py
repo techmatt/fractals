@@ -24,6 +24,7 @@ from pathlib import Path
 from . import atlas as atlas_module
 from . import build as build_module
 from . import checks, diagrams, figures, images, links, records, renders
+from . import curation as curation_module
 from . import explorer as explorer_module
 from . import growth as growth_module
 from . import judges as judges_module
@@ -226,6 +227,25 @@ def _parser() -> argparse.ArgumentParser:
         help="import each drawn sheet as its figure's asset and fill its registry row",
     )
     named.add_argument(
+        "--replace",
+        action="store_true",
+        help="land the redraw over a figure that is already made, page and row together",
+    )
+
+    curated = commands.add_parser("curation", help="draw the figures of the Gallery curation page")
+    curated.add_argument(
+        "id",
+        nargs="*",
+        choices=sorted(curation_module.MAKERS) or None,
+        help="which figures to draw; all of them by default",
+        metavar="ID",
+    )
+    curated.add_argument(
+        "--place",
+        action="store_true",
+        help="import each drawn sheet as its figure's asset and fill its registry row",
+    )
+    curated.add_argument(
         "--replace",
         action="store_true",
         help="land the redraw over a figure that is already made, page and row together",
@@ -691,6 +711,37 @@ def _do_growth(options: argparse.Namespace) -> int:
     return 0
 
 
+def _do_curation(options: argparse.Namespace) -> int:
+    """Draw section 9's figures, and optionally land each one where it belongs.
+
+    Two shapes land here and they ship differently: a chart is drawn art and lands
+    lossless, the way the pipeline charts do, and the twins sheet is six photographs of
+    fractals and lands as JPEG. `sources` are rewritten on landing for the same reason
+    `picks` rewrites them — the twins figure's panels **are** record keys.
+    """
+    for identifier in options.id or sorted(curation_module.MAKERS):
+        drawn = curation_module.draw(identifier)
+        print(f"wrote {drawn.path.relative_to(SITE_ROOT).as_posix()}")
+        if not (options.place or options.replace):
+            continue
+        lossless = identifier in curation_module.CHARTS
+        destination = FIGURE_IMAGES_DIR / f"{identifier}{'.png' if lossless else '.jpg'}"
+        width, height = images.import_web_res(drawn.path, destination)
+        placed = figures.place(
+            identifier,
+            destination.name,
+            width,
+            height,
+            provenance=list(drawn.provenance),
+            recipe=curation_module.recipe(identifier),
+            sources=curation_module.sources(identifier),
+            replace=options.replace,
+        )
+        size = destination.stat().st_size / 1024
+        print(f"  {destination.name}  {width}x{height}  ({size:.0f} KB) — {placed.page}")
+    return 0
+
+
 def _do_pipeline(options: argparse.Namespace) -> int:
     """Bake a full-pipeline chart, and optionally land it.
 
@@ -889,6 +940,8 @@ def main(argv: list[str] | None = None) -> int:
             return _do_picks(options)
         if options.command == "growth":
             return _do_growth(options)
+        if options.command == "curation":
+            return _do_curation(options)
         if options.command == "pipeline":
             return _do_pipeline(options)
         if options.command == "diagram":
@@ -912,6 +965,7 @@ def main(argv: list[str] | None = None) -> int:
         pipeline_module.PipelineError,
         picks_module.PickError,
         pool_module.PoolError,
+        curation_module.CurationError,
         prose_module.ProseError,
         review_module.ReviewError,
         OSError,

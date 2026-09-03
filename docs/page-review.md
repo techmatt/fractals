@@ -198,7 +198,7 @@ yet judged* rather than a decision.
 | `training-judges.html` | yes | `Training judges v5.md` | applied 2026-08-21 | 3 placed | — |
 | `color-palettes.html` | yes | `Color palettes v5.md` | applied 2026-09-02 | 7 placed | — |
 | `finding-good-wallpapers.html` | yes | `Finding good wallpapers v2.md` | none | 3 placed | renamed from `from-locations-to-wallpapers.html` at the twelve-section split, and the figures' `wallpapers-` prefix still carries the old name. `wallpapers-attempt` is placed off Matt's tile pick; `wallpapers-stages` was redrawn on 2026-09-02 as the three parts and the material each hands on, which lifted its stale mark; `wallpapers-mine` landed the same day off one mine's own visit records |
-| `gallery-curation.html` | yes | `Gallery curation v1.md` | none | 1 placed, 4 pending, 1 held | placed 2026-09-01 with the (b)/(c) seam; `gallery-release` came across from `wallpapers-release` with the full-size render it illustrates. The four pending rows need a solve's own record — the pool's narrowing, the color allowances, the twin pairs and the per-mode floors — which `builder/pool.py` does not read yet; `gallery-output` is **held** on a released gallery from the live selection leg, which writes only into the wallpaper project's ignored `artifacts/` |
+| `gallery-curation.html` | yes | `Gallery curation v1.md` | none | 6 placed | placed 2026-09-01 with the (b)/(c) seam; `gallery-release` came across from `wallpapers-release` with the full-size render it illustrates. The other five landed 2026-09-03 off the recorded tentative gallery `20260902T164622Z` and its solve record, which `builder/curation.py` reads — the page's figures stand on a **later pass** than `overview-gallery-hook` and `modes-gallery` do, over the same pool, because the earlier pass's solve record has been overwritten. `gallery-floors` is drawn at one gallery size and not two: see the seam note below |
 | `full-pipeline.html` | yes | `Full pipeline v3.md` | none | 2 placed, 1 draft, 1 held | `pipeline-overview` and `pipeline-yield-decay` landed 2026-09-02; `pipeline-growth` is a **draft** because its ladder stops at the gallery sizes this pool can seat; `pipeline-themed-galleries` is **held** on one pool solved twice, plain and under a color theme, which the solve leg writes only into the wallpaper project's ignored `artifacts/` |
 | `fractal-atlases.html` | no | none | none | none | the section's prose is not drafted; the tool page it will hang off is shipped — see below |
 | `deep-zoom.html` | no | none | none | none | the section is not written |
@@ -227,12 +227,20 @@ file and its `explorer/links.jsonl` row were renamed with it**, so the old slug 
 nowhere. `wallpapers-stages` kept its slug through the same move, and the redraw it then
 owed landed on 2026-09-02.
 
-Six rows are not on a page. Four are `pending` on Gallery curation — `gallery-pool`,
-`gallery-allowance`, `gallery-twins`, `gallery-floors` — and two are `held`,
-`gallery-output` and `pipeline-themed-galleries`. Both held rows are blocked on the same
-thing, and it is a `builder/pool.py` question rather than a figure one: the live selection
-leg writes its galleries only into the wallpaper project's ignored `artifacts/`, and
-nothing there is addressable from a clone. `pipeline-growth` is the site's one `draft` row.
+One row is not on a page: `pipeline-themed-galleries` is `held` on one pool solved twice,
+plain and under a color theme, and no such pair of passes has been recorded.
+`pipeline-growth` is the site's one `draft` row.
+
+**The hold the other five were under is gone, 2026-09-03.** It read as a `builder/pool.py`
+question — the live selection leg writes its galleries only into the wallpaper project's
+ignored `artifacts/`, and nothing there is addressable from a clone — and the second half
+of that was never the obstacle it looked like. A figure is drawn on this machine and its
+picture is committed; what a clone cannot do is *redraw* it, which is the same thing every
+other figure here asks of a clone and which `check` reports as a named skip rather than a
+failure. What was actually missing was a recorded pass, and `builder/picks.py` resolving a
+seat through the run's own record is what made one addressable. The residue is that CI can
+neither redraw these panels nor resolve their source keys, which is the standing shape of
+every figure on the site and not a hold on any one of them.
 
 ### The (b)/(c) seam
 
@@ -243,6 +251,18 @@ place, how candidates are ranked. (c) is the solve — what is eligible, two pic
 same place, how much of a collection one color may take, pictures that read as one
 wallpaper, asking for what would otherwise not be there, what the pass is trying to do,
 building the set, what the pass does not decide, what comes up short, rendering the gallery.
+
+**What `gallery-floors` could not be drawn as.** Its specification, in the master and in
+the registry, is two gallery sizes side by side — every mode's floor met at the smaller and
+several short at the larger. No such pair of records exists over one pool: the only sizes
+solved against this pool are n = 1,000, and every n = 150 record on this machine was solved
+over an earlier and smaller one. Two sizes over two pools is not the comparison the figure
+claims, so it was drawn at one size and re-captioned. The page's own sentence — *a gallery
+of a hundred and fifty fills today; a gallery of a thousand does not* — is still true of
+what was measured when it was written, and is the claim a round should ask for a current
+record of. The same round should look at *the demands that go unfilled are all mode
+floors*: on this pass every floor is met and the 88 unfilled seats were refused by the
+color allowance, by one-wallpaper-per-location and by the twin rule.
 
 *Where the budget goes* used to describe the allocator design that is now dead, and its
 revision was slated for the Full pipeline round. **That round landed it**: the section
