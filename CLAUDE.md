@@ -452,6 +452,31 @@ those three questions were skipped by name. Before a prompt is called done, run
 count in the exit summary — a run that reports skips is a run that answered part of the
 question.
 
+## Staging a prompt
+
+**"stage `<prompt>.md`" means prepare it, not run it** *(Matt, 2026-09-02)*. It exists so
+a second prompt can be thought through while a first one still holds this repository, and
+that is the whole of the rule: a staging run costs the live prompt nothing.
+
+- **Read the named prompt and everything it points at**, and run read-only commands
+  freely — `git log`, `builder check`, a served page, whatever answers the question.
+- **Produce a concrete plan**: what changes, in which files, in what order, what gets
+  measured, which steps get backgrounded.
+- **Dirty nothing.** No edit to a tracked file, no new file anywhere in the checkout,
+  nothing staged and nothing committed. Notes and scratch scripts go to the session's
+  scratchpad directory outside the repository — not to `scratch/`, which is inside it.
+- **Touch no running work**: no render leg, no training run, no pool-holding process, no
+  slow lane. The live prompt owns those, and a staging run that starts one has already
+  broken the only promise it makes.
+- **Expect `git status` to come back dirty, and leave every file in it alone.** Those
+  changes belong to the prompt that is still running.
+- **Stop at the plan.** Say it is ready and that the tree is not yours. The lock is handed
+  over explicitly; `git status` going clean on its own is not the handover, and neither is
+  the other prompt looking finished.
+
+A staged plan is not completed prompt work, so the commit rule under **Rules** does not
+reach it — there is nothing to commit until the prompt is actually run.
+
 ## Standing prompt contract
 
 Each prompt in this project ends the same way:
