@@ -1,6 +1,6 @@
 {"schema": 1, "kind": "link", "id": "figure:overview-gallery-hook", "link": "v=2&f=multibrot4&x=0.3190049359670787&y=0.7493803355819899&w=0.00000030536169435018664&p=pink&mirror=1", "from": "panel 2"}
 {"schema": 1, "kind": "link", "id": "figure:overview-pipeline", "link": "v=2&f=multibrot4&x=0.3407452442528424&y=0.931615414985041&w=0.00000006344276705989817&p=twilight_shifted", "from": "panel 2"}
-{"schema": 1, "kind": "link", "id": "figure:escape-families", "link": "v=2&y=0.0&p=twilight_shifted", "from": "panel 1"}
+{"schema": 1, "kind": "link", "id": "figure:escape-families", "no_link": "not_exposed", "why": "the picture reads smooth through a is curve, and the catalog's smooth is linear: a curve is part of a mode's identity here and is not a key a link may carry"}
 {"schema": 1, "kind": "link", "id": "figure:escape-orbit-race", "no_link": "drawn", "why": "a drawn diagram or chart, with no engine render behind it to reopen"}
 {"schema": 1, "kind": "link", "id": "figure:escape-zoom-strip", "link": "v=2&x=-0.8038460387836429&y=0.18284000541838608&p=twilight_shifted", "from": "panel 1"}
 {"schema": 1, "kind": "link", "id": "figure:escape-julia-map", "link": "v=2&y=0.0&p=twilight_shifted", "from": "panel 1"}
@@ -11,7 +11,7 @@
 {"schema": 1, "kind": "link", "id": "figure:render-field-anatomy", "no_link": "incomplete_provenance", "why": "no colormap is written down"}
 {"schema": 1, "kind": "link", "id": "figure:render-maxiter", "no_link": "not_exposed", "why": "the picture was drawn at a cap of 300 and the depth policy gives 32,474 at this width — the cap is the engine's own and is not a key a link may carry, so the link would draw a different picture"}
 {"schema": 1, "kind": "link", "id": "figure:render-supersample", "link": "v=2&f=multibrot3&x=-0.0693668444165554&y=0.7786163029308374&w=5.6412438043129286e-08&p=Teal%20Against%20Coral", "from": "panel 1"}
-{"schema": 1, "kind": "link", "id": "figure:render-cyclic-repeats", "link": "v=2&f=julia&cx=-1.2517612129804818&cy=0.038979112285470574&x=-0.2739474295196568&y=0.09521327512869174&w=0.6313752221683463&p=nova-25", "from": "panel 1"}
+{"schema": 1, "kind": "link", "id": "figure:render-cyclic-repeats", "link": "v=2&f=julia&cx=-1.2517612129804818&cy=0.038979112285470574&x=-0.2739474295196568&y=0.09521327512869174&w=0.6313752221683463&p=Forge%20to%20White", "from": "panel 1"}
 {"schema": 1, "kind": "link", "id": "figure:render-autolevel", "link": "v=2&x=-0.1592&y=1.0341&w=0.10&p=Gold%20Field%2C%20Blood%20Spark", "from": "panel 1"}
 {"schema": 1, "kind": "link", "id": "figure:modes-field-family", "link": "v=2&x=-1.2514946371626112&y=0.041108581786355486&w=1.214842568782454e-06&p=cmr.voltage", "from": "panel 1"}
 {"schema": 1, "kind": "link", "id": "figure:modes-composite", "link": "v=2&f=julia3&cx=0.1913606104683651875088144844&cy=1.053062736780250645290760882&x=0.0004165446916718357&y=0.21983475449232365&w=0.5199460528394672&p=cmr.voltage", "from": "panel 1"}

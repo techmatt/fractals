@@ -258,6 +258,11 @@ def strip(name: str, width: int, height: int = STRIP_HEIGHT) -> Path:
     Never in Python: a second densifier is how a strip and the picture beside it come to
     disagree about the same palette. Skipped where the file is already there, so a sheet
     is composed without redrawing eighty ramps.
+
+    The fold is not passed and does not need to be: `palettes strip` already defaults to
+    *folded unless the map is cyclic*, which is the pipeline's own rule and the one
+    `Palette.mirror` spells. A strip and the picture above it therefore agree about the
+    map without either side saying so.
     """
     directory = renders.default_cache_root() / "strips"
     directory.mkdir(parents=True, exist_ok=True)
@@ -1036,6 +1041,15 @@ DRIFT_NAMED = 8
 #: Where a map's name came from, which is the whole of what decides whether the page shows
 #: it under a display name — see `display_name`.
 EXTRACTED = "extracted"
+
+#: The maps written against the palette prompt, as opposed to `extracted` from a picture
+#: or `converted` from an upstream library. **These are the maps a figure draws at random**
+#: *(Matt, 2026-09-02)*: their names were written as prose rather than being a library
+#: identifier or a wallpaper's filename, and all 375 of them are cyclic — where 90% of the
+#: extracted maps close by *mirroring*, and so read as 2k bands when swept k times, not one
+#: authored map is a palindrome. A random draw over the whole pool put
+#: `cet_rainbow_bgyr_35_85_c72` under a picture on the article's front page.
+AUTHORED = "authored"
 
 #: Words a filename carries that say nothing about the palette: the site a picture came
 #: off, the resolution words beside it, and `fractal`, which every map on a fractal site

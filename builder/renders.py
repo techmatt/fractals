@@ -697,6 +697,83 @@ def levelled_stops(colormap: str, stamp: dict) -> dict:
     return json.loads(completed.stdout)
 
 
+#: The curve one *fresh* render earns, measured the way the operator measures it. Where
+#: `levelled_stops` replays a curve a run already recorded, this derives one for a picture
+#: no run ever made — the alternate colorings of `overview-pipeline`'s middle band, which
+#: exist only in this figure. There is no first operator to disagree with in that case, so
+#: measuring here is the operator acting, not a second reading of it.
+MEASURED_PROGRAM = """
+import json, sys
+
+from pathlib import Path
+
+from fractal_wallpapers.coloring import autolevel, band as band_module
+from fractal_wallpapers import paths
+
+ask = json.load(sys.stdin)
+loaded = json.loads(
+    (paths.colormap_dir() / (ask["colormap"] + ".json")).read_text(encoding="utf-8")
+)
+record = json.loads(Path(band_module.record_path()).read_text(encoding="utf-8"))
+statistics = autolevel.stats_of(Path(ask["picture"]))
+curve = autolevel.derive_curve(statistics, band_module.bands(record))
+if not curve.get("applies") or curve.get("identity"):
+    print(json.dumps({"acted": False}))
+else:
+    stops, capped = autolevel.curved_stops(loaded["stops"], curve)
+    print(json.dumps({
+        "acted": True, "kind": loaded["kind"], "stops": stops, "curve": curve, "capped": capped
+    }))
+"""
+
+
+def measured_stops(colormap: str, picture: Path) -> dict | None:
+    """What the autolevel operator does to this map, given this render of it.
+
+    `None` where it does nothing, which is the operator's own identity case and the
+    commonest answer. Otherwise `{"kind", "stops", "curve", "capped"}`.
+    """
+    completed = subprocess.run(
+        [str(venv_python()), "-c", MEASURED_PROGRAM],
+        input=json.dumps({"colormap": colormap, "picture": str(picture)}),
+        capture_output=True,
+        text=True,
+        cwd=str(wallpapers_root()),
+        check=False,
+    )
+    if completed.returncode != 0:
+        raise EngineError(f"measuring the autolevel curve failed: {completed.stderr.strip()}")
+    answer = json.loads(completed.stdout.strip().splitlines()[-1])
+    return answer if answer.get("acted") else None
+
+
+def colormap_directory(name: str, kind: str, stops: list, tag: str) -> Path:
+    """A directory holding one map under its own name, for `colormap_dir` to point at.
+
+    The arrangement the autolevel operator itself uses — one spec with one directory
+    changed — so the engine's fold decision and its bake are the production call's, and
+    only the stop colours differ. Under the ignored render cache, keyed on `tag`.
+    """
+    directory = default_cache_root() / "levelled" / tag
+    made = directory / f"{name}.json"
+    if not made.is_file():
+        directory.mkdir(parents=True, exist_ok=True)
+        made.write_text(
+            json.dumps(
+                {
+                    "schema": 1,
+                    "name": name,
+                    "kind": kind,
+                    "source": f"{name}, levelled by the operator for one render",
+                    "stops": stops,
+                }
+            ),
+            encoding="utf-8",
+            newline="\n",
+        )
+    return directory
+
+
 def palette_space(what: str, **ask):
     """One question about palette space, answered by the module that defines it."""
     completed = subprocess.run(

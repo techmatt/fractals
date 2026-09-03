@@ -248,7 +248,15 @@ def ledger_rows(keys) -> dict[str, dict]:
         for line in handle:
             if not line.strip():
                 continue
-            row = json.loads(line)
+            try:
+                row = json.loads(line)
+            except json.JSONDecodeError:
+                # A run next door appends to this file while a figure reads it, so the
+                # last line can be half-written. Skipping an unreadable row is safe here
+                # only because `resolve` refuses by name for every key it did not find —
+                # a torn row that happened to be a wanted one comes back as a refusal
+                # naming that key, never as a figure quietly drawn without it.
+                continue
             key = str(row.get("key"))
             if key in wanted:
                 found[key] = row
@@ -411,28 +419,12 @@ def levelled_colormap(pick: Pick, stamp: dict) -> Path:
     """
     name = str(pick.recipe["colormap"])
     replayed = renders.levelled_stops(name, stamp)
-    directory = (
-        renders.default_cache_root()
-        / "levelled"
-        / renders.spec_key("levelled", {"colormap": name, "curve": stamp["curve"]})
+    return renders.colormap_directory(
+        name,
+        replayed["kind"],
+        replayed["stops"],
+        renders.spec_key("levelled", {"colormap": name, "curve": stamp["curve"]}),
     )
-    made = directory / f"{name}.json"
-    if not made.is_file():
-        directory.mkdir(parents=True, exist_ok=True)
-        made.write_text(
-            json.dumps(
-                {
-                    "schema": 1,
-                    "name": name,
-                    "kind": replayed["kind"],
-                    "source": f"{name}, levelled by the operator for one render",
-                    "stops": replayed["stops"],
-                }
-            ),
-            encoding="utf-8",
-            newline=LF,
-        )
-    return directory
 
 
 def seat_picture(pick: Pick) -> Path:
