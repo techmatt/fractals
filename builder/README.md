@@ -201,7 +201,7 @@ carrying no palette at all; the **recipe** comes out of the candidate ledger, by
 lookup that stops as soon as it has the keys asked for. Never `headroom.population()`: a
 figure prompt has no business loading the pool a solve is solving over. `gallery_seat` is
 the source kind that addresses the result, and `fractal-wallpapers`' own
-`curate gallery resolve` does exactly these two reads.
+`curate solve resolve` does exactly these two reads.
 
 **A pick draws the recipe's frame, and that is not always the seat's location.** Picks are
 re-framed after seating, so the seat's `location` and the recipe's viewport can disagree —

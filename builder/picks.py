@@ -33,7 +33,7 @@ Two reads, and the split matters because a solve may be running next door.
   the ledger is the only store that holds them per recipe key. This is one pass of a
   file, never `headroom.population()` — the pool nothing here loads.
 
-`fractal-wallpapers`' own `curate gallery resolve` does exactly the same two reads, and
+`fractal-wallpapers`' own `curate solve resolve` does exactly the same two reads, and
 answers with the same pair; this is that path in-process, so a figure's provenance is
 written from the records rather than from a printout somebody pasted.
 
