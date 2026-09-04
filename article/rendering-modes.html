@@ -29,7 +29,6 @@
         <li><a href="#blending-modes-together">Blending modes together</a></li>
         <li><a href="#the-itinerary-mode">The itinerary mode</a></li>
         <li><a href="#direct-traps">Direct traps</a></li>
-        <li><a href="#one-judge-two-kinds">One judge, two kinds</a></li>
         <li><a href="#the-modes-the-pipeline-draws">The modes the pipeline draws</a></li>
         <li><a href="#beyond-this-catalog">Beyond this catalog</a></li>
         <li><a href="#one-discovery-many-wallpapers">One discovery, many wallpapers</a></li>
@@ -84,9 +83,10 @@
     <h2 id="fields-from-the-orbits-path">Fields from the orbit's path</h2>
 
     <p>Three modes keep smooth's recipe — one number per orbit, one continuous field — but
-    measure the path instead of the clock. Every figure on this page shows a location twice:
-    the smooth rendering on the left and the mode on the right, at the same location in the
-    same palette, so whatever changes between the two panels is the mode and nothing else.</p>
+    measure some property of the path instead of the clock. Every figure on this page shows a
+    location twice: the smooth rendering on the left and the mode on the right, at the same
+    location in the same palette, so whatever changes between the two panels is the mode and
+    nothing else.</p>
 
     <p><i>Triangle-inequality average</i> (tia) checks, at every step, where the orbit
     actually landed inside the range it could possibly have landed in. Before the step, the
@@ -190,35 +190,18 @@
     <p>The <i>itinerary</i> mode comes from a classical idea in the study of dynamics: instead
     of asking <em>when</em> an orbit escapes, ask <em>where it goes on the way</em>. Cut the
     plane into four equal angular sectors around the origin, follow the orbit, and write down
-    the sequence of sectors it visits. That sequence is the orbit's itinerary — its route,
-    recorded coarsely — and the mode turns it into a number by reading the sector indices as
-    digits after the point in base four, so the first few moves dominate the value and each
-    later move refines it. The engine keeps 26 digits, which is exactly as many as
-    double-precision arithmetic can hold before the deepest digits turn to rounding noise —
-    and rounding noise in an address doesn't blur the image, it bands it, so the depth is a
-    hard ceiling rather than a taste choice.</p>
-
-    <p>The result carves the image into territories of shared history: within a patch every
-    orbit opened with the same route, and the borders between patches are precisely where the
-    dynamics start to disagree — so the borders are sharp, and the image reads as stained
-    glass where smooth reads as airbrush. Rather than forming a field of its own, the
-    itinerary <em>shifts the palette</em>: the smooth rendering is drawn underneath — its
-    palette position taken from each pixel's rank in the frame rather than from the leveled
-    value — and each pixel's address rotates that position by up to half a turn, so
-    route-territories appear as coordinated recolorings of the classic structure.</p>
-
-    <p>The sharpest of those borders are the ones drawn by the first digit. On
-    Julia-set-style images, where each pixel is a different starting point, the very first
-    entry in the route would be the starting point itself — a value the iteration hasn't
-    produced — and its sector would record nothing but which quadrant the pixel sits in, a
-    hard wedge cut over the fractal rather than by it. The engine therefore starts reading the
-    itinerary one step in, at the first iterated point. That does not make the leading edges
-    soft — the first digit still splits the image into a few large territories with hard edges
-    between them — but it moves those edges off the raw quadrant lines and onto their
-    <em>preimages</em> under the map, which are curves the set itself draws. The first figure
-    row below shows what that looks like: a handful of bold, hard-edged regions whose
-    boundaries follow the fractal's own structure. On parameter-plane images every orbit
-    starts from the same point and the question never arises.</p>
+    the sequence of sectors it visits — its route, recorded coarsely — then read that sequence
+    as digits after the point in base four, so the first few moves dominate the value and each
+    later move refines it. The result carves the image into territories of shared history:
+    within a patch every orbit opened with the same route, and the borders between patches are
+    exactly where the dynamics start to disagree, so they are hard-edged, and the image reads
+    as stained glass where smooth reads as airbrush. The itinerary does not form a field of
+    its own; it <em>shifts the palette</em>. The smooth rendering is drawn underneath, and each
+    pixel's address rotates its palette position by up to half a turn, so the territories
+    appear as coordinated recolorings of the classic structure. (On Julia-set-style images,
+    where every pixel is its own starting point, the engine reads the route from the first
+    iterated point rather than the pixel itself — otherwise the leading digit would just cut
+    the picture into quadrants.)</p>
 
       <figure class="figure" data-figure="modes-itinerary">
         <a class="figure-open" href="../explorer/index.html?v=2&amp;f=julia&amp;cx=-0.7713889686976524&amp;cy=-0.10762203592208013&amp;m=itinerary&amp;x=-0.8715045448099162&amp;y=-0.18667305738748546&amp;w=1.094300797237734&amp;p=wallhaven_wallhaven-47xzoe" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/modes-itinerary.jpg" width="1316" height="822" alt="Two locations, each drawn twice: a smooth render beside an itinerary render of the same recipe."><span class="figure-open-mark" aria-hidden="true">↗</span></a>
@@ -239,8 +222,7 @@
     nothing alike — and the real axis alone, the family's one directional member. Because
     nothing is normalized per frame, direct traps are the only modes that don't adapt to the
     location they're pointed at: where near-misses are sparse they are spectacular, and where
-    near-misses are everywhere they wash out. They are drawn like every other mode and simply
-    live or die by the judge.</p>
+    near-misses are everywhere they wash out.</p>
 
       <figure class="figure" data-figure="modes-direct-trap-screen">
         <a class="figure-open" href="../explorer/index.html?v=2&amp;f=julia3&amp;cx=-0.1914639130015472&amp;cy=-1.0527513723190611&amp;m=direct_trap_screen&amp;x=0.42552177666526836&amp;y=0.03542798402482744&amp;w=0.5305332105250155&amp;p=wallhaven_wallhaven-2ex5zg" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/modes-direct-trap-screen.jpg" width="1316" height="822" alt="Two locations, each drawn twice: a smooth render beside a direct_trap_screen render of the same recipe."><span class="figure-open-mark" aria-hidden="true">↗</span></a>
@@ -257,19 +239,6 @@
         <figcaption>Smooth on the left, direct_trap_lines on the right — the real axis alone, the family's one directional member. Because nothing is normalized per frame, a direct trap does not adapt to where it is pointed: it lives or dies on how often these orbits happen to pass the line.</figcaption>
       </figure>
 
-    <h2 id="one-judge-two-kinds">One judge, two kinds</h2>
-
-    <p>Later in the pipeline, a trained judge scores finished renders
-    (<a href="training-judges.html">training judges</a>), and one judge covers this whole
-    roster. What splits in two is not the judge but what it is rating: the plain smooth
-    rendering is one <i>kind</i>, and <em>everything else</em> — every field, composite, and
-    trap variation on this page — is the other. The two kinds are rated separately, out of
-    pools kept apart, because the two questions turn out to be different: what makes a
-    classic smooth render beautiful is not what makes an engraved, striped, or thread-laced
-    render beautiful. The scale the two share is nominal only — the same score can mean a
-    keeper in one kind and an also-ran in the other, and neither reading is wrong.
-    Downstream, every mode is held to its own bar.</p>
-
     <h2 id="the-modes-the-pipeline-draws">The modes the pipeline draws</h2>
 
     <p>One structural fact shapes everything: the <em>search</em> for good locations
@@ -279,39 +248,43 @@
     takes a discovered location and tries renderings of it — one attempt in smooth and two in
     other modes, drawn without replacement from the rest of the roster.</p>
 
-    <p>The scoreboard so far, over every run and gallery pass to date — 546 wallpapers kept
-    out of 1,246 attempts in these modes:</p>
+    <p>Why search over modes at all, rather than pick the best one and use it everywhere?
+    Because a mode that makes one location sing fails spectacularly at the next, and good
+    smooth geometry is no protection. The table spreads every candidate this project has
+    rendered — a hundred thousand of them, in these thirteen modes — across the
+    <a href="training-judges.html#the-rating-scale">four-point scale</a>, counting only
+    locations whose smooth rendering scored a three or better, so every row starts from
+    geometry that already works. The scores are the judge's rather than mine: nobody has
+    looked at a hundred thousand pictures, and the judge's own readings run optimistic
+    against the ratings it was trained on, so a row is a machine's estimate of my taste and
+    not my taste itself. Even so, most of these modes spend most of their attempts at a one
+    or a two. That is the reason to try several modes at every location and keep whatever
+    survives.</p>
 
     <table>
       <thead>
-        <tr><th>mode</th><th>kept</th><th>of candidates tried</th></tr>
+        <tr><th>mode</th><th>1</th><th>2</th><th>3</th><th>4</th><th>candidates</th></tr>
       </thead>
       <tbody>
-        <tr><td>smooth</td><td>314</td><td>708</td></tr>
-        <tr><td>threads</td><td>42</td><td>54</td></tr>
-        <tr><td>itinerary</td><td>42</td><td>58</td></tr>
-        <tr><td>stripe</td><td>40</td><td>69</td></tr>
-        <tr><td>tia</td><td>34</td><td>61</td></tr>
-        <tr><td>smooth_stripe</td><td>33</td><td>56</td></tr>
-        <tr><td>smooth_angle_min</td><td>9</td><td>37</td></tr>
-        <tr><td>direct_trap_multiply</td><td>8</td><td>30</td></tr>
-        <tr><td>smooth_curvature</td><td>8</td><td>31</td></tr>
-        <tr><td>direct_trap_screen</td><td>7</td><td>41</td></tr>
-        <tr><td>direct_trap_lines</td><td>5</td><td>29</td></tr>
-        <tr><td>smooth_mean_angle</td><td>4</td><td>38</td></tr>
-        <tr><td>curvature</td><td>0</td><td>34</td></tr>
+        <tr><td>smooth</td><td>2%</td><td>15%</td><td>57%</td><td>26%</td><td>30,747</td></tr>
+        <tr><td>tia</td><td>9%</td><td>33%</td><td>44%</td><td>14%</td><td>10,437</td></tr>
+        <tr><td>stripe</td><td>19%</td><td>32%</td><td>35%</td><td>14%</td><td>10,564</td></tr>
+        <tr><td>curvature</td><td>48%</td><td>36%</td><td>13%</td><td>3%</td><td>12,080</td></tr>
+        <tr><td>smooth_stripe</td><td>18%</td><td>30%</td><td>39%</td><td>13%</td><td>2,872</td></tr>
+        <tr><td>smooth_curvature</td><td>29%</td><td>38%</td><td>27%</td><td>6%</td><td>3,745</td></tr>
+        <tr><td>smooth_mean_angle</td><td>46%</td><td>33%</td><td>16%</td><td>5%</td><td>4,556</td></tr>
+        <tr><td>smooth_angle_min</td><td>39%</td><td>34%</td><td>21%</td><td>6%</td><td>4,402</td></tr>
+        <tr><td>threads</td><td>5%</td><td>22%</td><td>50%</td><td>23%</td><td>2,870</td></tr>
+        <tr><td>itinerary</td><td>8%</td><td>35%</td><td>44%</td><td>13%</td><td>1,648</td></tr>
+        <tr><td>direct_trap_screen</td><td>31%</td><td>44%</td><td>19%</td><td>6%</td><td>5,149</td></tr>
+        <tr><td>direct_trap_multiply</td><td>34%</td><td>25%</td><td>34%</td><td>7%</td><td>8,421</td></tr>
+        <tr><td>direct_trap_lines</td><td>31%</td><td>47%</td><td>18%</td><td>4%</td><td>5,071</td></tr>
       </tbody>
     </table>
 
-    <p>Smooth accounts for more than half of everything kept — the classic rendering earns its
-    place as the default — while the rest spread across the roster, a few of them at rates
-    that rival it. The counts at the bottom are drawn from samples too small to write any
-    mode off, and a mode that keeps little in these attempts may still be the one that makes
-    a particular location work; that is the reason to keep drawing it.</p>
-
       <figure class="figure" data-figure="modes-gallery">
         <a class="figure-open" href="../explorer/index.html?v=2&amp;f=julia&amp;cx=-0.7548374821242281&amp;cy=-0.07387098369508416&amp;x=0.6986883196777741&amp;y=0.18609427076235419&amp;w=0.0006158665120853605&amp;p=gist_earth&amp;mirror=1" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/modes-gallery.jpg" width="1312" height="567" alt="One labeled thumbnail for each rendering mode the pipeline draws from, in the engine's catalog order."><span class="figure-open-mark" aria-hidden="true">↗</span></a>
-        <figcaption>Every rendering mode the pipeline draws from, one example each, in the engine's own catalog order. All thirteen are wallpapers the judges kept, taken at random from the gallery rather than chosen for this figure.</figcaption>
+        <figcaption>Every rendering mode the pipeline draws from when searching for wallpaper candidates at each location.</figcaption>
       </figure>
 
     <h2 id="beyond-this-catalog">Beyond this catalog</h2>
@@ -320,32 +293,42 @@
     accumulated many more ways to render these objects, and a few come up often enough to
     deserve a name and a pointer:</p>
 
-    <p><i>Distance estimation</i> tracks, alongside each orbit, how sensitively its endpoint
-    responds to nudging the pixel, and converts that into an estimate of the pixel's
-    <a href="https://en.wikipedia.org/wiki/Plotting_algorithms_for_the_Mandelbrot_set#Exterior_distance_estimation">distance
-    to the set's boundary</a> — rendered directly, the boundary becomes crisp filaments of
-    uniform width at any zoom, like a technical drawing of the fractal. <i>Normal-map
-    lighting</i> treats a field as terrain: read its slope, convert the slope to a surface
-    direction, and light the fractal as relief carved in material — the same
-    <a href="https://en.wikipedia.org/wiki/Normal_mapping">normal mapping</a> trick games use
-    to shade detailed surfaces cheaply. The
-    <i><a href="https://en.wikipedia.org/wiki/Buddhabrot">Buddhabrot</a></i> abandons
-    per-pixel coloring entirely: it follows the full orbits of millions of escaping points and
-    brightens every pixel each orbit passes through, building a glowing density image of where
-    the dynamics actually travel — something like an X-ray of the Mandelbrot set.
-    <i><a href="https://en.wikipedia.org/wiki/Plotting_algorithms_for_the_Mandelbrot_set#Histogram_coloring">Histogram
-    coloring</a></i> re-spreads the palette by rank rather than by raw value, so every color
-    gets used in proportion to how much of the image wants it — a cousin of the leveling step
-    from <a href="rendering-fundamentals.html">rendering fundamentals</a>, solving the same
-    problem a different way.
-    <i><a href="https://en.wikipedia.org/wiki/Fractal_flame">Fractal flames</a></i> leave
-    escape-time fractals altogether: they iterate a system of nonlinear functions and
-    accumulate the wandering point's path into a log-scaled density image, colored by which
-    functions the path took — a different mathematical object with its own dedicated tools.
-    And programs like <a href="https://www.ultrafractal.com/">Ultra Fractal</a> treat all of
-    this as an open library: thousands of user-written coloring algorithms, freely combined
-    with any fractal formula, stacked in Photoshop-style layers — a reminder that a rendering
-    mode is just a program, and there is no end of programs to write.</p>
+    <ul>
+      <li><i>Distance estimation</i> tracks, alongside each orbit, how sensitively its
+      endpoint responds to nudging the pixel, and converts that into an estimate of the
+      pixel's
+      <a href="https://en.wikipedia.org/wiki/Plotting_algorithms_for_the_Mandelbrot_set#Exterior_distance_estimation">distance
+      to the set's boundary</a> — rendered directly, the boundary becomes crisp filaments of
+      uniform width at any zoom, like a technical drawing of the fractal.</li>
+
+      <li><i>Normal-map lighting</i> treats a field as terrain: read its slope, convert the
+      slope to a surface direction, and light the fractal as relief carved in material — the
+      same <a href="https://en.wikipedia.org/wiki/Normal_mapping">normal mapping</a> trick
+      games use to shade detailed surfaces cheaply.</li>
+
+      <li>The <i><a href="https://en.wikipedia.org/wiki/Buddhabrot">Buddhabrot</a></i>
+      abandons per-pixel coloring entirely: it follows the full orbits of millions of
+      escaping points and brightens every pixel each orbit passes through, building a glowing
+      density image of where the dynamics actually travel — something like an X-ray of the
+      Mandelbrot set.</li>
+
+      <li><i><a href="https://en.wikipedia.org/wiki/Plotting_algorithms_for_the_Mandelbrot_set#Histogram_coloring">Histogram
+      coloring</a></i> re-spreads the palette by rank rather than by raw value, so every color
+      gets used in proportion to how much of the image wants it — a cousin of the leveling
+      step from <a href="rendering-fundamentals.html">rendering fundamentals</a>, solving the
+      same problem a different way.</li>
+
+      <li><i><a href="https://en.wikipedia.org/wiki/Fractal_flame">Fractal flames</a></i>
+      leave escape-time fractals altogether: they iterate a system of nonlinear functions and
+      accumulate the wandering point's path into a log-scaled density image, colored by which
+      functions the path took — a different mathematical object with its own dedicated
+      tools.</li>
+
+      <li>Programs like <a href="https://www.ultrafractal.com/">Ultra Fractal</a> treat all of
+      this as an open library: thousands of user-written coloring algorithms, freely combined
+      with any fractal formula, stacked in Photoshop-style layers — a reminder that a
+      rendering mode is just a program, and there is no end of programs to write.</li>
+    </ul>
 
     <h2 id="one-discovery-many-wallpapers">One discovery, many wallpapers</h2>
 

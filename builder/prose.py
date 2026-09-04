@@ -56,6 +56,7 @@ _MASTER_COMMENT = re.compile(r"<!--.*?-->", re.S)
 _MASTER_FIGURE = re.compile(r"^\[FIGURE:.*?\]$", re.M)
 _MASTER_TABLE = re.compile(r"^\[TABLE:[^\]]*\]\n(.*?)^\[/TABLE\]$", re.S | re.M)
 _MASTER_PENDING = re.compile(r"\[PENDING —.*?\]", re.S)
+_MASTER_BULLET = re.compile(r"^- ", re.M)
 _MARKDOWN_LINK = re.compile(r"\[([^\]]+)\]\([^)]*\)")
 _WIKI_LINK = re.compile(r"\[([^\]]+)\]")
 _INLINE_TAG = re.compile(r"</?(?:i|em|b|strong|code)>")
@@ -198,6 +199,12 @@ def words_of_master(text: str, divergences: tuple[Divergence, ...] = ()) -> str:
     A `[TABLE: ...]` block keeps its rows and loses its two marker lines and its column
     separators, so it lands on the same words the page's `<tbody>` does.
 
+    A list marker goes the way every other markdown marker here goes. `#`, `*` and a
+    backtick are already dropped as markup rather than as words, and a `- ` opening a
+    line is the same kind of thing: the page spells that list as `<li>`, whose tags
+    vanish with every other tag, so leaving the hyphen in would part the two sides on a
+    character neither of them is prose.
+
     An HTML comment goes out here for the reason it goes out of the page: a master's
     standing note to whoever places it — *this number wants re-checking against a run
     nobody has made yet* — is carried across to the page as a comment on purpose, and it
@@ -209,6 +216,7 @@ def words_of_master(text: str, divergences: tuple[Divergence, ...] = ()) -> str:
     text = _MASTER_FIGURE.sub("", text)
     text = _MASTER_TABLE.sub(lambda found: found.group(1).replace("|", " "), text)
     text = _MASTER_PENDING.sub("", text)
+    text = _MASTER_BULLET.sub("", text)
     for divergence in divergences:
         text = text.replace(divergence.master, divergence.page)
     text = _MARKDOWN_LINK.sub(r"\1", text)

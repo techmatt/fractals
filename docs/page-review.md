@@ -201,12 +201,27 @@ are records of passes made while the mode was live, so clearing them is re-picki
 panels — Matt's call — and, for `gallery-floors`, a curation pass solved under the
 current roster, which no record next door yet holds.
 
+**The Rendering modes table is the site's one machine-scored number, 2026-09-04.** Every
+other figure the article quotes counts something a person decided; the quality
+distribution on `rendering-modes.html` is the shipped render judge's own reading of
+102,562 candidates out of `curation/candidate_ledger`'s score sidecar, at the live
+artifact `481fe058`, conditioned on the location's own smooth candidate clearing that
+head's measured `SMOOTH_RELEASE_FLOOR`. Matt chose that population over his labelled
+renders for the n. **Two properties of it are why this note exists.** The judge's raw
+probabilities read high — its labels-derived crossover for *the human said three or
+better* sits at 0.780 rather than at a half — so the shares are the judge's opinion and
+not a calibrated estimate of Matt's, which is what the paragraph above the table says in
+one clause. And every score in that sidecar is keyed to one judge artifact, so a **judge
+adoption invalidates the whole table** at once and leaves it a reading nothing emits any
+more. It carries no `stale_when` because it is prose rather than a figure row, which is
+why that is written here.
+
 | page | written | prose master | last review round | figures | what is held, and why |
 | --- | --- | --- | --- | --- | --- |
 | `overview.html` | yes | `Overview v1.md` | none | 2 placed | — |
 | `escape-time-fractals.html` | yes | none — the HTML is its own master | none | 7 placed | — |
 | `rendering-fundamentals.html` | yes | none — the HTML is its own master | none | 6 placed | — |
-| `rendering-modes.html` | yes | `Rendering modes v2.md` | none | 13 placed | **the prose pass is done**: v2 placed 2026-09-04, and the page now carries twelve per-mode figures — one 2×2 a mode, `smooth` beside the mode at two locations, off Matt's picks from the recorded gallery `20260904T023748Z` — each one directly after its mode's paragraph, plus `modes-gallery`. v2 also carries the retirement below |
+| `rendering-modes.html` | yes | `Rendering modes v3.md` | none | 13 placed | **the prose pass is done**: v3 placed 2026-09-04 over v2 of the same day, and the page carries twelve per-mode figures — one 2×2 a mode, `smooth` beside the mode at two locations, off Matt's picks from the recorded gallery `20260904T023748Z` — each one directly after its mode's paragraph, plus `modes-gallery`. v3 drops the *One judge, two kinds* section and replaces the kept-out-of-tried scoreboard with a **quality distribution** read off the candidate ledger's score sidecar rather than off the label stores: see the note below. v3 also carries the retirement above |
 | `finding-good-locations.html` | yes | `Finding good locations v5.md` | applied 2026-08-21 | 12 placed | placed 2026-09-01 with the reframing channel; the master carries eleven `[FIGURE]` markers and the page twelve blocks — `locations-walk-root` landed after v4 was approved, and `locations-found-and-finished` stands where the marker says `locations-q4-gallery` |
 | `training-judges.html` | yes | `Training judges v5.md` | applied 2026-08-21 | 3 placed | — |
 | `color-palettes.html` | yes | `Color palettes v5.md` | applied 2026-09-02 | 7 placed | — |
