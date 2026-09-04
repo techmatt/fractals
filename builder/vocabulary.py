@@ -22,6 +22,18 @@ itself a hit. The compiled patterns are unaffected.
   to be copied across to arrive: it can be written fresh by somebody who met it in a
   report.
 
+**A retired mode's name is held the same way, and for the same reason** *(2026-09-04)*.
+The mode the Rendering modes v2 placement took off the site is banned in reader-facing
+text by ruling — it is named nowhere a reader can see it, which is why it is not spelled
+in this file either. It is not on the list below, because the list is a sweep over tracked
+text and the only tracked text that still spells it is `article/figures.jsonl`: four
+figures on three other pages were drawn while the mode was live, and a `provenance` line
+is the record of how a picture that is still on the site was made. Banning the name there
+would forbid the four places it is *needed* and catch none of the two where a reader
+actually meets it, because those two draw it into a JPEG and a PNG that this sweep skips
+as binary. The list waits on those four figures — `docs/page-review.md` says which they
+are and what each needs.
+
 One banned word is deliberately **not** here. `writing-guidance.md` bans **colormap** in
 reader-facing text — the article's word for the thing is *palette*, and a reader who meets
 both learns two names for one idea — and it stops at the reader, because the same word is

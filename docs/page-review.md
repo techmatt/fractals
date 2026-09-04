@@ -188,12 +188,25 @@ His first pass over the site was applied on 2026-09-01, and he is reviewing ever
 himself now — which is why two rows of the figure registry carry a repetition marked *not
 yet judged* rather than a decision.
 
+**One rendering mode was retired from the site on 2026-09-04**, by a ruling in the
+wallpaper project's `mode_policy` that took it to weight 0. Its Rendering modes
+paragraph, its figure and asset, its scoreboard row, its `explorer/modes.jsonl` entry
+and its line in `permalink.js`'s typed `MODES` are all gone, and the picker's frozen
+roster went 18 → 17. This is the one line on the site that records the removal; the
+mode is named nowhere, which is the ruling. **Four figures on three other pages still
+carry it** and are the reason the name is not yet in `builder/vocabulary.py`'s banned
+list: `gallery-floors` and `wallpapers-mine` draw its name into the picture, and
+`overview-pipeline` and `gallery-output` each stand on panels rendered in it. All four
+are records of passes made while the mode was live, so clearing them is re-picking
+panels — Matt's call — and, for `gallery-floors`, a curation pass solved under the
+current roster, which no record next door yet holds.
+
 | page | written | prose master | last review round | figures | what is held, and why |
 | --- | --- | --- | --- | --- | --- |
 | `overview.html` | yes | `Overview v1.md` | none | 2 placed | — |
 | `escape-time-fractals.html` | yes | none — the HTML is its own master | none | 7 placed | — |
 | `rendering-fundamentals.html` | yes | none — the HTML is its own master | none | 6 placed | — |
-| `rendering-modes.html` | yes | `Rendering modes v1.md` | none | 14 placed | the figures were rebuilt on 2026-09-04: one 2×2 a mode — `smooth` beside the mode at two locations, off Matt's picks from the recorded gallery `20260904T023748Z` — replacing the four multi-mode sheets and the two single-wallpaper figures. The prose is **unchanged and now behind the pictures**; see the report for the list a prose pass has to work |
+| `rendering-modes.html` | yes | `Rendering modes v2.md` | none | 13 placed | **the prose pass is done**: v2 placed 2026-09-04, and the page now carries twelve per-mode figures — one 2×2 a mode, `smooth` beside the mode at two locations, off Matt's picks from the recorded gallery `20260904T023748Z` — each one directly after its mode's paragraph, plus `modes-gallery`. v2 also carries the retirement below |
 | `finding-good-locations.html` | yes | `Finding good locations v5.md` | applied 2026-08-21 | 12 placed | placed 2026-09-01 with the reframing channel; the master carries eleven `[FIGURE]` markers and the page twelve blocks — `locations-walk-root` landed after v4 was approved, and `locations-found-and-finished` stands where the marker says `locations-q4-gallery` |
 | `training-judges.html` | yes | `Training judges v5.md` | applied 2026-08-21 | 3 placed | — |
 | `color-palettes.html` | yes | `Color palettes v5.md` | applied 2026-09-02 | 7 placed | — |

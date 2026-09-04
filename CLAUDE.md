@@ -162,13 +162,16 @@ keeps the mechanics. **Every apply round ends by distilling that round's general
   differently — a rebake nobody ran on purpose would have taken the picker from 77 entries
   to 277. Widening it is an edit to the record.
 - **And so is which modes it offers** *(2026-09-01)*. `explorer/modes.jsonl` names the
-  modes `catalog.js` is baked from, in the order the picker shows them. **18 are offered,
+  modes `catalog.js` is baked from, in the order the picker shows them. **17 are offered,
   and that number is frozen.** The bake reads the names from it and each mode's identity
   line and curve from the engine catalog next door, so `catalog.js` reproduces byte for
   byte the way `palettes.js` does and has no clock carve-out. This one broke the same way
   the palettes did, from the other side: the bake asked the engine "which of you are
   production", the engine promoted `tail_itinerary`, and the next rebake would have put a
-  nineteenth mode in front of a reader. The list is written three times — the record, the
+  nineteenth mode in front of a reader. It was 18 until 2026-09-04, when a mode this site
+  retired was struck from the record — the same edit in the other direction, and the
+  reason the number is stated here as a frozen count rather than as the engine's roster.
+  The list is written three times — the record, the
   baked module, and `permalink.js`'s typed `MODES` — and both ties are checked, `bake`
   holding the record to the module and `permalink.test.mjs` the module to the contract.
 - **No location is reused across the site unless the repetition is intentional**

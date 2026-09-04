@@ -82,7 +82,6 @@ const COST = {
   direct_trap_lines: { field: 3.98, shade: 0 },
   direct_trap_screen: { field: 4.51, shade: 0 },
   direct_trap_multiply: { field: 5.65, shade: 0 },
-  exp_smoothing: { field: 6.45, shade: 0.044 },
   tia: { field: 6.77, shade: 0.208 },
   threads: { field: 7.03, shade: 0.091 },
   direct_trap_ring: { field: 7.1, shade: 0 },

@@ -157,7 +157,6 @@ MODE_WORDS = {
     "smooth": "smooth",
     "tia": "triangle-inequality average",
     "stripe": "stripe average",
-    "exp_smoothing": "exponential smoothing",
     "curvature": "curvature",
     "smooth_curvature": "curvature over smooth",
     "smooth_stripe": "stripe over smooth",
@@ -597,7 +596,6 @@ MODES_ROSTER = (
     "smooth",
     "tia",
     "stripe",
-    "exp_smoothing",
     "curvature",
     "smooth_mean_angle",
     "smooth_angle_min",
@@ -610,10 +608,13 @@ MODES_ROSTER = (
     "itinerary",
 )
 
-#: The roster's shape: fourteen panels in fifteen cells, five across. The cell left over
-#: is well and nothing else. It used to carry a legend that said what the caption says a
-#: few lines below the picture, which is the same paragraph twice — the caption is the
-#: caption *(Matt, 2026-09-02, taking the last of these off the page)*.
+#: The roster's shape: thirteen panels in fifteen cells, five across. The two cells left
+#: over are well and nothing else. One of them was a panel until the roster lost a mode
+#: to a niche ruling *(2026-09-04)*, and the sheet keeps its five-across shape rather
+#: than re-cutting to a width no other figure on the page uses. The other used to carry a
+#: legend that said what the caption says a few lines below the picture, which is the same
+#: paragraph twice — the caption is the caption *(Matt, 2026-09-02, taking the last of
+#: these off the page)*.
 MODES_COLUMNS = 5
 MODES_ROWS = 3
 
@@ -622,7 +623,7 @@ MODES_ROWS = 3
 #: is for the front page, which meets a rendering before the vocabulary exists.
 MODES_LABEL_LINES = 1
 
-#: How the fourteen seats were arrived at, which is the one thing the resolution cannot
+#: How the thirteen seats were arrived at, which is the one thing the resolution cannot
 #: say for itself. Written down because a random draw is only a record if the draw is.
 MODES_DRAW = (
     "Which seat stands for a mode is a uniform random draw over that mode's seats of the "
@@ -805,7 +806,6 @@ MODE_FIGURES = {
     "modes-tia": "tia",
     "modes-stripe": "stripe",
     "modes-curvature": "curvature",
-    "modes-exp-smoothing": "exp_smoothing",
     "modes-smooth-mean-angle": "smooth_mean_angle",
     "modes-smooth-angle-min": "smooth_angle_min",
     "modes-smooth-stripe": "smooth_stripe",
@@ -1404,7 +1404,7 @@ def provenance(
 
     `chosen` is where a figure says how its seats were arrived at, which is the one thing
     the resolution above cannot say for itself — the hook's six are Matt's, and the modes
-    roster's fourteen are a seeded random draw.
+    roster's thirteen are a seeded random draw.
     """
     stamped = sorted({pick.stamp for pick in picks})
     lines = [
@@ -1432,8 +1432,8 @@ def provenance(
 def _pair(identifier: str):
     """One per-mode figure's maker, bound to the figure it draws.
 
-    `MAKERS` holds callables of no arguments, so the thirteen pair figures each get one
-    of these rather than thirteen copies of the same function. The name it answers to is
+    `MAKERS` holds callables of no arguments, so the twelve pair figures each get one
+    of these rather than twelve copies of the same function. The name it answers to is
     the real function's, which is what `recipe` writes down and what `check` holds to
     still existing.
     """

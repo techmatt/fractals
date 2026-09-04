@@ -5,9 +5,9 @@ every family the wallpapers are drawn from, in every mode the pipeline ships, un
 of the 77 curated palettes, and copy a link to whatever is on screen. Every figure of the
 article that this page can draw again carries a link straight into it.
 
-**Nine families, eighteen modes, `f64`.** The parameter planes `mandelbrot` and
+**Nine families, seventeen modes, `f64`.** The parameter planes `mandelbrot` and
 `multibrot3`–`multibrot5`, the dynamical planes `julia`–`julia5` and `phoenix`, the
-engine's whole production mode roster with the parameters its catalog settles for each,
+modes `modes.jsonl` offers with the parameters the engine's catalog settles for each,
 and double-precision arithmetic that stops zooming where the engine says two neighbouring
 samples have become the same number. What is **not** here: fractional degrees, which are
 render-only and have no home view to open at; the niche `de` mode, which the engine
@@ -59,8 +59,8 @@ recorded here so the reasoning behind them is not lost:
   `f64` is IEEE-754 with no x87 excess precision to diverge through. **0 of 3,686,400
   pixels** differ between a 2560x1440 `ss=4` download and `fractal-engine render` of the
   same spec, and the tree is held to that.
-- **The scope is the whole production roster.** Draft 1 was scoped to one family in one
-  mode — mandelbrot in `smooth` — and that is long since passed: nine families, eighteen
+- **The scope is the whole offered roster.** Draft 1 was scoped to one family in one
+  mode — mandelbrot in `smooth` — and that is long since passed: nine families, seventeen
   modes, every mode parameter the engine's catalog writes down. What the widening cost is
   *no loop of its own* below: the collapse draft 1 got for free by rendering one family
   in one mode had to be bought back, first by hand and now from the engine's own table.
@@ -79,7 +79,7 @@ permalink.js          the link contract — parse, validate, canonicalize
 permalink.test.mjs    34 tests, `node --test explorer/permalink.test.mjs`
 bands.test.mjs        3 tests: the pool cuts the frame, never what is in it
 palettes.jsonl        the roster palettes.js is baked from; 77 of them offered
-modes.jsonl           the roster catalog.js is baked from: the 18 modes the picker offers
+modes.jsonl           the roster catalog.js is baked from: the 17 modes the picker offers
 palettes.js           generated: the colormaps, by name, curated or drawn-in
 catalog.js            generated: the offered modes, their curves, the anchors' constants
 links.jsonl           generated: every figure and tile, as a link here or a reason not
@@ -487,7 +487,7 @@ node explorer/bench/families.mjs [generic.wasm]     # every family, smooth, at i
 
 **Every figure below is the specialized build, and a figure from before it is not a
 number about this tree.** The rewrite that put `field::sweep_row` under `compute_band`
-moved thirteen of the eighteen modes by 1.41x to 4.18x, so a pre-specialization reading —
+moved thirteen of the eighteen modes it was measured over by 1.41x to 4.18x, so a pre-specialization reading —
 draft 1's, the `x generic` column that has been retired, anything in a report written
 before the manifest's third `engine_changes` line — describes a module this repository no
 longer serves. Re-measure rather than quote: the four harnesses below are here so that
@@ -595,7 +595,9 @@ read as a code change. `before` is the committed module with its own nine call s
 `compute_band` over the whole frame; `shade` is the colouring pass, which a palette change
 pays again and nothing else does, and which this change does not touch. A direct trap has
 no shade because its band arrives painted. Rows are in the order the page now pays for
-them.
+them. **Seventeen rows for the eighteen modes measured**: one row came off when the
+site retired that mode from the picker (2026-09-04). The module is unchanged and so
+is every figure here — what left is a line about a mode this page no longer offers.
 
 | mode | before | after | x | x smooth | shade |
 | --- | --- | --- | --- | --- | --- |
@@ -606,7 +608,6 @@ them.
 | `direct_trap_lines` | 4.20 s | 3.98 s | 1.06 | 2.56 | — |
 | `direct_trap_screen` | 4.41 s | 4.51 s | 0.98 | 2.90 | — |
 | `direct_trap_multiply` | 5.44 s | 5.65 s | 0.96 | 3.64 | — |
-| `exp_smoothing` | 13.35 s | 6.45 s | 2.07 | 4.15 | 44 ms |
 | `tia` | 10.93 s | 6.77 s | 1.61 | 4.36 | 208 ms |
 | `threads` | 17.74 s | 7.03 s | 2.52 | 4.52 | 91 ms |
 | `direct_trap_ring` | 7.13 s | 7.10 s | 1.00 | 4.57 | — |
@@ -618,7 +619,7 @@ them.
 | `stripe` | 26.93 s | 18.55 s | 1.45 | 11.94 | 203 ms |
 | `smooth_stripe` | 27.49 s | 19.05 s | 1.44 | 12.26 | 221 ms |
 
-**Thirteen modes got faster and the range is 1.41x to 4.18x**, which is not one number and
+**Twelve of the modes listed got faster and the range is 1.41x to 4.18x**, which is not one number and
 was never going to be: what the collapse is worth to a mode is what share of its
 per-iteration work the eleven channel checks and the `Orbit` were. `trap_circle` and its
 composite are the extreme — a trap test is a couple of comparisons, so the overhead was
@@ -671,7 +672,7 @@ every field reduction, both blends, the trap painter, all nine families — plus
 614,666: the whole table is twelve channel sets over nine families and it arrives whole,
 where the nine call sites it replaced were 13.4 KB. That is a plain fact and not a gate —
 no size outcome was going to block this, and the alternative, instantiating by hand only
-the nine channel sets the explorer's eighteen modes actually reach, is a hand-written copy
+the nine channel sets the explorer's own modes actually reach, is a hand-written copy
 of the table again, which is the thing the change is for. **A tenth of the raw growth is
 what a reader downloads**: the transfer is gzipped, and 14 KB on 164 is the honest figure
 to compare against 8.4 seconds off `stripe`.
@@ -724,7 +725,7 @@ v · f · cx · cy · px · py · zx · zy · m · the mode's parameters · x ·
   meant something else, silently, for four fifths of the Phoenix work there is. Absent
   still means the origin, so every link written before the key existed draws exactly what
   it drew — which is why this is a widening and not a version 3.
-- **`m`** — the mode, one of the engine's eighteen production names. `de` is named and
+- **`m`** — the mode, one of the seventeen `modes.jsonl` names. `de` is named and
   refused with its own reason: it is niche rather than broken, the engine renders it by
   name, and no production draw picks it.
 - **The mode's parameters** — a number the engine's mode catalog writes down for that
@@ -916,7 +917,7 @@ makes; the module bakes from `fractal-engine modes` and the project's shipped an
 `check` compared it below its two clock fields rather than byte for byte. Then the engine
 promoted `tail_itinerary`, and the next bake would have put a nineteenth entry in the
 picker and a nineteenth name in the contract — the palette drop's failure mode exactly,
-arriving from the other repository. So `modes.jsonl` names the eighteen the picker offers,
+arriving from the other repository. So `modes.jsonl` names the seventeen the picker offers,
 in the order it shows them; the bake takes each mode's identity line and its curve from
 the catalog next door and offers nothing the record does not name, and its stamp is read
 off the record's method row, so `catalog.js` now reproduces **byte for byte** like

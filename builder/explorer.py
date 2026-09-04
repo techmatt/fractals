@@ -55,7 +55,7 @@ module byte for byte — which `builder check` asserts.
 be derived — every mode the engine catalog called `production` — and the engine promoted
 `tail_itinerary`, so the next bake would have put a nineteenth entry in the picker and a
 nineteenth name in the contract without anybody deciding to. `explorer/modes.jsonl` names
-the eighteen the picker offers, in the order it shows them; the bake takes each mode's
+the seventeen the picker offers, in the order it shows them; the bake takes each mode's
 identity line and its curve from the catalog next door and offers nothing the record does
 not name. There are three copies of that list and all three are held together: the record
 is held to the module by `builder check`'s bake, and the module to `permalink.js`'s typed

@@ -132,12 +132,11 @@ export const CONSTANTS = {
 /** Every constant key the contract spells, in emit order. */
 const CONSTANT_KEYS = ["cx", "cy", "px", "py", "zx", "zy"];
 
-/** The modes this page draws: the engine's production roster, in catalog order. */
+/** The modes this page draws: `modes.jsonl`'s roster, in catalog order. */
 export const MODES = [
   "smooth",
   "tia",
   "stripe",
-  "exp_smoothing",
   "gaussian_int",
   "trap_circle",
   "curvature",
@@ -155,10 +154,13 @@ export const MODES = [
 ];
 
 /**
- * The modes the engine has and production does not draw, with the reason.
+ * Names the engine answers to that this page refuses, with the reason to say back.
  *
- * One entry. `de` is niche rather than broken — the engine renders it on demand by
- * name — and it stays out of here because this page offers what the project ships.
+ * One entry, and it is not a census: a name absent from `MODES` and absent here is
+ * refused as unknown, which is the right answer for one this site does not carry. What
+ * earns an entry is a name a reader could reasonably expect to work — `de` is niche
+ * rather than broken, the engine renders it on demand, and a bare "there is no mode
+ * called de" would read as a bug in this page rather than as a choice.
  */
 export const NICHE_MODES = {
   de: "the distance estimate is a niche mode: the engine renders it by name, and no " +

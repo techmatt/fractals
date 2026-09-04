@@ -30,7 +30,7 @@ const FAMILIES = {
   },
 };
 const MODES = [
-  "smooth", "tia", "stripe", "exp_smoothing", "gaussian_int", "trap_circle", "curvature",
+  "smooth", "tia", "stripe", "gaussian_int", "trap_circle", "curvature",
   "smooth_mean_angle", "smooth_angle_min", "smooth_trap_circle", "smooth_stripe",
   "smooth_curvature", "direct_trap_ring", "direct_trap_screen", "direct_trap_multiply",
   "direct_trap_lines", "threads", "itinerary",

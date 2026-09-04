@@ -16,7 +16,6 @@
 {"schema": 1, "kind": "link", "id": "figure:modes-tia", "link": "v=2&f=multibrot4&m=tia&x=-0.0654442224838454&y=0.7190498713504007&w=0.0000004659891208886683&p=cmr.jungle&mirror=1", "from": "panel 2"}
 {"schema": 1, "kind": "link", "id": "figure:modes-stripe", "link": "v=2&f=phoenix&cx=-1.4989410059318877&cy=0.1097374257111832&px=-0.20267646248610371&py=-0.04464357650761742&zx=0.02848561971452761&zy=-0.06491096519398402&m=stripe&x=-0.9980313058062354&y=0.04640778794693713&w=0.00013679081090762718&p=795548-3840x2160-desktop-4k-fractal-background", "from": "panel 2"}
 {"schema": 1, "kind": "link", "id": "figure:modes-curvature", "no_link": "incomplete_provenance", "why": "no colormap is written down"}
-{"schema": 1, "kind": "link", "id": "figure:modes-exp-smoothing", "no_link": "incomplete_provenance", "why": "no colormap is written down"}
 {"schema": 1, "kind": "link", "id": "figure:modes-smooth-mean-angle", "no_link": "incomplete_provenance", "why": "no colormap is written down"}
 {"schema": 1, "kind": "link", "id": "figure:modes-smooth-angle-min", "no_link": "incomplete_provenance", "why": "no colormap is written down"}
 {"schema": 1, "kind": "link", "id": "figure:modes-smooth-stripe", "link": "v=2&m=smooth_stripe&x=-0.7805192962538873&y=-0.13533181800963165&w=0.000000012327752366020986&p=Orchid%20Procession", "from": "panel 2"}
