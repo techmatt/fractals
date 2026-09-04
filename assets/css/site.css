@@ -258,6 +258,16 @@ footer > * {
 
 .prose td:not(:first-child) { font-variant-numeric: tabular-nums; }
 
+/* A line under a table saying how its numbers were taken. It is a fact about the
+   measurement rather than something the prose argues, so it is set small and dim and
+   pulled up against the table — a paragraph's worth of leading under it would read as
+   the prose starting again. */
+.prose .table-note {
+  margin: -0.6em 0 1.4em;
+  font-size: 0.875rem;
+  color: var(--ink-dim);
+}
+
 /* An iteration, set the way a paper sets one: its own line, out of the paragraph
    rhythm, and monospaced, with indices and powers as real subscripts and superscripts.
    Zeroing their line-height keeps a formula's line from growing taller than the rest. */

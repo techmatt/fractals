@@ -249,38 +249,45 @@
     other modes, drawn without replacement from the rest of the roster.</p>
 
     <p>Why search over modes at all, rather than pick the best one and use it everywhere?
-    Because a mode that makes one location sing fails spectacularly at the next, and good
-    smooth geometry is no protection. The table spreads every candidate this project has
-    rendered — a hundred thousand of them, in these thirteen modes — across the
-    <a href="training-judges.html#the-rating-scale">four-point scale</a>, counting only
-    locations whose smooth rendering scored a three or better, so every row starts from
-    geometry that already works. The scores are the judge's rather than mine: nobody has
+    Because a mode that works great for one location fails spectacularly at the next, and
+    good smooth geometry is no protection. The table below shows, for each mode, how the
+    judge's ratings of every candidate the pipeline has rendered spread across the four
+    quality tiers from <a href="training-judges.html">training judges</a> — counting only
+    locations whose smooth rendering the judge rates a three or better, so every row starts
+    from geometry that already works. The scores are the judge's rather than mine: nobody has
     looked at a hundred thousand pictures, and the judge's own readings run optimistic
     against the ratings it was trained on, so a row is a machine's estimate of my taste and
     not my taste itself. Even so, most of these modes spend most of their attempts at a one
-    or a two. That is the reason to try several modes at every location and keep whatever
-    survives.</p>
+    or a two, and some, like curvature, need roughly 30 attempts to find one strong result.
+    That is the reason to try several modes at every location and keep whatever survives. The
+    last two columns are what an attempt costs: the engine time to render one candidate at
+    the size the judge scores (640×360, supersampled 2×) and to render a finished wallpaper
+    at full size (2560×1440, supersampled 4×).</p>
 
     <table>
       <thead>
-        <tr><th>mode</th><th>1</th><th>2</th><th>3</th><th>4</th><th>candidates</th></tr>
+        <tr><th>mode</th><th>1</th><th>2</th><th>3</th><th>4</th><th>candidates</th><th>candidate render</th><th>wallpaper render</th></tr>
       </thead>
       <tbody>
-        <tr><td>smooth</td><td>2%</td><td>15%</td><td>57%</td><td>26%</td><td>30,747</td></tr>
-        <tr><td>tia</td><td>9%</td><td>33%</td><td>44%</td><td>14%</td><td>10,437</td></tr>
-        <tr><td>stripe</td><td>19%</td><td>32%</td><td>35%</td><td>14%</td><td>10,564</td></tr>
-        <tr><td>curvature</td><td>48%</td><td>36%</td><td>13%</td><td>3%</td><td>12,080</td></tr>
-        <tr><td>smooth_stripe</td><td>18%</td><td>30%</td><td>39%</td><td>13%</td><td>2,872</td></tr>
-        <tr><td>smooth_curvature</td><td>29%</td><td>38%</td><td>27%</td><td>6%</td><td>3,745</td></tr>
-        <tr><td>smooth_mean_angle</td><td>46%</td><td>33%</td><td>16%</td><td>5%</td><td>4,556</td></tr>
-        <tr><td>smooth_angle_min</td><td>39%</td><td>34%</td><td>21%</td><td>6%</td><td>4,402</td></tr>
-        <tr><td>threads</td><td>5%</td><td>22%</td><td>50%</td><td>23%</td><td>2,870</td></tr>
-        <tr><td>itinerary</td><td>8%</td><td>35%</td><td>44%</td><td>13%</td><td>1,648</td></tr>
-        <tr><td>direct_trap_screen</td><td>31%</td><td>44%</td><td>19%</td><td>6%</td><td>5,149</td></tr>
-        <tr><td>direct_trap_multiply</td><td>34%</td><td>25%</td><td>34%</td><td>7%</td><td>8,421</td></tr>
-        <tr><td>direct_trap_lines</td><td>31%</td><td>47%</td><td>18%</td><td>4%</td><td>5,071</td></tr>
+        <tr><td>smooth</td><td>2%</td><td>15%</td><td>57%</td><td>26%</td><td>30,747</td><td>0.7</td><td>43.5</td></tr>
+        <tr><td>tia</td><td>9%</td><td>33%</td><td>44%</td><td>14%</td><td>10,437</td><td>0.6</td><td>41.1</td></tr>
+        <tr><td>stripe</td><td>19%</td><td>32%</td><td>35%</td><td>14%</td><td>10,564</td><td>1.2</td><td>75.1</td></tr>
+        <tr><td>curvature</td><td>48%</td><td>36%</td><td>13%</td><td>3%</td><td>12,080</td><td>0.9</td><td>56.9</td></tr>
+        <tr><td>smooth_stripe</td><td>18%</td><td>30%</td><td>39%</td><td>13%</td><td>2,872</td><td>7.2</td><td>460.5</td></tr>
+        <tr><td>smooth_curvature</td><td>29%</td><td>38%</td><td>27%</td><td>6%</td><td>3,745</td><td>4.6</td><td>296.9</td></tr>
+        <tr><td>smooth_mean_angle</td><td>46%</td><td>33%</td><td>16%</td><td>5%</td><td>4,556</td><td>5.3</td><td>336.7</td></tr>
+        <tr><td>smooth_angle_min</td><td>39%</td><td>34%</td><td>21%</td><td>6%</td><td>4,402</td><td>5.0</td><td>320.6</td></tr>
+        <tr><td>threads</td><td>5%</td><td>22%</td><td>50%</td><td>23%</td><td>2,870</td><td>3.3</td><td>214.2</td></tr>
+        <tr><td>itinerary</td><td>8%</td><td>35%</td><td>44%</td><td>13%</td><td>1,648</td><td>2.4</td><td>152.0</td></tr>
+        <tr><td>direct_trap_screen</td><td>31%</td><td>44%</td><td>19%</td><td>6%</td><td>5,149</td><td>1.4</td><td>90.0</td></tr>
+        <tr><td>direct_trap_multiply</td><td>34%</td><td>25%</td><td>34%</td><td>7%</td><td>8,421</td><td>2.0</td><td>126.1</td></tr>
+        <tr><td>direct_trap_lines</td><td>31%</td><td>47%</td><td>18%</td><td>4%</td><td>5,071</td><td>1.3</td><td>82.5</td></tr>
       </tbody>
     </table>
+
+    <p class="table-note">Render times are engine seconds on one desktop CPU: the candidate
+    column is a mean over the candidates each row counts, and the wallpaper column is a
+    placeholder scaled from it by the sample count, pending a measurement.</p>
 
       <figure class="figure" data-figure="modes-gallery">
         <a class="figure-open" href="../explorer/index.html?v=2&amp;f=julia&amp;cx=-0.7548374821242281&amp;cy=-0.07387098369508416&amp;x=0.6986883196777741&amp;y=0.18609427076235419&amp;w=0.0006158665120853605&amp;p=gist_earth&amp;mirror=1" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/modes-gallery.jpg" width="1312" height="567" alt="One labeled thumbnail for each rendering mode the pipeline draws from, in the engine's catalog order."><span class="figure-open-mark" aria-hidden="true">↗</span></a>
@@ -332,11 +339,11 @@
 
     <h2 id="one-discovery-many-wallpapers">One discovery, many wallpapers</h2>
 
-    <p>The reason to keep a roster of modes at all is arithmetic. Finding a genuinely good
-    location is the expensive, uncertain part of the pipeline — but once found, a location is
-    not one image. It is a smooth render, a tia render, a threads render, each in any palette:
-    one discovery, many possible wallpapers, and the modes multiply what every discovery is
-    worth. How those discoveries get made is the next page:
+    <p>Finding a genuinely good location is the expensive, uncertain part of the pipeline —
+    but once found, a location is not one image. It is a smooth render, a tia render, a
+    threads render, each in any palette: one discovery, many possible wallpapers, and the
+    modes multiply what every discovery is worth. How those discoveries get made is the next
+    page:
     <a href="finding-good-locations.html">finding good locations</a> covers the search,
     <a href="training-judges.html">training judges</a> covers teaching machines to
     recognize — mode by mode — when the render that came back is worth keeping, and

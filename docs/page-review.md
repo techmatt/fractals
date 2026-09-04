@@ -216,6 +216,21 @@ adoption invalidates the whole table** at once and leaves it a reading nothing e
 more. It carries no `stale_when` because it is prose rather than a figure row, which is
 why that is written here.
 
+**And its `wallpaper render` column is a placeholder, 2026-09-04.** `candidate render` is
+real: the **mean** `hunt.seconds` the mining legs stamped on the very rows the table
+counts — 95,449 of the 102,562 carry one, the rest predating the stamp — read off the
+record rather than measured here. `wallpaper render` is that mean times **64**, which is
+the ratio of the two geometries' sample counts (2560×1440 at 4× against 640×360 at 2×),
+because Matt called the measuring leg off mid-round and asked for a proxy until it is
+taken. The footnote under the table says so in the page's own words. **Replacing it is a
+measurement, not a recomputation**: `scratch/_modes_render_times.py` renders a sample of
+seats a mode out of a recorded tentative gallery at `run.RELEASE_RESOLUTION`, and the
+four smooth seats it got through before it was stopped came back at a mean of 43.4s
+against the column's 43.5 — encouraging at n=4 and no more than that, because the scaling
+holds only while a mode's cost is linear in samples. Both columns are seconds on **one
+desktop CPU**, which is all the footnote claims and all either number can support: a
+faster machine, a rebuilt engine or a different worker count moves every cell.
+
 | page | written | prose master | last review round | figures | what is held, and why |
 | --- | --- | --- | --- | --- | --- |
 | `overview.html` | yes | `Overview v1.md` | none | 2 placed | — |
