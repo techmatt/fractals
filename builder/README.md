@@ -208,6 +208,17 @@ re-framed after seating, so the seat's `location` and the recipe's viewport can 
 two of the six panels of `overview-gallery-hook` do. The recipe's frame is what the pixels
 are of, and it is what provenance records.
 
+**Which places the site already uses is `frames.py`.** A prompt that is about to pick
+wallpapers asks it *before* picking, because no location is reused unless the repetition
+is intentional and `check`'s `locations` only refuses a collision after the fact. It
+reduces every figure's places to `(centre, width)` at `%.12g` and answers in two
+resolutions: resolving a figure's keyed sources **only where its provenance wrote no
+geometry** finds 182 distinct places, 163 of them off the Rendering Modes page; resolving
+them **everywhere** finds 220 and 193. The Rendering Modes exclusion uses the second,
+because a place the record names is a place a reader can land on twice whether or not the
+prose repeated it. Nothing in `check` reads this module — `locations` reads
+`Figure.frames` directly, and this is the maker's side of the same question.
+
 `facts` is optional and holds the load-bearing claims a figure's caption or its prose
 makes — each one a `claim` and the `source` it was checked against. It is the answer to
 "who checked this, against what?" asked of a number the article states as settled.

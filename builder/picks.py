@@ -86,6 +86,7 @@ merely not known not to be — the wrong colour.
 from __future__ import annotations
 
 import json
+import re
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -108,6 +109,7 @@ LEDGER = ("curation", "candidate_ledger", "rows.jsonl")
 #: and the ledger's `picture` is the only name shared across both stores.
 RUN_RECORDS = {
     "depth": ("sequence.jsonl", "key"),
+    "hunt": ("rows.jsonl", "key"),
     "mine": ("rows.jsonl", "key"),
     "reframe_draw": ("attempts.jsonl", "picture"),
     "runs": ("candidates.jsonl", "picture"),
@@ -384,11 +386,19 @@ def run_stamp(pick: Pick) -> Levelling:
                 row = json.loads(line)
                 if str(row.get("key")) != pick.key:
                     continue
-                # A depth run stamps the fact and drops the curve; a mine run does not
-                # stamp even the fact, and a record that does not say the operator left a
-                # picture alone is not a record that says it did. Both are unrecoverable
-                # here, and only the depth one is unrecoverable *knowing* it acted.
+                # A depth run stamps the fact and drops the curve; a mine or a hunt run
+                # does not stamp even the fact, and a record that does not say the
+                # operator left a picture alone is not a record that says it did. Both are
+                # unrecoverable here, and only the depth one is unrecoverable *knowing* it
+                # acted. The one exception is a recipe carrying no autolevel identity at
+                # all: that is the operator's own ruling that it has nothing to say about
+                # this mode's kind — a direct trap paints over a flat ground and a
+                # modulate reads a different place in the map per sample — so there was
+                # never a curve for the run to record, and the engine's render is the
+                # picture.
                 if "acted" not in row:
+                    if pick.recipe.get("autolevel") is None:
+                        return Levelling(UNTOUCHED, where, None)
                     return Levelling(UNRECOVERABLE, where, None)
                 acted = bool(row.get("acted"))
                 return Levelling(UNRECOVERABLE if acted else UNTOUCHED, where, None)
@@ -768,6 +778,483 @@ def gallery_output() -> Drawn:
     )
 
 
+# ------------------------------------------------------------------ one mode, two pairs
+
+#: The Rendering modes page's per-mode figure: two examples down, and each example is the
+#: same location twice — `smooth` on the left, the mode on the right. The comparison is
+#: the whole figure, so the two panels of a row differ in exactly one field of the recipe.
+PAIR_COLUMNS = 2
+PAIR_ROWS = 2
+
+#: One line under a panel: which rendering drew it. The engine's own spelling, because
+#: this page is where a reader meets the roster and its scoreboard lists the same words.
+PAIR_LABEL_LINES = 1
+
+#: The mode a panel is swapped to on the left of every row.
+SMOOTH = "smooth"
+
+#: How a candidate's regime is spelled in the ledger, and what it means.
+REGIME = re.compile(r"^(\d+)x(\d+)ss(\d+)$")
+
+#: Which mode each per-mode figure of the page stands for. Spelled here rather than read
+#: off whatever the picks happen to be, for the reason `MODES_ROSTER` is spelled: a mode
+#: promoted or re-picked next door is a panel somebody chose, never one a redraw quietly
+#: swaps under a caption a reader has already been shown. `smooth` has no figure of its
+#: own — it is introduced a section earlier and is the left half of every row here.
+MODE_FIGURES = {
+    "modes-tia": "tia",
+    "modes-stripe": "stripe",
+    "modes-curvature": "curvature",
+    "modes-exp-smoothing": "exp_smoothing",
+    "modes-smooth-mean-angle": "smooth_mean_angle",
+    "modes-smooth-angle-min": "smooth_angle_min",
+    "modes-smooth-stripe": "smooth_stripe",
+    "modes-smooth-curvature": "smooth_curvature",
+    "modes-direct-trap-screen": "direct_trap_screen",
+    "modes-direct-trap-multiply": "direct_trap_multiply",
+    "modes-direct-trap-lines": "direct_trap_lines",
+    "modes-threads": "threads",
+    "modes-itinerary": "itinerary",
+}
+
+
+@dataclass(frozen=True)
+class Example:
+    """One row of a per-mode figure: the picture on the right, and what made it.
+
+    Two things can stand on the right — a seat of the recorded gallery, or a released
+    wallpaper the page already showed and is keeping. They answer the same three
+    questions, and the maker asks nothing else of either.
+    """
+
+    #: What a sentence about this row calls it: a seat's alias, or a released
+    #: wallpaper's candidate spelled so that it is **not** a release key. `links.py`
+    #: reads `<run>|release|<id>` anywhere it appears as a citation of that record, and a
+    #: sentence about the tone operator that happened to spell one would send the link
+    #: derivation to a line that is not a panel at all.
+    name: str
+    #: The wallpaper row `renders.wallpaper_spec` reads, at the mode this row is about.
+    row: dict
+    #: The geometry the candidate behind this row was drawn and measured at.
+    regime: str
+    #: The right panel's own file, drawn or copied.
+    picture: Path
+    #: The seat this row stands on, or `None` for a released wallpaper.
+    pick: Pick | None
+    #: The release key this row stands on, or `None` for a seat.
+    release: str | None
+    #: What the autolevel operator did to the *right* panel, in the record's own words.
+    right_levelling: str
+    #: The curve the operator derived for the *left* panel, or `None` where it left it be.
+    left_curve: dict | None
+    #: The left panel's own file.
+    left: Path
+
+
+def regime_geometry(spelled: str) -> tuple[tuple[int, int], int]:
+    """`640x360ss2` as the resolution and sample count it names."""
+    found = REGIME.match(str(spelled or ""))
+    if not found:
+        raise PickError(
+            f"{spelled!r} is not a regime this can read — a regime is <width>x<height>ss<n>, "
+            "and the left panel's autolevel has to be measured at the one the seat was "
+            "drawn at or the curve is not the one production would have derived"
+        )
+    return (int(found.group(1)), int(found.group(2))), int(found.group(3))
+
+
+def smooth_row(row: dict) -> dict:
+    """One wallpaper row with its mode swapped for `smooth` and nothing else moved.
+
+    The frame, the cap, the curve, the map, the fold and the whole palette pass are the
+    seat's. What the figure is about is the one field that changed, so the one field is
+    all that changes — a left panel that also re-picked the map would be a picture of two
+    differences and an argument for neither.
+    """
+    return dict(row, mode=SMOOTH, mode_params={})
+
+
+def smooth_counterpart(
+    row: dict, name: str, catalog: dict[str, dict], *, regime: str
+) -> tuple[Path, dict | None]:
+    """The left panel: this recipe in `smooth`, autolevelled the way production would.
+
+    The operator is a function of the *picture*, not of the recipe, so a mode swap is a
+    new picture and the curve has to be derived again rather than borrowed. Production
+    derives it from a render at the candidate regime, which is what the band was measured
+    against, so that is where this measures it too — and then draws the panel at figure
+    size through the stops that curve bakes. `renders.measured_stops` is the wallpaper
+    project's own operator acting; nothing about the tone is decided on this side.
+
+    Returns the panel and the curve, or the panel and `None` where the operator's own
+    identity case fired, which is the commonest answer.
+    """
+    plain = smooth_row(row)
+    resolution, supersample = regime_geometry(regime)
+    measured_on = (
+        cache()
+        .produce(
+            f"{name}-at-regime",
+            "render",
+            renders.wallpaper_spec(
+                plain, resolution=resolution, supersample=supersample, catalog=catalog
+            ),
+        )
+        .path
+    )
+    acted = renders.measured_stops(plain["colormap"], measured_on)
+    spec = renders.wallpaper_spec(
+        plain, resolution=PANEL_RENDER, supersample=PANEL_SUPERSAMPLE, catalog=catalog
+    )
+    if acted:
+        spec = dict(
+            spec,
+            colormap_dir=str(
+                renders.colormap_directory(
+                    plain["colormap"],
+                    acted["kind"],
+                    acted["stops"],
+                    renders.spec_key(
+                        "measured", {"colormap": plain["colormap"], "curve": acted["curve"]}
+                    ),
+                )
+            ),
+        )
+    return cache().produce(name, "render", spec).path, (acted["curve"] if acted else None)
+
+
+def released_row(key: str) -> dict:
+    """One released wallpaper in the shape `renders.wallpaper_spec` reads.
+
+    A release record spells the same picture a third way: the frame is under `location`,
+    the coloring under `recipe`, and the palette pass is the labeling defaults rather than
+    a stored object. Only the fold is a per-release choice, and it is the one thing read
+    off the row.
+    """
+    from .locations import release_record
+
+    run, separator, candidate = str(key).partition("|release|")
+    if not separator:
+        raise PickError(f"{key!r} is not a release key — a release key is <run>|release|<id>")
+    row = release_record(run, candidate)
+    recipe = row["recipe"]
+    return {
+        "family": row["location"]["family"],
+        "viewport": row["location"]["viewport"],
+        "mode": recipe["mode"],
+        "mode_params": {},
+        "curve": recipe.get("curve", "linear"),
+        "colormap": recipe["colormap"],
+        "recipe": {
+            "gamma": 1.0,
+            "cycles": 1.0,
+            "phase": 0.0,
+            "reverse": False,
+            "mirror": bool(recipe.get("mirror")),
+            "transfer": {"kind": "value"},
+            "rolloff": {"kind": "none"},
+        },
+        "render": {"maxiter": (recipe.get("render") or {}).get("maxiter")},
+        "regime": f"{(recipe.get('render') or {}).get('resolution', [640, 360])[0]}x"
+        f"{(recipe.get('render') or {}).get('resolution', [640, 360])[1]}ss"
+        f"{(recipe.get('render') or {}).get('supersample', 2)}",
+        "_picture": row["_picture"],
+        "_key": key,
+    }
+
+
+def pair_examples(identifier: str, catalog: dict[str, dict]) -> list[Example]:
+    """The rows of one per-mode figure, resolved and drawn: seats first, then releases."""
+    figure = figures_module.load_all().get(identifier)
+    if figure is None:
+        raise PickError(f"{identifier} is not in the figure registry")
+    wanted = picks_of(identifier)
+    released = list((figure.recipe.args if figure.recipe else {}).get("released") or [])
+    mode = MODE_FIGURES[identifier]
+
+    examples: list[Example] = []
+    for index, pick in enumerate(resolve(wanted)):
+        if pick.mode != mode:
+            raise PickError(
+                f"{identifier} is the {mode} figure and {pick.alias} is a {pick.mode} seat — "
+                "a per-mode figure shows the mode its caption names, and a re-pick into "
+                "another mode is a different figure"
+            )
+        row = wallpaper_row(pick)
+        picture, levelling = panel_or_seat(pick, f"{identifier}-{index + 1}-{pick.alias}", catalog)
+        left, curve = smooth_counterpart(
+            row,
+            f"{identifier}-{index + 1}-{pick.alias}-smooth",
+            catalog,
+            regime=pick.recipe["regime"],
+        )
+        examples.append(
+            Example(
+                name=pick.alias,
+                row=row,
+                regime=pick.recipe["regime"],
+                picture=picture,
+                pick=pick,
+                release=None,
+                right_levelling=levelling.way,
+                left_curve=curve,
+                left=left,
+            )
+        )
+    for index, key in enumerate(released):
+        row = released_row(key)
+        if row["mode"] != mode:
+            raise PickError(f"{identifier} is the {mode} figure and {key} is a {row['mode']} row")
+        left, curve = smooth_counterpart(
+            row, f"{identifier}-release-{index + 1}-smooth", catalog, regime=row["regime"]
+        )
+        examples.append(
+            Example(
+                name=f"released {key.split('|release|')[1]} of {key.split('|release|')[0]}",
+                row=row,
+                regime=row["regime"],
+                picture=row["_picture"],
+                pick=None,
+                release=key,
+                right_levelling=UNTOUCHED,
+                left_curve=curve,
+                left=left,
+            )
+        )
+    if len(examples) != PAIR_ROWS:
+        raise PickError(
+            f"{identifier} is {PAIR_COLUMNS}x{PAIR_ROWS} — two examples, each of them a "
+            f"pair — and its row names {len(examples)}"
+        )
+    return examples
+
+
+def mode_pair(identifier: str) -> Drawn:
+    """One rendering mode against `smooth`, twice: a 2 x 2, one location a row.
+
+    The right panel of a row is the wallpaper — a seat of the recorded gallery, or the one
+    released picture this page is keeping — and the left is that same recipe with the mode
+    swapped. Nothing else moves between them, which is the whole of what the figure
+    claims: this is what the mode did to this location in this palette.
+    """
+    catalog = renders.mode_catalog()
+    examples = pair_examples(identifier, catalog)
+    size = panels(PAIR_COLUMNS)
+    caption = sheets.caption_band(size[1], SHEET_WIDTH, PAIR_LABEL_LINES)
+    sheet, draw = sheets.canvas(*sheets.grid_size(size, PAIR_COLUMNS, PAIR_ROWS, caption))
+    for index, example in enumerate(examples):
+        for column, (picture, word) in enumerate(
+            ((example.left, SMOOTH), (example.picture, example.row["mode"]))
+        ):
+            origin = sheets.panel_origin(index * PAIR_COLUMNS + column, size, PAIR_COLUMNS, caption)
+            sheet.paste(sheets.fitted(picture, size), origin)
+            sheets.tile_label(draw, origin, size, word, sheet.width)
+    destination = sheets.save(sheet, sheet_path(identifier))
+    return Drawn(destination, pair_provenance(identifier, examples, size))
+
+
+def pair_provenance(identifier: str, examples: list[Example], size: tuple[int, int]) -> list[str]:
+    """The registry lines for a per-mode pair figure: the composition, then two per row.
+
+    **The seat's panel comes first inside a pair, and the sheet reads the other way.**
+    The order is stated in the composition line rather than left to be inferred, because
+    two things read the first panel line: the rule that exactly one line of a row may put
+    the word `colormap` in front of a map's name, and `builder/links.py`, which opens the
+    figure at the first panel that names a frame. Both want the picture the figure is
+    *about* — a `smooth` render carrying a tone curve nothing outside this repository
+    recorded is not a picture the explorer can reopen.
+
+    **And where that first panel is not the engine's own render of its recipe, no line
+    names a colormap at all**, so the link derivation refuses the figure rather than
+    approximating it. A copied seat carries a curve nobody wrote down and a replayed one
+    was drawn through stops that are not the map the record names; the explorer has
+    neither, so it would open the right place in the wrong colour. A link that is nearly
+    the figure is worse than none, and this is what that rule costs when Matt's pick lands
+    on a candidate a `depth` run drew.
+    """
+    stamps = sorted({one.pick.stamp for one in examples if one.pick})
+    mode = MODE_FIGURES[identifier]
+    lines = [
+        f"builder.picks — {PAIR_COLUMNS} x {PAIR_ROWS}: two examples of {mode}, one location "
+        f"a row, drawn in that location's own palette. The right panel of a row is the "
+        f"wallpaper; the left is a render of that same recipe with the mode swapped for "
+        f"{SMOOTH} and nothing else moved — same frame, same cap, same curve, same map, "
+        f"same fold, same palette pass. A seat panel is named by its own "
+        f"`<stamp>{PICK_SEPARATOR}<recipe key>` and resolved from artifacts/curation/"
+        f"tentative/<stamp>/{SEATS_NAME} for the seat and the candidate ledger for the "
+        f"recipe. Both panels are rendered through the engine at {PANEL_RENDER[0]}x"
+        f"{PANEL_RENDER[1]}, supersample {PANEL_SUPERSAMPLE}, then fitted to "
+        f"{size[0]}x{size[1]} in the sheet."
+        + (f" Stamp{'s' if len(stamps) > 1 else ''} {', '.join(stamps)}." if stamps else "")
+        + " The lines below run one row at a time and put the wallpaper's panel first, "
+        "which is the order the record is read in and not the order the sheet is looked "
+        "at.",
+        pair_autolevel_line(examples),
+    ]
+    opens = examples[0].right_levelling == UNTOUCHED
+    for example in examples:
+        lines += pair_lines(example, representative=opens and example is examples[0])
+    return lines
+
+
+def pair_autolevel_line(examples: list[Example]) -> str:
+    """What the tone operator did on both sides of every row, in one paragraph.
+
+    Two different questions, deliberately answered together. On the right it is a matter
+    of record — the run that drew the candidate either kept its curve or did not, and
+    `run_stamp` reads it. On the left there is no record to read, because no run ever made
+    that picture: the operator is run here, on a render at the seat's own regime, which is
+    the operator acting rather than a second reading of one that already acted.
+    """
+    ruled = [one for one in examples if _no_autolevel(one)]
+    replayed = [one for one in examples if one.right_levelling == REPLAYED]
+    copied = [one for one in examples if one.right_levelling == UNRECOVERABLE]
+    told = []
+    if ruled:
+        told.append(
+            "The operator has nothing to say about "
+            + ", ".join(one.name for one in ruled)
+            + ": their recipes carry no autolevel identity at all, which is the operator's "
+            "own ruling that this mode's kind is outside it — a direct trap paints over a "
+            "flat ground and a modulate reads a different place in the map per sample — so "
+            "the right panel is the engine's own render of the recipe."
+        )
+    plain = [one for one in examples if one not in ruled and one.right_levelling == UNTOUCHED]
+    if plain:
+        told.append(
+            "It was switched on behind "
+            + ", ".join(one.name for one in plain)
+            + " and left "
+            + ("that render" if len(plain) == 1 else "those renders")
+            + " alone, so the right panel is the engine's own render of the recipe."
+        )
+    if replayed:
+        told.append(
+            "It acted on "
+            + ", ".join(one.name for one in replayed)
+            + ", and those right panels were drawn through the stops that curve rebuilds — "
+            "the wallpaper project's own `stops_from_stamp` replaying its own curve."
+        )
+    if copied:
+        told.append(
+            "It also acted on "
+            + ", ".join(one.name for one in copied)
+            + ", whose run recorded the fact and not the curve; "
+            + ("that right panel is" if len(copied) == 1 else "those right panels are")
+            + " the seat's own shipped picture rather than a render, and the line for "
+            + ("it says so" if len(copied) == 1 else "each says so")
+            + "."
+        )
+    left = []
+    for one in examples:
+        if one.left_curve is None:
+            left.append(f"{one.name} left alone")
+        else:
+            left.append(
+                f"{one.name} acted on, black point {one.left_curve['black_pt']:.4f}, white "
+                f"point {one.left_curve['white_pt']:.4f}"
+            )
+    return (
+        "Autolevel: on the right it is what the run recorded. "
+        + " ".join(told)
+        + " On the left there is nothing to replay, because no run ever drew that picture: "
+        "the operator was run here the way production runs it for a field mode — "
+        "`renders.measured_stops`, over a render of the swapped recipe at the seat's own "
+        "regime — and where it acted the panel is drawn through the stops it baked. Its "
+        "readings, in row order: " + "; ".join(left) + "."
+    )
+
+
+def _no_autolevel(example: Example) -> bool:
+    """Whether this row's own recipe carries no autolevel identity to begin with."""
+    if example.pick is not None:
+        return example.pick.recipe.get("autolevel") is None
+    return True
+
+
+def pair_lines(example: Example, *, representative: bool) -> list[str]:
+    """One row of a pair figure: the wallpaper's panel, then its `smooth` counterpart."""
+    lines = []
+    if example.pick is not None:
+        lines.append(frame_line(example.pick, representative=representative))
+        if example.right_levelling == UNRECOVERABLE:
+            lines.append(unrecoverable_line(example.pick, run_stamp(example.pick)))
+    else:
+        lines.append(released_line(example, representative=representative))
+    lines.append(smooth_line(example))
+    return lines
+
+
+def released_line(example: Example, *, representative: bool) -> str:
+    """The right panel of a row that is a released wallpaper rather than a seat."""
+    row = example.row
+    family, viewport = row["family"], row["viewport"]
+    kind = family.get("kind")
+    named = f"family {kind}"
+    if kind in ("multibrot", "julia"):
+        named += f", degree {family.get('degree', 2)}"
+    for constant in ("c", "p", "z_prev"):
+        if family.get(constant):
+            named += f", {constant} = {family[constant][0]} + {family[constant][1]}i"
+    map_word = "colormap" if representative else "palette"
+    return (
+        f"{family_name(family)}, {mode_words(row['mode'])}: released wallpaper "
+        f"{example.release} — {named}, centre {viewport['center_re']} + "
+        f"{viewport['center_im']}i, width {viewport['width']}, mode {row['mode']}, curve "
+        f"{row['curve']}, {map_word} {row['colormap']}, mirror {flag(row['recipe']['mirror'])}, "
+        f"cap {row['render']['maxiter']}, no crop beyond the sheet's; "
+        f"{shade_words(row['recipe'])}. Not re-rendered here: the panel is the released "
+        f"picture itself, {example.picture.name} at its release size {_size(example.picture)}, "
+        f"fitted into the cell. "
+        "It is the one location this page keeps from the figures these replace, and it is "
+        "kept because it is the itinerary picture the section was written around."
+    )
+
+
+def _size(picture: Path) -> str:
+    """One picture's pixel size, for a line that says a panel was copied rather than drawn."""
+    from . import images
+
+    width, height = images.dimensions(picture)
+    return f"{width}x{height}"
+
+
+def smooth_line(example: Example) -> str:
+    """The left panel of a row: the same recipe in `smooth`, and what the operator did."""
+    row = smooth_row(example.row)
+    family, viewport = row["family"], row["viewport"]
+    kind = family.get("kind")
+    named = f"family {kind}"
+    if kind in ("multibrot", "julia"):
+        named += f", degree {family.get('degree', 2)}"
+    for constant in ("c", "p", "z_prev"):
+        if family.get(constant):
+            named += f", {constant} = {family[constant][0]} + {family[constant][1]}i"
+    if example.left_curve is None:
+        levelled = (
+            "The autolevel operator was run on this render at the row's own regime "
+            f"{example.regime} and returned it untouched, so the panel is the engine's own "
+            "render of the swapped recipe."
+        )
+    else:
+        levelled = (
+            "The autolevel operator was run on this render at the row's own regime "
+            f"{example.regime} and acted — black point {example.left_curve['black_pt']:.4f}, "
+            f"white point {example.left_curve['white_pt']:.4f} — so the panel is drawn "
+            "through the stops that curve bakes into the map rather than through the map "
+            "itself."
+        )
+    return (
+        f"{family_name(family)}, {mode_words(SMOOTH)}: the left panel beside "
+        f"{example.name}, the same recipe with mode {SMOOTH} and no mode settings — "
+        f"{named}, centre "
+        f"{viewport['center_re']} + {viewport['center_im']}i, width {viewport['width']}, "
+        f"mode {SMOOTH}, curve {row['curve']}, palette {row['colormap']}, mirror "
+        f"{flag(row['recipe'].get('mirror'))}, cap {row['render']['maxiter']}, no crop "
+        f"beyond the sheet's; {shade_words(row['recipe'])}. {levelled}"
+    )
+
+
 # ---------------------------------------------------------------------- the provenance
 
 
@@ -941,16 +1428,66 @@ def provenance(
 
 # ----------------------------------------------------------------------- the interface
 
+
+def _pair(identifier: str):
+    """One per-mode figure's maker, bound to the figure it draws.
+
+    `MAKERS` holds callables of no arguments, so the thirteen pair figures each get one
+    of these rather than thirteen copies of the same function. The name it answers to is
+    the real function's, which is what `recipe` writes down and what `check` holds to
+    still existing.
+    """
+
+    def make() -> Drawn:
+        return mode_pair(identifier)
+
+    make.__name__ = mode_pair.__name__
+    return make
+
+
 MAKERS = {
     "overview-gallery-hook": gallery_hook,
     "modes-gallery": modes_gallery,
     "gallery-output": gallery_output,
+    **{identifier: _pair(identifier) for identifier in MODE_FIGURES},
 }
 
 
+def released_of(identifier: str) -> list[str]:
+    """The release keys a figure's row names beside its picks, if any."""
+    figure = figures_module.load_all().get(identifier)
+    if figure is None or figure.recipe is None:
+        return []
+    return list(figure.recipe.args.get("released") or [])
+
+
 def sources(identifier: str) -> list[dict]:
-    """The registry `sources` for a figure of this module: its picks, as gallery seats."""
-    return [{"kind": figures_module.GALLERY_SEAT, "keys": picks_of(identifier)}]
+    """The registry `sources` for a figure of this module: its picks, as gallery seats.
+
+    A per-mode pair figure says the same keys **twice**, because its panels stand on them
+    two different ways: the right panel of a row is the seat drawn at its own recipe, and
+    the left is the same seat with the recipe deliberately changed. `check`'s `seats`
+    reads the word and holds only the first of those to the picture the gallery ships,
+    which is the whole reason `drawn` is a claim on the row rather than a list of excused
+    figures inside the check.
+    """
+    keys = picks_of(identifier)
+    if identifier not in MODE_FIGURES:
+        return [{"kind": figures_module.GALLERY_SEAT, "keys": keys}]
+    found = []
+    if keys:
+        found += [
+            {"kind": figures_module.GALLERY_SEAT, "keys": keys, "drawn": figures_module.OWN_RECIPE},
+            {
+                "kind": figures_module.GALLERY_SEAT,
+                "keys": keys,
+                "drawn": figures_module.RECIPE_CHANGED,
+            },
+        ]
+    released = released_of(identifier)
+    if released:
+        found.append({"kind": figures_module.RUN_ROW, "keys": released})
+    return found
 
 
 def recipe(identifier: str) -> dict:
@@ -961,10 +1498,11 @@ def recipe(identifier: str) -> dict:
     """
     if identifier not in MAKERS:
         raise records.RecordError(f"{identifier} is not drawn by {__name__}")
-    return {
-        "maker": f"{__name__}:{MAKERS[identifier].__name__}",
-        "args": {"picks": picks_of(identifier)},
-    }
+    args: dict = {"picks": picks_of(identifier)}
+    released = released_of(identifier) if identifier in MODE_FIGURES else []
+    if released:
+        args["released"] = released
+    return {"maker": f"{__name__}:{MAKERS[identifier].__name__}", "args": args}
 
 
 def draw(identifier: str) -> Drawn:

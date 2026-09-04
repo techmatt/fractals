@@ -1,4 +1,5 @@
 {"schema": 1, "kind": "method", "source": "data/palettes/*.json", "baked": "2026-08-25", "wallpapers_commit": "d9a423fd35e953618002804d7fc9db090dd34623", "rule": "the maps the explorer carries, and which of them the picker offers. The 77 curated maps the picker lists are the set as it stood on 2026-08-23 and are frozen there: the wallpaper project's library took a drop of two hundred authored maps afterwards, and a bake that read `every curated map` out of that library would have grown the picker to 277 entries without anybody deciding to. Baked alongside them and not offered are the further maps one of this site's own published pictures was drawn in — a set with no fixed size, because it grows every time a figure lands in a map the roster did not carry, and a count written down here would be one more thing to keep in step, which a permalink may name and the picker does not list — a picture the article publishes has to be openable here. Nothing is ever removed: a name that has been in a link is a name that has to keep resolving. This record is what `python -m builder explorer` bakes from, and `builder check`'s bake check holds the committed module to it."}
+{"schema": 1, "kind": "palette", "name": "795548-3840x2160-desktop-4k-fractal-background", "offered": false}
 {"schema": 1, "kind": "palette", "name": "Amber Highlands", "offered": false}
 {"schema": 1, "kind": "palette", "name": "Amethyst Veil", "offered": false}
 {"schema": 1, "kind": "palette", "name": "Blues", "offered": true}
@@ -18,12 +19,14 @@
 {"schema": 1, "kind": "palette", "name": "Ice Walk", "offered": false}
 {"schema": 1, "kind": "palette", "name": "Indigo Nocturne", "offered": false}
 {"schema": 1, "kind": "palette", "name": "Oranges", "offered": false}
+{"schema": 1, "kind": "palette", "name": "Orchid Procession", "offered": false}
 {"schema": 1, "kind": "palette", "name": "PuOr", "offered": true}
 {"schema": 1, "kind": "palette", "name": "RdBu", "offered": true}
 {"schema": 1, "kind": "palette", "name": "RdGy", "offered": true}
 {"schema": 1, "kind": "palette", "name": "RdPu", "offered": true}
 {"schema": 1, "kind": "palette", "name": "RdYlBu", "offered": true}
 {"schema": 1, "kind": "palette", "name": "Reef Triad", "offered": false}
+{"schema": 1, "kind": "palette", "name": "Rose Quartz Vault", "offered": false}
 {"schema": 1, "kind": "palette", "name": "Rust to Plum", "offered": false}
 {"schema": 1, "kind": "palette", "name": "Sage Ascending", "offered": false}
 {"schema": 1, "kind": "palette", "name": "Spectral", "offered": true}
@@ -62,6 +65,7 @@
 {"schema": 1, "kind": "palette", "name": "cet_linear_protanopic_deuteranopic_kbw_5_98_c40", "offered": true}
 {"schema": 1, "kind": "palette", "name": "cet_linear_tritanopic_krjcw_5_98_c46", "offered": true}
 {"schema": 1, "kind": "palette", "name": "cet_linear_tritanopic_krw_5_95_c46", "offered": true}
+{"schema": 1, "kind": "palette", "name": "cet_linear_wcmr_100_45_c42", "offered": false}
 {"schema": 1, "kind": "palette", "name": "chaidai", "offered": false}
 {"schema": 1, "kind": "palette", "name": "cividis", "offered": true}
 {"schema": 1, "kind": "palette", "name": "cmr.amber", "offered": true}
@@ -114,6 +118,9 @@
 {"schema": 1, "kind": "palette", "name": "twilight", "offered": true}
 {"schema": 1, "kind": "palette", "name": "twilight_shifted", "offered": true}
 {"schema": 1, "kind": "palette", "name": "viridis", "offered": true}
+{"schema": 1, "kind": "palette", "name": "wallhaven_wallhaven-2ex5zg", "offered": false}
 {"schema": 1, "kind": "palette", "name": "wallhaven_wallhaven-398e39", "offered": false}
+{"schema": 1, "kind": "palette", "name": "wallhaven_wallhaven-47xzoe", "offered": false}
+{"schema": 1, "kind": "palette", "name": "wallhaven_wallhaven-kwg7v6", "offered": false}
 {"schema": 1, "kind": "palette", "name": "wallhaven_wallhaven-nm6938", "offered": false}
 {"schema": 1, "kind": "palette", "name": "wheelance", "offered": false}

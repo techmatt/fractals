@@ -193,7 +193,7 @@ yet judged* rather than a decision.
 | `overview.html` | yes | `Overview v1.md` | none | 2 placed | — |
 | `escape-time-fractals.html` | yes | none — the HTML is its own master | none | 7 placed | — |
 | `rendering-fundamentals.html` | yes | none — the HTML is its own master | none | 6 placed | — |
-| `rendering-modes.html` | yes | `Rendering modes v1.md` | none | 6 placed | — |
+| `rendering-modes.html` | yes | `Rendering modes v1.md` | none | 14 placed | the figures were rebuilt on 2026-09-04: one 2×2 a mode — `smooth` beside the mode at two locations, off Matt's picks from the recorded gallery `20260904T023748Z` — replacing the four multi-mode sheets and the two single-wallpaper figures. The prose is **unchanged and now behind the pictures**; see the report for the list a prose pass has to work |
 | `finding-good-locations.html` | yes | `Finding good locations v5.md` | applied 2026-08-21 | 12 placed | placed 2026-09-01 with the reframing channel; the master carries eleven `[FIGURE]` markers and the page twelve blocks — `locations-walk-root` landed after v4 was approved, and `locations-found-and-finished` stands where the marker says `locations-q4-gallery` |
 | `training-judges.html` | yes | `Training judges v5.md` | applied 2026-08-21 | 3 placed | — |
 | `color-palettes.html` | yes | `Color palettes v5.md` | applied 2026-09-02 | 7 placed | — |
