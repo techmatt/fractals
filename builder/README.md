@@ -8,11 +8,11 @@ Python. A build is done here and reviewed in a diff.
 ```
 python -m builder build     regenerate gallery pages, the gallery index, thumbnails,
                             and the contents rail every page carries
-python -m builder check     fifteen named checks: links, page sync, contents, figure
-                            blocks, landings, one location to one figure, explorer links,
-                            the atlas record, the explorer's bake, assets, the palette
-                            record, prose, the editorial pointer, theme, banned
-                            vocabulary
+python -m builder check     seventeen named checks: links, page sync, contents, figure
+                            blocks, seat panels, landings, one location to one figure,
+                            explorer links, the atlas record, the explorer's bake, assets,
+                            the palette record, prose, the editorial pointer, theme,
+                            banned vocabulary, line endings
 python -m builder figure ID print a figure's markup block, to paste into an article page
 python -m builder figures [--all]   what is still to make, grouped by page
 python -m builder figures --place ID SRC [--crop l,t,r,b] [--max-width N] [--lossless]
@@ -326,6 +326,13 @@ configured. A palette entering the library next door costs one `--library` and o
   that actually carries it; every registered file exists at the size it claims, a pending
   figure excepted until its asset lands; and a recipe naming a maker inside `builder`
   names one that is still there.
+- **seats** — every panel that is a gallery seat *at its own recipe* is that seat's own
+  picture, to a stated tolerance. Redrawing the recipe is not the whole story — the
+  autolevel operator may have pushed a tone curve through the map before the run wrote the
+  picture the gallery ships — and where it did and the site did not, the page publishes
+  the right geometry in the wrong colour with every other check green. Exemptions are on
+  the record, in a `gallery_seat` source. Needs the wallpapers checkout and Pillow, and
+  says so by name where either is missing.
 - **landing** — every made figure is a block a redraw could land on. `--replace` finds
   the block it is about to swap by deriving it and refuses when the page is not carrying
   exactly that, so the derivation is load-bearing in a way the figure check does not
@@ -382,6 +389,13 @@ configured. A palette entering the library next door costs one `--library` and o
   that frame a run by the clock. It walks the **git index** rather than the tree, so
   `scratch/` and `artifacts/` are exempt by construction and a new file is first checked
   by the run that first stages it.
+- **endings** — no tracked file has drifted to CRLF on disk. `.gitattributes` says
+  `* text=auto eol=lf`, so a CRLF working-tree file still *commits* as LF and every
+  ordinary signal reports nothing: `git status` clean, `git diff` empty, the drift waiting
+  until something rewrites the file line by line and produces a whole-file diff for no
+  visible reason. `git ls-files --eol` is the only detector — `grep` cannot do it in Git
+  Bash here, where a CR-at-end-of-line pattern matches every line of a pure-LF file — and
+  the check asserts the sweep returned rows before believing that it found none.
 
 ## Prose has a master, and a page is held to it
 

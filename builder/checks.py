@@ -77,6 +77,13 @@ did on a machine without one was raise, and every check after it went unrun.
   from moving the well and leaving every diagram drawn against the old one.
 - **vocabulary** — no tracked file uses a word this site has banned. `vocabulary.py`
   holds the list and says why each term is on it.
+- **endings** — no tracked file has drifted to CRLF on disk. `.gitattributes` normalizes
+  on the way in, so a CRLF file **still commits as LF**: `git status` is empty, `git diff`
+  is empty, and the drift waits there until something rewrites the file line by line and
+  produces a whole-file diff nobody asked for. `git ls-files --eol` is the only thing that
+  reports it — `grep` cannot, and confidently names a clean tree dirty — and this is that
+  sweep, with the assertion that it returned rows at all, because a parse that silently
+  yields nothing is a guard that passes everything.
 - **explorer** — every figure and every gallery tile is in the explorer link registry,
   as a link or as a stated reason there is none, and every link the registry holds is
   the one the page carries. Whether a link *parses* is asked of the permalink contract
@@ -96,6 +103,7 @@ did on a machine without one was raise, and every check after it went unrun.
 
 import json
 import re
+import subprocess
 from dataclasses import dataclass
 from html.parser import HTMLParser
 from pathlib import Path
@@ -779,6 +787,58 @@ def check_library() -> list[str]:
         return [f"library.jsonl: the configured checkout could not be read — {error}"]
 
 
+#: The working-tree endings that are drift. `git ls-files --eol` writes each tracked file
+#: as `i/<eol> w/<eol> attr/<attrs>`, a tab, then the path; `i/` is what the index holds
+#: and `w/` is what is on disk. A binary file reads `-text` on both sides and is never a
+#: hit here.
+DRIFTED_ENDINGS = frozenset({"w/crlf", "w/mixed"})
+
+
+def endings_rows() -> list[str]:
+    """Every tracked file's endings, one row each, as git reports them."""
+    completed = subprocess.run(
+        ["git", "ls-files", "--eol"],
+        cwd=str(SITE_ROOT),
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    return [row for row in completed.stdout.split(LF) if row]
+
+
+def check_endings() -> list[str]:
+    """No tracked file has drifted to CRLF on disk.
+
+    `.gitattributes` normalizes this repository on the way in, so a CRLF working-tree file
+    **still commits as LF**: `git status` shows nothing, `git diff` comes back empty, and
+    the file sits there until something reads it and rewrites it with an explicit LF
+    newline — a diff that rewrites every line at once for no reason anybody can see. This
+    is the one thing that reports it. `grep` cannot: a CR-at-end-of-line pattern matches
+    every line of a pure-LF file in Git Bash here, and names a clean tree dirty.
+
+    The vacuity assertion is the second half and not a flourish. A guard whose parse
+    silently yields nothing passes everything, and this one's parse is a split on a tab in
+    text that comes back from a subprocess — exactly the shape that goes quiet rather than
+    loud when it breaks.
+    """
+    rows = endings_rows()
+    if not rows:
+        return [
+            "git ls-files --eol: no rows — the sweep read nothing, and a sweep that reads "
+            "nothing has no file it could ever fail on"
+        ]
+    problems = []
+    for row in rows:
+        flags, _, path = row.partition("\t")
+        drifted = sorted(DRIFTED_ENDINGS.intersection(flags.split()))
+        if drifted:
+            problems.append(
+                f"{path}: {drifted[0]} on disk, and nothing else will ever say so — "
+                "the index holds it as LF and the diff is empty"
+            )
+    return problems
+
+
 #: Why a skip happened, spelled once. Both are states of the machine rather than of the
 #: site, which is exactly why neither may fail a check and neither may pass one silently.
 NO_CHECKOUT = "the fractal-wallpapers checkout is not configured here"
@@ -888,6 +948,7 @@ def run_all() -> Report:
             "guidance": check_guidance(),
             "theme": check_theme(),
             "vocabulary": vocabulary.sweep(),
+            "endings": check_endings(),
         },
         skips(),
     )
