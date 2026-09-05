@@ -76,11 +76,11 @@
     leaves room for icons and text, while an intricate spiral that prints beautifully
     can be exhausting behind an already busy desktop. A few famous neighborhoods —
     <a href="https://en.wikipedia.org/wiki/Mandelbrot_set#Image_gallery_of_a_zoom_sequence">Seahorse
-    Valley</a>, Elephant Valley — are beautiful by broad consensus, but they are tiny slivers
+    Valley</a>, <a href="https://mathworld.wolfram.com/ElephantValley.html">Elephant
+    Valley</a> — are beautiful by broad consensus, but they are tiny slivers
     of the territory worth exploring. The six pictures below run from a frame that is mostly
     empty to one carrying detail at every scale. They are finished wallpapers rather than
-    bare geometry, because that is how the question actually gets asked, and every one of
-    them was rated as good as this project's scale goes — which of them are too sparse, too
+    bare geometry, and every one of them was rated as good as this project's scale goes — which of them are too sparse, too
     busy, or just right is still largely personal preference.</p>
 
       <figure class="figure" data-figure="locations-style-spectrum">
@@ -100,7 +100,7 @@
 
       <figure class="figure" data-figure="locations-rating-examples">
         <a class="figure-open" href="../explorer/index.html?v=2&amp;f=multibrot4&amp;x=-0.2348083809007602&amp;y=0.5774475407540084&amp;w=5.20487261e-04&amp;p=twilight_shifted" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/locations-rating-examples.jpg" width="1316" height="1204" alt="Four rows of locations, one row per rating from 1 to 4, three examples in each."><span class="figure-open-mark" aria-hidden="true">↗</span></a>
-        <figcaption>The four-point scale by example, with a line on each row saying what earns the score. What is being rated is the geometry, not the picture as drawn — the question is whether the place could make a good wallpaper across the modes and palettes available to it.</figcaption>
+        <figcaption>The four-point scale by example. What is being rated is the geometry, not the picture as drawn — the question is whether the place could make a good wallpaper across the modes and palettes available to it.</figcaption>
       </figure>
 
     <h2 id="guided-search">Guided search</h2>
@@ -121,8 +121,8 @@
     pattern held across more than a hundred such draws.</p>
 
       <figure class="figure" data-figure="locations-random-samples">
-        <a class="figure-open" href="../explorer/index.html?v=2&amp;x=-0.7389485586734066&amp;y=0.19464970626314537&amp;w=0.008536898938726294&amp;p=twilight_shifted" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/locations-random-samples.jpg" width="1316" height="734" alt="Twelve small fractal views drawn at random along the boundary, in a grid, under a line counting what the same draw threw away."><span class="figure-open-mark" aria-hidden="true">↗</span></a>
-        <figcaption>One seeded draw, reported in full: 704 frames taken uniformly over the Mandelbrot home view, of which the structural gates refused 691 — mostly interior, already escaped to blandness, or too little of the frame carrying detail. These twelve are everything that survived, and that filter is the only thing standing between them and worse.</figcaption>
+        <a class="figure-open" href="../explorer/index.html?v=2&amp;x=-0.7389485586734066&amp;y=0.19464970626314537&amp;w=0.008536898938726294&amp;p=twilight_shifted" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/locations-random-samples.jpg" width="1316" height="690" alt="Twelve small fractal views drawn at random along the boundary, in a grid, each labeled with the width of its frame."><span class="figure-open-mark" aria-hidden="true">↗</span></a>
+        <figcaption>Twelve frames that survived the structural gates out of one random draw over the Mandelbrot home view. That filter is the only thing standing between them and worse.</figcaption>
       </figure>
 
     <p>Rarity plus clustering is the signature of a search problem, and a search needs three
@@ -141,9 +141,30 @@
     repeats in a perfect cycle, which makes the nucleus the root of an equation that
     <a href="https://en.wikipedia.org/wiki/Newton%27s_method">Newton's method</a> can solve to
     full precision: a minibrot is not just a shape but an addressable coordinate at a known
-    scale. Second, the richest filament structure in the complex plane grows in the
+    scale.</p>
+
+    <p>Concretely, write the iteration as f<sub>c</sub>(z) = z<sup>2</sup> + c
+    (z<sup>d</sup> + c for a multibrot) and start it at z = 0. A copy of period p has its
+    nucleus at the c where the orbit returns exactly to zero after p steps, so the nucleus
+    is a root of g<sub>p</sub>(c) = f<sub>c</sub><sup>p</sup>(0), a polynomial in c. The
+    period is not assumed but read off the orbit: |z<sub>k</sub>| dips small wherever k is
+    a multiple of a containing copy's period, so one orbit pass at the guess ranks the
+    candidates, and Newton is tried on the divisors of the best few, smallest first.
+    Newton's method then solves for the root — c ← c − g<sub>p</sub>(c) /
+    g<sub>p</sub>′(c), with the derivative accumulated alongside the orbit as
+    z′ ← 2zz′ + 1 in the quadratic case and z′ ← d z<sup>d−1</sup> z′ + 1 in general — and
+    from a guess near enough to a copy it converges to full precision, most guesses not
+    being near enough to anything. The unknown is the constant c itself: what is being
+    solved for is where to put the camera.</p>
+
+    <p>Second, the richest filament structure in the complex plane grows in the
     halo <em>around</em> a copy, and minibrots are often near aesthetically beautiful
     locations.</p>
+
+      <figure class="figure" data-figure="locations-minibrot-examples">
+        <a class="figure-open" href="../explorer/index.html?v=2&amp;m=threads&amp;x=-0.7495253183358592&amp;y=0.0944710743517176&amp;w=0.00003933702370861308&amp;p=commons_Mandelbrot_3_B_C3_B4ng_Xoay" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/locations-minibrot-examples.jpg" width="1314" height="261" alt="Three finished fractal wallpapers side by side, each with a small dark miniature copy of the set at its center surrounded by dense structure."><span class="figure-open-mark" aria-hidden="true">↗</span></a>
+        <figcaption>Three minibrots as they appear in finished wallpapers from the gallery. The small dark shape in each is the copy's body; everything around it is the halo, and the halo is what the search is after.</figcaption>
+      </figure>
 
     <h2 id="the-walk">The walk</h2>
 
@@ -160,20 +181,15 @@
     runs, and <a href="#seeds-from-labels">Seeds from labels</a> below is about exactly
     that.</p>
 
-      <figure class="figure" data-figure="locations-walk-root">
-        <img src="../assets/images/figures/locations-walk-root.png" width="1316" height="446" alt="A Phoenix set framed two ways: cropped at both lobes on the left, wholly contained on the right.">
-        <figcaption>Where a walk starts decides what it can find. On the left the root frame is the whole-plane default and holds 66% of the set's height; on the right it is the family's own home view, and both lobes are territory the walk can descend into.</figcaption>
-      </figure>
-
     <p>From those roots the walk grows trees. It repeatedly takes the most promising frame it
     knows about — the <i>frontier</i> is a priority queue of frames — and expands it. (Every
     frame shares the project's fixed aspect ratio, which is why a center and a width fully
-    specify one.) One expansion runs in five beats.</p>
+    specify one.) One expansion runs in five stages.</p>
 
-    <p>Render cheaply. The frame is drawn small and fast, one sample per pixel — a thumbnail
+    <p><strong>Render cheaply.</strong> The frame is drawn small and fast, one sample per pixel — a thumbnail
     of its smooth field, not a finished render.</p>
 
-    <p>Propose children. Four candidate child frames are drawn inside the parent, each zoomed
+    <p><strong>Propose children.</strong> Four candidate child frames are drawn inside the parent, each zoomed
     to between 35% and 50% of its width. Most are pointed at <i>foci</i>: blur the smooth field
     at several radii and keep the peaks that survive every blur. A peak that persists across
     scales is a real concentration of structure, not one bright pixel, and the survivors are
@@ -182,19 +198,18 @@
     blind spots.</p>
 
       <figure class="figure" data-figure="locations-foci-proposals">
-        <a class="figure-open" href="../explorer/index.html?v=2&amp;f=multibrot4&amp;x=0.34024335714985376&amp;y=0.9313832371076788&amp;w=0.00000414220088899641&amp;p=twilight_shifted" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/locations-foci-proposals.jpg" width="1316" height="900" alt="One expanded frame with its kept foci ringed and its four proposals boxed, a table of those foci beside it, and the four children below."><span class="figure-open-mark" aria-hidden="true">↗</span></a>
-        <figcaption>One expansion's proposals. The rings are the peaks that survived blurring — the run sweeps five radii and keeps the survivors spaced apart — and the boxes are the four child frames drawn inside the parent. Two are aimed at foci, one is placed at random and one toward raw detail density, which is the insurance against the focus-finder's blind spots.</figcaption>
+        <a class="figure-open" href="../explorer/index.html?v=2&amp;f=multibrot4&amp;x=0.3402210811857287&amp;y=0.9314018675848565&amp;w=0.000020761869075560957&amp;p=twilight_shifted" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/locations-foci-proposals.jpg" width="1316" height="1033" alt="One fractal view with its surviving foci ringed and four child frames outlined in four different colors, and those four children in a row beneath, each bordered in its own box's color."><span class="figure-open-mark" aria-hidden="true">↗</span></a>
+        <figcaption>One expansion's proposals. Top: the parent, with the foci that survived blurring marked and the four child frames boxed. Bottom: each child at its own size, in its box's color. The labels say what each was aimed at.</figcaption>
       </figure>
 
-    <p>Gate. Each candidate is rendered the same cheap way, and structural checks throw out the
+    <p><strong>Gate.</strong> Each candidate is rendered the same cheap way, and structural checks throw out the
     hopeless before the judge ever sees one: too much interior (a mostly-black frame), instant
     escape (the whole frame gone in a few steps — the bland far-exterior signature), a flat
-    field with no usable range, and frames where too few tiles carry any edge detail. In one
-    measured run, 14% of all candidates died at these gates and were never scored at all.</p>
+    field with no usable range, and frames where too few tiles carry any edge detail.</p>
 
-    <p>Score. The judge scores the very render the gates just examined — nothing larger is
-    drawn, and that render is always in the same neutral palette, so the judge compares
-    geometry and never coloring. The location judge returns the probability that the view would
+    <p><strong>Score.</strong> The judge scores the rendering the gates just examined, and that render is
+    always in the same neutral palette, so the judge compares geometry and never
+    coloring. The location judge returns the probability that the view would
     be rated at least a 3 on the four-point scale above. At about 0.4 or higher the frame is
     <i>admitted</i>: recorded as a find and placed on the frontier. Between 0.1 and that bar
     it is <i>expandable</i> — a stepping stone the walk may explore through, but never a find. Below
@@ -202,13 +217,13 @@
     wide and bland before it gets good, so its first few steps get a waiver of the expandable
     bar rather than dying at the top.</p>
 
-    <p>Prioritize. Frontier order is the judge's score, plus a dash of random jitter so the
+    <p><strong>Prioritize.</strong> Frontier order is the judge's score, plus a dash of random jitter so the
     walk doesn't fixate, plus a slight bonus for depth. Expansion runs in batches of eight, and
     two shares of each batch are reserved: a quarter for roots that have never been touched,
     and a couple of slots for frames the reframing operators below proposed, so neither
     newcomers nor reframings wait behind an established frontier. Every root is capped at
     twelve expansions. Without the reservations and the cap, the handful of richest roots would
-    starve everything else — a lesson the project learned by watching it happen.</p>
+    starve everything else.</p>
 
     <p>The judge steers, but it never drives: it cannot move a frame or propose one, only
     reorder the queue and decide each candidate's fate. Where the camera can go is decided
@@ -216,6 +231,13 @@
     in the pipeline: admitted locations are the standing stock that rendering and selection
     draw from (<a href="finding-good-wallpapers.html">finding good wallpapers</a>,
     <a href="gallery-curation.html">gallery curation</a>).</p>
+
+    <p>Every frame the walk scores goes into its ledger, refusals as well as finds: the
+    family with all its constants, the center and width, the fate the frame earned, and
+    the judge's score behind it. The ledger is the walk's actual product. Nothing
+    downstream ever repeats the search — rendering, palette choice and curation all draw
+    on the frames it admitted. The ratings are not in it: those accumulate in the store of
+    hand labels the judge is trained on, and it is those that seed the next walk.</p>
 
       <figure class="figure" data-figure="locations-walk-step">
         <a class="figure-open" href="../explorer/index.html?v=2&amp;f=multibrot3&amp;x=-0.09178545984823365&amp;y=0.7701228066964432&amp;w=0.0000016915874951803383&amp;p=twilight_shifted" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/locations-walk-step.png" width="1316" height="678" alt="Animated diagram: a parent frame proposing four children, a gate removing one, the judge scoring the rest, and the frontier reordering."><span class="figure-open-mark" aria-hidden="true">↗</span></a>
@@ -249,7 +271,7 @@
     minibrots at the current scale or below, and propose the best two.</p>
 
       <figure class="figure" data-figure="locations-reframe-examples">
-        <a class="figure-open" href="../explorer/index.html?v=2&amp;f=multibrot4&amp;x=0.3121380176152481&amp;y=0.7310582944197834&amp;w=0.0000005363856379826955&amp;p=twilight_shifted" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/locations-reframe-examples.jpg" width="1316" height="1338" alt="Three rows, one per reframing operator: the triggering view, what the operator proposed, and the best frame admitted below it; then one frame reframed three ways."><span class="figure-open-mark" aria-hidden="true">↗</span></a>
+        <a class="figure-open" href="../explorer/index.html?v=2&amp;f=multibrot4&amp;x=0.3121380176152481&amp;y=0.7310582944197834&amp;w=0.0000005363856379826955&amp;p=twilight_shifted" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/locations-reframe-examples.jpg" width="1316" height="1208" alt="Three rows, one per reframing operator: the triggering view, what the operator proposed, and the best frame admitted below it; then one frame reframed three ways."><span class="figure-open-mark" aria-hidden="true">↗</span></a>
         <figcaption>The three reframing operators, one row each. A reframing is a move rather than a find, and two of these three score lower than the frame that triggered them — the first thing a minibrot framing puts in the picture is the copy's black body. The payoff is the third column: the best frame the walk went on to admit underneath. Below, one frame all three operators fired on, answered three different ways.</figcaption>
       </figure>
 
@@ -319,13 +341,11 @@
 
     <h2 id="examining-walk-quality">Examining walk quality</h2>
 
-    <p>Walks are far from interchangeable: the reservations and the cap in the Prioritize beat
+    <p>Walks are far from interchangeable: the reservations and the cap in the Prioritize stage
     exist precisely because a few rich roots would otherwise consume a whole run while others
     sit untouched.</p>
 
-    <p>The walk's output is a ledger of fates: every frame it considered, what it scored,
-    and whether it was admitted, kept open for further expansion, or refused. Reading that
-    ledger answers two different questions — does the walk find good locations, and does it
+    <p>Reading the ledger answers two different questions — does the walk find good locations, and does it
     find them efficiently — and the answer to the first is mostly a fact about where it
     starts.</p>
 

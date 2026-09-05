@@ -93,6 +93,7 @@
 {"schema": 1, "kind": "palette", "name": "cmr.voltage", "offered": true}
 {"schema": 1, "kind": "palette", "name": "cmr.waterlily", "offered": true}
 {"schema": 1, "kind": "palette", "name": "cmr.wildfire", "offered": true}
+{"schema": 1, "kind": "palette", "name": "commons_Mandelbrot_3_B_C3_B4ng_Xoay", "offered": false}
 {"schema": 1, "kind": "palette", "name": "consequences-25", "offered": false}
 {"schema": 1, "kind": "palette", "name": "coolwarm", "offered": true}
 {"schema": 1, "kind": "palette", "name": "curlv", "offered": false}

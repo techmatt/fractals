@@ -386,21 +386,54 @@ def outline(draw, box, colour, *, width: int = 2) -> None:
 
 # ---------------------------------------------------------------------- foci proposals
 
-#: The expansion the foci figure is drawn from. Picked out of the 1,017 ledger rows that
-#: carry a full set of kept foci *and* four proposed children, for a mix that shows the
-#: whole proposal rule: two children aimed at foci, one placed at random, one at raw
-#: detail density. Its foci also span the blur ladder — one peak survives all five radii
-#: and the weakest survives three — which is the half of the rule a single frame can
-#: otherwise only assert.
-FOCI_NODE = 6428
+#: The expansion the foci figure is drawn from, out of the run's 1,813 with a full set of
+#: kept foci and four proposed children. Three things a reader has to be able to see
+#: picked it. Its six kept foci are spread across the frame rather than crowded into one
+#: feature; its four children are four visibly different pictures; and all four of its
+#: proposals lie **wholly inside** the parent, which only 318 of the 1,813 do — the
+#: placement rules put a child's centre in the parent and let the frame itself run over
+#: the edge, and a box hanging off the corner of the picture would read as a drawing
+#: error rather than as the rule it is.
+FOCI_NODE = 2804
 
-#: How many blur radii a peak had to be found at to be a peak at all. The run's policy
-#: sweeps five, and a kept focus records which of them it survived.
-SIGMAS = 5
+#: One colour per proposed child, in the order the run proposed them. A child aimed at a
+#: focus rings that focus in its own colour and its label names the colour, which is the
+#: whole join between the small panel at the foot and the mark in the picture above it.
+#: Named the way a reader would say them, because the label says the name out loud.
+CHILD_INKS = (
+    ("red", (231, 76, 60)),
+    ("yellow", (247, 196, 63)),
+    ("green", (88, 196, 122)),
+    ("pink", (240, 122, 197)),
+)
+
+#: Room left under the bottom row for the mark that opens the picture in the explorer.
+#:
+#: That mark is CSS's — a rounded square in the picture's own bottom-right corner — and a
+#: sheet whose last label runs the full width of its tile has the mark land on the label's
+#: last word. Every other figure on this page ends in a label short enough to sit clear of
+#: it; this one's does not, and moving the mark is a stylesheet change that would move it
+#: on forty pictures. So the sheet leaves the corner empty instead. Sized against the
+#: figure at the reading column's own width, where the mark is about 34 CSS pixels tall on
+#: a sheet drawn at 1316 and shown at about 840.
+MARK_CLEARANCE = 60
+
+#: A focus no child was aimed at. Still marked — the figure's claim is that the blurring
+#: keeps several and the proposal rule spends only some of them — and marked quietly, so
+#: that the coloured rings stay the ones a label can point at.
+SPARE_FOCUS = (236, 236, 236)
 
 
 def foci_proposals() -> Drawn:
-    """The parent frame with its kept foci marked, and the four children it proposed."""
+    """The parent frame with its kept foci marked, and the four children it proposed.
+
+    Two blocks and one line of lettering. The figure used to carry a table of focus
+    scores, a caption naming the node, and three lines under every child saying which
+    placement rule ran and what the judge made of it — a ledger printed where a reader
+    looks first. What the reader needs is the join between a box in the parent and a
+    picture at the foot, so each proposal has a colour of its own, the focus it was
+    aimed at is ringed in that colour, and the one label says the colour out loud.
+    """
     rows = ledger()
     parent = nodes(rows)[FOCI_NODE]
     foci = next(
@@ -408,14 +441,9 @@ def foci_proposals() -> Drawn:
     )
     kept = foci["kept"]
     proposed = children(rows, FOCI_NODE)
+    aimed = _aimed_at(kept, proposed)
 
-    aimed = {}
-    for index, focus in enumerate(kept, start=1):
-        for child in proposed:
-            if child.get("focus_score") == focus["score"]:
-                aimed.setdefault(index, []).append(child)
-
-    big = (880, 495)
+    big = (SHEET_WIDTH - 2 * sheets.PAD, round((SHEET_WIDTH - 2 * sheets.PAD) * 9 / 16))
     small = panels(4)
     parent_render = panel("foci-parent", parent, big)
     child_renders = [
@@ -423,49 +451,78 @@ def foci_proposals() -> Drawn:
     ]
 
     top = sheets.PAD
-    block_b = top + big[1] + band(big[1], 3) + sheets.PAD
-    height = block_b + 22 + small[1] + band(small[1], 3) + sheets.PAD
+    kids_top = top + big[1] + sheets.PAD
+    height = kids_top + small[1] + band(small[1], 1) + sheets.PAD + MARK_CLEARANCE
     sheet, draw = sheets.canvas(SHEET_WIDTH, height)
 
     box = (0, 0, big[0], big[1])
     marked, over = _overlay(big)
-    for child in proposed:
-        colour = WELL_INK if child["branch"] == "foci" else WELL_INK_DIM
-        corners = frame_box(child["viewport"], parent["viewport"], box)
-        outline(over, corners, colour, width=2)
-        _tag(over, corners[0] + 5, corners[1] + 5, str(child["child_index"] + 1), colour)
-    for index, focus in enumerate(kept, start=1):
+    for index, child in enumerate(proposed):
+        outline(
+            over,
+            frame_box(child["viewport"], parent["viewport"], box),
+            CHILD_INKS[index][1],
+            width=3,
+        )
+    for index, focus in enumerate(kept):
+        colour = CHILD_INKS[aimed[index]][1] if index in aimed else SPARE_FOCUS
         x = (focus["x"] + 0.5) / NODE_TILE[0] * big[0]
         y = (focus["y"] + 0.5) / NODE_TILE[1] * big[1]
-        sheets.marker(over, x, y, str(index), radius=10, size=16)
+        _ring(over, x, y, colour)
     _paste_marked(sheet, sheets.fitted(parent_render, big), marked, (sheets.PAD, top))
-    box = (sheets.PAD, top, sheets.PAD + big[0], top + big[1])
 
-    under(
-        draw,
-        (box[0], box[1]),
-        big,
-        [
-            f"Parent frame · node {FOCI_NODE}, depth {parent['depth']} of a "
-            f"{_family_name(parent['family'])} walk",
-            f"centre {_centre(parent)}"
-            f"{sheets.MIDDOT}width {sheets.width_text(parent['viewport']['width'])}",
-            f"{foci['found']} peaks found{sheets.MIDDOT}{len(kept)} kept after spacing"
-            f"{sheets.MIDDOT}rings are the kept foci, boxes the four proposals",
-        ],
-    )
-    _foci_table(draw, sheets.PAD + big[0] + 2 * sheets.PAD, top, kept, aimed, foci)
-
-    rule(draw, block_b - 6)
     for index, (child, render) in enumerate(child_renders):
         x = sheets.PAD + index * (small[0] + sheets.PAD)
-        y = block_b + 22
-        sheet.paste(sheets.fitted(render, small), (x, y))
-        under(draw, (x, y), small, _child_lines(child, kept))
-    heading(draw, sheets.PAD, block_b + 2, "The four children this expansion proposed")
+        sheet.paste(sheets.fitted(render, small), (x, kids_top))
+        draw.rectangle(
+            [x, kids_top, x + small[0] - 1, kids_top + small[1] - 1],
+            outline=CHILD_INKS[index][1],
+            width=3,
+        )
+        under(draw, (x, kids_top), small, [_child_label(index, child, aimed)])
 
     destination = sheets.save(sheet, sheet_path("locations-foci-proposals"))
-    return Drawn(destination, _foci_provenance(parent, foci, proposed, big, small))
+    return Drawn(destination, _foci_provenance(parent, foci, proposed, aimed, big, small))
+
+
+def _aimed_at(kept: list[dict], proposed: list[dict]) -> dict[int, int]:
+    """Which kept focus each foci-branch child was pointed at: focus index to child index.
+
+    Read off the child's own `focus_score`, which is the peak strength the placement rule
+    recorded when it chose one — the ledger writes no other join between the two.
+    """
+    found: dict[int, int] = {}
+    for child_index, child in enumerate(proposed):
+        if child.get("branch") != "foci":
+            continue
+        for focus_index, focus in enumerate(kept):
+            if child.get("focus_score") == focus["score"] and focus_index not in found:
+                found[focus_index] = child_index
+                break
+    return found
+
+
+def _ring(draw, x: float, y: float, colour, *, radius: int = 13) -> None:
+    """A focus marked on the parent, dark-under-light like every other mark on a sheet."""
+    draw.ellipse(
+        [x - radius - 1, y - radius - 1, x + radius + 1, y + radius + 1],
+        outline=(0, 0, 0),
+        width=4,
+    )
+    draw.ellipse([x - radius, y - radius, x + radius, y + radius], outline=colour, width=3)
+
+
+def _child_label(index: int, child: dict, aimed: dict[int, int]) -> str:
+    """The one line under a child: what it was aimed at, in the colour it is ringed in."""
+    if child["branch"] == "foci":
+        colour = next(
+            (CHILD_INKS[value][0] for value in aimed.values() if value == index),
+            None,
+        )
+        aim = f"aimed at {colour} focus" if colour else "aimed at a focus"
+    else:
+        aim = {"random": "placed at random", "density": "toward detail density"}[child["branch"]]
+    return f"Child {index + 1}{sheets.MIDDOT}{aim}"
 
 
 def _overlay(size: tuple[int, int]):
@@ -489,10 +546,11 @@ def _paste_marked(sheet, picture, layer, origin: tuple[int, int]) -> None:
     sheet.paste(picture.convert("RGB"), origin)
 
 
-def _centre(row: dict, places: int = 6) -> str:
-    """A frame's centre, typeset — the pair of decimal strings a record carries."""
-    viewport = row["viewport"]
-    return sheets.complex_text((viewport["center_re"], viewport["center_im"]), places)
+def _tag(draw, x: float, y: float, text: str, colour) -> None:
+    """A number on a marked box, dark-under-light like the box itself."""
+    face = font(15)
+    for offset, ink in (((1, 1), (0, 0, 0)), ((0, 0), colour)):
+        draw.text((x + offset[0], y + offset[1]), text, fill=ink, font=face)
 
 
 def _family_name(family: dict) -> str:
@@ -505,94 +563,27 @@ def _family_name(family: dict) -> str:
     return {"mandelbrot": "Mandelbrot", "phoenix": "Phoenix"}.get(kind, str(kind))
 
 
-def _tag(draw, x: float, y: float, text: str, colour) -> None:
-    """A number on a marked box, dark-under-light like the box itself."""
-    face = font(15)
-    for offset, ink in (((1, 1), (0, 0, 0)), ((0, 0), colour)):
-        draw.text((x + offset[0], y + offset[1]), text, fill=ink, font=face)
-
-
-def _foci_table(draw, x: int, y: int, kept: list[dict], aimed: dict, foci: dict) -> None:
-    """The kept peaks as a table: how strong, how many blurs, and what aimed at it."""
-    heading(draw, x, y, "Kept foci, strongest first")
-    columns = ((0, "#"), (34, "focus score"), (150, "blurs survived"), (280, "proposal"))
-    face = font(14)
-    for offset, name in columns:
-        draw.text((x + offset, y + 26), name, fill=SECTION_INK, font=face)
-    for index, focus in enumerate(kept, start=1):
-        row_y = y + 50 + (index - 1) * 24
-        chosen = aimed.get(index)
-        ink = WELL_INK if chosen else WELL_INK_DIM
-        cells = (
-            str(index),
-            sheets.number(focus["score"], 3),
-            f"{len(focus['sigmas'])} of {SIGMAS}",
-            ", ".join(f"child {child['child_index'] + 1}" for child in chosen) if chosen else "—",
-        )
-        for (offset, _), text in zip(columns, cells, strict=True):
-            draw.text((x + offset, row_y), text, fill=ink, font=font(15))
-    note = y + 50 + len(kept) * 24 + 18
-    stack(
-        draw,
-        x,
-        note,
-        [
-            "A peak counts only where blurring",
-            "cannot erase it: the run sweeps five",
-            "radii, and keeps the survivors at least",
-            f"{foci['spread_radius']:.0f} pixels apart on the "
-            f"{NODE_TILE[0]}×{NODE_TILE[1]} tile, so",
-            "four proposals cannot pile onto one",
-            "feature.",
-        ],
-        lead=WELL_INK_DIM,
+def _foci_provenance(parent, foci, proposed, aimed, big, small) -> list[str]:
+    marks = ", ".join(
+        f"({focus['x']:.0f},{focus['y']:.0f}) "
+        + (CHILD_INKS[aimed[index]][0] if index in aimed else "unaimed")
+        for index, focus in enumerate(foci["kept"])
     )
-
-
-def _child_lines(child: dict, kept: list[dict]) -> list[str]:
-    """What one proposal is: which rule placed it, where it went, and what became of it."""
-    rank = next(
-        (
-            index
-            for index, focus in enumerate(kept, start=1)
-            if child.get("focus_score") == focus["score"]
-        ),
-        None,
-    )
-    branch = {
-        "foci": f"aimed at focus {rank}" if rank else "aimed at a focus",
-        "random": "placed at random",
-        "density": "placed at raw detail density",
-    }[child["branch"]]
-    zoom = (
-        float(child["viewport"]["width"]) / float(child.get("_parent_width", 1)) if False else None
-    )
-    fate = {"survived": "admitted", "expandable": "expandable"}.get(child["fate"], child["fate"])
-    return [
-        f"Child {child['child_index'] + 1}{sheets.MIDDOT}{branch}",
-        f"{child['placement']} placement{sheets.MIDDOT}width "
-        f"{sheets.width_text(child['viewport']['width'])}",
-        f"{fate}{sheets.MIDDOT}judge P(≥3) = {sheets.number(child['score'], 3)}",
-        "" if zoom is None else "",
-    ][:3]
-
-
-def _foci_provenance(parent, foci, proposed, big, small) -> list[str]:
     lines = [
         f"Ledger {LEDGER}/walk.jsonl, seed 11. All panels {_family_name(parent['family'])}, "
         f"mode smooth, colormap {renders.COLORMAP}, cap from the depth-aware policy, "
         "no crop; the engine chooses maxiter, so it is recorded per panel below.",
-        f"parent: node {parent['node_id']} (depth {parent['depth']}), centre "
+        f"parent: node {parent['node_id']} (root, depth {parent.get('depth', 0)}), centre "
         f"{parent['viewport']['center_re']} + {parent['viewport']['center_im']}i, width "
         f"{parent['viewport']['width']}, {big[0]}x{big[1]} at supersample 3, "
-        f"maxiter {parent['maxiter']}. Rings mark the {len(foci['kept'])} foci the run "
-        f"kept of {foci['found']} peaks found, at tile coordinates "
-        + ", ".join(f"({focus['x']:.0f},{focus['y']:.0f})" for focus in foci["kept"])
-        + f" on a {NODE_TILE[0]}x{NODE_TILE[1]} tile; boxes are the four proposals below.",
+        f"maxiter {parent.get('maxiter')}. Rings mark the {len(foci['kept'])} foci the run "
+        f"kept of {foci['found']} peaks found, at tile coordinates {marks} on a "
+        f"{NODE_TILE[0]}x{NODE_TILE[1]} tile; boxes are the four proposals below, each in "
+        "its own colour.",
     ]
-    for child in proposed:
+    for index, child in enumerate(proposed):
         lines.append(
-            f"child {child['child_index'] + 1}: branch {child['branch']}, placement "
+            f"child {index + 1} ({CHILD_INKS[index][0]}): branch {child['branch']}, placement "
             f"{child['placement']}, centre {child['viewport']['center_re']} + "
             f"{child['viewport']['center_im']}i, width {child['viewport']['width']}, "
             f"{small[0]}x{small[1]} at supersample 3, maxiter {child['maxiter']}, fate "
@@ -694,79 +685,45 @@ def reframe_examples() -> Drawn:
 
     big = panels(3)
     small = panels(4)
-    row_height = 24 + big[1] + band(big[1], 2) + sheets.PAD + 8
+    row_height = 24 + big[1] + band(big[1], 1) + sheets.PAD + 8
     strip_top = sheets.PAD + 3 * row_height + 6
-    height = strip_top + 26 + small[1] + band(small[1], 3) + sheets.PAD
+    height = strip_top + 26 + small[1] + band(small[1], 1) + sheets.PAD
     sheet, draw = sheets.canvas(SHEET_WIDTH, height)
 
     for index, (operator, node, row, found) in enumerate(picks):
         y = sheets.PAD + index * row_height
         if index:
             rule(draw, y - 14)
-        heading(draw, sheets.PAD, y, _operator_line(operator, row), size=15)
+        heading(draw, sheets.PAD, y, operator, size=15)
         cells = (
-            (
-                panel(f"reframe-{operator}-before", node, big),
-                [
-                    "The frame that triggered it",
-                    f"node {node['node_id']}, depth {node['depth']}"
-                    f"{sheets.MIDDOT}{_judged(judged[3 * index]['score'])}",
-                ],
-            ),
+            (panel(f"reframe-{operator}-before", node, big), "The frame that triggered it"),
             (
                 cache()
                 .render(f"reframe-{operator}-after", as_location(node["family"], row), big)
                 .path,
-                [
-                    "What the operator proposed",
-                    f"{FRAMINGS[row['framing']]}{sheets.MIDDOT}"
-                    f"{_judged(judged[3 * index + 1]['score'])}",
-                ],
+                "What the operator proposed",
             ),
             (
                 panel(f"reframe-{operator}-found", found, big),
-                [
-                    "The best frame admitted below it",
-                    f"depth {found['depth']}{sheets.MIDDOT}"
-                    f"{_judged(judged[3 * index + 2]['score'])}",
-                ],
+                "The best frame admitted below it",
             ),
         )
-        for column, (picture, lines) in enumerate(cells):
+        for column, (picture, label) in enumerate(cells):
             x = sheets.PAD + column * (big[0] + sheets.PAD)
             sheet.paste(sheets.fitted(picture, big), (x, y + 24))
-            under(draw, (x, y + 24), big, lines)
+            under(draw, (x, y + 24), big, [label])
 
     rule(draw, strip_top - 12)
-    heading(
-        draw,
-        sheets.PAD,
-        strip_top,
-        f"One frame, all three operators: node {THREE_WAYS}, "
-        f"{_family_name(trigger['family'])}, width "
-        f"{sheets.width_text(trigger['viewport']['width'])}",
-    )
-    strip = [
-        (location(trigger), ["The triggering frame", "admitted, " + _judged(judged[9]["score"])])
-    ]
-    for offset, (operator, row) in enumerate(three):
-        strip.append(
-            (
-                as_location(trigger["family"], row),
-                [
-                    operator,
-                    f"{FRAMINGS[row['framing']]}{sheets.MIDDOT}period {row['period']}",
-                    f"width {sheets.width_text(row['viewport']['width'])}"
-                    f"{sheets.MIDDOT}{_judged(judged[10 + offset]['score'])}",
-                ],
-            )
-        )
-    for index, (spec, lines) in enumerate(strip):
+    heading(draw, sheets.PAD, strip_top, "One frame, all three operators")
+    strip = [(location(trigger), "The triggering frame")]
+    for _offset, (operator, row) in enumerate(three):
+        strip.append((as_location(trigger["family"], row), operator))
+    for index, (spec, label) in enumerate(strip):
         x = sheets.PAD + index * (small[0] + sheets.PAD)
         y = strip_top + 26
         picture = cache().render(f"reframe-three-{index}", spec, small).path
         sheet.paste(sheets.fitted(picture, small), (x, y))
-        under(draw, (x, y), small, lines)
+        under(draw, (x, y), small, [label])
 
     destination = sheets.save(sheet, sheet_path("locations-reframe-examples"))
     return Drawn(destination, _reframe_provenance(picks, trigger, three, big, small, head, forest))
@@ -774,28 +731,6 @@ def reframe_examples() -> Drawn:
 
 def _score(row: dict) -> float:
     return row.get("score") or 0.0
-
-
-def _operator_line(operator: str, row: dict) -> str:
-    """The one line above an operator's row: what it does, and what it solved for."""
-    # A firing charges its Newton solves to the first row it writes and none to the
-    # rest, so a rung of the ladder that reused the same solve records zero. Printing
-    # "0 Newton probes" would read as "no solving happened", which is the opposite.
-    probes = row["newton_solves"]
-    cost = (
-        f"{sheets.MIDDOT}{probes} Newton probe{'' if probes == 1 else 's'}"
-        if probes
-        else f"{sheets.MIDDOT}solved once for the whole firing"
-    )
-    return (
-        f"{operator} \u2014 {OPERATORS[operator]}"
-        f"{sheets.MIDDOT}nucleus of period {row['period']}{cost}"
-    )
-
-
-def _judged(score: float) -> str:
-    """A judge score as a figure prints it: named as an estimate, never as a rating."""
-    return f"judge P(≥3) {sheets.number(score, 3)}"
 
 
 def _three_way_framings(rows: list[dict]) -> list[tuple[str, float | None]]:
@@ -817,26 +752,6 @@ def _three_way_framings(rows: list[dict]) -> list[tuple[str, float | None]]:
         )
         found.append((operator, row["framing"]))
     return found
-
-
-def _operator_note(draw, x: int, y: int, operator: str, node: dict, row: dict) -> None:
-    """The right-hand column of one operator's row: what fired, and what it cost."""
-    face = font(17)
-    draw.text((x, y), operator, fill=WELL_INK, font=face)
-    lines = [
-        OPERATORS[operator],
-        "",
-        f"nucleus of period {row['period']}, solved with",
-        f"Newton's method in {row['newton_solves']} probe"
-        f"{'' if row['newton_solves'] == 1 else 's'}",
-        "",
-        f"framed at {FRAMINGS[row['framing']]}",
-        f"width {sheets.width_text(node['viewport']['width'])} → "
-        f"{sheets.width_text(row['viewport']['width'])}",
-    ]
-    for index, line in enumerate(lines):
-        if line:
-            draw.text((x, y + 30 + index * 21), line, fill=WELL_INK_DIM, font=font(15))
 
 
 def _reframe_provenance(picks, trigger, three, big, small, head, forest) -> list[str]:
@@ -917,10 +832,9 @@ def framing_ladder() -> Drawn:
         draw,
         sheets.PAD,
         sheets.PAD,
-        f"One nucleus of period {rungs[0][1]['period']}, in a {_family_name(trigger['family'])} "
-        f"walk at node {LADDER_NODE}{sheets.MIDDOT}the copy's own size is "
-        f"{sheets.width_text(window)}, the frame it was spotted in "
-        f"{sheets.width_text(parent_width)}",
+        f"One minibrot found in a {_family_name(trigger['family'])} walk"
+        f"{sheets.MIDDOT}the copy's own size is {sheets.width_text(window)}, "
+        f"the frame it was spotted in {sheets.width_text(parent_width)}",
     )
     for index, (framing, row) in enumerate(rungs):
         x = sheets.PAD + index * (size[0] + sheets.PAD)
@@ -940,7 +854,6 @@ def framing_ladder() -> Drawn:
                     if framing
                     else f"{width / window:.0f}× the copy, unchanged from the parent"
                 ),
-                _judged(judged[index]["score"]),
             ],
         )
     destination = sheets.save(sheet, sheet_path("locations-framing-ladder"))
@@ -1010,7 +923,7 @@ def descent_chain() -> Drawn:
         heading(draw, x, y, f"{index + 1} of {len(chain)}{sheets.MIDDOT}{_rung(entry)}", size=15)
         picture = cache().render(f"chain-{index}", _chain_location(root, entry), size)
         sheet.paste(sheets.fitted(picture.path, size), (x, y + 26))
-        under(draw, (x, y + 26), size, _chain_lines(entry, judged[index], rated))
+        under(draw, (x, y + 26), size, _chain_lines(entry, rated))
     destination = sheets.save(sheet, sheet_path("locations-descent-chain"))
     return Drawn(destination, _chain_provenance(root, chain, judged, rated, size))
 
@@ -1035,25 +948,23 @@ def _rung(entry: dict) -> str:
     }[entry["branch"]]
 
 
-def _chain_lines(entry: dict, score: dict, rated: dict) -> list[str]:
-    """The three lines under one rung: what it is, how wide, and what the judge said."""
+def _chain_lines(entry: dict, rated: dict) -> list[str]:
+    """The lines under one rung: what the step was, and how wide the frame it reached."""
     if entry["kind"] == "root":
         return [
-            f"Rated {rated['score']} by hand, {rated['recorded_at']}",
+            f"Rated {rated['score']} by hand",
             f"width {sheets.width_text(entry['viewport']['width'])}",
             "the proven channel: a root per rated keeper",
         ]
     if entry["kind"] == "reframing":
         return [
-            f"{FRAMINGS[entry['framing']]}, on a nucleus of period {entry['period']}",
+            FRAMINGS[entry["framing"]],
             f"width {sheets.width_text(entry['viewport']['width'])}",
-            _judged(score["score"]) + ", read after the fact",
         ]
     fate = {"survived": "admitted", "expandable": "expandable"}.get(entry["fate"], entry["fate"])
     return [
-        f"depth {entry['depth']}{sheets.MIDDOT}{fate}",
+        fate,
         f"width {sheets.width_text(entry['viewport']['width'])}",
-        _judged(entry["score"]),
     ]
 
 
@@ -1147,7 +1058,7 @@ RATED = {
     4: (
         ("julia_multibrot45_score_band", 18),
         ("twin_top_slices", 74),
-        ("phoenix_parameter_grid", 452),
+        ("phoenix_parameter_grid", 296),
     ),
 }
 
@@ -1358,44 +1269,26 @@ FATES = {
 
 
 def random_samples() -> Drawn:
-    """Twelve frames drawn uniformly and kept only by the gates, with the draw's yield."""
+    """Twelve frames drawn uniformly over the home view and kept only by the gates.
+
+    The draw's tally — how many frames it took, which gate refused how many, what the
+    pass rate came to — used to stand across the top of the sheet. It is provenance and
+    the caption's, not the picture's: what a reader is here to see is twelve frames that
+    got through, and a line of counts above them is a record where the eye goes first.
+    """
     draws, kept = renders.boundary_draw(seed=BOUNDARY_SEED, keep=BOUNDARY_KEEP)
     run = next(row for row in draws if row["kind"] == "run")
     summary = next(row for row in draws if row["kind"] == "summary")
-    fates = summary["fates"]
-    refused = sum(count for fate, count in fates.items() if fate != "survived")
 
     size = panels(BOUNDARY_COLUMNS)
     rows_down = (len(kept) + BOUNDARY_COLUMNS - 1) // BOUNDARY_COLUMNS
     cell = size[1] + band(size[1], 1)
-    height = sheets.PAD + 44 + rows_down * (cell + sheets.PAD) + sheets.PAD
+    height = sheets.PAD + rows_down * (cell + sheets.PAD) + sheets.PAD
     sheet, draw = sheets.canvas(SHEET_WIDTH, height)
-    heading(
-        draw,
-        sheets.PAD,
-        sheets.PAD,
-        f"{summary['attempts']} frames drawn uniformly over the "
-        f"{_family_name(run['family'])} home view, widths log-uniform between "
-        f"{run['width_band'][0]:g} and {run['width_band'][1]:g}, seed {run['seed']}",
-    )
-    stack(
-        draw,
-        sheets.PAD,
-        sheets.PAD + 22,
-        [
-            f"{refused} refused by the structural gates — "
-            + f"{sheets.MIDDOT}".join(
-                f"{fates[fate]} {FATES[fate]}" for fate in FATES if fates.get(fate)
-            )
-            + f"{sheets.MIDDOT}{summary['pass_rate']:.1%} of draws survived",
-        ],
-        size=14,
-        lead=WELL_INK_DIM,
-    )
     for index, row in enumerate(kept):
         column, down = index % BOUNDARY_COLUMNS, index // BOUNDARY_COLUMNS
         x = sheets.PAD + column * (size[0] + sheets.PAD)
-        y = sheets.PAD + 44 + down * (cell + sheets.PAD)
+        y = sheets.PAD + down * (cell + sheets.PAD)
         picture = cache().render(f"boundary-{BOUNDARY_SEED}-{index}", location(row), size)
         sheet.paste(sheets.fitted(picture.path, size), (x, y))
         under(
@@ -1687,8 +1580,8 @@ def walk_lengths() -> Drawn:
             lambda root: _channel(root) != "proven",
         ),
         arm(
-            f"All roots of {PRIOR_RUN}",
-            "a different run, for scale — same limits, a different root mix",
+            "Another run entirely",
+            "for scale — the same limits, a different root mix",
             CONTEXT_INK,
             prior,
         ),
@@ -1877,9 +1770,10 @@ BEATS = (
     ),
     (
         "Score",
-        "The judge reads the very render the gates just examined and returns"
-        f" P(\u22653). At {GOOD_FLOOR} or higher the frame is admitted; between {JUNK_FLOOR}"
-        f" and {GOOD_FLOOR} it is expandable; below that it is refused.",
+        "The judge reads the very render the gates just examined and rates the"
+        " frame's chances. A strong reading is admitted; a middling one is expandable, a"
+        " frame the walk may explore through but never counts as a find; a weak one is"
+        " refused.",
     ),
     (
         "Prioritize",
@@ -1928,7 +1822,13 @@ def walk_step() -> Drawn:
 
 
 def _check_floors(rows: list[dict]) -> None:
-    """Hold the two printed floors to the ledger whose fates the diagram is showing."""
+    """Hold the three fates the diagram shows to the ledger it is drawing them from.
+
+    The diagram prints no threshold any more — a floor is an operating constant and it
+    moves — but it still asserts an ordering: admitted above expandable above refused.
+    This is that assertion checked against the run, so a ledger whose fates no longer
+    stack that way is a refusal rather than a diagram quietly telling the wrong story.
+    """
     scored = [
         row for row in rows if row.get("kind") == "candidate" and row.get("score") is not None
     ]
@@ -1939,8 +1839,8 @@ def _check_floors(rows: list[dict]) -> None:
     if min(admitted) < GOOD_FLOOR or max(refused) >= JUNK_FLOOR:
         raise renders.EngineError(
             f"this ledger admits from {min(admitted):.6f} and refuses up to "
-            f"{max(refused):.6f}; the diagram prints {GOOD_FLOOR} and {JUNK_FLOOR}, and "
-            "printing a floor the run did not use is the one thing this figure must not do"
+            f"{max(refused):.6f}, against the {GOOD_FLOOR} and {JUNK_FLOOR} this run was "
+            "meant to have used, so the three fates the diagram shows are not this run's"
         )
 
 
@@ -1990,26 +1890,23 @@ def _beat_text(draw, beat: int) -> None:
 
 
 def _step_settings(draw, parent: dict, run: dict) -> None:
-    """The numbers this one expansion ran under, standing still under the beat text."""
+    """What this one expansion is, standing still under the stage text."""
     left = sheets.PAD + NODE_TILE[0] + 2 * sheets.PAD
-    policy, gates = run["policy"], run["gates"]
+    policy = run["policy"]
     heading(draw, left, STEP_PARENT[1] + 138, "This expansion", size=15)
     stack(
         draw,
         left,
         STEP_PARENT[1] + 162,
         [
-            f"node {parent['node_id']}{sheets.MIDDOT}{_family_name(parent['family'])}"
-            f"{sheets.MIDDOT}depth {parent['depth']} of the walk from root "
-            f"{parent['root_id']}{sheets.MIDDOT}batch {parent['batch']}",
+            f"{_family_name(parent['family'])}{sheets.MIDDOT}"
+            f"{parent['depth']} rungs below the root it grew from",
             f"frame width {sheets.width_text(parent['viewport']['width'])}"
             f"{sheets.MIDDOT}drawn at {NODE_TILE[0]}×{NODE_TILE[1]}, one sample per pixel",
-            f"policy: {policy['candidates']} candidates, each "
+            f"{policy['candidates']} candidates, each "
             f"{policy['zoom'][0]:.0%} to {policy['zoom'][1]:.0%} of the parent's width",
-            f"gates: interior cap {gates['interior_cap']}{sheets.MIDDOT}escape spread at "
-            f"least {gates['band']['spread_min']:.0f}{sheets.MIDDOT}escape median at least "
-            f"{gates['band']['escape_median_min']:.0f}{sheets.MIDDOT}occupancy at least "
-            f"{gates['occupancy_floor']}",
+            "the gates: too much interior, escaped to blandness, a flat field, "
+            "too little of the frame carrying detail",
         ],
         size=14,
         lead=WELL_INK_DIM,
@@ -2074,12 +1971,6 @@ def _kid_marks(draw, beat: int, index: int, kid: dict, x: int, small) -> None:
             fill=REFUSED_INK,
             font=font(15),
         )
-        draw.text(
-            (x, STEP_VERDICT + 21),
-            _gate_reading(kid),
-            fill=SECTION_INK,
-            font=font(14),
-        )
         draw.line(
             [x, STEP_KIDS_TOP, x + small[0], STEP_KIDS_TOP + small[1]],
             fill=REFUSED_INK,
@@ -2097,7 +1988,7 @@ def _kid_marks(draw, beat: int, index: int, kid: dict, x: int, small) -> None:
     admitted = kid["fate"] == "survived"
     draw.text(
         (x, STEP_VERDICT + 21),
-        f"{_judged(kid['score'])} — {'admitted' if admitted else 'expandable'}",
+        "admitted" if admitted else "expandable",
         fill=ADMITTED_INK if admitted else WELL_INK_DIM,
         font=font(15),
     )
@@ -2111,15 +2002,6 @@ def _branch_line(kid: dict) -> str:
     }[kid["branch"]]
 
 
-def _gate_reading(kid: dict) -> str:
-    """The number the gate that refused this child actually read, against its threshold."""
-    if kid["fate"] == "occupancy_floor":
-        return f"{kid['occupancy']:.3f} of tiles carry detail, floor {0.321}"
-    if kid["fate"] == "interior_cap":
-        return f"interior fraction {kid['interior_fraction']:.3f}, cap {0.30}"
-    return f"escape spread {kid['escape']['spread']:.1f}, floor {20.0}"
-
-
 def _queue(draw, parent, kids) -> None:
     """The last beat: the parent gone, and what survived going back on, best first."""
     rule(draw, STEP_QUEUE - 14)
@@ -2130,7 +2012,7 @@ def _queue(draw, parent, kids) -> None:
         font=font(17, SEMIBOLD),
     )
     x = sheets.PAD + 190
-    gone = f"node {parent['node_id']} \u2014 expanded, off the queue"
+    gone = "the parent \u2014 expanded, off the queue"
     draw.text((x, STEP_QUEUE + 2), gone, fill=SECTION_INK, font=font(15))
     width = text_width(draw, gone, font(15))
     draw.line([x, STEP_QUEUE + 11, x + width, STEP_QUEUE + 11], fill=SECTION_INK, width=1)
@@ -2142,7 +2024,8 @@ def _queue(draw, parent, kids) -> None:
     for kid in survivors:
         admitted = kid["fate"] == "survived"
         ink = ADMITTED_INK if admitted else WELL_INK_DIM
-        text = f"{kid['child_index'] + 1}{sheets.MIDDOT}{sheets.number(kid['score'], 3)}"
+        fate = "admitted" if admitted else "expandable"
+        text = f"{kid['child_index'] + 1}{sheets.MIDDOT}{fate}"
         face = font(15)
         span = round(text_width(draw, text, face)) + 20
         draw.rounded_rectangle(
@@ -2248,10 +2131,7 @@ def walk_examples() -> Drawn:
             draw,
             sheets.PAD,
             y,
-            f"Best find rated {rating} by hand{sheets.MIDDOT}root {root_id}"
-            f"{sheets.MIDDOT}{found} frames proposed under it, {admitted} admitted"
-            f"{sheets.MIDDOT}deepest rung {deepest}"
-            f"{sheets.MIDDOT}the rated frame is {len(chain) - 1} rungs below the root",
+            f"Best find rated {rating} by hand",
             size=15,
         )
         for column, entry in enumerate(chain[:EXAMPLE_COLUMNS]):

@@ -779,6 +779,50 @@ def gallery_output() -> Drawn:
     )
 
 
+# ------------------------------------------------------------------- minibrots in a row
+
+#: Three across, one down, and no lettering at all. The figure's whole claim is that the
+#: small dark shape in each of these wallpapers is a copy of the set, so anything drawn
+#: over the picture is competing with the one thing the reader is being asked to look at.
+MINIBROT_COLUMNS = 3
+
+#: How the three were arrived at, for the row's own provenance.
+MINIBROT_DRAW = (
+    "Chosen by this session from the 1,000-seat tentative gallery, out of the 129 seats "
+    "on a parameter plane whose shipped picture carries one compact near-black region "
+    "wholly inside the frame — a copy's body rather than a lobe running off an edge — "
+    "measured on the seat's own thumbnail, narrowed to the ones whose run kept enough "
+    "of the autolevel stamp to be redrawn from the recipe, and then looked at. One seat "
+    "per plane and no two through the same rendering mode or hue family, so the row "
+    "varies in everything except the shape it is about.",
+)
+
+
+def minibrot_examples() -> Drawn:
+    """Three finished wallpapers with a minibrot's body plainly in frame."""
+    identifier = "locations-minibrot-examples"
+    wanted = picks_of(identifier)
+    if len(wanted) != MINIBROT_COLUMNS:
+        raise PickError(
+            f"{identifier} is a row of {MINIBROT_COLUMNS} and its row names {len(wanted)} pick(s)"
+        )
+    resolved = resolve(wanted)
+    catalog = renders.mode_catalog()
+    size = panels(MINIBROT_COLUMNS)
+    sheet, _draw = sheets.canvas(*sheets.grid_size(size, MINIBROT_COLUMNS, 1, caption=0))
+    for index, pick in enumerate(resolved):
+        picture = panel(pick, f"minibrot-{index + 1}-{pick.alias}", catalog)
+        sheet.paste(
+            sheets.fitted(picture, size),
+            sheets.panel_origin(index, size, MINIBROT_COLUMNS, caption=0),
+        )
+    destination = sheets.save(sheet, sheet_path(identifier))
+    return Drawn(
+        destination,
+        provenance(resolved, size, columns=MINIBROT_COLUMNS, chosen=MINIBROT_DRAW),
+    )
+
+
 # ------------------------------------------------------------------ one mode, two pairs
 
 #: The Rendering modes page's per-mode figure: two examples down, and each example is the
@@ -1449,6 +1493,7 @@ MAKERS = {
     "overview-gallery-hook": gallery_hook,
     "modes-gallery": modes_gallery,
     "gallery-output": gallery_output,
+    "locations-minibrot-examples": minibrot_examples,
     **{identifier: _pair(identifier) for identifier in MODE_FIGURES},
 }
 

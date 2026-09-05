@@ -59,7 +59,7 @@ _MASTER_PENDING = re.compile(r"\[PENDING —.*?\]", re.S)
 _MASTER_BULLET = re.compile(r"^- ", re.M)
 _MARKDOWN_LINK = re.compile(r"\[([^\]]+)\]\([^)]*\)")
 _WIKI_LINK = re.compile(r"\[([^\]]+)\]")
-_INLINE_TAG = re.compile(r"</?(?:i|em|b|strong|code)>")
+_INLINE_TAG = re.compile(r"</?(?:i|em|b|strong|code|sub|sup)>")
 
 
 class ProseError(Exception):
@@ -204,6 +204,10 @@ def words_of_master(text: str, divergences: tuple[Divergence, ...] = ()) -> str:
     line is the same kind of thing: the page spells that list as `<li>`, whose tags
     vanish with every other tag, so leaving the hyphen in would part the two sides on a
     character neither of them is prose.
+
+    `<sub>` and `<sup>` are on that list for the same reason `<i>` is: a master sets its
+    inline mathematics as HTML, because the alternative — a Unicode superscript on one
+    side and a tag on the other — is two spellings that reduce to two different words.
 
     An HTML comment goes out here for the reason it goes out of the page: a master's
     standing note to whoever places it — *this number wants re-checking against a run
