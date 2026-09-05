@@ -33,7 +33,6 @@
 {"schema": 1, "kind": "link", "id": "figure:locations-foci-proposals", "link": "v=2&f=multibrot4&x=0.3402210811857287&y=0.9314018675848565&w=0.000020761869075560957&p=twilight_shifted", "from": "panel 1"}
 {"schema": 1, "kind": "link", "id": "figure:locations-walk-descent", "link": "v=2&y=0.0&p=twilight_shifted", "from": "panel 1"}
 {"schema": 1, "kind": "link", "id": "figure:locations-reframe-examples", "link": "v=2&f=multibrot4&x=0.3121380176152481&y=0.7310582944197834&w=0.0000005363856379826955&p=twilight_shifted", "from": "panel 1"}
-{"schema": 1, "kind": "link", "id": "figure:locations-framing-ladder", "link": "v=2&f=multibrot3&x=0.52619245723013316382598465321559984&y=0.45603008888099358391978553545697806&w=7.395784334276819e-05&p=twilight_shifted", "from": "panel 1"}
 {"schema": 1, "kind": "link", "id": "figure:locations-descent-chain", "link": "v=2&f=multibrot5&x=0.6652523700253081&y=0.5097069361860601&w=5.1343761624410145e-05&p=twilight_shifted", "from": "panel 1"}
 {"schema": 1, "kind": "link", "id": "figure:locations-walk-lengths", "no_link": "drawn", "why": "a drawn diagram or chart, with no engine render behind it to reopen"}
 {"schema": 1, "kind": "link", "id": "figure:locations-highly-rated", "link": "v=2&x=-0.7493892550988116&y=0.04149385841183289&w=0.0000042814940366928615&p=twilight_shifted", "from": "panel 1"}

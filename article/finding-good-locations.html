@@ -61,11 +61,11 @@
   <section class="prose">
     <p><a href="rendering-modes.html">Rendering modes</a> showed the many ways to render a
     beautiful location in a fractal; this page is specifically about the problem of finding
-    such locations. A location is the camera half of a wallpaper: a fractal family with its
-    constants fixed, a center point in the complex plane, and a frame width and height —
-    where to point and how far to zoom. Color is deliberately absent: a location is judged on
-    its geometry alone, and later stages cover choosing rendering styles and palettes to suit
-    it (<a href="training-judges.html">training judges</a>,
+    such locations. A location is the camera half of a wallpaper: where to point and how far
+    to zoom. Concretely, it is a fractal family with its constants fixed, a center point in
+    the complex plane, and a frame width and height. Color is deliberately absent: a location
+    is judged on its geometry alone, and later stages cover choosing rendering styles and
+    palettes to suit it (<a href="training-judges.html">training judges</a>,
     <a href="color-palettes.html">color palettes</a>).</p>
 
     <h2 id="what-makes-a-location-good">What makes a location good</h2>
@@ -74,14 +74,15 @@
     that is too busy for one person is delightful to another; a lone filament crossing open
     space might be dull in a gallery but exactly right on a desktop, where sparse geometry
     leaves room for icons and text, while an intricate spiral that prints beautifully
-    can be exhausting behind an already busy desktop. A few famous neighborhoods —
-    <a href="https://en.wikipedia.org/wiki/Mandelbrot_set#Image_gallery_of_a_zoom_sequence">Seahorse
+    can be exhausting behind an already busy desktop. A few famous neighborhoods
+    (<a href="https://en.wikipedia.org/wiki/Mandelbrot_set#Image_gallery_of_a_zoom_sequence">Seahorse
     Valley</a>, <a href="https://mathworld.wolfram.com/ElephantValley.html">Elephant
-    Valley</a> — are beautiful by broad consensus, but they are tiny slivers
+    Valley</a>) are beautiful by broad consensus, but they are tiny slivers
     of the territory worth exploring. The six pictures below run from a frame that is mostly
     empty to one carrying detail at every scale. They are finished wallpapers rather than
-    bare geometry, and every one of them was rated as good as this project's scale goes — which of them are too sparse, too
-    busy, or just right is still largely personal preference.</p>
+    bare geometry, and every one of them was rated as good as this project's scale goes.
+    Which of them are too sparse, too busy, or just right is still largely personal
+    preference.</p>
 
       <figure class="figure" data-figure="locations-style-spectrum">
         <img src="../assets/images/figures/locations-style-spectrum.jpg" width="1314" height="510" alt="Six finished fractal wallpapers in a grid, numbered one to six, running from a sparse blue spiral in mostly empty space to a dense orange field busy at every scale.">
@@ -92,7 +93,7 @@
     to a large set of locations. As the project runs, locations are rated by hand on a
     four-point scale, from junk to exceptional wallpaper material. Each judgment looks at
     several differently-colored renders of the same location, because the thing being rated is
-    the geometry — the question is not "is this picture good as rendered" but "could this place
+    the geometry. The question is not "is this picture good as rendered" but "could this place
     make a good wallpaper across the many rendering modes and palettes available to it." Those
     ratings are the raw material for the <i>location judge</i>, a small neural network trained
     to predict them (see <a href="training-judges.html">training judges</a>); here are a few
@@ -109,15 +110,15 @@
     where interesting detail lives: deep inside a set nothing escapes and the image is black;
     far outside everything escapes at once and the image is a bland gradient; all the great
     structure crowds the boundary. But the boundary is not itself the answer. Most boundary
-    views are either nearly empty — one filament crossing a void — or pure visual noise, chaos
+    views are either nearly empty (one filament crossing a void) or pure visual noise, chaos
     at every scale with nothing for the eye to hold. Genuinely good views are rare, and they
     cluster: a spiral worth framing tends to sit in a neighborhood of other spirals worth
-    framing — Seahorse Valley is a classic example.</p>
+    framing. Seahorse Valley is a classic example.</p>
 
     <p>Random sampling shows the rarity directly. Below are viewports drawn at random along
-    the boundary, kept only if they pass a crude complexity check — not mostly interior, not
+    the boundary, kept only if they pass a crude complexity check: not mostly interior, not
     already escaped to blandness, something actually happening in the frame. Even with that
-    filter, almost all of them are mediocre at best as wallpapers, in my opinion — and that
+    filter, almost all of them are mediocre at best as wallpapers, in my opinion, and that
     pattern held across more than a hundred such draws.</p>
 
       <figure class="figure" data-figure="locations-random-samples">
@@ -137,10 +138,10 @@
     copies of themselves. For the Mandelbrot set we call these copies <i>minibrots</i>, and
     they are everywhere, at every scale; its
     multibrot cousins carry miniature copies of their own. Two facts make them special to a
-    search. Each copy has an exact center — its <i>nucleus</i> — a point whose orbit
-    repeats in a perfect cycle, which makes the nucleus the root of an equation that
+    search. Each copy has an exact center, its <i>nucleus</i>: a point whose orbit repeats in
+    a perfect cycle. That makes the nucleus the root of an equation
     <a href="https://en.wikipedia.org/wiki/Newton%27s_method">Newton's method</a> can solve to
-    full precision: a minibrot is not just a shape but an addressable coordinate at a known
+    full precision, so a minibrot is not just a shape but an addressable coordinate at a known
     scale.</p>
 
     <p>Concretely, write the iteration as f<sub>c</sub>(z) = z<sup>2</sup> + c
@@ -150,10 +151,10 @@
     period is not assumed but read off the orbit: |z<sub>k</sub>| dips small wherever k is
     a multiple of a containing copy's period, so one orbit pass at the guess ranks the
     candidates, and Newton is tried on the divisors of the best few, smallest first.
-    Newton's method then solves for the root — c ← c − g<sub>p</sub>(c) /
+    Newton's method then solves for the root: c ← c − g<sub>p</sub>(c) /
     g<sub>p</sub>′(c), with the derivative accumulated alongside the orbit as
-    z′ ← 2zz′ + 1 in the quadratic case and z′ ← d z<sup>d−1</sup> z′ + 1 in general — and
-    from a guess near enough to a copy it converges to full precision, most guesses not
+    z′ ← 2zz′ + 1 in the quadratic case and z′ ← d z<sup>d−1</sup> z′ + 1 in general.
+    From a guess near enough to a copy it converges to full precision, most guesses not
     being near enough to anything. The unknown is the constant c itself: what is being
     solved for is where to put the camera.</p>
 
@@ -171,22 +172,22 @@
     <p>Each fractal family gets its own walk, and a walk is not one path but a growing forest
     of frames. Its <i>roots</i> are starting frames drawn from per-family pools: for the Julia
     families, constants c accumulated from earlier discoveries (the atlas idea from
-    <a href="escape-time-fractals.html">escape-time fractals</a> — the Mandelbrot set as a map
-    of all Julia sets — made literal); for the phoenix family, a pool of seed constants placed
-    where the family's scarce plume structure is known to grow; for the parameter planes — the
-    Mandelbrot set and its multibrot cousins — a grid of about five hundred minibrot nuclei
+    <a href="escape-time-fractals.html">escape-time fractals</a> made literal, the Mandelbrot
+    set as a map of all Julia sets); for the phoenix family, a pool of seed constants placed
+    where the family's scarce plume structure is known to grow; for the parameter planes (the
+    Mandelbrot set and its multibrot cousins), a grid of about five hundred minibrot nuclei
     per plane, plus each plane's home view. Those pools are fixed files: a run walks a cursor
-    forward through one and can exhaust it. What is not fixed is the supply as a whole —
-    ratings and finds flow back as new roots through separate channels while the project
+    forward through one and can exhaust it. What is not fixed is the supply as a whole.
+    Ratings and finds flow back as new roots through separate channels while the project
     runs, and <a href="#seeds-from-labels">Seeds from labels</a> below is about exactly
     that.</p>
 
-    <p>From those roots the walk grows trees. It repeatedly takes the most promising frame it
-    knows about — the <i>frontier</i> is a priority queue of frames — and expands it. (Every
-    frame shares the project's fixed aspect ratio, which is why a center and a width fully
-    specify one.) One expansion runs in five stages.</p>
+    <p>From those roots the walk grows trees. The <i>frontier</i> is a priority queue of
+    frames; the walk repeatedly takes the most promising one it knows about and expands it.
+    (Every frame shares the project's fixed aspect ratio, which is why a center and a width
+    fully specify one.) One expansion runs in five stages.</p>
 
-    <p><strong>Render cheaply.</strong> The frame is drawn small and fast, one sample per pixel — a thumbnail
+    <p><strong>Render cheaply.</strong> The frame is drawn small and fast, one sample per pixel: a thumbnail
     of its smooth field, not a finished render.</p>
 
     <p><strong>Propose children.</strong> Four candidate child frames are drawn inside the parent, each zoomed
@@ -204,7 +205,7 @@
 
     <p><strong>Gate.</strong> Each candidate is rendered the same cheap way, and structural checks throw out the
     hopeless before the judge ever sees one: too much interior (a mostly-black frame), instant
-    escape (the whole frame gone in a few steps — the bland far-exterior signature), a flat
+    escape (the whole frame gone in a few steps, the bland far-exterior signature), a flat
     field with no usable range, and frames where too few tiles carry any edge detail.</p>
 
     <p><strong>Score.</strong> The judge scores the rendering the gates just examined, and that render is
@@ -212,8 +213,8 @@
     coloring. The location judge returns the probability that the view would
     be rated at least a 3 on the four-point scale above. At about 0.4 or higher the frame is
     <i>admitted</i>: recorded as a find and placed on the frontier. Between 0.1 and that bar
-    it is <i>expandable</i> — a stepping stone the walk may explore through, but never a find. Below
-    that it is refused. One allowance keeps the parameter planes viable: a plane descent starts
+    it is <i>expandable</i>: a stepping stone the walk may explore through, but never a find.
+    Below that it is refused. One allowance keeps the parameter planes viable: a plane descent starts
     wide and bland before it gets good, so its first few steps get a waiver of the expandable
     bar rather than dying at the top.</p>
 
@@ -235,13 +236,13 @@
     <p>Every frame the walk scores goes into its ledger, refusals as well as finds: the
     family with all its constants, the center and width, the fate the frame earned, and
     the judge's score behind it. The ledger is the walk's actual product. Nothing
-    downstream ever repeats the search — rendering, palette choice and curation all draw
+    downstream ever repeats the search. Rendering, palette choice and curation all draw
     on the frames it admitted. The ratings are not in it: those accumulate in the store of
     hand labels the judge is trained on, and it is those that seed the next walk.</p>
 
       <figure class="figure" data-figure="locations-walk-descent">
         <a class="figure-open" href="../explorer/index.html?v=2&amp;y=0.0&amp;p=twilight_shifted" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/locations-walk-descent.jpg" width="1316" height="1242" alt="Five rows. Each has one fractal view on the left and four smaller views beside it, every small view labeled with a number; the bottom row's four are finished color wallpapers."><span class="figure-open-mark" aria-hidden="true">↗</span></a>
-        <figcaption>One descent, from the whole set to a wallpaper. The left column is the frame the search is standing in; the four beside it are what that frame offers, each with the location judge's estimate of the place under it. A green border marks a frame the judge admits, and the amber corner follows the one this descent took — marked again on the view it came out of. The top row is four starting places rather than four proposals, and the judge has nothing to say about any of them: a plane descent is bland before it is good. The bottom row is the location the descent kept, and four wallpapers of it.</figcaption>
+        <figcaption>One descent, from the whole set to a wallpaper. The left column is the frame the search is standing in; the four beside it are what that frame offers, each with the location judge's estimate of the place under it. A green border marks a frame the judge admits, and the amber corner follows the one this descent took — marked again on the view it came out of. The top row is four starting places rather than four proposals. The bottom row is the location the descent kept, and four wallpapers of it.</figcaption>
       </figure>
 
     <h2 id="reframing-a-find">Reframing a find</h2>
@@ -256,13 +257,12 @@
     nearby-minibrots works and cold enumeration does not.</p>
 
     <p>That idea is packaged as three <i>reframing operators</i>, each triggered when a frame
-    the walk has chosen to keep exploring — admitted or expandable — shows signs of a minibrot.
+    the walk has chosen to keep exploring (admitted or expandable) shows signs of a minibrot.
     Each is easiest to see in the figure below.</p>
 
     <p><code>snap_to_nucleus</code> recenters exactly: solve for the nucleus with Newton's
     method and put it at the center of the frame. It only fires when a nucleus actually lies
-    inside the current frame — most attempts are refused for that reason. A snap is a
-    correction, not a teleport.</p>
+    inside the current frame, which is why most attempts are refused.</p>
 
     <p><code>lateral_to_sibling</code> steps sideways: probe a ring around the current minibrot
     for a neighboring one at comparable scale, and frame that one instead.</p>
@@ -275,28 +275,22 @@
         <figcaption>The three reframing operators, one row each. A reframing is a move rather than a find, and two of these three score lower than the frame that triggered them — the first thing a minibrot framing puts in the picture is the copy's black body. The payoff is the third column: the best frame the walk went on to admit underneath. Below, one frame all three operators fired on, answered three different ways.</figcaption>
       </figure>
 
-    <p>Every frame an operator proposes is then sized by the <i>framing ladder</i>: keep the
-    parent's own width, or take 4× or 16× the minibrot's own size — never smaller, because a
-    minibrot framed at its own size is mostly a black blob that never escapes. The ladder aims
-    outward on purpose: the payoff of a minibrot is its halo, not the copy itself. The figure
-    below shows the same nucleus at all three framings.</p>
-
-      <figure class="figure" data-figure="locations-framing-ladder">
-        <a class="figure-open" href="../explorer/index.html?v=2&amp;f=multibrot3&amp;x=0.52619245723013316382598465321559984&amp;y=0.45603008888099358391978553545697806&amp;w=7.395784334276819e-05&amp;p=twilight_shifted" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/locations-framing-ladder.jpg" width="1316" height="372" alt="One minibrot nucleus framed three ways: at the parent's own width, at four times the copy's own size, and at sixteen times."><span class="figure-open-mark" aria-hidden="true">↗</span></a>
-        <figcaption>The framing ladder at one nucleus. The parent's own width leaves the copy a speck; 4× the copy's own size is mostly its black body; 16× is the halo. Only the widest of the three is a frame the walk will admit, which is why the ladder aims outward and why it has no rung below 4×.</figcaption>
-      </figure>
+    <p>Every frame an operator proposes is then sized by the <i>framing ladder</i>, a short
+    list of candidate widths the judge picks among. The ladder never frames a minibrot at its
+    own size, because a copy at its own size is mostly a black blob that never escapes, and it
+    aims outward on purpose: the payoff of a minibrot is its halo, not the copy itself.</p>
 
     <h2 id="seeds-from-labels">Seeds from labels</h2>
 
     <p>Fractals contain essentially unlimited structure, but quality clusters tightly. So the
     supply strategy runs both directions at once: most of the effort explores variations and
     deviations around known-good seeds, while a steady share of fresh roots keeps hunting for
-    quality nowhere yet on the map. The seeds are ratings already on the books — a run reads
+    quality nowhere yet on the map. The seeds are ratings already on the books. A run reads
     whatever map exists when it starts, and never waits on new labeling.</p>
 
     <p>The atlas idea pays a second dividend because of the Mandelbrot–Julia connection. When
-    the walk admits a parameter-plane location, its center c is by definition a Julia constant
-    — and by the neighborhood principle from
+    the walk admits a parameter-plane location, its center c is by definition a Julia
+    constant, and by the neighborhood principle from
     <a href="escape-time-fractals.html">escape-time fractals</a>, a Julia set inherits the
     character of where its c sits. So admitted plane finds are recycled directly as Julia
     roots: the <i>twin channel</i>.</p>
@@ -310,13 +304,13 @@
     <p>The reframing operators earn a second life outside the walk. Run as a channel of their
     own, they fire directly at the best-rated roots on the books: sweep each one's neighborhood
     for minibrots, solve every nucleus found, and record each as a new location in its own
-    right — centered exactly on the nucleus, and offered at a ladder of framings wider than the
+    right, centered exactly on the nucleus and offered at a ladder of framings wider than the
     walk's, aimed outward as ever, with the judge picking the framing the same way it scores
     everything else. Because every seed already earned a high rating, the channel inherits
     quality the way an in-walk reframing does, and it has become one of the strongest sources
     of good locations the project has.</p>
 
-    <p>One seeded chain, end to end, shows the whole page in miniature — the figure below walks
+    <p>One seeded chain, end to end, shows the whole page in miniature. The figure below walks
     it frame by frame. A root is placed at a location I had rated highly. Two zoom steps
     descend into its filaments. Then <code>expand_neighborhood</code> spots a minibrot far
     below the current scale, and the ladder's widest framing recomposes the camera around it.
@@ -335,7 +329,7 @@
     pixels collide in double-precision arithmetic and there is nothing left to render. Letting
     walks push closer to that wall would be easy engineering; for now the minimum is simply a
     chosen stopping rule. Rendering <em>past</em> the wall takes genuinely different machinery,
-    and that story has its own page — <a href="deep-zoom.html">deep zoom</a>. Second, a root
+    and that story has its own page, <a href="deep-zoom.html">deep zoom</a>. Second, a root
     that has been expanded twelve times retires, so no root monopolizes a run. And finally, the
     run itself has a time budget; when it ends, the frontier simply stops being served.</p>
 
@@ -345,14 +339,13 @@
     exist precisely because a few rich roots would otherwise consume a whole run while others
     sit untouched.</p>
 
-    <p>Reading the ledger answers two different questions — does the walk find good locations, and does it
-    find them efficiently — and the answer to the first is mostly a fact about where it
-    starts.</p>
+    <p>Reading the ledger answers two different questions: does the walk find good locations,
+    and does it find them efficiently?</p>
 
     <p>The figure below splits one run's roots by origin. Roots seeded from locations a
     person had already rated well almost all lead somewhere: nearly every one of them admits
     at least one frame. Roots drawn fresh from the boundary mostly do not, and the gap is not
-    a matter of persistence — both kinds of root are walked to about the same depth before the
+    a matter of persistence: both kinds of root are walked to about the same depth before the
     walk gives up or runs out of budget. A good neighborhood is productive; an arbitrary one
     usually is not, however hard it is searched. This is why the pipeline invests in seeding
     (<a href="#seeds-from-labels">Seeds from labels</a>, above) rather than in walking
@@ -363,14 +356,14 @@
         <figcaption>Whether a walk finds anything depends on where it starts. Both arms of the comparison ran in one run, under one frontier, competing for the same expansion budget: roots placed at locations a person had already picked out, and fresh roots off the minibrot grid and the home views. 98% of the seeded roots produced at least one admitted find against 22% of the fresh ones, while both arms are walked to about the same depth — a median of six rungs either way. The third row is a different run entirely, for scale.</figcaption>
       </figure>
 
-    <p>The walk's refusals are reliable — frames it turns away are, on inspection, the flat
+    <p>The walk's refusals are reliable. Frames it turns away are, on inspection, the flat
     and interior ones it was built to exclude. Where it is looser is in what it keeps open: a
     frame judged worth expanding further often leads nowhere, so budget is spent below frames
     that a stricter reading of the score would have closed. The current trade is this: the
     gate is tight and the promotion is generous, and the cost of that generosity is walked
     frames, not bad admissions.</p>
 
-    <p>The location judge has been doing quiet work all through this page — scoring candidates,
+    <p>The location judge has been doing quiet work all through this page: scoring candidates,
     setting fates, ordering the frontier. The next page
     (<a href="training-judges.html">training judges</a>) is about where it comes from: the
     ratings, the training, and what a small network can and cannot be trusted to know.</p>

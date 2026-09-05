@@ -823,86 +823,6 @@ def _reframe_provenance(picks, trigger, three, offered, big, small, head, forest
     return lines
 
 
-# -------------------------------------------------------------------- the framing ladder
-
-#: The nucleus the ladder is drawn at: one `snap_to_nucleus` firing that came back
-#: available at all three rungs off a single Newton solve. Picked for its proportions —
-#: the copy is about a twelfth of the frame it was spotted in, so the parent's own width
-#: shows it as a speck, 16x gives it a third of the frame, and 4x fills the frame with
-#: the halo. A copy much smaller than that makes the first rung an empty picture.
-LADDER_NODE = 4214
-
-
-def framing_ladder() -> Drawn:
-    """One minibrot nucleus at each rung of the ladder, with what each rung costs."""
-    rows = ledger()
-    trigger = nodes(rows)[LADDER_NODE]
-    rungs = [
-        (framing, reframing(rows, LADDER_NODE, "snap_to_nucleus", framing)) for framing in FRAMINGS
-    ]
-    window = rungs[0][1]["window_scale"]
-    parent_width = float(trigger["viewport"]["width"])
-
-    wanted = [as_location(trigger["family"], row) for _, row in rungs]
-    judged = renders.scores(wanted)
-
-    size = panels(3)
-    height = sheets.PAD + 26 + size[1] + band(size[1], 3) + sheets.PAD
-    sheet, draw = sheets.canvas(SHEET_WIDTH, height)
-    heading(
-        draw,
-        sheets.PAD,
-        sheets.PAD,
-        f"One minibrot found in a {_family_name(trigger['family'])} walk"
-        f"{sheets.MIDDOT}the copy's own size is {sheets.width_text(window)}, "
-        f"the frame it was spotted in {sheets.width_text(parent_width)}",
-    )
-    for index, (framing, row) in enumerate(rungs):
-        x = sheets.PAD + index * (size[0] + sheets.PAD)
-        y = sheets.PAD + 26
-        picture = cache().render(f"ladder-{framing}", as_location(trigger["family"], row), size)
-        sheet.paste(sheets.fitted(picture.path, size), (x, y))
-        width = float(row["viewport"]["width"])
-        under(
-            draw,
-            (x, y),
-            size,
-            [
-                FRAMINGS[framing],
-                f"width {sheets.width_text(width)}{sheets.MIDDOT}"
-                + (
-                    f"{width / window:.0f}× the copy"
-                    if framing
-                    else f"{width / window:.0f}× the copy, unchanged from the parent"
-                ),
-            ],
-        )
-    destination = sheets.save(sheet, sheet_path("locations-framing-ladder"))
-    return Drawn(destination, _ladder_provenance(trigger, rungs, size, judged))
-
-
-def _ladder_provenance(trigger, rungs, size, judged) -> list[str]:
-    row = rungs[0][1]
-    lines = [
-        f"Ledger {LEDGER}/walk.jsonl, seed 11. All three panels are the same nucleus — "
-        f"atom {row['atom_key']}, period {row['period']}, |A| giving a window scale of "
-        f"{row['window_scale']} — solved by snap_to_nucleus on node {trigger['node_id']} "
-        f"({_family_name(trigger['family'])}, centre {trigger['viewport']['center_re']} + "
-        f"{trigger['viewport']['center_im']}i, width {trigger['viewport']['width']}). "
-        f"Every panel {size[0]}x{size[1]}, supersample 3, mode smooth, colormap "
-        f"{renders.COLORMAP}, cap from the depth-aware policy, no crop. Judge scores are "
-        f"P(>=3) at regime {judged[0]['regime']} through head {judged[0]['head']} sha256 "
-        f"{judged[0]['head_sha256']}.",
-    ]
-    for (framing, entry), score in zip(rungs, judged, strict=True):
-        lines.append(
-            f"framing {framing}: centre {entry['viewport']['center_re']} + "
-            f"{entry['viewport']['center_im']}i, width {entry['viewport']['width']}, "
-            f"maxiter {score['maxiter']} at the scoring regime, P(>=3) {score['score']:.6f}."
-        )
-    return lines
-
-
 # ---------------------------------------------------------------------- the descent chain
 
 #: The admitted frame the chain ends on. Its whole line back to the root is in the
@@ -1732,7 +1652,6 @@ MAKERS = {
     "locations-random-samples": random_samples,
     "locations-foci-proposals": foci_proposals,
     "locations-reframe-examples": reframe_examples,
-    "locations-framing-ladder": framing_ladder,
     "locations-walk-lengths": walk_lengths,
     "locations-descent-chain": descent_chain,
     "locations-highly-rated": highly_rated,
