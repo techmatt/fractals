@@ -611,6 +611,52 @@ with open(ask["out"], "w", encoding="utf-8", newline=chr(10)) as handle:
 print(json.dumps({"pictures": len(pictures), "device": where}))
 """
 
+#: What class a walk's own verdict puts a location in, asked of the module that owns the
+#: cuts. Two floors decide it — the keeper floor a run admits on, and the great cut on the
+#: probability of the top class — and both have been restated against a fixed pool at a
+#: head flip, which is exactly why neither is written down on this side. The heights come
+#: back with the answer so a figure can print what it was judged against.
+LOCATION_CLASS_PROGRAM = """
+import json, sys
+
+from fractal_wallpapers.supply import currency as money
+
+ask = json.load(sys.stdin)
+print(json.dumps({
+    "good_floor": float(money.GOOD_FLOOR),
+    "great_cut": float(money.GREAT_CUT),
+    "head_sha256": money.GOOD_FLOOR_RESTATED.head_sha256,
+    "classes": [
+        money.good_class(row.get("score"), row.get("score_great")) for row in ask["rows"]
+    ],
+}))
+"""
+
+
+def location_classes(rows) -> dict:
+    """The supply class of each of these ledger rows, and the cuts that decided it.
+
+    A class is `4`, `3`, or `None` below the keeper floor. Nothing about what those mean
+    is restated here: the rows go to the wallpaper project's own currency module and the
+    verdicts come back, so a floor moved next door moves this figure's answer too.
+    """
+    wanted = [{"score": row.get("score"), "score_great": row.get("score_great")} for row in rows]
+    completed = subprocess.run(
+        [str(venv_python()), "-c", LOCATION_CLASS_PROGRAM],
+        input=json.dumps({"rows": wanted}),
+        capture_output=True,
+        text=True,
+        cwd=str(wallpapers_root()),
+        check=False,
+    )
+    if completed.returncode != 0:
+        raise EngineError(
+            f"classing {len(wanted)} location(s) through the supply currency failed: "
+            f"{completed.stderr.strip()}"
+        )
+    return json.loads(completed.stdout)
+
+
 #: Palette space, asked of the module that owns it. `neighbourhood` is the candidate set
 #: a colorize builds; `medoid` is the member of a named group nearest the rest of it,
 #: which is how a figure picks one palette to stand for a mood family. Both are pure

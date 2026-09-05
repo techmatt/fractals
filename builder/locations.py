@@ -603,11 +603,19 @@ REFRAMINGS = (
     ("expand_neighborhood", 728, 16.0),
 )
 
-#: The node the bottom strip is about: one frame all three operators fired on, and the
-#: only one of the 67 such nodes whose three answers are all at a scale the same strip
-#: can show. Its three children were pushed to the frontier and never popped — the run
-#: ended first — so the frames are the proposals themselves, drawn here after the fact.
-THREE_WAYS = 5700
+#: The node the bottom strip is about: one frame all three operators fired on, chosen
+#: over the run's 67 such nodes so that **every one of the three answers is a frame the
+#: location judge likes**. Each operator's own best rung is scored, and the node kept is
+#: the one whose worst answer is best — 0.82 here, against 0.00 at the node this figure
+#: used to stand on, where the neighborhood operator's answer was a black copy filling
+#: the frame. The three answers also have to be visibly three: they sit at least four
+#: frame widths apart, so the strip shows three readings of one place and not one
+#: reading three times. The trigger itself is a weak frame, which is the point — a
+#: minibrot body fills it, and each operator recomposes around that body.
+#:
+#: The proposals were pushed to the frontier and never popped — the run ended first — so
+#: the frames are the proposals themselves, drawn here after the fact.
+THREE_WAYS = 5810
 
 #: How a framing is said in words. `None` is not "no framing": it is the rung of the
 #: ladder that keeps whatever width the triggering frame had.
@@ -659,18 +667,16 @@ def reframe_examples() -> Drawn:
         below = [kid for kid in forest.below(pushed) if kid.get("fate") == "survived"]
         picks.append((operator, forest.nodes[node_id], row, max(below, key=_score)))
     trigger = forest.nodes[THREE_WAYS]
-    three = [
-        (operator, reframing(rows, THREE_WAYS, operator, framing))
-        for operator, framing in _three_way_framings(rows)
-    ]
+    offered = _three_way_offers(rows)
 
     wanted = []
     for _operator, node, row, found in picks:
         wanted += [location(node), as_location(node["family"], row), location(found)]
     wanted += [location(trigger)]
-    wanted += [as_location(trigger["family"], row) for _, row in three]
+    wanted += [as_location(trigger["family"], row) for _operator, row in offered]
     judged = renders.scores(wanted)
     head = judged[0]
+    three = _three_way_best(offered, judged[len(judged) - len(offered) :])
 
     big = panels(3)
     small = panels(4)
@@ -715,35 +721,59 @@ def reframe_examples() -> Drawn:
         under(draw, (x, y), small, [label])
 
     destination = sheets.save(sheet, sheet_path("locations-reframe-examples"))
-    return Drawn(destination, _reframe_provenance(picks, trigger, three, big, small, head, forest))
+    return Drawn(
+        destination,
+        _reframe_provenance(picks, trigger, three, offered, big, small, head, forest),
+    )
 
 
 def _score(row: dict) -> float:
     return row.get("score") or 0.0
 
 
-def _three_way_framings(rows: list[dict]) -> list[tuple[str, float | None]]:
-    """Which rung of the ladder each operator took on the three-ways node.
+def _three_way_offers(rows: list[dict]) -> list[tuple[str, dict]]:
+    """Every frame each operator actually proposed on the three-ways node, in ledger order.
 
-    Read off the ledger rather than written down, because the framing is the operator's
-    own verdict — a shallow atom takes the 4x frame and refuses the 16x one — and a
-    figure that hardcoded it would keep printing the old answer after a re-run.
+    An operator fires once per rung of the framing ladder, and on more than one atom
+    where it found more than one, so "what `expand_neighborhood` proposed here" is six
+    frames rather than one. All of them are read, because which one the strip shows is
+    decided a step later by the judge.
     """
-    found = []
-    for operator in OPERATORS:
-        row = next(
-            other
-            for other in rows
-            if other.get("kind") == "reframing"
-            and other.get("node_id") == THREE_WAYS
-            and other.get("operator") == operator
-            and other.get("used")
+    found = [
+        (row["operator"], row)
+        for row in rows
+        if row.get("kind") == "reframing"
+        and row.get("node_id") == THREE_WAYS
+        and row.get("used")
+        and row.get("operator") in OPERATORS
+    ]
+    missing = [operator for operator in OPERATORS if not any(name == operator for name, _ in found)]
+    if missing:
+        raise renders.EngineError(
+            f"node {THREE_WAYS} has no used " + ", ".join(missing) + " — the strip is about "
+            "one frame all three operators answered, and this one did not"
         )
-        found.append((operator, row["framing"]))
     return found
 
 
-def _reframe_provenance(picks, trigger, three, big, small, head, forest) -> list[str]:
+def _three_way_best(offered, judged) -> list[tuple[str, dict]]:
+    """Each operator's best answer, by the judge, in the order the prose introduces them.
+
+    The rung used to be the ledger's first, which is an arbitrary choice dressed as a
+    reading: an operator fires at every rung its atom allows and the ledger's order is
+    the order it tried them in, not a verdict. So the strip shows each operator at its
+    **best** proposal, which is the only reading under which three panels side by side
+    are a fair comparison of three operators *(Matt, 2026-09-05)*.
+    """
+    best: dict[str, tuple[dict, float]] = {}
+    for (operator, row), verdict in zip(offered, judged, strict=True):
+        score = verdict["score"] or 0.0
+        if operator not in best or score > best[operator][1]:
+            best[operator] = (row, score)
+    return [(operator, best[operator][0]) for operator in OPERATORS]
+
+
+def _reframe_provenance(picks, trigger, three, offered, big, small, head, forest) -> list[str]:
     lines = [
         f"Ledger {LEDGER}/walk.jsonl, seed 11, mode smooth, colormap {renders.COLORMAP}, "
         "supersample 3, cap from the depth-aware policy, no crop. Every judge score "
@@ -785,8 +815,10 @@ def _reframe_provenance(picks, trigger, three, big, small, head, forest) -> list
             f"three ways, {operator}: atom {row['atom_key']} of period {row['period']} at "
             f"framing {row['framing']}, centre {row['viewport']['center_re']} + "
             f"{row['viewport']['center_im']}i, width {row['viewport']['width']}, "
-            f"{small[0]}x{small[1]}. Pushed to the frontier and never popped; drawn here "
-            "after the fact from the proposal the ledger recorded."
+            f"{small[0]}x{small[1]}. The best-scoring of the "
+            f"{sum(1 for name, _ in offered if name == operator)} frame(s) this operator "
+            "proposed here. Pushed to the frontier and never popped; drawn here after "
+            "the fact from the proposal the ledger recorded."
         )
     return lines
 
@@ -1208,11 +1240,6 @@ def _rung_band(draw, y: int, score: int) -> None:
     draw.text((x, y + 10), RUNGS[score], fill=WELL_INK, font=font(17))
 
 
-def _day(stamp: str) -> str:
-    """A label's date. The store writes some rows as a day and some as an instant."""
-    return stamp.split("T", 1)[0]
-
-
 def _store_provenance(order: str, picks, rows, size, with_score: bool) -> list[str]:
     lines = [
         "Every panel is a row of the tracked label store, read by file and line from "
@@ -1316,169 +1343,6 @@ def _boundary_provenance(run, summary, kept, size) -> list[str]:
         lines.append(
             f"panel {index + 1}: centre {row['viewport']['center_re']} + "
             f"{row['viewport']['center_im']}i, width {row['viewport']['width']}."
-        )
-    return lines
-
-
-# ------------------------------------------------------ what a walk found, and what it became
-
-#: One released wallpaper per partition whose location carries a human class-4 label,
-#: as `(run, candidate, label file, label line)`. The pairing was made by joining every
-#: release record against the label store through the wallpaper project's own location
-#: identity; what is recorded here is what that join returned, and the label line is
-#: read back at draw time so the rating printed under a panel is the store's, not a
-#: number copied into this file.
-#:
-#: Five partitions, not the article's six families: `mandelbrot`, `multibrot3`,
-#: `phoenix` and `julia:mandelbrot` have released wallpapers and **no** class-4 human
-#: label on the location behind any of them, so they are absent rather than filled with
-#: a machine-scored pick.
-FOUND_AND_FINISHED = (
-    ("run9", "0077", "plane_deep_admissions", 3),
-    ("run2", "0072", "plane_deep_admissions", 1),
-    ("run3", "0021", "twin_top_slices", 3),
-    ("run9", "0080", "twin_top_slices", 5),
-    ("run9", "0165", "twin_top_slices", 9),
-)
-
-
-def found_and_finished() -> Drawn:
-    """Each pair: the frame the walk admitted, and the wallpaper made from it."""
-    pairs = []
-    for run, candidate, batch, line in FOUND_AND_FINISHED:
-        release = release_record(run, candidate)
-        rated = label_row(batch, line)
-        if rated["viewport"] != release["location"]["viewport"]:
-            raise renders.EngineError(
-                f"{batch}.jsonl line {line} is not the location behind {run}|{candidate} — "
-                "the rating this figure prints would be about a different frame"
-            )
-        pairs.append((release, rated))
-
-    size = panels(4)
-    cell = 22 + size[1] + band(size[1], 2)
-    rows_down = (len(pairs) + 1) // 2
-    height = sheets.PAD + rows_down * (cell + sheets.PAD) + sheets.PAD
-    sheet, draw = sheets.canvas(SHEET_WIDTH, height)
-    for index, (release, rated) in enumerate(pairs):
-        down, side = divmod(index, 2)
-        left = sheets.PAD + side * 2 * (size[0] + sheets.PAD)
-        y = sheets.PAD + down * (cell + sheets.PAD)
-        heading(
-            draw,
-            left,
-            y,
-            f"{_family_name(release['location']['family'])}"
-            f"{sheets.MIDDOT}the location was rated {rated['score']} by hand",
-            size=15,
-        )
-        found = cache().render(
-            f"found-{release['run']}-{release['candidate']}",
-            location(release["location"]),
-            NODE_TILE,
-            supersample=NODE_SUPERSAMPLE,
-        )
-        sheet.paste(sheets.fitted(found.path, size), (left, y + 22))
-        under(
-            draw,
-            (left, y + 22),
-            size,
-            [
-                "As the walk found it",
-                f"width {sheets.width_text(release['location']['viewport']['width'])}"
-                f"{sheets.MIDDOT}{NODE_TILE[0]}\u00d7{NODE_TILE[1]}, no palette",
-            ],
-        )
-        x = left + size[0] + sheets.PAD
-        sheet.paste(sheets.fitted(release["_picture"], size), (x, y + 22))
-        recipe = release["recipe"]
-        under(
-            draw,
-            (x, y + 22),
-            size,
-            [
-                "The wallpaper released from it",
-                f"{recipe['mode']}{sheets.MIDDOT}{recipe['colormap']}"
-                + (f"{sheets.MIDDOT}mirrored" if recipe.get("mirror") else ""),
-            ],
-        )
-    spare = sheets.PAD + 2 * (size[0] + sheets.PAD)
-    stack(
-        draw,
-        spare,
-        sheets.PAD + (rows_down - 1) * (cell + sheets.PAD) + 22,
-        [
-            "Five kinds of fractal, not nine.",
-            "",
-            "Mandelbrot, multibrot d = 3, Phoenix and the",
-            "degree-2 Julias all ship released wallpapers",
-            "too, and none of the locations behind those",
-            "carries a class-4 human rating — so they are",
-            "absent here rather than filled in with a pick",
-            "the judge liked and nobody ever looked at.",
-        ],
-        size=15,
-        lead=WELL_INK_DIM,
-    )
-    destination = sheets.save(sheet, sheet_path("locations-found-and-finished"))
-    return Drawn(destination, _pair_provenance(pairs, size))
-
-
-def _released_at(release: dict) -> str:
-    """How big the released wallpaper is, stated and never guessed.
-
-    A release row's `recipe.render` is the **candidate** geometry — the small
-    render the curation verdict was cast on, 640x360 at supersample 2 — and this
-    line read it as the wallpaper's own size, so every provenance line here said
-    640x360 about a picture that is 2560x1440.
-
-    The wallpapers project records `release_geometry` on a release row since
-    2026-08-25, when a gallery pass's release regime became a per-pass decision
-    and the answer stopped being inferable at all. A row older than that field
-    does not carry one, so the frame is read off the shipped PNG this figure is
-    pasting anyway — a fact, not an inference — and the supersample is reported
-    as unrecorded rather than filled in from a constant in another repository.
-    """
-    from PIL import Image
-
-    geometry = release.get("release_geometry") or {}
-    resolution, supersample = geometry.get("resolution"), geometry.get("supersample")
-    if resolution and supersample is not None:
-        return f"at {resolution[0]}x{resolution[1]} supersample {supersample}"
-    with Image.open(release["_picture"]) as opened:
-        width, height = opened.size
-    return (
-        f"at {width}x{height}, read off the shipped PNG — the record predates the "
-        f"release-geometry field and does not carry its supersample"
-    )
-
-
-def _pair_provenance(pairs, size) -> list[str]:
-    lines = [
-        "Each row is one release record of a curation run beside the location it was "
-        "made from. The location panel is rendered here at the walk's own node regime, "
-        f"{NODE_TILE[0]}x{NODE_TILE[1]} at supersample {NODE_SUPERSAMPLE}, mode smooth, "
-        f"colormap {renders.COLORMAP}, cap from the depth-aware policy, then fitted to "
-        f"{size[0]}x{size[1]}: the picture the walk's gates and judge actually saw, "
-        "before any palette or curation. The wallpaper panel is the released PNG itself, "
-        "fitted to the same box and not re-rendered.",
-    ]
-    for release, rated in pairs:
-        recipe, place = release["recipe"], release["location"]
-        lines.append(
-            f"{release['key']}: {_family_name(place['family'])}"
-            + (
-                f", c = {place['family']['c'][0]} + {place['family']['c'][1]}i"
-                if "c" in place["family"]
-                else ""
-            )
-            + f", centre {place['viewport']['center_re']} + {place['viewport']['center_im']}i, "
-            f"width {place['viewport']['width']}, maxiter {place.get('maxiter')}; found in "
-            f"{place.get('ledger')}. Released as mode {recipe['mode']}, curve "
-            f"{recipe['curve']}, colormap {recipe['colormap']}, mirror "
-            f"{bool(recipe.get('mirror'))}, {_released_at(release)}. The location is scored "
-            f"{rated['score']} by {rated['labeler']} on {_day(rated['recorded_at'])}, "
-            f"recorded at data/labels/rows/{rated['_batch']}.jsonl line {rated['_line']}."
         )
     return lines
 
@@ -1724,116 +1588,136 @@ def _lengths_provenance(arms: list[Arm]) -> list[str]:
     return lines
 
 
-# ------------------------------------------------------------------------ walk examples
+# --------------------------------------------------------------- what the stage hands on
 
-#: The run the example walks come from: one plane, one seed, and — the reason it is this
-#: run and not the demo one — **one labelling batch** covering its finds. Where two
-#: batches label a run, the batches disagree about which walks got looked at, and a
-#: figure sorted by rating would be showing the labelling and calling it the walking.
-EXAMPLES_LEDGER = "mandelbrot_sourcing"
-EXAMPLES_BATCH = "mandelbrot_offer_body"
-
-#: `(best-find rating, root, the rated frame's node, the label's line)`. Each root's
-#: *best* human-rated find, over the 54 roots of this run that produced one at all.
-EXAMPLES = (
-    (2, 10, 422, 51),
-    (3, 2, 879, 11),
-    (4, 83, 3984, 4),
+#: The sixteen locations the closing grid shows, as `(ledger, node id)` — a walk's own
+#: record and the id it minted for that frame, never a position in any pool. Every one is
+#: a **class 4** in the supply currency: admitted by its run, over the keeper floor, and
+#: over the great cut on the top-class probability, which is what the article's rating
+#: scale calls exceptional.
+#:
+#: Two things chose them out of the 15,977 the ledgers hold, and neither is the score:
+#: **spread**, so nine of the ten partitions are here and no family is the figure's
+#: subject, and **composition**, so no two panels read as one picture. Nothing is drawn
+#: on them and no number is printed under them — a reader is being shown what the stage
+#: produces, not asked to audit it.
+#:
+#: The reframing channel's own ledgers are absent for a mechanical reason: those runs
+#: write no node ids at all, so a frame from one could only be addressed by position.
+HIGHLY_RATED = (
+    ("demo_neighborhood", 7243),
+    ("harvest_run10", 476),
+    ("dynamical_proven_smoke", 10780),
+    ("dynamical_proven_smoke", 92),
+    ("dynamical_proven_smoke", 2838),
+    ("harvest_run10", 25870),
+    ("dynamical_proven_smoke", 6371),
+    ("demo_neighborhood", 870),
+    ("mandelbrot_sourcing", 308),
+    ("dynamical_proven_smoke", 10879),
+    ("harvest_run10", 11837),
+    ("deep_run1", 177),
+    ("demo_neighborhood", 5140),
+    ("harvest_run10", 917),
+    ("dynamical_proven_smoke", 7560),
+    ("harvest_refresh", 387),
 )
 
-EXAMPLE_COLUMNS = 6
+RATED_COLUMNS = 4
 
 
-def walk_examples() -> Drawn:
-    """Three complete walks, laid out rung by rung, ordered by how good their best find is."""
-    rows = ledger(EXAMPLES_LEDGER)
-    forest = Forest(rows)
-    walks = []
-    for rating, root_id, tip, line in EXAMPLES:
-        chain = forest.chain(tip)
-        if chain is None:
-            raise renders.EngineError(f"node {tip} has a rung this ledger cannot recover")
-        rated = label_row(EXAMPLES_BATCH, line)
-        if rated["viewport"] != chain[-1]["viewport"]:
-            raise renders.EngineError(
-                f"{EXAMPLES_BATCH}.jsonl line {line} is not node {tip}'s frame"
-            )
-        if rated["score"] != rating:
-            raise renders.EngineError(
-                f"{EXAMPLES_BATCH}.jsonl line {line} is rated {rated['score']}, not {rating}"
-            )
-        walks.append((rating, root_id, chain, rated, _walk_tally(rows, root_id)))
+def node_rows(name: str, wanted) -> dict[int, dict]:
+    """Some of one ledger's node rows, read streamed and stopped once they are all in.
 
-    size = panels(EXAMPLE_COLUMNS)
-    cell = 24 + size[1] + band(size[1], 2)
-    height = sheets.PAD + len(walks) * (cell + sheets.PAD) + sheets.PAD
-    sheet, draw = sheets.canvas(SHEET_WIDTH, height)
-    for index, (rating, root_id, chain, _rated, tally) in enumerate(walks):
-        y = sheets.PAD + index * (cell + sheets.PAD)
-        if index:
-            rule(draw, y - 8)
-        found, admitted, deepest = tally
-        heading(
-            draw,
-            sheets.PAD,
-            y,
-            f"Best find rated {rating} by hand",
-            size=15,
+    Never `nodes(ledger(name))` here. The ledgers this figure reads run to seventy-six
+    megabytes and most of them are on the archive disk; loading one whole to answer four
+    questions about it is what `builder.picks` refuses for the candidate ledger, for the
+    same reason.
+    """
+    path = renders.artifact(name, "walk.jsonl")
+    if not path.is_file():
+        raise renders.EngineError(f"no walk ledger at {path}")
+    left, found = set(wanted), {}
+    with path.open(encoding="utf-8") as handle:
+        for line in handle:
+            if not line.strip():
+                continue
+            row = json.loads(line)
+            node_id = row.get("node_id")
+            if node_id in left and row.get("kind") in ("root", "candidate"):
+                found[node_id] = row
+                left.discard(node_id)
+                if not left:
+                    break
+    if left:
+        raise renders.EngineError(
+            f"{name}/walk.jsonl has no node " + ", ".join(str(one) for one in sorted(left))
         )
-        for column, entry in enumerate(chain[:EXAMPLE_COLUMNS]):
-            x = sheets.PAD + column * (size[0] + sheets.PAD)
-            picture = cache().render(f"walk-{root_id}-{column}", location(entry), size)
-            sheet.paste(sheets.fitted(picture.path, size), (x, y + 24))
-            last = entry is chain[-1]
-            under(
-                draw,
-                (x, y + 24),
-                size,
-                [
-                    ("the root" if entry["kind"] == "root" else f"rung {entry['depth'] - 1}")
-                    + (f"{sheets.MIDDOT}rated {rating} by hand" if last else ""),
-                    sheets.width_text(entry["viewport"]["width"]),
-                ],
-                lead=WELL_INK if last else WELL_INK_DIM,
-            )
-    destination = sheets.save(sheet, sheet_path("locations-walk-examples"))
-    return Drawn(destination, _examples_provenance(walks, size))
+    return found
 
 
-def _walk_tally(rows: list[dict], root_id: int) -> tuple[int, int, int]:
-    """How many frames a root's walk proposed, how many were admitted, how deep it got."""
-    under = [
-        row for row in rows if row.get("kind") == "candidate" and row.get("root_id") == root_id
+def highly_rated() -> Drawn:
+    """Sixteen of the stage's own keepers, four across, with nothing written on them."""
+    by_ledger: dict[str, list[int]] = {}
+    for name, node_id in HIGHLY_RATED:
+        by_ledger.setdefault(name, []).append(node_id)
+    held = {name: node_rows(name, wanted) for name, wanted in by_ledger.items()}
+    picks = [held[name][node_id] for name, node_id in HIGHLY_RATED]
+
+    verdict = renders.location_classes(picks)
+    wrong = [
+        f"{name}/walk.jsonl node {node_id} is a class {found}"
+        for (name, node_id), found in zip(HIGHLY_RATED, verdict["classes"], strict=True)
+        if found != 4
     ]
-    return (
-        len(under),
-        sum(1 for row in under if row["fate"] == "survived"),
-        max(row.get("depth") or 0 for row in under),
-    )
+    if wrong:
+        raise renders.EngineError(
+            "every panel of this grid is a class 4 in the supply currency, and "
+            + "; ".join(wrong)
+            + " — the cuts have moved, and the figure would be showing a location the "
+            "record no longer calls exceptional"
+        )
+
+    size = panels(RATED_COLUMNS)
+    rows_down = len(picks) // RATED_COLUMNS
+    sheet, _draw = sheets.canvas(*sheets.grid_size(size, RATED_COLUMNS, rows_down, caption=0))
+    for index, row in enumerate(picks):
+        x, y = sheets.panel_origin(index, size, RATED_COLUMNS, caption=0)
+        picture = cache().render(f"rated-4-{index + 1}", location(row), size)
+        sheet.paste(sheets.fitted(picture.path, size), (x, y))
+    destination = sheets.save(sheet, sheet_path("locations-highly-rated"))
+    return Drawn(destination, _highly_rated_provenance(picks, size, verdict))
 
 
-def _examples_provenance(walks, size) -> list[str]:
+def _highly_rated_provenance(picks: list[dict], size, verdict: dict) -> list[str]:
     lines = [
-        f"Ledger {EXAMPLES_LEDGER}/walk.jsonl. Three of the {len(walks)} best-find rating "
-        f"classes this run has: every one of its finds that a human scored was scored in "
-        f"one batch, data/labels/rows/{EXAMPLES_BATCH}.jsonl, so the rating a walk is "
-        "filed under is about the walk and not about which batch happened to look at it. "
-        f"Every panel {size[0]}x{size[1]}, supersample 3, mode smooth, colormap "
-        f"{renders.COLORMAP}, cap from the depth-aware policy, no crop.",
+        "Every panel is one admitted candidate of a walk ledger, addressed by that "
+        "ledger and the node id it was written under, and rendered fresh at "
+        f"{size[0]}x{size[1]}, supersample 3, mode smooth, colormap {renders.COLORMAP}, "
+        "cap from the depth-aware policy, no crop. Panels are in reading order, 4 "
+        "across. Each one is a class 4 in the supply currency — over the keeper floor "
+        f"{verdict['good_floor']} and over the great cut {verdict['great_cut']} on the "
+        "probability of the top class, both asked of the wallpaper project's own "
+        "supply.currency and both restated against a fixed pool at head "
+        f"{verdict['head_sha256']}. The class is re-derived from the row every time this "
+        "figure is drawn rather than written down here.",
     ]
-    for rating, root_id, chain, rated, tally in walks:
-        found, admitted, deepest = tally
+    for (name, node_id), row in zip(HIGHLY_RATED, picks, strict=True):
+        family = row["family"]
         lines.append(
-            f"rating {rating}, root {root_id}: {found} candidates, {admitted} admitted, "
-            f"deepest rung {deepest}. Rungs, root first — "
-            + "; ".join(
-                f"{entry['viewport']['center_re']} + {entry['viewport']['center_im']}i at "
-                f"width {entry['viewport']['width']}"
-                for entry in chain[:EXAMPLE_COLUMNS]
+            f"{name}/walk.jsonl node {node_id}: {_family_name(family)}"
+            + (f", c = {family['c'][0]} + {family['c'][1]}i" if "c" in family else "")
+            + (f", p = {family['p'][0]} + {family['p'][1]}i" if "p" in family else "")
+            + (
+                f", z_prev = {family['z_prev'][0]} + {family['z_prev'][1]}i"
+                if "z_prev" in family
+                else ""
             )
-            + f". The last is scored {rated['score']} by {rated['labeler']} on "
-            f"{_day(rated['recorded_at'])}, at data/labels/rows/{rated['_batch']}.jsonl "
-            f"line {rated['_line']}."
+            + f", centre {row['viewport']['center_re']} + {row['viewport']['center_im']}i, "
+            f"width {row['viewport']['width']}, maxiter {row.get('maxiter')}; at depth "
+            f"{row.get('depth')}, fate {row.get('fate')}, scored {row['score']:.6f} with "
+            f"P(top class) {row['score_great']:.6f} at regime {row.get('score_regime')} "
+            f"by {row.get('scorer')}."
         )
     return lines
 
@@ -1850,9 +1734,8 @@ MAKERS = {
     "locations-reframe-examples": reframe_examples,
     "locations-framing-ladder": framing_ladder,
     "locations-walk-lengths": walk_lengths,
-    "locations-walk-examples": walk_examples,
     "locations-descent-chain": descent_chain,
-    "locations-found-and-finished": found_and_finished,
+    "locations-highly-rated": highly_rated,
 }
 
 #: The figures that land as PNG rather than JPEG: the chart, which is flat art a lossy
