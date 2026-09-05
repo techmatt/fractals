@@ -349,33 +349,68 @@ def check_seats() -> list[str]:
     says how it is drawn, and `recipe_changed` or `cited` is a claim on the row that a
     person can read and `figures` refuses to load misspelled. A figure that quietly stops
     reproducing its seat cannot buy itself an exemption by being added to a list here.
+
+    **Two halves, and the first covers every seat a figure cites however it is drawn.**
+    A pick is only as good as the run record that answers it, and `picks.RUN_RECORDS` is
+    a typed list of those records rather than a search: a `runs` pass writing its browser
+    picks to `on_demand.jsonl` went unnamed there, and fifteen seats of the tentative
+    gallery had no reachable stamp at all. A figure naming one raised where a maker ran
+    it and nowhere else. So the reachability half asks `run_stamp` for every cited seat,
+    exempt or not, and the pixel half compares only the ones drawn at their own recipe.
+    The first needs no Pillow, which is why it is not behind the same gate.
     """
     problems: list[str] = []
-    if not figures.stores_available() or not images.available():
+    if not figures.stores_available():
         return problems
     registry = figures.load_all()
 
+    cited: dict[str, list[str]] = {}
     wanted: list[tuple[str, str]] = []
     for figure in registry.values():
         if figure.pending:
             continue
         for source in figure.sources:
-            if source.kind == figures.GALLERY_SEAT and source.drawn == figures.OWN_RECIPE:
+            if source.kind != figures.GALLERY_SEAT:
+                continue
+            for key in source.keys:
+                cited.setdefault(key, []).append(figure.id)
+            if source.drawn == figures.OWN_RECIPE:
                 wanted.extend((figure.id, key) for key in source.keys)
-    if not wanted:
+    if not cited:
         return problems
 
     try:
-        resolved = {pick.identifier: pick for pick in picks.resolve(sorted({k for _, k in wanted}))}
-        catalog = renders.mode_catalog()
-    except (picks.PickError, renders.EngineError) as error:
+        resolved = {pick.identifier: pick for pick in picks.resolve(sorted(cited))}
+    except picks.PickError as error:
         return [f"seats: no panel could be held to its seat — {error}"]
+
+    levelled: dict[str, picks.Levelling] = {}
+    for identifier in sorted(cited):
+        try:
+            levelled[identifier] = picks.run_stamp(resolved[identifier])
+        except picks.PickError as error:
+            problems.append(
+                f"figures.jsonl: {', '.join(sorted(set(cited[identifier])))} names a seat no "
+                f"run record reaches — {error}. If the run wrote a record "
+                "`picks.RUN_RECORDS` does not name, name it there."
+            )
+    if not wanted:
+        return problems
+    if not images.available():
+        return problems
+
+    try:
+        catalog = renders.mode_catalog()
+    except renders.EngineError as error:
+        return problems + [f"seats: no panel could be held to its seat — {error}"]
 
     cache = picks.cache()
     for figure_id, identifier in wanted:
         pick = resolved[identifier]
+        levelling = levelled.get(identifier)
+        if levelling is None:
+            continue
         try:
-            levelling = picks.run_stamp(pick)
             shipped = picks.seat_picture(pick)
             if levelling.way == picks.UNRECOVERABLE:
                 # The rig's own answer here is the shipped file itself — `panel` refuses
@@ -915,13 +950,11 @@ def skips() -> tuple[Skip, ...]:
         found.append(Skip("figures", "each figure's size on disk", NO_PILLOW))
         found.append(Skip("assets", "each image's and each thumbnail's size on disk", NO_PILLOW))
         if figures.stores_available():
+            # Half, not whole: the reachability sweep below it reads records rather than
+            # pixels, so a machine without Pillow still holds every cited seat to a run
+            # record that answers for it.
             found.append(
-                Skip(
-                    "seats",
-                    "every seat panel against the picture its gallery ships",
-                    NO_PILLOW,
-                    whole=True,
-                )
+                Skip("seats", "every seat panel against the picture its gallery ships", NO_PILLOW)
             )
     return tuple(found)
 

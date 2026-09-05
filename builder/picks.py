@@ -103,16 +103,24 @@ SEATS_NAME = "gallery.jsonl"
 #: and never whole — see the module docstring.
 LEDGER = ("curation", "candidate_ledger", "rows.jsonl")
 
-#: Where each kind of run writes the record carrying its own autolevel stamp, and which
-#: field of that record addresses one row. A `depth` run is matched by the recipe key it
-#: drew; the other two by the picture file, because their rows are numbered by attempt
-#: and the ledger's `picture` is the only name shared across both stores.
+#: Where each kind of run writes the records carrying its own autolevel stamp, and which
+#: field of each addresses one row. A `depth` run is matched by the recipe key it drew;
+#: the others by the picture file, because their rows are numbered by attempt and the
+#: ledger's `picture` is the only name shared across both stores.
+#:
+#: **A kind may write more than one record, and every one of them has to be named here.**
+#: A `runs` pass writes `candidates.jsonl` for the candidates its own plan asked for and
+#: `on_demand.jsonl` for the ones Matt asked for from the browser — the `d####.jpg`
+#: pictures — and for a year this named only the first. Fifteen seats of the tentative
+#: gallery then had no record this could reach, so a figure naming one raised rather than
+#: mis-drew; `check`'s `seats` now holds every seat a figure cites to being reachable
+#: through this table, so the next unnamed record is a red rather than a silent gap.
 RUN_RECORDS = {
-    "depth": ("sequence.jsonl", "key"),
-    "hunt": ("rows.jsonl", "key"),
-    "mine": ("rows.jsonl", "key"),
-    "reframe_draw": ("attempts.jsonl", "picture"),
-    "runs": ("candidates.jsonl", "picture"),
+    "depth": (("sequence.jsonl", "key"),),
+    "hunt": (("rows.jsonl", "key"),),
+    "mine": (("rows.jsonl", "key"),),
+    "reframe_draw": (("attempts.jsonl", "picture"),),
+    "runs": (("candidates.jsonl", "picture"), ("on_demand.jsonl", "picture")),
 }
 
 #: What `run_stamp` answers with, in the one word a caller has to branch on.
@@ -343,8 +351,13 @@ class Levelling:
         return self.way in (REPLAYED, UNRECOVERABLE)
 
 
-def run_record(pick: Pick) -> tuple[str, Path, str]:
-    """Which of the run stores holds this candidate's own record, and how it is matched."""
+def run_record(pick: Pick) -> tuple[str, list[tuple[Path, str]]]:
+    """Which run wrote this candidate, and every record of that run's that could hold it.
+
+    A list rather than one file, because a kind may keep more than one: a `runs` pass
+    writes its planned candidates to one record and the ones asked for from the browser
+    to another, and a seat can be in either.
+    """
     stored = str(pick.source.get("picture") or "")
     if not stored:
         raise PickError(
@@ -359,8 +372,10 @@ def run_record(pick: Pick) -> tuple[str, Path, str]:
             f"the kinds are {', '.join(sorted(RUN_RECORDS))}"
         )
     kind, run = parts[2], parts[3]
-    name, match = RUN_RECORDS[kind]
-    return f"{kind}/{run}", renders.artifact("curation", kind, run, name), match
+    named = [
+        (renders.artifact("curation", kind, run, name), match) for name, match in RUN_RECORDS[kind]
+    ]
+    return f"{kind}/{run}", named
 
 
 def run_stamp(pick: Pick) -> Levelling:
@@ -371,9 +386,27 @@ def run_stamp(pick: Pick) -> Levelling:
     seat it acted on is `acted_unrecoverable` and no render of the recipe is that seat's
     picture.
     """
-    where, path, match = run_record(pick)
-    if not path.is_file():
-        raise PickError(f"{pick.identifier}: {where} kept no {path.name}, so no stamp answers")
+    where, named = run_record(pick)
+    present = [(path, match) for path, match in named if path.is_file()]
+    if not present:
+        raise PickError(
+            f"{pick.identifier}: {where} kept none of "
+            f"{', '.join(path.name for path, _ in named)}, so no stamp answers"
+        )
+    for path, match in present:
+        found = _stamp_in(pick, where, path, match)
+        if found is not None:
+            return found
+    filename = str(pick.source["picture"]).replace("\\", "/").rsplit("/", 1)[-1]
+    raise PickError(
+        f"{pick.identifier}: no record of {where} — {', '.join(p.name for p, _ in present)} — "
+        f"has a row for {filename}, so nothing says whether the autolevel operator acted on "
+        "the picture the gallery ships"
+    )
+
+
+def _stamp_in(pick: Pick, where: str, path: Path, match: str) -> Levelling | None:
+    """One run record read for this pick's row, or `None` where it has no row for it."""
     filename = str(pick.source["picture"]).replace("\\", "/").rsplit("/", 1)[-1]
     with path.open(encoding="utf-8") as handle:
         for line in handle:
@@ -412,10 +445,7 @@ def run_stamp(pick: Pick) -> Levelling:
             if not stamp.get("curve"):
                 return Levelling(UNRECOVERABLE, where, stamp)
             return Levelling(REPLAYED, where, stamp)
-    raise PickError(
-        f"{pick.identifier}: {where} has no row for {filename}, so nothing says whether the "
-        "autolevel operator acted on the picture the gallery ships"
-    )
+    return None
 
 
 def levelled_colormap(pick: Pick, stamp: dict) -> Path:
