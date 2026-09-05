@@ -27,10 +27,11 @@ with four real renders in it, drawn by a rig under ignored `scratch/`.
 **An animation is copied, never imported.** Pillow's one-image read keeps the first frame
 and silently drops the rest, so an APNG that went through `import_web_res` would land as
 a still nobody would notice was still. A maker that draws one names it in its own
-`ANIMATED` set — `locations.ANIMATED` today, holding `locations-walk-step` — and
-`--place` writes the bytes across and measures the file rather than reopening it. The
-sheet is already web-res, which is what makes that safe. `escape-orbit-race` never meets
-the question: `diagram` writes it here directly.
+`ANIMATED` set — `locations.ANIMATED` is the one such set, and it is empty since
+`locations-walk-descent` replaced the animated walk step — and `--place` writes the bytes
+across and measures the file rather than reopening it. The sheet is already web-res, which
+is what makes that safe. `escape-orbit-race` never meets the question: `diagram` writes it
+here directly.
 
 Before staging an image drop, check its aggregate size against the 20 MB commit gate in
 `CLAUDE.md`.

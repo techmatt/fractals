@@ -43,7 +43,6 @@ from . import records, renders, sheets
 from . import theme as theme_module
 from .paths import SITE_ROOT
 from .theme import (
-    REGULAR,
     SECTION_INK,
     SEMIBOLD,
     WELL_INK,
@@ -279,16 +278,6 @@ def cache() -> renders.Cache:
 def panel(name: str, row: dict, size: tuple[int, int], **extra) -> Path:
     """One location, rendered at panel size in the neutral map every figure here uses."""
     return cache().render(name, dict(location(row), **extra), size).path
-
-
-def node_panel(name: str, row: dict) -> Path:
-    """One location at the walk's own geometry: the picture the judge was shown.
-
-    384x216 at one sample per pixel is not a pretty render and is not meant to be. It is
-    what the gates measured and what the judge scored, so a figure making a claim about
-    a verdict shows the frame the verdict was passed on.
-    """
-    return cache().render(name, location(row), NODE_TILE, supersample=NODE_SUPERSAMPLE).path
 
 
 # ------------------------------------------------------------------------- the lettering
@@ -1735,349 +1724,6 @@ def _lengths_provenance(arms: list[Arm]) -> list[str]:
     return lines
 
 
-# --------------------------------------------------------------------------- the walk step
-
-#: The expansion the animated diagram steps through: four children proposed by the
-#: three different rules, one refused at a gate with its reading recorded, and two
-#: admitted against one merely expandable — every beat of the prose with a real number
-#: under it.
-STEP_NODE = 232
-
-#: The two score floors the fates are decided at. They live in the wallpaper project
-#: (`supply.currency.GOOD_FLOOR`, `curation.floors.JUNK_FLOOR`) and they *move* — both
-#: were restated on 2026-08-20 at a head flip — so a figure that prints them checks
-#: them against the ledger it is drawing rather than trusting this line.
-GOOD_FLOOR = 0.385
-JUNK_FLOOR = 0.100
-
-#: The five beats, in the order the prose runs them, and what each one is doing here.
-BEATS = (
-    (
-        "Render cheaply",
-        "The frame is drawn small and fast, one sample per pixel — a"
-        " thumbnail of its smooth field, not a finished render.",
-    ),
-    (
-        "Propose children",
-        "Four child frames are drawn inside it, each zoomed to between"
-        " 35% and 50% of its width: most aimed at foci, the rest placed at random or toward"
-        " raw detail density.",
-    ),
-    (
-        "Gate",
-        "Each child is rendered the same cheap way, and the structural checks throw"
-        " out the hopeless before the judge sees one.",
-    ),
-    (
-        "Score",
-        "The judge reads the very render the gates just examined and rates the"
-        " frame's chances. A strong reading is admitted; a middling one is expandable, a"
-        " frame the walk may explore through but never counts as a find; a weak one is"
-        " refused.",
-    ),
-    (
-        "Prioritize",
-        "The parent has been expanded and leaves the frontier. What survived"
-        " goes back on, best first — the real order also carries a jitter and a small depth"
-        " bonus, which this diagram leaves out.",
-    ),
-)
-
-STEP_MS = 2600
-STEP_HOLD_MS = 5200
-
-#: Where each thing sits on the diagram's canvas. The two rows under the children are
-#: measured off the label band rather than typed: the band is the tile-label rule's to
-#: size now, and a typed 534 is a verdict line drawn through a caption.
-STEP_PARENT = (sheets.PAD, 54)
-STEP_KIDS_TOP = 300
-STEP_VERDICT = STEP_KIDS_TOP + panels(4)[1] + band(panels(4)[1], 2) + 8
-STEP_QUEUE = STEP_VERDICT + 76
-STEP_SIZE = (SHEET_WIDTH, STEP_QUEUE + 58)
-
-ADMITTED_INK = SEEDED_INK
-REFUSED_INK = FRESH_INK
-
-
-def walk_step() -> Drawn:
-    """One expansion, beat by beat, as a looping diagram over the frames it really used."""
-    forest = Forest(ledger())
-    parent = forest.nodes[STEP_NODE]
-    kids = forest.children(STEP_NODE)
-    _check_floors(forest.rows)
-    run = next(row for row in forest.rows if row.get("kind") == "run")
-    small = panels(4)
-    parent_panel = node_panel("step-parent", parent)
-    kid_panels = [node_panel(f"step-kid-{kid['child_index']}", kid) for kid in kids]
-
-    frames = [
-        _step_frame(beat, parent, kids, parent_panel, kid_panels, small, run)
-        for beat in range(len(BEATS))
-    ]
-    destination = sheet_path("locations-walk-step")
-    sheets.animate(frames, destination, frame_ms=STEP_MS, hold_ms=STEP_HOLD_MS)
-    size = destination.stat().st_size / 1024
-    print(f"{destination.name}  {STEP_SIZE[0]}x{STEP_SIZE[1]}  {len(frames)} frames  {size:.0f} KB")
-    return Drawn(destination, _step_provenance(parent, kids, small))
-
-
-def _check_floors(rows: list[dict]) -> None:
-    """Hold the three fates the diagram shows to the ledger it is drawing them from.
-
-    The diagram prints no threshold any more — a floor is an operating constant and it
-    moves — but it still asserts an ordering: admitted above expandable above refused.
-    This is that assertion checked against the run, so a ledger whose fates no longer
-    stack that way is a refusal rather than a diagram quietly telling the wrong story.
-    """
-    scored = [
-        row for row in rows if row.get("kind") == "candidate" and row.get("score") is not None
-    ]
-    admitted = [row["score"] for row in scored if row["fate"] == "survived"]
-    refused = [
-        row["score"] for row in scored if row["fate"] == "not_admitted" and not row.get("grace")
-    ]
-    if min(admitted) < GOOD_FLOOR or max(refused) >= JUNK_FLOOR:
-        raise renders.EngineError(
-            f"this ledger admits from {min(admitted):.6f} and refuses up to "
-            f"{max(refused):.6f}, against the {GOOD_FLOOR} and {JUNK_FLOOR} this run was "
-            "meant to have used, so the three fates the diagram shows are not this run's"
-        )
-
-
-def _step_frame(beat, parent, kids, parent_panel, kid_panels, small, run):
-    """One beat's frame: everything the beats before it drew, plus this beat's mark."""
-    sheet, draw = sheets.canvas(*STEP_SIZE)
-    _stepper(draw, beat)
-    sheet.paste(sheets.fitted(parent_panel, NODE_TILE), STEP_PARENT)
-    _beat_text(draw, beat)
-    _step_settings(draw, parent, run)
-    if beat >= 1:
-        _proposals(sheet, draw, parent, kids)
-        for index, (kid, picture) in enumerate(zip(kids, kid_panels, strict=True)):
-            x = sheets.PAD + index * (small[0] + sheets.PAD)
-            sheet.paste(sheets.fitted(picture, small), (x, STEP_KIDS_TOP))
-            _kid_marks(draw, beat, index, kid, x, small)
-    if beat >= 4:
-        _queue(draw, parent, kids)
-    return sheet
-
-
-def _stepper(draw, beat: int) -> None:
-    """The five beat names across the top, with the one being shown lit."""
-    x = sheets.PAD
-    for index, (name, _text) in enumerate(BEATS):
-        lit = index == beat
-        face = font(17, SEMIBOLD if lit else REGULAR)
-        draw.text((x, sheets.PAD), f"{index + 1}", fill=WELL_RULE, font=font(17))
-        draw.text(
-            (x + 18, sheets.PAD),
-            name,
-            fill=WELL_INK if lit else SECTION_INK,
-            font=face,
-        )
-        width = 18 + text_width(draw, name, face)
-        if lit:
-            draw.line([x + 18, sheets.PAD + 24, x + width, sheets.PAD + 24], fill=WELL_INK, width=2)
-        x += width + 34
-    rule(draw, sheets.PAD + 34)
-
-
-def _beat_text(draw, beat: int) -> None:
-    """What this beat is, beside the parent frame."""
-    left = sheets.PAD + NODE_TILE[0] + 2 * sheets.PAD
-    draw.text((left, STEP_PARENT[1]), BEATS[beat][0], fill=WELL_INK, font=font(21, SEMIBOLD))
-    stack(draw, left, STEP_PARENT[1] + 34, _wrap(BEATS[beat][1], 78), size=16, lead=WELL_INK_DIM)
-
-
-def _step_settings(draw, parent: dict, run: dict) -> None:
-    """What this one expansion is, standing still under the stage text."""
-    left = sheets.PAD + NODE_TILE[0] + 2 * sheets.PAD
-    policy = run["policy"]
-    heading(draw, left, STEP_PARENT[1] + 138, "This expansion", size=15)
-    stack(
-        draw,
-        left,
-        STEP_PARENT[1] + 162,
-        [
-            f"{_family_name(parent['family'])}{sheets.MIDDOT}"
-            f"{parent['depth']} rungs below the root it grew from",
-            f"frame width {sheets.width_text(parent['viewport']['width'])}"
-            f"{sheets.MIDDOT}drawn at {NODE_TILE[0]}×{NODE_TILE[1]}, one sample per pixel",
-            f"{policy['candidates']} candidates, each "
-            f"{policy['zoom'][0]:.0%} to {policy['zoom'][1]:.0%} of the parent's width",
-            "the gates: too much interior, escaped to blandness, a flat field, "
-            "too little of the frame carrying detail",
-        ],
-        size=14,
-        lead=WELL_INK_DIM,
-    )
-
-
-def _wrap(text: str, width: int) -> list[str]:
-    """Text broken to a line width, because Pillow will not do it."""
-    lines, line = [], ""
-    for word in text.split():
-        if line and len(line) + 1 + len(word) > width:
-            lines.append(line)
-            line = word
-        else:
-            line = f"{line} {word}".strip()
-    if line:
-        lines.append(line)
-    return lines
-
-
-def _proposals(sheet, draw, parent, kids) -> None:
-    """The four child frames, marked on the parent they were proposed inside."""
-    box = (0, 0, NODE_TILE[0], NODE_TILE[1])
-    layer, over = _overlay(NODE_TILE)
-    for kid in kids:
-        corners = frame_box(kid["viewport"], parent["viewport"], box)
-        outline(over, corners, WELL_INK, width=2)
-        _tag(over, corners[0] + 5, corners[1] + 4, str(kid["child_index"] + 1), WELL_INK)
-    _paste_marked(sheet, _render_of(sheet), layer, STEP_PARENT)
-
-
-def _render_of(sheet):
-    """The parent panel already on the sheet, so the marks composite over the picture."""
-    return sheet.crop(
-        (
-            STEP_PARENT[0],
-            STEP_PARENT[1],
-            STEP_PARENT[0] + NODE_TILE[0],
-            STEP_PARENT[1] + NODE_TILE[1],
-        )
-    )
-
-
-def _kid_marks(draw, beat: int, index: int, kid: dict, x: int, small) -> None:
-    """One child's caption, and whatever verdict the beats so far have reached."""
-    refused = kid["fate"] in FATES
-    under(
-        draw,
-        (x, STEP_KIDS_TOP),
-        small,
-        [
-            f"{index + 1}{sheets.MIDDOT}{_branch_line(kid)}",
-            f"width {sheets.width_text(kid['viewport']['width'])}",
-        ],
-    )
-    if beat < 2:
-        return
-    if refused:
-        draw.text(
-            (x, STEP_VERDICT),
-            f"refused: {FATES[kid['fate']]}",
-            fill=REFUSED_INK,
-            font=font(15),
-        )
-        draw.line(
-            [x, STEP_KIDS_TOP, x + small[0], STEP_KIDS_TOP + small[1]],
-            fill=REFUSED_INK,
-            width=3,
-        )
-        draw.line(
-            [x + small[0], STEP_KIDS_TOP, x, STEP_KIDS_TOP + small[1]],
-            fill=REFUSED_INK,
-            width=3,
-        )
-        return
-    draw.text((x, STEP_VERDICT), "passed every gate", fill=SECTION_INK, font=font(15))
-    if beat < 3:
-        return
-    admitted = kid["fate"] == "survived"
-    draw.text(
-        (x, STEP_VERDICT + 21),
-        "admitted" if admitted else "expandable",
-        fill=ADMITTED_INK if admitted else WELL_INK_DIM,
-        font=font(15),
-    )
-
-
-def _branch_line(kid: dict) -> str:
-    return {
-        "foci": "aimed at a focus",
-        "random": "placed at random",
-        "density": "placed toward detail density",
-    }[kid["branch"]]
-
-
-def _queue(draw, parent, kids) -> None:
-    """The last beat: the parent gone, and what survived going back on, best first."""
-    rule(draw, STEP_QUEUE - 14)
-    draw.text(
-        (sheets.PAD, STEP_QUEUE),
-        "Back on the frontier",
-        fill=WELL_INK,
-        font=font(17, SEMIBOLD),
-    )
-    x = sheets.PAD + 190
-    gone = "the parent \u2014 expanded, off the queue"
-    draw.text((x, STEP_QUEUE + 2), gone, fill=SECTION_INK, font=font(15))
-    width = text_width(draw, gone, font(15))
-    draw.line([x, STEP_QUEUE + 11, x + width, STEP_QUEUE + 11], fill=SECTION_INK, width=1)
-    x += width + 26
-    survivors = sorted(
-        (kid for kid in kids if kid["fate"] not in FATES),
-        key=lambda kid: -kid["score"],
-    )
-    for kid in survivors:
-        admitted = kid["fate"] == "survived"
-        ink = ADMITTED_INK if admitted else WELL_INK_DIM
-        fate = "admitted" if admitted else "expandable"
-        text = f"{kid['child_index'] + 1}{sheets.MIDDOT}{fate}"
-        face = font(15)
-        span = round(text_width(draw, text, face)) + 20
-        draw.rounded_rectangle(
-            [x, STEP_QUEUE - 4, x + span, STEP_QUEUE + 24],
-            radius=5,
-            fill=WELL_PANEL,
-            outline=ink,
-            width=2,
-        )
-        draw.text((x + 10, STEP_QUEUE + 2), text, fill=ink, font=face)
-        x += span + 16
-
-
-def _step_provenance(parent, kids, small) -> list[str]:
-    lines = [
-        f"An animated diagram over real frames. Ledger {LEDGER}/walk.jsonl, seed 11, "
-        f"batch {parent['batch']}: one expansion of node {parent['node_id']} "
-        f"({_family_name(parent['family'])}, depth {parent['depth']}). Every panel is "
-        f"rendered at the walk's own node regime — {NODE_TILE[0]}x{NODE_TILE[1]}, "
-        f"supersample {NODE_SUPERSAMPLE}, mode smooth, colormap {renders.COLORMAP}, cap "
-        "from the depth-aware policy — because that is the render the gates measured and "
-        f"the judge scored; the four children are fitted to {small[0]}x{small[1]}. Five "
-        f"frames at {STEP_MS} ms, the last held {STEP_HOLD_MS} ms, written as a looping "
-        "APNG in full colour.",
-        f"parent: node {parent['node_id']}, centre {parent['viewport']['center_re']} + "
-        f"{parent['viewport']['center_im']}i, width {parent['viewport']['width']}, "
-        f"maxiter {parent['maxiter']}.",
-    ]
-    for kid in kids:
-        lines.append(
-            f"child {kid['child_index'] + 1}: branch {kid['branch']}, placement "
-            f"{kid['placement']}, centre {kid['viewport']['center_re']} + "
-            f"{kid['viewport']['center_im']}i, width {kid['viewport']['width']}, maxiter "
-            f"{kid['maxiter']}, fate {kid['fate']}"
-            + (
-                f", occupancy {kid['occupancy']}"
-                if kid["fate"] == "occupancy_floor"
-                else f", judge P(>=3) {kid['score']:.6f} under head {kid['scorer']}"
-                if kid.get("score") is not None
-                else ""
-            )
-            + "."
-        )
-    lines.append(
-        f"The floors printed on the Score beat are GOOD_FLOOR {GOOD_FLOOR} and "
-        f"JUNK_FLOOR {JUNK_FLOOR}, checked against this ledger before drawing: its "
-        "lowest admission and its highest ungraced refusal both fall the right side of "
-        "them."
-    )
-    return lines
-
-
 # ------------------------------------------------------------------------ walk examples
 
 #: The run the example walks come from: one plane, one seed, and — the reason it is this
@@ -2201,7 +1847,6 @@ MAKERS = {
     "locations-rating-examples": rating_examples,
     "locations-random-samples": random_samples,
     "locations-foci-proposals": foci_proposals,
-    "locations-walk-step": walk_step,
     "locations-reframe-examples": reframe_examples,
     "locations-framing-ladder": framing_ladder,
     "locations-walk-lengths": walk_lengths,
@@ -2210,12 +1855,15 @@ MAKERS = {
     "locations-found-and-finished": found_and_finished,
 }
 
-#: The figures that land as PNG rather than JPEG: the animated one, which has no JPEG
-#: form at all, and the chart, which is flat art a lossy encode would only smear.
-LOSSLESS = frozenset({"locations-walk-step", "locations-walk-lengths"})
+#: The figures that land as PNG rather than JPEG: the chart, which is flat art a lossy
+#: encode would only smear.
+LOSSLESS = frozenset({"locations-walk-lengths"})
 
 #: The figures that are more than one frame, and so are copied rather than imported.
-ANIMATED = frozenset({"locations-walk-step"})
+#: Empty since `locations-walk-descent` replaced the animated walk step, and kept
+#: because `--place` still has to ask: the next animation here is a set entry rather
+#: than a code path somebody has to write again.
+ANIMATED: frozenset[str] = frozenset()
 
 
 def recipe(identifier: str) -> dict:

@@ -127,7 +127,7 @@
 
     <p>Rarity plus clustering is the signature of a search problem, and a search needs three
     things: places with some reason to be promising to start from, a way to move locally, and,
-    crucially, a valuation function that tells better from worse. The project's valuation
+    crucially, a valuation function that tells better from worse. This project's valuation
     function is the location judge above, and its search is a guided walk: thousands of frames
     explored per run, descending toward structure and away from both emptiness and chaos.</p>
 
@@ -137,7 +137,7 @@
     copies of themselves. For the Mandelbrot set we call these copies <i>minibrots</i>, and
     they are everywhere, at every scale; its
     multibrot cousins carry miniature copies of their own. Two facts make them special to a
-    search. First, each copy has an exact center — its <i>nucleus</i> — a point whose orbit
+    search. Each copy has an exact center — its <i>nucleus</i> — a point whose orbit
     repeats in a perfect cycle, which makes the nucleus the root of an equation that
     <a href="https://en.wikipedia.org/wiki/Newton%27s_method">Newton's method</a> can solve to
     full precision: a minibrot is not just a shape but an addressable coordinate at a known
@@ -157,7 +157,7 @@
     being near enough to anything. The unknown is the constant c itself: what is being
     solved for is where to put the camera.</p>
 
-    <p>Second, the richest filament structure in the complex plane grows in the
+    <p>The richest filament structure in the complex plane grows in the
     halo <em>around</em> a copy, and minibrots are often near aesthetically beautiful
     locations.</p>
 
@@ -239,9 +239,9 @@
     on the frames it admitted. The ratings are not in it: those accumulate in the store of
     hand labels the judge is trained on, and it is those that seed the next walk.</p>
 
-      <figure class="figure" data-figure="locations-walk-step">
-        <a class="figure-open" href="../explorer/index.html?v=2&amp;f=multibrot3&amp;x=-0.09178545984823365&amp;y=0.7701228066964432&amp;w=0.0000016915874951803383&amp;p=twilight_shifted" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/locations-walk-step.png" width="1316" height="678" alt="Animated diagram: a parent frame proposing four children, a gate removing one, the judge scoring the rest, and the frontier reordering."><span class="figure-open-mark" aria-hidden="true">↗</span></a>
-        <figcaption>One expansion, end to end, over the frames one real expansion used. The parent is drawn cheaply, four children are proposed inside it, the structural gates throw out what is hopeless, the judge scores what survives, and the frontier reorders around the result.</figcaption>
+      <figure class="figure" data-figure="locations-walk-descent">
+        <a class="figure-open" href="../explorer/index.html?v=2&amp;y=0.0&amp;p=twilight_shifted" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/locations-walk-descent.jpg" width="1316" height="1242" alt="Five rows. Each has one fractal view on the left and four smaller views beside it, every small view labeled with a number; the bottom row's four are finished color wallpapers."><span class="figure-open-mark" aria-hidden="true">↗</span></a>
+        <figcaption>One descent, from the whole set to a wallpaper. The left column is the frame the search is standing in; the four beside it are what that frame offers, each with the location judge's estimate of the place under it. A green border marks a frame the judge admits, and the amber corner follows the one this descent took — marked again on the view it came out of. The top row is four starting places rather than four proposals, and the judge has nothing to say about any of them: a plane descent is bland before it is good. The bottom row is the location the descent kept, and four wallpapers of it.</figcaption>
       </figure>
 
     <h2 id="reframing-a-find">Reframing a find</h2>

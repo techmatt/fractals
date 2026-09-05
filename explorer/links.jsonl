@@ -31,7 +31,7 @@
 {"schema": 1, "kind": "link", "id": "figure:locations-random-samples", "link": "v=2&x=-0.7389485586734066&y=0.19464970626314537&w=0.008536898938726294&p=twilight_shifted", "from": "panel 2"}
 {"schema": 1, "kind": "link", "id": "figure:locations-minibrot-examples", "link": "v=2&m=threads&x=-0.7495253183358592&y=0.0944710743517176&w=0.00003933702370861308&p=commons_Mandelbrot_3_B_C3_B4ng_Xoay", "from": "panel 3"}
 {"schema": 1, "kind": "link", "id": "figure:locations-foci-proposals", "link": "v=2&f=multibrot4&x=0.3402210811857287&y=0.9314018675848565&w=0.000020761869075560957&p=twilight_shifted", "from": "panel 1"}
-{"schema": 1, "kind": "link", "id": "figure:locations-walk-step", "link": "v=2&f=multibrot3&x=-0.09178545984823365&y=0.7701228066964432&w=0.0000016915874951803383&p=twilight_shifted", "from": "panel 1"}
+{"schema": 1, "kind": "link", "id": "figure:locations-walk-descent", "link": "v=2&y=0.0&p=twilight_shifted", "from": "panel 1"}
 {"schema": 1, "kind": "link", "id": "figure:locations-reframe-examples", "link": "v=2&f=multibrot4&x=0.3121380176152481&y=0.7310582944197834&w=0.0000005363856379826955&p=twilight_shifted", "from": "panel 1"}
 {"schema": 1, "kind": "link", "id": "figure:locations-framing-ladder", "link": "v=2&f=multibrot3&x=0.52619245723013316382598465321559984&y=0.45603008888099358391978553545697806&w=7.395784334276819e-05&p=twilight_shifted", "from": "panel 1"}
 {"schema": 1, "kind": "link", "id": "figure:locations-descent-chain", "link": "v=2&f=multibrot5&x=0.6652523700253081&y=0.5097069361860601&w=5.1343761624410145e-05&p=twilight_shifted", "from": "panel 1"}
