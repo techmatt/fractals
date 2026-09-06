@@ -101,7 +101,7 @@
 
       <figure class="figure" data-figure="locations-rating-examples">
         <a class="figure-open" href="../explorer/index.html?v=2&amp;f=multibrot4&amp;x=-0.2348083809007602&amp;y=0.5774475407540084&amp;w=5.20487261e-04&amp;p=twilight_shifted" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/locations-rating-examples.jpg" width="1316" height="1204" alt="Four rows of locations, one row per rating from 1 to 4, three examples in each."><span class="figure-open-mark" aria-hidden="true">↗</span></a>
-        <figcaption>The four-point scale by example. What is being rated is the geometry, not the picture as drawn — the question is whether the place could make a good wallpaper across the modes and palettes available to it.</figcaption>
+        <figcaption>The four-point scale by example. What is being rated is the geometry, not the picture as drawn. The question is whether the place could make a good wallpaper across the modes and palettes available to it.</figcaption>
       </figure>
 
     <h2 id="guided-search">Guided search</h2>
@@ -242,7 +242,7 @@
 
       <figure class="figure" data-figure="locations-walk-descent">
         <a class="figure-open" href="../explorer/index.html?v=2&amp;y=0.0&amp;p=twilight_shifted" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/locations-walk-descent.jpg" width="1316" height="1242" alt="Five rows. Each has one fractal view on the left and four smaller views beside it, every small view labeled with a number; the bottom row's four are finished color wallpapers."><span class="figure-open-mark" aria-hidden="true">↗</span></a>
-        <figcaption>One descent, from the whole set to a wallpaper. The left column is the frame the search is standing in; the four beside it are what that frame offers, each with the location judge's estimate of the place under it. A green border marks a frame the judge admits, and the amber corner follows the one this descent took — marked again on the view it came out of. The top row is four starting places rather than four proposals. The bottom row is the location the descent kept, and four wallpapers of it.</figcaption>
+        <figcaption>One descent, from the whole set to a wallpaper. The left column is the frame the search is standing in; the four beside it are what that frame offers, each with the location judge's estimate of the place under it. A green border marks a frame the judge admits, and the amber corner follows the one this descent took, marked again on the view it came out of. The top row is four starting places rather than four proposals. The bottom row is the location the descent kept, and four wallpapers of it.</figcaption>
       </figure>
 
     <h2 id="reframing-a-find">Reframing a find</h2>
@@ -262,7 +262,8 @@
 
     <p><code>snap_to_nucleus</code> recenters exactly: solve for the nucleus with Newton's
     method and put it at the center of the frame. It only fires when a nucleus actually lies
-    inside the current frame, which is why most attempts are refused.</p>
+    inside the current frame, which is why most attempts are refused. A snap is a
+    correction, not a teleport.</p>
 
     <p><code>lateral_to_sibling</code> steps sideways: probe a ring around the current minibrot
     for a neighboring one at comparable scale, and frame that one instead.</p>
@@ -272,7 +273,7 @@
 
       <figure class="figure" data-figure="locations-reframe-examples">
         <a class="figure-open" href="../explorer/index.html?v=2&amp;f=multibrot4&amp;x=0.3121380176152481&amp;y=0.7310582944197834&amp;w=0.0000005363856379826955&amp;p=twilight_shifted" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/locations-reframe-examples.jpg" width="1316" height="1208" alt="Three rows, one per reframing operator: the triggering view, what the operator proposed, and the best frame admitted below it; then one frame reframed three ways."><span class="figure-open-mark" aria-hidden="true">↗</span></a>
-        <figcaption>The three reframing operators, one row each. A reframing is a move rather than a find, and two of these three score lower than the frame that triggered them — the first thing a minibrot framing puts in the picture is the copy's black body. The payoff is the third column: the best frame the walk went on to admit underneath. Below, one frame all three operators fired on, answered three different ways.</figcaption>
+        <figcaption>The three reframing operators, one row each. A reframing is a move rather than a find: in the top three rows, two of the three answers score lower than the frame that triggered them, because the first thing a minibrot framing puts in the picture is the copy's black body. The payoff is the third column, the best frame the walk went on to admit underneath. Below, one weak frame that all three operators fired on, answered three different ways, and this time all three answers are stronger than what triggered them.</figcaption>
       </figure>
 
     <p>Every frame an operator proposes is then sized by the <i>framing ladder</i>, a short
@@ -353,7 +354,7 @@
 
       <figure class="figure" data-figure="locations-walk-lengths">
         <img src="../assets/images/figures/locations-walk-lengths.png" width="1316" height="538" alt="Three bar charts of how deep each root's walk got, beside three bars of how many roots produced a find at all.">
-        <figcaption>Whether a walk finds anything depends on where it starts. Both arms of the comparison ran in one run, under one frontier, competing for the same expansion budget: roots placed at locations a person had already picked out, and fresh roots off the minibrot grid and the home views. 98% of the seeded roots produced at least one admitted find against 22% of the fresh ones, while both arms are walked to about the same depth — a median of six rungs either way. The third row is a different run entirely, for scale.</figcaption>
+        <figcaption>Whether a walk finds anything depends on where it starts. Both arms of the comparison ran in one run, under one frontier, competing for the same expansion budget: roots placed at locations a person had already picked out, and fresh roots off the minibrot grid and the home views. 98% of the seeded roots produced at least one admitted find against 22% of the fresh ones, while both arms are walked to about the same depth, a median of six rungs either way. The third row is a different run entirely, for scale.</figcaption>
       </figure>
 
     <p>The walk's refusals are reliable. Frames it turns away are, on inspection, the flat

@@ -638,15 +638,16 @@ MODES_ROSTER = (
     "itinerary",
 )
 
-#: The roster's shape: thirteen panels in fifteen cells, five across. The two cells left
-#: over are well and nothing else. One of them was a panel until the roster lost a mode
-#: to a niche ruling *(2026-09-04)*, and the sheet keeps its five-across shape rather
-#: than re-cutting to a width no other figure on the page uses. The other used to carry a
-#: legend that said what the caption says a few lines below the picture, which is the same
-#: paragraph twice — the caption is the caption *(Matt, 2026-09-02, taking the last of
-#: these off the page)*.
-MODES_COLUMNS = 5
-MODES_ROWS = 3
+#: The roster's shape: thirteen panels in sixteen cells, four across. Five across left
+#: each panel too small to read a rendering mode off, which is the only thing this figure
+#: asks a reader to do — the page's whole argument is that these thirteen pictures differ
+#: in a way you can see. Four across buys a third more width per panel and costs one more
+#: row. The three cells left over are well and nothing else; one of them was a panel until
+#: the roster lost a mode to a niche ruling *(2026-09-04)*, and one used to carry a legend
+#: saying what the caption says a few lines below the picture, which is the same paragraph
+#: twice *(Matt, 2026-09-02, taking the last of these off the page)*.
+MODES_COLUMNS = 4
+MODES_ROWS = 4
 
 #: How a panel of the roster is labelled: the engine's own name for the mode, which is
 #: the name this page teaches and the name its scoreboard lists. Not `MODE_WORDS` — that
@@ -656,18 +657,18 @@ MODES_LABEL_LINES = 1
 #: How the thirteen seats were arrived at, which is the one thing the resolution cannot
 #: say for itself. Written down because a random draw is only a record if the draw is.
 MODES_DRAW = (
-    "Which seat stands for a mode is a uniform random draw over that mode's seats of the "
-    "stamp — scratch/modes/repick_gallery.py, seed 20260902 — rejecting any seat standing "
-    "on a location another figure already stands on, and any whose run recorded that the "
-    "autolevel operator acted without recording the curve it acted with. Nothing here was "
-    "chosen for how it looks: the figure's claim is that the roster draws wallpapers, and "
-    "a hand-picked panel per mode would be a claim about the picker instead.",
-    "A seat's mode is read off the ledger recipe and never off the seat row. The two "
-    "disagree on 18 of that gallery's 746 seats — every one a candidate of the "
-    "sm_comp_pilot depth run, seated as smooth and recipe'd as itinerary — and the recipe "
-    "is what the engine is handed, so grouping by the seat row would label a panel with a "
-    "mode its picture was not drawn in. That gap is the wallpaper project's record to "
-    "close and is only worked around here.",
+    "Which seat stands for a mode is a uniform random draw over that mode's q4 seats of "
+    "the stamp — scratch/modes/repick_gallery.py, seed 20260905 — rejecting any seat "
+    "standing on a location another figure already stands on, and any whose run recorded "
+    "that the autolevel operator acted without recording the curve it acted with. A q4 "
+    "seat is one over P(>=4) 0.50, the render judge's own cutpoint and the bar the solve "
+    "seats on; the stamp filled all thousand of its seats and every one of them clears "
+    "it, so the bar refused nothing here and is stated because a later stamp's might. "
+    "Nothing was chosen for how it looks: the figure's claim is that the roster draws "
+    "wallpapers, and a hand-picked panel per mode would be a claim about the picker.",
+    "A seat's mode is read off the ledger recipe and never off the seat row, the two "
+    "having disagreed on eighteen seats of an earlier stamp — every one seated as smooth "
+    "and recipe'd as itinerary — and the recipe being what the engine is handed.",
 )
 
 

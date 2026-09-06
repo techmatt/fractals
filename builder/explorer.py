@@ -294,12 +294,21 @@ def _article_smooth_colormaps() -> list[str]:
 
     Read off the figure registry's provenance, which is the only place the answer
     survives: the scripts that drew the figures live in ignored `scratch/`.
+
+    **The family is the one the line names first**, `figures._FAMILY`'s reading and not
+    the word `mandelbrot` appearing anywhere in the line. A gallery seat's provenance
+    writes its partition out, and `julia:mandelbrot` is a Julia set of the mandelbrot
+    parameter plane rather than a mandelbrot — so the looser test read one as the other,
+    and a re-picked roster panel that happened to be a curated map away from the rule's
+    single answer moved the explorer's default with it.
     """
     named = []
     for figure in figures.load_all().values():
         for line in figure.provenance:
-            lowered = line.lower()
-            if "mandelbrot" not in lowered or "mode smooth" not in lowered:
+            family = figures._FAMILY.search(line)
+            if not family or family.group(1).lower() != "mandelbrot":
+                continue
+            if "mode smooth" not in line.lower():
                 continue
             found = re.search(r"colormap ([^,]+)", line)
             if found:
