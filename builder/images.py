@@ -113,16 +113,18 @@ def save(image, destination: Path) -> None:
     _save(image, destination)
 
 
-def land(image, destination: Path, *, max_width: int | None = None) -> tuple[int, int]:
+def land(image, destination: Path, *, max_width: int = WEB_RES_MAX_WIDTH) -> tuple[int, int]:
     """A composed sheet onto disk as a web-res asset, the way `import` lands one.
 
     The same two steps `import_web_res` runs — downscale, then one encode — for a maker
-    that already has the image in hand and has no file to read it back from. `max_width`
-    is the sheet's own landing width where it has one: most sheets are composed at the
-    width they ship at and pass nothing, but a sheet composed larger says so here rather
-    than depending on somebody remembering a flag. Nothing is ever enlarged.
+    that already has the image in hand and has no file to read it back from, and so with
+    the same default: `import` caps every asset at `WEB_RES_MAX_WIDTH` whether or not a
+    flag was passed, and a maker that skipped the cap would land a wider picture than the
+    one committed. A sheet with a narrower landing width of its own says so; most are
+    composed at the width they ship at and this changes nothing for them. Nothing is ever
+    enlarged.
     """
-    working = _resize(image, max_width) if max_width else image
+    working = _resize(image, max_width)
     _save(working, destination)
     return working.size
 
