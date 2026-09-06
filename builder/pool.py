@@ -199,11 +199,17 @@ def frame_line(row: dict, lead: str) -> str:
     )
 
 
-def heading(draw, x: int, y: int, text: str) -> None:
-    """The line that says what the block of panels under it is."""
+def heading(draw, x: int, y: int, text: str, *, size: int = BAND_SIZE) -> None:
+    """The line that says what the block of panels under it is.
+
+    `size` is here for `wallpapers-three-bands`, whose titles are set a rank **above** the
+    labels under its tiles rather than below them — see `BANDS_TITLE_STEP`. The other
+    headed sheets on this page still take `BAND_SIZE`, and bringing them into line is a
+    pass of its own rather than something to do while re-drawing one figure.
+    """
     from .theme import font
 
-    draw.text((x, y), text, fill=WELL_INK, font=font(BAND_SIZE))
+    draw.text((x, y), text, fill=WELL_INK, font=font(size))
 
 
 # ---------------------------------------------------------------------------- the panels
@@ -954,9 +960,18 @@ BANDS_LABEL_LINES = 2
 #: The room between two bands, with the hand-off arrow drawn down the middle of it.
 BANDS_HAND_OFF = 46
 
-#: The room a band's own title takes above it — `BAND_SIZE` and the air under it, the
-#: same offset every other headed block on this page uses.
-BANDS_TITLE_HEIGHT = 22
+#: How much bigger a band's title is than the label under a tile of that band, and the
+#: air between the title and the pictures it names.
+#:
+#: **A title outranks a label** *(Matt, 2026-09-05)*: it says what the whole block under
+#: it is, where a label names one picture inside that block, so setting it smaller had the
+#: two ranks the wrong way round — `BAND_SIZE` is 16 and `sheets.label_size` returns 19 at
+#: this band's tile height. The step is taken from the label rule rather than typed as a
+#: size, so the two cannot drift apart the way two constants would. The other headed
+#: sheets on this page are still on `BAND_SIZE` and bringing them into line is a pass of
+#: its own.
+BANDS_TITLE_STEP = 4
+BANDS_TITLE_AIR = 6
 
 #: What each band is called, in the words the article already teaches. The first and the
 #: last are the names of the sections either side of this one, which is what makes the
@@ -1102,19 +1117,21 @@ def three_bands() -> Drawn:
     middle = panels(BANDS_MINED_COLUMNS)
     large = panels(BANDS_SEATED_COLUMNS)
     labels = band(middle[1], BANDS_LABEL_LINES)
+    title_size = sheets.label_size(middle[1], SHEET_WIDTH) + BANDS_TITLE_STEP
+    title_high = title_size + BANDS_TITLE_AIR
 
     # Every band is a title, then its pictures; between two bands is the hand-off, and
     # the arrow is centred in it. Laid out down a running `y` rather than from three
     # origins, because a title's height is the one number that moves when the wording does.
     rows_down = len(admitted) // BANDS_ADMITTED_COLUMNS
-    admitted_at = sheets.PAD + BANDS_TITLE_HEIGHT
+    admitted_at = sheets.PAD + title_high
     admitted_high = rows_down * small[1] + (rows_down - 1) * sheets.PAD
-    mined_at = admitted_at + admitted_high + BANDS_HAND_OFF + BANDS_TITLE_HEIGHT
-    seated_at = mined_at + middle[1] + labels + BANDS_HAND_OFF + BANDS_TITLE_HEIGHT
+    mined_at = admitted_at + admitted_high + BANDS_HAND_OFF + title_high
+    seated_at = mined_at + middle[1] + labels + BANDS_HAND_OFF + title_high
     seated_high = BANDS_SEATED_ROWS * large[1] + (BANDS_SEATED_ROWS - 1) * sheets.PAD
     sheet, draw = sheets.canvas(SHEET_WIDTH, seated_at + seated_high + sheets.PAD)
 
-    heading(draw, sheets.PAD, sheets.PAD, BANDS_TITLES[0])
+    heading(draw, sheets.PAD, sheets.PAD, BANDS_TITLES[0], size=title_size)
     for index, row in enumerate(admitted):
         column, line = index % BANDS_ADMITTED_COLUMNS, index // BANDS_ADMITTED_COLUMNS
         origin = (
@@ -1126,7 +1143,7 @@ def three_bands() -> Drawn:
             sheets.framed(draw, origin, small, BANDS_MARK)
 
     pairs = [BANDS_MODE_WORDS, BANDS_MODE_WORDS, *_bands_color_words(mined[2:])]
-    heading(draw, sheets.PAD, mined_at - BANDS_TITLE_HEIGHT, BANDS_TITLES[1])
+    heading(draw, sheets.PAD, mined_at - title_high, BANDS_TITLES[1], size=title_size)
     for index in range(BANDS_MINED_COLUMNS):
         origin = (sheets.PAD + index * (middle[0] + sheets.PAD), mined_at)
         if index == 0:
@@ -1141,7 +1158,7 @@ def three_bands() -> Drawn:
             sheets.framed(draw, origin, middle, BANDS_MARK)
         under(draw, origin, middle, words)
 
-    heading(draw, sheets.PAD, seated_at - BANDS_TITLE_HEIGHT, BANDS_TITLES[2])
+    heading(draw, sheets.PAD, seated_at - title_high, BANDS_TITLES[2], size=title_size)
     for index, pick in enumerate(seated):
         column, line = index % BANDS_SEATED_COLUMNS, index // BANDS_SEATED_COLUMNS
         origin = (
@@ -1153,7 +1170,7 @@ def three_bands() -> Drawn:
 
     centre = SHEET_WIDTH // 2
     for top in (mined_at, seated_at):
-        gap = top - BANDS_TITLE_HEIGHT - BANDS_HAND_OFF
+        gap = top - title_high - BANDS_HAND_OFF
         sheets.elbow_arrow(draw, [(centre, gap + 11), (centre, gap + BANDS_HAND_OFF - 11)])
 
     destination = sheets.save(sheet, sheet_path(BANDS_ID))
@@ -1175,9 +1192,13 @@ def _bands_provenance(admitted, marked_at, mined, seated, sizes) -> list[str]:
         f"{large[0]}x{large[1]}, {BANDS_SEATED_COLUMNS} across. The titles are "
         f"{', '.join(BANDS_TITLES)} — the sections either side of this one and this page's "
         f"own word for what it does, so a reader who has met the contents rail has met all "
-        f"three. The marked location wears the same amber frame in the first band and the "
-        f"second, and that frame is the only thing on the sheet saying the two are one "
-        f"place. Nothing on it is a count.",
+        f"three. They are set {BANDS_TITLE_STEP} points above the label under a middle-band "
+        f"tile rather than below it: a title says what the whole block under it is and a "
+        f"label names one picture inside that block, so the smaller title the other headed "
+        f"sheets of this page still carry has the two ranks the wrong way round. The marked "
+        f"location wears the same amber frame in the first band and the second, and that "
+        f"frame is the only thing on the sheet saying the two are one place. Nothing on it "
+        f"is a count.",
         f"Band 1 — the same sixteen admitted locations `locations-highly-rated` shows on "
         f"finding-good-locations.html, in the same order, each addressed by the walk "
         f"ledger and the node id it was written under and rendered fresh at "
