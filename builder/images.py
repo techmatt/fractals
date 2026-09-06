@@ -113,6 +113,20 @@ def save(image, destination: Path) -> None:
     _save(image, destination)
 
 
+def land(image, destination: Path, *, max_width: int | None = None) -> tuple[int, int]:
+    """A composed sheet onto disk as a web-res asset, the way `import` lands one.
+
+    The same two steps `import_web_res` runs — downscale, then one encode — for a maker
+    that already has the image in hand and has no file to read it back from. `max_width`
+    is the sheet's own landing width where it has one: most sheets are composed at the
+    width they ship at and pass nothing, but a sheet composed larger says so here rather
+    than depending on somebody remembering a flag. Nothing is ever enlarged.
+    """
+    working = _resize(image, max_width) if max_width else image
+    _save(working, destination)
+    return working.size
+
+
 def _resize(image, width: int):
     """Downscale to a width. Nothing is ever enlarged."""
     from PIL import Image

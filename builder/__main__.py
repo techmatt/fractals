@@ -798,10 +798,12 @@ def _do_diagram(identifier: str) -> int:
 
 
 def _do_families(identifier: str) -> int:
-    destination, width, height = families.draw(identifier)
+    destination, width, height, provenance = families.draw(identifier)
     relative = destination.relative_to(SITE_ROOT).as_posix()
     size = destination.stat().st_size
     print(f'wrote {relative}  "width": {width}, "height": {height}  ({size / 1024:.0f} KB)')
+    for line in provenance:
+        print(f"  {line}")
     return 0
 
 
