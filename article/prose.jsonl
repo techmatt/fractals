@@ -1,4 +1,4 @@
-{"schema": 1, "kind": "prose", "page": "overview.html", "file": "Overview v1.md"}
+{"schema": 1, "kind": "prose", "page": "overview.html", "file": "Overview v2.md"}
 {"schema": 1, "kind": "prose", "page": "rendering-modes.html", "file": "Rendering modes v3.md"}
 {"schema": 1, "kind": "prose", "page": "finding-good-locations.html", "file": "Finding good locations v6.md", "divergences": [{"master": "[locations-walk-lengths] splits", "page": "The figure below splits", "why": "the approved draft names each walk figure by slug, in brackets, the way a paper names a numbered figure; this site numbers no figures and anchors none, so a reference to one is positional, as it is everywhere else on the page"}]}
 {"schema": 1, "kind": "prose", "page": "training-judges.html", "file": "Training judges v5.md"}

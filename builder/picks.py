@@ -645,6 +645,43 @@ def family_name(family: dict) -> str:
     return {"mandelbrot": "Mandelbrot", "phoenix": "Phoenix"}.get(kind, str(kind))
 
 
+#: The iteration each family runs, spelled the way `escape-families` spells it under its
+#: own tiles: the article's formula with the step subscripts dropped, which is what makes
+#: it short enough to sit under a picture *(Matt, 2026-09-06)*. Phoenix keeps one
+#: subscript because it is the only family that reaches back a step, and that reach is the
+#: whole of what its formula says. A Julia's iteration is its plane's iteration — what
+#: differs is which of `z` and `c` the pixel moves — so the two spell one formula here,
+#: exactly as [escape-time fractals] teaches them.
+FAMILY_FORMULA = {
+    "mandelbrot": "z² + c",
+    "phoenix": "z² + c + p·z₋₁",
+}
+
+#: Superscript digits for a multibrot's degree, which is a whole number in every family
+#: this figure can seat. A fractional degree has no spelling here and asks for one.
+SUPERSCRIPT = str.maketrans("0123456789", "⁰¹²³⁴⁵⁶⁷⁸⁹")
+
+
+def family_formula(family: dict) -> str:
+    """The iteration one family runs, for a tile label that shows it beside the name."""
+    kind = family.get("kind")
+    if kind in FAMILY_FORMULA:
+        return FAMILY_FORMULA[kind]
+    degree = family.get("degree", 2)
+    if int(degree) != degree:
+        raise PickError(
+            f"no formula for {kind} at degree {degree} — a fractional degree has no "
+            f"superscript to write it with, so add a spelling to {__name__}.FAMILY_FORMULA "
+            "before seating one under a label that shows the iteration"
+        )
+    return f"z{str(int(degree)).translate(SUPERSCRIPT)} + c"
+
+
+def family_with_formula(family: dict) -> str:
+    """A family as the article names it, and the iteration it runs, on one line."""
+    return f"{family_name(family)} — {family_formula(family)}"
+
+
 def mode_words(mode: str) -> str:
     """What a tile calls a rendering mode, or a refusal naming the mode with no wording."""
     if mode not in MODE_WORDS:
@@ -662,8 +699,13 @@ def mode_words(mode: str) -> str:
 HOOK_COLUMNS = 3
 HOOK_ROWS = 2
 
-#: How many lines a tile label under the hook carries: the family, then the rendering.
-HOOK_LABEL_LINES = 2
+#: How many lines a tile label under the hook carries: the family and the iteration it
+#: runs, and nothing else *(Matt, 2026-09-06)*. It used to name the rendering underneath,
+#: and the caption already says which row is smooth and which is not — a mode name under
+#: every tile of the article's opening figure spends a reader's first look on vocabulary
+#: the page has not taught yet. The formula went on in the same round, the way
+#: `escape-families` carries one, so the opening picture says what a family *is*.
+HOOK_LABEL_LINES = 1
 
 #: The Rendering modes roster, in the engine catalog's own order — the order the page's
 #: own scoreboard reads in, and the order the sheet draws. Spelled here rather than read
@@ -786,7 +828,7 @@ def gallery_hook() -> Drawn:
             draw,
             origin,
             size,
-            [family_name(pick.family), mode_words(pick.mode)],
+            [family_with_formula(pick.family)],
             sheet.width,
         )
     destination = sheets.save(sheet, sheet_path(identifier))
