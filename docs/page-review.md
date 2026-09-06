@@ -199,7 +199,12 @@ list: `gallery-floors` and `wallpapers-mine` draw its name into the picture, and
 `overview-pipeline` and `gallery-output` each stand on panels rendered in it. All four
 are records of passes made while the mode was live, so clearing them is re-picking
 panels — Matt's call — and, for `gallery-floors`, a curation pass solved under the
-current roster, which no record next door yet holds.
+current roster, which no record next door yet holds. **`overview-pipeline` now has a
+tracked maker and still refuses** *(2026-09-06)*: `python -m builder overview
+overview-pipeline` composes the sheet byte for byte identical and then stops at
+`builder.picks.frame_line`, which will not spell the retired mode pick `8b27fa88` is
+drawn in. The guard is about the record line rather than the picture, and it is the
+re-pick above that clears it — not a wording added back to `MODE_WORDS`.
 
 **The Rendering modes table is the site's one machine-scored number, 2026-09-04.** Every
 other figure the article quotes counts something a person decided; the quality

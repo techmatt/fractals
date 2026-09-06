@@ -23,7 +23,18 @@ from pathlib import Path
 
 from . import atlas as atlas_module
 from . import build as build_module
-from . import checks, diagrams, families, figures, fundamentals, images, links, records, renders
+from . import (
+    checks,
+    diagrams,
+    families,
+    figures,
+    fundamentals,
+    images,
+    links,
+    overview,
+    records,
+    renders,
+)
 from . import curation as curation_module
 from . import explorer as explorer_module
 from . import growth as growth_module
@@ -313,6 +324,9 @@ def _parser() -> argparse.ArgumentParser:
         "fundamentals", help="draw a figure of the Rendering fundamentals page"
     )
     grounded.add_argument("id", choices=sorted(fundamentals.SHEETS), help="the figure's id")
+
+    framed = commands.add_parser("overview", help="draw a figure of the Overview page")
+    framed.add_argument("id", choices=sorted(overview.SHEETS), help="the figure's id")
 
     mapped = commands.add_parser("atlas", help="report the atlas record, or write its fixture")
     mapped.add_argument(
@@ -822,6 +836,16 @@ def _do_fundamentals(identifier: str) -> int:
     return 0
 
 
+def _do_overview(identifier: str) -> int:
+    destination, width, height, provenance = overview.draw(identifier)
+    relative = destination.relative_to(SITE_ROOT).as_posix()
+    size = destination.stat().st_size
+    print(f'wrote {relative}  "width": {width}, "height": {height}  ({size / 1024:.0f} KB)')
+    for line in provenance:
+        print(f"  {line}")
+    return 0
+
+
 def _do_prose(options: argparse.Namespace) -> int:
     """Hold each placed page to its approved master, word for word."""
     masters = prose_module.load_all()
@@ -980,6 +1004,8 @@ def main(argv: list[str] | None = None) -> int:
             return _do_families(options.id)
         if options.command == "fundamentals":
             return _do_fundamentals(options.id)
+        if options.command == "overview":
+            return _do_overview(options.id)
         if options.command == "prose":
             return _do_prose(options)
         if options.command == "review":
