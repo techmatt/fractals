@@ -56,10 +56,11 @@
     <p>For many years my desktop background cycled through
     <a href="https://en.wikipedia.org/wiki/Fractal">fractal</a> wallpapers gathered from around
     the internet. Seeing the same ones over and over grew repetitive, and my daughter was
-    fascinated specifically by dark pink fractals, so I built a program to find, color, and
-    stylize new ones automatically. Producing a finished fractal wallpaper involves several
-    artistic choices: picking a location, selecting and aligning palettes, stylizing, and
-    layering post-processing. That work is usually done by hand, in tools like
+    fascinated specifically by dark pink fractals, so I built
+    <a href="https://github.com/techmatt/fractal-wallpapers">fractal-wallpapers</a>, a program
+    to find, color, and stylize new ones automatically. Producing a finished fractal wallpaper
+    involves several artistic choices: picking a location, selecting and aligning palettes,
+    stylizing, and layering post-processing. That work is usually done by hand, in tools like
     <a href="https://en.wikipedia.org/wiki/Ultra_Fractal">UltraFractal</a> or
     <a href="https://www.chaoticafractals.com/">Chaotica</a>. This project doesn't try to match
     that level of hand-tuned artistry on any single image. The goal is a system that continually
@@ -68,8 +69,9 @@
     small part of that. The system also has to decide where to point the camera, how to turn
     what it sees into an image, and which of the results are worth keeping. Everything here
     lives in the flat complex plane: two-dimensional
-    <a href="escape-time-fractals.html">escape-time fractals</a>. Other beautiful fractal worlds
-    are outside its scope, among them the 3D
+    <a href="escape-time-fractals.html">escape-time fractals</a>, the most popular of which is
+    the famous <a href="https://en.wikipedia.org/wiki/Mandelbrot_set">Mandelbrot set</a>. Other
+    beautiful fractal worlds are outside its scope, among them the 3D
     <a href="https://en.wikipedia.org/wiki/Mandelbulb">Mandelbulb</a>,
     <a href="https://en.wikipedia.org/wiki/Fractal_flame">fractal flames</a>, and
     <a href="https://paulbourke.net/fractals/quatjulia/">quaternion Julia sets</a>.</p>
@@ -85,7 +87,7 @@
 
       <figure class="figure" data-figure="overview-pipeline">
         <a class="figure-open" href="../explorer/index.html?v=2&amp;f=multibrot4&amp;x=0.3407452442528424&amp;y=0.931615414985041&amp;w=0.00000006344276705989817&amp;p=twilight_shifted" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/overview-pipeline.jpg" width="1344" height="1017" alt="The three parts of the pipeline stacked down the page: three locations a walk found, drawn in neutral colors; one of them colored through four different palettes with the kept one marked; and three finished wallpapers of the gallery a solve chose."><span class="figure-open-mark" aria-hidden="true">↗</span></a>
-        <figcaption>Pipeline overview. A guided walk proposes locations, which the location judge scores. Admitted locations are rendered under many rendering mode and palette combinations with automatic tone balancing, and the render judge scores the resulting images. Gallery curation then chooses a set out of the candidate pool. The first location in the top band is traced through the remaining stages: four colorings appear in the middle band, with the retained one marked, and that picture appears again in the gallery below.</figcaption>
+        <figcaption>Pipeline overview. A guided walk proposes locations, which the location judge scores. Admitted locations are rendered under many rendering mode and palette combinations with automatic tone balancing, and the render judge scores the resulting images. Gallery curation then chooses a diverse set of wallpapers out of the candidate pool.</figcaption>
       </figure>
 
     <p><a href="finding-good-locations.html">Finding good locations</a>: a guided walk through
