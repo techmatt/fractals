@@ -954,10 +954,31 @@ BANDS_LABEL_LINES = 2
 #: The room between two bands, with the hand-off arrow drawn down the middle of it.
 BANDS_HAND_OFF = 46
 
-#: What the first tile of the middle band says, and what its two pairs are called.
-#: `best by color`, not `best by colour`: American spelling in everything a reader sees.
+#: The room a band's own title takes above it — `BAND_SIZE` and the air under it, the
+#: same offset every other headed block on this page uses.
+BANDS_TITLE_HEIGHT = 22
+
+#: What each band is called, in the words the article already teaches. The first and the
+#: last are the names of the sections either side of this one, which is what makes the
+#: figure read as a hand-off rather than as three unrelated grids; the middle one is this
+#: page's own word for what it does, `mine` being vocabulary it defines.
+BANDS_TITLES = (
+    "Finding good locations",
+    "Mining for wallpapers",
+    "Gallery curation",
+)
+
+#: What the first tile of the middle band says, and what its mode pair is called. `color`,
+#: not `colour`: American spelling in everything a reader sees.
 BANDS_MARKED_WORDS = ("the marked location", "no color yet")
-BANDS_PAIR_WORDS = ("best by mode", "best by color")
+BANDS_MODE_WORDS = "best by mode"
+
+#: The colour pair names the colour it is best in rather than saying `best by color`
+#: twice, because two tiles carrying one label say nothing about why they are a pair. The
+#: word comes off the candidate's own dominant hue family and this is the only rename:
+#: the wallpaper project's twelve families are plain colour words except `azure`, which is
+#: a name for a blue and reads as a paint chip under a wallpaper.
+BANDS_HUE_WORDS = {"azure": "blue"}
 
 #: The hue the marked location wears in both of the first two bands. `MARK_INK[0]` is the
 #: site's own first mark colour, so a reader who has met a marked panel anywhere else
@@ -1004,6 +1025,33 @@ def _bands_args() -> dict:
     if figure is None or figure.recipe is None:
         raise records.RecordError(f"{BANDS_ID} is not registered, so nothing says what it shows")
     return dict(figure.recipe.args)
+
+
+def _bands_color_words(pair) -> list[str]:
+    """What the colour pair's two tiles are called, off the candidates' own records.
+
+    The dominant hue family is the first of a ledger row's `families`, which is the
+    largest chromatic cell's family — the same reading `ceiling.py` calls dominance next
+    door. Two rules, and both are refusals rather than fallbacks: a candidate the reading
+    finds dominant in no colour at all has nothing to be called here, and a pair whose two
+    tiles come out under one word is a pair that no longer says why it is one.
+    """
+    words = []
+    for pick in pair:
+        families = (pick.source.get("colour") or {}).get("families") or []
+        if not families:
+            raise records.RecordError(
+                f"candidate {pick.key} is dominant in no color the reading names, so the "
+                "color pair has nothing to call it — pick one the record has a hue for"
+            )
+        family = str(families[0])
+        words.append(f"best {BANDS_HUE_WORDS.get(family, family)} color")
+    if len(set(words)) < len(words):
+        raise records.RecordError(
+            f"the color pair reads {' and '.join(words)}, which is one label twice — the "
+            "two tiles differ in hue family and not in the word this site has for it"
+        )
+    return words
 
 
 def _bands_marked(marked: str) -> int:
@@ -1055,45 +1103,58 @@ def three_bands() -> Drawn:
     large = panels(BANDS_SEATED_COLUMNS)
     labels = band(middle[1], BANDS_LABEL_LINES)
 
+    # Every band is a title, then its pictures; between two bands is the hand-off, and
+    # the arrow is centred in it. Laid out down a running `y` rather than from three
+    # origins, because a title's height is the one number that moves when the wording does.
     rows_down = len(admitted) // BANDS_ADMITTED_COLUMNS
-    bottom_of_admitted = sheets.PAD + rows_down * small[1] + (rows_down - 1) * sheets.PAD
-    top_of_mined = bottom_of_admitted + BANDS_HAND_OFF
-    top_of_seated = top_of_mined + middle[1] + labels + BANDS_HAND_OFF
-    height = top_of_seated + BANDS_SEATED_ROWS * (large[1] + sheets.PAD)
-    sheet, draw = sheets.canvas(SHEET_WIDTH, height)
+    admitted_at = sheets.PAD + BANDS_TITLE_HEIGHT
+    admitted_high = rows_down * small[1] + (rows_down - 1) * sheets.PAD
+    mined_at = admitted_at + admitted_high + BANDS_HAND_OFF + BANDS_TITLE_HEIGHT
+    seated_at = mined_at + middle[1] + labels + BANDS_HAND_OFF + BANDS_TITLE_HEIGHT
+    seated_high = BANDS_SEATED_ROWS * large[1] + (BANDS_SEATED_ROWS - 1) * sheets.PAD
+    sheet, draw = sheets.canvas(SHEET_WIDTH, seated_at + seated_high + sheets.PAD)
 
+    heading(draw, sheets.PAD, sheets.PAD, BANDS_TITLES[0])
     for index, row in enumerate(admitted):
-        origin = sheets.panel_origin(index, small, BANDS_ADMITTED_COLUMNS, caption=0)
+        column, line = index % BANDS_ADMITTED_COLUMNS, index // BANDS_ADMITTED_COLUMNS
+        origin = (
+            sheets.PAD + column * (small[0] + sheets.PAD),
+            admitted_at + line * (small[1] + sheets.PAD),
+        )
         sheet.paste(sheets.fitted(panel(f"bands-admitted-{index + 1}", row, small), small), origin)
         if index == marked_at:
             sheets.framed(draw, origin, small, BANDS_MARK)
 
+    pairs = [BANDS_MODE_WORDS, BANDS_MODE_WORDS, *_bands_color_words(mined[2:])]
+    heading(draw, sheets.PAD, mined_at - BANDS_TITLE_HEIGHT, BANDS_TITLES[1])
     for index in range(BANDS_MINED_COLUMNS):
-        origin = (sheets.PAD + index * (middle[0] + sheets.PAD), top_of_mined)
+        origin = (sheets.PAD + index * (middle[0] + sheets.PAD), mined_at)
         if index == 0:
             picture = panel("bands-marked", admitted[marked_at], middle)
             words = list(BANDS_MARKED_WORDS)
         else:
             pick = mined[index - 1]
             picture = picks_module.panel(pick, f"bands-mined-{index}", catalog)
-            words = [BANDS_PAIR_WORDS[(index - 1) // 2], picks_module.mode_words(pick.mode)]
+            words = [pairs[index - 1], picks_module.mode_words(pick.mode)]
         sheet.paste(sheets.fitted(picture, middle), origin)
         if index == 0:
             sheets.framed(draw, origin, middle, BANDS_MARK)
         under(draw, origin, middle, words)
 
+    heading(draw, sheets.PAD, seated_at - BANDS_TITLE_HEIGHT, BANDS_TITLES[2])
     for index, pick in enumerate(seated):
         column, line = index % BANDS_SEATED_COLUMNS, index // BANDS_SEATED_COLUMNS
         origin = (
             sheets.PAD + column * (large[0] + sheets.PAD),
-            top_of_seated + line * (large[1] + sheets.PAD),
+            seated_at + line * (large[1] + sheets.PAD),
         )
         picture = picks_module.panel(pick, f"bands-seated-{index + 1}", catalog)
         sheet.paste(sheets.fitted(picture, large), origin)
 
     centre = SHEET_WIDTH // 2
-    for top in (bottom_of_admitted, top_of_seated - BANDS_HAND_OFF):
-        sheets.elbow_arrow(draw, [(centre, top + 11), (centre, top + BANDS_HAND_OFF - 11)])
+    for top in (mined_at, seated_at):
+        gap = top - BANDS_TITLE_HEIGHT - BANDS_HAND_OFF
+        sheets.elbow_arrow(draw, [(centre, gap + 11), (centre, gap + BANDS_HAND_OFF - 11)])
 
     destination = sheets.save(sheet, sheet_path(BANDS_ID))
     return Drawn(
@@ -1108,12 +1169,15 @@ def _bands_provenance(admitted, marked_at, mined, seated, sizes) -> list[str]:
     ledger, node_id = HIGHLY_RATED[marked_at]
     lines = [
         f"builder.pool — three bands on one sheet {SHEET_WIDTH} wide, read top to bottom, "
-        f"with a plain arrow down the centre line between each pair of them. Sixteen "
-        f"panels at {small[0]}x{small[1]}, {BANDS_ADMITTED_COLUMNS} across; five at "
-        f"{middle[0]}x{middle[1]}; eight at {large[0]}x{large[1]}, "
-        f"{BANDS_SEATED_COLUMNS} across. The marked location wears the same amber frame in "
-        f"the first band and the second, and that frame is the only thing on the sheet "
-        f"saying the two are one place. Nothing on it is a count.",
+        f"each under its own title and with a plain arrow down the centre line between "
+        f"each pair of them. Sixteen panels at {small[0]}x{small[1]}, "
+        f"{BANDS_ADMITTED_COLUMNS} across; five at {middle[0]}x{middle[1]}; eight at "
+        f"{large[0]}x{large[1]}, {BANDS_SEATED_COLUMNS} across. The titles are "
+        f"{', '.join(BANDS_TITLES)} — the sections either side of this one and this page's "
+        f"own word for what it does, so a reader who has met the contents rail has met all "
+        f"three. The marked location wears the same amber frame in the first band and the "
+        f"second, and that frame is the only thing on the sheet saying the two are one "
+        f"place. Nothing on it is a count.",
         f"Band 1 — the same sixteen admitted locations `locations-highly-rated` shows on "
         f"finding-good-locations.html, in the same order, each addressed by the walk "
         f"ledger and the node id it was written under and rendered fresh at "
@@ -1149,7 +1213,10 @@ def _bands_provenance(admitted, marked_at, mined, seated, sizes) -> list[str]:
         f"{picks_module.PANEL_SUPERSAMPLE}, then fitted to the tile. Nothing about the "
         f"coloring is this figure's choice: mode, mode settings, curve, map, the whole "
         f"palette pass and the cap all come off the ledger's recipe. Panels in reading "
-        f"order — the mode pair, then the color pair.",
+        f"order — the mode pair, then the color pair. The color pair's two tiles are "
+        f"labelled {' and '.join(_bands_color_words(mined[2:]))}, and the word in each is "
+        f"that candidate's own dominant hue family off the ledger's colour reading rather "
+        f"than a reading taken here.",
         BANDS_MINE_RULE,
         picks_module.autolevel_line(mined),
     ]

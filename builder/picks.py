@@ -344,7 +344,11 @@ def candidates(keys) -> list[Pick]:
     autolevel curve is found through the same third read, and the refusals are the same.
 
     A candidate carries no seat, so `alias` falls back to the key's first eight
-    characters, which is what the browser prints under a tile anyway.
+    characters, which is what the browser prints under a tile anyway. What the seat row
+    would have carried and the ledger row does — the colour reading, `cells` largest
+    first and the hue families they roll up to — rides in `source` instead, because a
+    figure that labels a picture by its dominant hue has to read that off the record
+    rather than off the picture.
     """
     wanted = [str(key).strip() for key in keys]
     rows = ledger_rows(set(wanted))
@@ -363,6 +367,7 @@ def candidates(keys) -> list[Pick]:
             recipe=rows[key]["recipe"],
             source={
                 "picture": rows[key].get("picture"),
+                "colour": rows[key].get("colour") or {},
                 **(rows[key].get("provenance") or {}),
             },
         )
