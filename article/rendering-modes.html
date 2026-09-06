@@ -61,29 +61,33 @@
   <section class="prose">
     <p><a href="rendering-fundamentals.html">Rendering fundamentals</a> built one way of
     rendering a location: compute the smooth field, percentile-stretch it, map a palette
-    across it. This
-    page describes several other ways to render a fractal, each reaching for a different
-    artistic effect. It is hardly exhaustive: dedicated fractal-art programs like
-    <a href="https://www.ultrafractal.com/">Ultra Fractal</a> carry far more options than
-    what is shown here. A rendering mode is any recipe for turning a location's orbits into
-    a picture — and because an orbit is a whole path through the complex plane, dozens or
-    thousands of positions of which the escape time keeps just one number, there are many
-    recipes to choose from, each with its own artistic character. Most modes work exactly
-    like smooth does: reduce each orbit to a value, collect the values into a field, and
-    hand the field to the same stretching and palette machinery as before. But not all of
-    them — some modes blend two renderings into one, some shift the palette by where the
-    orbit went, and some families skip fields entirely and paint the orbit's behavior
-    directly. This page runs through them in roughly that order of strangeness.</p>
+    across it. There are several other ways to render a fractal, each reaching for a
+    different artistic effect, and this is hardly an exhaustive set: dedicated fractal-art
+    programs like <a href="https://www.ultrafractal.com/">Ultra Fractal</a> carry far more
+    options than what is shown here. A rendering mode is any recipe for turning a
+    location's orbits into a picture, and because an orbit is a whole path through the
+    complex plane, dozens or thousands of positions of which the escape time keeps just one
+    number, there are many recipes to choose from, each with its own artistic character.
+    Most modes work exactly like smooth does: reduce each orbit to a value, collect the
+    values into a field, and hand the field to the same stretching and palette machinery as
+    before. But not all of them. Some blend two renderings into one, some shift the palette
+    by where the orbit went, and some skip fields entirely and paint the orbit's behavior
+    directly, which is roughly the order they arrive in below.</p>
 
-    <p>Not every recipe I tried earns a place in the pipeline. The renderer supports more
-    modes than this page shows; I hand-picked the subset the program draws from when it
-    generates wallpapers and their approximate parameter ranges. Several of the ones left
-    out are mathematically interesting and still almost never produce a picture worth
-    keeping without careful tuning by hand.</p>
+    <p>Not every recipe I tried earns a place in the pipeline. The renderer's coloring
+    machinery is wider than its catalog of named modes, and the catalog is wider than the
+    roster this page shows: a named mode is one setting of that machinery that proved worth
+    returning to, and each named mode carries a standing that decides whether the program
+    draws it when it generates wallpapers. A mode whose standing is zero stays renderable
+    by name and out of the draws. Standings move, too, in both directions, as modes earn
+    their place or stop earning it. What follows is the roster as it stands, with the
+    approximate parameter ranges I picked for each. Several of the recipes left out are
+    mathematically interesting and still almost never produce a picture worth keeping
+    without careful tuning by hand.</p>
 
     <h2 id="fields-from-the-orbits-path">Fields from the orbit's path</h2>
 
-    <p>Three modes keep smooth's recipe — one number per orbit, one continuous field — but
+    <p>Three modes keep smooth's recipe, one number per orbit and one continuous field, but
     measure some property of the path instead of the clock. Every figure on this page shows a
     location twice: the smooth rendering on the left and the mode on the right, at the same
     location in the same palette, so whatever changes between the two panels is the mode and
@@ -94,19 +98,22 @@
     triangle inequality brackets the next distance from the origin between a lowest and
     highest possible value; the mode scores the real landing as a fraction between those
     bounds, and averages the fractions over the orbit. Because the score can swing fully
-    between one step and the next, the field bands far more finely than escape time — the
+    between one step and the next, the field bands far more finely than escape time: the
     result reads as engraving where smooth reads as contour lines.</p>
 
       <figure class="figure" data-figure="modes-tia">
         <a class="figure-open" href="../explorer/index.html?v=2&amp;f=multibrot4&amp;m=tia&amp;x=-0.0654442224838454&amp;y=0.7190498713504007&amp;w=0.0000004659891208886683&amp;p=cmr.jungle&amp;mirror=1" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/modes-tia.jpg" width="1316" height="822" alt="Two locations, each drawn twice: a smooth render beside a tia render of the same recipe."><span class="figure-open-mark" aria-hidden="true">↗</span></a>
-        <figcaption>Two locations, each drawn twice — smooth on the left, tia on the right, in that location's own palette. Because the triangle-inequality score can swing fully between one step and the next, the field bands far more finely than escape time: the same frame that reads as contour lines comes back engraved.</figcaption>
+        <figcaption>Two locations, each drawn twice: smooth on the left, tia on the right, in that location's own palette. Because the triangle-inequality score can swing fully between one step and the next, the field bands far more finely than escape time, and the same frame that reads as contour lines comes back engraved.</figcaption>
       </figure>
 
     <p><i>Stripe coloring</i> works from the angles of the orbit's points. Each orbit point is
-    a complex number and so has an angle; the mode averages a wave over those angles —
+    a complex number and so has an angle, and the mode averages a wave over those angles:
     one-half plus one-half the sine of six times the angle, six being the stripe count the
-    pipeline draws with — and the wave's crests show up as flowing bands laid along the
-    fractal's structure.</p>
+    pipeline draws with. The wave's crests show up as flowing bands laid along the fractal's
+    structure. As with the other orbit averages here, the final term is blended in by the
+    fractional part of the smooth count from
+    <a href="rendering-fundamentals.html">rendering fundamentals</a>, so that crossing a
+    whole escape step does not put a terrace of its own into the picture.</p>
 
       <figure class="figure" data-figure="modes-stripe">
         <a class="figure-open" href="../explorer/index.html?v=2&amp;f=phoenix&amp;cx=-1.4989410059318877&amp;cy=0.1097374257111832&amp;px=-0.20267646248610371&amp;py=-0.04464357650761742&amp;zx=0.02848561971452761&amp;zy=-0.06491096519398402&amp;m=stripe&amp;x=-0.9980313058062354&amp;y=0.04640778794693713&amp;w=0.00013679081090762718&amp;p=795548-3840x2160-desktop-4k-fractal-background" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/modes-stripe.jpg" width="1316" height="822" alt="Two locations, each drawn twice: a smooth render beside a stripe render of the same recipe."><span class="figure-open-mark" aria-hidden="true">↗</span></a>
@@ -115,42 +122,45 @@
 
     <p><i>Curvature coloring</i> measures how sharply the path turns: at each step, the
     unsigned angle between the new step and the one before it, averaged along the orbit.
-    Orbits that march outward turn gently; orbits that spiral and fold turn hard on every
-    step, and the two kinds of motion separate cleanly in the image.</p>
+    Orbits that turn differently separate cleanly in the image even when they escape at
+    nearly the same moment, which is a distinction escape time makes nothing of, and one
+    that survives into parts of the frame where the smooth field has gone flat.</p>
 
       <figure class="figure" data-figure="modes-curvature">
         <img src="../assets/images/figures/modes-curvature.jpg" width="1316" height="822" alt="Two locations, each drawn twice: a smooth render beside a curvature render of the same recipe.">
-        <figcaption>Smooth on the left, curvature on the right. Curvature scores how sharply each orbit turns, so orbits that spiral and fold separate from orbits that march outward — a distinction escape time makes nothing of, and one that survives into parts of the frame where the smooth field has gone flat.</figcaption>
+        <figcaption>Smooth on the left, curvature on the right. Curvature scores how sharply each orbit turns, so orbits that turn differently separate even when they escape at nearly the same moment. That is a distinction escape time makes nothing of, and one that survives into parts of the frame where the smooth field has gone flat.</figcaption>
       </figure>
 
     <h2 id="orbit-traps">Orbit traps</h2>
 
     <p>An <i>orbit trap</i> places a fixed shape in the complex plane and asks each orbit how
-    close it ever came to the shape. In this engine every trap is centered on the origin, and
-    no trap is a mode of its own on this page; traps appear in two roles — as a texture laid
-    over a smooth rendering in the composites below, and painted directly in the last family
-    on the page. Two shapes carry that work. The <i>cross trap</i> is the distance to the two
-    coordinate axes. The <i>Gaussian-integer trap</i> traps against the grid of points with
-    whole-number real and imaginary parts: there is one trap cell repeating across the entire
-    plane rather than one shape at the center, so the stamped echoes tile instead of
-    radiating — a texture with the granularity of graph paper crumpled along the fractal's
+    close it ever came to the shape. No trap is drawn as a mode of its own in the roster
+    below; traps appear in two roles, as a texture laid over a smooth rendering in the
+    composites, and painted directly in the last family on the page. Two shapes carry that
+    work. The <i>cross trap</i> is the distance to the two coordinate axes, crossing at the
+    origin. The <i>Gaussian-integer trap</i> traps against the grid of points with
+    whole-number real and imaginary parts, so it is not one shape at a center at all: a
+    single trap cell repeats across the entire plane, and the stamped echoes tile instead of
+    radiating, a texture with the granularity of graph paper crumpled along the fractal's
     folds. And unlike every field mode above, a trap is defined for interior points too,
     which is what fills the normally-black lake with structure where a trap's own reading is
     used as a texture.</p>
 
     <h2 id="blending-modes-together">Blending modes together</h2>
 
-    <p>A composite is also a rendering mode. The engine can render the same location twice — a
-    base and a texture — normalize each, and blend them with any of the standard
+    <p>A composite is also a rendering mode. The engine can render the same location twice, a
+    base and a texture, normalize each, and blend them with any of the standard
     picture-blending operators (multiply, screen, additive, and their relatives). Five of the
     modes the pipeline draws are built this way, all on a smooth base. Four of them blend with
-    screen at 85% strength: <i>smooth_stripe</i> and <i>smooth_curvature</i> lay their
-    namesake fields over the smooth rendering, and <i>smooth_mean_angle</i> and
-    <i>smooth_angle_min</i> lay over two angular readings of the Gaussian-integer trap — the
-    direction the trap is encountered from, averaged out, and the direction at the moment of
-    closest approach. The 85% is a taste constant with a reason: at full strength the
-    texture's own normalization competes with the base's and the escape structure stops being
-    legible underneath.</p>
+    screen at 85% strength. <i>smooth_stripe</i> and <i>smooth_curvature</i> lay their
+    namesake fields over the smooth rendering. <i>smooth_angle_min</i> lays over the angle of
+    the iterate at the orbit's closest approach to the Gaussian-integer trap.
+    <i>smooth_mean_angle</i> reads something less obvious: it takes the orbit's nearest, mean
+    and farthest distances to that same lattice and turns the imbalance among those three
+    into an angle, so what it draws is how lopsided the orbit's approaches were rather than
+    which direction they came from. The 85% is a taste constant with a reason: at full
+    strength the texture's own normalization competes with the base's and the escape
+    structure stops being legible underneath.</p>
 
       <figure class="figure" data-figure="modes-smooth-stripe">
         <a class="figure-open" href="../explorer/index.html?v=2&amp;m=smooth_stripe&amp;x=-0.7805192962538873&amp;y=-0.13533181800963165&amp;w=0.000000012327752366020986&amp;p=Orchid%20Procession" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/modes-smooth-stripe.jpg" width="1316" height="822" alt="Two locations, each drawn twice: a smooth render beside a smooth_stripe render of the same recipe."><span class="figure-open-mark" aria-hidden="true">↗</span></a>
@@ -159,75 +169,76 @@
 
       <figure class="figure" data-figure="modes-smooth-curvature">
         <a class="figure-open" href="../explorer/index.html?v=2&amp;m=smooth_curvature&amp;x=-0.757146423020352&amp;y=0.07328882879620356&amp;w=0.0000000006987884705315999&amp;p=wallhaven_wallhaven-kwg7v6" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/modes-smooth-curvature.jpg" width="1316" height="822" alt="Two locations, each drawn twice: a smooth render beside a smooth_curvature render of the same recipe."><span class="figure-open-mark" aria-hidden="true">↗</span></a>
-        <figcaption>Smooth on the left, smooth_curvature on the right — the same curvature field, screened over the smooth base rather than shown alone. What curvature finds is still there, and the escape structure it was replacing is there with it.</figcaption>
+        <figcaption>Smooth on the left, smooth_curvature on the right: the same curvature field, screened over the smooth base rather than shown alone. What curvature finds is still there, and the escape structure it was replacing is there with it.</figcaption>
       </figure>
 
       <figure class="figure" data-figure="modes-smooth-mean-angle">
         <img src="../assets/images/figures/modes-smooth-mean-angle.jpg" width="1316" height="822" alt="Two locations, each drawn twice: a smooth render beside a smooth_mean_angle render of the same recipe.">
-        <figcaption>Smooth on the left, smooth_mean_angle on the right: the direction the Gaussian-integer trap is approached from, averaged over the orbit and screened over the smooth base at 85%. The trap repeats across the whole plane rather than centered on the origin, so its texture tiles instead of radiating.</figcaption>
+        <figcaption>Smooth on the left, smooth_mean_angle on the right. The texture comes from the spread between the orbit's nearest, mean and farthest distances to the Gaussian-integer trap, read as an angle and screened over the smooth base at 85%, so what it draws is how lopsided the approaches were rather than which direction they came from. The trap repeats across the whole plane rather than standing at the origin, so its texture tiles instead of radiating.</figcaption>
       </figure>
 
       <figure class="figure" data-figure="modes-smooth-angle-min">
         <img src="../assets/images/figures/modes-smooth-angle-min.jpg" width="1316" height="822" alt="Two locations, each drawn twice: a smooth render beside a smooth_angle_min render of the same recipe.">
-        <figcaption>Smooth on the left, smooth_angle_min on the right: the direction of the trap at the orbit's closest approach, screened over the same smooth base. The base is unchanged underneath — the texture is a second reading of the same orbits, not a second picture.</figcaption>
+        <figcaption>Smooth on the left, smooth_angle_min on the right: the direction of the trap at the orbit's closest approach, screened over the same smooth base. The base is unchanged underneath, because the texture is a second reading of the same orbits rather than a second picture.</figcaption>
       </figure>
 
     <p>The fifth, <i>threads</i>, is the family's extremist. Its texture accumulates the cross
-    trap over the whole orbit — every pass near the axes contributes, weighted by how close it
-    came, so a pixel whose orbit grazed the axes a dozen times reads differently from one that
-    grazed once — and the result is laid <em>additively</em> over the smooth base: sparse
-    bright filaments tracing the orbit's near-misses, stacked on top of the classic rendering
-    rather than mixed into it. Additive blending is why the filaments glow. It is also
-    expensive to draw: the trap distance is evaluated at every iteration of every orbit, with
-    no early exit.</p>
+    trap over the whole orbit: every pass near the axes contributes, weighted by a narrow bell
+    around the trap, so a pixel whose orbit grazed the axes a dozen times reads differently
+    from one that grazed once. The result is laid additively over the smooth base at half
+    strength, giving sparse bright filaments that trace the orbit's near-misses and stack on
+    top of the classic rendering rather than mixing into it. Additive blending is why the
+    filaments glow. It is also expensive to draw: the trap distance and its kernel are
+    evaluated on every iteration the orbit runs, so the cost lands hardest exactly where
+    orbits run longest.</p>
 
       <figure class="figure" data-figure="modes-threads">
         <a class="figure-open" href="../explorer/index.html?v=2&amp;f=multibrot4&amp;m=threads&amp;x=0.34023047570455006&amp;y=0.9315184542388448&amp;w=0.000000044486968842909104&amp;p=afmhot&amp;mirror=1" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/modes-threads.jpg" width="1316" height="822" alt="Two locations, each drawn twice: a smooth render beside a threads render of the same recipe."><span class="figure-open-mark" aria-hidden="true">↗</span></a>
-        <figcaption>Smooth on the left, threads on the right. The cross trap is accumulated over the whole orbit and laid additively over the smooth base, so the filaments stack on top of the classic rendering instead of mixing into it — which is why they glow rather than tint.</figcaption>
+        <figcaption>Smooth on the left, threads on the right. The cross trap is accumulated over the whole orbit and laid additively over the smooth base, so the filaments stack on top of the classic rendering instead of mixing into it, which is why they glow rather than tint.</figcaption>
       </figure>
 
     <h2 id="the-itinerary-mode">The itinerary mode</h2>
 
     <p>The <i>itinerary</i> mode comes from a classical idea in the study of dynamics: instead
-    of asking <em>when</em> an orbit escapes, ask <em>where it goes on the way</em>. Cut the
-    plane into four equal angular sectors around the origin, follow the orbit, and write down
-    the sequence of sectors it visits — its route, recorded coarsely — then read that sequence
-    as digits after the point in base four, so the first few moves dominate the value and each
-    later move refines it. The result carves the image into territories of shared history:
-    within a patch every orbit opened with the same route, and the borders between patches are
-    exactly where the dynamics start to disagree, so they are hard-edged, and the image reads
-    as stained glass where smooth reads as airbrush. The itinerary does not form a field of
-    its own; it <em>shifts the palette</em>. The smooth rendering is drawn underneath, and each
-    pixel's address rotates its palette position by up to half a turn, so the territories
-    appear as coordinated recolorings of the classic structure. (On Julia-set-style images,
-    where every pixel is its own starting point, the engine reads the route from the first
-    iterated point rather than the pixel itself — otherwise the leading digit would just cut
-    the picture into quadrants.)</p>
+    of asking when an orbit escapes, ask where it goes on the way. Cut the plane into four
+    equal angular sectors around the origin, follow the orbit, and write down the sequence of
+    sectors it visits, its route recorded coarsely, then read that sequence as digits after
+    the point in base four, so the first few moves dominate the value and each later move
+    refines it. The result carves the image into territories of shared history: within a patch
+    every orbit opened with the same route, and the borders between patches are where the
+    dynamics start to disagree, so they are hard-edged, and the image reads as stained glass
+    where smooth reads as airbrush. The itinerary does not form a field of its own; it shifts
+    the palette. The smooth rendering is drawn underneath, and each pixel's address rotates
+    its palette position by up to half a turn, so the territories appear as coordinated
+    recolorings of the classic structure. (On Julia-set-style images, where every pixel is its
+    own starting point, the engine reads the route from the first iterated point rather than
+    the pixel itself, since otherwise the leading digit would just cut the picture into
+    quadrants.)</p>
 
       <figure class="figure" data-figure="modes-itinerary">
         <a class="figure-open" href="../explorer/index.html?v=2&amp;f=julia&amp;cx=-0.7713889686976524&amp;cy=-0.10762203592208013&amp;m=itinerary&amp;x=-0.8715045448099162&amp;y=-0.18667305738748546&amp;w=1.094300797237734&amp;p=wallhaven_wallhaven-47xzoe" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/modes-itinerary.jpg" width="1316" height="822" alt="Two locations, each drawn twice: a smooth render beside an itinerary render of the same recipe."><span class="figure-open-mark" aria-hidden="true">↗</span></a>
-        <figcaption>Smooth on the left, itinerary on the right. The hard-edged territories are regions of shared history — inside one, every orbit opened with the same route through the four sectors — and each rotates the palette rather than replacing it, so the structure of the smooth render on its left runs on underneath the recoloring.</figcaption>
+        <figcaption>Smooth on the left, itinerary on the right. The hard-edged territories are regions of shared history: inside one, every orbit opened with the same route through the four sectors. Each territory rotates the palette rather than replacing it, so the structure of the smooth render on its left runs on underneath the recoloring.</figcaption>
       </figure>
 
     <h2 id="direct-traps">Direct traps</h2>
 
     <p>The last family never makes a field at all. A <i>direct trap</i> watches each orbit as
     it iterates, and every time an iterate falls within a threshold of the trap shape, it
-    takes a sample from the palette and paints it into the pixel then and there — closer
-    approaches sample deeper into the gradient and land with more weight, which is why the
-    strokes come out soft-edged with nothing extra to tune. A pixel's final color is the stack
-    of every near-miss its orbit ever made, in order.</p>
+    takes a sample from the palette and paints it into the pixel then and there. How close the
+    iterate came decides both where in the gradient the sample is taken and how much of it
+    lands, which is why the strokes come out soft-edged with nothing extra to tune. A pixel's
+    final color is the stack of every near-miss its orbit ever made, in order.</p>
 
-    <p>Three modes ship this way, built from two shapes: the cross of the coordinate axes —
-    twice, once brightening a black ground and once darkening a white one, and the two read
-    nothing alike — and the real axis alone, the family's one directional member. Because
-    nothing is normalized per frame, direct traps are the only modes that don't adapt to the
-    location they're pointed at: where near-misses are sparse they are spectacular, and where
-    near-misses are everywhere they wash out.</p>
+    <p>Three modes ship this way, built from two shapes. The cross of the coordinate axes
+    carries two of them, once brightening a black ground and once darkening a white one, and
+    the two read nothing alike. The third is the real axis alone, the family's one directional
+    member. Because nothing is normalized per frame, direct traps are the only modes that
+    don't adapt to the location they're pointed at: where near-misses are sparse they are
+    spectacular, and where near-misses are everywhere they wash out.</p>
 
       <figure class="figure" data-figure="modes-direct-trap-screen">
         <a class="figure-open" href="../explorer/index.html?v=2&amp;f=julia3&amp;cx=-0.1914639130015472&amp;cy=-1.0527513723190611&amp;m=direct_trap_screen&amp;x=0.42552177666526836&amp;y=0.03542798402482744&amp;w=0.5305332105250155&amp;p=wallhaven_wallhaven-2ex5zg" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/modes-direct-trap-screen.jpg" width="1316" height="822" alt="Two locations, each drawn twice: a smooth render beside a direct_trap_screen render of the same recipe."><span class="figure-open-mark" aria-hidden="true">↗</span></a>
-        <figcaption>Smooth on the left, direct_trap_screen on the right: the cross of the coordinate axes painted directly, brightening a black ground. Nothing on the right is a field — each orbit samples the gradient at every near-miss and the pixel keeps the stack of what it took.</figcaption>
+        <figcaption>Smooth on the left, direct_trap_screen on the right: the cross of the coordinate axes painted directly, brightening a black ground. Nothing on the right is a field, because each orbit samples the gradient at every near-miss and the pixel keeps the stack of what it took.</figcaption>
       </figure>
 
       <figure class="figure" data-figure="modes-direct-trap-multiply">
@@ -237,23 +248,23 @@
 
       <figure class="figure" data-figure="modes-direct-trap-lines">
         <a class="figure-open" href="../explorer/index.html?v=2&amp;f=multibrot5&amp;m=direct_trap_lines&amp;x=0.5346286758046401&amp;y=0.7421518803373967&amp;w=0.00000022650676563702367&amp;p=Rose%20Quartz%20Vault" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/modes-direct-trap-lines.jpg" width="1316" height="822" alt="Two locations, each drawn twice: a smooth render beside a direct_trap_lines render of the same recipe."><span class="figure-open-mark" aria-hidden="true">↗</span></a>
-        <figcaption>Smooth on the left, direct_trap_lines on the right — the real axis alone, the family's one directional member. Because nothing is normalized per frame, a direct trap does not adapt to where it is pointed: it lives or dies on how often these orbits happen to pass the line.</figcaption>
+        <figcaption>Smooth on the left, direct_trap_lines on the right: the real axis alone, the family's one directional member. Because nothing is normalized per frame, a direct trap does not adapt to where it is pointed, and it lives or dies on how often these orbits happen to pass the line.</figcaption>
       </figure>
 
     <h2 id="the-modes-the-pipeline-draws">The modes the pipeline draws</h2>
 
-    <p>One structural fact shapes everything: the <em>search</em> for good locations
+    <p>One structural fact shapes everything: the search for good locations
     (<a href="finding-good-locations.html">finding good locations</a>) renders only smooth.
     Every other mode enters later, in
     <a href="finding-good-wallpapers.html">finding good wallpapers</a>, when the pipeline
-    takes a discovered location and tries renderings of it — one attempt in smooth and two in
+    takes a discovered location and tries renderings of it: one attempt in smooth and two in
     other modes, drawn without replacement from the rest of the roster.</p>
 
     <p>Why search over modes at all, rather than pick the best one and use it everywhere?
     Because a mode that works great for one location fails spectacularly at the next, and
     good smooth geometry is no protection. The table below shows, for each mode, how the
     judge's ratings of every candidate the pipeline has rendered spread across the four
-    quality tiers from <a href="training-judges.html">training judges</a> — counting only
+    quality tiers from <a href="training-judges.html">training judges</a>, counting only
     locations whose smooth rendering the judge rates a three or better, so every row starts
     from geometry that already works. The scores are the judge's rather than mine: nobody has
     looked at a hundred thousand pictures, and the judge's own readings run optimistic
@@ -306,50 +317,55 @@
       endpoint responds to nudging the pixel, and converts that into an estimate of the
       pixel's
       <a href="https://en.wikipedia.org/wiki/Plotting_algorithms_for_the_Mandelbrot_set#Exterior_distance_estimation">distance
-      to the set's boundary</a> — rendered directly, the boundary becomes crisp filaments of
-      uniform width at any zoom, like a technical drawing of the fractal.</li>
+      to the set's boundary</a>. Rendered directly, the boundary becomes crisp filaments of
+      uniform width at any zoom, like a technical drawing of the fractal. The renderer
+      implements this one and will draw it on request; it is simply not among the modes the
+      wallpaper search draws from.</li>
 
       <li><i>Normal-map lighting</i> treats a field as terrain: read its slope, convert the
-      slope to a surface direction, and light the fractal as relief carved in material — the
+      slope to a surface direction, and light the fractal as relief carved in material, the
       same <a href="https://en.wikipedia.org/wiki/Normal_mapping">normal mapping</a> trick
-      games use to shade detailed surfaces cheaply.</li>
+      games use to shade detailed surfaces cheaply. The engine leaves this one out on purpose
+      rather than for want of the code: it makes a fractal read as an embossed metal plaque
+      instead of as a field, and the picture's own structure gets replaced by a lighting
+      model's.</li>
 
       <li>The <i><a href="https://en.wikipedia.org/wiki/Buddhabrot">Buddhabrot</a></i>
       abandons per-pixel coloring entirely: it follows the full orbits of millions of
       escaping points and brightens every pixel each orbit passes through, building a glowing
-      density image of where the dynamics actually travel — something like an X-ray of the
+      density image of where the dynamics actually travel, something like an X-ray of the
       Mandelbrot set.</li>
 
       <li><i><a href="https://en.wikipedia.org/wiki/Plotting_algorithms_for_the_Mandelbrot_set#Histogram_coloring">Histogram
-      coloring</a></i> re-spreads the palette by rank rather than by raw value, so every color
-      gets used in proportion to how much of the image wants it — a cousin of the percentile
-      stretch from <a href="rendering-fundamentals.html">rendering fundamentals</a>, solving
-      the same problem a different way.</li>
+      coloring</a></i> maps field values by how often each value occurs rather than by its raw
+      size, so every color gets used in proportion to how much of the image wants it. It
+      solves the same squeezed-range problem as the percentile stretch from
+      <a href="rendering-fundamentals.html">rendering fundamentals</a>, but reads the whole
+      distribution rather than two points on it.</li>
 
       <li><i><a href="https://en.wikipedia.org/wiki/Fractal_flame">Fractal flames</a></i>
       leave escape-time fractals altogether: they iterate a system of nonlinear functions and
       accumulate the wandering point's path into a log-scaled density image, colored by which
-      functions the path took — a different mathematical object with its own dedicated
+      functions the path took, a different mathematical object with its own dedicated
       tools.</li>
 
       <li>Programs like <a href="https://www.ultrafractal.com/">Ultra Fractal</a> treat all of
       this as an open library: thousands of user-written coloring algorithms, freely combined
-      with any fractal formula, stacked in Photoshop-style layers — a reminder that a
+      with any fractal formula, stacked in Photoshop-style layers, a reminder that a
       rendering mode is just a program, and there is no end of programs to write.</li>
     </ul>
 
     <h2 id="one-discovery-many-wallpapers">One discovery, many wallpapers</h2>
 
-    <p>Finding a genuinely good location is the expensive, uncertain part of the pipeline —
-    but once found, a location is not one image. It is a smooth render, a tia render, a
-    threads render, each in any palette: one discovery, many possible wallpapers, and the
-    modes multiply what every discovery is worth. How those discoveries get made is the next
-    page:
-    <a href="finding-good-locations.html">finding good locations</a> covers the search,
-    <a href="training-judges.html">training judges</a> covers teaching machines to
-    recognize — mode by mode — when the render that came back is worth keeping, and
+    <p>Finding a genuinely good location is the uncertain part of the pipeline, and once
+    found, a location is not one image. It is a smooth render, a tia render, a threads render,
+    each in any palette: one discovery, many possible wallpapers, and the modes multiply what
+    every discovery is worth.
+    <a href="finding-good-locations.html">Finding good locations</a> covers how the pool of
+    locations gets built, <a href="training-judges.html">training judges</a> covers teaching a
+    machine to recognize when the render that came back is worth keeping, and
     <a href="finding-good-wallpapers.html">finding good wallpapers</a> is where a found
-    location is finally drawn every way on this page.</p>
+    location is drawn again and again across the roster on this page.</p>
   </section>
 
   <nav class="section-nav">
