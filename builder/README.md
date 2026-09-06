@@ -203,6 +203,20 @@ figure prompt has no business loading the pool a solve is solving over. `gallery
 the source kind that addresses the result, and `fractal-wallpapers`' own
 `curate solve resolve` does exactly these two reads.
 
+**A pool candidate was never seated, and `picks.candidates` is the same path without the
+first read.** The pool is not only what a gallery kept: `wallpapers-three-bands`' middle
+band is the best of what one mine made at one place, which is a question about candidates.
+Those resolve by recipe key alone, they carry the `candidate` source kind rather than
+`gallery_seat`, and everything downstream of a `Pick` — the panel, the autolevel curve,
+the refusals — is unchanged.
+
+**Two modules take their panels off a row this way now.** `builder.pool` draws
+`wallpapers-three-bands` from three lists on its own row: the location it marks, the four
+wallpapers of the middle band and the eight seats of the bottom one. That is why
+`pool.recipe` reads its arguments back off the registry instead of returning an empty
+`args` the way it does for the other two figures of that page — a landing that rebuilt
+them would land a figure whose recipe no longer says what it shows.
+
 **A pick draws the recipe's frame, and that is not always the seat's location.** Picks are
 re-framed after seating, so the seat's `location` and the recipe's viewport can disagree —
 two of the six panels of `overview-gallery-hook` do. The recipe's frame is what the pixels
@@ -223,9 +237,9 @@ prose repeated it. Nothing in `check` reads this module — `locations` reads
 makes — each one a `claim` and the `source` it was checked against. It is the answer to
 "who checked this, against what?" asked of a number the article states as settled.
 
-Three figures are an exception, and they are diagrams rather than pictures of a location:
-`escape-orbit-race`, `wallpapers-stages` and `pipeline-overview` explain a mechanism, so there
-is nothing to render and nothing outside this repository to read. Those three are
+Two figures are an exception, and they are diagrams rather than pictures of a location:
+`escape-orbit-race` and `pipeline-overview` explain a mechanism, so there
+is nothing to render and nothing outside this repository to read. Those two are
 `diagrams.DIAGRAMS`, and `diagram` draws them from `diagrams.py`, in the stylesheet's own
 colours, straight into
 `assets/images/figures/`. It is deliberately a separate command from `build` and is not

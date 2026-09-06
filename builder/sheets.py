@@ -328,6 +328,30 @@ def panel_grid(
 # ------------------------------------------------------------------------ the two marks
 
 
+def elbow_arrow(draw, points, colour=WELL_INK_DIM, width: int = 2) -> None:
+    """A run of horizontal and vertical segments, with a solid head on the last one.
+
+    The one arrow this project draws. `diagrams.py` drew it for the pipeline's loop and
+    `pool.py` draws it between the bands of `wallpapers-three-bands`, and an arrowhead
+    that differed between a diagram and a sheet of pictures would be two conventions
+    where a reader has learned one.
+    """
+    for start, end in zip(points, points[1:], strict=False):
+        draw.line((*start, *end), fill=colour, width=width)
+    (x0, y0), (x1, y1) = points[-2], points[-1]
+    head = 6
+    if y0 == y1:
+        step = head if x1 > x0 else -head
+        draw.polygon(
+            [(x1, y1), (x1 - step, y1 - head + 1), (x1 - step, y1 + head - 1)], fill=colour
+        )
+    else:
+        step = head if y1 > y0 else -head
+        draw.polygon(
+            [(x1, y1), (x1 - head + 1, y1 - step), (x1 + head - 1, y1 - step)], fill=colour
+        )
+
+
 def marked_box(draw, x: int, y: int, panel_width: int, panel_height: int, step: float) -> None:
     """The box the next panel is drawn from: centred, one zoom step's worth of the frame.
 

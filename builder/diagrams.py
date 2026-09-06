@@ -313,19 +313,18 @@ def orbit_race(destination: Path) -> tuple[int, int]:
 
 # ------------------------------------------------------------------------- flow figures
 #
-# Two diagrams share this section, and they are deliberately not one picture drawn twice.
-# The tenth section is about a **loop** — three parts, two stores between them, and one
-# arrow running the other way — so `pipeline-overview` is a spine read left to right with
-# the return path in its own lane underneath. The eighth is about the **material** — what
-# each part hands to the next — so `wallpapers-stages` is three bands read top to bottom,
-# each split into what a part does and what it produces. Same ink and same box, different
-# claim; a reader who has seen one is not being shown it again under another caption.
+# One diagram lives here, and it used to be two. The tenth section is about a **loop** —
+# three parts, two stores between them, and one arrow running the other way — so
+# `pipeline-overview` is a spine read left to right with the return path in its own lane
+# underneath. The eighth section's `wallpapers-stages` was the same three parts drawn as
+# what each hands to the next, and it is gone: `wallpapers-three-bands` makes that claim
+# out of real pictures instead, which is a claim a box of lettering cannot make.
 #
-# Nothing in either is a count. Every other figure of these two pages that carries a
-# number reads it off a record, and these are about shape, which no record holds.
+# Nothing here is a count. Every other figure of that page that carries a number reads it
+# off a record, and this one is about shape, which no record holds.
 
-#: The sheet both are composed at — the width every figure of this article is composed at,
-#: so a diagram and a sheet of renders sit at the same size in the column.
+#: The sheet a flow diagram is composed at — the width every figure of this article is
+#: composed at, so a diagram and a sheet of renders sit at the same size in the column.
 FLOW_WIDTH = 1316
 
 #: The margin around a flow diagram, and the corner every box is drawn with.
@@ -395,22 +394,11 @@ def _flow_box(
     )
 
 
-def _flow_arrow(draw, points, colour=WELL_INK_DIM, width: int = 2) -> None:
-    """A run of horizontal and vertical segments, with a solid head on the last one."""
-    for start, end in zip(points, points[1:], strict=False):
-        draw.line((*start, *end), fill=colour, width=width)
-    (x0, y0), (x1, y1) = points[-2], points[-1]
-    head = 6
-    if y0 == y1:
-        step = head if x1 > x0 else -head
-        draw.polygon(
-            [(x1, y1), (x1 - step, y1 - head + 1), (x1 - step, y1 + head - 1)], fill=colour
-        )
-    else:
-        step = head if y1 > y0 else -head
-        draw.polygon(
-            [(x1, y1), (x1 - head + 1, y1 - step), (x1 + head - 1, y1 - step)], fill=colour
-        )
+#: The arrow both this module and `pool.py` draw, which is why it lives in `sheets.py`
+#: now: `wallpapers-three-bands` hands one band's material to the next the way the loop
+#: figure hands one plate's to the next, and two arrowheads drawn two ways would be two
+#: conventions for a reader to learn.
+_flow_arrow = sheets.elbow_arrow
 
 
 # ------------------------------------------------------------------- the pipeline's loop
@@ -569,115 +557,8 @@ def pipeline_loop(destination: Path) -> tuple[int, int]:
     return sheet.width, sheet.height
 
 
-# -------------------------------------------------------------- the three parts, in turn
-
-#: One band a part: what it does on the left, what it hands on to the right. The right
-#: half is the subject — this figure is the material moving — and the arrows between bands
-#: run out of one band's product into the next band's process.
-STAGE_BANDS = [
-    (
-        (
-            "The search",
-            ["a guided walk through every family, the", "location judge scoring every frame"],
-        ),
-        (
-            "Admitted locations",
-            ["a family, a center and a width — a place,", "with nothing yet decided about color"],
-        ),
-    ),
-    (
-        (
-            "Mining",
-            ["returns to a location and draws it many", "ways, a mode and a palette an attempt"],
-        ),
-        (
-            "The candidate pool",
-            ["every judged picture any mine has made,", "its recipe and its scores, kept for good"],
-        ),
-    ),
-    (
-        (
-            "Curation",
-            ["one selection over the whole pool at a", "size, under the bar and the mode floors"],
-        ),
-        (
-            "A gallery",
-            ["the seated few, and the only pictures", "ever rendered at wallpaper size"],
-        ),
-    ),
-]
-
-#: Which band holds the store rather than a hand-off, outlined the way the two pools are
-#: outlined in the loop figure — one convention for a reader to learn, not two.
-STAGE_STORE = 1
-
-STAGE_HEIGHT = 118
-STAGE_JOIN = 52
-STAGE_SPLIT = 0.46
-
-#: The fill of the half that holds material, a step up from the plate the band is drawn
-#: on. One step and no second outline: the band is one thing split, not two things joined.
-STAGE_MADE = sheets.mix(WELL_PANEL, WELL_RULE, 0.55)
-
-
-def three_parts(destination: Path) -> tuple[int, int]:
-    """`wallpapers-stages` — the three parts as what each one hands to the next.
-
-    The loop figure of the tenth section is these same three parts and is not this
-    picture: there the subject is the arrow that runs backwards, and here there is none.
-    What a reader is shown instead is that the search's product is a place, mining's is a
-    judged picture and curation's is a set — three different kinds of thing, each made out
-    of the one above it.
-    """
-    inner = FLOW_WIDTH - 2 * FLOW_PAD
-    split = FLOW_PAD + round(inner * STAGE_SPLIT)
-    height = FLOW_PAD + 3 * STAGE_HEIGHT + 2 * STAGE_JOIN + FLOW_PAD
-    sheet, draw = sheets.canvas(FLOW_WIDTH, height)
-
-    working = FLOW_PAD + (split - FLOW_PAD) // 2
-    carrying = split + (FLOW_PAD + inner - split) // 2
-    for index, ((doing, does), (made, holds)) in enumerate(STAGE_BANDS):
-        top = FLOW_PAD + index * (STAGE_HEIGHT + STAGE_JOIN)
-        bottom = top + STAGE_HEIGHT
-        store = index == STAGE_STORE
-        _flow_box(draw, (FLOW_PAD, top, FLOW_PAD + inner, bottom), doing, does)
-        # The half that holds the material is a step lighter than the half that makes it,
-        # so the column a reader is meant to follow down the sheet reads as one column —
-        # and the one band whose material is a *store* is outlined the way the two pools
-        # are outlined in the loop figure, on that half alone. The band it sits in is a
-        # process like the other two, and outlining the whole band would say it is not.
-        draw.rectangle(
-            (split, top + 1, FLOW_PAD + inner - 2, bottom - 2),
-            fill=STAGE_MADE,
-            outline=SECTION_INK if store else WELL_RULE,
-            width=2 if store else 1,
-        )
-        draw.text(
-            (split + 22, top + 16), made, fill=WELL_INK, font=font(FLOW_SUB_SIZE + 2, SEMIBOLD)
-        )
-        _flow_lines(draw, split + 22, top + 46, holds, FLOW_SUB_SIZE, FLOW_PAD + inner - split - 44)
-        if index + 1 < len(STAGE_BANDS):
-            # Out of what this band produced and into what the next band does with it —
-            # never straight down into the next band's own product, which would say the
-            # locations became the pool rather than being what the pool was mined from.
-            turn = bottom + STAGE_JOIN // 2
-            _flow_arrow(
-                draw,
-                [
-                    (carrying, bottom + 4),
-                    (carrying, turn),
-                    (working, turn),
-                    (working, bottom + STAGE_JOIN - 5),
-                ],
-            )
-
-    sheets.save(sheet, destination)
-    return sheet.width, sheet.height
-
-
 DIAGRAMS = {
     "escape-orbit-race": ("escape-orbit-race.png", orbit_race),
-    "wallpapers-stages": ("wallpapers-stages.png", three_parts),
     "pipeline-overview": ("pipeline-overview.png", pipeline_loop),
 }
 

@@ -52,11 +52,16 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+from . import figures as figures_module
+from . import picks as picks_module
 from . import records, renders, sheets
 from .locations import (
+    HIGHLY_RATED,
     SHEET_WIDTH,
     Drawn,
     band,
+    node_rows,
+    panel,
     panels,
     release_record,
     rule,
@@ -64,7 +69,7 @@ from .locations import (
     under,
 )
 from .palettes import strip
-from .theme import WELL_INK
+from .theme import MARK_INK, WELL_INK
 
 #: The two rows these figures stand on, by the key their release record answers to. Matt
 #: chose each off a numbered contact sheet — `scratch/contact/wallpapers-attempt.png` tile 40
@@ -920,18 +925,310 @@ def mine_provenance(
     return lines
 
 
+# --------------------------------------------------------- the three parts, in pictures
+
+#: The figure this section draws, named once because the maker, the recipe and the row
+#: all address it.
+BANDS_ID = "wallpapers-three-bands"
+
+#: The top band: the same sixteen admitted locations `locations-highly-rated` shows, in
+#: the same order and the same neutral map, eight across and two down. Eight rather than
+#: that figure's four because this band is a third of a sheet rather than a whole one,
+#: and the claim it carries — *the search admitted these* — survives a small tile in a way
+#: the middle band's claim would not.
+BANDS_ADMITTED_COLUMNS = 8
+
+#: The middle band: the marked location and four wallpapers mined at it, noticeably
+#: larger than the band above, because this is where a reader is asked to look at a
+#: picture rather than to count them.
+BANDS_MINED_COLUMNS = 5
+
+#: The bottom band: eight gallery seats, larger again. The figure narrows in count and
+#: widens in size on the way down, which is what the pipeline does.
+BANDS_SEATED_COLUMNS = 4
+BANDS_SEATED_ROWS = 2
+
+#: Two lines under a middle-band tile: which pair it belongs to, then how it was drawn.
+BANDS_LABEL_LINES = 2
+
+#: The room between two bands, with the hand-off arrow drawn down the middle of it.
+BANDS_HAND_OFF = 46
+
+#: What the first tile of the middle band says, and what its two pairs are called.
+#: `best by color`, not `best by colour`: American spelling in everything a reader sees.
+BANDS_MARKED_WORDS = ("the marked location", "no color yet")
+BANDS_PAIR_WORDS = ("best by mode", "best by color")
+
+#: The hue the marked location wears in both of the first two bands. `MARK_INK[0]` is the
+#: site's own first mark colour, so a reader who has met a marked panel anywhere else
+#: meets the same yellow here.
+BANDS_MARK = MARK_INK[0]
+
+#: How the middle band's four were arrived at, which the records cannot say for
+#: themselves. Written down because a choice is only a record if the choosing is.
+BANDS_MINE_RULE = (
+    "Which four wallpapers stand for the mine is a search over every candidate the ledger "
+    "holds at that exact frame, ranked on P(>=4) from the render judge's current block. "
+    "The mode pair is two results that differ in rendering mode; the color pair is two "
+    "that differ in dominant hue family, and holding that pair's mode fixed is preferred "
+    "over letting it vary. Three rules bind the search: the four are four distinct "
+    "pictures in four distinct maps, so the strongest result cannot stand in both pairs; "
+    "each of them redraws to inside the tolerance `check`'s `seats` allows of the picture "
+    "its own run shipped; and what is maximized is the weakest of the four rather than "
+    "their sum, because the band's claim is that there is nothing mediocre in it."
+)
+
+#: How the bottom band's eight were arrived at. The rig is under ignored `scratch/`, so
+#: this is where the rule survives.
+BANDS_SEAT_RULE = (
+    "Which eight is a seeded shuffle of that gallery's whole seating — "
+    "scratch/three_bands/pick_seats.py, seed 20260905 — taking the first that clear one "
+    "spread rule and three refusals. The spread: no two of the eight share a partition, a "
+    "rendering mode or a dominant hue family, which is the diversity of family, color and "
+    "mode this band is for, made a rule rather than a taste. The refusals: a seat standing "
+    "on a location another figure already stands on, a seat whose run recorded that the "
+    "autolevel operator acted without recording the curve it acted with, and a seat whose "
+    "redraw does not come back as the picture the gallery ships. Nothing here was chosen "
+    "for how it looks."
+)
+
+
+def _bands_args() -> dict:
+    """The three lists this figure is made of, read off its own registry row.
+
+    The row is where a pick lives, for `builder.picks`' reason: a list in a constant here
+    would be a second place to keep in step with the first, and the registry is the place
+    a person looks.
+    """
+    figure = figures_module.load_all().get(BANDS_ID)
+    if figure is None or figure.recipe is None:
+        raise records.RecordError(f"{BANDS_ID} is not registered, so nothing says what it shows")
+    return dict(figure.recipe.args)
+
+
+def _bands_marked(marked: str) -> int:
+    """Which of the sixteen carries the mark, by its own ledger-and-node address."""
+    wanted = [f"{name}/walk.jsonl#{node}" for name, node in HIGHLY_RATED]
+    if marked not in wanted:
+        raise records.RecordError(
+            f"{marked} is not one of the sixteen `locations-highly-rated` stands on — the "
+            "marked location has to be in the top band, which is the whole of what the "
+            "mark is for"
+        )
+    return wanted.index(marked)
+
+
+def three_bands() -> Drawn:
+    """`wallpapers-three-bands` — the three parts, each made of the pictures it makes.
+
+    It replaces a diagram of boxes and lettering. The claim the caption makes has not
+    changed and the evidence for it has: a band of sixteen real admitted locations says
+    *the search keeps places worth looking at* in a way a box reading "admitted locations"
+    cannot, and the middle band's four wallpapers at one of them say what mining is for
+    without a word.
+    """
+    args = _bands_args()
+    marked_at = _bands_marked(str(args["marked"]))
+
+    by_ledger: dict[str, list[int]] = {}
+    for name, node_id in HIGHLY_RATED:
+        by_ledger.setdefault(name, []).append(node_id)
+    held = {name: node_rows(name, wanted) for name, wanted in by_ledger.items()}
+    admitted = [held[name][node_id] for name, node_id in HIGHLY_RATED]
+
+    mined = picks_module.candidates(args["wallpapers"])
+    seated = picks_module.resolve(args["picks"])
+    if len(mined) != BANDS_MINED_COLUMNS - 1:
+        raise records.RecordError(
+            f"{BANDS_ID}'s middle band is one location and two pairs beside it, and its "
+            f"row names {len(mined)} wallpaper(s)"
+        )
+    if len(seated) != BANDS_SEATED_COLUMNS * BANDS_SEATED_ROWS:
+        raise records.RecordError(
+            f"{BANDS_ID}'s bottom band is {BANDS_SEATED_COLUMNS * BANDS_SEATED_ROWS} seats "
+            f"and its row names {len(seated)}"
+        )
+    catalog = renders.mode_catalog()
+
+    small = panels(BANDS_ADMITTED_COLUMNS)
+    middle = panels(BANDS_MINED_COLUMNS)
+    large = panels(BANDS_SEATED_COLUMNS)
+    labels = band(middle[1], BANDS_LABEL_LINES)
+
+    rows_down = len(admitted) // BANDS_ADMITTED_COLUMNS
+    bottom_of_admitted = sheets.PAD + rows_down * small[1] + (rows_down - 1) * sheets.PAD
+    top_of_mined = bottom_of_admitted + BANDS_HAND_OFF
+    top_of_seated = top_of_mined + middle[1] + labels + BANDS_HAND_OFF
+    height = top_of_seated + BANDS_SEATED_ROWS * (large[1] + sheets.PAD)
+    sheet, draw = sheets.canvas(SHEET_WIDTH, height)
+
+    for index, row in enumerate(admitted):
+        origin = sheets.panel_origin(index, small, BANDS_ADMITTED_COLUMNS, caption=0)
+        sheet.paste(sheets.fitted(panel(f"bands-admitted-{index + 1}", row, small), small), origin)
+        if index == marked_at:
+            sheets.framed(draw, origin, small, BANDS_MARK)
+
+    for index in range(BANDS_MINED_COLUMNS):
+        origin = (sheets.PAD + index * (middle[0] + sheets.PAD), top_of_mined)
+        if index == 0:
+            picture = panel("bands-marked", admitted[marked_at], middle)
+            words = list(BANDS_MARKED_WORDS)
+        else:
+            pick = mined[index - 1]
+            picture = picks_module.panel(pick, f"bands-mined-{index}", catalog)
+            words = [BANDS_PAIR_WORDS[(index - 1) // 2], picks_module.mode_words(pick.mode)]
+        sheet.paste(sheets.fitted(picture, middle), origin)
+        if index == 0:
+            sheets.framed(draw, origin, middle, BANDS_MARK)
+        under(draw, origin, middle, words)
+
+    for index, pick in enumerate(seated):
+        column, line = index % BANDS_SEATED_COLUMNS, index // BANDS_SEATED_COLUMNS
+        origin = (
+            sheets.PAD + column * (large[0] + sheets.PAD),
+            top_of_seated + line * (large[1] + sheets.PAD),
+        )
+        picture = picks_module.panel(pick, f"bands-seated-{index + 1}", catalog)
+        sheet.paste(sheets.fitted(picture, large), origin)
+
+    centre = SHEET_WIDTH // 2
+    for top in (bottom_of_admitted, top_of_seated - BANDS_HAND_OFF):
+        sheets.elbow_arrow(draw, [(centre, top + 11), (centre, top + BANDS_HAND_OFF - 11)])
+
+    destination = sheets.save(sheet, sheet_path(BANDS_ID))
+    return Drawn(
+        destination,
+        _bands_provenance(admitted, marked_at, mined, seated, (small, middle, large)),
+    )
+
+
+def _bands_provenance(admitted, marked_at, mined, seated, sizes) -> list[str]:
+    """One line saying what a band is, then one line for each of its panels."""
+    small, middle, large = sizes
+    ledger, node_id = HIGHLY_RATED[marked_at]
+    lines = [
+        f"builder.pool — three bands on one sheet {SHEET_WIDTH} wide, read top to bottom, "
+        f"with a plain arrow down the centre line between each pair of them. Sixteen "
+        f"panels at {small[0]}x{small[1]}, {BANDS_ADMITTED_COLUMNS} across; five at "
+        f"{middle[0]}x{middle[1]}; eight at {large[0]}x{large[1]}, "
+        f"{BANDS_SEATED_COLUMNS} across. The marked location wears the same amber frame in "
+        f"the first band and the second, and that frame is the only thing on the sheet "
+        f"saying the two are one place. Nothing on it is a count.",
+        f"Band 1 — the same sixteen admitted locations `locations-highly-rated` shows on "
+        f"finding-good-locations.html, in the same order, each addressed by the walk "
+        f"ledger and the node id it was written under and rendered fresh at "
+        f"{small[0]}x{small[1]}, supersample 3, mode smooth, colormap {renders.COLORMAP}, "
+        f"cap from the depth-aware policy, no crop. One neutral map for all sixteen, "
+        f"because nothing about their color is settled at this stage; that the two figures "
+        f"show the same sixteen the same way is the point of both, and the reuse is "
+        f"claimed on this row rather than being an accident.",
+    ]
+    for (name, node), row in zip(HIGHLY_RATED, admitted, strict=True):
+        family = row["family"]
+        lines.append(
+            f"{name}/walk.jsonl node {node}: {_bands_family_words(family)}"
+            + (f", c = {family['c'][0]} + {family['c'][1]}i" if "c" in family else "")
+            + (f", p = {family['p'][0]} + {family['p'][1]}i" if "p" in family else "")
+            + (
+                f", z_prev = {family['z_prev'][0]} + {family['z_prev'][1]}i"
+                if "z_prev" in family
+                else ""
+            )
+            + f", centre {row['viewport']['center_re']} + {row['viewport']['center_im']}i, "
+            f"width {row['viewport']['width']}, maxiter {row.get('maxiter')}"
+            + (" — the marked one." if (name, node) == HIGHLY_RATED[marked_at] else ".")
+        )
+    lines += [
+        f"Band 2 — five tiles, every one of them at {ledger}/walk.jsonl node {node_id}, "
+        f"panel {marked_at + 1} of the band above. The first is that location drawn exactly "
+        f"as band 1 draws it and at {middle[0]}x{middle[1]} instead of "
+        f"{small[0]}x{small[1]}, wearing the same mark. The other four are candidates of "
+        f"the pool at that same frame, addressed by recipe key against "
+        f"artifacts/curation/candidate_ledger/rows.jsonl and drawn through the engine at "
+        f"{picks_module.PANEL_RENDER[0]}x{picks_module.PANEL_RENDER[1]}, supersample "
+        f"{picks_module.PANEL_SUPERSAMPLE}, then fitted to the tile. Nothing about the "
+        f"coloring is this figure's choice: mode, mode settings, curve, map, the whole "
+        f"palette pass and the cap all come off the ledger's recipe. Panels in reading "
+        f"order — the mode pair, then the color pair.",
+        BANDS_MINE_RULE,
+        picks_module.autolevel_line(mined),
+    ]
+    lines += [_bands_candidate_line(pick) for pick in mined]
+    stamps = sorted({pick.stamp for pick in seated})
+    lines += [
+        f"Band 3 — eight seats of a recorded tentative gallery, named on this row by their "
+        f"own `<stamp>{picks_module.PICK_SEPARATOR}<recipe key>` and resolved from "
+        f"artifacts/curation/tentative/<stamp>/{picks_module.SEATS_NAME} for the seat and "
+        f"the candidate ledger for the recipe. Stamp"
+        f"{'s' if len(stamps) > 1 else ''} {', '.join(stamps)}, a gallery **committed** "
+        f"next door rather than one merely recorded on this machine, so the record behind "
+        f"this band survives a re-base of the artifacts tree. Drawn the way band 2's four "
+        f"are and fitted to {large[0]}x{large[1]}, {BANDS_SEATED_COLUMNS} across. Nothing "
+        f"is written on them: the band's subject is what a gallery looks like, and a label "
+        f"under each would make it a table of them instead.",
+        BANDS_SEAT_RULE,
+        picks_module.autolevel_line(seated),
+    ]
+    lines += [picks_module.frame_line(pick, representative=False) for pick in seated]
+    return lines
+
+
+def _bands_candidate_line(pick) -> str:
+    """One middle-band wallpaper: the ledger row it is, and how to draw it again."""
+    recipe = pick.recipe
+    family, viewport = recipe["family"], recipe["viewport"]
+    kind = family.get("kind")
+    named = f"family {kind}"
+    if kind in ("multibrot", "julia"):
+        named += f", degree {family.get('degree', 2)}"
+    for constant in ("c", "p", "z_prev"):
+        if family.get(constant):
+            named += f", {constant} = {family[constant][0]} + {family[constant][1]}i"
+    palette = recipe["palette"]
+    return (
+        f"{picks_module.family_name(family)}, {picks_module.mode_words(pick.mode)}: candidate "
+        f"ledger key {pick.key}, drawn by the {pick.source.get('run')} run as its candidate "
+        f"{pick.source.get('candidate')} — {named}, centre {viewport['center_re']} + "
+        f"{viewport['center_im']}i, width {viewport['width']}, mode {recipe['mode']}"
+        + (f" {json.dumps(recipe['mode_params'])}" if recipe.get("mode_params") else "")
+        + f", curve {recipe['curve']}, palette {recipe['colormap']}, "
+        f"mirror {picks_module.flag(palette.get('mirror'))}, cap {recipe['maxiter']}, no crop "
+        f"beyond the sheet's; {picks_module.shade_words(palette)}. Drawn at regime "
+        f"{recipe['regime']}."
+    )
+
+
+def _bands_family_words(family: dict) -> str:
+    """A family as band 1's own record spells it, matching `locations-highly-rated`."""
+    kind = family.get("kind")
+    if kind == "multibrot":
+        return f"multibrot d = {family.get('degree')}"
+    if kind == "julia":
+        return f"Julia d = {family.get('degree', 2)}"
+    return {"mandelbrot": "Mandelbrot", "phoenix": "Phoenix"}.get(kind, str(kind))
+
+
 MAKERS = {
     "wallpapers-attempt": attempt_steps,
     "wallpapers-mine": visit_steps,
     "gallery-release": finished_beside_judged,
+    BANDS_ID: three_bands,
 }
 
 
 def recipe(identifier: str) -> dict:
-    """The registry recipe for a figure of this module: the maker, and no arguments."""
+    """The registry recipe for a figure of this module: the maker, and its arguments.
+
+    Two of the three figures here name their panels in this file and take no arguments.
+    `wallpapers-three-bands` names them on its own row instead — the sixteen it marks
+    one of, the four wallpapers its middle band shows, the eight seats its bottom band
+    does — so the arguments are read back off the row rather than rebuilt, which is what
+    keeps a re-pick an edit to the registry and nothing else.
+    """
     if identifier not in MAKERS:
         raise records.RecordError(f"{identifier} is not drawn by builder.pool")
-    return {"maker": f"{__name__}:{MAKERS[identifier].__name__}", "args": {}}
+    args = _bands_args() if identifier == BANDS_ID else {}
+    return {"maker": f"{__name__}:{MAKERS[identifier].__name__}", "args": args}
 
 
 def draw(identifier: str) -> Drawn:

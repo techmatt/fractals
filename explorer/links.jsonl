@@ -47,7 +47,7 @@
 {"schema": 1, "kind": "link", "id": "figure:palette-neighborhood", "link": "v=2&x=-0.7482800116735308&y=-0.13563763985784028&w=0.0007193954637897842&p=Rust%20to%20Plum", "from": "panel 1"}
 {"schema": 1, "kind": "link", "id": "figure:palette-autolevel", "link": "v=2&x=-0.800778181691469&y=0.18229482640825037&w=0.0003856391990486722&p=wheelance", "from": "panel 1"}
 {"schema": 1, "kind": "link", "id": "figure:palette-generator-batch", "no_link": "drawn", "why": "a drawn diagram or chart, with no engine render behind it to reopen"}
-{"schema": 1, "kind": "link", "id": "figure:wallpapers-stages", "no_link": "drawn", "why": "a drawn diagram or chart, with no engine render behind it to reopen"}
+{"schema": 1, "kind": "link", "id": "figure:wallpapers-three-bands", "link": "v=2&x=-0.7493892550988116&y=0.04149385841183289&w=0.0000042814940366928615&p=twilight_shifted", "from": "panel 2"}
 {"schema": 1, "kind": "link", "id": "figure:wallpapers-attempt", "link": "v=2&m=smooth_mean_angle&x=-0.7894061466838949&y=-0.16437809352996482&w=0.0027914350318908217&p=Forge%20Sweep", "from": "panel 1"}
 {"schema": 1, "kind": "link", "id": "figure:wallpapers-mine", "no_link": "incomplete_provenance", "why": "no colormap is written down"}
 {"schema": 1, "kind": "link", "id": "figure:gallery-pool", "no_link": "drawn", "why": "a drawn diagram or chart, with no engine render behind it to reopen"}

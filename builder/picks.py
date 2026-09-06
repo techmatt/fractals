@@ -327,6 +327,49 @@ def resolve(identifiers) -> list[Pick]:
     ]
 
 
+#: What a `Pick` built from a bare ledger row calls its stamp. A candidate is a row of
+#: the pool and was never seated, so there is no gallery it came out of to name — and the
+#: word is spelled rather than left empty so that a provenance line built off one of
+#: these cannot read as a seat of a gallery whose stamp somebody forgot to write down.
+CANDIDATE_STAMP = "candidate"
+
+
+def candidates(keys) -> list[Pick]:
+    """Ledger rows resolved to picks, for a figure whose panels were never seated.
+
+    The pool is not only what a gallery kept. `wallpapers-three-bands` shows the best of
+    what one mine made at one place, which is a question about candidates rather than
+    about seats — so this is `resolve` without the first of its two reads, and everything
+    downstream of a `Pick` works unchanged: the panel is drawn from the same recipe, the
+    autolevel curve is found through the same third read, and the refusals are the same.
+
+    A candidate carries no seat, so `alias` falls back to the key's first eight
+    characters, which is what the browser prints under a tile anyway.
+    """
+    wanted = [str(key).strip() for key in keys]
+    rows = ledger_rows(set(wanted))
+    unrecorded = [key for key in wanted if key not in rows]
+    if unrecorded:
+        raise PickError(
+            f"{', '.join(unrecorded)}: not a row of the candidate ledger, so nothing says "
+            "which map or which cap drew it"
+        )
+    return [
+        Pick(
+            identifier=f"{CANDIDATE_STAMP}{PICK_SEPARATOR}{key}",
+            stamp=CANDIDATE_STAMP,
+            key=key,
+            seat={},
+            recipe=rows[key]["recipe"],
+            source={
+                "picture": rows[key].get("picture"),
+                **(rows[key].get("provenance") or {}),
+            },
+        )
+        for key in wanted
+    ]
+
+
 # ----------------------------------------------------------------------- the tone curve
 
 
