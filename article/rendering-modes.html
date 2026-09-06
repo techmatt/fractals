@@ -60,7 +60,8 @@
 <main>
   <section class="prose">
     <p><a href="rendering-fundamentals.html">Rendering fundamentals</a> built one way of
-    rendering a location: compute the smooth field, level it, map a palette across it. This
+    rendering a location: compute the smooth field, percentile-stretch it, map a palette
+    across it. This
     page describes several other ways to render a fractal, each reaching for a different
     artistic effect. It is hardly exhaustive: dedicated fractal-art programs like
     <a href="https://www.ultrafractal.com/">Ultra Fractal</a> carry far more options than
@@ -69,7 +70,7 @@
     thousands of positions of which the escape time keeps just one number, there are many
     recipes to choose from, each with its own artistic character. Most modes work exactly
     like smooth does: reduce each orbit to a value, collect the values into a field, and
-    hand the field to the same leveling and palette machinery as before. But not all of
+    hand the field to the same stretching and palette machinery as before. But not all of
     them — some modes blend two renderings into one, some shift the palette by where the
     orbit went, and some families skip fields entirely and paint the orbit's behavior
     directly. This page runs through them in roughly that order of strangeness.</p>
@@ -321,9 +322,9 @@
 
       <li><i><a href="https://en.wikipedia.org/wiki/Plotting_algorithms_for_the_Mandelbrot_set#Histogram_coloring">Histogram
       coloring</a></i> re-spreads the palette by rank rather than by raw value, so every color
-      gets used in proportion to how much of the image wants it — a cousin of the leveling
-      step from <a href="rendering-fundamentals.html">rendering fundamentals</a>, solving the
-      same problem a different way.</li>
+      gets used in proportion to how much of the image wants it — a cousin of the percentile
+      stretch from <a href="rendering-fundamentals.html">rendering fundamentals</a>, solving
+      the same problem a different way.</li>
 
       <li><i><a href="https://en.wikipedia.org/wiki/Fractal_flame">Fractal flames</a></i>
       leave escape-time fractals altogether: they iterate a system of nonlinear functions and
