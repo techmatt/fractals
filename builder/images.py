@@ -103,6 +103,16 @@ def _save(image, destination: Path) -> None:
         raise ImageError(f"{destination.name}: write .jpg or .png, not {suffix or 'nothing'}")
 
 
+def save(image, destination: Path) -> None:
+    """Write a finished figure with the site's own fixed options.
+
+    The public name for `_save`, for the figure makers in this package: a sheet they
+    compose is encoded exactly once and by the same encoder `import` uses, so a maker
+    moving into the repository never rewrites the bytes of a picture that did not change.
+    """
+    _save(image, destination)
+
+
 def _resize(image, width: int):
     """Downscale to a width. Nothing is ever enlarged."""
     from PIL import Image

@@ -192,10 +192,34 @@ keeps the mechanics. **Every apply round ends by distilling that round's general
   that panel again: the family and its constants, the frame's centre and width, the
   mode, the palette, the cap, the sample count, the crop. A one-off may record the
   command that was run instead. Nothing about it is published: it is what answers
-  "where did this picture come from?" a year later, and the registry is the only place
-  that answer survives, because the scripts that draw figures live in ignored
-  `scratch/`. A made figure without one is a failing `builder check`. Where a value is
-  genuinely lost, the line says so — the record never guesses.
+  "where did this picture come from?" a year later. A made figure without one is a
+  failing `builder check`. Where a value is genuinely lost, the line says so — the
+  record never guesses.
+- **A figure's maker is tracked, and lives in `builder/`** *(Matt, 2026-09-06)*. This
+  used to say the opposite — that the registry was the *only* place a picture's origin
+  survived, because the scripts that draw figures lived in ignored `scratch/`. That was
+  already untrue of most of them, and where it was true it cost: of fourteen figures
+  whose row named a script under `scratch/`, **thirteen of those scripts were gone**, and
+  `escape-julia-map` had to be patched pixel-wise rather than recomposed because the
+  program that drew it no longer existed. `provenance` is a record and not a program, and
+  a redraw off one is archaeology.
+
+  So a maker is a module in `builder/` with an entry in its own `SHEETS` or `DIAGRAMS`
+  table and a subcommand that draws it by figure id — `families`, `fundamentals`,
+  `diagram`, `locations`, `judges`, `palettes`, `pool`, `picks`, `curation`. `scratch/`
+  stays what it is for: the probes, sweeps and contact sheets that *found* a choice. Once
+  a choice is made, the program that acts on it is committed.
+
+  Three rules come with it. **A maker addresses a location by its record** — the
+  constants a search settled on are frozen into the maker or read from a committed file,
+  never re-derived at draw time, because a maker free to re-derive is free to answer
+  differently and move a picture nobody asked to move. **One encoder**: a composed sheet
+  goes through `images.save`, the same one `python -m builder import` uses, so moving a
+  maker into the repository never rewrites the bytes of a picture that did not change —
+  which is also the test that a port is faithful, and three of the four sheets recovered
+  on 2026-09-06 came back byte for byte identical. And **these commands are no part of
+  `build` or `check`**, for `diagram`'s reason: text rasterizes through whatever font the
+  machine has, so two machines agree about the picture and not about its bytes.
 - **The figure registry is `article/figures.jsonl`**, beside `sections.jsonl` and
   `prose.jsonl`. Every row says where it stands in `status` — `placed`, `pending`, `held`
   (registered and deliberately not on a page, with a `held_reason`) or `stale` (overtaken
@@ -279,7 +303,9 @@ atlas/          the second: every place the search kept, on the plane it came ou
 assets/         css/ and images/ — web-res only
 builder/        the Python page generator
 docs/           how this repository's workflows are run — the page-review loop
-scratch/        working files, reports, anything untracked (gitignored)
+scratch/        the probes and contact sheets a choice was found with, reports,
+                anything untracked (gitignored). Not the makers — those are in
+                builder/, per the locked convention below
 ```
 
 ## How a page is put together
