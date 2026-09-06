@@ -204,20 +204,25 @@ keeps the mechanics. **Every apply round ends by distilling that round's general
   program that drew it no longer existed. `provenance` is a record and not a program, and
   a redraw off one is archaeology.
 
-  So a maker is a module in `builder/` with an entry in its own `SHEETS` or `DIAGRAMS`
-  table and a subcommand that draws it by figure id — `families`, `fundamentals`,
-  `diagram`, `locations`, `judges`, `palettes`, `pool`, `picks`, `curation`. `scratch/`
-  stays what it is for: the probes, sweeps and contact sheets that *found* a choice. Once
-  a choice is made, the program that acts on it is committed.
+  So a maker is a module in `builder/` with an entry in its own `SHEETS`, `MAKERS` or
+  `DIAGRAMS` table and a subcommand that draws it by figure id — `families`,
+  `fundamentals`, `overview`, `diagram`, `locations`, `judges`, `palettes`, `pool`,
+  `picks`, `curation`. `scratch/` stays what it is for: the probes, sweeps and contact
+  sheets that *found* a choice. Once a choice is made, the program that acts on it is
+  committed. **All 61 of them are, as of 2026-09-06**, and a row naming a path under
+  `scratch/` is now a bug rather than a legacy.
 
   Three rules come with it. **A maker addresses a location by its record** — the
   constants a search settled on are frozen into the maker or read from a committed file,
   never re-derived at draw time, because a maker free to re-derive is free to answer
-  differently and move a picture nobody asked to move. **One encoder**: a composed sheet
-  goes through `images.save`, the same one `python -m builder import` uses, so moving a
-  maker into the repository never rewrites the bytes of a picture that did not change —
-  which is also the test that a port is faithful, and three of the four sheets recovered
-  on 2026-09-06 came back byte for byte identical. And **these commands are no part of
+  differently and move a picture nobody asked to move. Where the answer to a search is
+  too big to write into the maker, it is a committed record beside it —
+  `builder/data/locations-walk-descent.json` is the one of those. **One encoder**: a
+  composed sheet goes through `images.land`, which downscales to `WEB_RES_MAX_WIDTH` and
+  encodes exactly the way `python -m builder import` does, so moving a maker into the
+  repository never rewrites the bytes of a picture that did not change — which is also
+  the test that a port is faithful, and **all fourteen recovered on 2026-09-06 came back
+  byte for byte identical**. And **these commands are no part of
   `build` or `check`**, for `diagram`'s reason: text rasterizes through whatever font the
   machine has, so two machines agree about the picture and not about its bytes.
 - **The figure registry is `article/figures.jsonl`**, beside `sections.jsonl` and

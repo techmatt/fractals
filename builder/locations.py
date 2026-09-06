@@ -1642,6 +1642,355 @@ def _highly_rated_provenance(picks: list[dict], size, verdict: dict) -> list[str
     return lines
 
 
+# ------------------------------------------------------------------ the walk descent
+#
+# Recovered into the repository on 2026-09-06 from a discarded scratch tree, under the
+# rule in `CLAUDE.md` that a figure's maker is tracked. Its four rungs were a search, and
+# the search's answer is a committed record beside this file rather than something rerun
+# at draw time: the pool it searched over grows, and a rerun would compose a different
+# descent under a figure nobody asked to change.
+
+#: The plane the descent runs on, at the view the engine derives for it.
+DESCENT_FAMILY = {"kind": "mandelbrot"}
+DESCENT_HOME = {"center_re": "-0.77", "center_im": "0.0", "width": "4.4"}
+
+#: Where the descent lands: the frame those four wallpapers were drawn at, which is the
+#: recipe's own viewport rather than the location key's — the key rounds the imaginary
+#: part by 1.4e-4, a seventh of the frame, and a bottom row claiming to be four pictures
+#: of the tile beside it has to be the tile beside it.
+DESCENT_TARGET = {
+    "center_re": "-0.7490862027090445",
+    "center_im": "0.11556260179350399",
+    "width": "0.000984995853938134",
+}
+
+#: The four wallpapers of it the bottom row shows, by their own recipe key in the
+#: candidate ledger. Four modes and four palettes, so the row reads as four pictures of
+#: one place rather than one picture recoloured.
+DESCENT_WALLPAPERS = (
+    "4da63dae808e13d9",  # smooth, Ember Against Steel
+    "df5b26803e6a250e",  # stripe, dessert-union-25
+    "eaf59e74934b62f5",  # smooth_stripe, jadanti
+    "a6b262c099c85b3c",  # threads, rondo
+)
+
+#: The walk's own floor: at or above it a frame is admitted and recorded as a find.
+DESCENT_GOOD_FLOOR = 0.385
+DESCENT_ASPECT = 16 / 9
+
+#: The two tile sizes, and the arithmetic that makes them fill the sheet: one margin, the
+#: left tile, a wider gutter to separate a frame from its own proposals, then four tiles
+#: at the ordinary gutter.
+DESCENT_LEFT = (384, 216)
+DESCENT_SMALL = (212, 119)
+DESCENT_COLUMN_GAP = 24
+DESCENT_ROW_GAP = 26
+
+#: What every panel is rendered at before it is fitted into its cell. Well above the cell
+#: so the fine texture survives the shrink, which is the site's rule for a panel.
+DESCENT_RENDER = (1152, 648)
+DESCENT_SUPERSAMPLE = 2
+
+#: A frame the location judge admitted, and the one the descent followed. Green is the
+#: verdict and amber is the route, so a tile can carry both and most of them do.
+DESCENT_ADMITTED = (0x2E, 0x8B, 0x57)
+DESCENT_ADMITTED_TEXT = (0x5F, 0xDD, 0x8F)
+DESCENT_PICKED = (0xFF, 0xC4, 0x3D)
+
+#: The composed descent itself: four rungs, each a parent frame and the proposals drawn
+#: under it. Committed, because it is the answer to a search and not a derivation.
+DESCENT_RECORD = SITE_ROOT / "builder" / "data" / "locations-walk-descent.json"
+
+
+def _descent_height(width: float) -> float:
+    return width / DESCENT_ASPECT
+
+
+def _descent_location(view: dict) -> dict:
+    return {"family": dict(DESCENT_FAMILY), "viewport": dict(view)}
+
+
+def _descent_centre(view: dict) -> tuple[float, float]:
+    return float(view["center_re"]), float(view["center_im"])
+
+
+def _two_places(value: float) -> str:
+    """The judge's estimate as a reader meets it: a plain number, two decimals."""
+    return f"{value:.2f}"
+
+
+def _descent_panel(name: str, view: dict) -> Path:
+    return (
+        cache()
+        .render(name, _descent_location(view), DESCENT_RENDER, supersample=DESCENT_SUPERSAMPLE)
+        .path
+    )
+
+
+def _descent_border(draw, origin, size, colour, width) -> None:
+    x, y = origin
+    draw.rectangle([x, y, x + size[0] - 1, y + size[1] - 1], outline=colour, width=width)
+
+
+def _descent_corner(draw, origin, size) -> None:
+    """The amber mark that says *this is the one the descent followed*."""
+    del size
+    x, y = origin
+    draw.polygon([(x, y), (x + 26, y), (x, y + 26)], fill=DESCENT_PICKED)
+
+
+def _descent_box(draw, origin, size, parent_view, view, colour, width) -> None:
+    """Where a child frame sits on its parent, drawn onto the parent's tile."""
+    px, py = _descent_centre(parent_view)
+    pw = float(parent_view["width"])
+    cx, cy = _descent_centre(view)
+    cw = float(view["width"])
+    scale = size[0] / pw
+    left = origin[0] + (cx - cw / 2 - (px - pw / 2)) * scale
+    right = origin[0] + (cx + cw / 2 - (px - pw / 2)) * scale
+    # The imaginary axis runs up the plane and down the picture.
+    top = origin[1] + ((py + _descent_height(pw) / 2) - (cy + _descent_height(cw) / 2)) * scale
+    bottom = origin[1] + ((py + _descent_height(pw) / 2) - (cy - _descent_height(cw) / 2)) * scale
+    if right - left < 9:
+        sheets.ring(draw, (left + right) / 2, (top + bottom) / 2, colour, radius=11, width=3)
+        return
+    draw.rectangle([left, top, right, bottom], outline=colour, width=width)
+
+
+def _descent_wallpapers() -> list[dict]:
+    """The four finished renders, drawn from their own rows in the candidate ledger.
+
+    `picks` is imported here rather than at the top of the file: it imports this module,
+    so a module-level import either way round is a cycle.
+    """
+    from . import picks
+
+    rows = picks.ledger_rows(DESCENT_WALLPAPERS)
+    catalog = renders.mode_catalog()
+    out = []
+    for key in DESCENT_WALLPAPERS:
+        row = rows[key]
+        pick = picks.Pick(
+            identifier=key,
+            stamp="candidate_ledger",
+            key=key,
+            seat={},
+            recipe=row["recipe"],
+            source=row.get("provenance", {}) | {"picture": row.get("picture")},
+        )
+        path, levelling = picks.panel_or_seat(pick, f"descent-wallpaper-{key[:8]}", catalog)
+        out.append({"key": key, "row": row, "path": path, "levelling": levelling})
+    return out
+
+
+def _descent_scores() -> dict[str, dict]:
+    """What the finished-render head said about each of the four, off the ledger.
+
+    A streamed read of the score sidecar, kept to the current block. The whole file is
+    read rather than stopped early: a later row supersedes an earlier one for the same
+    key, and stopping at the first hit is how a figure comes to print a stale verdict.
+    """
+    found: dict[str, dict] = {}
+    path = renders.artifact("curation", "candidate_ledger", "scores.jsonl")
+    wanted = set(DESCENT_WALLPAPERS)
+    with path.open(encoding="utf-8") as handle:
+        for line in handle:
+            if not line.strip():
+                continue
+            row = json.loads(line)
+            if row.get("recipe_key") in wanted and row.get("block") == "scores_current":
+                found[row["recipe_key"]] = row
+    missing = wanted - set(found)
+    if missing:
+        raise records.RecordError(f"no current score row for {sorted(missing)}")
+    return found
+
+
+def _descent_wrap(draw, text: str, room: int) -> list[str]:
+    face = font(15)
+    lines, current = [], ""
+    for word in text.split():
+        trial = f"{current} {word}".strip()
+        if draw.textlength(trial, font=face) > room and current:
+            lines.append(current)
+            current = word
+        else:
+            current = trial
+    if current:
+        lines.append(current)
+    return lines
+
+
+def _frame_words(view: dict) -> str:
+    """One frame, at full double precision — provenance is what redraws the panel."""
+    return (
+        f"centre {float(view['center_re'])!r} + {float(view['center_im'])!r}i, "
+        f"width {float(view['width'])!r}"
+    )
+
+
+def _rung_provenance(index: int, rung: dict, candidates: list[dict]) -> list[str]:
+    where = "the home view" if index == 0 else f"rung {index}'s pick"
+    lines = [f"Row {index + 1}, left: mandelbrot at {where}, {_frame_words(rung['parent'])}."]
+    for column, row in enumerate(candidates, start=1):
+        role = "PICKED — " if row["picked"] else ""
+        fate = "admitted" if row["p_ge3"] >= DESCENT_GOOD_FLOOR else "under the good floor"
+        seed = (
+            " (a centre of the tracked plane seed pool)" if index == 0 and not row["picked"] else ""
+        )
+        lines.append(
+            f"Row {index + 1}, candidate {column}: {role}mandelbrot, "
+            f"{_frame_words(row['viewport'])}, maxiter {row['maxiter']}, judge P(>=3) "
+            f"{row['p_ge3']:.6f}, {fate}{seed}."
+        )
+    return lines
+
+
+def _finished_provenance(finished: list[dict], verdicts: dict) -> list[str]:
+    from . import picks
+
+    lines = [
+        "Row 5, left: mandelbrot at the location the descent kept, "
+        f"{_frame_words(DESCENT_TARGET)} — the same frame as row 4's pick, drawn once here."
+    ]
+    for column, made in enumerate(finished, start=1):
+        recipe_row = made["row"]["recipe"]
+        verdict = verdicts[made["key"]]
+        palette = recipe_row["palette"]
+        lines.append(
+            f"Row 5, wallpaper {column}: candidate ledger row {made['key']}, mandelbrot, "
+            f"{_frame_words(recipe_row['viewport'])}, mode {recipe_row['mode']}, curve "
+            f"{recipe_row['curve']}, palette {recipe_row['colormap']}, "
+            f"cycles {palette['cycles']}, gamma {palette['gamma']}, "
+            f"mirror {str(bool(palette.get('mirror'))).lower()}, maxiter "
+            f"{recipe_row['maxiter']}, drawn at {picks.PANEL_RENDER[0]}x"
+            f"{picks.PANEL_RENDER[1]} supersample {picks.PANEL_SUPERSAMPLE} and fitted to "
+            f"the cell; autolevel {made['levelling'].way} ({made['levelling'].where}); the "
+            f"finished-render head {verdict['head']} reads it P(>=4) "
+            f"{float(verdict['p_ge4']):.6f} at {verdict['regime']} under judge artifact "
+            f"{verdict['judge_artifact'][:8]}."
+        )
+    return lines
+
+
+def walk_descent() -> Drawn:
+    """One descent down the plane: five rows of a frame and the proposals under it."""
+    rungs = json.loads(DESCENT_RECORD.read_text(encoding="utf-8"))
+    finished = _descent_wallpapers()
+    verdicts = _descent_scores()
+
+    band = sheets.caption_band(DESCENT_SMALL[1], SHEET_WIDTH, 2)
+    row_height = max(DESCENT_LEFT[1], DESCENT_SMALL[1] + band)
+    note_room = 34
+    height = sheets.PAD + 5 * row_height + 4 * DESCENT_ROW_GAP + note_room + sheets.PAD
+    sheet, draw = sheets.canvas(SHEET_WIDTH, height)
+
+    left_x = sheets.PAD
+    first_small = sheets.PAD + DESCENT_LEFT[0] + DESCENT_COLUMN_GAP
+    provenance = [
+        "One descent, composed for this figure rather than replayed off a ledger — a real "
+        "walk seeded on the mandelbrot home view dies at depth 3, every proposal below the "
+        "second rung refused on interior or occupancy. The composition is the committed "
+        "record builder/data/locations-walk-descent.json and is not searched again here. "
+        "Every descent panel is mandelbrot, mode smooth, colormap twilight_shifted, drawn "
+        "at 1152x648 supersample 2 and fitted to its cell; the engine chooses maxiter. "
+        "Every P(>=3) printed under a tile is read at 384x216 supersample 1 through the "
+        f"shipped location head {rungs[0]['pick']['head']}, and the walk's good floor is "
+        f"{DESCENT_GOOD_FLOOR}.",
+    ]
+
+    for index in range(5):
+        top = sheets.PAD + index * (row_height + DESCENT_ROW_GAP)
+        small_top = top + (row_height - (DESCENT_SMALL[1] + band)) // 2
+        if index == 0:
+            parent_view = dict(DESCENT_HOME)
+        elif index < 4:
+            parent_view = dict(rungs[index - 1]["pick"]["viewport"])
+        else:
+            parent_view = dict(DESCENT_TARGET)
+
+        parent_path = _descent_panel(f"descent-parent-{index}", parent_view)
+        sheet.paste(sheets.fitted(parent_path, DESCENT_LEFT), (left_x, top))
+        _descent_border(draw, (left_x, top), DESCENT_LEFT, WELL_RULE, 1)
+        if index:
+            _descent_corner(draw, (left_x, top), DESCENT_LEFT)
+
+        if index < 4:
+            rung = rungs[index]
+            candidates = sorted(
+                [dict(rung["pick"], picked=True)]
+                + [dict(row, picked=False) for row in rung["siblings"]],
+                key=lambda row: float(row["viewport"]["center_re"]),
+            )
+            for column, row in enumerate(candidates):
+                origin = (first_small + column * (DESCENT_SMALL[0] + sheets.PAD), small_top)
+                sheet.paste(
+                    sheets.fitted(
+                        _descent_panel(f"descent-{index}-{column}", row["viewport"]),
+                        DESCENT_SMALL,
+                    ),
+                    origin,
+                )
+                admitted = row["p_ge3"] >= DESCENT_GOOD_FLOOR
+                _descent_border(
+                    draw,
+                    origin,
+                    DESCENT_SMALL,
+                    DESCENT_ADMITTED if admitted else WELL_RULE,
+                    3 if admitted else 1,
+                )
+                if row["picked"]:
+                    _descent_corner(draw, origin, DESCENT_SMALL)
+                    _descent_box(
+                        draw,
+                        (left_x, top),
+                        DESCENT_LEFT,
+                        parent_view,
+                        row["viewport"],
+                        DESCENT_PICKED,
+                        3,
+                    )
+                lines = [_two_places(row["p_ge3"])]
+                inks = [DESCENT_ADMITTED_TEXT if admitted else WELL_INK_DIM]
+                if row["picked"]:
+                    lines.append("picked")
+                    inks.append(DESCENT_PICKED)
+                under(draw, origin, DESCENT_SMALL, lines, inks=inks)
+            provenance.extend(_rung_provenance(index, rung, candidates))
+        else:
+            for column, made in enumerate(finished):
+                origin = (first_small + column * (DESCENT_SMALL[0] + sheets.PAD), small_top)
+                sheet.paste(sheets.fitted(made["path"], DESCENT_SMALL), origin)
+                _descent_border(draw, origin, DESCENT_SMALL, WELL_RULE, 1)
+                verdict = verdicts[made["key"]]
+                under(
+                    draw,
+                    origin,
+                    DESCENT_SMALL,
+                    [_two_places(float(verdict["p_ge4"]))],
+                    inks=[DESCENT_ADMITTED_TEXT],
+                )
+            note = (
+                "Four wallpapers of that one location, every one of them over the render "
+                "judge's own bar. Turning a location into pictures, and keeping only the "
+                "pictures that earn their place, is the next section: finding good "
+                "wallpapers."
+            )
+            sheets.label(
+                draw,
+                first_small,
+                small_top + DESCENT_SMALL[1] + band + 2,
+                _descent_wrap(draw, note, SHEET_WIDTH - first_small - sheets.PAD),
+                size=15,
+                lead=WELL_INK_DIM,
+            )
+            provenance.extend(_finished_provenance(finished, verdicts))
+
+    destination = sheet_path("locations-walk-descent")
+    sheets.save(sheet, destination)
+    return Drawn(destination, provenance)
+
+
 # --------------------------------------------------------------------------- the command
 
 #: Every figure this module draws, and what redraws it. The keys are registry ids, so
@@ -1655,6 +2004,7 @@ MAKERS = {
     "locations-walk-lengths": walk_lengths,
     "locations-descent-chain": descent_chain,
     "locations-highly-rated": highly_rated,
+    "locations-walk-descent": walk_descent,
 }
 
 #: The figures that land as PNG rather than JPEG: the chart, which is flat art a lossy
