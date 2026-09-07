@@ -29,6 +29,17 @@ every byte of that lands in this repository's ignored `artifacts/`, never next d
 render cache defaults to `artifacts/renders/` and `FRACTAL_WEBSITE_RENDER_CACHE` moves it,
 which is the only knob involved.
 
+**Read-only is not free of obligation, and `carriers.jsonl` is the standing example**
+*(2026-09-06)*. That repository dropped `fields` and `mean` from every carrier row to buy
+headroom under its 1 MiB history guard, and both are derived back at its own read — so
+nothing above its `palettes/carriers.py` knew. Nothing there knew about this repository
+either, and the library page's `dominant_hues` read `mean` straight off the file and broke
+on a `KeyError`. `builder/palettes.py`'s `carriers` now derives both on this side and says
+where the seam is. **A record next door with a consumer here is a schema with two readers**,
+and the second one is invisible from the first: a website prompt that finds a check red on a
+missing column should suspect a thinned record before it suspects its own page, and a change
+to that shape lands here as a failing `library` check and nowhere earlier.
+
 ## The naming rule
 
 **Nothing ships under a name the article wouldn't teach.** This repo is public and it

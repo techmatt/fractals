@@ -8,7 +8,9 @@ module reads four things next door and nothing else:
   saying which of them were authored against the palette prompt and under which mood family;
 * the **carrier table** that repository ships, `carriers.jsonl`, which says which
   codebook cell each map comes out dominant in — a reading of the library rather than
-  something the pipeline consumes, and the one thing the library page groups on;
+  something the pipeline consumes, and the one thing the library page groups on. Two of
+  its columns are no longer on disk and are derived back at the read; `carriers` below is
+  that derivation and the cross-repo seam it stands on;
 * the **finished-render label stores**, for the locations: every single-location figure
   here stands on a frame Matt rated 4, addressed by the file and line it sits at;
 * the **palette head**, for the two figures whose subject is a ranking — asked through
@@ -68,6 +70,19 @@ LIBRARY = ("data", "palettes")
 #: map carries on at least one of three pinned reference fields. A row already names the
 #: hue family its cell rolls up to, so nothing here re-derives the codebook.
 CARRIERS = "carriers.jsonl"
+
+#: The two thresholds the dominance rule turns on: a cell is dominant on a field when it
+#: leads that field and holds `CELL_LEAD`, or when it holds `CELL_ALONE` whether it leads
+#: or not. The record states them only inside the prose sentence its header carries, so
+#: `carriers` holds that sentence to these two numbers rather than parsing them out of it
+#: — a threshold that moves next door then fails loudly here instead of quietly filling a
+#: column by a rule the pictures were not read through.
+CELL_LEAD = 0.10
+CELL_ALONE = 0.15
+
+#: Decimals a derived mean is written to: the shares' own rounding, and what the column
+#: that used to be stored held.
+CARRIER_PLACES = 6
 
 #: The twelve hue names of the codebook's chromatic half — 48 cells, twelve hues by
 #: {dark, light} by {muted, vivid} — in the wheel's own order, which is the order the
@@ -198,6 +213,89 @@ def library() -> dict[str, Palette]:
     return found
 
 
+def carriers() -> list[dict]:
+    """Every carrier row, with the two members the record stopped storing put back.
+
+    **This is a cross-repo seam.** `fields` and `mean` came off `carriers.jsonl` on
+    2026-09-06 — they were 191,102 of 881,834 bytes, and the file is tracked next door
+    under a 1 MiB history guard — and both are functions of `share`, which is now the only
+    thing a carrier row measures. The wallpaper project puts them back at its own read, in
+    `palettes/carriers.py`'s `fill`, so nothing above that module knows they are gone.
+    This repository is a second reader of the same file and so needs the same derivation,
+    and the two spellings are held together by verification rather than by hope: a rule
+    that moved on one side and not the other would not raise, it would answer.
+
+    * `mean` is the mean of the three shares, rounded the way a share is rounded.
+    * `fields` is which of the three reference fields the cell was dominant on, by the
+      rule the header states in prose: the cell holds `CELL_ALONE` on that field, or it
+      leads that field's shares and holds `CELL_LEAD`.
+
+    **The lead is taken over the map's own rows, and that is exact rather than a
+    shortcut.** A cell with no row was dominant on no field, so it is under `CELL_ALONE`
+    on all three and under `CELL_LEAD` on the one it might have led — otherwise the rule
+    would have written it a row. Ties break on the cell's name, which is the dominance
+    rule's own tiebreak.
+
+    Verified against the last copy of the file that still carried both columns —
+    `fractal-wallpapers` b140f37, whose 3,665 rows the drop left otherwise untouched:
+    **3,665 of 3,665 means and 10,995 of 10,995 (row, field) reads**, no exception. That
+    is the same count that repository re-verified before it dropped them, arrived at from
+    the other side.
+    """
+    rows = renders.jsonl(renders.data_file(*LIBRARY) / CARRIERS)
+    header = next((row for row in rows if row.get("kind") == "method"), None)
+    if header is None:
+        raise PaletteError(f"{CARRIERS} carries no method row, so nothing says what its fields are")
+    fields = [str(name) for name in header["fields"]]
+    rule = str(header.get("dominance", ""))
+    if f">= {CELL_LEAD}" not in rule or f">= {CELL_ALONE}" not in rule:
+        raise PaletteError(
+            f"{CARRIERS} states its dominance rule as {rule!r}, which does not name "
+            f">= {CELL_LEAD} and >= {CELL_ALONE}. `fields` is derived here from those two "
+            f"numbers, so either they have moved next door and this module has to move with "
+            f"them, or the header has been reworded and this guard has to be reworded with it."
+        )
+    written = [row for row in rows if row.get("kind") == "carrier"]
+    by_map: dict[str, list[dict]] = {}
+    for row in written:
+        missing = [name for name in fields if (row.get("share") or {}).get(name) is None]
+        if missing:
+            raise PaletteError(
+                f"{CARRIERS}: {row.get('map')!r}/{row.get('cell')!r} names no share on "
+                f"{missing}, and both derived members are functions of the three shares — so "
+                f"the row carries no reading at all rather than a thin one"
+            )
+        by_map.setdefault(str(row["map"]), []).append(row)
+    leads = {
+        (name, field): str(
+            min(mine, key=lambda row: (-float(row["share"][field]), str(row["cell"])))["cell"]
+        )
+        for name, mine in by_map.items()
+        for field in fields
+    }
+    filled = []
+    for row in written:
+        share = row["share"]
+        filled.append(
+            {
+                **row,
+                "fields": [
+                    field
+                    for field in fields
+                    if float(share[field]) >= CELL_ALONE
+                    or (
+                        leads[(str(row["map"]), field)] == str(row["cell"])
+                        and float(share[field]) >= CELL_LEAD
+                    )
+                ],
+                "mean": round(
+                    sum(float(share[field]) for field in fields) / len(fields), CARRIER_PLACES
+                ),
+            }
+        )
+    return filled
+
+
 def dominant_hues() -> dict[str, str]:
     """Every map's dominant hue, keyed by name: the one word the library page groups on.
 
@@ -211,11 +309,11 @@ def dominant_hues() -> dict[str, str]:
     rows were written; at the time of writing no map has one. Every one of the 901 maps
     carries at least one cell, which is why the page needs no section for the colourless:
     a map that carried none would reach no section at all, and `_uncarried` says so.
+
+    The mean is no longer a column of that file; `carriers` derives it, and says why.
     """
     best: dict[str, tuple[float, str, str]] = {}
-    for row in renders.jsonl(renders.data_file(*LIBRARY) / CARRIERS):
-        if row.get("kind") != "carrier":
-            continue
+    for row in carriers():
         mark = (float(row["mean"]), str(row["cell"]))
         held = best.get(row["map"])
         if held is None or mark > (held[0], held[1]):
