@@ -59,9 +59,9 @@
   <section class="prose">
     <p>Two learned judges supply the pipeline's quality scores. The location judge rates a
     place before any color is chosen, and the render judge rates a finished candidate
-    picture. They answer on the same four-point scale and are trained the same way, but they
-    are two different networks fitted to two different collections of ratings, and they act
-    at different points. A third, smaller network chooses palettes rather than rating
+    picture. They answer on the same four-point scale and are trained by the same general
+    method, but they are two different networks fitted to two different collections of
+    ratings, and they act at different points. A third, smaller network chooses palettes rather than rating
     quality; it is trained by a different method and is covered in
     <a href="color-palettes.html">color palettes</a>.</p>
 
@@ -231,10 +231,10 @@
     worth keeping, and says nothing about which of two keepers is better. The ordering that
     seats a gallery therefore comes from a second network trained for that question alone, on
     ratings made of pictures that had already cleared the bar. It orders only what is above
-    the bar, leaves everything below it alone, and is deliberately kept out of the decision to
-    delete a candidate, because a bad ordering at a seat costs a slot while a bad ordering at
-    a deletion costs the picture. That ordering could not be read off the first judge's own
-    internal representation: reusing those features and learning only a new output layer
+    the bar, and is deliberately kept out of the decision to delete a candidate, because a bad
+    ordering at a seat costs a slot while a bad ordering at a deletion costs the picture. That
+    ordering could not be read off the first judge's own internal representation: reusing
+    those features and learning only a new output layer
     performed at chance on the question, and only retraining the whole network recovered it.
     Whatever separates a keeper from a non-keeper is not what separates a good keeper from a
     great one. What makes a gallery out of a pool is
