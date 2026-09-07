@@ -218,14 +218,14 @@
     <p><strong>Score.</strong> The judge scores the rendering the gates just examined, always
     in the same neutral palette, so it compares geometry and never coloring. It returns the
     probability that the view would be rated at least a 3 on the four-point scale above. Two
-    cuts act on that number. Above the upper bar the frame is <i>admitted</i>: recorded as a
+    cuts act on that number. Above the <i>admission bar</i> the frame is <i>admitted</i>: recorded as a
     find and placed on the frontier. Between the two bars it is <i>expandable</i>, a stepping
-    stone the walk may explore through but never a find. Below the lower bar it is refused. The
+    stone the walk may explore through but never a find. Below the <i>expansion bar</i> it is refused. The
     heights of those bars are operating policy on one model's score scale rather than
     calibrated aesthetic constants: when the judge was last retrained, they were restated to
     preserve the volume of frames admitted and refused, not reinterpreted as new probabilities.
     One allowance keeps the parameter planes viable: a plane descent starts wide and bland
-    before it gets good, so a configurable number of early rungs get a waiver of the lower bar
+    before it gets good, so a configurable number of early rungs get a waiver of the expansion bar
     rather than dying at the top.</p>
 
     <p><strong>Prioritize.</strong> A frame's place in the queue is its judge score, plus one
