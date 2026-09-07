@@ -30,7 +30,7 @@
         <li><a href="#where-the-palettes-came-from">Where the palettes came from</a></li>
         <li><a href="#applying-a-palette">Applying a palette</a></li>
         <li><a href="#why-diversity-has-to-be-built-in">Why diversity has to be built in</a></li>
-        <li><a href="#leveling">Leveling</a></li>
+        <li><a href="#autolevel">Autolevel</a></li>
       </ol>
     </li>
     <li><a href="finding-good-wallpapers.html">Finding good wallpapers</a> <span class="done" role="img" aria-label="written">✓</span></li>
@@ -212,22 +212,21 @@
         <figcaption>The 32 candidates a colorize would ask about, in the judge's own order with its pick first, above 32 palettes drawn uniformly from the same pool. The set the judge is really shown is meant to be a hard question, not an obvious one.</figcaption>
       </figure>
 
-    <h2 id="leveling">Leveling</h2>
+    <h2 id="autolevel">Autolevel</h2>
 
     <p>A palette that sits well on one location can land too dark, too light, or too flat on
-    another, because the field decides how much of the ramp is used. Autolevel corrects for
-    that after the pick. It measures three things about the finished picture — its black
-    point, its white point, and its median lightness — against a band derived from 48
-    finished wallpapers (data/coloring/levels_band.json). Inside the band it does nothing at
-    all; outside it, it bends the palette's lightness along its own stops without reordering
-    them and renders once more. Across the tracked releases it has acted on about four in
-    ten of the renders it applies to. It is used only for rendering modes where the
-    palette's tone is the picture's tone — not for the direct traps, whose tone belongs to
-    their flat ground, and not for itinerary, which reads a different place in the ramp at
-    every sample.</p>
+    another. Autolevel corrects for that after the pick. It measures three things about the
+    finished picture — its black point, its white point, and its median lightness — against
+    a band derived from 48 finished wallpapers (data/coloring/levels_band.json). Inside the
+    band it does nothing at all; outside it, it bends the palette's lightness along its own
+    stops without reordering them and renders once more. Across the tracked releases it has
+    acted on about four in ten of the renders it applies to. It is used only for rendering
+    modes where the palette's tone is the picture's tone — not for the direct traps, whose
+    tone belongs to their flat ground, and not for itinerary, which reads a different place
+    in the ramp at every sample.</p>
 
       <figure class="figure" data-figure="palette-autolevel">
-        <a class="figure-open" href="../explorer/index.html?v=2&amp;x=-0.800778181691469&amp;y=0.18229482640825037&amp;w=0.0003856391990486722&amp;p=wheelance" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/palette-autolevel.jpg" width="1316" height="874" alt="Two kept wallpapers, one above the other, each drawn twice: as the chosen palette rendered it, and after the leveling operator moved its tone."><span class="figure-open-mark" aria-hidden="true">↗</span></a>
+        <a class="figure-open" href="../explorer/index.html?v=2&amp;x=-0.800778181691469&amp;y=0.18229482640825037&amp;w=0.0003856391990486722&amp;p=wheelance" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/palette-autolevel.jpg" width="1316" height="874" alt="Two kept wallpapers, one above the other, each drawn twice: as the chosen palette rendered it, and after the autolevel operator moved its tone."><span class="figure-open-mark" aria-hidden="true">↗</span></a>
         <figcaption>Two kept wallpapers before and after the operator acted, with the three statistics it measured on each as it was rendered. The top row came out too light and is pulled down; the bottom came out too dark and is lifted. Inside the band it does nothing at all and hands back the render it was given.</figcaption>
       </figure>
   </section>
