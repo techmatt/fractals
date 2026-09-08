@@ -42,6 +42,7 @@ REVIEW_DIR_NAME = "review"
 APPLIED_DIR_NAME = "applied"
 
 _PROSE_SECTION = re.compile(r'<section class="prose">(.*?)\n  </section>', re.S)
+_MAIN = re.compile(r"<main>(.*?)\n</main>", re.S)
 _FIGURE = re.compile(r"<figure .*?</figure>", re.S)
 _COMMENT = re.compile(r"<!--.*?-->", re.S)
 _THEAD = re.compile(r"<thead>.*?</thead>", re.S)
@@ -185,12 +186,37 @@ def words_of_page(page_html: str) -> str:
     tags vanish with every other tag, and without this `314` and `708` would reduce to
     `314708` and a wrong number could hide inside a right one.
     """
-    body = prose_html(page_html) or ""
+    return _reduced(prose_html(page_html) or "")
+
+
+def _reduced(body: str) -> str:
+    """The reduction itself: figures, comments and table heads out, then every tag."""
     body = _FIGURE.sub("", body)
     body = _COMMENT.sub("", body)
     body = _THEAD.sub("", body)
     body = _CELL.sub(" ", body)
     return " ".join(html_module.unescape(_TAG.sub("", body)).split())
+
+
+def words_of_body(page_html: str) -> str:
+    """A page's own words, reduced the way `words_of_page` reduces a section's.
+
+    The same reduction, over a wider set of pages. An article section keeps its words in
+    `<section class="prose">` and is compared to a master; the front page and the gallery
+    index have no master and no prose section, and their words — a lead, twelve blurbs,
+    two pointers — are read by exactly the same reader. So where there is no prose
+    section this falls back to `<main>`, which on those two pages is all of it and on an
+    article page would also carry the section nav.
+
+    The contents rail sits outside `<main>` and is not read here, which is right twice
+    over: it is derived by `build` rather than written, and its words are other pages'
+    titles.
+    """
+    body = prose_html(page_html)
+    if body is None:
+        found = _MAIN.search(page_html)
+        body = "" if found is None else found.group(1)
+    return _reduced(body)
 
 
 def words_of_master(text: str, divergences: tuple[Divergence, ...] = ()) -> str:

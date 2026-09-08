@@ -77,6 +77,12 @@ did on a machine without one was raise, and every check after it went unrun.
   from moving the well and leaving every diagram drawn against the old one.
 - **vocabulary** — no tracked file uses a word this site has banned. `vocabulary.py`
   holds the list and says why each term is on it.
+- **dashes** — no em-dash in the words a reader meets: the body of every section, of the
+  front page, of the gallery index and of the page hanging off Color palettes, and every
+  caption and alt in the figure registry. The rule is `writing-guidance.md`'s and it was
+  held by hand through a two-day sweep; it is mechanical from 2026-09-07, because the
+  regression it catches is a page **arriving** with them rather than a page drifting.
+  `dashes.py` says what it reads, what it does not, and why there is no allowlist.
 - **endings** — no tracked file has drifted to CRLF on disk. `.gitattributes` normalizes
   on the way in, so a CRLF file **still commits as LF**: `git status` is empty, `git diff`
   is empty, and the drift waits there until something rewrites the file line by line and
@@ -113,6 +119,7 @@ from . import (
     atlas as atlas_module,
 )
 from . import (
+    dashes,
     explorer,
     figures,
     galleries,
@@ -981,6 +988,7 @@ def run_all() -> Report:
             "guidance": check_guidance(),
             "theme": check_theme(),
             "vocabulary": vocabulary.sweep(),
+            "dashes": dashes.sweep(),
             "endings": check_endings(),
         },
         skips(),

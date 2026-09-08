@@ -8,11 +8,11 @@ Python. A build is done here and reviewed in a diff.
 ```
 python -m builder build     regenerate gallery pages, the gallery index, thumbnails,
                             and the contents rail every page carries
-python -m builder check     seventeen named checks: links, page sync, contents, figure
+python -m builder check     eighteen named checks: links, page sync, contents, figure
                             blocks, seat panels, landings, one location to one figure,
                             explorer links, the atlas record, the explorer's bake, assets,
                             the palette record, prose, the editorial pointer, theme,
-                            banned vocabulary, line endings
+                            banned vocabulary, em-dashes, line endings
 python -m builder figure ID print a figure's markup block, to paste into an article page
 python -m builder figures [--all]   what is still to make, grouped by page
 python -m builder figures --place ID SRC [--crop l,t,r,b] [--max-width N] [--lossless]

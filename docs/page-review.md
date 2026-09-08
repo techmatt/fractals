@@ -248,7 +248,7 @@ faster machine, a rebuilt engine or a different worker count moves every cell.
 | `finding-good-wallpapers.html` | yes | `Finding good wallpapers v2.md` | none | 3 placed | renamed from `from-locations-to-wallpapers.html` at the twelve-section split, and the figures' `wallpapers-` prefix still carries the old name. `wallpapers-attempt` is placed off Matt's tile pick and `wallpapers-mine` landed 2026-09-02 off one mine's own visit records. **`wallpapers-stages` is deleted and `wallpapers-three-bands` stands in its slot** *(2026-09-05)*: the diagram of boxes and lettering is gone entirely — block, asset, registry row, link row, master marker, and its maker and constants in `builder/diagrams.py` — and the new figure makes the same claim out of real pictures. Three titled bands — *Finding good locations*, *Mining for wallpapers*, *Gallery curation*, the sections either side of this one and this page's own word for what it does. Sixteen admitted locations across the top, in the same neutral map and the same order as `locations-highly-rated` so the two pages visibly hand off; five larger tiles of the ninth of them in the middle, its own neutral frame, then the two best results that differ in mode and the two that differ in color, those last two labelled by the hue each is dominant in rather than twice by the same word; eight gallery seats along the bottom, no two sharing a partition, a mode or a hue. **The reuse of the sixteen is claimed on the row** and is the only `reuse_reason` on the site. `builder/pool.py` draws it and the picks live on its registry row. **`wallpapers-three-bands`'s alt string lost *color map* 2026-09-07** (FIX_ckpt113_website_leftovers_0907), the same correction as `locations-highly-rated`'s and for the same reason: its top band is now *sixteen small fractal locations in one neutral palette*. The row's caption and `provenance` are unchanged — a `provenance` line naming a `colormap` is the word the explorer's link derivation reads. **The page was swept for em-dashes 2026-09-07** (FIX_ckpt114_website_leftovers_0907), page and master v2 together: nine in the body, and the one in `wallpapers-mine`'s alt, where *of the same location — one row a mode* takes a colon |
 | `gallery-curation.html` | yes | `Gallery curation v1.md` | none | 6 placed | placed 2026-09-01 with the (b)/(c) seam; `gallery-release` came across from `wallpapers-release` with the full-size render it illustrates. The other five landed 2026-09-03 off the recorded tentative gallery `20260902T164622Z` and its solve record, which `builder/curation.py` reads — the page's figures stand on a **later pass** than `overview-gallery-hook` and `modes-gallery` do, over the same pool, because the earlier pass's solve record has been overwritten. `gallery-floors` is drawn at one gallery size and not two: see the seam note below. **The page's two *leveling* uses became *autolevel* 2026-09-07** (PLACE_ckpt113_gallery_curation_autolevel_and_caption_0907, closing the note left on [color palettes] the day before): *the leveling operator from color palettes* and *its leveling stamp*, both around the `gallery-release` figure, and both the finished-image operator under its retired name rather than the pre-color percentile stretch — a rename and not a rewrite, page and master together. The link into that section carries no fragment and so did not move with `#leveling` to `#autolevel`. Nothing else on the page carried the old name in prose, caption or alt. **The eligibility cutpoint is corrected 2026-09-07** (FIX_ckpt113_website_leftovers_0907), page and master together: *even odds or better of being rated good* is now *of being rated exceptional*, because the bar is a flat one half on P(≥4) and the very next sentence already says it is measured at the judge's top threshold — the two could not both be true. The two-tier fallback that follows is correct and current, `curation.headroom.bars` reading P(≥4) where a mode has the places and P(≥3) where it does not, and was not touched. **The page was swept for em-dashes 2026-09-07** (FIX_ckpt114_website_leftovers_0907), page and master together: seventeen in the body, and one of them took more than a punctuation mark — the DINOv2 gloss, *— a vision network trained without labels, which turns*, reads *, a vision network trained without labels that turns*, because an appositive comma in front of a *which* clause reads as two asides where the dash read as one |
 | `full-pipeline.html` | yes | `Full pipeline v3.md` | none | 2 placed, 1 draft, 1 held | `pipeline-overview` and `pipeline-yield-decay` landed 2026-09-02; `pipeline-growth` is a **draft** because its ladder stops at the gallery sizes this pool can seat; `pipeline-themed-galleries` is **held** on one pool solved twice, plain and under a color theme, which the solve leg writes only into the wallpaper project's ignored `artifacts/`. **The page was swept for em-dashes 2026-09-07** (FIX_ckpt114_website_leftovers_0907), page and master v3 together: twenty-six in the body, more than any other page carried, plus the two in `pipeline-growth`'s alt. Six recasts joined a line that then had to be re-wrapped, which is the only reason this page's diff is wider than its edits |
-| `fractal-atlases.html` | no | none | none | none | the section's prose is not drafted; the tool page it will hang off is shipped — see below |
+| `fractal-atlases.html` | no | none | none | none | the section's prose is not drafted; the tool page it will hang off is shipped — see below. **The stub's own intro was swept for em-dashes 2026-09-07**: a stub is prose a reader can read, and the one it carried is the reason the `dashes` check reads `<main>` where a page has no prose section |
 | `deep-zoom.html` | no | none | none | none | the section is not written |
 | `palettes/make-your-own.html` | hangs off Color palettes | `Make your own palettes v4.md` | applied 2026-09-02 | 1 placed | **Swept for em-dashes 2026-09-07** (FIX_ckpt114_website_leftovers_0907), page and master v4 together: three in the body, one pair becoming a parenthesis and one dash a colon. Nothing else is held |
 | `palettes/all-palettes.html` | hangs off Color palettes | generated | n/a | 1,021 palette strips, none a registry figure | the strips are generated from the wallpaper project's library and are not figures; the page groups them by the hue each map is dominant in, twelve sections, every map shown in its own right |
@@ -265,31 +265,57 @@ thirteenth section would be twelve hand edits. `finding-good-wallpapers.html` wa
 from `from-locations-to-wallpapers.html` at that split, and **the old URL is dead with no
 stub at it**, which is the one permanent URL this site has spent.
 
-### The em-dash sweep
+### The em-dash sweep, and the check it became
 
-**Measured 2026-09-06, and finished 2026-09-07** (FIX_ckpt114_website_leftovers_0907): the
-last five pages were swept that day, and every cell of the table below is now zero. Nothing
-regenerates these numbers. The em-dash rule is standing in `writing-guidance.md`, and it is
-deliberately **not** a `check` — every unswept page would go red at once, and the pages are
-swept at Matt's pace. **That reason is spent**, there being no unswept page left, and
-whether the rule becomes a check is Matt's call rather than this round's; a page arriving
-from a design session carries em-dashes again, so the question is what should happen at
-placement, not whether the site is clean today. Until he rules, the table is measured by
-hand, and it is dated, because a page edited after that date has not been re-counted.
+**Measured 2026-09-06, finished 2026-09-07, and mechanical the same day**
+(FIX_ckpt114_website_leftovers_0907, then FIX_ckpt114_website_emdash_check_0907). The last
+five article pages were swept in the first of those rounds; the front page and the Fractal
+atlases stub in the second, which is where the rule stopped being something a person held.
+
+**It is `builder check`'s `dashes` check now** *(Matt, 2026-09-07)*. The paragraph that
+stood here explained why it was not one: every unswept page would have gone red at once,
+and the pages were swept at Matt's pace. That reason is spent — the site is at zero, so the
+rule adopts green — and the ruling is to adopt it. The regression it exists to catch was
+never a page drifting on its own: it is a page **arriving** from a design session with
+em-dashes in it, which is what every placed page did. Caught at placement that is a short
+recast; caught a round later it is another sweep of a whole page, which is what both rounds
+above were. A failure names the page and quotes the words around each em-dash, because the
+work is to fix them rather than to know how many there are.
+
+`builder/dashes.py` says what it reads and what it does not. Body, captions and alt, across
+every section of the article — written or not — plus `palettes/make-your-own.html`,
+`index.html` and the gallery index. Out of its reach, on purpose: a page's `<title>`, which
+spells its separator `Overview — Making Fractal Wallpapers` site-wide; the contents rail,
+which `build` derives from other pages' titles; `palettes/all-palettes.html`, whose lead and
+twelve hue headings are the generator's and are `builder/palettes.py`'s to rule on; the
+explorer and the atlas, which are tool pages rather than sections and carry one recast each
+in their served-not-from-the-filesystem note; and text drawn into a figure, below. **There
+is no allowlist**: the guidance keeps one carve-out, an em-dash where no recast preserves
+the meaning, and with the rule mechanical that carve-out costs an edit to that module, which
+is the right price for it.
+
+The table below is no longer the guard, and is kept as the record of when each page was
+swept. Nothing regenerates its numbers, and nothing needs to now.
 
 Three columns, because they are three different edit sites and an apply that clears one does
 not touch the others. **Body** is the page's `section.prose` with figure blocks and comments
-removed, which is the reduction `python -m builder prose` compares. **Captions** and **alt**
-are that page's rows in `article/figures.jsonl`. **Text drawn into a figure is not counted
-here or anywhere** *(Matt, 2026-09-06)*: the rule reaches body, captions and alt and stops,
-so an em-dash lettered into a sheet is not a defect and is not a hold.
+removed, which is the reduction `python -m builder prose` compares — and, on a page that has
+no prose section, its `<main>`. That fallback is what the check added, and it is not a
+technicality: the Fractal atlases stub carried one em-dash in the intro above its *not
+written yet* line, and this column read zero for it because a stub has no `section.prose` to
+read. **Captions** and **alt** are that page's rows in `article/figures.jsonl`. **Text drawn
+into a figure is not counted here or anywhere** *(Matt, 2026-09-06)*: the rule reaches body,
+captions and alt and stops, so an em-dash lettered into a sheet is not a defect and is not a
+hold.
 
-**What the table does not cover, said out loud 2026-09-07**: `index.html` is reader-facing
-prose with no prose master, so it has never had a row here, and its lead, its section
-blurbs and its two closing pointers carry **10** em-dashes between them. The gallery
-index carries none in prose — its three are a comment, the rail marker and the `<title>`.
-Nothing has ruled on whether the rule reaches the front page; the sweep that finished on
-2026-09-07 was the table's thirteen pages and no more.
+**The front page has a row now, and had none until 2026-09-07.** `index.html` is
+reader-facing prose with no prose master, so the page is its own only edit site, and it sat
+outside this register by accident rather than by ruling: its lead, its twelve section blurbs
+and its two closing pointers carried **10** em-dashes between them, recast as a sentence
+break, two parentheses, four colons and one phrase that wanted no punctuation at all — ten
+marks in eight places, two of them a pair around an aside. The gallery
+index has a row for the same reason and carries none in prose — its three are a comment, the
+rail marker and the `<title>`, and the check reads none of those.
 
 | page | prose master | body | captions | alt | swept |
 | --- | --- | ---: | ---: | ---: | --- |
@@ -303,9 +329,11 @@ Nothing has ruled on whether the rule reaches the front page; the sweep that fin
 | `finding-good-wallpapers.html` | Finding good wallpapers v2 | 0 | 0 | 0 | yes, 2026-09-07 |
 | `gallery-curation.html` | Gallery curation v1 | 0 | 0 | 0 | yes, 2026-09-07 |
 | `full-pipeline.html` | Full pipeline v3 | 0 | 0 | 0 | yes, 2026-09-07 |
-| `fractal-atlases.html` | none yet | 0 | 0 | 0 | n/a, stub |
-| `deep-zoom.html` | none yet | 0 | 0 | 0 | n/a, stub |
+| `fractal-atlases.html` | none yet | 0 | 0 | 0 | yes, 2026-09-07, its stub intro read as `<main>` |
+| `deep-zoom.html` | none yet | 0 | 0 | 0 | n/a, stub carries none |
 | `palettes/make-your-own.html` | Make your own palettes v4 | 0 | 0 | 0 | yes, 2026-09-07 |
+| `index.html` | none, the page is its own | 0 | 0 | 0 | yes, 2026-09-07 |
+| `galleries/index.html` | generated | 0 | 0 | 0 | n/a, carries none |
 | **total** | | **0** | **0** | **0** | |
 
 Two things the table says that a copied count would not. **Every row verifies at zero**, on
@@ -315,7 +343,9 @@ read again after the sweep. And **the caption column reached zero before the bod
 the nineteen that had stood in it were all on the pages swept with a new master, so the
 2026-09-07 round had only body and alt left to clear: 74 in the body of four article pages
 and the one page hanging off Color palettes, and 3 in alt, `full-pipeline` 2 and
-`finding-good-wallpapers` 1.
+`finding-good-wallpapers` 1. **The round that made it a check found 11 more in the body**,
+on the page the table had no row for and on the one whose row was reading the wrong half of
+its page: 10 on the front page and 1 in the Fractal atlases stub.
 
 **The paragraph that stood here said 99 in the body of five article pages, and both halves
 were wrong** — the column it sat under summed to 74 across four article pages plus
