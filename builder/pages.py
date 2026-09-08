@@ -285,7 +285,10 @@ def library_page(sections: list[sections_module.Section]) -> str:
     for hue, group in palettes_module.held_hues():
         lines = [
             '  <section class="palette-group">',
-            f'    <h2 id="hue-{hue}">{text(hue.capitalize())} — {len(group)} palettes</h2>',
+            # A parenthesis and not an em-dash: the library page is generated, so
+            # `builder/dashes.py` cannot sweep it and the rule is held at the two places
+            # that write its words, here and `palettes.LIBRARY_LEAD`.
+            f'    <h2 id="hue-{hue}">{text(hue.capitalize())} ({len(group)} palettes)</h2>',
             '    <div class="palette-grid">',
         ]
         for held in group:

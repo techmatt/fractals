@@ -1054,11 +1054,16 @@ LIBRARY_TITLE = "All palettes"
 
 #: The page's opening paragraph. The count is derived and formatted in, because a library
 #: that grows is a page that has to say so without anybody remembering to.
+#:
+#: No em-dash, and the two it used to carry are the reason this says so: the page is
+#: generated, so `builder/dashes.py` cannot reach it and rules on it here instead. The
+#: first pair is a parenthesis because the count has to stay inside the sentence that
+#: derives it, and the second is a sentence break.
 LIBRARY_LEAD = (
-    "Every palette the project ships — {palettes} of them — grouped by the color each one "
+    "Every palette the project ships ({palettes} of them), grouped by the color each one "
     "is dominant in: a map is read onto three fixed pictures, and the hue it puts most of "
     "a picture in is the section it sits in here. Each is drawn as a render sweeps through "
-    "it — folded where it does not close on the color it opened with — so what is on the "
+    "it, folded where it does not close on the color it opened with. So what is on the "
     "page is the gradient a picture is read through, and not the handful of stops it was "
     "written as."
 )
