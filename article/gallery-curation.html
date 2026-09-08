@@ -64,9 +64,9 @@
     <p><a href="finding-good-wallpapers.html">Finding good wallpapers</a> ends with a pool:
     every judged picture every mine has made, accumulated across all of them, and growing. A
     pool is not a gallery. A gallery is a fixed number of wallpapers chosen to be looked at
-    together, and almost everything that makes a set of wallpapers good — that it is not the
+    together, and almost everything that makes a set of wallpapers good (that it is not the
     same picture eight times, that it is not all blue, that it does not spend half its slots
-    on one corner of one fractal — is a property of the set and of no picture in it. So
+    on one corner of one fractal) is a property of the set and of no picture in it. So
     curation is a single pass over the whole pool that chooses the whole set at once. Each
     place in the finished gallery is a <i>seat</i>, and a gallery of a hundred has a hundred
     seats to fill.</p>
@@ -80,7 +80,7 @@
 
     <p>Not every judged picture is a candidate for a seat. A picture is eligible if the
     <a href="training-judges.html">render judge</a> gives it even odds or better of being rated
-    exceptional — a probability of one half. Where a mode has enough rated locations to support the
+    exceptional: a probability of one half. Where a mode has enough rated locations to support the
     reading, that is measured at the judge's top threshold; where it does not, the gentler of
     its two thresholds is used instead, so a thinly rated mode is not locked out.</p>
 
@@ -97,8 +97,8 @@
 
     <p>Two locations can be nearby frames of one spiral, and nothing in their coordinates says
     so. To tell, every admitted location is rendered once, small, in one fixed neutral palette
-    and passed through <a href="https://arxiv.org/abs/2304.07193">DINOv2</a> — a vision
-    network trained without labels, which turns a picture into a vector positioned so that
+    and passed through <a href="https://arxiv.org/abs/2304.07193">DINOv2</a> , a vision
+    network trained without labels that turns a picture into a vector positioned so that
     visually similar images land near one another. Two locations closer than a small fixed
     distance in that space are the same place as far as the gallery is concerned, and only one
     of them survives into the pool. On the current pool that collapses close to a fifth of the
@@ -112,14 +112,14 @@
 
     <p><a href="color-palettes.html">Color palettes</a> laid out the fifty-two named colors,
     which group into twelve hue families. Curation reads, for each finished picture, which of
-    those colors it is actually <em>dominant</em> in — measured off the picture rather than
-    off its palette, since a map only colors what the fractal's own values reach — and a
+    those colors it is actually <em>dominant</em> in (measured off the picture rather than
+    off its palette, since a map only colors what the fractal's own values reach), and a
     picture may be dominant in two colors or in none.</p>
 
     <p>Each color cell then gets an <i>allowance</i>: roughly twice its even share of the
     gallery, so that a color can be over-represented but not by much, and the same rule one
     level up for hue families. The rounding is generous on purpose. An allowance is a ceiling
-    and never a quota — nothing is obliged to reach it, and a color the pool cannot supply
+    and never a quota: nothing is obliged to reach it, and a color the pool cannot supply
     simply does not appear.</p>
 
     <p>One more count guards against a subtler repetition. Near-duplicate palettes in the
@@ -159,7 +159,7 @@
     entirely. So each mode carries a <i>floor</i>: a number of seats the gallery should hold
     of that mode if the pool can supply them. A mode the project rates highly is floored at
     twice one it rates ordinarily, and the floors deliberately sum to only half the seats they
-    are dividing — the point is to guarantee a presence, not to dictate the whole
+    are dividing. The point is to guarantee a presence, not to dictate the whole
     composition.</p>
 
     <p>A floor is not a ceiling in the other direction, and it never overrides the rules above
@@ -194,8 +194,8 @@
     <p>The gallery is built rather than searched exhaustively, because the pool is large and
     the rules interact.</p>
 
-    <p>It starts greedily. Anything the gallery is obliged to hold — the mode floors, and any
-    color a particular gallery has been asked for — is seated first, scarcest first: a demand
+    <p>It starts greedily. Anything the gallery is obliged to hold (the mode floors, and any
+    color a particular gallery has been asked for) is seated first, scarcest first: a demand
     that only three locations in the whole pool can satisfy has to be spent before those three
     locations are taken for something else. What remains is filled by walking the eligible
     pictures in rank order and seating each one the rules allow.</p>
@@ -203,7 +203,7 @@
     <p>Then the set is improved by <i>swapping</i>: take one seated picture out, put one
     unseated picture in, and keep the exchange only if it strictly improves the goals above,
     in their order. Swaps run until a full pass over the gallery finds no exchange worth
-    making. The method is usable at every point along the way — there is a complete, valid
+    making. The method is usable at every point along the way: there is a complete, valid
     gallery from the moment the greedy pass finishes, and stopping early costs quality rather
     than producing nothing.</p>
 
@@ -214,8 +214,8 @@
     which minibrot the location was found near, and nothing asks whether the finished gallery
     struck a particular balance between the plain smooth rendering and the other modes. Those
     things do come out reasonably mixed, but they come out that way because the pool is mixed
-    and because the rules above — one wallpaper per location, near-duplicates refused, color
-    spread — push hard against concentration, not because anything checks them.</p>
+    and because the rules above (one wallpaper per location, near-duplicates refused, color
+    spread) push hard against concentration, not because anything checks them.</p>
 
     <p>That is a deliberate position rather than an oversight, and it is provisional.
     Enforcing a mix directly is easy; knowing what mix is worth enforcing is not, and a
@@ -231,7 +231,7 @@
 
     <p>This is the most useful thing the pass produces. For every unfilled floor it records
     what was available, which rule refused the pictures that were, and which locations could
-    have fed it — so the answer to "what should the next mine look for" is a readout rather
+    have fed it. So the answer to "what should the next mine look for" is a readout rather
     than a guess, and <a href="finding-good-wallpapers.html">finding good wallpapers</a> says
     what a mine does with it. A shortfall is not a failure of the selection; it is the
     collection saying which ground has not been walked yet.</p>
@@ -244,8 +244,8 @@
     <h2 id="rendering-the-gallery">Rendering the gallery</h2>
 
     <p>A seated picture is not the wallpaper. What the judges scored is a small render, and
-    every wallpaper the gallery ships is drawn again from its record alone — the location, the
-    mode and its settings, the palette, the geometry — at full size. Nothing from the small
+    every wallpaper the gallery ships is drawn again from its record alone (the location, the
+    mode and its settings, the palette, the geometry) at full size. Nothing from the small
     render is reused, and no judge sees the result: every probability attached to a gallery
     row is a statement about the picture that was judged, not about the picture that
     ships.</p>
@@ -257,7 +257,7 @@
 
     <p>The autolevel operator from <a href="color-palettes.html">color palettes</a> runs inside
     that render. The picture is drawn, measured, and where its tones fall outside the band,
-    the palette's lightness is rebaked and it is drawn again — which happens to about four in
+    the palette's lightness is rebaked and it is drawn again, which happens to about four in
     ten of the renders it applies to. It is skipped for the direct traps, whose figures sit on
     a flat ground that its measurements would describe instead of the figure, and for the
     modes that shift where each sample reads in the map, where rebaking the map does not mean

@@ -53,9 +53,9 @@
     enough to run: it says what "dramatic" means in measurable terms, spreads each batch
     across a set of structural templates so the batch is not twenty versions of one idea,
     and ends with a schema. Paste it into a Claude conversation, set the four lines at the
-    top — batch size, mood family, complexity band, value key — and you get a JSON array
+    top (batch size, mood family, complexity band, value key), and you get a JSON array
     of palettes, each stop in <a href="https://en.wikipedia.org/wiki/Oklab_color_space">OKLCH</a>. Run the
-    validator on the result. It checks the mechanical rules — the loop closes, the number of
+    validator on the result. It checks the mechanical rules: the loop closes, the number of
     stops fits the complexity band, the bright band is feathered rather than cut, a hard
     edge carries only a small step, a big hue jump routes through black or white. A
     validated batch dropped into data/palettes/ is a palette like any other.</p>

@@ -967,7 +967,26 @@ def _do_import(options: argparse.Namespace) -> int:
     return 0
 
 
+def _widen_output() -> None:
+    """Let stdout and stderr carry what the records carry.
+
+    A figure's markup block holds the `↗` of its explorer mark, and provenance, captions
+    and check output hold `×`, superscript degrees and the odd arrow besides. Windows
+    hands Python a cp1252 stdout, which cannot encode any of them: `python -m builder
+    figure <id>` raised `UnicodeEncodeError` before printing a line, so a block that
+    exists to be pasted could not be. The encoding belongs to the stream and not to the
+    text, so it is fixed here, once, at the boundary — never by spelling a record's
+    characters down to what a console happens to survive.
+    """
+    for stream in (sys.stdout, sys.stderr):
+        reconfigure = getattr(stream, "reconfigure", None)
+        encoding = (getattr(stream, "encoding", None) or "").lower().replace("-", "")
+        if reconfigure is not None and encoding != "utf8":
+            reconfigure(encoding="utf-8")
+
+
 def main(argv: list[str] | None = None) -> int:
+    _widen_output()
     options = _parser().parse_args(argv)
     try:
         if options.command == "build":

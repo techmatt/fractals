@@ -56,9 +56,9 @@
 <main>
   <section class="prose">
     <p>Finding a good location is slow; coloring it is fast. For each pixel the renderer
-    computes a field — the smooth escape value from
+    computes a field: the smooth escape value from
     <a href="rendering-fundamentals.html">rendering fundamentals</a>, or whatever the
-    rendering mode measures — and that is where nearly all the work goes. For the rendering
+    rendering mode measures. That is where nearly all the work goes. For the rendering
     modes that read one scalar field, coloring is a separate step over stored numbers, so
     the field can be kept and every palette tried on it is a lookup over the same array.
     The pipeline chooses each location's palettes with a trained palette judge, which ranks
@@ -93,7 +93,7 @@
     <h2 id="where-the-palettes-came-from">Where the palettes came from</h2>
 
     <p>The library holds 901 palettes (data/palettes/). Just under two hundred are ramps
-    converted from scientific plotting libraries — matplotlib, colorcet, cmasher. They are
+    converted from scientific plotting libraries: matplotlib, colorcet, cmasher. They are
     fine on a chart and often dull on a fractal: one hue, one sweep from dark to light, no
     event anywhere along the ramp. Over a third of the library, 334 of them, was distilled from
     fractal pictures in my own wallpaper collection, and those set the standard the rest are
@@ -104,8 +104,8 @@
     jewel-earth, oceanic, and so on), gives each batch a handful of structural templates to
     spread across, and ends with a schema. A request looks like: twenty palettes, fire-ice,
     moderate complexity, bright on dark. A small script checks the mechanical rules before
-    anything is rendered. The prompt, the script, and each authored palette's record — its
-    mood family, its templates, and its stops as written — ship with
+    anything is rendered. The prompt, the script, and each authored palette's record (its
+    mood family, its templates, and its stops as written) ship with
     <a href="https://github.com/techmatt/fractal-wallpapers">the repository</a>. The prompt
     runs as-is in Claude; see
     <a href="../palettes/make-your-own.html">make your own palettes</a>.</p>
@@ -114,7 +114,7 @@
     wallpaper into fifty-two named colors and measuring which of them the frame actually
     reaches says which colors the collection reaches as a whole, and the answer is: very
     few. Most pictures concentrate their area on a small handful of the fifty-two, and a
-    whole band of them — greens, limes, teals, cyans and the dark yellows — went almost
+    whole band of them (greens, limes, teals, cyans and the dark yellows) went almost
     unrepresented. I specifically targeted palettes at these under-represented regions
     of color space to ensure that we would be able to hit the full gamut of colors that can
     be rendered on a typical monitor.
@@ -132,12 +132,12 @@
         <figcaption>One field under every palette the fire-ice batch produced.</figcaption>
       </figure>
 
-    <p>The library is one pool — converted ramps, extracted palettes and authored ones
-    together, cyclic beside sequential — and what organizes it is not where a palette came
+    <p>The library is one pool: converted ramps, extracted palettes and authored ones
+    together, cyclic beside sequential. What organizes it is not where a palette came
     from but what it looks like. Nine hundred names in source order would say nothing about
     that. Each palette therefore gets a descriptor: the ramp is drawn as a render sweeps
     through it, folded if it is sequential, 32 colors are sampled evenly along it, and each
-    is written in OKLab — 96 numbers per palette. Distance between two descriptors is
+    is written in OKLab: 96 numbers per palette. Distance between two descriptors is
     distance between two palettes, and it is the same distance the pipeline uses when it
     assembles candidate sets, below. The whole library, one strip per palette, grouped by
     the color each palette is dominant in, is on
@@ -171,7 +171,7 @@
     <p>To make that call automatically, the pipeline trains a palette judge for exactly this
     question. It has the smallest job of the four judges: given one location and 32
     candidate colorings of it, pick one. Those candidates vary by palette and by nothing
-    else — each is the same stored field at gamma 1, one cycle, phase 0. The judge sees the
+    else: each is the same stored field at gamma 1, one cycle, phase 0. The judge sees the
     rendered frame only, never a description of the palette, and it is trained to order the
     candidates of a single location, so its scores mean nothing across locations; they are a
     ranking inside one set (models/palette/). The judge that ships was trained to reproduce
@@ -183,28 +183,28 @@
     to track its teacher more closely than the teacher tracks itself. That is below the bar
     I set, and it ships regardless; the figure at the end of the next section is the case
     for it. Unlike the two quality judges, which ship the best of their three seeds, this
-    judge ships the median seed by that top-pick measure — with a teacher this noisy, the
+    judge ships the median seed by that top-pick measure. With a teacher this noisy, the
     best of three is the luckiest of three.</p>
 
     <h2 id="why-diversity-has-to-be-built-in">Why diversity has to be built in</h2>
 
     <p>A pipeline that selects for quality converges on a theme. The palettes that score
     best on the most locations resemble one another, and without a counterweight the best
-    wallpapers become variations on one color idea that happens to transfer well — I find
+    wallpapers become variations on one color idea that happens to transfer well. I find
     fire- and ice-themed palettes are close to universal across locations and families, and
     left alone the pipeline would find that too. The counterweight is in how a candidate set
     is built. The set for a location is a <i>neighborhood</i> in palette space: one anchor
     palette and its 31 nearest neighbors by the descriptor distance above, so the judge
     always chooses among palettes that belong together rather than among 32 unrelated ones.
     The pool a set is drawn from holds all but one of the 901, and 65 small sets inside it
-    are near-duplicates of one another — near enough that nothing looking at a wallpaper
-    could tell one from another — so a run stands one member of each and draws from 822.
+    are near-duplicates of one another (near enough that nothing looking at a wallpaper
+    could tell one from another), so a run stands one member of each and draws from 822.
     Anchors are drawn without replacement across a run, so no map anchors twice until all
     822 have anchored once, and two locations in one release are asked about different
     regions of palette space. Nothing downstream adds to that: the diversity rule in
     <a href="gallery-curation.html">gallery curation</a> caps
     near-duplicate locations rather than palettes, and two released wallpapers may share a
-    palette — across everything released so far, roughly six hundred and fifty released
+    palette. Across everything released so far, roughly six hundred and fifty released
     pictures have used fewer than three hundred distinct palettes.</p>
 
       <figure class="figure" data-figure="palette-neighborhood">
@@ -216,12 +216,12 @@
 
     <p>A palette that sits well on one location can land too dark, too light, or too flat on
     another. Autolevel corrects for that after the pick. It measures three things about the
-    finished picture — its black point, its white point, and its median lightness — against
+    finished picture (its black point, its white point, and its median lightness) against
     a band derived from 48 finished wallpapers (data/coloring/levels_band.json). Inside the
     band it does nothing at all; outside it, it bends the palette's lightness along its own
     stops without reordering them and renders once more. Across the tracked releases it has
     acted on about four in ten of the renders it applies to. It is used only for rendering
-    modes where the palette's tone is the picture's tone — not for the direct traps, whose
+    modes where the palette's tone is the picture's tone: not for the direct traps, whose
     tone belongs to their flat ground, and not for itinerary, which reads a different place
     in the ramp at every sample.</p>
 

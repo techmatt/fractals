@@ -59,15 +59,15 @@
   <section class="prose">
     <p>The pipeline has three parts, and every page before this one described one of
     them. <a href="finding-good-locations.html">Finding good locations</a> is a guided
-    walk through each fractal family, hunting for locations — a family, a center in the
-    complex plane, a width — with nothing yet said about color.
+    walk through each fractal family, hunting for locations (a family, a center in the
+    complex plane, a width) with nothing yet said about color.
     <a href="finding-good-wallpapers.html">Finding good wallpapers</a> is mining:
     returning to those locations and drawing each one many ways, in many rendering modes
     and palettes, with every judged picture kept.
     <a href="gallery-curation.html">Gallery curation</a> is the solve: one pass that
     chooses a whole gallery out of every picture ever mined. Two stores connect the parts
-    — a pool of locations that only ever grows, and a pool of candidate pictures that only
-    ever grows — and this page is about how the three run together: not once, in order,
+    (a pool of locations that only ever grows, and a pool of candidate pictures that only
+    ever grows), and this page is about how the three run together: not once, in order,
     but as a loop whose last step tells the first two what to do next.</p>
 
       <figure class="figure" data-figure="pipeline-overview">
@@ -80,9 +80,9 @@
     <p>A run is the unit of work: the walk applied to every family at once under a fixed
     budget, expanding its frontier batch by batch, scoring every frame with the location
     judge, and admitting the frames it rates likely to be at least good on the four-point
-    scale. How much of a run each partition gets follows a declared mix — the proportions
+    scale. How much of a run each partition gets follows a declared mix (the proportions
     I want the finished collection to hold, weighted toward the standard Mandelbrot set
-    and its Julia sets — steered toward whichever partitions are furthest below their
+    and its Julia sets), steered toward whichever partitions are furthest below their
     share. Every admitted location joins the location pool. Nothing in that pool is ever
     pruned; a later run can only add to it.</p>
 
@@ -100,8 +100,8 @@
     <p>Yield still falls as a run goes on. In one measured run it fell roughly eightfold
     from the first quarter to the last, and the figure below shows where the later
     admissions came from. Past a point, more search in the same neighborhoods buys less
-    however the batches are split, and the remedy is new ground rather than a better split
-    — new families, new seeds, and the reframing channel that
+    however the batches are split, and the remedy is new ground rather than a better split:
+    new families, new seeds, and the reframing channel that
     <a href="finding-good-locations.html">finding good locations</a> ends on.</p>
 
     <!-- TODO: the measured run had the proven channel off; re-verify the figure and the
@@ -130,7 +130,7 @@
     and be recolored for almost nothing; the composite modes and the direct traps have to
     be drawn in full every time, and a candidate in one costs several times a candidate in
     the other. That is a price, not a ranking. A mine draws its modes uniformly over the
-    whole roster, so most of its time goes to the expensive kinds — which are also the
+    whole roster, so most of its time goes to the expensive kinds, which are also the
     ones a gallery is most often short of.</p>
 
     <p>Like a run, a mine plans everything before the first picture is drawn and reads no
@@ -140,22 +140,22 @@
     <h2 id="curating-a-gallery">Curating a gallery</h2>
 
     <p>The solve is the only place in the pipeline where a selection is made, and it makes
-    that selection over the whole candidate pool — everything every mine has ever
+    that selection over the whole candidate pool: everything every mine has ever
     contributed, never the work of whichever mine finished last.
     <a href="gallery-curation.html">Gallery curation</a> lays out its rules one at a time;
     at a glance: a candidate is eligible at even odds or better of being rated good;
-    locations that are the same place to the eye are collapsed — about one in five of
-    them, on the current pool — and a location seats at most one wallpaper; each color
+    locations that are the same place to the eye are collapsed (about one in five of
+    them, on the current pool), and a location seats at most one wallpaper; each color
     cell has an allowance of roughly twice its even share, and a group of near-identical
     palettes may take about one seat in forty; each rendering mode is owed a floor of
     seats, the floors summing to half the gallery; and the set is built greedily, then
-    improved by swaps, against four goals in strict order — fill the seats, meet the
+    improved by swaps, against four goals in strict order: fill the seats, meet the
     floors, raise the worst picture, and only then raise the whole. A seat the pool cannot
     fill under those rules stays empty. Only the seated pictures are rendered at wallpaper
     resolution, the most expensive step in the pipeline, spent on the gallery alone.</p>
 
-    <p>The solve is cheap next to the mining that filled its pool — minutes against hours
-    — so it is re-run freely. A retrained judge, a changed floor, a different size, or a
+    <p>The solve is cheap next to the mining that filled its pool (minutes against hours),
+    so it is re-run freely. A retrained judge, a changed floor, a different size, or a
     color the gallery is asked for produces a new gallery over the same pool, with the old
     one kept as a record.</p>
 
@@ -175,15 +175,15 @@
     shortfall. A general mine draws its modes uniformly over the whole roster, and the
     next solve says whether that was enough.</p>
 
-    <p>Two measurements decided that. A mine aimed at one short mode does move seats —
+    <p>Two measurements decided that. A mine aimed at one short mode does move seats:
     into that mode and out of others, because a location seats at most one wallpaper, so a
-    place seated in one short mode is a place no longer available to another — and the
+    place seated in one short mode is a place no longer available to another. The
     gallery's total shortfall does not move at all. And a cheap mine of the field modes
     alone opens new locations without moving a single floor, because the modes that are
     short are the expensive ones, and a new location serves a floor only where that mode
     was attempted. What a gallery is short of, in the end, is places where the expensive
     modes have been tried, and the way to get more of them is to try them everywhere.
-    Targeted mining — at one mode, one color, one family — is for a targeted gallery, not
+    Targeted mining (at one mode, one color, one family) is for a targeted gallery, not
     for the collection.</p>
 
     <p>How much more mining is worth once a gallery of a given size can be filled is
@@ -193,7 +193,7 @@
     far.</p>
 
       <figure class="figure" data-figure="pipeline-growth">
-        <img src="../assets/images/figures/pipeline-growth.png" width="1316" height="810" alt="Two line charts sharing one logarithmic axis of mining effort, in attempts, from about three thousand to about a hundred and seventy-seven thousand. The upper chart plots the median ranking score of the seated gallery; the lower plots the tenth percentile of the same seats. Each carries one line per gallery size — fifty, one hundred, two hundred — with a band around it showing the spread of three random draws. Every line rises from left to right, and the smaller galleries sit above the larger ones throughout.">
+        <img src="../assets/images/figures/pipeline-growth.png" width="1316" height="810" alt="Two line charts sharing one logarithmic axis of mining effort, in attempts, from about three thousand to about a hundred and seventy-seven thousand. The upper chart plots the median ranking score of the seated gallery; the lower plots the tenth percentile of the same seats. Each carries one line per gallery size (fifty, one hundred, two hundred) with a band around it showing the spread of three random draws. Every line rises from left to right, and the smaller galleries sit above the larger ones throughout.">
         <figcaption><span class="figure-draft">Draft</span> The candidate pool re-solved over random fractions of the mining that made it, three draws at each fraction and three gallery sizes. Seats stop being bought early: fifty seats fill at every fraction measured, and two hundred from a quarter of the mining upward. Quality keeps being bought at every doubling so far, and the weakest seats gain the most of it. A hollow marker is a fraction whose draws could not fill the gallery.</figcaption>
       </figure>
 
@@ -206,7 +206,7 @@
     Twenty wallpapers in the same three hues is a worse set than twenty spread across the
     spectrum, however good each is alone.</p>
 
-    <p>So the solve carries color allowances beside the quality bar — the ceilings
+    <p>So the solve carries color allowances beside the quality bar: the ceilings
     <a href="gallery-curation.html">gallery curation</a> describes, read off each picture's
     own dominant colors rather than off its palette, since a palette colors only what the
     field reaches. An allowance is a ceiling and never a quota. A color the pool cannot
@@ -215,10 +215,10 @@
     otherwise.</p>
 
     <p>The same machinery runs the other way. A gallery can be asked for a color rather
-    than capped on it — the pool restricted to pictures dominant in that color, the
+    than capped on it: the pool restricted to pictures dominant in that color, the
     palette-group ceiling loosened so the theme has room, and pictures told apart by their
-    geometry alone, since under a theme every picture's colors are alike by construction —
-    and the solve then chooses from the same candidate pool by the same four goals. What
+    geometry alone, since under a theme every picture's colors are alike by construction.
+    The solve then chooses from the same candidate pool by the same four goals. What
     changes is which pictures are worth seating, not what any of them looks like.</p>
 
     <h2 id="future-developments">Future developments</h2>
@@ -227,7 +227,7 @@
     compute.</p>
 
     <p>The judges stand in for one person's eye. Retrain them on someone else's ratings
-    and the same pools yield a different collection — that is the most direct way another
+    and the same pools yield a different collection. That is the most direct way another
     artist could make this pipeline theirs, and none of the machinery around the judges
     would have to change.</p>
 
@@ -237,8 +237,8 @@
     found, so it is least reliable exactly where the novelty is, and the reserved share of
     each batch is a blunt correction for that rather than a solution to it.</p>
 
-    <p>Framing has room. A location's frame is decided once, when it is found — the walk's
-    ladder sizes a frame outward around a minibrot and the judge picks a rung — and
+    <p>Framing has room. A location's frame is decided once, when it is found (the walk's
+    ladder sizes a frame outward around a minibrot and the judge picks a rung), and
     nothing after that moves the camera. How much of a good picture is the region, and how
     much is where the edges were drawn, is genuinely open, and the pipeline has no step
     that asks.</p>
@@ -251,8 +251,8 @@
     that floor is a different search with different machinery, and it is the subject of
     <a href="deep-zoom.html">deep zoom</a>.</p>
 
-    <p>Where in each family the location pool's finds actually lie — and where they do not
-    — is the subject of <a href="fractal-atlases.html">fractal atlases</a>.</p>
+    <p>Where in each family the location pool's finds actually lie (and where they do not)
+    is the subject of <a href="fractal-atlases.html">fractal atlases</a>.</p>
   </section>
 
   <nav class="section-nav">
