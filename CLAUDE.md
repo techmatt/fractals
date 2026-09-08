@@ -146,6 +146,18 @@ keeps the mechanics. **Every apply round ends by distilling that round's general
   session never picks for him, however clearly one panel looks best — the article's claim
   is that a person chose these pictures, and a machine pick standing in for one makes that
   claim quietly false.
+- **And which figures look wrong is his to say, not something the repo tracks.** Whether a
+  picture reads badly is the same judgement as picking the tile, so a session does not
+  open a backlog of it: no `TODO` about how a picture looks, no list of suspect figures in
+  a record, no standing item in `docs/page-review.md`. The one `TODO` the tree does carry,
+  on `full-pipeline.html`, is the other kind — a number to re-verify against a run that
+  does not exist yet, which is a fact somebody can check rather than a taste somebody has
+  to have. What the repo tracks instead is what a machine
+  can decide — a `stale_when` that names an event, a `held_reason` that names what is
+  blocked, a `draft` note that says what re-bakes it, a `reuse_reason` a collision made
+  necessary — each of which fails or fires on its own. Where a figure pass leaves
+  something genuinely undecided, the row carries the collision and says it is not yet
+  judged, which is a state a check reads rather than a task somebody has to remember.
 - **A figure's id opens with its page's prefix** — `overview-`, `escape-`, `render-`,
   `modes-`, `locations-`, `judges-`, `palette-`, `wallpapers-` — so a slug says where it
   lives before anything looks it up. One prefix to a page and one page to a prefix, with
@@ -485,9 +497,10 @@ prints one note — never a failure — about the committed wasm module, describ
 
 **Every check runs on a bare clone, and what cannot run says so by name.** CI clones this
 repository alone, so a check that needs the wallpapers checkout is a check CI never makes.
-Three of them want it — `library`, which holds `palettes/library.jsonl` to the palette
-library next door; `bake`, which rebakes the explorer's modules; and the source-key half
-of `figures` — and without it each reports a **named skip**: `skipped` rather than `ok`
+Four of them want it — `library`, which holds `palettes/library.jsonl` to the palette
+library next door; `bake`, which rebakes the explorer's modules; `seats`, which holds a
+panel to the picture its gallery ships; and the source-key half of `figures` — and
+without it each reports a **named skip**: `skipped` rather than `ok`
 on its own line, and counted in the exit summary. Pillow's absence is the same shape, for pixel sizes. Never a crash before the
 other checks, and never a silent pass. *(This is a rule because it was broken: `check`
 built the palette library page straight off the checkout, so on a machine without one it
@@ -498,8 +511,9 @@ lands any missing strip.
 
 **Which is why a checkpoint runs `check` here, not in CI.** A green CI says every check
 that a bare clone can ask came back clean; it says nothing about the palette record, the
-explorer's generated modules, or a single one of the source keys a figure cites, because
-those three questions were skipped by name. Before a prompt is called done, run
+explorer's generated modules, whether a seat panel is still the picture its gallery
+ships, or a single one of the source keys a figure cites, because
+those four questions were skipped by name. Before a prompt is called done, run
 `python -m builder check` on this machine with the checkout configured and read the skip
 count in the exit summary — a run that reports skips is a run that answered part of the
 question.

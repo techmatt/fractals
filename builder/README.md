@@ -56,19 +56,19 @@ Install what it needs with `pip install -r builder/requirements.txt`.
 nothing else — that is the whole contract, because CI clones this repository alone and
 a check that cannot run there is a check nobody runs. Two things it will use if they are
 here and does not need: the wallpaper project's checkout, which is what the `library`
-check, the `bake` check and the source-key half of `figures` want; and Pillow, which is
+check, the `bake` check, the `seats` check and the source-key half of `figures` want; and Pillow, which is
 what lets `figures` and `assets` verify pixel sizes. Missing either is a **named skip** —
 the check line says `skipped` rather than `ok`, and the exit summary counts them — never a
 failure and never a silent pass. `check` once built the palette library page straight off
 that checkout, so on a machine without one it raised before the first check ran and every
 check after it went unrun; the page is built from a committed record now, and this is why.
 
-**So a green CI is not a green tree.** `library` and `bake` ask nothing on a bare clone
-and `figures` asks half, which means the two explorer rosters, its generated modules
-and every source key a figure cites are certified **only on a machine that has the
-checkout**. Run `python -m builder check` here, with `FRACTAL_WALLPAPERS_ROOT` set or
+**So a green CI is not a green tree.** `library`, `bake` and `seats` ask nothing on a bare
+clone and `figures` asks half, which means the two explorer rosters, its generated modules,
+every seat panel's agreement with the picture its gallery ships, and every source key a
+figure cites are certified **only on a machine that has the checkout**. Run `python -m builder check` here, with `FRACTAL_WALLPAPERS_ROOT` set or
 `local.toml` in place, before a checkpoint — and read the exit summary's skip count, which
-is what says whether the run that just passed was the whole question or two thirds of it.
+is what says whether the run that just passed was the whole question or part of it.
 
 ## A gallery is a directory
 
@@ -165,6 +165,18 @@ again; a made row without one is a failing check too. `recipe` names the maker a
 arguments — `module:function` — which is what actually redraws the figure today; where that
 module is inside `builder`, `check` holds the name to still existing. Prose outlives code
 and code is what runs, which is why both are kept.
+
+**Renaming a figure moves three things, and the `recipe` is not one of them.** The slug,
+the asset file, and the figure's row in `explorer/links.jsonl` all carry it: every made
+row's `file` is its id plus a suffix — all 61 of them, with no exception — and an image
+filename is a URL a reader can land on, so the naming rule in `CLAUDE.md` reaches it
+exactly as it reaches a page slug. `gallery-release` is the worked example: it came across
+from `wallpapers-release` with its asset and its link row renamed alongside it, and the
+old slug survives nowhere. What does **not** move is `recipe`, which names the function
+that actually ran — `palette-autolevel`'s is still `builder.palettes:autolevel_pairs`
+after the section above it stopped being called *Leveling* — because a maker is code and a
+slug is vocabulary, and holding them to the same word would rename a function every time
+the article changed its mind about a word.
 
 `sources` is the fourth, and it is the one the prose cannot do. It is a list of
 `{"kind", "keys"}`, where a **key is a string that addresses a record by its own name**:
@@ -273,8 +285,8 @@ page to the later one moved no claim any earlier figure makes.
 
 ## The palette library has a record, the way a gallery does
 
-`palettes/all-palettes.html` is nine hundred rows of the same shape, so it is generated
-rather than written. What it is generated *from* is `palettes/library.jsonl` — **901 rows,
+`palettes/all-palettes.html` is a thousand rows of the same shape, so it is generated
+rather than written. What it is generated *from* is `palettes/library.jsonl` — **1,021 rows,
 one per palette**, carrying the four facts the page is made of and nothing else: the name,
 which is the strip's file name and the key everything else addresses it by; whether the
 map closes on the colour it opened with, which is the alt text and, in a render, the fold;
@@ -287,14 +299,15 @@ reads every map onto three pinned reference fields and writes a row for each cod
 the map comes out *dominant* in, with that cell's mean share and the hue family it rolls up
 to. A map's hue is the family of its largest such row — the colour it actually puts most of
 a picture in — and the sections are the codebook's twelve hues in the wheel's own order:
-rose, red, orange, yellow, lime, green, teal, cyan, azure, blue, purple, magenta. All 901
+rose, red, orange, yellow, lime, green, teal, cyan, azure, blue, purple, magenta. All 1,021
 maps carry at least one cell and no map ties for its largest, so every map lands in exactly
 one section and none needs a bucket for the colourless; `_uncarried` is the check that says
 so if that ever stops being true. Inside a section the maps are in name order, case folded.
 
 What this replaced was a sixteen-way hierarchical clustering of a 96-number descriptor,
 which grouped maps by a distance nothing on the page could show, and a `<details>` fold
-that hid 78 near-duplicate maps under the 823 that led them. **The page shows all 901 in
+that hid 78 near-duplicate maps under the 823 that led them, of the 901 the library held
+that day. **The page shows all 1,021 of today's in
 their own right now** — the near-duplicate reading is the pipeline's business, where it
 narrows the pool a run draws from, and it was never a thing a reader of a library page
 wanted done to it.
@@ -313,7 +326,7 @@ only ever a hash or a percent-encoded Wikimedia title, and a made-up reading of 
 worse than the id. The id is never renamed anywhere it matters — a permalink, the explorer,
 a figure's `provenance` — and where it differs from the display name the page carries it
 under the strip, in text rather than in a `title` attribute, so a reader can search for it.
-208 of the 901 carry that second line.
+208 of the 1,021 carry that second line.
 
 That record is this repository's, exactly as `gallery.jsonl` is, and for the same reason:
 page generation is a pure function of committed text, so `check` can hold the largest
@@ -345,7 +358,17 @@ configured. A palette entering the library next door costs one `--library` and o
   autolevel operator may have pushed a tone curve through the map before the run wrote the
   picture the gallery ships — and where it did and the site did not, the page publishes
   the right geometry in the wrong colour with every other check green. Exemptions are on
-  the record, in a `gallery_seat` source. Needs the wallpapers checkout and Pillow, and
+  the record, in a `gallery_seat` source. The stated tolerance is `checks.SEAT_TOLERANCE`,
+  **6.0 mean absolute difference of 255**, on a redraw at the shipped picture's own size —
+  640x360, the candidate's own regime — at supersample 2. Re-encoding the same JPEG costs
+  about 2 of that and a tone curve nobody applied cost 29.51, which is the gap the number
+  sits in. **Two halves, and only the second needs pixels.** The reachability half asks
+  `picks.run_stamp` for **every** cited seat, exempt or not, and fails where no run record
+  answers for it; `picks.RUN_RECORDS` is what it asks through — one tuple per run kind, of
+  the record files that kind writes and the field a picture is matched on, typed rather
+  than searched for, so a run that writes a record nobody named there is a seat with no
+  reachable stamp. The pixel half compares only the panels drawn at their own recipe.
+  Needs the wallpapers checkout, and Pillow for the second half, and
   says so by name where either is missing.
 - **landing** — every made figure is a block a redraw could land on. `--replace` finds
   the block it is about to swap by deriving it and refuses when the page is not carrying
@@ -453,6 +476,14 @@ A figure that shows a location is made in two halves, and the split is deliberat
   **both storage tiers**, hot and archive, by that project's own settings — several of its
   subtrees now live on an external disk, and a path built from the checkout root and a
   string finds only the hot one.
+
+  **A path handed to the engine is handed absolute.** Both `run` and `cli` shell with
+  `cwd` set to the *wallpapers* checkout, because the engine finds `data/palettes`
+  relative to it — so an `output`, an `--out`, a `--manifest` or an `--out-dir` that is
+  relative resolves against the other repository, which is the one place this side may
+  not write. Everything here builds those from `default_cache_root()`, which is absolute
+  when it falls back to `artifacts/renders/`; a relative `FRACTAL_WEBSITE_RENDER_CACHE`
+  or a relative `root=` passed to `Cache` is the one way to make it not so.
 
 `renders.Cache` keys a render on its spec and records it in a manifest beside the files.
 Renders are the expensive half and compositions are the half that gets adjusted, so

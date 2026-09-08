@@ -897,6 +897,19 @@ Needs the sibling checkout, `cargo`, and the `wasm32-unknown-unknown` target
 (`rustup target add wasm32-unknown-unknown`). `engine-wasm/target/` is gitignored — it is
 the several hundred megabytes cargo needs to produce a 480 KB file.
 
+**The bare command rebuilds the wasm every time, and that is why `--palettes-only`
+exists.** `explorer.bake` compiles the crate and rewrites `engine.manifest.json` unless
+that flag is passed, and the manifest is rewritten unconditionally: `built` is today's
+date and `wallpapers_commit` is whatever the sibling checkout's `HEAD` is at that moment.
+So a prompt that came to move a colormap and ran the bare command lands two files it did
+not come for — the manifest always, and `engine.wasm` too whenever the engine next door
+has moved since the last bake, which folds somebody else's engine change into a website
+commit under a message about palettes. **A prompt that does not own the engine reverts
+both**, `git checkout` on `engine.wasm` and `engine.manifest.json`, and reaches for
+`--palettes-only` first. Owning the engine here means the carve-out in `CLAUDE.md`: a
+zero-behaviour change to the sibling engine, made deliberately and named in
+`ENGINE_CHANGES`. Rebaking is not one of those and never was.
+
 Which colormaps count as curated is the wallpaper project's own distinction: a map that
 arrived by mechanical conversion says so in its `source` line, and the rest were chosen.
 

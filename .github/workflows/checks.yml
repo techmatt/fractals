@@ -9,8 +9,8 @@
 #
 # This job is a bare clone: the wallpaper project is not here and never will be, and
 # `FRACTAL_WALLPAPERS_ROOT` is set empty to say so rather than leave it to the absence of
-# an untracked `local.toml`. Every check runs anyway; the three that want that checkout —
-# `library`, `bake`, and the source-key half of `figures` — report a named skip. A red on this step therefore means a check failed. It has meant
+# an untracked `local.toml`. Every check runs anyway; the four that want that checkout —
+# `library`, `bake`, `seats`, and the source-key half of `figures` — report a named skip. A red on this step therefore means a check failed. It has meant
 # something else once: `check` built the palette library page straight off the checkout,
 # so this step raised before the first check and stayed red for a reason that was about
 # this runner and not about the site.

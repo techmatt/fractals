@@ -177,6 +177,13 @@ noticing. Everything in the table is read off `article/sections.jsonl`,
 `python -m builder review --list` and `python -m builder figures --all` rather than
 editing a cell by hand.
 
+**Every page of the site is here or excluded by name.** The last two rows are the two
+reader-facing pages no registry reaches — the front page and the gallery index — and they
+are in the table for the reason `dashes` gave them a row in the register below: a page
+nothing reaches is a page nothing reviews, and both were outside every register by
+accident rather than by ruling. The explorer and the atlas are excluded by ruling, at the
+foot of this section. Nothing else on the site is a page.
+
 **The whole-site prose refresh is complete, 2026-09-02.** Eight sections are placed and
 mastered — Overview v2, Rendering modes v1, Finding good wallpapers v2, Gallery curation
 v1, Training judges v5, Finding good locations v5, Color palettes v5, Full pipeline v3 —
@@ -252,6 +259,8 @@ faster machine, a rebuilt engine or a different worker count moves every cell.
 | `deep-zoom.html` | no | none | none | none | the section is not written |
 | `palettes/make-your-own.html` | hangs off Color palettes | `Make your own palettes v4.md` | applied 2026-09-02 | 1 placed | **Swept for em-dashes 2026-09-07** (FIX_ckpt114_website_leftovers_0907), page and master v4 together: three in the body, one pair becoming a parenthesis and one dash a colon. Nothing else is held |
 | `palettes/all-palettes.html` | hangs off Color palettes | generated | n/a | 1,021 palette strips, none a registry figure | the strips are generated from the wallpaper project's library and are not figures; the page groups them by the hue each map is dominant in, twelve sections, every map shown in its own right |
+| `index.html` | n/a, the front page | none, the page is its own | none | none | reader-facing prose with no master and no round: a lead, twelve section blurbs and two closing pointers, hand-written and hand-edited. The one thing on it a check decides is its **done markers**, which `check`'s `contents` re-derives from `article/sections.jsonl`, so the written flag lives in one place and not thirteen. No registry figure names this page. **Swept for em-dashes 2026-09-07** (FIX_ckpt114_website_emdash_check_0907): ten marks in eight places. It carried no row in this table until 2026-09-08, for the same reason it carried none in the register below until the day before — it is not a section, so nothing that reads `sections.jsonl` reaches it, and a page nothing reaches is a page nothing reviews |
+| `galleries/index.html` | n/a, generated | generated | n/a | none | the builder writes it from the gallery metadata and `check`'s `pages` holds the committed bytes to what the builder produces now, so there is nothing on it to review as prose and an edit by hand is a failing check. **No gallery exists yet** — `assets/images/galleries/` is not there, so `builder build` writes an index with no cover tiles on it and the page is its intro sentence and a link back. It waits on Matt exactly as the galleries do |
 
 "Last review round" is what `python -m builder review --list` reports as **applied**; a
 doc **waiting** in the review folder is a round somebody started and did not finish, and
