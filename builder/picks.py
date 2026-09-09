@@ -754,8 +754,13 @@ MODES_DRAW = (
     "seat is one over P(>=4) 0.50, the render judge's own cutpoint and the bar the solve "
     "seats on; the stamp filled all thousand of its seats and every one of them clears "
     "it, so the bar refused nothing here and is stated because a later stamp's might. "
-    "Nothing was chosen for how it looks: the figure's claim is that the roster draws "
-    "wallpapers, and a hand-picked panel per mode would be a claim about the picker.",
+    "Nothing the draw seated was chosen for how it looks: the figure's claim is that the "
+    "roster draws wallpapers, and a machine pick is what makes that claim.",
+    "Three of the thirteen are not the draw's — stripe, curvature and closest trap angle "
+    "over smooth, which Matt replaced by hand on 2026-09-08, naming each by the alias "
+    "under its tile on the curation browser. Each stands on a later stamp than the draw "
+    "did, which is why this row names more than one, and each is a claim about the picker "
+    "in the way the other ten are not.",
     "A seat's mode is read off the ledger recipe and never off the seat row, the two "
     "having disagreed on eighteen seats of an earlier stamp — every one seated as smooth "
     "and recipe'd as itinerary — and the recipe being what the engine is handed.",

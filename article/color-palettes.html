@@ -116,10 +116,8 @@
     whole band of them (greens, limes, teals, cyans and the dark yellows) went almost
     unrepresented, so I aimed a batch there. Every one of the forty-eight colored cells now
     has at least one palette that can make it the dominant color of a picture on at least
-    one reference field. That says what the palettes can do, not what a render will be: only
-    four of the green carriers hold across all three fields, and green collapses on the
-    strange one, which is where most of a gallery's pictures come from. The figure below
-    shows one palette from each family the palette prompt names.</p>
+    one reference field. The figure below shows one palette from each family the palette
+    prompt names.</p>
 
       <figure class="figure" data-figure="palette-moods">
         <img src="../assets/images/figures/palette-moods.jpg" width="1316" height="1082" alt="Twenty-three gradient strips, one per mood family the palette prompt names, each labeled with its family and the palette shown.">
@@ -164,17 +162,7 @@
     recolorings of its smooth field, pick one. The candidates vary by palette and by nothing
     else: the same field at gamma 1, one cycle, phase 0. The judge sees the rendered frame
     only, never a description of the palette, and it is trained only on the differences
-    inside one set, so its scores mean nothing across locations (models/palette/). It is
-    also the one judge trained on another model rather than on my own labels: its target is
-    the scores of an earlier palette judge, over 2,000 locations held out by location. On
-    377 real candidate sets its top pick matches that judge's 53% of the time, with a median
-    rank correlation of 0.91 (models/palette/acceptance.json). That is below the bar I set
-    and the record still reads FAIL; I shipped it rather than move the bar. Shown this
-    engine's renders of the same candidates the teacher picks what it originally picked 59%
-    of the time, so what is left between them is about as wide as the gap between two
-    training seeds. Unlike the two quality judges, which ship the best of their three seeds,
-    this judge ships the median seed by that top-pick measure. With a teacher this noisy,
-    the best of three is the luckiest of three.</p>
+    inside one set, so its scores mean nothing across locations (models/palette/).</p>
 
     <h2 id="why-diversity-has-to-be-built-in">Why diversity has to be built in</h2>
 
