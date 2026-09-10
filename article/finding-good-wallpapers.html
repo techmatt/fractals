@@ -28,7 +28,7 @@
     <li><a href="color-palettes.html">Color palettes</a> <span class="done" role="img" aria-label="written">✓</span></li>
     <li class="rail-current"><a href="finding-good-wallpapers.html" aria-current="page">Finding good wallpapers</a> <span class="done" role="img" aria-label="written">✓</span>
       <ol class="rail-headings">
-        <li><a href="#what-one-attempt-is">What one attempt is</a></li>
+        <li><a href="#how-one-picture-is-made">How one picture is made</a></li>
         <li><a href="#the-pool">The pool</a></li>
         <li><a href="#breadth-and-depth">Breadth and depth</a></li>
         <li><a href="#where-the-budget-goes">Where the budget goes</a></li>
@@ -71,14 +71,15 @@
         <figcaption>The three parts, and what each hands to the next. The top band is sixteen places the search admitted, all drawn in one neutral map because nothing about their color is settled yet. The middle band takes the marked one: two of its best results in different rendering modes, and two in different colors. The bottom band is eight seats from the galleries, chosen out of the pool as it stands.</figcaption>
       </figure>
 
-    <h2 id="what-one-attempt-is">What one attempt is</h2>
+    <h2 id="how-one-picture-is-made">How one picture is made</h2>
 
-    <p>The unit of work is an <i>attempt</i>, and every attempt is the same four steps.</p>
+    <p>The unit of work is one small picture, and making one is always the same four
+    steps.</p>
 
     <p>The location's smooth field is computed once, at a small size: 640 by 360, the
     geometry the judges were trained at. The thirty-two-palette neighborhood from
     <a href="color-palettes.html">color palettes</a> is built over that field and the palette
-    judge picks one of them. The attempt's own rendering mode then draws the picture through
+    judge picks one of them. The rendering mode being tried then draws the picture through
     the chosen palette, as <a href="rendering-modes.html">rendering modes</a> described, at
     that size with two-by-two supersampling, and the render judge scores it. Only the plain
     field modes read the same field the palette was chosen on, so the palette is usually
@@ -86,15 +87,14 @@
 
     <p>What that produces is a <i>candidate</i>: one location, one mode with its settings, one
     palette, the judge's scores, and the small picture itself. Everything else on this page is
-    about which attempts to make.</p>
+    about which candidates to make.</p>
 
     <p>One economy shapes the whole thing. For the modes that read a single scalar field, the
     field can be computed once and then colored many times over, so a second look at the same
     place in the same mode costs a coloring rather than a render, and even autolevel's second
     pass is another coloring. The composite modes, the direct traps, and the mode that shifts
     where each sample reads in the map build their pictures differently and have to be drawn
-    in full each time. That is a real difference in what a look costs, and it is a fact to
-    price rather than a reason to prefer one kind of picture over another.</p>
+    in full each time.</p>
 
       <figure class="figure" data-figure="wallpapers-attempt">
         <a class="figure-open" href="../explorer/index.html?v=2&amp;m=smooth_mean_angle&amp;x=-0.7894061466838949&amp;y=-0.16437809352996482&amp;w=0.0027914350318908217&amp;p=Forge%20Sweep" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/wallpapers-attempt.jpg" width="1316" height="1336" alt="One location through one attempt: its smooth field as plain lightness beside the same location in the rendering mode the attempt drew, then a block of thirty-two colorings of that field with the chosen one outlined, and last the small render that is judged."><span class="figure-open-mark" aria-hidden="true">↗</span></a>
@@ -103,15 +103,17 @@
 
     <h2 id="the-pool">The pool</h2>
 
-    <p>Candidates accumulate. Every <i>mine</i> merges what it made into one <i>pool</i>, and
-    a gallery is chosen out of the pool as it stands rather than out of any one session's
-    work. What accumulates is coverage rather than rows: each merge keeps a bounded number of
-    candidates at each location and mode and deletes the rest.</p>
+    <p>Every <i>mine</i>, one session of this drawing and judging, empties what it made into
+    a single <i>pool</i>, and a gallery is chosen from the pool as a whole rather than from
+    whatever the last session happened to produce. The pool does not simply grow. Each time a
+    mine merges into it, only the best few candidates at each place and mode survive and the
+    rest are deleted, so what builds up over time is coverage: more places, tried in more
+    ways, rather than a larger and larger heap.</p>
 
-    <p>Keeping that pool separate from the mining that fills it is what makes the arrangement
-    work. Locations are cumulative, since a place found once is found for good. A mine is free
-    to spend its whole budget on one question, because it is adding to a store rather than
-    producing a collection.</p>
+    <p>Keeping the pool separate from the mining that fills it is what makes this work. A
+    place found once is found for good, and a mine never has to justify itself by what it
+    ships. It is adding to a store rather than putting a collection together, which leaves it
+    free to spend a whole session on a single question.</p>
 
     <h2 id="breadth-and-depth">Breadth and depth</h2>
 
@@ -123,15 +125,9 @@
     there. It is worth most where the field is already computed, or where the candidate
     standing at a place sits just under the bar and another palette might carry it over.</p>
 
-    <p>The plan for a mining session is fixed before the first picture is drawn. Nothing reads
-    a score partway through and changes what it renders next. That is deliberate: a loop that
-    chases its own early results is a loop whose output cannot be read as a sample of
-    anything. What adapts is the next session, planned against the pool and the last gallery
-    on purpose.</p>
-
       <figure class="figure" data-figure="wallpapers-mine">
-        <img src="../assets/images/figures/wallpapers-mine.jpg" width="1316" height="1195" alt="A row of four gray fields, one per rendering mode, above four rows of five colored renders of the same location: one row a mode, ordered best first, each picture with its palette's gradient under it and labeled with the render judge's score and a fitted rank. Three of the five are outlined in every row.">
-        <figcaption>One visit to one location, in four of the five modes it drew. A mode's field is computed once and every candidate in that mode is a coloring over it, so the four fields at the top are most of what the visit cost; the palettes are drawn without repeating inside a mode, so no two candidates are the same recipe. Under each picture is the render judge's score and the fitted rank the pool orders on, and the outlined ones in each mode are what that visit kept.</figcaption>
+        <img src="../assets/images/figures/wallpapers-mine.jpg" width="1316" height="1367" alt="Five rows of four colored renders of the same location, one row a rendering mode, each row labeled with the mode and ordered best first. Every picture has its palette's gradient under it and is labeled with the render judge's score and a fitted rank. Three of the four are outlined in every row.">
+        <figcaption>One visit to one location, in five of the seven modes it drew. A mine that reaches a place cycles through modes and tries a few palettes in each; none of these five has a scalar field to reuse, so every picture here was drawn in full, and the visit's forty-four attempts took 42 seconds in all. Under each picture is the render judge's score and the fitted rank the pool orders on, and the outlined ones are the ones the pool still holds.</figcaption>
       </figure>
 
     <h2 id="where-the-budget-goes">Where the budget goes</h2>
@@ -146,15 +142,6 @@
     (<a href="gallery-curation.html">gallery curation</a>), and the answer is to mine longer,
     not to mine differently.</p>
 
-    <p>Two things made that the rule. Mining one short mode on its own moves seats between
-    modes more than it adds them: a location contributes at most one wallpaper to a gallery,
-    so a place seated in one short mode is a place lost to another. And mining only the cheap
-    modes opens new locations without moving a single short mode's floor, because a new
-    location serves a mode only where that mode was attempted. What a gallery is short of is
-    places where the expensive modes have been tried, and the way to get more of them is to
-    try them everywhere. Targeted mining, at one mode or one color or one family, is for a
-    targeted gallery, and <a href="full-pipeline.html">full pipeline</a> describes both.</p>
-
     <h2 id="keeping-only-what-earns-its-place">Keeping only what earns its place</h2>
 
     <p>A mine that visits a location many times produces many pictures of it, and keeping them
@@ -162,15 +149,6 @@
     the best five candidates of each location and mode, ranked among themselves. A mode drawn
     with its settings changed keeps its own five rather than competing with the mode's
     default.</p>
-
-    <p>Five things protect a candidate the ranking would otherwise drop: it is in a gallery
-    that has shipped; it holds a seat in a gallery recorded under a name, whose pictures can
-    be asked for by id; a person has rejected it; a person has rated it; or it is one of the
-    rows the ranking itself was fitted on. Everything else goes, and a picture is kept if and
-    only if its row is: the record and the image are deleted together, so the pool never holds
-    a row pointing at a file that is gone. Nothing remembers what was dropped, so a later mine
-    can pay again for a picture this one already made; that repeat is measured, and it is the
-    price of the rule rather than an oversight.</p>
 
     <h2 id="how-candidates-are-ranked">How candidates are ranked</h2>
 

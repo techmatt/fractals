@@ -64,7 +64,6 @@ from .locations import (
     panel,
     panels,
     release_record,
-    rule,
     sheet_path,
     under,
 )
@@ -563,51 +562,50 @@ def finished_beside_judged() -> Drawn:
 # candidate ledger, in one streamed pass that never loads the pool, because retention runs
 # later and afterwards and the run's own records still list every attempt it made.
 #
-# ## Why the pictures are the stored JPEGs
+# ## Where the panels come from, and why it is two answers
 #
-# Everywhere else on this site a panel is redrawn from a record, because a redraw is
-# sharper and the record is the truth. Here it would be a lie of a kind: the claim of the
-# figure is *the judge scored these and kept those*, and the files under `pictures/` are
-# the ones the judge read. So they are copied, at the 640x360 the judges were trained at,
-# and the only thing the engine draws for this figure is the field panel at the head of
-# each mode — which the run dumped and did not keep.
+# A survivor's picture is **copied**: the file under `pictures/` is the one the render
+# judge read, and the figure's claim is *the judge scored these and the pool kept those*.
+# A pruned candidate has no file at all — retention deletes a row and its picture
+# together — so its panel is **redrawn** from the run's own recipe at the regime it was
+# judged at. That is only honest because the autolevel operator acted on none of the
+# attempts shown: a depth run records that the operator acted and never the curve it
+# acted with, so a redraw of an attempt it *had* touched would be the wrong colour. The
+# five modes below are the modes of this visit it left alone, and `mine_agreement`
+# measures a redraw against the fifteen stored files to say what the copy and the render
+# actually differ by.
 #
-# ## Why a visit whose pictures still exist is hard to find
+# ## Why this visit
 #
-# Retention deletes a pruned candidate's row and its picture together, so most visits are
-# a set of survivors with holes where the rest were. A figure of the retention rule needs a
-# visit that still has both halves, and there are very few. This one is named below.
+# It is drawn entirely in modes with no field to reuse: `dumps` is zero across all
+# forty-four attempts, so every picture here cost a full render, which is the expensive
+# half of the economy the prose above the figure describes. And its pruning is visible —
+# three of every four survive — where a visit whose losers are still on disk is now rare.
 
 #: The visit: the mine run, and the location key it visited. A location key is the
 #: record's own name for the place — the partition, the degree, the family constants, the
 #: centre and the width — so this is an address and not a position in anything.
 MINE = (
-    "teal_pilot",
-    '["mandelbrot", 2, [], "-0.0779555612343306", "-0.6515573959617936", '
-    '"0.00000013055391824593846"]',
+    "night_d",
+    '["multibrot3", 3, [], "0.13310613216958833", "0.770819715489605", "0.000029231884613996562"]',
 )
 
-#: The seat this location holds in the recorded tentative gallery it was picked out of.
-#: The seated picture is **not** from the visit drawn here — it was made by a later mine at
-#: the same place — and the row is cited because it is how the location was chosen, which
-#: is the thing a source key is for.
-MINE_SEAT = ("20260902T164622Z", "7836b31cb1ea13cb")
+#: The mode this run was deepening, and the reason it is off the sheet. It drew twenty
+#: palettes here against four in every other mode, across four settings of its own, so a
+#: row of it would be a figure about one mode's parameters rather than about a visit. Its
+#: twenty are named in the provenance instead, so the record is still the whole visit.
+MINE_DEEPENED = "direct_trap_multiply"
 
-#: The mode this visit drew that the article does not teach. The ruling of 2026-09-01 is
-#: that this site shows only the modes the galleries draw, which is why `gaussian_int` came
-#: off `modes-gallery` and `modes-field-family`; a figure that put it back under a caption
-#: about *the modes a mine cycles* would be teaching a name the article withholds. Its four
-#: attempts are named in the provenance instead, so the record is still the whole visit.
-MINE_UNTAUGHT = "gaussian_int"
+#: The other mode left off, and the reason is the autolevel operator: it acted on one of
+#: this mode's four attempts, the run recorded that it acted and not the curve, and the
+#: pruned attempt of the four is the one with no picture left to copy. A row that cannot
+#: be completed either way is a row that does not go on the sheet.
+MINE_LEVELLED = "smooth_stripe"
 
-#: How many candidates a mode's row holds. Five, because that is what this visit drew in
-#: each of the four modes it is shown in, and a row that is the mode is what makes the
-#: three-per-mode retention rule legible without a word being spent on it.
-MINE_COLUMNS = 5
-
-#: The two rows of the sheet: the fields at the head, one a mode, and the candidates under
-#: them. Four across for the fields, because there are four modes and each one dumped one.
-MINE_FIELD_COLUMNS = 4
+#: How many candidates a mode's row holds — what this visit drew in every mode but the one
+#: it was deepening. A row that is exactly the mode is what makes the pruning legible
+#: without a word being spent on it.
+MINE_COLUMNS = 4
 
 
 def mine_file(run: str, name: str) -> Path:
@@ -677,19 +675,9 @@ def surviving(keys) -> set[str]:
     Never `headroom.population()` and never the pool: a solve may be reading the ledger
     next door, and what is wanted here is a membership test over a couple of dozen keys.
     """
-    from .picks import ledger_recipes
+    from .picks import ledger_rows
 
-    return set(ledger_recipes(keys))
-
-
-def visit_seat(stamp: str, key: str) -> dict:
-    """The seat a location holds in one recorded tentative gallery."""
-    from .picks import seats
-
-    row = seats(stamp).get(key)
-    if row is None:
-        raise PoolError(f"no seat {key} in the tentative gallery recorded under {stamp}")
-    return row
+    return set(ledger_rows(keys))
 
 
 #: The regime a visit's candidates are drawn at — the geometry the judges were trained
@@ -697,30 +685,55 @@ def visit_seat(stamp: str, key: str) -> dict:
 MINE_REGIME = ((640, 360), 2)
 
 
-def mine_spec(row: dict, **extra) -> dict:
-    """The engine spec that redraws one attempt's frame, at the regime it was drawn at."""
+def mine_spec(row: dict) -> dict:
+    """The engine spec that redraws one attempt, at the regime it was judged at.
+
+    Everything but the geometry is the run's own recipe, through the one funnel every
+    other maker draws a stored recipe with, so the picture here is the picture that was
+    scored rather than a second reading of the same numbers.
+    """
     recipe = row["recipe"]
     resolution, supersample = MINE_REGIME
-    return {
-        "family": recipe["family"],
-        "viewport": recipe["viewport"],
-        "resolution": list(resolution),
-        "supersample": supersample,
-        "maxiter": recipe["maxiter"],
-        **extra,
-    }
+    return renders.wallpaper_spec(
+        {
+            "family": recipe["family"],
+            "viewport": recipe["viewport"],
+            "mode": recipe["mode"],
+            "mode_params": recipe.get("mode_params") or {},
+            "curve": recipe["curve"],
+            "colormap": recipe["colormap"],
+            "recipe": recipe["palette"],
+            "render": {"maxiter": recipe["maxiter"]},
+        },
+        resolution=resolution,
+        supersample=supersample,
+        catalog=renders.mode_catalog(),
+    )
 
 
-def mine_field(run: str, row: dict) -> Path:
-    """One mode's field at this location, dumped once and shown as plain lightness.
+def mine_render(run: str, row: dict) -> Path:
+    """One attempt of a visit, redrawn from its recipe."""
+    out = renders.default_cache_root() / "visit" / f"{run}-{row['key']}.png"
+    return renders.render(mine_spec(row), out)
 
-    The same two steps `attempt_steps` takes for its one field, and the same reason: the
-    stretch a reader sees is the engine's own percentile stretch rather than a second
-    operator's reading of the same numbers.
+
+def mine_agreement(pairs) -> tuple[float, float]:
+    """How far a redraw is from the stored picture it stands in for, worst and mean.
+
+    Mean absolute difference over the whole frame, of 255, for every attempt that still
+    has a file. It is the one measurement that says whether the five redrawn panels of
+    this sheet are the pictures the judge read, and it is taken rather than asserted.
     """
-    stem = renders.default_cache_root() / "fields" / f"mine-{run}-{row['key']}-{row['mode']}"
-    field, _ = renders.dump_field(mine_spec(row, mode=row["mode"], colormap=renders.COLORMAP), stem)
-    return as_lightness(field)
+    from PIL import Image, ImageChops, ImageStat
+
+    readings = []
+    for drawn, stored in pairs:
+        with Image.open(drawn) as left, Image.open(stored) as right:
+            difference = ImageChops.difference(left.convert("RGB"), right.convert("RGB"))
+            readings.append(sum(ImageStat.Stat(difference).mean) / 3)
+    if not readings:
+        raise PoolError("no attempt of this visit still has a stored picture to measure against")
+    return max(readings), sum(readings) / len(readings)
 
 
 def visit_steps() -> Drawn:
@@ -731,18 +744,13 @@ def visit_steps() -> Drawn:
     rows = visit_rows(run, location)
     scores = visit_scores(run, [row["key"] for row in rows])
     kept = surviving([row["key"] for row in rows])
-    seat = visit_seat(*MINE_SEAT)
 
-    shown = [row for row in rows if row["mode"] != MINE_UNTAUGHT]
+    off = (MINE_DEEPENED, MINE_LEVELLED)
+    shown = [row for row in rows if row["mode"] not in off]
     order: list[str] = []
     for row in shown:
         if row["mode"] not in order:
             order.append(row["mode"])
-    if len(order) != MINE_FIELD_COLUMNS:
-        raise PoolError(
-            f"{run} drew {len(order)} teachable mode(s) at this location and the sheet is "
-            f"laid out for {MINE_FIELD_COLUMNS}"
-        )
     by_mode = {
         mode: sorted(
             (row for row in shown if row["mode"] == mode),
@@ -756,38 +764,29 @@ def visit_steps() -> Drawn:
                 f"{run} drew {len(drawn)} candidate(s) in {mode} at this location and a row "
                 f"of this sheet is {MINE_COLUMNS} wide"
             )
+    levelled = sorted(row["key"] for row in shown if row.get("acted"))
+    if levelled:
+        raise PoolError(
+            f"the autolevel operator acted on {', '.join(levelled)}, and a depth run records "
+            "that it acted and never the curve — no redraw of those is the picture that was "
+            "judged, and this sheet redraws whatever retention has deleted"
+        )
 
-    wide = panels(MINE_FIELD_COLUMNS)
     tile = panels(MINE_COLUMNS)
-    fields = {mode: mine_field(run, by_mode[mode][0]) for mode in order}
-    pictures = {
+    stored = {
         row["key"]: renders.artifact("curation", "depth", run, "pictures", f"{row['key']}.jpg")
         for row in shown
     }
-    absent = sorted(key for key, path in pictures.items() if not path.is_file())
-    if absent:
-        raise PoolError(
-            f"{run} no longer has the picture for {', '.join(absent)} — retention deletes a "
-            "pruned candidate's row and its picture together, and this figure is the one that "
-            "shows both halves"
-        )
+    redrawn = {row["key"]: mine_render(run, row) for row in shown}
+    pictures = {key: path if (path := stored[key]).is_file() else redrawn[key] for key in stored}
+    worst, mean = mine_agreement(
+        [(redrawn[key], stored[key]) for key in sorted(stored) if stored[key].is_file()]
+    )
 
     head = 22
-    field_band = band(wide[1])
     cell = tile[1] + 3 + TILE_STRIP_HEIGHT
     row_height = head + cell + band(tile[1]) + sheets.PAD
-    height = (
-        sheets.PAD
-        + head
-        + wide[1]
-        + field_band
-        + sheets.PAD
-        + 1
-        + sheets.PAD
-        + MINE_FIELD_COLUMNS * row_height
-        + 26
-        + sheets.PAD
-    )
+    height = sheets.PAD + head + len(order) * row_height + 26 + sheets.PAD
     sheet, draw = sheets.canvas(SHEET_WIDTH, height)
 
     y = sheets.PAD
@@ -795,16 +794,9 @@ def visit_steps() -> Drawn:
         draw,
         sheets.PAD,
         y,
-        "One visit to one location — each mode's field, dumped once and painted five times",
+        "One visit to one location — five modes, four palettes each, drawn in full every time",
     )
     y += head
-    for index, mode in enumerate(order):
-        x = sheets.PAD + index * (wide[0] + sheets.PAD)
-        sheets.paste(sheet, fields[mode], (x, y), wide)
-        under(draw, (x, y), wide, [mode_words(mode)])
-    y += wide[1] + field_band + sheets.PAD
-    rule(draw, y)
-    y += 1 + sheets.PAD
 
     for mode in order:
         drawn = by_mode[mode]
@@ -813,7 +805,8 @@ def visit_steps() -> Drawn:
             draw,
             sheets.PAD,
             y,
-            f"{mode_words(mode)} — {len(drawn)} palettes, best first · {survivors} kept",
+            f"{mode_words(mode)} — {len(drawn)} palettes, best first · "
+            f"{survivors} still in the pool",
         )
         top = y + head
         for index, row in enumerate(drawn):
@@ -841,70 +834,85 @@ def visit_steps() -> Drawn:
         draw,
         sheets.PAD,
         y,
-        "the outline is what the pool holds today; retention keeps three a mode, decided on "
-        "the ranking as it now stands rather than on the rank this run recorded",
+        "the outline is what the pool holds today, and the tiles are ordered by the rank this "
+        "run recorded — the ranking retention was applied against is the one that stands now",
     )
 
     return Drawn(
         sheets.save(sheet, sheet_path("wallpapers-mine")),
-        mine_provenance(run, location, rows, shown, order, by_mode, scores, kept, seat, wide, tile),
+        mine_provenance(run, location, rows, shown, order, by_mode, scores, kept, stored, tile)
+        + [mine_measurement(worst, mean)],
     )
 
 
+def _settings(rows) -> set[str]:
+    """How many distinct settings one mode was drawn at, as the recipe spells them."""
+    return {json.dumps(row["recipe"].get("mode_params") or {}, sort_keys=True) for row in rows}
+
+
 def mine_provenance(
-    run, location, rows, shown, order, by_mode, scores, kept, seat, wide, tile
+    run, location, rows, shown, order, by_mode, scores, kept, stored, tile
 ) -> list[str]:
     """Every attempt of the visit, kept or not, and the three reads it was assembled from."""
     from .picks import mode_words
 
     first = rows[0]["recipe"]
     family = first["family"]
+    named = (
+        f"{family['kind']} degree {family['degree']}" if family.get("degree") else family["kind"]
+    )
     viewport = first["viewport"]
     dumps = sum(1 for row in rows if row["stages"]["dump"] > 0.01)
-    cut = [row for row in rows if row["mode"] == MINE_UNTAUGHT]
-    stamp, key = MINE_SEAT
+    deep = [row for row in rows if row["mode"] == MINE_DEEPENED]
+    levelled = [row for row in rows if row["mode"] == MINE_LEVELLED]
+    copied = sum(1 for key in stored if stored[key].is_file())
     lines = [
         f"Mine run {run}, one visit, drawn by builder.pool:visit_steps. The visit is read "
         f"out of three records and nothing else: artifacts/curation/depth/{run}/"
-        f"sequence.jsonl for what was drawn, scores.jsonl beside it for the fitted rank each "
-        "attempt was ranked on, and the candidate ledger — one streamed pass, never the pool "
-        "— for which of them retention has left standing.",
+        f"sequence.jsonl for what was drawn, rows.jsonl beside it for each attempt's recipe, "
+        "and the candidate ledger — one streamed pass, never the pool — for which of them "
+        "retention has left standing. scores.jsonl carries the fitted rank each attempt was "
+        "ranked on.",
         f"The location, as the record names it: {location}. Every panel is that frame — "
-        f"{family['kind']}, centre {viewport['center_re']} + {viewport['center_im']}i, width "
+        f"{named}, centre {viewport['center_re']} + {viewport['center_im']}i, width "
         f"{viewport['width']}, cap {first['maxiter']}, curve {first['curve']}, at the "
-        f"candidate regime {first['regime']}. It is seated in the tentative gallery "
-        f"recorded under {stamp}, at "
-        f"seat {seat['seat']} in partition {seat['partition']} by {key}, whose picture a later "
-        f"mine made in mode {seat['mode']} — the seat is how this location was chosen and is "
-        "not one of the pictures shown here.",
+        "candidate regime "
+        f"{first['regime']}. The frame the mine drew is the one written here and not the one "
+        "the location key names: a mine reframes as it goes, and a figure of a visit stands "
+        "on what was drawn.",
         f"The visit: {len(rows)} attempts across {len({row['mode'] for row in rows})} modes, "
         f"drawn at positions {min(row['at'] for row in rows)}–{max(row['at'] for row in rows)} "
-        f"of the run, in {dumps} field dumps — the run paid for one field a mode and painted "
-        f"the rest, which took {sum(row['seconds'] for row in rows):.1f} seconds in total.",
-        f"Drawn here: {len(shown)} of them, in the {len(order)} modes this article teaches. "
-        f"The visit also drew {MINE_UNTAUGHT} {len(cut)} times, and that mode is off the "
-        "article's roster by the ruling of 2026-09-01 that this site shows only the modes the "
-        "galleries draw — the same cut modes-gallery and modes-field-family took. Its four, "
-        "for the record: "
+        f"of the run, in {dumps} field dumps — not one of these modes has a scalar field to "
+        "reuse, so every picture here cost a full render, and the whole visit took "
+        f"{sum(row['seconds'] for row in rows):.1f} seconds.",
+        f"Drawn here: {len(shown)} of them, the {len(order)} modes this visit drew "
+        f"{MINE_COLUMNS} palettes in. Two modes are off the sheet. {MINE_DEEPENED} is the mode "
+        f"this run was deepening and drew {len(deep)} palettes at this location across "
+        f"{len(_settings(deep))}"
+        " settings of its own, which is a figure about one mode's parameters rather than about "
+        "a visit; its twenty, best first: "
         + " · ".join(
             f"palette {row['colormap']} rank {scores[row['key']]['rank_score']:.4f} "
             f"P(>=4) {scores[row['key']]['p_ge4']:.6f} "
             f"{'kept' if row['key'] in kept else 'pruned'}"
-            for row in sorted(cut, key=lambda row: -scores[row["key"]]["rank_score"])
+            for row in sorted(deep, key=lambda row: -scores[row["key"]]["rank_score"])
         )
         + ".",
-        f"The head of each mode's row is `fractal-engine dump-field` at that mode, at the "
-        f"visit's own geometry, recoloured through the two-stop black-to-white ramp "
-        f"builder/pool.py writes — so it is the engine's own 0.5/99.5 percentile stretch and "
-        f"not a second reading of the field. Shown at {wide[0]}x{wide[1]}.",
-        f"Every candidate tile is the stored picture the render judge read, "
+        f"The other mode off the sheet is {MINE_LEVELLED}, {len(levelled)} palettes, and the "
+        "reason is the autolevel operator: it acted on "
+        + ", ".join(row["key"] for row in levelled if row.get("acted"))
+        + ". A depth run records that it acted and never the curve it acted with, and the one "
+        "attempt of the four that retention deleted has no stored picture left to copy. A row "
+        "that can be neither copied nor honestly redrawn does not go on the sheet.",
+        f"{copied} of the {len(shown)} tiles are the stored picture the render judge read, "
         f"artifacts/curation/depth/{run}/pictures/<key>.jpg at 640x360 supersample 2, copied "
-        f"and not redrawn, shown at {tile[0]}x{tile[1]}. This is the one figure on the site "
-        "whose panels are the judged files rather than fresh renders: the claim is that these "
-        "were scored and those were kept, and a redraw would be a second picture that merely "
-        "ought to be the same one. The strip under a tile is `fractal-wallpapers palettes "
-        "strip` for that map. Every panel carried the release autolevel operator on, and it "
-        "acted on none of them.",
+        f"and not redrawn. The other {len(shown) - copied} are the attempts retention deleted, "
+        "which takes a candidate's row and its picture together, and each is redrawn by "
+        "`fractal-engine render` from that attempt's own recipe at the same 640x360 "
+        "supersample 2. The autolevel operator was on for all "
+        f"{len(shown)} and acted on none of them, so a redraw is the render's own bytes rather "
+        f"than a colour nobody recorded. Every tile is shown at {tile[0]}x{tile[1]}, and the "
+        "strip under it is `fractal-wallpapers palettes strip` for that map.",
     ]
     for mode in order:
         drawn = by_mode[mode]
@@ -921,14 +929,26 @@ def mine_provenance(
             + "."
         )
     lines.append(
-        "The tiles are ordered by the rank this run recorded and the outline is what the "
-        "candidate ledger still holds, and the two disagree at the third seat of two of these "
-        "four modes: retention was applied against the ranking as it stands now, and the rank "
-        "key is refitted whenever the judges behind it are. Nothing here is a claim that the "
-        "printed number chose the outline — it is the number the run wrote down beside the "
-        "picture the judge read."
+        "Three of every four survive here, and the standing rule is five per location and "
+        "mode: this visit was pruned while the rule was three, and retention is not "
+        "retroactive, so what it took then it took for good. The outline is what the ledger "
+        "holds today and the order is the rank this run recorded, and the two disagree at the "
+        "third tile of the screened trap row, because the rank key is refitted whenever the "
+        "judges behind it are. Nothing here claims the printed number chose the outline."
     )
     return lines
+
+
+def mine_measurement(worst: float, mean: float) -> str:
+    """What the redrawn panels are worth, measured against the ones that survived."""
+    return (
+        "What that redraw is worth, measured rather than asserted: every attempt of this "
+        "visit that still has a stored picture was redrawn as well and compared with it, and "
+        f"the two differ by a mean absolute {mean:.2f} of 255 over the frame, {worst:.2f} at "
+        "the worst of them. That is the floor of comparing a render with a stored JPEG of "
+        "itself, so the redrawn panels are the pictures that were judged to within what the "
+        "codec costs."
+    )
 
 
 # --------------------------------------------------------- the three parts, in pictures
