@@ -157,7 +157,38 @@
   border-bottom: 1px solid var(--well-rule);
   display: flex;
   flex-direction: column;
-  gap: 0.35rem;
+  gap: 0.5rem;
+}
+
+/* A filter group, in the shape the wallpaper project's own curation browser gives one: a
+   thin rule around it, a small uppercase legend, and — where the group has more entries
+   than a couple of rows will hold — a fixed height it scrolls inside. Thirteen modes wrap
+   to three lines otherwise, and three lines of chips is a third of the panel spent on
+   what is being filtered rather than on the pictures. */
+.chip-group {
+  min-width: 0;
+  margin: 0;
+  padding: 0.3rem 0.45rem 0.4rem;
+  border: 1px solid var(--well-rule);
+  border-radius: 4px;
+}
+
+.chip-group > legend {
+  padding: 0 0.3rem;
+  font-family: var(--sans);
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--well-ink-dim);
+}
+
+/* Two rows of chips, and the rest is a scroll. A fixed height rather than a max: the row
+   under it should not move when a filter narrows what is above it. */
+.chip-group.is-scrolling .chips {
+  height: 3.4rem;
+  overflow-y: auto;
+  align-content: start;
 }
 
 .chips { display: flex; flex-wrap: wrap; gap: 0.3rem; }
@@ -187,6 +218,22 @@
 .chip:focus-visible { outline: 2px solid var(--well-link); outline-offset: 1px; }
 .chip .count { font-variant-numeric: tabular-nums; opacity: 0.7; margin-left: 0.3rem; }
 
+/* The family's own colour, ahead of its name. It keeps its colour when the chip is
+   pressed, which is the point of it: the row still reads as a wheel. */
+.chip .hue {
+  display: inline-block;
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 50%;
+  margin-right: 0.35rem;
+  vertical-align: -0.02em;
+  box-shadow: 0 0 0 1px rgb(0 0 0 / 0.35) inset;
+}
+.chip .hue.is-unfiled {
+  background: var(--well-pending);
+  box-shadow: 0 0 0 1px var(--well-ink-dim) inset;
+}
+
 /* Pictures and nothing else. No caption, no name, no score: the grid is for finding one
    worth opening, and everything a tile could say about itself is something the viewer
    says better once it is open. */
@@ -196,13 +243,22 @@
   overflow-y: auto;
   padding: 0.5rem var(--gutter) 1rem;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr));
+  /* Three to a row, whatever the panel is worth. A track with a minimum in rem gives a
+     column count that changes with the window — four tiles at one width, two at another,
+     which is what a 440-pixel panel was doing — and a share of the panel does not: a
+     third each, so the pictures grow with the panel and the row does not change shape. */
+  grid-template-columns: repeat(auto-fill, minmax(30%, 1fr));
   gap: 0.35rem;
   align-content: start;
-  /* A grid item stretches to its row by default, and a row that is auto-sized takes its
-     height from the item: the two together resolve a tile to nothing and squash every
-     wallpaper into a sliver. The shape belongs to the picture, so the picture carries it
-     and the tile is sized by what is in it. */
+
+  /* **The rows are sized by what is in them, and that has to be said out loud.** An auto
+     row asks its items for a *minimum* height, and a block holding one replaced element
+     at `width: 100%` answers zero — so the track comes out two pixels, which is the
+     border and nothing else. Stretched into it, every wallpaper is a sliver; left at
+     their own height, the tiles overflow the track and paint over each other, which is
+     the same picture with more steps. `max-content` is the one that asks the question
+     whose answer is the picture's own height. */
+  grid-auto-rows: max-content;
   align-items: start;
 }
 
@@ -215,13 +271,25 @@
   overflow: hidden;
   line-height: 0;
 }
+/* **The shape comes from the picture, not from a rule.** An `aspect-ratio` here is
+   circular inside an auto-sized grid row — the row asks the image how tall it is, the
+   image works it out from a width that depends on the row — and Chrome settles that by
+   giving the row two pixels while the tile computes its own 107, so every tile overflows
+   onto the ones below and the grid paints as a stack of bands. The `width` and `height`
+   attributes on the element carry the same 16:9 and carry it intrinsically, which is
+   what a row can size itself from, before the picture has loaded as well as after. */
 .tile img {
   display: block;
   width: 100%;
   height: auto;
-  aspect-ratio: 16 / 9;
   object-fit: cover;
+  /* Held back until the picture is whole: a half-received JPEG paints as a band of
+     scanlines, and a grid of those looks like a grid of broken pictures. The tile's own
+     ground is what shows until then, and the box never changes size. */
+  opacity: 0;
+  transition: opacity 120ms ease-out;
 }
+.tile.is-ready img { opacity: 1; }
 .tile:hover { border-color: var(--well-ink-dim); }
 .tile:focus-visible { outline: 2px solid var(--well-link); outline-offset: -2px; }
 .tile.is-open { border-color: var(--well-ink); }
@@ -447,14 +515,18 @@
   background: var(--well-link);
 }
 
+/* As many columns as the panel holds, a row filling before the list scrolls. One column
+   under a strip this wide was a thousand maps in a shaft: the All tab is the case that
+   matters, and a reader scanning names wants them side by side. */
 .swatches {
-  max-height: 14rem;
+  max-height: 16rem;
   overflow-y: auto;
   border: 1px solid var(--well-rule);
   padding: 0.25rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.15rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(13.75rem, 1fr));
+  align-content: start;
+  gap: 0.15rem 0.4rem;
 }
 
 /* One row: the gradient, and the name under a reader's eye rather than beside a color

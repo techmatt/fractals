@@ -22,6 +22,8 @@
 // fails to start: the viewer is the page, and the gallery is one of two things the side
 // panel can show.
 
+import { colorOf } from "./hues.js";
+
 /** The staged gallery this panel shows, by the slug that is its directory's name. */
 const SLUG = "seated-candidates";
 
@@ -125,6 +127,13 @@ export function install({ base, modes, hues, tiles, note, onPick }) {
       // that looks broken rather than one that is unlanded, and the difference is a
       // sentence somebody can act on. Said once, by whichever tile fails first.
       picture.addEventListener("error", missing, { once: true });
+      // **Shown when it is whole, and not before.** A browser paints the scanlines of a
+      // JPEG it is still receiving, so a grid asking for two hundred thumbnails at once
+      // — which is what a reload is here, on a machine with a solve running next door —
+      // fills with pictures squashed into bands, and the panel reads as broken rather
+      // than as loading. The tile is a dark well until its picture is there.
+      if (picture.complete && picture.naturalWidth > 0) tile.classList.add("is-ready");
+      else picture.addEventListener("load", () => tile.classList.add("is-ready"), { once: true });
       tile.append(picture);
       tile.addEventListener("click", () => {
         open = seat.key;
@@ -139,14 +148,26 @@ export function install({ base, modes, hues, tiles, note, onPick }) {
     say();
   }
 
-  function chipsInto(host, field, counts, label) {
+  function chipsInto(host, field, counts, label, swatches = false) {
     host.replaceChildren();
     for (const [value, count] of counts) {
       const chip = document.createElement("button");
       chip.type = "button";
       chip.className = "chip";
       chip.setAttribute("aria-pressed", "false");
-      chip.textContent = value === null ? label : value;
+      // A hue chip wears its family's own colour, which is the codebook's `light_vivid`
+      // cell for that hue rather than a colour this page chose. A family the wheel does
+      // not name — the four seats filed under nothing — gets the well's neutral, because
+      // inventing a thirteenth colour would say the pipeline had an opinion it does not.
+      if (swatches) {
+        const dot = document.createElement("span");
+        dot.className = "hue";
+        const color = value === null ? null : colorOf(value);
+        if (color !== null) dot.style.background = color;
+        else dot.classList.add("is-unfiled");
+        chip.append(dot);
+      }
+      chip.append(value === null ? label : value);
       const tally = document.createElement("span");
       tally.className = "count";
       tally.textContent = count;
@@ -171,7 +192,7 @@ export function install({ base, modes, hues, tiles, note, onPick }) {
       // A seat whose palette the ledger never saw in a picture has no hue family at all.
       // Four of them do, and they get a chip of their own rather than being dropped: a
       // filter that quietly holds back four pictures is worse than one that admits it.
-      chipsInto(hues, "hue", tally(seats, "hue"), "unfiled");
+      chipsInto(hues, "hue", tally(seats, "hue"), "unfiled", true);
       fill();
     },
     /** Which seat the viewer is showing, so the grid can mark it. Cleared by any move

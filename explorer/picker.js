@@ -27,23 +27,9 @@
 // not use it: the blob is already fetched to draw with, and a second copy of the same
 // colours is a second thing to keep in step.
 
+import { HUES } from "./hues.js";
 import { PALETTES } from "./palettes.js";
 import { stopsOf } from "./stops.js";
-
-/**
- * The twelve hue families in the wheel's own order.
- *
- * The same order, and the same twelve words, that the palette library page lays its
- * sections out in: `builder/palettes.py`'s `HUES`, which spells them for the same reason
- * this does — the codebook they come from is a module in the wallpaper project, and
- * neither a page here nor a record here may depend on a checkout of it. A family this
- * list does not know is appended rather than dropped, so a thirteenth hue next door
- * arrives on the page as a tab nobody chose instead of as a set of maps nobody can reach.
- */
-const HUES = [
-  "rose", "red", "orange", "yellow", "lime", "green",
-  "teal", "cyan", "azure", "blue", "purple", "magenta",
-];
 
 /** How many maps the Popular tab holds. */
 const POPULAR = 20;

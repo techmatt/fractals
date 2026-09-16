@@ -41,8 +41,14 @@
 
     <div class="tabpanel" id="panel-gallery" role="tabpanel" aria-labelledby="tab-gallery">
       <div class="filters">
-        <div class="chips" id="gallery-modes" role="group" aria-label="Rendering mode"></div>
-        <div class="chips" id="gallery-hues" role="group" aria-label="Color family"></div>
+        <fieldset class="chip-group is-scrolling">
+          <legend>Mode</legend>
+          <div class="chips" id="gallery-modes" role="group" aria-label="Rendering mode"></div>
+        </fieldset>
+        <fieldset class="chip-group">
+          <legend>Color family</legend>
+          <div class="chips" id="gallery-hues" role="group" aria-label="Color family"></div>
+        </fieldset>
       </div>
       <div class="tiles" id="gallery-tiles"></div>
       <p class="side-note" id="gallery-note"></p>

@@ -11,16 +11,23 @@ whole site is one origin, and a zoom set on the first page is still there on the
 What it serves is the committed bytes, from the checkout root, the way Pages serves
 them. It builds nothing, writes nothing, and is not a dependency of anything.
 
-**And it serves them uncached, which is not how Pages serves them** *(2026-09-16)*. This
-server sends a `Last-Modified` and nothing else, so a browser is free to apply its own
-heuristic freshness and reuse a module it fetched days ago without asking. The port is
-always 8000 and the paths never change, which makes that likely rather than theoretical:
-the studio's first preview came up on a stale `explorer.js` from before the page was
-rebuilt, which took the old module's `getElementById` of a control that no longer exists,
-threw at evaluation, and left the boot notice standing — a page that looks like it never
-started, over a file nobody would think to look at, because the request is not in the
-log. `no-store` costs nothing here (the files are local and the whole point is to look at
-what just changed) and it is not a claim about production: Pages sends its own headers.
+**And it asks a browser to revalidate, which is not how Pages serves them**
+*(2026-09-16)*. This server sends a `Last-Modified` and nothing else, so a browser is free
+to apply its own heuristic freshness and reuse a module it fetched days ago without
+asking. The port is always 8000 and the paths never change, which makes that likely
+rather than theoretical: the studio's first preview came up on a stale `explorer.js` from
+before the page was rebuilt, which took the old module's `getElementById` of a control
+that no longer exists, threw at evaluation, and left the boot notice standing — a page
+that looks like it never started, over a file nobody would think to look at, because the
+request is not in the log.
+
+`no-cache` is the header for that and `no-store` is not, though the names suggest
+otherwise: this one says *keep it, and ask before using it*, so the browser sends its
+`If-Modified-Since` and gets a 304 for everything that has not moved. `no-store` was the
+first fix here and it was the wrong one — it made every reload re-fetch the gallery
+panel's thumbnails, a couple of hundred of them, and on a machine with a solve running
+next door they painted half-decoded, which reads as a grid of broken pictures. Neither
+header is a claim about production: Pages sends its own.
 """
 
 import functools
@@ -33,10 +40,10 @@ HOST = "localhost"
 
 
 class Preview(SimpleHTTPRequestHandler):
-    """The committed bytes, with every response marked never to be reused."""
+    """The committed bytes, with every response marked to be revalidated before use."""
 
     def end_headers(self) -> None:
-        self.send_header("Cache-Control", "no-store, max-age=0")
+        self.send_header("Cache-Control", "no-cache")
         super().end_headers()
 
 
