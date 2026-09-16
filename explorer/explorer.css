@@ -36,9 +36,10 @@
      it a grid of wallpaper tiles and a canvas cannot both be worth looking at. */
   --studio-stack: 60rem;
   /* The render-state dot: drawing the field, the one-sample picture up while the final
-     pass runs, and the final picture. */
-  --state-rendering: #e0a43a;
-  --state-sharpening: #6fa8e8;
+     pass runs, and the final picture. Red, yellow, green, so the order is read off the
+     colour alone. */
+  --state-rendering: #e0605a;
+  --state-sharpening: #e8c84a;
   --state-final: #5cc47a;
 
   margin: 0;
