@@ -79,14 +79,56 @@ const PANEL_AT = ":";
  *  out of range and the engine refuses it again. What a parameter is SET to when
  *  nobody has moved it comes from the module's plan, never from here. */
 const CONTROLS = {
-  density: { label: "Stripe density", step: 1 },
-  radius: { label: "Trap radius", step: 0.1 },
-  sigma: { label: "Kernel width", step: 0.05 },
-  weight: { label: "Texture", step: 0.05 },
-  shift: { label: "Shift", step: 0.1 },
-  threshold: { label: "Threshold", step: 0.01 },
-  opacity: { label: "Opacity", step: 0.05 },
+  density: {
+    label: "Stripe density",
+    step: 1,
+    tip: "How many stripes wrap around each band: higher is finer.",
+  },
+  radius: { label: "Trap radius", step: 0.1, tip: "The size of the shape the orbit is measured against." },
+  sigma: { label: "Kernel width", step: 0.05, tip: "How soft the threads are: higher is broader and smoother." },
+  weight: {
+    label: "Texture",
+    step: 0.05,
+    tip: "How strongly the detail layer shows over the smooth base: 0 is the base alone.",
+  },
+  shift: { label: "Shift", step: 0.1, tip: "How far each region's colors are moved along the palette." },
+  threshold: { label: "Threshold", step: 0.01, tip: "How close the orbit must come before it paints." },
+  opacity: { label: "Opacity", step: 0.05, tip: "How strongly each painted stroke covers what is under it." },
 };
+
+/** The one plain sentence each shade control says on hover. */
+const SHADE_TIPS = {
+  gamma: "Above 1 gives more of the picture to the start of the palette, below 1 to its end.",
+  cycles: "How many times the palette repeats across the picture.",
+  phase: "Where in the palette the coloring starts.",
+  transfer: "How the palette is spread over the picture: by value, by where detail changes, or evenly.",
+  rolloff: "How the brightest colors are eased off.",
+  reverse: "Runs the palette backward.",
+  mirror: "Plays the palette forward and then back, so it has no hard seam.",
+};
+
+/** The order the Mode select lists the gallery's modes in.
+ *
+ *  Seat count in the published n=1000 record, most first, ties by name, with `curvature`
+ *  moved to second-to-last *(explorer_polish, 2026-09-16)*. Baked here rather than counted
+ *  at load, so a reseated gallery does not reshuffle a menu somebody has learnt. A mode
+ *  the gallery offers that is not named here, or one only listed because a link arrived
+ *  in it, goes after these in the contract's order. */
+const MODE_ORDER = [
+  "tia",
+  "stripe",
+  "smooth",
+  "threads",
+  "smooth_mean_angle",
+  "smooth_angle_min",
+  "itinerary",
+  "smooth_stripe",
+  "direct_trap_multiply",
+  "direct_trap_lines",
+  "direct_trap_screen",
+  "curvature",
+  "smooth_curvature",
+];
 
 /** What each coordinate box is called, in the words the link spells them with. */
 const COORDINATES = { x: "x", y: "y", w: "width" };
@@ -102,6 +144,7 @@ const status = document.getElementById("status");
 const stats = document.getElementById("stats");
 const opened = document.getElementById("opened");
 const readout = document.getElementById("readout");
+const differs = document.getElementById("differs");
 const familyPicker = document.getElementById("family");
 const modePicker = document.getElementById("mode");
 const constantStrip = document.getElementById("constants");
@@ -117,6 +160,7 @@ const levelNote = document.getElementById("level-note");
 const levelWhy = document.getElementById("level-why");
 const levelExplained = document.getElementById("level-explained");
 const details = document.getElementById("details");
+const renderState = document.getElementById("render-state");
 
 let renderer = null;
 let contract = null;
@@ -170,7 +214,7 @@ let busy = false;
 
 function locked() {
   if (!busy) return false;
-  say("a download is rendering this view — press its bar to cancel");
+  say("A download is rendering this view. Press its bar to cancel.");
   return true;
 }
 
@@ -201,6 +245,25 @@ function say(text) {
  *  estimate. */
 function stat(text) {
   stats.textContent = text;
+}
+
+/** The one word each state of the render-state dot says, on hover and to a screen reader.
+ *
+ *  `rendering` is the field being iterated, with at most a stretched preview up;
+ *  `sharpening` is the one-sample picture up while the final pass runs; `final` is the
+ *  finished picture, the only state a download's estimate reads "ready" in. `stopped` is
+ *  a pass that ended short of that: a refusal, an error, or a view too deep to sharpen. */
+const RENDER_STATES = {
+  rendering: "Rendering",
+  sharpening: "Sharpening",
+  final: "Final",
+  stopped: "Stopped",
+};
+
+function showState(state) {
+  renderState.dataset.state = state;
+  renderState.title = RENDER_STATES[state];
+  renderState.setAttribute("aria-label", RENDER_STATES[state]);
 }
 
 /** A refusal: the picture is not drawn, and the reason is on the page. */
@@ -289,7 +352,7 @@ function zoomAbout(px, py, factor) {
   const anchor = planeAt(px, py);
   const width = view.w.value * factor;
   if (factor < 1 && !renderer.resolves(view.x.value, view.y.value, width, grid.width, grid.height)) {
-    say("this is as deep as f64 goes — two neighboring samples would be the same number");
+    say("This is as deep as the renderer can zoom: neighboring pixels would land on the same number.");
     return;
   }
   const scale = width / view.w.value;
@@ -362,6 +425,7 @@ async function draw() {
   colouring.stop?.();
   colouring = {};
   finished = null;
+  showState("rendering");
   say("");
   panel?.describe();
 
@@ -370,6 +434,7 @@ async function draw() {
     measure = null;
     stat("");
     say(shape.why);
+    showState("stopped");
     return;
   }
 
@@ -413,6 +478,7 @@ async function draw() {
       present(renderer.shade(full, view).image);
     }
     settle();
+    showState("sharpening");
 
     // A grid twice as fine is a grid `f64` may stop resolving before the screen's does.
     // The module says so, and the one-sample picture stays up with its reason beside it
@@ -422,6 +488,7 @@ async function draw() {
     );
     if (!fine.ok) {
       stat(`${size} at one sample a pixel · ${fine.why}`);
+      showState("stopped");
       return;
     }
 
@@ -445,6 +512,7 @@ async function draw() {
     if (shaded === null || pass !== drawing) return;
     present(shaded.image);
     finished = shaded.image;
+    showState("final");
     // Where the field came off the cache its `elapsed` is still the pass that iterated
     // it, so a recolour keeps the field's cost and re-measures only the shade. The fastest
     // shade of this field is the one kept: the page's first shade starts a worker while
@@ -469,6 +537,7 @@ async function draw() {
     // asked for, so a reader can see what to change; the address bar keeps naming the
     // picture that is still on the screen, because a refused recipe is not a view.
     say(String(error.message ?? error));
+    if (pass === drawing) showState("stopped");
   }
 }
 
@@ -485,9 +554,10 @@ function stretch(image) {
 
 function updateReadout() {
   const cap = renderer.maxiter(view.w.value);
+  const level = view.level === null ? "" : `  ·  levels by ${view.level.operator}`;
   readout.textContent =
-    `${bothNamesOf(view.palette)}  ·  ` +
-    `${view.aspect.across}:${view.aspect.down}  ·  ${cap} iterations at this width`;
+    `${bothNamesOf(view.palette)}  ·  ${view.mode}  ·  ` +
+    `${view.aspect.across}:${view.aspect.down}  ·  ${cap} iterations at this width${level}`;
   syncCoordinates();
 }
 
@@ -630,10 +700,12 @@ function buildParams() {
     const label = document.createElement("label");
     label.textContent = control.label;
     label.htmlFor = `param-${key}`;
+    label.title = control.tip;
     const input = document.createElement("input");
     input.type = "number";
     input.id = `param-${key}`;
     input.className = "param";
+    input.title = control.tip;
     input.step = control.step;
     input.value = view.params[key] ?? settled[key] ?? "";
     input.addEventListener("change", () => {
@@ -685,6 +757,7 @@ function buildShade() {
       chip.id = `shade-${control.key}`;
       chip.className = "chip";
       chip.textContent = control.label;
+      chip.title = SHADE_TIPS[control.key];
       chip.setAttribute("aria-pressed", "false");
       chip.addEventListener("click", () =>
         setShade(control.key, chip.getAttribute("aria-pressed") === "true" ? "0" : "1"),
@@ -697,6 +770,7 @@ function buildShade() {
 
     const group = document.createElement("span");
     group.className = "group";
+    group.title = SHADE_TIPS[control.key];
     const label = document.createElement("label");
     label.textContent = control.label;
     label.htmlFor = `shade-${control.key}`;
@@ -839,17 +913,18 @@ function syncShade() {
   const cyclic = PALETTES.get(view.palette).cyclic;
   fold.box.disabled = busy || cyclic;
   fold.box.title = cyclic
-    ? `${shownName(view.palette)} closes on the color it opens with, so there is no seam to fold out`
-    : "";
+    ? `${shownName(view.palette)} already loops back to its first color, so there is no seam to mirror.`
+    : SHADE_TIPS.mirror;
 
   // The count names every key set, the ones with no control included: a link that set
   // the rolloff is a recipe this button resets, and its title is where that is said.
   const set = shade.chosen(view.shade);
+  const labels = set.map((key) => shade.CONTROLS.find((control) => control.key === key).label);
   shadeReset.disabled = busy || set.length === 0;
-  shadeReset.textContent = set.length === 0 ? "Engine defaults" : `Engine defaults (${set.length})`;
+  shadeReset.textContent = set.length === 0 ? "Reset shade" : `Reset shade (${set.length})`;
   shadeReset.title = set.length === 0
-    ? "Every key is at the engine's default"
-    : `Put ${set.join(", ")} back to what the engine ships`;
+    ? "Every shade setting is at its default."
+    : `${sentenceList(labels)} ${set.length === 1 ? "differs" : "differ"} from the default.`;
 
   // Four of the seven are inert under a direct trap, and the engine says so where it
   // paints: those modes composite gradient samples as they iterate and never make a
@@ -857,13 +932,16 @@ function syncShade() {
   // reach them is the bake — a reversed or folded map is a different gradient — and the
   // rolloff, which acts after a colour has been chosen and has no control here.
   shadeNote.textContent = planOf(view).direct
-    ? `${view.mode} paints as it iterates and never makes a field, so gamma, cycles, ` +
-      "phase and transfer have no distribution to spend and the engine ignores them " +
-      "here. Reverse and mirror do reach it, and each re-iterates the frame rather than " +
-      "recoloring it, because there is no field to recolor."
+    ? "This mode paints as it draws, so Gamma, Cycles, Phase and Transfer have no effect " +
+      "here. Reverse and Mirror still apply, and each one redraws the picture."
     : "";
 
   syncLevel();
+}
+
+/** `a`, `a and b`, `a, b and c`. */
+function sentenceList(words) {
+  return words.length < 2 ? words.join("") : `${words.slice(0, -1).join(", ")} and ${words.at(-1)}`;
 }
 
 /**
@@ -881,25 +959,21 @@ function syncLevel() {
   const carried = view.level ?? heldCurve;
   levelToggle.checked = view.level !== null;
   levelToggle.disabled = busy || carried === null;
-  // The long reason lives behind the `?` and is the same sentence whatever the view; the
-  // line beside the box is the one thing true of this view.
-  levelWhy.hidden = carried !== null;
+  // The long reason lives behind the `?` and is the same two sentences whatever the view;
+  // the line beside the box is the one thing true of this view. Which operator measured
+  // the curve is Details' business, not this line's.
   if (carried === null) {
-    levelNote.textContent = "Nothing to measure for this view.";
+    levelNote.textContent = "Available for gallery wallpapers and links that carry a tone curve.";
     return;
   }
-  levelExplained.hidden = true;
-  levelWhy.setAttribute("aria-expanded", "false");
   levelNote.textContent = view.level === null
-    ? "Off: the map's own stops, with the curve this view arrived with put aside."
-    : `${view.level.operator}, replayed on the map's stops before the recipe is spent on it.`;
+    ? "Off: the palette as it is, without this wallpaper's tone curve."
+    : "Leveled to this wallpaper's stored tone curve.";
 }
 
 levelExplained.textContent =
-  "The autolevel operator measures a finished picture, and only the half that replays " +
-  "its curve is on this page. So this switches on for a view that arrived carrying one " +
-  "(a gallery seat, or a link that names it), and there is nothing here to measure for a " +
-  "view that did not.";
+  "Leveling is computed once, when a wallpaper is made, by measuring the finished picture. " +
+  "This page replays that stored curve, so it can only level a view that came with one.";
 levelWhy.title = levelExplained.textContent;
 levelWhy.addEventListener("click", () => {
   levelExplained.hidden = !levelExplained.hidden;
@@ -907,7 +981,7 @@ levelWhy.addEventListener("click", () => {
 });
 
 /**
- * The Mode select: the gallery's modes, in the contract's order, plus the view's own.
+ * The Mode select: the gallery's modes, in `MODE_ORDER`, plus the view's own after them.
  *
  * The select offers what the published record seats and nothing else, so a reader
  * choosing a mode is choosing among modes the pool actually makes wallpapers in. A link
@@ -917,7 +991,11 @@ levelWhy.addEventListener("click", () => {
  */
 function syncModes() {
   const offered = offeredModes ?? link.MODES;
-  const wanted = link.MODES.filter((mode) => offered.includes(mode) || mode === view.mode);
+  const listed = link.MODES.filter((mode) => offered.includes(mode) || mode === view.mode);
+  const wanted = [
+    ...MODE_ORDER.filter((mode) => listed.includes(mode)),
+    ...listed.filter((mode) => !MODE_ORDER.includes(mode)),
+  ];
   const showing = [...modePicker.options].map((option) => option.value);
   if (wanted.join() !== showing.join()) fill(modePicker, wanted, IDENTITIES);
   modePicker.value = view.mode;
@@ -961,7 +1039,12 @@ function openLink(query, { gap = null, key = null, what = "this picture" } = {})
   seat = key;
   heldCurve = view.level;
   tiles?.mark(key);
-  opened.textContent = gap ? `${what}: ${gap}` : "";
+  // The record's sentence names caps, curves and policies, which is Details' vocabulary;
+  // the line under the picture only says that there is a difference and where to read it.
+  opened.textContent = gap
+    ? `This view is close to ${what} but not exact. Details says what differs.`
+    : "";
+  differs.textContent = gap ? `Not carried by this link: ${gap}.` : "";
   rebuild();
   draw();
 }
@@ -972,6 +1055,7 @@ function leaveSeat() {
   seat = null;
   tiles?.mark(null);
   opened.textContent = "";
+  differs.textContent = "";
 }
 
 // ------------------------------------------------------------------- the panels
@@ -1036,9 +1120,9 @@ async function startAtlas() {
         const refused = slot?.refused ?? [];
         const gap = refused.length === 0
           ? null
-          : `the link cannot carry ${refused.join("; ")}${
+          : `${refused.join("; ")}${
               palette && slot.colormap && palette !== slot.colormap
-                ? `, so it opens in ${shownName(palette)}`
+                ? `, so it opens in ${bothNamesOf(palette)}`
                 : ""
             }`;
         openLink(query, { gap, what: "this place" });
@@ -1056,7 +1140,8 @@ async function startAtlas() {
       "Click the mark to open the wallpaper, or click one of the three to open that one.";
   } catch (error) {
     atlasStarted = false;
-    note.textContent = `The atlas could not be read: ${error.message ?? error}`;
+    console.warn("the atlas could not be read", error);
+    note.textContent = "The atlas could not be loaded.";
   }
 }
 
@@ -1080,6 +1165,7 @@ function canvasPoint(event) {
 
 /** Slide the last picture drawn, so a drag has something to follow. */
 function preview(dx, dy, scale = 1) {
+  showState("rendering");
   screen.fillStyle = "#000";
   screen.fillRect(0, 0, grid.width, grid.height);
   const width = grid.width * scale;
@@ -1260,7 +1346,7 @@ copyButton.addEventListener("click", async () => {
   url.hash = "";
   try {
     await navigator.clipboard.writeText(url.toString());
-    say("link copied");
+    say("Link copied.");
   } catch {
     say(url.toString());
   }
@@ -1385,10 +1471,10 @@ async function main() {
       openLink(row.link, { gap: row.gap, key: row.key, what: "this wallpaper" }),
   });
   tiles.start(record).catch((error) => {
-    tiles.refuse(
-      `The gallery record could not be read (${error.message ?? error}). It is landed by ` +
-        "`python -m builder seats`, and its pictures are untracked until this is deployed.",
-    );
+    // The reason goes to the console: it names a record file, and a reader can do
+    // nothing with that. `python -m builder seats` is what lands the record on a clone.
+    console.warn("the gallery record could not be read", error);
+    tiles.refuse("The gallery could not be loaded.");
   });
 }
 

@@ -192,8 +192,7 @@ export function install({ tabs, search, filter, list, names, popular, onPick }) 
 
     row.title = map.seats === 0
       ? bothNames(map)
-      : `${bothNames(map)} — ${map.seats} ${map.seats === 1 ? "wallpaper" : "wallpapers"} ` +
-        "of the published record were drawn in it";
+      : `${bothNames(map)}: ${map.seats} gallery ${map.seats === 1 ? "wallpaper uses" : "wallpapers use"} it`;
     row.append(canvas, name);
     row.addEventListener("click", () => onPick(map.name));
     painter.observe(canvas);

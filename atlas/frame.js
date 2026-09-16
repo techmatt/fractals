@@ -100,17 +100,38 @@ function made(tag, className, text) {
  * tooltip can be three lines or one without costing the frame a pixel, which is the point
  * of moving it here.
  */
-function titleOf(label, slot, palette) {
+function titleOf(label, slot, palette, named) {
   const lines = [
     `${label}: ${slot.what ?? SOURCE[slot.source] ?? slot.source ?? "a render"}`,
-    `${slot.mode} · ${slot.colormap}`,
+    `${slot.mode} · ${named(slot.colormap)}`,
   ];
   if (slot.refused.length > 0) {
-    const fell = palette !== slot.colormap ? `; it opens in ${palette}` : "";
+    const fell = palette !== slot.colormap ? `; it opens in ${named(palette)}` : "";
     lines.push(`The link cannot carry: ${slot.refused.join("; ")}${fell}.`);
   }
   if (slot.gap) lines.push(`Not recorded: ${slot.gap}.`);
   return lines.join("\n");
+}
+
+/**
+ * How a tooltip names a map: its display name, with its own name beside it.
+ *
+ * `explorer/palette-names.json` is where a display name lives, and both pages carrying a
+ * frame read it from there. A page that cannot have it names every map by its own name,
+ * which is also what a link spells, so nothing is wrong, only plainer.
+ */
+async function namer(base) {
+  let names = {};
+  try {
+    const response = await fetch(new URL("../explorer/palette-names.json", base));
+    if (response.ok) names = await response.json();
+  } catch {
+    // The names are a courtesy; a frame without them still works.
+  }
+  return (name) => {
+    const shown = names[name];
+    return shown === undefined || shown === name ? name : `${shown} (${name})`;
+  };
 }
 
 /**
@@ -191,7 +212,7 @@ export async function mount(host, options = {}) {
     return answer.home;
   });
 
-  const record = await load(base);
+  const [record, named] = await Promise.all([load(base), namer(base)]);
 
   /**
    * Which plane is open, and everything that follows from it.
@@ -276,10 +297,10 @@ export async function mount(host, options = {}) {
       }
       const { query, palette } = links.get(slot);
       if (navigates) node.href = `${explorer}?${query}`;
-      node.title = titleOf(label, slot, palette);
+      node.title = titleOf(label, slot, palette, named);
       image.hidden = false;
       image.src = new URL(`../assets/images/atlas/${slot.file}`, base);
-      image.alt = `${slot.mode} through ${slot.colormap}, at the ${name} view of this place`;
+      image.alt = `${slot.mode} through ${named(slot.colormap)}, at the ${name} view of this place`;
     }
   };
 

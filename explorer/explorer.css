@@ -11,7 +11,9 @@
    pictures, which is the exact thing the well tokens exist to avoid. So the studio is
    one large well, and it is spelled with the same six tokens a figure's well uses rather
    than with a second palette: `--well` is the ground, `--well-rule` the rules, and the
-   two ink tokens carry every word on the page. Nothing here is a new colour.
+   two ink tokens carry every word on the page. Nothing here is a new colour, except the
+   three the render-state dot on the Download row says its state with: a status light is
+   the one thing on the page whose colour is its meaning.
 
    It is forced rather than asked for. There is no `prefers-color-scheme` branch on this
    site and this page does not open one: a reader who arrives from an article page should
@@ -33,6 +35,11 @@
      contents rail, which this page does not have, so the number is this page's own: below
      it a grid of wallpaper tiles and a canvas cannot both be worth looking at. */
   --studio-stack: 60rem;
+  /* The render-state dot: drawing the field, the one-sample picture up while the final
+     pass runs, and the final picture. */
+  --state-rendering: #e0a43a;
+  --state-sharpening: #6fa8e8;
+  --state-final: #5cc47a;
 
   margin: 0;
   padding: 0;
@@ -431,6 +438,18 @@ summary.section-head:focus-visible { outline: 2px solid var(--well-link); outlin
 .bar.download .times { color: var(--well-ink-dim); }
 .bar.download input.param { width: 4rem; }
 .download .samples { display: inline-flex; gap: 0.25rem; flex: none; }
+/* What the canvas is showing, as a dot before the estimate: the estimate reads "ready"
+   only once this is green, so the two are read together. Its word is its tooltip. */
+.download .render-state {
+  flex: none;
+  width: 0.6rem;
+  height: 0.6rem;
+  border-radius: 50%;
+  background: var(--state-rendering);
+}
+.download .render-state[data-state="sharpening"] { background: var(--state-sharpening); }
+.download .render-state[data-state="final"] { background: var(--state-final); }
+.download .render-state[data-state="stopped"] { background: var(--well-pending); }
 .download .estimate {
   flex: 1 1 auto;
   min-width: 0;

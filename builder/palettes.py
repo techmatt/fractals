@@ -200,17 +200,33 @@ class Palette:
 
 
 def library() -> dict[str, Palette]:
-    """Every palette the wallpaper project tracks, keyed by name."""
+    """Every palette the wallpaper project tracks, keyed by name, less the uncarried.
+
+    A map the carrier table writes an `uncarried` row for is one it read as neutral on all
+    three reference fields, so it is dominant in no cell and files under no hue: it is a
+    working map of that project's, not a palette of the library. `atlas_grey` is the one
+    today, the gray the atlas plates are drawn through. It is skipped here rather than
+    left for `_uncarried` to fail on, because the table next door now says so itself.
+    """
     directory = renders.data_file(*LIBRARY)
+    skipped = uncarried()
     made = {}
     for line in renders.jsonl(directory / "provenance.jsonl"):
         made[line["name"]] = (line["source"], line.get("mood_family"))
     found = {}
     for path in sorted(directory.glob("*.json")):
         loaded = json.loads(path.read_text(encoding="utf-8"))
+        if loaded["name"] in skipped:
+            continue
         source, mood = made.get(loaded["name"], ("converted", None))
         found[loaded["name"]] = Palette(loaded["name"], loaded["kind"] == "cyclic", source, mood)
     return found
+
+
+def uncarried() -> set[str]:
+    """The maps `carriers.jsonl` names in a `kind == "uncarried"` row."""
+    rows = renders.jsonl(renders.data_file(*LIBRARY) / CARRIERS)
+    return {str(row["map"]) for row in rows if row.get("kind") == "uncarried"}
 
 
 def carriers() -> list[dict]:

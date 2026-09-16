@@ -31,15 +31,33 @@ const PRESETS = [
   { name: "3840 × 2160", width: 3840, height: 2160 },
 ];
 
-/** The size menu's first entry, which is no fixed size: the canvas's own pixel grid.
+/** A size menu entry that is no fixed size: the canvas's own pixel grid.
  *
- *  It is the default because the screen's pass now ends at two samples a pixel, so at
- *  2× this entry is the picture already on the screen and is saved without being drawn
- *  again. A wallpaper's size is one pick down the same menu. */
+ *  The screen's pass ends at two samples a pixel, so at 2× this entry is the picture
+ *  already on the screen and is saved without being drawn again. It was the default
+ *  until the display's own size could be offered, and still is where that cannot. */
 const SHOWN = "shown";
 
-/** The default: the picture as shown, at the antialiasing a render sheet uses. */
-const DEFAULT_SIZE = SHOWN;
+/** The reader's own display, in device pixels: what a wallpaper for this machine is.
+ *
+ *  `screen.width × screen.height` is in CSS pixels, so it is scaled by the device pixel
+ *  ratio. The CSS size was itself rounded on the way out, so the product can land half a
+ *  pixel over: a 2560 × 1440 panel at 150% reports 1707 × 960, which scales to 2560.5.
+ *  Taking a quarter off before the floor gives 2560 back, and still absorbs a product a
+ *  hair under a whole number. It is the default wherever it can be read, and where it
+ *  cannot the menu opens at As shown. */
+const SCREEN = "screen";
+
+/** The display's size in device pixels, or `null` where the browser will not say. */
+export function screenSize() {
+  const shown = globalThis.screen;
+  const ratio = globalThis.devicePixelRatio || 1;
+  const device = (css) => Math.floor((css ?? 0) * ratio + 0.25);
+  const width = device(shown?.width);
+  const height = device(shown?.height);
+  return width > 0 && height > 0 ? { width, height } : null;
+}
+
 const DEFAULT_PRESET = 1;
 const DEFAULT_SUPERSAMPLE = 2;
 
@@ -141,23 +159,22 @@ export function saidAsCount(samples) {
 /** Whether these dimensions may be asked for, and the reason where they may not. */
 export function withinLimits(width, height, supersample) {
   if (!Number.isInteger(width) || !Number.isInteger(height)) {
-    return "a size is two whole numbers of pixels";
+    return "A size is two whole numbers of pixels.";
   }
   if (width < MIN_SIDE || height < MIN_SIDE) {
-    return `nothing smaller than ${MIN_SIDE} pixels on a side`;
+    return `Nothing smaller than ${MIN_SIDE} pixels on a side.`;
   }
   if (width > MAX_SIDE || height > MAX_SIDE) {
-    return `nothing longer than ${MAX_SIDE} pixels on a side — a canvas is what a PNG is made on, and every browser caps one`;
+    return `Nothing longer than ${MAX_SIDE} pixels on a side: browsers cap the size of an image they can save.`;
   }
   if (width * height > MAX_PIXELS) {
-    return `${MAX_PIXELS / 1e6} million pixels is as large a canvas as this can encode`;
+    return `${MAX_PIXELS / 1e6} million pixels is the largest image this page can save.`;
   }
   const samples = width * height * supersample * supersample;
   if (samples > MAX_SAMPLES) {
     return (
-      `${saidAsCount(samples)} samples is past what a browser survives — coloring a frame holds all of it ` +
-      `in one 32-bit address space at once, and ${saidAsCount(MAX_SAMPLES)} is the ceiling. ` +
-      `Ask for fewer samples per pixel, or a smaller size.`
+      `${saidAsCount(samples)} samples is more than a browser tab has memory for; ` +
+      `${saidAsCount(MAX_SAMPLES)} is the most. Ask for fewer samples per pixel, or a smaller size.`
     );
   }
   return null;
@@ -198,6 +215,13 @@ export function install(context) {
   const go = document.getElementById("download-go");
   const label = document.getElementById("download-label");
 
+  const display = screenSize();
+  if (display !== null) {
+    const screenOption = document.createElement("option");
+    screenOption.value = SCREEN;
+    screenOption.textContent = `This screen (${display.width}×${display.height})`;
+    sizePicker.append(screenOption);
+  }
   const shownOption = document.createElement("option");
   shownOption.value = SHOWN;
   shownOption.textContent = "As shown";
@@ -212,7 +236,7 @@ export function install(context) {
   customOption.value = "custom";
   customOption.textContent = "Custom W × H";
   sizePicker.append(customOption);
-  sizePicker.value = DEFAULT_SIZE;
+  sizePicker.value = display !== null ? SCREEN : SHOWN;
 
   let supersample = DEFAULT_SUPERSAMPLE;
   const sampleButtons = SUPERSAMPLES.map((factor) => {
@@ -220,7 +244,9 @@ export function install(context) {
     button.type = "button";
     button.className = "chip";
     button.textContent = `${factor}×`;
-    button.title = factor === 1 ? "one sample a pixel" : `${factor * factor} samples a pixel`;
+    button.title = factor === 1
+      ? "One sample per pixel: quicker, with rougher edges."
+      : `${factor * factor} samples per pixel: smoother edges, and about ${factor * factor} times as long.`;
     button.addEventListener("click", () => {
       supersample = factor;
       syncSamples();
@@ -250,7 +276,9 @@ export function install(context) {
         ? { width: Number(widthBox.value), height: Number(heightBox.value) }
         : chosen === SHOWN
           ? { width: shownGrid().width, height: shownGrid().height }
-          : PRESETS[Number(chosen)];
+          : chosen === SCREEN
+            ? display
+            : PRESETS[Number(chosen)];
     return { width: size.width, height: size.height };
   }
 
@@ -282,7 +310,7 @@ export function install(context) {
     if (ready() !== null) {
       go.disabled = false;
       estimateLine.textContent = "ready";
-      estimateLine.title = "the picture on the screen, saved as it is without drawing it again";
+      estimateLine.title = "The picture on the screen, saved as it is without drawing it again.";
       return;
     }
     const refusal = withinLimits(width, height, supersample);
@@ -307,8 +335,8 @@ export function install(context) {
     // Shape is not resolution: a link carries an aspect and the plane width is what a view
     // is, so a different shape keeps that width and shows more or less height.
     estimateLine.title =
-      "scaled from how long this view took to draw on the screen. A different shape keeps " +
-      "the plane width and shows more or less height, rather than cropping.";
+      "Estimated from how long this view took to draw here. A different shape shows more " +
+      "or less of the picture above and below, rather than cropping it.";
   }
 
   /** The button is the bar: a fill across it, and how far it has got as its label. */
@@ -344,7 +372,7 @@ export function install(context) {
       const name = fileNameOf(view, drawn.width, drawn.height);
       try {
         await save(drawn, name);
-        say(`saved ${name}`);
+        say(`Saved ${name}.`);
       } catch (error) {
         say(String(error.message ?? error));
       }
@@ -360,7 +388,7 @@ export function install(context) {
     running = { cancelled: false, stop: null };
     const mine = running;
     go.classList.add("is-running");
-    go.title = "rendering — press to cancel";
+    go.title = "Rendering. Press to cancel.";
     lockSize(true);
     progress(0);
     setBusy(true);
@@ -387,7 +415,7 @@ export function install(context) {
         },
       });
       if (field === null || mine.cancelled) {
-        say("download cancelled");
+        say("Download cancelled.");
         finish();
         return;
       }
@@ -399,7 +427,7 @@ export function install(context) {
         progress(1 - shadeShare);
         const shaded = await shadeApart(renderer.module, field, view, mine);
         if (shaded === null || mine.cancelled) {
-          say("download cancelled");
+          say("Download cancelled.");
           finish();
           return;
         }
@@ -410,7 +438,7 @@ export function install(context) {
       const name = fileNameOf(view, width, height);
       await save(image, name);
       const spent = (performance.now() - started) / 1000;
-      say(`saved ${name} in ${spent.toFixed(1)} s`);
+      say(`Saved ${name} in ${spent.toFixed(1)} s.`);
       finish();
     } catch (error) {
       say(String(error.message ?? error));
@@ -448,7 +476,7 @@ function save(image, name) {
   return new Promise((resolve, reject) => {
     canvas.toBlob((blob) => {
       if (blob === null) {
-        reject(new Error("the browser could not encode a PNG this large"));
+        reject(new Error("The browser could not save a PNG this large."));
         return;
       }
       const url = URL.createObjectURL(blob);

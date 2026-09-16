@@ -81,6 +81,8 @@
             <input type="number" id="download-height" class="param" min="16" max="8192" step="16" aria-label="Height">
           </span>
           <span class="samples" id="download-samples" role="group" aria-label="Samples per pixel"></span>
+          <span class="render-state" id="render-state" role="status" data-state="rendering"
+                title="Rendering" aria-label="Rendering"></span>
           <span class="estimate" id="download-estimate"></span>
         </div>
       </section>
@@ -88,7 +90,8 @@
       <section class="control-group">
         <div class="section-head"><h2 id="head-mode">Mode</h2></div>
         <div class="bar">
-          <select id="mode" aria-labelledby="head-mode"></select>
+          <select id="mode" aria-labelledby="head-mode"
+                  title="How each point is turned into a color: each mode reads the orbit differently."></select>
           <span class="group" id="params"></span>
         </div>
       </section>
@@ -108,7 +111,7 @@
       <section class="control-group">
         <div class="section-head">
           <h2>Shade</h2>
-          <button type="button" class="head-action" id="shade-reset">Engine defaults</button>
+          <button type="button" class="head-action" id="shade-reset">Reset shade</button>
         </div>
         <div class="bar" id="shade-bar"></div>
         <div class="bar">
@@ -118,7 +121,7 @@
           </span>
           <span class="help-inline" id="level-note"></span>
           <button type="button" class="why" id="level-why" aria-expanded="false"
-                  aria-controls="level-explained" aria-label="Why autolevel is not always available">?</button>
+                  aria-controls="level-explained" aria-label="What autolevel does">?</button>
         </div>
         <p class="help" id="level-explained" hidden></p>
         <p class="help" id="shade-note"></p>
@@ -136,6 +139,7 @@
         </div>
         <div class="bar" id="coordinates"></div>
         <p class="readout" id="readout"></p>
+        <p class="readout" id="differs"></p>
         <p class="provenance" id="provenance"></p>
       </details>
 

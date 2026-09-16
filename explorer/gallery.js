@@ -102,15 +102,14 @@ export function install({ base, modes, hues, tiles, note, onPick }) {
     if (!landed) return;
     landed = false;
     note.textContent =
-      `${seats.length} wallpapers, and their pictures are not on this machine: they are ` +
-      "untracked until this is deployed, and `python -m builder seats` lands them.";
+      `${seats.length} wallpapers, but their pictures could not be loaded here.`;
   }
 
   function say() {
     if (!landed) return;
     const all = seats.length;
     note.textContent = showing.length === all
-      ? `${all} wallpapers, seated by one solve.`
+      ? `${all} wallpapers from the published gallery.`
       : `${showing.length} of ${all} wallpapers.`;
   }
 
