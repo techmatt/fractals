@@ -1024,7 +1024,13 @@ BANDS_MARK = MARK_INK[0]
 #: themselves. Written down because a choice is only a record if the choosing is.
 BANDS_MINE_RULE = (
     "Which four wallpapers stand for the mine is a search over every candidate the ledger "
-    "holds at that exact frame, ranked on P(>=4) from the render judge's current block. "
+    "holds at that exact frame and location, unreframed and not rejected, ranked on P(>=4) "
+    "from the fine head's reading of the pool (gallery_grade_head/pool_scores.jsonl); a "
+    "candidate that head has not read, whose run keeps no record this maker reads its "
+    "autolevel stamp from, or on which the operator acted without its run recording the "
+    "curve, is not in the search. Re-picked on 2026-09-16, when "
+    "the ledger no longer held three of the four it had chosen, and solved again whole "
+    "rather than around the one that survived, because that one was the weakest by far. "
     "The mode pair is two results that differ in rendering mode; the color pair is two "
     "that differ in dominant hue family, and holding that pair's mode fixed is preferred "
     "over letting it vary. Three rules bind the search: the four are four distinct "

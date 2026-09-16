@@ -46,6 +46,12 @@ the odd comma, connective or ampersand — `Pale Fire Rose`, `Copper Bloom, Teal
 maps are named that way on purpose, so a name of four such words is kept too: it is not a
 code, and renaming it would be replacing somebody's name with a generated one.
 
+**So is a single word, where the library says a person wrote it.** `Inkfall`, `Three-Metal`:
+one Title Case word, hyphens allowed, no capital inside it and no digit. The shape alone
+cannot tell `Tidepool` from `Spectral` or `Blues`, which are matplotlib's names carried over
+under the library's `converted`, nor from `Jqmsl`, an `extracted` filename; the library's
+own `source` can, so a single word reads as a name only where that is `authored`.
+
 **Everything else gets two words:** a colour word, then a material or an object —
 `Cobalt Harbor`, `Ivory Ember`. The colour word comes from the map's **dominant** cell and
 the material from its **secondary** one: the largest cell of a *different* hue family, or
@@ -56,9 +62,16 @@ name has to be able to say *ivory* and *coal*.
 
 **Unique, and stable.** Maps are named in seat order, so the most seated maps get the
 first word of each list. A name already taken — by a kept name or an earlier generated one —
-moves to the next pair. And **an entry already in the file is never rewritten**: the
-generator fills missing entries only, so a name Matt authors by hand stays his, and the
-next map the library grows gets a name without renaming the thousand before it.
+moves to the next pair. And **an authored entry is never rewritten**: the generator fills
+missing entries, so a name Matt authors by hand stays his, and the next map the library
+grows gets a name without renaming the thousand before it.
+
+**Every entry says where its name came from**: `{"name": ..., "source": "authored"}` for a
+name a person wrote — the map's own, or one set by hand — and `"generated"` for one this
+generator made. That is what lets a later `--names` correct itself: a `generated` entry
+whose map's own name has come to read as one, under a rule that has grown since, is given
+its own name back, and nothing else already in the file moves. A hand edit that changes a
+name says `authored` beside it.
 
 American spelling throughout, and nothing on the site's banned lists: the vocabulary is
 typed below, and `builder check`'s `vocabulary` sweep reads the committed file.
@@ -204,6 +217,14 @@ def load_popular() -> dict:
 
 # --------------------------------------------------------------------------- names
 
+#: A single word that reads as a name: Title Case, hyphen-joined parts allowed, no capital
+#: inside a part and no digit — `Inkfall`, `Three-Metal`, never `BrBG` or `CMRmap`.
+SINGLE_WORD = re.compile(r"[A-Z][a-z]+(?:-[A-Z][a-z]+)*")
+
+#: Where an entry's display name came from: a person, or this generator.
+AUTHORED_NAME, GENERATED_NAME = "authored", "generated"
+NAME_SOURCES = (AUTHORED_NAME, GENERATED_NAME)
+
 #: Short joining words a Title Case name may carry in lower case.
 CONNECTIVES = frozenset(
     {
@@ -336,9 +357,15 @@ def census(names: list[str]) -> dict[str, dict[str, float]]:
     return json.loads(completed.stdout)
 
 
-def reads_as_display(name: str) -> bool:
-    """Whether a library name is already a name a reader can be shown as it stands."""
-    if re.search(r"[_.]|\d+$", name) or " " not in name:
+def reads_as_display(name: str, source: str | None = None) -> bool:
+    """Whether a library name is already a name a reader can be shown as it stands.
+
+    `source` is the library's own word for where the map came from; only a single word
+    needs it, because only a single word's shape is shared with a vendor's identifier.
+    """
+    if " " not in name:
+        return source == palettes.AUTHORED and SINGLE_WORD.fullmatch(name) is not None
+    if re.search(r"[_.]|\d+$", name):
         return False
     words = [word for word in re.split(r"[ ,]+", name) if word]
     significant = [word for word in words if word.lower() not in CONNECTIVES]
@@ -398,28 +425,44 @@ def candidates(shares: dict[str, float]) -> list[str]:
     return list(dict.fromkeys(found))
 
 
-def load_names() -> dict[str, str]:
-    """The committed `{underlying: display}` map, or an empty one where there is none yet."""
+def load_names() -> dict[str, dict]:
+    """The committed `{underlying: {name, source}}` map, or an empty one where there is none."""
     if not NAMES_RECORD.is_file():
         return {}
     return json.loads(NAMES_RECORD.read_text(encoding="utf-8"))
 
 
-def fill_names() -> tuple[Path, int, int, int]:
-    """Give every carried map without an entry a display name; never touch one that has.
+def fill_names() -> tuple[Path, int, int, int, int]:
+    """Give every carried map without an entry a display name, and correct generated ones.
 
-    Returns the record's path, how many entries were added, and of those how many kept the
-    map's own name and how many were generated.
+    An authored entry is never touched. A generated entry whose map's own name now reads as
+    one is given it back, where no other entry already shows that name. Returns the record's
+    path, how many entries were added, of those how many kept the map's own name and how
+    many were generated, and how many generated entries were given their own name back.
     """
     _, entries = explorer.roster()
+    sources = {held.name: held.source for held in palettes.held_library()}
     names = load_names()
     missing = [entry for entry in entries if entry.name not in names]
-    taken = {display.casefold() for display in names.values()}
+    taken = {entry["name"].casefold() for entry in names.values()}
+    restored = 0
+    for name, entry in names.items():
+        own = name.casefold()
+        if (
+            entry.get("source") == GENERATED_NAME
+            and reads_as_display(name, sources.get(name))
+            and own not in taken
+        ):
+            taken.discard(entry["name"].casefold())
+            names[name] = {"name": name, "source": AUTHORED_NAME}
+            taken.add(own)
+            restored += 1
     kept = 0
     for entry in missing:
-        if reads_as_display(entry.name) and entry.name.casefold() not in taken:
-            names[entry.name] = entry.name
-            taken.add(entry.name.casefold())
+        own = entry.name.casefold()
+        if reads_as_display(entry.name, sources.get(entry.name)) and own not in taken:
+            names[entry.name] = {"name": entry.name, "source": AUTHORED_NAME}
+            taken.add(own)
             kept += 1
     wanted = [entry for entry in missing if entry.name not in names]
     # Reserve every kept name before generating any, so a generated name can never take a
@@ -432,12 +475,12 @@ def fill_names() -> tuple[Path, int, int, int]:
         )
         if chosen is None:
             raise PickerError(f"every generated name for {entry.name} is taken")
-        names[entry.name] = chosen
+        names[entry.name] = {"name": chosen, "source": GENERATED_NAME}
         taken.add(chosen.casefold())
     ordered = {entry.name: names[entry.name] for entry in entries}
-    ordered.update({name: display for name, display in names.items() if name not in ordered})
+    ordered.update({name: entry for name, entry in names.items() if name not in ordered})
     _write_json(NAMES_RECORD, ordered)
-    return NAMES_RECORD, len(missing), kept, len(wanted)
+    return NAMES_RECORD, len(missing), kept, len(wanted), restored
 
 
 def name_problems(carried: list[str]) -> tuple[list[str], int]:
@@ -445,7 +488,8 @@ def name_problems(carried: list[str]) -> tuple[list[str], int]:
 
     A missing entry is not a problem — the page falls back to the underlying name — so it
     is counted rather than failed. A display name two maps share is a problem, because the
-    picker would show two rows a reader cannot tell apart.
+    picker would show two rows a reader cannot tell apart; so is an entry that does not say
+    where its name came from, because that is what keeps `--names` off a person's name.
     """
     if not NAMES_RECORD.is_file():
         return [f"{NAMES_RECORD.name} is missing"], len(carried)
@@ -456,12 +500,18 @@ def name_problems(carried: list[str]) -> tuple[list[str], int]:
     problems = []
     known = set(carried)
     seen: dict[str, str] = {}
-    for name, display in names.items():
+    for name, entry in names.items():
         if name not in known:
             problems.append(f"{NAMES_RECORD.name}: {name!r} is not a map the explorer carries")
+        display = entry.get("name") if isinstance(entry, dict) else None
         if not isinstance(display, str) or display.strip() != display or not display:
             problems.append(f"{NAMES_RECORD.name}: {name!r} has no usable display name")
             continue
+        if entry.get("source") not in NAME_SOURCES:
+            problems.append(
+                f"{NAMES_RECORD.name}: {name!r} says its name is {entry.get('source')!r}, "
+                f"not one of {', '.join(NAME_SOURCES)}"
+            )
         other = seen.setdefault(display.casefold(), name)
         if other != name:
             problems.append(f"{NAMES_RECORD.name}: {name!r} and {other!r} are both {display!r}")

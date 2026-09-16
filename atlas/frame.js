@@ -129,7 +129,7 @@ async function namer(base) {
     // The names are a courtesy; a frame without them still works.
   }
   return (name) => {
-    const shown = names[name];
+    const shown = names[name]?.name;
     return shown === undefined || shown === name ? name : `${shown} (${name})`;
   };
 }

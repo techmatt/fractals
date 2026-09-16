@@ -504,10 +504,11 @@ def _do_explorer(options: argparse.Namespace) -> int:
                 f"{len(made['skipped'])} passed over"
             )
         if options.names:
-            path, added, kept, generated = picker_module.fill_names()
+            path, added, kept, generated, restored = picker_module.fill_names()
             print(
                 f"wrote {path.relative_to(SITE_ROOT).as_posix()}  {added} added: {kept} kept "
-                f"their own name, {generated} generated"
+                f"their own name, {generated} generated; {restored} generated name(s) given "
+                "back the map's own"
             )
         return 0
     if options.roster:

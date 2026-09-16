@@ -216,10 +216,11 @@ keeps the mechanics. **Every apply round ends by distilling that round's general
   not of what the page carries: the 17 are still baked, still parsed, and still drawn when
   a link names one, which puts that mode in the select for as long as its view is up.
 - **A palette is shown by its display name and addressed by its own** *(explorer_palettes,
-  2026-09-16)*. `explorer/palette-names.json` is `{underlying: display}` and the only place
-  a display name lives; the underlying name is what links, Copy link, download filenames,
-  records and the bake spell. `python -m builder explorer --names` fills missing entries
-  and never rewrites an existing one, so a hand-authored name is safe from it. The picker's
+  2026-09-16)*. `explorer/palette-names.json` is `{underlying: {name, source}}` and the only
+  place a display name lives; the underlying name is what links, Copy link, download
+  filenames, records and the bake spell. `source` is `authored` or `generated`, and
+  `python -m builder explorer --names` fills missing entries and never rewrites an authored
+  one, so a hand-authored name is safe from it — a hand edit says `authored` beside it. The picker's
   Popular list is `explorer/popular.json`. Its `pinned` and `dropped` are Matt's and edited
   by hand (the same rule as a figure's tile); `--popular` fills the other places around
   them under the rule `builder/picker.py` states, and never moves a pin.

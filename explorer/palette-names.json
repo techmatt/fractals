@@ -1,1023 +1,4086 @@
 {
-  "02591_vermilionlakes_2560x1600": "Olive Kiln",
-  "02595_oiawindmills_2560x1600": "Cobalt Glass",
-  "02596_lakehawea_2560x1600": "Cream Moss",
-  "02598_asgardrealmofthegods_2560x1600": "Peach Sapphire",
-  "02604_platform_2560x1600": "Turquoise Berry",
-  "02605_journeytoheaven_2560x1600": "Indigo Slate",
-  "103420": "Gold Ember",
-  "2pi1Zz6": "Wine Plum",
-  "72kcy - Imgur": "72kcy - Imgur",
-  "795548-3840x2160-desktop-4k-fractal-background": "Rain Seaglass",
-  "795549-3840x2160-desktop-4k-fractal-background": "Amber Glass",
-  "795565-3840x2160-desktop-4k-fractal-wallpaper-image": "Clay Sapphire",
-  "Abyss to Foam": "Abyss to Foam",
-  "Amber Highlands": "Amber Highlands",
-  "Amber Signal": "Amber Signal",
-  "Amber Through Teal and Lime": "Amber Through Teal and Lime",
-  "Amethyst Veil": "Amethyst Veil",
-  "Arcade Black": "Arcade Black",
-  "Ash Ember Arc": "Ash Ember Arc",
-  "Ash Gold": "Ash Gold",
-  "Ash Rose Vault": "Ash Rose Vault",
-  "Ashen Orchid": "Ashen Orchid",
-  "Aster Bloom": "Aster Bloom",
-  "Aurora Curtain": "Aurora Curtain",
-  "Aurora Undertow": "Aurora Undertow",
-  "Azure & Coal": "Azure & Coal",
-  "Azure Monolith": "Azure Monolith",
-  "Azure, Gold, Oxblood": "Azure, Gold, Oxblood",
-  "Bauhaus Primary": "Bauhaus Primary",
-  "Bauhaus Workshop": "Bauhaus Workshop",
-  "Black Iris": "Black Iris",
-  "Black Lacquer, Teal Seal": "Black Lacquer, Teal Seal",
-  "Bleached Bronze": "Bleached Bronze",
-  "Blossom Triad": "Blossom Triad",
-  "Blue Held, Amber Struck": "Blue Held, Amber Struck",
-  "Blues": "Powder Sapphire",
-  "Blush Room, Wine Dark": "Blush Room, Wine Dark",
-  "Blush Vault": "Blush Vault",
-  "Blush and Bracken": "Blush and Bracken",
-  "Boho Cloth": "Boho Cloth",
-  "Boho Dust": "Boho Dust",
-  "Bone & Bruise": "Bone & Bruise",
-  "Bone & Deep Petrol": "Bone & Deep Petrol",
-  "Bone Orchard Rose": "Bone Orchard Rose",
-  "Bone Vault": "Bone Vault",
-  "Bone and Blush": "Bone and Blush",
-  "Bone and Deep Green": "Bone and Deep Green",
-  "Bone and Moss": "Bone and Moss",
-  "Bone and Verdigris": "Bone and Verdigris",
-  "Boulevard Gold": "Boulevard Gold",
-  "BrBG": "Seafoam Kiln",
-  "Bracken and Bone": "Bracken and Bone",
-  "Bramble at Dusk": "Bramble at Dusk",
-  "Brass Tide": "Brass Tide",
-  "Bronze Fern": "Bronze Fern",
-  "Bruised Velvet": "Bruised Velvet",
-  "BuGn": "Verdigris Foam",
-  "BuPu": "Magenta Porcelain",
-  "Burgundy & Coal": "Burgundy & Coal",
-  "Buried Fire": "Buried Fire",
-  "Burnished Deep": "Burnished Deep",
-  "Burnt Boulevard": "Burnt Boulevard",
-  "Butter Fathom": "Butter Fathom",
-  "Butter Storm": "Butter Storm",
-  "CMRmap": "Gold Sapphire",
-  "Candle & Wine": "Candle & Wine",
-  "Candle Ramp": "Candle Ramp",
-  "Cellar & Yew": "Cellar & Yew",
-  "Chalcedony": "Chalcedony",
-  "Chart & Compass": "Chart & Compass",
-  "Chartreuse Eclipse": "Chartreuse Eclipse",
-  "Chartreuse Furnace": "Chartreuse Furnace",
-  "Chartreuse Nocturne": "Chartreuse Nocturne",
-  "Chartreuse Vault": "Chartreuse Vault",
-  "Chrome Violet Hour": "Chrome Violet Hour",
-  "Cinnabar Cathedral": "Cinnabar Cathedral",
-  "Cirrus & Ember": "Cirrus & Ember",
-  "Claret Ember": "Claret Ember",
-  "Coal & Coal-Fire": "Coal & Coal-Fire",
-  "Coal & Malachite": "Coal & Malachite",
-  "Coal Amber": "Coal Amber",
-  "Coal Rose": "Coal Rose",
-  "Coalglow": "Coalglow",
-  "Cobalt & Celadon": "Cobalt & Celadon",
-  "Cobalt & Coal": "Cobalt & Coal",
-  "Cobalt Against Gold": "Cobalt Against Gold",
-  "Cobalt Detonation": "Cobalt Detonation",
-  "Cobalt Furnace Ultra": "Cobalt Furnace Ultra",
-  "Cobalt Meets Blush": "Cobalt Meets Blush",
-  "Cobalt Meets Rust": "Cobalt Meets Rust",
-  "Cobalt Monody": "Cobalt Monody",
-  "Cobalt Orchid": "Cobalt Orchid",
-  "Cobalt Without Daylight": "Cobalt Without Daylight",
-  "Cobalt, Crimson, Gold": "Cobalt, Crimson, Gold",
-  "Cobalt-Rust Double Flare": "Cobalt-Rust Double Flare",
-  "Cochineal & Cream": "Cochineal & Cream",
-  "Cold Fern Ramp": "Cold Fern Ramp",
-  "Cold Forge": "Cold Forge",
-  "Cold Iron Ascent": "Cold Iron Ascent",
-  "Cold Sweep": "Cold Sweep",
-  "Coldhearth": "Coldhearth",
-  "Copper Bloom, Teal Fleck": "Copper Bloom, Teal Fleck",
-  "Copper Fathom": "Copper Fathom",
-  "Copper Meets Tide": "Copper Meets Tide",
-  "Copper Reef": "Copper Reef",
-  "Copper Tide": "Copper Tide",
-  "Copper Verdigris": "Copper Verdigris",
-  "Copper Vespers": "Copper Vespers",
-  "Copper on Slate": "Copper on Slate",
-  "Copper on Verdigris": "Copper on Verdigris",
-  "Copper, Sage & Petrol": "Copper, Sage & Petrol",
-  "Coral Nocturne": "Coral Nocturne",
-  "Coral Signal": "Coral Signal",
-  "Coral Tideline": "Coral Tideline",
-  "Coral in the Trench": "Coral in the Trench",
-  "Counter Chrome": "Counter Chrome",
-  "Court of Thorns": "Court of Thorns",
-  "Crimson Ice Duet": "Crimson Ice Duet",
-  "Cyan & Ember": "Cyan & Ember",
-  "Cyan Coal, One Coral": "Cyan Coal, One Coral",
-  "Cyan Tide": "Cyan Tide",
-  "Cyan Vault": "Cyan Vault",
-  "Cyan, Magenta, Amber": "Cyan, Magenta, Amber",
-  "Cyanotype Furnace": "Cyanotype Furnace",
-  "Damson and Ore": "Damson and Ore",
-  "Deco Lacquer": "Deco Lacquer",
-  "Deco Malachite": "Deco Malachite",
-  "Deep Azure & Coral": "Deep Azure & Coral",
-  "Deep Cold Run": "Deep Cold Run",
-  "Deep Current": "Deep Current",
-  "Deep Iris Rise": "Deep Iris Rise",
-  "Deep Rose Vault": "Deep Rose Vault",
-  "Deep Verdigris Sweep": "Deep Verdigris Sweep",
-  "Deep Wood, One Ember": "Deep Wood, One Ember",
-  "Delft Deep": "Delft Deep",
-  "Dove & Apricot": "Dove & Apricot",
-  "Drape & Shadow": "Drape & Shadow",
-  "Ember Against Steel": "Ember Against Steel",
-  "Ember Gate": "Ember Gate",
-  "Ember Gilt": "Ember Gilt",
-  "Ember Gradient": "Ember Gradient",
-  "Ember Over Tidewater": "Ember Over Tidewater",
-  "Ember Rising": "Ember Rising",
-  "Ember Rose Ramp": "Ember Rose Ramp",
-  "Ember Standard": "Ember Standard",
-  "Ember Terracotta": "Ember Terracotta",
-  "Ember Triad": "Ember Triad",
-  "Ember Undertow": "Ember Undertow",
-  "Ember in Green Ash": "Ember in Green Ash",
-  "Ember in Orchid Ash": "Ember in Orchid Ash",
-  "Ember in Smoke": "Ember in Smoke",
-  "Ember to Lime": "Ember to Lime",
-  "Emerald Furnace": "Emerald Furnace",
-  "Emerald Ingot": "Emerald Ingot",
-  "Ensign": "Ensign",
-  "Faded Gilt": "Faded Gilt",
-  "Faded Salon": "Faded Salon",
-  "Fanned Coals": "Fanned Coals",
-  "Fathom Ice": "Fathom Ice",
-  "Fen Fire": "Fen Fire",
-  "Fern Drift": "Fern Drift",
-  "Fern Ladder": "Fern Ladder",
-  "Field at Dusk": "Field at Dusk",
-  "Fire, One Cobalt Chip": "Fire, One Cobalt Chip",
-  "Foam & Olive": "Foam & Olive",
-  "Foam Over Indigo": "Foam Over Indigo",
-  "Forest Bloom": "Forest Bloom",
-  "Forest Kiln": "Forest Kiln",
-  "Forest to Foam": "Forest to Foam",
-  "Forge Ascent": "Forge Ascent",
-  "Forge Sweep": "Forge Sweep",
-  "Forge and Frost": "Forge and Frost",
-  "Forge to White": "Forge to White",
-  "Formica Neon": "Formica Neon",
-  "Foxglove & Iron": "Foxglove & Iron",
-  "Frost & Cinder": "Frost & Cinder",
-  "Frost Orchid": "Frost Orchid",
-  "Fuchsia & Acid": "Fuchsia & Acid",
-  "Fuchsia & Coal": "Fuchsia & Coal",
-  "Fuchsia Beacon": "Fuchsia Beacon",
-  "Fuchsia Cliffside": "Fuchsia Cliffside",
-  "Fuchsia Ironworks": "Fuchsia Ironworks",
-  "Furnace Rose": "Furnace Rose",
-  "Garnet Tide": "Garnet Tide",
-  "Gilded Moss": "Gilded Moss",
-  "Gilt Triad": "Gilt Triad",
-  "Gilt and Rose": "Gilt and Rose",
-  "Glacier Ascent": "Glacier Ascent",
-  "Glacier Drift": "Glacier Drift",
-  "Glacier Meridian": "Glacier Meridian",
-  "GnBu": "Azure Tide",
-  "Gold Cliff Sage": "Gold Cliff Sage",
-  "Gold Field, Blood Spark": "Gold Field, Blood Spark",
-  "Gold Leaf on Lacquer": "Gold Leaf on Lacquer",
-  "Gold Leaf, Deep Water": "Gold Leaf, Deep Water",
-  "Green Against Oxblood": "Green Against Oxblood",
-  "Green Fire, Black Ash": "Green Fire, Black Ash",
-  "Green Flag, Blue Water": "Green Flag, Blue Water",
-  "Green Hour": "Green Hour",
-  "Green Triad Dusk": "Green Triad Dusk",
-  "Green Vault": "Green Vault",
-  "Green Water Drift": "Green Water Drift",
-  "Green Water, Blue Deep": "Green Water, Blue Deep",
-  "Green and Magenta": "Green and Magenta",
-  "Green, Cobalt, Amber": "Green, Cobalt, Amber",
-  "Green, Gold, Magenta": "Green, Gold, Magenta",
-  "Green, Violet, Bone": "Green, Violet, Bone",
-  "Greens": "Mint Frost",
-  "Harbour Sand": "Harbour Sand",
-  "Harbour Spark": "Harbour Spark",
-  "Harvest Wallpaper": "Harvest Wallpaper",
-  "High Cyan, Low Gold": "High Cyan, Low Gold",
-  "High Gold": "High Gold",
-  "Hollow Lantern": "Hollow Lantern",
-  "Ice Sage Ramp": "Ice Sage Ramp",
-  "Ice Shaft": "Ice Shaft",
-  "Ice Spire": "Ice Spire",
-  "Ice Verdant Ramp": "Ice Verdant Ramp",
-  "Ice Walk": "Ice Walk",
-  "Ice with an Ember": "Ice with an Ember",
-  "Ice-to-Ember Cliff": "Ice-to-Ember Cliff",
-  "Indigo & Old Gold": "Indigo & Old Gold",
-  "Indigo Descent": "Indigo Descent",
-  "Indigo Kindling": "Indigo Kindling",
-  "Indigo Marquee": "Indigo Marquee",
-  "Indigo Nocturne": "Indigo Nocturne",
-  "Indigo Rungs": "Indigo Rungs",
-  "Indigo Teal Crests": "Indigo Teal Crests",
-  "Indigo Tideline": "Indigo Tideline",
-  "Indigo Walk to Lime": "Indigo Walk to Lime",
-  "Indigo, Cyan, Teal, Foam": "Indigo, Cyan, Teal, Foam",
-  "Ink & Fuchsia Flare": "Ink & Fuchsia Flare",
-  "Inkfall": "Inkfall",
-  "Iris Ascension": "Iris Ascension",
-  "Ivory Gilt": "Ivory Gilt",
-  "Jade in Amethyst Light": "Jade in Amethyst Light",
-  "Jqmsl": "Honey Copper",
-  "Jungle Canopy": "Jungle Canopy",
-  "Jungle Floor": "Jungle Floor",
-  "Khaki Cathedral": "Khaki Cathedral",
-  "Kiln Triad": "Kiln Triad",
-  "Lacquer & Bone": "Lacquer & Bone",
-  "Ladder to Ice": "Ladder to Ice",
-  "Lagoon Neon": "Lagoon Neon",
-  "Lantern Rose": "Lantern Rose",
-  "Lantern in the Deep": "Lantern in the Deep",
-  "Lavender Bleach": "Lavender Bleach",
-  "Lichen and Ink": "Lichen and Ink",
-  "Lilac Drift, Plum Trough": "Lilac Drift, Plum Trough",
-  "Lilac Vellum": "Lilac Vellum",
-  "Lime Ash Ember": "Lime Ash Ember",
-  "Lime and Cobalt": "Lime and Cobalt",
-  "Lime on Black Glass": "Lime on Black Glass",
-  "Lime, Cobalt, Oxblood": "Lime, Cobalt, Oxblood",
-  "Lime, Sage & Teal Dusk": "Lime, Sage & Teal Dusk",
-  "Lime, Steel, Rose": "Lime, Steel, Rose",
-  "Long Autumn": "Long Autumn",
-  "Madder Lantern": "Madder Lantern",
-  "Malachite & Rose": "Malachite & Rose",
-  "Malachite and Rose": "Malachite and Rose",
-  "Marsh Lantern": "Marsh Lantern",
-  "Mauve Hollow": "Mauve Hollow",
-  "Memphis Blackboard": "Memphis Blackboard",
-  "Memphis Chalkline": "Memphis Chalkline",
-  "Mesa Noon": "Mesa Noon",
-  "Mesa Shadow": "Mesa Shadow",
-  "Midnight Regalia": "Midnight Regalia",
-  "Mineral Verdigris & Copper": "Mineral Verdigris & Copper",
-  "Mint & Wine Air": "Mint & Wine Air",
-  "Mint Field, Teal Well": "Mint Field, Teal Well",
-  "Mist Field, Ink Well": "Mist Field, Ink Well",
-  "Moss & Rust": "Moss & Rust",
-  "Moss Under Snow": "Moss Under Snow",
-  "Moss and Ore": "Moss and Ore",
-  "Moss, Clay & Gold": "Moss, Clay & Gold",
-  "Mustard Field": "Mustard Field",
-  "Muted Triune": "Muted Triune",
-  "MyFractal01": "Amber Candle",
-  "MyFractal03": "Sky Sapphire",
-  "MyFractal04": "Amber Poppy",
-  "Navy to Foam": "Navy to Foam",
-  "Nebula Flare": "Nebula Flare",
-  "Nebula Veil": "Nebula Veil",
-  "Neon Bramble": "Neon Bramble",
-  "Neon Causeway": "Neon Causeway",
-  "Neon Grid": "Neon Grid",
-  "Neon Pop Flash": "Neon Pop Flash",
-  "Nightbloom Signal": "Nightbloom Signal",
-  "Nightfall Azure": "Nightfall Azure",
-  "Nightfall Spectrum": "Nightfall Spectrum",
-  "Nineties Arcade": "Nineties Arcade",
-  "Nineties Dusk": "Nineties Dusk",
-  "Ochre Against Steel": "Ochre Against Steel",
-  "Ochre Loam": "Ochre Loam",
-  "Olive Ash": "Olive Ash",
-  "Olive Cellar": "Olive Cellar",
-  "Olive Ember Ramp": "Olive Ember Ramp",
-  "Olive Field, Violet Spark": "Olive Field, Violet Spark",
-  "Olive Turn": "Olive Turn",
-  "Olive, Ash-Blue & Rose": "Olive, Ash-Blue & Rose",
-  "Olive, Blood, Cobalt": "Olive, Blood, Cobalt",
-  "Olive, Green, Ochre": "Olive, Green, Ochre",
-  "Olive, Lime, Foam": "Olive, Lime, Foam",
-  "One Coal Alight": "One Coal Alight",
-  "Opal & Ink": "Opal & Ink",
-  "Opal Drift": "Opal Drift",
-  "Opal Field, Sapphire Spark": "Opal Field, Sapphire Spark",
-  "OrRd": "Coral Ember",
-  "Oranges": "Amber Brick",
-  "Orchid & Goldshadow": "Orchid & Goldshadow",
-  "Orchid Deep": "Orchid Deep",
-  "Orchid Furnace": "Orchid Furnace",
-  "Orchid Procession": "Orchid Procession",
-  "Orchid Triad": "Orchid Triad",
-  "Orchid Triad Ember": "Orchid Triad Ember",
-  "Oxblood & Petrol Seam": "Oxblood & Petrol Seam",
-  "Oxblood Procession": "Oxblood Procession",
-  "Oxblood Standard": "Oxblood Standard",
-  "Oxblood Thicket": "Oxblood Thicket",
-  "Oxblood, Amber, Teal": "Oxblood, Amber, Teal",
-  "Oxblood, Cyan, Cream": "Oxblood, Cyan, Cream",
-  "Oxblood, Ochre, Petrol": "Oxblood, Ochre, Petrol",
-  "Oxblood, One Cold Spark": "Oxblood, One Cold Spark",
-  "Oxide & Copper Edge": "Oxide & Copper Edge",
-  "Oxide and Ember": "Oxide and Ember",
-  "PRGn": "Magenta Fern",
-  "Pale Aurora": "Pale Aurora",
-  "Pale Ember Over Teal": "Pale Ember Over Teal",
-  "Pale Fire Rose": "Pale Fire Rose",
-  "Pale Harbor": "Pale Harbor",
-  "Pale Moss Field": "Pale Moss Field",
-  "Pale Orchid, Deep Well": "Pale Orchid, Deep Well",
-  "Pale Reed Hollow": "Pale Reed Hollow",
-  "Pale Reef, Three Lights": "Pale Reef, Three Lights",
-  "Pale Reliquary": "Pale Reliquary",
-  "Pale Triad": "Pale Triad",
-  "Pale Verdigris, Copper Heart": "Pale Verdigris, Copper Heart",
-  "Patina Brass": "Patina Brass",
-  "Peacock Nocturne": "Peacock Nocturne",
-  "Peacock Regalia": "Peacock Regalia",
-  "Peat & Rose Smoke": "Peat & Rose Smoke",
-  "Periwinkle Room": "Periwinkle Room",
-  "Petal Drift": "Petal Drift",
-  "Petal Dusk": "Petal Dusk",
-  "Petrol & Amber": "Petrol & Amber",
-  "Petrol & Coal": "Petrol & Coal",
-  "Petrol & Coral": "Petrol & Coral",
-  "Petrol & Flame": "Petrol & Flame",
-  "Petrol Bloom": "Petrol Bloom",
-  "Petrol Boundary": "Petrol Boundary",
-  "Petrol Dawn": "Petrol Dawn",
-  "Petrol Depths": "Petrol Depths",
-  "Petrol Depths, Ember Spark": "Petrol Depths, Ember Spark",
-  "Petrol Monolith": "Petrol Monolith",
-  "Petrol Noon": "Petrol Noon",
-  "Petrol to Powder": "Petrol to Powder",
-  "Petrol, One Coral": "Petrol, One Coral",
-  "Pewter Bloom": "Pewter Bloom",
-  "Phosphor Deep": "Phosphor Deep",
-  "PiYG": "Chartreuse Velvet",
-  "Pine and Frost": "Pine and Frost",
-  "Plum Anvil": "Plum Anvil",
-  "Plum Cut with Gold": "Plum Cut with Gold",
-  "Plum Gilding": "Plum Gilding",
-  "Plum Reliquary": "Plum Reliquary",
-  "Plum Walk": "Plum Walk",
-  "Plum in Ash": "Plum in Ash",
-  "Plum, Cobalt, Acid": "Plum, Cobalt, Acid",
-  "Plum, Gold & Moss": "Plum, Gold & Moss",
-  "Porcelain Azure": "Porcelain Azure",
-  "Porcelain Field": "Porcelain Field",
-  "Prism Veil": "Prism Veil",
-  "Prism on Ice": "Prism on Ice",
-  "PuBu": "Azure Porcelain",
-  "PuBuGn": "Powder Verdigris",
-  "PuOr": "Amber Amethyst",
-  "PuRd": "Raspberry Fuchsia",
-  "Pumpkin Cellar": "Pumpkin Cellar",
-  "Purples": "Violet Dusk",
-  "RdBu": "Crimson Sea",
-  "RdGy": "Crimson Glass",
-  "RdPu": "Pink Berry",
-  "RdYlBu": "Coral Sky",
-  "RdYlGn": "Mint Poppy",
-  "Reds": "Coral Frost",
-  "Reed Walk": "Reed Walk",
-  "Reef Triad": "Reef Triad",
-  "Reef Without Sun": "Reef Without Sun",
-  "Reef at Midnight": "Reef at Midnight",
-  "Regalia & Sulphur": "Regalia & Sulphur",
-  "Regatta Ice": "Regatta Ice",
-  "Reliquary": "Reliquary",
-  "Reliquary Vespers": "Reliquary Vespers",
-  "Rose Above": "Rose Above",
-  "Rose Against Cobalt": "Rose Against Cobalt",
-  "Rose Against Steel": "Rose Against Steel",
-  "Rose Eclipse": "Rose Eclipse",
-  "Rose Field, Sapphire Cut": "Rose Field, Sapphire Cut",
-  "Rose Furnace": "Rose Furnace",
-  "Rose Hour Spark": "Rose Hour Spark",
-  "Rose Quartz Deep": "Rose Quartz Deep",
-  "Rose Quartz Meadow": "Rose Quartz Meadow",
-  "Rose Quartz Ramp": "Rose Quartz Ramp",
-  "Rose Quartz Vault": "Rose Quartz Vault",
-  "Rose Reactor": "Rose Reactor",
-  "Rose Slate Khaki": "Rose Slate Khaki",
-  "Rose Smoke": "Rose Smoke",
-  "Rose Triad": "Rose Triad",
-  "Rose Under Ice": "Rose Under Ice",
-  "Rose and Verdigris": "Rose and Verdigris",
-  "Rose in Ash": "Rose in Ash",
-  "Rust & Rainlight": "Rust & Rainlight",
-  "Rust Against Petrol": "Rust Against Petrol",
-  "Rust Kiln": "Rust Kiln",
-  "Rust Lagoon": "Rust Lagoon",
-  "Rust in the Slate Vault": "Rust in the Slate Vault",
-  "Rust to Olive": "Rust to Olive",
-  "Rust to Plum": "Rust to Plum",
-  "Sage & Signal": "Sage & Signal",
-  "Sage Ascendant": "Sage Ascendant",
-  "Sage Ascending": "Sage Ascending",
-  "Sage Ember": "Sage Ember",
-  "Sage Ladder": "Sage Ladder",
-  "Sage Over Oxblood": "Sage Over Oxblood",
-  "Sapphire & Coal": "Sapphire & Coal",
-  "Sapphire & Dusk Rose": "Sapphire & Dusk Rose",
-  "Sapphire Against Rose": "Sapphire Against Rose",
-  "Sapphire Bloom": "Sapphire Bloom",
-  "Sapphire in Blush": "Sapphire in Blush",
-  "Sea Glass Dawn": "Sea Glass Dawn",
-  "Sea Glass Drift": "Sea Glass Drift",
-  "Sea Glass Vault": "Sea Glass Vault",
-  "Sea-Glass & Ash": "Sea-Glass & Ash",
-  "Seafoam Dusk": "Seafoam Dusk",
-  "Sherbet Flare": "Sherbet Flare",
-  "Shoal, One Coral": "Shoal, One Coral",
-  "Signal & Sulphur": "Signal & Sulphur",
-  "Signal Triad": "Signal Triad",
-  "Siren, Lights Out": "Siren, Lights Out",
-  "Sixties Cellar": "Sixties Cellar",
-  "Sixties Poster": "Sixties Poster",
-  "Slate & Wine": "Slate & Wine",
-  "Slate Ascension": "Slate Ascension",
-  "Slate Ladder": "Slate Ladder",
-  "Slate and Dusty Rose": "Slate and Dusty Rose",
-  "Slow Combustion": "Slow Combustion",
-  "Smoke & Madder": "Smoke & Madder",
-  "Sorbet Cellar": "Sorbet Cellar",
-  "Sorbet Vault": "Sorbet Vault",
-  "Sorrel Triad": "Sorrel Triad",
-  "Spectral": "Vermilion Ember",
-  "Spice Procession": "Spice Procession",
-  "Split Lime": "Split Lime",
-  "Steel & Coals": "Steel & Coals",
-  "Steel & Ember": "Steel & Ember",
-  "Steel and Straw": "Steel and Straw",
-  "Straw and Teal": "Straw and Teal",
-  "Struck Flint": "Struck Flint",
-  "Sulphur & Plum": "Sulphur & Plum",
-  "Sulphur in the Vault": "Sulphur in the Vault",
-  "Tarnished Amber": "Tarnished Amber",
-  "Teal & Coral Tide": "Teal & Coral Tide",
-  "Teal Against Coral": "Teal Against Coral",
-  "Teal Against Rust": "Teal Against Rust",
-  "Teal Amber Orchid": "Teal Amber Orchid",
-  "Teal Ash": "Teal Ash",
-  "Teal Depths, Coral Spark": "Teal Depths, Coral Spark",
-  "Teal Ember Cliff": "Teal Ember Cliff",
-  "Teal Family, Amber Spark": "Teal Family, Amber Spark",
-  "Teal Flare, Amber Fall": "Teal Flare, Amber Fall",
-  "Teal, Magenta, Gold": "Teal, Magenta, Gold",
-  "Terminal Flare": "Terminal Flare",
-  "Three Candles": "Three Candles",
-  "Three Coals": "Three Coals",
-  "Three Coals in Ash": "Three Coals in Ash",
-  "Three Fires": "Three Fires",
-  "Three Hues, Kept Apart": "Three Hues, Kept Apart",
-  "Three Jewels": "Three Jewels",
-  "Three Jewels, Pale Room": "Three Jewels, Pale Room",
-  "Three Minerals on Coal": "Three Minerals on Coal",
-  "Three-Jewel Bloom": "Three-Jewel Bloom",
-  "Three-Metal": "Three-Metal",
-  "Three-Point Fire-Ice": "Three-Point Fire-Ice",
-  "Tidepool": "Tidepool",
-  "Tidewater, No Sky": "Tidewater, No Sky",
-  "Tidewater, Two Crests": "Tidewater, Two Crests",
-  "Tobacco Bloom": "Tobacco Bloom",
-  "Tourmaline Rose": "Tourmaline Rose",
-  "Triad Nocturne": "Triad Nocturne",
-  "Triad Patina": "Triad Patina",
-  "Trinity of Ash": "Trinity of Ash",
-  "Turkish Grind": "Turkish Grind",
-  "Twilight Bridge": "Twilight Bridge",
-  "Twilight Procession": "Twilight Procession",
-  "Twilight Triad": "Twilight Triad",
-  "Twin Mineral Peaks": "Twin Mineral Peaks",
-  "Twin Sapphires": "Twin Sapphires",
-  "Twin Sconces": "Twin Sconces",
-  "Two Golds": "Two Golds",
-  "Ultraviolet Siren": "Ultraviolet Siren",
-  "Umber & Ember": "Umber & Ember",
-  "Umber Ground": "Umber Ground",
-  "Umber Procession": "Umber Procession",
-  "Umber Rise": "Umber Rise",
-  "Varnish and Bone": "Varnish and Bone",
-  "Verdant Ascent": "Verdant Ascent",
-  "Verdant Mist": "Verdant Mist",
-  "Verdant Triad": "Verdant Triad",
-  "Verdigris & Coal": "Verdigris & Coal",
-  "Verdigris & Copper": "Verdigris & Copper",
-  "Verdigris & Fuchsia": "Verdigris & Fuchsia",
-  "Verdigris & One Spark": "Verdigris & One Spark",
-  "Verdigris Coal": "Verdigris Coal",
-  "Verdigris Flare": "Verdigris Flare",
-  "Verdigris Furnace": "Verdigris Furnace",
-  "Verdigris Hollow": "Verdigris Hollow",
-  "Verdigris Khaki": "Verdigris Khaki",
-  "Verdigris Walk": "Verdigris Walk",
-  "Verdigris to Lime, One Rose": "Verdigris to Lime, One Rose",
-  "Vermilion Chapel": "Vermilion Chapel",
-  "Vice Nightfall": "Vice Nightfall",
-  "Violet Ascension": "Violet Ascension",
-  "Violet Cellar": "Violet Cellar",
-  "Violet Kindled": "Violet Kindled",
-  "Violet, Cyan, Ochre": "Violet, Cyan, Ochre",
-  "Warm Core in the Deep": "Warm Core in the Deep",
-  "Widow's Gold": "Widow's Gold",
-  "Wine & Ember": "Wine & Ember",
-  "Wine & Slate Candle": "Wine & Slate Candle",
-  "Wine Step": "Wine Step",
-  "Wisteria Nightfall": "Wisteria Nightfall",
-  "Y2K Bubblegum": "Y2K Bubblegum",
-  "Y2K Chrome": "Y2K Chrome",
-  "Yew Without Moon": "Yew Without Moon",
-  "YlGn": "Mint Glass",
-  "YlGnBu": "Cobalt Glacier",
-  "YlOrBr": "Amber Cinder",
-  "YlOrRd": "Scarlet Flame",
-  "abstract-3d-wallpapers": "Mint Coal",
-  "abstract-wallpaper-backgrounds-hd": "Amber Sea",
-  "adrift-concept-art-14463-1920x1200": "Umber Ash",
-  "afmhot": "Scarlet Ember",
-  "agates-25": "Gold Brick",
-  "ahli": "Wine Tide",
-  "along-the-starry-way-25": "Violet Bluebell",
-  "amarettoboso": "Peach Amethyst",
-  "amazing-25": "Amber Blaze",
-  "anathema-25": "Crimson Ash",
-  "anodize-25": "Aquamarine Deep",
-  "antiques-and-aqua-25": "Verdigris Ruby",
-  "ariel-25": "Powder Bluebell",
-  "at-the-beach-hd-wallpaper-1920x1200": "Amber Sunlight",
-  "autumn": "Vermilion Lantern",
-  "azarn": "Magenta Petal",
-  "benediction-25": "Amber Sapphire",
-  "berlin": "Clay Kiln",
-  "birds-of-paradise-25": "Violet Ember",
-  "black-widow-25": "Cream Flame",
-  "blacklight-25": "Violet Peony",
-  "blinan": "Cream Marigold",
-  "blue_orange": "Azure Flame",
-  "bluebird-25": "Sky Glacier",
-  "blueroot": "Oxblood Velvet",
-  "bone": "Indigo Amethyst",
-  "brisbee": "Peach Abyss",
-  "bwr": "Coral Ink",
-  "calypsos-domain-25": "Mint Ink",
-  "carried-away-25": "Violet Sapphire",
-  "celestial-domain-25": "Seafoam Glacier",
-  "cet_cyclic_bgrmb_35_70_c75": "Cobalt Peony",
-  "cet_cyclic_mrybm_35_75_c68": "Orchid Ruby",
-  "cet_cyclic_mrybm_35_75_c68_s25": "Cobalt Brick",
-  "cet_cyclic_mybm_20_100_c48": "Cobalt Meadow",
-  "cet_cyclic_mybm_20_100_c48_s25": "Cobalt Citron",
-  "cet_cyclic_mygbm_30_95_c78": "Chartreuse Fuchsia",
-  "cet_cyclic_mygbm_30_95_c78_s25": "Chartreuse Ink",
-  "cet_cyclic_mygbm_50_90_c46": "Sky Meadow",
-  "cet_cyclic_mygbm_50_90_c46_s25": "Sky Citron",
-  "cet_cyclic_protanopic_deuteranopic_bwyk_16_96_c31": "Periwinkle Gold",
-  "cet_cyclic_protanopic_deuteranopic_wywb_55_96_c33": "Periwinkle Honey",
-  "cet_cyclic_rygcbmr_50_90_c64": "Coral Jade",
-  "cet_cyclic_rygcbmr_50_90_c64_s25": "Coral Mint",
-  "cet_cyclic_tritanopic_cwrk_40_100_c20": "Clay Surf",
-  "cet_cyclic_tritanopic_wrwc_70_100_c20": "Clay Glacier",
-  "cet_cyclic_wrkbw_10_90_c43": "Coral Bluebell",
-  "cet_cyclic_wrkbw_10_90_c43_s25": "Periwinkle Poppy",
-  "cet_cyclic_wrwbw_40_90_c42": "Coral Dusk",
-  "cet_cyclic_wrwbw_40_90_c42_s25": "Coral Hydrangea",
-  "cet_cyclic_ymcgy_60_90_c67": "Chartreuse Jade",
-  "cet_cyclic_ymcgy_60_90_c67_s25": "Mint Meadow",
-  "cet_diverging_bkr_55_10_c35": "Oxblood Sapphire",
-  "cet_diverging_bky_60_10_c30": "Azure Brass",
-  "cet_diverging_bwg_20_95_c41": "Emerald Sapphire",
-  "cet_diverging_bwr_20_95_c54": "Cobalt Ruby",
-  "cet_diverging_bwr_40_95_c42": "Vermilion Porcelain",
-  "cet_diverging_bwr_55_98_c37": "Coral Porcelain",
-  "cet_diverging_gkr_60_10_c40": "Emerald Ruby",
-  "cet_diverging_gwr_55_95_c38": "Coral Clover",
-  "cet_diverging_linear_bjr_30_55_c53": "Coral Abyss",
-  "cet_diverging_linear_bjy_30_90_c45": "Gold Ink",
-  "cet_diverging_linear_protanopic_deuteranopic_bjy_57_89_c34": "Cream Porcelain",
-  "cet_diverging_protanopic_deuteranopic_bwy_60_95_c32": "Periwinkle Candle",
-  "cet_diverging_rainbow_bgymr_45_85_c67": "Pink Meadow",
-  "cet_diverging_tritanopic_cwr_75_98_c20": "Clay Spray",
-  "cet_linear_bgy_10_95_c74": "Mint Abyss",
-  "cet_linear_bgyw_15_100_c67": "Cobalt Pear",
-  "cet_linear_bgyw_15_100_c68": "Cobalt Sprout",
-  "cet_linear_bgyw_20_98_c66": "Chartreuse Abyss",
-  "cet_linear_blue_95_50_c20": "Powder Porcelain",
-  "cet_linear_bmw_5_95_c86": "Orchid Sapphire",
-  "cet_linear_bmw_5_95_c89": "Cobalt Fuchsia",
-  "cet_linear_bmy_10_95_c71": "Gold Abyss",
-  "cet_linear_bmy_10_95_c78": "Cobalt Gold",
-  "cet_linear_gow_60_85_c27": "Cream Meadow",
-  "cet_linear_gow_65_90_c35": "Cream Citron",
-  "cet_linear_kbc_5_95_c73": "Cobalt Air",
-  "cet_linear_kbgoy_20_95_c57": "Gold Lapis",
-  "cet_linear_kbgyw_10_98_c63": "Sapphire Meadow",
-  "cet_linear_kbgyw_5_98_c62": "Sapphire Citron",
-  "cet_linear_kgy_5_95_c69": "Mint Citron",
-  "cet_linear_kry_0_97_c73": "Gold Lantern",
-  "cet_linear_kry_5_95_c72": "Vermilion Flame",
-  "cet_linear_kry_5_98_c75": "Crimson Gold",
-  "cet_linear_kryw_0_100_c71": "Crimson Honey",
-  "cet_linear_kryw_5_100_c64": "Cardinal Flame",
-  "cet_linear_kryw_5_100_c67": "Vermilion Marigold",
-  "cet_linear_protanopic_deuteranopic_kbjyw_5_95_c25": "Cream Sea",
-  "cet_linear_protanopic_deuteranopic_kbw_5_95_c34": "Periwinkle Sky",
-  "cet_linear_protanopic_deuteranopic_kbw_5_98_c40": "Cobalt Sea",
-  "cet_linear_protanopic_deuteranopic_kyw_5_95_c49": "Gold Coal",
-  "cet_linear_tritanopic_kcw_5_95_c22": "Aquamarine Coal",
-  "cet_linear_tritanopic_krjcw_5_95_c24": "Oxblood Glacier",
-  "cet_linear_tritanopic_krjcw_5_98_c46": "Crimson Glacier",
-  "cet_linear_tritanopic_krw_5_95_c46": "Coral Glass",
-  "cet_linear_wcmr_100_45_c42": "Pink Peony",
-  "cet_linear_worb_100_25_c53": "Coral Petal",
-  "cet_linear_wyor_100_45_c55": "Amber Honey",
-  "cet_rainbow_bgyr_10_90_c83": "Sapphire Pear",
-  "cet_rainbow_bgyr_35_85_c72": "Chartreuse Ember",
-  "cet_rainbow_bgyr_35_85_c73": "Chartreuse Lantern",
-  "cet_rainbow_bgyrm_35_85_c69": "Chartreuse Flame",
-  "cet_rainbow_bgyrm_35_85_c71": "Chartreuse Marigold",
-  "chaidai": "Orchid Amethyst",
-  "chalk-drawing-25": "Indigo Denim",
-  "chiaris-25": "Cream Flint",
-  "chronoscope-25": "Oxblood Marigold",
-  "circulation": "Mauve Ruby",
-  "citadel": "Oxblood Flame",
-  "city_of_lights": "Gold Hearth",
-  "cividis": "Honey Sapphire",
-  "cmr.amber": "Gold Flame",
-  "cmr.amethyst": "Violet Hydrangea",
-  "cmr.apple": "Crimson Kiln",
-  "cmr.arctic": "Indigo Sky",
-  "cmr.bubblegum": "Violet Petal",
-  "cmr.chroma": "Mint Brick",
-  "cmr.copper": "Mauve Obsidian",
-  "cmr.copper_s": "Mauve Coal",
-  "cmr.cosmic": "Violet Ink",
-  "cmr.dusk": "Coral Lantern",
-  "cmr.eclipse": "Gold Sea",
-  "cmr.ember": "Raspberry Lantern",
-  "cmr.emerald": "Turquoise Fern",
-  "cmr.emergency": "Lilac Ruby",
-  "cmr.emergency_s": "Lilac Brick",
-  "cmr.fall": "Gold Ruby",
-  "cmr.flamingo": "Crimson Petal",
-  "cmr.freeze": "Sapphire Horizon",
-  "cmr.fusion": "Violet Ruby",
-  "cmr.gem": "Magenta Plum",
-  "cmr.ghostlight": "Chartreuse Berry",
-  "cmr.gothic": "Cathedral Violet",
-  "cmr.guppy": "Coral Plum",
-  "cmr.holly": "Holly Fern",
-  "cmr.horizon": "Periwinkle Lilac",
-  "cmr.iceburn": "Sky Gold",
-  "cmr.infinity": "Violet Berry",
-  "cmr.infinity_s": "Crimson Amethyst",
-  "cmr.jungle": "Emerald Meadow",
-  "cmr.lavender": "Mint Amethyst",
-  "cmr.lilac": "Wine Iris",
-  "cmr.neon": "Mint Wisteria",
-  "cmr.nuclear": "Mint Obsidian",
-  "cmr.ocean": "Deep Harbor",
-  "cmr.pepper": "Chartreuse Ruby",
-  "cmr.pride": "Amber Velvet",
-  "cmr.prinsenvlag": "Amber Porcelain",
-  "cmr.rainforest": "Chartreuse Amethyst",
-  "cmr.redshift": "Pink Sky",
-  "cmr.sapphire": "Indigo Ice",
-  "cmr.savanna": "Gold Moss",
-  "cmr.seasons": "Jet Glass",
-  "cmr.seasons_s": "Ivory Coal",
-  "cmr.seaweed": "Mint Lapis",
-  "cmr.sepia": "Mauve Ember",
-  "cmr.sunburst": "Scarlet Marigold",
-  "cmr.swamp": "Mint Verdigris",
-  "cmr.torch": "Coral Amethyst",
-  "cmr.toxic": "Mint Pear",
-  "cmr.tree": "Mint Kiln",
-  "cmr.tropical": "Mint Rosewood",
-  "cmr.viola": "Raspberry Amethyst",
-  "cmr.voltage": "Violet Porcelain",
-  "cmr.waterlily": "Violet Jade",
-  "cmr.watermelon": "Mint Ruby",
-  "cmr.wildfire": "Mint Velvet",
-  "colourwheel-25": "Cream Petal",
-  "commons_2125_Mandelbulb_3D": "Powder Ash",
-  "commons_Chaos_Clock_-_The_Steampunk_Spell-Shaper": "Pistachio Fern",
-  "commons_Js17eta": "Sky Ink",
-  "commons_Julia-Menge_-0.8_0.156i": "Rain Slate",
-  "commons_Julia-Menge_83372617338": "Mint Sprout",
-  "commons_Julia_Fractal_rendered_in_Paint.NET": "Cardinal Marigold",
-  "commons_Julia_set_spiral": "Mint Plum",
-  "commons_Kalles_Fraktaler_adventurous-forest_00024_1.17e222": "Cobalt Petal",
-  "commons_Mandelbrot_3_B_C3_B4ng_Xoay": "Cobalt Sky",
-  "commons_Mandelbrot_3_D_C6_B0_C6_A1ng_X_E1_BB_89_C_E1_BB_95_Sinh": "Magenta Gold",
-  "commons_Mandelbrot_3_Xo_C3_A1y_B_C3_A1nh_Ng_E1_BB_8Dt": "Gold Marigold",
-  "commons_Mandelbrot_3__E1_BB_94_Chu_E1_BB_93n_Chu_E1_BB_93n__C4_90_E1_BB_99t_Bi_E1_BA_BFn": "Orchid Ember",
-  "commons_Mandelbrot_4_B_C3_B4ng_Ho_C3_A0ng_D_C3_A3": "Orchid Petal",
-  "commons_Mandelbrot_4_H_E1_BB_93__E1_BB_90c": "Gold Glass",
-  "commons_Mandelbrot_5_B_C3_B4ng_Ng_C5_A9_Gi_C3_A1c": "Plum Ember",
-  "commons_Mandelbrot_5_Ba__E1_BB_90c": "Mint Moss",
-  "commons_Mandelbrot_5__E1_BB_90c_D_C3_A3y_B_C3_B4ng": "Cobalt Horizon",
-  "commons_Mandelbrot_6_Hai_Ng_C3_A2n_H_C3_A0": "Crimson Plum",
-  "commons_Mandelbrot_6_Ph_C3_A1o_B_C3_B4ng": "Magenta Honey",
-  "commons_Mandelbrot_6_R_E1_BB_ABng_Nhi_E1_BB_87t__C4_90_E1_BB_9Bi": "Mint Glacier",
-  "commons_Mandelbrot_6__C4_90_E1_BA_A7u_R_E1_BB_93ng": "Umber Fuchsia",
-  "commons_Mandelbrot_B_C3_A1nh_Ng_E1_BB_8Dt": "Peach Glass",
-  "commons_Mandelbrot_B_C3_B4ng_Tuy_E1_BA_BFt": "Violet Frost",
-  "commons_Mandelbrot_C_C3_A2y_Trong_R_E1_BB_ABng_2": "Mint Petal",
-  "commons_Mandelbrot_Hai__E1_BB_90c_M_E1_BB_8Bn": "Clay Berry",
-  "commons_Mandelbrot_M_E1_BB_8Dc_Rau": "Mallow Wisteria",
-  "commons_Mandelbrot_M_E1_BB_99t__C4_90_C3_A0n__E1_BB_90c": "Mint Linen",
-  "commons_Mandelbrot_V_C3_A0nh__C4_90_C3_A0i__E1_BB_90c_M_E1_BB_8Bn": "Mint Lilac",
-  "commons_Mandelbrot_set-35-k_3D10-filter01": "Amber Lacquer",
-  "commons_Ms-0557-0645": "Salmon Ember",
-  "commons_Spiralarm_Julia-Menge_-0_2C5R_0I_01072019_16K": "Magenta Velvet",
-  "congruity-25": "Honey Kiln",
-  "consequences-25": "Crimson Ember",
-  "contra-25": "Salmon Lantern",
-  "coolwarm": "Periwinkle Coral",
-  "copper": "Amber Coal",
-  "corkscrew-25": "Cyan Coal",
-  "corporeal-25": "Powder Slate",
-  "cosmic-forces-25": "Cobalt Frost",
-  "creeping-frost-25": "Azure Sapphire",
-  "crisis-25": "Sky Ember",
-  "crystal-flood-25": "Honey Ember",
-  "cubehelix": "Emerald Glass",
-  "curlv": "Violet Poppy",
-  "deadly-nightshade-25": "Slate Pewter",
-  "death-cd-25": "Silver Flint",
-  "debutalis": "Crimson Candle",
-  "deepsea-life-25": "Indigo Sea",
-  "delphic-oracle-25": "Coral Garnet",
-  "desert-nights-25": "Cream Kiln",
-  "desire-framed-25": "Peach Coal",
-  "dessert-union-25": "Oxblood Lantern",
-  "dimensionality-25": "Sage Verdigris",
-  "dinlappi": "Wine Amethyst",
-  "dolphin-dance-25": "Cobalt Ice",
-  "doublevision": "Mallow Lilac",
-  "dreamcatcher-25": "Sky Surf",
-  "duckol": "Gold Amethyst",
-  "dynamo-25": "Sage Seaglass",
-  "eagles-25": "Copper Honey",
-  "early-may-25": "Teal Gold",
-  "edge-25": "Honey Lantern",
-  "eirene-25": "Cream Bluebell",
-  "embrace-25": "Mint Flint",
-  "emergence": "Lavender Velvet",
-  "ephemera-25": "Aquamarine Tide",
-  "etheric-frontier-25": "Peach Velvet",
-  "evening-radiance-25": "Violet Orchid",
-  "exile-25": "Turquoise Sea",
-  "fairys-hollow-25": "Violet Meadow",
-  "fantasy-25": "Magenta Poppy",
-  "fiery-descent-25": "Aquamarine Fuchsia",
-  "flamed-25": "Tangerine Gold",
-  "flaming-wings-25": "Cardinal Ember",
-  "flit-25": "Pine Moss",
-  "flow-25": "Magenta Coal",
-  "flyline": "Chartreuse Coal",
-  "forestal": "Straw Ember",
-  "forgery-25": "Tangerine Ruby",
-  "fractal_abstraction_lines_130499_2560x1600": "Midnight Cobalt",
-  "fractal_flowers_abstract_104352_2560x1600": "Azure Ember",
-  "fractal_shine_stripes_130177_2560x1600": "Pine Harbor",
-  "fractal_stripes_bends_lines_116839_2560x1600": "Tangerine Brick",
-  "fractalscape-25": "Turquoise Jade",
-  "freedor": "Mint Seaglass",
-  "fury-of-the-waves-25": "Salmon Flame",
-  "garcya.us_fantasy_wallpaper074": "Pistachio Gold",
-  "gedoo": "Cream Velvet",
-  "gemini-25": "Peach Ruby",
-  "gist_earth": "Spring Meadow",
-  "gist_heat": "Cardinal Lantern",
-  "gist_rainbow": "Spring Sapphire",
-  "gist_stern": "Chartreuse Lapis",
-  "glassworks-25": "Mint Cinder",
-  "glory-25": "Azure Coral",
-  "glowdon": "Scarlet Lantern",
-  "gnuplot": "Violet Brick",
-  "gnuplot2": "Cobalt Honey",
-  "golden-egg-closeup-25": "Cream Dusk",
-  "gossamer-25": "Indigo Horizon",
-  "grace-25": "Coral Denim",
-  "green-dragon-25": "Gold Kiln",
-  "green-spine-25": "Emerald Citron",
-  "gurundin": "Cream Lantern",
-  "happy-hours-25": "Oxblood Kiln",
-  "harbinger-25": "Cream Ruby",
-  "hawthorn-25": "Wine Seaglass",
-  "hazy-summer-garden-25": "Straw Lantern",
-  "heather-and-sage-25": "Violet Seaglass",
-  "hellid-25": "Amber Meadow",
-  "helping-hands-25": "Copper Gold",
-  "hemispheres-25": "Pistachio Seaglass",
-  "hoarfrost-25": "Cream Slate",
-  "holey-trinity-25": "Raspberry Sky",
-  "hollow-worlds-25": "Tangerine Honey",
-  "hot": "Salmon Marigold",
-  "house-of-ivory-25": "Slate Harbor",
-  "hsv": "Spring Ink",
-  "hyperborean-25": "Cobalt Slate",
-  "illusion-25": "Plum Sapphire",
-  "incursion-25": "Indigo Deep",
-  "inferno": "Amber Berry",
-  "infinity-25": "Sage Tide",
-  "intermission-25": "Raspberry Ember",
-  "jadanti": "Crimson Coal",
-  "jade-serpent-25": "Silver Glass",
-  "jet": "Cobalt Jade",
-  "jiradin": "Crimson Meadow",
-  "kirin-25": "Powder Dusk",
-  "krinshinda": "Cobalt Ember",
-  "kyoto-lanterns-25": "Amber Obsidian",
-  "labani": "Mauve Jade",
-  "lambent-25": "Coral Deep",
-  "lander": "Tangerine Candle",
-  "let-there-be-light-25": "Violet Linen",
-  "lethe-25": "Magenta Coral",
-  "ley-lines-25": "Peach Ink",
-  "liquid-fire-25": "Honey Flame",
-  "locomotion-25": "Orchid Sea",
-  "mSL22 - Imgur": "Lichen Fern",
-  "magic-mushroom-25": "Pink Porcelain",
-  "magma": "Coral Berry",
-  "magnificat-25": "Cream Ember",
-  "malign-25": "Crimson Rosewood",
-  "managua": "Amber Sky",
-  "mean-25": "Aquamarine Denim",
-  "meditation-25": "Azure Ink",
-  "meloni": "Amber Fuchsia",
-  "metal-emblem-25": "Slate Smoke",
-  "metamorph-25": "Coral Iris",
-  "molten-25": "Copper Sunlight",
-  "moon-over-mandelbrot-25": "Indigo Berry",
-  "morning-at-misty-vale-25": "Seafoam Jade",
-  "mossy-25": "Chartreuse Brass",
-  "muswirla": "Copper Sea",
-  "necromancer-25": "Coral Flame",
-  "neptunes-garden-25": "Aquamarine Shoal",
-  "neuron-25": "Honey Marigold",
-  "nightingale-25": "Oxblood Ink",
-  "nipy_spectral": "Spring Abyss",
-  "no-mans-land-25": "Tangerine Cinder",
-  "not-yet-lost-25": "Wisteria Sapphire",
-  "nova-25": "Crimson Flame",
-  "ocean": "Azure Fern",
-  "of-strange-design-25": "Mint Slate",
-  "pacific-shore-25": "Cream Sapphire",
-  "paezing": "Azure Fuchsia",
-  "pageantry-25": "Coral Marigold",
-  "painted-day-25": "Turquoise Denim",
-  "pebbles-shore-light-25": "Peach Poppy",
-  "peekaboo-25": "Slate Silver",
-  "phylum-25": "Emerald Coal",
-  "pilgrim": "Gold Copper",
-  "pink": "Clay Ember",
-  "plasma": "Violet Wine",
-  "plummet-25": "Turquoise Glacier",
-  "polished-25": "Pine Meadow",
-  "portal-of-fire-25": "Clay Lantern",
-  "quiet-waiting-25": "Seafoam Gold",
-  "radian": "Wisteria Fuchsia",
-  "ragnetic_field": "Copper Coal",
-  "rainbow": "Coral Seaglass",
-  "rainbow-country-25": "Chartreuse Kiln",
-  "ransom-25": "Copper Candle",
-  "re-entry-25": "Peach Lilac",
-  "red-octavo-25": "Cream Brick",
-  "reelati": "Chartreuse Sapphire",
-  "rideon": "Plum Petal",
-  "riding-on-the-tide-25": "Periwinkle Lantern",
-  "rite-of-passage-25": "Copper Ruby",
-  "riven-25": "Amber Coral",
-  "river-of-light-25": "Gilded Lagoon",
-  "rolling": "Spring Lime",
-  "rondo": "Cobalt Lantern",
-  "rose-pillow-25": "Clay Petal",
-  "roundabout": "Magenta Ember",
-  "sacred-grove-25": "Aquamarine Channel",
-  "sad-eyes-25": "Periwinkle Ember",
-  "sanctuary-25": "Periwinkle Slate",
-  "sapphire-dreams-25": "Azure Abyss",
-  "satin-ends-25": "Magenta Bluebell",
-  "scarlet-admiral-25": "Peach Coral",
-  "scattering-25": "Gold Rust",
-  "sci-fi-new-worlds-alien-fiction-selection-earth-space-planets-393423": "Rain Frost",
-  "scifi-my-current-lol-1652484": "Rain Horizon",
-  "seaweed-25": "Storm Verdigris",
-  "seismic": "Cobalt Poppy",
-  "shadalu": "Peach Gold",
-  "shaki": "Straw Flame",
-  "shartook": "Cream Glass",
-  "sholmes": "Violet Coral",
-  "silk-scarves-25": "Lemon Ember",
-  "singularity-25": "Cyan Fern",
-  "skyroads-25": "Turquoise Road",
-  "skyroads-blue-25": "Cobalt Obsidian",
-  "skyward-25": "Cobalt Candle",
-  "sleeper-25": "Aquamarine Seaglass",
-  "smokey-green-25": "Mint Olive",
-  "smooth-sailing-25": "Denim Poppy",
-  "solipstic": "Rust Gold",
-  "sparks": "Cobalt Plum",
-  "sparx-25": "Moss Gold",
-  "spirit-of-the-dream-25": "Azure Clay",
-  "spring": "Orchid Blossom",
-  "stained_glass": "Straw Marigold",
-  "standard-25": "Amber Plum",
-  "strange-creature-25": "Copper Ember",
-  "summer": "Spring Citron",
-  "summer-dusk-25": "Cobalt Sunlight",
-  "sun-god-25": "Amber Gold",
-  "sun-kissed-25": "Oxblood Rosewood",
-  "sunsets-wake-25": "Amber Frost",
-  "taladee": "Amber Wine",
-  "tapestry-25": "Olive Moss",
-  "technology-25": "Olive Slate",
-  "ten-leaf-clover-25": "Turquoise Deep",
-  "terrain": "Mint Sapphire",
-  "tethered": "Copper Seaglass",
-  "the-four-quarters-25": "Turquoise Kiln",
-  "the-outsiders-25": "Sapphire Gold",
-  "the_light_fantastic": "Powder Coal",
-  "tictac": "Seafoam Sapphire",
-  "to-the-bone-25": "Sapphire Honey",
-  "torment-of-the-skies-25": "Sapphire Ice",
-  "torque-25": "Copper Tidewater",
-  "touch": "Maroon Ember",
-  "toxic-spire-25": "Emerald Gold",
-  "trade-winds-25": "Cream Cinder",
-  "transcendence-25": "Cobalt Surf",
-  "tri-state": "Mauve Gold",
-  "triangulate-25": "Tangerine Lacquer",
-  "triglandal": "Pink Fuchsia",
-  "turbo": "Crimson Jade",
-  "twilight": "Violet Velvet",
-  "twilight_shifted": "Violet Rosewood",
-  "under-a-brighter-sky-25": "Aquamarine Glass",
-  "unfolding-creation-25": "Gold Meadow",
-  "variations-on-a-floorplan-25": "Azure Poppy",
-  "vibe-25": "Azure Marigold",
-  "viridis": "Chartreuse Mint",
-  "visionary-spires-25": "Aquamarine Sea",
-  "visions-25": "Violet Prism",
-  "vitality-25": "Amber Iron",
-  "wallhaven_wallhaven-0125mv": "Crimson Blossom",
-  "wallhaven_wallhaven-0w8gpp": "Rain Glass",
-  "wallhaven_wallhaven-1jo7vv": "Crimson Copper",
-  "wallhaven_wallhaven-1joljg": "Crimson Velvet",
-  "wallhaven_wallhaven-2ex5zg": "Cobalt Lavender",
-  "wallhaven_wallhaven-398e39": "Cobalt Lilac",
-  "wallhaven_wallhaven-39lg2d": "Cyan Seaglass",
-  "wallhaven_wallhaven-3z1jkd": "Raspberry Peony",
-  "wallhaven_wallhaven-422xr6": "Cobalt Cinder",
-  "wallhaven_wallhaven-45pqz1": "Wine Velvet",
-  "wallhaven_wallhaven-47xzoe": "Coral Sapphire",
-  "wallhaven_wallhaven-4omjp5": "Azure Glacier",
-  "wallhaven_wallhaven-4xy8el": "Indigo Channel",
-  "wallhaven_wallhaven-5dpzz5": "Plum Berry",
-  "wallhaven_wallhaven-6d3zz6": "Ember Lantern",
-  "wallhaven_wallhaven-8xz1mk": "Oxblood Ember",
-  "wallhaven_wallhaven-95k3qx": "Sky Spray",
-  "wallhaven_wallhaven-d67kpg": "Azure Shoal",
-  "wallhaven_wallhaven-d6yv9m": "Maroon Lantern",
-  "wallhaven_wallhaven-dg6v93": "Sapphire Lilac",
-  "wallhaven_wallhaven-dped2l": "Powder Glacier",
-  "wallhaven_wallhaven-e7v1ll": "Mauve Berry",
-  "wallhaven_wallhaven-g8ev1l": "Plum Porcelain",
-  "wallhaven_wallhaven-g8p1ol": "Rain Ice",
-  "wallhaven_wallhaven-k97v5q": "Silver Slate",
-  "wallhaven_wallhaven-kwg7v6": "Coral Rosewood",
-  "wallhaven_wallhaven-m9v5l9": "Rain Sea",
-  "wallhaven_wallhaven-nm6938": "Powder Jade",
-  "wallhaven_wallhaven-nrl8ym": "Saffron Ruby",
-  "wallhaven_wallhaven-oxgk7p": "Oxblood Copper",
-  "wallhaven_wallhaven-oxxve5": "Crimson Marigold",
-  "wallhaven_wallhaven-vg1rzm": "Cobalt Wisteria",
-  "wallhaven_wallhaven-we6oqp": "Peach Clay",
-  "wallhaven_wallhaven-xl8gmd": "Oxblood Glass",
-  "wallhaven_wallhaven-ym8rqk": "Sapphire Sky",
-  "wallhaven_wallhaven-yxlvkk": "Mulberry Amethyst",
-  "wallhaven_wallhaven-zxv17j": "Lilac Porcelain",
-  "wallpaper-supernova": "Crimson Seaglass",
-  "waltzing-in-shadows-25": "Denim Moss",
-  "warp-angels-25": "Cobalt Flame",
-  "watercolours-in-the-rain-25": "Indigo Seaglass",
-  "watersprite-25": "Sapphire Air",
-  "western-winds-25": "Cream Hydrangea",
-  "wheelance": "Gold Cinder",
-  "whispers-on-golden-sand-25": "Ultramarine Sky",
-  "windy-peak-25": "Cobalt Kiln",
-  "winter": "Cobalt Mint",
-  "within-25": "Aquamarine Gold",
-  "xelan-25": "Gold Fern",
-  "xuahakin": "Mint Lacquer",
-  "zhgiu1cypaac1": "Ivory Glass"
+  "02591_vermilionlakes_2560x1600": {
+    "name": "Olive Kiln",
+    "source": "generated"
+  },
+  "02595_oiawindmills_2560x1600": {
+    "name": "Cobalt Glass",
+    "source": "generated"
+  },
+  "02596_lakehawea_2560x1600": {
+    "name": "Cream Moss",
+    "source": "generated"
+  },
+  "02598_asgardrealmofthegods_2560x1600": {
+    "name": "Peach Sapphire",
+    "source": "generated"
+  },
+  "02604_platform_2560x1600": {
+    "name": "Turquoise Berry",
+    "source": "generated"
+  },
+  "02605_journeytoheaven_2560x1600": {
+    "name": "Indigo Slate",
+    "source": "generated"
+  },
+  "103420": {
+    "name": "Gold Ember",
+    "source": "generated"
+  },
+  "2pi1Zz6": {
+    "name": "Wine Plum",
+    "source": "generated"
+  },
+  "72kcy - Imgur": {
+    "name": "72kcy - Imgur",
+    "source": "authored"
+  },
+  "795548-3840x2160-desktop-4k-fractal-background": {
+    "name": "Rain Seaglass",
+    "source": "generated"
+  },
+  "795549-3840x2160-desktop-4k-fractal-background": {
+    "name": "Amber Glass",
+    "source": "generated"
+  },
+  "795565-3840x2160-desktop-4k-fractal-wallpaper-image": {
+    "name": "Clay Sapphire",
+    "source": "generated"
+  },
+  "Abyss to Foam": {
+    "name": "Abyss to Foam",
+    "source": "authored"
+  },
+  "Amber Highlands": {
+    "name": "Amber Highlands",
+    "source": "authored"
+  },
+  "Amber Signal": {
+    "name": "Amber Signal",
+    "source": "authored"
+  },
+  "Amber Through Teal and Lime": {
+    "name": "Amber Through Teal and Lime",
+    "source": "authored"
+  },
+  "Amethyst Veil": {
+    "name": "Amethyst Veil",
+    "source": "authored"
+  },
+  "Arcade Black": {
+    "name": "Arcade Black",
+    "source": "authored"
+  },
+  "Ash Ember Arc": {
+    "name": "Ash Ember Arc",
+    "source": "authored"
+  },
+  "Ash Gold": {
+    "name": "Ash Gold",
+    "source": "authored"
+  },
+  "Ash Rose Vault": {
+    "name": "Ash Rose Vault",
+    "source": "authored"
+  },
+  "Ashen Orchid": {
+    "name": "Ashen Orchid",
+    "source": "authored"
+  },
+  "Aster Bloom": {
+    "name": "Aster Bloom",
+    "source": "authored"
+  },
+  "Aurora Curtain": {
+    "name": "Aurora Curtain",
+    "source": "authored"
+  },
+  "Aurora Undertow": {
+    "name": "Aurora Undertow",
+    "source": "authored"
+  },
+  "Azure & Coal": {
+    "name": "Azure & Coal",
+    "source": "authored"
+  },
+  "Azure Monolith": {
+    "name": "Azure Monolith",
+    "source": "authored"
+  },
+  "Azure, Gold, Oxblood": {
+    "name": "Azure, Gold, Oxblood",
+    "source": "authored"
+  },
+  "Bauhaus Primary": {
+    "name": "Bauhaus Primary",
+    "source": "authored"
+  },
+  "Bauhaus Workshop": {
+    "name": "Bauhaus Workshop",
+    "source": "authored"
+  },
+  "Black Iris": {
+    "name": "Black Iris",
+    "source": "authored"
+  },
+  "Black Lacquer, Teal Seal": {
+    "name": "Black Lacquer, Teal Seal",
+    "source": "authored"
+  },
+  "Bleached Bronze": {
+    "name": "Bleached Bronze",
+    "source": "authored"
+  },
+  "Blossom Triad": {
+    "name": "Blossom Triad",
+    "source": "authored"
+  },
+  "Blue Held, Amber Struck": {
+    "name": "Blue Held, Amber Struck",
+    "source": "authored"
+  },
+  "Blues": {
+    "name": "Powder Sapphire",
+    "source": "generated"
+  },
+  "Blush Room, Wine Dark": {
+    "name": "Blush Room, Wine Dark",
+    "source": "authored"
+  },
+  "Blush Vault": {
+    "name": "Blush Vault",
+    "source": "authored"
+  },
+  "Blush and Bracken": {
+    "name": "Blush and Bracken",
+    "source": "authored"
+  },
+  "Boho Cloth": {
+    "name": "Boho Cloth",
+    "source": "authored"
+  },
+  "Boho Dust": {
+    "name": "Boho Dust",
+    "source": "authored"
+  },
+  "Bone & Bruise": {
+    "name": "Bone & Bruise",
+    "source": "authored"
+  },
+  "Bone & Deep Petrol": {
+    "name": "Bone & Deep Petrol",
+    "source": "authored"
+  },
+  "Bone Orchard Rose": {
+    "name": "Bone Orchard Rose",
+    "source": "authored"
+  },
+  "Bone Vault": {
+    "name": "Bone Vault",
+    "source": "authored"
+  },
+  "Bone and Blush": {
+    "name": "Bone and Blush",
+    "source": "authored"
+  },
+  "Bone and Deep Green": {
+    "name": "Bone and Deep Green",
+    "source": "authored"
+  },
+  "Bone and Moss": {
+    "name": "Bone and Moss",
+    "source": "authored"
+  },
+  "Bone and Verdigris": {
+    "name": "Bone and Verdigris",
+    "source": "authored"
+  },
+  "Boulevard Gold": {
+    "name": "Boulevard Gold",
+    "source": "authored"
+  },
+  "BrBG": {
+    "name": "Seafoam Kiln",
+    "source": "generated"
+  },
+  "Bracken and Bone": {
+    "name": "Bracken and Bone",
+    "source": "authored"
+  },
+  "Bramble at Dusk": {
+    "name": "Bramble at Dusk",
+    "source": "authored"
+  },
+  "Brass Tide": {
+    "name": "Brass Tide",
+    "source": "authored"
+  },
+  "Bronze Fern": {
+    "name": "Bronze Fern",
+    "source": "authored"
+  },
+  "Bruised Velvet": {
+    "name": "Bruised Velvet",
+    "source": "authored"
+  },
+  "BuGn": {
+    "name": "Verdigris Foam",
+    "source": "authored"
+  },
+  "BuPu": {
+    "name": "Magenta Porcelain",
+    "source": "generated"
+  },
+  "Burgundy & Coal": {
+    "name": "Burgundy & Coal",
+    "source": "authored"
+  },
+  "Buried Fire": {
+    "name": "Buried Fire",
+    "source": "authored"
+  },
+  "Burnished Deep": {
+    "name": "Burnished Deep",
+    "source": "authored"
+  },
+  "Burnt Boulevard": {
+    "name": "Burnt Boulevard",
+    "source": "authored"
+  },
+  "Butter Fathom": {
+    "name": "Butter Fathom",
+    "source": "authored"
+  },
+  "Butter Storm": {
+    "name": "Butter Storm",
+    "source": "authored"
+  },
+  "CMRmap": {
+    "name": "Gold Sapphire",
+    "source": "generated"
+  },
+  "Candle & Wine": {
+    "name": "Candle & Wine",
+    "source": "authored"
+  },
+  "Candle Ramp": {
+    "name": "Candle Ramp",
+    "source": "authored"
+  },
+  "Cellar & Yew": {
+    "name": "Cellar & Yew",
+    "source": "authored"
+  },
+  "Chalcedony": {
+    "name": "Chalcedony",
+    "source": "authored"
+  },
+  "Chart & Compass": {
+    "name": "Chart & Compass",
+    "source": "authored"
+  },
+  "Chartreuse Eclipse": {
+    "name": "Chartreuse Eclipse",
+    "source": "authored"
+  },
+  "Chartreuse Furnace": {
+    "name": "Chartreuse Furnace",
+    "source": "authored"
+  },
+  "Chartreuse Nocturne": {
+    "name": "Chartreuse Nocturne",
+    "source": "authored"
+  },
+  "Chartreuse Vault": {
+    "name": "Chartreuse Vault",
+    "source": "authored"
+  },
+  "Chrome Violet Hour": {
+    "name": "Chrome Violet Hour",
+    "source": "authored"
+  },
+  "Cinnabar Cathedral": {
+    "name": "Cinnabar Cathedral",
+    "source": "authored"
+  },
+  "Cirrus & Ember": {
+    "name": "Cirrus & Ember",
+    "source": "authored"
+  },
+  "Claret Ember": {
+    "name": "Claret Ember",
+    "source": "authored"
+  },
+  "Coal & Coal-Fire": {
+    "name": "Coal & Coal-Fire",
+    "source": "authored"
+  },
+  "Coal & Malachite": {
+    "name": "Coal & Malachite",
+    "source": "authored"
+  },
+  "Coal Amber": {
+    "name": "Coal Amber",
+    "source": "authored"
+  },
+  "Coal Rose": {
+    "name": "Coal Rose",
+    "source": "authored"
+  },
+  "Coalglow": {
+    "name": "Coalglow",
+    "source": "authored"
+  },
+  "Cobalt & Celadon": {
+    "name": "Cobalt & Celadon",
+    "source": "authored"
+  },
+  "Cobalt & Coal": {
+    "name": "Cobalt & Coal",
+    "source": "authored"
+  },
+  "Cobalt Against Gold": {
+    "name": "Cobalt Against Gold",
+    "source": "authored"
+  },
+  "Cobalt Detonation": {
+    "name": "Cobalt Detonation",
+    "source": "authored"
+  },
+  "Cobalt Furnace Ultra": {
+    "name": "Cobalt Furnace Ultra",
+    "source": "authored"
+  },
+  "Cobalt Meets Blush": {
+    "name": "Cobalt Meets Blush",
+    "source": "authored"
+  },
+  "Cobalt Meets Rust": {
+    "name": "Cobalt Meets Rust",
+    "source": "authored"
+  },
+  "Cobalt Monody": {
+    "name": "Cobalt Monody",
+    "source": "authored"
+  },
+  "Cobalt Orchid": {
+    "name": "Cobalt Orchid",
+    "source": "authored"
+  },
+  "Cobalt Without Daylight": {
+    "name": "Cobalt Without Daylight",
+    "source": "authored"
+  },
+  "Cobalt, Crimson, Gold": {
+    "name": "Cobalt, Crimson, Gold",
+    "source": "authored"
+  },
+  "Cobalt-Rust Double Flare": {
+    "name": "Cobalt-Rust Double Flare",
+    "source": "authored"
+  },
+  "Cochineal & Cream": {
+    "name": "Cochineal & Cream",
+    "source": "authored"
+  },
+  "Cold Fern Ramp": {
+    "name": "Cold Fern Ramp",
+    "source": "authored"
+  },
+  "Cold Forge": {
+    "name": "Cold Forge",
+    "source": "authored"
+  },
+  "Cold Iron Ascent": {
+    "name": "Cold Iron Ascent",
+    "source": "authored"
+  },
+  "Cold Sweep": {
+    "name": "Cold Sweep",
+    "source": "authored"
+  },
+  "Coldhearth": {
+    "name": "Coldhearth",
+    "source": "authored"
+  },
+  "Copper Bloom, Teal Fleck": {
+    "name": "Copper Bloom, Teal Fleck",
+    "source": "authored"
+  },
+  "Copper Fathom": {
+    "name": "Copper Fathom",
+    "source": "authored"
+  },
+  "Copper Meets Tide": {
+    "name": "Copper Meets Tide",
+    "source": "authored"
+  },
+  "Copper Reef": {
+    "name": "Copper Reef",
+    "source": "authored"
+  },
+  "Copper Tide": {
+    "name": "Copper Tide",
+    "source": "authored"
+  },
+  "Copper Verdigris": {
+    "name": "Copper Verdigris",
+    "source": "authored"
+  },
+  "Copper Vespers": {
+    "name": "Copper Vespers",
+    "source": "authored"
+  },
+  "Copper on Slate": {
+    "name": "Copper on Slate",
+    "source": "authored"
+  },
+  "Copper on Verdigris": {
+    "name": "Copper on Verdigris",
+    "source": "authored"
+  },
+  "Copper, Sage & Petrol": {
+    "name": "Copper, Sage & Petrol",
+    "source": "authored"
+  },
+  "Coral Nocturne": {
+    "name": "Coral Nocturne",
+    "source": "authored"
+  },
+  "Coral Signal": {
+    "name": "Coral Signal",
+    "source": "authored"
+  },
+  "Coral Tideline": {
+    "name": "Coral Tideline",
+    "source": "authored"
+  },
+  "Coral in the Trench": {
+    "name": "Coral in the Trench",
+    "source": "authored"
+  },
+  "Counter Chrome": {
+    "name": "Counter Chrome",
+    "source": "authored"
+  },
+  "Court of Thorns": {
+    "name": "Court of Thorns",
+    "source": "authored"
+  },
+  "Crimson Ice Duet": {
+    "name": "Crimson Ice Duet",
+    "source": "authored"
+  },
+  "Cyan & Ember": {
+    "name": "Cyan & Ember",
+    "source": "authored"
+  },
+  "Cyan Coal, One Coral": {
+    "name": "Cyan Coal, One Coral",
+    "source": "authored"
+  },
+  "Cyan Tide": {
+    "name": "Cyan Tide",
+    "source": "authored"
+  },
+  "Cyan Vault": {
+    "name": "Cyan Vault",
+    "source": "authored"
+  },
+  "Cyan, Magenta, Amber": {
+    "name": "Cyan, Magenta, Amber",
+    "source": "authored"
+  },
+  "Cyanotype Furnace": {
+    "name": "Cyanotype Furnace",
+    "source": "authored"
+  },
+  "Damson and Ore": {
+    "name": "Damson and Ore",
+    "source": "authored"
+  },
+  "Deco Lacquer": {
+    "name": "Deco Lacquer",
+    "source": "authored"
+  },
+  "Deco Malachite": {
+    "name": "Deco Malachite",
+    "source": "authored"
+  },
+  "Deep Azure & Coral": {
+    "name": "Deep Azure & Coral",
+    "source": "authored"
+  },
+  "Deep Cold Run": {
+    "name": "Deep Cold Run",
+    "source": "authored"
+  },
+  "Deep Current": {
+    "name": "Deep Current",
+    "source": "authored"
+  },
+  "Deep Iris Rise": {
+    "name": "Deep Iris Rise",
+    "source": "authored"
+  },
+  "Deep Rose Vault": {
+    "name": "Deep Rose Vault",
+    "source": "authored"
+  },
+  "Deep Verdigris Sweep": {
+    "name": "Deep Verdigris Sweep",
+    "source": "authored"
+  },
+  "Deep Wood, One Ember": {
+    "name": "Deep Wood, One Ember",
+    "source": "authored"
+  },
+  "Delft Deep": {
+    "name": "Delft Deep",
+    "source": "authored"
+  },
+  "Dove & Apricot": {
+    "name": "Dove & Apricot",
+    "source": "authored"
+  },
+  "Drape & Shadow": {
+    "name": "Drape & Shadow",
+    "source": "authored"
+  },
+  "Ember Against Steel": {
+    "name": "Ember Against Steel",
+    "source": "authored"
+  },
+  "Ember Gate": {
+    "name": "Ember Gate",
+    "source": "authored"
+  },
+  "Ember Gilt": {
+    "name": "Ember Gilt",
+    "source": "authored"
+  },
+  "Ember Gradient": {
+    "name": "Ember Gradient",
+    "source": "authored"
+  },
+  "Ember Over Tidewater": {
+    "name": "Ember Over Tidewater",
+    "source": "authored"
+  },
+  "Ember Rising": {
+    "name": "Ember Rising",
+    "source": "authored"
+  },
+  "Ember Rose Ramp": {
+    "name": "Ember Rose Ramp",
+    "source": "authored"
+  },
+  "Ember Standard": {
+    "name": "Ember Standard",
+    "source": "authored"
+  },
+  "Ember Terracotta": {
+    "name": "Ember Terracotta",
+    "source": "authored"
+  },
+  "Ember Triad": {
+    "name": "Ember Triad",
+    "source": "authored"
+  },
+  "Ember Undertow": {
+    "name": "Ember Undertow",
+    "source": "authored"
+  },
+  "Ember in Green Ash": {
+    "name": "Ember in Green Ash",
+    "source": "authored"
+  },
+  "Ember in Orchid Ash": {
+    "name": "Ember in Orchid Ash",
+    "source": "authored"
+  },
+  "Ember in Smoke": {
+    "name": "Ember in Smoke",
+    "source": "authored"
+  },
+  "Ember to Lime": {
+    "name": "Ember to Lime",
+    "source": "authored"
+  },
+  "Emerald Furnace": {
+    "name": "Emerald Furnace",
+    "source": "authored"
+  },
+  "Emerald Ingot": {
+    "name": "Emerald Ingot",
+    "source": "authored"
+  },
+  "Ensign": {
+    "name": "Ensign",
+    "source": "authored"
+  },
+  "Faded Gilt": {
+    "name": "Faded Gilt",
+    "source": "authored"
+  },
+  "Faded Salon": {
+    "name": "Faded Salon",
+    "source": "authored"
+  },
+  "Fanned Coals": {
+    "name": "Fanned Coals",
+    "source": "authored"
+  },
+  "Fathom Ice": {
+    "name": "Fathom Ice",
+    "source": "authored"
+  },
+  "Fen Fire": {
+    "name": "Fen Fire",
+    "source": "authored"
+  },
+  "Fern Drift": {
+    "name": "Fern Drift",
+    "source": "authored"
+  },
+  "Fern Ladder": {
+    "name": "Fern Ladder",
+    "source": "authored"
+  },
+  "Field at Dusk": {
+    "name": "Field at Dusk",
+    "source": "authored"
+  },
+  "Fire, One Cobalt Chip": {
+    "name": "Fire, One Cobalt Chip",
+    "source": "authored"
+  },
+  "Foam & Olive": {
+    "name": "Foam & Olive",
+    "source": "authored"
+  },
+  "Foam Over Indigo": {
+    "name": "Foam Over Indigo",
+    "source": "authored"
+  },
+  "Forest Bloom": {
+    "name": "Forest Bloom",
+    "source": "authored"
+  },
+  "Forest Kiln": {
+    "name": "Forest Kiln",
+    "source": "authored"
+  },
+  "Forest to Foam": {
+    "name": "Forest to Foam",
+    "source": "authored"
+  },
+  "Forge Ascent": {
+    "name": "Forge Ascent",
+    "source": "authored"
+  },
+  "Forge Sweep": {
+    "name": "Forge Sweep",
+    "source": "authored"
+  },
+  "Forge and Frost": {
+    "name": "Forge and Frost",
+    "source": "authored"
+  },
+  "Forge to White": {
+    "name": "Forge to White",
+    "source": "authored"
+  },
+  "Formica Neon": {
+    "name": "Formica Neon",
+    "source": "authored"
+  },
+  "Foxglove & Iron": {
+    "name": "Foxglove & Iron",
+    "source": "authored"
+  },
+  "Frost & Cinder": {
+    "name": "Frost & Cinder",
+    "source": "authored"
+  },
+  "Frost Orchid": {
+    "name": "Frost Orchid",
+    "source": "authored"
+  },
+  "Fuchsia & Acid": {
+    "name": "Fuchsia & Acid",
+    "source": "authored"
+  },
+  "Fuchsia & Coal": {
+    "name": "Fuchsia & Coal",
+    "source": "authored"
+  },
+  "Fuchsia Beacon": {
+    "name": "Fuchsia Beacon",
+    "source": "authored"
+  },
+  "Fuchsia Cliffside": {
+    "name": "Fuchsia Cliffside",
+    "source": "authored"
+  },
+  "Fuchsia Ironworks": {
+    "name": "Fuchsia Ironworks",
+    "source": "authored"
+  },
+  "Furnace Rose": {
+    "name": "Furnace Rose",
+    "source": "authored"
+  },
+  "Garnet Tide": {
+    "name": "Garnet Tide",
+    "source": "authored"
+  },
+  "Gilded Moss": {
+    "name": "Gilded Moss",
+    "source": "authored"
+  },
+  "Gilt Triad": {
+    "name": "Gilt Triad",
+    "source": "authored"
+  },
+  "Gilt and Rose": {
+    "name": "Gilt and Rose",
+    "source": "authored"
+  },
+  "Glacier Ascent": {
+    "name": "Glacier Ascent",
+    "source": "authored"
+  },
+  "Glacier Drift": {
+    "name": "Glacier Drift",
+    "source": "authored"
+  },
+  "Glacier Meridian": {
+    "name": "Glacier Meridian",
+    "source": "authored"
+  },
+  "GnBu": {
+    "name": "Azure Tide",
+    "source": "generated"
+  },
+  "Gold Cliff Sage": {
+    "name": "Gold Cliff Sage",
+    "source": "authored"
+  },
+  "Gold Field, Blood Spark": {
+    "name": "Gold Field, Blood Spark",
+    "source": "authored"
+  },
+  "Gold Leaf on Lacquer": {
+    "name": "Gold Leaf on Lacquer",
+    "source": "authored"
+  },
+  "Gold Leaf, Deep Water": {
+    "name": "Gold Leaf, Deep Water",
+    "source": "authored"
+  },
+  "Green Against Oxblood": {
+    "name": "Green Against Oxblood",
+    "source": "authored"
+  },
+  "Green Fire, Black Ash": {
+    "name": "Green Fire, Black Ash",
+    "source": "authored"
+  },
+  "Green Flag, Blue Water": {
+    "name": "Green Flag, Blue Water",
+    "source": "authored"
+  },
+  "Green Hour": {
+    "name": "Green Hour",
+    "source": "authored"
+  },
+  "Green Triad Dusk": {
+    "name": "Green Triad Dusk",
+    "source": "authored"
+  },
+  "Green Vault": {
+    "name": "Green Vault",
+    "source": "authored"
+  },
+  "Green Water Drift": {
+    "name": "Green Water Drift",
+    "source": "authored"
+  },
+  "Green Water, Blue Deep": {
+    "name": "Green Water, Blue Deep",
+    "source": "authored"
+  },
+  "Green and Magenta": {
+    "name": "Green and Magenta",
+    "source": "authored"
+  },
+  "Green, Cobalt, Amber": {
+    "name": "Green, Cobalt, Amber",
+    "source": "authored"
+  },
+  "Green, Gold, Magenta": {
+    "name": "Green, Gold, Magenta",
+    "source": "authored"
+  },
+  "Green, Violet, Bone": {
+    "name": "Green, Violet, Bone",
+    "source": "authored"
+  },
+  "Greens": {
+    "name": "Mint Frost",
+    "source": "generated"
+  },
+  "Harbour Sand": {
+    "name": "Harbour Sand",
+    "source": "authored"
+  },
+  "Harbour Spark": {
+    "name": "Harbour Spark",
+    "source": "authored"
+  },
+  "Harvest Wallpaper": {
+    "name": "Harvest Wallpaper",
+    "source": "authored"
+  },
+  "High Cyan, Low Gold": {
+    "name": "High Cyan, Low Gold",
+    "source": "authored"
+  },
+  "High Gold": {
+    "name": "High Gold",
+    "source": "authored"
+  },
+  "Hollow Lantern": {
+    "name": "Hollow Lantern",
+    "source": "authored"
+  },
+  "Ice Sage Ramp": {
+    "name": "Ice Sage Ramp",
+    "source": "authored"
+  },
+  "Ice Shaft": {
+    "name": "Ice Shaft",
+    "source": "authored"
+  },
+  "Ice Spire": {
+    "name": "Ice Spire",
+    "source": "authored"
+  },
+  "Ice Verdant Ramp": {
+    "name": "Ice Verdant Ramp",
+    "source": "authored"
+  },
+  "Ice Walk": {
+    "name": "Ice Walk",
+    "source": "authored"
+  },
+  "Ice with an Ember": {
+    "name": "Ice with an Ember",
+    "source": "authored"
+  },
+  "Ice-to-Ember Cliff": {
+    "name": "Ice-to-Ember Cliff",
+    "source": "authored"
+  },
+  "Indigo & Old Gold": {
+    "name": "Indigo & Old Gold",
+    "source": "authored"
+  },
+  "Indigo Descent": {
+    "name": "Indigo Descent",
+    "source": "authored"
+  },
+  "Indigo Kindling": {
+    "name": "Indigo Kindling",
+    "source": "authored"
+  },
+  "Indigo Marquee": {
+    "name": "Indigo Marquee",
+    "source": "authored"
+  },
+  "Indigo Nocturne": {
+    "name": "Indigo Nocturne",
+    "source": "authored"
+  },
+  "Indigo Rungs": {
+    "name": "Indigo Rungs",
+    "source": "authored"
+  },
+  "Indigo Teal Crests": {
+    "name": "Indigo Teal Crests",
+    "source": "authored"
+  },
+  "Indigo Tideline": {
+    "name": "Indigo Tideline",
+    "source": "authored"
+  },
+  "Indigo Walk to Lime": {
+    "name": "Indigo Walk to Lime",
+    "source": "authored"
+  },
+  "Indigo, Cyan, Teal, Foam": {
+    "name": "Indigo, Cyan, Teal, Foam",
+    "source": "authored"
+  },
+  "Ink & Fuchsia Flare": {
+    "name": "Ink & Fuchsia Flare",
+    "source": "authored"
+  },
+  "Inkfall": {
+    "name": "Inkfall",
+    "source": "authored"
+  },
+  "Iris Ascension": {
+    "name": "Iris Ascension",
+    "source": "authored"
+  },
+  "Ivory Gilt": {
+    "name": "Ivory Gilt",
+    "source": "authored"
+  },
+  "Jade in Amethyst Light": {
+    "name": "Jade in Amethyst Light",
+    "source": "authored"
+  },
+  "Jqmsl": {
+    "name": "Honey Copper",
+    "source": "generated"
+  },
+  "Jungle Canopy": {
+    "name": "Jungle Canopy",
+    "source": "authored"
+  },
+  "Jungle Floor": {
+    "name": "Jungle Floor",
+    "source": "authored"
+  },
+  "Khaki Cathedral": {
+    "name": "Khaki Cathedral",
+    "source": "authored"
+  },
+  "Kiln Triad": {
+    "name": "Kiln Triad",
+    "source": "authored"
+  },
+  "Lacquer & Bone": {
+    "name": "Lacquer & Bone",
+    "source": "authored"
+  },
+  "Ladder to Ice": {
+    "name": "Ladder to Ice",
+    "source": "authored"
+  },
+  "Lagoon Neon": {
+    "name": "Lagoon Neon",
+    "source": "authored"
+  },
+  "Lantern Rose": {
+    "name": "Lantern Rose",
+    "source": "authored"
+  },
+  "Lantern in the Deep": {
+    "name": "Lantern in the Deep",
+    "source": "authored"
+  },
+  "Lavender Bleach": {
+    "name": "Lavender Bleach",
+    "source": "authored"
+  },
+  "Lichen and Ink": {
+    "name": "Lichen and Ink",
+    "source": "authored"
+  },
+  "Lilac Drift, Plum Trough": {
+    "name": "Lilac Drift, Plum Trough",
+    "source": "authored"
+  },
+  "Lilac Vellum": {
+    "name": "Lilac Vellum",
+    "source": "authored"
+  },
+  "Lime Ash Ember": {
+    "name": "Lime Ash Ember",
+    "source": "authored"
+  },
+  "Lime and Cobalt": {
+    "name": "Lime and Cobalt",
+    "source": "authored"
+  },
+  "Lime on Black Glass": {
+    "name": "Lime on Black Glass",
+    "source": "authored"
+  },
+  "Lime, Cobalt, Oxblood": {
+    "name": "Lime, Cobalt, Oxblood",
+    "source": "authored"
+  },
+  "Lime, Sage & Teal Dusk": {
+    "name": "Lime, Sage & Teal Dusk",
+    "source": "authored"
+  },
+  "Lime, Steel, Rose": {
+    "name": "Lime, Steel, Rose",
+    "source": "authored"
+  },
+  "Long Autumn": {
+    "name": "Long Autumn",
+    "source": "authored"
+  },
+  "Madder Lantern": {
+    "name": "Madder Lantern",
+    "source": "authored"
+  },
+  "Malachite & Rose": {
+    "name": "Malachite & Rose",
+    "source": "authored"
+  },
+  "Malachite and Rose": {
+    "name": "Malachite and Rose",
+    "source": "authored"
+  },
+  "Marsh Lantern": {
+    "name": "Marsh Lantern",
+    "source": "authored"
+  },
+  "Mauve Hollow": {
+    "name": "Mauve Hollow",
+    "source": "authored"
+  },
+  "Memphis Blackboard": {
+    "name": "Memphis Blackboard",
+    "source": "authored"
+  },
+  "Memphis Chalkline": {
+    "name": "Memphis Chalkline",
+    "source": "authored"
+  },
+  "Mesa Noon": {
+    "name": "Mesa Noon",
+    "source": "authored"
+  },
+  "Mesa Shadow": {
+    "name": "Mesa Shadow",
+    "source": "authored"
+  },
+  "Midnight Regalia": {
+    "name": "Midnight Regalia",
+    "source": "authored"
+  },
+  "Mineral Verdigris & Copper": {
+    "name": "Mineral Verdigris & Copper",
+    "source": "authored"
+  },
+  "Mint & Wine Air": {
+    "name": "Mint & Wine Air",
+    "source": "authored"
+  },
+  "Mint Field, Teal Well": {
+    "name": "Mint Field, Teal Well",
+    "source": "authored"
+  },
+  "Mist Field, Ink Well": {
+    "name": "Mist Field, Ink Well",
+    "source": "authored"
+  },
+  "Moss & Rust": {
+    "name": "Moss & Rust",
+    "source": "authored"
+  },
+  "Moss Under Snow": {
+    "name": "Moss Under Snow",
+    "source": "authored"
+  },
+  "Moss and Ore": {
+    "name": "Moss and Ore",
+    "source": "authored"
+  },
+  "Moss, Clay & Gold": {
+    "name": "Moss, Clay & Gold",
+    "source": "authored"
+  },
+  "Mustard Field": {
+    "name": "Mustard Field",
+    "source": "authored"
+  },
+  "Muted Triune": {
+    "name": "Muted Triune",
+    "source": "authored"
+  },
+  "MyFractal01": {
+    "name": "Amber Candle",
+    "source": "generated"
+  },
+  "MyFractal03": {
+    "name": "Sky Sapphire",
+    "source": "generated"
+  },
+  "MyFractal04": {
+    "name": "Amber Poppy",
+    "source": "generated"
+  },
+  "Navy to Foam": {
+    "name": "Navy to Foam",
+    "source": "authored"
+  },
+  "Nebula Flare": {
+    "name": "Nebula Flare",
+    "source": "authored"
+  },
+  "Nebula Veil": {
+    "name": "Nebula Veil",
+    "source": "authored"
+  },
+  "Neon Bramble": {
+    "name": "Neon Bramble",
+    "source": "authored"
+  },
+  "Neon Causeway": {
+    "name": "Neon Causeway",
+    "source": "authored"
+  },
+  "Neon Grid": {
+    "name": "Neon Grid",
+    "source": "authored"
+  },
+  "Neon Pop Flash": {
+    "name": "Neon Pop Flash",
+    "source": "authored"
+  },
+  "Nightbloom Signal": {
+    "name": "Nightbloom Signal",
+    "source": "authored"
+  },
+  "Nightfall Azure": {
+    "name": "Nightfall Azure",
+    "source": "authored"
+  },
+  "Nightfall Spectrum": {
+    "name": "Nightfall Spectrum",
+    "source": "authored"
+  },
+  "Nineties Arcade": {
+    "name": "Nineties Arcade",
+    "source": "authored"
+  },
+  "Nineties Dusk": {
+    "name": "Nineties Dusk",
+    "source": "authored"
+  },
+  "Ochre Against Steel": {
+    "name": "Ochre Against Steel",
+    "source": "authored"
+  },
+  "Ochre Loam": {
+    "name": "Ochre Loam",
+    "source": "authored"
+  },
+  "Olive Ash": {
+    "name": "Olive Ash",
+    "source": "authored"
+  },
+  "Olive Cellar": {
+    "name": "Olive Cellar",
+    "source": "authored"
+  },
+  "Olive Ember Ramp": {
+    "name": "Olive Ember Ramp",
+    "source": "authored"
+  },
+  "Olive Field, Violet Spark": {
+    "name": "Olive Field, Violet Spark",
+    "source": "authored"
+  },
+  "Olive Turn": {
+    "name": "Olive Turn",
+    "source": "authored"
+  },
+  "Olive, Ash-Blue & Rose": {
+    "name": "Olive, Ash-Blue & Rose",
+    "source": "authored"
+  },
+  "Olive, Blood, Cobalt": {
+    "name": "Olive, Blood, Cobalt",
+    "source": "authored"
+  },
+  "Olive, Green, Ochre": {
+    "name": "Olive, Green, Ochre",
+    "source": "authored"
+  },
+  "Olive, Lime, Foam": {
+    "name": "Olive, Lime, Foam",
+    "source": "authored"
+  },
+  "One Coal Alight": {
+    "name": "One Coal Alight",
+    "source": "authored"
+  },
+  "Opal & Ink": {
+    "name": "Opal & Ink",
+    "source": "authored"
+  },
+  "Opal Drift": {
+    "name": "Opal Drift",
+    "source": "authored"
+  },
+  "Opal Field, Sapphire Spark": {
+    "name": "Opal Field, Sapphire Spark",
+    "source": "authored"
+  },
+  "OrRd": {
+    "name": "Coral Ember",
+    "source": "generated"
+  },
+  "Oranges": {
+    "name": "Amber Brick",
+    "source": "generated"
+  },
+  "Orchid & Goldshadow": {
+    "name": "Orchid & Goldshadow",
+    "source": "authored"
+  },
+  "Orchid Deep": {
+    "name": "Orchid Deep",
+    "source": "authored"
+  },
+  "Orchid Furnace": {
+    "name": "Orchid Furnace",
+    "source": "authored"
+  },
+  "Orchid Procession": {
+    "name": "Orchid Procession",
+    "source": "authored"
+  },
+  "Orchid Triad": {
+    "name": "Orchid Triad",
+    "source": "authored"
+  },
+  "Orchid Triad Ember": {
+    "name": "Orchid Triad Ember",
+    "source": "authored"
+  },
+  "Oxblood & Petrol Seam": {
+    "name": "Oxblood & Petrol Seam",
+    "source": "authored"
+  },
+  "Oxblood Procession": {
+    "name": "Oxblood Procession",
+    "source": "authored"
+  },
+  "Oxblood Standard": {
+    "name": "Oxblood Standard",
+    "source": "authored"
+  },
+  "Oxblood Thicket": {
+    "name": "Oxblood Thicket",
+    "source": "authored"
+  },
+  "Oxblood, Amber, Teal": {
+    "name": "Oxblood, Amber, Teal",
+    "source": "authored"
+  },
+  "Oxblood, Cyan, Cream": {
+    "name": "Oxblood, Cyan, Cream",
+    "source": "authored"
+  },
+  "Oxblood, Ochre, Petrol": {
+    "name": "Oxblood, Ochre, Petrol",
+    "source": "authored"
+  },
+  "Oxblood, One Cold Spark": {
+    "name": "Oxblood, One Cold Spark",
+    "source": "authored"
+  },
+  "Oxide & Copper Edge": {
+    "name": "Oxide & Copper Edge",
+    "source": "authored"
+  },
+  "Oxide and Ember": {
+    "name": "Oxide and Ember",
+    "source": "authored"
+  },
+  "PRGn": {
+    "name": "Magenta Fern",
+    "source": "generated"
+  },
+  "Pale Aurora": {
+    "name": "Pale Aurora",
+    "source": "authored"
+  },
+  "Pale Ember Over Teal": {
+    "name": "Pale Ember Over Teal",
+    "source": "authored"
+  },
+  "Pale Fire Rose": {
+    "name": "Pale Fire Rose",
+    "source": "authored"
+  },
+  "Pale Harbor": {
+    "name": "Pale Harbor",
+    "source": "authored"
+  },
+  "Pale Moss Field": {
+    "name": "Pale Moss Field",
+    "source": "authored"
+  },
+  "Pale Orchid, Deep Well": {
+    "name": "Pale Orchid, Deep Well",
+    "source": "authored"
+  },
+  "Pale Reed Hollow": {
+    "name": "Pale Reed Hollow",
+    "source": "authored"
+  },
+  "Pale Reef, Three Lights": {
+    "name": "Pale Reef, Three Lights",
+    "source": "authored"
+  },
+  "Pale Reliquary": {
+    "name": "Pale Reliquary",
+    "source": "authored"
+  },
+  "Pale Triad": {
+    "name": "Pale Triad",
+    "source": "authored"
+  },
+  "Pale Verdigris, Copper Heart": {
+    "name": "Pale Verdigris, Copper Heart",
+    "source": "authored"
+  },
+  "Patina Brass": {
+    "name": "Patina Brass",
+    "source": "authored"
+  },
+  "Peacock Nocturne": {
+    "name": "Peacock Nocturne",
+    "source": "authored"
+  },
+  "Peacock Regalia": {
+    "name": "Peacock Regalia",
+    "source": "authored"
+  },
+  "Peat & Rose Smoke": {
+    "name": "Peat & Rose Smoke",
+    "source": "authored"
+  },
+  "Periwinkle Room": {
+    "name": "Periwinkle Room",
+    "source": "authored"
+  },
+  "Petal Drift": {
+    "name": "Petal Drift",
+    "source": "authored"
+  },
+  "Petal Dusk": {
+    "name": "Petal Dusk",
+    "source": "authored"
+  },
+  "Petrol & Amber": {
+    "name": "Petrol & Amber",
+    "source": "authored"
+  },
+  "Petrol & Coal": {
+    "name": "Petrol & Coal",
+    "source": "authored"
+  },
+  "Petrol & Coral": {
+    "name": "Petrol & Coral",
+    "source": "authored"
+  },
+  "Petrol & Flame": {
+    "name": "Petrol & Flame",
+    "source": "authored"
+  },
+  "Petrol Bloom": {
+    "name": "Petrol Bloom",
+    "source": "authored"
+  },
+  "Petrol Boundary": {
+    "name": "Petrol Boundary",
+    "source": "authored"
+  },
+  "Petrol Dawn": {
+    "name": "Petrol Dawn",
+    "source": "authored"
+  },
+  "Petrol Depths": {
+    "name": "Petrol Depths",
+    "source": "authored"
+  },
+  "Petrol Depths, Ember Spark": {
+    "name": "Petrol Depths, Ember Spark",
+    "source": "authored"
+  },
+  "Petrol Monolith": {
+    "name": "Petrol Monolith",
+    "source": "authored"
+  },
+  "Petrol Noon": {
+    "name": "Petrol Noon",
+    "source": "authored"
+  },
+  "Petrol to Powder": {
+    "name": "Petrol to Powder",
+    "source": "authored"
+  },
+  "Petrol, One Coral": {
+    "name": "Petrol, One Coral",
+    "source": "authored"
+  },
+  "Pewter Bloom": {
+    "name": "Pewter Bloom",
+    "source": "authored"
+  },
+  "Phosphor Deep": {
+    "name": "Phosphor Deep",
+    "source": "authored"
+  },
+  "PiYG": {
+    "name": "Chartreuse Velvet",
+    "source": "generated"
+  },
+  "Pine and Frost": {
+    "name": "Pine and Frost",
+    "source": "authored"
+  },
+  "Plum Anvil": {
+    "name": "Plum Anvil",
+    "source": "authored"
+  },
+  "Plum Cut with Gold": {
+    "name": "Plum Cut with Gold",
+    "source": "authored"
+  },
+  "Plum Gilding": {
+    "name": "Plum Gilding",
+    "source": "authored"
+  },
+  "Plum Reliquary": {
+    "name": "Plum Reliquary",
+    "source": "authored"
+  },
+  "Plum Walk": {
+    "name": "Plum Walk",
+    "source": "authored"
+  },
+  "Plum in Ash": {
+    "name": "Plum in Ash",
+    "source": "authored"
+  },
+  "Plum, Cobalt, Acid": {
+    "name": "Plum, Cobalt, Acid",
+    "source": "authored"
+  },
+  "Plum, Gold & Moss": {
+    "name": "Plum, Gold & Moss",
+    "source": "authored"
+  },
+  "Porcelain Azure": {
+    "name": "Porcelain Azure",
+    "source": "authored"
+  },
+  "Porcelain Field": {
+    "name": "Porcelain Field",
+    "source": "authored"
+  },
+  "Prism Veil": {
+    "name": "Prism Veil",
+    "source": "authored"
+  },
+  "Prism on Ice": {
+    "name": "Prism on Ice",
+    "source": "authored"
+  },
+  "PuBu": {
+    "name": "Azure Porcelain",
+    "source": "generated"
+  },
+  "PuBuGn": {
+    "name": "Powder Verdigris",
+    "source": "generated"
+  },
+  "PuOr": {
+    "name": "Amber Amethyst",
+    "source": "generated"
+  },
+  "PuRd": {
+    "name": "Raspberry Fuchsia",
+    "source": "generated"
+  },
+  "Pumpkin Cellar": {
+    "name": "Pumpkin Cellar",
+    "source": "authored"
+  },
+  "Purples": {
+    "name": "Violet Dusk",
+    "source": "generated"
+  },
+  "RdBu": {
+    "name": "Crimson Sea",
+    "source": "generated"
+  },
+  "RdGy": {
+    "name": "Crimson Glass",
+    "source": "generated"
+  },
+  "RdPu": {
+    "name": "Pink Berry",
+    "source": "generated"
+  },
+  "RdYlBu": {
+    "name": "Coral Sky",
+    "source": "generated"
+  },
+  "RdYlGn": {
+    "name": "Mint Poppy",
+    "source": "generated"
+  },
+  "Reds": {
+    "name": "Coral Frost",
+    "source": "generated"
+  },
+  "Reed Walk": {
+    "name": "Reed Walk",
+    "source": "authored"
+  },
+  "Reef Triad": {
+    "name": "Reef Triad",
+    "source": "authored"
+  },
+  "Reef Without Sun": {
+    "name": "Reef Without Sun",
+    "source": "authored"
+  },
+  "Reef at Midnight": {
+    "name": "Reef at Midnight",
+    "source": "authored"
+  },
+  "Regalia & Sulphur": {
+    "name": "Regalia & Sulphur",
+    "source": "authored"
+  },
+  "Regatta Ice": {
+    "name": "Regatta Ice",
+    "source": "authored"
+  },
+  "Reliquary": {
+    "name": "Reliquary",
+    "source": "authored"
+  },
+  "Reliquary Vespers": {
+    "name": "Reliquary Vespers",
+    "source": "authored"
+  },
+  "Rose Above": {
+    "name": "Rose Above",
+    "source": "authored"
+  },
+  "Rose Against Cobalt": {
+    "name": "Rose Against Cobalt",
+    "source": "authored"
+  },
+  "Rose Against Steel": {
+    "name": "Rose Against Steel",
+    "source": "authored"
+  },
+  "Rose Eclipse": {
+    "name": "Rose Eclipse",
+    "source": "authored"
+  },
+  "Rose Field, Sapphire Cut": {
+    "name": "Rose Field, Sapphire Cut",
+    "source": "authored"
+  },
+  "Rose Furnace": {
+    "name": "Rose Furnace",
+    "source": "authored"
+  },
+  "Rose Hour Spark": {
+    "name": "Rose Hour Spark",
+    "source": "authored"
+  },
+  "Rose Quartz Deep": {
+    "name": "Rose Quartz Deep",
+    "source": "authored"
+  },
+  "Rose Quartz Meadow": {
+    "name": "Rose Quartz Meadow",
+    "source": "authored"
+  },
+  "Rose Quartz Ramp": {
+    "name": "Rose Quartz Ramp",
+    "source": "authored"
+  },
+  "Rose Quartz Vault": {
+    "name": "Rose Quartz Vault",
+    "source": "authored"
+  },
+  "Rose Reactor": {
+    "name": "Rose Reactor",
+    "source": "authored"
+  },
+  "Rose Slate Khaki": {
+    "name": "Rose Slate Khaki",
+    "source": "authored"
+  },
+  "Rose Smoke": {
+    "name": "Rose Smoke",
+    "source": "authored"
+  },
+  "Rose Triad": {
+    "name": "Rose Triad",
+    "source": "authored"
+  },
+  "Rose Under Ice": {
+    "name": "Rose Under Ice",
+    "source": "authored"
+  },
+  "Rose and Verdigris": {
+    "name": "Rose and Verdigris",
+    "source": "authored"
+  },
+  "Rose in Ash": {
+    "name": "Rose in Ash",
+    "source": "authored"
+  },
+  "Rust & Rainlight": {
+    "name": "Rust & Rainlight",
+    "source": "authored"
+  },
+  "Rust Against Petrol": {
+    "name": "Rust Against Petrol",
+    "source": "authored"
+  },
+  "Rust Kiln": {
+    "name": "Rust Kiln",
+    "source": "authored"
+  },
+  "Rust Lagoon": {
+    "name": "Rust Lagoon",
+    "source": "authored"
+  },
+  "Rust in the Slate Vault": {
+    "name": "Rust in the Slate Vault",
+    "source": "authored"
+  },
+  "Rust to Olive": {
+    "name": "Rust to Olive",
+    "source": "authored"
+  },
+  "Rust to Plum": {
+    "name": "Rust to Plum",
+    "source": "authored"
+  },
+  "Sage & Signal": {
+    "name": "Sage & Signal",
+    "source": "authored"
+  },
+  "Sage Ascendant": {
+    "name": "Sage Ascendant",
+    "source": "authored"
+  },
+  "Sage Ascending": {
+    "name": "Sage Ascending",
+    "source": "authored"
+  },
+  "Sage Ember": {
+    "name": "Sage Ember",
+    "source": "authored"
+  },
+  "Sage Ladder": {
+    "name": "Sage Ladder",
+    "source": "authored"
+  },
+  "Sage Over Oxblood": {
+    "name": "Sage Over Oxblood",
+    "source": "authored"
+  },
+  "Sapphire & Coal": {
+    "name": "Sapphire & Coal",
+    "source": "authored"
+  },
+  "Sapphire & Dusk Rose": {
+    "name": "Sapphire & Dusk Rose",
+    "source": "authored"
+  },
+  "Sapphire Against Rose": {
+    "name": "Sapphire Against Rose",
+    "source": "authored"
+  },
+  "Sapphire Bloom": {
+    "name": "Sapphire Bloom",
+    "source": "authored"
+  },
+  "Sapphire in Blush": {
+    "name": "Sapphire in Blush",
+    "source": "authored"
+  },
+  "Sea Glass Dawn": {
+    "name": "Sea Glass Dawn",
+    "source": "authored"
+  },
+  "Sea Glass Drift": {
+    "name": "Sea Glass Drift",
+    "source": "authored"
+  },
+  "Sea Glass Vault": {
+    "name": "Sea Glass Vault",
+    "source": "authored"
+  },
+  "Sea-Glass & Ash": {
+    "name": "Sea-Glass & Ash",
+    "source": "authored"
+  },
+  "Seafoam Dusk": {
+    "name": "Seafoam Dusk",
+    "source": "authored"
+  },
+  "Sherbet Flare": {
+    "name": "Sherbet Flare",
+    "source": "authored"
+  },
+  "Shoal, One Coral": {
+    "name": "Shoal, One Coral",
+    "source": "authored"
+  },
+  "Signal & Sulphur": {
+    "name": "Signal & Sulphur",
+    "source": "authored"
+  },
+  "Signal Triad": {
+    "name": "Signal Triad",
+    "source": "authored"
+  },
+  "Siren, Lights Out": {
+    "name": "Siren, Lights Out",
+    "source": "authored"
+  },
+  "Sixties Cellar": {
+    "name": "Sixties Cellar",
+    "source": "authored"
+  },
+  "Sixties Poster": {
+    "name": "Sixties Poster",
+    "source": "authored"
+  },
+  "Slate & Wine": {
+    "name": "Slate & Wine",
+    "source": "authored"
+  },
+  "Slate Ascension": {
+    "name": "Slate Ascension",
+    "source": "authored"
+  },
+  "Slate Ladder": {
+    "name": "Slate Ladder",
+    "source": "authored"
+  },
+  "Slate and Dusty Rose": {
+    "name": "Slate and Dusty Rose",
+    "source": "authored"
+  },
+  "Slow Combustion": {
+    "name": "Slow Combustion",
+    "source": "authored"
+  },
+  "Smoke & Madder": {
+    "name": "Smoke & Madder",
+    "source": "authored"
+  },
+  "Sorbet Cellar": {
+    "name": "Sorbet Cellar",
+    "source": "authored"
+  },
+  "Sorbet Vault": {
+    "name": "Sorbet Vault",
+    "source": "authored"
+  },
+  "Sorrel Triad": {
+    "name": "Sorrel Triad",
+    "source": "authored"
+  },
+  "Spectral": {
+    "name": "Vermilion Ember",
+    "source": "generated"
+  },
+  "Spice Procession": {
+    "name": "Spice Procession",
+    "source": "authored"
+  },
+  "Split Lime": {
+    "name": "Split Lime",
+    "source": "authored"
+  },
+  "Steel & Coals": {
+    "name": "Steel & Coals",
+    "source": "authored"
+  },
+  "Steel & Ember": {
+    "name": "Steel & Ember",
+    "source": "authored"
+  },
+  "Steel and Straw": {
+    "name": "Steel and Straw",
+    "source": "authored"
+  },
+  "Straw and Teal": {
+    "name": "Straw and Teal",
+    "source": "authored"
+  },
+  "Struck Flint": {
+    "name": "Struck Flint",
+    "source": "authored"
+  },
+  "Sulphur & Plum": {
+    "name": "Sulphur & Plum",
+    "source": "authored"
+  },
+  "Sulphur in the Vault": {
+    "name": "Sulphur in the Vault",
+    "source": "authored"
+  },
+  "Tarnished Amber": {
+    "name": "Tarnished Amber",
+    "source": "authored"
+  },
+  "Teal & Coral Tide": {
+    "name": "Teal & Coral Tide",
+    "source": "authored"
+  },
+  "Teal Against Coral": {
+    "name": "Teal Against Coral",
+    "source": "authored"
+  },
+  "Teal Against Rust": {
+    "name": "Teal Against Rust",
+    "source": "authored"
+  },
+  "Teal Amber Orchid": {
+    "name": "Teal Amber Orchid",
+    "source": "authored"
+  },
+  "Teal Ash": {
+    "name": "Teal Ash",
+    "source": "authored"
+  },
+  "Teal Depths, Coral Spark": {
+    "name": "Teal Depths, Coral Spark",
+    "source": "authored"
+  },
+  "Teal Ember Cliff": {
+    "name": "Teal Ember Cliff",
+    "source": "authored"
+  },
+  "Teal Family, Amber Spark": {
+    "name": "Teal Family, Amber Spark",
+    "source": "authored"
+  },
+  "Teal Flare, Amber Fall": {
+    "name": "Teal Flare, Amber Fall",
+    "source": "authored"
+  },
+  "Teal, Magenta, Gold": {
+    "name": "Teal, Magenta, Gold",
+    "source": "authored"
+  },
+  "Terminal Flare": {
+    "name": "Terminal Flare",
+    "source": "authored"
+  },
+  "Three Candles": {
+    "name": "Three Candles",
+    "source": "authored"
+  },
+  "Three Coals": {
+    "name": "Three Coals",
+    "source": "authored"
+  },
+  "Three Coals in Ash": {
+    "name": "Three Coals in Ash",
+    "source": "authored"
+  },
+  "Three Fires": {
+    "name": "Three Fires",
+    "source": "authored"
+  },
+  "Three Hues, Kept Apart": {
+    "name": "Three Hues, Kept Apart",
+    "source": "authored"
+  },
+  "Three Jewels": {
+    "name": "Three Jewels",
+    "source": "authored"
+  },
+  "Three Jewels, Pale Room": {
+    "name": "Three Jewels, Pale Room",
+    "source": "authored"
+  },
+  "Three Minerals on Coal": {
+    "name": "Three Minerals on Coal",
+    "source": "authored"
+  },
+  "Three-Jewel Bloom": {
+    "name": "Three-Jewel Bloom",
+    "source": "authored"
+  },
+  "Three-Metal": {
+    "name": "Three-Metal",
+    "source": "authored"
+  },
+  "Three-Point Fire-Ice": {
+    "name": "Three-Point Fire-Ice",
+    "source": "authored"
+  },
+  "Tidepool": {
+    "name": "Tidepool",
+    "source": "authored"
+  },
+  "Tidewater, No Sky": {
+    "name": "Tidewater, No Sky",
+    "source": "authored"
+  },
+  "Tidewater, Two Crests": {
+    "name": "Tidewater, Two Crests",
+    "source": "authored"
+  },
+  "Tobacco Bloom": {
+    "name": "Tobacco Bloom",
+    "source": "authored"
+  },
+  "Tourmaline Rose": {
+    "name": "Tourmaline Rose",
+    "source": "authored"
+  },
+  "Triad Nocturne": {
+    "name": "Triad Nocturne",
+    "source": "authored"
+  },
+  "Triad Patina": {
+    "name": "Triad Patina",
+    "source": "authored"
+  },
+  "Trinity of Ash": {
+    "name": "Trinity of Ash",
+    "source": "authored"
+  },
+  "Turkish Grind": {
+    "name": "Turkish Grind",
+    "source": "authored"
+  },
+  "Twilight Bridge": {
+    "name": "Twilight Bridge",
+    "source": "authored"
+  },
+  "Twilight Procession": {
+    "name": "Twilight Procession",
+    "source": "authored"
+  },
+  "Twilight Triad": {
+    "name": "Twilight Triad",
+    "source": "authored"
+  },
+  "Twin Mineral Peaks": {
+    "name": "Twin Mineral Peaks",
+    "source": "authored"
+  },
+  "Twin Sapphires": {
+    "name": "Twin Sapphires",
+    "source": "authored"
+  },
+  "Twin Sconces": {
+    "name": "Twin Sconces",
+    "source": "authored"
+  },
+  "Two Golds": {
+    "name": "Two Golds",
+    "source": "authored"
+  },
+  "Ultraviolet Siren": {
+    "name": "Ultraviolet Siren",
+    "source": "authored"
+  },
+  "Umber & Ember": {
+    "name": "Umber & Ember",
+    "source": "authored"
+  },
+  "Umber Ground": {
+    "name": "Umber Ground",
+    "source": "authored"
+  },
+  "Umber Procession": {
+    "name": "Umber Procession",
+    "source": "authored"
+  },
+  "Umber Rise": {
+    "name": "Umber Rise",
+    "source": "authored"
+  },
+  "Varnish and Bone": {
+    "name": "Varnish and Bone",
+    "source": "authored"
+  },
+  "Verdant Ascent": {
+    "name": "Verdant Ascent",
+    "source": "authored"
+  },
+  "Verdant Mist": {
+    "name": "Verdant Mist",
+    "source": "authored"
+  },
+  "Verdant Triad": {
+    "name": "Verdant Triad",
+    "source": "authored"
+  },
+  "Verdigris & Coal": {
+    "name": "Verdigris & Coal",
+    "source": "authored"
+  },
+  "Verdigris & Copper": {
+    "name": "Verdigris & Copper",
+    "source": "authored"
+  },
+  "Verdigris & Fuchsia": {
+    "name": "Verdigris & Fuchsia",
+    "source": "authored"
+  },
+  "Verdigris & One Spark": {
+    "name": "Verdigris & One Spark",
+    "source": "authored"
+  },
+  "Verdigris Coal": {
+    "name": "Verdigris Coal",
+    "source": "authored"
+  },
+  "Verdigris Flare": {
+    "name": "Verdigris Flare",
+    "source": "authored"
+  },
+  "Verdigris Furnace": {
+    "name": "Verdigris Furnace",
+    "source": "authored"
+  },
+  "Verdigris Hollow": {
+    "name": "Verdigris Hollow",
+    "source": "authored"
+  },
+  "Verdigris Khaki": {
+    "name": "Verdigris Khaki",
+    "source": "authored"
+  },
+  "Verdigris Walk": {
+    "name": "Verdigris Walk",
+    "source": "authored"
+  },
+  "Verdigris to Lime, One Rose": {
+    "name": "Verdigris to Lime, One Rose",
+    "source": "authored"
+  },
+  "Vermilion Chapel": {
+    "name": "Vermilion Chapel",
+    "source": "authored"
+  },
+  "Vice Nightfall": {
+    "name": "Vice Nightfall",
+    "source": "authored"
+  },
+  "Violet Ascension": {
+    "name": "Violet Ascension",
+    "source": "authored"
+  },
+  "Violet Cellar": {
+    "name": "Violet Cellar",
+    "source": "authored"
+  },
+  "Violet Kindled": {
+    "name": "Violet Kindled",
+    "source": "authored"
+  },
+  "Violet, Cyan, Ochre": {
+    "name": "Violet, Cyan, Ochre",
+    "source": "authored"
+  },
+  "Warm Core in the Deep": {
+    "name": "Warm Core in the Deep",
+    "source": "authored"
+  },
+  "Widow's Gold": {
+    "name": "Widow's Gold",
+    "source": "authored"
+  },
+  "Wine & Ember": {
+    "name": "Wine & Ember",
+    "source": "authored"
+  },
+  "Wine & Slate Candle": {
+    "name": "Wine & Slate Candle",
+    "source": "authored"
+  },
+  "Wine Step": {
+    "name": "Wine Step",
+    "source": "authored"
+  },
+  "Wisteria Nightfall": {
+    "name": "Wisteria Nightfall",
+    "source": "authored"
+  },
+  "Y2K Bubblegum": {
+    "name": "Y2K Bubblegum",
+    "source": "authored"
+  },
+  "Y2K Chrome": {
+    "name": "Y2K Chrome",
+    "source": "authored"
+  },
+  "Yew Without Moon": {
+    "name": "Yew Without Moon",
+    "source": "authored"
+  },
+  "YlGn": {
+    "name": "Mint Glass",
+    "source": "generated"
+  },
+  "YlGnBu": {
+    "name": "Cobalt Glacier",
+    "source": "generated"
+  },
+  "YlOrBr": {
+    "name": "Amber Cinder",
+    "source": "generated"
+  },
+  "YlOrRd": {
+    "name": "Scarlet Flame",
+    "source": "generated"
+  },
+  "abstract-3d-wallpapers": {
+    "name": "Mint Coal",
+    "source": "generated"
+  },
+  "abstract-wallpaper-backgrounds-hd": {
+    "name": "Amber Sea",
+    "source": "generated"
+  },
+  "adrift-concept-art-14463-1920x1200": {
+    "name": "Umber Ash",
+    "source": "generated"
+  },
+  "afmhot": {
+    "name": "Scarlet Ember",
+    "source": "generated"
+  },
+  "agates-25": {
+    "name": "Gold Brick",
+    "source": "generated"
+  },
+  "ahli": {
+    "name": "Wine Tide",
+    "source": "generated"
+  },
+  "along-the-starry-way-25": {
+    "name": "Violet Bluebell",
+    "source": "generated"
+  },
+  "amarettoboso": {
+    "name": "Peach Amethyst",
+    "source": "generated"
+  },
+  "amazing-25": {
+    "name": "Amber Blaze",
+    "source": "authored"
+  },
+  "anathema-25": {
+    "name": "Crimson Ash",
+    "source": "generated"
+  },
+  "anodize-25": {
+    "name": "Aquamarine Deep",
+    "source": "generated"
+  },
+  "antiques-and-aqua-25": {
+    "name": "Verdigris Ruby",
+    "source": "generated"
+  },
+  "ariel-25": {
+    "name": "Powder Bluebell",
+    "source": "generated"
+  },
+  "at-the-beach-hd-wallpaper-1920x1200": {
+    "name": "Amber Sunlight",
+    "source": "generated"
+  },
+  "autumn": {
+    "name": "Vermilion Lantern",
+    "source": "generated"
+  },
+  "azarn": {
+    "name": "Magenta Petal",
+    "source": "generated"
+  },
+  "benediction-25": {
+    "name": "Amber Sapphire",
+    "source": "generated"
+  },
+  "berlin": {
+    "name": "Clay Kiln",
+    "source": "generated"
+  },
+  "birds-of-paradise-25": {
+    "name": "Violet Ember",
+    "source": "generated"
+  },
+  "black-widow-25": {
+    "name": "Cream Flame",
+    "source": "generated"
+  },
+  "blacklight-25": {
+    "name": "Violet Peony",
+    "source": "generated"
+  },
+  "blinan": {
+    "name": "Cream Marigold",
+    "source": "generated"
+  },
+  "blue_orange": {
+    "name": "Azure Flame",
+    "source": "generated"
+  },
+  "bluebird-25": {
+    "name": "Sky Glacier",
+    "source": "generated"
+  },
+  "blueroot": {
+    "name": "Oxblood Velvet",
+    "source": "generated"
+  },
+  "bone": {
+    "name": "Indigo Amethyst",
+    "source": "generated"
+  },
+  "brisbee": {
+    "name": "Peach Abyss",
+    "source": "generated"
+  },
+  "bwr": {
+    "name": "Coral Ink",
+    "source": "generated"
+  },
+  "calypsos-domain-25": {
+    "name": "Mint Ink",
+    "source": "generated"
+  },
+  "carried-away-25": {
+    "name": "Violet Sapphire",
+    "source": "generated"
+  },
+  "celestial-domain-25": {
+    "name": "Seafoam Glacier",
+    "source": "generated"
+  },
+  "cet_cyclic_bgrmb_35_70_c75": {
+    "name": "Cobalt Peony",
+    "source": "generated"
+  },
+  "cet_cyclic_mrybm_35_75_c68": {
+    "name": "Orchid Ruby",
+    "source": "generated"
+  },
+  "cet_cyclic_mrybm_35_75_c68_s25": {
+    "name": "Cobalt Brick",
+    "source": "generated"
+  },
+  "cet_cyclic_mybm_20_100_c48": {
+    "name": "Cobalt Meadow",
+    "source": "generated"
+  },
+  "cet_cyclic_mybm_20_100_c48_s25": {
+    "name": "Cobalt Citron",
+    "source": "generated"
+  },
+  "cet_cyclic_mygbm_30_95_c78": {
+    "name": "Chartreuse Fuchsia",
+    "source": "generated"
+  },
+  "cet_cyclic_mygbm_30_95_c78_s25": {
+    "name": "Chartreuse Ink",
+    "source": "generated"
+  },
+  "cet_cyclic_mygbm_50_90_c46": {
+    "name": "Sky Meadow",
+    "source": "generated"
+  },
+  "cet_cyclic_mygbm_50_90_c46_s25": {
+    "name": "Sky Citron",
+    "source": "generated"
+  },
+  "cet_cyclic_protanopic_deuteranopic_bwyk_16_96_c31": {
+    "name": "Periwinkle Gold",
+    "source": "generated"
+  },
+  "cet_cyclic_protanopic_deuteranopic_wywb_55_96_c33": {
+    "name": "Periwinkle Honey",
+    "source": "generated"
+  },
+  "cet_cyclic_rygcbmr_50_90_c64": {
+    "name": "Coral Jade",
+    "source": "generated"
+  },
+  "cet_cyclic_rygcbmr_50_90_c64_s25": {
+    "name": "Coral Mint",
+    "source": "generated"
+  },
+  "cet_cyclic_tritanopic_cwrk_40_100_c20": {
+    "name": "Clay Surf",
+    "source": "generated"
+  },
+  "cet_cyclic_tritanopic_wrwc_70_100_c20": {
+    "name": "Clay Glacier",
+    "source": "generated"
+  },
+  "cet_cyclic_wrkbw_10_90_c43": {
+    "name": "Coral Bluebell",
+    "source": "generated"
+  },
+  "cet_cyclic_wrkbw_10_90_c43_s25": {
+    "name": "Periwinkle Poppy",
+    "source": "generated"
+  },
+  "cet_cyclic_wrwbw_40_90_c42": {
+    "name": "Coral Dusk",
+    "source": "generated"
+  },
+  "cet_cyclic_wrwbw_40_90_c42_s25": {
+    "name": "Coral Hydrangea",
+    "source": "generated"
+  },
+  "cet_cyclic_ymcgy_60_90_c67": {
+    "name": "Chartreuse Jade",
+    "source": "generated"
+  },
+  "cet_cyclic_ymcgy_60_90_c67_s25": {
+    "name": "Mint Meadow",
+    "source": "generated"
+  },
+  "cet_diverging_bkr_55_10_c35": {
+    "name": "Oxblood Sapphire",
+    "source": "generated"
+  },
+  "cet_diverging_bky_60_10_c30": {
+    "name": "Azure Brass",
+    "source": "generated"
+  },
+  "cet_diverging_bwg_20_95_c41": {
+    "name": "Emerald Sapphire",
+    "source": "generated"
+  },
+  "cet_diverging_bwr_20_95_c54": {
+    "name": "Cobalt Ruby",
+    "source": "generated"
+  },
+  "cet_diverging_bwr_40_95_c42": {
+    "name": "Vermilion Porcelain",
+    "source": "generated"
+  },
+  "cet_diverging_bwr_55_98_c37": {
+    "name": "Coral Porcelain",
+    "source": "generated"
+  },
+  "cet_diverging_gkr_60_10_c40": {
+    "name": "Emerald Ruby",
+    "source": "generated"
+  },
+  "cet_diverging_gwr_55_95_c38": {
+    "name": "Coral Clover",
+    "source": "generated"
+  },
+  "cet_diverging_linear_bjr_30_55_c53": {
+    "name": "Coral Abyss",
+    "source": "generated"
+  },
+  "cet_diverging_linear_bjy_30_90_c45": {
+    "name": "Gold Ink",
+    "source": "generated"
+  },
+  "cet_diverging_linear_protanopic_deuteranopic_bjy_57_89_c34": {
+    "name": "Cream Porcelain",
+    "source": "generated"
+  },
+  "cet_diverging_protanopic_deuteranopic_bwy_60_95_c32": {
+    "name": "Periwinkle Candle",
+    "source": "generated"
+  },
+  "cet_diverging_rainbow_bgymr_45_85_c67": {
+    "name": "Pink Meadow",
+    "source": "generated"
+  },
+  "cet_diverging_tritanopic_cwr_75_98_c20": {
+    "name": "Clay Spray",
+    "source": "generated"
+  },
+  "cet_linear_bgy_10_95_c74": {
+    "name": "Mint Abyss",
+    "source": "generated"
+  },
+  "cet_linear_bgyw_15_100_c67": {
+    "name": "Cobalt Pear",
+    "source": "generated"
+  },
+  "cet_linear_bgyw_15_100_c68": {
+    "name": "Cobalt Sprout",
+    "source": "generated"
+  },
+  "cet_linear_bgyw_20_98_c66": {
+    "name": "Chartreuse Abyss",
+    "source": "generated"
+  },
+  "cet_linear_blue_95_50_c20": {
+    "name": "Powder Porcelain",
+    "source": "generated"
+  },
+  "cet_linear_bmw_5_95_c86": {
+    "name": "Orchid Sapphire",
+    "source": "generated"
+  },
+  "cet_linear_bmw_5_95_c89": {
+    "name": "Cobalt Fuchsia",
+    "source": "generated"
+  },
+  "cet_linear_bmy_10_95_c71": {
+    "name": "Gold Abyss",
+    "source": "generated"
+  },
+  "cet_linear_bmy_10_95_c78": {
+    "name": "Cobalt Gold",
+    "source": "generated"
+  },
+  "cet_linear_gow_60_85_c27": {
+    "name": "Cream Meadow",
+    "source": "generated"
+  },
+  "cet_linear_gow_65_90_c35": {
+    "name": "Cream Citron",
+    "source": "generated"
+  },
+  "cet_linear_kbc_5_95_c73": {
+    "name": "Cobalt Air",
+    "source": "generated"
+  },
+  "cet_linear_kbgoy_20_95_c57": {
+    "name": "Gold Lapis",
+    "source": "generated"
+  },
+  "cet_linear_kbgyw_10_98_c63": {
+    "name": "Sapphire Meadow",
+    "source": "generated"
+  },
+  "cet_linear_kbgyw_5_98_c62": {
+    "name": "Sapphire Citron",
+    "source": "generated"
+  },
+  "cet_linear_kgy_5_95_c69": {
+    "name": "Mint Citron",
+    "source": "generated"
+  },
+  "cet_linear_kry_0_97_c73": {
+    "name": "Gold Lantern",
+    "source": "generated"
+  },
+  "cet_linear_kry_5_95_c72": {
+    "name": "Vermilion Flame",
+    "source": "generated"
+  },
+  "cet_linear_kry_5_98_c75": {
+    "name": "Crimson Gold",
+    "source": "generated"
+  },
+  "cet_linear_kryw_0_100_c71": {
+    "name": "Crimson Honey",
+    "source": "generated"
+  },
+  "cet_linear_kryw_5_100_c64": {
+    "name": "Cardinal Flame",
+    "source": "generated"
+  },
+  "cet_linear_kryw_5_100_c67": {
+    "name": "Vermilion Marigold",
+    "source": "generated"
+  },
+  "cet_linear_protanopic_deuteranopic_kbjyw_5_95_c25": {
+    "name": "Cream Sea",
+    "source": "generated"
+  },
+  "cet_linear_protanopic_deuteranopic_kbw_5_95_c34": {
+    "name": "Periwinkle Sky",
+    "source": "generated"
+  },
+  "cet_linear_protanopic_deuteranopic_kbw_5_98_c40": {
+    "name": "Cobalt Sea",
+    "source": "generated"
+  },
+  "cet_linear_protanopic_deuteranopic_kyw_5_95_c49": {
+    "name": "Gold Coal",
+    "source": "generated"
+  },
+  "cet_linear_tritanopic_kcw_5_95_c22": {
+    "name": "Aquamarine Coal",
+    "source": "generated"
+  },
+  "cet_linear_tritanopic_krjcw_5_95_c24": {
+    "name": "Oxblood Glacier",
+    "source": "generated"
+  },
+  "cet_linear_tritanopic_krjcw_5_98_c46": {
+    "name": "Crimson Glacier",
+    "source": "generated"
+  },
+  "cet_linear_tritanopic_krw_5_95_c46": {
+    "name": "Coral Glass",
+    "source": "generated"
+  },
+  "cet_linear_wcmr_100_45_c42": {
+    "name": "Pink Peony",
+    "source": "generated"
+  },
+  "cet_linear_worb_100_25_c53": {
+    "name": "Coral Petal",
+    "source": "generated"
+  },
+  "cet_linear_wyor_100_45_c55": {
+    "name": "Amber Honey",
+    "source": "generated"
+  },
+  "cet_rainbow_bgyr_10_90_c83": {
+    "name": "Sapphire Pear",
+    "source": "generated"
+  },
+  "cet_rainbow_bgyr_35_85_c72": {
+    "name": "Chartreuse Ember",
+    "source": "generated"
+  },
+  "cet_rainbow_bgyr_35_85_c73": {
+    "name": "Chartreuse Lantern",
+    "source": "generated"
+  },
+  "cet_rainbow_bgyrm_35_85_c69": {
+    "name": "Chartreuse Flame",
+    "source": "generated"
+  },
+  "cet_rainbow_bgyrm_35_85_c71": {
+    "name": "Chartreuse Marigold",
+    "source": "generated"
+  },
+  "chaidai": {
+    "name": "Orchid Amethyst",
+    "source": "generated"
+  },
+  "chalk-drawing-25": {
+    "name": "Indigo Denim",
+    "source": "generated"
+  },
+  "chiaris-25": {
+    "name": "Cream Flint",
+    "source": "generated"
+  },
+  "chronoscope-25": {
+    "name": "Oxblood Marigold",
+    "source": "generated"
+  },
+  "circulation": {
+    "name": "Mauve Ruby",
+    "source": "generated"
+  },
+  "citadel": {
+    "name": "Oxblood Flame",
+    "source": "generated"
+  },
+  "city_of_lights": {
+    "name": "Gold Hearth",
+    "source": "generated"
+  },
+  "cividis": {
+    "name": "Honey Sapphire",
+    "source": "generated"
+  },
+  "cmr.amber": {
+    "name": "Gold Flame",
+    "source": "generated"
+  },
+  "cmr.amethyst": {
+    "name": "Violet Hydrangea",
+    "source": "generated"
+  },
+  "cmr.apple": {
+    "name": "Crimson Kiln",
+    "source": "generated"
+  },
+  "cmr.arctic": {
+    "name": "Indigo Sky",
+    "source": "generated"
+  },
+  "cmr.bubblegum": {
+    "name": "Violet Petal",
+    "source": "generated"
+  },
+  "cmr.chroma": {
+    "name": "Mint Brick",
+    "source": "generated"
+  },
+  "cmr.copper": {
+    "name": "Mauve Obsidian",
+    "source": "generated"
+  },
+  "cmr.copper_s": {
+    "name": "Mauve Coal",
+    "source": "generated"
+  },
+  "cmr.cosmic": {
+    "name": "Violet Ink",
+    "source": "generated"
+  },
+  "cmr.dusk": {
+    "name": "Coral Lantern",
+    "source": "generated"
+  },
+  "cmr.eclipse": {
+    "name": "Gold Sea",
+    "source": "generated"
+  },
+  "cmr.ember": {
+    "name": "Raspberry Lantern",
+    "source": "generated"
+  },
+  "cmr.emerald": {
+    "name": "Turquoise Fern",
+    "source": "generated"
+  },
+  "cmr.emergency": {
+    "name": "Lilac Ruby",
+    "source": "generated"
+  },
+  "cmr.emergency_s": {
+    "name": "Lilac Brick",
+    "source": "generated"
+  },
+  "cmr.fall": {
+    "name": "Gold Ruby",
+    "source": "generated"
+  },
+  "cmr.flamingo": {
+    "name": "Crimson Petal",
+    "source": "generated"
+  },
+  "cmr.freeze": {
+    "name": "Sapphire Horizon",
+    "source": "generated"
+  },
+  "cmr.fusion": {
+    "name": "Violet Ruby",
+    "source": "generated"
+  },
+  "cmr.gem": {
+    "name": "Magenta Plum",
+    "source": "generated"
+  },
+  "cmr.ghostlight": {
+    "name": "Chartreuse Berry",
+    "source": "generated"
+  },
+  "cmr.gothic": {
+    "name": "Cathedral Violet",
+    "source": "authored"
+  },
+  "cmr.guppy": {
+    "name": "Coral Plum",
+    "source": "generated"
+  },
+  "cmr.holly": {
+    "name": "Holly Fern",
+    "source": "authored"
+  },
+  "cmr.horizon": {
+    "name": "Periwinkle Lilac",
+    "source": "generated"
+  },
+  "cmr.iceburn": {
+    "name": "Sky Gold",
+    "source": "generated"
+  },
+  "cmr.infinity": {
+    "name": "Violet Berry",
+    "source": "generated"
+  },
+  "cmr.infinity_s": {
+    "name": "Crimson Amethyst",
+    "source": "generated"
+  },
+  "cmr.jungle": {
+    "name": "Emerald Meadow",
+    "source": "generated"
+  },
+  "cmr.lavender": {
+    "name": "Mint Amethyst",
+    "source": "generated"
+  },
+  "cmr.lilac": {
+    "name": "Wine Iris",
+    "source": "generated"
+  },
+  "cmr.neon": {
+    "name": "Mint Wisteria",
+    "source": "generated"
+  },
+  "cmr.nuclear": {
+    "name": "Mint Obsidian",
+    "source": "generated"
+  },
+  "cmr.ocean": {
+    "name": "Deep Harbor",
+    "source": "authored"
+  },
+  "cmr.pepper": {
+    "name": "Chartreuse Ruby",
+    "source": "generated"
+  },
+  "cmr.pride": {
+    "name": "Amber Velvet",
+    "source": "generated"
+  },
+  "cmr.prinsenvlag": {
+    "name": "Amber Porcelain",
+    "source": "generated"
+  },
+  "cmr.rainforest": {
+    "name": "Chartreuse Amethyst",
+    "source": "generated"
+  },
+  "cmr.redshift": {
+    "name": "Pink Sky",
+    "source": "generated"
+  },
+  "cmr.sapphire": {
+    "name": "Indigo Ice",
+    "source": "generated"
+  },
+  "cmr.savanna": {
+    "name": "Gold Moss",
+    "source": "generated"
+  },
+  "cmr.seasons": {
+    "name": "Jet Glass",
+    "source": "generated"
+  },
+  "cmr.seasons_s": {
+    "name": "Ivory Coal",
+    "source": "generated"
+  },
+  "cmr.seaweed": {
+    "name": "Mint Lapis",
+    "source": "generated"
+  },
+  "cmr.sepia": {
+    "name": "Mauve Ember",
+    "source": "generated"
+  },
+  "cmr.sunburst": {
+    "name": "Scarlet Marigold",
+    "source": "generated"
+  },
+  "cmr.swamp": {
+    "name": "Mint Verdigris",
+    "source": "generated"
+  },
+  "cmr.torch": {
+    "name": "Coral Amethyst",
+    "source": "generated"
+  },
+  "cmr.toxic": {
+    "name": "Mint Pear",
+    "source": "generated"
+  },
+  "cmr.tree": {
+    "name": "Mint Kiln",
+    "source": "generated"
+  },
+  "cmr.tropical": {
+    "name": "Mint Rosewood",
+    "source": "generated"
+  },
+  "cmr.viola": {
+    "name": "Raspberry Amethyst",
+    "source": "generated"
+  },
+  "cmr.voltage": {
+    "name": "Violet Porcelain",
+    "source": "generated"
+  },
+  "cmr.waterlily": {
+    "name": "Violet Jade",
+    "source": "generated"
+  },
+  "cmr.watermelon": {
+    "name": "Mint Ruby",
+    "source": "generated"
+  },
+  "cmr.wildfire": {
+    "name": "Mint Velvet",
+    "source": "generated"
+  },
+  "colourwheel-25": {
+    "name": "Cream Petal",
+    "source": "generated"
+  },
+  "commons_2125_Mandelbulb_3D": {
+    "name": "Powder Ash",
+    "source": "generated"
+  },
+  "commons_Chaos_Clock_-_The_Steampunk_Spell-Shaper": {
+    "name": "Pistachio Fern",
+    "source": "generated"
+  },
+  "commons_Js17eta": {
+    "name": "Sky Ink",
+    "source": "generated"
+  },
+  "commons_Julia-Menge_-0.8_0.156i": {
+    "name": "Rain Slate",
+    "source": "generated"
+  },
+  "commons_Julia-Menge_83372617338": {
+    "name": "Mint Sprout",
+    "source": "generated"
+  },
+  "commons_Julia_Fractal_rendered_in_Paint.NET": {
+    "name": "Cardinal Marigold",
+    "source": "generated"
+  },
+  "commons_Julia_set_spiral": {
+    "name": "Mint Plum",
+    "source": "generated"
+  },
+  "commons_Kalles_Fraktaler_adventurous-forest_00024_1.17e222": {
+    "name": "Cobalt Petal",
+    "source": "generated"
+  },
+  "commons_Mandelbrot_3_B_C3_B4ng_Xoay": {
+    "name": "Cobalt Sky",
+    "source": "generated"
+  },
+  "commons_Mandelbrot_3_D_C6_B0_C6_A1ng_X_E1_BB_89_C_E1_BB_95_Sinh": {
+    "name": "Magenta Gold",
+    "source": "generated"
+  },
+  "commons_Mandelbrot_3_Xo_C3_A1y_B_C3_A1nh_Ng_E1_BB_8Dt": {
+    "name": "Gold Marigold",
+    "source": "generated"
+  },
+  "commons_Mandelbrot_3__E1_BB_94_Chu_E1_BB_93n_Chu_E1_BB_93n__C4_90_E1_BB_99t_Bi_E1_BA_BFn": {
+    "name": "Orchid Ember",
+    "source": "generated"
+  },
+  "commons_Mandelbrot_4_B_C3_B4ng_Ho_C3_A0ng_D_C3_A3": {
+    "name": "Orchid Petal",
+    "source": "generated"
+  },
+  "commons_Mandelbrot_4_H_E1_BB_93__E1_BB_90c": {
+    "name": "Gold Glass",
+    "source": "generated"
+  },
+  "commons_Mandelbrot_5_B_C3_B4ng_Ng_C5_A9_Gi_C3_A1c": {
+    "name": "Plum Ember",
+    "source": "generated"
+  },
+  "commons_Mandelbrot_5_Ba__E1_BB_90c": {
+    "name": "Mint Moss",
+    "source": "generated"
+  },
+  "commons_Mandelbrot_5__E1_BB_90c_D_C3_A3y_B_C3_B4ng": {
+    "name": "Cobalt Horizon",
+    "source": "generated"
+  },
+  "commons_Mandelbrot_6_Hai_Ng_C3_A2n_H_C3_A0": {
+    "name": "Crimson Plum",
+    "source": "generated"
+  },
+  "commons_Mandelbrot_6_Ph_C3_A1o_B_C3_B4ng": {
+    "name": "Magenta Honey",
+    "source": "generated"
+  },
+  "commons_Mandelbrot_6_R_E1_BB_ABng_Nhi_E1_BB_87t__C4_90_E1_BB_9Bi": {
+    "name": "Mint Glacier",
+    "source": "generated"
+  },
+  "commons_Mandelbrot_6__C4_90_E1_BA_A7u_R_E1_BB_93ng": {
+    "name": "Umber Fuchsia",
+    "source": "generated"
+  },
+  "commons_Mandelbrot_B_C3_A1nh_Ng_E1_BB_8Dt": {
+    "name": "Peach Glass",
+    "source": "generated"
+  },
+  "commons_Mandelbrot_B_C3_B4ng_Tuy_E1_BA_BFt": {
+    "name": "Violet Frost",
+    "source": "generated"
+  },
+  "commons_Mandelbrot_C_C3_A2y_Trong_R_E1_BB_ABng_2": {
+    "name": "Mint Petal",
+    "source": "generated"
+  },
+  "commons_Mandelbrot_Hai__E1_BB_90c_M_E1_BB_8Bn": {
+    "name": "Clay Berry",
+    "source": "generated"
+  },
+  "commons_Mandelbrot_M_E1_BB_8Dc_Rau": {
+    "name": "Mallow Wisteria",
+    "source": "generated"
+  },
+  "commons_Mandelbrot_M_E1_BB_99t__C4_90_C3_A0n__E1_BB_90c": {
+    "name": "Mint Linen",
+    "source": "generated"
+  },
+  "commons_Mandelbrot_V_C3_A0nh__C4_90_C3_A0i__E1_BB_90c_M_E1_BB_8Bn": {
+    "name": "Mint Lilac",
+    "source": "generated"
+  },
+  "commons_Mandelbrot_set-35-k_3D10-filter01": {
+    "name": "Amber Lacquer",
+    "source": "generated"
+  },
+  "commons_Ms-0557-0645": {
+    "name": "Salmon Ember",
+    "source": "generated"
+  },
+  "commons_Spiralarm_Julia-Menge_-0_2C5R_0I_01072019_16K": {
+    "name": "Magenta Velvet",
+    "source": "generated"
+  },
+  "congruity-25": {
+    "name": "Honey Kiln",
+    "source": "generated"
+  },
+  "consequences-25": {
+    "name": "Crimson Ember",
+    "source": "generated"
+  },
+  "contra-25": {
+    "name": "Salmon Lantern",
+    "source": "generated"
+  },
+  "coolwarm": {
+    "name": "Periwinkle Coral",
+    "source": "generated"
+  },
+  "copper": {
+    "name": "Amber Coal",
+    "source": "generated"
+  },
+  "corkscrew-25": {
+    "name": "Cyan Coal",
+    "source": "generated"
+  },
+  "corporeal-25": {
+    "name": "Powder Slate",
+    "source": "generated"
+  },
+  "cosmic-forces-25": {
+    "name": "Cobalt Frost",
+    "source": "generated"
+  },
+  "creeping-frost-25": {
+    "name": "Azure Sapphire",
+    "source": "generated"
+  },
+  "crisis-25": {
+    "name": "Sky Ember",
+    "source": "generated"
+  },
+  "crystal-flood-25": {
+    "name": "Honey Ember",
+    "source": "generated"
+  },
+  "cubehelix": {
+    "name": "Emerald Glass",
+    "source": "generated"
+  },
+  "curlv": {
+    "name": "Violet Poppy",
+    "source": "generated"
+  },
+  "deadly-nightshade-25": {
+    "name": "Slate Pewter",
+    "source": "generated"
+  },
+  "death-cd-25": {
+    "name": "Silver Flint",
+    "source": "generated"
+  },
+  "debutalis": {
+    "name": "Crimson Candle",
+    "source": "generated"
+  },
+  "deepsea-life-25": {
+    "name": "Indigo Sea",
+    "source": "generated"
+  },
+  "delphic-oracle-25": {
+    "name": "Coral Garnet",
+    "source": "generated"
+  },
+  "desert-nights-25": {
+    "name": "Cream Kiln",
+    "source": "generated"
+  },
+  "desire-framed-25": {
+    "name": "Peach Coal",
+    "source": "generated"
+  },
+  "dessert-union-25": {
+    "name": "Oxblood Lantern",
+    "source": "generated"
+  },
+  "dimensionality-25": {
+    "name": "Sage Verdigris",
+    "source": "generated"
+  },
+  "dinlappi": {
+    "name": "Wine Amethyst",
+    "source": "generated"
+  },
+  "dolphin-dance-25": {
+    "name": "Cobalt Ice",
+    "source": "generated"
+  },
+  "doublevision": {
+    "name": "Mallow Lilac",
+    "source": "generated"
+  },
+  "dreamcatcher-25": {
+    "name": "Sky Surf",
+    "source": "generated"
+  },
+  "duckol": {
+    "name": "Gold Amethyst",
+    "source": "generated"
+  },
+  "dynamo-25": {
+    "name": "Sage Seaglass",
+    "source": "generated"
+  },
+  "eagles-25": {
+    "name": "Copper Honey",
+    "source": "generated"
+  },
+  "early-may-25": {
+    "name": "Teal Gold",
+    "source": "generated"
+  },
+  "edge-25": {
+    "name": "Honey Lantern",
+    "source": "generated"
+  },
+  "eirene-25": {
+    "name": "Cream Bluebell",
+    "source": "generated"
+  },
+  "embrace-25": {
+    "name": "Mint Flint",
+    "source": "generated"
+  },
+  "emergence": {
+    "name": "Lavender Velvet",
+    "source": "generated"
+  },
+  "ephemera-25": {
+    "name": "Aquamarine Tide",
+    "source": "generated"
+  },
+  "etheric-frontier-25": {
+    "name": "Peach Velvet",
+    "source": "generated"
+  },
+  "evening-radiance-25": {
+    "name": "Violet Orchid",
+    "source": "generated"
+  },
+  "exile-25": {
+    "name": "Turquoise Sea",
+    "source": "generated"
+  },
+  "fairys-hollow-25": {
+    "name": "Violet Meadow",
+    "source": "generated"
+  },
+  "fantasy-25": {
+    "name": "Magenta Poppy",
+    "source": "generated"
+  },
+  "fiery-descent-25": {
+    "name": "Aquamarine Fuchsia",
+    "source": "generated"
+  },
+  "flamed-25": {
+    "name": "Tangerine Gold",
+    "source": "generated"
+  },
+  "flaming-wings-25": {
+    "name": "Cardinal Ember",
+    "source": "generated"
+  },
+  "flit-25": {
+    "name": "Pine Moss",
+    "source": "generated"
+  },
+  "flow-25": {
+    "name": "Magenta Coal",
+    "source": "generated"
+  },
+  "flyline": {
+    "name": "Chartreuse Coal",
+    "source": "generated"
+  },
+  "forestal": {
+    "name": "Straw Ember",
+    "source": "generated"
+  },
+  "forgery-25": {
+    "name": "Tangerine Ruby",
+    "source": "generated"
+  },
+  "fractal_abstraction_lines_130499_2560x1600": {
+    "name": "Midnight Cobalt",
+    "source": "authored"
+  },
+  "fractal_flowers_abstract_104352_2560x1600": {
+    "name": "Azure Ember",
+    "source": "generated"
+  },
+  "fractal_shine_stripes_130177_2560x1600": {
+    "name": "Pine Harbor",
+    "source": "generated"
+  },
+  "fractal_stripes_bends_lines_116839_2560x1600": {
+    "name": "Tangerine Brick",
+    "source": "generated"
+  },
+  "fractalscape-25": {
+    "name": "Turquoise Jade",
+    "source": "generated"
+  },
+  "freedor": {
+    "name": "Mint Seaglass",
+    "source": "generated"
+  },
+  "fury-of-the-waves-25": {
+    "name": "Salmon Flame",
+    "source": "generated"
+  },
+  "garcya.us_fantasy_wallpaper074": {
+    "name": "Pistachio Gold",
+    "source": "generated"
+  },
+  "gedoo": {
+    "name": "Cream Velvet",
+    "source": "generated"
+  },
+  "gemini-25": {
+    "name": "Peach Ruby",
+    "source": "generated"
+  },
+  "gist_earth": {
+    "name": "Spring Meadow",
+    "source": "generated"
+  },
+  "gist_heat": {
+    "name": "Cardinal Lantern",
+    "source": "generated"
+  },
+  "gist_rainbow": {
+    "name": "Spring Sapphire",
+    "source": "generated"
+  },
+  "gist_stern": {
+    "name": "Chartreuse Lapis",
+    "source": "generated"
+  },
+  "glassworks-25": {
+    "name": "Mint Cinder",
+    "source": "generated"
+  },
+  "glory-25": {
+    "name": "Azure Coral",
+    "source": "generated"
+  },
+  "glowdon": {
+    "name": "Scarlet Lantern",
+    "source": "generated"
+  },
+  "gnuplot": {
+    "name": "Violet Brick",
+    "source": "generated"
+  },
+  "gnuplot2": {
+    "name": "Cobalt Honey",
+    "source": "generated"
+  },
+  "golden-egg-closeup-25": {
+    "name": "Cream Dusk",
+    "source": "generated"
+  },
+  "gossamer-25": {
+    "name": "Indigo Horizon",
+    "source": "generated"
+  },
+  "grace-25": {
+    "name": "Coral Denim",
+    "source": "generated"
+  },
+  "green-dragon-25": {
+    "name": "Gold Kiln",
+    "source": "generated"
+  },
+  "green-spine-25": {
+    "name": "Emerald Citron",
+    "source": "generated"
+  },
+  "gurundin": {
+    "name": "Cream Lantern",
+    "source": "generated"
+  },
+  "happy-hours-25": {
+    "name": "Oxblood Kiln",
+    "source": "generated"
+  },
+  "harbinger-25": {
+    "name": "Cream Ruby",
+    "source": "generated"
+  },
+  "hawthorn-25": {
+    "name": "Wine Seaglass",
+    "source": "generated"
+  },
+  "hazy-summer-garden-25": {
+    "name": "Straw Lantern",
+    "source": "generated"
+  },
+  "heather-and-sage-25": {
+    "name": "Violet Seaglass",
+    "source": "generated"
+  },
+  "hellid-25": {
+    "name": "Amber Meadow",
+    "source": "generated"
+  },
+  "helping-hands-25": {
+    "name": "Copper Gold",
+    "source": "generated"
+  },
+  "hemispheres-25": {
+    "name": "Pistachio Seaglass",
+    "source": "generated"
+  },
+  "hoarfrost-25": {
+    "name": "Cream Slate",
+    "source": "generated"
+  },
+  "holey-trinity-25": {
+    "name": "Raspberry Sky",
+    "source": "generated"
+  },
+  "hollow-worlds-25": {
+    "name": "Tangerine Honey",
+    "source": "generated"
+  },
+  "hot": {
+    "name": "Salmon Marigold",
+    "source": "generated"
+  },
+  "house-of-ivory-25": {
+    "name": "Slate Harbor",
+    "source": "authored"
+  },
+  "hsv": {
+    "name": "Spring Ink",
+    "source": "generated"
+  },
+  "hyperborean-25": {
+    "name": "Cobalt Slate",
+    "source": "generated"
+  },
+  "illusion-25": {
+    "name": "Plum Sapphire",
+    "source": "generated"
+  },
+  "incursion-25": {
+    "name": "Indigo Deep",
+    "source": "generated"
+  },
+  "inferno": {
+    "name": "Amber Berry",
+    "source": "generated"
+  },
+  "infinity-25": {
+    "name": "Sage Tide",
+    "source": "generated"
+  },
+  "intermission-25": {
+    "name": "Raspberry Ember",
+    "source": "generated"
+  },
+  "jadanti": {
+    "name": "Crimson Coal",
+    "source": "generated"
+  },
+  "jade-serpent-25": {
+    "name": "Silver Glass",
+    "source": "generated"
+  },
+  "jet": {
+    "name": "Cobalt Jade",
+    "source": "generated"
+  },
+  "jiradin": {
+    "name": "Crimson Meadow",
+    "source": "generated"
+  },
+  "kirin-25": {
+    "name": "Powder Dusk",
+    "source": "generated"
+  },
+  "krinshinda": {
+    "name": "Cobalt Ember",
+    "source": "generated"
+  },
+  "kyoto-lanterns-25": {
+    "name": "Amber Obsidian",
+    "source": "generated"
+  },
+  "labani": {
+    "name": "Mauve Jade",
+    "source": "generated"
+  },
+  "lambent-25": {
+    "name": "Coral Deep",
+    "source": "generated"
+  },
+  "lander": {
+    "name": "Tangerine Candle",
+    "source": "generated"
+  },
+  "let-there-be-light-25": {
+    "name": "Violet Linen",
+    "source": "generated"
+  },
+  "lethe-25": {
+    "name": "Magenta Coral",
+    "source": "generated"
+  },
+  "ley-lines-25": {
+    "name": "Peach Ink",
+    "source": "generated"
+  },
+  "liquid-fire-25": {
+    "name": "Honey Flame",
+    "source": "generated"
+  },
+  "locomotion-25": {
+    "name": "Orchid Sea",
+    "source": "generated"
+  },
+  "mSL22 - Imgur": {
+    "name": "Lichen Fern",
+    "source": "generated"
+  },
+  "magic-mushroom-25": {
+    "name": "Pink Porcelain",
+    "source": "generated"
+  },
+  "magma": {
+    "name": "Coral Berry",
+    "source": "generated"
+  },
+  "magnificat-25": {
+    "name": "Cream Ember",
+    "source": "generated"
+  },
+  "malign-25": {
+    "name": "Crimson Rosewood",
+    "source": "generated"
+  },
+  "managua": {
+    "name": "Amber Sky",
+    "source": "generated"
+  },
+  "mean-25": {
+    "name": "Aquamarine Denim",
+    "source": "generated"
+  },
+  "meditation-25": {
+    "name": "Azure Ink",
+    "source": "generated"
+  },
+  "meloni": {
+    "name": "Amber Fuchsia",
+    "source": "generated"
+  },
+  "metal-emblem-25": {
+    "name": "Slate Smoke",
+    "source": "generated"
+  },
+  "metamorph-25": {
+    "name": "Coral Iris",
+    "source": "generated"
+  },
+  "molten-25": {
+    "name": "Copper Sunlight",
+    "source": "generated"
+  },
+  "moon-over-mandelbrot-25": {
+    "name": "Indigo Berry",
+    "source": "generated"
+  },
+  "morning-at-misty-vale-25": {
+    "name": "Seafoam Jade",
+    "source": "generated"
+  },
+  "mossy-25": {
+    "name": "Chartreuse Brass",
+    "source": "generated"
+  },
+  "muswirla": {
+    "name": "Copper Sea",
+    "source": "generated"
+  },
+  "necromancer-25": {
+    "name": "Coral Flame",
+    "source": "generated"
+  },
+  "neptunes-garden-25": {
+    "name": "Aquamarine Shoal",
+    "source": "generated"
+  },
+  "neuron-25": {
+    "name": "Honey Marigold",
+    "source": "generated"
+  },
+  "nightingale-25": {
+    "name": "Oxblood Ink",
+    "source": "generated"
+  },
+  "nipy_spectral": {
+    "name": "Spring Abyss",
+    "source": "generated"
+  },
+  "no-mans-land-25": {
+    "name": "Tangerine Cinder",
+    "source": "generated"
+  },
+  "not-yet-lost-25": {
+    "name": "Wisteria Sapphire",
+    "source": "generated"
+  },
+  "nova-25": {
+    "name": "Crimson Flame",
+    "source": "generated"
+  },
+  "ocean": {
+    "name": "Azure Fern",
+    "source": "generated"
+  },
+  "of-strange-design-25": {
+    "name": "Mint Slate",
+    "source": "generated"
+  },
+  "pacific-shore-25": {
+    "name": "Cream Sapphire",
+    "source": "generated"
+  },
+  "paezing": {
+    "name": "Azure Fuchsia",
+    "source": "generated"
+  },
+  "pageantry-25": {
+    "name": "Coral Marigold",
+    "source": "generated"
+  },
+  "painted-day-25": {
+    "name": "Turquoise Denim",
+    "source": "generated"
+  },
+  "pebbles-shore-light-25": {
+    "name": "Peach Poppy",
+    "source": "generated"
+  },
+  "peekaboo-25": {
+    "name": "Slate Silver",
+    "source": "generated"
+  },
+  "phylum-25": {
+    "name": "Emerald Coal",
+    "source": "generated"
+  },
+  "pilgrim": {
+    "name": "Gold Copper",
+    "source": "generated"
+  },
+  "pink": {
+    "name": "Clay Ember",
+    "source": "generated"
+  },
+  "plasma": {
+    "name": "Violet Wine",
+    "source": "generated"
+  },
+  "plummet-25": {
+    "name": "Turquoise Glacier",
+    "source": "generated"
+  },
+  "polished-25": {
+    "name": "Pine Meadow",
+    "source": "generated"
+  },
+  "portal-of-fire-25": {
+    "name": "Clay Lantern",
+    "source": "generated"
+  },
+  "quiet-waiting-25": {
+    "name": "Seafoam Gold",
+    "source": "generated"
+  },
+  "radian": {
+    "name": "Wisteria Fuchsia",
+    "source": "generated"
+  },
+  "ragnetic_field": {
+    "name": "Copper Coal",
+    "source": "generated"
+  },
+  "rainbow": {
+    "name": "Coral Seaglass",
+    "source": "generated"
+  },
+  "rainbow-country-25": {
+    "name": "Chartreuse Kiln",
+    "source": "generated"
+  },
+  "ransom-25": {
+    "name": "Copper Candle",
+    "source": "generated"
+  },
+  "re-entry-25": {
+    "name": "Peach Lilac",
+    "source": "generated"
+  },
+  "red-octavo-25": {
+    "name": "Cream Brick",
+    "source": "generated"
+  },
+  "reelati": {
+    "name": "Chartreuse Sapphire",
+    "source": "generated"
+  },
+  "rideon": {
+    "name": "Plum Petal",
+    "source": "generated"
+  },
+  "riding-on-the-tide-25": {
+    "name": "Periwinkle Lantern",
+    "source": "generated"
+  },
+  "rite-of-passage-25": {
+    "name": "Copper Ruby",
+    "source": "generated"
+  },
+  "riven-25": {
+    "name": "Amber Coral",
+    "source": "generated"
+  },
+  "river-of-light-25": {
+    "name": "Gilded Lagoon",
+    "source": "authored"
+  },
+  "rolling": {
+    "name": "Spring Lime",
+    "source": "authored"
+  },
+  "rondo": {
+    "name": "Cobalt Lantern",
+    "source": "generated"
+  },
+  "rose-pillow-25": {
+    "name": "Clay Petal",
+    "source": "generated"
+  },
+  "roundabout": {
+    "name": "Magenta Ember",
+    "source": "generated"
+  },
+  "sacred-grove-25": {
+    "name": "Aquamarine Channel",
+    "source": "generated"
+  },
+  "sad-eyes-25": {
+    "name": "Periwinkle Ember",
+    "source": "generated"
+  },
+  "sanctuary-25": {
+    "name": "Periwinkle Slate",
+    "source": "generated"
+  },
+  "sapphire-dreams-25": {
+    "name": "Azure Abyss",
+    "source": "generated"
+  },
+  "satin-ends-25": {
+    "name": "Magenta Bluebell",
+    "source": "generated"
+  },
+  "scarlet-admiral-25": {
+    "name": "Peach Coral",
+    "source": "generated"
+  },
+  "scattering-25": {
+    "name": "Gold Rust",
+    "source": "generated"
+  },
+  "sci-fi-new-worlds-alien-fiction-selection-earth-space-planets-393423": {
+    "name": "Rain Frost",
+    "source": "generated"
+  },
+  "scifi-my-current-lol-1652484": {
+    "name": "Rain Horizon",
+    "source": "generated"
+  },
+  "seaweed-25": {
+    "name": "Storm Verdigris",
+    "source": "generated"
+  },
+  "seismic": {
+    "name": "Cobalt Poppy",
+    "source": "generated"
+  },
+  "shadalu": {
+    "name": "Peach Gold",
+    "source": "generated"
+  },
+  "shaki": {
+    "name": "Straw Flame",
+    "source": "generated"
+  },
+  "shartook": {
+    "name": "Cream Glass",
+    "source": "generated"
+  },
+  "sholmes": {
+    "name": "Violet Coral",
+    "source": "generated"
+  },
+  "silk-scarves-25": {
+    "name": "Lemon Ember",
+    "source": "generated"
+  },
+  "singularity-25": {
+    "name": "Cyan Fern",
+    "source": "generated"
+  },
+  "skyroads-25": {
+    "name": "Turquoise Road",
+    "source": "authored"
+  },
+  "skyroads-blue-25": {
+    "name": "Cobalt Obsidian",
+    "source": "generated"
+  },
+  "skyward-25": {
+    "name": "Cobalt Candle",
+    "source": "generated"
+  },
+  "sleeper-25": {
+    "name": "Aquamarine Seaglass",
+    "source": "generated"
+  },
+  "smokey-green-25": {
+    "name": "Mint Olive",
+    "source": "generated"
+  },
+  "smooth-sailing-25": {
+    "name": "Denim Poppy",
+    "source": "generated"
+  },
+  "solipstic": {
+    "name": "Rust Gold",
+    "source": "generated"
+  },
+  "sparks": {
+    "name": "Cobalt Plum",
+    "source": "generated"
+  },
+  "sparx-25": {
+    "name": "Moss Gold",
+    "source": "generated"
+  },
+  "spirit-of-the-dream-25": {
+    "name": "Azure Clay",
+    "source": "generated"
+  },
+  "spring": {
+    "name": "Orchid Blossom",
+    "source": "generated"
+  },
+  "stained_glass": {
+    "name": "Straw Marigold",
+    "source": "generated"
+  },
+  "standard-25": {
+    "name": "Amber Plum",
+    "source": "generated"
+  },
+  "strange-creature-25": {
+    "name": "Copper Ember",
+    "source": "generated"
+  },
+  "summer": {
+    "name": "Spring Citron",
+    "source": "generated"
+  },
+  "summer-dusk-25": {
+    "name": "Cobalt Sunlight",
+    "source": "generated"
+  },
+  "sun-god-25": {
+    "name": "Amber Gold",
+    "source": "generated"
+  },
+  "sun-kissed-25": {
+    "name": "Oxblood Rosewood",
+    "source": "generated"
+  },
+  "sunsets-wake-25": {
+    "name": "Amber Frost",
+    "source": "generated"
+  },
+  "taladee": {
+    "name": "Amber Wine",
+    "source": "generated"
+  },
+  "tapestry-25": {
+    "name": "Olive Moss",
+    "source": "generated"
+  },
+  "technology-25": {
+    "name": "Olive Slate",
+    "source": "generated"
+  },
+  "ten-leaf-clover-25": {
+    "name": "Turquoise Deep",
+    "source": "generated"
+  },
+  "terrain": {
+    "name": "Mint Sapphire",
+    "source": "generated"
+  },
+  "tethered": {
+    "name": "Copper Seaglass",
+    "source": "generated"
+  },
+  "the-four-quarters-25": {
+    "name": "Turquoise Kiln",
+    "source": "generated"
+  },
+  "the-outsiders-25": {
+    "name": "Sapphire Gold",
+    "source": "generated"
+  },
+  "the_light_fantastic": {
+    "name": "Powder Coal",
+    "source": "generated"
+  },
+  "tictac": {
+    "name": "Seafoam Sapphire",
+    "source": "generated"
+  },
+  "to-the-bone-25": {
+    "name": "Sapphire Honey",
+    "source": "generated"
+  },
+  "torment-of-the-skies-25": {
+    "name": "Sapphire Ice",
+    "source": "generated"
+  },
+  "torque-25": {
+    "name": "Copper Tidewater",
+    "source": "authored"
+  },
+  "touch": {
+    "name": "Maroon Ember",
+    "source": "generated"
+  },
+  "toxic-spire-25": {
+    "name": "Emerald Gold",
+    "source": "generated"
+  },
+  "trade-winds-25": {
+    "name": "Cream Cinder",
+    "source": "generated"
+  },
+  "transcendence-25": {
+    "name": "Cobalt Surf",
+    "source": "generated"
+  },
+  "tri-state": {
+    "name": "Mauve Gold",
+    "source": "generated"
+  },
+  "triangulate-25": {
+    "name": "Tangerine Lacquer",
+    "source": "generated"
+  },
+  "triglandal": {
+    "name": "Pink Fuchsia",
+    "source": "generated"
+  },
+  "turbo": {
+    "name": "Crimson Jade",
+    "source": "generated"
+  },
+  "twilight": {
+    "name": "Violet Velvet",
+    "source": "generated"
+  },
+  "twilight_shifted": {
+    "name": "Violet Rosewood",
+    "source": "generated"
+  },
+  "under-a-brighter-sky-25": {
+    "name": "Aquamarine Glass",
+    "source": "generated"
+  },
+  "unfolding-creation-25": {
+    "name": "Gold Meadow",
+    "source": "generated"
+  },
+  "variations-on-a-floorplan-25": {
+    "name": "Azure Poppy",
+    "source": "generated"
+  },
+  "vibe-25": {
+    "name": "Azure Marigold",
+    "source": "generated"
+  },
+  "viridis": {
+    "name": "Chartreuse Mint",
+    "source": "generated"
+  },
+  "visionary-spires-25": {
+    "name": "Aquamarine Sea",
+    "source": "generated"
+  },
+  "visions-25": {
+    "name": "Violet Prism",
+    "source": "authored"
+  },
+  "vitality-25": {
+    "name": "Amber Iron",
+    "source": "generated"
+  },
+  "wallhaven_wallhaven-0125mv": {
+    "name": "Crimson Blossom",
+    "source": "generated"
+  },
+  "wallhaven_wallhaven-0w8gpp": {
+    "name": "Rain Glass",
+    "source": "authored"
+  },
+  "wallhaven_wallhaven-1jo7vv": {
+    "name": "Crimson Copper",
+    "source": "generated"
+  },
+  "wallhaven_wallhaven-1joljg": {
+    "name": "Crimson Velvet",
+    "source": "authored"
+  },
+  "wallhaven_wallhaven-2ex5zg": {
+    "name": "Cobalt Lavender",
+    "source": "generated"
+  },
+  "wallhaven_wallhaven-398e39": {
+    "name": "Cobalt Lilac",
+    "source": "generated"
+  },
+  "wallhaven_wallhaven-39lg2d": {
+    "name": "Cyan Seaglass",
+    "source": "generated"
+  },
+  "wallhaven_wallhaven-3z1jkd": {
+    "name": "Raspberry Peony",
+    "source": "generated"
+  },
+  "wallhaven_wallhaven-422xr6": {
+    "name": "Cobalt Cinder",
+    "source": "generated"
+  },
+  "wallhaven_wallhaven-45pqz1": {
+    "name": "Wine Velvet",
+    "source": "generated"
+  },
+  "wallhaven_wallhaven-47xzoe": {
+    "name": "Coral Sapphire",
+    "source": "generated"
+  },
+  "wallhaven_wallhaven-4omjp5": {
+    "name": "Azure Glacier",
+    "source": "generated"
+  },
+  "wallhaven_wallhaven-4xy8el": {
+    "name": "Indigo Channel",
+    "source": "generated"
+  },
+  "wallhaven_wallhaven-5dpzz5": {
+    "name": "Plum Berry",
+    "source": "generated"
+  },
+  "wallhaven_wallhaven-6d3zz6": {
+    "name": "Ember Lantern",
+    "source": "authored"
+  },
+  "wallhaven_wallhaven-8xz1mk": {
+    "name": "Oxblood Ember",
+    "source": "generated"
+  },
+  "wallhaven_wallhaven-95k3qx": {
+    "name": "Sky Spray",
+    "source": "generated"
+  },
+  "wallhaven_wallhaven-d67kpg": {
+    "name": "Azure Shoal",
+    "source": "generated"
+  },
+  "wallhaven_wallhaven-d6yv9m": {
+    "name": "Maroon Lantern",
+    "source": "generated"
+  },
+  "wallhaven_wallhaven-dg6v93": {
+    "name": "Sapphire Lilac",
+    "source": "generated"
+  },
+  "wallhaven_wallhaven-dped2l": {
+    "name": "Powder Glacier",
+    "source": "generated"
+  },
+  "wallhaven_wallhaven-e7v1ll": {
+    "name": "Mauve Berry",
+    "source": "generated"
+  },
+  "wallhaven_wallhaven-g8ev1l": {
+    "name": "Plum Porcelain",
+    "source": "generated"
+  },
+  "wallhaven_wallhaven-g8p1ol": {
+    "name": "Rain Ice",
+    "source": "generated"
+  },
+  "wallhaven_wallhaven-k97v5q": {
+    "name": "Silver Slate",
+    "source": "generated"
+  },
+  "wallhaven_wallhaven-kwg7v6": {
+    "name": "Coral Rosewood",
+    "source": "generated"
+  },
+  "wallhaven_wallhaven-m9v5l9": {
+    "name": "Rain Sea",
+    "source": "generated"
+  },
+  "wallhaven_wallhaven-nm6938": {
+    "name": "Powder Jade",
+    "source": "generated"
+  },
+  "wallhaven_wallhaven-nrl8ym": {
+    "name": "Saffron Ruby",
+    "source": "generated"
+  },
+  "wallhaven_wallhaven-oxgk7p": {
+    "name": "Oxblood Copper",
+    "source": "generated"
+  },
+  "wallhaven_wallhaven-oxxve5": {
+    "name": "Crimson Marigold",
+    "source": "generated"
+  },
+  "wallhaven_wallhaven-vg1rzm": {
+    "name": "Cobalt Wisteria",
+    "source": "generated"
+  },
+  "wallhaven_wallhaven-we6oqp": {
+    "name": "Peach Clay",
+    "source": "generated"
+  },
+  "wallhaven_wallhaven-xl8gmd": {
+    "name": "Oxblood Glass",
+    "source": "generated"
+  },
+  "wallhaven_wallhaven-ym8rqk": {
+    "name": "Sapphire Sky",
+    "source": "generated"
+  },
+  "wallhaven_wallhaven-yxlvkk": {
+    "name": "Mulberry Amethyst",
+    "source": "generated"
+  },
+  "wallhaven_wallhaven-zxv17j": {
+    "name": "Lilac Porcelain",
+    "source": "generated"
+  },
+  "wallpaper-supernova": {
+    "name": "Crimson Seaglass",
+    "source": "generated"
+  },
+  "waltzing-in-shadows-25": {
+    "name": "Denim Moss",
+    "source": "generated"
+  },
+  "warp-angels-25": {
+    "name": "Cobalt Flame",
+    "source": "generated"
+  },
+  "watercolours-in-the-rain-25": {
+    "name": "Indigo Seaglass",
+    "source": "generated"
+  },
+  "watersprite-25": {
+    "name": "Sapphire Air",
+    "source": "generated"
+  },
+  "western-winds-25": {
+    "name": "Cream Hydrangea",
+    "source": "generated"
+  },
+  "wheelance": {
+    "name": "Gold Cinder",
+    "source": "generated"
+  },
+  "whispers-on-golden-sand-25": {
+    "name": "Ultramarine Sky",
+    "source": "generated"
+  },
+  "windy-peak-25": {
+    "name": "Cobalt Kiln",
+    "source": "generated"
+  },
+  "winter": {
+    "name": "Cobalt Mint",
+    "source": "generated"
+  },
+  "within-25": {
+    "name": "Aquamarine Gold",
+    "source": "generated"
+  },
+  "xelan-25": {
+    "name": "Gold Fern",
+    "source": "generated"
+  },
+  "xuahakin": {
+    "name": "Mint Lacquer",
+    "source": "generated"
+  },
+  "zhgiu1cypaac1": {
+    "name": "Ivory Glass",
+    "source": "generated"
+  }
 }

@@ -90,7 +90,7 @@ bands.test.mjs        3 tests: the pool cuts the frame, never what is in it
 level.test.mjs        7 tests: the module's tone measurement, and a derived curve replays
 palettes.jsonl        the roster palettes.js is baked from; 1,021 maps, 77 offered
 modes.jsonl           the roster catalog.js is baked from: the 17 modes the picker offers
-palette-names.json    every map's display name, by underlying name; generated, then hand-editable
+palette-names.json    every map's display name and whether a person wrote it, by underlying name
 popular.json          the picker's Popular 24, and why each map passed over was passed over
 stops.js              the blob's reader: a map's control points, by name
 palettes.js           generated: the index — name to kind, offer, offset, count
@@ -127,16 +127,19 @@ gallery record cannot be read the select lists all seventeen, because a page off
 mode at all is worse than one offering too many.
 
 **A palette is shown by its display name** *(explorer_palettes, 2026-09-16)*.
-`palette-names.json` is `{underlying: display}` for every map carried: 488 of the library's
-names already read as names and are their own, and 533 codes — `wallhaven_*`, `cmr.*`,
+`palette-names.json` is `{underlying: {name, source}}` for every map carried, `source`
+being `authored` (the map's own name, or one set by hand) or `generated`: the library's
+names that already read as names are their own, a single word included where the library
+says a person wrote it (`Inkfall`, not `Blues`), and the codes — `wallhaven_*`, `cmr.*`,
 `cet_*`, `commons_*`, matplotlib's `RdPu`, a trailing `-25` — get two words, a colour and a
 material, from the map's dominant and secondary codebook cells. The display name is what
 the picker's rows, its tabs and its filter use, what the Palette note and Details say, and
 what the tooltip says beside the underlying name. The underlying name is what a link, Copy
 link, the download filename and every record carry, so no permalink moved. A map with no
 entry shows its own name, and `builder check` prints how many have none.
-`python -m builder explorer --names` fills missing entries and never rewrites one, which is
-what lets a name be authored by hand. **Popular** is `popular.json`: 24 maps. Its
+`python -m builder explorer --names` fills missing entries and never rewrites an authored
+one, which is what lets a name be authored by hand; a generated entry whose map's own name
+has come to read as one gets it back. **Popular** is `popular.json`: 24 maps. Its
 `pinned` maps are Matt's picks and open the list in his order, and `dropped` holds the ones he
 ruled out. The rest are filled by `python -m builder explorer --popular` for range
 across hue families (every family gets one place before any gets a second), by the rule
@@ -1046,6 +1049,8 @@ verbatim, over the band's six numbers transcribed from `levels_band.json` with i
 | --- | --- | --- | --- |
 | stored | a seat, an atlas mark, a pasted link | replays `level=` exactly, or no curve where there is none | *Leveled to this wallpaper's stored tone curve* |
 | derived | the first pan, zoom or control change; a bare page | measured on its own finished picture, every pass | *Leveled to this view* |
+
+**15 of the 1,000 published seats carry a recipe maxiter other than `maxiter::for_width`**, which the page always draws at, so a seat opened here may differ slightly from its gallery picture; Details names the difference.
 
 The Autolevel box is enabled wherever the operator acts — a field coloring or a composite,
 which the plan now answers as `levels` — and disabled with *Not used by this mode* under a

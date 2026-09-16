@@ -174,8 +174,14 @@ const homes = new Map();
 
 /** `palette-names.json`: the name each map is shown by. A map it does not name, or a page
  *  that could not read it, shows the map's own name — which is also the name a link, Copy
- *  link and a downloaded file carry, always. */
+ *  link and a downloaded file carry, always. The record's entries are `{name, source}`;
+ *  `source` is the builder's business, and this holds the names alone. */
 let paletteNames = {};
+
+/** The record's entries reduced to `{underlying: shown}`. */
+function shownNames(record) {
+  return Object.fromEntries(Object.entries(record ?? {}).map(([name, entry]) => [name, entry.name]));
+}
 
 /** The name a reader is shown for a map. */
 function shownName(name) {
@@ -1020,7 +1026,7 @@ function syncLevel() {
       : "Leveled to this wallpaper's stored tone curve.";
   } else {
     levelNote.textContent = derivedInBand
-      ? "Leveled to this view, whose tone is already in band."
+      ? "Measured for this view, which needed no leveling."
       : "Leveled to this view.";
   }
 }
@@ -1460,7 +1466,7 @@ async function main() {
     json(new URL("./popular.json", import.meta.url)),
   ]);
   renderer = started;
-  paletteNames = names ?? {};
+  paletteNames = shownNames(names);
   if (!(record instanceof Error)) {
     offeredModes = [...new Set(record.seats.map((seat) => seat.mode))];
   }
