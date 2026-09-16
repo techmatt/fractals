@@ -103,8 +103,14 @@ follows is why it says it that way.
   them, so a link whose map is not baked falls back to `DEFAULT_PALETTE` rather than
   costing the link, and the slot's tooltip says which ones did. `refused` is the record's
   list of everything the recipe holds that a link has no key for: that map, a
-  `band_autolevel/v1` pass, a curve a mode's catalog does not give it, a fold a cyclic map
-  refuses.
+  `band_autolevel/v1` pass whose curve was not recorded, a curve a mode's catalog does not
+  give it, a fold a cyclic map refuses.
+- **A gallery picture's tone curve travels with it where it was recorded.** The gallery
+  slot's `tone` is `clean`, `curved` or `lost`; a `curved` slot's `level` is the curve as
+  the permalink's own `level` value, and `links.js` passes it through, so the seat opens
+  levelled. A `lost` slot carries `autolevel band_autolevel/v1` in `refused` and a `gap`
+  saying what its run did not record, which the tooltip shows. `from` and `curve` are
+  notes: the run the row came out of, and the mode transform it was drawn at.
 - **Both halves of the search are on one plane.** A Julia location is a value of `c`, and
   `c` is a point of the Mandelbrot parameter plane, so a `julia:mandelbrot` place is drawn
   at its own `c` and shares the plate with the parameter places.
@@ -162,13 +168,14 @@ instantiated for that one export, which is exactly what `builder/emit.mjs` and
 
 `atlas.jsonl`'s method row names it: the published record the seats were read out of, the
 live judge, and the fine bar the population was cut at. The maker is
-`scratch/atlas_explore2/` in `fractal-wallpapers` — it streams the candidate ledger and
+`fractal-wallpapers curate atlas`, writing `artifacts/atlas/mandelbrot/` in that checkout,
+which is where `--ingest` reads with no path given. It streams the candidate ledger and
 the fine head's pool scores, queues every seated place and then everything else by best
-fine score, and places them in one greedy pass. Its own README has the build order.
+fine score, and places them in one greedy pass.
 
 ```
 python -m builder atlas                                  # what the record holds
-python -m builder atlas --ingest <maker>/dots.json       # rewrite it and its pictures
+python -m builder atlas --ingest [<maker>/dots.json]     # rewrite it and its pictures
 python -m builder atlas --plates                         # all five plates, dots re-projected
 python -m builder atlas --figure atlas-places            # the plate and its marks, for §11
 ```
@@ -183,7 +190,9 @@ no input in anybody's scratch.
 makers are: a record nobody can rebuild is a record nobody can correct. It re-encodes
 every thumbnail at the page's own quality and no chroma subsampling, sweeps
 `assets/images/atlas/` of anything the new record does not name, and writes both JSONL
-files.
+files. The maker still projects onto its own 16:9 `base.jpg`; the ingest ignores that,
+keeps every committed partition and plate, and projects each dot from its `place` onto the
+committed plate, so an ingest never undoes `--plates`.
 
 The figure is the only thing this module draws. It is the plate with the marks on it and
 nothing else — no frames, no captions, no interface — because a still of a tool should be

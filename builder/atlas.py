@@ -56,6 +56,21 @@ whether this is the picture the published record seats at the place, and `plane`
 kind of place the row came from. The second is read off the recipe's own family rather
 than copied from the dot, and `check` holds the two together.
 
+It also carries what became of the picture's tone, because a gallery picture went through
+`band_autolevel/v1` and a link that forgot the curve would draw the right geometry in the
+wrong color:
+
+* `tone` — `clean` where the operator did not act, `curved` where it did and the run
+  recorded the curve, `lost` where it did and the run did not;
+* `level` — the curve as the permalink's own `level` value, where `tone` is `curved`, and
+  `null` everywhere else. The page hands it to the link, so a curved seat opens levelled;
+* `gap` — what the run did not record, where `tone` is `lost`, which the tooltip says;
+* `from` — the run the row came out of, and `curve` — the mode's transform it was drawn
+  at. Both are notes; nothing reads them to build a link.
+
+A `lost` slot is the one that carries an `autolevel` refusal, and a slot that carries one
+is `lost`: the two are one fact spelled twice, and the loader holds them together.
+
 **A slot's `colormap` is what the picture was drawn through, not what its link will
 say.** Where the explorer does not bake that map the link falls back to the default, and
 the `refused` line is what the tooltip is written from. `atlas/atlas.test.mjs` holds the
@@ -119,6 +134,14 @@ SLOTS = ("mandelbrot", "julia", "gallery")
 #: The two kinds of place, and the word each is spelled with. A dot is one of them and
 #: never both.
 PLANES = ("mandelbrot", "julia")
+
+#: What became of a gallery picture's tone curve: untouched, recorded, or not recorded.
+TONES = ("clean", "curved", "lost")
+
+#: The one tone operator a gallery picture went through, as the record's `level` names it
+#: and as `refused` names it where the curve was lost.
+LEVEL_OPERATOR = "band_autolevel/v1"
+LOST_LEVEL = f"autolevel {LEVEL_OPERATOR}"
 
 #: Which plane a slot's family belongs to. This is how the gallery slot's own `plane` is
 #: checked rather than trusted: the row says which kind of place it came from, and its
@@ -195,6 +218,11 @@ class Slot:
     p_fine: float | None
     refused: tuple[str, ...]
     file: str
+    tone: str | None = None
+    level: str | None = None
+    gap: str | None = None
+    came_from: str | None = None
+    curve: str | None = None
 
     @property
     def path(self) -> Path:
@@ -374,6 +402,9 @@ def _slot(row: records.Record, name: str, held: object) -> Slot:
         raise AtlasError(f"{row.where}: {where}.refused is a list of what the link cannot carry")
     plane = held.get("plane")
     seated = held.get("seated")
+    tone = held.get("tone")
+    level = held.get("level")
+    notes = {key: held.get(key) for key in ("gap", "from", "curve")}
     if name == "gallery":
         if plane not in PLANES:
             raise AtlasError(
@@ -381,8 +412,33 @@ def _slot(row: records.Record, name: str, held: object) -> Slot:
             )
         if not isinstance(seated, bool):
             raise AtlasError(f"{row.where}: {where}.seated must be true or false")
-    elif plane is not None or seated is not None:
-        raise AtlasError(f"{row.where}: only the gallery slot carries plane and seated")
+        if tone not in TONES:
+            raise AtlasError(f"{row.where}: {where}.tone is one of {', '.join(TONES)}")
+        if level is not None and (
+            not isinstance(level, str) or not level.startswith(LEVEL_OPERATOR + ":")
+        ):
+            raise AtlasError(
+                f"{row.where}: {where}.level is a {LEVEL_OPERATOR} curve as a link spells it, "
+                "or null"
+            )
+        if (level is not None) != (tone == "curved"):
+            raise AtlasError(
+                f"{row.where}: {where} says tone {tone} and "
+                + ("carries a level" if level is not None else "carries no level")
+            )
+        if (LOST_LEVEL in refused) != (tone == "lost"):
+            raise AtlasError(
+                f"{row.where}: {where} says tone {tone} and "
+                + ("refuses" if LOST_LEVEL in refused else "does not refuse")
+                + f" {LOST_LEVEL}"
+            )
+        for key, value in notes.items():
+            if value is not None and (not isinstance(value, str) or not value):
+                raise AtlasError(f"{row.where}: {where}.{key} is a non-empty string, or null")
+    elif plane is not None or seated is not None or tone is not None or level is not None:
+        raise AtlasError(
+            f"{row.where}: only the gallery slot carries plane, seated, tone and level"
+        )
     return Slot(
         name=name,
         what=held.get("what"),
@@ -400,6 +456,11 @@ def _slot(row: records.Record, name: str, held: object) -> Slot:
         p_fine=_maybe(row, held, "p_fine", f"{where}.p_fine"),
         refused=tuple(refused),
         file=held["file"],
+        tone=tone,
+        level=level,
+        gap=notes["gap"],
+        came_from=notes["from"],
+        curve=notes["curve"],
     )
 
 
@@ -745,6 +806,15 @@ def summary() -> list[str]:
         refused = sum(1 for dot in partition.dots for slot in dot.slots.values() if slot.refused)
         pictures = sum(len(dot.slots) for dot in partition.dots)
         lines.append(f"    {pictures} pictures, {refused} whose link cannot carry everything")
+        tones = {
+            tone: sum(1 for dot in partition.dots if dot.slots["gallery"].tone == tone)
+            for tone in TONES
+        }
+        if partition.dots:
+            lines.append(
+                f"    gallery tone: {tones['clean']} clean, {tones['curved']} curved and opening "
+                f"levelled, {tones['lost']} lost"
+            )
     return lines
 
 
@@ -763,13 +833,12 @@ SHADE_DEFAULTS = {
     "rolloff": {"kind": "none"},
 }
 
-#: What the maker's refusal lines are rewritten to on the way in. The maker spells the
-#: roster's size into its own message — *not among the 126 the explorer bakes* — and that
-#: is a number which grows every time a figure lands in a map the roster did not carry.
-#: The record names the thing it could not carry; the page writes the sentence. The two
-#: short forms `links.js`'s `refusals` derives have to match exactly, because
-#: `atlas.test.mjs` holds the record to them in both directions.
-REFUSAL_PREFIX = ("colormap ", "mode ")
+#: Where `curate atlas` writes, inside the wallpapers checkout. The maker writes its
+#: refusal lines in the site's short forms — `colormap <name>`, `mirror on a cyclic map`,
+#: `autolevel band_autolevel/v1`, `curve <name>` — so they pass through untouched, and
+#: `atlas.test.mjs` holds the first two to the roster in both directions.
+MAKER_OUTPUT = ("artifacts", "atlas", "mandelbrot", "dots.json")
+MAKER = "fractal-wallpapers curate atlas"
 
 #: The quality a slot picture is re-encoded at. The maker lands them at the engine's own
 #: quality and they are nearly twice as large as this page can afford to ship; 4:4:4 is not
@@ -791,21 +860,11 @@ def _shade_of(palette: object) -> dict:
     }
 
 
-def _refusal(text: str) -> str:
-    """One of the maker's refusal lines, as the record carries it.
+def maker_output() -> Path:
+    """The maker's `dots.json` in the configured wallpapers checkout."""
+    from . import renders
 
-    The name is everything up to the maker's own parenthetical, not up to the first space:
-    a colormap is called `Smoke & Madder` as readily as `twilight_shifted`, and splitting
-    on whitespace turned that one into a refusal nothing on the site could match.
-    """
-    if text.startswith("mirror "):
-        return "mirror on a cyclic map"
-    for prefix in REFUSAL_PREFIX:
-        if text.startswith(prefix):
-            name = text[len(prefix) :]
-            cut = name.find(" (")
-            return prefix + (name if cut < 0 else name[:cut])
-    return text
+    return renders.wallpapers_root().joinpath(*MAKER_OUTPUT)
 
 
 def _slot_row(name: str, held: dict, file: str) -> dict:
@@ -836,7 +895,12 @@ def _slot_row(name: str, held: dict, file: str) -> dict:
     if name == "gallery":
         row["seated"] = bool(held.get("seated"))
         row["plane"] = PLANE_OF_FAMILY[row["family"]]
-    row["refused"] = [_refusal(line) for line in held.get("refused") or []]
+        row["tone"] = held.get("tone")
+        row["level"] = held.get("level")
+        for key in ("gap", "from", "curve"):
+            if held.get(key) is not None:
+                row[key] = held[key]
+    row["refused"] = list(held.get("refused") or [])
     row["file"] = file
     return row
 
@@ -857,7 +921,9 @@ def _family_name(family: dict) -> str:
     raise AtlasError(f"{kind}: not a family this site draws")
 
 
-def ingest(source: Path, *, quality: int = THUMB_QUALITY, made: str | None = None) -> list[str]:
+def ingest(
+    source: Path | None = None, *, quality: int = THUMB_QUALITY, made: str | None = None
+) -> list[str]:
     """Turn the maker's `dots.json` and `thumbs/` into the committed record and pictures.
 
     The maker next door writes a working file; this is the one program that turns it into
@@ -866,22 +932,35 @@ def ingest(source: Path, *, quality: int = THUMB_QUALITY, made: str | None = Non
     re-encodes every thumbnail — the maker's are three times the size this page can afford
     — sweeps `assets/images/atlas/` of anything the new record does not name, and writes
     both JSONL files.
+
+    **The plates are this repository's, not the maker's.** The maker still lands a 16:9
+    `base.jpg` and projects its dots onto that; the site draws its own five plates with
+    `--plates`, so the ingest keeps every committed partition row as it stands and projects
+    each dot from its own place onto the committed Mandelbrot plate. The absorption radius
+    comes in as pixels of the maker's base and is kept on the plane, then restated against
+    the plate the dots are drawn on.
     """
     from datetime import date
 
+    source = source or maker_output()
     payload = json.loads(source.read_text(encoding="utf-8"))
     here = source.parent
     base = payload["base"]
-    # The plate was rendered once, by the first pass, and `base.json` is the report it
-    # left. Its supersample and cap are read off that rather than typed here: they are
-    # facts about a picture this repository did not draw.
-    plate = json.loads((here / "base.json").read_text(encoding="utf-8"))
-    plate_file = str(base["image"])
     thumb_across, thumb_down = (int(value) for value in payload["thumb"]["resolution"])
 
+    index = records.read(ATLAS_INDEX)
+    partitions = [dict(row.fields) for row in index[1:]]
+    target = next((one for one in partitions if one["partition"] == "mandelbrot"), None)
+    if target is None:
+        raise AtlasError(f"{ATLAS_INDEX.name}: no mandelbrot partition to ingest dots onto")
+    drawn = _plate(records.Record(ATLAS_INDEX, 1, target))
+    radius_plane = round(
+        float(payload["radius_px"]) * float(base["viewport"]["width"]) / int(base["resolution"][0]),
+        6,
+    )
+
     IMAGE_DIR.mkdir(parents=True, exist_ok=True)
-    landed = {plate_file}
-    shutil.copyfile(here / plate_file, IMAGE_DIR / plate_file)
+    landed = {one["plate"]["file"] for one in partitions}
 
     rows: list[dict] = []
     for dot in payload["dots"]:
@@ -895,13 +974,14 @@ def ingest(source: Path, *, quality: int = THUMB_QUALITY, made: str | None = Non
             landed.add(file)
             slots[name] = _slot_row(name, held, file)
         place = dot["place"]
+        px, py = project((float(place["x"]), float(place["y"])), drawn)
         rows.append(
             {
                 "schema": records.SCHEMA,
                 "kind": "dot",
                 "id": int(dot["id"]),
-                "px": dot["px"],
-                "py": dot["py"],
+                "px": round(px, 2),
+                "py": round(py, 2),
                 "plane": str(dot["kind"]),
                 "dropped": int(dot["dropped"]),
                 "place": {
@@ -925,8 +1005,8 @@ def ingest(source: Path, *, quality: int = THUMB_QUALITY, made: str | None = Non
         "made": made or date.today().isoformat(),
         "record": payload["record"],
         "judge": payload["judge_artifact"],
-        "generator": "fractal-wallpapers scratch/atlas_explore2/build_dots.py",
-        "radius_px": payload["radius_px"],
+        "generator": MAKER,
+        "radius_px": round(radius_plane * drawn.width / float(drawn.w), 2),
         "canonical_map": payload["canonical_map"],
         "fine_bar": payload["fine_bar"],
         "thumb": {"width": thumb_across, "height": thumb_down},
@@ -939,45 +1019,20 @@ def ingest(source: Path, *, quality: int = THUMB_QUALITY, made: str | None = Non
             "score; a place landing inside the absorption radius of a dot already drawn is "
             "dropped, whichever kind either of them is, so a dot is one place of one kind."
         ),
+        "radius_plane": radius_plane,
     }
-    partition = {
-        "schema": records.SCHEMA,
-        "kind": "partition",
-        "partition": "mandelbrot",
-        "title": "Mandelbrot",
-        "family": "mandelbrot",
-        "file": "mandelbrot.jsonl",
-        "plate": {
-            "file": plate_file,
-            "width": int(base["resolution"][0]),
-            "height": int(base["resolution"][1]),
-            "family": "mandelbrot",
-            "x": str(base["viewport"]["center_re"]),
-            "y": str(base["viewport"]["center_im"]),
-            "w": str(base["viewport"]["width"]),
-            "aspect": [16, 9],
-            "mode": str(plate["mode"]),
-            "colormap": str(plate["colormap"]),
-            "supersample": int(plate["supersample"]),
-            "maxiter": int(plate["maxiter"]),
-        },
-        "plate_width": str(payload["plate_width"]),
-        "dots": len(rows),
-        "says": (
-            "the parameter plane, with the Julia places drawn over the same plane: a Julia "
-            "place is a c, and c is a point of this plane"
-        ),
-    }
+    target["plate_width"] = str(payload["plate_width"])
+    target["dots"] = len(rows)
 
-    _write_rows(ATLAS_INDEX, [method, partition])
-    _write_rows(ATLAS_DIR / "mandelbrot.jsonl", rows)
+    _write_rows(ATLAS_INDEX, [method] + partitions)
+    _write_rows(ATLAS_DIR / target["file"], rows)
 
     swept = [path for path in sorted(IMAGE_DIR.glob("*.jpg")) if path.name not in landed]
     for path in swept:
         path.unlink()
     total = sum(path.stat().st_size for path in IMAGE_DIR.glob("*.jpg"))
     return [
-        f"atlas/atlas.jsonl: 2 rows · atlas/mandelbrot.jsonl: {len(rows)} dots",
+        f"atlas/atlas.jsonl: {1 + len(partitions)} rows · atlas/{target['file']}: {len(rows)} dots",
         f"assets/images/atlas/: {len(landed)} files, {total / 1e6:.2f} MB "
         f"({len(rows) * len(SLOTS)} slot pictures at {thumb_across}x{thumb_down} quality "
         f"{quality}, {len(swept)} swept)",

@@ -109,6 +109,7 @@ function titleOf(label, slot, palette) {
     const fell = palette !== slot.colormap ? `; it opens in ${palette}` : "";
     lines.push(`The link cannot carry: ${slot.refused.join("; ")}${fell}.`);
   }
+  if (slot.gap) lines.push(`Not recorded: ${slot.gap}.`);
   return lines.join("\n");
 }
 

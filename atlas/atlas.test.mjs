@@ -158,6 +158,50 @@ test("the gallery slot's kind is the kind of place its own family belongs to", (
   }
 });
 
+// ---------------------------------------------------------- the gallery's tone curve
+
+const TONES = ["clean", "curved", "lost"];
+const LOST_LEVEL = "autolevel band_autolevel/v1";
+
+test("a gallery slot's tone, level and refusal tell one story", () => {
+  // `curved` is the one tone with a curve to replay, and `lost` the one whose link has to
+  // say it opens unlevelled; the record spells each of those twice and the two must agree.
+  for (const partition of partitions) {
+    for (const dot of partition.dots) {
+      const gallery = dot.slots.gallery;
+      assert.ok(TONES.includes(gallery.tone), `dot ${dot.id}: tone ${gallery.tone}`);
+      assert.equal(
+        gallery.level !== null,
+        gallery.tone === "curved",
+        `dot ${dot.id}: tone ${gallery.tone} with level ${gallery.level}`,
+      );
+      assert.equal(
+        gallery.refused.includes(LOST_LEVEL),
+        gallery.tone === "lost",
+        `dot ${dot.id}: tone ${gallery.tone} and refused ${gallery.refused.join("; ")}`,
+      );
+      for (const name of ["mandelbrot", "julia"]) {
+        assert.equal(dot.slots[name].level, undefined, `dot ${dot.id}/${name}: carries a level`);
+      }
+    }
+  }
+});
+
+test("a curved gallery picture opens levelled, and nothing else does", () => {
+  for (const { where, slot } of everySlot) {
+    const { query, view, palette } = opened(CONTRACT, slot);
+    const carried = new URLSearchParams(query).get(link.LEVEL_KEY.key);
+    if (slot.level == null || palette !== slot.colormap) {
+      assert.equal(carried, null, `${where}: the link levels a picture the record did not`);
+      continue;
+    }
+    assert.ok(
+      link.LEVEL_KEY.same(view.level, link.LEVEL_KEY.read(slot.level)),
+      `${where}: the link opens at a curve that is not the one the record gives`,
+    );
+  }
+});
+
 // ------------------------------------------------------- the rest of the contract
 
 test("a link built from a slot draws that slot's own frame, verbatim", () => {

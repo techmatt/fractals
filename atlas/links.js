@@ -65,7 +65,8 @@ export function contractOf(homeRaw) {
  * named and the slot's tooltip says it.
  *
  * The record's own `refused` list carries these too, plus the things a view has no shape
- * for at all — an autolevel pass, a curve a mode's catalog does not give it. The two are
+ * for at all — an autolevel pass whose curve the run did not record, a curve a mode's
+ * catalog does not give it. The two are
  * held together by `atlas.test.mjs`: the record may not claim a refusal the roster does
  * not make, and may not stay quiet about one it does.
  */
@@ -102,6 +103,12 @@ export function opened(contract, slot) {
   for (const key of link.MODE_PARAMETERS[mode] ?? []) {
     if (slot.mode_params?.[key] !== undefined) params[key] = slot.mode_params[key];
   }
+  // A curved gallery picture opens levelled: the record carries the curve its run recorded,
+  // spelled as the contract's own `level` value, and it is read through the contract rather
+  // than taken apart here. The curve was measured through the picture's own map, so a link
+  // that fell back to the default map drops it rather than bending a map it never saw.
+  const level =
+    slot.level == null || palette !== slot.colormap ? null : link.LEVEL_KEY.read(slot.level);
   const query = link.emit(
     {
       version: link.VERSION,
@@ -115,6 +122,7 @@ export function opened(contract, slot) {
       aspect: { ...link.DEFAULT_ASPECT },
       palette,
       shade,
+      level,
     },
     contract,
   );
