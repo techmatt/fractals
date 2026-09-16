@@ -10,6 +10,17 @@ whole site is one origin, and a zoom set on the first page is still there on the
 
 What it serves is the committed bytes, from the checkout root, the way Pages serves
 them. It builds nothing, writes nothing, and is not a dependency of anything.
+
+**And it serves them uncached, which is not how Pages serves them** *(2026-09-16)*. This
+server sends a `Last-Modified` and nothing else, so a browser is free to apply its own
+heuristic freshness and reuse a module it fetched days ago without asking. The port is
+always 8000 and the paths never change, which makes that likely rather than theoretical:
+the studio's first preview came up on a stale `explorer.js` from before the page was
+rebuilt, which took the old module's `getElementById` of a control that no longer exists,
+threw at evaluation, and left the boot notice standing — a page that looks like it never
+started, over a file nobody would think to look at, because the request is not in the
+log. `no-store` costs nothing here (the files are local and the whole point is to look at
+what just changed) and it is not a claim about production: Pages sends its own headers.
 """
 
 import functools
@@ -21,9 +32,17 @@ DEFAULT_PORT = 8000
 HOST = "localhost"
 
 
+class Preview(SimpleHTTPRequestHandler):
+    """The committed bytes, with every response marked never to be reused."""
+
+    def end_headers(self) -> None:
+        self.send_header("Cache-Control", "no-store, max-age=0")
+        super().end_headers()
+
+
 def serve(port: int = DEFAULT_PORT) -> None:
     """Serve the checkout root until interrupted."""
-    handler = functools.partial(SimpleHTTPRequestHandler, directory=str(SITE_ROOT))
+    handler = functools.partial(Preview, directory=str(SITE_ROOT))
     with ThreadingHTTPServer((HOST, port), handler) as server:
         print(f"serving the committed tree at http://{HOST}:{port}/index.html")
         print("ctrl-c to stop")
