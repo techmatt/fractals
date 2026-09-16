@@ -111,10 +111,18 @@ each with its count. A tile sets the viewer to that seat's whole recipe. *Atlas*
 same frame `atlas/index.html` shows, mounted in the panel through `atlas/frame.js`, with
 the marks clicking into the viewer rather than navigating.
 
-**Right, the viewer**, and under it only what one would turn: the mode and its
-parameters, the palette strip, the shade recipe and the autolevel switch, then Details —
-family, constants, `x`, `y`, `w`, all editable — and the download. Copy link is in the
-bar, because it is about the page rather than about a group.
+**Right, the viewer**, and under it three sections — Mode, Palette, Shade — then the
+folded Details: family, constants, `x`, `y`, `w`, all editable. Copy link is in the bar,
+because it is about the page rather than about a group.
+
+**A section is a header, and a header is one class.** `.section-head` is the label in
+the accent and a hairline running from it to the section's right edge; the rule is the
+divider, so the sections carry no border of their own. The gallery panel's Mode and Color
+family use the same class. A section's one action sits on its rule: **Download** on
+Mode's, which opens the size strip under it, and **Engine defaults** on Shade's, which is
+disabled with nothing to reset and carries the count of keys set in its label — the
+separate "N of 7 set" line is gone, and the button's title names the keys, including any
+that have no control.
 
 **A picture gets into the viewer exactly one way, by being a link.** A gallery tile
 parses the permalink its record carries, an atlas mark parses the one its slot derived,
@@ -463,11 +471,24 @@ its base by rank as part of what it is, which is why the engine refuses a recipe
 for another transfer alongside it — `?m=itinerary&transfer=rank` is a visible refusal on
 this page, in the engine's own words, rather than half a request quietly dropped.
 
-**A pass draws twice.** A quarter-resolution field first, then the full one. The preview
+**A pass draws three times.** A quarter-resolution field first, then the full one at one
+sample per pixel, then the same grid at **two samples per pixel each way**, which is the
+picture the pass ends on and the one the stat line under the canvas describes. The preview
 is a *separate* field of the same rectangle rather than a subsample of the full one, so it
 carries its own percentile stretch and can be a shade off the picture that replaces it.
 The canvas's pixel grid is rounded to a multiple of four on both axes so the preview is
 exactly the same rectangle at exactly a quarter of the samples.
+
+**The last stage is the engine's supersample**, the `supersample` key a download already
+sends: iterated on a grid twice as fine and reduced by `resample::downsample` inside wasm,
+so the screen now shows what a download at 2× of the same size would save — and the
+download strip's first size, *As shown*, at 2× saves that picture without drawing it
+again. One sample per pixel aliased visibly on every fractal edge. The stage's shade goes
+to a worker of its own (`shadeApart`, with a copy of the field so the cached one stays
+whole), because four times the samples is up to half a second on the slower shades and a
+recolour should not freeze the page; a recolour puts the one-sample picture up from the
+cache first, on this thread. Where `f64` resolves the screen's grid and not one twice as
+fine, the module's refusal is said beside the one-sample picture, which stays up.
 
 **Cancel is by generation, not by termination.** A pan bumps the generation, no further
 bands are dispatched, and the band still in flight is finished and thrown away — killing
@@ -486,8 +507,9 @@ renderer was the one caller, and the atlas draws its pictures next door now.
 **The field cache** is keyed on the canonical permalink *minus* the palette and the shade
 recipe, plus the pixel grid it was sampled on — geometry alone, because nothing on the
 colour side can change the field. The four direct traps are the exception and are keyed on
-everything, because for them it can. Four fields are kept: two passes of the current view
-and one view back. So a palette change re-shades what is already here and iterates
+everything, because for them it can. Six fields are kept: the three stages of the current
+view and the three of one view back; the supersampled stage keys as the one-sample key
+with `&ss=2` after it. So a palette change re-shades what is already here and iterates
 nothing, which is the whole point of computing the two apart.
 
 **`resample::downsample` at one sample per pixel is the identity, and now skips itself**
@@ -993,9 +1015,18 @@ recipe** group. What is worth writing down is the shape rather than the widgets:
   to this module's own reader, so a value out of range is refused **in the contract's own
   sentence** and the box goes back to what is still in force. There is no second reader.
 - **A control is named for the key, not for what it does.** Gamma, Cycles, Phase,
-  Reverse, Mirror, Transfer, Rolloff — every other control on the page is named for its
-  job, and these are named so that a reader who has just read `rolloff=aces` in the
-  address bar finds Rolloff on the page rather than Highlights.
+  Reverse, Mirror, Transfer — every other control on the page is named for its job, and
+  these are named so that a reader who has just read `gamma=0.75` in the address bar
+  finds Gamma on the page. Reverse and Mirror are toggle chips in the gallery filters'
+  style; Phase is a slider over `[0, 1)`, which is its whole range because the engine
+  wraps it, with the number box beside it for the exact value.
+- **Rolloff has no control, and is still a key.** Counted off the published gallery
+  record the left panel is built from, all 1,000 seated recipes leave `rolloff` at
+  `none`, so the knob turned nothing any picture there was made with; `transfer` has four
+  distinct values across the same thousand (`value`, and `edge` at 0.25, 1 and 2) and
+  keeps its menu. A link that names a rolloff is still read, drawn and written back by
+  Copy link, and Engine defaults names it among the keys it would reset. `shade.js`
+  carries it as `offered: false`, so `CONTROLS` stays one row per key.
 - **What a control opens at is the engine's default**, read out of the recipe above and
   never typed twice. The one number the engine has no default for is the parameter of a
   tagged kind — the contract refuses `transfer=edge` without its weight — so a menu that
@@ -1012,9 +1043,13 @@ recipe** group. What is worth writing down is the shape rather than the widgets:
 - **A cyclic map's fold is refused before it is asked for.** `mirror` on a map that
   closes on the colour it opens with is a refusal in `parse`, so the control is disabled
   and says which map and why rather than letting a reader write a link that will not open.
-- **A group that is closed says when it is not empty.** The recipe is folded away by a
-  `<details>` — no script, on the one page that has some — and its summary carries how
-  many of the seven are set. A link that set any of them opens the group.
+- **The count of what is set is the reset button's state.** Engine defaults is disabled
+  at zero and reads *Engine defaults (3)* otherwise; there is no separate counter.
+- **Autolevel is disabled where there is no curve to replay**, with one line beside it
+  saying there is nothing to measure for this view; the longer reason — only the replay
+  half of the operator crossed into this page — is behind the `?` beside it, as a title
+  and as a click-to-reveal paragraph. A view that arrived carrying a curve has the
+  switch enabled, both ways, as before.
 
 ### The rules the keys are read under
 

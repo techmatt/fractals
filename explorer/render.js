@@ -15,7 +15,10 @@
 //      is normalized against its own samples — which is why the preview can be a
 //      shade off the picture that replaces it.
 //   3. The full-resolution field, in bands, dispatched from a queue.
-//   4. Both are cached by geometry, so a palette change re-shades and never
+//   3a. The same field again at two samples a pixel each way, which is the picture the
+//      pass ends on; the page drives that stage, and this file only carries the
+//      `supersample` a download already used.
+//   4. All are cached by geometry, so a palette change re-shades and never
 //      re-iterates — except under the four direct-trap modes, which have no field
 //      to re-shade and are cached on the colour too.
 //
@@ -81,8 +84,9 @@ export function bandsOf(height, workers) {
 /** Each axis of the preview, as a fraction of the full pass. */
 export const PREVIEW_DIVISOR = 4;
 
-/** How many fields to keep. Two passes of the current view, and one view back. */
-const CACHE_LIMIT = 4;
+/** How many fields to keep. The three stages of the current view — preview, one sample a
+ *  pixel, and the supersampled finish — and the same three of one view back. */
+const CACHE_LIMIT = 6;
 
 /** The engine's family spec for each name the permalink carries.
  *

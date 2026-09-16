@@ -31,7 +31,15 @@ const PRESETS = [
   { name: "3840 × 2160", width: 3840, height: 2160 },
 ];
 
-/** The default: a good desktop wallpaper, at the antialiasing a render sheet uses. */
+/** The size menu's first entry, which is no fixed size: the canvas's own pixel grid.
+ *
+ *  It is the default because the screen's pass now ends at two samples a pixel, so at
+ *  2× this entry is the picture already on the screen and is saved without being drawn
+ *  again. A wallpaper's size is one pick down the same menu. */
+const SHOWN = "shown";
+
+/** The default: the picture as shown, at the antialiasing a render sheet uses. */
+const DEFAULT_SIZE = SHOWN;
 const DEFAULT_PRESET = 1;
 const DEFAULT_SUPERSAMPLE = 2;
 
@@ -160,8 +168,10 @@ export function fileNameOf(view, width) {
  * moving under a render that is drawing it.
  */
 export function install(context) {
-  const { renderer, currentView, say, setBusy } = context;
+  const { renderer, currentView, shownGrid, shownImage, finalSupersample, say, setBusy } = context;
 
+  const opener = document.getElementById("download-open");
+  const strip = document.getElementById("download");
   const sizePicker = document.getElementById("download-size");
   const custom = document.getElementById("download-custom");
   const widthBox = document.getElementById("download-width");
@@ -172,6 +182,9 @@ export function install(context) {
   const help = document.getElementById("download-help");
   const meter = document.getElementById("download-progress");
 
+  const shownOption = document.createElement("option");
+  shownOption.value = SHOWN;
+  sizePicker.append(shownOption);
   for (const [index, preset] of PRESETS.entries()) {
     const option = document.createElement("option");
     option.value = String(index);
@@ -182,7 +195,7 @@ export function install(context) {
   customOption.value = "custom";
   customOption.textContent = "Custom…";
   sizePicker.append(customOption);
-  sizePicker.value = String(DEFAULT_PRESET);
+  sizePicker.value = DEFAULT_SIZE;
 
   for (const factor of SUPERSAMPLES) {
     const option = document.createElement("option");
@@ -203,22 +216,40 @@ export function install(context) {
     const size =
       chosen === "custom"
         ? { width: Number(widthBox.value), height: Number(heightBox.value) }
-        : PRESETS[Number(chosen)];
+        : chosen === SHOWN
+          ? { width: shownGrid().width, height: shownGrid().height }
+          : PRESETS[Number(chosen)];
     return { ...size, supersample: Number(samplePicker.value) };
+  }
+
+  /** The finished picture on the screen, where it is exactly what is being asked for. */
+  function ready() {
+    if (sizePicker.value !== SHOWN || Number(samplePicker.value) !== finalSupersample) return null;
+    return shownImage();
   }
 
   /** The line under the control: what this will cost, or why it is refused. */
   function describe() {
+    const grid = shownGrid();
+    shownOption.textContent = `As shown · ${grid.width} × ${grid.height}`;
     custom.hidden = sizePicker.value !== "custom";
     // A preset carries its numbers into the boxes, so choosing Custom afterwards
     // starts from the size that was just on the screen rather than from whatever
     // was typed there three sizes ago.
     if (sizePicker.value !== "custom") {
-      const preset = PRESETS[Number(sizePicker.value)];
-      widthBox.value = preset.width;
-      heightBox.value = preset.height;
+      const { width, height } = wanted();
+      widthBox.value = width;
+      heightBox.value = height;
     }
+    if (running !== null) return;
     const { width, height, supersample } = wanted();
+    if (ready() !== null) {
+      go.disabled = false;
+      help.textContent =
+        `The picture on the screen, already drawn at ${finalSupersample}×: saved as it is, ` +
+        "without drawing it again.";
+      return;
+    }
     const refusal = withinLimits(width, height, supersample);
     go.disabled = refusal !== null;
     if (refusal !== null) {
@@ -257,6 +288,18 @@ export function install(context) {
     const view = currentView();
     const { width, height, supersample } = wanted();
     const samples = width * height * supersample * supersample;
+
+    const drawn = ready();
+    if (drawn !== null) {
+      const name = fileNameOf(view, drawn.width);
+      try {
+        await save(drawn, name);
+        say(`${name} — ${drawn.width}×${drawn.height} at ${supersample}×, as shown`);
+      } catch (error) {
+        say(String(error.message ?? error));
+      }
+      return;
+    }
 
     // The module's own answer first, at the size actually being asked for: a
     // supersample samples a grid `ss` times finer, so a view the canvas still
@@ -337,6 +380,17 @@ export function install(context) {
       finish();
     }
   }
+
+  // The Mode header's action. It opens the strip rather than saving at once, because what
+  // to save is a choice of size; the strip opens on "As shown", so the finished picture
+  // is one press further. It will not fold away a download that is running, because the
+  // progress bar and the cancel button are in what it would hide.
+  opener.addEventListener("click", () => {
+    if (running !== null && !strip.hidden) return;
+    strip.hidden = !strip.hidden;
+    opener.setAttribute("aria-expanded", String(!strip.hidden));
+    if (!strip.hidden) describe();
+  });
 
   go.addEventListener("click", download);
   stop.addEventListener("click", () => {

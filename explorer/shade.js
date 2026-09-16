@@ -37,15 +37,24 @@ import { SHADE_KEYS, defaultShade, shadeKey } from "./permalink.js";
  * counted off its records: of the 1,334 renders that ask for the edge transfer the
  * weights are 0.25, 0.5, 1 and 2, and every one of the 274 that ask for a soft knee
  * asks for 0.35. A reader moves it the moment they have it.
+ *
+ * `offered: false` keeps a key off the page and nowhere else. It is still read from a
+ * link, still handed to the engine and still written by Copy link; what goes is the
+ * control. **Rolloff is the one**, counted off the published gallery record the studio's
+ * left panel is built from: all 1,000 seated recipes leave it at `none`, so the knob
+ * turned nothing any picture there was made with. Transfer stays, because four of the
+ * thousand ask for the edge transfer (weights 0.25, 1 and 2) and the rest for `value`:
+ * four distinct values. `min` and `max` bound a slider's travel and nothing else — phase
+ * wraps modulo one in the engine, so its slider covers every picture there is.
  */
 const PRESENTATION = {
   gamma: { step: 0.05 },
   cycles: { step: 1 },
-  phase: { step: 0.05 },
+  phase: { step: 0.005, slider: { min: 0, max: 1 } },
   reverse: {},
   mirror: {},
   transfer: { step: 0.25, opening: { edge: "0.5" } },
-  rolloff: { step: 0.05, opening: { soft_knee: "0.35" } },
+  rolloff: { step: 0.05, opening: { soft_knee: "0.35" }, offered: false },
 };
 
 /**
@@ -65,6 +74,8 @@ export const CONTROLS = SHADE_KEYS.map((spec) => {
     control: spec.control,
     label: spec.key[0].toUpperCase() + spec.key.slice(1),
     step: shown.step,
+    slider: shown.slider ?? null,
+    offered: shown.offered ?? true,
     kinds:
       spec.table === undefined
         ? null

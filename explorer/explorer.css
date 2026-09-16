@@ -160,28 +160,84 @@
   gap: 0.5rem;
 }
 
-/* A filter group, in the shape the wallpaper project's own curation browser gives one: a
-   thin rule around it, a small uppercase legend, and — where the group has more entries
-   than a couple of rows will hold — a fixed height it scrolls inside. Thirteen modes wrap
-   to three lines otherwise, and three lines of chips is a third of the panel spent on
-   what is being filtered rather than on the pictures. */
-.chip-group {
-  min-width: 0;
-  margin: 0;
-  padding: 0.3rem 0.45rem 0.4rem;
-  border: 1px solid var(--well-rule);
-  border-radius: 4px;
+/* A filter group: a section header, and — where the group has more entries than a couple
+   of rows will hold — a fixed height it scrolls inside. Thirteen modes wrap to three lines
+   otherwise, and three lines of chips is a third of the panel spent on what is being
+   filtered rather than on the pictures. The box that used to be drawn around each group is
+   gone: the header's rule is the divider now, on this side as on the viewer's. */
+.chip-group { min-width: 0; }
+
+/* ---------------------------------------------------------------- a section header */
+
+/* One class for every section on the page — Mode and Color family on the gallery side;
+   Mode, Palette, Shade and Details under the viewer. The label, in the accent, and a
+   hairline that runs from it to the section's right edge; a section's one action, where
+   it has one, sits on the rule at the right. The rule is what divides one section from
+   the next, which is why the sections carry no border and little gap of their own.
+
+   **One accent, because this page has one surface.** The studio is a single dark well
+   (see the top of this file) and there is no light version of it to spell a second
+   accent for. `--head` is the one token the header reads, so a light surface is one
+   declaration of it and not a restyle. */
+.section-head {
+  --head: var(--well-link);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0 0 0.35rem;
+  font-family: var(--sans);
 }
 
-.chip-group > legend {
-  padding: 0 0.3rem;
-  font-family: var(--sans);
-  font-size: 0.65rem;
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--well-ink-dim);
+.section-head::after {
+  content: "";
+  order: 1;
+  flex: 1 1 auto;
+  min-width: 1rem;
+  border-top: 1px solid var(--well-rule);
 }
+
+.section-head h2 {
+  order: 0;
+  flex: none;
+  margin: 0;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--head);
+}
+
+.section-head .head-action {
+  order: 2;
+  flex: none;
+  font: inherit;
+  font-size: 0.75rem;
+  color: var(--well-ink);
+  background: var(--well);
+  border: 1px solid var(--well-rule);
+  border-radius: 2px;
+  padding: 0.05rem 0.5rem;
+  cursor: pointer;
+}
+.section-head .head-action:hover { border-color: var(--well-ink-dim); color: var(--well-link); }
+.section-head .head-action:focus-visible { outline: 2px solid var(--well-link); outline-offset: 1px; }
+.section-head .head-action[aria-expanded="true"] { border-color: var(--well-ink-dim); }
+.section-head .head-action:disabled { opacity: 0.45; cursor: not-allowed; }
+.section-head .head-action:disabled:hover { border-color: var(--well-rule); color: var(--well-ink); }
+
+/* Details folds, so its header is a summary: the marker is drawn ahead of the label rather
+   than left to the browser, which would put it outside the flex row. */
+summary.section-head { list-style: none; cursor: pointer; }
+summary.section-head::-webkit-details-marker { display: none; }
+summary.section-head::before {
+  content: "▸";
+  order: -1;
+  font-size: 0.7rem;
+  color: var(--head);
+}
+details[open] > summary.section-head::before { content: "▾"; }
+summary.section-head:hover h2 { color: var(--well-ink); }
+summary.section-head:focus-visible { outline: 2px solid var(--well-link); outline-offset: 2px; }
 
 /* Two rows of chips, and the rest is a scroll. A fixed height rather than a max: the row
    under it should not move when a filter narrows what is above it. */
@@ -362,25 +418,16 @@
   padding: 0.5rem var(--gutter) 2rem;
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 0.6rem;
 }
 
-.control-group {
-  border-top: 1px solid var(--well-rule);
-  padding-top: 0.6rem;
+/* The download strip opens under the Mode header, set off by a rule underneath so the
+   mode's own row below it does not read as part of it. */
+.download {
+  margin-bottom: 0.5rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px dashed var(--well-rule);
 }
-
-.control-group h2, .control-group > summary {
-  margin: 0 0 0.4rem;
-  font-family: var(--sans);
-  font-size: 0.7rem;
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--well-ink-dim);
-}
-.control-group > summary { cursor: pointer; }
-.control-group > summary:hover { color: var(--well-ink); }
 
 .bar {
   display: flex;
@@ -411,8 +458,17 @@
 .bar input.constant { width: 13rem; font-family: var(--mono); font-size: 0.75rem; }
 .bar input.param { width: 5rem; }
 .bar input.flag { width: auto; accent-color: var(--well-link); }
+.bar input.slider {
+  width: 8rem;
+  padding: 0;
+  border: none;
+  background: none;
+  accent-color: var(--well-link);
+}
 
-.bar button {
+/* Reverse and Mirror are toggle chips, which carry their own look from the gallery's
+   filters; the bar's button rule is kept off them. */
+.bar button:not(.chip) {
   font: inherit;
   font-size: 0.8rem;
   color: var(--well-ink);
@@ -422,11 +478,26 @@
   padding: 0.15rem 0.5rem;
   cursor: pointer;
 }
-.bar button:hover { border-color: var(--well-ink-dim); color: var(--well-link); }
+.bar button:not(.chip):hover { border-color: var(--well-ink-dim); color: var(--well-link); }
 .bar select:disabled,
 .bar input:disabled,
 .bar button:disabled { opacity: 0.45; cursor: not-allowed; }
-.bar button:disabled:hover { border-color: var(--well-rule); color: var(--well-ink); }
+.bar button:not(.chip):disabled:hover { border-color: var(--well-rule); color: var(--well-ink); }
+.bar .chip:disabled:hover { border-color: var(--well-rule); color: var(--well-ink-dim); }
+
+/* The `?` beside a disabled control: a small round button that reveals the long reason. */
+.bar button.why {
+  width: 1.2rem;
+  height: 1.2rem;
+  padding: 0;
+  border-radius: 50%;
+  font-size: 0.7rem;
+  line-height: 1;
+  color: var(--well-ink-dim);
+}
+.bar button.why[aria-expanded="true"] { color: var(--well-ink); border-color: var(--well-ink-dim); }
+.help-inline { font-size: 0.72rem; color: var(--well-ink-dim); }
+.help-inline:empty { display: none; }
 .bar progress { width: 8rem; }
 
 .studio-bar button {
@@ -440,8 +511,6 @@
   cursor: pointer;
 }
 .studio-bar button:hover { border-color: var(--well-ink-dim); color: var(--well-link); }
-
-.shade-count { font-variant-numeric: tabular-nums; text-transform: none; letter-spacing: 0; }
 
 /* What the picture that was opened could not carry: the tone curve a run never wrote
    down, or a cap the depth policy answers differently. It sits under the canvas because

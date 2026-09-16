@@ -38,7 +38,14 @@ import { fetchStops } from "./stops.js";
 import * as download from "./download.js";
 import * as picker from "./picker.js";
 import * as gallery from "./gallery.js";
-import { PREVIEW_DIVISOR, Renderer, familySpecOf, pixelGrid, specOf } from "./render.js";
+import {
+  PREVIEW_DIVISOR,
+  Renderer,
+  familySpecOf,
+  pixelGrid,
+  shadeApart,
+  specOf,
+} from "./render.js";
 
 /** How far one arrow key moves the view, as a share of its width. */
 const PAN_STEP = 0.1;
@@ -46,6 +53,15 @@ const PAN_STEP = 0.1;
 const KEY_ZOOM = 1.4;
 /** How much one wheel notch multiplies the width by. */
 const WHEEL_ZOOM = 1.15;
+
+/** Samples per pixel, on each axis, of the last stage of a pass.
+ *
+ *  The pass used to end at one sample a pixel, and a fractal's edges alias at one. So
+ *  it ends at two: the same field iterated on a grid twice as fine each way and reduced
+ *  inside wasm by the engine's own filter — Lanczos-3 in linear light, which is what a
+ *  download at 2× and a finished wallpaper are written through. Not a canvas scaled
+ *  down, which would be a box filter over gamma-encoded bytes and a different picture. */
+const FINAL_SUPERSAMPLE = 2;
 
 /** Which panel the left side shows when nothing says otherwise. */
 const DEFAULT_PANEL = "gallery";
@@ -92,10 +108,12 @@ const paramStrip = document.getElementById("params");
 const copyButton = document.getElementById("copy");
 const notice = document.getElementById("notice");
 const shadeBar = document.getElementById("shade-bar");
-const shadeCount = document.getElementById("shade-count");
+const shadeReset = document.getElementById("shade-reset");
 const shadeNote = document.getElementById("shade-note");
 const levelToggle = document.getElementById("level-toggle");
 const levelNote = document.getElementById("level-note");
+const levelWhy = document.getElementById("level-why");
+const levelExplained = document.getElementById("level-explained");
 const details = document.getElementById("details");
 
 let renderer = null;
@@ -140,8 +158,10 @@ function setBusy(on) {
     for (const control of strip.querySelectorAll("input")) control.disabled = on;
   }
   for (const control of shadeBar.querySelectorAll("input, select, button")) control.disabled = on;
-  // Released, the fold is not simply enabled again: whether it may be touched at all
-  // is the current map's business, and the sync is what knows.
+  shadeReset.disabled = on;
+  // Released, neither the fold nor the reset is simply enabled again: whether the fold
+  // may be touched is the current map's business, whether there is anything to reset is
+  // the recipe's, and the sync is what knows both.
   if (shadeWidgets.size > 0) syncShade();
 }
 
@@ -270,26 +290,35 @@ function present(image) {
   screen.drawImage(frame, 0, 0);
 }
 
-/** Re-colour the picture already on the screen, with no field computed. */
-function reshade(direct) {
-  const key = link.fieldKey(view, contract, grid.width, grid.height, direct);
-  const field = renderer.cached(key);
-  if (field === undefined) return false;
-  const shaded = renderer.shade(field, view);
-  present(shaded.image);
-  say(`recolored in ${shaded.elapsed.toFixed(0)} ms`);
-  settle();
-  return true;
-}
-
 let drawing = 0;
 
-/** The whole pass: preview, then full resolution, either served from the cache. */
+/** The finished picture of the view on the screen — the last stage's, and only once it
+ *  has landed. What a download at the screen's own size saves instead of drawing it
+ *  again; cleared by every pass, because a picture of the view before is not this one. */
+let finished = null;
+
+/** The worker colouring the last stage, while it is. A pass that starts stops it. */
+let colouring = {};
+
+/**
+ * The whole pass: a quarter-resolution preview, one sample a pixel, then the finished
+ * picture at `FINAL_SUPERSAMPLE`. Each stage is served from the cache where it can be.
+ *
+ * **The stages are there to be looked at, and the last one is the picture.** A recolour
+ * of a view already drawn puts its one-sample field up first because that is
+ * milliseconds on this thread, and then colours the supersampled field in a worker of
+ * its own: four times the samples is seconds on the slower shades, and a palette strip
+ * that froze the page for them would be a strip nobody could scroll.
+ */
 async function draw() {
   updateReadout();
   syncShade();
   const pass = ++drawing;
   renderer.cancel();
+  colouring.stop?.();
+  colouring = {};
+  finished = null;
+  panel?.describe();
 
   const shape = planOf(view);
   if (!shape.ok) {
@@ -303,36 +332,75 @@ async function draw() {
   };
   const previewKey = link.fieldKey(view, contract, previewGrid.width, previewGrid.height, shape.direct);
   const fullKey = link.fieldKey(view, contract, grid.width, grid.height, shape.direct);
+  const finalKey = `${fullKey}&ss=${FINAL_SUPERSAMPLE}`;
+  const size = `${grid.width}×${grid.height}`;
 
   try {
     // Inside the try, because a recipe the engine refuses — a rank transfer under the
     // modulate, which spends its base by rank already — throws from `shade` rather than
     // from the plan, and a refusal a reader caused with a control has to be said rather
     // than left to the console.
-    if (reshade(shape.direct)) return;
-
-    const cachedPreview = renderer.cached(previewKey);
-    if (cachedPreview !== undefined) {
-      stretch(renderer.shade(cachedPreview, view).image);
+    const cachedFull = renderer.cached(fullKey);
+    if (cachedFull !== undefined) {
+      present(renderer.shade(cachedFull, view).image);
     } else {
-      say(`iterating at ${previewGrid.width}×${previewGrid.height}…`);
-      const preview = await renderer.field(view, previewGrid.width, previewGrid.height);
-      if (preview === null || pass !== drawing) return;
-      renderer.remember(previewKey, preview);
-      stretch(renderer.shade(preview, view).image);
+      const cachedPreview = renderer.cached(previewKey);
+      if (cachedPreview !== undefined) {
+        stretch(renderer.shade(cachedPreview, view).image);
+      } else {
+        say(`iterating at ${previewGrid.width}×${previewGrid.height}…`);
+        const preview = await renderer.field(view, previewGrid.width, previewGrid.height);
+        if (preview === null || pass !== drawing) return;
+        renderer.remember(previewKey, preview);
+        stretch(renderer.shade(preview, view).image);
+      }
+
+      say(`iterating at ${size} on ${renderer.workerCount} workers…`);
+      const full = await renderer.field(view, grid.width, grid.height);
+      if (full === null || pass !== drawing) return;
+      renderer.remember(fullKey, full);
+      present(renderer.shade(full, view).image);
+    }
+    settle();
+
+    // A grid twice as fine is a grid `f64` may stop resolving before the screen's does.
+    // The module says so, and the one-sample picture stays up with its reason beside it
+    // rather than the pass failing over a stage that only sharpens.
+    const fine = renderer.plan(
+      specOf(view, grid.width, grid.height, { colormap: false, supersample: FINAL_SUPERSAMPLE }),
+    );
+    if (!fine.ok) {
+      say(`${size} at one sample a pixel · ${fine.why}`);
+      return;
     }
 
-    say(`iterating at ${grid.width}×${grid.height} on ${renderer.workerCount} workers…`);
-    const full = await renderer.field(view, grid.width, grid.height);
-    if (full === null || pass !== drawing) return;
-    renderer.remember(fullKey, full);
-    const shaded = renderer.shade(full, view);
+    let field = renderer.cached(finalKey);
+    const recolor = field !== undefined;
+    if (!recolor) {
+      say(`${size} · iterating at ${FINAL_SUPERSAMPLE}× on ${renderer.workerCount} workers…`);
+      field = await renderer.field(view, grid.width, grid.height, { supersample: FINAL_SUPERSAMPLE });
+      if (field === null || pass !== drawing) return;
+      renderer.remember(finalKey, field);
+    } else if (!shape.direct) {
+      say(`${size} · coloring at ${FINAL_SUPERSAMPLE}×…`);
+    }
+
+    // A direct trap arrived painted and reduced, so there is nothing to colour. Anything
+    // else goes to a worker with a copy of its field: the one in the cache has to stay
+    // whole for the next recolour, and a transfer would detach it.
+    const shaded = shape.direct
+      ? renderer.shade(field, view)
+      : await shadeApart(renderer.module, { ...field, values: field.values.slice() }, view, colouring);
+    if (shaded === null || pass !== drawing) return;
     present(shaded.image);
+    finished = shaded.image;
     say(
-      `${grid.width}×${grid.height} · field ${(full.elapsed / 1000).toFixed(2)} s ` +
-        `· shade ${shaded.elapsed.toFixed(0)} ms`,
+      recolor
+        ? `${size} at ${FINAL_SUPERSAMPLE}× · recolored in ${shaded.elapsed.toFixed(0)} ms`
+        : `${size} at ${FINAL_SUPERSAMPLE}× · field ${(field.elapsed / 1000).toFixed(2)} s ` +
+            `· shade ${shaded.elapsed.toFixed(0)} ms`,
     );
-    settle();
+    panel?.describe();
   } catch (error) {
     // Including a recipe the engine refuses outright — a rank transfer under the
     // modulate, which spends its base by rank already. The control keeps what was
@@ -529,29 +597,68 @@ function buildParams() {
  * **Built once and then synced**, never rebuilt. The seven keys do not change with the
  * family or the mode, and a strip rebuilt under a reader's cursor loses whatever they
  * were half way through typing.
+ *
+ * **Only the offered keys get a control.** A key `shade.js` marks `offered: false` is
+ * still read from a link, drawn, and written back by Copy link; it has no widget here,
+ * and the Engine defaults button is where a reader learns that a link set it.
+ *
+ * The two flags are toggle chips, in the gallery filters' own style, because a flag is
+ * a thing that is on or off and a chip says which at a glance. They sit together at the
+ * end of the strip rather than between the numbers.
  */
 const shadeWidgets = new Map();
 
 function buildShade() {
   shadeBar.replaceChildren();
+  const chips = document.createElement("span");
+  chips.className = "group";
   for (const control of shade.CONTROLS) {
+    if (!control.offered) continue;
+    const held = {};
+
+    if (control.control === "flag") {
+      const chip = document.createElement("button");
+      chip.type = "button";
+      chip.id = `shade-${control.key}`;
+      chip.className = "chip";
+      chip.textContent = control.label;
+      chip.setAttribute("aria-pressed", "false");
+      chip.addEventListener("click", () =>
+        setShade(control.key, chip.getAttribute("aria-pressed") === "true" ? "0" : "1"),
+      );
+      chips.append(chip);
+      held.box = chip;
+      shadeWidgets.set(control.key, held);
+      continue;
+    }
+
     const group = document.createElement("span");
     group.className = "group";
     const label = document.createElement("label");
     label.textContent = control.label;
     label.htmlFor = `shade-${control.key}`;
     group.append(label);
-    const held = { group };
+    held.group = group;
 
-    if (control.control === "flag") {
-      const box = document.createElement("input");
-      box.type = "checkbox";
-      box.id = `shade-${control.key}`;
-      box.className = "flag";
-      box.addEventListener("change", () => setShade(control.key, box.checked ? "1" : "0"));
-      group.append(box);
-      held.box = box;
-    } else if (control.control === "number") {
+    if (control.control === "number") {
+      if (control.slider !== null) {
+        // A slider for the travel and the box beside it for the exact number. The slider
+        // recolours as it moves wherever a recolour is cheap; under a direct trap every
+        // value is a re-iteration, so there it waits for the hand to let go.
+        const slider = document.createElement("input");
+        slider.type = "range";
+        slider.className = "slider";
+        slider.min = control.slider.min;
+        slider.max = control.slider.max;
+        slider.step = control.step;
+        slider.setAttribute("aria-label", control.label);
+        slider.addEventListener("input", () => {
+          if (!planOf(view).direct) setShade(control.key, slider.value);
+        });
+        slider.addEventListener("change", () => setShade(control.key, slider.value));
+        group.append(slider);
+        held.slider = slider;
+      }
       const box = document.createElement("input");
       box.type = "number";
       box.id = `shade-${control.key}`;
@@ -597,21 +704,18 @@ function buildShade() {
     shadeWidgets.set(control.key, held);
     shadeBar.append(group);
   }
-
-  const reset = document.createElement("button");
-  reset.type = "button";
-  reset.id = "shade-reset";
-  reset.textContent = "Engine defaults";
-  reset.title = "Put every one of the seven back to what the engine ships";
-  reset.addEventListener("click", () => {
-    if (locked()) return;
-    view = { ...view, shade: shade.defaultShade() };
-    leaveSeat();
-    syncShade();
-    draw();
-  });
-  shadeBar.append(reset);
+  shadeBar.append(chips);
 }
+
+/** The one action on the Shade header. It is disabled with nothing to put back, and its
+ *  label carries the count that used to be a separate line of text beside the heading. */
+shadeReset.addEventListener("click", () => {
+  if (locked()) return;
+  view = { ...view, shade: shade.defaultShade() };
+  leaveSeat();
+  syncShade();
+  draw();
+});
 
 /**
  * One key of the recipe, as its control now says it.
@@ -625,6 +729,8 @@ function setShade(key, text) {
     syncShade();
     return;
   }
+  // A slider fires `change` on release after `input` has already set the same value.
+  if (shade.spelling(view.shade, key) === text) return;
   try {
     view = { ...view, shade: shade.withKey(view.shade, key, text) };
   } catch (error) {
@@ -641,11 +747,17 @@ function setShade(key, text) {
 function syncShade() {
   for (const control of shade.CONTROLS) {
     const held = shadeWidgets.get(control.key);
+    if (held === undefined) continue;
     const text = shade.spelling(view.shade, control.key);
     if (control.control === "flag") {
-      held.box.checked = text === "1";
+      held.box.setAttribute("aria-pressed", String(text === "1"));
     } else if (control.control === "number") {
       held.box.value = text;
+      if (held.slider) {
+        // Phase wraps modulo one, so a link's 1.25 sits where 0.25 does on the slider,
+        // and the box beside it keeps the number the link actually said.
+        held.slider.value = String(((Number(text) % 1) + 1) % 1);
+      }
     } else {
       const said = shade.parts(text);
       held.menu.value = said.kind;
@@ -667,19 +779,25 @@ function syncShade() {
     ? `${view.palette} closes on the color it opens with, so there is no seam to fold out`
     : "";
 
+  // The count names every key set, the ones with no control included: a link that set
+  // the rolloff is a recipe this button resets, and its title is where that is said.
   const set = shade.chosen(view.shade);
-  shadeCount.textContent = set.length === 0 ? "" : ` · ${set.length} of 7 set`;
+  shadeReset.disabled = busy || set.length === 0;
+  shadeReset.textContent = set.length === 0 ? "Engine defaults" : `Engine defaults (${set.length})`;
+  shadeReset.title = set.length === 0
+    ? "Every key is at the engine's default"
+    : `Put ${set.join(", ")} back to what the engine ships`;
 
   // Four of the seven are inert under a direct trap, and the engine says so where it
   // paints: those modes composite gradient samples as they iterate and never make a
   // field, so there is no distribution for a gamma or a transfer to spend. What does
   // reach them is the bake — a reversed or folded map is a different gradient — and the
-  // rolloff, which acts after a colour has been chosen.
+  // rolloff, which acts after a colour has been chosen and has no control here.
   shadeNote.textContent = planOf(view).direct
     ? `${view.mode} paints as it iterates and never makes a field, so gamma, cycles, ` +
       "phase and transfer have no distribution to spend and the engine ignores them " +
-      "here. Reverse, mirror and rolloff do reach it — and each of the three re-iterates " +
-      "the frame rather than recoloring it, because there is no field to recolor."
+      "here. Reverse and mirror do reach it, and each re-iterates the frame rather than " +
+      "recoloring it, because there is no field to recolor."
     : "";
 
   syncLevel();
@@ -700,18 +818,30 @@ function syncLevel() {
   const carried = view.level ?? heldCurve;
   levelToggle.checked = view.level !== null;
   levelToggle.disabled = busy || carried === null;
+  // The long reason lives behind the `?` and is the same sentence whatever the view; the
+  // line beside the box is the one thing true of this view.
+  levelWhy.hidden = carried !== null;
   if (carried === null) {
-    levelNote.textContent =
-      "The autolevel operator measures a finished picture, and only the half that replays " +
-      "its curve is on this page. So this switches on for a view that arrived carrying " +
-      "one — a gallery seat, or a link that names it — and there is nothing here to " +
-      "measure for a view that did not.";
+    levelNote.textContent = "Nothing to measure for this view.";
     return;
   }
+  levelExplained.hidden = true;
+  levelWhy.setAttribute("aria-expanded", "false");
   levelNote.textContent = view.level === null
     ? "Off: the map's own stops, with the curve this view arrived with put aside."
     : `${view.level.operator}, replayed on the map's stops before the recipe is spent on it.`;
 }
+
+levelExplained.textContent =
+  "The autolevel operator measures a finished picture, and only the half that replays " +
+  "its curve is on this page. So this switches on for a view that arrived carrying one " +
+  "(a gallery seat, or a link that names it), and there is nothing here to measure for a " +
+  "view that did not.";
+levelWhy.title = levelExplained.textContent;
+levelWhy.addEventListener("click", () => {
+  levelExplained.hidden = !levelExplained.hidden;
+  levelWhy.setAttribute("aria-expanded", String(!levelExplained.hidden));
+});
 
 /** Whatever the reader just chose, drawn — and the strips rebuilt around it. */
 function rebuild() {
@@ -1119,6 +1249,9 @@ async function main() {
   panel = download.install({
     renderer,
     currentView: () => view,
+    shownGrid: () => grid,
+    shownImage: () => finished,
+    finalSupersample: FINAL_SUPERSAMPLE,
     say,
     setBusy,
   });

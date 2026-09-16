@@ -41,14 +41,14 @@
 
     <div class="tabpanel" id="panel-gallery" role="tabpanel" aria-labelledby="tab-gallery">
       <div class="filters">
-        <fieldset class="chip-group is-scrolling">
-          <legend>Mode</legend>
-          <div class="chips" id="gallery-modes" role="group" aria-label="Rendering mode"></div>
-        </fieldset>
-        <fieldset class="chip-group">
-          <legend>Color family</legend>
-          <div class="chips" id="gallery-hues" role="group" aria-label="Color family"></div>
-        </fieldset>
+        <div class="chip-group is-scrolling">
+          <div class="section-head"><h2 id="head-gallery-modes">Mode</h2></div>
+          <div class="chips" id="gallery-modes" role="group" aria-labelledby="head-gallery-modes"></div>
+        </div>
+        <div class="chip-group">
+          <div class="section-head"><h2 id="head-gallery-hues">Color family</h2></div>
+          <div class="chips" id="gallery-hues" role="group" aria-labelledby="head-gallery-hues"></div>
+        </div>
       </div>
       <div class="tiles" id="gallery-tiles"></div>
       <p class="side-note" id="gallery-note"></p>
@@ -71,18 +71,41 @@
     <div class="controls" id="controls">
 
       <section class="control-group">
-        <h2>Mode</h2>
+        <div class="section-head">
+          <h2 id="head-mode">Mode</h2>
+          <button type="button" class="head-action" id="download-open"
+                  aria-expanded="false" aria-controls="download">Download</button>
+        </div>
+        <div class="download" id="download" hidden>
+          <div class="bar">
+            <span class="group">
+              <label for="download-size">Size</label>
+              <select id="download-size"></select>
+            </span>
+            <span class="group" id="download-custom" hidden>
+              <label for="download-width">Width</label>
+              <input type="number" id="download-width" class="param" min="16" max="8192" step="16">
+              <label for="download-height">Height</label>
+              <input type="number" id="download-height" class="param" min="16" max="8192" step="16">
+            </span>
+            <span class="group">
+              <label for="download-supersample">Samples per pixel</label>
+              <select id="download-supersample"></select>
+            </span>
+            <button type="button" id="download-go">Save PNG</button>
+            <button type="button" id="download-cancel" hidden>Cancel</button>
+            <progress id="download-progress" max="1" value="0" hidden></progress>
+          </div>
+          <p class="help" id="download-help"></p>
+        </div>
         <div class="bar">
-          <span class="group">
-            <label for="mode">Mode</label>
-            <select id="mode"></select>
-          </span>
+          <select id="mode" aria-labelledby="head-mode"></select>
           <span class="group" id="params"></span>
         </div>
       </section>
 
       <section class="control-group">
-        <h2>Palette</h2>
+        <div class="section-head"><h2>Palette</h2></div>
         <div class="palette-tabs" id="palette-tabs" role="tablist" aria-label="Palette family"></div>
         <div class="bar palette-search" id="palette-search" hidden>
           <span class="group">
@@ -94,20 +117,26 @@
       </section>
 
       <section class="control-group">
-        <h2>Shade<span class="shade-count" id="shade-count"></span></h2>
+        <div class="section-head">
+          <h2>Shade</h2>
+          <button type="button" class="head-action" id="shade-reset">Engine defaults</button>
+        </div>
         <div class="bar" id="shade-bar"></div>
         <div class="bar">
           <span class="group">
             <label for="level-toggle">Autolevel</label>
             <input type="checkbox" id="level-toggle" class="flag">
           </span>
+          <span class="help-inline" id="level-note"></span>
+          <button type="button" class="why" id="level-why" aria-expanded="false"
+                  aria-controls="level-explained" aria-label="Why autolevel is not always available">?</button>
         </div>
-        <p class="help" id="level-note"></p>
+        <p class="help" id="level-explained" hidden></p>
         <p class="help" id="shade-note"></p>
       </section>
 
       <details class="control-group" id="details">
-        <summary>Details</summary>
+        <summary class="section-head"><h2>Details</h2></summary>
         <div class="bar">
           <span class="group">
             <label for="family">Family</label>
@@ -119,30 +148,6 @@
         <p class="readout" id="readout"></p>
         <p class="provenance" id="provenance"></p>
       </details>
-
-      <section class="control-group">
-        <h2>Download</h2>
-        <div class="bar" id="download">
-          <span class="group">
-            <label for="download-size">Size</label>
-            <select id="download-size"></select>
-          </span>
-          <span class="group" id="download-custom" hidden>
-            <label for="download-width">Width</label>
-            <input type="number" id="download-width" class="param" min="16" max="8192" step="16">
-            <label for="download-height">Height</label>
-            <input type="number" id="download-height" class="param" min="16" max="8192" step="16">
-          </span>
-          <span class="group">
-            <label for="download-supersample">Samples per pixel</label>
-            <select id="download-supersample"></select>
-          </span>
-          <button type="button" id="download-go">Download PNG</button>
-          <button type="button" id="download-cancel" hidden>Cancel</button>
-          <progress id="download-progress" max="1" value="0" hidden></progress>
-        </div>
-        <p class="help" id="download-help"></p>
-      </section>
 
     </div>
   </section>
