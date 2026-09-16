@@ -4,11 +4,13 @@ Two committed records, both under `explorer/`, and both written from here:
 
 * **`popular.json`** — the maps the picker's Popular tab lists, in order. It used to be
   the top twenty by seat count, taken straight off the index, and the pool's favourites
-  look alike: that list carried four cream, gold and green ramps. So the list is now a
-  *curated* top 24, and the curation is a rule rather than a taste. Maps are ranked by
-  `seats` — how many seats of the published record were drawn in each — and taken
-  greedily. A candidate is skipped when too much of its colour is already on the list,
-  or when its hue family already holds `FAMILY_CAP` places.
+  look alike: that list carried four cream, gold and green ramps. It is now 24, and
+  **the choice is Matt's first** *(2026-09-16)*: `pinned` is the maps he picked, in his
+  order, and `dropped` the ones he ruled out, each with his reason. Both are edited by hand
+  and read back by `--popular`, which fills the remaining places by a rule rather than a
+  taste — for **range across hue families**: ranked by `seats`, how many seats of the
+  published record were drawn in each, and taken in rounds, so that every family holds one
+  place before any family holds two, and never a map too like one already on the list.
 * **`palette-names.json`** — `{underlying: display}` for every map the explorer carries.
   The underlying name is an address — it is what a link, a download filename and every
   record spell — and a great many of them are codes: `wallhaven_wallhaven-1joljg`,
@@ -21,7 +23,9 @@ codebook cells it comes out dominant in on three reference fields, with each cel
 share (`palettes.carriers` derives that mean). The cells are pooled onto the **hue family**
 each row names, and two maps overlap by the share of the *smaller* map's pooled colour that
 the other map carries too — the sum over families of the lesser share, over the lesser
-total. A candidate that overlaps any map already taken by `OVERLAP` or more is skipped.
+total. A candidate that overlaps any map already taken, pins included, by `OVERLAP` or more is
+skipped. Pins are held to nothing: two of Matt's picks may overlap, and a family may hold
+more pinned places than the rounds would ever give it.
 
 Pooled onto families, not compared cell by cell, because the cells split a colour by tone
 and chroma: the three cream-and-gold ramps that crowded the old list lead with three
@@ -30,8 +34,9 @@ lesser total, not the union, because a map whose carrier rows are thin — most 
 picture neutral — is still exactly as much *of* its colour as its rows say.
 `OVERLAP = 0.7` is where that list came apart without cutting maps that merely share one
 colour: at 0.6 the list reaches down to maps seated twice, and at 0.8 three of the four
-cream, gold and green ramps survive. The family cap is on `family`, the reading
-the picker's own tabs are built from, so "three to a tab" is what a reader can see.
+cream, gold and green ramps survive. The rounds count `family`, the reading the picker's
+own tabs are built from, so the spread is one a reader can see tab by tab; a map filed
+under no family is never taken to fill.
 
 ## How a display name is chosen
 
@@ -78,9 +83,6 @@ POPULAR_SIZE = 24
 #: A candidate overlapping a taken map by this much of its pooled carrier colour is skipped.
 OVERLAP = 0.7
 
-#: At most this many Popular places to one hue family, as `palettes.jsonl` files it.
-FAMILY_CAP = 3
-
 #: `.gitattributes` normalizes this repository to LF; anything written here spells it.
 LF = "\n"
 
@@ -111,54 +113,86 @@ def overlap(one: dict[str, float], other: dict[str, float]) -> float:
     return shared / lesser
 
 
-def popular() -> dict:
-    """The Popular list and the reason each passed-over map was passed over."""
+def popular(pinned: list[str], dropped: dict[str, str]) -> dict:
+    """The Popular list: Matt's pins, then the rest filled for range, and every reason.
+
+    `pinned` is taken whole and in its own order, whatever the rule would have said of it.
+    `dropped` names maps that are never taken, each with the reason Matt gave. The rest are
+    filled in **rounds**: round `k` walks the maps by seats and takes one whose hue family
+    holds fewer than `k` places and which overlaps nothing already taken by `OVERLAP`, so a
+    family with no place gets one before any family gets a second.
+    """
     head, entries = explorer.roster()
+    by_name = {entry.name: entry for entry in entries}
+    unknown = [name for name in [*pinned, *dropped] if name not in by_name]
+    if unknown:
+        raise PickerError(
+            f"{POPULAR_RECORD.name} names maps the explorer does not carry: {unknown}"
+        )
+    if len(pinned) > POPULAR_SIZE:
+        raise PickerError(f"{len(pinned)} maps are pinned, and Popular holds {POPULAR_SIZE}")
     pooled = pooled_carriers()
     ranked = sorted(entries, key=lambda entry: (-entry.seats, entry.name))
-    taken: list[explorer.Entry] = []
-    held: Counter[str] = Counter()
-    skipped = []
-    for entry in ranked:
-        if len(taken) == POPULAR_SIZE:
-            break
-        mine = pooled.get(entry.name, {})
-        worst = max(
-            ((overlap(mine, pooled.get(other.name, {})), other.name) for other in taken),
-            default=(0.0, ""),
-        )
-        if worst[0] >= OVERLAP:
-            why = f"overlaps {worst[1]} by {worst[0]:.2f}"
-        elif entry.family is not None and held[entry.family] >= FAMILY_CAP:
-            why = f"{entry.family} already holds {FAMILY_CAP}"
-        else:
-            taken.append(entry)
-            if entry.family is not None:
-                held[entry.family] += 1
-            continue
-        skipped.append({"name": entry.name, "seats": entry.seats, "why": why})
-    if len(taken) < POPULAR_SIZE:
-        raise PickerError(f"only {len(taken)} maps pass the Popular rule, not {POPULAR_SIZE}")
+    taken = [by_name[name] for name in pinned]
+    held: Counter[str] = Counter(entry.family for entry in taken if entry.family is not None)
+    skipped: dict[str, dict] = {}
+    rounds = 0
+    while len(taken) < POPULAR_SIZE:
+        rounds += 1
+        before = len(taken)
+        for entry in ranked:
+            if len(taken) == POPULAR_SIZE:
+                break
+            if entry in taken or entry.family is None or held[entry.family] >= rounds:
+                continue
+            if entry.name in dropped:
+                why = dropped[entry.name]
+            else:
+                mine = pooled.get(entry.name, {})
+                worst = max(
+                    (overlap(mine, pooled.get(other.name, {})), other.name) for other in taken
+                )
+                if worst[0] < OVERLAP:
+                    taken.append(entry)
+                    held[entry.family] += 1
+                    skipped.pop(entry.name, None)
+                    continue
+                why = f"overlaps {worst[1]} by {worst[0]:.2f}"
+            skipped[entry.name] = {"name": entry.name, "seats": entry.seats, "why": why}
+        if len(taken) == before and rounds > POPULAR_SIZE:
+            raise PickerError(f"only {len(taken)} maps pass the Popular rule, not {POPULAR_SIZE}")
+    # A reason is worth keeping for a map the fill would otherwise have reached: one seated
+    # at least as often as the least seated map it took. Below that, nothing was passed over.
+    filled = taken[len(pinned) :]
+    floor = min((entry.seats for entry in filled), default=0)
+    skipped = {
+        name: row for name, row in skipped.items() if row["seats"] >= floor or name in dropped
+    }
     return {
         "schema": 1,
         "release": head.get("release"),
         "rule": (
-            "the maps ranked by seats in the release named here, ties by name, taken greedily: "
-            f"a map is skipped when it overlaps one already taken by {OVERLAP} or more — the "
-            "share of the smaller map's carrier colour, pooled onto hue families, that the "
-            f"other carries too — or when its family already holds {FAMILY_CAP}. Written by "
-            "`python -m builder explorer --popular`; see builder/picker.py."
+            "`pinned` first, in its own order: Matt's picks, taken whatever the rule says. "
+            "`dropped` is never taken. The rest are filled in rounds: round k walks the maps "
+            "by seats in the release named here, ties by name, and takes a map whose hue "
+            "family holds fewer than k places and which overlaps no map already taken by "
+            f"{OVERLAP} or more — the share of the smaller map's carrier colour, pooled onto "
+            "hue families, that the other carries too. Only `pinned` and `dropped` are edited "
+            "by hand; `python -m builder explorer --popular` rewrites the rest. See "
+            "builder/picker.py."
         ),
         "overlap": OVERLAP,
-        "family_cap": FAMILY_CAP,
+        "pinned": pinned,
+        "dropped": dropped,
         "maps": [entry.name for entry in taken],
-        "skipped": skipped,
+        "skipped": sorted(skipped.values(), key=lambda row: (-row["seats"], row["name"])),
     }
 
 
 def write_popular() -> tuple[Path, dict]:
-    """Write `popular.json` from the roster and the carrier record."""
-    made = popular()
+    """Rewrite `popular.json` around the pins and drops it already holds."""
+    held = load_popular() if POPULAR_RECORD.is_file() else {}
+    made = popular(list(held.get("pinned", [])), dict(held.get("dropped", {})))
     _write_json(POPULAR_RECORD, made)
     return POPULAR_RECORD, made
 
@@ -438,8 +472,21 @@ def popular_problems(carried: list[str]) -> list[str]:
     """The Popular record names maps the explorer carries, once each, and enough of them."""
     if not POPULAR_RECORD.is_file():
         return [f"{POPULAR_RECORD.name} is missing"]
-    maps = load_popular().get("maps", [])
+    held = load_popular()
+    maps = held.get("maps", [])
+    pinned = held.get("pinned", [])
     problems = [
+        f"{POPULAR_RECORD.name}: pinned {name!r} is not where the list opens — "
+        "`python -m builder explorer --popular`"
+        for index, name in enumerate(pinned)
+        if index >= len(maps) or maps[index] != name
+    ]
+    problems += [
+        f"{POPULAR_RECORD.name}: dropped {name!r} is on the list"
+        for name in held.get("dropped", {})
+        if name in maps
+    ]
+    problems += [
         f"{POPULAR_RECORD.name}: {name!r} is not a map the explorer carries"
         for name in maps
         if name not in set(carried)

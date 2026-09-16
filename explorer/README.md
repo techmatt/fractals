@@ -135,9 +135,11 @@ what the tooltip says beside the underlying name. The underlying name is what a 
 link, the download filename and every record carry, so no permalink moved. A map with no
 entry shows its own name, and `builder check` prints how many have none.
 `python -m builder explorer --names` fills missing entries and never rewrites one, which is
-what lets a name be authored by hand. **Popular** is `popular.json`: 24 maps, by seats,
-curated for range by the rule `builder/picker.py` states, and
-`python -m builder explorer --popular` rewrites it.
+what lets a name be authored by hand. **Popular** is `popular.json`: 24 maps. Its
+`pinned` maps are Matt's picks and open the list in his order, and `dropped` holds the ones he
+ruled out. The rest are filled by `python -m builder explorer --popular` for range
+across hue families (every family gets one place before any gets a second), by the rule
+`builder/picker.py` states.
 
 **A section is a header, and a header is one class.** `.section-head` is the label in
 the accent and a hairline running from it to the section's right edge; the rule is the

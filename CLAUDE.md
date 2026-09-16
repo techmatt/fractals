@@ -220,8 +220,9 @@ keeps the mechanics. **Every apply round ends by distilling that round's general
   a display name lives; the underlying name is what links, Copy link, download filenames,
   records and the bake spell. `python -m builder explorer --names` fills missing entries
   and never rewrites an existing one, so a hand-authored name is safe from it. The picker's
-  Popular list is `explorer/popular.json`, written by `--popular` under the rule
-  `builder/picker.py` states.
+  Popular list is `explorer/popular.json`. Its `pinned` and `dropped` are Matt's and edited
+  by hand (the same rule as a figure's tile); `--popular` fills the other places around
+  them under the rule `builder/picker.py` states, and never moves a pin.
 - **No location is reused across the site unless the repetition is intentional**
   *(Matt, 2026-09-01)*. A location gets one figure. Where the repetition is the point —
   a family's home view, which is its identity rather than anything the search found; a
