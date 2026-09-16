@@ -27,7 +27,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from . import fields, images, renders, sheets
+from . import images, renders, sheets
 from . import palettes as palette_module
 from .paths import FIGURE_IMAGES_DIR
 from .theme import WELL, WELL_INK_DIM
@@ -226,6 +226,10 @@ def field_anatomy(destination: Path) -> tuple[tuple[int, int], list[str]]:
     """The same field with no palette at all, and under two of them."""
     import numpy as np
     from PIL import Image
+
+    # Imported here, as numpy is: `fields` needs numpy at import time, and the builder's
+    # requirements are Pillow alone, so CI's `check` must not import it by importing this.
+    from . import fields
 
     stem = _work("fields", "anatomy")
     renders.dump_field(
@@ -451,6 +455,8 @@ def cyclic_repeats(destination: Path) -> tuple[tuple[int, int], list[str]]:
 
 def percentile_stretch(destination: Path) -> tuple[tuple[int, int], list[str]]:
     """One field spread across its whole range, and stretched against its own distribution."""
+    from . import fields  # needs numpy; see `field_anatomy`
+
     stem = _work("fields", "autolevel")
     renders.dump_field(
         dict(SKEWED, resolution=list(PANEL), supersample=1, mode="smooth", colormap=SKEWED_MAP),
