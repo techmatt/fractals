@@ -171,7 +171,7 @@ test("the refusals the record claims are the ones the explorer's roster makes", 
       assert.ok(
         refusals(slot).includes(said),
         `${where}: the record claims "${said}" and the roster no longer refuses it — the ` +
-          "caption is warning about a link that works",
+          "tooltip is warning about a link that works",
       );
     }
   }

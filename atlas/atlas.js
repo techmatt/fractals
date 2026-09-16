@@ -1,9 +1,16 @@
 // The atlas page.
 //
-// One dot per place the search kept, over a plate of the plane those places sit in. The
-// plate was rendered once, next door, and landed as a picture; this page draws no
-// fractal at all. What it does draw is the marks, and what it owes each mark is three
-// pictures and three links.
+// One mark per place the search kept, over a plate of the plane those places sit in. The
+// plate was rendered once, next door, and landed as a picture; this page draws no fractal
+// at all. What it does draw is the marks, and what it owes each mark is three pictures and
+// three links.
+//
+// **It is one fixed frame.** The three slots and the plate are sized once, in pixels, from
+// the viewport, and there is no text inside the frame at all. The page used to carry a
+// caption under each slot and a line of scores under the row, and both changed height with
+// whichever mark was under the pointer — which moved the plate under the pointer, which
+// moved the mark. What those captions said is a `title` on the slot now: a tooltip is drawn
+// over the page rather than in it, so it can say as much as it likes and nothing reflows.
 //
 // The engine is here for one export. `permalink.js` decides whether a canonical link
 // spells `x`, `y` and `w` by comparing them against the family's home view, and home is
@@ -14,7 +21,6 @@
 
 import { contractOf, opened } from "./links.js";
 import { load } from "./record.js";
-import { DEFAULT_PALETTE } from "../explorer/palettes.js";
 
 /** The three pictures a place carries, in the order the page shows them. */
 const SLOTS = [
@@ -23,14 +29,7 @@ const SLOTS = [
   ["render", "Render"],
 ];
 
-/** The search's own name for a population, in words a reader of this article has. */
-const POPULATION = {
-  seated: "seated",
-  human_q4: "human top quarter",
-  machine_q4: "model top quarter",
-};
-
-/** Where a render slot's recipe came from, said the same way. */
+/** Where a render slot's recipe came from, said in words a reader of this article has. */
 const SOURCE = {
   seated: "seated in the published gallery",
   "best recipe by p_fine": "best recipe by the fine score",
@@ -41,27 +40,24 @@ const SOURCE = {
 
 const EXPLORER = "../explorer/index.html";
 
+/** Each slot's width, as a share of the plate's. Three of them, centred, and no gaps. */
+const SLOT_SHARE = 0.3;
+
+/** What the frame leaves below itself, so the whole of it is on screen at once. */
+const BOTTOM = 16;
+
+/** The narrowest plate worth drawing 152 marks on, whatever the viewport says. */
+const LEAST = 320;
+
 const notice = document.getElementById("notice");
-const stage = document.getElementById("stage");
+const frame = document.getElementById("frame");
 const plate = document.getElementById("plate");
 const plateImage = document.getElementById("plate-image");
-const line = document.getElementById("dot-line");
-const legend = document.getElementById("legend");
-const provenance = document.getElementById("provenance");
 
-const frames = new Map();
+const slots = new Map();
 for (const [name] of SLOTS) {
-  const held = document.querySelector(`.slot[data-slot="${name}"]`);
-  const empty = held.querySelector(".slot-empty");
-  frames.set(name, {
-    link: held.querySelector(".slot-frame"),
-    image: held.querySelector(".slot-frame img"),
-    empty,
-    // What the well says before anything has been hovered, kept so that leaving a mark
-    // puts the page back where it started rather than into a blanker version of itself.
-    idle: empty.textContent,
-    what: held.querySelector(".slot-what"),
-  });
+  const node = document.querySelector(`.slot[data-slot="${name}"]`);
+  slots.set(name, { node, image: node.querySelector("img") });
 }
 
 /** The committed module, instantiated for `plan` and nothing else. */
@@ -86,9 +82,8 @@ async function planner() {
 const decimal = (value) =>
   Math.abs(value) < 1e-4 && value !== 0 ? value.toExponential(3) : Number(value).toPrecision(8);
 const point = ([x, y]) => `${decimal(x)} ${y < 0 ? "−" : "+"} ${decimal(Math.abs(y))}i`;
-const score = (value) => Number(value).toFixed(4);
 
-/** One element, with its class, its text and whatever else it is given. */
+/** One element, with its class and its text. */
 function made(tag, className, text) {
   const node = document.createElement(tag);
   if (className) node.className = className;
@@ -96,67 +91,74 @@ function made(tag, className, text) {
   return node;
 }
 
-/** What one slot's caption says: what it is, how it was drawn, what its link cannot carry. */
-function saidOf(slot, palette) {
-  const bits = [
-    [null, slot.what ?? SOURCE[slot.source] ?? slot.source ?? "a render"],
-    [null, `${slot.mode} · ${slot.colormap}`],
+/**
+ * What one slot's tooltip says: what it is, how it was drawn, what its link cannot carry.
+ *
+ * This is the whole of what the deleted captions carried that was about the picture. A
+ * tooltip can be three lines or one without costing the frame a pixel, which is the point
+ * of moving it here.
+ */
+function titleOf(label, slot, palette) {
+  const lines = [
+    `${label}: ${slot.what ?? SOURCE[slot.source] ?? slot.source ?? "a render"}`,
+    `${slot.mode} · ${slot.colormap}`,
   ];
   if (slot.refused.length > 0) {
     const fell = palette !== slot.colormap ? `; it opens in ${palette}` : "";
-    bits.push(["slot-refused", `the link cannot carry: ${slot.refused.join("; ")}${fell}`]);
+    lines.push(`The link cannot carry: ${slot.refused.join("; ")}${fell}.`);
   }
-  return bits;
+  return lines.join("\n");
 }
 
-/** The one line under the three pictures: which place this is, and what is known of it. */
-function saidAbout(dot) {
-  const parts = [];
-  for (const [plane, side] of Object.entries(dot.sides)) {
-    const what = plane === "julia" ? "c" : "center";
-    const scores = [];
-    if (side.p_ge4 !== undefined) scores.push(`P(≥4) ${score(side.p_ge4)}`);
-    if (side.p_fine !== undefined) scores.push(`fine ${score(side.p_fine)}`);
-    if (side.human !== undefined) scores.push(`human ${side.human}`);
-    if (side.seat !== undefined) scores.push(`seat ${side.seat.seat} (${side.seat.alias})`);
-    const held = side.populations.map((name) => POPULATION[name] ?? name).join(" ∪ ");
-    const said = scores.join(", ") || "no score";
-    parts.push(`${plane} ${what} ${point(side.at)}: ${said} · ${held}`);
-  }
-  return parts;
-}
-
-/** Fill the three frames and the line from one place, or empty them all. */
+/** Fill the three slots from one place, or empty them. The boxes stay either way. */
 function show(dot, links) {
-  for (const [name] of SLOTS) {
-    const held = frames.get(name);
+  for (const [name, label] of SLOTS) {
+    const held = slots.get(name);
     const slot = dot === null ? undefined : dot.slots[name];
     if (slot === undefined) {
-      held.link.hidden = true;
-      held.link.removeAttribute("href");
-      held.empty.hidden = false;
-      held.empty.textContent = dot === null ? held.idle : "no picture";
-      held.what.textContent = "";
+      held.node.removeAttribute("href");
+      held.node.title = dot === null ? `${label}: hover a mark on the plane` : `${label}: none`;
+      held.image.hidden = true;
+      held.image.removeAttribute("src");
+      held.image.alt = "";
       continue;
     }
     const { query, palette } = links.get(slot);
-    held.empty.hidden = true;
-    held.link.hidden = false;
-    held.link.href = `${EXPLORER}?${query}`;
+    held.node.href = `${EXPLORER}?${query}`;
+    held.node.title = titleOf(label, slot, palette);
+    held.image.hidden = false;
     held.image.src = `../assets/images/atlas/${slot.file}`;
     held.image.alt = `${slot.mode} through ${slot.colormap}, at the ${name} view of this place`;
-    held.what.replaceChildren(
-      ...saidOf(slot, palette).map(([className, text]) => made("span", className, text)),
-    );
   }
-  line.replaceChildren(
-    ...(dot === null
-      ? [made("span", "quiet", "Hover a mark on the plane. Click one to keep it.")]
-      : [
-          made("span", `chip chip-${dot.class}`, dot.class === "seated" ? "seated" : "top quarter"),
-          ...saidAbout(dot).map((text) => made("span", null, text)),
-        ]),
-  );
+}
+
+/**
+ * Size the frame, once, from the viewport.
+ *
+ * The frame has one aspect ratio of its own — the plate's, plus the strip's share of it —
+ * so fitting it into the room below the intro is one division and no branches. Nothing
+ * here reads the hover state, and nothing the hover state does reaches back in.
+ */
+function fit({ plateAspect, slotAspect, slotNative }) {
+  const ratio = plateAspect + SLOT_SHARE * slotAspect;
+  const room = frame.parentElement.clientWidth;
+  const above = frame.getBoundingClientRect().top + window.scrollY;
+  const tall = window.innerHeight - above - BOTTOM;
+  // The third bound is the pictures themselves: a slot wider than the thumbnail the maker
+  // landed is a soft picture pretending to be a big one, and on a tall screen the column
+  // is wide enough to ask for one.
+  const most = slotNative / SLOT_SHARE;
+  const width = Math.max(LEAST, Math.floor(Math.min(room, tall / ratio, most)));
+
+  const slotWidth = Math.floor(width * SLOT_SHARE);
+  const slotHeight = Math.round(slotWidth * slotAspect);
+  frame.style.width = `${width}px`;
+  plate.style.width = `${width}px`;
+  plate.style.height = `${Math.round(width * plateAspect)}px`;
+  for (const { node } of slots.values()) {
+    node.style.width = `${slotWidth}px`;
+    node.style.height = `${slotHeight}px`;
+  }
 }
 
 async function start() {
@@ -172,7 +174,7 @@ async function start() {
 
   // Every link, built once, through the one function that builds them. A link is the
   // same string every time it is asked for, so asking per hover would be work that says
-  // nothing new — and the caption needs the map each one settled on anyway.
+  // nothing new — and the tooltip needs the map each one settled on anyway.
   const links = new Map();
   for (const dot of partition.dots) {
     for (const slot of Object.values(dot.slots)) links.set(slot, opened(contract, slot));
@@ -182,7 +184,6 @@ async function start() {
   plateImage.alt =
     `The Mandelbrot parameter plane in gray at its whole view, ${partition.dots.length} marks ` +
     "on it where the search has kept a place.";
-  plate.style.aspectRatio = `${partition.plate.aspect[0]} / ${partition.plate.aspect[1]}`;
 
   let stored = null;
   let hovering = null;
@@ -229,31 +230,20 @@ async function start() {
     settle();
   });
 
-  const tally = method.tally;
-  const counted = (value) => value.toLocaleString("en-US");
-  legend.replaceChildren(
-    made("span", "key key-seated", "gold: holds a seat in the published gallery"),
-    made("span", "key key-q4", "green: kept by the judges, not yet seated"),
-    made(
-      "span",
-      "quiet",
-      `${counted(tally.dots)} marks of ${counted(tally.queued)} places. ` +
-        `${tally.absorbed} merged into a mark of the other plane, and ` +
-        `${counted(tally.dropped)} landed inside the ${method.radius_px} px absorption radius ` +
-        "of one already drawn.",
-    ),
-  );
-  provenance.textContent =
-    `Published record ${method.record}, judge ${method.judge.slice(0, 12)}…, ` +
-    `top quarter at ${method.q_bar} and the fine bar at ${method.fine_bar}. ` +
-    `${tally.both} of these places were found on both planes and are one mark with two sides. ` +
-    `The neighborhood plates are drawn through ${method.canonical_map}, which is the map the ` +
-    `explorer opens at; a picture drawn through a map the explorer does not bake opens in ` +
-    `${DEFAULT_PALETTE} instead, and its caption says so.`;
-
   show(null, links);
   notice.hidden = true;
-  stage.hidden = false;
+  frame.hidden = false;
+
+  const sizes = {
+    plateAspect: partition.plate.aspect[1] / partition.plate.aspect[0],
+    slotAspect: method.thumb.height / method.thumb.width,
+    slotNative: method.thumb.width,
+  };
+  fit(sizes);
+  // A window that changed size is not a mark that was hovered. The frame is fixed against
+  // the one and fitted to the other, because a frame sized for a window nobody has any
+  // more is not fixed, it is stale.
+  window.addEventListener("resize", () => fit(sizes));
 }
 
 start().catch((error) => {

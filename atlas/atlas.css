@@ -6,8 +6,8 @@
    are declared below rather than there because they are not furniture: they are marks
    drawn on top of a picture, they exist on this page and nowhere else, and putting them
    in the site's root would make them look like part of a palette everything shares.
-   `builder/atlas.py` carries the same two values, for the figure §11 shows, because
-   Pillow cannot read CSS. */
+   `builder/atlas.py` carries the same two values, for the figure section 11 shows,
+   because Pillow cannot read CSS. */
 
 .atlas-page {
   --mark-seated: #ffb02e;
@@ -16,13 +16,11 @@
   margin: 0 auto;
 }
 
-/* What is read in lines stops at the measure. The plate does not: an atlas squeezed into
+/* What is read in lines stops at the measure. The frame does not: an atlas squeezed into
    a column of prose is a diagram of a diagram. */
 .atlas-page .masthead > *,
 .atlas-page .intro,
-.atlas-page .notice,
-.atlas-page .section-nav > *,
-.atlas-page footer > * { max-width: var(--measure); }
+.atlas-page .notice { max-width: var(--measure); }
 
 [hidden] { display: none !important; }
 
@@ -35,86 +33,37 @@
 .notice p { margin: 0 0 0.5em; }
 .notice p:last-child { margin-bottom: 0; }
 
-/* The three pictures a place carries. They are landed at 320 wide and shown at 320 wide:
-   a thumbnail stretched to fill a third of a wide page is a soft picture pretending to
-   be a big one. Below the room for three they wrap rather than shrink. */
-.slots {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1rem;
-  margin-top: 1.25rem;
-}
-.slot { flex: 0 1 20rem; min-width: 0; margin: 0; }
-.slot h2 {
-  margin: 0 0 0.3rem;
-  font: 600 0.75rem/1.3 var(--sans);
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--ink-dim);
-}
+/* ------------------------------------------------------------------------ the frame
 
-.slot-well {
-  position: relative;
-  aspect-ratio: 16 / 9;
+   One fixed frame, and it never moves. The three slots and the plate are sized once, in
+   pixels, by `atlas.js` from the viewport; nothing here depends on which mark is under
+   the pointer, and there is no text inside the frame to reflow when one is. What the
+   captions used to say is a `title` on the slot, because a tooltip is drawn over the page
+   rather than in it.
+
+   The strip sits directly on the plate with no gap, centred on its width: three pictures
+   of one place, and then the place. */
+.frame { margin: 1.25rem auto 0; }
+
+.strip { display: flex; justify-content: center; font-size: 0; }
+
+.slot {
+  display: block;
+  flex: 0 0 auto;
   background: var(--well);
   border: 1px solid var(--well-rule);
+  border-bottom: 0;
   overflow: hidden;
 }
-.slot-frame { display: block; width: 100%; height: 100%; line-height: 0; }
-.slot-frame img { display: block; width: 100%; height: 100%; object-fit: cover; }
-.slot-empty {
-  position: absolute;
-  inset: 0;
-  display: grid;
-  place-items: center;
-  font-size: 0.8125rem;
-  color: var(--well-ink-dim);
-}
+.slot + .slot { border-left: 0; }
+.slot img { display: block; width: 100%; height: 100%; object-fit: cover; }
 
-/* Three lines, and the page keeps room for all three whether or not this place needs
-   them: a caption that grows on hover would walk the plate down the screen. */
-.slot-what {
-  display: flex;
-  flex-direction: column;
-  margin-top: 0.35rem;
-  min-height: 4.2em;
-  font-size: 0.8125rem;
-  line-height: 1.4;
-  color: var(--ink-dim);
-}
-.slot-what .slot-refused { color: #8a5a00; }
-
-/* The line under them: which place this is, on each plane it was found on. */
-.dot-line {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.25rem 1.1rem;
-  margin: 0.9rem 0 0;
-  min-height: 2.8em;
-  font-size: 0.8125rem;
-  font-variant-numeric: tabular-nums;
-  color: var(--ink);
-}
-.dot-line .quiet { color: var(--ink-dim); }
-.dot-line .chip {
-  padding: 0 0.45em;
-  border-radius: 0.8em;
-  font-weight: 600;
-  color: #201a08;
-}
-.dot-line .chip-seated { background: var(--mark-seated); }
-.dot-line .chip-q4 { background: var(--mark-q4); }
-
-/* The plate, at the full width of the page. The marks are positioned in per-cent of it,
-   so they stay where they are at every width the page is read at. */
 .plate {
   position: relative;
-  margin-top: 0.9rem;
-  aspect-ratio: 16 / 9;
   background: var(--well);
   border: 1px solid var(--well-rule);
 }
-.plate img { display: block; width: 100%; height: 100%; }
+.plate > img { display: block; width: 100%; height: 100%; }
 
 .mark {
   position: absolute;
@@ -144,31 +93,4 @@
 .mark:focus-visible { outline: 2px solid var(--well-ink); outline-offset: -1px; }
 .mark.is-stored::before {
   box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.9), 0 0 0 3px var(--well-ink);
-}
-
-.legend {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.2rem 1.1rem;
-  margin: 0.6rem 0 0;
-  font-size: 0.8125rem;
-  color: var(--ink-dim);
-}
-.legend .key::before {
-  content: "";
-  display: inline-block;
-  width: 0.6em;
-  height: 0.6em;
-  margin-right: 0.4em;
-  border-radius: 50%;
-  vertical-align: 0.05em;
-}
-.legend .key-seated::before { background: var(--mark-seated); }
-.legend .key-q4::before { background: var(--mark-q4); }
-
-.provenance {
-  margin-top: 1.2rem;
-  max-width: var(--wide);
-  font-size: 0.8125rem;
-  color: var(--ink-dim);
 }

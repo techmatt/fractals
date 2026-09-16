@@ -62,7 +62,7 @@ export function contractOf(homeRaw) {
  * explorer does not bake and a fold the contract refuses on a cyclic map. Neither costs
  * the link: the map falls back to the one the explorer opens at, and the fold is
  * dropped. What they cost is the claim that the link *is* the picture, so each one is
- * named and the caption says it.
+ * named and the slot's tooltip says it.
  *
  * The record's own `refused` list carries these too, plus the things a view has no shape
  * for at all — an autolevel pass, a curve a mode's catalog does not give it. The two are

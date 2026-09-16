@@ -24,12 +24,14 @@
 </header>
 
 <main>
-  <p class="intro">One mark for every location the search has found and a judge has kept,
-  on the parameter plane it came out of. A Julia location is a value of <code>c</code>, and
+  <p class="intro">One mark for every location the search has found and a judge has kept, on
+  the parameter plane it came out of. A Julia location is a value of <code>c</code>, and
   <code>c</code> is a point of that same plane, so both halves of the search are drawn here
-  together. Hover a mark and it gives you three pictures: the Julia set it stands for, its
-  neighborhood on the plane, and the colored render a judge scored. Each of the three opens
-  in the <a href="../explorer/index.html">explorer</a> at the view it is.</p>
+  together. Hover a mark and the three frames above the plane fill with the Julia set it
+  stands for, its neighborhood on the plane, and the colored render a judge scored; click to
+  keep one, and Escape to let it go. Each of the three opens in the
+  <a href="../explorer/index.html">explorer</a> at the view it is, and says in its tooltip
+  what the link cannot carry.</p>
 
   <div class="notice" id="notice">
     <p>Reading the atlas…</p>
@@ -40,54 +42,15 @@
     <a href="https://techmatt.github.io/fractal-website/atlas/">techmatt.github.io</a>.</p>
   </div>
 
-  <div id="stage" hidden>
-    <div class="slots">
-      <figure class="slot" data-slot="julia">
-        <h2>Julia</h2>
-        <div class="slot-well">
-          <a class="slot-frame" hidden><img alt=""></a>
-          <p class="slot-empty">hover a mark</p>
-        </div>
-        <figcaption class="slot-what"></figcaption>
-      </figure>
-      <figure class="slot" data-slot="mandelbrot">
-        <h2>Mandelbrot</h2>
-        <div class="slot-well">
-          <a class="slot-frame" hidden><img alt=""></a>
-          <p class="slot-empty"></p>
-        </div>
-        <figcaption class="slot-what"></figcaption>
-      </figure>
-      <figure class="slot" data-slot="render">
-        <h2>Render</h2>
-        <div class="slot-well">
-          <a class="slot-frame" hidden><img alt=""></a>
-          <p class="slot-empty"></p>
-        </div>
-        <figcaption class="slot-what"></figcaption>
-      </figure>
+  <div class="frame" id="frame" hidden>
+    <div class="strip">
+      <a class="slot" data-slot="julia"><img alt=""></a>
+      <a class="slot" data-slot="mandelbrot"><img alt=""></a>
+      <a class="slot" data-slot="render"><img alt=""></a>
     </div>
-
-    <p class="dot-line" id="dot-line"></p>
-
     <div class="plate" id="plate"><img id="plate-image" alt=""></div>
-
-    <p class="legend" id="legend"></p>
-    <p class="provenance" id="provenance"></p>
   </div>
-
-  <nav class="section-nav">
-    <p><a href="../index.html">Contents</a>
-    · <a href="../article/fractal-atlases.html">Fractal atlases</a>
-    · <a href="../explorer/index.html">Fractal explorer</a>
-    · <a href="../galleries/index.html">Galleries</a></p>
-  </nav>
 </main>
-
-<footer>
-  <p><a href="https://techmatt.github.io/">Matt Fisher</a>
-  · <a href="https://github.com/techmatt/fractal-wallpapers">fractal-wallpapers</a> · MIT</p>
-</footer>
 </div>
 
 <script type="module" src="atlas.js"></script>

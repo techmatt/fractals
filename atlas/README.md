@@ -9,10 +9,17 @@ is.
 **It does not open from `file://`**, for the reasons `explorer/README.md` spells out.
 `python -m builder serve` puts this tree on localhost.
 
+**It is one fixed frame, and there is no text in it.** The three slots and the plate are
+sized once, in pixels, from the viewport; nothing in the frame changes height when a mark
+is hovered, because a caption that grew by a line moved the plate under the pointer, which
+moved the mark the pointer was on. What the captions said is a `title` on the slot: a
+tooltip is drawn over the page rather than in it, so it can say as much as it likes and
+cost the frame nothing.
+
 ```
 index.html        the page
 atlas.css         its own stylesheet, on top of the site's
-atlas.js          the marks, the three frames, the caption
+atlas.js          the marks, the three slots, and the one size the frame is
 links.js          a slot as a link — the one place a view is spelled, for two callers
 record.js         the record, fetched and read
 atlas.test.mjs    10 tests, `node --test atlas/atlas.test.mjs`
@@ -39,9 +46,10 @@ authority on what it may say; what follows is why it says it that way.
 - **A slot's `colormap` is what the picture was drawn through, not what its link will
   say.** The renderer next door knows a thousand maps and the explorer bakes a fraction of
   them, so a link whose map is not baked falls back to `DEFAULT_PALETTE` rather than
-  costing the link, and the caption says which ones did. `refused` is the record's list of
-  everything the recipe holds that a link has no key for: that map, an `band_autolevel/v1`
-  pass, a curve a mode's catalog does not give it, a fold a cyclic map refuses.
+  costing the link, and the slot's tooltip says which ones did. `refused` is the record's
+  list of everything the recipe holds that a link has no key for: that map, a
+  `band_autolevel/v1` pass, a curve a mode's catalog does not give it, a fold a cyclic map
+  refuses.
 - **Both halves of the search are on one plane.** A Julia location is a value of `c`, and
   `c` is a point of the Mandelbrot parameter plane, so a `julia:mandelbrot` place is drawn
   at its own `c` and shares the plate with the parameter places. A place found on both is
@@ -51,14 +59,14 @@ authority on what it may say; what follows is why it says it that way.
 
 **The map.** A picture whose colormap the explorer does not bake opens at
 `DEFAULT_PALETTE`, and the two neighborhood plates every mark carries are drawn through
-the record's `canonical_map`. Those are the same map today, which is what lets the caption
+the record's `canonical_map`. Those are the same map today, which is what lets the tooltip
 name it and have that mean something a reader has already seen. Neither fact is written
 down anywhere the other can see, so it is pinned by name, with the reason attached, in
 `atlas.test.mjs`.
 
 **The refusals.** The record says which links cannot carry everything, and the explorer's
 roster is what makes that true. A rebake that added a map the record calls unbakeable
-would leave a caption warning about a link that works; a rebake that dropped one would
+would leave a tooltip warning about a link that works; a rebake that dropped one would
 leave a link falling back in silence. `atlas.test.mjs` derives the refusals from the
 roster and holds the record to them in both directions.
 
