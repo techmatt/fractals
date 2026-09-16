@@ -16,38 +16,57 @@ spells them, and the page hands them to `permalink.js` without arithmetic.
 
 `atlas/atlas.jsonl` is the index and carries no dots:
 
-* one **`method`** row — the published record the population was read out of, the judge
-  that scored it, the bars it was cut at, the absorption radius the thinning ran at, the
-  map the neighborhood plates are drawn through, and the tally the page reports;
+* one **`method`** row — the published record the seats were read out of, the judge that
+  scored it, the fine bar the population was cut at, the absorption radius the thinning
+  ran at, the map the neighborhood plates are drawn through, and the tally the page
+  reports;
 * one **`partition`** row per plane — the plate its dots are drawn over, that plate's own
   view, and the file its dots are in. There is one today: the Mandelbrot parameter plane,
-  with the Julia side drawn over the same plate, because a Julia place *is* a `c` and a
+  with the Julia places drawn over the same plate, because a Julia place *is* a `c` and a
   `c` is a point of that plane.
 
 `atlas/<partition>.jsonl` carries one **`dot`** row per place:
 
 * `px`/`py` — where it is drawn **on the plate, in the plate's own pixels**, so the page
   scales one number and the dot stays put at every width;
-* `class` — `seated` where either side of the place holds a seat in the published record,
-  `q4` otherwise. The page colors them; the record says which they are;
-* `sides` — one entry per plane the place was found on, keyed by that plane's family:
-  where it is, which populations hold it, what the judges said, and the seat if it has
-  one. A place found on both is one dot and two sides;
-* `slots` — the three pictures the page shows: `julia`, `mandelbrot`, `render`. Each
-  carries the permalink keys of its own view, the mode and map it was drawn through, the
-  file it was landed as, and `refused` — what the recipe holds that a link has no key
-  for, so the page can say the explorer is opening *near* the picture rather than at it.
+* `plane` — `mandelbrot` where the place is a frame on the parameter plane, `julia` where
+  it is a frame on the dynamical plane of some `c`. **A dot is one place of one kind**:
+  there is no merging across the two, so the color the page draws is a fact about the
+  place rather than about what happened to land near it;
+* `place` — where it is, what the two judges read there, how many of its rows clear the
+  bar, and the seat if it holds one;
+* `slots` — the three pictures the page shows, in the order it shows them: `mandelbrot`,
+  `julia`, `gallery`. Each carries the permalink keys of its own view, the mode and map it
+  was drawn through, the file it was landed as, and `refused` — what the recipe holds that
+  a link has no key for, so the page can say the explorer is opening *near* the picture
+  rather than at it.
+
+The gallery slot carries two more, because the page's border color says both: `seated`,
+whether this is the picture the published record seats at the place, and `plane`, which
+kind of place the row came from. The second is read off the recipe's own family rather
+than copied from the dot, and `check` holds the two together.
 
 **A slot's `colormap` is what the picture was drawn through, not what its link will
 say.** Where the explorer does not bake that map the link falls back to the default, and
-the `refused` line is what the caption is written from. `atlas/atlas.test.mjs` holds the
+the `refused` line is what the tooltip is written from. `atlas/atlas.test.mjs` holds the
 two together: a refusal the roster does not make, or a map the roster lacks with no
 refusal beside it, fails there.
+
+## The population is one bar
+
+A place is on the plate if it holds at least one row the fine head reads at or above the
+solve's own `DEFAULT_FINE_BAR`. Nothing else qualifies — not a human verdict, not a
+top-quarter reading of the candidate judge — and that is what makes the third slot
+honest: the best row at a qualifying place clears the bar by construction, so the gallery
+picture is always a wallpaper somebody could seat rather than a location view standing in
+for one.
 """
 
 from __future__ import annotations
 
+import json
 import math
+import shutil
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -84,12 +103,27 @@ CONSTANTS = {
     "phoenix": ("cx", "cy", "px", "py", "zx", "zy"),
 }
 
-#: The three pictures a dot carries, in the order the page shows them.
-SLOTS = ("julia", "mandelbrot", "render")
+#: The three pictures a dot carries, in the order the page shows them, left to right.
+SLOTS = ("mandelbrot", "julia", "gallery")
 
-#: Which class a dot may be in. `seated` is the published record's own word for a place
-#: that holds a seat; `q4` is the search's for the top quarter.
-CLASSES = ("seated", "q4")
+#: The two kinds of place, and the word each is spelled with. A dot is one of them and
+#: never both.
+PLANES = ("mandelbrot", "julia")
+
+#: Which plane a slot's family belongs to. This is how the gallery slot's own `plane` is
+#: checked rather than trusted: the row says which kind of place it came from, and its
+#: family has to agree.
+PLANE_OF_FAMILY = {
+    "mandelbrot": "mandelbrot",
+    "multibrot3": "mandelbrot",
+    "multibrot4": "mandelbrot",
+    "multibrot5": "mandelbrot",
+    "julia": "julia",
+    "julia3": "julia",
+    "julia4": "julia",
+    "julia5": "julia",
+    "phoenix": "julia",
+}
 
 #: The permalink contract's own cap on a coordinate string, restated as a bound rather
 #: than as a rule: a record that wrote a longer one would produce a link that is refused.
@@ -102,27 +136,32 @@ class AtlasError(Exception):
 
 @dataclass(frozen=True)
 class Seat:
-    """A place's seat in the published record, where it holds one."""
+    """A place's seat in the published record, where it holds one.
+
+    `key` and `mode` are what the seat *is*; the rest is what the record happened to carry
+    beside it, and a release that stops carrying one of them is a thinner record rather
+    than a broken one — `carriers.jsonl` is this repository's standing lesson about
+    requiring a column a second reader never asked for.
+    """
 
     key: str
-    alias: str
-    seat: int
     mode: str
-    p_ge4: float
-    cell: str
+    seat: int
+    alias: str | None
+    p_ge4: float | None
+    cell: str | None
 
 
 @dataclass(frozen=True)
-class Side:
-    """One plane a place was found on, and what the judges made of it there."""
+class Place:
+    """The one place a dot stands for, and what the judges made of it."""
 
     plane: str
     at: tuple[float, float]
-    populations: tuple[str, ...]
+    rows_at_bar: int
     judged_rows: int
     p_ge4: float | None
     p_fine: float | None
-    human: int | None
     seat: Seat | None
 
 
@@ -132,8 +171,9 @@ class Slot:
 
     name: str
     what: str | None
-    side: str
     source: str | None
+    seated: bool | None
+    plane: str | None
     key: str | None
     family: str
     view: dict[str, str]
@@ -143,7 +183,6 @@ class Slot:
     shade: dict
     maxiter: int
     p_fine: float | None
-    p_ge4: float | None
     refused: tuple[str, ...]
     file: str
 
@@ -159,16 +198,14 @@ class Dot:
     id: int
     px: float
     py: float
-    kind: str
-    anchor: str
-    absorbed: int
+    plane: str
     dropped: int
-    sides: dict[str, Side]
+    place: Place
     slots: dict[str, Slot]
 
     @property
     def seated(self) -> bool:
-        return any(side.seat is not None for side in self.sides.values())
+        return self.place.seat is not None
 
 
 @dataclass(frozen=True)
@@ -212,6 +249,7 @@ class Atlas:
     made: str
     record: str
     judge: str
+    fine_bar: float
     radius_px: float
     canonical_map: str
     tally: dict
@@ -254,47 +292,47 @@ def _maybe(row: records.Record, held: dict, key: str, what: str) -> float | None
     return None if held.get(key) is None else _number(row, held[key], what)
 
 
-def _seat(row: records.Record, held: object, where: str) -> Seat | None:
+def _seat(row: records.Record, held: object) -> Seat | None:
     if held is None:
         return None
     if not isinstance(held, dict):
-        raise AtlasError(f"{row.where}: {where}.seat must be an object")
-    for key in ("key", "alias", "mode", "cell"):
+        raise AtlasError(f"{row.where}: place.seat must be an object")
+    for key in ("key", "mode"):
         if not isinstance(held.get(key), str) or not held[key]:
-            raise AtlasError(f"{row.where}: {where}.seat.{key} must be a non-empty string")
+            raise AtlasError(f"{row.where}: place.seat.{key} must be a non-empty string")
+    for key in ("alias", "cell"):
+        if held.get(key) is not None and not isinstance(held[key], str):
+            raise AtlasError(f"{row.where}: place.seat.{key} is a string where the record has one")
     return Seat(
         key=held["key"],
-        alias=held["alias"],
-        seat=_whole(row, held.get("seat"), f"{where}.seat.seat"),
         mode=held["mode"],
-        p_ge4=_number(row, held.get("p_ge4"), f"{where}.seat.p_ge4"),
-        cell=held["cell"],
+        seat=_whole(row, held.get("seat"), "place.seat.seat"),
+        alias=held.get("alias") or None,
+        p_ge4=_maybe(row, held, "p_ge4", "place.seat.p_ge4"),
+        cell=held.get("cell") or None,
     )
 
 
-def _side(row: records.Record, plane: str, held: object) -> Side:
-    where = f"sides.{plane}"
+def _place(row: records.Record, plane: str, held: object) -> Place:
     if not isinstance(held, dict):
-        raise AtlasError(f"{row.where}: {where} must be an object")
+        raise AtlasError(f"{row.where}: place must be an object")
     at = held.get("at")
     if not isinstance(at, list) or len(at) != 2:
-        raise AtlasError(f"{row.where}: {where}.at is the two coordinates of the place")
-    populations = held.get("populations")
-    if not isinstance(populations, list) or not populations:
-        raise AtlasError(f"{row.where}: {where}.populations says which sets hold this place")
-    for name in populations:
-        if not isinstance(name, str) or not name:
-            raise AtlasError(f"{row.where}: {where}.populations is a list of names")
-    human = held.get("human")
-    return Side(
+        raise AtlasError(f"{row.where}: place.at is the two coordinates of the place")
+    rows = _whole(row, held.get("rows_at_bar"), "place.rows_at_bar")
+    if rows < 1:
+        raise AtlasError(
+            f"{row.where}: place.rows_at_bar is {rows} — a place is on the plate because at "
+            "least one of its rows clears the fine bar"
+        )
+    return Place(
         plane=plane,
-        at=(_number(row, at[0], f"{where}.at[0]"), _number(row, at[1], f"{where}.at[1]")),
-        populations=tuple(populations),
-        judged_rows=_whole(row, held.get("judged_rows"), f"{where}.judged_rows"),
-        p_ge4=_maybe(row, held, "p_ge4", f"{where}.p_ge4"),
-        p_fine=_maybe(row, held, "p_fine", f"{where}.p_fine"),
-        human=None if human is None else _whole(row, human, f"{where}.human"),
-        seat=_seat(row, held.get("seat"), where),
+        at=(_number(row, at[0], "place.at[0]"), _number(row, at[1], "place.at[1]")),
+        rows_at_bar=rows,
+        judged_rows=_whole(row, held.get("judged_rows"), "place.judged_rows"),
+        p_ge4=_maybe(row, held, "p_ge4", "place.p_ge4"),
+        p_fine=_maybe(row, held, "p_fine", "place.p_fine"),
+        seat=_seat(row, held.get("seat")),
     )
 
 
@@ -323,14 +361,23 @@ def _slot(row: records.Record, name: str, held: object) -> Slot:
         not isinstance(line, str) or not line for line in refused
     ):
         raise AtlasError(f"{row.where}: {where}.refused is a list of what the link cannot carry")
-    side = held.get("side")
-    if side is None or not isinstance(side, str):
-        raise AtlasError(f"{row.where}: {where}.side names the plane this picture came from")
+    plane = held.get("plane")
+    seated = held.get("seated")
+    if name == "gallery":
+        if plane not in PLANES:
+            raise AtlasError(
+                f"{row.where}: {where}.plane says which kind of place this picture came from"
+            )
+        if not isinstance(seated, bool):
+            raise AtlasError(f"{row.where}: {where}.seated must be true or false")
+    elif plane is not None or seated is not None:
+        raise AtlasError(f"{row.where}: only the gallery slot carries plane and seated")
     return Slot(
         name=name,
         what=held.get("what"),
-        side=side,
         source=held.get("source"),
+        seated=seated,
+        plane=plane,
         key=held.get("key"),
         family=family,
         view=view,
@@ -340,7 +387,6 @@ def _slot(row: records.Record, name: str, held: object) -> Slot:
         shade=held.get("shade") or {},
         maxiter=_whole(row, held.get("maxiter"), f"{where}.maxiter"),
         p_fine=_maybe(row, held, "p_fine", f"{where}.p_fine"),
-        p_ge4=_maybe(row, held, "p_ge4", f"{where}.p_ge4"),
         refused=tuple(refused),
         file=held["file"],
     )
@@ -351,34 +397,26 @@ def _dot(row: records.Record, at: int) -> Dot:
     identifier = _whole(row, row.fields.get("id"), "id")
     if identifier != at:
         raise AtlasError(f"{row.where}: the {at}th dot calls itself {identifier}")
-    kind = row.text("class")
-    if kind not in CLASSES:
-        raise AtlasError(f"{row.where}: class {kind!r} — a dot is {' or '.join(CLASSES)}")
-    sides = row.fields.get("sides")
-    if not isinstance(sides, dict) or not sides:
-        raise AtlasError(f"{row.where}: sides names every plane this place was found on")
-    held = {plane: _side(row, plane, fields) for plane, fields in sides.items()}
-    anchor = row.text("anchor")
-    if anchor not in held:
-        raise AtlasError(
-            f"{row.where}: the dot is anchored on {anchor!r}, which is not a side it has"
-        )
+    plane = row.text("plane")
+    if plane not in PLANES:
+        raise AtlasError(f"{row.where}: plane {plane!r} — a dot is {' or '.join(PLANES)}")
     slots = row.fields.get("slots")
     if not isinstance(slots, dict) or not slots:
         raise AtlasError(f"{row.where}: slots carries the pictures this dot shows")
     for name in slots:
         if name not in SLOTS:
             raise AtlasError(f"{row.where}: {name!r} is not one of {', '.join(SLOTS)}")
+    for name in SLOTS:
+        if name not in slots:
+            raise AtlasError(f"{row.where}: every dot carries all three of {', '.join(SLOTS)}")
     return Dot(
         id=identifier,
         px=_number(row, row.fields.get("px"), "px"),
         py=_number(row, row.fields.get("py"), "py"),
-        kind=kind,
-        anchor=anchor,
-        absorbed=_whole(row, row.fields.get("absorbed"), "absorbed"),
+        plane=plane,
         dropped=_whole(row, row.fields.get("dropped"), "dropped"),
-        sides=held,
-        slots={name: _slot(row, name, slots[name]) for name in SLOTS if name in slots},
+        place=_place(row, plane, row.fields.get("place")),
+        slots={name: _slot(row, name, slots[name]) for name in SLOTS},
     )
 
 
@@ -480,6 +518,7 @@ def load_all() -> Atlas:
         made=head.text("made"),
         record=head.text("record"),
         judge=head.text("judge"),
+        fine_bar=_number(head, head.fields.get("fine_bar"), "fine_bar"),
         radius_px=_number(head, head.fields.get("radius_px"), "radius_px"),
         canonical_map=head.text("canonical_map"),
         tally=tally,
@@ -496,11 +535,11 @@ def problems() -> list[str]:
 
     Shape is held by `load_all`; what is added here is the part that needs the tree
     around it — a dot standing off the plate it is drawn on, two dots closer than the
-    absorption radius the thinning claims, a class that disagrees with the seats the
-    record itself carries, a tally that disagrees with the dots it counts, and a picture
-    that is missing or is not the size the method row gives. The last of those is
-    Pillow's, and its absence is a named skip rather than a pass, the way every other
-    size check on this site treats it.
+    absorption radius the thinning claims, a gallery slot that disagrees with the seat and
+    the plane the dot itself carries, a tally that disagrees with the dots it counts, and a
+    picture that is missing or is not the size the method row gives. The last of those is
+    Pillow's, and its absence is a named skip rather than a pass, the way every other size
+    check on this site treats it.
     """
     try:
         atlas = load_all()
@@ -511,7 +550,7 @@ def problems() -> list[str]:
     for partition in atlas.partitions:
         found.extend(_placed(partition))
         found.extend(_separated(partition, atlas.radius_px))
-        found.extend(_classed(partition))
+        found.extend(_galleried(partition))
         found.extend(_pictures(partition, atlas.thumb))
     found.extend(_tallied(atlas))
     return found
@@ -548,19 +587,36 @@ def _separated(partition: Partition, radius: float) -> list[str]:
     return []
 
 
-def _classed(partition: Partition) -> list[str]:
-    """A dot is `seated` exactly where one of its own sides carries a seat.
+def _galleried(partition: Partition) -> list[str]:
+    """The gallery slot agrees with the dot it hangs off, in both of the things it says.
 
-    The class is what the page colors by, and the seats are what it means. They are two
-    fields of one record, so a record that disagrees with itself is the one thing a
-    reader could not see: a gold dot standing for nothing.
+    The page colors the gallery's border by `plane` and rings a seated dot, so those two
+    fields are what a reader is actually told. `plane` is read off the recipe's own family
+    at ingest rather than copied from the dot, which is what makes this comparison worth
+    making; `seated` is true exactly where the gallery picture is the key the published
+    record seats at this place.
     """
-    return [
-        f"{partition.file}: dot {dot.id} is {dot.kind} and "
-        + ("no side of it holds a seat" if dot.seated is False else "a side of it holds a seat")
-        for dot in partition.dots
-        if (dot.kind == "seated") != dot.seated
-    ]
+    found: list[str] = []
+    for dot in partition.dots:
+        slot = dot.slots["gallery"]
+        if slot.plane != dot.plane:
+            found.append(
+                f"{partition.file}: dot {dot.id} is a {dot.plane} place and its gallery "
+                f"picture says it came from a {slot.plane} one"
+            )
+        if slot.plane != PLANE_OF_FAMILY[slot.family]:
+            found.append(
+                f"{partition.file}: dot {dot.id}'s gallery says {slot.plane} and is drawn on "
+                f"the {slot.family} family"
+            )
+        seat = dot.place.seat
+        expected = seat is not None and slot.key == seat.key
+        if slot.seated != expected:
+            found.append(
+                f"{partition.file}: dot {dot.id}'s gallery says seated={slot.seated} and "
+                + ("the place holds no seat" if seat is None else f"its seat is {seat.key}")
+            )
+    return found
 
 
 def _pictures(partition: Partition, size: tuple[int, int]) -> list[str]:
@@ -600,10 +656,10 @@ def _tallied(atlas: Atlas) -> list[str]:
     dots = [dot for partition in atlas.partitions for dot in partition.dots]
     counted = {
         "dots": len(dots),
-        "seated": sum(1 for dot in dots if dot.kind == "seated"),
-        "q4": sum(1 for dot in dots if dot.kind == "q4"),
-        "both": sum(1 for dot in dots if len(dot.sides) == 2),
-        "absorbed": sum(dot.absorbed for dot in dots),
+        "mandelbrot": sum(1 for dot in dots if dot.plane == "mandelbrot"),
+        "julia": sum(1 for dot in dots if dot.plane == "julia"),
+        "seated": sum(1 for dot in dots if dot.seated),
+        "gallery_seated": sum(1 for dot in dots if dot.slots["gallery"].seated),
         "dropped": sum(dot.dropped for dot in dots),
     }
     found = [
@@ -612,10 +668,10 @@ def _tallied(atlas: Atlas) -> list[str]:
         if key in atlas.tally and atlas.tally[key] != value
     ]
     queued = atlas.tally.get("queued")
-    if queued is not None and queued != counted["dots"] + counted["absorbed"] + counted["dropped"]:
+    if queued is not None and queued != counted["dots"] + counted["dropped"]:
         found.append(
             f"{ATLAS_INDEX.name}: {queued} places were queued and the dots account for "
-            f"{counted['dots'] + counted['absorbed'] + counted['dropped']}"
+            f"{counted['dots'] + counted['dropped']}"
         )
     return found
 
@@ -625,8 +681,8 @@ def summary() -> list[str]:
     atlas = load_all()
     lines = [
         f"atlas/atlas.jsonl — made {atlas.made} from the published record {atlas.record}",
-        f"  judge {atlas.judge[:12]}… · absorption radius {atlas.radius_px:g} px · "
-        f"neighborhood plates through {atlas.canonical_map}",
+        f"  judge {atlas.judge[:12]}… · fine bar {atlas.fine_bar:g} · absorption radius "
+        f"{atlas.radius_px:g} px · neighborhood plates through {atlas.canonical_map}",
     ]
     for partition in atlas.partitions:
         plate = partition.plate
@@ -634,20 +690,20 @@ def summary() -> list[str]:
             f"  {partition.name}: {len(partition.dots)} dots over {plate.file} "
             f"({plate.width}x{plate.height}, {plate.mode} through {plate.colormap})"
         )
-        seated = sum(1 for dot in partition.dots if dot.kind == "seated")
-        both = sum(1 for dot in partition.dots if len(dot.sides) == 2)
+        counted = {name: sum(1 for dot in partition.dots if dot.plane == name) for name in PLANES}
+        seated = sum(1 for dot in partition.dots if dot.seated)
         lines.append(
-            f"    {seated} seated, {len(partition.dots) - seated} q4 · {both} on both planes"
+            f"    {counted['mandelbrot']} on the parameter plane, {counted['julia']} on a "
+            f"dynamical one · {seated} hold a seat"
         )
         widths = sorted(
-            float(slot.view["w"])
+            float(dot.slots["gallery"].view["w"])
             for dot in partition.dots
-            for slot in dot.slots.values()
-            if slot.name == "render"
+            if "gallery" in dot.slots
         )
         if widths:
             lines.append(
-                f"    render widths {widths[0]:.3g}–{widths[-1]:.3g} "
+                f"    gallery widths {widths[0]:.3g}–{widths[-1]:.3g} "
                 f"({math.log10(widths[-1] / widths[0]):.1f} decades), "
                 f"median {widths[len(widths) // 2]:.3g}"
             )
@@ -655,6 +711,260 @@ def summary() -> list[str]:
         pictures = sum(len(dot.slots) for dot in partition.dots)
         lines.append(f"    {pictures} pictures, {refused} whose link cannot carry everything")
     return lines
+
+
+# ---------------------------------------------------------------------------- the ingest
+
+#: The shade recipe's defaults, as `explorer/permalink.js`'s `SHADE_KEYS` declares them.
+#: A slot's `shade` carries only what differs from these, because the page merges it over
+#: `defaultShade()` and a key spelled at its default would be noise in the record.
+SHADE_DEFAULTS = {
+    "gamma": 1.0,
+    "cycles": 1.0,
+    "phase": 0.0,
+    "reverse": False,
+    "mirror": False,
+    "transfer": {"kind": "value"},
+    "rolloff": {"kind": "none"},
+}
+
+#: What the maker's refusal lines are rewritten to on the way in. The maker spells the
+#: roster's size into its own message — *not among the 126 the explorer bakes* — and that
+#: is a number which grows every time a figure lands in a map the roster did not carry.
+#: The record names the thing it could not carry; the page writes the sentence. The two
+#: short forms `links.js`'s `refusals` derives have to match exactly, because
+#: `atlas.test.mjs` holds the record to them in both directions.
+REFUSAL_PREFIX = ("colormap ", "mode ")
+
+#: The quality a slot picture is re-encoded at. The maker lands them at the engine's own
+#: quality and they are nearly twice as large as this page can afford to ship; 4:4:4 is not
+#: negotiable, because a fractal thumbnail is all saturated edge and chroma subsampling is
+#: visible on every one of them. 78 is what the whole set fits the page's budget at — a
+#: little under ten megabytes — and it is a number to re-derive rather than to keep, the
+#: day a release puts twice as many dots on the plate.
+THUMB_QUALITY = 78
+
+
+def _shade_of(palette: object) -> dict:
+    """A recipe's shade as the record carries it: only what differs from the default."""
+    if not isinstance(palette, dict):
+        return {}
+    return {
+        key: palette[key]
+        for key, fallback in SHADE_DEFAULTS.items()
+        if key in palette and palette[key] != fallback
+    }
+
+
+def _refusal(text: str) -> str:
+    """One of the maker's refusal lines, as the record carries it.
+
+    The name is everything up to the maker's own parenthetical, not up to the first space:
+    a colormap is called `Smoke & Madder` as readily as `twilight_shifted`, and splitting
+    on whitespace turned that one into a refusal nothing on the site could match.
+    """
+    if text.startswith("mirror "):
+        return "mirror on a cyclic map"
+    for prefix in REFUSAL_PREFIX:
+        if text.startswith(prefix):
+            name = text[len(prefix) :]
+            cut = name.find(" (")
+            return prefix + (name if cut < 0 else name[:cut])
+    return text
+
+
+def _slot_row(name: str, held: dict, file: str) -> dict:
+    """One slot of the maker's `dots.json`, as the record spells it."""
+    viewport = held["viewport"]
+    row = {
+        "what": held.get("what"),
+        "source": held.get("source"),
+        "key": held.get("key"),
+        "family": _family_name(held["family"]),
+        "x": str(viewport["center_re"]),
+        "y": str(viewport["center_im"]),
+        "w": str(viewport["width"]),
+    }
+    constants = list(held["family"].get("c") or [])
+    if CONSTANTS.get(row["family"], ())[:2] == ("cx", "cy"):
+        row["cx"], row["cy"] = str(constants[0]), str(constants[1])
+    row["mode"] = str(held["mode"])
+    if held.get("mode_params"):
+        row["mode_params"] = dict(held["mode_params"])
+    row["colormap"] = str(held["colormap"])
+    shade = _shade_of(held.get("palette"))
+    if shade:
+        row["shade"] = shade
+    row["maxiter"] = int(held["maxiter"])
+    if held.get("p_fine") is not None:
+        row["p_fine"] = held["p_fine"]
+    if name == "gallery":
+        row["seated"] = bool(held.get("seated"))
+        row["plane"] = PLANE_OF_FAMILY[row["family"]]
+    row["refused"] = [_refusal(line) for line in held.get("refused") or []]
+    row["file"] = file
+    return row
+
+
+def _family_name(family: dict) -> str:
+    """The permalink contract's name for an engine family spec."""
+    kind = str(family.get("kind"))
+    degree = int(family.get("degree") or 2)
+    if kind == "mandelbrot":
+        return "mandelbrot" if degree == 2 else f"multibrot{degree}"
+    if kind == "julia":
+        return "julia" if degree == 2 else f"julia{degree}"
+    if kind == "phoenix":
+        return "phoenix"
+    raise AtlasError(f"{kind}: not a family this site draws")
+
+
+def ingest(source: Path, *, quality: int = THUMB_QUALITY, made: str | None = None) -> list[str]:
+    """Turn the maker's `dots.json` and `thumbs/` into the committed record and pictures.
+
+    The maker next door writes a working file; this is the one program that turns it into
+    what the site ships, and it is committed rather than left in `scratch/` for the reason
+    the figure makers are: a record nobody can rebuild is a record nobody can correct. It
+    re-encodes every thumbnail — the maker's are three times the size this page can afford
+    — sweeps `assets/images/atlas/` of anything the new record does not name, and writes
+    both JSONL files.
+    """
+    from datetime import date
+
+    payload = json.loads(source.read_text(encoding="utf-8"))
+    here = source.parent
+    base = payload["base"]
+    # The plate was rendered once, by the first pass, and `base.json` is the report it
+    # left. Its supersample and cap are read off that rather than typed here: they are
+    # facts about a picture this repository did not draw.
+    plate = json.loads((here / "base.json").read_text(encoding="utf-8"))
+    plate_file = str(base["image"])
+    thumb_across, thumb_down = (int(value) for value in payload["thumb"]["resolution"])
+
+    IMAGE_DIR.mkdir(parents=True, exist_ok=True)
+    landed = {plate_file}
+    shutil.copyfile(here / plate_file, IMAGE_DIR / plate_file)
+
+    rows: list[dict] = []
+    for dot in payload["dots"]:
+        slots = {}
+        for name in SLOTS:
+            held = dot["slots"].get(name)
+            if held is None:
+                raise AtlasError(f"dot {dot['id']} has no {name} picture")
+            file = f"{dot['id']:04d}-{name}.jpg"
+            _encode(here / held["picture"], IMAGE_DIR / file, quality)
+            landed.add(file)
+            slots[name] = _slot_row(name, held, file)
+        place = dot["place"]
+        rows.append(
+            {
+                "schema": records.SCHEMA,
+                "kind": "dot",
+                "id": int(dot["id"]),
+                "px": dot["px"],
+                "py": dot["py"],
+                "plane": str(dot["kind"]),
+                "dropped": int(dot["dropped"]),
+                "place": {
+                    "at": [place["x"], place["y"]],
+                    "p_fine": place["p_fine"],
+                    "rows_at_bar": int(place["rows_at_bar"]),
+                    "p_ge4": place["p_ge4"],
+                    "judged_rows": int(place["judged_rows"]),
+                    "seat": place["seat"],
+                },
+                "slots": slots,
+            }
+        )
+
+    tally = dict(payload["tally"])
+    tally.pop("radius_px", None)
+    tally["gallery_seated"] = sum(1 for row in rows if row["slots"]["gallery"]["seated"])
+    method = {
+        "schema": records.SCHEMA,
+        "kind": "method",
+        "made": made or date.today().isoformat(),
+        "record": payload["record"],
+        "judge": payload["judge_artifact"],
+        "generator": "fractal-wallpapers scratch/atlas_explore2/build_dots.py",
+        "radius_px": payload["radius_px"],
+        "canonical_map": payload["canonical_map"],
+        "fine_bar": payload["fine_bar"],
+        "thumb": {"width": thumb_across, "height": thumb_down},
+        "tally": tally,
+        "says": (
+            "Every place the search kept on the two planes it has searched, thinned to one dot "
+            "per neighborhood. A place is here because at least one of its rows reads at or "
+            "above the solve's own fine bar, and nothing else puts one here. The seats of the "
+            "published record are placed first and everything else follows by its best fine "
+            "score; a place landing inside the absorption radius of a dot already drawn is "
+            "dropped, whichever kind either of them is, so a dot is one place of one kind."
+        ),
+    }
+    partition = {
+        "schema": records.SCHEMA,
+        "kind": "partition",
+        "partition": "mandelbrot",
+        "title": "Mandelbrot",
+        "family": "mandelbrot",
+        "file": "mandelbrot.jsonl",
+        "plate": {
+            "file": plate_file,
+            "width": int(base["resolution"][0]),
+            "height": int(base["resolution"][1]),
+            "family": "mandelbrot",
+            "x": str(base["viewport"]["center_re"]),
+            "y": str(base["viewport"]["center_im"]),
+            "w": str(base["viewport"]["width"]),
+            "aspect": [16, 9],
+            "mode": str(plate["mode"]),
+            "colormap": str(plate["colormap"]),
+            "supersample": int(plate["supersample"]),
+            "maxiter": int(plate["maxiter"]),
+        },
+        "plate_width": str(payload["plate_width"]),
+        "dots": len(rows),
+        "says": (
+            "the parameter plane, with the Julia places drawn over the same plane: a Julia "
+            "place is a c, and c is a point of this plane"
+        ),
+    }
+
+    _write_rows(ATLAS_INDEX, [method, partition])
+    _write_rows(ATLAS_DIR / "mandelbrot.jsonl", rows)
+
+    swept = [path for path in sorted(IMAGE_DIR.glob("*.jpg")) if path.name not in landed]
+    for path in swept:
+        path.unlink()
+    total = sum(path.stat().st_size for path in IMAGE_DIR.glob("*.jpg"))
+    return [
+        f"atlas/atlas.jsonl: 2 rows · atlas/mandelbrot.jsonl: {len(rows)} dots",
+        f"assets/images/atlas/: {len(landed)} files, {total / 1e6:.2f} MB "
+        f"({len(rows) * len(SLOTS)} slot pictures at {thumb_across}x{thumb_down} quality "
+        f"{quality}, {len(swept)} swept)",
+    ]
+
+
+def _encode(source: Path, destination: Path, quality: int) -> None:
+    """One thumbnail, re-encoded at the page's own quality and no chroma subsampling."""
+    from PIL import Image, ImageFile
+
+    ImageFile.MAXBLOCK = max(ImageFile.MAXBLOCK, 4 * 1024 * 1024)
+    with Image.open(source) as picture:
+        picture.convert("RGB").save(
+            destination,
+            format="JPEG",
+            quality=quality,
+            subsampling=0,
+            optimize=True,
+            progressive=False,
+        )
+
+
+def _write_rows(path: Path, rows: list[dict]) -> None:
+    body = "".join(json.dumps(row, ensure_ascii=False) + "\n" for row in rows)
+    path.write_text(body, encoding="utf-8", newline="\n")
 
 
 # ---------------------------------------------------------------------------- the maker
@@ -671,12 +981,12 @@ MAKERS = {"atlas-places": "the plate with every kept place marked on it"}
 MARK_RADIUS = 0.0039
 MARK_RING = 0.0012
 
-#: What each class is drawn in. The page's two tokens, transcribed the way
+#: What each kind of place is drawn in. The page's two tokens, transcribed the way
 #: `builder/theme.py` transcribes the well colors and for the same reason: Pillow cannot
 #: read CSS. `check`'s `theme` holds those five; these two are the atlas's own and are
 #: held by nothing but this comment, because a figure drawn a shade off its page is not a
 #: failure a reader could be misled by.
-MARK_COLOR = {"seated": (255, 176, 46), "q4": (87, 217, 138)}
+MARK_COLOR = {"mandelbrot": (77, 141, 240), "julia": (242, 88, 76)}
 
 
 def draw(identifier: str) -> list[str]:
@@ -703,7 +1013,7 @@ def draw(identifier: str) -> list[str]:
             (x - radius - ring, y - radius - ring, x + radius + ring, y + radius + ring),
             fill=(0, 0, 0),
         )
-        canvas.ellipse((x - radius, y - radius, x + radius, y + radius), fill=MARK_COLOR[dot.kind])
+        canvas.ellipse((x - radius, y - radius, x + radius, y + radius), fill=MARK_COLOR[dot.plane])
 
     width, height = images.land(sheet, figure.path)
     return [

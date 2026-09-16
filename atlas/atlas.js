@@ -5,12 +5,15 @@
 // at all. What it does draw is the marks, and what it owes each mark is three pictures and
 // three links.
 //
-// **It is one fixed frame.** The three slots and the plate are sized once, in pixels, from
-// the viewport, and there is no text inside the frame at all. The page used to carry a
-// caption under each slot and a line of scores under the row, and both changed height with
-// whichever mark was under the pointer — which moved the plate under the pointer, which
-// moved the mark. What those captions said is a `title` on the slot now: a tooltip is drawn
-// over the page rather than in it, so it can say as much as it likes and nothing reflows.
+// **It is full bleed and it is one fixed frame.** The stage under the site bar takes the
+// whole window; the strip and the plate are sized once, in pixels, from what is left, and
+// there is no text inside the frame at all. The page used to carry a caption under each
+// slot and a line of scores under the row, and both changed height with whichever mark was
+// under the pointer — which moved the plate under the pointer, which moved the mark. What
+// those captions said is a `title` on the slot now: a tooltip is drawn over the page rather
+// than in it, so it can say as much as it likes and nothing reflows. The three labels are
+// the one piece of text the frame carries and they sit *on* the pictures, for the same
+// reason: a row of labels is a height, and a height is a thing that can change.
 //
 // The engine is here for one export. `permalink.js` decides whether a canonical link
 // spells `x`, `y` and `w` by comparing them against the family's home view, and home is
@@ -22,35 +25,45 @@
 import { contractOf, opened } from "./links.js";
 import { load } from "./record.js";
 
-/** The three pictures a place carries, in the order the page shows them. */
+/** The three pictures a place carries, in the order the page shows them, left to right. */
 const SLOTS = [
-  ["julia", "Julia"],
   ["mandelbrot", "Mandelbrot"],
-  ["render", "Render"],
+  ["julia", "Julia"],
+  ["gallery", "Gallery"],
 ];
 
-/** Where a render slot's recipe came from, said in words a reader of this article has. */
+/** Where a gallery slot's recipe came from, said in words a reader of this article has. */
 const SOURCE = {
-  seated: "seated in the published gallery",
-  "best recipe by p_fine": "best recipe by the fine score",
-  "best recipe by p_ge4": "best recipe by P(≥4)",
-  "human-judged location view": "a view a person rated",
-  "human-judged recipe": "a recipe a person rated",
+  seated: "the wallpaper the published gallery seats here",
+  "best row by the fine score": "the best-scoring wallpaper drawn here",
 };
+
+/** Which kind of place a picture came from, as the class that colors its border. */
+const FROM = { mandelbrot: "from-mandelbrot", julia: "from-julia" };
 
 const EXPLORER = "../explorer/index.html";
 
-/** Each slot's width, as a share of the plate's. Three of them, centred, and no gaps. */
-const SLOT_SHARE = 0.3;
+/** Each slot's width, as a share of the plate's. Three of them and two gaps span it. */
+const SLOT_SHARE = 0.32;
 
-/** What the frame leaves below itself, so the whole of it is on screen at once. */
-const BOTTOM = 16;
+/** The gap under the strip, as the same share of the plate's width the side gaps get. */
+const GAP_SHARE = (1 - 3 * SLOT_SHARE) / 2;
 
-/** The narrowest plate worth drawing 152 marks on, whatever the viewport says. */
+/** How far past its own pixels a slot picture may be stretched before the frame stops.
+ *  Full bleed means the figure grows with the window, and on a tall window the height is
+ *  what binds; past about here a thumbnail is being enlarged rather than shown. */
+const MOST_UPSCALE = 1.6;
+
+/** The narrowest plate worth drawing a hundred and fifty marks on. */
 const LEAST = 320;
 
+/** The shortest the stage goes, whatever a window with no height says. */
+const LEAST_TALL = 280;
+
+const stage = document.getElementById("stage");
 const notice = document.getElementById("notice");
 const frame = document.getElementById("frame");
+const strip = frame.querySelector(".strip");
 const plate = document.getElementById("plate");
 const plateImage = document.getElementById("plate-image");
 
@@ -115,6 +128,10 @@ function show(dot, links) {
   for (const [name, label] of SLOTS) {
     const held = slots.get(name);
     const slot = dot === null ? undefined : dot.slots[name];
+    // Only the gallery slot carries a kind, and only while a mark is showing: the other
+    // two are always what their own label says and keep their border at rest.
+    held.node.classList.remove(FROM.mandelbrot, FROM.julia);
+    if (slot !== undefined && slot.plane !== undefined) held.node.classList.add(FROM[slot.plane]);
     if (slot === undefined) {
       held.node.removeAttribute("href");
       held.node.title = dot === null ? `${label}: hover a mark on the plane` : `${label}: none`;
@@ -133,26 +150,60 @@ function show(dot, links) {
 }
 
 /**
+ * What the stage has to give: the window's width, and the height the site bar leaves.
+ *
+ * The height is a number rather than `100vh` less a bar, because the bar's own height is
+ * whatever the reader's font metrics make it and `100vh` is a promise a phone browser does
+ * not keep. The padding comes out of both, because that is the box the figure goes in.
+ */
+function room() {
+  const style = getComputedStyle(stage);
+  const above = stage.getBoundingClientRect().top + window.scrollY;
+  return {
+    padX: parseFloat(style.paddingLeft) + parseFloat(style.paddingRight),
+    padY: parseFloat(style.paddingTop) + parseFloat(style.paddingBottom),
+    width: document.documentElement.clientWidth,
+    height: Math.max(LEAST_TALL, Math.floor(window.innerHeight - above)),
+  };
+}
+
+/** The stage at its full height, which is what the notice is centred in before the load. */
+function stageBox() {
+  stage.style.height = `${room().height}px`;
+}
+
+/**
  * Size the frame, once, from the viewport.
  *
- * The frame has one aspect ratio of its own — the plate's, plus the strip's share of it —
- * so fitting it into the room below the intro is one division and no branches. Nothing
- * here reads the hover state, and nothing the hover state does reaches back in.
+ * The frame has one aspect ratio of its own — the plate's, plus the strip's share of it,
+ * plus the gap between them — so fitting it into the stage is one division and no
+ * branches. Nothing here reads the hover state, and nothing the hover state does reaches
+ * back in.
+ *
+ * The strip spans the plate exactly: three slots at `SLOT_SHARE` and two gaps that the
+ * flexbox works out from what is left, so the composed object is one rectangle whatever
+ * the rounding does.
+ *
+ * **The stage takes the window's height, or the figure's, whichever is less.** Full bleed
+ * is the ask and on any ordinary window the height is what binds, so the stage is the
+ * screen. On a narrow one the width binds first and the figure comes out short, and a
+ * stage held to the viewport anyway would be a band of empty mat with a small picture in
+ * the middle of it.
  */
 function fit({ plateAspect, slotAspect, slotNative }) {
-  const ratio = plateAspect + SLOT_SHARE * slotAspect;
-  const room = frame.parentElement.clientWidth;
-  const above = frame.getBoundingClientRect().top + window.scrollY;
-  const tall = window.innerHeight - above - BOTTOM;
-  // The third bound is the pictures themselves: a slot wider than the thumbnail the maker
-  // landed is a soft picture pretending to be a big one, and on a tall screen the column
-  // is wide enough to ask for one.
-  const most = slotNative / SLOT_SHARE;
-  const width = Math.max(LEAST, Math.floor(Math.min(room, tall / ratio, most)));
+  const box = room();
+  const ratio = plateAspect + SLOT_SHARE * slotAspect + GAP_SHARE;
+  const most = (slotNative * MOST_UPSCALE) / SLOT_SHARE;
+  const width = Math.max(
+    LEAST,
+    Math.floor(Math.min(box.width - box.padX, (box.height - box.padY) / ratio, most)),
+  );
+  stage.style.height = `${Math.min(box.height, Math.ceil(width * ratio) + box.padY)}px`;
 
   const slotWidth = Math.floor(width * SLOT_SHARE);
   const slotHeight = Math.round(slotWidth * slotAspect);
   frame.style.width = `${width}px`;
+  strip.style.marginBottom = `${Math.round(width * GAP_SHARE)}px`;
   plate.style.width = `${width}px`;
   plate.style.height = `${Math.round(width * plateAspect)}px`;
   for (const { node } of slots.values()) {
@@ -192,14 +243,14 @@ async function start() {
   const settle = () => show(hovering ?? stored, links);
 
   for (const dot of partition.dots) {
-    const node = made("button", `mark mark-${dot.class}`);
+    const node = made("button", `mark mark-${dot.plane}`);
     node.type = "button";
     node.style.left = `${(dot.px / partition.plate.width) * 100}%`;
     node.style.top = `${(dot.py / partition.plate.height) * 100}%`;
     node.setAttribute(
       "aria-label",
-      `${dot.class === "seated" ? "A seated place" : "A kept place"} at ` +
-        `${point(Object.values(dot.sides)[0].at)}`,
+      `${dot.plane === "mandelbrot" ? "A place on the parameter plane" : "A Julia place"} at ` +
+        `${point(dot.place.at)}${dot.place.seat === null ? "" : ", seated"}`,
     );
     const enter = () => {
       hovering = dot;
@@ -246,9 +297,17 @@ async function start() {
   window.addEventListener("resize", () => fit(sizes));
 }
 
+// The stage is full height before anything has loaded, so the notice — and the wait, on a
+// slow connection — sits in the band the figure is about to fill rather than in a strip
+// that jumps open when it arrives.
+stageBox();
+
 start().catch((error) => {
   notice.replaceChildren(
     made("p", null, "The atlas could not be read."),
     made("p", null, String(error.message ?? error)),
   );
+  // `fit` is what keeps the stage the window's height once there is a frame in it; with
+  // no frame there is still a notice to centre, so the stage is resized on its own.
+  window.addEventListener("resize", stageBox);
 });

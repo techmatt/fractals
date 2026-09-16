@@ -2,61 +2,138 @@
    arrangement the explorer has, and for the same reason: the article does not run code
    and does not need the rules for a page that does.
 
-   Almost every colour here is a token `site.css` already declares. Two are not, and they
-   are declared below rather than there because they are not furniture: they are marks
-   drawn on top of a picture, they exist on this page and nowhere else, and putting them
-   in the site's root would make them look like part of a palette everything shares.
-   `builder/atlas.py` carries the same two values, for the figure section 11 shows,
-   because Pillow cannot read CSS. */
+   **The page is full bleed.** The site bar stays; below it the stage takes the whole
+   viewport width and every pixel of height the bar leaves, and the figure is centred in
+   it. The kicker, the title and the intro are under that, in the article's own type, so
+   the first screen is the picture rather than a paragraph about one. Nothing here is the
+   reading column: `.atlas-page` picks that up again below the fold.
 
-.atlas-page {
-  --mark-seated: #ffb02e;
-  --mark-q4: #57d98a;
-  max-width: var(--page);
-  margin: 0 auto;
+   ## The four colours
+
+   Blue is a place on the parameter plane and red is a place on a dynamical one, and that
+   is the whole of the page's colour language: the dots say it, the two fixed slots say it
+   with a soft border of the same hue, and the gallery slot says which kind of place its
+   picture came from with a deeper one. They are declared here rather than in `site.css`
+   because they are not furniture — they are a reading of a record that exists on this
+   page and nowhere else — and `builder/atlas.py` carries the same two dot values for the
+   figure section 11 shows, because Pillow cannot read CSS.
+
+   The soft borders are mixed toward the well's own rule colour rather than declared
+   separately, so there is one hue per kind and the "soft" and "deeper" ends of it are
+   derived from the same token. */
+
+.atlas-body {
+  --place-mandelbrot: #4d8df0;
+  --place-julia: #f2584c;
+  --edge-mandelbrot: #2f6bc4;
+  --edge-julia: #c4372c;
+
+  /* Full bleed: the body's gutter is what stops a page short of the viewport, so it goes,
+     and every block below takes its own. */
+  padding-left: 0;
+  padding-right: 0;
+  padding-bottom: 0;
 }
 
-/* What is read in lines stops at the measure. The frame does not: an atlas squeezed into
-   a column of prose is a diagram of a diagram. */
-.atlas-page .masthead > *,
-.atlas-page .intro,
-.atlas-page .notice { max-width: var(--measure); }
+/* The site bar pulls itself out to the gutter it expects the body to have. There isn't
+   one, so it does not need to. */
+.atlas-body .topbar { margin: 0; }
 
 [hidden] { display: none !important; }
 
+/* ------------------------------------------------------------------------- the stage
+
+   A dark band the width of the window, as tall as the bar leaves, holding one figure. It
+   is a well in the site's sense — the wallpapers want a mat rather than a white void —
+   and the prose below it is the white reading surface as usual.
+
+   `atlas.js` sets the height, in pixels, from the viewport. It has to be a number rather
+   than `100vh` less a bar: the bar's own height is whatever the reader's font metrics make
+   it, and on a phone `100vh` is a promise the browser does not keep. */
+.stage {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem var(--gutter);
+  background: var(--well);
+  border-bottom: 1px solid var(--rule);
+  overflow: hidden;
+}
+
 .notice {
-  margin: 1.25rem 0 0;
+  max-width: var(--measure);
   padding: 1rem 1.2rem;
-  border-left: 3px solid var(--rule);
-  background: var(--bar);
+  border-left: 3px solid var(--well-rule);
+  background: var(--ground);
 }
 .notice p { margin: 0 0 0.5em; }
 .notice p:last-child { margin-bottom: 0; }
 
-/* ------------------------------------------------------------------------ the frame
+/* ------------------------------------------------------------------------- the frame
 
-   One fixed frame, and it never moves. The three slots and the plate are sized once, in
-   pixels, by `atlas.js` from the viewport; nothing here depends on which mark is under
-   the pointer, and there is no text inside the frame to reflow when one is. What the
+   One fixed frame, and it never moves. The strip and the plate are sized once, in pixels,
+   by `atlas.js` from the viewport; nothing here depends on which mark is under the
+   pointer, and there is no text inside the frame that could reflow when one is. What the
    captions used to say is a `title` on the slot, because a tooltip is drawn over the page
    rather than in it.
 
-   The strip sits directly on the plate with no gap, centred on its width: three pictures
-   of one place, and then the place. */
-.frame { margin: 1.25rem auto 0; }
+   The strip spans the plate exactly — three slots and two gaps, the same gap again
+   between the strip and the plate — so the two are one composed rectangle rather than a
+   row of pictures above a picture. */
+.frame { flex: 0 0 auto; }
 
-.strip { display: flex; justify-content: center; font-size: 0; }
+.strip { display: flex; justify-content: space-between; font-size: 0; }
 
 .slot {
+  position: relative;
   display: block;
   flex: 0 0 auto;
   background: var(--well);
   border: 1px solid var(--well-rule);
-  border-bottom: 0;
   overflow: hidden;
+  -webkit-tap-highlight-color: transparent;
 }
-.slot + .slot { border-left: 0; }
 .slot img { display: block; width: 100%; height: 100%; object-fit: cover; }
+
+/* The two fixed slots always say what they are; the gallery slot has no kind until a mark
+   is under the pointer, and takes the well's own rule until it has one. */
+.slot[data-slot="mandelbrot"] {
+  border-color: color-mix(in srgb, var(--place-mandelbrot) 55%, var(--well-rule));
+}
+.slot[data-slot="julia"] {
+  border-color: color-mix(in srgb, var(--place-julia) 55%, var(--well-rule));
+}
+.slot.from-mandelbrot { border-color: var(--edge-mandelbrot); }
+.slot.from-julia { border-color: var(--edge-julia); }
+
+.slot:focus-visible { outline: 2px solid var(--well-ink); outline-offset: -3px; }
+
+/* A label on the top edge of the picture, not a row above it: a row is a height, and a
+   height is something that can change. The site's kicker treatment, centred the way every
+   short label under a picture on this site is centred, over a scrim that fades out so it
+   reads on a bright render and a black one alike. */
+.slot-label {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  padding: 0.55em 0.6em 1.2em;
+  background: linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0.78),
+    rgba(0, 0, 0, 0.42) 55%,
+    rgba(0, 0, 0, 0)
+  );
+  color: var(--well-ink);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+  font-family: var(--sans);
+  font-size: 0.6875rem;
+  line-height: 1;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  text-align: center;
+  pointer-events: none;
+}
 
 .plate {
   position: relative;
@@ -65,6 +142,15 @@
 }
 .plate > img { display: block; width: 100%; height: 100%; }
 
+/* --------------------------------------------------------------------------- the marks
+
+   Blue for a place on the parameter plane, red for a place on a dynamical one. The plate
+   is grey and mostly dark, so every dot carries a thin light outline: a dot with no edge
+   disappears into the bright filaments and doubles in the black.
+
+   The hit area is bigger than the dot, which is what makes 150 of them usable with a
+   mouse; the dot itself is what changes size, so growing one does not move the pointer
+   off it. */
 .mark {
   position: absolute;
   width: 18px;
@@ -77,6 +163,7 @@
   display: grid;
   place-items: center;
   cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
 }
 .mark::before {
   content: "";
@@ -84,13 +171,48 @@
   width: 9px;
   height: 9px;
   border-radius: 50%;
-  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.8);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.72), 0 0 2px 1px rgba(0, 0, 0, 0.55);
   transition: width 90ms ease-out, height 90ms ease-out;
 }
-.mark-seated::before { background: var(--mark-seated); }
-.mark-q4::before { background: var(--mark-q4); }
-.mark:hover::before, .mark:focus-visible::before { width: 14px; height: 14px; }
-.mark:focus-visible { outline: 2px solid var(--well-ink); outline-offset: -1px; }
-.mark.is-stored::before {
-  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.9), 0 0 0 3px var(--well-ink);
+.mark-mandelbrot::before { background: var(--place-mandelbrot); }
+.mark-julia::before { background: var(--place-julia); }
+
+.mark:hover::before,
+.mark:focus-visible::before {
+  width: 15px;
+  height: 15px;
+  filter: brightness(1.3);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.95), 0 0 6px 2px rgba(0, 0, 0, 0.5);
 }
+.mark:focus-visible { outline: none; }
+
+.mark.is-stored::before {
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.95),
+    0 0 0 3px var(--well),
+    0 0 0 6px currentColor,
+    0 0 0 7px rgba(0, 0, 0, 0.6);
+}
+.mark-mandelbrot.is-stored { color: var(--place-mandelbrot); }
+.mark-julia.is-stored { color: var(--place-julia); }
+
+/* ------------------------------------------------------------------- what is below it
+
+   The article's own column, picked up again under the figure: the site's page width, the
+   measure holding the lines, and the gutter the body gave up so the stage could run to
+   the edge. */
+.atlas-page {
+  max-width: calc(var(--wide) + 2 * var(--gutter));
+  margin: 0 auto;
+  padding: 0 var(--gutter) 3rem;
+}
+.atlas-page .masthead > *,
+.atlas-page .intro { max-width: var(--measure); }
+
+/* The two words the intro colours, so the sentence that explains the colour language is
+   written in it. Weight rather than hue alone carries the distinction, because a reader
+   who cannot tell the two apart still has to be able to read the sentence. */
+.key-mandelbrot,
+.key-julia { font-weight: 600; }
+.key-mandelbrot { color: var(--edge-mandelbrot); }
+.key-julia { color: var(--edge-julia); }

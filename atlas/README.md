@@ -2,19 +2,21 @@
 
 Every place the fractal search has kept, marked on the plane it came out of. The plane is
 a picture: rendered once, next door, and landed here. Every mark carries three more —
-the Julia set it stands for, its neighborhood on the plane, and the colored render a judge
-scored — and each of those opens in the [explorer](../explorer/README.md) at the view it
-is.
+its neighborhood on the plane, the Julia set it stands for, and a wallpaper drawn at it —
+and each of those opens in the [explorer](../explorer/README.md) at the view it is.
 
 **It does not open from `file://`**, for the reasons `explorer/README.md` spells out.
 `python -m builder serve` puts this tree on localhost.
 
-**It is one fixed frame, and there is no text in it.** The three slots and the plate are
-sized once, in pixels, from the viewport; nothing in the frame changes height when a mark
-is hovered, because a caption that grew by a line moved the plate under the pointer, which
-moved the mark the pointer was on. What the captions said is a `title` on the slot: a
-tooltip is drawn over the page rather than in it, so it can say as much as it likes and
-cost the frame nothing.
+**It is full bleed, it is one fixed frame, and there is no text in it.** Under the site bar
+the stage takes the whole window; the strip and the plate are sized once, in pixels, from
+what is left, and the kicker, title and intro sit below the fold so that the first screen
+is the figure. Nothing in the frame changes height when a mark is hovered, because a
+caption that grew by a line moved the plate under the pointer, which moved the mark the
+pointer was on. What the captions said is a `title` on the slot: a tooltip is drawn over
+the page rather than in it, so it can say as much as it likes and cost the frame nothing.
+The three slot labels are the one piece of text the frame carries, and they sit *on* the
+pictures for the same reason.
 
 ```
 index.html        the page
@@ -22,7 +24,7 @@ atlas.css         its own stylesheet, on top of the site's
 atlas.js          the marks, the three slots, and the one size the frame is
 links.js          a slot as a link — the one place a view is spelled, for two callers
 record.js         the record, fetched and read
-atlas.test.mjs    10 tests, `node --test atlas/atlas.test.mjs`
+atlas.test.mjs    12 tests, `node --test atlas/atlas.test.mjs`
 atlas.jsonl       the index: how the record was made, and one row per plane
 mandelbrot.jsonl  that plane's dots
 ```
@@ -30,8 +32,9 @@ mandelbrot.jsonl  that plane's dots
 ## The record is the deliverable
 
 The atlas record is the **contract between the wallpaper project's maker and this page**.
-The maker writes it; the page reads it. `builder/atlas.py` holds it to shape and is the
-authority on what it may say; what follows is why it says it that way.
+The maker writes it; `python -m builder atlas --ingest` turns it into what is committed;
+`builder/atlas.py` holds it to shape and is the authority on what it may say. What
+follows is why it says it that way.
 
 - **A slot carries its own viewport keys**, as decimal strings, spelled the way
   `explorer/permalink.js` spells them: `x`, `y`, `w`, and the constants the family needs.
@@ -52,8 +55,25 @@ authority on what it may say; what follows is why it says it that way.
   refuses.
 - **Both halves of the search are on one plane.** A Julia location is a value of `c`, and
   `c` is a point of the Mandelbrot parameter plane, so a `julia:mandelbrot` place is drawn
-  at its own `c` and shares the plate with the parameter places. A place found on both is
-  one mark with two `sides`.
+  at its own `c` and shares the plate with the parameter places.
+
+## One bar, and one kind to a dot
+
+**The population is the fine bar and nothing else.** A place is on the plate because at
+least one of its rows reads at or above the solve's own `DEFAULT_FINE_BAR` — the bar a
+gallery solve narrows its pool with. No union with the human verdicts, no top-quarter cut
+by the candidate judge. That is what makes the third slot honest: the best row at a
+qualifying place clears the bar by construction, so the Gallery picture is always a
+wallpaper somebody could seat rather than a location view standing in for one.
+
+**A dot is one place of one kind.** `plane` is `mandelbrot` or `julia`, and the page's
+whole color language is that word: blue for a place on the parameter plane, red for a
+place on a dynamical one. There is no merging across the two — a place landing inside the
+absorption radius of a dot already drawn is dropped, whichever kind either of them is — so
+the color a reader sees is a fact about the place rather than about what happened to land
+near it. The two fixed slots wear a soft border of their own color always; the Gallery
+slot's is deeper and says which kind of place *its* picture came from, which is the dot's
+own kind and is checked rather than copied.
 
 ## The two things that would break silently
 
@@ -86,20 +106,25 @@ this page would be a second author of the contract. So `explorer/engine.wasm` is
 instantiated for that one export, which is exactly what `builder/emit.mjs` and
 `atlas.test.mjs` do on the other side of the boundary.
 
-## Where the record came from
+## Where the record came from, and how to rebuild it
 
-`atlas.jsonl`'s method row names it: the published record `20260914T171846Z`, the live
-judge it was scored by, the top-quarter bar and the fine bar it was cut at. The maker is
-`scratch/atlas_explore2/` in `fractal-wallpapers` — it streams the candidate ledger, the
-score sidecar and the label stores, queues every seated place and then everything in the
-top quarter by score, and places them in one greedy pass: a newcomer within the absorption
-radius of a mark from the other plane merges into it, and one within the radius of a mark
-of its own plane is dropped. 2,454 places queued, 57 absorbed, 2,245 dropped, 152 drawn.
+`atlas.jsonl`'s method row names it: the published record the seats were read out of, the
+live judge, and the fine bar the population was cut at. The maker is
+`scratch/atlas_explore2/` in `fractal-wallpapers` — it streams the candidate ledger and
+the fine head's pool scores, queues every seated place and then everything else by best
+fine score, and places them in one greedy pass. Its own README has the build order.
 
 ```
-python -m builder atlas                          # what the record holds
-python -m builder atlas --figure atlas-places    # the plate and its marks, for section 11
+python -m builder atlas                                  # what the record holds
+python -m builder atlas --ingest <maker>/dots.json       # rewrite it and its pictures
+python -m builder atlas --figure atlas-places            # the plate and its marks, for §11
 ```
+
+`--ingest` is the second half of the maker and is committed for the reason the figure
+makers are: a record nobody can rebuild is a record nobody can correct. It re-encodes
+every thumbnail at the page's own quality and no chroma subsampling, sweeps
+`assets/images/atlas/` of anything the new record does not name, and writes both JSONL
+files.
 
 The figure is the only thing this module draws. It is the plate with the marks on it and
 nothing else — no frames, no captions, no interface — because a still of a tool should be

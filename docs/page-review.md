@@ -432,11 +432,13 @@ say when it does not — and nothing about the allocator is left on the page.
 ### Fractal atlases has a tool page before it has prose
 
 `atlas/index.html` is built and shipped over the search's own record; `atlas/README.md` is
-its contract. Three facts from there are worth knowing before the section is drafted. The
-record is **real as of 2026-09-15** — 152 marks read out of the published record
+its contract. Four facts from there are worth knowing before the section is drafted. The
+record is **real as of 2026-09-15** — 107 marks, seats read out of the published record
 `20260914T171846Z`, where it used to be a fixture that told a maker the shape it owed. The
-plane is a **pre-rendered plate** and the page draws no fractal, so the three layouts, the
-density heatmap and the on-demand rendering are all gone with the fixture. And
+**population is one bar**: a place is on the plate because at least one of its rows clears
+the solve's own fine bar, and nothing else puts one there, which is what lets the third
+slot always be a wallpaper. A dot is **one place of one kind**, blue for the parameter
+plane and red for a dynamical one, with no merging across the two. And
 `atlas/links.js`'s `opened` is still **the only place a view is spelled**, which is the
 whole reason a mark's picture and a mark's link agree.
 

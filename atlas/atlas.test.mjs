@@ -75,9 +75,25 @@ const partitions = index
 /** Every slot on the site, with the dot it belongs to, for the loops below. */
 const everySlot = partitions.flatMap((partition) =>
   partition.dots.flatMap((dot) =>
-    Object.entries(dot.slots).map(([name, slot]) => ({ where: `${dot.id}/${name}`, slot })),
+    Object.entries(dot.slots).map(([name, slot]) => ({ where: `${dot.id}/${name}`, slot, dot })),
   ),
 );
+
+/** The three pictures a dot carries, in the order `atlas.js` lays them out. */
+const SLOTS = ["mandelbrot", "julia", "gallery"];
+
+/** Which plane a family belongs to, which is what the gallery slot's border says. */
+const PLANE_OF_FAMILY = {
+  mandelbrot: "mandelbrot",
+  multibrot3: "mandelbrot",
+  multibrot4: "mandelbrot",
+  multibrot5: "mandelbrot",
+  julia: "julia",
+  julia3: "julia",
+  julia4: "julia",
+  julia5: "julia",
+  phoenix: "julia",
+};
 
 // --------------------------------------------------------------- the pin
 
@@ -100,6 +116,36 @@ test("the canonical map is one the explorer actually bakes", () => {
     PALETTES.has(method.canonical_map),
     `the record draws its plates through ${method.canonical_map}, which is not baked`,
   );
+});
+
+// --------------------------------------------------- the three slots, as the page reads them
+
+test("every dot carries the three pictures the page lays out, in that order", () => {
+  // `atlas.js` reads `dot.slots[name]` by name and has its own list of the three; a record
+  // that dropped one would leave an empty box on the page with nothing saying why, and one
+  // that renamed a slot would leave three.
+  for (const partition of partitions) {
+    for (const dot of partition.dots) {
+      assert.deepEqual(Object.keys(dot.slots), SLOTS, `dot ${dot.id}: the slots the record gives`);
+    }
+  }
+});
+
+test("the gallery slot's kind is the kind of place its own family belongs to", () => {
+  // The page paints that border deep blue or deep red, and a reader takes it as the claim
+  // that this wallpaper was drawn at a place of that kind. It is written at ingest off the
+  // recipe's family rather than copied from the dot, so the two can be compared.
+  for (const partition of partitions) {
+    for (const dot of partition.dots) {
+      const gallery = dot.slots.gallery;
+      assert.equal(
+        gallery.plane,
+        PLANE_OF_FAMILY[gallery.family],
+        `dot ${dot.id}: the gallery says ${gallery.plane} and is drawn on ${gallery.family}`,
+      );
+      assert.equal(gallery.plane, dot.plane, `dot ${dot.id}: the gallery is not this dot's kind`);
+    }
+  }
 });
 
 // ------------------------------------------------------- the rest of the contract
@@ -127,10 +173,11 @@ test("every slot's link is the canonical spelling of its own view", () => {
 });
 
 test("a link leaves a coordinate out only where the record's own frame is home", () => {
-  // Fifty-three of these slots are a Julia set drawn whole, which *is* the family's home
-  // view, and the canonical spelling of a home view omits `x`, `y` and `w`. So the claim
-  // is not that a link always names its frame — it is that a link which does not name one
-  // means the frame the record gives, which is the property the page depends on.
+  // Every parameter-plane dot's Julia slot is that set drawn whole, which *is* the
+  // family's home view, and the canonical spelling of a home view omits `x`, `y` and `w`.
+  // So the claim is not that a link always names its frame — it is that a link which does
+  // not name one means the frame the record gives, which is the property the page depends
+  // on.
   for (const { where, slot } of everySlot) {
     const keys = new URLSearchParams(opened(CONTRACT, slot).query);
     assert.ok(keys.has("p"), `${where}: the link leaves the map to the page's own default`);

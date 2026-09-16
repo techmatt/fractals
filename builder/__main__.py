@@ -334,6 +334,18 @@ def _parser() -> argparse.ArgumentParser:
         choices=sorted(atlas_module.MAKERS),
         help="compose that figure from the record and land it",
     )
+    mapped.add_argument(
+        "--ingest",
+        type=Path,
+        metavar="DOTS.JSON",
+        help="rewrite the record and its pictures from the maker's dots.json",
+    )
+    mapped.add_argument(
+        "--quality",
+        type=int,
+        default=atlas_module.THUMB_QUALITY,
+        help=f"the JPEG quality --ingest re-encodes at (default {atlas_module.THUMB_QUALITY})",
+    )
 
     served = commands.add_parser("serve", help="preview the committed tree over localhost")
     served.add_argument(
@@ -924,6 +936,9 @@ def _do_review_read(page: str, *, full: bool) -> int:
 
 def _do_atlas(options: argparse.Namespace) -> int:
     """What the atlas record holds — or, with a flag, the figure it is drawn into."""
+    if options.ingest:
+        for line in atlas_module.ingest(options.ingest, quality=options.quality):
+            print(line)
     if options.figure:
         for line in atlas_module.draw(options.figure):
             print(line)

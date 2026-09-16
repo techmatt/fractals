@@ -4,11 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Atlas — Making Fractal Wallpapers</title>
-<meta name="description" content="Every place the fractal search has kept, marked on the parameter plane it came out of. Each mark carries its Julia set, its neighborhood, and the render a judge scored, and each of those opens in the explorer.">
+<meta name="description" content="Every place the fractal search has kept, marked on the parameter plane it came out of. Each mark carries its neighborhood, its Julia set, and a wallpaper drawn there, and each of those opens in the explorer.">
 <link rel="stylesheet" href="../assets/css/site.css">
 <link rel="stylesheet" href="atlas.css">
 </head>
-<body>
+<body class="atlas-body">
 <nav class="topbar">
   <div class="topbar-inner">
     <a class="topbar-site" href="../index.html">Making Fractal Wallpapers</a>
@@ -16,22 +16,7 @@
   </div>
 </nav>
 
-<div class="atlas-page">
-
-<header class="masthead">
-  <p class="kicker"><a href="../article/fractal-atlases.html">Fractal atlases</a></p>
-  <h1>Every place the search kept</h1>
-</header>
-
-<main>
-  <p class="intro">One mark for every location the search has found and a judge has kept, on
-  the parameter plane it came out of. A Julia location is a value of <code>c</code>, and
-  <code>c</code> is a point of that same plane, so both halves of the search are drawn here
-  together. Hover a mark and the three frames above the plane fill with the Julia set it
-  stands for, its neighborhood on the plane, and the colored render a judge scored; click to
-  keep one, and Escape to let it go. Each of the three opens in the
-  <a href="../explorer/index.html">explorer</a> at the view it is, and says in its tooltip
-  what the link cannot carry.</p>
+<div class="stage" id="stage">
 
   <div class="notice" id="notice">
     <p>Reading the atlas…</p>
@@ -44,12 +29,34 @@
 
   <div class="frame" id="frame" hidden>
     <div class="strip">
-      <a class="slot" data-slot="julia"><img alt=""></a>
-      <a class="slot" data-slot="mandelbrot"><img alt=""></a>
-      <a class="slot" data-slot="render"><img alt=""></a>
+      <a class="slot" data-slot="mandelbrot"><img alt=""><span class="slot-label">Mandelbrot</span></a>
+      <a class="slot" data-slot="julia"><img alt=""><span class="slot-label">Julia</span></a>
+      <a class="slot" data-slot="gallery"><img alt=""><span class="slot-label">Gallery</span></a>
     </div>
     <div class="plate" id="plate"><img id="plate-image" alt=""></div>
   </div>
+
+</div>
+
+<div class="atlas-page">
+
+<header class="masthead">
+  <p class="kicker"><a href="../article/fractal-atlases.html">Fractal atlases</a></p>
+  <h1>Every place the search kept</h1>
+</header>
+
+<main>
+  <p class="intro">One mark for every place the search has kept, on the parameter plane it
+  came out of. A place is on the plate because at least one render there scored above the
+  bar a gallery solve seats over, and nothing else puts a mark here.
+  <span class="key-mandelbrot">Blue</span> is a location on the parameter plane itself;
+  <span class="key-julia">red</span> is a Julia location, which is a value of <code>c</code>,
+  and <code>c</code> is a point of this same plane. Both halves of the search are drawn
+  together, and a mark is one of them or the other and never both. Hover a mark and the three frames
+  above the plane fill with its neighborhood on the plane, the Julia set it stands for, and a
+  wallpaper drawn at it; click to keep one, and Escape to let it go. Each of the three opens
+  in the <a href="../explorer/index.html">explorer</a> at the view it is, and says in its
+  tooltip what the link cannot carry.</p>
 </main>
 </div>
 
