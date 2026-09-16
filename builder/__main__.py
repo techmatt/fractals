@@ -328,16 +328,11 @@ def _parser() -> argparse.ArgumentParser:
     framed = commands.add_parser("overview", help="draw a figure of the Overview page")
     framed.add_argument("id", choices=sorted(overview.SHEETS), help="the figure's id")
 
-    mapped = commands.add_parser("atlas", help="report the atlas record, or write its fixture")
+    mapped = commands.add_parser("atlas", help="report the atlas record, or draw its figure")
     mapped.add_argument(
-        "--fixture",
-        action="store_true",
-        help="rewrite the synthetic record the atlas page was designed against",
-    )
-    mapped.add_argument(
-        "--thumbs",
-        action="store_true",
-        help="draw every judged dot's picture through the link that opens it, and land it",
+        "--figure",
+        choices=sorted(atlas_module.MAKERS),
+        help="compose that figure from the record and land it",
     )
 
     served = commands.add_parser("serve", help="preview the committed tree over localhost")
@@ -928,12 +923,9 @@ def _do_review_read(page: str, *, full: bool) -> int:
 
 
 def _do_atlas(options: argparse.Namespace) -> int:
-    """What the atlas record holds — or, with a flag, the fixture it holds while it waits."""
-    if options.fixture:
-        for line in atlas_module.write_fixture():
-            print(line)
-    if options.thumbs:
-        for line in atlas_module.land_thumbs():
+    """What the atlas record holds — or, with a flag, the figure it is drawn into."""
+    if options.figure:
+        for line in atlas_module.draw(options.figure):
             print(line)
     for line in atlas_module.summary():
         print(line)

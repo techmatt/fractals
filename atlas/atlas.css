@@ -5,39 +5,26 @@
    Almost every colour here is a token `site.css` already declares. Two are not, and they
    are declared below rather than there because they are not furniture: they are marks
    drawn on top of a picture, they exist on this page and nowhere else, and putting them
-   in the site's root would make them look like part of a palette everything shares. */
+   in the site's root would make them look like part of a palette everything shares.
+   `builder/atlas.py` carries the same two values, for the figure §11 shows, because
+   Pillow cannot read CSS. */
 
 .atlas-page {
-  --dot: #a9b6c8;
-  --dot-judged: #ffb02e;
+  --mark-seated: #ffb02e;
+  --mark-q4: #57d98a;
   max-width: var(--page);
   margin: 0 auto;
 }
 
-/* What is read in lines stops at the measure. The plot does not: an atlas squeezed into
+/* What is read in lines stops at the measure. The plate does not: an atlas squeezed into
    a column of prose is a diagram of a diagram. */
 .atlas-page .masthead > *,
 .atlas-page .intro,
 .atlas-page .notice,
-.atlas-page .caution,
-.atlas-page .status,
-.atlas-page .provenance,
 .atlas-page .section-nav > *,
 .atlas-page footer > * { max-width: var(--measure); }
 
 [hidden] { display: none !important; }
-
-/* The fixture warning. It is not a refusal — the page works — so it sits above the plot
-   rather than replacing it, and it is the loudest thing on the page because every number
-   under it is made up. */
-.caution {
-  margin: 1.25rem 0 0;
-  padding: 0.7rem 1rem;
-  border-left: 3px solid var(--dot-judged);
-  background: var(--bar);
-  font-size: 0.9375rem;
-}
-.caution code { font-size: 0.9em; }
 
 .notice {
   margin: 1.25rem 0 0;
@@ -48,206 +35,140 @@
 .notice p { margin: 0 0 0.5em; }
 .notice p:last-child { margin-bottom: 0; }
 
-/* The controls, the same strip the explorer carries. */
-.bar {
+/* The three pictures a place carries. They are landed at 320 wide and shown at 320 wide:
+   a thumbnail stretched to fill a third of a wide page is a soft picture pretending to
+   be a big one. Below the room for three they wrap rather than shrink. */
+.slots {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
-  gap: 0.5rem 1rem;
-  margin-top: 0.9rem;
-  font-size: 0.875rem;
+  gap: 1rem;
+  margin-top: 1.25rem;
 }
-.bar .group { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 0.35rem 0.6rem; }
-.bar label { color: var(--ink-dim); }
-.bar select {
-  max-width: 22rem;
-  padding: 0.2rem 0.3rem;
-  border: 1px solid var(--rule);
-  border-radius: 2px;
-  background: var(--bar);
-  color: var(--ink);
-  font: inherit;
-}
-
-/* The heatmap's key. A ramp of swatches rather than a gradient, because what it is a key
-   to is a set of bins and not a continuum. */
-.legend {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  margin-top: 0.6rem;
-  font-size: 0.8125rem;
+.slot { flex: 0 1 20rem; min-width: 0; margin: 0; }
+.slot h2 {
+  margin: 0 0 0.3rem;
+  font: 600 0.75rem/1.3 var(--sans);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
   color: var(--ink-dim);
-  font-variant-numeric: tabular-nums;
-}
-.legend .ramp { display: inline-flex; height: 0.7rem; }
-.legend .ramp i { display: block; width: 0.4rem; height: 100%; }
-.legend .legend-note { flex: 1 1 14rem; min-width: 0; }
-
-/* The plot and the panel beside it. One column until there is room for two — the panel
-   is a column of pictures, and a column of pictures under a plot is still a column of
-   pictures. */
-.atlas-stage {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 1.25rem;
-  margin-top: 1rem;
 }
 
-@media (min-width: 62.5rem) {
-  .atlas-stage { grid-template-columns: minmax(0, 1fr) 17rem; align-items: start; }
-}
-
-/* The plates. The whole plane runs the full width of the plot; the regional plates sit
-   two up under it, which is as small as a render can get and still be a picture. */
-.plates { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.9rem; }
-.plate-whole { grid-column: 1 / -1; }
-
-.plate { margin: 0; }
-
-.plate-stage {
+.slot-well {
   position: relative;
   aspect-ratio: 16 / 9;
   background: var(--well);
   border: 1px solid var(--well-rule);
   overflow: hidden;
 }
-
-.plate-render,
-.plate-heat,
-.plate-leaders,
-.plate-marks,
-.plate-dots {
+.slot-frame { display: block; width: 100%; height: 100%; line-height: 0; }
+.slot-frame img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.slot-empty {
   position: absolute;
   inset: 0;
-  width: 100%;
-  height: 100%;
-}
-
-/* Until the renderer has been round, the well is a well rather than a white rectangle:
-   the page says what it is going to show before it can show it. */
-.plate-render { opacity: 0; transition: opacity 220ms ease-out; }
-.plate-render.drawn { opacity: 1; }
-.plate-render.past-the-wall { opacity: 0; }
-.plate-stage.heated .plate-render.drawn { opacity: 0.3; }
-
-/* Painted over the render rather than blended into it. `screen` was the obvious choice
-   and it is the wrong one: a blend group is the nearest stacking context, and this one
-   reaches the white page behind the plot, where screening anything gives white. Plain
-   alpha over the render is predictable and says the same thing. */
-.plate-heat { pointer-events: none; }
-.plate-leaders { pointer-events: none; }
-.plate-leaders line { stroke: var(--well-ink); stroke-width: 0.32; opacity: 0.8; }
-
-.plate-marks { pointer-events: none; }
-.plate-marks .mark {
-  position: absolute;
-  min-width: 12px;
-  min-height: 12px;
-  border: 1px solid var(--dot-judged);
-  border-radius: 2px;
-  color: var(--dot-judged);
-  font: 600 0.6875rem/1 var(--sans);
-  padding: 1px 3px;
-  text-align: left;
-}
-
-.plate-dots { pointer-events: none; }
-
-/* A dot is a link, and it behaves like one: the address bar shows where it goes, a
-   middle click opens it in a tab, and a right click copies it. What settling on it does
-   instead of opening it is fill the panel — a preview costs a render, and a reader who
-   wanted the whole thing clicks. */
-.dot {
-  position: absolute;
-  width: 9px;
-  height: 9px;
-  margin: -4.5px 0 0 -4.5px;
-  border-radius: 50%;
-  background: var(--dot);
-  box-shadow: 0 0 0 1.5px rgba(0, 0, 0, 0.75);
-  pointer-events: auto;
-  transition: transform 90ms ease-out;
-}
-.dot.judged { background: var(--dot-judged); }
-.dot.refused { background: var(--well-pending); }
-.dot:hover, .dot:focus-visible { transform: scale(1.65); outline: none; }
-.dot.is-current {
-  transform: scale(1.9);
-  box-shadow: 0 0 0 1.5px rgba(0, 0, 0, 0.9), 0 0 0 3px var(--well-ink);
-}
-
-.plate figcaption {
-  margin-top: 0.35rem;
+  display: grid;
+  place-items: center;
   font-size: 0.8125rem;
+  color: var(--well-ink-dim);
+}
+
+/* Three lines, and the page keeps room for all three whether or not this place needs
+   them: a caption that grows on hover would walk the plate down the screen. */
+.slot-what {
+  display: flex;
+  flex-direction: column;
+  margin-top: 0.35rem;
+  min-height: 4.2em;
+  font-size: 0.8125rem;
+  line-height: 1.4;
   color: var(--ink-dim);
-  max-width: var(--measure);
 }
-.plate figcaption b { color: var(--ink); font-weight: 600; }
-.plate figcaption span { margin-left: 0.5em; }
+.slot-what .slot-refused { color: #8a5a00; }
 
-/* The panel. Everything in it is a dark well, because everything in it is a picture. */
-.panel { min-width: 0; }
-.panel h2:first-child { margin-top: 0; }
-.panel h2 {
-  margin: 1.4rem 0 0.4rem;
-  font: 600 0.9375rem/1.3 var(--sans);
+/* The line under them: which place this is, on each plane it was found on. */
+.dot-line {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1.1rem;
+  margin: 0.9rem 0 0;
+  min-height: 2.8em;
+  font-size: 0.8125rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
 }
-.panel .panel-note { margin: 0 0 0.6rem; font-size: 0.8125rem; color: var(--ink-dim); }
+.dot-line .quiet { color: var(--ink-dim); }
+.dot-line .chip {
+  padding: 0 0.45em;
+  border-radius: 0.8em;
+  font-weight: 600;
+  color: #201a08;
+}
+.dot-line .chip-seated { background: var(--mark-seated); }
+.dot-line .chip-q4 { background: var(--mark-q4); }
 
-.chosen-well {
+/* The plate, at the full width of the page. The marks are positioned in per-cent of it,
+   so they stay where they are at every width the page is read at. */
+.plate {
+  position: relative;
+  margin-top: 0.9rem;
+  aspect-ratio: 16 / 9;
   background: var(--well);
   border: 1px solid var(--well-rule);
-  aspect-ratio: 16 / 9;
 }
-.chosen-well img, .chosen-render { display: block; width: 100%; height: 100%; }
+.plate img { display: block; width: 100%; height: 100%; }
 
-.panel .how, .panel .stands {
-  margin: 0.5rem 0 0;
-  font-size: 0.8125rem;
-  color: var(--ink-dim);
-}
-
-.keys {
+.mark {
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  margin: -9px 0 0 -9px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: none;
   display: grid;
-  grid-template-columns: max-content minmax(0, 1fr);
-  gap: 0 0.6rem;
-  margin: 0.5rem 0 0;
-  font-family: var(--mono);
-  font-size: 0.75rem;
+  place-items: center;
+  cursor: pointer;
 }
-.keys dt { color: var(--ink-dim); }
-.keys dd { margin: 0; overflow-wrap: anywhere; }
-
-.panel .open { display: inline-block; margin-top: 0.6rem; font-size: 0.875rem; }
-
-/* The judged strip. Two up, so a tile is big enough to tell one render from another and
-   the column is still a column. */
-.judged {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.35rem;
-  margin-top: 0.5rem;
-  max-height: 24rem;
-  overflow-y: auto;
+.mark::before {
+  content: "";
+  display: block;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.8);
+  transition: width 90ms ease-out, height 90ms ease-out;
 }
-.judged .tile { display: block; line-height: 0; border: 1px solid transparent; }
-.judged .tile img { display: block; width: 100%; height: auto; }
-.judged .tile:hover, .judged .tile:focus-visible { border-color: var(--link); outline: none; }
-.judged .tile.is-current { border-color: var(--dot-judged); }
+.mark-seated::before { background: var(--mark-seated); }
+.mark-q4::before { background: var(--mark-q4); }
+.mark:hover::before, .mark:focus-visible::before { width: 14px; height: 14px; }
+.mark:focus-visible { outline: 2px solid var(--well-ink); outline-offset: -1px; }
+.mark.is-stored::before {
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.9), 0 0 0 3px var(--well-ink);
+}
 
-.status {
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.2rem 1.1rem;
   margin: 0.6rem 0 0;
-  font-family: var(--mono);
   font-size: 0.8125rem;
   color: var(--ink-dim);
 }
+.legend .key::before {
+  content: "";
+  display: inline-block;
+  width: 0.6em;
+  height: 0.6em;
+  margin-right: 0.4em;
+  border-radius: 50%;
+  vertical-align: 0.05em;
+}
+.legend .key-seated::before { background: var(--mark-seated); }
+.legend .key-q4::before { background: var(--mark-q4); }
 
-.provenance { margin-top: 1.5rem; font-size: 0.8125rem; color: var(--ink-dim); }
-
-/* Below the breakpoint the plates stop being two up: half of a phone's width is not a
-   render, it is a swatch. */
-@media (max-width: 40rem) {
-  .plates { grid-template-columns: minmax(0, 1fr); }
-  .judged { max-height: none; }
+.provenance {
+  margin-top: 1.2rem;
+  max-width: var(--wide);
+  font-size: 0.8125rem;
+  color: var(--ink-dim);
 }

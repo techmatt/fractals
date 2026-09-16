@@ -1,10 +1,10 @@
-// A dot's link, and the one place it is made.
+// A slot's link, and the one place it is made.
 //
-// Three things build a link out of an atlas row: the page, the offline renderer that
-// draws the pre-rendered thumbnails, and the test that pins the two together. If any of
-// them spelled a view its own way, the picture and the link would be two promises kept
-// in step by hand — which is the failure this whole page is arranged to make impossible.
-// So they all call `opened` below, and `opened` calls `explorer/permalink.js`.
+// Two things build a link out of an atlas slot: the page, and the test that pins the
+// page to the record. If either spelled a view its own way, the picture and the link
+// would be two promises kept in step by hand — which is the failure this whole page is
+// arranged to make impossible. So they both call `opened` below, and `opened` calls
+// `explorer/permalink.js`.
 //
 // Emit, then parse. `emit` turns a view into the string somebody saves; `parse` turns a
 // string into the view a picture is drawn from; asking for the picture through both is
@@ -28,10 +28,12 @@ export function seedConstants(family) {
 /**
  * The contract's context, over a `home` the engine answers.
  *
- * `homeRaw` takes the engine's own family spec and returns its home view as numbers —
- * `Renderer.home` on the page, a bare `plan` call anywhere else. It is asked rather than
- * tabulated because whether a link spells `x`, `y` and `w` at all depends on what home
- * is, and a table of home views written here would be a second author.
+ * `homeRaw` takes the engine's own family spec and returns its home view as numbers. It
+ * is asked rather than tabulated because whether a link spells `x`, `y` and `w` at all
+ * depends on what home is, and a table of home views written here would be a second
+ * author. The page instantiates the committed wasm module for `plan` and nothing else —
+ * no workers, no rendering: the plane it draws is a picture that was rendered once, next
+ * door, and landed.
  */
 export function contractOf(homeRaw) {
   const homes = new Map();
@@ -54,21 +56,51 @@ export function contractOf(homeRaw) {
 }
 
 /**
- * One atlas row as a link and as the view that link means.
+ * What the contract will not accept about a recipe, settled here rather than assumed.
  *
- * `viewport` is the record's own keys and nothing else — `x`, `y`, `w`, and whatever
+ * A picture on this page was drawn by the renderer next door, which knows maps the
+ * explorer does not bake and a fold the contract refuses on a cyclic map. Neither costs
+ * the link: the map falls back to the one the explorer opens at, and the fold is
+ * dropped. What they cost is the claim that the link *is* the picture, so each one is
+ * named and the caption says it.
+ *
+ * The record's own `refused` list carries these too, plus the things a view has no shape
+ * for at all — an autolevel pass, a curve a mode's catalog does not give it. The two are
+ * held together by `atlas.test.mjs`: the record may not claim a refusal the roster does
+ * not make, and may not stay quiet about one it does.
+ */
+export function refusals({ colormap, shade }) {
+  const found = [];
+  if (!PALETTES.has(colormap)) found.push(`colormap ${colormap}`);
+  const map = PALETTES.get(PALETTES.has(colormap) ? colormap : DEFAULT_PALETTE);
+  if (shade?.mirror && map.cyclic) found.push("mirror on a cyclic map");
+  return found;
+}
+
+/**
+ * One atlas slot as a link and as the view that link means.
+ *
+ * The frame is the record's own keys and nothing else — `x`, `y`, `w`, and whatever
  * constants the family needs, each the decimal string the maker wrote. Nothing is
  * computed from a position in a list, and nothing is rounded on the way through: the
  * decimal string is the identity of a location, and a round trip through a double would
  * quietly rewrite a link that was more precise than today's renderer.
  */
-export function opened(contract, { family, viewport, palette, mode }) {
+export function opened(contract, slot) {
+  const { family, mode } = slot;
   const constants = {};
   for (const key of link.CONSTANTS[family] ?? []) {
-    if (viewport[key] === undefined) {
+    if (slot[key] === undefined) {
       throw new link.PermalinkError(`the record gives no ${key} for a ${family} view.`);
     }
-    constants[key] = written(viewport[key]);
+    constants[key] = written(slot[key]);
+  }
+  const palette = PALETTES.has(slot.colormap) ? slot.colormap : DEFAULT_PALETTE;
+  const shade = { ...link.defaultShade(), ...(slot.shade ?? {}) };
+  if (shade.mirror && PALETTES.get(palette).cyclic) shade.mirror = false;
+  const params = {};
+  for (const key of link.MODE_PARAMETERS[mode] ?? []) {
+    if (slot.mode_params?.[key] !== undefined) params[key] = slot.mode_params[key];
   }
   const query = link.emit(
     {
@@ -76,40 +108,15 @@ export function opened(contract, { family, viewport, palette, mode }) {
       family,
       constants,
       mode,
-      params: {},
-      x: written(viewport.x),
-      y: written(viewport.y),
-      w: written(viewport.w),
+      params,
+      x: written(slot.x),
+      y: written(slot.y),
+      w: written(slot.w),
       aspect: { ...link.DEFAULT_ASPECT },
       palette,
-      shade: link.defaultShade(),
+      shade,
     },
     contract,
   );
-  return { query, view: link.parse(query, contract) };
-}
-
-/** The maps the explorer's picker offers, which is what an unjudged place may wear. */
-export const OFFERED = [...PALETTES].filter(([, map]) => map.offered).map(([name]) => name);
-
-/**
- * The map a dot is drawn through.
- *
- * A judged dot wears the map its render was scored in — that render exists, and nothing
- * on this page may relabel it. An unjudged one wears either the map the search's own node
- * views use, which is what makes its picture and its link the same picture, or one of the
- * offered roster picked by the dot's **own key**. By the key and never by the clock: a
- * link whose colour changed every time the page opened would not be a link.
- */
-export function paletteFor(record, dot, wanted) {
-  if (dot.judged !== null && dot.judged !== undefined) return dot.judged.palette;
-  if (wanted === "fixed") return record.nodeView.palette;
-  let hash = 0;
-  for (const character of dot.key) hash = (hash * 31 + character.charCodeAt(0)) >>> 0;
-  return OFFERED[hash % OFFERED.length];
-}
-
-/** The mode a dot is drawn in: the judge's, or the one the node views were made at. */
-export function modeFor(record, dot) {
-  return dot.judged !== null && dot.judged !== undefined ? dot.judged.mode : record.nodeView.mode;
+  return { query, palette, view: link.parse(query, contract) };
 }

@@ -239,6 +239,7 @@ class Figure:
     stale_when: str | None
     reuse_reason: str | None
     note: str | None
+    caption_link: tuple[str, str] | None
 
     @property
     def draft(self) -> bool:
@@ -357,10 +358,19 @@ def markup(figure: Figure, opened: str | None = None) -> str:
         [
             f'{INDENT}<figure class="{" ".join(classes)}" data-figure="{attribute(figure.id)}">',
             _well(figure, opened),
-            f"{INDENT}  <figcaption>{_mark(figure)}{text(figure.caption)}</figcaption>",
+            f"{INDENT}  <figcaption>{_mark(figure)}{text(figure.caption)}"
+            f"{_caption_anchor(figure)}</figcaption>",
             f"{INDENT}</figure>",
         ]
     )
+
+
+def _caption_anchor(figure: Figure) -> str:
+    """The sentence a caption ends with where its row carries one, and nothing otherwise."""
+    if figure.caption_link is None:
+        return ""
+    href, words = figure.caption_link
+    return f' <a href="{attribute(href)}">{text(words)}</a>.'
 
 
 #: What a draft figure's mark says. A word, not an abbreviation: this is the one piece of
@@ -475,7 +485,37 @@ def _figure(row: records.Record, identifier: str) -> Figure:
         stale_when=row.optional_text("stale_when"),
         reuse_reason=row.optional_text("reuse_reason"),
         note=note,
+        caption_link=_caption_link(row),
     )
+
+
+def _caption_link(row: records.Record) -> tuple[str, str] | None:
+    """The one link a caption may end with, where the figure stands in for a page.
+
+    **A caption is the caption and nothing else**, and that rule is not loosened here:
+    this is not the way into the explorer written out as prose, which is a mark on the
+    corner of the picture. It is for the narrow case where the figure is a still of
+    something a reader can go and use — the atlas plate on the section page, whose marks
+    are pictures and links on the tool page and nothing but marks here. The words are a
+    sentence of their own and the block supplies the full stop, so there is one place the
+    caption lives and the link is part of it.
+    """
+    held = row.optional_mapping("caption_link")
+    if held is None:
+        return None
+    unknown = set(held) - {"href", "words"}
+    if unknown:
+        raise records.RecordError(
+            f"{row.where}: caption_link is href and words, not {', '.join(sorted(unknown))}"
+        )
+    for key in ("href", "words"):
+        if not isinstance(held.get(key), str) or not held[key]:
+            raise records.RecordError(f"{row.where}: caption_link.{key} must be a non-empty string")
+    if held["href"].startswith("/") or held["href"].endswith("/"):
+        raise records.RecordError(
+            f"{row.where}: caption_link.href is relative and names a file — {held['href']!r}"
+        )
+    return (held["href"], held["words"])
 
 
 def _sources(row: records.Record) -> tuple[Source, ...]:
@@ -612,6 +652,7 @@ KEY_ORDER = (
     "height",
     "alt",
     "caption",
+    "caption_link",
     "recipe",
     "sources",
     "params",

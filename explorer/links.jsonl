@@ -49,7 +49,7 @@
 {"schema": 1, "kind": "link", "id": "figure:palette-generator-batch", "no_link": "drawn", "why": "a drawn diagram or chart, with no engine render behind it to reopen"}
 {"schema": 1, "kind": "link", "id": "figure:wallpapers-three-bands", "link": "v=2&x=-0.7493892550988116&y=0.04149385841183289&w=0.0000042814940366928615&p=twilight_shifted", "from": "panel 2"}
 {"schema": 1, "kind": "link", "id": "figure:wallpapers-attempt", "link": "v=2&m=smooth_mean_angle&x=-0.7894061466838949&y=-0.16437809352996482&w=0.0027914350318908217&p=Forge%20Sweep", "from": "panel 1"}
-{"schema": 1, "kind": "link", "id": "figure:wallpapers-mine", "no_link": "incomplete_provenance", "why": "no colormap is written down"}
+{"schema": 1, "kind": "link", "id": "figure:wallpapers-mine", "no_link": "incomplete_provenance", "why": "no mode is written down"}
 {"schema": 1, "kind": "link", "id": "figure:gallery-pool", "no_link": "drawn", "why": "a drawn diagram or chart, with no engine render behind it to reopen"}
 {"schema": 1, "kind": "link", "id": "figure:gallery-allowance", "no_link": "drawn", "why": "a drawn diagram or chart, with no engine render behind it to reopen"}
 {"schema": 1, "kind": "link", "id": "figure:gallery-twins", "no_link": "incomplete_provenance", "why": "no colormap is written down"}
@@ -59,3 +59,4 @@
 {"schema": 1, "kind": "link", "id": "figure:pipeline-overview", "no_link": "drawn", "why": "a drawn diagram or chart, with no engine render behind it to reopen"}
 {"schema": 1, "kind": "link", "id": "figure:pipeline-yield-decay", "no_link": "drawn", "why": "a drawn diagram or chart, with no engine render behind it to reopen"}
 {"schema": 1, "kind": "link", "id": "figure:pipeline-growth", "no_link": "drawn", "why": "a drawn diagram or chart, with no engine render behind it to reopen"}
+{"schema": 1, "kind": "link", "id": "figure:atlas-places", "no_link": "incomplete_provenance", "why": "no colormap is written down"}

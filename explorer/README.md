@@ -382,7 +382,8 @@ races.** Every call bumps the generation, which is what makes a pan responsive a
 makes two overlapping calls wrong: the first resolves `null` and the second returns, so
 code that asks for two fields at once silently gets one. Anything wanting several — a
 contact sheet, a batch of thumbnails — awaits each in turn, or goes to `compute_band` and
-`shade` directly the way `builder/atlas_thumbs.mjs` does.
+`shade` directly. Nothing in this repository does the second any more: the atlas's offline
+renderer was the one caller, and the atlas draws its pictures next door now.
 
 **The field cache** is keyed on the canonical permalink *minus* the palette and the shade
 recipe, plus the pixel grid it was sampled on — geometry alone, because nothing on the

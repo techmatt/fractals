@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Atlas — Making Fractal Wallpapers</title>
-<meta name="description" content="Every place the fractal search has kept, marked on the plane it came out of, with the renderer that found it running in the browser. Each mark opens at the view it stands for.">
+<meta name="description" content="Every place the fractal search has kept, marked on the parameter plane it came out of. Each mark carries its Julia set, its neighborhood, and the render a judge scored, and each of those opens in the explorer.">
 <link rel="stylesheet" href="../assets/css/site.css">
 <link rel="stylesheet" href="atlas.css">
 </head>
@@ -25,68 +25,56 @@
 
 <main>
   <p class="intro">One mark for every location the search has found and a judge has kept,
-  drawn on the plane it came out of. The plane behind the marks is rendered here, in the
-  browser, by the same renderer that made the wallpapers; so is every place you settle on
-  that no render judge has looked at yet. Each mark is a link into the
-  <a href="../explorer/index.html">explorer</a> at the view it stands for.</p>
-
-  <div class="caution" id="caution" hidden></div>
+  on the parameter plane it came out of. A Julia location is a value of <code>c</code>, and
+  <code>c</code> is a point of that same plane, so both halves of the search are drawn here
+  together. Hover a mark and it gives you three pictures: the Julia set it stands for, its
+  neighborhood on the plane, and the colored render a judge scored. Each of the three opens
+  in the <a href="../explorer/index.html">explorer</a> at the view it is.</p>
 
   <div class="notice" id="notice">
-    <p>Starting the renderer…</p>
+    <p>Reading the atlas…</p>
     <p>If this message stays, the page is being opened straight off the filesystem. A browser
-    will not load a page's modules, its workers or its renderer over <code>file://</code>, so
-    this page needs to be served — <code>python -m builder serve</code> puts this tree on
-    localhost — or read at
+    will not load a page's modules or its renderer over <code>file://</code>, so this page
+    needs to be served — <code>python -m builder serve</code> puts this tree on localhost —
+    or read at
     <a href="https://techmatt.github.io/fractal-website/atlas/">techmatt.github.io</a>.</p>
   </div>
 
-  <div class="bar" id="bar" hidden>
-    <span class="group">
-      <label for="partition">Partition</label>
-      <select id="partition"></select>
-    </span>
-    <span class="group">
-      <label for="layout">Layout</label>
-      <select id="layout">
-        <option value="plates" selected>Plates</option>
-        <option value="plane">Plane</option>
-        <option value="spread">Spread</option>
-      </select>
-    </span>
-    <span class="group">
-      <label for="density">Density</label>
-      <select id="density">
-        <option value="off" selected>Off</option>
-        <option value="on">Heatmap</option>
-      </select>
-    </span>
-    <span class="group">
-      <label for="palette">Unjudged places</label>
-      <select id="palette">
-        <option value="random" selected>A palette apiece</option>
-        <option value="fixed">The one the search used</option>
-      </select>
-    </span>
-  </div>
-
-  <div class="legend" id="legend" hidden></div>
-
-  <div class="atlas-stage" id="stage" hidden>
-    <div class="plates" id="plates"></div>
-    <div class="panel">
-      <h2>The place under the pointer</h2>
-      <div id="chosen"></div>
-      <h2>Already judged <span id="judged-count"></span></h2>
-      <p class="panel-note">These places have a colored render a judge has already scored,
-      and their marks are the warm ones on the plates. Everything else is drawn on demand,
-      in a palette nobody has chosen.</p>
-      <div class="judged" id="judged"></div>
+  <div id="stage" hidden>
+    <div class="slots">
+      <figure class="slot" data-slot="julia">
+        <h2>Julia</h2>
+        <div class="slot-well">
+          <a class="slot-frame" hidden><img alt=""></a>
+          <p class="slot-empty">hover a mark</p>
+        </div>
+        <figcaption class="slot-what"></figcaption>
+      </figure>
+      <figure class="slot" data-slot="mandelbrot">
+        <h2>Mandelbrot</h2>
+        <div class="slot-well">
+          <a class="slot-frame" hidden><img alt=""></a>
+          <p class="slot-empty"></p>
+        </div>
+        <figcaption class="slot-what"></figcaption>
+      </figure>
+      <figure class="slot" data-slot="render">
+        <h2>Render</h2>
+        <div class="slot-well">
+          <a class="slot-frame" hidden><img alt=""></a>
+          <p class="slot-empty"></p>
+        </div>
+        <figcaption class="slot-what"></figcaption>
+      </figure>
     </div>
-  </div>
 
-  <p class="status" id="status"></p>
-  <p class="provenance" id="provenance"></p>
+    <p class="dot-line" id="dot-line"></p>
+
+    <div class="plate" id="plate"><img id="plate-image" alt=""></div>
+
+    <p class="legend" id="legend"></p>
+    <p class="provenance" id="provenance"></p>
+  </div>
 
   <nav class="section-nav">
     <p><a href="../index.html">Contents</a>

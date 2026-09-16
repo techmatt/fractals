@@ -21,6 +21,11 @@ __pycache__/
 .ruff_cache/
 .pytest_cache/
 
+# Visual Studio's per-user solution state. Toolchain noise, the same shape as the
+# caches above: it appeared in the working tree on its own and `git add -A` would
+# have committed it.
+.vs/
+
 # OS junk
 Thumbs.db
 ehthumbs.db

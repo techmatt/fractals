@@ -1,11 +1,10 @@
 # The atlas
 
-One page per partition of the fractal search, showing every place it has kept: a mark on
-the plane that place came out of, the plane itself rendered in the browser, and a link
-from every mark into the [explorer](../explorer/README.md) at the view the mark stands
-for. It is the second page on this site that runs code, and it runs the same code the
-first one does — the permalink contract, the worker pool, the committed wasm module. It
-adds no engine export and asks the engine nothing it was not already answering.
+Every place the fractal search has kept, marked on the plane it came out of. The plane is
+a picture: rendered once, next door, and landed here. Every mark carries three more —
+the Julia set it stands for, its neighborhood on the plane, and the colored render a judge
+scored — and each of those opens in the [explorer](../explorer/README.md) at the view it
+is.
 
 **It does not open from `file://`**, for the reasons `explorer/README.md` spells out.
 `python -m builder serve` puts this tree on localhost.
@@ -13,13 +12,12 @@ adds no engine export and asks the engine nothing it was not already answering.
 ```
 index.html        the page
 atlas.css         its own stylesheet, on top of the site's
-atlas.js          what a reader touches: the pickers, the plates, the panel
-links.js          a row as a link — the one place a view is spelled, for three callers
-plot.js           the three layouts, the clustering, the heat ramp
+atlas.js          the marks, the three frames, the caption
+links.js          a slot as a link — the one place a view is spelled, for two callers
 record.js         the record, fetched and read
-atlas.test.mjs    9 tests, `node --test atlas/atlas.test.mjs`
-atlas.jsonl       the index: how the record was made, and one row per partition
-*.jsonl           one file per partition: its dots, and its density grid
+atlas.test.mjs    10 tests, `node --test atlas/atlas.test.mjs`
+atlas.jsonl       the index: how the record was made, and one row per plane
+mandelbrot.jsonl  that plane's dots
 ```
 
 ## The record is the deliverable
@@ -28,89 +26,73 @@ The atlas record is the **contract between the wallpaper project's maker and thi
 The maker writes it; the page reads it. `builder/atlas.py` holds it to shape and is the
 authority on what it may say; what follows is why it says it that way.
 
-- **A dot carries its own viewport keys**, as decimal strings, spelled the way
+- **A slot carries its own viewport keys**, as decimal strings, spelled the way
   `explorer/permalink.js` spells them: `x`, `y`, `w`, and the constants the family needs.
   The page hands them to the contract untouched. It never resolves a location through a
   position in a list, or through an index into anything derived from live data next door
   — that shape draws at a moving target, and the day the pool grows the pictures stay put
   while the links under them quietly point somewhere else.
-- **`at` is a place on a picture, not an identity**, which is why it is a JSON number
-  while the viewport keys are strings. On a parameter plane it is the frame's own centre;
-  on a dynamical one it is `c`, because the plane a Julia atlas is drawn over is the
-  parameter plane its `c` came out of. The page reads `at` and never works out which.
-- **The density grid is sparse.** 97 of 40,000 bins are lit in the fixture and 106 in the
-  audited population, so the grid is a list of `[ix, iy, count]` and a bin holds a whole
-  place: a walk's returns to one neighbourhood are a thousandth of a plane apart and a bin
-  is fifty times that.
-- **A judged dot carries what the judge saw** — the mode, the map, the score, and the file
-  if one was pre-rendered — and the page never relabels it. That render exists; the
-  palette control governs the places nobody has drawn yet.
+- **`px`/`py` are a place on a picture, not an identity**, which is why they are JSON
+  numbers while the viewport keys are strings. They are the plate's own pixels, so the
+  page divides by one number and a mark stays where it is at every width the page is read
+  at.
+- **A slot's `colormap` is what the picture was drawn through, not what its link will
+  say.** The renderer next door knows a thousand maps and the explorer bakes a fraction of
+  them, so a link whose map is not baked falls back to `DEFAULT_PALETTE` rather than
+  costing the link, and the caption says which ones did. `refused` is the record's list of
+  everything the recipe holds that a link has no key for: that map, an `band_autolevel/v1`
+  pass, a curve a mode's catalog does not give it, a fold a cyclic map refuses.
+- **Both halves of the search are on one plane.** A Julia location is a value of `c`, and
+  `c` is a point of the Mandelbrot parameter plane, so a `julia:mandelbrot` place is drawn
+  at its own `c` and shares the plate with the parameter places. A place found on both is
+  one mark with two `sides`.
 
-## The one thing that would break silently
+## The two things that would break silently
 
-An unjudged place is drawn here, on demand, and the link beside it opens the explorer at
-the same view. They agree because the search's node views are drawn palette-free through
-`twilight_shifted`, and because that is the map `explorer/palettes.js` names as
-`DEFAULT_PALETTE`. Neither of those facts is written down anywhere the other can see.
+**The map.** A picture whose colormap the explorer does not bake opens at
+`DEFAULT_PALETTE`, and the two neighborhood plates every mark carries are drawn through
+the record's `canonical_map`. Those are the same map today, which is what lets the caption
+name it and have that mean something a reader has already seen. Neither fact is written
+down anywhere the other can see, so it is pinned by name, with the reason attached, in
+`atlas.test.mjs`.
 
-A rebake that moved the default, or a maker that changed what a node view is drawn at,
-would leave every dot opening at a picture a shade off the one beside it — and nothing
-would go red, because both halves would still be internally consistent. So it is pinned,
-by name and with the reason attached, in `atlas.test.mjs`. Tamper-tested: pointing the
-record's node view at another map fails two of the nine tests.
+**The refusals.** The record says which links cannot carry everything, and the explorer's
+roster is what makes that true. A rebake that added a map the record calls unbakeable
+would leave a caption warning about a link that works; a rebake that dropped one would
+leave a link falling back in silence. `atlas.test.mjs` derives the refusals from the
+roster and holds the record to them in both directions.
 
 The second half of the same guard is that **one function builds every link**. `links.js`'s
-`opened` is called by the page, by `builder/atlas_thumbs.mjs` — which draws the
-pre-rendered thumbnails *through the link that opens them* rather than through a spec of
-its own — and by the test. There is no second spelling to drift.
+`opened` is called by the page and by the test, and by nothing else. There is no second
+spelling to drift.
 
-## The layout, and why it is three
+## Why the engine is here, and what it is not doing
 
-The population is savagely clumped, and the clumping is not in the dots. One bin holds
-two fifths of every keeper the search has admitted, and the thinning that makes the atlas
-readable is exactly what throws that away: a place the search returned to a thousand times
-and a place it found once become the same dot. A dot's frame is a millionth of a plane
-wide at the median, so *where* it is is nearly as invisible as *how deep* it is at plane
-scale.
+The page draws no fractal. The plate is a picture and so is every thumbnail; there is no
+worker pool, no render loop, nothing baked into a canvas.
 
-There is no one right picture of that, so the page offers three and the density heatmap
-draws over whichever is showing.
+What it does need is `plan`. `permalink.js` decides whether a canonical link spells `x`,
+`y` and `w` at all by comparing them against the family's home view, and home is the
+engine's answer rather than a table anybody may type — a table of home views written into
+this page would be a second author of the contract. So `explorer/engine.wasm` is
+instantiated for that one export, which is exactly what `builder/emit.mjs` and
+`atlas.test.mjs` do on the other side of the boundary.
 
-- **Plane** — the family whole, dots where they are. Complete and honest, and it spends
-  most of its area on ground nothing was ever found in.
-- **Plates** *(the default)* — the plane, and under it one plate per neighbourhood the
-  dots gather in, each a render of that ground with a numbered rectangle on the plane
-  saying where it came from. Position survives at every scale, and the empty ground stops
-  being most of what is on screen. It is what an atlas has always meant.
-- **Spread** — the plane, with dots pushed apart to a fixed pixel gap and a hairline from
-  each to where it really is. It breaks position on purpose and draws the leader that says
-  so; what it buys is a pointer target for every dot in a clump.
+## Where the record came from
 
-Plates and clusters are **derived from the record**, not typed: single-link clustering at
-a fraction of the plane's width, ordered by how many keepers a group stands for, capped at
-six. A record with different ground gives different plates.
-
-## The fixture
-
-`atlas.jsonl` says `"fixture": true` and the page says so above the plot, in the loudest
-block on it. Every `location_key` opens with `fixture:`. Nothing here came out of the
-search: the places are drawn around the parameter plane's own valleys and then **descended
-to** — bisected between a point inside the set and a point outside until the pair is a
-fraction of the width wanted — so that the set's edge actually runs through each frame.
-The first fixture skipped that step and produced eighty-nine smooth gradients, which is
-what a frame at a millionth of a plane looks like when its centre was chosen at plane
-scale.
-
-What is real is the **shape and the scale**, because that is what the page had to be
-designed against: the audited counts, the separation radii, seven decades of width with
-its median near a millionth, and one bin holding two fifths of everything.
+`atlas.jsonl`'s method row names it: the published record `20260914T171846Z`, the live
+judge it was scored by, the top-quarter bar and the fine bar it was cut at. The maker is
+`scratch/atlas_explore2/` in `fractal-wallpapers` — it streams the candidate ledger, the
+score sidecar and the label stores, queues every seated place and then everything in the
+top quarter by score, and places them in one greedy pass: a newcomer within the absorption
+radius of a mark from the other plane merges into it, and one within the radius of a mark
+of its own plane is dropped. 2,454 places queued, 57 absorbed, 2,245 dropped, 152 drawn.
 
 ```
-python -m builder atlas                      # what the record holds
-python -m builder atlas --fixture            # rewrite it
-python -m builder atlas --fixture --thumbs   # and redraw the 64 judged renders (~2 min)
+python -m builder atlas                          # what the record holds
+python -m builder atlas --figure atlas-places    # the plate and its marks, for section 11
 ```
 
-The fixture half of `builder/atlas.py`, `builder/atlas_thumbs.mjs`, and the JPEGs under
-`assets/images/atlas/` all go when the maker lands. The rest — the loader, the checks, the
-page, the test — is what the real record arrives into.
+The figure is the only thing this module draws. It is the plate with the marks on it and
+nothing else — no frames, no captions, no interface — because a still of a tool should be
+the thing the tool is about rather than a photograph of its buttons.
