@@ -591,6 +591,8 @@ async function draw() {
     // asked for, so a reader can see what to change; the address bar keeps naming the
     // picture that is still on the screen, because a refused recipe is not a view.
     say(String(error.message ?? error));
+    // The line above is a sentence for a reader; the stack is for whoever has to find it.
+    console.error("draw failed", { state: renderState.dataset.state, view }, error);
     if (pass === drawing) showState("stopped");
   }
 }

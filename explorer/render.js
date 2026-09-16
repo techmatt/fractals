@@ -545,13 +545,23 @@ export function shadeApart(module, field, view, holder = {}, { derive = false } 
         reject(new Error("the renderer refused this palette recipe"));
         return;
       }
+      // A worker.js older than the page — a browser's cached copy from before `level`
+      // existed — answers without the key. It also drew no curve, so `null` is the truth
+      // about its picture; the warning is what says the page is running two versions.
+      if (derive && !("level" in event.data)) {
+        console.warn(
+          "shade worker reported no level: worker.js is older than render.js (a cached " +
+            "copy?); the picture is unlevelled. Reload bypassing the cache.",
+          Object.keys(event.data),
+        );
+      }
       resolve({
         image: new ImageData(
           new Uint8ClampedArray(event.data.image),
           field.width,
           field.height,
         ),
-        ...(derive ? { level: event.data.level } : {}),
+        ...(derive ? { level: event.data.level ?? null } : {}),
         elapsed: performance.now() - started,
       });
     };
