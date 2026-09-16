@@ -21,9 +21,19 @@ spells them, and the page hands them to `permalink.js` without arithmetic.
   ran at, the map the neighborhood plates are drawn through, and the tally the page
   reports;
 * one **`partition`** row per plane — the plate its dots are drawn over, that plate's own
-  view, and the file its dots are in. There is one today: the Mandelbrot parameter plane,
-  with the Julia places drawn over the same plate, because a Julia place *is* a `c` and a
-  `c` is a point of that plane.
+  view, the word the frame's strip of planes puts on it, and the file its dots are in.
+  There are five: the Mandelbrot parameter plane, with the Julia places drawn over the
+  same plate because a Julia place *is* a `c` and a `c` is a point of that plane; the
+  three higher-degree parameter planes; and the classic Phoenix slice. **Only the first
+  has marks today**, and the other four carry an empty dot file rather than none, so the
+  marks land later as rows and no page changes. `python -m builder atlas --plates` draws
+  all five plates, each cropped to its set's own measured extent at one shared aspect,
+  and re-projects the dots from the plane coordinates they already carry.
+
+The method row keeps the absorption radius twice: `radius_plane`, the distance on the
+plane the thinning ran at, and `radius_px`, that distance spelled in the pixels of the plate
+the dots are drawn on now. The second is restated from the first whenever the plates are,
+because a plate cropped tighter spells one distance with a bigger number.
 
 `atlas/<partition>.jsonl` carries one **`dot`** row per place:
 
@@ -234,6 +244,7 @@ class Partition:
 
     name: str
     title: str
+    label: str
     family: str
     file: str
     plate: Plate
@@ -450,6 +461,17 @@ def _plate(row: records.Record) -> Plate:
     view = {key: _decimal(row, held, key, "plate") for key in ("x", "y", "w")}
     if float(view["w"]) <= 0:
         raise AtlasError(f"{row.where}: plate.w has to be positive")
+    # A plane with constants is a different set for every value of them, so a Phoenix
+    # plate that did not say which slice it was drawn at would be a picture of nothing in
+    # particular — and a link from it would open at the contract's default slice instead.
+    wanted = CONSTANTS.get(family, ())
+    constants = held.get("constants") or {}
+    missing = [key for key in wanted if not isinstance(constants.get(key), str)]
+    if missing:
+        raise AtlasError(
+            f"{row.where}: a {family} plate records the constants it was drawn at, "
+            f"and this one gives no {', '.join(missing)}"
+        )
     return Plate(
         file=held["file"],
         width=width,
@@ -493,17 +515,30 @@ def load_all() -> Atlas:
         path = ATLAS_DIR / file
         if "/" in file or not path.is_file():
             raise AtlasError(f"{row.where}: no atlas/{file}")
-        dots = tuple(_dot(entry, at) for at, entry in enumerate(records.read(path)))
-        if not dots:
-            raise AtlasError(f"{file}: no dots")
-        if row.count("dots") != len(dots):
-            raise AtlasError(
-                f"{row.where}: says {row.count('dots')} dots and {file} holds {len(dots)}"
-            )
+        # **An empty file is a plane with nothing kept on it yet, and that is a state the
+        # record is allowed to be in.** Four of the five planes are plates a reader can
+        # look at before the search has reached them, and they carry a dot file like every
+        # other partition so that nothing downstream — the ingest, the page, this loader —
+        # has a second shape to handle. `records.read` refuses an empty file by design,
+        # which is right for every other record here and is why the emptiness is decided
+        # before it is called rather than inside it.
+        dots = (
+            ()
+            if path.stat().st_size == 0
+            else tuple(_dot(entry, at) for at, entry in enumerate(records.read(path)))
+        )
+        # `count` refuses zero and is right to nearly everywhere; a plane with no marks
+        # yet is the one record here that says nought and means it.
+        said = row.fields.get("dots")
+        if not isinstance(said, int) or isinstance(said, bool) or said < 0:
+            raise AtlasError(f"{row.where}: dots is how many the file holds, zero included")
+        if said != len(dots):
+            raise AtlasError(f"{row.where}: says {said} dots and {file} holds {len(dots)}")
         partitions.append(
             Partition(
                 name=name,
                 title=row.text("title"),
+                label=row.text("label"),
                 family=family,
                 file=file,
                 plate=_plate(row),
@@ -810,7 +845,10 @@ def _family_name(family: dict) -> str:
     """The permalink contract's name for an engine family spec."""
     kind = str(family.get("kind"))
     degree = int(family.get("degree") or 2)
-    if kind == "mandelbrot":
+    # The engine spells the higher degrees `multibrot` and the rest of this builder asks
+    # for them that way; `mandelbrot` with a degree is the same family and arrives from
+    # the records the ingest reads. Both spellings mean one picture, and one name.
+    if kind in ("mandelbrot", "multibrot"):
         return "mandelbrot" if degree == 2 else f"multibrot{degree}"
     if kind == "julia":
         return "julia" if degree == 2 else f"julia{degree}"
@@ -965,6 +1003,258 @@ def _encode(source: Path, destination: Path, quality: int) -> None:
 def _write_rows(path: Path, rows: list[dict]) -> None:
     body = "".join(json.dumps(row, ensure_ascii=False) + "\n" for row in rows)
     path.write_text(body, encoding="utf-8", newline="\n")
+
+
+# ---------------------------------------------------------------------------- the plates
+
+#: The five planes the atlas carries, in the order the frame's strip shows them: the
+#: partition's own name, the word the strip puts on it, what it is, and the family spec
+#: the engine is asked for. Only the first has marks; the other four are plates a reader
+#: can see before the search has kept anything on them, and their dot files are empty by
+#: design rather than by accident.
+#:
+#: **A plane's constants come from this table and nowhere else.** The Phoenix slice is the
+#: one that has any, and the record's `cx`/`cy`/`px`/`py`/`zx`/`zy` are spelled from the
+#: same spec the render was drawn at, so the plate and the row recording it cannot
+#: disagree about which Phoenix this is.
+PLANES_DRAWN = (
+    ("mandelbrot", "Mandelbrot", "Mandelbrot", {"kind": "mandelbrot", "degree": 2}),
+    ("multibrot3", "d=3", "Multibrot, degree 3", {"kind": "multibrot", "degree": 3}),
+    ("multibrot4", "d=4", "Multibrot, degree 4", {"kind": "multibrot", "degree": 4}),
+    ("multibrot5", "d=5", "Multibrot, degree 5", {"kind": "multibrot", "degree": 5}),
+    (
+        "phoenix",
+        "Phoenix",
+        "Phoenix, the classic slice",
+        {"kind": "phoenix", "c": ["0.5667", "0.0"], "p": ["-0.5", "0.0"], "z_prev": ["0", "0"]},
+    ),
+)
+
+#: How the engine's family spec spells a constant, and how a permalink does. The record
+#: carries the permalink's spelling, because that is what the page hands to the contract.
+PLATE_CONSTANTS = {"c": ("cx", "cy"), "p": ("px", "py"), "z_prev": ("zx", "zy")}
+
+#: The one aspect every plate is drawn at, and the pixels its long side is drawn at.
+#:
+#: **It is the panel's shape rather than the picture's.** The frame is a strip of three
+#: slots over a plate, so its own height is the plate's plus about a fifth; in the studio
+#: it sits in a panel four units wide to five tall, where the 16:9 plate the first pass
+#: shipped is letterboxed twice over and fills a little over half the box. At 9:8 the
+#: frame fills about four fifths of it. That ratio is also the nearest simple one that
+#: holds the Mandelbrot set — 2.45 by 2.20, as the engine measures it — with air around
+#: it, where 4:3 and 5:4 both cut the antennae off the top and bottom bulbs.
+PLATE_ASPECT = (9, 8)
+PLATE_LONG = 4104
+
+#: How much wider than the set a plate is drawn: the engine measures the extent and this
+#: is the air around it.
+PLATE_MARGIN = 1.10
+
+#: Samples a pixel, each axis, as the first plate was drawn at. A plate is a picture a
+#: reader looks at for a while.
+PLATE_SUPERSAMPLE = 2
+
+#: What a partition says while its plane has no marks on it yet.
+NO_MARKS_YET = "the plane itself, with no places kept on it yet: the search has not run here"
+
+#: The width a neighborhood plate is drawn at, for a plane that has no dots to draw one
+#: for yet. The Mandelbrot partition's own value is kept where it already has one.
+DEFAULT_PLATE_WIDTH = "0.22"
+
+#: The grey ramp a plate is drawn through, committed beside this module. It is not a
+#: shipped colormap and never was — the library next door has no such map — so it is the
+#: maker's own input, the way `builder/data/locations-walk-descent.json` is.
+GREY_RAMP = Path(__file__).resolve().parent / "data" / "atlas-grey.json"
+
+
+def plate_size() -> tuple[int, int]:
+    """The plate's pixels: the long side, and the short side its aspect gives."""
+    across, down = PLATE_ASPECT
+    return PLATE_LONG, PLATE_LONG * down // across
+
+
+def _spelled(value: float) -> str:
+    """A plate coordinate as the record carries it.
+
+    Six significant figures, because the extent behind it was measured on the engine's
+    own 4001-point grid and a float's full tail — `-0.7737499999999999` for a number that
+    is `-0.77375` — is noise in a record a person reads. The projection reads these
+    strings back, so the plate and its dots agree whatever is written here.
+    """
+    return f"{float(f'{value:.6g}'):g}"
+
+
+def plate_view(extent: dict) -> tuple[float, float, float]:
+    """The frame a set is drawn in: its own measured extent, fitted to the plate's aspect.
+
+    **Derived, never typed.** `home-view` reports the extent the engine measured for that
+    family, so a crop is that rectangle widened to the plate's ratio and given its margin.
+    A typed rectangle would be a number somebody has to re-measure the day a family's own
+    answer moves, and four of these five sets have never been framed by anybody.
+    """
+    across, down = PLATE_ASPECT
+    (re_low, re_high), (im_low, im_high) = extent["re"], extent["im"]
+    wide, tall = re_high - re_low, im_high - im_low
+    width = max(wide, tall * across / down) * PLATE_MARGIN
+    return (re_low + re_high) / 2, (im_low + im_high) / 2, width
+
+
+def project(at: tuple[float, float], plate: Plate) -> tuple[float, float]:
+    """Where a place on the plane falls on a plate, in that plate's own pixels.
+
+    The one piece of arithmetic that turns a coordinate into a dot. It lives here because
+    the record is written from it and `check` reads the record back: a dot's `px`/`py` are
+    this function's answer for its own `place.at`, which is what makes re-rendering a
+    plate a change to one row of a table rather than a re-thinning of a population.
+    """
+    scale = plate.width / float(plate.w)
+    return (
+        plate.width / 2 + (at[0] - float(plate.x)) * scale,
+        plate.height / 2 - (at[1] - float(plate.y)) * scale,
+    )
+
+
+def _plate_row(name: str, family: dict, view: tuple[float, float, float], maxiter) -> dict:
+    """One partition's `plate`, as the record spells it."""
+    across, down = PLATE_ASPECT
+    width, height = plate_size()
+    x, y, w = view
+    row = {
+        "file": f"plate-{name}.jpg",
+        "width": width,
+        "height": height,
+        "family": _family_name(family),
+        "x": _spelled(x),
+        "y": _spelled(y),
+        "w": _spelled(w),
+        "aspect": [across, down],
+        "mode": "smooth",
+        "colormap": json.loads(GREY_RAMP.read_text(encoding="utf-8"))["name"],
+        "supersample": PLATE_SUPERSAMPLE,
+        "maxiter": maxiter,
+    }
+    constants = {
+        key: str(value)
+        for field, keys in PLATE_CONSTANTS.items()
+        if field in family
+        for key, value in zip(keys, family[field], strict=True)
+    }
+    if constants:
+        row["constants"] = constants
+    return row
+
+
+def plates() -> list[str]:
+    """Draw all five plates, re-project the dots onto them, and rewrite the record.
+
+    **Idempotent by construction.** Every number it writes comes from the engine's own
+    measurement of a family and from each dot's `place.at`, so running it twice writes the
+    same record twice. That is the whole reason a dot carries the coordinate it stands at
+    as well as the pixel it is drawn on: a plate can be re-cropped without anybody
+    re-thinning a population, and the dots follow the picture instead of the other way
+    around.
+    """
+    from . import renders
+
+    ramp = json.loads(GREY_RAMP.read_text(encoding="utf-8"))
+    directory = renders.colormap_directory(ramp["name"], ramp["kind"], ramp["stops"], "atlas-grey")
+    width, height = plate_size()
+    rows = records.read(ATLAS_INDEX)
+    method = dict(rows[0].fields)
+    held = {row.text("partition"): dict(row.fields) for row in rows[1:]}
+
+    IMAGE_DIR.mkdir(parents=True, exist_ok=True)
+    lines: list[str] = []
+    partitions: list[dict] = []
+    for name, label, title, family in PLANES_DRAWN:
+        home = renders.home_view(family)
+        view = plate_view(home["extent"])
+        x, y, w = view
+        out = renders.default_cache_root() / "atlas" / f"plate-{name}-{width}x{height}.jpg"
+        out.parent.mkdir(parents=True, exist_ok=True)
+        was = held.get(name, {})
+        # **The cap is asked for, not remembered.** It is the engine's depth policy at this
+        # width, so a warm render cache must not be the reason the record carries one value
+        # or another — the first pass of this maker wrote a null for the one plate that was
+        # already on disk, which is exactly that bug.
+        maxiter = renders.run("maxiter", {"schema": 1, "widths": [_spelled(w)]})["caps"][0]
+        if not out.is_file():
+            echo = renders.run(
+                "render",
+                {
+                    "schema": 1,
+                    "family": family,
+                    "viewport": {
+                        "center_re": _spelled(x),
+                        "center_im": _spelled(y),
+                        "width": _spelled(w),
+                    },
+                    "resolution": [width, height],
+                    "supersample": PLATE_SUPERSAMPLE,
+                    "colormap": ramp["name"],
+                    "colormap_dir": str(directory),
+                    "mode": "smooth",
+                    "output": str(out),
+                },
+            )
+            maxiter = echo.get("maxiter")
+            lines.append(f"  {name}: {echo.get('seconds')}s at cap {maxiter}")
+        plate = _plate_row(name, family, view, maxiter)
+        shutil.copyfile(out, IMAGE_DIR / plate["file"])
+        partitions.append(
+            {
+                "schema": records.SCHEMA,
+                "kind": "partition",
+                "partition": name,
+                "title": title,
+                "label": label,
+                "family": plate["family"],
+                "file": f"{name}.jsonl",
+                "plate": plate,
+                "plate_width": was.get("plate_width", DEFAULT_PLATE_WIDTH),
+                "dots": 0,
+                "says": was.get("says", NO_MARKS_YET),
+            }
+        )
+        lines.append(
+            f"  plate-{name}.jpg  {width}x{height}  x {x:.4f} y {y:.4f} w {w:.4f}  "
+            f"{(IMAGE_DIR / plate['file']).stat().st_size / 1e3:.0f} kB"
+        )
+
+    for partition in partitions:
+        path = ATLAS_DIR / partition["file"]
+        # A plane with no marks keeps an empty file rather than none, so that every
+        # partition looks the same on disk; there is nothing in it to re-project.
+        if not path.is_file() or path.stat().st_size == 0:
+            path.write_text("", encoding="utf-8", newline="\n")
+            continue
+        spelled = _plate(records.Record(ATLAS_INDEX, 0, partition))
+        moved = []
+        for row in records.read(path):
+            dot = dict(row.fields)
+            at = dot["place"]["at"]
+            px, py = project((float(at[0]), float(at[1])), spelled)
+            dot["px"], dot["py"] = round(px, 2), round(py, 2)
+            moved.append(dot)
+        _write_rows(path, moved)
+        partition["dots"] = len(moved)
+        if moved:
+            lines.append(f"  {partition['file']}: {len(moved)} dots re-projected")
+
+    # **The absorption radius is a distance on the plane, and pixels are only how a plate
+    # spells it.** The thinning ran at twelve pixels on the first plate — 4096 across a
+    # width of 4.4 — and a plate drawn at another crop spells the same distance with
+    # another number. So the record keeps the plane distance, `radius_plane`, and
+    # `radius_px` is restated from it against whichever plate the dots are drawn on now:
+    # `check`'s `_separated` reads the pixels, and the pixels have to describe this plate.
+    radius_plane = method.get("radius_plane")
+    if radius_plane is not None:
+        drawn = next(one for one in partitions if one["dots"] > 0)["plate"]
+        method["radius_px"] = round(radius_plane * drawn["width"] / float(drawn["w"]), 2)
+        lines.append(f"  absorption radius {radius_plane} on the plane: {method['radius_px']} px")
+
+    _write_rows(ATLAS_INDEX, [method] + partitions)
+    return lines
 
 
 # ---------------------------------------------------------------------------- the maker

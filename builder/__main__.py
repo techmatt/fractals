@@ -358,6 +358,11 @@ def _parser() -> argparse.ArgumentParser:
         default=atlas_module.THUMB_QUALITY,
         help=f"the JPEG quality --ingest re-encodes at (default {atlas_module.THUMB_QUALITY})",
     )
+    mapped.add_argument(
+        "--plates",
+        action="store_true",
+        help="re-render every plane's plate, re-project its dots and rewrite the record",
+    )
 
     seated = commands.add_parser(
         "seats", help="land the published tentative record as a staged gallery"
@@ -965,6 +970,9 @@ def _do_atlas(options: argparse.Namespace) -> int:
     """What the atlas record holds — or, with a flag, the figure it is drawn into."""
     if options.ingest:
         for line in atlas_module.ingest(options.ingest, quality=options.quality):
+            print(line)
+    if options.plates:
+        for line in atlas_module.plates():
             print(line)
     if options.figure:
         for line in atlas_module.draw(options.figure):

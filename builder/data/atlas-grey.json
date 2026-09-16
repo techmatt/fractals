@@ -1,0 +1,80 @@
+{
+  "schema": 1,
+  "name": "atlas_grey",
+  "kind": "sequential",
+  "source": "the atlas plate\u2019s own grey ramp: a linear ramp that tops out well below white, so a mark drawn over it reads. Written for the first atlas pass next door, in that repository\u2019s scratch, and committed here because the plates are drawn from here now and a maker whose input lives in somebody\u2019s scratch is a maker nobody can run.",
+  "stops": [
+    [
+      0.0,
+      [
+        0,
+        0,
+        0
+      ]
+    ],
+    [
+      0.125,
+      [
+        24,
+        24,
+        24
+      ]
+    ],
+    [
+      0.25,
+      [
+        48,
+        48,
+        48
+      ]
+    ],
+    [
+      0.375,
+      [
+        71,
+        71,
+        71
+      ]
+    ],
+    [
+      0.5,
+      [
+        94,
+        94,
+        94
+      ]
+    ],
+    [
+      0.625,
+      [
+        116,
+        116,
+        116
+      ]
+    ],
+    [
+      0.75,
+      [
+        138,
+        138,
+        138
+      ]
+    ],
+    [
+      0.875,
+      [
+        159,
+        159,
+        159
+      ]
+    ],
+    [
+      1.0,
+      [
+        180,
+        180,
+        180
+      ]
+    ]
+  ]
+}

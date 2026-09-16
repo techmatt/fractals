@@ -49,10 +49,63 @@
    at `destroy`: a frame is centred in its box without either page having to say so, and
    the box is the host's rather than the window's, which is the whole of the difference
    between the atlas page's stage and the studio's panel. */
-.frame-host { display: flex; align-items: center; justify-content: center; }
+.frame-host {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+}
 .frame-host[hidden] { display: none; }
 
 .frame { flex: 0 0 auto; }
+
+/* The strip of planes, and the line under the plate. Both sit outside the fitted
+   rectangle and both change only when a reader moves to another plane — never under the
+   pointer — which is what lets the frame go on being the one fixed thing it is. `refit`
+   takes their height off the box before it divides, so they cost the plate room rather
+   than pushing it out of the panel. */
+.planes {
+  flex: 0 0 auto;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.25rem;
+  font-family: var(--sans);
+}
+
+.plane {
+  appearance: none;
+  border: 1px solid var(--well-rule);
+  border-radius: 999px;
+  background: none;
+  color: var(--well-ink-dim);
+  font: inherit;
+  font-size: 0.75rem;
+  line-height: 1.5;
+  padding: 0.05rem 0.6rem;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.plane:hover { color: var(--well-ink); border-color: var(--well-ink-dim); }
+.plane[aria-pressed="true"] {
+  color: var(--well);
+  background: var(--well-ink);
+  border-color: var(--well-ink);
+}
+.plane:focus-visible { outline: 2px solid var(--well-link); outline-offset: 1px; }
+
+.frame-foot {
+  flex: 0 0 auto;
+  margin: 0;
+  max-width: 34rem;
+  text-align: center;
+  font-family: var(--sans);
+  font-size: 0.72rem;
+  line-height: 1.4;
+  color: var(--well-ink-dim);
+}
+.frame-foot[hidden] { display: none; }
 
 /* `.slot img` sets a display of its own, so the browser's `[hidden]` no longer wins: an
    empty slot's picture is hidden by a rule of the frame's instead. */

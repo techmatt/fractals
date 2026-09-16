@@ -34,7 +34,7 @@ mandelbrot.jsonl  that plane's dots
 ## The frame is a piece, and two pages mount it
 
 `frame.js` builds the frame inside whatever element it is handed and hands back
-`{ record, refit, destroy }`; `frame.css` is the frame's own rules, including the four
+`{ record, refit, destroy, plane }`; `frame.css` is the frame's own rules, including the four
 colours, which sit on the frame itself so that a page which is not this one gets them.
 This page mounts one full bleed under the site bar with `{ keep: true }` — click a mark and
 the frame goes on showing that place — and the explorer's studio mounts the same frame in a
@@ -52,6 +52,34 @@ stage takes the window's height, or the figure's, whichever is less, and the hos
 keeps the whole box the stage's padding leaves. The one-way flow is deliberate — a stage
 that shrank to its figure and a frame fitted to that stage would be each other's input, and
 a pixel of rounding would chase itself.
+
+## Five planes, and four of them waiting
+
+The record carries a partition per plane — **Mandelbrot · d=3 · d=4 · d=5 · Phoenix** —
+and the frame puts a strip of them above the slots. Only Mandelbrot has marks. The other
+four are plates a reader can look at before the search has reached them: the slots stay
+blank, and a line under the plate says the marks are still to come. Their dot files are
+empty rather than absent, so the marks land later as rows and neither page changes.
+
+The strip and that line sit **outside** the fitted rectangle, and both change only when a
+reader moves to another plane — never under the pointer — so the frame is still the one
+fixed thing it has to be. `refit` takes their height off the box before it divides, and
+hands back `total` beside `height` so a page sizing a band leaves room for them; this page
+clipped its own plate for as long as that was one number.
+
+Which plane is open is the page's to keep. `options.plane` opens one by the partition's own
+name and `options.onPlane` says when the reader moves; the studio puts it in its `panel`
+UI key as `atlas:phoenix`, leaves the record's first plane unsaid, and never emits either
+in a copied link. This page keeps no address for it.
+
+**Every plate is cropped to its own set, at one aspect.** The engine's `home-view` reports
+the extent it measured for each family; a plate is that rectangle widened to 9:8 with a
+tenth of air around it, drawn at 4104x3648 through the plate's own grey ramp. 9:8 is the
+panel's shape rather than any set's — the studio's atlas panel is about four wide to five
+tall, and the frame's own ratio is the plate's plus a fifth — and it is also the nearest
+simple ratio that holds the Mandelbrot set with a margin, where 4:3 and 5:4 cut the
+antennae off the top and bottom bulbs. The first plate was 16:9 at the whole home view and
+filled a little over half the panel; this one fills four fifths of it.
 
 ## The record is the deliverable
 
@@ -141,8 +169,15 @@ fine score, and places them in one greedy pass. Its own README has the build ord
 ```
 python -m builder atlas                                  # what the record holds
 python -m builder atlas --ingest <maker>/dots.json       # rewrite it and its pictures
+python -m builder atlas --plates                         # all five plates, dots re-projected
 python -m builder atlas --figure atlas-places            # the plate and its marks, for §11
 ```
+
+`--plates` is idempotent by construction: every number it writes comes from the engine's
+measurement of a family and from each dot's own `place.at`, and the absorption radius is
+kept on the plane as `radius_plane` and restated in pixels against the plate the dots are
+drawn on. The grey ramp is `builder/data/atlas-grey.json`, committed here so the maker has
+no input in anybody's scratch.
 
 `--ingest` is the second half of the maker and is committed for the reason the figure
 makers are: a record nobody can rebuild is a record nobody can correct. It re-encodes

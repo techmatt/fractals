@@ -155,6 +155,13 @@ function contentBox(node) {
  *   mark, and a picture nobody can reach is not a picture anybody can pick. It is not
  *   `keep` in a second spelling — nothing is stored, no mark wears a ring, and there is
  *   nothing for Escape to let go of. The slots simply hold the last thing they were shown.
+ * - **`plane`** (default the first the record carries) — which plane the frame opens on,
+ *   by the partition's own name. A name the record does not carry opens the first one
+ *   rather than nothing: a plane is furniture, and furniture never withholds a picture.
+ * - **`onPlane`** (default absent) — called with a partition's name whenever the reader
+ *   moves to another plane, so a page can put it in its own URL. The frame does not touch
+ *   the address bar itself; two pages mount it and only one of them has an address to
+ *   keep.
  * - **`onPick`** (default absent) — where a click goes instead of the explorer. Given one,
  *   a click on a mark calls `onPick({ dot, slot, query, palette })` for that mark's gallery
  *   slot and a click on a slot calls it for that slot, the frame navigates nowhere, and the
@@ -184,15 +191,31 @@ export async function mount(host, options = {}) {
   });
 
   const record = await load(base);
-  const partition = record.partitions[0];
 
-  // Every link, built once, through the one function that builds them. A link is the
-  // same string every time it is asked for, so asking per hover would be work that says
-  // nothing new — and the tooltip needs the map each one settled on anyway.
-  const links = new Map();
-  for (const dot of partition.dots) {
-    for (const slot of Object.values(dot.slots)) links.set(slot, opened(contract, slot));
-  }
+  /**
+   * Which plane is open, and everything that follows from it.
+   *
+   * **Five partitions, one frame.** The record carries a partition per plane — the
+   * Mandelbrot parameter plane, the three higher degrees, and the Phoenix slice — and
+   * only the first has marks on it today. The other four are plates a reader can look at
+   * before the search has reached them, and their dot lists are empty in the record
+   * rather than absent from it, so nothing here has a second case to handle: the marks
+   * land later as rows in a file, and no page changes.
+   */
+  let partition = record.partitions.find((one) => one.partition === options.plane)
+    ?? record.partitions[0];
+
+  // Every link, built once per plane, through the one function that builds them. A link
+  // is the same string every time it is asked for, so asking per hover would be work that
+  // says nothing new — and the tooltip needs the map each one settled on anyway.
+  let links = new Map();
+  const relink = () => {
+    links = new Map();
+    for (const dot of partition.dots) {
+      for (const slot of Object.values(dot.slots)) links.set(slot, opened(contract, slot));
+    }
+  };
+  relink();
 
   const frame = made("div", "frame");
   const strip = made("div", "strip");
@@ -210,12 +233,25 @@ export async function mount(host, options = {}) {
   }
   const plate = made("div", "plate");
   const plateImage = made("img");
-  plateImage.src = new URL(`../assets/images/atlas/${partition.plate.file}`, base);
-  plateImage.alt =
-    `The Mandelbrot parameter plane in gray at its whole view, ${partition.dots.length} marks ` +
-    "on it where the search has kept a place.";
   plate.appendChild(plateImage);
   frame.append(strip, plate);
+
+  // The plane strip and the footer sit outside the fitted rectangle, which is what keeps
+  // the frame the fixed thing it is: both change only when a reader moves to another
+  // plane, never under the pointer, and `refit` takes their height off the box before it
+  // divides. A line that grew on hover would move the plate, which would move the mark.
+  const planes = made("div", "planes");
+  const foot = made("p", "frame-foot");
+  const buttons = new Map();
+  for (const one of record.partitions) {
+    const button = made("button", "plane", one.label);
+    button.type = "button";
+    button.title = one.title;
+    button.setAttribute("aria-pressed", String(one === partition));
+    button.addEventListener("click", () => openPlane(one));
+    buttons.set(one, button);
+    planes.appendChild(button);
+  }
 
   /** Which place the three slots are showing, so that a click on one knows what it is. */
   let showing = null;
@@ -265,45 +301,83 @@ export async function mount(host, options = {}) {
     }
   }
 
-  for (const dot of partition.dots) {
-    const node = made("button", `mark mark-${dot.plane}`);
-    node.type = "button";
-    node.style.left = `${(dot.px / partition.plate.width) * 100}%`;
-    node.style.top = `${(dot.py / partition.plate.height) * 100}%`;
-    node.setAttribute(
-      "aria-label",
-      `${dot.plane === "mandelbrot" ? "A place on the parameter plane" : "A Julia place"} at ` +
-        `${point(dot.place.at)}${dot.place.seat === null ? "" : ", seated"}`,
-    );
-    const enter = () => {
-      hovering = dot;
-      settle();
-    };
-    const leave = () => {
-      // Lingering, the slots keep what they were last shown, so there is something in
-      // them to click. Nothing is stored: `hovering` is still the last place the pointer
-      // was over, and the next mark replaces it.
-      if (linger) return;
-      if (hovering === dot) hovering = null;
-      settle();
-    };
-    node.addEventListener("mouseenter", enter);
-    node.addEventListener("focus", enter);
-    node.addEventListener("mouseleave", leave);
-    node.addEventListener("blur", leave);
-    node.addEventListener("click", () => {
-      if (keep) {
-        if (stored !== null) nodes.get(stored).classList.remove("is-stored");
-        stored = stored === dot ? null : dot;
-        if (stored !== null) nodes.get(stored).classList.add("is-stored");
+  const drawMarks = () => {
+    for (const dot of partition.dots) {
+      const node = made("button", `mark mark-${dot.plane}`);
+      node.type = "button";
+      node.style.left = `${(dot.px / partition.plate.width) * 100}%`;
+      node.style.top = `${(dot.py / partition.plate.height) * 100}%`;
+      node.setAttribute(
+        "aria-label",
+        `${dot.plane === "mandelbrot" ? "A place on the parameter plane" : "A Julia place"} at ` +
+          `${point(dot.place.at)}${dot.place.seat === null ? "" : ", seated"}`,
+      );
+      const enter = () => {
+        hovering = dot;
         settle();
-      }
-      // A mark is a place, and the one of its three pictures a place is worth opening at
-      // is the wallpaper. The other two are what a picker would go to the slots for.
-      if (!navigates) pick(dot, "gallery");
-    });
-    nodes.set(dot, node);
-    plate.appendChild(node);
+      };
+      const leave = () => {
+        // Lingering, the slots keep what they were last shown, so there is something in
+        // them to click. Nothing is stored: `hovering` is still the last place the pointer
+        // was over, and the next mark replaces it.
+        if (linger) return;
+        if (hovering === dot) hovering = null;
+        settle();
+      };
+      node.addEventListener("mouseenter", enter);
+      node.addEventListener("focus", enter);
+      node.addEventListener("mouseleave", leave);
+      node.addEventListener("blur", leave);
+      node.addEventListener("click", () => {
+        if (keep) {
+          if (stored !== null) nodes.get(stored).classList.remove("is-stored");
+          stored = stored === dot ? null : dot;
+          if (stored !== null) nodes.get(stored).classList.add("is-stored");
+          settle();
+        }
+        // A mark is a place, and the one of its three pictures a place is worth opening at
+        // is the wallpaper. The other two are what a picker would go to the slots for.
+        if (!navigates) pick(dot, "gallery");
+      });
+      nodes.set(dot, node);
+      plate.appendChild(node);
+    }
+  };
+
+  /**
+   * Move to another plane: its plate, its marks, its links, and what its footer says.
+   *
+   * Everything a plane owns is rebuilt and nothing a page owns is touched. The slots are
+   * emptied because they were showing a place on the plane being left, and a picture from
+   * one plane hanging over another is the one thing this must not do.
+   */
+  function openPlane(wanted) {
+    if (wanted === partition) return;
+    partition = wanted;
+    stored = null;
+    hovering = null;
+    nodes.clear();
+    for (const mark of [...plate.querySelectorAll(".mark")]) mark.remove();
+    relink();
+    drawMarks();
+    dressPlate();
+    for (const [one, button] of buttons) {
+      button.setAttribute("aria-pressed", String(one === partition));
+    }
+    show(null);
+    refit(true);
+    options.onPlane?.(partition.partition);
+  }
+
+  /** The plate picture, what it says it is, and the line under it. */
+  function dressPlate() {
+    plateImage.src = new URL(`../assets/images/atlas/${partition.plate.file}`, base);
+    plateImage.alt = partition.dots.length
+      ? `The ${partition.title} plane in gray, ${partition.dots.length} marks on it where ` +
+        "the search has kept a place."
+      : `The ${partition.title} plane in gray, with no marks on it yet.`;
+    foot.textContent = partition.dots.length ? "" : partition.says;
+    foot.hidden = partition.dots.length > 0;
   }
 
   const letGo = (event) => {
@@ -323,6 +397,10 @@ export async function mount(host, options = {}) {
    * flexbox works out from what is left, so the composed object is one rectangle whatever
    * the rounding does.
    */
+  // Every plate is drawn at one aspect — `builder/atlas.py`'s `PLATE_ASPECT` — so the
+  // frame's own ratio does not move when a reader moves planes. It is read off the open
+  // partition anyway rather than off the first, because a record that ever carried two
+  // aspects should make this arithmetic wrong rather than make it lie.
   const plateAspect = partition.plate.aspect[1] / partition.plate.aspect[0];
   const slotAspect = record.method.thumb.height / record.method.thumb.width;
   const ratio = plateAspect + SLOT_SHARE * slotAspect + GAP_SHARE;
@@ -330,13 +408,18 @@ export async function mount(host, options = {}) {
 
   /** The size the frame was last fitted to. Everything about it follows from the width,
    *  so a box that changed without changing that is a box nothing has to be written for. */
-  let fitted = { width: 0, height: 0 };
+  let fitted = { width: 0, height: 0, total: 0 };
 
-  const refit = () => {
+  const refit = (force = false) => {
     const box = contentBox(host);
     if (box.width <= 0 || box.height <= 0) return fitted;
-    const width = Math.max(LEAST, Math.floor(Math.min(box.width, box.height / ratio, most)));
-    if (width === fitted.width) return fitted;
+    // What the strip of planes and the footer take is theirs before the frame divides up
+    // what is left; both are laid out by the page's own stylesheet and neither is part of
+    // the rectangle the plate's aspect describes.
+    const spare = planes.offsetHeight + foot.offsetHeight;
+    const room = Math.max(LEAST * ratio, box.height - spare);
+    const width = Math.max(LEAST, Math.floor(Math.min(box.width, room / ratio, most)));
+    if (width === fitted.width && !force) return fitted;
 
     const slotWidth = Math.floor(width * SLOT_SHARE);
     const slotHeight = Math.round(slotWidth * slotAspect);
@@ -351,13 +434,19 @@ export async function mount(host, options = {}) {
     // The height a page lays a band out with is the composed one the aspect gives, not the
     // box's: a border or two either side is what the difference is, and a page that sized a
     // band from the rendered box would be sizing it from a number the frame does not own.
-    fitted = { width, height: Math.ceil(width * ratio) };
+    // `total` is that height plus the strip of planes and the footer, which is what a page
+    // sizing a band around the whole thing has to leave room for — the atlas page clipped
+    // its own plate for exactly as long as this was one number instead of two.
+    const height = Math.ceil(width * ratio);
+    fitted = { width, height, total: height + spare };
     return fitted;
   };
 
+  drawMarks();
+  dressPlate();
   show(null);
   host.classList.add("frame-host");
-  host.appendChild(frame);
+  host.append(planes, frame, foot);
 
   // A host that changed size is not a mark that was hovered. The frame is fixed against
   // the one and fitted to the other, because a frame sized for a box nobody has any more
@@ -368,9 +457,11 @@ export async function mount(host, options = {}) {
   const destroy = () => {
     observer.disconnect();
     if (keep) document.removeEventListener("keydown", letGo);
+    planes.remove();
     frame.remove();
+    foot.remove();
     host.classList.remove("frame-host");
   };
 
-  return { record, refit, destroy };
+  return { record, refit, destroy, get plane() { return partition.partition; } };
 }

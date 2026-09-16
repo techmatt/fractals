@@ -266,7 +266,10 @@ test("every picture the record names is on disk", () => {
 test("the plate a partition is drawn over opens in the explorer too", () => {
   for (const partition of partitions) {
     const plate = partition.plate;
+    // A plane with constants — the Phoenix slice — records them beside its view, keyed as
+    // the permalink keys them, so a plate opens at the same slice it was drawn from.
     const { query } = opened(CONTRACT, {
+      ...(plate.constants ?? {}),
       family: plate.family,
       x: plate.x,
       y: plate.y,

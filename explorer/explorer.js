@@ -50,6 +50,11 @@ const WHEEL_ZOOM = 1.15;
 /** Which panel the left side shows when nothing says otherwise. */
 const DEFAULT_PANEL = "gallery";
 
+/** What separates a panel from the thing it is open at, in the UI key: `atlas:phoenix`.
+ *  The atlas carries five planes and which one is open is worth sending somebody; it is
+ *  still furniture, so it rides in the key the contract tolerates and never reads. */
+const PANEL_AT = ":";
+
 /** How a mode's parameter is stepped in its control, and what it is called.
  *
  *  The label is the reader's word for it and the step is a sensible nudge; neither
@@ -369,7 +374,8 @@ function settle() {
   clearTimeout(settleTimer);
   settleTimer = setTimeout(() => {
     const picture = link.emit(view, contract);
-    const furniture = showing === DEFAULT_PANEL ? "" : `&panel=${showing}`;
+    const at = showing === "atlas" && plane && plane !== home ? `${PANEL_AT}${plane}` : "";
+    const furniture = showing === DEFAULT_PANEL ? "" : `&panel=${encodeURIComponent(showing + at)}`;
     history.replaceState(null, "", `?${picture}${furniture}`);
   }, 0);
 }
@@ -763,6 +769,14 @@ function leaveSeat() {
 let showing = DEFAULT_PANEL;
 let atlasStarted = false;
 
+/** Which plane the atlas panel is open at, where a link named one. Held even while the
+ *  panel has not been mounted, because a link may name a plane before a reader has ever
+ *  opened the tab. */
+let plane = null;
+
+/** The plane the record opens on, learnt at mount. A key says nothing about the default. */
+let home = null;
+
 const tabs = [...document.querySelectorAll(".tab")];
 
 /**
@@ -774,14 +788,18 @@ const tabs = [...document.querySelectorAll(".tab")];
  * the viewer is what this page is, and one of two side panels not loading is a note in
  * that panel.
  */
-function showPanel(name) {
+function showPanel(asked) {
+  const [name, at] = String(asked).split(PANEL_AT);
   showing = tabs.some((tab) => tab.dataset.panel === name) ? name : DEFAULT_PANEL;
   for (const tab of tabs) {
     const mine = tab.dataset.panel === showing;
     tab.setAttribute("aria-selected", String(mine));
     document.getElementById(`panel-${tab.dataset.panel}`).hidden = !mine;
   }
-  if (showing === "atlas") startAtlas();
+  if (showing === "atlas") {
+    plane = at ?? plane;
+    startAtlas();
+  }
   settle();
 }
 
@@ -792,8 +810,13 @@ async function startAtlas() {
   const note = document.getElementById("atlas-note");
   try {
     const { mount } = await import("../atlas/frame.js");
-    await mount(host, {
+    const frame = await mount(host, {
       base: new URL("../atlas/", import.meta.url),
+      plane,
+      onPlane: (name) => {
+        plane = name;
+        settle();
+      },
       // Nothing is stored here — no ring on a mark, no Escape to press — but the slots
       // hold the last place they were shown, because a slot that empties when the pointer
       // leaves the mark is a picture nobody can click.
@@ -811,6 +834,13 @@ async function startAtlas() {
         openLink(query, { gap, what: "this place" });
       },
     });
+    // The default is the record's own first plane, not whichever one this page happened
+    // to open at: a link that named `atlas:multibrot4` has to go on saying so when the
+    // address bar is rewritten, and the key leaves only the default unsaid, exactly as
+    // the picture keys do.
+    home = frame.record.partitions[0]?.partition ?? frame.plane;
+    plane = frame.plane;
+    settle();
     note.textContent =
       "Hover a mark for its neighborhood, its Julia set and a wallpaper drawn there. " +
       "Click the mark to open the wallpaper, or click one of the three to open that one.";

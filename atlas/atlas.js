@@ -70,7 +70,7 @@ async function start() {
     host.style.width = `${box.width - box.padX}px`;
     host.style.height = `${box.height - box.padY}px`;
     const size = frame.refit();
-    stage.style.height = `${Math.min(box.height, size.height + box.padY)}px`;
+    stage.style.height = `${Math.min(box.height, size.total + box.padY)}px`;
   };
   lay();
   window.addEventListener("resize", lay);
