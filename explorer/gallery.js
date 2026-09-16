@@ -12,9 +12,8 @@
 // own `permalink.js` rather than a second URL writer — so opening a tile is parsing a
 // link, exactly as arriving on one is. Where the link cannot be the whole picture the row
 // says so in `gap`, and the page passes that sentence on rather than quietly drawing
-// something close. Most often it is the tone curve: every candidate was made with the
-// autolevel operator on, the curve lives on the run's record rather than in the recipe,
-// and for the runs that kept no curve there is nothing anybody can replay.
+// something close. The tone curve lives on the run's record rather than in the recipe,
+// and the link carries it wherever a record holds one.
 //
 // **The record is committed and the pictures are not.** They are a couple of hundred
 // megabytes of JPEG and stay out of git history until this is deployed, so a clone has
@@ -45,7 +44,16 @@ function rowsOf(text, where) {
   return rows;
 }
 
-/** The gallery's record: its header, and one row per picture in the order it seats them. */
+/**
+ * The gallery's record: its header, and one row per picture in presentation order.
+ *
+ * **Presentation order, not seat order.** The seating is the solve's rank order, and its
+ * strongest rows look alike: opened on `seat`, the panel's first screen was spirals, three
+ * of them in one palette. The tentative gallery's own page opens on the permutation
+ * `curation.page_order` spreads modes and colours with, and `order` is that permutation,
+ * so both pages open on the same tiles. Sorted here rather than trusted to the file, so
+ * the field is what is read.
+ */
 export async function load(base) {
   const url = new URL(`${DIRECTORY}gallery.jsonl`, base);
   const response = await fetch(url);
@@ -53,7 +61,9 @@ export async function load(base) {
   const rows = rowsOf(await response.text(), `${SLUG}/gallery.jsonl`);
   const header = rows[0];
   if (header?.kind !== "gallery") throw new Error(`${SLUG}/gallery.jsonl: no header record`);
-  return { header, seats: rows.filter((row) => row.kind === "image") };
+  const seats = rows.filter((row) => row.kind === "image");
+  seats.sort((a, b) => (a.order ?? Infinity) - (b.order ?? Infinity) || a.seat - b.seat);
+  return { header, seats };
 }
 
 /** How many seats a value of one field holds, most first, so a chip row reads as a shape. */

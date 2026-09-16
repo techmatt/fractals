@@ -98,6 +98,7 @@ const frameScreen = frame.getContext("2d", { alpha: false });
 const studio = document.getElementById("studio");
 const stage = document.getElementById("stage");
 const status = document.getElementById("status");
+const stats = document.getElementById("stats");
 const opened = document.getElementById("opened");
 const readout = document.getElementById("readout");
 const familyPicker = document.getElementById("family");
@@ -140,13 +141,13 @@ let heldCurve = null;
  *  While one is, the view is **held still**: a wheel notch that pans the canvas
  *  would cancel the pass the download is waiting on, and a reader who has been
  *  watching a two-minute render would lose it to a scroll they did not mean.
- *  Everything that would move the view checks this and says so; the cancel button
- *  is the way out and is the only control in the strip still live. */
+ *  Everything that would move the view checks this and says so; the Download button,
+ *  which is the progress bar while it draws, is the way out: pressed, it cancels. */
 let busy = false;
 
 function locked() {
   if (!busy) return false;
-  say("a download is rendering this view — cancel it to move");
+  say("a download is rendering this view — press its bar to cancel");
   return true;
 }
 
@@ -167,8 +168,16 @@ function setBusy(on) {
 
 // ------------------------------------------------------------------- what to say
 
+/** A message under the canvas: a refusal, an error, a saved file, a copied link. */
 function say(text) {
   status.textContent = text;
+}
+
+/** The render stat line — what the pass is doing, and what the finished one cost. It is
+ *  the first line of Details, so nothing numeric sits above the controls but a download's
+ *  estimate. */
+function stat(text) {
+  stats.textContent = text;
 }
 
 /** A refusal: the picture is not drawn, and the reason is on the page. */
@@ -300,6 +309,18 @@ let finished = null;
 /** The worker colouring the last stage, while it is. A pass that starts stops it. */
 let colouring = {};
 
+/** What the finished stage of this view cost: `{ key, samples, field, shade }`, seconds.
+ *
+ *  A download's estimate is scaled from it. Kept across a recolour of the same field —
+ *  whose key names the geometry and not the palette — with the shade re-measured, and
+ *  dropped the moment the field it timed is not the one being drawn. */
+let measure = null;
+
+/** The measurement, where there is one for the view on the screen. */
+function measured() {
+  return measure;
+}
+
 /**
  * The whole pass: a quarter-resolution preview, one sample a pixel, then the finished
  * picture at `FINAL_SUPERSAMPLE`. Each stage is served from the cache where it can be.
@@ -318,10 +339,13 @@ async function draw() {
   colouring.stop?.();
   colouring = {};
   finished = null;
+  say("");
   panel?.describe();
 
   const shape = planOf(view);
   if (!shape.ok) {
+    measure = null;
+    stat("");
     say(shape.why);
     return;
   }
@@ -334,6 +358,10 @@ async function draw() {
   const fullKey = link.fieldKey(view, contract, grid.width, grid.height, shape.direct);
   const finalKey = `${fullKey}&ss=${FINAL_SUPERSAMPLE}`;
   const size = `${grid.width}×${grid.height}`;
+  if (measure?.key !== finalKey) {
+    measure = null;
+    panel?.describe();
+  }
 
   try {
     // Inside the try, because a recipe the engine refuses — a rank transfer under the
@@ -348,14 +376,14 @@ async function draw() {
       if (cachedPreview !== undefined) {
         stretch(renderer.shade(cachedPreview, view).image);
       } else {
-        say(`iterating at ${previewGrid.width}×${previewGrid.height}…`);
+        stat(`iterating at ${previewGrid.width}×${previewGrid.height}…`);
         const preview = await renderer.field(view, previewGrid.width, previewGrid.height);
         if (preview === null || pass !== drawing) return;
         renderer.remember(previewKey, preview);
         stretch(renderer.shade(preview, view).image);
       }
 
-      say(`iterating at ${size} on ${renderer.workerCount} workers…`);
+      stat(`iterating at ${size} on ${renderer.workerCount} workers…`);
       const full = await renderer.field(view, grid.width, grid.height);
       if (full === null || pass !== drawing) return;
       renderer.remember(fullKey, full);
@@ -370,19 +398,19 @@ async function draw() {
       specOf(view, grid.width, grid.height, { colormap: false, supersample: FINAL_SUPERSAMPLE }),
     );
     if (!fine.ok) {
-      say(`${size} at one sample a pixel · ${fine.why}`);
+      stat(`${size} at one sample a pixel · ${fine.why}`);
       return;
     }
 
     let field = renderer.cached(finalKey);
     const recolor = field !== undefined;
     if (!recolor) {
-      say(`${size} · iterating at ${FINAL_SUPERSAMPLE}× on ${renderer.workerCount} workers…`);
+      stat(`${size} · iterating at ${FINAL_SUPERSAMPLE}× on ${renderer.workerCount} workers…`);
       field = await renderer.field(view, grid.width, grid.height, { supersample: FINAL_SUPERSAMPLE });
       if (field === null || pass !== drawing) return;
       renderer.remember(finalKey, field);
     } else if (!shape.direct) {
-      say(`${size} · coloring at ${FINAL_SUPERSAMPLE}×…`);
+      stat(`${size} · coloring at ${FINAL_SUPERSAMPLE}×…`);
     }
 
     // A direct trap arrived painted and reduced, so there is nothing to colour. Anything
@@ -394,7 +422,18 @@ async function draw() {
     if (shaded === null || pass !== drawing) return;
     present(shaded.image);
     finished = shaded.image;
-    say(
+    // Where the field came off the cache its `elapsed` is still the pass that iterated
+    // it, so a recolour keeps the field's cost and re-measures only the shade. The fastest
+    // shade of this field is the one kept: the page's first shade starts a worker while
+    // the gallery is still loading, and measured about five times a recolour's.
+    const shadeSeconds = shaded.elapsed / 1000;
+    measure = {
+      key: finalKey,
+      samples: grid.width * grid.height * FINAL_SUPERSAMPLE * FINAL_SUPERSAMPLE,
+      field: (field.elapsed ?? 0) / 1000,
+      shade: measure?.key === finalKey ? Math.min(measure.shade, shadeSeconds) : shadeSeconds,
+    };
+    stat(
       recolor
         ? `${size} at ${FINAL_SUPERSAMPLE}× · recolored in ${shaded.elapsed.toFixed(0)} ms`
         : `${size} at ${FINAL_SUPERSAMPLE}× · field ${(field.elapsed / 1000).toFixed(2)} s ` +
@@ -1251,6 +1290,7 @@ async function main() {
     currentView: () => view,
     shownGrid: () => grid,
     shownImage: () => finished,
+    measured,
     finalSupersample: FINAL_SUPERSAMPLE,
     say,
     setBusy,

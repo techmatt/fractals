@@ -71,33 +71,22 @@
     <div class="controls" id="controls">
 
       <section class="control-group">
-        <div class="section-head">
-          <h2 id="head-mode">Mode</h2>
-          <button type="button" class="head-action" id="download-open"
-                  aria-expanded="false" aria-controls="download">Download</button>
+        <div class="section-head"><h2 id="head-download">Download</h2></div>
+        <div class="bar download" id="download" role="group" aria-labelledby="head-download">
+          <select id="download-size" aria-label="Size"></select>
+          <span class="group" id="download-custom" hidden>
+            <input type="number" id="download-width" class="param" min="16" max="8192" step="16" aria-label="Width">
+            <span class="times">×</span>
+            <input type="number" id="download-height" class="param" min="16" max="8192" step="16" aria-label="Height">
+          </span>
+          <span class="samples" id="download-samples" role="group" aria-label="Samples per pixel"></span>
+          <span class="estimate" id="download-estimate"></span>
+          <button type="button" class="download-go" id="download-go"><span class="download-label" id="download-label">Download</span></button>
         </div>
-        <div class="download" id="download" hidden>
-          <div class="bar">
-            <span class="group">
-              <label for="download-size">Size</label>
-              <select id="download-size"></select>
-            </span>
-            <span class="group" id="download-custom" hidden>
-              <label for="download-width">Width</label>
-              <input type="number" id="download-width" class="param" min="16" max="8192" step="16">
-              <label for="download-height">Height</label>
-              <input type="number" id="download-height" class="param" min="16" max="8192" step="16">
-            </span>
-            <span class="group">
-              <label for="download-supersample">Samples per pixel</label>
-              <select id="download-supersample"></select>
-            </span>
-            <button type="button" id="download-go">Save PNG</button>
-            <button type="button" id="download-cancel" hidden>Cancel</button>
-            <progress id="download-progress" max="1" value="0" hidden></progress>
-          </div>
-          <p class="help" id="download-help"></p>
-        </div>
+      </section>
+
+      <section class="control-group">
+        <div class="section-head"><h2 id="head-mode">Mode</h2></div>
         <div class="bar">
           <select id="mode" aria-labelledby="head-mode"></select>
           <span class="group" id="params"></span>
@@ -137,6 +126,7 @@
 
       <details class="control-group" id="details">
         <summary class="section-head"><h2>Details</h2></summary>
+        <p class="stats" id="stats"></p>
         <div class="bar">
           <span class="group">
             <label for="family">Family</label>

@@ -111,15 +111,15 @@ each with its count. A tile sets the viewer to that seat's whole recipe. *Atlas*
 same frame `atlas/index.html` shows, mounted in the panel through `atlas/frame.js`, with
 the marks clicking into the viewer rather than navigating.
 
-**Right, the viewer**, and under it three sections — Mode, Palette, Shade — then the
-folded Details: family, constants, `x`, `y`, `w`, all editable. Copy link is in the bar,
+**Right, the viewer**, and under it four sections — Download, Mode, Palette, Shade — then
+the folded Details: the render stat line, family, constants, `x`, `y`, `w`, all editable. Copy link is in the bar,
 because it is about the page rather than about a group.
 
 **A section is a header, and a header is one class.** `.section-head` is the label in
 the accent and a hairline running from it to the section's right edge; the rule is the
 divider, so the sections carry no border of their own. The gallery panel's Mode and Color
-family use the same class. A section's one action sits on its rule: **Download** on
-Mode's, which opens the size strip under it, and **Engine defaults** on Shade's, which is
+family use the same class. A section's one action sits on its rule: **Engine defaults**
+on Shade's, which is
 disabled with nothing to reset and carries the count of keys set in its label — the
 separate "N of 7 set" line is gone, and the button's title names the keys, including any
 that have no control.
@@ -482,7 +482,7 @@ exactly the same rectangle at exactly a quarter of the samples.
 **The last stage is the engine's supersample**, the `supersample` key a download already
 sends: iterated on a grid twice as fine and reduced by `resample::downsample` inside wasm,
 so the screen now shows what a download at 2× of the same size would save — and the
-download strip's first size, *As shown*, at 2× saves that picture without drawing it
+download menu's first size, *As shown*, at 2× saves that picture without drawing it
 again. One sample per pixel aliased visibly on every fractal edge. The stage's shade goes
 to a worker of its own (`shadeApart`, with a copy of the field so the cached one stays
 whole), because four times the samples is up to half a second on the slower shades and a
@@ -558,7 +558,14 @@ the wasm side takes the nine of its own that the native side has no use for. Re-
 
 **Shape is not resolution.** A link carries an aspect and never a pixel count, and the
 plane *width* is what a view is, so downloading at a different shape keeps that width and
-shows more or less height rather than cropping. The control says so in one line.
+shows more or less height rather than cropping. The estimate's tooltip says so.
+
+**One row, first, and always open.** Download is the studio's first section: a size
+(*As shown*, three wallpaper presets, or a custom width and height), a 1× / 2× samples
+toggle, an estimate and the button. The file is named for what is in it —
+`multibrot3_smooth_mean_angle_dimensionality-25_3840x2160.png` — family, mode, palette
+and size. The render stat line lives in Details, so the estimate is the only number above
+Mode.
 
 **Off the main thread, both halves.** The field is the pool as always. The shade is
 milliseconds at a canvas's size and *seconds* at a wallpaper's — a 2560x1440 at `ss=4` is
@@ -581,14 +588,16 @@ the canvas a PNG is encoded on and is far under the lowest browser cap in circul
 A view that `f64` still resolves on the screen can be one it does not resolve on a grid
 four times finer, and that refusal is the engine's own sentence, shown as it stands.
 
-**The estimate is a table until it is a measurement.** Before a render the wait is the
-per-mode field cost below, scaled by sample count and divided by the pool; from the first
-band that lands it is the measured rate, and the table is not consulted again. The bar
-advances by band, and cancel is by generation exactly as a pan is.
+**The estimate is a few words, scaled from this view.** *ready* where As shown at 2× is
+the picture already on the screen; otherwise `~5 s`, `~40 s`, `~3 min`, which is what the
+screen's own finished pass of this view took — field and shade — scaled by the ratio of
+sample counts. Only before that pass has finished is the per-mode table below the prior.
+The button is the progress bar: it fills by band, its label is the percentage, and a
+press while it draws cancels, by generation exactly as a pan does.
 
 While a download is drawing, **the view is held still** — a wheel notch would cancel the
 pass it is waiting on, and losing a two-minute render to a stray scroll is not a trade
-anybody would make. The cancel button is the way out and is the only live control.
+anybody would make. The button is the way out.
 
 ## Measured
 

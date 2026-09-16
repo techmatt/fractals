@@ -409,9 +409,9 @@ summary.section-head:focus-visible { outline: 2px solid var(--well-link); outlin
 
 /* --------------------------------------------------------------------- the controls */
 
-/* Only what one would turn. Each group is a heading and its own row of controls, and the
-   groups are in the order a picture is made in: the mode, then the colour it is spent
-   on, then the shading, then the place. The place is last and folded, because a reader
+/* Only what one would turn. Each group is a heading and its own row of controls. The
+   download comes first, on one row, and then the groups are in the order a picture is
+   made in: the mode, then the colour it is spent on, then the shading, then the place. The place is last and folded, because a reader
    who wants to move moves the picture. */
 .controls {
   flex: 1 1 auto;
@@ -421,13 +421,58 @@ summary.section-head:focus-visible { outline: 2px solid var(--well-link); outlin
   gap: 0.6rem;
 }
 
-/* The download strip opens under the Mode header, set off by a rule underneath so the
-   mode's own row below it does not read as part of it. */
-.download {
-  margin-bottom: 0.5rem;
-  padding-bottom: 0.5rem;
-  border-bottom: 1px dashed var(--well-rule);
+/* Download is the first section and one row, always open: size, samples, a few words of
+   estimate, and the button pushed to the right. Nothing folds, because what to save is
+   the last thing a reader decides and the first thing they look for. */
+.bar.download { flex-wrap: nowrap; gap: 0.5rem; }
+.bar.download select { flex: 0 1 auto; min-width: 0; }
+.bar.download .group { gap: 0.25rem; }
+.bar.download .times { color: var(--well-ink-dim); }
+.bar.download input.param { width: 4rem; }
+.download .samples { display: inline-flex; gap: 0.25rem; flex: none; }
+.download .estimate {
+  flex: 1 1 auto;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--well-ink-dim);
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
 }
+
+/* The button is the progress bar: `--done` fills it from the left while a render draws,
+   and its label is how far along it is. A fixed minimum width, so a label going from
+   "Download" to "7%" does not pull the row about. */
+.bar button.download-go {
+  flex: none;
+  min-width: 6.5rem;
+  position: relative;
+  overflow: hidden;
+  border-color: var(--well-ink-dim);
+}
+.bar button.download-go::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  width: calc(var(--done, 0) * 100%);
+  background: var(--well-link);
+  opacity: 0.35;
+  pointer-events: none;
+}
+.bar button.download-go .download-label {
+  position: relative;
+  font-variant-numeric: tabular-nums;
+}
+
+/* The render stat line, first under Details. */
+.stats {
+  margin: 0 0 0.4rem;
+  font-family: var(--sans);
+  font-size: 0.72rem;
+  color: var(--well-ink-dim);
+}
+.stats:empty { display: none; }
 
 .bar {
   display: flex;
@@ -498,7 +543,6 @@ summary.section-head:focus-visible { outline: 2px solid var(--well-link); outlin
 .bar button.why[aria-expanded="true"] { color: var(--well-ink); border-color: var(--well-ink-dim); }
 .help-inline { font-size: 0.72rem; color: var(--well-ink-dim); }
 .help-inline:empty { display: none; }
-.bar progress { width: 8rem; }
 
 .studio-bar button {
   font: inherit;

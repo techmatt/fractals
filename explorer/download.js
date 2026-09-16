@@ -17,7 +17,7 @@
 //
 // **Shape is not resolution.** A link carries an aspect and never a pixel count,
 // and the plane *width* is what a view is: downloading at a different shape keeps
-// that width and shows more or less height. The control says so in one line,
+// that width and shows more or less height. The estimate's tooltip says so,
 // because a reader who expects a crop would otherwise read the extra sky as a bug.
 //
 // What is capped and why is `withinLimits` below.
@@ -43,7 +43,10 @@ const DEFAULT_SIZE = SHOWN;
 const DEFAULT_PRESET = 1;
 const DEFAULT_SUPERSAMPLE = 2;
 
-const SUPERSAMPLES = [1, 2, 4];
+/** The samples toggle. Two settings: the one-sample picture a quick look wants, and the
+ *  two a pixel the screen's own finished pass ends at, which is what a render sheet uses.
+ *  Past two the memory ceiling below refuses the two larger presets. */
+const SUPERSAMPLES = [1, 2];
 
 /** The most samples one download may iterate.
  *
@@ -75,12 +78,11 @@ const MIN_SIDE = 16;
  *  refreshed the README and not it, and every field cost here was about twice what the
  *  module did.
  *
- *  It is a **prior and not a promise**: it is one machine on one day, at the
- *  mandelbrot home view and so at that view's iteration cap, and a deep frame
- *  iterates more per sample than a shallow one. It exists so that the reader is
- *  told roughly what they are asking for BEFORE they ask for it; from the first
- *  band that lands the estimate is the measured rate instead, and the prior is not
- *  consulted again. A direct trap has no shade, because its bands arrive painted. */
+ *  It is a **prior and not a promise**, and only the fallback: it is one machine on one
+ *  day, at the mandelbrot home view, and a deep frame iterates more per sample than a
+ *  shallow one. The estimate beside the button is scaled from what drawing THIS view on
+ *  the screen took, and this table is read only before that pass has finished. A direct
+ *  trap has no shade, because its bands arrive painted. */
 const FRAME = 1280 * 720;
 const COST = {
   smooth: { field: 1.55, shade: 0.044 },
@@ -102,7 +104,7 @@ const COST = {
   smooth_stripe: { field: 19.05, shade: 0.221 },
 };
 
-/** Seconds this download is expected to take, before any of it has happened. */
+/** Seconds this download is expected to take, from the prior table. */
 export function estimate(mode, samples, workers) {
   const cost = COST[mode];
   if (cost === undefined) return null;
@@ -111,13 +113,23 @@ export function estimate(mode, samples, workers) {
   return (cost.field * samples) / FRAME / workers + (cost.shade * samples) / FRAME;
 }
 
-/** A duration a reader can read: two significant figures, and never `0.0 s`. */
-export function saidAs(seconds) {
-  if (!Number.isFinite(seconds)) return "an unknown time";
-  if (seconds < 1) return "under a second";
-  if (seconds < 90) return `about ${Math.round(seconds)} s`;
-  const minutes = seconds / 60;
-  return minutes < 10 ? `about ${minutes.toFixed(1)} min` : `about ${Math.round(minutes)} min`;
+/** Seconds this download is expected to take, scaled from a measured pass of the view.
+ *
+ *  `measured` is `{ samples, field, shade }`, in seconds, from the screen's own finished
+ *  pass. Both halves are linear in samples — the field over the same pool, the shade one
+ *  pass over the frame — so the ratio of sample counts is the whole of the scaling. */
+export function scaled(measured, samples) {
+  if (!measured || !(measured.samples > 0)) return null;
+  return ((measured.field + measured.shade) * samples) / measured.samples;
+}
+
+/** A wait in a few words — `~5 s`, `~40 s`, `~3 min` — and never a pixel count. */
+export function saidShort(seconds) {
+  if (!Number.isFinite(seconds)) return "";
+  if (seconds < 1.5) return "~1 s";
+  if (seconds < 10) return `~${Math.round(seconds)} s`;
+  if (seconds < 90) return `~${Math.round(seconds / 5) * 5} s`;
+  return `~${Math.round(seconds / 60)} min`;
 }
 
 export function saidAsCount(samples) {
@@ -151,39 +163,44 @@ export function withinLimits(width, height, supersample) {
   return null;
 }
 
-/** The name a saved file gets: the view's own identity, minus where it is.
+/** The name a saved file gets: family, mode, palette and size.
  *
- *  Family, mode and width, so that two downloads of one view at one size land on
- *  one name and the browser numbers them — which is what somebody who has just
- *  tried two palettes wants — while two different modes never collide. */
-export function fileNameOf(view, width) {
-  return `${view.family}-${view.mode}-${width}.png`;
+ *  `multibrot3_smooth_mean_angle_dimensionality-25_3840x2160.png`, so that a folder of
+ *  downloads reads as what is in it. A palette name may carry spaces and punctuation —
+ *  `Oxide & Copper Edge` — which a file name spells as hyphens. Two downloads of one view
+ *  at one size land on one name, and the browser numbers them. */
+export function fileNameOf(view, width, height) {
+  const palette = String(view.palette)
+    .replace(/[^A-Za-z0-9._-]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+  return `${view.family}_${view.mode}_${palette}_${width}x${height}.png`;
 }
 
 /**
- * Wire the download control.
+ * Wire the download control: one row, always open — size, samples, the estimate, and the
+ * button, which is also the progress bar while a render is drawing.
  *
- * `context` is what the page owns and this module borrows: the renderer, a reader
- * for the current view, somewhere to say things, and the lock that stops the view
- * moving under a render that is drawing it.
+ * `context` is what the page owns and this module borrows: the renderer, a reader for the
+ * current view, the screen's grid and finished picture, what the pass that drew it cost,
+ * somewhere to say things, and the lock that stops the view moving under a render that is
+ * drawing it.
  */
 export function install(context) {
-  const { renderer, currentView, shownGrid, shownImage, finalSupersample, say, setBusy } = context;
+  const { renderer, currentView, shownGrid, shownImage, measured, finalSupersample, say, setBusy } =
+    context;
 
-  const opener = document.getElementById("download-open");
-  const strip = document.getElementById("download");
   const sizePicker = document.getElementById("download-size");
   const custom = document.getElementById("download-custom");
   const widthBox = document.getElementById("download-width");
   const heightBox = document.getElementById("download-height");
-  const samplePicker = document.getElementById("download-supersample");
+  const sampleHost = document.getElementById("download-samples");
+  const estimateLine = document.getElementById("download-estimate");
   const go = document.getElementById("download-go");
-  const stop = document.getElementById("download-cancel");
-  const help = document.getElementById("download-help");
-  const meter = document.getElementById("download-progress");
+  const label = document.getElementById("download-label");
 
   const shownOption = document.createElement("option");
   shownOption.value = SHOWN;
+  shownOption.textContent = "As shown";
   sizePicker.append(shownOption);
   for (const [index, preset] of PRESETS.entries()) {
     const option = document.createElement("option");
@@ -193,17 +210,32 @@ export function install(context) {
   }
   const customOption = document.createElement("option");
   customOption.value = "custom";
-  customOption.textContent = "Custom…";
+  customOption.textContent = "Custom W × H";
   sizePicker.append(customOption);
   sizePicker.value = DEFAULT_SIZE;
 
-  for (const factor of SUPERSAMPLES) {
-    const option = document.createElement("option");
-    option.value = String(factor);
-    option.textContent = `${factor}×`;
-    samplePicker.append(option);
+  let supersample = DEFAULT_SUPERSAMPLE;
+  const sampleButtons = SUPERSAMPLES.map((factor) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "chip";
+    button.textContent = `${factor}×`;
+    button.title = factor === 1 ? "one sample a pixel" : `${factor * factor} samples a pixel`;
+    button.addEventListener("click", () => {
+      supersample = factor;
+      syncSamples();
+      describe();
+    });
+    sampleHost.append(button);
+    return { factor, button };
+  });
+
+  function syncSamples() {
+    for (const { factor, button } of sampleButtons) {
+      button.setAttribute("aria-pressed", String(factor === supersample));
+    }
   }
-  samplePicker.value = String(DEFAULT_SUPERSAMPLE);
+  syncSamples();
 
   widthBox.value = PRESETS[DEFAULT_PRESET].width;
   heightBox.value = PRESETS[DEFAULT_PRESET].height;
@@ -219,129 +251,139 @@ export function install(context) {
         : chosen === SHOWN
           ? { width: shownGrid().width, height: shownGrid().height }
           : PRESETS[Number(chosen)];
-    return { ...size, supersample: Number(samplePicker.value) };
+    return { width: size.width, height: size.height };
   }
 
   /** The finished picture on the screen, where it is exactly what is being asked for. */
   function ready() {
-    if (sizePicker.value !== SHOWN || Number(samplePicker.value) !== finalSupersample) return null;
+    if (sizePicker.value !== SHOWN || supersample !== finalSupersample) return null;
     return shownImage();
   }
 
-  /** The line under the control: what this will cost, or why it is refused. */
+  /** A refusal, in two words beside the button and a whole sentence behind them. */
+  function refuse(short, why) {
+    estimateLine.textContent = short;
+    estimateLine.title = why;
+    go.disabled = true;
+  }
+
+  /** The estimate beside the button: `ready`, a wait in a few words, or a refusal. */
   function describe() {
-    const grid = shownGrid();
-    shownOption.textContent = `As shown · ${grid.width} × ${grid.height}`;
     custom.hidden = sizePicker.value !== "custom";
-    // A preset carries its numbers into the boxes, so choosing Custom afterwards
-    // starts from the size that was just on the screen rather than from whatever
-    // was typed there three sizes ago.
+    // A preset carries its numbers into the boxes, so choosing Custom afterwards starts
+    // from the size that was just chosen rather than from whatever was typed there before.
     if (sizePicker.value !== "custom") {
       const { width, height } = wanted();
       widthBox.value = width;
       heightBox.value = height;
     }
     if (running !== null) return;
-    const { width, height, supersample } = wanted();
+    const { width, height } = wanted();
     if (ready() !== null) {
       go.disabled = false;
-      help.textContent =
-        `The picture on the screen, already drawn at ${finalSupersample}×: saved as it is, ` +
-        "without drawing it again.";
+      estimateLine.textContent = "ready";
+      estimateLine.title = "the picture on the screen, saved as it is without drawing it again";
       return;
     }
     const refusal = withinLimits(width, height, supersample);
-    go.disabled = refusal !== null;
     if (refusal !== null) {
-      help.textContent = refusal;
+      refuse("too large", refusal);
       return;
     }
-    // The module's own answer, at the size actually being asked for. Worth asking
-    // here and not only at the press, because a supersample samples a grid `ss`
-    // times finer: a deep view the canvas still resolves in `f64` can be one this
-    // download does not, and finding that out after the button is worse.
+    // The module's own answer, at the size actually being asked for. Worth asking here
+    // and not only at the press, because a supersample samples a grid `ss` times finer: a
+    // deep view the canvas still resolves in `f64` can be one this download does not.
     const view = currentView();
     const shape = renderer.plan(specOf(view, width, height, { colormap: false, supersample }));
     if (!shape.ok) {
-      help.textContent = shape.why;
-      go.disabled = true;
+      refuse("too deep", shape.why);
       return;
     }
+    go.disabled = false;
     const samples = width * height * supersample * supersample;
-    const seconds = estimate(view.mode, samples, renderer.workerCount);
-    help.textContent =
-      `${saidAsCount(samples)} samples, ${saidAs(seconds)} — the estimate is a table, and becomes ` +
-      `the measured rate once bands start landing. A different shape to the one on screen keeps the ` +
-      `plane width and shows more or less height, rather than cropping.`;
+    const seconds =
+      scaled(measured(), samples) ?? estimate(view.mode, samples, renderer.workerCount);
+    estimateLine.textContent = saidShort(seconds);
+    // Shape is not resolution: a link carries an aspect and the plane width is what a view
+    // is, so a different shape keeps that width and shows more or less height.
+    estimateLine.title =
+      "scaled from how long this view took to draw on the screen. A different shape keeps " +
+      "the plane width and shows more or less height, rather than cropping.";
+  }
+
+  /** The button is the bar: a fill across it, and how far it has got as its label. */
+  function progress(done) {
+    const clamped = Math.max(0, Math.min(1, done));
+    go.style.setProperty("--done", String(clamped));
+    label.textContent = `${Math.round(clamped * 100)}%`;
+  }
+
+  function lockSize(on) {
+    for (const control of [sizePicker, widthBox, heightBox]) control.disabled = on;
+    for (const { button } of sampleButtons) button.disabled = on;
   }
 
   function finish() {
     running = null;
-    meter.hidden = true;
-    stop.hidden = true;
-    go.hidden = false;
+    go.classList.remove("is-running");
+    go.style.removeProperty("--done");
+    go.title = "";
+    label.textContent = "Download";
+    lockSize(false);
     setBusy(false);
     describe();
   }
 
   async function download() {
     const view = currentView();
-    const { width, height, supersample } = wanted();
+    const { width, height } = wanted();
     const samples = width * height * supersample * supersample;
 
     const drawn = ready();
     if (drawn !== null) {
-      const name = fileNameOf(view, drawn.width);
+      const name = fileNameOf(view, drawn.width, drawn.height);
       try {
         await save(drawn, name);
-        say(`${name} — ${drawn.width}×${drawn.height} at ${supersample}×, as shown`);
+        say(`saved ${name}`);
       } catch (error) {
         say(String(error.message ?? error));
       }
       return;
     }
 
-    // The module's own answer first, at the size actually being asked for: a
-    // supersample samples a grid `ss` times finer, so a view the canvas still
-    // resolves in `f64` can be one this download does not. The refusal is the
-    // engine's sentence and is shown as it stands.
     const shape = renderer.plan(specOf(view, width, height, { colormap: false, supersample }));
     if (!shape.ok) {
-      help.textContent = shape.why;
+      refuse("too deep", shape.why);
       return;
     }
 
     running = { cancelled: false, stop: null };
     const mine = running;
-    go.hidden = true;
-    stop.hidden = false;
-    meter.hidden = false;
-    meter.value = 0;
+    go.classList.add("is-running");
+    go.title = "rendering — press to cancel";
+    lockSize(true);
+    progress(0);
     setBusy(true);
 
     const started = performance.now();
-    // The shade's share of the wait, from the prior, so that a bar advancing by
-    // band does not sit at 100% through a colouring nobody was told about. A
-    // direct trap has no shade — its bands arrive painted — and its bar runs the
-    // whole way on bands alone.
-    const shadeSeconds = shape.direct ? 0 : ((COST[view.mode]?.shade ?? 0) * samples) / FRAME;
-    const whole = estimate(view.mode, samples, renderer.workerCount) ?? shadeSeconds;
+    // The shade's share of the wait, so that a bar advancing by band does not sit full
+    // through a colouring nobody was told about. A direct trap has no shade — its bands
+    // arrive painted — and its bar runs the whole way on bands alone.
+    const known = measured();
+    const shadeSeconds = shape.direct
+      ? 0
+      : known
+        ? (known.shade * samples) / known.samples
+        : ((COST[view.mode]?.shade ?? 0) * samples) / FRAME;
+    const whole =
+      scaled(known, samples) ?? estimate(view.mode, samples, renderer.workerCount) ?? shadeSeconds;
     const shadeShare = whole > 0 ? Math.min(0.5, shadeSeconds / whole) : 0;
 
     try {
-      help.textContent = `iterating ${width}×${height} at ${supersample}× on ${renderer.workerCount} workers…`;
       const field = await renderer.field(view, width, height, {
         supersample,
         onProgress: (done) => {
-          if (mine.cancelled) return;
-          meter.value = done * (1 - shadeShare);
-          // The measured rate, from the bands that have landed. The table above
-          // is not consulted again once there is a real number to use.
-          const spent = (performance.now() - started) / 1000;
-          const left = done > 0 ? (spent / done) * (1 - done) + shadeSeconds : null;
-          help.textContent =
-            `iterating ${width}×${height} at ${supersample}× — ${Math.round(done * 100)}%` +
-            (left === null ? "" : `, ${saidAs(left)} left`);
+          if (!mine.cancelled) progress(done * (1 - shadeShare));
         },
       });
       if (field === null || mine.cancelled) {
@@ -354,8 +396,7 @@ export function install(context) {
       if (shape.direct) {
         image = new ImageData(field.values, field.width, field.height);
       } else {
-        help.textContent = `coloring ${width}×${height}…`;
-        meter.value = 1 - shadeShare;
+        progress(1 - shadeShare);
         const shaded = await shadeApart(renderer.module, field, view, mine);
         if (shaded === null || mine.cancelled) {
           say("download cancelled");
@@ -364,47 +405,33 @@ export function install(context) {
         }
         image = shaded.image;
       }
-      meter.value = 1;
+      progress(1);
 
-      const name = fileNameOf(view, width);
+      const name = fileNameOf(view, width, height);
       await save(image, name);
       const spent = (performance.now() - started) / 1000;
-      say(`${name} — ${width}×${height} at ${supersample}×, ${spent.toFixed(1)} s`);
+      say(`saved ${name} in ${spent.toFixed(1)} s`);
       finish();
-      help.textContent =
-        `${saidAsCount(samples)} samples in ${spent.toFixed(1)} s, which is ` +
-        `${((spent * 1e6) / samples).toFixed(2)} µs a sample over ${renderer.workerCount} workers.`;
     } catch (error) {
       say(String(error.message ?? error));
-      help.textContent = String(error.message ?? error);
       finish();
     }
   }
 
-  // The Mode header's action. It opens the strip rather than saving at once, because what
-  // to save is a choice of size; the strip opens on "As shown", so the finished picture
-  // is one press further. It will not fold away a download that is running, because the
-  // progress bar and the cancel button are in what it would hide.
-  opener.addEventListener("click", () => {
-    if (running !== null && !strip.hidden) return;
-    strip.hidden = !strip.hidden;
-    opener.setAttribute("aria-expanded", String(!strip.hidden));
-    if (!strip.hidden) describe();
-  });
-
-  go.addEventListener("click", download);
-  stop.addEventListener("click", () => {
-    if (running === null) return;
+  go.addEventListener("click", () => {
+    if (running === null) {
+      download();
+      return;
+    }
+    // Pressed while drawing, the bar is the way out. The field is cancelled by generation,
+    // exactly as a pan cancels a pass; the colouring by terminating the worker doing it —
+    // a shade is one pass of many seconds with nothing to let it finish for, and it is
+    // holding a couple of gigabytes while it runs.
     running.cancelled = true;
-    // The field, by generation, exactly as a pan cancels a pass: no further bands
-    // are dispatched and the one in flight is finished and thrown away. The
-    // colouring, by terminating the worker doing it — a shade is one pass of many
-    // seconds with nothing to let it finish for, and it is holding a couple of
-    // gigabytes while it runs.
     renderer.cancel();
     running.stop?.();
   });
-  for (const control of [sizePicker, widthBox, heightBox, samplePicker]) {
+  for (const control of [sizePicker, widthBox, heightBox]) {
     control.addEventListener("change", describe);
     control.addEventListener("input", describe);
   }

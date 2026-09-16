@@ -20,9 +20,16 @@ is opened once:
 - **the seats**, `artifacts/curation/tentative/<stamp>/gallery.jsonl` — seat order, the
   alias, and the hue family the colour reading rolls the picture up to;
 - **the recipes**, the candidate ledger, in one streamed pass through `picks.ledger_rows`;
-- **the tone curves**, one pass per run record rather than one pass per seat. `STAMP_RECORDS`
-  is the table, and it is not `picks.RUN_RECORDS`: that one answers *did the operator
-  act*, and this one wants the five numbers it acted with.
+- **the tone curves**, asked of that project's own reader, `curation.stamps.for_rows` with
+  the backfill overlay beneath it, in one call for the thousand. The two kinds that draw
+  by attempt are not among its stores, and `PICTURE_RECORDS` reads theirs here, one pass
+  per run record. Neither is `picks.RUN_RECORDS`: that one answers *did the operator
+  act*, and this wants the five numbers it acted with.
+
+And a fourth thing that is not a read of a record: **the presentation order**. The
+tentative gallery's own page opens on `curation.page_order`'s permutation of the seating,
+computed at its build and written onto no record, and this gallery asks the same module
+for the same permutation so that the explorer's panel opens on the tiles that page does.
 
 ## The link, and what it cannot carry
 
@@ -33,10 +40,9 @@ what is missing, and there are three ways that happens here.
 
 - **The tone curve.** Every candidate of this pool was drawn with `band_autolevel/v1`
   switched on, and where it acted the picture is drawn through a curve pushed into the
-  map's stops. The permalink's `level` key carries that curve, so a seat whose run wrote
-  the coefficients down opens as the picture it ships. A `rotation` run records only a
-  tally, a `label_migration` pass keeps no record at all, and a `mine` or a `hunt` run
-  keeps neither the curve nor the fact — those seats say so.
+  map's stops. The permalink's `level` key carries that curve, so a seat whose curve is on
+  a record, its run's own or the backfill's, opens as the picture it ships; a seat with
+  neither says so.
 - **A curve that does nothing is not carried.** `applies` and `identity` are different
   claims: an identity curve is the operator having measured and declined, and replaying
   one is not free — it costs a fraction of a level through the Oklab round trip — so a
@@ -52,7 +58,9 @@ what is missing, and there are three ways that happens here.
 from __future__ import annotations
 
 import json
+import subprocess
 from dataclasses import dataclass
+from functools import cache
 from pathlib import Path
 
 from . import galleries, images, links, picks, renders
@@ -83,23 +91,45 @@ OPERATOR = "band_autolevel/v1"
 #: `explorer/permalink.js` and never by anything on this side.
 LEVEL_KEY = "level"
 
-#: Where each kind of run wrote the **curve** the autolevel operator acted with, and what
-#: addresses one row of it.
+#: Where the two kinds that draw by attempt wrote the **curve** the autolevel operator
+#: acted with, keyed by the picture the attempt produced.
 #:
-#: Deliberately not `picks.RUN_RECORDS`, which answers a narrower question — *did the
-#: operator act* — and is read by the makers and by `check`'s seat guard. A `depth` and a
-#: `remode` run write their whole stamp into `sequence.jsonl`, keyed by the recipe key; the
-#: two kinds that draw by attempt write theirs keyed by the picture the attempt produced.
-#: A kind absent from this table wrote no curve anywhere: `rotation` keeps a bare
-#: `autolevel_acted` tally in `rotation.json`, a `label_migration` pass keeps nothing but
-#: its pictures, and `mine` and `hunt` keep only the reduced stamp their ledger row already
-#: carries.
-STAMP_RECORDS = {
-    "depth": (("sequence.jsonl", "key"),),
-    "remode": (("sequence.jsonl", "key"),),
-    "runs": (("candidates.jsonl", "picture"), ("on_demand.jsonl", "picture")),
-    "reframe_draw": (("attempts.jsonl", "picture"),),
+#: Every other kind is `STAMPS_PROGRAM`'s to answer. The stores that write a whole stamp
+#: per recipe key, and the backfill that gives one back to the rows whose leg wrote none,
+#: are that project's to list, and a second list here is what went stale the last time a
+#: store joined it. These two are not among its stores, so they are read here.
+PICTURE_RECORDS = {
+    "runs": ("candidates.jsonl", "on_demand.jsonl"),
+    "reframe_draw": ("attempts.jsonl",),
 }
+
+#: The whole stamp behind each recipe key, asked of the reader that project's releases and
+#: its atlas take it from: every sequence store, with the backfill overlay read first.
+STAMPS_PROGRAM = """
+import json, sys
+
+from fractal_wallpapers.curation import backfill, stamps
+
+ask = json.load(sys.stdin)
+rows = {key: {"provenance": {"run": run}} for key, run in ask["runs"].items()}
+print(json.dumps(stamps.for_rows(rows, backfill.read())))
+"""
+
+#: The order the tentative gallery's own page presents its seats in, as recipe keys, and
+#: the basis it was taken on. Keys rather than indices, so the answer does not depend on
+#: the two sides reading the rows in the same order.
+ORDER_PROGRAM = """
+import json, sys
+
+from fractal_wallpapers.curation import page_order, tentative
+
+rows = tentative.read_rows(sys.argv[1])
+vectors = page_order.vectors_for(rows)
+print(json.dumps({
+    "basis": page_order.basis(vectors),
+    "keys": [rows[at]["key"] for at in page_order.order(rows, vectors)],
+}))
+"""
 
 #: What `tone` answers with, in the one word a caller branches on. `CLEAN` is the link
 #: being the picture with no curve in it; `CURVED` carries one; `LOST` is a gap.
@@ -172,45 +202,65 @@ def _filename(pick: picks.Pick) -> str:
     return str(pick.source.get("picture") or "").rsplit("/", 1)[-1]
 
 
-def stamps_of(resolved: list[picks.Pick]) -> dict[str, dict]:
-    """Every seat's autolevel stamp, read one run record at a time rather than one a seat.
+def _program(program: str, what: str, *arguments: str, ask: dict | None = None):
+    """One program run in that project's interpreter, and the JSON it prints."""
+    completed = subprocess.run(
+        [str(renders.venv_python()), "-c", program, *arguments],
+        input=json.dumps(ask or {}),
+        capture_output=True,
+        text=True,
+        cwd=str(renders.wallpapers_root()),
+        check=False,
+    )
+    if completed.returncode != 0:
+        raise SeatError(f"{what} failed: {completed.stderr.strip()[-2000:]}")
+    return json.loads(completed.stdout)
 
-    The record files are tens of megabytes and there are a hundred of them, so the reads
-    are grouped: each file is opened once and gives up every row anything here asked it
-    for. A seat whose kind writes no such record is simply absent from the answer, which
-    is what `tone` reads as a gap.
+
+def stamps_of(resolved: list[picks.Pick]) -> dict[str, dict]:
+    """Every seat's autolevel stamp, by recipe key, where any record holds one.
+
+    Two reads. The project's own reader answers for every sequence store and the
+    backfill, in one call. The kinds that draw by attempt are read here, grouped so each
+    record file — tens of megabytes — is opened once. A seat nothing answers for is
+    simply absent, which is what `tone` reads as a gap.
     """
-    wanted: dict[tuple[str, str], dict[str, list[str]]] = {}
+    runs = {pick.key: str(pick.source.get("run") or _stored(pick)[1]) for pick in resolved}
+    found: dict[str, dict] = _program(
+        STAMPS_PROGRAM, "reading the seats' autolevel stamps", ask={"runs": runs}
+    )
+
+    wanted: dict[tuple[str, str], dict[str, str]] = {}
     for pick in resolved:
         kind, run = _stored(pick)
-        if kind not in STAMP_RECORDS:
+        if pick.key in found or kind not in PICTURE_RECORDS:
             continue
-        asked = wanted.setdefault((kind, run), {"key": [], "picture": []})
-        for _name, match in STAMP_RECORDS[kind]:
-            asked[match].append(pick.key if match == "key" else _filename(pick))
-
-    found: dict[str, dict] = {}
-    for (kind, run), asked in wanted.items():
-        for name, match in STAMP_RECORDS[kind]:
+        wanted.setdefault((kind, run), {})[_filename(pick)] = pick.key
+    for (kind, run), looking in wanted.items():
+        for name in PICTURE_RECORDS[kind]:
             path = renders.artifact("curation", kind, run, name)
             if not path.is_file():
-                continue
-            looking = set(asked[match])
-            if not looking:
                 continue
             with path.open(encoding="utf-8") as handle:
                 for line in handle:
                     if not line.strip():
                         continue
                     row = json.loads(line)
-                    if match == "key":
-                        address = str(row.get("key"))
-                    else:
-                        address = str(row.get("picture") or "").replace("\\", "/")
-                        address = address.rsplit("/", 1)[-1]
+                    address = str(row.get("picture") or "").replace("\\", "/")
+                    address = address.rsplit("/", 1)[-1]
                     if address in looking:
-                        found[f"{kind}/{run}/{address}"] = row.get("autolevel") or {}
+                        found[looking[address]] = row.get("autolevel") or {}
     return found
+
+
+@cache
+def presentation_order() -> tuple[list[str], str]:
+    """The record's seats as its own page presents them, as recipe keys, and the basis.
+
+    Asked once a process: `derive` orders the rows by it and `header` says its basis.
+    """
+    answer = _program(ORDER_PROGRAM, "reading the presentation order", STAMP)
+    return [str(key) for key in answer["keys"]], str(answer["basis"])
 
 
 def tone(pick: picks.Pick, stamps: dict[str, dict]) -> Tone:
@@ -221,15 +271,7 @@ def tone(pick: picks.Pick, stamps: dict[str, dict]) -> Tone:
         # The operator's own ruling that it has nothing to say about this mode's kind —
         # a direct trap paints over a flat ground — so there was never a curve to record.
         return Tone(CLEAN, where, None, None)
-    if kind not in STAMP_RECORDS:
-        return Tone(
-            LOST,
-            where,
-            None,
-            f"whether the tone operator acted at all, which a {kind} run writes down nowhere",
-        )
-    address = pick.key if STAMP_RECORDS[kind][0][1] == "key" else _filename(pick)
-    stamp = stamps.get(f"{where}/{address}")
+    stamp = stamps.get(pick.key)
     if stamp is None:
         return Tone(
             LOST,
@@ -284,12 +326,18 @@ def alt_text(mode: str, hue: str | None) -> str:
 
 
 def derive() -> list[dict]:
-    """Every seat of the record, as the row this gallery's metadata carries.
+    """Every seat of the record, as the row this gallery's metadata carries, in the order
+    the record's own page presents them.
 
-    Needs the wallpaper project beside this checkout for all three reads, and `node`,
-    which is what runs the permalink contract.
+    Needs the wallpaper project beside this checkout for all three reads and for the
+    order, and `node`, which is what runs the permalink contract.
     """
+    keys, _ = presentation_order()
+    at = {key: position for position, key in enumerate(keys)}
     seats = seat_rows()
+    if set(at) != {str(seat["key"]) for seat in seats} or len(keys) != len(seats):
+        raise SeatError("the presentation order is not a permutation of the record's seats")
+    seats.sort(key=lambda seat: at[str(seat["key"])])
     resolved = picks.resolve(f"{STAMP}{picks.PICK_SEPARATOR}{row['key']}" for row in seats)
     stamps = stamps_of(resolved)
     curves = links.catalog_curves()
@@ -309,6 +357,8 @@ def derive() -> list[dict]:
         if not answer.get("ok"):
             raise SeatError(f"{pick.key}: the contract refuses this seat — {answer['why']}")
         rows.append(_row(seat, pick, tones[pick.key], answer, curves))
+    for position, row in enumerate(rows):
+        row["order"] = position
     return rows
 
 
@@ -338,6 +388,7 @@ def _row(seat: dict, pick: picks.Pick, toned: Tone, answer: dict, curves: dict[s
         "height": 360,
         "alt": alt_text(mode, hue),
         "seat": int(seat["seat"]),
+        "order": None,
         "key": pick.key,
         "mode": mode,
         "hue": hue,
@@ -365,6 +416,7 @@ def header(rows: list[dict]) -> dict:
         "title": TITLE,
         "blurb": BLURB,
         "stamp": STAMP,
+        "ordered_on": presentation_order()[1],
         "seats": len(rows),
         "wallpapers_commit": _wallpapers_commit(),
         "written_by": "python -m builder seats",
@@ -374,7 +426,9 @@ def header(rows: list[dict]) -> dict:
             "row in the explorer's link registry."
         ),
         "rule": (
-            "One row per seat of the tentative record named above, in its own seat order. "
+            "One row per seat of the tentative record named above, in the presentation order "
+            "its own page opens on, which order counts and ordered_on names the basis of; seat "
+            "is the solve's own seating. "
             "The seat's alias, mode and hue family come from that record; the recipe every "
             "link is built from comes from the candidate ledger by a streamed lookup; the "
             "tone curve a link carries in its level key comes from the run that drew the "
@@ -404,7 +458,7 @@ def _wallpapers_commit() -> str:
 
 
 def write(rows: list[dict]) -> Path:
-    """The record, one row a line, in the record's own seat order."""
+    """The record, one row a line, in the presentation order `derive` put the rows in."""
     path = metadata_path()
     path.parent.mkdir(parents=True, exist_ok=True)
     body = LF.join(json.dumps(row, ensure_ascii=False) for row in [header(rows), *rows])
