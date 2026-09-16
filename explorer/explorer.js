@@ -15,8 +15,9 @@
 // picture, which is what keeps the address bar honest — anything that can be opened here
 // can be sent to somebody else.
 //
-// **The controls are derived, never typed.** Which families exist and which modes are
-// offered come from the contract; what a mode is for comes from the baked catalog; which
+// **The controls are derived, never typed.** Which families exist and which modes a link
+// may name come from the contract, and which of those the Mode select lists from the
+// gallery record; what a mode is for comes from the baked catalog; which
 // parameters a mode has comes from the contract and what they are set to comes from the
 // module's own plan; which palettes there are, and what each is filed under, come from
 // the baked index. Nothing here holds a second opinion about the engine's catalog, so a
@@ -126,6 +127,28 @@ let panel = null;
 let palettes = null;
 let tiles = null;
 const homes = new Map();
+
+/** `palette-names.json`: the name each map is shown by. A map it does not name, or a page
+ *  that could not read it, shows the map's own name — which is also the name a link, Copy
+ *  link and a downloaded file carry, always. */
+let paletteNames = {};
+
+/** The name a reader is shown for a map. */
+function shownName(name) {
+  return paletteNames[name] ?? name;
+}
+
+/** Both names, where they differ: what a tooltip or Details says. */
+function bothNamesOf(name) {
+  const shown = shownName(name);
+  return shown === name ? name : `${shown} · ${name}`;
+}
+
+/** The modes the Mode select offers: the gallery record's, which are the gallery panel's
+ *  mode chips. `null` until the record is read, and where it cannot be, every mode the
+ *  contract knows. A link may still name any of those, and `syncModes` adds its mode to
+ *  the select for as long as that view is up. */
+let offeredModes = null;
 
 /** The curve the current view came with, kept while it is switched off.
  *
@@ -463,6 +486,7 @@ function stretch(image) {
 function updateReadout() {
   const cap = renderer.maxiter(view.w.value);
   readout.textContent =
+    `${bothNamesOf(view.palette)}  ·  ` +
     `${view.aspect.across}:${view.aspect.down}  ·  ${cap} iterations at this width`;
   syncCoordinates();
 }
@@ -815,7 +839,7 @@ function syncShade() {
   const cyclic = PALETTES.get(view.palette).cyclic;
   fold.box.disabled = busy || cyclic;
   fold.box.title = cyclic
-    ? `${view.palette} closes on the color it opens with, so there is no seam to fold out`
+    ? `${shownName(view.palette)} closes on the color it opens with, so there is no seam to fold out`
     : "";
 
   // The count names every key set, the ones with no control included: a link that set
@@ -882,10 +906,27 @@ levelWhy.addEventListener("click", () => {
   levelWhy.setAttribute("aria-expanded", String(!levelExplained.hidden));
 });
 
+/**
+ * The Mode select: the gallery's modes, in the contract's order, plus the view's own.
+ *
+ * The select offers what the published record seats and nothing else, so a reader
+ * choosing a mode is choosing among modes the pool actually makes wallpapers in. A link
+ * naming any other mode the contract knows still parses and draws, and that mode is an
+ * extra entry here while its view is up — a select that could not show the mode in force
+ * would be showing the wrong one.
+ */
+function syncModes() {
+  const offered = offeredModes ?? link.MODES;
+  const wanted = link.MODES.filter((mode) => offered.includes(mode) || mode === view.mode);
+  const showing = [...modePicker.options].map((option) => option.value);
+  if (wanted.join() !== showing.join()) fill(modePicker, wanted, IDENTITIES);
+  modePicker.value = view.mode;
+}
+
 /** Whatever the reader just chose, drawn — and the strips rebuilt around it. */
 function rebuild() {
   familyPicker.value = view.family;
-  modePicker.value = view.mode;
+  syncModes();
   palettes?.show(view.palette);
   buildConstants();
   buildParams();
@@ -997,7 +1038,7 @@ async function startAtlas() {
           ? null
           : `the link cannot carry ${refused.join("; ")}${
               palette && slot.colormap && palette !== slot.colormap
-                ? `, so it opens in ${palette}`
+                ? `, so it opens in ${shownName(palette)}`
                 : ""
             }`;
         openLink(query, { gap, what: "this place" });
@@ -1167,6 +1208,8 @@ familyPicker.addEventListener("change", () => {
  *  the mode that is being left. */
 modePicker.addEventListener("change", () => {
   view = { ...view, mode: modePicker.value, params: {} };
+  // A mode that was only listed because the view arrived in it goes, now it is left.
+  syncModes();
   leaveSeat();
   buildParams();
   // What a download of this view would cost is per mode, so the line under the
@@ -1234,15 +1277,37 @@ window.addEventListener("resize", () => {
 
 // ------------------------------------------------------------------- starting up
 
+/** A small JSON record beside the page, or `null` where it cannot be had. */
+async function json(url) {
+  try {
+    const response = await fetch(url);
+    return response.ok ? await response.json() : null;
+  } catch {
+    return null;
+  }
+}
+
 async function main() {
   // Two fetches and they are independent, so they go together: the module the page
   // draws with, and the megabyte of control points its index addresses. Neither is
   // wanted before the first frame and both are wanted by it.
-  const [started] = await Promise.all([
+  //
+  // Three small records go out beside them, and each is allowed to fail: the gallery's,
+  // which says which modes the Mode select offers; the display names; and the Popular
+  // list. Without any of them the page still draws, showing every mode, every map by its
+  // own name, and Popular by seats alone.
+  const [started, , record, names, listed] = await Promise.all([
     Renderer.start(new URL("./engine.wasm", import.meta.url)),
     fetchStops(new URL("./palettes.bin", import.meta.url)),
+    gallery.load(import.meta.url).catch((error) => error),
+    json(new URL("./palette-names.json", import.meta.url)),
+    json(new URL("./popular.json", import.meta.url)),
   ]);
   renderer = started;
+  paletteNames = names ?? {};
+  if (!(record instanceof Error)) {
+    offeredModes = [...new Set(record.seats.map((seat) => seat.mode))];
+  }
 
   contract = {
     home: homeOf,
@@ -1252,7 +1317,6 @@ async function main() {
   };
 
   fill(familyPicker, link.FAMILIES);
-  fill(modePicker, link.MODES, IDENTITIES);
 
   try {
     view = link.parse(window.location.search, contract);
@@ -1281,6 +1345,8 @@ async function main() {
     search: document.getElementById("palette-search"),
     filter: document.getElementById("palette-filter"),
     list: document.getElementById("palette-list"),
+    names: paletteNames,
+    popular: Array.isArray(listed?.maps) ? listed.maps : null,
     onPick: pickPalette,
   });
   palettes.start(view.palette);
@@ -1318,7 +1384,7 @@ async function main() {
     onPick: (row) =>
       openLink(row.link, { gap: row.gap, key: row.key, what: "this wallpaper" }),
   });
-  tiles.start().catch((error) => {
+  tiles.start(record).catch((error) => {
     tiles.refuse(
       `The gallery record could not be read (${error.message ?? error}). It is landed by ` +
         "`python -m builder seats`, and its pictures are untracked until this is deployed.",

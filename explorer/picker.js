@@ -6,10 +6,12 @@
 // maps — and a thousand names in one menu is not a picker, it is a list. So the maps are
 // laid out the three ways somebody actually looks for one:
 //
-//   * **Popular** — the top maps by `seats`, which is how many wallpapers of the
-//     published record were drawn in each. This is the pool's own answer to which maps
-//     work, rather than anybody's taste, and it is where a reader who does not know what
-//     they want should start.
+//   * **Popular** — 24 of the most seated maps, `seats` being how many wallpapers of the
+//     published record were drawn in each, curated for range: `popular.json` lists them,
+//     and `builder/picker.py` is the rule that wrote it — a map too like one already on
+//     the list is passed over, and no hue family holds more than three. Where a reader
+//     who does not know what they want should start, so it should not be four of one
+//     ramp.
 //   * **A hue family** — the colour a map most often PRODUCES, read off the candidate
 //     ledger rather than off the gradient. A map of mostly blue stops that keeps landing
 //     in orange pictures is filed under orange here, because what a reader is choosing is
@@ -21,6 +23,12 @@
 // rather than deriving them at bake time; `builder/explorer.py --roster` is what rewrites
 // them. Nothing here computes either.
 //
+// **A map is shown by its display name and addressed by its own.** `palette-names.json`
+// gives most of the library a name a reader can read — `wallhaven_wallhaven-1joljg` is
+// shown as a colour and a material — and every row, tab and filter here uses it. What
+// `onPick` is handed, and so what a link carries, is the underlying name, and a row's
+// tooltip says both. A map with no entry is shown as itself.
+//
 // **The strip is drawn from the control points the renderer bakes**, through `stops.js`,
 // so a row and the picture it opens cannot disagree about a colour. There is a swatch PNG
 // beside the page — `python -m builder explorer` writes one — and this deliberately does
@@ -31,21 +39,32 @@ import { HUES } from "./hues.js";
 import { PALETTES } from "./palettes.js";
 import { stopsOf } from "./stops.js";
 
-/** How many maps the Popular tab holds. */
-const POPULAR = 20;
+/** How many maps the Popular tab holds where its record could not be read, taken by seats
+ *  alone. The record is the list; this is only what a page without it still shows. */
+const POPULAR = 24;
 
 /** The swatch's backing store. Wide enough that a map with hundreds of stops lands about
  *  one stop to a pixel, which is as much of a gradient as a strip this size can say. */
 const STRIP = { width: 160, height: 12 };
 
-/** Every map, with the two readings the tabs are built out of. */
-function roster() {
-  return [...PALETTES].map(([name, map]) => ({ name, family: map.family, seats: map.seats }));
+/** Every map, with the two readings the tabs are built out of and the name it is shown by. */
+function roster(names) {
+  return [...PALETTES].map(([name, map]) => ({
+    name,
+    shown: names[name] ?? name,
+    family: map.family,
+    seats: map.seats,
+  }));
 }
 
-/** By seats, then by name: a tie in a count is broken by something stable. */
+/** By seats, then by the name shown: a tie in a count is broken by something stable. */
 function bySeats(a, b) {
-  return b.seats - a.seats || a.name.localeCompare(b.name);
+  return b.seats - a.seats || a.shown.localeCompare(b.shown);
+}
+
+/** What a row's tooltip calls a map: both names where they differ. */
+export function bothNames(map) {
+  return map.shown === map.name ? map.name : `${map.shown} · ${map.name}`;
 }
 
 /**
@@ -56,7 +75,7 @@ function bySeats(a, b) {
  * a picture carry no family at all and so appear only under All, which is the honest
  * place for them: nothing is known about what they produce.
  */
-function tabsOf(maps) {
+function tabsOf(maps, listed) {
   const held = new Map();
   for (const map of maps) {
     if (map.family === null || map.family === undefined) continue;
@@ -66,7 +85,10 @@ function tabsOf(maps) {
     ...HUES.filter((hue) => held.has(hue)),
     ...[...held.keys()].filter((hue) => !HUES.includes(hue)).sort(),
   ];
-  const popular = [...maps].sort(bySeats).slice(0, POPULAR);
+  const byName = new Map(maps.map((map) => [map.name, map]));
+  const popular = listed === null
+    ? [...maps].sort(bySeats).slice(0, POPULAR)
+    : listed.map((name) => byName.get(name)).filter((map) => map !== undefined);
   return [
     { id: "popular", label: "Popular", count: popular.length, maps: popular },
     ...ordered.map((hue) => ({
@@ -79,7 +101,7 @@ function tabsOf(maps) {
       id: "all",
       label: "All",
       count: maps.length,
-      maps: [...maps].sort((a, b) => a.name.localeCompare(b.name)),
+      maps: [...maps].sort((a, b) => a.shown.localeCompare(b.shown)),
     },
   ];
 }
@@ -122,10 +144,13 @@ function paint(canvas, name) {
  * `onPick` is called with a map's name and nothing else: what happens to the view is the
  * page's business, and this module never holds a second opinion about which map is in
  * force — `show` is told, every time, by whoever changed it.
+ *
+ * `names` is the display-name record and `popular` the Popular record's list, or `null`
+ * where it could not be read.
  */
-export function install({ tabs, search, filter, list, onPick }) {
-  const maps = roster();
-  const groups = tabsOf(maps);
+export function install({ tabs, search, filter, list, names, popular, onPick }) {
+  const maps = roster(names);
+  const groups = tabsOf(maps, popular);
   const buttons = new Map();
   let open = groups[0];
   let picked = null;
@@ -163,12 +188,12 @@ export function install({ tabs, search, filter, list, onPick }) {
 
     const name = document.createElement("span");
     name.className = "name";
-    name.textContent = map.name;
+    name.textContent = map.shown;
 
     row.title = map.seats === 0
-      ? map.name
-      : `${map.name} — ${map.seats} ${map.seats === 1 ? "wallpaper" : "wallpapers"} of the ` +
-        "published record were drawn in it";
+      ? bothNames(map)
+      : `${bothNames(map)} — ${map.seats} ${map.seats === 1 ? "wallpaper" : "wallpapers"} ` +
+        "of the published record were drawn in it";
     row.append(canvas, name);
     row.addEventListener("click", () => onPick(map.name));
     painter.observe(canvas);
@@ -178,7 +203,9 @@ export function install({ tabs, search, filter, list, onPick }) {
   function fillList() {
     const wanted = query === ""
       ? open.maps
-      : open.maps.filter((map) => map.name.toLowerCase().includes(query));
+      : open.maps.filter(
+        (map) => map.shown.toLowerCase().includes(query) || map.name.toLowerCase().includes(query),
+      );
     list.replaceChildren(...wanted.map(rowOf));
     if (wanted.length === 0) {
       const empty = document.createElement("p");

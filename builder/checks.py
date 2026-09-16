@@ -97,7 +97,10 @@ was raise, and every check after it went unrun.
   as a link or as a stated reason there is none, and every link the registry holds is
   the one the page carries. Whether a link *parses* is asked of the permalink contract
   itself, by `permalink.test.mjs`, because the contract is written in JavaScript and a
-  second reading of it in Python is exactly what a URL contract cannot survive.
+  second reading of it in Python is exactly what a URL contract cannot survive. The
+  picker's two records are held here too: `palette-names.json` names only maps the
+  explorer carries and never gives two of them one display name, and `popular.json` lists
+  24 carried maps once each. A map with no display name is a printed count, not a failure.
 - **bake** — the explorer's two generated modules are what a rebake produces from the
   committed rosters and the wallpaper project next door, both byte for byte, because both
   stamps are read off a record — `explorer/palettes.jsonl` and `explorer/modes.jsonl` —
@@ -130,6 +133,7 @@ from . import (
     links,
     pages,
     palettes,
+    picker,
     picks,
     prose,
     records,
@@ -259,7 +263,20 @@ def check_explorer() -> list[str]:
     for identifier in registered:
         if identifier not in set(links.picture_ids()):
             problems.append(f"links.jsonl: {identifier} is registered and is not on the site")
+    # The picker's two records beside the index. A map with no display name is not a
+    # problem — the page shows its underlying name — so that is a count `check` prints as
+    # a note, and what fails here is a record naming a map the page does not carry, or two
+    # maps a reader would see under one name.
+    carried = [entry.name for entry in explorer.roster()[1]]
+    problems.extend(picker.name_problems(carried)[0])
+    problems.extend(picker.popular_problems(carried))
     return problems
+
+
+def unnamed_palettes() -> tuple[int, int]:
+    """How many carried maps `palette-names.json` gives no display name, and of how many."""
+    carried = [entry.name for entry in explorer.roster()[1]]
+    return picker.name_problems(carried)[1], len(carried)
 
 
 def check_figures() -> list[str]:

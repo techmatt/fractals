@@ -89,6 +89,8 @@ permalink.test.mjs    46 tests, `node --test explorer/permalink.test.mjs`
 bands.test.mjs        3 tests: the pool cuts the frame, never what is in it
 palettes.jsonl        the roster palettes.js is baked from; 1,021 maps, 77 offered
 modes.jsonl           the roster catalog.js is baked from: the 17 modes the picker offers
+palette-names.json    every map's display name, by underlying name; generated, then hand-editable
+popular.json          the picker's Popular 24, and why each map passed over was passed over
 stops.js              the blob's reader: a map's control points, by name
 palettes.js           generated: the index — name to kind, offer, offset, count
 palettes.bin          generated and UNTRACKED: every map's control points, sRGB8
@@ -114,6 +116,28 @@ the marks clicking into the viewer rather than navigating.
 **Right, the viewer**, and under it four sections — Download, Mode, Palette, Shade — then
 the folded Details: the render stat line, family, constants, `x`, `y`, `w`, all editable. Copy link is in the bar,
 because it is about the page rather than about a group.
+
+**Mode offers the gallery's modes** *(explorer_palettes, 2026-09-16)*: the set the gallery
+panel's mode chips show, read off the same record — thirteen of the seventeen today — in
+the contract's order. Nothing about what a link may say moved. A link naming one of the
+other four still parses and draws, and its mode is an extra entry in the select while that
+view is up; the four stay in `modes.jsonl`, in `catalog.js` and in `permalink.js`. Where the
+gallery record cannot be read the select lists all seventeen, because a page offering no
+mode at all is worse than one offering too many.
+
+**A palette is shown by its display name** *(explorer_palettes, 2026-09-16)*.
+`palette-names.json` is `{underlying: display}` for every map carried: 488 of the library's
+names already read as names and are their own, and 533 codes — `wallhaven_*`, `cmr.*`,
+`cet_*`, `commons_*`, matplotlib's `RdPu`, a trailing `-25` — get two words, a colour and a
+material, from the map's dominant and secondary codebook cells. The display name is what
+the picker's rows, its tabs and its filter use, what the Palette note and Details say, and
+what the tooltip says beside the underlying name. The underlying name is what a link, Copy
+link, the download filename and every record carry, so no permalink moved. A map with no
+entry shows its own name, and `builder check` prints how many have none.
+`python -m builder explorer --names` fills missing entries and never rewrites one, which is
+what lets a name be authored by hand. **Popular** is `popular.json`: 24 maps, by seats,
+curated for range by the rule `builder/picker.py` states, and
+`python -m builder explorer --popular` rewrites it.
 
 **A section is a header, and a header is one class.** `.section-head` is the label in
 the accent and a hairline running from it to the section's right edge; the rule is the
@@ -560,11 +584,12 @@ the wasm side takes the nine of its own that the native side has no use for. Re-
 plane *width* is what a view is, so downloading at a different shape keeps that width and
 shows more or less height rather than cropping. The estimate's tooltip says so.
 
-**One row, first, and always open.** Download is the studio's first section: a size
-(*As shown*, three wallpaper presets, or a custom width and height), a 1× / 2× samples
-toggle, an estimate and the button. The file is named for what is in it —
-`multibrot3_smooth_mean_angle_dimensionality-25_3840x2160.png` — family, mode, palette
-and size. The render stat line lives in Details, so the estimate is the only number above
+**One row, first, and always open.** Download is the studio's first section: the button,
+leftmost, then a size (*As shown*, three wallpaper presets, or a custom width and height),
+a 1× / 2× samples toggle, and an estimate of a few words. The file is named for what is in
+it — `multibrot3_smooth_mean_angle_dimensionality-25_3840x2160.png` — family, mode, palette
+and size, and the palette is its **underlying** name, the one a link carries, never the
+display name the picker shows. The render stat line lives in Details, so the estimate is the only number above
 Mode.
 
 **Off the main thread, both halves.** The field is the pool as always. The shade is

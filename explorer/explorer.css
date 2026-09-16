@@ -421,9 +421,10 @@ summary.section-head:focus-visible { outline: 2px solid var(--well-link); outlin
   gap: 0.6rem;
 }
 
-/* Download is the first section and one row, always open: size, samples, a few words of
-   estimate, and the button pushed to the right. Nothing folds, because what to save is
-   the last thing a reader decides and the first thing they look for. */
+/* Download is the first section and one row, always open: the button first, then size,
+   samples, and a few words of estimate taking what is left. Nothing folds, because what
+   to save is the last thing a reader decides and the first thing they look for, and the
+   button leads because it is the one thing on the row everybody presses. */
 .bar.download { flex-wrap: nowrap; gap: 0.5rem; }
 .bar.download select { flex: 0 1 auto; min-width: 0; }
 .bar.download .group { gap: 0.25rem; }

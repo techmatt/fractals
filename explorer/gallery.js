@@ -194,9 +194,13 @@ export function install({ base, modes, hues, tiles, note, onPick }) {
   }
 
   return {
-    /** Read the record and put the panel up, or say why there is nothing to show. */
-    async start() {
-      const { seats: loaded } = await load(base);
+    /** Put the panel up from the record, or say why there is nothing to show. `record` is
+     *  what `load` already answered, where the page asked it first — a failure included,
+     *  which is thrown here so that the panel is where it is said. */
+    async start(record = null) {
+      const answered = record ?? (await load(base));
+      if (answered instanceof Error) throw answered;
+      const { seats: loaded } = answered;
       seats = loaded;
       chipsInto(modes, "mode", tally(seats, "mode"), "no mode");
       // A seat whose palette the ledger never saw in a picture has no hue family at all.

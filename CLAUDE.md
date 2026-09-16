@@ -209,6 +209,19 @@ keeps the mechanics. **Every apply round ends by distilling that round's general
   The list is written three times — the record, the
   baked module, and `permalink.js`'s typed `MODES` — and both ties are checked, `bake`
   holding the record to the module and `permalink.test.mjs` the module to the contract.
+
+  **The Mode select lists fewer than that** *(explorer_palettes, 2026-09-16)*: the modes
+  the published gallery record seats, the same set as the gallery panel's mode chips and
+  read off the same committed record. That is a narrowing of what a control *lists* and
+  not of what the page carries: the 17 are still baked, still parsed, and still drawn when
+  a link names one, which puts that mode in the select for as long as its view is up.
+- **A palette is shown by its display name and addressed by its own** *(explorer_palettes,
+  2026-09-16)*. `explorer/palette-names.json` is `{underlying: display}` and the only place
+  a display name lives; the underlying name is what links, Copy link, download filenames,
+  records and the bake spell. `python -m builder explorer --names` fills missing entries
+  and never rewrites an existing one, so a hand-authored name is safe from it. The picker's
+  Popular list is `explorer/popular.json`, written by `--popular` under the rule
+  `builder/picker.py` states.
 - **No location is reused across the site unless the repetition is intentional**
   *(Matt, 2026-09-01)*. A location gets one figure. Where the repetition is the point —
   a family's home view, which is its identity rather than anything the search found; a

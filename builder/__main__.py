@@ -43,6 +43,7 @@ from . import growth as growth_module
 from . import judges as judges_module
 from . import locations as locations_module
 from . import palettes as palettes_module
+from . import picker as picker_module
 from . import picks as picks_module
 from . import pipeline as pipeline_module
 from . import pool as pool_module
@@ -97,6 +98,22 @@ def _parser() -> argparse.ArgumentParser:
             "rewrite explorer/palettes.jsonl from the library, the candidate ledger and the "
             "named published record, then bake — the deliberate act that moves each map's "
             "hue family and seat count"
+        ),
+    )
+    baked.add_argument(
+        "--popular",
+        action="store_true",
+        help=(
+            "rewrite explorer/popular.json, the picker's Popular list, from the roster and "
+            "the carrier record next door; bakes nothing"
+        ),
+    )
+    baked.add_argument(
+        "--names",
+        action="store_true",
+        help=(
+            "give every carried map without an entry in explorer/palette-names.json a display "
+            "name; never rewrites one that has an entry, and bakes nothing"
         ),
     )
 
@@ -453,6 +470,8 @@ def _do_check() -> int:
             print(f"{skip.check}: skipped — {skip}")
     for note in explorer_module.manifest_notes():
         print(f"note: {note}")
+    unnamed, carried = checks.unnamed_palettes()
+    print(f"note: {unnamed} of {carried} palettes have no display name and show their own")
     registry = figures.load_all()
     pending = sorted(f.id for f in registry.values() if f.status == figures.PENDING)
     if pending:
@@ -477,6 +496,20 @@ def _do_check() -> int:
 
 
 def _do_explorer(options: argparse.Namespace) -> int:
+    if options.popular or options.names:
+        if options.popular:
+            path, made = picker_module.write_popular()
+            print(
+                f"wrote {path.relative_to(SITE_ROOT).as_posix()}  {len(made['maps'])} maps, "
+                f"{len(made['skipped'])} passed over"
+            )
+        if options.names:
+            path, added, kept, generated = picker_module.fill_names()
+            print(
+                f"wrote {path.relative_to(SITE_ROOT).as_posix()}  {added} added: {kept} kept "
+                f"their own name, {generated} generated"
+            )
+        return 0
     if options.roster:
         path, count, families, rows = explorer_module.refresh_roster(options.roster)
         print(
@@ -1105,6 +1138,7 @@ def main(argv: list[str] | None = None) -> int:
         growth_module.GrowthError,
         pipeline_module.PipelineError,
         picks_module.PickError,
+        picker_module.PickerError,
         seats_module.SeatError,
         links.LinkError,
         pool_module.PoolError,

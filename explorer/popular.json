@@ -1,0 +1,275 @@
+{
+  "schema": 1,
+  "release": "20260914T171846Z",
+  "rule": "the maps ranked by seats in the release named here, ties by name, taken greedily: a map is skipped when it overlaps one already taken by 0.7 or more — the share of the smaller map's carrier colour, pooled onto hue families, that the other carries too — or when its family already holds 3. Written by `python -m builder explorer --popular`; see builder/picker.py.",
+  "overlap": 0.7,
+  "family_cap": 3,
+  "maps": [
+    "river-of-light-25",
+    "Pale Fire Rose",
+    "cmr.gothic",
+    "fractal_abstraction_lines_130499_2560x1600",
+    "Chalcedony",
+    "torque-25",
+    "wallhaven_wallhaven-1joljg",
+    "Emerald Ingot",
+    "BuGn",
+    "visions-25",
+    "wallhaven_wallhaven-6d3zz6",
+    "Rose Furnace",
+    "Sapphire Against Rose",
+    "cmr.ocean",
+    "rolling",
+    "Orchid Furnace",
+    "cmr.holly",
+    "skyroads-25",
+    "Bone Orchard Rose",
+    "Pale Moss Field",
+    "amazing-25",
+    "house-of-ivory-25",
+    "wallhaven_wallhaven-0w8gpp",
+    "Coal & Coal-Fire"
+  ],
+  "skipped": [
+    {
+      "name": "Rose Against Cobalt",
+      "seats": 10,
+      "why": "overlaps Pale Fire Rose by 0.92"
+    },
+    {
+      "name": "RdPu",
+      "seats": 9,
+      "why": "overlaps Pale Fire Rose by 0.90"
+    },
+    {
+      "name": "Cobalt Orchid",
+      "seats": 7,
+      "why": "overlaps Chalcedony by 0.98"
+    },
+    {
+      "name": "Furnace Rose",
+      "seats": 7,
+      "why": "overlaps wallhaven_wallhaven-1joljg by 0.75"
+    },
+    {
+      "name": "Pale Ember Over Teal",
+      "seats": 7,
+      "why": "overlaps BuGn by 0.77"
+    },
+    {
+      "name": "Petrol Noon",
+      "seats": 7,
+      "why": "overlaps Emerald Ingot by 0.92"
+    },
+    {
+      "name": "cmr.voltage",
+      "seats": 7,
+      "why": "overlaps Chalcedony by 0.85"
+    },
+    {
+      "name": "consequences-25",
+      "seats": 7,
+      "why": "overlaps wallhaven_wallhaven-1joljg by 0.73"
+    },
+    {
+      "name": "fractal_flowers_abstract_104352_2560x1600",
+      "seats": 7,
+      "why": "overlaps torque-25 by 0.92"
+    },
+    {
+      "name": "Deep Rose Vault",
+      "seats": 6,
+      "why": "overlaps Pale Fire Rose by 0.83"
+    },
+    {
+      "name": "Ember Rose Ramp",
+      "seats": 6,
+      "why": "overlaps Pale Fire Rose by 0.92"
+    },
+    {
+      "name": "Indigo Kindling",
+      "seats": 6,
+      "why": "overlaps Chalcedony by 0.94"
+    },
+    {
+      "name": "Nebula Veil",
+      "seats": 6,
+      "why": "overlaps visions-25 by 1.00"
+    },
+    {
+      "name": "PuRd",
+      "seats": 6,
+      "why": "overlaps Pale Fire Rose by 0.81"
+    },
+    {
+      "name": "cmr.iceburn",
+      "seats": 6,
+      "why": "overlaps torque-25 by 0.72"
+    },
+    {
+      "name": "Ash Rose Vault",
+      "seats": 5,
+      "why": "overlaps Pale Fire Rose by 0.78"
+    },
+    {
+      "name": "Frost Orchid",
+      "seats": 5,
+      "why": "overlaps cmr.gothic by 1.00"
+    },
+    {
+      "name": "Regatta Ice",
+      "seats": 5,
+      "why": "overlaps wallhaven_wallhaven-1joljg by 0.78"
+    },
+    {
+      "name": "Rose Quartz Ramp",
+      "seats": 5,
+      "why": "overlaps Pale Fire Rose by 0.92"
+    },
+    {
+      "name": "cmr.redshift",
+      "seats": 5,
+      "why": "overlaps Sapphire Against Rose by 0.96"
+    },
+    {
+      "name": "nova-25",
+      "seats": 5,
+      "why": "overlaps wallhaven_wallhaven-6d3zz6 by 0.81"
+    },
+    {
+      "name": "sad-eyes-25",
+      "seats": 5,
+      "why": "overlaps Sapphire Against Rose by 0.72"
+    },
+    {
+      "name": "wallhaven_wallhaven-398e39",
+      "seats": 5,
+      "why": "overlaps fractal_abstraction_lines_130499_2560x1600 by 0.75"
+    },
+    {
+      "name": "wallhaven_wallhaven-8xz1mk",
+      "seats": 5,
+      "why": "overlaps wallhaven_wallhaven-1joljg by 0.82"
+    },
+    {
+      "name": "wallhaven_wallhaven-oxxve5",
+      "seats": 5,
+      "why": "overlaps wallhaven_wallhaven-6d3zz6 by 1.00"
+    },
+    {
+      "name": "wallhaven_wallhaven-vg1rzm",
+      "seats": 5,
+      "why": "overlaps Chalcedony by 0.79"
+    },
+    {
+      "name": "02596_lakehawea_2560x1600",
+      "seats": 4,
+      "why": "overlaps Emerald Ingot by 0.75"
+    },
+    {
+      "name": "02598_asgardrealmofthegods_2560x1600",
+      "seats": 4,
+      "why": "overlaps wallhaven_wallhaven-6d3zz6 by 0.80"
+    },
+    {
+      "name": "Amethyst Veil",
+      "seats": 4,
+      "why": "overlaps Orchid Furnace by 0.84"
+    },
+    {
+      "name": "Cobalt Without Daylight",
+      "seats": 4,
+      "why": "overlaps wallhaven_wallhaven-6d3zz6 by 0.71"
+    },
+    {
+      "name": "Coral Tideline",
+      "seats": 4,
+      "why": "overlaps wallhaven_wallhaven-6d3zz6 by 0.77"
+    },
+    {
+      "name": "Indigo Nocturne",
+      "seats": 4,
+      "why": "overlaps visions-25 by 0.77"
+    },
+    {
+      "name": "Navy to Foam",
+      "seats": 4,
+      "why": "overlaps BuGn by 0.87"
+    },
+    {
+      "name": "RdBu",
+      "seats": 4,
+      "why": "red already holds 3"
+    },
+    {
+      "name": "Rose in Ash",
+      "seats": 4,
+      "why": "overlaps Pale Fire Rose by 0.92"
+    },
+    {
+      "name": "YlGn",
+      "seats": 4,
+      "why": "overlaps cmr.holly by 0.70"
+    },
+    {
+      "name": "abstract-3d-wallpapers",
+      "seats": 4,
+      "why": "green already holds 3"
+    },
+    {
+      "name": "along-the-starry-way-25",
+      "seats": 4,
+      "why": "overlaps fractal_abstraction_lines_130499_2560x1600 by 0.77"
+    },
+    {
+      "name": "cmr.jungle",
+      "seats": 4,
+      "why": "overlaps Pale Moss Field by 0.73"
+    },
+    {
+      "name": "cmr.savanna",
+      "seats": 4,
+      "why": "overlaps amazing-25 by 0.77"
+    },
+    {
+      "name": "cmr.swamp",
+      "seats": 4,
+      "why": "overlaps cmr.holly by 1.00"
+    },
+    {
+      "name": "dessert-union-25",
+      "seats": 4,
+      "why": "overlaps amazing-25 by 1.00"
+    },
+    {
+      "name": "exile-25",
+      "seats": 4,
+      "why": "overlaps skyroads-25 by 1.00"
+    },
+    {
+      "name": "gemini-25",
+      "seats": 4,
+      "why": "overlaps amazing-25 by 0.93"
+    },
+    {
+      "name": "of-strange-design-25",
+      "seats": 4,
+      "why": "overlaps BuGn by 0.76"
+    },
+    {
+      "name": "Amber Signal",
+      "seats": 3,
+      "why": "overlaps river-of-light-25 by 0.88"
+    },
+    {
+      "name": "Bauhaus Primary",
+      "seats": 3,
+      "why": "red already holds 3"
+    },
+    {
+      "name": "Bone and Moss",
+      "seats": 3,
+      "why": "overlaps Emerald Ingot by 0.75"
+    }
+  ]
+}
