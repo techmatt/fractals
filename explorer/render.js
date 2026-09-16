@@ -30,7 +30,7 @@
 // constant, or what a mode's parameters default to: the module is asked. That is
 // what keeps adding a family to the engine from being a change to this file.
 
-import { PALETTES } from "./palettes.js";
+import { stopsOf } from "./stops.js";
 
 /** The pool is the machine's, up to this. Eight was a guess and it cost a twelve-core
  *  machine a third of its frame; the ceiling is here because the returns stop, not
@@ -121,26 +121,15 @@ export function familySpecOf(family, constants) {
   }
 }
 
-/** The curated maps as the engine's control points, baked once per name. */
-const STOPS = new Map();
-function colormapOf(name) {
-  if (!STOPS.has(name)) {
-    const map = PALETTES.get(name);
-    const stops = map.positions.map((at, index) => [
-      at,
-      [map.colors[index * 3], map.colors[index * 3 + 1], map.colors[index * 3 + 2]],
-    ]);
-    STOPS.set(name, { kind: map.cyclic ? "cyclic" : "sequential", stops });
-  }
-  return STOPS.get(name);
-}
-
 /**
  * One view as the module's spec.
  *
  * `palette` is handed over as it stands, because the permalink's seven shade keys
  * ARE the engine's palette recipe — same names, same shapes, same defaults — and
- * translating between two spellings of one thing is how they drift apart.
+ * translating between two spellings of one thing is how they drift apart. `level`
+ * is not one of the seven and is handed over beside them, under the operator's own
+ * field names: it is a separate operator that curves the ramp before the recipe is
+ * spent on it, and a key in the wrong object would be refused by the module.
  *
  * The colormap is left out of a field pass that does not need it. Only the direct
  * traps read the gradient while they iterate; for every other mode the map is a
@@ -160,7 +149,19 @@ export function specOf(view, width, height, { colormap = true, supersample = 1 }
   // the strings they have always been and the plan cache does not split in two.
   if (supersample > 1) spec.supersample = supersample;
   if (Object.keys(view.params).length > 0) spec.params = view.params;
-  if (colormap) spec.colormap = colormapOf(view.palette);
+  if (colormap) spec.colormap = stopsOf(view.palette);
+  // The tone operator acts on the map's stops, so it travels with the colormap and is
+  // left out of the specs that carry none — a field pass has no ramp to curve, and a
+  // plan is a question rather than a render. `view.level` is absent on a view built
+  // before the key existed, which is the same thing as the operator not having acted.
+  if (colormap && view.level) {
+    spec.autolevel = {
+      black_pt: view.level.black_pt,
+      white_pt: view.level.white_pt,
+      exponent: view.level.exponent,
+      out_ends: view.level.out_ends,
+    };
+  }
   return spec;
 }
 

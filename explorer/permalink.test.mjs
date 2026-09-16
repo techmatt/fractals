@@ -30,8 +30,10 @@ import {
   FAMILIES,
   fieldKey,
   fresh,
+  LEVEL_KEY,
   MODE_PARAMETERS,
   MODES,
+  OPERATORS,
   parse,
   PermalinkError,
   SHADE_KEYS,
@@ -578,4 +580,86 @@ test("every home view above is the one the module answers with", () => {
     );
     assert.deepEqual(spelled, HOMES[family], family);
   }
+});
+
+// ------------------------------------------------------------------ the tone operator
+
+/** One real curve out of the wallpaper project's records — `2c0f6cbf0bb0d5d7`'s, which
+ *  is one of the ten seats this key was measured against. Five numbers, in the
+ *  operator's own order. */
+const CURVE = "band_autolevel/v1:0.4534963269613206,0.9820933435107078,1.4118306599987556,0.4534963269613206,0.9820933435107078";
+
+test("a link with no level means the operator did not act, and says nothing", () => {
+  const view = parse("", CONTEXT);
+  assert.equal(view.level, null);
+  assert.equal(emit(view, CONTEXT).includes("level="), false);
+});
+
+test("a recorded curve round-trips as the five numbers the operator wrote", () => {
+  const view = parse(`?v=${VERSION}&level=${CURVE}`, CONTEXT);
+  assert.equal(view.level.operator, "band_autolevel/v1");
+  assert.equal(view.level.black_pt, 0.4534963269613206);
+  assert.equal(view.level.white_pt, 0.9820933435107078);
+  assert.equal(view.level.exponent, 1.4118306599987556);
+  assert.deepEqual(view.level.out_ends, [0.4534963269613206, 0.9820933435107078]);
+  assert.equal(emit(view, CONTEXT), `v=${VERSION}&${HOUSE}&level=${CURVE}`);
+});
+
+test("level is emitted last, after every shade key", () => {
+  const spelled = `${EVERYTHING}&level=${CURVE}`;
+  const canonical = canonicalize(spelled, CONTEXT);
+  assert.equal(canonical.endsWith(`level=${CURVE}`), true);
+  assert.ok(canonical.indexOf("rolloff=") < canonical.indexOf("level="));
+  assert.equal(canonicalize(canonical, CONTEXT), canonical);
+});
+
+test("an operator this page cannot replay is refused by name", () => {
+  // A version is part of the operator's name on purpose: a v2 that measured
+  // differently is a value this contract refuses rather than a curve it misreads.
+  assert.throws(
+    () => parse(`?v=${VERSION}&level=band_autolevel/v2:0.1,0.9,1,0.1,0.9`, CONTEXT),
+    (error) => error instanceof PermalinkError && /band_autolevel\/v1/.test(error.message),
+  );
+  assert.deepEqual(Object.keys(OPERATORS), ["band_autolevel/v1"]);
+});
+
+test("the operator's numbers are counted, not guessed", () => {
+  const five = OPERATORS["band_autolevel/v1"].parameters.length;
+  assert.equal(five, 5);
+  for (const bad of ["band_autolevel/v1", "band_autolevel/v1:0.1,0.9,1,0.1", "band_autolevel/v1:0.1,0.9,1,0.1,0.9,0.5"]) {
+    assert.throws(
+      () => parse(`?v=${VERSION}&level=${encodeURIComponent(bad)}`, CONTEXT),
+      PermalinkError,
+      bad,
+    );
+  }
+});
+
+test("a curve whose ends cross, or whose exponent is not positive, is refused", () => {
+  for (const bad of ["band_autolevel/v1:0.9,0.4,1,0.9,0.4", "band_autolevel/v1:0.1,0.9,0,0.1,0.9", "band_autolevel/v1:0.1,0.9,-1,0.1,0.9"]) {
+    assert.throws(
+      () => parse(`?v=${VERSION}&level=${encodeURIComponent(bad)}`, CONTEXT),
+      PermalinkError,
+      bad,
+    );
+  }
+});
+
+test("level is on the colour side of the field cache, like every shade key", () => {
+  // The operator acts on the map's stops, so it cannot move a sample. A reader who
+  // opens a seat's link and then clears the curve should pay a re-shade and not a
+  // re-iterate, which is what this asserts.
+  const plain = parse(`?v=${VERSION}&m=smooth`, CONTEXT);
+  const levelled = parse(`?v=${VERSION}&m=smooth&level=${CURVE}`, CONTEXT);
+  assert.equal(fieldKey(plain, CONTEXT, 800, 450), fieldKey(levelled, CONTEXT, 800, 450));
+  assert.notEqual(emit(plain, CONTEXT), emit(levelled, CONTEXT));
+});
+
+test("the level key is not one of the seven the engine's palette recipe has", () => {
+  // They are handed to the module as a unit, under `palette`, and the module refuses
+  // an unknown field there. A `level` that drifted into that list would be a key
+  // handed to the wrong place, and the spec would stop parsing at all.
+  assert.equal(SHADE_KEYS.some((spec) => spec.key === LEVEL_KEY.key), false);
+  assert.equal(LEVEL_KEY.key, "level");
+  assert.equal(LEVEL_KEY.fallback, null);
 });

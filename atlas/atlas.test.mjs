@@ -30,6 +30,7 @@ import { fileURLToPath } from "node:url";
 import * as link from "../explorer/permalink.js";
 import { DEFAULT_PALETTE, PALETTES } from "../explorer/palettes.js";
 import { specOf } from "../explorer/render.js";
+import { install } from "../explorer/stops.js";
 import { contractOf, opened, refusals } from "./links.js";
 
 const HERE = new URL("./", import.meta.url);
@@ -39,6 +40,15 @@ const engine = new WebAssembly.Instance(
   new WebAssembly.Module(readFileSync(fileURLToPath(new URL("../explorer/engine.wasm", HERE)))),
   {},
 ).exports;
+
+// The gradients live in `explorer/palettes.bin`, which is untracked — a megabyte of
+// control points, where what is committed is the index that addresses them. A clone that
+// has not baked it, which is every CI run, still holds the frame claim below; it just
+// asks for the spec without a colormap in it. The flag says which happened rather than
+// leaving a weaker test looking like the same test.
+const BLOB = fileURLToPath(new URL("../explorer/palettes.bin", HERE));
+const gradients = existsSync(BLOB);
+if (gradients) install(new Uint8Array(readFileSync(BLOB)));
 
 function plan(spec) {
   const raw = new TextEncoder().encode(JSON.stringify(spec));
@@ -153,7 +163,7 @@ test("the gallery slot's kind is the kind of place its own family belongs to", (
 test("a link built from a slot draws that slot's own frame, verbatim", () => {
   for (const { where, slot } of everySlot) {
     const { view } = opened(CONTRACT, slot);
-    const spec = specOf(view, 320, 180);
+    const spec = specOf(view, 320, 180, { colormap: gradients });
     assert.equal(spec.viewport.center_re, slot.x, `${where}: x was rewritten`);
     assert.equal(spec.viewport.center_im, slot.y, `${where}: y was rewritten`);
     assert.equal(spec.viewport.width, slot.w, `${where}: w was rewritten`);

@@ -763,14 +763,15 @@ def check_bake() -> list[str]:
 
 def _bake_problems() -> list[str]:
     problems = []
-    baked, _count, _offered, _chosen = explorer.palettes_module_text()
+    made = explorer.palettes_module_text()
     committed = _read(explorer.PALETTES_MODULE)
-    if baked != committed:
+    if made.text != committed:
         problems.append(
             f"{_shown(explorer.PALETTES_MODULE)}: not what "
             "`python -m builder explorer --palettes-only` bakes from "
-            f"{_shown(explorer.PICKS_RECORD)} — {_first_difference(baked, committed)}"
+            f"{_shown(explorer.PICKS_RECORD)} — {_first_difference(made.text, committed)}"
         )
+    problems += _blob_problems(made.blob)
     catalogued, _modes = explorer.catalog_module_text()
     committed = _read(explorer.CATALOG_MODULE)
     if catalogued != committed:
@@ -780,6 +781,38 @@ def _bake_problems() -> list[str]:
             f"{_first_difference(catalogued, committed)}"
         )
     return problems + _unbakeable()
+
+
+def _blob_problems(baked: bytes) -> list[str]:
+    """The control points on disk against the ones this bake makes of them.
+
+    **Absent is a problem and not a skip.** The blob is untracked, so a fresh clone of
+    this repository has the index and not the gradients — but this check only runs where
+    the wallpapers checkout is configured, and on such a machine the blob is one command
+    away. A page whose index addresses a file that is not there draws nothing, and saying
+    so here is cheaper than finding out in a browser.
+    """
+    where = _shown(explorer.PALETTES_BLOB)
+    if not explorer.PALETTES_BLOB.is_file():
+        return [
+            f"{where}: the index in {_shown(explorer.PALETTES_MODULE)} addresses it and it is "
+            "not here. `python -m builder explorer --palettes-only` writes it; it is untracked "
+            "on purpose, so a clone has to bake it."
+        ]
+    committed = explorer.PALETTES_BLOB.read_bytes()
+    if committed == baked:
+        return []
+    if len(committed) != len(baked):
+        return [
+            f"{where}: {len(committed):,} bytes on disk and {len(baked):,} baked, so the index "
+            "beside it addresses the wrong gradients"
+        ]
+    pairs = enumerate(zip(committed, baked, strict=True))
+    at = next(index for index, (one, other) in pairs if one != other)
+    return [
+        f"{where}: the bytes differ from a rebake, first at byte {at:,} of {len(baked):,} — "
+        "a gradient moved in the library next door, or the roster did"
+    ]
 
 
 def _first_difference(baked: str, committed: str) -> str:
@@ -803,7 +836,7 @@ def _unbakeable() -> list[str]:
     held = {
         json.loads(path.read_text(encoding="utf-8"))["name"] for path in directory.glob("*.json")
     }
-    carried = {name for name, _ in explorer.roster()[1]}
+    carried = {entry.name for entry in explorer.roster()[1]}
     missing = sorted(explorer.drawn_in(held) - carried)
     return [
         f"{_shown(explorer.PICKS_RECORD)}: a figure is drawn in {name}, which the roster does "

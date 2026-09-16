@@ -87,6 +87,15 @@ def _parser() -> argparse.ArgumentParser:
         action="store_true",
         help="rebake palettes.js alone; leave the wasm module and its manifest alone",
     )
+    baked.add_argument(
+        "--roster",
+        metavar="RELEASE",
+        help=(
+            "rewrite explorer/palettes.jsonl from the library, the candidate ledger and the "
+            "named published record, then bake — the deliberate act that moves each map's "
+            "hue family and seat count"
+        ),
+    )
 
     opened = commands.add_parser(
         "links", help="derive the explorer link registry from every picture's provenance"
@@ -448,6 +457,12 @@ def _do_check() -> int:
 
 
 def _do_explorer(options: argparse.Namespace) -> int:
+    if options.roster:
+        path, count, families, rows = explorer_module.refresh_roster(options.roster)
+        print(
+            f"wrote {path.relative_to(SITE_ROOT).as_posix()}  {count} maps, "
+            f"{families} with a hue family, off {rows:,} ledger rows"
+        )
     for line in explorer_module.bake(palettes_only=options.palettes_only):
         print(f"wrote {line}")
     return 0

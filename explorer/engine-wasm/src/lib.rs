@@ -64,6 +64,8 @@ use fractal_engine::{maxiter, mode, resample};
 use num_complex::Complex;
 use serde::Deserialize;
 
+mod level;
+
 /// The name a colormap baked from control points is given. It exists only to
 /// appear in the engine's own refusal messages — the page addresses maps by the
 /// name a permalink carries, and never asks this module to look one up.
@@ -107,6 +109,11 @@ struct Spec {
     /// the page asks for a home view before it has a picture to color.
     #[serde(default)]
     colormap: Option<ColormapSpec>,
+    /// The tone curve a run's `band_autolevel/v1` derived, replayed on this map's
+    /// stops. Absent means the operator did not act, which is what every picture
+    /// drawn on this page meant before the key existed — see [`level`].
+    #[serde(default)]
+    autolevel: Option<level::Curve>,
 }
 
 /// A colormap as its control points, because the page has no filesystem to load
@@ -229,13 +236,40 @@ fn resolve(text: &str) -> Result<Plan, String> {
     coloring.agrees_with(&spec.palette)?;
     coloring.agrees_with_family(&family)?;
 
+    // The operator acts on the map, not on the picture, so this is the one place it
+    // can go: the stops are curved and then baked exactly as they would have been.
+    // The refusal below is the operator's own `applies_to` — it acts on a field
+    // coloring and on a composite and on nothing else, so a link asking for it under
+    // a direct trap or the modulate would be replaying a decision no run ever took.
+    if let Some(curve) = &spec.autolevel {
+        curve.validate()?;
+        if !matches!(coloring, Coloring::Field { .. } | Coloring::Composite { .. }) {
+            return Err(format!(
+                "{} does not act on this mode: the operator reads a finished picture's tone \
+                 and only a field coloring or a composite is measured that way, so there is \
+                 no curve for {} to replay",
+                level::OPERATOR,
+                spec.mode
+            ));
+        }
+    }
     let colormap = match spec.colormap {
-        Some(map) => Some(Colormap::from_stops_baked(
-            COLORMAP_NAME,
-            map.kind,
-            &map.stops,
-            spec.palette.bake,
-        )?),
+        Some(map) => {
+            let curved;
+            let stops: &[(f64, [u8; 3])] = match &spec.autolevel {
+                Some(curve) => {
+                    curved = level::curved_stops(&map.stops, curve);
+                    &curved
+                }
+                None => &map.stops,
+            };
+            Some(Colormap::from_stops_baked(
+                COLORMAP_NAME,
+                map.kind,
+                stops,
+                spec.palette.bake,
+            )?)
+        }
         None => None,
     };
 

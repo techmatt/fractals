@@ -58,7 +58,28 @@
 //
 // Emit order: v · f · cx · cy · px · py · zx · zy · m · the mode's parameters · x · y · w ·
 // a · p · then the shade parameters, in the order the engine's own palette recipe
-// declares them.
+// declares them · level.
+//
+// ## `level`, and why it is last
+//
+// A gallery seat is not drawn through the map its recipe names. Every candidate the
+// wallpaper project makes goes through `band_autolevel/v1`, which measures the
+// finished picture's tone and, where that tone sits outside the band of finished
+// wallpapers, pushes a curve through the MAP'S OWN STOPS and renders again. So a
+// link built from a seat's recipe alone draws the right geometry in the wrong
+// colour — 29.51 of 255 apart, on a scale where re-encoding the same JPEG costs
+// about 2.4.
+//
+// `level` carries the curve that run recorded, so the link draws what the gallery
+// shipped. It is last in the emit order because it is the last thing that happens
+// to a colour: the map is chosen, the recipe is spent on it, and then the operator's
+// curve moves the ramp. Absent means the operator did not act, which is what every
+// link written before this key existed meant — so none of them changed picture.
+//
+// It is NOT one of the seven shade keys and must not become one. Those seven are the
+// engine's own `Palette` recipe, handed to the module as they stand; this is a
+// separate operator that lives in the wallpaper project's Python, and the module
+// applies it to the stops before it bakes them.
 
 /** The contract version this module emits. */
 export const VERSION = 2;
@@ -348,6 +369,43 @@ export const SHADE_KEYS = [
   },
 ];
 
+/**
+ * The tone operators a link may name, and how many numbers each takes.
+ *
+ * One entry, and the shape is the point: a version is part of the name, so a
+ * `band_autolevel/v2` that measured differently would be a value this contract
+ * refuses rather than a curve it misread. The parameters are the operator's own
+ * field names in the operator's own order — `black_pt`, `white_pt`, `exponent`
+ * and the two `out_ends` — which is what the wasm module deserializes them into
+ * and what a run's stamp calls them. Nothing is renamed on the way through.
+ *
+ * The other nine fields of a run's `curve` block are how the curve was *arrived
+ * at*: the band it was projected onto, which side of that band each statistic
+ * fell, whether the exponent was clamped. A replay does not read any of them, so
+ * a link does not carry them.
+ */
+export const OPERATORS = {
+  "band_autolevel/v1": {
+    parameters: ["black_pt", "white_pt", "exponent", "out_ends[0]", "out_ends[1]"],
+  },
+};
+
+/**
+ * The `level` key, read and written the way the seven shade keys are.
+ *
+ * Deliberately its own row rather than an eighth member of `SHADE_KEYS`: those
+ * seven ARE the engine's palette recipe and are handed to the module as a unit,
+ * and this is a separate operator that acts on the ramp before the recipe is spent
+ * on it. A key in the wrong list would be a key handed to the wrong place.
+ */
+export const LEVEL_KEY = {
+  key: "level",
+  read: readLevel,
+  write: writeLevel,
+  fallback: null,
+  same: sameLevel,
+};
+
 /** One key's row of the recipe, by the name a link spells it with. */
 export function shadeKey(key) {
   const spec = SHADE_KEYS.find((held) => held.key === key);
@@ -413,7 +471,7 @@ export function parse(search, context) {
 
   const wanted = MODE_PARAMETERS[mode] ?? [];
   const known = new Set([
-    "v", "f", "m", "x", "y", "w", "a", "p",
+    "v", "f", "m", "x", "y", "w", "a", "p", LEVEL_KEY.key,
     ...CONSTANTS[family], ...wanted, ...SHADE_KEYS.map((spec) => spec.key),
   ]);
   for (const key of seen) {
@@ -468,7 +526,15 @@ export function parse(search, context) {
     throw new PermalinkError(`${palette} is cyclic, so folding it would halve the cycle it was drawn to have. Folding is the seam fix for a map that has a seam.`);
   }
 
-  return { version: VERSION, family, constants, mode, params: values, x, y, w, aspect, palette, shade };
+  // Whether this mode is one the operator acts on is the module's answer and not
+  // this file's: the operator reads a coloring kind, which lives in the engine's
+  // mode catalog, and a fourth copy of that catalog here is a fourth thing to keep
+  // in step. A link asking for a curve under a direct trap draws nothing and shows
+  // the module's own sentence, which is how every other engine refusal arrives.
+  const levelText = params.get(LEVEL_KEY.key);
+  const level = levelText === null ? LEVEL_KEY.fallback : LEVEL_KEY.read(levelText);
+
+  return { version: VERSION, family, constants, mode, params: values, x, y, w, aspect, palette, shade, level };
 }
 
 /** A view nobody has said anything about: this family, this mode, at home. */
@@ -486,6 +552,7 @@ export function fresh(family, mode, context) {
     aspect: { ...DEFAULT_ASPECT },
     palette: context.defaultPalette,
     shade: defaultShade(),
+    level: LEVEL_KEY.fallback,
   };
 }
 
@@ -520,6 +587,13 @@ export function emit(view, context) {
     if (spec.same(value, spec.fallback)) continue;
     parts.push(`${spec.key}=${encode(spec.write(value))}`);
   }
+  // Last, because it is the last thing that happens to a colour — see the note at
+  // the top. `view.level` is absent on a view built before this key existed, which
+  // is the same thing as the operator not having acted.
+  const level = view.level ?? LEVEL_KEY.fallback;
+  if (!LEVEL_KEY.same(level, LEVEL_KEY.fallback)) {
+    parts.push(`${LEVEL_KEY.key}=${encodeCurve(LEVEL_KEY.write(level))}`);
+  }
   return parts.join("&");
 }
 
@@ -534,6 +608,29 @@ export function emit(view, context) {
  */
 function encode(text) {
   return encodeURIComponent(text).replaceAll("%3A", ":");
+}
+
+/**
+ * The same, and it also leaves the slash and the comma alone.
+ *
+ * Both are legal unencoded in a query string and both are separators inside one
+ * value — `band_autolevel/v1` is the operator's own name and the five numbers are
+ * comma-separated — so `level=band_autolevel/v1:0.45,0.98,1.41,0.45,0.98` beats
+ * the same string with three characters spelled as percent escapes, for the one
+ * thing a URL is for.
+ *
+ * **Why this is not a widening of [`encode`].** A palette name may carry a comma —
+ * `Gold Field, Blood Spark` is one, and it is in `links.jsonl` today as `%2C`. A
+ * link that spells it either way parses to the same view, but the *canonical*
+ * spelling would move, and re-spelling a permanent URL to tidy up three characters
+ * is not a trade this contract makes. So the widening is where it is needed and
+ * nowhere else.
+ *
+ * The `+` of an exponent is encoded here exactly as it is there, and must be: a
+ * raw `+` in a query string means a space.
+ */
+function encodeCurve(text) {
+  return encode(text).replaceAll("%2F", "/").replaceAll("%2C", ",");
 }
 
 /** Parse and re-emit: the fixed point every link settles to. */
@@ -559,7 +656,7 @@ export function canonicalize(search, context) {
 export function fieldKey(view, context, pixelWidth, pixelHeight, direct = false) {
   const geometry = direct
     ? view
-    : { ...view, palette: context.defaultPalette, shade: defaultShade() };
+    : { ...view, palette: context.defaultPalette, shade: defaultShade(), level: null };
   return `${emit(geometry, context)}&px=${pixelWidth}x${pixelHeight}`;
 }
 
@@ -679,6 +776,49 @@ function writeTagged(value) {
 
 function sameTagged(a, b) {
   return writeTagged(a) === writeTagged(b);
+}
+
+/**
+ * `operator:a,b,c,d,e` — one recorded tone curve, as a link spells it.
+ *
+ * The same shape as a tagged shade value and one comma-separated list longer,
+ * because this operator takes five numbers rather than one. The name carries its
+ * version, so the count that follows is the named operator's own and is never
+ * guessed from how many numbers arrived.
+ */
+function readLevel(text) {
+  const colon = text.indexOf(":");
+  const operator = colon === -1 ? text : text.slice(0, colon);
+  const entry = OPERATORS[operator];
+  if (entry === undefined) {
+    throw new PermalinkError(`level names ${operator}, and the operators this page can replay are ${Object.keys(OPERATORS).join(", ")}.`);
+  }
+  if (colon === -1) {
+    throw new PermalinkError(`level=${operator} needs its ${entry.parameters.length} numbers after a colon, ${entry.parameters.join(", ")}; the link says ${text}.`);
+  }
+  const parts = text.slice(colon + 1).split(",");
+  if (parts.length !== entry.parameters.length) {
+    throw new PermalinkError(`${operator} takes ${entry.parameters.length} numbers — ${entry.parameters.join(", ")} — and the link gives ${parts.length}.`);
+  }
+  const read = parts.map((part, at) => finite(part, `${operator}'s ${entry.parameters[at]}`));
+  const [black, white, exponent, low, high] = read;
+  if (!(white > black)) {
+    throw new PermalinkError(`${operator}'s white point sits above its black point; the link says ${number(white)} above ${number(black)}.`);
+  }
+  if (!(exponent > 0)) {
+    throw new PermalinkError(`${operator}'s exponent is positive; the link says ${number(exponent)}.`);
+  }
+  return { operator, black_pt: black, white_pt: white, exponent, out_ends: [low, high] };
+}
+
+function writeLevel(value) {
+  const numbers = [value.black_pt, value.white_pt, value.exponent, ...value.out_ends];
+  return `${value.operator}:${numbers.map(number).join(",")}`;
+}
+
+function sameLevel(a, b) {
+  if (a === null || b === null) return a === b;
+  return writeLevel(a) === writeLevel(b);
 }
 
 function number(value) {

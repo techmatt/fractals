@@ -17,6 +17,7 @@ import * as link from "./permalink.js";
 import * as shade from "./shade.js";
 import { CONSTANTS as ANCHORS, MODES as IDENTITIES } from "./catalog.js";
 import { DEFAULT_PALETTE, PALETTES, PROVENANCE } from "./palettes.js";
+import { fetchStops } from "./stops.js";
 import * as download from "./download.js";
 import { PREVIEW_DIVISOR, Renderer, familySpecOf, pixelGrid, specOf } from "./render.js";
 
@@ -783,7 +784,14 @@ window.addEventListener("resize", () => {
 // ------------------------------------------------------------------- starting up
 
 async function main() {
-  renderer = await Renderer.start(new URL("./engine.wasm", import.meta.url));
+  // Two fetches and they are independent, so they go together: the module the page
+  // draws with, and the megabyte of control points its index addresses. Neither is
+  // wanted before the first frame and both are wanted by it.
+  const [started] = await Promise.all([
+    Renderer.start(new URL("./engine.wasm", import.meta.url)),
+    fetchStops(new URL("./palettes.bin", import.meta.url)),
+  ]);
+  renderer = started;
 
   contract = {
     home: homeOf,

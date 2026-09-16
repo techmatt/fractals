@@ -6,11 +6,14 @@ site is held to still holds: **the builder generates; it never becomes the site.
 with no wallpaper project beside it serves the explorer exactly as this one does; only
 *regenerating* those three files needs the sibling checkout and a Rust toolchain.
 
-Four things are baked, and each for its own reason:
+Five things are baked, and each for its own reason:
 
-- **The palettes** — the curated colormaps, name to stops, as an ES module. Names are
-  the ids a permalink carries, so they are baked as names and never as indices: a
-  colormap added to the wallpaper project must not silently renumber somebody's link.
+- **The palettes** — every colormap the library holds, as a small ES module indexing a
+  binary blob. Names are the ids a permalink carries, so they are baked as names and
+  never as indices: a colormap added to the wallpaper project must not silently
+  renumber somebody's link.
+- **The blob** — `palettes.bin`, the control points of all of them, sRGB8, three bytes
+  a stop, in the index's own order. See *The blob, and what is not in it* below.
 - **The catalog** — the modes the picker offers with the line that says what each one
   is for, and the family constants a dynamical plane needs. What each mode *is* is a fact
   the wallpaper project owns, and so are the constants: the identity lines come out of
@@ -51,6 +54,34 @@ record and the gradients from the library next door, so growing the picker is an
 somebody made on purpose and a rebake on an unchanged tree reproduces the committed
 module byte for byte — which `builder check` asserts.
 
+## The blob, and what is not in it
+
+The module used to carry every map's stops inline and carried 126 maps. It carries
+**1,021** now — the whole library — because a link built from a gallery seat's recipe
+has to be able to name the map that seat was drawn in, and 451 distinct maps are seated
+in the published record alone. Inline, that is about twelve megabytes of JavaScript
+source; as three bytes a stop it is about one megabyte of binary that the page fetches
+once beside the wasm.
+
+**The positions are not in it, and the bake refuses a map that would need them.** Every
+map the library holds spaces its stops evenly — position `i` is exactly `i/(n-1)`, on all
+1,021, checked — so the blob carries colour alone and the index carries the count. That
+is not an assumption the format makes quietly: `blob` compares each stop's own position
+with `i/(n-1)` as an exact `f64` and **stops the bake by name** where one differs, because
+rounding a map's positions would bend its gradient slightly rather than fail, and the
+engine does not require even spacing even though this library happens to have it.
+
+**Two fields ride in the index that the library does not hold**, `family` and `seats`,
+and both are frozen into the roster record rather than derived at bake time. `family` is
+the hue family a map most often *produces* — the modal `colour.families[0]` over the
+candidate-ledger rows drawn in it whose fine-head reading clears `solve.DEFAULT_FINE_BAR`
+— and `seats` is how many seats of the published record named it. Neither is a fact about
+the gradient; both are readings of a pool that is being written to while this runs. A bake
+that went out to the ledger would answer differently on two days of one tree, which is
+what the roster record exists to prevent — the picker's 77 went the same way once. So
+`python -m builder explorer --roster` is what reads them, deliberately, and the method row
+records the release and the ledger row count it read them at.
+
 **The mode roster is a committed record for the same reason** *(2026-09-01)*. It used to
 be derived — every mode the engine catalog called `production` — and the engine promoted
 `tail_itinerary`, so the next bake would have put a nineteenth entry in the picker and a
@@ -64,7 +95,9 @@ is held to the module by `builder check`'s bake, and the module to `permalink.js
 
 from __future__ import annotations
 
+import contextlib
 import gzip
+import hashlib
 import json
 import re
 import shutil
@@ -73,13 +106,19 @@ from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
 
-from . import figures, records
+from . import figures, records, renders
 from .paths import SITE_ROOT
 from .renders import EngineError, wallpapers_root
 
 #: Where the explorer's committed artifacts live.
 EXPLORER_DIR = SITE_ROOT / "explorer"
 PALETTES_MODULE = EXPLORER_DIR / "palettes.js"
+#: The control points themselves. Untracked: a megabyte of binary is the one thing here
+#: that is library-sized, and what is committed is the index that addresses it.
+PALETTES_BLOB = EXPLORER_DIR / "palettes.bin"
+#: One row of gradient per map, in index order — a picture of what the blob holds, for a
+#: person rather than for the page. Untracked, and nothing serves it.
+PALETTES_SWATCH = EXPLORER_DIR / "palettes-swatch.png"
 CATALOG_MODULE = EXPLORER_DIR / "catalog.js"
 WASM_MODULE = EXPLORER_DIR / "engine.wasm"
 MANIFEST = EXPLORER_DIR / "engine.manifest.json"
@@ -130,6 +169,28 @@ CONVERTED_MARKER = "not because it was curated"
 #: The word a provenance line puts in front of a colormap's name.
 COLORMAP_WORD = "colormap "
 
+#: How wide the swatch is drawn. A swatch is not the shading table — the engine bakes
+#: that at 4,096 — so this is only wide enough to look at, and each column is a stop of
+#: the blob taken whole rather than a colour interpolated between two. What it shows is
+#: what is in the file.
+SWATCH_WIDTH = 1024
+
+#: The candidate ledger's rows and the fine head's reading of the pool, relative to the
+#: wallpaper project's artifacts tree and to its checkout. `--roster` reads both, and
+#: nothing else here does.
+LEDGER_ROWS = ("curation", "candidate_ledger", "rows.jsonl")
+FINE_SCORES = ("gallery_grade_head", "pool_scores.jsonl")
+
+#: Where a published tentative gallery keeps its seats' recipes, under the artifacts
+#: tree. `gallery.jsonl` names no colormap at all — the recipe beside it does.
+TENTATIVE = ("curation", "tentative")
+RECIPES_NAME = "recipes.jsonl"
+
+#: The bar a candidate's fine-head `p_ge4` clears to count toward a map's `family`.
+#: `curation.solve.DEFAULT_FINE_BAR`, transcribed: reading it would mean importing the
+#: wallpaper project's Python into this builder, which nothing here does.
+FINE_BAR = 0.030242
+
 #: The wasm target and the file cargo leaves the module at.
 WASM_TARGET = "wasm32-unknown-unknown"
 WASM_ARTIFACT = ("target", WASM_TARGET, "release", "explorer_engine_wasm.wasm")
@@ -152,6 +213,10 @@ ENGINE_CHANGES = [
     "call sites, twelve channel sets over nine families, which compute_lanes now calls "
     "instead of keeping a hand-written copy of nine of them. Visibility only, no signature "
     "moved, engine tests unmoved.",
+    "colormap::srgb_to_linear, linear_to_srgb, linear_srgb_to_oklab and oklab_to_linear_srgb "
+    "were ALREADY pub, and are named here because the autolevel port leans on them: "
+    "`level.rs` replays band_autolevel/v1 on a map's stops through the engine's own copy of "
+    "Ottosson's matrices rather than a third one. Nothing was changed next door for it.",
 ]
 
 _RUSTC_VERSION = re.compile(r"^rustc (\S+ \([0-9a-f]+ \d{4}-\d{2}-\d{2}\))")
@@ -171,16 +236,39 @@ class Colormap:
     `offered` is whether the picker lists it. A curated map is offered; a map baked
     only because one of this site's pictures was drawn in it is not — see the note at
     the top on why the two sets differ.
+
+    `family` and `seats` are the two readings the roster carries and the library does
+    not: the hue family this map most often produces, and how many seats of the
+    published record were drawn in it. Both come off the record rather than off the
+    gradient — see *The blob, and what is not in it*.
     """
 
     name: str
     cyclic: bool
     stops: tuple[tuple[float, tuple[int, int, int]], ...]
     offered: bool
+    family: str | None = None
+    seats: int = 0
+
+    @property
+    def even(self) -> bool:
+        """Whether stop `i` sits at exactly `i/(n-1)`, which is what the blob assumes."""
+        last = len(self.stops) - 1
+        return last > 0 and all(at == index / last for index, (at, _) in enumerate(self.stops))
 
 
-def roster() -> tuple[dict, tuple[tuple[str, bool], ...]]:
-    """The committed roster: its method row, and one `(name, offered)` per map.
+@dataclass(frozen=True)
+class Entry:
+    """One row of the roster: what the record says about a map before its gradient."""
+
+    name: str
+    offered: bool
+    family: str | None
+    seats: int
+
+
+def roster() -> tuple[dict, tuple[Entry, ...]]:
+    """The committed roster: its method row, and one [`Entry`] per map.
 
     Read in file order, which is name order, which is what the picker shows — the same
     `sorted` order the bake used to produce, kept as the record's own so that a rebake
@@ -192,14 +280,26 @@ def roster() -> tuple[dict, tuple[tuple[str, bool], ...]]:
     found = []
     for record in rest:
         record.expect_kind(PICKS_ROW)
-        found.append((record.text("name"), record.flag("offered")))
+        seats = record.fields.get("seats", 0)
+        if not isinstance(seats, int) or isinstance(seats, bool) or seats < 0:
+            raise ExplorerError(f"{record.where}: seats must be a whole number, not {seats!r}")
+        found.append(
+            Entry(
+                record.text("name"),
+                record.flag("offered"),
+                record.optional_text("family"),
+                seats,
+            )
+        )
     if not found:
         raise ExplorerError(f"{PICKS_RECORD.name} names no palette")
-    if not any(offered for _, offered in found):
+    if not any(entry.offered for entry in found):
         raise ExplorerError(f"{PICKS_RECORD.name} offers nothing, so the picker would be empty")
-    names = [name for name, _ in found]
+    names = [entry.name for entry in found]
     if names != sorted(names):
         raise ExplorerError(f"{PICKS_RECORD.name} is not in name order, and the picker shows it")
+    if len(set(names)) != len(names):
+        raise ExplorerError(f"{PICKS_RECORD.name} names a map twice, and a name is an address")
     return head.fields, tuple(found)
 
 
@@ -224,15 +324,32 @@ def baked() -> list[Colormap]:
         held[loaded["name"]] = loaded
 
     found = []
-    for name, offered in roster()[1]:
-        loaded = held.get(name)
+    for entry in roster()[1]:
+        loaded = held.get(entry.name)
         if loaded is None:
             raise ExplorerError(
-                f"{PICKS_RECORD.name} names {name!r}, and {COLORMAP_SOURCE} holds no such map"
+                f"{PICKS_RECORD.name} names {entry.name!r}, and {COLORMAP_SOURCE} holds no such map"
             )
         stops = tuple((float(at), tuple(int(c) for c in rgb)) for at, rgb in loaded["stops"])
-        found.append(Colormap(name, loaded["kind"] == "cyclic", stops, offered))
+        found.append(
+            Colormap(
+                entry.name,
+                loaded["kind"] == "cyclic",
+                stops,
+                entry.offered,
+                entry.family,
+                entry.seats,
+            )
+        )
     return found
+
+
+def library_names() -> list[str]:
+    """Every map the library next door holds, by name, in the order a roster wants."""
+    directory = wallpapers_root() / COLORMAP_SOURCE
+    if not directory.is_dir():
+        raise ExplorerError(f"no colormaps at {directory}")
+    return sorted(path.stem for path in directory.glob("*.json"))
 
 
 def drawn_in(held: set[str]) -> set[str]:
@@ -266,6 +383,55 @@ def _occurrences(line: str, word: str) -> list[int]:
         found.append(at)
         at = line.find(word, at + 1)
     return found
+
+
+def blob(maps: list[Colormap]) -> bytes:
+    """Every map's control points, sRGB8, three bytes a stop, in the index's order.
+
+    **No header and no positions.** The index in `palettes.js` says where each map
+    starts and how many stops it has, which is the whole of the addressing; a header
+    would be a second copy of the count. The positions are not written because stop `i`
+    of every map in this library sits at exactly `i/(n-1)` — and a map where that is not
+    true stops the bake here rather than being rounded into the format, because rounding
+    a gradient's positions bends it slightly instead of failing.
+    """
+    out = bytearray()
+    for colormap in maps:
+        if not colormap.even:
+            raise ExplorerError(
+                f"{colormap.name} does not space its {len(colormap.stops)} stops evenly, and "
+                f"{PALETTES_BLOB.name} carries colour alone — its positions are derived as "
+                "i/(n-1). Carrying this map means widening the format to write positions "
+                "beside the colours, which is a deliberate change and not a rounding."
+            )
+        for _at, rgb in colormap.stops:
+            out.extend(rgb)
+    return bytes(out)
+
+
+def swatch(maps: list[Colormap]) -> bytes:
+    """One row of gradient per map, in index order, as a PNG.
+
+    A picture of the blob, for a person: it is how a reader of a report sees that 1,021
+    maps went in and that they are the maps they should be. It is **not** the shading
+    table — the engine bakes that at 4,096 entries by interpolating in Oklab — so nothing
+    is interpolated here. Each column is one of the map's own stops, taken whole, which
+    is the honest thing for a picture of a file to show.
+    """
+    from PIL import Image
+
+    rows = bytearray()
+    for colormap in maps:
+        last = len(colormap.stops) - 1
+        for column in range(SWATCH_WIDTH):
+            at = round(column * last / (SWATCH_WIDTH - 1))
+            rows.extend(colormap.stops[at][1])
+    image = Image.frombytes("RGB", (SWATCH_WIDTH, len(maps)), bytes(rows))
+    from io import BytesIO
+
+    buffer = BytesIO()
+    image.save(buffer, format="PNG", optimize=True)
+    return buffer.getvalue()
 
 
 def default_palette(names: list[str]) -> tuple[str, str]:
@@ -316,19 +482,37 @@ def _article_smooth_colormaps() -> list[str]:
     return named
 
 
-def palettes_module_text() -> tuple[str, int, int, str]:
-    """The text of `palettes.js`, and the counts and default that go in the report line.
+@dataclass(frozen=True)
+class Baked:
+    """What one bake of the palettes produced, for the caller that has to report it."""
 
-    Split out from writing it so that `check` can bake into memory and compare, which is
-    the whole reason the stamp below is read off the roster rather than off the clock:
+    text: str
+    blob: bytes
+    count: int
+    offered: int
+    chosen: str
+    families: int
+
+
+def palettes_module_text() -> Baked:
+    """The text of `palettes.js` and the bytes of `palettes.bin`, as one answer.
+
+    Split out from writing them so that `check` can bake into memory and compare, which
+    is the whole reason the stamp below is read off the roster rather than off the clock:
     `baked` and `wallpapers_commit` say when the roster was fixed and against which
     commit of the library, so two bakes of one tree are the same bytes. A gradient that
     moved next door is then a failing check rather than a diff nobody looks at.
+
+    **The module is an index and the gradients are beside it.** `at` is the byte the
+    map's colours start at in `palettes.bin` and `stops` is how many there are; position
+    `i` is `i/(stops-1)`, which is what every map in the library spaces its stops at and
+    what `blob` refuses to write around. A page reads the blob once, beside the wasm.
     """
-    stated, _picks = roster()
+    stated, _entries = roster()
     maps = baked()
     names = [colormap.name for colormap in maps if colormap.offered]
     chosen, why = default_palette(names)
+    bytes_ = blob(maps)
     stamp = {
         "source": str(stated["source"]),
         "wallpapers_commit": str(stated["wallpapers_commit"]),
@@ -336,23 +520,40 @@ def palettes_module_text() -> tuple[str, int, int, str]:
         "count": len(maps),
         "offered": len(names),
         "default_because": why,
+        "blob": {
+            "file": PALETTES_BLOB.name,
+            "bytes": len(bytes_),
+            "sha256": hashlib.sha256(bytes_).hexdigest(),
+            "stops": sum(len(colormap.stops) for colormap in maps),
+        },
+        "readings": {
+            "release": str(stated["release"]),
+            "ledger_rows": int(stated["ledger_rows"]),
+            "fine_bar": FINE_BAR,
+        },
     }
 
     lines = [
-        "// The colormaps the explorer carries, baked from the wallpaper project at",
-        "// build time.",
+        "// The colormaps the explorer carries: the index, beside the blob that holds",
+        "// their control points. Baked from the wallpaper project's library.",
         "//",
         "// Generated by `python -m builder explorer` — edit that, not this. A map is",
         "// addressed by NAME everywhere, in this file and in a permalink, because a name",
         "// is stable and a position in a list is not: a colormap added next year must not",
         "// silently repaint a link somebody saved this year.",
         "//",
-        "// `offered` is whether the picker lists it. Every curated map is offered; a map",
-        "// baked only because one of this site's own pictures was drawn in it is not, so",
-        "// that a figure of this article can be opened here without widening a curated",
-        "// set this repository does not own.",
+        "// `offered` is whether the picker lists it. Every map the library holds is baked,",
+        "// because a link built from a gallery seat's recipe has to be able to name the map",
+        "// that seat was drawn in; the picker lists a frozen subset of them.",
         "//",
-        "// Positions are the map's own, not assumed evenly spaced. Colors are sRGB8.",
+        "// `at` is where this map's colours start in the blob and `stops` is how many there",
+        "// are, three sRGB8 bytes each. Position `i` is `i/(stops-1)` — every map in this",
+        "// library spaces its stops evenly, and the bake refuses one that does not rather",
+        "// than rounding it.",
+        "//",
+        "// `family` is the hue family this map most often produces, read off the candidate",
+        "// ledger; `seats` is how many seats of the published record were drawn in it.",
+        "// Neither is a fact about the gradient — both are frozen in `palettes.jsonl`.",
         "",
         f"export const PROVENANCE = {json.dumps(stamp, indent=2, sort_keys=True)};",
         "",
@@ -360,25 +561,218 @@ def palettes_module_text() -> tuple[str, int, int, str]:
         "",
         "export const PALETTES = new Map([",
     ]
+    at = 0
     for colormap in maps:
-        positions = ", ".join(repr(at) for at, _ in colormap.stops)
-        colors = ", ".join(str(value) for _, rgb in colormap.stops for value in rgb)
-        lines.append(f"  [{json.dumps(colormap.name)}, {{")
-        lines.append(f"    cyclic: {'true' if colormap.cyclic else 'false'},")
-        lines.append(f"    offered: {'true' if colormap.offered else 'false'},")
-        lines.append(f"    positions: [{positions}],")
-        lines.append(f"    colors: [{colors}],")
-        lines.append("  }],")
+        row = {
+            "cyclic": colormap.cyclic,
+            "offered": colormap.offered,
+            "at": at,
+            "stops": len(colormap.stops),
+            "family": colormap.family,
+            "seats": colormap.seats,
+        }
+        lines.append(f"  [{json.dumps(colormap.name)}, {json.dumps(row, sort_keys=True)}],")
+        at += 3 * len(colormap.stops)
     lines.append("]);")
     lines.append("")
-    return "\n".join(lines), len(maps), len(names), chosen
+    return Baked(
+        "\n".join(lines),
+        bytes_,
+        len(maps),
+        len(names),
+        chosen,
+        sum(1 for colormap in maps if colormap.family),
+    )
 
 
-def write_palettes() -> tuple[Path, int, int, str]:
-    """Bake the maps into `palettes.js`, with the stamp that says where from."""
-    text, count, offered, chosen = palettes_module_text()
-    PALETTES_MODULE.write_text(text, encoding="utf-8", newline="\n")
-    return PALETTES_MODULE, count, offered, chosen
+def write_palettes() -> Baked:
+    """Bake the index into `palettes.js` and the control points into `palettes.bin`.
+
+    The swatch goes down beside them, which is neither committed nor served and is only
+    how a person looks at a megabyte of binary.
+    """
+    made = palettes_module_text()
+    PALETTES_MODULE.write_text(made.text, encoding="utf-8", newline="\n")
+    PALETTES_BLOB.write_bytes(made.blob)
+    # Pillow is the one thing here a machine may not have, and the swatch is the one
+    # output nothing reads — so its absence is a missing picture and never a failed bake.
+    with contextlib.suppress(ImportError):
+        PALETTES_SWATCH.write_bytes(swatch(baked()))
+    return made
+
+
+# ---------------------------------------------------------------------------- the roster
+
+
+def _above_the_bar() -> set[str]:
+    """Every candidate key the fine-tier head reads at or above [`FINE_BAR`].
+
+    `models/gallery_grade`'s own pool scores, which is the column `solve.at_fine_bar`
+    reads and the column `DEFAULT_FINE_BAR` was derived against. The render judge's
+    column in the ledger's own `scores.jsonl` is a different head on a different scale
+    and is not this bar's.
+    """
+    path = renders.artifact(*FINE_SCORES)
+    if not path.is_file():
+        raise ExplorerError(f"no fine-head pool scores at {path}, so no map has a hue family")
+    found = set()
+    with path.open(encoding="utf-8") as handle:
+        for line in handle:
+            if not line.strip():
+                continue
+            row = json.loads(line)
+            if float(row["p_ge4"]) >= FINE_BAR:
+                found.add(str(row["key"]))
+    return found
+
+
+def _families_and_rows(wanted: set[str]) -> tuple[dict[str, str], int]:
+    """`({map: the hue family it most often produces}, how many ledger rows were read)`.
+
+    One streamed pass. The ledger is a couple of gigabytes across its files and a solve
+    may be appending to it while this runs, so this reads the file a line at a time and
+    never loads the pool — `picks.ledger_rows`' discipline, for its reason. A key is
+    lifted out of the raw line before anything is parsed, because 97% of the rows are
+    not wanted and `json.loads` on all of them is most of the clock.
+
+    A torn last line is skipped, exactly as `picks.ledger_rows` skips one: a run next
+    door appends while this reads, and a half-written row is not a reading.
+    """
+    counts: dict[str, dict[str, int]] = {}
+    read = 0
+    path = renders.artifact(*LEDGER_ROWS)
+    if not path.is_file():
+        raise ExplorerError(f"no candidate ledger at {path}, so no map has a hue family")
+    marker = '"key": "'
+    with path.open(encoding="utf-8") as handle:
+        for line in handle:
+            if not line.strip():
+                continue
+            read += 1
+            at = line.find(marker)
+            if at == -1:
+                continue
+            end = line.find('"', at + len(marker))
+            if end == -1 or line[at + len(marker) : end] not in wanted:
+                continue
+            try:
+                row = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            families = (row.get("colour") or {}).get("families") or []
+            colormap = (row.get("recipe") or {}).get("colormap")
+            if not families or not colormap:
+                continue
+            tally = counts.setdefault(str(colormap), {})
+            leading = str(families[0])
+            tally[leading] = tally.get(leading, 0) + 1
+    # Ties by name, so the answer is a function of the pool and not of insertion order.
+    return (
+        {
+            name: max(sorted(tally), key=lambda family: (tally[family], family))
+            for name, tally in counts.items()
+        },
+        read,
+    )
+
+
+def _seats_per_map(stamp: str) -> dict[str, int]:
+    """How many seats of one published record were drawn in each map.
+
+    Read off that record's own `recipes.jsonl` and never off the ledger: a published
+    record was made redrawable on purpose and carries every seat's recipe beside its
+    seats, so the colormap is one file away. `gallery.jsonl` names no map at all.
+    """
+    path = renders.artifact(*TENTATIVE, stamp, RECIPES_NAME)
+    if not path.is_file():
+        raise ExplorerError(f"no recipes beside the published record at {path}")
+    counts: dict[str, int] = {}
+    with path.open(encoding="utf-8") as handle:
+        for line in handle:
+            if not line.strip():
+                continue
+            name = (json.loads(line).get("recipe") or {}).get("colormap")
+            if name:
+                counts[str(name)] = counts.get(str(name), 0) + 1
+    if not counts:
+        raise ExplorerError(f"{path} names no colormap, so no map has a seat count")
+    return counts
+
+
+def refresh_roster(release: str) -> tuple[Path, int, int, int]:
+    """Rewrite `palettes.jsonl`: every map the library holds, with its two readings.
+
+    **This is the deliberate act, and the bake is not.** `family` and `seats` are
+    readings of a pool that is written to while this runs and of one named release, so
+    a bake that went out to them would answer differently on two days of one tree and
+    `check`'s own bake would go red for a reason that has nothing to do with this
+    repository. They are frozen here instead, the same way `offered` is, and the method
+    row says which release and how many ledger rows they were read at.
+
+    **Nothing is removed and nothing changes what the picker offers.** A name already in
+    the roster keeps its `offered` flag; a name the library holds and the roster does not
+    is added, unoffered. A name in the roster that the library has dropped stops this,
+    because a link that used to resolve would stop resolving.
+    """
+    stated, entries = roster()
+    held = {entry.name: entry for entry in entries}
+    names = library_names()
+    missing = sorted(set(held) - set(names))
+    if missing:
+        raise ExplorerError(
+            f"{PICKS_RECORD.name} names {', '.join(missing)}, and {COLORMAP_SOURCE} no longer "
+            "holds them — a rename or a deletion next door, and either way a link that used "
+            "to resolve stops resolving"
+        )
+
+    seats = _seats_per_map(release)
+    families, ledger_rows = _families_and_rows(_above_the_bar())
+    method = dict(stated)
+    method["baked"] = date.today().isoformat()
+    method["wallpapers_commit"] = _wallpapers_commit()
+    method["rule"] = (
+        "every map the library holds, and which of them the picker offers. The roster is the "
+        "whole library because a link built from a gallery seat's recipe has to be able to "
+        "name the map that seat was drawn in — 451 distinct maps are seated in the published "
+        "record alone — and the gradients ride in `palettes.bin` beside the index rather than "
+        "in it. What the picker LISTS is the narrower thing and is still frozen: the 77 "
+        "curated maps as they stood on 2026-08-23, unchanged by this widening. The distinction "
+        "used to be derived from the library's own `source` lines, and a drop of two hundred "
+        "authored maps next door would have taken the picker to 277 entries without anybody "
+        "deciding to, which is why `offered` is a field here and not a question asked over "
+        "there. Nothing is ever removed: a name that has been in a link is a name that has to "
+        "keep resolving. This record is what `python -m builder explorer` bakes from, and "
+        "`builder check`'s bake check holds the committed module and blob to it."
+    )
+    method["release"] = release
+    method["ledger_rows"] = ledger_rows
+    method["readings"] = (
+        "`family` is the hue family a map most often PRODUCES: the modal leading entry of "
+        "`colour.families` over the candidate-ledger rows drawn in it whose fine-head "
+        f"p_ge4 clears solve.DEFAULT_FINE_BAR ({FINE_BAR}), ties by name, absent where the "
+        "map has no such row. `seats` is how many seats of the release named above were "
+        "drawn in it, counted off that record's own recipes. Both are frozen here rather "
+        "than derived at bake time, because the ledger is written to while a bake runs and "
+        "a picker's metadata that moved on its own is the failure this record exists for. "
+        "`python -m builder explorer --roster` is what rewrites them."
+    )
+
+    lines = [json.dumps(method, sort_keys=False)]
+    for name in names:
+        entry = held.get(name)
+        row = {
+            "schema": records.SCHEMA,
+            "kind": PICKS_ROW,
+            "name": name,
+            "offered": bool(entry.offered) if entry else False,
+            "seats": int(seats.get(name, 0)),
+        }
+        family = families.get(name)
+        if family:
+            row["family"] = family
+        lines.append(json.dumps(row))
+    PICKS_RECORD.write_text("\n".join(lines) + "\n", encoding="utf-8", newline="\n")
+    return PICKS_RECORD, len(names), sum(1 for name in names if families.get(name)), ledger_rows
 
 
 # --------------------------------------------------------------------------- the catalog
@@ -681,11 +1075,19 @@ def _rustc_version() -> str:
 def bake(*, palettes_only: bool = False) -> list[str]:
     """Everything the explorer is generated from, in one pass."""
     written = []
-    path, count, offered, chosen = write_palettes()
+    made = write_palettes()
     written.append(
-        f"{path.relative_to(SITE_ROOT).as_posix()}  {count} palettes ({offered} offered), "
-        f"default {chosen}"
+        f"{PALETTES_MODULE.relative_to(SITE_ROOT).as_posix()}  {made.count} palettes "
+        f"({made.offered} offered, {made.families} with a hue family), default {made.chosen}"
     )
+    written.append(
+        f"{PALETTES_BLOB.relative_to(SITE_ROOT).as_posix()}  {len(made.blob):,} bytes, untracked"
+    )
+    if PALETTES_SWATCH.is_file():
+        written.append(
+            f"{PALETTES_SWATCH.relative_to(SITE_ROOT).as_posix()}  "
+            f"{PALETTES_SWATCH.stat().st_size:,} bytes, untracked"
+        )
     path, modes = write_catalog()
     written.append(f"{path.relative_to(SITE_ROOT).as_posix()}  {modes} offered modes")
     if palettes_only:

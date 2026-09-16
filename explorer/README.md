@@ -2,7 +2,8 @@
 
 One page that runs the wallpaper project's own renderer in the browser: pan and zoom
 every family the wallpapers are drawn from, in every mode the pipeline ships, under any
-of the 77 curated palettes, and copy a link to whatever is on screen. Every figure of the
+of the 77 curated palettes — any of the library's 1,021 by link — and copy a link to
+whatever is on screen. Every figure of the
 article that this page can draw again carries a link straight into it.
 
 **Nine families, seventeen modes, `f64`.** The parameter planes `mandelbrot` and
@@ -76,17 +77,70 @@ download.js           the same render at a wallpaper's size, and what caps it
 render.js             the worker pool, the plan, the field passes, the shade
 worker.js             one worker: one wasm instance, one band of rows
 permalink.js          the link contract — parse, validate, canonicalize
-permalink.test.mjs    34 tests, `node --test explorer/permalink.test.mjs`
+permalink.test.mjs    43 tests, `node --test explorer/permalink.test.mjs`
 bands.test.mjs        3 tests: the pool cuts the frame, never what is in it
-palettes.jsonl        the roster palettes.js is baked from; 77 of them offered
+palettes.jsonl        the roster palettes.js is baked from; 1,021 maps, 77 offered
 modes.jsonl           the roster catalog.js is baked from: the 17 modes the picker offers
-palettes.js           generated: the colormaps, by name, curated or drawn-in
+stops.js              the blob's reader: a map's control points, by name
+palettes.js           generated: the index — name to kind, offer, offset, count
+palettes.bin          generated and UNTRACKED: every map's control points, sRGB8
+palettes-swatch.png   generated and UNTRACKED: a row of gradient per map, to look at
 catalog.js            generated: the offered modes, their curves, the anchors' constants
 links.jsonl           generated: every figure and tile, as a link here or a reason not
 engine.wasm           generated: the engine, compiled
 engine.manifest.json  generated: what engine.wasm was built from
 engine-wasm/          the crate that produces engine.wasm
 ```
+
+## Every colormap, and where they live
+
+The page carries **1,021** maps, which is the whole tracked library, and it used to carry
+126. The reason is a gallery seat: a link built from a seat's recipe has to be able to
+name the map that seat was drawn in, and the published record alone seats **451 distinct
+maps**. The 126 were the curated set plus whatever this site's own figures happened to
+land in, which is a set that answers "can this figure be opened" and not "can any seat
+be".
+
+**What is offered did not move.** The picker still lists the same **77**, frozen where
+they were on 2026-08-23. `offered` is a field of `palettes.jsonl` and widening the picker
+is still an edit somebody makes on purpose.
+
+**The gradients are beside the module rather than in it.** `palettes.js` is an index —
+for each map, whether it closes, whether the picker lists it, where its colours start in
+`palettes.bin` and how many stops it has, plus two readings described below.
+`palettes.bin` is those colours: sRGB8, three bytes a stop, 345,650 stops, **1,036,950
+bytes**, in the index's own order. Inline as JavaScript source that is about twelve
+megabytes a browser parses before it draws anything; as a blob it is one `fetch` that
+goes out beside the wasm's, on a boot the page already waits through. `stops.js` is the
+reader, and it checks the blob's length against the index's own stamp before trusting a
+byte of it — an index and a blob that disagree do not fail, they draw map `n`'s bytes at
+map `n+1`'s offset, which is a real gradient belonging to somebody else.
+
+**No positions are stored, and the bake refuses a map that would need them.** Stop `i` of
+every map in this library sits at exactly `i/(n-1)` — checked as an `f64` on all 1,021 —
+so the index's stop count is the whole of the addressing. `builder/explorer.py`'s `blob`
+compares each position with `i/(n-1)` and **stops the bake by name** where one differs,
+rather than rounding a gradient into the format: the engine does not require even
+spacing, this library merely has it, and the day it does not is a decision somebody makes
+rather than a bend nobody sees.
+
+**Two readings ride in the index that the library does not hold.** `family` is the hue
+family a map most often *produces* — the modal leading entry of `colour.families` over
+the candidate-ledger rows drawn in it whose fine-head `p_ge4` clears
+`solve.DEFAULT_FINE_BAR`, absent where it has no such row, **929 of 1,021 have one** —
+and `seats` is how many seats of the published record were drawn in it. Neither is a fact
+about the gradient and both are frozen in `palettes.jsonl` rather than derived at bake
+time, because the ledger is written to while a bake runs and a picker's metadata that
+moved on its own is the failure that record exists for. `python -m builder explorer
+--roster <release>` is what reads them.
+
+**The blob and the swatch are untracked.** They are the one library-sized thing here and
+what is committed is the index that addresses them; both are in `.git/info/exclude` and
+`python -m builder explorer --palettes-only` writes them. `builder check`'s `bake` holds
+the blob on disk to a rebake of it byte for byte, and says so by name when it is missing.
+The swatch is a row of gradient per map in index order, 1,024 wide, each column one of
+the map's own stops taken whole — a picture of the file for a person, not the shading
+table, which the engine bakes at 4,096 by interpolating in Oklab.
 
 The five generated files are **committed artifacts**. The site never builds; a clone
 with no wallpaper project beside it serves this page exactly as this checkout does. Only
@@ -131,7 +185,7 @@ Committed beside the module, `engine.manifest.json` records what it was built fr
 | `rustc` | the compiler, with its commit and date |
 | `wallpapers_commit` | the sibling checkout's `HEAD` at bake time |
 | `engine_changes` | every change this consumer has needed in the engine, one line each |
-| `raw_bytes` / `gzip_bytes` | 614,666 raw, **177,908 gzipped** |
+| `raw_bytes` / `gzip_bytes` | 634,824 raw, **184,458 gzipped** |
 
 `engine_changes` is typed, in `builder/explorer.py`, and is the condition CLAUDE.md puts
 on a website prompt touching the sibling engine at all: a zero-behaviour change is allowed
@@ -664,8 +718,9 @@ mandelbrot `smooth_trap_circle` 1.47 s, and the worst seen, julia5 `threads` at 
 0.25, 7.77 s. Shade is main-thread and pool-independent at 150–500 ms, and a preview
 lands at a sixteenth of the samples before any of it.
 
-**The module** is 614,666 bytes raw and 177,908 gzipped, against draft 1's 190,240 and
-70,639. Most of that is the eighteen modes' worth of engine that is reachable at all —
+**The module** is 634,824 bytes raw and 184,458 gzipped, against draft 1's 190,240 and
+70,639. The tone operator is 18,955 of that raw and 6,043 gzipped — two bisections and a
+subdivision, and it buys a gallery seat's own colour. Most of that is the eighteen modes' worth of engine that is reachable at all —
 every field reduction, both blends, the trap painter, all nine families — plus
 `serde_json` and the derived readers for the spec.
 
@@ -700,7 +755,7 @@ the version is cheaper than leaving a reader to find it out.
 ### The keys, in emit order
 
 ```
-v · f · cx · cy · px · py · zx · zy · m · the mode's parameters · x · y · w · a · p · the shade keys
+v · f · cx · cy · px · py · zx · zy · m · the mode's parameters · x · y · w · a · p · the shade keys · level
 ```
 
 - **`v`** — required. `1` and `2` both parse; every string this page writes says `v=2`.
@@ -754,13 +809,12 @@ v · f · cx · cy · px · py · zx · zy · m · the mode's parameters · x ·
   carry a resolution.
 - **`p`** — a palette **name**, which must be one the page carries. Names and never
   indices: a colormap added next year must not repaint a link saved this year. **The set
-  a link may name is wider than the set the picker offers**: every curated map is
-  offered, and baked alongside them are the maps this site's own figures were drawn in,
-  most of which arrived in the wallpaper project by mechanical conversion and are not
-  curated. A map the article publishes a picture in has to be nameable or that picture
-  cannot be opened here at all; it does not have to be on the menu, and putting it there
-  would widen a distinction this repository does not own. A link arriving on an unoffered
-  map draws it, and the picker shows that map for as long as it is the one on the screen.
+  a link may name is wider than the set the picker offers**: a link may name any of the
+  library's **1,021** maps and the picker lists **77** of them. It used to be the curated
+  set plus whatever this site's own figures landed in, which answered "can this figure be
+  opened" and not "can any gallery seat be" — and 451 distinct maps are seated in the
+  published record alone. A link arriving on an unoffered map draws it, and the picker
+  shows that map for as long as it is the one on the screen.
 - **The seven shade keys** are the engine's own `Palette` recipe, one key per real engine
   parameter, at the engine's defaults, handed to the module exactly as they are read
   here. They were **link-only** for two drafts and are not any more — see *The controls
@@ -779,6 +833,103 @@ v · f · cx · cy · px · py · zx · zy · m · the mode's parameters · x ·
 `transfer` and `rolloff` are **tagged**: a kind, and its one parameter after a colon
 where it takes one. A kind that takes no parameter is refused if given one, and a kind
 that needs one is refused without it.
+
+### `level`, and a gallery seat's own colour
+
+**A seat is not drawn through the map its recipe names.** Every candidate the wallpaper
+project makes goes through `band_autolevel/v1`: it measures the finished picture's Oklab
+tone, and where that tone sits outside the band of finished wallpapers it pushes a curve
+through the **map's own stops** and renders again. The operator lives in that project's
+Python and never touches a pixel — it reads an image and writes a colour ramp — so a link
+built from a seat's recipe alone draws the right geometry in the wrong colour. The
+wallpaper project's own records put that at **29.51 of 255** on the seat this was first
+caught on, where re-encoding the same JPEG costs about **2.4**.
+
+| key | default | value |
+| --- | --- | --- |
+| `level` | absent | `band_autolevel/v1:<black_pt>,<white_pt>,<exponent>,<out_ends[0]>,<out_ends[1]>` |
+
+**Five numbers, in the operator's own order and under its own field names.** They are
+what the operator's `apply_curve` reads and nothing else. A run's stamp carries nine more
+— the band it was projected onto, which side of that band each statistic fell, whether
+the exponent was clamped — and every one of those is how the curve was *arrived at*,
+which a replay does not need and a link should not carry.
+
+**The version is part of the name.** A `band_autolevel/v2` that measured differently is a
+value this contract refuses by name rather than a curve it misreads.
+
+**Absent is off**, so every link written before this key existed draws exactly what it
+drew. A key with a default is a widening, which is why this is not a version 3.
+
+**The operator's own `applies_to` is enforced, and by the module rather than here.** It
+acts on a field coloring and on a composite and on nothing else, so `level` under a
+direct trap or under the modulate is a refusal in the engine's voice — a link asking for
+it would be replaying a decision no run ever took. That test reads a coloring kind, which
+lives in the engine's mode catalog, and a fourth copy of that catalog in `permalink.js`
+is a fourth thing to keep in step.
+
+**It is not one of the seven shade keys and must not become one.** Those seven *are* the
+engine's `Palette` recipe and are handed to the module as a unit; `level` is a separate
+operator and crosses beside them, and the module curves the stops before it bakes them.
+It is on the **colour** side of the field cache for the same reason every shade key is:
+the operator moves a ramp and cannot move a sample.
+
+**The curve is replayed by the wasm, not by the page.** `explorer/engine-wasm/src/level.rs`
+is the second half of the operator — densify, the piecewise curve, the chroma cap's
+walk-back, the gamut pull-back — and every colour conversion in it goes through
+`fractal_engine::colormap`'s own public `srgb_to_linear`, `linear_to_srgb`,
+`linear_srgb_to_oklab` and `oklab_to_linear_srgb`. The Python side keeps one copy of
+Ottosson's matrices for the stated reason that two halves of one project should not
+disagree about what a colour is, and a third written out here would be exactly that.
+**Nothing in the engine changed for it**; all four were already public.
+
+**The port is held to the operator, and was measured wider than it is held.**
+`level-cases.json` beside the crate holds four `(map, curve)` pairs and the stop list
+`autolevel.curved_stops` returns for each — one map of each stop count the library has,
+one cyclic, exponents on both sides of 1 and one clamped, the chroma cap firing on 22
+stops in the mildest case and 1,524 in the hardest — and `cargo test` compares. Behind
+that fixture: **261 maps over 261 distinct recorded curves, 1,467,495 stop bytes, 0
+different** (2026-09-15).
+
+**Measured end to end**, on ten seats of the published record `20260914T171846Z` whose
+run recorded a curve that actually acted — seven modes over five families, each opened as
+a link and drawn by the page's own modules at the seat's own regime, 1280x720 at two
+samples per pixel, against the picture the record ships. Mean absolute difference per
+channel out of 255, which is `builder check`'s `seats` own distance:
+
+| seat | mode | family | as a link | curve dropped | codec floor |
+| --- | --- | --- | --- | --- | --- |
+| `752e3977` | `smooth_mean_angle` | phoenix | 4.89 | 5.39 | 2.26 |
+| `7d6e5b01` | `smooth` | julia3 | 3.63 | **28.34** | 1.70 |
+| `527a2b1d` | `curvature` | julia3 | 4.53 | 4.40 | 2.31 |
+| `951253cd` | `threads` | multibrot3 | 2.95 | 3.10 | 1.31 |
+| `27aed4c3` | `stripe` | julia | 4.42 | **9.73** | 2.48 |
+| `fc627779` | `tia` | mandelbrot | 3.33 | **6.70** | 1.76 |
+| `22ef264a` | `threads` | multibrot4 | 3.41 | 3.88 | 1.89 |
+| `53f334f7` | `tia` | multibrot4 | 3.02 | **7.37** | 1.45 |
+| `b6c86c4d` | `smooth` | multibrot3 | 2.69 | **23.93** | 1.30 |
+| `03f826d1` | `smooth_stripe` | mandelbrot | 4.65 | **27.81** | 2.12 |
+
+All ten land **2.69 to 4.89**, inside `checks.SEAT_TOLERANCE`'s 6.0 and in the same band
+`picks.RECIPE_AGREEMENT` records for a correctly drawn panel, over a codec floor of 1.30
+to 2.48. With the curve dropped the same ten run 3.10 to 28.34 and five of them break the
+tolerance. **Every one of the ten is the canonical spelling of its own view**, and the
+engine's depth policy answers each with exactly the cap the recipe pinned, so the one
+thing the contract deliberately cannot carry did not have to be carried.
+
+**Two of the ten barely move**, `527a2b1d` by −0.13 and `951253cd` by 0.15, and one of
+those is fractionally *worse* with the curve. Both are curves whose effect on their own
+map is near nothing, and both readings sit at about twice the floor either way, which is
+where a correctly drawn panel sits. What the table shows is that the key is never a cost
+and is sometimes the whole picture.
+
+**A link should not carry an identity curve.** Every stamp has a `curve` block and an
+identity one means the render *is* the base map's — the operator writes no levelled map
+at all. Replaying one is not quite a no-op here, because the stops make a round trip
+through Oklab and back to `u8`: measured at 0.01 to 0.02 of 255 over the ten identity
+seats first drawn for this table, which is nothing, and is still a picture nobody asked
+for. Whatever builds a link off a record reads `applies && !identity`, not "a curve is
+recorded".
 
 **Folding is off by default and is never applied on a map's behalf**, which is what
 `tiles` and `expand` do in the wallpaper project. `location_view` is the one view over
@@ -854,7 +1005,7 @@ list of what a link may *say*. Two lists on purpose — a contract that read its
 from a generated file could be widened by rebuilding it — and the test suite asserts they
 are the same roster in the same order, which is where a promoted or retired mode shows up.
 
-`permalink.test.mjs` holds all of that: **34 tests**, Node's own runner, nothing
+`permalink.test.mjs` holds all of that: **43 tests**, Node's own runner, nothing
 installed. Among them, encode-then-decode is the identity for **every family crossed with
 a mode of each of the engine's four coloring shapes**, parameters and constants included.
 
@@ -889,8 +1040,9 @@ every row is a picture on the site.
 ## Rebuilding
 
 ```
-python -m builder explorer                 # palettes, wasm, manifest
+python -m builder explorer                 # palettes, blob, swatch, catalog, wasm, manifest
 python -m builder explorer --palettes-only # when only the colormaps moved
+python -m builder explorer --roster <stamp>  # and re-read each map's family and seat count
 python -m builder links --write            # the link registry, from figure provenance
 ```
 
