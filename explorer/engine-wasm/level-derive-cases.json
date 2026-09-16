@@ -1,0 +1,326 @@
+{
+  "band_sha256": "49d4f43b200904c5967df788308834be163698081d85802df978554261aa63a1",
+  "source": "fractal-wallpapers artifacts/curation/autolevel_backfill.jsonl",
+  "pixels": "artifacts/level-derive/<key>.rgb, written by make-derive-cases.py",
+  "curves": [
+    {
+      "key": "002027dd34b42442",
+      "why": "guarded black",
+      "measured": {
+        "black_pt": null,
+        "black_pt_all": 0.15843160214482607,
+        "white_pt": 0.8886051231611396,
+        "mid": 0.5518929149846422
+      },
+      "curve": {
+        "applies": true,
+        "identity": true,
+        "black_pt": 0.15843160214482607,
+        "white_pt": 0.8886051231611396,
+        "exponent": 1.0,
+        "out_ends": [
+          0.15843160214482607,
+          0.8886051231611396
+        ]
+      }
+    },
+    {
+      "key": "013638b27c81d5a0",
+      "why": "clamped at 2",
+      "measured": {
+        "black_pt": 0.0,
+        "black_pt_all": 0.0,
+        "white_pt": 0.9786018361665012,
+        "mid": 0.8763662450674595
+      },
+      "curve": {
+        "applies": true,
+        "identity": false,
+        "black_pt": 0.0,
+        "white_pt": 0.9786018361665012,
+        "exponent": 2.0,
+        "out_ends": [
+          0.0,
+          0.9786018361665012
+        ]
+      }
+    },
+    {
+      "key": "01e63e273a10f3cb",
+      "why": "clamped at 1/2",
+      "measured": {
+        "black_pt": 0.8430950429468159,
+        "black_pt_all": 0.8434447612086232,
+        "white_pt": 0.9844523805844027,
+        "mid": 0.8999521735449982
+      },
+      "curve": {
+        "applies": true,
+        "identity": false,
+        "black_pt": 0.8430950429468159,
+        "white_pt": 0.9844523805844027,
+        "exponent": 0.5,
+        "out_ends": [
+          0.3008176686683185,
+          0.9844523805844027
+        ]
+      }
+    },
+    {
+      "key": "0083ff985110caf3",
+      "why": "black above band",
+      "measured": {
+        "black_pt": 0.37615445346056486,
+        "black_pt_all": 0.3471718063221643,
+        "white_pt": 0.9269976637878269,
+        "mid": 0.7908018486396482
+      },
+      "curve": {
+        "applies": true,
+        "identity": false,
+        "black_pt": 0.37615445346056486,
+        "white_pt": 0.9269976637878269,
+        "exponent": 1.2643348940546066,
+        "out_ends": [
+          0.3008176686683185,
+          0.9269976637878269
+        ]
+      }
+    },
+    {
+      "key": "00dbe3681ff05a24",
+      "why": "white below band",
+      "measured": {
+        "black_pt": 0.0807285627947693,
+        "black_pt_all": 0.09314127474917953,
+        "white_pt": 0.8496004871587719,
+        "mid": 0.32988771270428524
+      },
+      "curve": {
+        "applies": true,
+        "identity": false,
+        "black_pt": 0.0807285627947693,
+        "white_pt": 0.8496004871587719,
+        "exponent": 1.0153198712505105,
+        "out_ends": [
+          0.0807285627947693,
+          0.8629886965307019
+        ]
+      }
+    },
+    {
+      "key": "01fbb1c0deceaebe",
+      "why": "white above band",
+      "measured": {
+        "black_pt": 0.042201498685263905,
+        "black_pt_all": 0.5673853885315815,
+        "white_pt": 0.9999999934735462,
+        "mid": 0.8489110972401865
+      },
+      "curve": {
+        "applies": true,
+        "identity": false,
+        "black_pt": 0.042201498685263905,
+        "white_pt": 0.9999999934735462,
+        "exponent": 1.8366845211035117,
+        "out_ends": [
+          0.042201498685263905,
+          0.9960350764349456
+        ]
+      }
+    },
+    {
+      "key": "02bc79c3f3f62059",
+      "why": "mid below band",
+      "measured": {
+        "black_pt": 0.038273136075353466,
+        "black_pt_all": 0.06963529051179199,
+        "white_pt": 0.6532960379160244,
+        "mid": 0.21177088772302588
+      },
+      "curve": {
+        "applies": true,
+        "identity": false,
+        "black_pt": 0.038273136075353466,
+        "white_pt": 0.6532960379160244,
+        "exponent": 1.0157668585861712,
+        "out_ends": [
+          0.038273136075353466,
+          0.8629886965307019
+        ]
+      }
+    },
+    {
+      "key": "000891ba4515a783",
+      "why": "mid above band",
+      "measured": {
+        "black_pt": 0.2944440847906507,
+        "black_pt_all": 0.343898493864663,
+        "white_pt": 0.9783609544829114,
+        "mid": 0.7979616734920572
+      },
+      "curve": {
+        "applies": true,
+        "identity": false,
+        "black_pt": 0.2944440847906507,
+        "white_pt": 0.9783609544829114,
+        "exponent": 1.4134591458027213,
+        "out_ends": [
+          0.2944440847906507,
+          0.9783609544829114
+        ]
+      }
+    },
+    {
+      "key": "00044bc4f8112433",
+      "why": "identity",
+      "measured": {
+        "black_pt": 0.0,
+        "black_pt_all": 0.09080356972980684,
+        "white_pt": 0.9802252450021036,
+        "mid": 0.7252001202154759
+      },
+      "curve": {
+        "applies": true,
+        "identity": true,
+        "black_pt": 0.0,
+        "white_pt": 0.9802252450021036,
+        "exponent": 1.0,
+        "out_ends": [
+          0.0,
+          0.9802252450021036
+        ]
+      }
+    },
+    {
+      "key": "01280459d3ef7919",
+      "why": "unclamped, both ends moved",
+      "measured": {
+        "black_pt": 0.31998240443136944,
+        "black_pt_all": 0.3243781170847215,
+        "white_pt": 0.6408449400847782,
+        "mid": 0.4981017030509765
+      },
+      "curve": {
+        "applies": true,
+        "identity": false,
+        "black_pt": 0.31998240443136944,
+        "white_pt": 0.6408449400847782,
+        "exponent": 1.7791949289003266,
+        "out_ends": [
+          0.3008176686683185,
+          0.8629886965307019
+        ]
+      }
+    },
+    {
+      "key": null,
+      "why": "synthetic: degenerate range",
+      "measured": {
+        "black_pt": 0.5,
+        "black_pt_all": 0.5,
+        "white_pt": 0.52,
+        "mid": 0.51
+      },
+      "curve": {
+        "applies": false,
+        "identity": null,
+        "black_pt": 0.5,
+        "white_pt": 0.52,
+        "exponent": 1.0,
+        "out_ends": [
+          0.5,
+          0.52
+        ]
+      }
+    },
+    {
+      "key": null,
+      "why": "synthetic: midtone outside the position window",
+      "measured": {
+        "black_pt": 0.1,
+        "black_pt_all": 0.1,
+        "white_pt": 0.9,
+        "mid": 0.1
+      },
+      "curve": {
+        "applies": true,
+        "identity": true,
+        "black_pt": 0.1,
+        "white_pt": 0.9,
+        "exponent": 1.0,
+        "out_ends": [
+          0.1,
+          0.9
+        ]
+      }
+    },
+    {
+      "key": null,
+      "why": "synthetic: guarded black high in the range",
+      "measured": {
+        "black_pt": null,
+        "black_pt_all": 0.95,
+        "white_pt": 1.0,
+        "mid": 0.97
+      },
+      "curve": {
+        "applies": true,
+        "identity": false,
+        "black_pt": 0.95,
+        "white_pt": 1.0,
+        "exponent": 1.0,
+        "out_ends": [
+          0.95,
+          0.9960350764349456
+        ]
+      }
+    }
+  ],
+  "stats": [
+    {
+      "key": "002027dd34b42442",
+      "width": 640,
+      "height": 360,
+      "measured": {
+        "black_pt": null,
+        "black_pt_all": 0.15843160214482607,
+        "white_pt": 0.8886051231611396,
+        "mid": 0.5518929149846422
+      }
+    },
+    {
+      "key": "013638b27c81d5a0",
+      "width": 640,
+      "height": 360,
+      "measured": {
+        "black_pt": 0.0,
+        "black_pt_all": 0.0,
+        "white_pt": 0.9786018361665012,
+        "mid": 0.8763662450674595
+      }
+    },
+    {
+      "key": "01e63e273a10f3cb",
+      "width": 640,
+      "height": 360,
+      "measured": {
+        "black_pt": 0.8430950429468159,
+        "black_pt_all": 0.8434447612086232,
+        "white_pt": 0.9844523805844027,
+        "mid": 0.8999521735449982
+      }
+    },
+    {
+      "key": "0083ff985110caf3",
+      "width": 640,
+      "height": 360,
+      "measured": {
+        "black_pt": 0.37615445346056486,
+        "black_pt_all": 0.3471718063221643,
+        "white_pt": 0.9269976637878269,
+        "mid": 0.7908018486396482
+      }
+    }
+  ]
+}

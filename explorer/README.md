@@ -87,6 +87,7 @@ worker.js             one worker: one wasm instance, one band of rows
 permalink.js          the link contract — parse, validate, canonicalize
 permalink.test.mjs    46 tests, `node --test explorer/permalink.test.mjs`
 bands.test.mjs        3 tests: the pool cuts the frame, never what is in it
+level.test.mjs        7 tests: the module's tone measurement, and a derived curve replays
 palettes.jsonl        the roster palettes.js is baked from; 1,021 maps, 77 offered
 modes.jsonl           the roster catalog.js is baked from: the 17 modes the picker offers
 palette-names.json    every map's display name, by underlying name; generated, then hand-editable
@@ -159,10 +160,10 @@ a link's would be. There is no second path, which is what keeps the address bar 
 **What a link cannot carry is said under the canvas.** Every wallpaper the pool makes
 goes through `band_autolevel/v1`, and the curve lives on the run's record rather than in
 the recipe: 98 of the thousand seats carry one into their link, 493 come from runs that
-wrote nothing down at all, and those open at the recipe with a sentence saying so. The
-autolevel switch replays a curve that arrived and never measures one — only the second
-half of the operator crossed into this page, and a control that measured its own would be
-a second operator.
+wrote nothing down at all, and those open at the recipe with a sentence saying so. A view
+that **arrived** replays exactly what its link carries, curve or no curve; the first view
+a reader **makes** — a pan, a zoom, any control — is measured on its own finished picture
+by the same operator, ported whole. See *`level`, and a gallery seat's own colour* below.
 
 **`panel` is a UI key.** Which side is open travels in the URL and is not part of the
 picture: `permalink.js` tolerates the key, reads nothing from it and never emits it, so
@@ -961,7 +962,13 @@ which a replay does not need and a link should not carry.
 value this contract refuses by name rather than a curve it misreads.
 
 **Absent is off**, so every link written before this key existed draws exactly what it
-drew. A key with a default is a widening, which is why this is not a version 3.
+drew. A key with a default is a widening, which is why this is not a version 3. Absent
+stays off even now that the page can measure a curve of its own: 612 of the thousand
+seats are field or composite pictures whose link carries no curve (291 carry one, and 97
+are direct traps or the modulate, which the operator never acts on), and
+all 62 rows of `links.jsonl` are figures drawn without a curve, so reading absent as
+*measure this* would open every one of them in a tone nobody chose. Measuring starts when
+the reader changes the view, never when a link is opened.
 
 **The operator's own `applies_to` is enforced, and by the module rather than here.** It
 acts on a field coloring and on a composite and on nothing else, so `level` under a
@@ -1025,6 +1032,72 @@ map is near nothing, and both readings sit at about twice the floor either way, 
 where a correctly drawn panel sits. What the table shows is that the key is never a cost
 and is sometimes the whole picture.
 
+### A view the reader made measures its own curve *(autolevel_port_ckpt127, 2026-09-16)*
+
+**Both halves of the operator are in the module now.** `level.rs` carries `tone_stats` —
+sRGB8 to Oklab lightness and chroma per pixel, P0.5 and P99.5 by **numpy's own linear
+interpolation** (not the engine's nearest-rank `coloring::percentile`, which answers a
+different number), the masked median, the neutral-black guard — and `derive_curve`
+verbatim, over the band's six numbers transcribed from `levels_band.json` with its sha.
+
+**Two states, and which one a view is in is the page's.**
+
+| state | entered by | the picture | the note beside Autolevel |
+| --- | --- | --- | --- |
+| stored | a seat, an atlas mark, a pasted link | replays `level=` exactly, or no curve where there is none | *Leveled to this wallpaper's stored tone curve* |
+| derived | the first pan, zoom or control change; a bare page | measured on its own finished picture, every pass | *Leveled to this view* |
+
+The Autolevel box is enabled wherever the operator acts — a field coloring or a composite,
+which the plan now answers as `levels` — and disabled with *Not used by this mode* under a
+direct trap or the modulate. Unticked, the palette is drawn as it is; ticked again, a
+stored view gets its curve back and a derived view is measured again.
+
+**The measurement is on the final stage and nowhere else.** `shade_level` colours the
+two-sample field, measures what it drew, and where the operator acts curves the stops,
+bakes again and colours **the same field** a second time — one export, because `shade`
+frees the lanes before it colours and a second call would copy the whole field back in.
+It runs in `shadeApart`'s worker, so the render dot turns final only when the levelled
+picture is up. The preview and one-sample stages draw in the last derived curve, so a pan
+does not flash to the unlevelled tone and back.
+
+**Copy link writes five numbers, never a flag.** A derived curve goes into `view.level`,
+so the address bar and Copy link carry `level=band_autolevel/v1:…` and a link reopens as
+the picture that was seen — as a *stored* view, because a measurement taken on another
+reader's window would not be. A derived pass whose tone was already in band writes no key,
+which reopens as the same unlevelled picture. **Download** replays a stored curve at any
+size and measures a derived view again on the frame it draws, because the curve is a
+measurement of a frame by design; *As shown* at two samples saves the screen's picture,
+curve and all.
+
+**Pinned, three ways.** `cargo test` in the crate:
+
+- `the_derivation_is_the_operator` — `level-derive-cases.json`: ten backfill rows chosen
+  to reach every branch of `derive_curve` (a guarded black, the exponent clamped at each
+  end, each statistic below and above its band, the identity, both ends moved) and three
+  synthetic statistics for branches no row reaches, answered by the operator itself.
+  Stored measured statistics in, **stored curve out, bit for bit**.
+- `…_on_every_backfill_row` — the same over the whole sidecar next door where this
+  machine has it: **4,411 of 4,411 exact** (2026-09-16).
+- `the_measurement_is_the_operator` — four bases re-rendered at `640x360ss2` by
+  `make-derive-cases.py`, JPEG-decoded by PIL, refused unless Python's `tone_stats` gives
+  the row's stored statistics; the port reads the same pixels and lands **0 away** on all
+  four. The pixels are in ignored `artifacts/level-derive/` and the test skips by name
+  without them.
+
+**It took one fix to get there, and it was not arithmetic.** The first run matched 3,987
+of 4,411. The misses were a unit of last place in the exponent, and the cause was
+`serde_json`'s default float parser, which is fast rather than exact and reads about one
+17-digit decimal in ten a unit off. `float_roundtrip` is on in `Cargo.toml` now. It
+matters beyond the test: a replayed `level=` crosses into the module the same way.
+
+`explorer/level.test.mjs` holds the **module** — not the native build — to the same
+pixels: wasm's `cbrt` is its own libm, and lands within **2.2e-16** of the operator (two
+of the four exact), which the suite allows to 1e-12. It also holds `shade_level` without a
+derivation to `shade` byte for byte, a derived curve to **replaying to the same bytes it
+drew** under `smooth` and `smooth_stripe` (which is what makes Copy link honest), the
+modulate to never levelling, and a spec that already replays a curve to being refused a
+derivation.
+
 **A link should not carry an identity curve.** Every stamp has a `curve` block and an
 identity one means the render *is* the base map's — the operator writes no levelled map
 at all. Replaying one is not quite a no-op here, because the stops make a round trip
@@ -1081,11 +1154,12 @@ recipe** group. What is worth writing down is the shape rather than the widgets:
   and says which map and why rather than letting a reader write a link that will not open.
 - **The count of what is set is the reset button's state.** Engine defaults is disabled
   at zero and reads *Engine defaults (3)* otherwise; there is no separate counter.
-- **Autolevel is disabled where there is no curve to replay**, with one line beside it
-  saying there is nothing to measure for this view; the longer reason — only the replay
-  half of the operator crossed into this page — is behind the `?` beside it, as a title
-  and as a click-to-reveal paragraph. A view that arrived carrying a curve has the
-  switch enabled, both ways, as before.
+- **Autolevel is disabled only where the operator has nothing to say** — a direct trap or
+  the modulate — with *Not used by this mode* beside it. Everywhere else it is enabled,
+  with one line saying whether the curve in force is this wallpaper's stored one or this
+  view's own; the longer reason is behind the `?`, as a title and as a click-to-reveal
+  paragraph, in two sentences: gallery wallpapers carry the curve they were made with, and
+  any other view is leveled from its own picture.
 
 ### The rules the keys are read under
 

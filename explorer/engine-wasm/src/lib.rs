@@ -9,6 +9,10 @@
 //! shade(spec, lanes)        -> RGBA bytes  a frame at a time, and it owns them
 //! ```
 //!
+//! `shade_level` is `shade` with the autolevel operator's measure half after it —
+//! the finished picture measured, and where it acts the same field coloured again
+//! through a curved map — and `derive_level` is that measurement alone, for a test.
+//!
 //! A field is what costs seconds; a color is what costs milliseconds. Computing
 //! them apart is what lets a worker own a band of rows, and lets a palette change
 //! recolor a picture that is already on the screen without iterating anything
@@ -110,8 +114,8 @@ struct Spec {
     #[serde(default)]
     colormap: Option<ColormapSpec>,
     /// The tone curve a run's `band_autolevel/v1` derived, replayed on this map's
-    /// stops. Absent means the operator did not act, which is what every picture
-    /// drawn on this page meant before the key existed — see [`level`].
+    /// stops. Absent means no curve is replayed: either the operator did not act, or
+    /// the caller is [`shade_level`] asking to measure one — see [`level`].
     #[serde(default)]
     autolevel: Option<level::Curve>,
 }
@@ -153,6 +157,12 @@ struct Plan {
     coloring: Coloring,
     palette: Palette,
     colormap: Option<Colormap>,
+    /// The map's control points as they arrived, before any curve: what a view that
+    /// measures its own tone curves and bakes again. See [`shade_level`].
+    source: Option<(Kind, Vec<(f64, [u8; 3])>)>,
+    /// Whether the spec carried a curve to replay. A picture drawn through one is
+    /// already levelled, and measuring it would level it twice.
+    replays: bool,
     /// The fields this coloring reads, in the order this module stores them: base
     /// first, texture second. Empty for a direct trap, which reads none.
     lanes: Vec<Layer>,
@@ -164,6 +174,12 @@ struct Plan {
 impl Plan {
     fn direct(&self) -> bool {
         matches!(self.coloring, Coloring::Direct { .. })
+    }
+
+    /// Whether `band_autolevel/v1` acts on this coloring at all: the operator's own
+    /// `applies_to`, a field coloring and a composite and nothing else.
+    fn levels(&self) -> bool {
+        matches!(self.coloring, Coloring::Field { .. } | Coloring::Composite { .. })
     }
 
     /// Samples in one band of rows.
@@ -253,7 +269,8 @@ fn resolve(text: &str) -> Result<Plan, String> {
             ));
         }
     }
-    let colormap = match spec.colormap {
+    let replays = spec.autolevel.is_some();
+    let colormap = match &spec.colormap {
         Some(map) => {
             let curved;
             let stops: &[(f64, [u8; 3])] = match &spec.autolevel {
@@ -272,6 +289,7 @@ fn resolve(text: &str) -> Result<Plan, String> {
         }
         None => None,
     };
+    let source = spec.colormap.map(|map| (map.kind, map.stops));
 
     let lanes = lanes_of(&coloring);
     // The modulate's texture is a base-`k` expansion whose deep digits are the
@@ -290,6 +308,8 @@ fn resolve(text: &str) -> Result<Plan, String> {
         coloring,
         palette: spec.palette,
         colormap,
+        source,
+        replays,
         lanes,
         exact,
     })
@@ -473,6 +493,7 @@ pub extern "C" fn plan(spec_ptr: *const u8, spec_len: usize) -> *mut u8 {
             "lanes": plan.lanes.len(),
             "exact": plan.exact,
             "direct": plan.direct(),
+            "levels": plan.levels(),
             "params": params_of(&plan.coloring),
             "resolution_ulps": plan.view.resolution_ulps(),
         }),
@@ -748,12 +769,141 @@ pub extern "C" fn shade(
         .colormap
         .as_ref()
         .expect("a colormap, which read_lanes refuses without");
+    match colour(&plan, &base, &texture, colormap) {
+        Some(rgb) => release(rgba(&rgb)),
+        None => std::ptr::null_mut(),
+    }
+}
+
+/// How many bytes [`shade_level`] and [`derive_level`] put in front of what they
+/// return: one saying whether a curve acts, seven of padding, and the curve's five
+/// numbers as little-endian `f64`.
+const LEVEL_HEADER: usize = 48;
+
+/// The header: whether the curve acts, and its five numbers (zeros where there is none).
+fn level_header(acts: bool, curve: Option<level::Curve>) -> Vec<u8> {
+    let mut out = Vec::with_capacity(LEVEL_HEADER);
+    out.extend_from_slice(&[u8::from(acts), 0, 0, 0, 0, 0, 0, 0]);
+    match curve {
+        Some(curve) => {
+            for value in [
+                curve.black_pt,
+                curve.white_pt,
+                curve.exponent,
+                curve.out_ends[0],
+                curve.out_ends[1],
+            ] {
+                out.extend_from_slice(&value.to_le_bytes());
+            }
+        }
+        None => out.extend_from_slice(&[0; 40]),
+    }
+    out
+}
+
+/// [`shade`], and then the operator's measure half on the picture it made.
+///
+/// **One export and not three calls from JavaScript**, because the second colouring
+/// is of the field this call already holds. `shade` frees the lanes before it
+/// allocates a byte of colour — that is what fits a wallpaper's download into a
+/// 32-bit heap — so a page that measured in one call and coloured again in another
+/// would copy and narrow the whole field a second time to get back what was just
+/// dropped.
+///
+/// With `derive` zero this is `shade` with a header in front. With `derive` set, on a
+/// coloring the operator acts on, the finished picture is measured
+/// ([`level::derive`]); where the curve acts, the map's own stops go through
+/// [`level::curved_stops`], are baked again exactly as [`resolve`] bakes a replayed
+/// curve, and the same fields are coloured through them. The first picture is
+/// dropped before the second is made.
+///
+/// Returns `LEVEL_HEADER + out_width * out_height * 4` bytes, or null on a refusal.
+/// A spec that carries `autolevel` and asks to derive is refused: that picture is
+/// already levelled, and measuring it would level it twice.
+#[unsafe(no_mangle)]
+pub extern "C" fn shade_level(
+    spec_ptr: *const u8,
+    spec_len: usize,
+    lanes_ptr: *mut u8,
+    lanes_len: usize,
+    derive: u32,
+) -> *mut u8 {
+    let read = read_lanes(spec_ptr, spec_len, lanes_ptr, lanes_len);
+    if !lanes_ptr.is_null() {
+        unsafe { dealloc(lanes_ptr, lanes_len) };
+    }
+    let Some((plan, base, texture)) = read else {
+        return std::ptr::null_mut();
+    };
+    if derive != 0 && plan.replays {
+        return std::ptr::null_mut();
+    }
+    let colormap = plan
+        .colormap
+        .as_ref()
+        .expect("a colormap, which read_lanes refuses without");
+    let Some(mut rgb) = colour(&plan, &base, &texture, colormap) else {
+        return std::ptr::null_mut();
+    };
+
+    let mut acted = None;
+    if derive != 0 && plan.levels() {
+        if let Some(curve) = level::derive(&rgb, 3) {
+            let (kind, stops) = plan.source.as_ref().expect("a colormap keeps its stops");
+            let curved = level::curved_stops(stops, &curve);
+            let Ok(levelled) =
+                Colormap::from_stops_baked(COLORMAP_NAME, *kind, &curved, plan.palette.bake)
+            else {
+                return std::ptr::null_mut();
+            };
+            drop(rgb);
+            let Some(again) = colour(&plan, &base, &texture, &levelled) else {
+                return std::ptr::null_mut();
+            };
+            rgb = again;
+            acted = Some(curve);
+        }
+    }
+
+    let mut out = level_header(acted.is_some(), acted);
+    out.reserve(rgb.len() / 3 * 4);
+    for pixel in rgb.chunks_exact(3) {
+        out.extend_from_slice(pixel);
+        out.push(255);
+    }
+    release(out)
+}
+
+/// The operator's measure half on a finished RGBA picture, alone, as the same
+/// `LEVEL_HEADER` [`shade_level`] writes. The curve is written for an identity as well
+/// as for an acting curve, and is zeros for a degenerate range.
+///
+/// Here so that a test can hold the **module's** arithmetic — `cbrt`, `ln` and `powf`
+/// as wasm computes them, which is not the native build's libm — to the operator's
+/// answers. The native test cannot make that claim on the module's behalf.
+#[unsafe(no_mangle)]
+pub extern "C" fn derive_level(rgba_ptr: *const u8, rgba_len: usize) -> *mut u8 {
+    if rgba_ptr.is_null() || rgba_len % 4 != 0 {
+        return std::ptr::null_mut();
+    }
+    let raw = unsafe { std::slice::from_raw_parts(rgba_ptr, rgba_len) };
+    release(match level::derive_curve(&level::tone_stats(raw, 4)) {
+        level::Decision::Acts(curve) => level_header(true, Some(curve)),
+        level::Decision::Identity(curve) => level_header(false, Some(curve)),
+        level::Decision::Degenerate => level_header(false, None),
+    })
+}
+
+/// One whole frame's colour, as RGB: the engine's coloring for this plan's shape, the
+/// rolloff, and the Lanczos-3 reduction. `None` where the lanes and the coloring
+/// disagree about what they are.
+fn colour(plan: &Plan, base: &Field, texture: &Texture, colormap: &Colormap) -> Option<Vec<u8>> {
     let width = plan.view.sample_width();
     let height = plan.view.sample_height();
 
-    let mut linear = match (&plan.coloring, &texture) {
+    let mut linear = match (&plan.coloring, texture) {
         (Coloring::Field { transform, .. }, _) => {
-            coloring::shade(&base, *transform, &plan.palette, colormap)
+            coloring::shade(base, *transform, &plan.palette, colormap)
         }
         (
             Coloring::Composite {
@@ -764,7 +914,7 @@ pub extern "C" fn shade(
             },
             Texture::Narrow(second),
         ) => coloring::composite(
-            &base,
+            base,
             second,
             plan.lanes[0].transform,
             plan.lanes[1].transform,
@@ -780,7 +930,7 @@ pub extern "C" fn shade(
         // and dropped here rather than widened into the module's return.
         (Coloring::Modulate { shift, .. }, Texture::Exact(second)) => {
             coloring::modulate(
-                &base,
+                base,
                 second,
                 plan.lanes[0].transform,
                 plan.lanes[1].transform,
@@ -790,7 +940,7 @@ pub extern "C" fn shade(
             )
             .0
         }
-        _ => return std::ptr::null_mut(),
+        _ => return None,
     };
     if plan.palette.rolloff != Rolloff::None {
         // `coloring::paint` rolls the highlights off after it colors and before
@@ -801,14 +951,14 @@ pub extern "C" fn shade(
             *pixel = plan.palette.rolloff.shade(*pixel);
         }
     }
-    release(rgba(&resample::downsample(
+    Some(resample::downsample(
         &linear,
         width as usize,
         height as usize,
         plan.view.out_width as usize,
         plan.view.out_height as usize,
         plan.view.supersample,
-    )))
+    ))
 }
 
 /// Read every lane out of the caller's buffer, and nothing else.

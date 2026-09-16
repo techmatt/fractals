@@ -18,6 +18,15 @@
 let wasm = null;
 const encoder = new TextEncoder();
 
+/** What `shade_level` puts in front of the picture: a flag, padding, five `f64`. */
+const LEVEL_HEADER = 48;
+
+/** The one tone operator the module derives, by the name a permalink spells it with.
+ *  Written here rather than imported so that a worker stays one file with no imports;
+ *  a curve under any other name is refused by `permalink.js`'s `OPERATORS` the moment a
+ *  link carrying it is opened, so a drift here cannot pass for a working link. */
+const OPERATOR = "band_autolevel/v1";
+
 /** Write a string into the module's heap, and hand back what frees it. */
 function put(text) {
   const raw = encoder.encode(text);
@@ -40,18 +49,39 @@ self.onmessage = (event) => {
     const lanes = new Uint8Array(message.lanes);
     const lanePointer = wasm.alloc(lanes.length);
     new Uint8Array(wasm.memory.buffer, lanePointer, lanes.length).set(lanes);
-    // The lanes are `shade`'s to free from here, and it frees them before it
+    // The lanes are `shade_level`'s to free from here, and it frees them before it
     // allocates a byte of colour — which is what makes a wallpaper's worth of
-    // samples fit in a 32-bit address space at all.
-    const pointer = wasm.shade(specPointer, specLength, lanePointer, lanes.length);
+    // samples fit in a 32-bit address space at all. With `derive` set it also
+    // measures what it drew and colours again where the operator acts; either way
+    // the picture comes back behind a 48-byte header that says whether a curve acted
+    // and what it was.
+    const pointer = wasm.shade_level(
+      specPointer,
+      specLength,
+      lanePointer,
+      lanes.length,
+      message.derive ? 1 : 0,
+    );
     wasm.dealloc(specPointer, specLength);
     if (pointer === 0) {
       self.postMessage({ kind: "shaded", refused: true });
       return;
     }
-    const image = new Uint8Array(wasm.memory.buffer, pointer, message.bytes).slice().buffer;
-    wasm.dealloc(pointer, message.bytes);
-    self.postMessage({ kind: "shaded", image }, [image]);
+    const header = new DataView(wasm.memory.buffer, pointer, LEVEL_HEADER);
+    const level =
+      header.getUint8(0) === 1
+        ? {
+            operator: OPERATOR,
+            black_pt: header.getFloat64(8, true),
+            white_pt: header.getFloat64(16, true),
+            exponent: header.getFloat64(24, true),
+            out_ends: [header.getFloat64(32, true), header.getFloat64(40, true)],
+          }
+        : null;
+    const image = new Uint8Array(wasm.memory.buffer, pointer + LEVEL_HEADER, message.bytes)
+      .slice().buffer;
+    wasm.dealloc(pointer, LEVEL_HEADER + message.bytes);
+    self.postMessage({ kind: "shaded", image, level }, [image]);
     return;
   }
 

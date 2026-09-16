@@ -23,7 +23,12 @@ num-complex = "0.4"
 # Neither of these is a new dependency of anything — the engine already carries
 # both, and this crate is the only thing built from that tree.
 serde = { version = "1", features = ["derive"] }
-serde_json = "1"
+# `float_roundtrip`, because the default parser is fast rather than exact and reads a
+# 17-digit decimal one unit of last place away about one time in ten. A tone curve
+# crosses this boundary as five such decimals, and a curve one ulp off is not the
+# curve the link carries — measured on the backfill sidecar, 424 of 4,411 stored
+# curves failed to re-derive for exactly this reason and 0 once it was on.
+serde_json = { version = "1", features = ["float_roundtrip"] }
 
 # Release only; the module is a committed artifact and there is no debug build of
 # it. LTO is what dead-strips png, jpeg-encoder and flate2 out of the module.

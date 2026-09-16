@@ -140,7 +140,7 @@ export function familySpecOf(family, constants) {
  * shade-time input, and baking a lookup table into every band would be a table per
  * band.
  */
-export function specOf(view, width, height, { colormap = true, supersample = 1 } = {}) {
+export function specOf(view, width, height, { colormap = true, supersample = 1, level = true } = {}) {
   const spec = {
     schema: 1,
     family: familySpecOf(view.family, view.constants),
@@ -158,7 +158,9 @@ export function specOf(view, width, height, { colormap = true, supersample = 1 }
   // left out of the specs that carry none — a field pass has no ramp to curve, and a
   // plan is a question rather than a render. `view.level` is absent on a view built
   // before the key existed, which is the same thing as the operator not having acted.
-  if (colormap && view.level) {
+  // `level: false` leaves it out for a shade that is to measure its own curve: a picture
+  // drawn through a curve is already levelled, and the module refuses to level it twice.
+  if (colormap && level && view.level) {
     spec.autolevel = {
       black_pt: view.level.black_pt,
       white_pt: view.level.white_pt,
@@ -496,8 +498,17 @@ export class Renderer {
  * mid-band would cost a wasm instantiation to save one band; a shade is a single
  * indivisible pass of many seconds, there is nothing to let it finish for, and it
  * is holding the memory. A stopped shade resolves with `null`.
+ *
+ * **`derive` is the operator's measure half, taken on this picture.** Set, the module
+ * colours the field with no curve, measures what it drew, and where the tone sits
+ * outside the band colours the same field again through the curve it derived — all in
+ * one call, because the lanes are freed before the first byte of colour and a second
+ * call would have to copy the whole field in again. What comes back carries `level`:
+ * the curve in the permalink's own shape where it acted, and `null` where it did not.
+ * Unset, the view's own curve is replayed exactly as it always was and `level` is not
+ * reported.
  */
-export function shadeApart(module, field, view, holder = {}) {
+export function shadeApart(module, field, view, holder = {}, { derive = false } = {}) {
   return new Promise((resolve, reject) => {
     const worker = new Worker(new URL("./worker.js", import.meta.url), { type: "module" });
     const started = performance.now();
@@ -516,10 +527,14 @@ export function shadeApart(module, field, view, holder = {}) {
           {
             kind: "shade",
             spec: JSON.stringify(
-              specOf(view, field.width, field.height, { supersample: field.supersample }),
+              specOf(view, field.width, field.height, {
+                supersample: field.supersample,
+                level: !derive,
+              }),
             ),
             lanes: lanes.buffer,
             bytes: field.width * field.height * 4,
+            derive,
           },
           [lanes.buffer],
         );
@@ -536,6 +551,7 @@ export function shadeApart(module, field, view, holder = {}) {
           field.width,
           field.height,
         ),
+        ...(derive ? { level: event.data.level } : {}),
         elapsed: performance.now() - started,
       });
     };

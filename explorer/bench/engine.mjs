@@ -64,6 +64,49 @@ export async function load(url = new URL("../engine.wasm", import.meta.url)) {
     return copy;
   };
 
+  /** The five numbers and the flag in front of `shade_level` and `derive_level`. */
+  const header = (pointer) => {
+    const view = new DataView(wasm.memory.buffer, pointer, 48);
+    const numbers = [8, 16, 24, 32, 40].map((at) => view.getFloat64(at, true));
+    return {
+      acts: view.getUint8(0) === 1,
+      curve: {
+        black_pt: numbers[0],
+        white_pt: numbers[1],
+        exponent: numbers[2],
+        out_ends: [numbers[3], numbers[4]],
+      },
+    };
+  };
+
+  /** `shade`, and the operator's measure half on what it made where `derive` is set. */
+  const shadeLevel = (spec, lanes, derive) => {
+    const [pointer, length] = put(JSON.stringify(spec));
+    const lanePointer = wasm.alloc(lanes.length);
+    new Uint8Array(wasm.memory.buffer, lanePointer, lanes.length).set(lanes);
+    const out = wasm.shade_level(pointer, length, lanePointer, lanes.length, derive ? 1 : 0);
+    wasm.dealloc(pointer, length);
+    if (out === 0) return null;
+    const [width, height] = spec.resolution;
+    const bytes = 48 + width * height * 4;
+    const { acts, curve } = header(out);
+    const image = new Uint8Array(wasm.memory.buffer, out + 48, width * height * 4).slice();
+    wasm.dealloc(out, bytes);
+    return { acts, curve, image };
+  };
+
+  /** The measure half alone, on RGBA: whether it acts, and the curve it derived. */
+  const deriveLevel = (rgba) => {
+    const pointer = wasm.alloc(rgba.length);
+    new Uint8Array(wasm.memory.buffer, pointer, rgba.length).set(rgba);
+    const out = wasm.derive_level(pointer, rgba.length);
+    wasm.dealloc(pointer, rgba.length);
+    if (out === 0) throw new Error("derive_level refused");
+    const answer = header(out);
+    wasm.dealloc(out, 48);
+    return answer;
+  };
+
   /** The whole frame, the way the page draws it: bands, then one shade. */
   const frame = (spec) => {
     const shape = plan(spec);
@@ -78,7 +121,7 @@ export async function load(url = new URL("../engine.wasm", import.meta.url)) {
     return { shape, image, fieldMs, shadeMs };
   };
 
-  return { wasm, plan, band, shade, frame };
+  return { wasm, plan, band, shade, shadeLevel, deriveLevel, frame };
 }
 
 /** The two-stop ramp used wherever the picture's colours do not matter. */

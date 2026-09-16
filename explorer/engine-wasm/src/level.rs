@@ -9,10 +9,15 @@
 //! 2. **apply**, which pushes that curve through the **colormap's own stops** and
 //!    renders again.
 //!
-//! A run recorded what it did, so the measurement is already made: a permalink
-//! carries the curve the run derived and this module is the second half alone.
-//! That is the whole reason the explorer can show a gallery seat's own colour —
-//! it never has to read a picture it has not drawn yet.
+//! **Both halves are here.** A run recorded what it did, so for a gallery seat
+//! the measurement is already made: its permalink carries the curve the run
+//! derived, and the apply half replays it — which is the whole reason the explorer
+//! can show a seat's own colour without reading a picture it has not drawn yet.
+//! A view a reader made has no record, and since `autolevel_port_ckpt127` the
+//! measure half is ported too ([`tone_stats`], [`derive_curve`]) and runs on the
+//! finished picture that view drew. Its pins are at the foot of this file: the
+//! stored curve out of the stored statistics on every backfill row, bit for bit,
+//! and the stored statistics out of the operator's own decoded pixels.
 //!
 //! **It lives on this side of the boundary because the colormap does.** The page
 //! has no filesystem, so a map crosses as control points and is baked by
@@ -325,10 +330,382 @@ pub fn curved_stops(stops: &[(f64, [u8; 3])], curve: &Curve) -> Vec<(f64, [u8; 3
         .collect()
 }
 
+// --------------------------------------------------------------------------- //
+// The measure half: a finished picture to the curve its tone earns.
+// --------------------------------------------------------------------------- //
+
+/// The band of finished wallpapers each statistic is projected onto, `[low, high]`.
+///
+/// Transcribed from `data/coloring/levels_band.json` next door, full doubles,
+/// sha256 `49d4f43b200904c5967df788308834be163698081d85802df978554261aa63a1`
+/// (derived 2026-08-15, 48 images) — the sha every recorded stamp names. A
+/// different band is a different operator's answer, and a gallery seat levelled
+/// under this one would stop agreeing with a view levelled here.
+const BAND_BLACK: [f64; 2] = [0.0, 0.3008176686683185];
+const BAND_WHITE: [f64; 2] = [0.8629886965307019, 0.9960350764349456];
+const BAND_MID: [f64; 2] = [0.2663290436868155, 0.7380826210003913];
+
+/// The robust black and white percentiles of Oklab L. `autolevel.CLIP_LO`, `CLIP_HI`.
+const CLIP_LO: f64 = 0.5;
+const CLIP_HI: f64 = 99.5;
+
+/// Oklab L floor of the structure mask the midtone is read over. `autolevel.MASK_L`.
+const MASK_L: f64 = 0.04;
+
+/// Oklab chroma at or below which a pixel reads as neutral. `autolevel.CHROMA_NEUTRAL`.
+const CHROMA_NEUTRAL: f64 = 0.06;
+
+/// A neutral subset thinner than this share reads no black point.
+/// `autolevel.NEUTRAL_FRACTION_MIN`.
+const NEUTRAL_FRACTION_MIN: f64 = 0.05;
+
+/// A neutral black this far above the all-pixel black means the dark tail is
+/// coloured rather than dim. `autolevel.DARK_MARGIN`.
+const DARK_MARGIN: f64 = 0.10;
+
+/// How few neutral pixels are too few for a percentile to mean anything.
+/// `autolevel.NEUTRAL_PIXELS_MIN`; the test is strictly more than this.
+const NEUTRAL_PIXELS_MIN: usize = 64;
+
+/// The exponent is clamped to `[1/this, this]`. `autolevel.EXPONENT_CLAMP`.
+const EXPONENT_CLAMP: f64 = 2.0;
+
+/// White and black closer than this have no range to curve. `autolevel.MIN_RANGE`.
+const MIN_RANGE: f64 = 0.05;
+
+/// The three statistics the band is read on. `autolevel.tone_stats`, the fields
+/// [`derive_curve`] reads and nothing else.
+#[derive(Debug, Clone, Copy, PartialEq, Deserialize)]
+pub struct ToneStats {
+    /// The guarded black point: `None` where the chroma guard declares it
+    /// unmeasurable.
+    pub black_pt: Option<f64>,
+    pub black_pt_all: f64,
+    pub white_pt: f64,
+    pub mid: f64,
+}
+
+/// `numpy.percentile(values, q)` under its default `linear` method, **bit for bit**.
+///
+/// Not the engine's `coloring::percentile`, which is nearest-rank and answers a
+/// different number. numpy forms the virtual index as `n*q + (1 + q*(1-α-β)) - 1`
+/// with `α = β = 1`, and its `_lerp` switches form at a weight of one half so that
+/// the interpolation is exact at both ends; both orders of operation are kept here,
+/// because a percentile one unit of last place off is a curve that is not the
+/// operator's. Selects rather than sorts, so it reorders `values`.
+fn percentile(values: &mut [f64], q: f64) -> f64 {
+    let n = values.len();
+    let quantile = q / 100.0;
+    let virtual_index = n as f64 * quantile + (1.0 + quantile * (1.0 - 1.0 - 1.0)) - 1.0;
+    if virtual_index >= (n - 1) as f64 {
+        return values.iter().copied().fold(f64::NEG_INFINITY, f64::max);
+    }
+    if virtual_index < 0.0 {
+        return values.iter().copied().fold(f64::INFINITY, f64::min);
+    }
+    let previous = virtual_index.floor();
+    let gamma = virtual_index - previous;
+    let below = previous as usize;
+    let (_, &mut a, upper) = values.select_nth_unstable_by(below, f64::total_cmp);
+    let b = upper.iter().copied().fold(f64::INFINITY, f64::min);
+    let difference = b - a;
+    if gamma >= 0.5 {
+        b - difference * (1.0 - gamma)
+    } else {
+        a + difference * gamma
+    }
+}
+
+/// `numpy.median`: the middle value, or the mean of the middle two.
+fn median(values: &mut [f64]) -> f64 {
+    let n = values.len();
+    let half = n / 2;
+    if n % 2 == 1 {
+        return *values.select_nth_unstable_by(half, f64::total_cmp).1;
+    }
+    let (lower, &mut high, _) = values.select_nth_unstable_by(half, f64::total_cmp);
+    let low = lower.iter().copied().fold(f64::NEG_INFINITY, f64::max);
+    (low + high) / 2.0
+}
+
+/// One rendered picture's tone statistics. `autolevel.tone_stats`.
+///
+/// `rgb` is packed three or four bytes a pixel — `channels` says which — and only
+/// the first three are read. Per pixel: sRGB8 to Oklab through the engine's own
+/// conversion (the same arithmetic as `palettes.space.lightness_and_chroma`, whose
+/// table is the same expression evaluated at the 256 codes), kept as lightness and
+/// `hypot(a, b)`.
+pub fn tone_stats(rgb: &[u8], channels: usize) -> ToneStats {
+    let count = rgb.len() / channels;
+    let mut table = [0.0_f64; 256];
+    for (code, linear) in table.iter_mut().enumerate() {
+        *linear = srgb_to_linear(code as f64 / 255.0);
+    }
+    let mut lightness = Vec::with_capacity(count);
+    let mut neutral = Vec::new();
+    let mut structure = Vec::new();
+    for pixel in rgb.chunks_exact(channels) {
+        let [lit, green_red, blue_yellow] = linear_srgb_to_oklab([
+            table[pixel[0] as usize],
+            table[pixel[1] as usize],
+            table[pixel[2] as usize],
+        ]);
+        lightness.push(lit);
+        if lit > MASK_L {
+            structure.push(lit);
+        }
+        if green_red.hypot(blue_yellow) <= CHROMA_NEUTRAL {
+            neutral.push(lit);
+        }
+    }
+
+    let neutrals = neutral.len();
+    let share = neutrals as f64 / count as f64;
+    let neutral_black = (neutrals > NEUTRAL_PIXELS_MIN).then(|| percentile(&mut neutral, CLIP_LO));
+    let middle = if structure.is_empty() {
+        median(&mut lightness.clone())
+    } else {
+        median(&mut structure)
+    };
+    let all_black = percentile(&mut lightness, CLIP_LO);
+    let white = percentile(&mut lightness, CLIP_HI);
+
+    let black = match neutral_black {
+        Some(value) if share >= NEUTRAL_FRACTION_MIN && value - all_black <= DARK_MARGIN => {
+            Some(value)
+        }
+        _ => None,
+    };
+    ToneStats {
+        black_pt: black,
+        black_pt_all: all_black,
+        white_pt: white,
+        mid: middle,
+    }
+}
+
+/// `(projected, side)` — inside a band a value is itself, outside it is the nearest
+/// edge. `autolevel.project`.
+fn project(value: f64, band: [f64; 2]) -> f64 {
+    if value < band[0] {
+        band[0]
+    } else if value > band[1] {
+        band[1]
+    } else {
+        value
+    }
+}
+
+/// What the operator decided about one picture.
+#[derive(Debug, Clone, Copy)]
+pub enum Decision {
+    /// White and black too close to curve. `applies: false`.
+    Degenerate,
+    /// All three statistics already in band: the exact identity, and no curve.
+    Identity(Curve),
+    /// A curve that moves the picture.
+    Acts(Curve),
+}
+
+/// The tone curve for one picture's statistics. `autolevel.derive_curve`, verbatim.
+pub fn derive_curve(statistics: &ToneStats) -> Decision {
+    let measured_black = statistics.black_pt;
+    let black = measured_black.unwrap_or(statistics.black_pt_all);
+    let (white, middle) = (statistics.white_pt, statistics.mid);
+
+    if white - black < MIN_RANGE {
+        return Decision::Degenerate;
+    }
+
+    let low = match measured_black {
+        None => black,
+        Some(value) => project(value, BAND_BLACK),
+    };
+    let high = project(white, BAND_WHITE);
+    let target = project(middle, BAND_MID);
+
+    let position = (middle - black) / (white - black);
+    let wanted = if high > low {
+        (target - low) / (high - low)
+    } else {
+        0.5
+    };
+    let inside = |value: f64| 1e-4 < value && value < 1.0 - 1e-4;
+    let exponent = if !inside(position) || !inside(wanted) {
+        1.0
+    } else {
+        wanted.ln() / position.ln()
+    };
+    let exponent = exponent.max(1.0 / EXPONENT_CLAMP).min(EXPONENT_CLAMP);
+
+    let curve = Curve {
+        black_pt: black,
+        white_pt: white,
+        exponent,
+        out_ends: [low, high],
+    };
+    if (low - black).abs() < 1e-9 && (high - white).abs() < 1e-9 && (exponent - 1.0).abs() < 1e-9 {
+        Decision::Identity(curve)
+    } else {
+        Decision::Acts(curve)
+    }
+}
+
+/// A finished picture to the curve that levels it, or `None` where the operator
+/// would leave it exactly alone.
+pub fn derive(rgb: &[u8], channels: usize) -> Option<Curve> {
+    match derive_curve(&tone_stats(rgb, channels)) {
+        Decision::Acts(curve) => Some(curve),
+        Decision::Identity(_) | Decision::Degenerate => None,
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    use super::{Curve, curved_stops};
+    use super::{Curve, Decision, ToneStats, curved_stops, derive_curve, tone_stats};
     use std::path::PathBuf;
+
+    fn derive_cases() -> serde_json::Value {
+        let fixture = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("level-derive-cases.json");
+        serde_json::from_str(&std::fs::read_to_string(&fixture).expect("level-derive-cases.json"))
+            .expect("level-derive-cases.json parses")
+    }
+
+    fn stats_of(value: &serde_json::Value) -> ToneStats {
+        serde_json::from_value(value.clone()).expect("four statistics")
+    }
+
+    /// Which decision a recorded curve block is, and its curve, as the port spells it.
+    fn recorded(curve: &serde_json::Value) -> Decision {
+        if curve["applies"] == false {
+            return Decision::Degenerate;
+        }
+        let held = Curve {
+            black_pt: curve["black_pt"].as_f64().expect("black_pt"),
+            white_pt: curve["white_pt"].as_f64().expect("white_pt"),
+            exponent: curve["exponent"].as_f64().expect("exponent"),
+            out_ends: [
+                curve["out_ends"][0].as_f64().expect("out_ends[0]"),
+                curve["out_ends"][1].as_f64().expect("out_ends[1]"),
+            ],
+        };
+        if curve["identity"] == true {
+            Decision::Identity(held)
+        } else {
+            Decision::Acts(held)
+        }
+    }
+
+    fn same(ours: &Decision, theirs: &Decision) -> bool {
+        let bits = |c: &Curve| {
+            [
+                c.black_pt.to_bits(),
+                c.white_pt.to_bits(),
+                c.exponent.to_bits(),
+                c.out_ends[0].to_bits(),
+                c.out_ends[1].to_bits(),
+            ]
+        };
+        match (ours, theirs) {
+            (Decision::Degenerate, Decision::Degenerate) => true,
+            (Decision::Identity(a), Decision::Identity(b)) | (Decision::Acts(a), Decision::Acts(b)) => {
+                bits(a) == bits(b)
+            }
+            _ => false,
+        }
+    }
+
+    /// **`derive_curve` is the operator's, to the last bit.** Every case in
+    /// `level-derive-cases.json` is a row's stored measured statistics and the curve the
+    /// operator stored beside them — plus three synthetic statistics for branches no
+    /// recorded row reaches, answered by the operator itself. Regenerated by
+    /// `make-derive-cases.py`.
+    #[test]
+    fn the_derivation_is_the_operator() {
+        let cases = derive_cases();
+        for case in cases["curves"].as_array().expect("curve cases") {
+            let ours = derive_curve(&stats_of(&case["measured"]));
+            let theirs = recorded(&case["curve"]);
+            assert!(
+                same(&ours, &theirs),
+                "{} ({}): the port derives {ours:?} and the operator stored {theirs:?}",
+                case["key"],
+                case["why"]
+            );
+        }
+    }
+
+    /// The same, over every row of the sidecar next door, where this machine has it.
+    ///
+    /// The sidecar lives in the wallpaper project's ignored store, so this is skipped by
+    /// name on any other machine; the fixture above is the committed part of the claim.
+    #[test]
+    fn the_derivation_is_the_operator_on_every_backfill_row() {
+        let sidecar = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join("../../../fractal-wallpapers/artifacts/curation/autolevel_backfill.jsonl");
+        let Ok(text) = std::fs::read_to_string(&sidecar) else {
+            eprintln!("no autolevel_backfill.jsonl at {}; skipped", sidecar.display());
+            return;
+        };
+        let (mut rows, mut different) = (0, Vec::new());
+        for line in text.lines().filter(|line| !line.trim().is_empty()) {
+            let row: serde_json::Value = serde_json::from_str(line).expect("a backfill row");
+            let ours = derive_curve(&stats_of(&row["autolevel"]["measured"]));
+            let theirs = recorded(&row["autolevel"]["curve"]);
+            rows += 1;
+            if !same(&ours, &theirs) {
+                different.push(row["key"].to_string());
+            }
+        }
+        eprintln!("{} of {rows} backfill rows derive the stored curve", rows - different.len());
+        assert!(different.is_empty(), "{} row(s) differ: {:?}", different.len(), &different[..different.len().min(10)]);
+    }
+
+    /// **`tone_stats` reads a picture the way the operator does.** Each stats case is a
+    /// base render drawn again at its candidate geometry, JPEG-decoded by PIL; the maker
+    /// refuses one whose Python statistics are not the row's stored ones, so the pixels
+    /// are the pixels the curve was taken off. The pixels are in ignored `artifacts/`,
+    /// and a case without them is skipped by name.
+    #[test]
+    fn the_measurement_is_the_operator() {
+        let cases = derive_cases();
+        let pixels = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../artifacts/level-derive");
+        for case in cases["stats"].as_array().expect("stats cases") {
+            let key = case["key"].as_str().expect("a key");
+            let Ok(rgb) = std::fs::read(pixels.join(format!("{key}.rgb"))) else {
+                eprintln!("{key}: no decoded base in artifacts/level-derive; skipped (run make-derive-cases.py)");
+                continue;
+            };
+            let expected_len = case["width"].as_u64().unwrap() * case["height"].as_u64().unwrap() * 3;
+            assert_eq!(rgb.len() as u64, expected_len, "{key}: the decoded base is the wrong size");
+            let ours = tone_stats(&rgb, 3);
+            let theirs = stats_of(&case["measured"]);
+            let far = |a: f64, b: f64| (a - b).abs();
+            match (ours.black_pt, theirs.black_pt) {
+                (Some(a), Some(b)) => assert!(far(a, b) < 1e-6, "{key}: black_pt {a} vs {b}"),
+                (None, None) => {}
+                (a, b) => panic!("{key}: black_pt guard disagrees, {a:?} vs {b:?}"),
+            }
+            for (name, a, b) in [
+                ("black_pt_all", ours.black_pt_all, theirs.black_pt_all),
+                ("white_pt", ours.white_pt, theirs.white_pt),
+                ("mid", ours.mid, theirs.mid),
+            ] {
+                assert!(far(a, b) < 1e-6, "{key}: {name} {a} here and {b} in the operator");
+            }
+            eprintln!(
+                "{key}: largest difference {:e}",
+                [
+                    far(ours.black_pt.unwrap_or(0.0), theirs.black_pt.unwrap_or(0.0)),
+                    far(ours.black_pt_all, theirs.black_pt_all),
+                    far(ours.white_pt, theirs.white_pt),
+                    far(ours.mid, theirs.mid)
+                ]
+                .into_iter()
+                .fold(0.0, f64::max)
+            );
+        }
+    }
 
     /// **The port against the operator itself, on the operator's own answers.**
     ///

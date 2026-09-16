@@ -194,14 +194,33 @@ function bothNamesOf(name) {
  *  the select for as long as that view is up. */
 let offeredModes = null;
 
-/** The curve the current view came with, kept while it is switched off.
+/** Where the tone curve in force comes from: `stored` or `derived`.
  *
- *  The operator measures a finished picture and derives a curve from it; only the second
- *  half of that crossed into this page, so the explorer can replay a curve and cannot
- *  invent one. A reader who switches autolevel off to see what the seat looked like
- *  underneath has to be able to switch it back on, and the only curve there is is the one
- *  that arrived — so it is held here rather than lost to the toggle. */
-let heldCurve = null;
+ *  **A view that arrives replays what it arrived with.** A gallery seat, an atlas mark or
+ *  a pasted link carries the curve its run recorded in `level=`, or carries none because
+ *  the operator measured that picture and left it alone — and either way what is on the
+ *  screen is what the link names. Measuring such a view again here would be taking the
+ *  decision a second time at a different size, and the audit behind this page measured
+ *  that: the verdict holds and the curve does not. So `stored` replays, and a link with no
+ *  `level` stays unlevelled, which is what every such link has always meant.
+ *
+ *  **The first change a reader makes is a view nobody measured**, so from then on the
+ *  page is `derived`: the finished picture of every pass is measured in the worker that
+ *  colours it, and levelled where its tone sits outside the band. `view.level` then holds
+ *  the curve the last pass derived, which is what Copy link writes — five numbers, never a
+ *  flag, so a link reopens as the picture that was seen rather than as a fresh measurement
+ *  of it. A bare page with no picture in its address is `derived` from the start. */
+let levelling = "stored";
+
+/** Whether the Autolevel box is ticked. Unticked, the palette is drawn as it is. */
+let levelOn = true;
+
+/** The curve the view arrived with, kept while the box is unticked so ticking it again
+ *  puts the same curve back. Meaningless once the view is `derived`. */
+let storedCurve = null;
+
+/** Whether the last derived pass found the tone already in band, which the note says. */
+let derivedInBand = false;
 
 /** Whether a download is drawing the current view.
  *
@@ -335,8 +354,9 @@ function planeAt(px, py) {
  *
  *  A move is a view the reader made rather than one they opened, so whatever was opened
  *  stops being what is on the screen: the note about it goes, and the grid's mark with
- *  it. Everything else about the picture — the mode, the map, the recipe, the curve —
- *  is still theirs and travels with them. */
+ *  it. Everything else about the picture — the mode, the map, the recipe — is still
+ *  theirs and travels with them. The tone curve does not: it was a measurement of the
+ *  picture that was on the screen, and the new one is measured when it is drawn. */
 function moveTo(x, y, w) {
   view = {
     ...view,
@@ -344,7 +364,7 @@ function moveTo(x, y, w) {
     y: link.coordinateOf(y),
     w: link.coordinateOf(w),
   };
-  leaveSeat();
+  changed();
 }
 
 /** Zoom by `factor` about a point of the canvas, refusing to pass the `f64` wall. */
@@ -438,6 +458,17 @@ async function draw() {
     return;
   }
 
+  // A derived view whose mode the operator does not act on, or whose box is unticked,
+  // carries no curve: the module would refuse one under a direct trap or the modulate,
+  // and an unticked box is the palette as it is. Otherwise the curve in force while the
+  // earlier stages draw is the last one derived — a preview in last pass's tone rather
+  // than a flash of the unlevelled picture — and the final stage measures its own.
+  const deriving = levelling === "derived" && levelOn && shape.levels;
+  if (levelling === "derived" && !deriving && view.level !== null) {
+    view = { ...view, level: null };
+    updateReadout();
+  }
+
   const previewGrid = {
     width: grid.width / PREVIEW_DIVISOR,
     height: grid.height / PREVIEW_DIVISOR,
@@ -506,10 +537,27 @@ async function draw() {
     // A direct trap arrived painted and reduced, so there is nothing to colour. Anything
     // else goes to a worker with a copy of its field: the one in the cache has to stay
     // whole for the next recolour, and a transfer would detach it.
+    //
+    // A derived view is measured in that same worker, on this picture, and coloured again
+    // there where the operator acts — so the state below turns final only once the levelled
+    // picture is the one on the screen.
     const shaded = shape.direct
       ? renderer.shade(field, view)
-      : await shadeApart(renderer.module, { ...field, values: field.values.slice() }, view, colouring);
+      : await shadeApart(
+          renderer.module,
+          { ...field, values: field.values.slice() },
+          view,
+          colouring,
+          { derive: deriving },
+        );
     if (shaded === null || pass !== drawing) return;
+    if (deriving) {
+      view = { ...view, level: shaded.level };
+      derivedInBand = shaded.level === null;
+      updateReadout();
+      syncLevel();
+      settle();
+    }
     present(shaded.image);
     finished = shaded.image;
     showState("final");
@@ -615,7 +663,7 @@ function retype(key, text) {
     say(error.message);
     return false;
   }
-  leaveSeat();
+  changed();
   return true;
 }
 
@@ -715,7 +763,7 @@ function buildParams() {
         return;
       }
       view = { ...view, params: { ...view.params, [key]: value } };
-      leaveSeat();
+      changed();
       draw();
     });
     paramStrip.append(label, input);
@@ -849,7 +897,7 @@ function buildShade() {
 shadeReset.addEventListener("click", () => {
   if (locked()) return;
   view = { ...view, shade: shade.defaultShade() };
-  leaveSeat();
+  changed();
   syncShade();
   draw();
 });
@@ -875,7 +923,7 @@ function setShade(key, text) {
     syncShade();
     return;
   }
-  leaveSeat();
+  changed();
   syncShade();
   draw();
 }
@@ -945,35 +993,41 @@ function sentenceList(words) {
 }
 
 /**
- * The autolevel toggle: on where a curve is in force, off where it is not.
+ * The autolevel box: ticked or not, and one line saying what is in force.
  *
- * **It offers a curve and never derives one.** The operator has two halves — measure a
- * finished picture's tone against the band of finished wallpapers, then push the curve
- * that measurement gives through the map's own stops — and only the second half is on
- * this page. So the toggle can replay the curve a link or a gallery seat arrived with,
- * and can put it away, and has nothing to switch on for a view that never carried one.
- * A control that measured a curve of its own would be a second operator, and two
- * operators is how a seat comes to open in a colour the gallery never shipped.
+ * **Both halves of the operator are on this page now**, and which one runs is
+ * `levelling`'s business rather than the box's. A view that arrived replays the curve it
+ * arrived with; a view the reader made is measured on its own finished picture. The box is
+ * the same box for both — it takes the curve away, and gives it back — and it is disabled
+ * only where the operator has nothing to say: a direct trap, whose statistics describe the
+ * ground rather than the picture, and the modulate, which reads a different place in the
+ * map per sample so a curved map would not be the same picture with its tone moved.
  */
 function syncLevel() {
-  const carried = view.level ?? heldCurve;
-  levelToggle.checked = view.level !== null;
-  levelToggle.disabled = busy || carried === null;
+  const levels = planOf(view).levels === true;
+  levelToggle.checked = levels && levelOn;
+  levelToggle.disabled = busy || !levels;
   // The long reason lives behind the `?` and is the same two sentences whatever the view;
   // the line beside the box is the one thing true of this view. Which operator measured
   // the curve is Details' business, not this line's.
-  if (carried === null) {
-    levelNote.textContent = "Available for gallery wallpapers and links that carry a tone curve.";
-    return;
+  if (!levels) {
+    levelNote.textContent = "Not used by this mode.";
+  } else if (!levelOn) {
+    levelNote.textContent = "Off: the palette as it is, without a tone curve.";
+  } else if (levelling === "stored") {
+    levelNote.textContent = view.level === null
+      ? "As this link arrived, which carries no tone curve. Moving the view levels it."
+      : "Leveled to this wallpaper's stored tone curve.";
+  } else {
+    levelNote.textContent = derivedInBand
+      ? "Leveled to this view, whose tone is already in band."
+      : "Leveled to this view.";
   }
-  levelNote.textContent = view.level === null
-    ? "Off: the palette as it is, without this wallpaper's tone curve."
-    : "Leveled to this wallpaper's stored tone curve.";
 }
 
 levelExplained.textContent =
-  "Leveling is computed once, when a wallpaper is made, by measuring the finished picture. " +
-  "This page replays that stored curve, so it can only level a view that came with one.";
+  "Gallery wallpapers carry the tone curve they were made with, and open with exactly that curve. " +
+  "Any other view is leveled from its own finished picture, so the curve moves with the view.";
 levelWhy.title = levelExplained.textContent;
 levelWhy.addEventListener("click", () => {
   levelExplained.hidden = !levelExplained.hidden;
@@ -1037,7 +1091,7 @@ function openLink(query, { gap = null, key = null, what = "this picture" } = {})
   }
   view = wanted;
   seat = key;
-  heldCurve = view.level;
+  arrived();
   tiles?.mark(key);
   // The record's sentence names caps, curves and policies, which is Details' vocabulary;
   // the line under the picture only says that there is a difference and where to read it.
@@ -1047,6 +1101,22 @@ function openLink(query, { gap = null, key = null, what = "this picture" } = {})
   differs.textContent = gap ? `Not carried by this link: ${gap}.` : "";
   rebuild();
   draw();
+}
+
+/** A view just arrived from a link: it replays what it carries. See `levelling`. */
+function arrived() {
+  levelling = "stored";
+  levelOn = true;
+  storedCurve = view.level;
+  derivedInBand = false;
+}
+
+/** The reader changed the picture: the seat note goes, and the tone is measured from now
+ *  on. Every control that moves the view comes through here and the Autolevel box does
+ *  not — switching a curve off is looking at the same view. */
+function changed() {
+  leaveSeat();
+  levelling = "derived";
 }
 
 /** Stop claiming the picture is the one that was opened. */
@@ -1285,7 +1355,7 @@ familyPicker.addEventListener("change", () => {
     shade: view.shade,
     level: view.level,
   };
-  leaveSeat();
+  changed();
   rebuild();
   draw();
 });
@@ -1296,7 +1366,7 @@ modePicker.addEventListener("change", () => {
   view = { ...view, mode: modePicker.value, params: {} };
   // A mode that was only listed because the view arrived in it goes, now it is left.
   syncModes();
-  leaveSeat();
+  changed();
   buildParams();
   // What a download of this view would cost is per mode, so the line under the
   // control moves with the picker rather than at the moment somebody presses it.
@@ -1314,7 +1384,7 @@ function pickPalette(name) {
   if (view.shade.mirror && PALETTES.get(name).cyclic) {
     view = { ...view, shade: { ...view.shade, mirror: false } };
   }
-  leaveSeat();
+  changed();
   palettes.show(name);
   draw();
 }
@@ -1324,18 +1394,18 @@ levelToggle.addEventListener("change", () => {
     syncLevel();
     return;
   }
-  if (levelToggle.checked) {
-    if (heldCurve === null) {
-      syncLevel();
-      return;
-    }
-    view = { ...view, level: heldCurve };
-  } else {
-    heldCurve = view.level ?? heldCurve;
+  levelOn = levelToggle.checked;
+  if (levelling === "stored") {
+    view = { ...view, level: levelOn ? storedCurve : null };
+  } else if (!levelOn) {
     view = { ...view, level: null };
   }
-  // Not a `leaveSeat`: switching the seat's own curve off is looking at the seat, and
-  // the note that says what the link could not carry is still the thing worth reading.
+  // A derived view ticked back on has no curve to put back: the draw measures it again,
+  // off the field already cached, which is a recolour and not a render.
+  //
+  // Not `changed`: switching the seat's own curve off is looking at the seat, and the note
+  // that says what the link could not carry is still the thing worth reading.
+  updateReadout();
   syncLevel();
   draw();
 });
@@ -1410,7 +1480,13 @@ async function main() {
     refuse(`${error.message} Nothing has been drawn, because guessing what was meant would be worse than saying so.`);
     return;
   }
-  heldCurve = view.level;
+  arrived();
+  // A bare page names no picture, so there is nothing it arrived with to replay: the
+  // explorer's own home view is measured like any view a reader made.
+  const named = [...new URLSearchParams(window.location.search).keys()].filter(
+    (key) => !link.UI_KEYS.has(key),
+  );
+  if (named.length === 0) levelling = "derived";
 
   document.getElementById("provenance").textContent =
     `${PROVENANCE.count} palettes and ${IDENTITIES.size} production modes, baked from ` +
@@ -1440,6 +1516,10 @@ async function main() {
   panel = download.install({
     renderer,
     currentView: () => view,
+    // Whether a download measures its own tone. A derived view's curve is a measurement
+    // of the frame on the screen, and a download is a different frame, so it derives
+    // again on the picture it draws; a stored view replays its curve at any size.
+    deriving: () => levelling === "derived" && levelOn,
     shownGrid: () => grid,
     shownImage: () => finished,
     measured,

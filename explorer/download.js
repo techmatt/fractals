@@ -198,13 +198,22 @@ export function fileNameOf(view, width, height) {
  * button, which is also the progress bar while a render is drawing.
  *
  * `context` is what the page owns and this module borrows: the renderer, a reader for the
- * current view, the screen's grid and finished picture, what the pass that drew it cost,
- * somewhere to say things, and the lock that stops the view moving under a render that is
- * drawing it.
+ * current view and whether its tone is measured or replayed, the screen's grid and
+ * finished picture, what the pass that drew it cost, somewhere to say things, and the
+ * lock that stops the view moving under a render that is drawing it.
  */
 export function install(context) {
-  const { renderer, currentView, shownGrid, shownImage, measured, finalSupersample, say, setBusy } =
-    context;
+  const {
+    renderer,
+    currentView,
+    deriving,
+    shownGrid,
+    shownImage,
+    measured,
+    finalSupersample,
+    say,
+    setBusy,
+  } = context;
 
   const sizePicker = document.getElementById("download-size");
   const custom = document.getElementById("download-custom");
@@ -425,7 +434,13 @@ export function install(context) {
         image = new ImageData(field.values, field.width, field.height);
       } else {
         progress(1 - shadeShare);
-        const shaded = await shadeApart(renderer.module, field, view, mine);
+        // The tone curve is per frame by design. A view that arrived replays the curve it
+        // carries at this size as at any other; a view the reader made is measured again on
+        // the picture being saved, because the curve on the screen was measured on a
+        // different frame.
+        const shaded = await shadeApart(renderer.module, field, view, mine, {
+          derive: deriving() && shape.levels,
+        });
         if (shaded === null || mine.cancelled) {
           say("Download cancelled.");
           finish();
