@@ -184,6 +184,18 @@ keeps the mechanics. **Every apply round ends by distilling that round's general
   library "which of you are curated", and a two-hundred-map drop next door answered
   differently — a rebake nobody ran on purpose would have taken the picker from 77 entries
   to 277. Widening it is an edit to the record.
+
+  **The studio's picker lists the whole library, and the guard is now about the library**
+  *(Matt, 2026-09-15, with `explorer_studio`)*. A single menu of names was the reason the
+  offered set had to be curated at all; the picker is a tab strip now — the maps this
+  pool actually seats, then a tab per hue family, then all of them behind a filter box —
+  and a thousand names laid out three ways is a picker rather than a list. So the page
+  reads no `offered` flag. The field stays on the record and stays baked: it is what the
+  old menu listed, the bake still holds the module to it, and a name that was offered is a
+  name that keeps resolving. What the guard protects is unchanged and is now stated of the
+  right thing — **which maps the page carries is the record's to say, never a derivation**,
+  and the 277-entry rebake would still be caught, because the blob and the index are held
+  to `palettes.jsonl` and not to a question asked of the library.
 - **And so is which modes it offers** *(2026-09-01)*. `explorer/modes.jsonl` names the
   modes `catalog.js` is baked from, in the order the picker shows them. **17 are offered,
   and that number is frozen.** The bake reads the names from it and each mode's identity

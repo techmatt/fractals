@@ -1,11 +1,12 @@
 """The checks the bootstrap did by hand, made mechanical.
 
 Every one of them read-only, and every one of them runs on a clone with nothing beside
-it. Two want things a clone need not have — the wallpaper project's checkout, and
-Pillow — and what they do without is report a **named skip**: which check, which half of
-it, and why. Never a crash before the other checks, and never a silent pass. `check`
-used to build the palette library page straight off the checkout, so the first thing it
-did on a machine without one was raise, and every check after it went unrun.
+it. Three things a clone need not have are wanted here — the wallpaper project's
+checkout, Pillow, and a staged gallery's untracked pictures — and what a check does
+without one is report a **named skip**: which check, which half of it, and why. Never a
+crash before the other checks, and never a silent pass. `check` used to build the palette
+library page straight off the checkout, so the first thing it did on a machine without one
+was raise, and every check after it went unrun.
 
 - **links** — every internal href and src on every page resolves to a file that exists,
   and none is root-absolute. The site is served from `/fractal-website/`, so a rooted
@@ -53,7 +54,9 @@ did on a machine without one was raise, and every check after it went unrun.
   every prose heading carries the id its own words give it, and the front page's contents
   list marks the same sections done that `sections.jsonl` calls written.
 - **assets** — every image the metadata names exists at the size it claims, every
-  thumbnail is current, and no orphan file is left in a gallery directory.
+  thumbnail is current, and no orphan file is left in a gallery directory. A **staged**
+  gallery is held to the same three things once its pictures are here, and is a named skip
+  where they are not: they are untracked by design, so a clone has the record alone.
 - **prose** — every row of `article/prose.jsonl` names a page that is in the article and
   is written. The master itself lives in the Drive-synced working folder, which is not
   in a clone and never in CI, so what is checked here is the registry and not the
@@ -578,10 +581,27 @@ def _index_markers(article: list[sections.Section]) -> list[str]:
     return problems
 
 
+def staged_without_pictures(gallery: galleries.Gallery) -> bool:
+    """Whether a staged gallery's directory holds none of the pictures its record names.
+
+    A staged gallery's pictures are untracked by design — a thousand of them is a fifth of
+    a gigabyte, and what commits is the record. So on a clone, and on any machine where
+    `python -m builder seats` has not been run, the directory is the record alone, and
+    that is a check this machine cannot ask rather than a site that is broken. One or more
+    pictures present means the command has run and the whole gallery is checked exactly as
+    a publishable one is: a half-landed directory is a real problem and says so.
+    """
+    return gallery.staged and not any(
+        (gallery.directory / image.file).is_file() for image in gallery.images
+    )
+
+
 def check_assets(loaded: list[galleries.Gallery]) -> list[str]:
     problems = []
     can_measure = images.available()
     for gallery in loaded:
+        if staged_without_pictures(gallery):
+            continue
         named = {image.file for image in gallery.images}
         for image in gallery.images:
             source = gallery.directory / image.file
@@ -919,6 +939,12 @@ def check_endings() -> list[str]:
 NO_CHECKOUT = "the fractal-wallpapers checkout is not configured here"
 NO_PILLOW = "Pillow is not installed here"
 
+#: The third state of the machine that stops a check asking its question. A staged
+#: gallery's pictures are untracked on purpose, so a clone has the record and none of the
+#: files it names — which is not the site being wrong, and must not read as the check
+#: having passed either.
+NO_STAGED_PICTURES = "its pictures are untracked and have not been landed on this machine"
+
 
 @dataclass(frozen=True)
 class Skip:
@@ -996,6 +1022,18 @@ def skips() -> tuple[Skip, ...]:
             found.append(
                 Skip("seats", "every seat panel against the picture its gallery ships", NO_PILLOW)
             )
+    for gallery in galleries.staged():
+        if staged_without_pictures(gallery):
+            # Never `whole`: the publishable galleries beside it are checked in full, and
+            # a check reporting `ok` here is still answering for them.
+            found.append(
+                Skip(
+                    "assets",
+                    f"the staged gallery {gallery.slug}'s {len(gallery.images)} picture(s) "
+                    "and their thumbnails",
+                    NO_STAGED_PICTURES,
+                )
+            )
     return tuple(found)
 
 
@@ -1015,7 +1053,9 @@ def run_all() -> Report:
             "explorer": check_explorer(),
             "atlas": atlas_module.problems(),
             "bake": check_bake(),
-            "assets": check_assets(loaded),
+            # Every gallery here, staged or not: a staged record has no page, and its
+            # files are held to it exactly as any other gallery's are once they are landed.
+            "assets": check_assets(galleries.load_every()),
             "library": check_library(),
             "prose": check_prose(article),
             "guidance": check_guidance(),

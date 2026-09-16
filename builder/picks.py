@@ -66,21 +66,39 @@ tried and is not equivalent: the same frame redrawn at the seat's own regime der
 black point of 0.634 where the run stamped 0.595, so a re-measurement would quietly
 publish a different picture from the one the gallery shows.
 
-**Four run stores, and only two of them keep the curve.** A candidate made by a
-`reframe_draw` run or a gallery `runs` pass has its whole stamp on that run's record. The
-other two do not:
+**Which run stores keep the curve, and which keep only the fact** *(re-read 2026-09-15,
+against the 1,000 seats of `20260914T171846Z`)*. A candidate made by a `reframe_draw` run
+or a gallery `runs` pass has its whole stamp on that run's record, addressed by the
+picture the attempt wrote. A `depth` run and a `remode` run keep theirs in
+`sequence.jsonl`, addressed by the recipe key — **including the curve**: of the 439 seats
+of that record a `depth` run drew, 288 carry a full `autolevel.curve` block, 87 of them a
+curve that acted. This used to say a depth run wrote down `acted` and nothing else, which
+was true of the runs the sentence was written against and is not true of these.
 
-- a **`depth` run writes down `acted` and nothing else** — no curve, no band — so a seat
-  it acted on cannot be redrawn correctly from any record this project keeps;
-- a **`mine` run does not write down even that**, keeping only the reduced stamp its
-  ledger row already carries, so nothing says whether the operator acted at all. A record
-  that does not say a picture was left alone is not a record that says it was, and the
-  answer here is the same as if it had acted.
+What is still only a fact rather than a curve:
 
-That is a gap in the wallpaper project's own records and is not this repository's to
-close; `run_stamp` reports both as `acted_unrecoverable` and `seat_picture` is the way
-out, copying the seat's shipped picture rather than publishing a render known to be — or
-merely not known not to be — the wrong colour.
+- a **`mine` or a `hunt` run does not write down even that**, keeping only the reduced
+  stamp its ledger row already carries, so nothing says whether the operator acted at
+  all. A record that does not say a picture was left alone is not a record that says it
+  was, and the answer here is the same as if it had acted;
+- a **`rotation` run keeps a tally and no rows**: `rotation.json` counts how many pictures
+  the operator acted on across the whole run, and `rows.jsonl` beside it carries the
+  reduced stamp only;
+- a **`label_migration` pass keeps nothing but its pictures**, so neither kind is in
+  `RUN_RECORDS` and a seat from one has no reachable stamp at all.
+
+`run_stamp` reports every one of those as `acted_unrecoverable`, and `seat_picture` is the
+way out, copying the seat's shipped picture rather than publishing a render known to be —
+or merely not known not to be — the wrong colour.
+
+**This module's own reading stops at the fact, deliberately.** `_stamp_in`'s key-matched
+branch reads `acted` and not the curve beside it, so a `depth` or a `remode` seat is
+`acted_unrecoverable` to a maker even where the coefficients are on the record. Lifting
+that would change what every figure standing on such a seat is drawn *from* — a render
+through replayed stops rather than a copy of the shipped file — which is a decision about
+pictures on pages rather than a better read of a record, and it is not one this note
+makes. `builder/seats.py` reads the same records for the curve itself, because a link
+carries a curve without redrawing anything.
 """
 
 from __future__ import annotations
@@ -115,11 +133,17 @@ LEDGER = ("curation", "candidate_ledger", "rows.jsonl")
 #: gallery then had no record this could reach, so a figure naming one raised rather than
 #: mis-drew; `check`'s `seats` now holds every seat a figure cites to being reachable
 #: through this table, so the next unnamed record is a red rather than a silent gap.
+#:
+#: `remode` joined on 2026-09-15, off the 1,000 seats of `20260914T171846Z`: it writes a
+#: `sequence.jsonl` keyed the way a `depth` run's is, six seats of that record came out of
+#: one, and no figure cites one yet — so this is a record named before a figure needs it
+#: rather than after a maker raised on it.
 RUN_RECORDS = {
     "depth": (("sequence.jsonl", "key"),),
     "hunt": (("rows.jsonl", "key"),),
     "mine": (("rows.jsonl", "key"),),
     "reframe_draw": (("attempts.jsonl", "picture"),),
+    "remode": (("sequence.jsonl", "key"),),
     "runs": (("candidates.jsonl", "picture"), ("on_demand.jsonl", "picture")),
 }
 

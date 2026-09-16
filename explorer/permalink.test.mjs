@@ -37,6 +37,7 @@ import {
   parse,
   PermalinkError,
   SHADE_KEYS,
+  UI_KEYS,
   VERSION,
 } from "./permalink.js";
 import { CONSTANTS, CURVES, MODES as IDENTITIES } from "./catalog.js";
@@ -662,4 +663,41 @@ test("the level key is not one of the seven the engine's palette recipe has", ()
   assert.equal(SHADE_KEYS.some((spec) => spec.key === LEVEL_KEY.key), false);
   assert.equal(LEVEL_KEY.key, "level");
   assert.equal(LEVEL_KEY.fallback, null);
+});
+
+// ---------------------------------------------------------------- the keys that are not the picture
+
+test("a UI key is tolerated, read by nobody, and never emitted", () => {
+  // The studio's left panel is either the gallery or the atlas, and which one is open
+  // travels in the link. It is not part of the picture, so the canonical string of the
+  // view drops it — copy the link and what arrives is the view, with the page free to
+  // put its own furniture back on top.
+  for (const key of UI_KEYS) {
+    const view = parse(`?v=${VERSION}&m=smooth&${key}=atlas`, CONTEXT);
+    assert.equal(Object.hasOwn(view, key), false);
+    assert.equal(emit(view, CONTEXT).includes(key), false);
+    assert.equal(
+      canonicalize(`?v=${VERSION}&m=smooth&${key}=atlas`, CONTEXT),
+      canonicalize(`?v=${VERSION}&m=smooth`, CONTEXT),
+    );
+  }
+});
+
+test("a UI key never refuses a link, whatever it says", () => {
+  // A panel nobody can open is a page that opens the other one. Withholding a picture
+  // over furniture is the one thing this key must never be able to do, so its value is
+  // not checked here at all — the page falls back to its own default.
+  for (const value of ["atlas", "gallery", "", "nonsense", "../etc"]) {
+    assert.doesNotThrow(() => parse(`?v=${VERSION}&panel=${encodeURIComponent(value)}`, CONTEXT));
+  }
+  // And a link that says nothing but a panel is the home view, not a link missing a `v`.
+  assert.deepEqual(parse("?panel=atlas", CONTEXT), fresh(FAMILIES[0], MODES[0], CONTEXT));
+});
+
+test("an unknown key that is not a UI key is still refused", () => {
+  // The tolerance is a short list and not a policy. A typo that silently drew the
+  // default view would look exactly like the link working, which is the whole reason
+  // this contract refuses what it does not know.
+  assert.throws(() => parse(`?v=${VERSION}&pnael=atlas`, CONTEXT), PermalinkError);
+  assert.equal(UI_KEYS.has("pnael"), false);
 });

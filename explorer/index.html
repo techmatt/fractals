@@ -4,109 +4,144 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Explorer — Making Fractal Wallpapers</title>
-<meta name="description" content="Pan and zoom every fractal family the wallpapers are drawn from, in every rendering mode, in the same renderer that makes them. Every view has a link.">
+<meta name="description" content="A studio for the fractal renderer the wallpapers are made with: a thousand seated wallpapers and every place the search kept on the left, and on the right the same renderer drawing whichever one you pick. Every view has a link.">
 <link rel="stylesheet" href="../assets/css/site.css">
+<link rel="stylesheet" href="../atlas/frame.css">
 <link rel="stylesheet" href="explorer.css">
 </head>
-<body>
-<nav class="topbar">
-  <div class="topbar-inner">
-    <a class="topbar-site" href="../index.html">Making Fractal Wallpapers</a>
-    <span class="topbar-links"><a href="../galleries/index.html">Galleries</a><a href="https://github.com/techmatt/fractal-wallpapers">GitHub</a><a href="https://techmatt.github.io/">Matt Fisher</a></span>
-  </div>
+<body class="studio-body">
+
+<nav class="studio-bar">
+  <a class="studio-site" href="../index.html">Making Fractal Wallpapers</a>
+  <span class="studio-bar-links">
+    <button type="button" id="copy">Copy link</button>
+    <a href="../galleries/index.html">Galleries</a>
+    <a href="https://github.com/techmatt/fractal-wallpapers">GitHub</a>
+  </span>
 </nav>
 
-<div class="explorer-page">
-
-<header class="masthead">
-  <p class="kicker">Explorer</p>
-  <h1>Every family, every mode, in the browser</h1>
-</header>
-
-<main>
-  <p class="intro">The renderer the wallpapers are made with, compiled to run here: the same
-  escape-time arithmetic, the same iteration policy, the same modes and palettes. Drag to move,
-  scroll to zoom, then pick a family, a mode and a color and see what the same place looks like
-  through each of them. The address bar always names the view you are looking at, so a link is
-  the whole picture.</p>
-
-  <div class="notice" id="notice">
-    <p>Starting the renderer…</p>
-    <p>If this message stays, the page is being opened straight off the filesystem. A browser
-    will not load a page's module, its workers or its renderer over <code>file://</code>, so the
-    explorer needs to be served — <code>python -m builder serve</code> puts this tree on
-    localhost — or read at
-    <a href="https://techmatt.github.io/fractal-website/explorer/">techmatt.github.io</a>.</p>
-  </div>
-
-  <div class="stage" id="stage" hidden>
-    <canvas id="canvas" tabindex="0" aria-label="The fractal at the current family, mode and view"></canvas>
-  </div>
-
-  <div class="bar" id="bar" hidden>
-    <span class="group">
-      <label for="family">Family</label>
-      <select id="family"></select>
-    </span>
-    <span class="group" id="constants"></span>
-    <span class="group">
-      <label for="mode">Mode</label>
-      <select id="mode"></select>
-    </span>
-    <span class="group" id="params"></span>
-    <span class="group">
-      <label for="palette">Palette</label>
-      <select id="palette"></select>
-    </span>
-    <button type="button" id="copy">Copy link</button>
-  </div>
-
-  <details class="shade" id="shade" hidden>
-    <summary>Shade recipe<span class="shade-count" id="shade-count"></span></summary>
-    <div class="bar" id="shade-bar"></div>
-    <p class="help" id="shade-note"></p>
-  </details>
-
-  <div class="bar" id="download" hidden>
-    <span class="group">
-      <label for="download-size">Download</label>
-      <select id="download-size"></select>
-    </span>
-    <span class="group" id="download-custom" hidden>
-      <label for="download-width">Width</label>
-      <input type="number" id="download-width" class="param" min="16" max="8192" step="16">
-      <label for="download-height">Height</label>
-      <input type="number" id="download-height" class="param" min="16" max="8192" step="16">
-    </span>
-    <span class="group">
-      <label for="download-supersample">Samples per pixel</label>
-      <select id="download-supersample"></select>
-    </span>
-    <button type="button" id="download-go">Download PNG</button>
-    <button type="button" id="download-cancel" hidden>Cancel</button>
-    <progress id="download-progress" max="1" value="0" hidden></progress>
-  </div>
-
-  <p class="help" id="download-help"></p>
-
-  <p class="status" id="status"></p>
-  <p class="readout" id="readout"></p>
-
-  <p class="provenance" id="provenance"></p>
-
-  <nav class="section-nav">
-    <p><a href="../index.html">Contents</a>
-    · <a href="../galleries/index.html">Galleries</a>
-    · <a href="../article/escape-time-fractals.html">What is being drawn</a>
-    · <a href="../article/rendering-fundamentals.html">How it is drawn</a></p>
-  </nav>
-</main>
-
-<footer>
-  <p><a href="https://techmatt.github.io/">Matt Fisher</a>
-  · <a href="https://github.com/techmatt/fractal-wallpapers">fractal-wallpapers</a> · MIT</p>
-</footer>
+<div class="notice" id="notice">
+  <p>Starting the renderer…</p>
+  <p>If this message stays, the page is being opened straight off the filesystem. A browser
+  will not load a page's module, its workers or its renderer over <code>file://</code>, so the
+  explorer needs to be served — <code>python -m builder serve</code> puts this tree on
+  localhost — or read at
+  <a href="https://techmatt.github.io/fractal-website/explorer/">techmatt.github.io</a>.</p>
 </div>
+
+<main class="studio" id="studio" hidden>
+
+  <section class="side" aria-label="Pictures to open">
+    <div class="tabs" role="tablist" aria-label="What the left panel shows">
+      <button type="button" class="tab" role="tab" id="tab-gallery" data-panel="gallery"
+              aria-controls="panel-gallery" aria-selected="true">Gallery</button>
+      <button type="button" class="tab" role="tab" id="tab-atlas" data-panel="atlas"
+              aria-controls="panel-atlas" aria-selected="false">Atlas</button>
+    </div>
+
+    <div class="tabpanel" id="panel-gallery" role="tabpanel" aria-labelledby="tab-gallery">
+      <div class="filters">
+        <div class="chips" id="gallery-modes" role="group" aria-label="Rendering mode"></div>
+        <div class="chips" id="gallery-hues" role="group" aria-label="Color family"></div>
+      </div>
+      <div class="tiles" id="gallery-tiles"></div>
+      <p class="side-note" id="gallery-note"></p>
+    </div>
+
+    <div class="tabpanel" id="panel-atlas" role="tabpanel" aria-labelledby="tab-atlas" hidden>
+      <div class="atlas-host" id="atlas-host"></div>
+      <p class="side-note" id="atlas-note"></p>
+    </div>
+  </section>
+
+  <section class="viewer" aria-label="The view">
+    <div class="stage" id="stage">
+      <canvas id="canvas" tabindex="0" aria-label="The fractal at the current family, mode and view"></canvas>
+    </div>
+
+    <p class="status" id="status"></p>
+    <p class="opened" id="opened"></p>
+
+    <div class="controls" id="controls">
+
+      <section class="control-group">
+        <h2>Mode</h2>
+        <div class="bar">
+          <span class="group">
+            <label for="mode">Mode</label>
+            <select id="mode"></select>
+          </span>
+          <span class="group" id="params"></span>
+        </div>
+      </section>
+
+      <section class="control-group">
+        <h2>Palette</h2>
+        <div class="palette-tabs" id="palette-tabs" role="tablist" aria-label="Palette family"></div>
+        <div class="bar palette-search" id="palette-search" hidden>
+          <span class="group">
+            <label for="palette-filter">Filter</label>
+            <input type="search" id="palette-filter" class="constant" placeholder="part of a name">
+          </span>
+        </div>
+        <div class="swatches" id="palette-list" role="listbox" aria-label="Palettes"></div>
+      </section>
+
+      <section class="control-group">
+        <h2>Shade<span class="shade-count" id="shade-count"></span></h2>
+        <div class="bar" id="shade-bar"></div>
+        <div class="bar">
+          <span class="group">
+            <label for="level-toggle">Autolevel</label>
+            <input type="checkbox" id="level-toggle" class="flag">
+          </span>
+        </div>
+        <p class="help" id="level-note"></p>
+        <p class="help" id="shade-note"></p>
+      </section>
+
+      <details class="control-group" id="details">
+        <summary>Details</summary>
+        <div class="bar">
+          <span class="group">
+            <label for="family">Family</label>
+            <select id="family"></select>
+          </span>
+          <span class="group" id="constants"></span>
+        </div>
+        <div class="bar" id="coordinates"></div>
+        <p class="readout" id="readout"></p>
+        <p class="provenance" id="provenance"></p>
+      </details>
+
+      <section class="control-group">
+        <h2>Download</h2>
+        <div class="bar" id="download">
+          <span class="group">
+            <label for="download-size">Size</label>
+            <select id="download-size"></select>
+          </span>
+          <span class="group" id="download-custom" hidden>
+            <label for="download-width">Width</label>
+            <input type="number" id="download-width" class="param" min="16" max="8192" step="16">
+            <label for="download-height">Height</label>
+            <input type="number" id="download-height" class="param" min="16" max="8192" step="16">
+          </span>
+          <span class="group">
+            <label for="download-supersample">Samples per pixel</label>
+            <select id="download-supersample"></select>
+          </span>
+          <button type="button" id="download-go">Download PNG</button>
+          <button type="button" id="download-cancel" hidden>Cancel</button>
+          <progress id="download-progress" max="1" value="0" hidden></progress>
+        </div>
+        <p class="help" id="download-help"></p>
+      </section>
+
+    </div>
+  </section>
+
+</main>
 
 <script type="module" src="explorer.js"></script>
 </body>

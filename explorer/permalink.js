@@ -80,6 +80,24 @@
 // engine's own `Palette` recipe, handed to the module as they stand; this is a
 // separate operator that lives in the wallpaper project's Python, and the module
 // applies it to the stops before it bakes them.
+//
+// ## The keys that are not about the picture
+//
+// The page the reader touches is a studio: a viewer on the right, and on the left a
+// panel that is either the gallery or the atlas. Which of those two is open is worth
+// keeping in a link — sending somebody the atlas is sending them the atlas — and it is
+// emphatically not part of the picture. So `UI_KEYS` is a short list of keys this
+// contract **tolerates and never reads**: `parse` lets one through without complaint
+// and puts nothing in the view for it, `emit` never writes one, and therefore the
+// canonical string of a view does not carry one. A reader who copies the link gets the
+// picture; the page, which knows it also has panels, adds its own key back on top.
+//
+// Two rules keep that from becoming a second contract by the back door. **A UI key
+// never refuses a link** — not even with a value this page does not recognize, because
+// a panel nobody can open is a page that opens the other one, and a picture is never
+// worth withholding over furniture. And **a UI key never decides what is drawn**: the
+// moment one would, it is a picture key and belongs in the emit order above with a
+// default and a reader.
 
 /** The contract version this module emits. */
 export const VERSION = 2;
@@ -406,6 +424,16 @@ export const LEVEL_KEY = {
   same: sameLevel,
 };
 
+/**
+ * The keys the page carries and the picture ignores. See the note in the header.
+ *
+ * `panel` is which side the studio's left panel is showing. It is exported so the page
+ * and the contract spell it once between them: a page that typed `"panel"` beside a
+ * contract that had been renamed would go on working until the day somebody sent a
+ * link, which is the worst moment to find out.
+ */
+export const UI_KEYS = new Set(["panel"]);
+
 /** One key's row of the recipe, by the name a link spells it with. */
 export function shadeKey(key) {
   const spec = SHADE_KEYS.find((held) => held.key === key);
@@ -443,7 +471,10 @@ export function parse(search, context) {
     seen.add(key);
   }
 
-  if (seen.size === 0) return fresh(FAMILIES[0], MODES[0], context);
+  // A link that says nothing about the picture is the home view, and a link that says
+  // nothing about the picture but does open a panel is still the home view: a UI key
+  // does not oblige a reader to have written a `v` they had no picture to version.
+  if ([...seen].every((key) => UI_KEYS.has(key))) return fresh(FAMILIES[0], MODES[0], context);
 
   const version = params.get("v");
   if (version === null) {
@@ -475,7 +506,7 @@ export function parse(search, context) {
     ...CONSTANTS[family], ...wanted, ...SHADE_KEYS.map((spec) => spec.key),
   ]);
   for (const key of seen) {
-    if (known.has(key)) continue;
+    if (known.has(key) || UI_KEYS.has(key)) continue;
     if (CONSTANT_KEYS.includes(key)) {
       throw new PermalinkError(`${key} is a constant of a family this link does not name — ${family} has ${CONSTANTS[family].length === 0 ? "none" : CONSTANTS[family].join(" and ")}.`);
     }

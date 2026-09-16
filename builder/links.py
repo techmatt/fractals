@@ -216,6 +216,10 @@ def derive() -> list[Link]:
             views[key] = view
             wanted.append(Link(key, None, None, None, source))
 
+    # `load_all` is the publishable galleries. A **staged** gallery is on no page, so
+    # there is no picture for a link to sit in the corner of and nothing for a reader to
+    # open from here; its rows carry their own links, derived at the same contract, in
+    # its own record.
     for gallery in galleries.load_all():
         for image in gallery.images:
             key = f"gallery:{gallery.slug}/{image.file}"
@@ -710,6 +714,40 @@ def _constants(family: str, fields: dict, record: dict | None) -> dict:
     return {}
 
 
+def ledger_view(recipe: dict, *, level: dict | None = None) -> dict:
+    """One candidate-ledger recipe in the shape `emit.mjs` reads.
+
+    A ledger recipe is a record and not prose, so none of the scanning above applies to
+    it: the family, the frame, the mode and its parameters, the map and the whole palette
+    pass are fields. What this is for is the caller that already holds a recipe — a staged
+    gallery is a thousand of them — and the reason it lives here rather than there is the
+    module's own rule: **nothing outside this module decides what a view is**, because a
+    second opinion about a view is a second opinion about the URL it emits.
+
+    `level` is the recorded tone curve, where the caller found one on the run that drew
+    the picture. Left out, the view says nothing about tone, which is the contract's own
+    fallback and the link every picture drawn before that key existed still emits.
+    """
+    record = {
+        "family": recipe["family"],
+        "viewport": recipe["viewport"],
+        "recipe": recipe.get("palette") or {},
+    }
+    family = _family({}, record)
+    view = {
+        "family": family,
+        "constants": _constants(family, {}, record),
+        "mode": str(recipe["mode"]),
+        "params": dict(recipe.get("mode_params") or {}),
+        **_frame({}, record),
+        "palette": str(recipe["colormap"]),
+        "shade": _shade({}, record),
+    }
+    if level is not None:
+        view["level"] = level
+    return view
+
+
 def _colormap(fields: dict, record: dict | None) -> str | None:
     """The map the picture was drawn through."""
     return record["colormap"] if record is not None else fields.get("colormap")
@@ -721,12 +759,28 @@ def baked_palettes() -> dict[str, bool]:
     Read out of the baked module rather than out of the wallpaper project, because the
     question this module asks is not "does a map by this name exist" — it is "can a link
     say it", and `palettes.js` is what answers that.
+
+    Read by pattern rather than by parsing JavaScript, so the shape of the baked line is
+    part of what this asks for. That shape changed once — the module became an index and
+    each map went from a block of several lines to one line of JSON-spelled fields — and
+    this went on matching nothing, quietly, because no check calls it: `links --write`
+    would have refused every figure for naming a colormap the explorer does not carry.
+    So the pattern is anchored at both ends now and the count is asserted: a module this
+    cannot read is a loud failure rather than an empty roster.
     """
     text = (SITE_ROOT / "explorer" / "palettes.js").read_text(encoding="utf-8")
-    return {
-        name: kind == "true"
-        for name, kind in re.findall(r'^  \["(.+)", \{\n    cyclic: (true|false),', text, re.M)
+    found = {
+        name: cyclic == "true"
+        for name, cyclic in re.findall(
+            r'^  \["(.+?)", \{.*?"cyclic": (true|false).*?\}\],$', text, re.M
+        )
     }
+    if not found:
+        raise records.RecordError(
+            "explorer/palettes.js carries no map this can read: the baked module's shape "
+            "has changed and `baked_palettes` has not."
+        )
+    return found
 
 
 def named_colormap(line: str, roster: list[str]) -> str | None:

@@ -35,6 +35,9 @@ python -m builder pipeline [ID ...] [--run R] [--place] [--replace]
                             bake the Full pipeline charts read off a run's own
                             walk ledger next door
 python -m builder diagram ID draw one of the three figures that are diagrams, not renders
+python -m builder seats [--records-only]
+                            land the published tentative record next door as a staged
+                            gallery: the record, the pictures and their thumbnails
 python -m builder explorer [--palettes-only]  bake the explorer's palettes, wasm, manifest
 python -m builder links [--write]   derive every picture's explorer link from its
                             provenance, or the reason it has none
@@ -94,6 +97,41 @@ above the title, since `writing-guidance.md` cut the standfirst site-wide.
 
 Metadata is JSONL with an integer `schema` on every line. A line announcing a schema
 this builder does not read is an error, not a guess.
+
+## A gallery may be staged, and then nothing is generated from it
+
+A header record saying `"staged": true` means **the record and its pictures exist, and no
+page is made from them**. There is no `galleries/<slug>.html`, no cover tile on
+`galleries/index.html`, and no row in `explorer/links.jsonl` — a staged gallery is not
+somewhere a reader arrives, so there is nothing for a link to sit in the corner of. What
+reads one is code that wants the *record*: the explorer's gallery panel, which is handed a
+thousand seats and the permalink each of them opens at.
+
+`galleries.load_all()` is the publishable galleries and `galleries.staged()` is the rest,
+so the page generator, `check`'s **pages** and the link derivation are written as though
+staged galleries did not exist. That is the whole safety of it: a staged record cannot
+grow a page by somebody forgetting a flag in one of three places.
+
+Two fields relax, in a staged gallery and only there. An image row's `title` and `caption`
+become optional, because such a record is a machine's reading of records next door rather
+than anybody's prose, and a thousand invented captions would be a thousand claims nobody
+made. **`alt` does not relax.** A picture a reader can be shown owes them a description
+whatever it is filed under, so a staged row derives one by rule — what drew the picture,
+and the hue family the colour reading finds it dominant in.
+
+The pictures are untracked, the record commits. So the **assets** check has a third
+machine state to report beside the missing checkout and the missing Pillow: a staged
+gallery whose directory holds none of the pictures its record names is a **named skip**,
+not a pass and not a failure. One picture present means the command has run, and then the
+whole gallery is held to its record exactly as a publishable one is — a half-landed
+directory is a real problem and reads as one.
+
+`seated-candidates` is the first, and `builder/seats.py` is what fills it: one published
+tentative record — a thousand seats — read three times over, for the seat, the recipe and
+the tone curve the run acted with, with the permalink for each emitted by the contract
+itself through `builder/emit.mjs`. Where the link is not quite the picture the row says so
+in a `gap` clause: a curve the run recorded as a fact and not as coefficients, a curve a
+mode's identity fixes, an iteration cap the depth policy answers differently.
 
 ## A page may hang off a section without being one
 

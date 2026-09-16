@@ -8,8 +8,10 @@ are charts of a measurement rather than pictures of anything, `diagram` draws
 the three figures that are diagrams rather than renders, `serve` puts the committed tree
 on localhost for previewing, `prose` holds each page to the approved document it was
 placed from, and `review` builds the doc a page is marked up in and reads it back.
-`explorer` bakes the explorer page's palettes, wasm module and manifest. `import`,
-`prose`, `review`, `explorer`, `locations`, `judges`, `picks`, `growth` and
+`explorer` bakes the explorer page's palettes, wasm module and manifest. `seats` lands a
+published tentative record next door as a staged gallery — a record and its pictures, with
+no page made from them. `import`,
+`prose`, `review`, `explorer`, `locations`, `judges`, `picks`, `seats`, `growth` and
 `pipeline` are the
 commands that reach outside the repository — for a full-size original, for the approved
 prose, for the Drive-synced review folder, and for the engine, the records and the
@@ -46,6 +48,7 @@ from . import pipeline as pipeline_module
 from . import pool as pool_module
 from . import prose as prose_module
 from . import review as review_module
+from . import seats as seats_module
 from . import sections as sections_module
 from . import serve as serve_module
 from .paths import FIGURE_IMAGES_DIR, IMAGES_DIR, SITE_ROOT
@@ -354,6 +357,15 @@ def _parser() -> argparse.ArgumentParser:
         type=int,
         default=atlas_module.THUMB_QUALITY,
         help=f"the JPEG quality --ingest re-encodes at (default {atlas_module.THUMB_QUALITY})",
+    )
+
+    seated = commands.add_parser(
+        "seats", help="land the published tentative record as a staged gallery"
+    )
+    seated.add_argument(
+        "--records-only",
+        action="store_true",
+        help="rewrite gallery.jsonl alone; leave the pictures and thumbnails as they are",
     )
 
     served = commands.add_parser("serve", help="preview the committed tree over localhost")
@@ -965,6 +977,20 @@ def _do_atlas(options: argparse.Namespace) -> int:
     return 1 if found else 0
 
 
+def _do_seats(options: argparse.Namespace) -> int:
+    """Land the published tentative record as a staged gallery: record, pictures, thumbs.
+
+    One command rather than three, because the three are one act: a picture landed without
+    the row that addresses it is an orphan `check` fails on, and a row written without the
+    picture is a gallery whose files are all missing. `--records-only` is the one split
+    worth having — re-deriving a thousand links costs a ledger pass and a node call, and
+    re-copying a fifth of a gigabyte that has not changed costs the disk.
+    """
+    for line in seats_module.land(records_only=options.records_only):
+        print(line)
+    return 0
+
+
 def _do_serve(options: argparse.Namespace) -> int:
     serve_module.serve(options.port)
     return 0
@@ -1053,6 +1079,8 @@ def main(argv: list[str] | None = None) -> int:
             return _do_review(options)
         if options.command == "atlas":
             return _do_atlas(options)
+        if options.command == "seats":
+            return _do_seats(options)
         if options.command == "serve":
             return _do_serve(options)
         return _do_import(options)
@@ -1065,6 +1093,8 @@ def main(argv: list[str] | None = None) -> int:
         growth_module.GrowthError,
         pipeline_module.PipelineError,
         picks_module.PickError,
+        seats_module.SeatError,
+        links.LinkError,
         pool_module.PoolError,
         curation_module.CurationError,
         prose_module.ProseError,

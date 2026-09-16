@@ -6,6 +6,7 @@
 <title>Atlas — Making Fractal Wallpapers</title>
 <meta name="description" content="Every place the fractal search has kept, marked on the parameter plane it came out of. Each mark carries its neighborhood, its Julia set, and a wallpaper drawn there, and each of those opens in the explorer.">
 <link rel="stylesheet" href="../assets/css/site.css">
+<link rel="stylesheet" href="frame.css">
 <link rel="stylesheet" href="atlas.css">
 </head>
 <body class="atlas-body">
@@ -27,14 +28,9 @@
     <a href="https://techmatt.github.io/fractal-website/atlas/">techmatt.github.io</a>.</p>
   </div>
 
-  <div class="frame" id="frame" hidden>
-    <div class="strip">
-      <a class="slot" data-slot="mandelbrot"><img alt=""><span class="slot-label">Mandelbrot</span></a>
-      <a class="slot" data-slot="julia"><img alt=""><span class="slot-label">Julia</span></a>
-      <a class="slot" data-slot="gallery"><img alt=""><span class="slot-label">Gallery</span></a>
-    </div>
-    <div class="plate" id="plate"><img id="plate-image" alt=""></div>
-  </div>
+  <!-- The frame is built inside this box by frame.js, which the explorer's studio mounts
+       too; the page's own script sizes the box and hands the stage its height. -->
+  <div id="frame-host" hidden></div>
 
 </div>
 
@@ -46,9 +42,9 @@
 </header>
 
 <main>
-  <p class="intro">One mark for every place the search has kept, on the parameter plane it
-  came out of. A place is on the plate because at least one render there scored above the
-  bar a gallery solve seats over, and nothing else puts a mark here.
+  <p class="intro place-colors">One mark for every place the search has kept, on the
+  parameter plane it came out of. A place is on the plate because at least one render there
+  scored above the bar a gallery solve seats over, and nothing else puts a mark here.
   <span class="key-mandelbrot">Blue</span> is a location on the parameter plane itself;
   <span class="key-julia">red</span> is a Julia location, which is a value of <code>c</code>,
   and <code>c</code> is a point of this same plane. Both halves of the search are drawn

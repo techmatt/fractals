@@ -8,6 +8,15 @@ The metadata carries each image's pixel dimensions rather than the builder readi
 off disk. That is what lets page generation be a pure function of text — no image
 library, no decode order, byte-stable output — and it gives `check` something to verify
 the files against.
+
+A header record may say `"staged": true`, and then the record and its pictures exist and
+**no page is generated from them**. `load_all` answers with the publishable galleries and
+`staged` with the rest, so nothing that writes a page, an index tile or an explorer link
+sees a staged one — see `builder/README.md`. Two fields relax for a staged gallery and
+only there: `title` and `caption`, because such a record is a machine's reading of a
+record next door rather than anybody's prose, and a thousand invented captions would be a
+thousand claims nobody made. `alt` does not relax: a picture a reader can be shown owes
+them a description whatever it is filed under.
 """
 
 from dataclasses import dataclass
@@ -24,8 +33,10 @@ class Image:
     """One web-res image on a gallery page."""
 
     file: str
-    title: str
-    caption: str
+    #: The prose a page puts under the picture. `None` only in a staged gallery, which
+    #: has no page to put it on.
+    title: str | None
+    caption: str | None
     alt: str
     width: int
     height: int
@@ -52,6 +63,8 @@ class Gallery:
     note: str | None
     release: str | None
     images: tuple[Image, ...]
+    #: Whether this is a record and its pictures with no page made from them.
+    staged: bool = False
 
     @property
     def directory(self) -> Path:
@@ -77,6 +90,9 @@ def load(slug: str) -> Gallery:
         )
     if not rest:
         raise records.RecordError(f"{header.where}: a gallery needs at least one image")
+    # Absent is the ordinary case and says so. Present and not a boolean is refused by
+    # `flag`, because `0` and `"no"` are not a way of saying this.
+    staged = header.flag("staged") if "staged" in header.fields else False
 
     images = []
     seen: set[str] = set()
@@ -89,8 +105,8 @@ def load(slug: str) -> Gallery:
         images.append(
             Image(
                 file=file,
-                title=row.text("title"),
-                caption=row.text("caption"),
+                title=row.optional_text("title") if staged else row.text("title"),
+                caption=row.optional_text("caption") if staged else row.text("caption"),
                 alt=row.text("alt"),
                 width=row.count("width"),
                 height=row.count("height"),
@@ -105,6 +121,7 @@ def load(slug: str) -> Gallery:
         note=header.optional_text("note"),
         release=header.optional_text("release"),
         images=tuple(images),
+        staged=staged,
     )
 
 
@@ -120,5 +137,21 @@ def slugs() -> list[str]:
     return sorted(found)
 
 
-def load_all() -> list[Gallery]:
+def load_every() -> list[Gallery]:
+    """Every gallery directory here, staged or not. The only reader that wants both."""
     return [load(slug) for slug in slugs()]
+
+
+def load_all() -> list[Gallery]:
+    """The galleries this site publishes: a page, a cover tile and an explorer link each.
+
+    A staged gallery is deliberately absent. Everything that writes or checks a page goes
+    through here, so `staged` is a state the page generator never has to know about — and
+    a staged record cannot grow a page by somebody forgetting a flag somewhere.
+    """
+    return [gallery for gallery in load_every() if not gallery.staged]
+
+
+def staged() -> list[Gallery]:
+    """The galleries that are a record and its pictures, with no page made from them."""
+    return [gallery for gallery in load_every() if gallery.staged]

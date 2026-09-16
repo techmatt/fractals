@@ -10,8 +10,8 @@ and each of those opens in the [explorer](../explorer/README.md) at the view it 
 
 **It is full bleed, it is one fixed frame, and there is no text in it.** Under the site bar
 the stage takes the whole window; the strip and the plate are sized once, in pixels, from
-what is left, and the kicker, title and intro sit below the fold so that the first screen
-is the figure. Nothing in the frame changes height when a mark is hovered, because a
+the box that leaves, and the kicker, title and intro sit below the fold so that the first
+screen is the figure. Nothing in the frame changes height when a mark is hovered, because a
 caption that grew by a line moved the plate under the pointer, which moved the mark the
 pointer was on. What the captions said is a `title` on the slot: a tooltip is drawn over
 the page rather than in it, so it can say as much as it likes and cost the frame nothing.
@@ -20,14 +20,38 @@ pictures for the same reason.
 
 ```
 index.html        the page
-atlas.css         its own stylesheet, on top of the site's
-atlas.js          the marks, the three slots, and the one size the frame is
+atlas.css         the page's own stylesheet, on top of the site's
+atlas.js          the page: the notice, the error path, and the height the stage takes
+frame.js          the frame: the marks, the three slots, and the one size it is
+frame.css         the frame's own stylesheet, loaded by both pages that mount one
 links.js          a slot as a link — the one place a view is spelled, for two callers
 record.js         the record, fetched and read
 atlas.test.mjs    12 tests, `node --test atlas/atlas.test.mjs`
 atlas.jsonl       the index: how the record was made, and one row per plane
 mandelbrot.jsonl  that plane's dots
 ```
+
+## The frame is a piece, and two pages mount it
+
+`frame.js` builds the frame inside whatever element it is handed and hands back
+`{ record, refit, destroy }`; `frame.css` is the frame's own rules, including the four
+colours, which sit on the frame itself so that a page which is not this one gets them.
+This page mounts one full bleed under the site bar with `{ keep: true }` — click a mark and
+the frame goes on showing that place — and the explorer's studio mounts the same frame in a
+panel with an `onPick`, which takes a click instead of the link and leaves the slots as
+buttons so that they are still reachable from the keyboard.
+
+Everything the frame fetches — the record, the thumbnails, `explorer/engine.wasm` — is
+resolved against `options.base`, which defaults to the module's own directory. A page in
+`explorer/` and a page here both find them without either saying so, and the relative-link
+rule is kept by derivation rather than by a path written down twice.
+
+The size is the other half of that split. The frame fits itself to its **host's content
+box**, watched with a `ResizeObserver`, and `atlas.js` keeps the page's own arithmetic: the
+stage takes the window's height, or the figure's, whichever is less, and the host inside it
+keeps the whole box the stage's padding leaves. The one-way flow is deliberate — a stage
+that shrank to its figure and a frame fitted to that stage would be each other's input, and
+a pixel of rounding would chase itself.
 
 ## The record is the deliverable
 

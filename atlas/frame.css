@@ -1,0 +1,179 @@
+/* The atlas frame: the three slots, the plate, and the marks on it.
+
+   Both pages that mount a frame load this file — the atlas page, full bleed under the site
+   bar, and the explorer's studio, in a panel beside its canvas — so nothing here knows
+   which page it is on. What is the atlas *page's* — the full-bleed body, the stage, the
+   masthead and the reading column — is `atlas.css`, and the frame's own size is `frame.js`.
+
+   ## The four colours
+
+   Blue is a place on the parameter plane and red is a place on a dynamical one, and that
+   is the whole of the frame's colour language: the dots say it, the two fixed slots say it
+   with a soft border of the same hue, and the gallery slot says which kind of place its
+   picture came from with a deeper one. They are declared here rather than in `site.css`
+   because they are not furniture — they are a reading of a record that exists on this
+   page and nowhere else — and `builder/atlas.py` carries the same two dot values for the
+   figure section 11 shows, because Pillow cannot read CSS.
+
+   They sit on the frame itself rather than on the page's body, because the frame is what
+   spends them and the explorer's page does not carry the atlas body's class. `.place-colors`
+   is the same declaration for a page that spends them outside the frame as well: the atlas
+   page's intro names the two kinds in the two hues, and a hex written down twice is two
+   things to restyle.
+
+   The soft borders are mixed toward the well's own rule colour rather than declared
+   separately, so there is one hue per kind and the "soft" and "deeper" ends of it are
+   derived from the same token. */
+
+.frame,
+.place-colors {
+  --place-mandelbrot: #4d8df0;
+  --place-julia: #f2584c;
+  --edge-mandelbrot: #2f6bc4;
+  --edge-julia: #c4372c;
+}
+
+/* ------------------------------------------------------------------------- the frame
+
+   One fixed frame, and it never moves. The strip and the plate are sized once, in pixels,
+   by `frame.js` from the box its host gives; nothing here depends on which mark is under
+   the pointer, and there is no text inside the frame that could reflow when one is. What
+   the captions used to say is a `title` on the slot, because a tooltip is drawn over the
+   page rather than in it.
+
+   The strip spans the plate exactly — three slots and two gaps, the same gap again
+   between the strip and the plate — so the two are one composed rectangle rather than a
+   row of pictures above a picture.
+
+   `frame.js` puts `.frame-host` on whatever element it was handed and takes it off again
+   at `destroy`: a frame is centred in its box without either page having to say so, and
+   the box is the host's rather than the window's, which is the whole of the difference
+   between the atlas page's stage and the studio's panel. */
+.frame-host { display: flex; align-items: center; justify-content: center; }
+.frame-host[hidden] { display: none; }
+
+.frame { flex: 0 0 auto; }
+
+/* `.slot img` sets a display of its own, so the browser's `[hidden]` no longer wins: an
+   empty slot's picture is hidden by a rule of the frame's instead. */
+.frame [hidden] { display: none !important; }
+
+.strip { display: flex; justify-content: space-between; font-size: 0; }
+
+.slot {
+  position: relative;
+  display: block;
+  flex: 0 0 auto;
+  background: var(--well);
+  border: 1px solid var(--well-rule);
+  overflow: hidden;
+  -webkit-tap-highlight-color: transparent;
+}
+.slot img { display: block; width: 100%; height: 100%; object-fit: cover; }
+
+/* A frame that hands its picks back to the page it is in rather than opening the explorer
+   builds its slots as buttons, so that they are still reachable from the keyboard without
+   an href to be reached by. A button brings a browser's own furniture with it, and none of
+   it is wanted: the slot is a picture with a border. */
+button.slot { margin: 0; padding: 0; font: inherit; color: inherit; cursor: pointer; }
+
+/* The two fixed slots always say what they are; the gallery slot has no kind until a mark
+   is under the pointer, and takes the well's own rule until it has one. */
+.slot[data-slot="mandelbrot"] {
+  border-color: color-mix(in srgb, var(--place-mandelbrot) 55%, var(--well-rule));
+}
+.slot[data-slot="julia"] {
+  border-color: color-mix(in srgb, var(--place-julia) 55%, var(--well-rule));
+}
+.slot.from-mandelbrot { border-color: var(--edge-mandelbrot); }
+.slot.from-julia { border-color: var(--edge-julia); }
+
+.slot:focus-visible { outline: 2px solid var(--well-ink); outline-offset: -3px; }
+
+/* A label on the top edge of the picture, not a row above it: a row is a height, and a
+   height is something that can change. The site's kicker treatment, centred the way every
+   short label under a picture on this site is centred, over a scrim that fades out so it
+   reads on a bright render and a black one alike. */
+.slot-label {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  padding: 0.55em 0.6em 1.2em;
+  background: linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0.78),
+    rgba(0, 0, 0, 0.42) 55%,
+    rgba(0, 0, 0, 0)
+  );
+  color: var(--well-ink);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+  font-family: var(--sans);
+  font-size: 0.6875rem;
+  line-height: 1;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  text-align: center;
+  pointer-events: none;
+}
+
+.plate {
+  position: relative;
+  background: var(--well);
+  border: 1px solid var(--well-rule);
+}
+.plate > img { display: block; width: 100%; height: 100%; }
+
+/* --------------------------------------------------------------------------- the marks
+
+   Blue for a place on the parameter plane, red for a place on a dynamical one. The plate
+   is grey and mostly dark, so every dot carries a thin light outline: a dot with no edge
+   disappears into the bright filaments and doubles in the black.
+
+   The hit area is bigger than the dot, which is what makes 150 of them usable with a
+   mouse; the dot itself is what changes size, so growing one does not move the pointer
+   off it. */
+.mark {
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  margin: -9px 0 0 -9px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.mark::before {
+  content: "";
+  display: block;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.72), 0 0 2px 1px rgba(0, 0, 0, 0.55);
+  transition: width 90ms ease-out, height 90ms ease-out;
+}
+.mark-mandelbrot::before { background: var(--place-mandelbrot); }
+.mark-julia::before { background: var(--place-julia); }
+
+.mark:hover::before,
+.mark:focus-visible::before {
+  width: 15px;
+  height: 15px;
+  filter: brightness(1.3);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.95), 0 0 6px 2px rgba(0, 0, 0, 0.5);
+}
+.mark:focus-visible { outline: none; }
+
+.mark.is-stored::before {
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.95),
+    0 0 0 3px var(--well),
+    0 0 0 6px currentColor,
+    0 0 0 7px rgba(0, 0, 0, 0.6);
+}
+.mark-mandelbrot.is-stored { color: var(--place-mandelbrot); }
+.mark-julia.is-stored { color: var(--place-julia); }

@@ -99,6 +99,10 @@ function viewOf(derived) {
     aspect: { across: 16, down: 9 },
     palette: derived.palette,
     shade: derived.shade,
+    // The recorded tone curve, where the caller found one on the run that drew the
+    // picture. A caller that has none says nothing, which is `null` — the contract's own
+    // fallback — so a view built before this key existed emits exactly the link it did.
+    level: derived.level ?? null,
   };
 }
 

@@ -340,7 +340,13 @@ def _strip(held, page: Path, directory: Path, width: int, height: int) -> str:
 
 
 def generated_pages(galleries: list[Gallery], sections: list[sections_module.Section]) -> dict:
-    """Every page the builder owns, as {path: html}. The set `check` compares against."""
+    """Every page the builder owns, as {path: html}. The set `check` compares against.
+
+    The galleries handed in are the **publishable** ones — `galleries.load_all()`, which a
+    staged gallery is deliberately not in. A staged record is a record and its pictures
+    with no page made from them, so there is nothing for this module to write and nothing
+    for the index to carry a cover tile of.
+    """
     pages = {GALLERIES_DIR / "index.html": gallery_index(galleries, sections)}
     for gallery in galleries:
         pages[gallery_page_path(gallery)] = gallery_page(gallery, sections)

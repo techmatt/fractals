@@ -1,34 +1,266 @@
 /* The explorer's own layout, on top of the site stylesheet rather than inside it.
-   Every colour here is a token `site.css` already declares: a render is read
-   against the same dark well the figures and the gallery tiles use, and the
-   controls under it are the same quiet furniture as the rest of the site.
+   Loaded only by this page: the article does not run code and does not need the rules
+   for a page that does.
 
-   Loaded only by this page. The article does not run code and does not need the
-   rules for a page that does. */
+   ## This page is dark, and it is the only one that is
 
-/* The explorer is a picture with a strip under it, so it takes the width the rail
-   would otherwise share — the whole page, not the reading column. What is read in
-   lines still stops at the measure; the picture and its controls do not, because a
-   fractal squeezed into a column of prose is a thumbnail. */
-.explorer-page { max-width: var(--page); margin: 0 auto; }
-.explorer-page .masthead > *,
-.explorer-page .intro,
-.explorer-page .notice,
-.explorer-page .status,
-.explorer-page .readout,
-.explorer-page .help,
-.explorer-page .provenance,
-.explorer-page .section-nav > *,
-.explorer-page footer > * { max-width: var(--measure); }
+   `site.css` sets a white reading surface with dark image wells, and every article page
+   keeps it. This page is not a reading surface — there is no prose on it at all — and it
+   is nearly all picture: a thousand wallpapers on the left, a render on the right, the
+   atlas plate in place of either. A white mat between them is a light box around dark
+   pictures, which is the exact thing the well tokens exist to avoid. So the studio is
+   one large well, and it is spelled with the same six tokens a figure's well uses rather
+   than with a second palette: `--well` is the ground, `--well-rule` the rules, and the
+   two ink tokens carry every word on the page. Nothing here is a new colour.
 
-/* The stage holds the canvas at the aspect the link asks for, so the picture's
-   shape is the link's and not the window's. The canvas fills it and is rendered at
-   its own display size — the picture is made at the resolution it is shown at. */
-.stage {
-  position: relative;
+   It is forced rather than asked for. There is no `prefers-color-scheme` branch on this
+   site and this page does not open one: a reader who arrives from an article page should
+   find the tool the colour it always is, not the colour their laptop is set to.
+
+   ## The page is the window
+
+   Two panels side by side, each scrolling on its own, and the document does not scroll at
+   all. The viewer is the wider of the two because it holds the picture being made; the
+   side panel is wide enough for a grid of wallpapers to read as a grid. Below the
+   breakpoint the two stack, viewer first, and nothing more is owed to a narrow window —
+   this is a tool for a desktop and says so by what it shows rather than by refusing. */
+
+.studio-body {
+  --side: 40fr;
+  --viewer: 60fr;
+  --studio-gap: 1px;
+  /* Where the two panels stop being side by side. The site's own breakpoint is about the
+     contents rail, which this page does not have, so the number is this page's own: below
+     it a grid of wallpaper tiles and a canvas cannot both be worth looking at. */
+  --studio-stack: 60rem;
+
+  margin: 0;
+  padding: 0;
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
+  background: var(--well);
+  color: var(--well-ink);
+  display: flex;
+  flex-direction: column;
+}
+
+[hidden] { display: none !important; }
+
+/* ------------------------------------------------------------------------ the bar */
+
+/* Thin, because it is not the page. The site's own `.topbar` carries the reading
+   column's metrics and a bottom rule sized for paper; this is the same two jobs — say
+   where you are, offer the way back — in one line of the well's own furniture. */
+.studio-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex: none;
+  padding: 0.45rem var(--gutter);
+  border-bottom: 1px solid var(--well-rule);
+  font-family: var(--sans);
+  font-size: 0.85rem;
+}
+
+.studio-site {
+  color: var(--well-ink);
+  text-decoration: none;
+  font-weight: 600;
+}
+.studio-site:hover { color: var(--well-link); }
+
+.studio-bar-links { display: flex; align-items: center; gap: 1rem; }
+.studio-bar-links a { color: var(--well-ink-dim); text-decoration: none; }
+.studio-bar-links a:hover { color: var(--well-link); text-decoration: underline; }
+
+/* ---------------------------------------------------------------------- the panels */
+
+.studio {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: var(--side) var(--viewer);
+  gap: var(--studio-gap);
+  background: var(--well-rule);
+}
+
+.side, .viewer {
+  min-width: 0;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  background: var(--well);
+}
+
+.side { display: flex; flex-direction: column; overflow-y: hidden; }
+
+@media (max-width: 60rem) {
+  .studio {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto;
+    overflow-y: auto;
+  }
+  /* Stacked, the viewer comes first: the picture is what the page is for, and a reader
+     who has just followed a link should not have to scroll past a thousand thumbnails to
+     see what the link said. */
+  .viewer { order: 1; }
+  .side { order: 2; overflow-y: visible; }
+  .side .tiles, .side .tabpanel { overflow: visible; }
+}
+
+/* ------------------------------------------------------------------------ the tabs */
+
+.tabs {
+  flex: none;
+  display: flex;
+  gap: 0.25rem;
+  padding: 0.5rem var(--gutter) 0;
+  border-bottom: 1px solid var(--well-rule);
+  font-family: var(--sans);
+}
+
+.tab {
+  appearance: none;
+  border: 1px solid transparent;
+  border-bottom: none;
+  border-radius: 3px 3px 0 0;
+  background: none;
+  color: var(--well-ink-dim);
+  font: inherit;
+  font-size: 0.85rem;
+  padding: 0.35rem 0.8rem;
+  margin-bottom: -1px;
+  cursor: pointer;
+}
+.tab:hover { color: var(--well-ink); }
+.tab[aria-selected="true"] {
+  color: var(--well-ink);
+  border-color: var(--well-rule);
+  background: var(--well);
+}
+.tab:focus-visible { outline: 2px solid var(--well-link); outline-offset: -2px; }
+
+.tabpanel {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* --------------------------------------------------------------------- the gallery */
+
+.filters {
+  flex: none;
+  padding: 0.6rem var(--gutter) 0.5rem;
+  border-bottom: 1px solid var(--well-rule);
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.chips { display: flex; flex-wrap: wrap; gap: 0.3rem; }
+
+/* A chip is a filter and a count in one control. The count is what makes the row worth
+   having: a reader picking `threads` should be able to see, before they pick, that it is
+   a hundred pictures and not six. */
+.chip {
+  appearance: none;
+  border: 1px solid var(--well-rule);
+  border-radius: 999px;
+  background: none;
+  color: var(--well-ink-dim);
+  font-family: var(--sans);
+  font-size: 0.75rem;
+  line-height: 1.5;
+  padding: 0.1rem 0.55rem;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.chip:hover { color: var(--well-ink); border-color: var(--well-ink-dim); }
+.chip[aria-pressed="true"] {
+  color: var(--well);
+  background: var(--well-ink);
+  border-color: var(--well-ink);
+}
+.chip:focus-visible { outline: 2px solid var(--well-link); outline-offset: 1px; }
+.chip .count { font-variant-numeric: tabular-nums; opacity: 0.7; margin-left: 0.3rem; }
+
+/* Pictures and nothing else. No caption, no name, no score: the grid is for finding one
+   worth opening, and everything a tile could say about itself is something the viewer
+   says better once it is open. */
+.tiles {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 0.5rem var(--gutter) 1rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr));
+  gap: 0.35rem;
+  align-content: start;
+  /* A grid item stretches to its row by default, and a row that is auto-sized takes its
+     height from the item: the two together resolve a tile to nothing and squash every
+     wallpaper into a sliver. The shape belongs to the picture, so the picture carries it
+     and the tile is sized by what is in it. */
+  align-items: start;
+}
+
+.tile {
+  appearance: none;
+  padding: 0;
+  border: 1px solid transparent;
+  background: var(--well-pending);
+  cursor: pointer;
+  overflow: hidden;
+  line-height: 0;
+}
+.tile img {
+  display: block;
   width: 100%;
+  height: auto;
   aspect-ratio: 16 / 9;
-  margin: 1.25rem 0 0;
+  object-fit: cover;
+}
+.tile:hover { border-color: var(--well-ink-dim); }
+.tile:focus-visible { outline: 2px solid var(--well-link); outline-offset: -2px; }
+.tile.is-open { border-color: var(--well-ink); }
+
+.side-note {
+  flex: none;
+  margin: 0;
+  padding: 0.4rem var(--gutter) 0.6rem;
+  border-top: 1px solid var(--well-rule);
+  font-family: var(--sans);
+  font-size: 0.75rem;
+  color: var(--well-ink-dim);
+}
+.side-note:empty { display: none; }
+
+/* ----------------------------------------------------------------------- the atlas */
+
+/* The frame sizes itself to this box, which is the whole of what the panel owes it. */
+.atlas-host {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.6rem var(--gutter);
+}
+
+/* ---------------------------------------------------------------------- the viewer */
+
+.viewer { display: flex; flex-direction: column; }
+
+/* The stage holds the canvas at the aspect the link asks for, so the picture's shape is
+   the link's and not the window's. The canvas is rendered at its own display size — the
+   picture is made at the resolution it is shown at. */
+.stage {
+  flex: none;
+  margin: var(--gutter) var(--gutter) 0;
+  aspect-ratio: 16 / 9;
+  max-height: 60vh;
   background: var(--well);
   border: 1px solid var(--well-rule);
 }
@@ -42,147 +274,244 @@
 }
 .stage canvas:active { cursor: grabbing; }
 
-/* `hidden` has to win over the `display` an element is given here. The attribute's
-   `display: none` comes from the browser's own stylesheet, and any author rule beats
-   it — so a bar declared `display: flex` stays on the page while the notice explaining
-   why there is nothing to show sits above it. */
-[hidden] { display: none !important; }
+.status {
+  flex: none;
+  margin: 0.4rem var(--gutter) 0;
+  font-family: var(--sans);
+  font-size: 0.75rem;
+  color: var(--well-ink-dim);
+  min-height: 1.2em;
+}
 
-/* The controls under the picture. They wrap rather than overflow — a palette name
-   can be forty characters long, and a mode with parameters brings two more boxes —
-   and a group holds a label with the control it names so a wrap never splits one
-   from the other. The groups a family or a mode does not need are empty spans, so
-   the strip is as short as what is being drawn. */
+/* --------------------------------------------------------------------- the controls */
+
+/* Only what one would turn. Each group is a heading and its own row of controls, and the
+   groups are in the order a picture is made in: the mode, then the colour it is spent
+   on, then the shading, then the place. The place is last and folded, because a reader
+   who wants to move moves the picture. */
+.controls {
+  flex: 1 1 auto;
+  padding: 0.5rem var(--gutter) 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.control-group {
+  border-top: 1px solid var(--well-rule);
+  padding-top: 0.6rem;
+}
+
+.control-group h2, .control-group > summary {
+  margin: 0 0 0.4rem;
+  font-family: var(--sans);
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--well-ink-dim);
+}
+.control-group > summary { cursor: pointer; }
+.control-group > summary:hover { color: var(--well-ink); }
+
 .bar {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 0.5rem 1rem;
-  margin-top: 0.6rem;
-  font-size: 0.875rem;
+  gap: 0.4rem 0.9rem;
+  font-family: var(--sans);
+  font-size: 0.8rem;
 }
-
-.bar .group {
-  display: inline-flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.35rem 0.6rem;
-}
+.bar + .bar { margin-top: 0.4rem; }
+.bar .group { display: inline-flex; align-items: center; gap: 0.35rem; }
 .bar .group:empty { display: none; }
-
-.bar label { color: var(--ink-dim); }
+.bar label { color: var(--well-ink-dim); }
 
 .bar select,
 .bar input {
-  max-width: 22rem;
-  padding: 0.2rem 0.3rem;
-  border: 1px solid var(--rule);
-  border-radius: 2px;
-  background: var(--bar);
-  color: var(--ink);
   font: inherit;
+  font-size: 0.8rem;
+  color: var(--well-ink);
+  background: var(--well);
+  border: 1px solid var(--well-rule);
+  border-radius: 2px;
+  padding: 0.15rem 0.3rem;
+  max-width: 100%;
 }
-
-/* A constant is a decimal string that carries a location's identity, so its box is
-   wide enough to show one and monospaced so the digits line up under each other.
-   A parameter is a small number and gets a small box. */
-.bar input.constant {
-  width: 12rem;
-  font-family: var(--mono);
-  font-size: 0.8125rem;
-}
+.bar select:focus-visible,
+.bar input:focus-visible { outline: 2px solid var(--well-link); outline-offset: -2px; }
+.bar input.constant { width: 13rem; font-family: var(--mono); font-size: 0.75rem; }
 .bar input.param { width: 5rem; }
+.bar input.flag { width: auto; accent-color: var(--well-link); }
 
 .bar button {
-  padding: 0.25rem 0.7rem;
-  border: 1px solid var(--rule);
-  border-radius: 2px;
-  background: var(--bar);
-  color: var(--ink);
   font: inherit;
+  font-size: 0.8rem;
+  color: var(--well-ink);
+  background: var(--well);
+  border: 1px solid var(--well-rule);
+  border-radius: 2px;
+  padding: 0.15rem 0.5rem;
   cursor: pointer;
 }
-.bar button:hover { border-color: var(--underline); color: var(--link); }
-
-/* The shade recipe. Seven controls a link could always set and the page could not,
-   folded away because a reader wants a palette far more often than a recipe — and
-   folded by a `<details>`, so the one page on this site that runs code does not spend
-   any of it on opening a group. Inside it is the same strip and the same furniture as
-   the pickers above; what is different is that it says how many of the seven are set,
-   because a group that is closed has to say when it is not empty. */
-.shade { margin-top: 0.75rem; }
-
-.shade > summary {
-  /* Left at `list-item`, which is what carries the disclosure triangle — a summary
-     given any other display loses its marker and stops looking like something that
-     opens. `fit-content` is what keeps the hit area to the words. */
-  width: fit-content;
-  cursor: pointer;
-  font-size: 0.875rem;
-  color: var(--ink-dim);
-}
-.shade > summary:hover { color: var(--link); }
-.shade-count { font-variant-numeric: tabular-nums; }
-.shade .bar { margin-top: 0.4rem; }
-
-/* A flag is a checkbox and wants none of the box a number gets — it is not a field
-   with a value in it, and the border around one reads as an empty text box. */
-.bar input.flag {
-  width: auto;
-  padding: 0;
-  border: 0;
-  accent-color: var(--link);
-}
-
-/* The download's own line: what a size will cost before it is asked for, how far
-   along it is while it runs, and what it actually took. Prose rather than
-   monospace, because it is a sentence and not a coordinate. */
-.help {
-  margin: 0.5rem 0 0;
-  font-size: 0.875rem;
-  color: var(--ink-dim);
-}
-.help:empty { display: none; }
-
-/* The bar's progress, at the height of the controls beside it so a running
-   download does not change how tall the strip is. */
-.bar progress {
-  width: 12rem;
-  height: 0.5rem;
-  accent-color: var(--link);
-}
-
-/* A control that cannot be used says so by fading, and stops answering the
-   pointer: while a download is drawing, the view it is drawing may not move. */
+.bar button:hover { border-color: var(--well-ink-dim); color: var(--well-link); }
 .bar select:disabled,
 .bar input:disabled,
-.bar button:disabled {
-  opacity: 0.45;
-  cursor: default;
-}
-.bar button:disabled:hover { border-color: var(--rule); color: var(--ink); }
+.bar button:disabled { opacity: 0.45; cursor: not-allowed; }
+.bar button:disabled:hover { border-color: var(--well-rule); color: var(--well-ink); }
+.bar progress { width: 8rem; }
 
-/* What the renderer is doing, and where the view is. Tabular figures so a
-   coordinate does not jitter sideways as its digits change under the cursor. */
-.status, .readout {
+.studio-bar button {
+  font: inherit;
+  font-size: 0.8rem;
+  color: var(--well-ink);
+  background: none;
+  border: 1px solid var(--well-rule);
+  border-radius: 2px;
+  padding: 0.1rem 0.5rem;
+  cursor: pointer;
+}
+.studio-bar button:hover { border-color: var(--well-ink-dim); color: var(--well-link); }
+
+.shade-count { font-variant-numeric: tabular-nums; text-transform: none; letter-spacing: 0; }
+
+/* What the picture that was opened could not carry: the tone curve a run never wrote
+   down, or a cap the depth policy answers differently. It sits under the canvas because
+   it is about the picture on the screen, and it goes the moment the reader moves. */
+.opened {
+  flex: none;
+  margin: 0.2rem var(--gutter) 0;
+  font-family: var(--sans);
+  font-size: 0.72rem;
+  line-height: 1.5;
+  color: var(--well-ink-dim);
+  max-width: var(--measure);
+}
+.opened:empty { display: none; }
+
+.help, .readout, .provenance {
   margin: 0.35rem 0 0;
-  font-family: var(--mono);
-  font-size: 0.8125rem;
-  color: var(--ink-dim);
+  font-family: var(--sans);
+  font-size: 0.72rem;
+  line-height: 1.5;
+  color: var(--well-ink-dim);
+  max-width: var(--measure);
 }
-.readout { font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.help:empty, .readout:empty, .provenance:empty { display: none; }
+.readout { font-family: var(--mono); overflow-wrap: anywhere; }
 
-/* A refused link, or a page that could not start. It replaces the picture rather
-   than standing beside it: there is nothing to look at, and saying so plainly beats
-   a blank rectangle. */
+/* --------------------------------------------------------------------- the palettes */
+
+/* A family tab strip, because the library is a thousand maps and a reader wants the one
+   that is the colour they are thinking of. Popular is first and is the record's own
+   answer to which maps this pool actually seats; the families after it are what each map
+   most often produces, which is a reading of the ledger rather than of the gradient. */
+.palette-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.2rem;
+  margin-bottom: 0.4rem;
+}
+
+.palette-tab {
+  appearance: none;
+  border: 1px solid transparent;
+  border-radius: 2px;
+  background: none;
+  color: var(--well-ink-dim);
+  font-family: var(--sans);
+  font-size: 0.75rem;
+  padding: 0.1rem 0.45rem;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.palette-tab:hover { color: var(--well-ink); }
+.palette-tab[aria-selected="true"] {
+  color: var(--well-ink);
+  border-color: var(--well-rule);
+  background: var(--well-pending);
+}
+.palette-tab:focus-visible { outline: 2px solid var(--well-link); outline-offset: -2px; }
+.palette-tab .count { font-variant-numeric: tabular-nums; opacity: 0.6; margin-left: 0.3rem; }
+
+/* The tabs that hold the map in force. A reader who arrived on a link can see where the
+   colour they are looking at lives without opening every tab to find it. */
+.palette-tab.holds::after {
+  content: "";
+  display: inline-block;
+  width: 0.3rem;
+  height: 0.3rem;
+  margin-left: 0.3rem;
+  vertical-align: 0.05em;
+  border-radius: 50%;
+  background: var(--well-link);
+}
+
+.swatches {
+  max-height: 14rem;
+  overflow-y: auto;
+  border: 1px solid var(--well-rule);
+  padding: 0.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+/* One row: the gradient, and the name under a reader's eye rather than beside a color
+   chip. The strip is drawn from the same control points the renderer bakes, so what the
+   row shows is what the picture will be spent on. */
+.swatch {
+  appearance: none;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  border: 1px solid transparent;
+  border-radius: 2px;
+  background: none;
+  padding: 0.15rem 0.25rem;
+  cursor: pointer;
+  text-align: left;
+}
+.swatch canvas {
+  display: block;
+  width: 5.5rem;
+  height: 0.9rem;
+  flex: none;
+  border: 1px solid var(--well-rule);
+}
+.swatch .name {
+  font-family: var(--sans);
+  font-size: 0.75rem;
+  color: var(--well-ink-dim);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.swatch:hover { border-color: var(--well-ink-dim); }
+.swatch:hover .name { color: var(--well-ink); }
+.swatch:focus-visible { outline: 2px solid var(--well-link); outline-offset: -1px; }
+.swatch.is-picked { border-color: var(--well-ink); }
+.swatch.is-picked .name { color: var(--well-ink); font-weight: 600; }
+
+/* ----------------------------------------------------------------------- the notice */
+
+/* The boot message, and every refusal after it. It is the whole page when it is showing,
+   because a page that cannot draw has nothing else to be. */
 .notice {
-  margin: 1.25rem 0 0;
-  padding: 1rem 1.2rem;
-  border-left: 3px solid var(--rule);
-  background: var(--bar);
+  margin: auto;
+  padding: var(--gutter);
+  max-width: var(--measure);
+  font-family: var(--sans);
+  font-size: 0.85rem;
+  line-height: 1.6;
+  color: var(--well-ink);
 }
-.notice p { margin: 0 0 0.5em; }
-.notice p:last-child { margin-bottom: 0; }
-.notice code { font-size: 0.9em; }
-
-.provenance { margin-top: 1.5rem; font-size: 0.8125rem; color: var(--ink-dim); }
+.notice p { margin: 0 0 0.6em; }
+.notice a { color: var(--well-link); }
+.notice code {
+  font-family: var(--mono);
+  font-size: 0.85em;
+  background: var(--well-pending);
+  padding: 0.05em 0.3em;
+  border-radius: 2px;
+}

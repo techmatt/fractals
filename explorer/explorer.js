@@ -1,17 +1,34 @@
-// The explorer page: a canvas, a strip of controls, and an address bar that is
-// always a valid permalink.
+// The explorer: a studio, and an address bar that is always a valid permalink.
 //
-// Everything about what a link MEANS lives in `permalink.js` and everything about
-// how a picture is MADE lives in `render.js`. What is here is the part a reader
-// touches — dragging, the wheel, the keys, the pickers — and the one rule that
-// binds them together: after every settled view the URL is rewritten to the
-// canonical string, so the thing in the address bar is the thing to send somebody.
+// Two panels. On the left, pictures somebody can open: a thousand seated wallpapers, or
+// the atlas of every place the search kept. On the right, the viewer — the canvas, and
+// under it only the controls one would actually turn. Everything about what a link MEANS
+// lives in `permalink.js` and everything about how a picture is MADE lives in
+// `render.js`. What is here is the part a reader touches, and the one rule that binds it
+// together: after every settled view the URL is rewritten to the canonical string, so
+// the thing in the address bar is the thing to send somebody.
 //
-// The controls are **derived, never typed**. Which families exist and which modes
-// are offered come from the contract; what a mode is for comes from the baked
-// catalog; which parameters a mode has comes from the contract and what they are
-// set to comes from the module's own plan. Nothing here holds a second opinion
-// about the engine's catalog, so a mode retuned over there arrives by rebuilding.
+// **One direction of travel.** Every picture on the left is a link, and a link is the
+// only way a picture gets into the viewer: a gallery tile parses the permalink its record
+// carries, an atlas mark parses the one its slot derived, a control writes one key of the
+// view and re-parses. There is no second path by which something becomes the current
+// picture, which is what keeps the address bar honest — anything that can be opened here
+// can be sent to somebody else.
+//
+// **The controls are derived, never typed.** Which families exist and which modes are
+// offered come from the contract; what a mode is for comes from the baked catalog; which
+// parameters a mode has comes from the contract and what they are set to comes from the
+// module's own plan; which palettes there are, and what each is filed under, come from
+// the baked index. Nothing here holds a second opinion about the engine's catalog, so a
+// mode retuned over there arrives by rebuilding.
+//
+// ## What the regrouping dropped
+//
+// The page used to be an article page with a canvas in it: a masthead, an introductory
+// paragraph, a section nav, a footer, and a line of provenance under everything. A studio
+// is not read, so the prose is gone — the `<title>`, the bar and the controls say what
+// this is. The provenance line is kept, folded into Details, because what the page was
+// baked from is a fact about the picture and not a paragraph about the page.
 
 import * as link from "./permalink.js";
 import * as shade from "./shade.js";
@@ -19,6 +36,8 @@ import { CONSTANTS as ANCHORS, MODES as IDENTITIES } from "./catalog.js";
 import { DEFAULT_PALETTE, PALETTES, PROVENANCE } from "./palettes.js";
 import { fetchStops } from "./stops.js";
 import * as download from "./download.js";
+import * as picker from "./picker.js";
+import * as gallery from "./gallery.js";
 import { PREVIEW_DIVISOR, Renderer, familySpecOf, pixelGrid, specOf } from "./render.js";
 
 /** How far one arrow key moves the view, as a share of its width. */
@@ -27,6 +46,9 @@ const PAN_STEP = 0.1;
 const KEY_ZOOM = 1.4;
 /** How much one wheel notch multiplies the width by. */
 const WHEEL_ZOOM = 1.15;
+
+/** Which panel the left side shows when nothing says otherwise. */
+const DEFAULT_PANEL = "gallery";
 
 /** How a mode's parameter is stepped in its control, and what it is called.
  *
@@ -44,27 +66,32 @@ const CONTROLS = {
   opacity: { label: "Opacity", step: 0.05 },
 };
 
+/** What each coordinate box is called, in the words the link spells them with. */
+const COORDINATES = { x: "x", y: "y", w: "width" };
+
 const canvas = document.getElementById("canvas");
 const screen = canvas.getContext("2d", { alpha: false });
 const frame = document.createElement("canvas");
 const frameScreen = frame.getContext("2d", { alpha: false });
 
+const studio = document.getElementById("studio");
 const stage = document.getElementById("stage");
-const bar = document.getElementById("bar");
 const status = document.getElementById("status");
+const opened = document.getElementById("opened");
 const readout = document.getElementById("readout");
 const familyPicker = document.getElementById("family");
 const modePicker = document.getElementById("mode");
-const picker = document.getElementById("palette");
 const constantStrip = document.getElementById("constants");
+const coordinateStrip = document.getElementById("coordinates");
 const paramStrip = document.getElementById("params");
 const copyButton = document.getElementById("copy");
 const notice = document.getElementById("notice");
-const downloadBar = document.getElementById("download");
-const shadeGroup = document.getElementById("shade");
 const shadeBar = document.getElementById("shade-bar");
 const shadeCount = document.getElementById("shade-count");
 const shadeNote = document.getElementById("shade-note");
+const levelToggle = document.getElementById("level-toggle");
+const levelNote = document.getElementById("level-note");
+const details = document.getElementById("details");
 
 let renderer = null;
 let contract = null;
@@ -72,7 +99,18 @@ let view = null;
 let grid = { width: 0, height: 0 };
 let settleTimer = 0;
 let panel = null;
+let palettes = null;
+let tiles = null;
 const homes = new Map();
+
+/** The curve the current view came with, kept while it is switched off.
+ *
+ *  The operator measures a finished picture and derives a curve from it; only the second
+ *  half of that crossed into this page, so the explorer can replay a curve and cannot
+ *  invent one. A reader who switches autolevel off to see what the seat looked like
+ *  underneath has to be able to switch it back on, and the only curve there is is the one
+ *  that arrived — so it is held here rather than lost to the toggle. */
+let heldCurve = null;
 
 /** Whether a download is drawing the current view.
  *
@@ -92,9 +130,10 @@ function locked() {
 /** Freeze or release every control that would change what is being drawn. */
 function setBusy(on) {
   busy = on;
-  for (const control of [familyPicker, modePicker, picker, copyButton]) control.disabled = on;
-  for (const control of constantStrip.querySelectorAll("input")) control.disabled = on;
-  for (const control of paramStrip.querySelectorAll("input")) control.disabled = on;
+  for (const control of [familyPicker, modePicker, copyButton, levelToggle]) control.disabled = on;
+  for (const strip of [constantStrip, coordinateStrip, paramStrip]) {
+    for (const control of strip.querySelectorAll("input")) control.disabled = on;
+  }
   for (const control of shadeBar.querySelectorAll("input, select, button")) control.disabled = on;
   // Released, the fold is not simply enabled again: whether it may be touched at all
   // is the current map's business, and the sync is what knows.
@@ -111,10 +150,7 @@ function say(text) {
 function refuse(message) {
   notice.textContent = message;
   notice.hidden = false;
-  stage.hidden = true;
-  bar.hidden = true;
-  downloadBar.hidden = true;
-  shadeGroup.hidden = true;
+  studio.hidden = true;
 }
 
 function clearNotice() {
@@ -175,7 +211,12 @@ function planeAt(px, py) {
   };
 }
 
-/** Move to a freshly computed geometry, with the coordinates written shortest. */
+/** Move to a freshly computed geometry, with the coordinates written shortest.
+ *
+ *  A move is a view the reader made rather than one they opened, so whatever was opened
+ *  stops being what is on the screen: the note about it goes, and the grid's mark with
+ *  it. Everything else about the picture — the mode, the map, the recipe, the curve —
+ *  is still theirs and travels with them. */
 function moveTo(x, y, w) {
   view = {
     ...view,
@@ -183,6 +224,7 @@ function moveTo(x, y, w) {
     y: link.coordinateOf(y),
     w: link.coordinateOf(w),
   };
+  leaveSeat();
 }
 
 /** Zoom by `factor` about a point of the canvas, refusing to pass the `f64` wall. */
@@ -309,18 +351,26 @@ function stretch(image) {
 function updateReadout() {
   const cap = renderer.maxiter(view.w.value);
   readout.textContent =
-    `x ${view.x.text}  ·  y ${view.y.text}  ·  w ${view.w.text}  ·  ${cap} iterations`;
+    `${view.aspect.across}:${view.aspect.down}  ·  ${cap} iterations at this width`;
+  syncCoordinates();
 }
 
 /** Write the canonical permalink into the address bar, and re-price a download.
  *
  *  Both are properties of the settled view: the estimate is per mode, and whether
- *  a supersampled grid still resolves in `f64` is per width. */
+ *  a supersampled grid still resolves in `f64` is per width.
+ *
+ *  **The panel rides along and is not part of the link.** `emit` writes the picture and
+ *  nothing else; which side panel is open is a UI key the contract tolerates and never
+ *  reads, added here on top. So the address bar restores the whole page and a link
+ *  copied out of it is the picture. */
 function settle() {
   panel?.describe();
   clearTimeout(settleTimer);
   settleTimer = setTimeout(() => {
-    history.replaceState(null, "", `?${link.emit(view, contract)}`);
+    const picture = link.emit(view, contract);
+    const furniture = showing === DEFAULT_PANEL ? "" : `&panel=${showing}`;
+    history.replaceState(null, "", `?${picture}${furniture}`);
   }, 0);
 }
 
@@ -336,6 +386,30 @@ function fill(select, names, titles) {
     if (titles && titles.get(name)) option.title = titles.get(name);
     select.append(option);
   }
+}
+
+/**
+ * One key of the link, retyped: the contract reads it, or says why it will not.
+ *
+ * Every text box in Details goes through here — the family constants and the three
+ * coordinates alike — and the route is deliberately the long way round: the current view
+ * is emitted, one key is replaced, and the whole string is parsed back. That way a typed
+ * coordinate is read by exactly the reader a link's coordinate is read by, refused with
+ * exactly the sentence a link would be refused with, and echoed back verbatim in the box
+ * rather than reformatted through a float.
+ */
+function retype(key, text) {
+  if (locked()) return false;
+  const params = new URLSearchParams(link.emit(view, contract));
+  params.set(key, text);
+  try {
+    view = link.parse(`?${params}`, contract);
+  } catch (error) {
+    say(error.message);
+    return false;
+  }
+  leaveSeat();
+  return true;
 }
 
 /**
@@ -359,18 +433,47 @@ function buildConstants() {
     input.className = "constant";
     input.value = view.constants[key].text;
     input.addEventListener("change", () => {
-      const text = input.value.trim();
-      const value = Number(text);
-      if (text === "" || !Number.isFinite(value)) {
-        say(`${label.textContent} has to be a decimal number — “${input.value}” is not one`);
+      if (retype(key, input.value.trim())) {
+        homes.delete(view.family);
+        draw();
+      } else {
         input.value = view.constants[key].text;
-        return;
       }
-      view = { ...view, constants: { ...view.constants, [key]: { text, value } } };
-      homes.delete(view.family);
-      draw();
     });
     constantStrip.append(label, input);
+  }
+}
+
+/** The three coordinate boxes: where the view is, and how wide.
+ *
+ *  Built once and synced after every move, because a drag and a wheel notch write them
+ *  as surely as typing does. What is in the box is the text the link carries — the
+ *  decimal string is the identity of a location, and a box that reformatted it would be
+ *  the one place on the page where a coordinate lost precision. */
+const coordinateBoxes = new Map();
+
+function buildCoordinates() {
+  coordinateStrip.replaceChildren();
+  for (const [key, label] of Object.entries(COORDINATES)) {
+    const name = document.createElement("label");
+    name.textContent = label;
+    name.htmlFor = `coordinate-${key}`;
+    const input = document.createElement("input");
+    input.type = "text";
+    input.id = `coordinate-${key}`;
+    input.className = "constant";
+    input.addEventListener("change", () => {
+      if (retype(key, input.value.trim())) draw();
+      else input.value = view[key].text;
+    });
+    coordinateBoxes.set(key, input);
+    coordinateStrip.append(name, input);
+  }
+}
+
+function syncCoordinates() {
+  for (const [key, input] of coordinateBoxes) {
+    if (document.activeElement !== input) input.value = view[key].text;
   }
 }
 
@@ -403,6 +506,7 @@ function buildParams() {
         return;
       }
       view = { ...view, params: { ...view.params, [key]: value } };
+      leaveSeat();
       draw();
     });
     paramStrip.append(label, input);
@@ -496,6 +600,7 @@ function buildShade() {
   reset.addEventListener("click", () => {
     if (locked()) return;
     view = { ...view, shade: shade.defaultShade() };
+    leaveSeat();
     syncShade();
     draw();
   });
@@ -521,6 +626,7 @@ function setShade(key, text) {
     syncShade();
     return;
   }
+  leaveSeat();
   syncShade();
   draw();
 }
@@ -569,32 +675,153 @@ function syncShade() {
       "here. Reverse, mirror and rolloff do reach it — and each of the three re-iterates " +
       "the frame rather than recoloring it, because there is no field to recolor."
     : "";
+
+  syncLevel();
 }
 
 /**
- * The palette picker's options: the offered maps, and whatever is drawn right now.
+ * The autolevel toggle: on where a curve is in force, off where it is not.
  *
- * A few baked maps are not offered — they are here so that a figure of the article can
- * be opened at the map it was drawn in, and not to widen a curated set this site does
- * not own. A link arriving on one still has to be shown truthfully, so it joins the
- * list while it is in force and leaves again the moment the reader picks something
- * else. A select that quietly showed a different name than the picture is drawn in
- * would be worse than either.
+ * **It offers a curve and never derives one.** The operator has two halves — measure a
+ * finished picture's tone against the band of finished wallpapers, then push the curve
+ * that measurement gives through the map's own stops — and only the second half is on
+ * this page. So the toggle can replay the curve a link or a gallery seat arrived with,
+ * and can put it away, and has nothing to switch on for a view that never carried one.
+ * A control that measured a curve of its own would be a second operator, and two
+ * operators is how a seat comes to open in a colour the gallery never shipped.
  */
-function paletteNames() {
-  const names = [...PALETTES].filter(([, map]) => map.offered).map(([name]) => name);
-  return names.includes(view.palette) ? names : [view.palette, ...names];
+function syncLevel() {
+  const carried = view.level ?? heldCurve;
+  levelToggle.checked = view.level !== null;
+  levelToggle.disabled = busy || carried === null;
+  if (carried === null) {
+    levelNote.textContent =
+      "The autolevel operator measures a finished picture, and only the half that replays " +
+      "its curve is on this page. So this switches on for a view that arrived carrying " +
+      "one — a gallery seat, or a link that names it — and there is nothing here to " +
+      "measure for a view that did not.";
+    return;
+  }
+  levelNote.textContent = view.level === null
+    ? "Off: the map's own stops, with the curve this view arrived with put aside."
+    : `${view.level.operator}, replayed on the map's stops before the recipe is spent on it.`;
 }
 
 /** Whatever the reader just chose, drawn — and the strips rebuilt around it. */
 function rebuild() {
   familyPicker.value = view.family;
   modePicker.value = view.mode;
-  fill(picker, paletteNames());
-  picker.value = view.palette;
+  palettes?.show(view.palette);
   buildConstants();
   buildParams();
   stage.style.aspectRatio = `${view.aspect.across} / ${view.aspect.down}`;
+}
+
+// ------------------------------------------------------------------- what was opened
+
+/** The seat the viewer is showing, where it is showing one. */
+let seat = null;
+
+/**
+ * Open a picture from the left panel: its link is parsed, and what the link could not
+ * carry is said where the picture is.
+ *
+ * A tile and a mark both arrive here, because both are the same thing — a permalink that
+ * was derived from a record next door. What `gap` says is not this page's sentence: it
+ * is the one the builder wrote when it found the run had kept no tone curve, or that the
+ * cap the recipe pinned is not the cap the depth policy gives for that width. Saying it
+ * is the difference between a picture and a picture that is nearly right.
+ */
+function openLink(query, { gap = null, key = null, what = "this picture" } = {}) {
+  if (locked()) return;
+  let wanted;
+  try {
+    wanted = link.parse(`?${query}`, contract);
+  } catch (error) {
+    say(error.message);
+    return;
+  }
+  view = wanted;
+  seat = key;
+  heldCurve = view.level;
+  tiles?.mark(key);
+  opened.textContent = gap ? `${what}: ${gap}` : "";
+  rebuild();
+  draw();
+}
+
+/** Stop claiming the picture is the one that was opened. */
+function leaveSeat() {
+  if (seat === null && opened.textContent === "") return;
+  seat = null;
+  tiles?.mark(null);
+  opened.textContent = "";
+}
+
+// ------------------------------------------------------------------- the panels
+
+let showing = DEFAULT_PANEL;
+let atlasStarted = false;
+
+const tabs = [...document.querySelectorAll(".tab")];
+
+/**
+ * Show one of the two left panels.
+ *
+ * The atlas is mounted the first time it is opened and never before: it reads its own
+ * record and instantiates the wasm module for one export, and a reader who came here for
+ * the gallery should not wait for either. Its failure is the panel's and not the page's —
+ * the viewer is what this page is, and one of two side panels not loading is a note in
+ * that panel.
+ */
+function showPanel(name) {
+  showing = tabs.some((tab) => tab.dataset.panel === name) ? name : DEFAULT_PANEL;
+  for (const tab of tabs) {
+    const mine = tab.dataset.panel === showing;
+    tab.setAttribute("aria-selected", String(mine));
+    document.getElementById(`panel-${tab.dataset.panel}`).hidden = !mine;
+  }
+  if (showing === "atlas") startAtlas();
+  settle();
+}
+
+async function startAtlas() {
+  if (atlasStarted) return;
+  atlasStarted = true;
+  const host = document.getElementById("atlas-host");
+  const note = document.getElementById("atlas-note");
+  try {
+    const { mount } = await import("../atlas/frame.js");
+    await mount(host, {
+      base: new URL("../atlas/", import.meta.url),
+      // Nothing is stored here — no ring on a mark, no Escape to press — but the slots
+      // hold the last place they were shown, because a slot that empties when the pointer
+      // leaves the mark is a picture nobody can click.
+      keep: false,
+      linger: true,
+      onPick: ({ query, palette, slot }) => {
+        const refused = slot?.refused ?? [];
+        const gap = refused.length === 0
+          ? null
+          : `the link cannot carry ${refused.join("; ")}${
+              palette && slot.colormap && palette !== slot.colormap
+                ? `, so it opens in ${palette}`
+                : ""
+            }`;
+        openLink(query, { gap, what: "this place" });
+      },
+    });
+    note.textContent =
+      "Hover a mark for its neighborhood, its Julia set and a wallpaper drawn there. " +
+      "Click the mark to open the wallpaper, or click one of the three to open that one.";
+  } catch (error) {
+    atlasStarted = false;
+    note.textContent = `The atlas could not be read: ${error.message ?? error}`;
+  }
+}
+
+for (const tab of tabs) {
+  tab.addEventListener("click", () => showPanel(tab.dataset.panel));
 }
 
 // ------------------------------------------------------------------- the gestures
@@ -730,7 +957,9 @@ familyPicker.addEventListener("change", () => {
     aspect: view.aspect,
     palette: view.palette,
     shade: view.shade,
+    level: view.level,
   };
+  leaveSeat();
   rebuild();
   draw();
 });
@@ -739,6 +968,7 @@ familyPicker.addEventListener("change", () => {
  *  the mode that is being left. */
 modePicker.addEventListener("change", () => {
   view = { ...view, mode: modePicker.value, params: {} };
+  leaveSeat();
   buildParams();
   // What a download of this view would cost is per mode, so the line under the
   // control moves with the picker rather than at the moment somebody presses it.
@@ -746,17 +976,39 @@ modePicker.addEventListener("change", () => {
   draw();
 });
 
-picker.addEventListener("change", () => {
-  view = { ...view, palette: picker.value };
+/** A map, picked out of the strip. The recipe travels with the reader, except where
+ *  the new map refuses a piece of it. */
+function pickPalette(name) {
+  if (locked()) return;
+  view = { ...view, palette: name };
   // A cyclic map cannot be folded, so a recipe that arrived folded is dropped
   // rather than carried onto a map it is refused on.
-  if (view.shade.mirror && PALETTES.get(view.palette).cyclic) {
+  if (view.shade.mirror && PALETTES.get(name).cyclic) {
     view = { ...view, shade: { ...view.shade, mirror: false } };
   }
-  // Refilled because the map just left may have been an unoffered one, and the picker
-  // carries such a map only while it is the one on the screen.
-  fill(picker, paletteNames());
-  picker.value = view.palette;
+  leaveSeat();
+  palettes.show(name);
+  draw();
+}
+
+levelToggle.addEventListener("change", () => {
+  if (locked()) {
+    syncLevel();
+    return;
+  }
+  if (levelToggle.checked) {
+    if (heldCurve === null) {
+      syncLevel();
+      return;
+    }
+    view = { ...view, level: heldCurve };
+  } else {
+    heldCurve = view.level ?? heldCurve;
+    view = { ...view, level: null };
+  }
+  // Not a `leaveSeat`: switching the seat's own curve off is looking at the seat, and
+  // the note that says what the link could not carry is still the thing worth reading.
+  syncLevel();
   draw();
 });
 
@@ -809,21 +1061,31 @@ async function main() {
     refuse(`${error.message} Nothing has been drawn, because guessing what was meant would be worse than saying so.`);
     return;
   }
+  heldCurve = view.level;
 
   document.getElementById("provenance").textContent =
-    `${PROVENANCE.offered} curated palettes and ${IDENTITIES.size} production modes, baked from ` +
+    `${PROVENANCE.count} palettes and ${IDENTITIES.size} production modes, baked from ` +
     `fractal-wallpapers ${PROVENANCE.wallpapers_commit.slice(0, 12)} on ${PROVENANCE.baked}.`;
 
   clearNotice();
-  stage.hidden = false;
-  bar.hidden = false;
-  downloadBar.hidden = false;
-  shadeGroup.hidden = false;
+  studio.hidden = false;
+
   buildShade();
+  buildCoordinates();
   // A link that set part of the recipe opens the group it set. Folded away is the right
-  // resting state for seven knobs most readers will not want; folded away over values
-  // somebody sent in a link is the page hiding what it was asked to show.
-  shadeGroup.open = shade.chosen(view.shade).length > 0;
+  // resting state for a place a reader is more likely to reach by dragging; folded away
+  // over values somebody sent in a link is the page hiding what it was asked to show.
+  details.open = shade.chosen(view.shade).length > 0;
+
+  palettes = picker.install({
+    tabs: document.getElementById("palette-tabs"),
+    search: document.getElementById("palette-search"),
+    filter: document.getElementById("palette-filter"),
+    list: document.getElementById("palette-list"),
+    onPick: pickPalette,
+  });
+  palettes.start(view.palette);
+
   panel = download.install({
     renderer,
     currentView: () => view,
@@ -831,9 +1093,34 @@ async function main() {
     setBusy,
   });
   panel.describe();
+
+  // Which panel the link asked for. A UI key is never validated by the contract, so an
+  // unknown one lands on the default rather than refusing a picture over furniture.
+  showPanel(new URLSearchParams(window.location.search).get("panel") ?? DEFAULT_PANEL);
+
   rebuild();
   resize();
   draw();
+
+  // The gallery is the last thing started and the only one allowed to fail quietly: its
+  // pictures are untracked until this is deployed, so a clone has the record and no
+  // images, and that is a panel with a sentence in it rather than a page that will not
+  // open.
+  tiles = gallery.install({
+    base: import.meta.url,
+    modes: document.getElementById("gallery-modes"),
+    hues: document.getElementById("gallery-hues"),
+    tiles: document.getElementById("gallery-tiles"),
+    note: document.getElementById("gallery-note"),
+    onPick: (row) =>
+      openLink(row.link, { gap: row.gap, key: row.key, what: "this wallpaper" }),
+  });
+  tiles.start().catch((error) => {
+    tiles.refuse(
+      `The gallery record could not be read (${error.message ?? error}). It is landed by ` +
+        "`python -m builder seats`, and its pictures are untracked until this is deployed.",
+    );
+  });
 }
 
 main().catch((error) => {

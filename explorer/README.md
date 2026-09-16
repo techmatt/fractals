@@ -2,9 +2,13 @@
 
 One page that runs the wallpaper project's own renderer in the browser: pan and zoom
 every family the wallpapers are drawn from, in every mode the pipeline ships, under any
-of the 77 curated palettes — any of the library's 1,021 by link — and copy a link to
-whatever is on screen. Every figure of the
-article that this page can draw again carries a link straight into it.
+of the library's 1,021 palettes, and copy a link to whatever is on screen. Every figure
+of the article that this page can draw again carries a link straight into it.
+
+**It is a studio, since `explorer_studio` (2026-09-15).** The page is the window: a left
+panel of pictures somebody can open — a thousand seated wallpapers, or the atlas of every
+place the search kept — and on the right the viewer that draws whichever one is picked.
+Same URL, same keys, and every link written before it still opens the same picture.
 
 **Nine families, seventeen modes, `f64`.** The parameter planes `mandelbrot` and
 `multibrot3`–`multibrot5`, the dynamical planes `julia`–`julia5` and `phoenix`, the
@@ -33,14 +37,16 @@ tree are now the only record of what the explorer does. Where the build departed
 what was originally planned the departure was deliberate, and those decisions are
 recorded here so the reasoning behind them is not lost:
 
-- **The picker's set and the link's set are not the same set.** One set was to serve
-  both — the curated maps, and nothing else. The picker offers **77** of those, and that
-  number is frozen; a link may name any of those plus every map one of this site's own
-  published pictures was drawn in, most of them mechanical conversions rather than curated
-  choices. A picture the article publishes has to be openable here, and it does not have to
-  be on the menu. **That second set has no fixed size and no count is written down** — it
-  grows every time a figure lands in a map the roster did not carry, so a number here would
-  be one more thing to keep in step. `explorer/palettes.jsonl` is where it is counted.
+- **The picker's set and the link's set were not the same set, and now they are.** One
+  set was to serve both — the curated maps, and nothing else — and for two drafts the
+  picker offered **77** of them while a link could name any map one of this site's own
+  pictures had been drawn in. What made the curation necessary was the control: a single
+  `<select>` of a thousand names is a list rather than a menu. The studio's picker is a
+  tab strip — the maps this pool seats most, a tab per hue family, all of them behind a
+  filter box — so the page now offers every map it carries and reads no `offered` flag.
+  The flag stays on the record as what that menu listed; `explorer/palettes.jsonl` is
+  where the whole set is counted, and it has no fixed size, because it grows every time a
+  figure lands in a map the roster did not carry.
 - **A download re-iterates, every time.** The full-resolution field was to be computed
   once in the background, after which every palette download came back off it instantly.
   A wallpaper-sized field is not cached and cannot be: the lanes are eight bytes for
@@ -72,12 +78,14 @@ recorded here so the reasoning behind them is not lost:
 index.html            the page
 explorer.css          its own stylesheet, on top of the site's
 explorer.js           what a reader touches: drag, wheel, keys, pickers, copy link
+gallery.js            the left panel's grid: a staged gallery's record, filtered
+picker.js             the palette tab strip, and a gradient drawn per row
 shade.js              the recipe's controls, apart from the boxes they are drawn in
 download.js           the same render at a wallpaper's size, and what caps it
 render.js             the worker pool, the plan, the field passes, the shade
 worker.js             one worker: one wasm instance, one band of rows
 permalink.js          the link contract — parse, validate, canonicalize
-permalink.test.mjs    43 tests, `node --test explorer/permalink.test.mjs`
+permalink.test.mjs    46 tests, `node --test explorer/permalink.test.mjs`
 bands.test.mjs        3 tests: the pool cuts the frame, never what is in it
 palettes.jsonl        the roster palettes.js is baked from; 1,021 maps, 77 offered
 modes.jsonl           the roster catalog.js is baked from: the 17 modes the picker offers
@@ -91,6 +99,42 @@ engine.wasm           generated: the engine, compiled
 engine.manifest.json  generated: what engine.wasm was built from
 engine-wasm/          the crate that produces engine.wasm
 ```
+
+## The studio
+
+Two panels, and the document itself does not scroll.
+
+**Left, one of two things.** *Gallery* is the staged gallery `python -m builder seats`
+lands — a thousand wallpapers one curation solve seated — as pictures and nothing else:
+no caption, no id, no score, two rows of filter chips over them, mode and hue family,
+each with its count. A tile sets the viewer to that seat's whole recipe. *Atlas* is the
+same frame `atlas/index.html` shows, mounted in the panel through `atlas/frame.js`, with
+the marks clicking into the viewer rather than navigating.
+
+**Right, the viewer**, and under it only what one would turn: the mode and its
+parameters, the palette strip, the shade recipe and the autolevel switch, then Details —
+family, constants, `x`, `y`, `w`, all editable — and the download. Copy link is in the
+bar, because it is about the page rather than about a group.
+
+**A picture gets into the viewer exactly one way, by being a link.** A gallery tile
+parses the permalink its record carries, an atlas mark parses the one its slot derived,
+and a control writes one key of the current view and re-parses the whole string — that is
+what `retype` is for, and it is why a typed coordinate is refused with the same sentence
+a link's would be. There is no second path, which is what keeps the address bar honest.
+
+**What a link cannot carry is said under the canvas.** Every wallpaper the pool makes
+goes through `band_autolevel/v1`, and the curve lives on the run's record rather than in
+the recipe: 98 of the thousand seats carry one into their link, 493 come from runs that
+wrote nothing down at all, and those open at the recipe with a sentence saying so. The
+autolevel switch replays a curve that arrived and never measures one — only the second
+half of the operator crossed into this page, and a control that measured its own would be
+a second operator.
+
+**`panel` is a UI key.** Which side is open travels in the URL and is not part of the
+picture: `permalink.js` tolerates the key, reads nothing from it and never emits it, so
+the canonical string of a view — what Copy link copies — is the picture alone. Two rules
+keep that from becoming a contract by the back door: a UI key never refuses a link, and a
+UI key never decides what is drawn.
 
 ## Every colormap, and where they live
 
