@@ -83,7 +83,19 @@ export function install({ base, modes, hues, tiles, note, onPick }) {
     return true;
   }
 
+  /** Said once, the first time a thumbnail is not there. */
+  let landed = true;
+
+  function missing() {
+    if (!landed) return;
+    landed = false;
+    note.textContent =
+      `${seats.length} wallpapers, and their pictures are not on this machine: they are ` +
+      "untracked until this is deployed, and `python -m builder seats` lands them.";
+  }
+
   function say() {
+    if (!landed) return;
     const all = seats.length;
     note.textContent = showing.length === all
       ? `${all} wallpapers, seated by one solve.`
@@ -108,6 +120,11 @@ export function install({ base, modes, hues, tiles, note, onPick }) {
       picture.height = 270;
       picture.src = new URL(`${DIRECTORY}thumbs/${seat.file}`, base).href;
       picture.alt = seat.alt ?? "";
+      // The record commits and the pictures do not, so a tree can hold one without the
+      // other: the blob baked, `seats` never run. A thousand broken images is a panel
+      // that looks broken rather than one that is unlanded, and the difference is a
+      // sentence somebody can act on. Said once, by whichever tile fails first.
+      picture.addEventListener("error", missing, { once: true });
       tile.append(picture);
       tile.addEventListener("click", () => {
         open = seat.key;
