@@ -1,11 +1,13 @@
-// The gallery panel: a thousand seated wallpapers, and nothing said about any of them.
+// The gallery panel: thousands of seated wallpapers, one collection at a time, and nothing
+// said about any of them.
 //
-// The pictures are one published tentative gallery — the seats a curation solve settled
-// on, landed here as a staged gallery directory beside the others. What the panel shows
-// is the pictures and two rows of filters, and that is deliberate: a tile with a name, a
-// score or an id under it is a page asking to be read, and this one is asking to be
-// looked at. Everything a tile could say about itself the viewer says better the moment
-// it is opened, because then it is saying it about a picture being drawn.
+// The pictures are the curation passes' tentative galleries — the general one, published,
+// and a collection per hue family and per mode — landed here as one staged gallery
+// directory beside the others. What the panel shows is the pictures, a dropdown of
+// collections and two rows of filters, and that is deliberate: a tile with a name, a score
+// or an id under it is a page asking to be read, and this one is asking to be looked at.
+// Everything a tile could say about itself the viewer says better the moment it is opened,
+// because then it is saying it about a picture being drawn.
 //
 // **A tile sets the viewer to that seat's own recipe.** The record carries each seat's
 // canonical permalink — built next door by `python -m builder seats`, through this page's
@@ -15,11 +17,16 @@
 // something close. The tone curve lives on the run's record rather than in the recipe,
 // and the link carries it wherever a record holds one.
 //
-// **The record is committed and the pictures are not.** They are a couple of hundred
-// megabytes of JPEG and stay out of git history until this is deployed, so a clone has
-// the record and no images. That is a panel that says what is missing, not a page that
-// fails to start: the viewer is the page, and the gallery is one of two things the side
-// panel can show.
+// **One record, and a collection is a question asked of it.** The collections overlap, so
+// the record is their union: one row and one tile per seat, and each row's `collections`
+// maps the collections that seat it to its place in each. Choosing a collection sorts and
+// filters what is already here and fetches nothing, and a picture shared by two
+// collections is one download however often it is shown.
+//
+// **The record is committed and the pictures are not.** They are tens of megabytes of
+// tiles and stay out of git history until this is deployed, so a clone has the record and
+// no images. That is a panel that says what is missing, not a page that fails to start:
+// the viewer is the page, and the gallery is one of two things the side panel can show.
 
 import { colorOf } from "./hues.js";
 
@@ -28,6 +35,19 @@ const SLUG = "seated-candidates";
 
 /** Where that directory sits, relative to this module. */
 const DIRECTORY = `../assets/images/galleries/${SLUG}/`;
+
+/** The collection the panel opens on, which is the published gallery. */
+export const GENERAL = "general";
+
+/** What the dropdown groups each axis under. The general collection stands alone. */
+const AXIS_LABELS = { family: "Color family", mode: "Mode" };
+
+/**
+ * How far past the visible tiles a picture is asked for, as a share of the panel's height.
+ * Enough that a steady scroll meets pictures already there, and little enough that a
+ * visitor who opens the panel and looks at the first screen downloads about that screen.
+ */
+const AHEAD = "50%";
 
 /** One JSONL record, as rows. A blank line is nothing and a bad line is worth naming. */
 function rowsOf(text, where) {
@@ -45,14 +65,14 @@ function rowsOf(text, where) {
 }
 
 /**
- * The gallery's record: its header, and one row per picture in presentation order.
+ * The gallery's record: its header, its collections in dropdown order, and one row per
+ * seat across all of them.
  *
- * **Presentation order, not seat order.** The seating is the solve's rank order, and its
- * strongest rows look alike: opened on `seat`, the panel's first screen was spirals, three
- * of them in one palette. The tentative gallery's own page opens on the permutation
- * `curation.page_order` spreads modes and colours with, and `order` is that permutation,
- * so both pages open on the same tiles. Sorted here rather than trusted to the file, so
- * the field is what is read.
+ * **Presentation order, not seat order.** A solve's seating is its rank order, and its
+ * strongest rows look alike: opened on it, the panel's first screen was spirals, three of
+ * them in one palette. Each tentative gallery's own page opens on the permutation
+ * `curation.page_order` spreads modes and colours with, and a row's place in a collection
+ * is that permutation, so both pages open on the same tiles.
  */
 export async function load(base) {
   const url = new URL(`${DIRECTORY}gallery.jsonl`, base);
@@ -61,9 +81,24 @@ export async function load(base) {
   const rows = rowsOf(await response.text(), `${SLUG}/gallery.jsonl`);
   const header = rows[0];
   if (header?.kind !== "gallery") throw new Error(`${SLUG}/gallery.jsonl: no header record`);
+  if (!Array.isArray(header.collections) || header.collections.length === 0) {
+    throw new Error(`${SLUG}/gallery.jsonl: the header names no collections`);
+  }
   const seats = rows.filter((row) => row.kind === "image");
-  seats.sort((a, b) => (a.order ?? Infinity) - (b.order ?? Infinity) || a.seat - b.seat);
-  return { header, seats };
+  for (const seat of seats) {
+    if (seat.collections === null || typeof seat.collections !== "object") {
+      throw new Error(`${SLUG}/gallery.jsonl: ${seat.key} belongs to no collection`);
+    }
+  }
+  return { header, collections: header.collections, seats };
+}
+
+/** One collection's seats, in its own presentation order. Sorted here rather than trusted
+ *  to the file, so the field is what is read. */
+export function membersOf(seats, name) {
+  return seats
+    .filter((seat) => Object.hasOwn(seat.collections, name))
+    .sort((a, b) => a.collections[name] - b.collections[name]);
 }
 
 /** How many seats a value of one field holds, most first, so a chip row reads as a shape. */
@@ -83,11 +118,15 @@ function tally(seats, field) {
  * which is a sentence about what the link cannot carry — is the page's business and not
  * this module's, which knows only how to show pictures and which ones are being asked for.
  */
-export function install({ base, modes, hues, tiles, note, onPick }) {
+export function install({ base, collection, modes, hues, tiles, note, onPick }) {
   let seats = [];
+  let collections = [];
+  let chosen = GENERAL;
+  let members = [];
   let showing = [];
   const wanted = { mode: new Set(), hue: new Set() };
   let open = null;
+  let observer = null;
 
   function matches(seat) {
     if (wanted.mode.size > 0 && !wanted.mode.has(seat.mode)) return false;
@@ -95,7 +134,7 @@ export function install({ base, modes, hues, tiles, note, onPick }) {
     return true;
   }
 
-  /** Said once, the first time a thumbnail is not there. */
+  /** Said once, the first time a tile is not there. */
   let landed = true;
 
   function missing() {
@@ -105,16 +144,45 @@ export function install({ base, modes, hues, tiles, note, onPick }) {
       `${seats.length} wallpapers, but their pictures could not be loaded here.`;
   }
 
+  function nameOf(name) {
+    return name === GENERAL ? "the general gallery" : `the ${name} collection`;
+  }
+
   function say() {
     if (!landed) return;
-    const all = seats.length;
+    const all = members.length;
     note.textContent = showing.length === all
-      ? `${all} wallpapers from the published gallery.`
-      : `${showing.length} of ${all} wallpapers.`;
+      ? `${all} wallpapers in ${nameOf(chosen)}.`
+      : `${showing.length} of ${all} wallpapers in ${nameOf(chosen)}.`;
+  }
+
+  /**
+   * **A tile asks for its picture when it comes near the panel's window, and not before.**
+   * Native lazy loading reaches thousands of pixels ahead of the viewport, which in a
+   * side panel of three-to-a-row tiles is dozens of pictures nobody scrolled to, so the
+   * source waits on an observer of the scroll box. The box is the tile grid where the
+   * panels sit side by side and the page where they stack, and the observer is made again
+   * on each fill, which is when the grid's contents change.
+   */
+  function watch() {
+    observer?.disconnect();
+    const scrolls = getComputedStyle(tiles).overflowY !== "visible";
+    observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (!entry.isIntersecting) continue;
+          const picture = entry.target.querySelector("img");
+          if (picture && !picture.src) picture.src = picture.dataset.src;
+          observer.unobserve(entry.target);
+        }
+      },
+      { root: scrolls ? tiles : null, rootMargin: `${AHEAD} 0px` },
+    );
+    for (const tile of tiles.querySelectorAll(".tile")) observer.observe(tile);
   }
 
   function fill() {
-    showing = seats.filter(matches);
+    showing = members.filter(matches);
     const made = showing.map((seat) => {
       const tile = document.createElement("button");
       tile.type = "button";
@@ -122,27 +190,21 @@ export function install({ base, modes, hues, tiles, note, onPick }) {
       tile.dataset.key = seat.key;
       if (seat.key === open) tile.classList.add("is-open");
       const picture = document.createElement("img");
-      // Native lazy loading rather than an observer of our own: a thousand tiles is
-      // exactly the case the attribute exists for, and the browser decides better than a
-      // margin somebody guessed at.
-      picture.loading = "lazy";
       picture.decoding = "async";
-      picture.width = 480;
-      picture.height = 270;
-      picture.src = new URL(`${DIRECTORY}thumbs/${seat.file}`, base).href;
+      picture.width = seat.width;
+      picture.height = seat.height;
+      picture.dataset.src = new URL(`${DIRECTORY}${seat.file}`, base).href;
       picture.alt = seat.alt ?? "";
       // The record commits and the pictures do not, so a tree can hold one without the
-      // other: the blob baked, `seats` never run. A thousand broken images is a panel
-      // that looks broken rather than one that is unlanded, and the difference is a
+      // other: the record written, `seats` never run here. A grid of broken images is a
+      // panel that looks broken rather than one that is unlanded, and the difference is a
       // sentence somebody can act on. Said once, by whichever tile fails first.
       picture.addEventListener("error", missing, { once: true });
-      // **Shown when it is whole, and not before.** A browser paints the scanlines of a
-      // JPEG it is still receiving, so a grid asking for two hundred thumbnails at once
-      // — which is what a reload is here, on a machine with a solve running next door —
-      // fills with pictures squashed into bands, and the panel reads as broken rather
-      // than as loading. The tile is a dark well until its picture is there.
-      if (picture.complete && picture.naturalWidth > 0) tile.classList.add("is-ready");
-      else picture.addEventListener("load", () => tile.classList.add("is-ready"), { once: true });
+      // **Shown when it is whole, and not before.** A browser paints the part of a picture
+      // it has received, so a grid asking for a screen of tiles at once fills with
+      // pictures cut into bands, and the panel reads as broken rather than as loading.
+      // The tile is a dark well until its picture is there.
+      picture.addEventListener("load", () => tile.classList.add("is-ready"), { once: true });
       tile.append(picture);
       tile.addEventListener("click", () => {
         open = seat.key;
@@ -154,6 +216,8 @@ export function install({ base, modes, hues, tiles, note, onPick }) {
       return tile;
     });
     tiles.replaceChildren(...made);
+    tiles.scrollTop = 0;
+    watch();
     say();
   }
 
@@ -162,15 +226,19 @@ export function install({ base, modes, hues, tiles, note, onPick }) {
    *  stays a union of whatever is pressed. */
   function chipsInto(host, field, counts, label, swatches = false) {
     host.replaceChildren();
+    // A value the new collection does not hold is let go of, so a filter never narrows a
+    // collection to nothing by a choice made in another one.
+    const present = new Set(counts.map(([value]) => value));
+    for (const value of [...wanted[field]]) if (!present.has(value)) wanted[field].delete(value);
     const chips = [];
     for (const [value, count] of counts) {
       const chip = document.createElement("button");
       chip.type = "button";
       chip.className = "chip";
-      chip.setAttribute("aria-pressed", "false");
+      chip.setAttribute("aria-pressed", String(wanted[field].has(value)));
       // A hue chip wears its family's own colour, which is the codebook's `light_vivid`
       // cell for that hue rather than a colour this page chose. A family the wheel does
-      // not name — the four seats filed under nothing — gets the well's neutral, because
+      // not name — the seats filed under nothing — gets the well's neutral, because
       // inventing a thirteenth colour would say the pipeline had an opinion it does not.
       if (swatches) {
         const dot = document.createElement("span");
@@ -200,6 +268,50 @@ export function install({ base, modes, hues, tiles, note, onPick }) {
     }
   }
 
+  /** Show one collection: its members, the chips they tally to, and the grid. */
+  function choose(name) {
+    chosen = collections.some((one) => one.name === name) ? name : GENERAL;
+    collection.value = chosen;
+    members = membersOf(seats, chosen);
+    chipsInto(modes, "mode", tally(members, "mode"), "no mode");
+    // A seat whose palette the ledger never saw in a picture has no hue family at all.
+    // Those get a chip of their own rather than being dropped: a filter that quietly holds
+    // back pictures is worse than one that admits it.
+    chipsInto(hues, "hue", tally(members, "hue"), "unfiled", true);
+    fill();
+  }
+
+  /**
+   * The dropdown, from the header's own list and in its order. A dropdown rather than a
+   * chip row, because the chips below it filter and this chooses what is being filtered:
+   * the palette picker's hue chips already mean "narrow this list", and a collection is
+   * not that.
+   */
+  function options() {
+    collection.replaceChildren();
+    const groups = new Map();
+    for (const one of collections) {
+      const option = document.createElement("option");
+      option.value = one.name;
+      const count = membersOf(seats, one.name).length;
+      option.textContent = one.name === GENERAL
+        ? `General gallery · ${count}`
+        : `${one.name} · ${count}`;
+      const label = AXIS_LABELS[one.axis];
+      if (label === undefined) {
+        collection.append(option);
+        continue;
+      }
+      if (!groups.has(label)) {
+        const group = document.createElement("optgroup");
+        group.label = label;
+        groups.set(label, group);
+        collection.append(group);
+      }
+      groups.get(label).append(option);
+    }
+  }
+
   return {
     /** Put the panel up from the record, or say why there is nothing to show. `record` is
      *  what `load` already answered, where the page asked it first — a failure included,
@@ -207,14 +319,11 @@ export function install({ base, modes, hues, tiles, note, onPick }) {
     async start(record = null) {
       const answered = record ?? (await load(base));
       if (answered instanceof Error) throw answered;
-      const { seats: loaded } = answered;
-      seats = loaded;
-      chipsInto(modes, "mode", tally(seats, "mode"), "no mode");
-      // A seat whose palette the ledger never saw in a picture has no hue family at all.
-      // Four of them do, and they get a chip of their own rather than being dropped: a
-      // filter that quietly holds back four pictures is worse than one that admits it.
-      chipsInto(hues, "hue", tally(seats, "hue"), "unfiled", true);
-      fill();
+      seats = answered.seats;
+      collections = answered.collections;
+      options();
+      collection.addEventListener("change", () => choose(collection.value));
+      choose(GENERAL);
     },
     /** Which seat the viewer is showing, so the grid can mark it. Cleared by any move
      *  that leaves it, because a tile marked open under a picture somebody has since

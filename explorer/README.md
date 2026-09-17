@@ -112,9 +112,14 @@ engine-wasm/          the crate that produces engine.wasm
 Two panels, and the document itself does not scroll.
 
 **Left, one of two things.** *Gallery* is the staged gallery `python -m builder seats`
-lands — a thousand wallpapers one curation solve seated — as pictures and nothing else:
-no caption, no id, no score, two rows of filter chips over them, mode and hue family,
-each with its count. Mode chips add up; a hue family chip is one at a time, and pressing
+lands, one **collection** at a time — the general gallery, a collection per hue family,
+a collection per mode, chosen from a dropdown *(explorer_gallery_collections_ckpt129)* — as
+pictures and nothing else: no caption, no id, no score, two rows of filter chips over them,
+mode and hue family, each with its count in the collection chosen. The record is the union
+of the collections, so choosing one fetches nothing, and a tile asks for its 316 px WebP
+only when it comes within half a panel of view. A dropdown and not a chip row, because the
+chips filter and this chooses what is being filtered. The Mode select's roster and the
+trap-mode defaults stay the general gallery's. Mode chips add up; a hue family chip is one at a time, and pressing
 it again clears it. A tile sets the viewer to that seat's whole recipe. *Atlas* is the
 same frame `atlas/index.html` shows, mounted in the panel through `atlas/frame.js`, with
 the marks clicking into the viewer rather than navigating.

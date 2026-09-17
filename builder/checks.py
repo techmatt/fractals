@@ -55,8 +55,9 @@ was raise, and every check after it went unrun.
   list marks the same sections done that `sections.jsonl` calls written.
 - **assets** — every image the metadata names exists at the size it claims, every
   thumbnail is current, and no orphan file is left in a gallery directory. A **staged**
-  gallery is held to the same three things once its pictures are here, and is a named skip
-  where they are not: they are untracked by design, so a clone has the record alone.
+  gallery is held to the same things once its pictures are here, bar the thumbnail — its
+  picture is already the explorer panel's tile — and is a named skip where they are not:
+  they are untracked by design, so a clone has the record alone.
 - **prose** — every row of `article/prose.jsonl` names a page that is in the article and
   is written. The master itself lives in the Drive-synced working folder, which is not
   in a clone and never in CI, so what is checked here is the registry and not the
@@ -601,8 +602,8 @@ def _index_markers(article: list[sections.Section]) -> list[str]:
 def staged_without_pictures(gallery: galleries.Gallery) -> bool:
     """Whether a staged gallery's directory holds none of the pictures its record names.
 
-    A staged gallery's pictures are untracked by design — a thousand of them is a fifth of
-    a gigabyte, and what commits is the record. So on a clone, and on any machine where
+    A staged gallery's pictures are untracked by design — thousands of tiles are tens of
+    megabytes, and what commits is the record. So on a clone, and on any machine where
     `python -m builder seats` has not been run, the directory is the record alone, and
     that is a check this machine cannot ask rather than a site that is broken. One or more
     pictures present means the command has run and the whole gallery is checked exactly as
@@ -632,6 +633,10 @@ def check_assets(loaded: list[galleries.Gallery]) -> list[str]:
                     f"{_shown(source)}: metadata says {image.width}x{image.height}, "
                     f"file is {actual[0]}x{actual[1]}"
                 )
+            if gallery.staged:
+                # A staged gallery's picture is its tile: the explorer panel opens the
+                # viewer on a click, so there is no larger size to make a thumbnail of.
+                continue
             if not thumb.is_file():
                 problems.append(f"{_shown(thumb)}: missing — run `python -m builder build`")
             elif can_measure and images.dimensions(thumb) != image.thumb_size:

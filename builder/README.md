@@ -36,8 +36,8 @@ python -m builder pipeline [ID ...] [--run R] [--place] [--replace]
                             walk ledger next door
 python -m builder diagram ID draw one of the three figures that are diagrams, not renders
 python -m builder seats [--records-only]
-                            land the published tentative record next door as a staged
-                            gallery: the record, the pictures and their thumbnails
+                            land the general gallery and the sixteen collections next
+                            door as one staged gallery: the record and a tile per seat
 python -m builder explorer [--palettes-only]  bake the explorer's palettes, wasm, manifest
 python -m builder links [--write]   derive every picture's explorer link from its
                             provenance, or the reason it has none
@@ -126,8 +126,12 @@ not a pass and not a failure. One picture present means the command has run, and
 whole gallery is held to its record exactly as a publishable one is — a half-landed
 directory is a real problem and reads as one.
 
-`seated-candidates` is the first, and `builder/seats.py` is what fills it: one published
-tentative record — a thousand seats — read three times over, for the seat, the recipe and
+`seated-candidates` is the first, and `builder/seats.py` is what fills it: the published
+tentative record and the sixteen collections solved beside it — twelve hue families and four
+modes, not yet published — as one union of 5,626 seats, each row saying which collections
+seat it and where. **A staged gallery's picture is its tile**, a 316 px WebP, and there are no
+thumbnails: the explorer draws the picture itself on a click, so **assets** holds the file to
+its record and asks for nothing smaller. Every seat is read three times over, for the seat, the recipe and
 the tone curve the run acted with, with the permalink for each emitted by the contract
 itself through `builder/emit.mjs`. Where the link is not quite the picture the row says so
 in a `gap` clause: a curve the run recorded as a fact and not as coefficients, a curve a

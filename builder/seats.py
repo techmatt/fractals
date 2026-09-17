@@ -1,14 +1,30 @@
-"""One published tentative record, landed here as a staged gallery.
+"""Seventeen tentative records, landed here as one staged gallery.
 
 ## What this is for
 
 The explorer grew a gallery panel: a reader who has a picture on the canvas can look at
-what the curation pass actually seated, and open any of it. That wants a thousand
-pictures and a thousand links beside them, which is a gallery in every respect the
-builder already understands — a directory, a `gallery.jsonl`, web-res images, thumbnails
-— and a gallery in no respect the *article* understands, because there is no page, no
-cover tile and no written caption anywhere in it. `staged` is that state, and
-`builder/README.md` says what it means. Here is what fills one.
+what the curation passes actually seated, and open any of it. That wants thousands of
+pictures and a link beside each, which is a gallery in every respect the builder already
+understands — a directory, a `gallery.jsonl`, web-res images — and a gallery in no respect
+the *article* understands, because there is no page, no cover tile and no written caption
+anywhere in it. `staged` is that state, and `builder/README.md` says what it means. Here is
+what fills one.
+
+## Collections, and one row a seat across all of them
+
+The panel shows one **collection** at a time: the general gallery, or one of the sixteen
+the project next door solves on a single axis — twelve hue families and four modes, whose
+sizes are `curation/targets.py`'s. They overlap, since a seat of the rose collection may
+well be a seat of the general one, so the record is their **union**: one row, and one
+picture, per recipe key, and each row carries `collections`, a map from every collection
+that seats it to its place in that collection's presentation order. The panel's dropdown
+chooses a key of that map; it never fetches anything.
+
+**The pictures are thumbnails and nothing else** *(explorer_gallery_collections_ckpt129)*.
+Clicking a tile opens the viewer, which draws the picture itself, so the full picture is
+one click away and a second, larger copy of it here would be a gigabyte nobody is shown. A
+row's `file` is a WebP at `TILE_SIZE`, encoded through `images.write_thumb` at the one
+quality `images` holds for that format, and it is the only size this gallery ships.
 
 ## The three reads, and where each answer comes from
 
@@ -63,13 +79,66 @@ from dataclasses import dataclass
 from functools import cache
 from pathlib import Path
 
-from . import galleries, images, links, picks, renders
-from .paths import GALLERY_IMAGES_DIR, GALLERY_METADATA_NAME, SITE_ROOT, THUMBS_DIR_NAME
+from . import images, links, picks, renders
+from .paths import GALLERY_IMAGES_DIR, GALLERY_METADATA_NAME, SITE_ROOT
 
-#: The published tentative record this gallery is. A stamp rather than "the latest": a
-#: second solve writes a second stamp, and a staged gallery that re-pointed itself would
-#: replace a thousand committed rows without anybody deciding to.
+#: The published tentative record the general collection is. A stamp rather than "the
+#: latest": a second solve writes a second stamp, and a staged gallery that re-pointed
+#: itself would replace a thousand committed rows without anybody deciding to.
 STAMP = "20260914T171846Z"
+
+#: The general collection's name, which is what `collections` keys it by.
+GENERAL = "general"
+
+#: Every collection the panel offers, in the order its dropdown lists them, and the stamp
+#: each one is read from.
+#:
+#: The general gallery first; then the nine ordinary hue families, in the codebook's wheel
+#: order; then the three thin ones — `green`, `cyan`, `lime` — the families whose stock
+#: ran short at the old target; then the four modes.
+#:
+#: ⚠ **The sixteen are not published**, and nothing next door names a stamp for a
+#: collection: `tentative.PUBLISHED` lists the general record alone. These are the
+#: `targets_<collection>_n<seats>` solves of 2026-09-15 21:01-21:06Z, the newest recording
+#: of each at the sizes `curation/targets.py` sets, all sixteen taken over one pool in one
+#: batch. Matt's word on them is that they are not final, so a re-solve is a re-pointing of
+#: this table, and `_collection_stamp` refuses a stamp whose solve was not that
+#: collection's so a mistyped line cannot seat one family's pictures under another's name.
+#: Discard-by-default applies to them next door; a stamp that goes is a `seats` run that
+#: refuses, not a panel that quietly shrinks.
+COLLECTIONS: tuple[tuple[str, str], ...] = (
+    (GENERAL, STAMP),
+    ("rose", "20260915T210135Z"),
+    ("red", "20260915T210149Z"),
+    ("orange", "20260915T210155Z"),
+    ("yellow", "20260915T210203Z"),
+    ("teal", "20260915T210219Z"),
+    ("azure", "20260915T210232Z"),
+    ("blue", "20260915T210238Z"),
+    ("purple", "20260915T210246Z"),
+    ("magenta", "20260915T210351Z"),
+    ("green", "20260915T210214Z"),
+    ("cyan", "20260915T210224Z"),
+    ("lime", "20260915T210208Z"),
+    ("tia", "20260915T210422Z"),
+    ("smooth", "20260915T210501Z"),
+    ("stripe", "20260915T210551Z"),
+    ("threads", "20260915T210604Z"),
+)
+
+#: Which of those are a mode, so the header can say which axis each was cut on. The rest
+#: after the general one are hue families.
+MODE_COLLECTIONS = frozenset({"tia", "smooth", "stripe", "threads"})
+
+#: The one picture size this gallery ships: 316 wide at 16:9. Chosen for the panel's tile,
+#: which is a third of a side panel that is 40% of a desktop window, and no larger size is
+#: kept — the viewer is where a picture is looked at.
+TILE_SIZE = (316, 178)
+
+#: The format every tile is written in. At 316 px WebP holds about 1.5 dB more than a JPEG
+#: of the same bytes (measured on fifty seats, explorer_gallery_collections_ckpt129), and
+#: every browser the explorer's wasm runs in decodes it.
+TILE_SUFFIX = ".webp"
 
 #: The directory, which is the slug, which is a permanent URL.
 SLUG = "seated-candidates"
@@ -77,7 +146,8 @@ SLUG = "seated-candidates"
 TITLE = "Seated candidates"
 
 BLURB = (
-    "Every wallpaper one curation pass seated, each one openable at the frame, the "
+    "Every wallpaper the curation passes seated, in the general gallery and in a "
+    "collection per color family and per mode, each one openable at the frame, the "
     "rendering mode and the palette that drew it."
 )
 
@@ -115,20 +185,24 @@ rows = {key: {"provenance": {"run": run}} for key, run in ask["runs"].items()}
 print(json.dumps(stamps.for_rows(rows, backfill.read())))
 """
 
-#: The order the tentative gallery's own page presents its seats in, as recipe keys, and
-#: the basis it was taken on. Keys rather than indices, so the answer does not depend on
-#: the two sides reading the rows in the same order.
+#: The order each tentative gallery's own page presents its seats in, as recipe keys, and
+#: the basis it was taken on, for every stamp named. Keys rather than indices, so the
+#: answer does not depend on the two sides reading the rows in the same order; one process
+#: for all of them, because the import is most of the cost.
 ORDER_PROGRAM = """
 import json, sys
 
 from fractal_wallpapers.curation import page_order, tentative
 
-rows = tentative.read_rows(sys.argv[1])
-vectors = page_order.vectors_for(rows)
-print(json.dumps({
-    "basis": page_order.basis(vectors),
-    "keys": [rows[at]["key"] for at in page_order.order(rows, vectors)],
-}))
+answer = {}
+for stamp in sys.argv[1:]:
+    rows = tentative.read_rows(stamp)
+    vectors = page_order.vectors_for(rows)
+    answer[stamp] = {
+        "basis": page_order.basis(vectors),
+        "keys": [rows[at]["key"] for at in page_order.order(rows, vectors)],
+    }
+print(json.dumps(answer))
 """
 
 #: What `tone` answers with, in the one word a caller branches on. `CLEAN` is the link
@@ -155,20 +229,38 @@ def metadata_path() -> Path:
     return directory() / GALLERY_METADATA_NAME
 
 
-def seat_rows() -> list[dict]:
-    """The record's seats, in its own seat order.
+def seat_rows(stamp: str = STAMP) -> list[dict]:
+    """One record's seats, in its own seat order.
 
     Ordered by the record's `seat` rather than by the file, so the gallery's order is the
     solve's own seating and not an accident of how the rows were appended.
     """
-    path = renders.artifact("curation", "tentative", STAMP, picks.SEATS_NAME)
+    path = renders.artifact("curation", "tentative", stamp, picks.SEATS_NAME)
     if not path.is_file():
         raise SeatError(
-            f"no tentative gallery recorded under {STAMP} — {path} is not there. "
+            f"no tentative gallery recorded under {stamp} — {path} is not there. "
             f"Recorded here: {', '.join(picks.stamps()) or 'none'}"
         )
     rows = [json.loads(line) for line in path.open(encoding="utf-8") if line.strip()]
     return sorted(rows, key=lambda row: int(row["seat"]))
+
+
+def _collection_stamp(name: str, stamp: str) -> str:
+    """The stamp, once its own manifest says the solve behind it was this collection's.
+
+    The general record is published and its solve predates the collection passes, so it
+    is taken as named. Every other stamp's solve is called `targets_<collection>_n<seats>`
+    by the pass that recorded it, and a stamp whose solve says another name is refused.
+    """
+    if name == GENERAL:
+        return stamp
+    path = renders.artifact("curation", "tentative", stamp, "manifest.json")
+    if not path.is_file():
+        raise SeatError(f"the {name} collection's record {stamp} is not there — {path}")
+    solved = str(json.loads(path.read_text(encoding="utf-8"))["solve"]["name"])
+    if not solved.startswith(f"targets_{name}_n"):
+        raise SeatError(f"{stamp} is the solve {solved!r}, not the {name} collection's")
+    return stamp
 
 
 # ------------------------------------------------------------------------ the tone curve
@@ -254,13 +346,18 @@ def stamps_of(resolved: list[picks.Pick]) -> dict[str, dict]:
 
 
 @cache
-def presentation_order() -> tuple[list[str], str]:
-    """The record's seats as its own page presents them, as recipe keys, and the basis.
+def presentation_orders() -> dict[str, tuple[list[str], str]]:
+    """Every collection's seats as its own page presents them, as recipe keys, and the
+    basis, by collection name.
 
-    Asked once a process: `derive` orders the rows by it and `header` says its basis.
+    Asked once a process: `derive` orders the rows by it and `header` says each basis.
     """
-    answer = _program(ORDER_PROGRAM, "reading the presentation order", STAMP)
-    return [str(key) for key in answer["keys"]], str(answer["basis"])
+    stamps = {name: _collection_stamp(name, stamp) for name, stamp in COLLECTIONS}
+    answer = _program(ORDER_PROGRAM, "reading the presentation orders", *stamps.values())
+    return {
+        name: ([str(key) for key in answer[stamp]["keys"]], str(answer[stamp]["basis"]))
+        for name, stamp in stamps.items()
+    }
 
 
 def tone(pick: picks.Pick, stamps: dict[str, dict]) -> Tone:
@@ -325,20 +422,38 @@ def alt_text(mode: str, hue: str | None) -> str:
     return f"A wallpaper drawn in {mode}."
 
 
+def union() -> tuple[list[tuple[str, dict]], dict[str, dict[str, int]]]:
+    """Every seat of every collection once, and where each one sits in each collection.
+
+    The seats come first in the general collection's presentation order, then each further
+    collection's new seats in its own, so the file reads in the order the panel opens on.
+    Each seat is paired with the stamp it was first found under, which is the record its
+    seat row, its recipe and its picture are read from.
+    """
+    orders = presentation_orders()
+    seen: dict[str, tuple[str, dict]] = {}
+    places: dict[str, dict[str, int]] = {}
+    for name, stamp in COLLECTIONS:
+        keys, _ = orders[name]
+        rows = {str(seat["key"]): seat for seat in seat_rows(stamp)}
+        if set(keys) != set(rows) or len(keys) != len(rows):
+            raise SeatError(
+                f"the {name} collection's presentation order is not a permutation of its seats"
+            )
+        for position, key in enumerate(keys):
+            seen.setdefault(key, (stamp, rows[key]))
+            places.setdefault(key, {})[name] = position
+    return list(seen.values()), places
+
+
 def derive() -> list[dict]:
-    """Every seat of the record, as the row this gallery's metadata carries, in the order
-    the record's own page presents them.
+    """Every seat of every collection, as the row this gallery's metadata carries.
 
     Needs the wallpaper project beside this checkout for all three reads and for the
-    order, and `node`, which is what runs the permalink contract.
+    orders, and `node`, which is what runs the permalink contract.
     """
-    keys, _ = presentation_order()
-    at = {key: position for position, key in enumerate(keys)}
-    seats = seat_rows()
-    if set(at) != {str(seat["key"]) for seat in seats} or len(keys) != len(seats):
-        raise SeatError("the presentation order is not a permutation of the record's seats")
-    seats.sort(key=lambda seat: at[str(seat["key"])])
-    resolved = picks.resolve(f"{STAMP}{picks.PICK_SEPARATOR}{row['key']}" for row in seats)
+    seats, places = union()
+    resolved = picks.resolve(f"{stamp}{picks.PICK_SEPARATOR}{seat['key']}" for stamp, seat in seats)
     stamps = stamps_of(resolved)
     curves = links.catalog_curves()
 
@@ -352,17 +467,22 @@ def derive() -> list[dict]:
     emitted = links.emit(views)
 
     rows = []
-    for seat, pick in zip(seats, resolved, strict=True):
+    for (_, seat), pick in zip(seats, resolved, strict=True):
         answer = emitted[pick.key]
         if not answer.get("ok"):
             raise SeatError(f"{pick.key}: the contract refuses this seat — {answer['why']}")
-        rows.append(_row(seat, pick, tones[pick.key], answer, curves))
-    for position, row in enumerate(rows):
-        row["order"] = position
+        rows.append(_row(seat, pick, tones[pick.key], answer, curves, places[pick.key]))
     return rows
 
 
-def _row(seat: dict, pick: picks.Pick, toned: Tone, answer: dict, curves: dict[str, str]) -> dict:
+def _row(
+    seat: dict,
+    pick: picks.Pick,
+    toned: Tone,
+    answer: dict,
+    curves: dict[str, str],
+    places: dict[str, int],
+) -> dict:
     """One seat's metadata row, gap and all."""
     recipe = pick.recipe
     mode = str(recipe["mode"])
@@ -380,16 +500,16 @@ def _row(seat: dict, pick: picks.Pick, toned: Tone, answer: dict, curves: dict[s
             f"the cap of {int(cap):,} this seat was drawn at, where the depth policy "
             f"gives {int(answer['maxiter']):,} at this width"
         )
+    width, height = TILE_SIZE
     return {
         "schema": 1,
         "kind": "image",
-        "file": f"{pick.key}.jpg",
-        "width": 640,
-        "height": 360,
+        "file": f"{pick.key}{TILE_SUFFIX}",
+        "width": width,
+        "height": height,
         "alt": alt_text(mode, hue),
-        "seat": int(seat["seat"]),
-        "order": None,
         "key": pick.key,
+        "collections": places,
         "mode": mode,
         "hue": hue,
         "palette": str(recipe["colormap"]),
@@ -408,6 +528,11 @@ def header(rows: list[dict]) -> dict:
     same reason: a generated record that does not say what generated it is a record
     nobody can reproduce, and this one is a thousand rows nobody would reproduce by hand.
     """
+    orders = presentation_orders()
+    held = {name: 0 for name, _ in COLLECTIONS}
+    for row in rows:
+        for name in row["collections"]:
+            held[name] += 1
     return {
         "schema": 1,
         "kind": "gallery",
@@ -415,8 +540,21 @@ def header(rows: list[dict]) -> dict:
         "staged": True,
         "title": TITLE,
         "blurb": BLURB,
-        "stamp": STAMP,
-        "ordered_on": presentation_order()[1],
+        "collections": [
+            {
+                "name": name,
+                "axis": "general"
+                if name == GENERAL
+                else "mode"
+                if name in MODE_COLLECTIONS
+                else "family",
+                "stamp": stamp,
+                "published": name == GENERAL,
+                "seats": held[name],
+                "ordered_on": orders[name][1],
+            }
+            for name, stamp in COLLECTIONS
+        ],
         "seats": len(rows),
         "wallpapers_commit": _wallpapers_commit(),
         "written_by": "python -m builder seats",
@@ -426,18 +564,22 @@ def header(rows: list[dict]) -> dict:
             "row in the explorer's link registry."
         ),
         "rule": (
-            "One row per seat of the tentative record named above, in the presentation order "
-            "its own page opens on, which order counts and ordered_on names the basis of; seat "
-            "is the solve's own seating. "
-            "The seat's alias, mode and hue family come from that record; the recipe every "
-            "link is built from comes from the candidate ledger by a streamed lookup; the "
-            "tone curve a link carries in its level key comes from the run that drew the "
-            "candidate. A link is emitted by explorer/permalink.js through builder/emit.mjs "
-            "and never spelled here. Where the link is not quite the picture, gap says in "
-            "one clause what it cannot carry: a tone curve the run did not record, a curve "
-            "a mode's identity fixes, or an iteration cap the depth policy answers "
-            "differently. The pictures are the ones the record ships, copied unchanged; "
-            "they are untracked, and this record is what commits."
+            "One row per recipe key seated by any collection named above, each collection "
+            "being one tentative record next door, and only the general one published. "
+            "collections maps every collection that seats the row to its place in that "
+            "record's presentation order, the permutation its own page opens on, whose basis "
+            "ordered_on names. Rows run in the general collection's order, then each further "
+            "collection's new seats in its own. "
+            "The seat's mode and hue family come from the first record that seats it; the "
+            "recipe every link is built from comes from the candidate ledger by a streamed "
+            "lookup; the tone curve a link carries in its level key comes from the run that "
+            "drew the candidate. A link is emitted by explorer/permalink.js through "
+            "builder/emit.mjs and never spelled here. Where the link is not quite the picture, "
+            "gap says in one clause what it cannot carry: a tone curve the run did not record, "
+            "a curve a mode's identity fixes, or an iteration cap the depth policy answers "
+            "differently. file is a tile-sized WebP drawn from the picture the record ships "
+            "and is the only size this gallery holds; it is untracked, and this record is "
+            "what commits."
         ),
     }
 
@@ -466,47 +608,35 @@ def write(rows: list[dict]) -> Path:
     return path
 
 
-def pictures(rows: list[dict]) -> tuple[int, int]:
-    """Each seat's shipped picture copied in, and its thumbnail written beside it.
+def pictures(rows: list[dict]) -> int:
+    """Each seat's tile, drawn down from the picture its record ships.
 
-    **Copied rather than re-encoded.** The picture the record ships is what the judges
-    were shown and what a reader is being offered; it is already web-res at 640x360, so
-    there is nothing for `images.land` to downscale and a second encode would spend
-    quality on nothing. The thumbnail is the gallery contract's own, at
-    `galleries.THUMB_WIDTH`, through the one encoder every asset here goes through.
+    **Nothing is rendered.** Every seat of every collection already has a picture next
+    door, and a seat whose picture is not on this machine is refused rather than drawn:
+    the collections are not final, and a render leg for a tile is not this command's to
+    start. A tile already at `TILE_SIZE` is left alone, so a re-run writes only what is new.
     """
     where = directory()
-    thumbs = where / THUMBS_DIR_NAME
     where.mkdir(parents=True, exist_ok=True)
-    thumbs.mkdir(parents=True, exist_ok=True)
     # Addressed by the seat's own key rather than by position: two lists in the same order
     # is a thing that stays true until it does not, and what it would land is every
     # picture under its neighbour's name.
-    shipped = {str(seat["key"]): seat["picture"] for seat in seat_rows()}
-    copied = written = 0
+    shipped = {}
+    for _, stamp in COLLECTIONS:
+        for seat in seat_rows(stamp):
+            shipped.setdefault(str(seat["key"]), seat["picture"])
+    written = 0
     for row in rows:
+        tile = where / row["file"]
+        if tile.is_file() and images.dimensions(tile) == TILE_SIZE:
+            continue
         stored = shipped[row["key"]]
         source = renders.rehome(stored)
         if source is None or not source.is_file():
             raise SeatError(f"{row['key']}: {stored} is not on this machine")
-        destination = where / row["file"]
-        raw = source.read_bytes()
-        if not destination.is_file() or destination.read_bytes() != raw:
-            destination.write_bytes(raw)
-            copied += 1
-        thumb = thumbs / row["file"]
-        size = _thumb_size(row["width"], row["height"])
-        if not thumb.is_file() or images.dimensions(thumb) != size:
-            images.write_thumb(destination, thumb, size)
-            written += 1
-    return copied, written
-
-
-def _thumb_size(width: int, height: int) -> tuple[int, int]:
-    """The gallery contract's own thumbnail shape, asked of the contract rather than typed."""
-    return galleries.Image(
-        file="", title=None, caption=None, alt="", width=width, height=height, credit=None
-    ).thumb_size
+        images.write_thumb(source, tile, TILE_SIZE)
+        written += 1
+    return written
 
 
 def land(*, records_only: bool = False) -> list[str]:
@@ -514,10 +644,17 @@ def land(*, records_only: bool = False) -> list[str]:
     rows = derive()
     told = []
     if not records_only:
-        copied, written = pictures(rows)
-        told.append(f"{copied} picture(s) copied, {written} thumbnail(s) written")
+        told.append(f"{pictures(rows)} tile(s) written")
     path = write(rows)
     told.append(f"wrote {path.relative_to(SITE_ROOT).as_posix()}  {len(rows)} seat(s)")
+    held = {name: 0 for name, _ in COLLECTIONS}
+    inside = dict(held)
+    for row in rows:
+        for name in row["collections"]:
+            held[name] += 1
+            inside[name] += GENERAL in row["collections"]
+    for name, stamp in COLLECTIONS:
+        told.append(f"  {name:<8} {stamp}  {held[name]} seat(s), {inside[name]} in {GENERAL}")
     levelled = sum(1 for row in rows if f"&{LEVEL_KEY}=" in row["link"])
     gapped = [row for row in rows if row["gap"]]
     told.append(f"{levelled} link(s) carry a tone curve, {len(gapped)} row(s) carry a gap")

@@ -1480,6 +1480,9 @@ function indexSeats(rows) {
       continue;
     }
     seatsByPlace.set(`${placeOf(seated)}|${seated.mode}`, seated.params);
+    // What a trap mode is most often drawn at is read off the published gallery alone, so
+    // an unpublished collection cannot move a default somebody has already seen.
+    if (!Object.hasOwn(row.collections ?? {}, gallery.GENERAL)) continue;
     const key = link.DERIVED[seated.mode];
     if (key !== "opacity" || seated.params[key] === undefined) continue;
     const tally = (tallies[seated.mode] ??= new Map());
@@ -2092,7 +2095,11 @@ async function main() {
   renderer = started;
   paletteNames = shownNames(names);
   if (!(record instanceof Error)) {
-    offeredModes = [...new Set(record.seats.map((seat) => seat.mode))];
+    // The published gallery's modes, and not every collection's: a collection may seat a
+    // mode the general gallery does not, and the select's roster is the published one's.
+    offeredModes = [
+      ...new Set(gallery.membersOf(record.seats, gallery.GENERAL).map((seat) => seat.mode)),
+    ];
   }
 
   contract = {
@@ -2175,6 +2182,7 @@ async function main() {
   // open.
   tiles = gallery.install({
     base: import.meta.url,
+    collection: document.getElementById("gallery-collection"),
     modes: document.getElementById("gallery-modes"),
     hues: document.getElementById("gallery-hues"),
     tiles: document.getElementById("gallery-tiles"),

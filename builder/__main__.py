@@ -385,12 +385,12 @@ def _parser() -> argparse.ArgumentParser:
     )
 
     seated = commands.add_parser(
-        "seats", help="land the published tentative record as a staged gallery"
+        "seats", help="land the gallery and its collections as one staged gallery"
     )
     seated.add_argument(
         "--records-only",
         action="store_true",
-        help="rewrite gallery.jsonl alone; leave the pictures and thumbnails as they are",
+        help="rewrite gallery.jsonl alone; leave the tiles as they are",
     )
 
     served = commands.add_parser("serve", help="preview the committed tree over localhost")

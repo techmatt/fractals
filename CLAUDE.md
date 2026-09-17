@@ -211,10 +211,27 @@ keeps the mechanics. **Every apply round ends by distilling that round's general
   holding the record to the module and `permalink.test.mjs` the module to the contract.
 
   **The Mode select lists fewer than that** *(explorer_palettes, 2026-09-16)*: the modes
-  the published gallery record seats, the same set as the gallery panel's mode chips and
-  read off the same committed record. That is a narrowing of what a control *lists* and
-  not of what the page carries: the 17 are still baked, still parsed, and still drawn when
-  a link names one, which puts that mode in the select for as long as its view is up.
+  the **published** gallery record seats, read off the same committed record. That is a
+  narrowing of what a control *lists* and not of what the page carries: the 17 are still
+  baked, still parsed, and still drawn when a link names one, which puts that mode in the
+  select for as long as its view is up. The gallery panel's mode chips were the same set
+  until the panel grew collections *(explorer_gallery_collections_ckpt129, 2026-09-17)*;
+  they tally whichever collection is chosen now, and an unpublished collection seating a
+  mode the published record does not is a chip and never a select entry.
+
+- **The gallery panel shows one collection, and the record is their union**
+  *(explorer_gallery_collections_ckpt129, 2026-09-17)*. `seated-candidates` is the
+  published record plus the sixteen collections next door — twelve hue families and four
+  modes, whose sizes are that project's `curation/targets.py` — as one row per seat, with
+  `collections` naming each collection that seats it and where in that collection's
+  presentation order it stands. A **Collection** dropdown chooses one; the chips filter
+  what it chose, which is why the collection is not a chip row. ⚠ **The sixteen are
+  unpublished and Matt's word is that they are not final**, so `builder/seats.py`'s
+  `COLLECTIONS` names a stamp per collection and refuses one whose solve was another
+  collection's — a re-solve is a re-pointing of that table. **A staged gallery ships one
+  size and it is the tile**: 316 px WebP, about 10 KB, the only picture in the directory,
+  because the viewer draws the full picture on a click. `assets` asks a staged gallery for
+  no thumbnail because of it.
 - **A palette is shown by its display name and addressed by its own** *(explorer_palettes,
   2026-09-16)*. `explorer/palette-names.json` is `{underlying: {name, source}}` and the only
   place a display name lives; the underlying name is what links, Copy link, download

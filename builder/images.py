@@ -11,6 +11,12 @@ from pathlib import Path
 WEB_RES_MAX_WIDTH = 1600
 JPEG_QUALITY = 88
 
+#: The one WebP this repository writes is the explorer gallery panel's tile, at 316 px,
+#: where the full picture is a click away. Measured on fifty seats
+#: (explorer_gallery_collections_ckpt129): 10.4 KB and 26.7 dB here, against 9.8 KB and
+#: 25.0 dB for a 4:2:0 JPEG at 40 and 15.3 KB for the JPEG that matches it at 70.
+WEBP_QUALITY = 40
+
 _JPEG_SUFFIXES = frozenset({".jpg", ".jpeg"})
 
 
@@ -99,8 +105,12 @@ def _save(image, destination: Path) -> None:
         )
     elif suffix == ".png":
         image.save(destination, format="PNG", optimize=True)
+    elif suffix == ".webp":
+        image.convert("RGB").save(destination, format="WEBP", quality=WEBP_QUALITY, method=6)
     else:
-        raise ImageError(f"{destination.name}: write .jpg or .png, not {suffix or 'nothing'}")
+        raise ImageError(
+            f"{destination.name}: write .jpg, .png or .webp, not {suffix or 'nothing'}"
+        )
 
 
 def save(image, destination: Path) -> None:
