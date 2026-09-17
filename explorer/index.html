@@ -73,7 +73,10 @@
       <section class="control-group">
         <div class="section-head"><h2 id="head-download">Download</h2></div>
         <div class="bar download" id="download" role="group" aria-labelledby="head-download">
-          <button type="button" class="download-go" id="download-go"><span class="download-label" id="download-label">Download</span></button>
+          <button type="button" class="download-go" id="download-png"
+                  title="The picture exactly, as a lossless file."><span class="download-label">Download PNG</span></button>
+          <button type="button" class="download-go" id="download-jpg"
+                  title="A much smaller file, at quality 95."><span class="download-label">Download JPG</span></button>
           <select id="download-size" aria-label="Size"></select>
           <span class="group" id="download-custom" hidden>
             <input type="number" id="download-width" class="param" min="16" max="8192" step="16" aria-label="Width">

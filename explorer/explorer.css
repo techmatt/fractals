@@ -429,11 +429,13 @@ summary.section-head:focus-visible { outline: 2px solid var(--well-link); outlin
   gap: 0.6rem;
 }
 
-/* Download is the first section and one row, always open: the button first, then size,
-   samples, and a few words of estimate taking what is left. Nothing folds, because what
-   to save is the last thing a reader decides and the first thing they look for, and the
-   button leads because it is the one thing on the row everybody presses. */
-.bar.download { flex-wrap: nowrap; gap: 0.5rem; }
+/* Download is the first section and one row, always open: a button per format first, then
+   size, samples, and a few words of estimate taking what is left. Nothing folds, because
+   what to save is the last thing a reader decides and the first thing they look for, and
+   the buttons lead because they are the one thing on the row everybody presses. On a
+   phone the two buttons leave the rest no room, and the row wraps rather than running off
+   the side of the page. */
+.bar.download { flex-wrap: wrap; gap: 0.5rem; }
 .bar.download select { flex: 0 1 auto; min-width: 0; }
 .bar.download .group { gap: 0.25rem; }
 .bar.download .times { color: var(--well-ink-dim); }

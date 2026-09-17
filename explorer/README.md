@@ -593,12 +593,26 @@ the wasm side takes the nine of its own that the native side has no use for. Re-
 plane *width* is what a view is, so downloading at a different shape keeps that width and
 shows more or less height rather than cropping. The estimate's tooltip says so.
 
-**One row, first, and always open.** Download is the studio's first section: the button,
-leftmost, then a size (*As shown*, three wallpaper presets, or a custom width and height),
-a 1× / 2× samples toggle, and an estimate of a few words. The file is named for what is in
-it — `multibrot3_smooth_mean_angle_dimensionality-25_3840x2160.png` — family, mode, palette
-and size, and the palette is its **underlying** name, the one a link carries, never the
-display name the picker shows. The render stat line lives in Details, so the estimate is the only number above
+**One row, first, and always open.** Download is the studio's first section: two buttons,
+leftmost — *Download PNG* and *Download JPG* — then a size (*As shown*, three wallpaper
+presets, or a custom width and height), a 1× / 2× samples toggle, and an estimate of a few
+words. The size, samples and estimate are the same for both; the pressed button is the
+progress bar and the way to cancel, and the other is held still until it finishes. On a
+phone the row wraps. The file is named for what is in it —
+`multibrot3_smooth_mean_angle_dimensionality-25_3840x2160.png` — family, mode, palette and
+size, and the palette is its **underlying** name, the one a link carries, never the
+display name the picker shows. The format changes the extension and nothing else.
+
+**The JPG is the browser's, and the browser subsamples it.** Both formats go through
+`canvas.toBlob`, the JPG at quality 0.95. Measured by reading the frame header of what
+it writes (2026-09-16, Chrome 152 and Edge 153): **4:2:0 at every quality below 1**, and
+4:4:4 only at exactly 1, which is also a different, far larger quantization. The wallpaper
+pipeline's own encoder is `jpeg-encoder`, which switches to 4:4:4 at quality 90 and up, so
+a downloaded JPG is not the file the pipeline would have written — saturated edges are
+where the difference shows, which is why the site's render sheets are 4:4:4. The way to a
+4:4:4 JPG here is an `encode_jpeg` export on this crate calling `jpeg-encoder` directly: a
+direct dependency on a crate already in the build's lock, no engine change, a module
+larger by the encoder, and a rebuild and manifest update like any other export. The render stat line lives in Details, so the estimate is the only number above
 Mode.
 
 **Off the main thread, both halves.** The field is the pool as always. The shade is

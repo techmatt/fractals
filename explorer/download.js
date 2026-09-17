@@ -66,6 +66,19 @@ const DEFAULT_SUPERSAMPLE = 2;
  *  Past two the memory ceiling below refuses the two larger presets. */
 const SUPERSAMPLES = [1, 2];
 
+/** The two files a picture can be saved as, each with its own button.
+ *
+ *  PNG is the picture exactly. JPG is several times smaller and what a wallpaper usually
+ *  is, at quality 95 through the browser's own canvas encoder — the same `toBlob` the PNG
+ *  goes through, so the pixels handed to either are the same pixels. What that encoder
+ *  does with color at 95 is the browser's to decide: Chrome and Edge store color at half
+ *  resolution each way (4:2:0) at every quality below 1, which the explorer's README says
+ *  more about. */
+const FORMATS = {
+  png: { type: "image/png", extension: "png", label: "PNG" },
+  jpg: { type: "image/jpeg", extension: "jpg", label: "JPG", quality: 0.95 },
+};
+
 /** The most samples one download may iterate.
  *
  *  **This is a memory ceiling and not a patience one.** Colouring a frame holds
@@ -185,17 +198,19 @@ export function withinLimits(width, height, supersample) {
  *  `multibrot3_smooth_mean_angle_dimensionality-25_3840x2160.png`, so that a folder of
  *  downloads reads as what is in it. A palette name may carry spaces and punctuation —
  *  `Oxide & Copper Edge` — which a file name spells as hyphens. Two downloads of one view
- *  at one size land on one name, and the browser numbers them. */
-export function fileNameOf(view, width, height) {
+ *  at one size land on one name, and the browser numbers them. The extension is the
+ *  format's, `png` or `jpg`, and is the only thing the format changes. */
+export function fileNameOf(view, width, height, extension = "png") {
   const palette = String(view.palette)
     .replace(/[^A-Za-z0-9._-]+/g, "-")
     .replace(/^-+|-+$/g, "");
-  return `${view.family}_${view.mode}_${palette}_${width}x${height}.png`;
+  return `${view.family}_${view.mode}_${palette}_${width}x${height}.${extension}`;
 }
 
 /**
- * Wire the download control: one row, always open — size, samples, the estimate, and the
- * button, which is also the progress bar while a render is drawing.
+ * Wire the download control: one row, always open — size, samples, the estimate, and a
+ * button per format, the pressed one of which is also the progress bar while a render is
+ * drawing.
  *
  * `context` is what the page owns and this module borrows: the renderer, a reader for the
  * current view and whether its tone is measured or replayed, the screen's grid and
@@ -221,8 +236,11 @@ export function install(context) {
   const heightBox = document.getElementById("download-height");
   const sampleHost = document.getElementById("download-samples");
   const estimateLine = document.getElementById("download-estimate");
-  const go = document.getElementById("download-go");
-  const label = document.getElementById("download-label");
+  const buttons = Object.entries(FORMATS).map(([key, format]) => {
+    const button = document.getElementById(`download-${key}`);
+    const label = button.querySelector(".download-label");
+    return { format, button, label, title: button.title };
+  });
 
   const display = screenSize();
   if (display !== null) {
@@ -301,7 +319,12 @@ export function install(context) {
   function refuse(short, why) {
     estimateLine.textContent = short;
     estimateLine.title = why;
-    go.disabled = true;
+    enable(false);
+  }
+
+  /** Both buttons at once: a refusal is about the size and the view, never the format. */
+  function enable(on) {
+    for (const { button } of buttons) button.disabled = !on;
   }
 
   /** The estimate beside the button: `ready`, a wait in a few words, or a refusal. */
@@ -317,7 +340,7 @@ export function install(context) {
     if (running !== null) return;
     const { width, height } = wanted();
     if (ready() !== null) {
-      go.disabled = false;
+      enable(true);
       estimateLine.textContent = "ready";
       estimateLine.title = "The picture on the screen, saved as it is without drawing it again.";
       return;
@@ -336,7 +359,7 @@ export function install(context) {
       refuse("too deep", shape.why);
       return;
     }
-    go.disabled = false;
+    enable(true);
     const samples = width * height * supersample * supersample;
     const seconds =
       scaled(measured(), samples) ?? estimate(view.mode, samples, renderer.workerCount);
@@ -351,36 +374,41 @@ export function install(context) {
   /** The button is the bar: a fill across it, and how far it has got as its label. */
   function progress(done) {
     const clamped = Math.max(0, Math.min(1, done));
-    go.style.setProperty("--done", String(clamped));
-    label.textContent = `${Math.round(clamped * 100)}%`;
+    running.go.button.style.setProperty("--done", String(clamped));
+    running.go.label.textContent = `${Math.round(clamped * 100)}%`;
   }
 
-  function lockSize(on) {
+  /** While one format draws, the other button and the size are held still: the pressed
+   *  button stays live, because it is the way to cancel. */
+  function lock(on, go) {
     for (const control of [sizePicker, widthBox, heightBox]) control.disabled = on;
     for (const { button } of sampleButtons) button.disabled = on;
+    for (const other of buttons) if (other !== go) other.button.disabled = on;
   }
 
   function finish() {
+    const { go } = running;
     running = null;
-    go.classList.remove("is-running");
-    go.style.removeProperty("--done");
-    go.title = "";
-    label.textContent = "Download";
-    lockSize(false);
+    go.button.classList.remove("is-running");
+    go.button.style.removeProperty("--done");
+    go.button.title = go.title;
+    go.label.textContent = `Download ${go.format.label}`;
+    lock(false, go);
     setBusy(false);
     describe();
   }
 
-  async function download() {
+  async function download(go) {
+    const { format } = go;
     const view = currentView();
     const { width, height } = wanted();
     const samples = width * height * supersample * supersample;
 
     const drawn = ready();
     if (drawn !== null) {
-      const name = fileNameOf(view, drawn.width, drawn.height);
+      const name = fileNameOf(view, drawn.width, drawn.height, format.extension);
       try {
-        await save(drawn, name);
+        await save(drawn, name, format);
         say(`Saved ${name}.`);
       } catch (error) {
         say(String(error.message ?? error));
@@ -394,11 +422,11 @@ export function install(context) {
       return;
     }
 
-    running = { cancelled: false, stop: null };
+    running = { cancelled: false, stop: null, go };
     const mine = running;
-    go.classList.add("is-running");
-    go.title = "Rendering. Press to cancel.";
-    lockSize(true);
+    go.button.classList.add("is-running");
+    go.button.title = "Rendering. Press to cancel.";
+    lock(true, go);
     progress(0);
     setBusy(true);
 
@@ -450,8 +478,8 @@ export function install(context) {
       }
       progress(1);
 
-      const name = fileNameOf(view, width, height);
-      await save(image, name);
+      const name = fileNameOf(view, width, height, format.extension);
+      await save(image, name, format);
       const spent = (performance.now() - started) / 1000;
       say(`Saved ${name} in ${spent.toFixed(1)} s.`);
       finish();
@@ -461,19 +489,22 @@ export function install(context) {
     }
   }
 
-  go.addEventListener("click", () => {
-    if (running === null) {
-      download();
-      return;
-    }
-    // Pressed while drawing, the bar is the way out. The field is cancelled by generation,
-    // exactly as a pan cancels a pass; the colouring by terminating the worker doing it —
-    // a shade is one pass of many seconds with nothing to let it finish for, and it is
-    // holding a couple of gigabytes while it runs.
-    running.cancelled = true;
-    renderer.cancel();
-    running.stop?.();
-  });
+  for (const go of buttons) {
+    go.button.addEventListener("click", () => {
+      if (running === null) {
+        download(go);
+        return;
+      }
+      // Pressed while drawing, the bar is the way out. The field is cancelled by
+      // generation, exactly as a pan cancels a pass; the colouring by terminating the
+      // worker doing it — a shade is one pass of many seconds with nothing to let it
+      // finish for, and it is holding a couple of gigabytes while it runs.
+      if (running.go !== go) return;
+      running.cancelled = true;
+      renderer.cancel();
+      running.stop?.();
+    });
+  }
   for (const control of [sizePicker, widthBox, heightBox]) {
     control.addEventListener("change", describe);
     control.addEventListener("input", describe);
@@ -482,8 +513,8 @@ export function install(context) {
   return { describe, get running() { return running !== null; } };
 }
 
-/** Encode an image as a PNG and hand it to the browser to save. */
-function save(image, name) {
+/** Encode an image in one of `FORMATS` and hand it to the browser to save. */
+function save(image, name, format) {
   const canvas = document.createElement("canvas");
   canvas.width = image.width;
   canvas.height = image.height;
@@ -491,7 +522,7 @@ function save(image, name) {
   return new Promise((resolve, reject) => {
     canvas.toBlob((blob) => {
       if (blob === null) {
-        reject(new Error("The browser could not save a PNG this large."));
+        reject(new Error(`The browser could not save a ${format.label} this large.`));
         return;
       }
       const url = URL.createObjectURL(blob);
@@ -503,7 +534,7 @@ function save(image, name) {
       // and the blob is tens of megabytes to leave behind.
       setTimeout(() => URL.revokeObjectURL(url), 0);
       resolve();
-    }, "image/png");
+    }, format.type, format.quality);
   });
 }
 
