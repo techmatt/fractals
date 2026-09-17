@@ -45,7 +45,6 @@ import {
   familySpecOf,
   pixelGrid,
   probeGrid,
-  shadeApart,
   specOf,
 } from "./render.js";
 
@@ -289,6 +288,34 @@ let derivedInBand = false;
  *  which is the progress bar while it draws, is the way out: pressed, it cancels. */
 let busy = false;
 
+/** Whether the pass on the screen is still deriving something a link carries.
+ *
+ *  A derived tone curve lands on the view when the final stage has measured the picture,
+ *  a texture weight when the one-sample stage has, and a trap's opacity when the probe
+ *  has. Until then the view holds the last pass's value, so a link copied mid-pass would
+ *  name a picture that is never on the screen. **So the copy controls wait**: Copy link
+ *  and Copy view are disabled from the start of a pass that derives anything until that
+ *  pass ends, whether it finishes, stops short or is overtaken. A pass that derives
+ *  nothing leaves them alone, because its view is already the one it will finish on. */
+let copyHeld = false;
+
+/** What the two copy buttons say on hover while they are held. */
+const COPY_HELD_TITLE = "Available when this view has finished measuring its picture.";
+const copyViewTitle = copyViewButton.title;
+
+function syncCopy() {
+  copyButton.disabled = busy || copyHeld;
+  copyViewButton.disabled = copyHeld;
+  copyButton.title = copyHeld ? COPY_HELD_TITLE : "";
+  copyViewButton.title = copyHeld ? COPY_HELD_TITLE : copyViewTitle;
+}
+
+function holdCopy(on) {
+  if (copyHeld === on) return;
+  copyHeld = on;
+  syncCopy();
+}
+
 function locked() {
   if (!busy) return false;
   say("A download is rendering this view. Press its bar to cancel.");
@@ -298,7 +325,8 @@ function locked() {
 /** Freeze or release every control that would change what is being drawn. */
 function setBusy(on) {
   busy = on;
-  for (const control of [familyPicker, modePicker, copyButton, levelToggle]) control.disabled = on;
+  for (const control of [familyPicker, modePicker, levelToggle]) control.disabled = on;
+  syncCopy();
   for (const strip of [constantStrip, coordinateStrip, paramStrip]) {
     for (const control of strip.querySelectorAll("input")) control.disabled = on;
   }
@@ -499,9 +527,22 @@ function measured() {
  * that froze the page for them would be a strip nobody could scroll.
  */
 async function draw() {
+  const running = drawPass();
+  // `drawPass` bumps `drawing` before its first await, so this is the pass just started.
+  const pass = drawing;
+  try {
+    await running;
+  } finally {
+    if (pass === drawing) holdCopy(false);
+  }
+}
+
+/** One pass, as `draw` describes it; `draw` is what releases the copy controls after it. */
+async function drawPass() {
   updateReadout();
   syncShade();
   const pass = ++drawing;
+  holdCopy(false);
   renderer.cancel();
   colouring.stop?.();
   colouring = {};
@@ -535,6 +576,7 @@ async function draw() {
   const tuned = link.DERIVED[view.mode];
   const derivingOpacity = tuning === "derived" && tuned === "opacity" && shape.direct;
   const derivingWeight = tuning === "derived" && tuned === "weight" && !shape.direct;
+  holdCopy(deriving || derivingOpacity || derivingWeight);
   let probeMs = 0;
   probed = null;
   if (derivingOpacity) {
@@ -648,8 +690,7 @@ async function draw() {
     // picture is the one on the screen.
     const shaded = shape.direct
       ? renderer.shade(field, view)
-      : await shadeApart(
-          renderer.module,
+      : await renderer.shadeKept(
           { ...field, values: field.values.slice() },
           view,
           colouring,
@@ -678,8 +719,8 @@ async function draw() {
     }
     // Where the field came off the cache its `elapsed` is still the pass that iterated
     // it, so a recolour keeps the field's cost and re-measures only the shade. The fastest
-    // shade of this field is the one kept: the page's first shade starts a worker while
-    // the gallery is still loading, and measured about five times a recolour's.
+    // shade of this field is the one kept: the page's first shade lands while the gallery
+    // is still loading, and used to measure about five times a recolour's.
     const shadeSeconds = shaded.elapsed / 1000;
     measure = {
       key: finalKey,

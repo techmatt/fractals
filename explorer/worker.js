@@ -10,10 +10,10 @@
 // as text and the number of bytes its answer will be — both worked out on the main
 // thread from the module's own plan — and its whole job is a row range.
 //
-// One worker is asked for a **shade** instead, and it is a worker of its own that
-// is terminated afterwards: a download's frame is far too many samples to colour
-// on the main thread, and far too many to leave in a pool worker's heap. See
-// `shadeApart` in `render.js`.
+// A worker outside the pool is asked for a **shade** instead: the screen's finished
+// frame goes to one the page keeps warm, and a download's to one of its own that is
+// terminated afterwards, because that frame is far too many samples to leave in any
+// heap. See `ShadeWorker` and `shadeApart` in `render.js`.
 
 let wasm = null;
 const encoder = new TextEncoder();

@@ -175,8 +175,10 @@ a link's would be. There is no second path, which is what keeps the address bar 
 
 **What a link cannot carry is said under the canvas.** Every wallpaper the pool makes
 goes through `band_autolevel/v1`, and the curve lives on the run's record rather than in
-the recipe: 98 of the thousand seats carry one into their link, 493 come from runs that
-wrote nothing down at all, and those open at the recipe with a sentence saying so. A view
+the recipe: 291 of the thousand seats of `20260914T171846Z` carry one into their link, and
+the other 709 are pictures the operator left alone, so none opens with a curve missing. A
+seat whose run had written nothing down would open at the recipe with a sentence saying
+so. A view
 that **arrived** replays exactly what its link carries, curve or no curve; the first view
 a reader **makes** — a pan, a zoom, any control — is measured on its own finished picture
 by the same operator, ported whole. See *`level`, and a gallery seat's own colour* below.
@@ -527,8 +529,8 @@ sends: iterated on a grid twice as fine and reduced by `resample::downsample` in
 so the screen now shows what a download at 4× of the same size would save — and the
 download menu's first size, *As shown*, at 4× saves that picture without drawing it
 again. One sample per pixel aliased visibly on every fractal edge. The stage's shade goes
-to a worker of its own (`shadeApart`, with a copy of the field so the cached one stays
-whole), because four times the samples is up to half a second on the slower shades and a
+to the page's kept shade worker (`ShadeWorker`, with a copy of the field so the cached one
+stays whole), because four times the samples is up to half a second on the slower shades and a
 recolour should not freeze the page; a recolour puts the one-sample picture up from the
 cache first, on this thread. Where `f64` resolves the screen's grid and not one twice as
 fine, the module's refusal is said beside the one-sample picture, which stays up.
@@ -1214,11 +1216,39 @@ The measurement is taken on the output picture, which is the same 666,000 pixels
 sample count, so most of the added half second does not grow with supersampling; only the
 second colouring does. On a view that is cheap to iterate it roughly doubles the final stage.
 
+**Most of that half second was the worker, not the measurement** *(explorer_leftovers,
+2026-09-17)*. The table above timed `shadeApart`, which started a worker per shade, and so
+did the page. The screen now keeps one shade worker for the session (`ShadeWorker` in
+`render.js`), started beside the pool; a download still takes a worker of its own and
+terminates it, for the memory. Measured through the page's own control — the phase box,
+nine alternating recolours of the home view in `twilight_shifted` at 1088×612, 4×, median,
+back to back on one machine:
+
+| final-pass recolour | fresh worker | kept worker |
+| --- | --- | --- |
+| Autolevel off | 608 ms | 258 ms |
+| Autolevel on, curve acts | 979 ms | 612 ms |
+| Autolevel on, already in band | ~710 ms | ~375 ms |
+
+So a fresh worker cost about 350 ms of every final pass, ticked or not, and what ticking
+adds on a warm worker is about 110 ms of measurement plus the second colouring where the
+curve acts, 350 ms in all. The first derive on a warm worker is still slower than the
+rest (1.2 s, once, in the second timing run), which is not explained here; the likeliest
+reading, unverified, is the measure path running for the first time in that instance. **A kept worker is never interrupted**: a stopped
+job that is still waiting is dropped unposted, and one already in flight finishes and is
+thrown away, so a recolour asked mid-shade waits for that shade.
+
+**Copy link and Copy view wait for a derived pass.** A pass that derives anything a link
+carries — the tone curve, a texture weight, a trap's opacity — disables both buttons from
+its start until it ends, because until the value lands the view still holds the last
+pass's, and a link copied then would name a picture that is never on the screen. A pass
+that derives nothing leaves them alone.
+
 **The measurement is on the final stage and nowhere else.** `shade_level` colours the
 two-sample field, measures what it drew, and where the operator acts curves the stops,
 bakes again and colours **the same field** a second time — one export, because `shade`
 frees the lanes before it colours and a second call would copy the whole field back in.
-It runs in `shadeApart`'s worker, so the render dot turns final only when the levelled
+It runs in the kept shade worker, so the render dot turns final only when the levelled
 picture is up. The preview and one-sample stages draw in the last derived curve, so a pan
 does not flash to the unlevelled tone and back.
 

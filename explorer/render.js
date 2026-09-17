@@ -188,6 +188,7 @@ export class Renderer {
     this.fields = new Map();
     this.plans = new Map();
     this.ramped = null;
+    this.shading = new ShadeWorker(module);
   }
 
   /**
@@ -217,7 +218,9 @@ export class Renderer {
       await ready;
       workers.push(worker);
     }
-    return new Renderer(module, shader, workers);
+    const renderer = new Renderer(module, shader, workers);
+    renderer.shading.warm();
+    return renderer;
   }
 
   get workerCount() {
@@ -577,6 +580,21 @@ export class Renderer {
       elapsed: performance.now() - started,
     };
   }
+
+  /**
+   * Colour the screen's finished field in the page's own shade worker, which is kept.
+   *
+   * The screen's last stage, and the recolour of it. It used to go through `shadeApart`
+   * like a download, and so paid a fresh worker on every final pass: a new instance of a
+   * module already compiled, and a heap grown from nothing to a frame's worth of lanes
+   * before the first byte of colour. At a screen's size that start was most of what the
+   * pass cost. A download still throws its worker away, for the memory `shadeApart` says;
+   * the screen's frame is small enough that a heap sized to it is worth keeping, the way
+   * each pool worker keeps one sized to its largest band. See `ShadeWorker`.
+   */
+  shadeKept(field, view, holder = {}, options = {}) {
+    return this.shading.shade(field, view, holder, options);
+  }
 }
 
 /**
@@ -624,51 +642,148 @@ export function shadeApart(module, field, view, holder = {}, { derive = false } 
     };
     worker.onmessage = (event) => {
       if (event.data.kind === "ready") {
-        const lanes = field.values;
-        worker.postMessage(
-          {
-            kind: "shade",
-            spec: JSON.stringify(
-              specOf(view, field.width, field.height, {
-                supersample: field.supersample,
-                level: !derive,
-              }),
-            ),
-            lanes: lanes.buffer,
-            bytes: field.width * field.height * 4,
-            derive,
-          },
-          [lanes.buffer],
-        );
+        const [message, transfer] = shadeMessage(field, view, derive);
+        worker.postMessage(message, transfer);
         return;
       }
       worker.terminate();
-      if (event.data.refused) {
-        reject(new Error("the renderer refused this palette recipe"));
-        return;
-      }
-      // A worker.js older than the page — a browser's cached copy from before `level`
-      // existed — answers without the key. It also drew no curve, so `null` is the truth
-      // about its picture; the warning is what says the page is running two versions.
-      if (derive && !("level" in event.data)) {
-        console.warn(
-          "shade worker reported no level: worker.js is older than render.js (a cached " +
-            "copy?); the picture is unlevelled. Reload bypassing the cache.",
-          Object.keys(event.data),
-        );
-      }
-      resolve({
-        image: new ImageData(
-          new Uint8ClampedArray(event.data.image),
-          field.width,
-          field.height,
-        ),
-        ...(derive ? { level: event.data.level ?? null } : {}),
-        elapsed: performance.now() - started,
-      });
+      settleShade(event.data, field, derive, started, resolve, reject);
     };
     worker.postMessage({ kind: "start", module });
   });
+}
+
+/** What a shade worker is asked: the spec as text, the field's lanes transferred, and
+ *  whether to measure the curve. The lanes buffer is detached by the transfer. */
+function shadeMessage(field, view, derive) {
+  const lanes = field.values;
+  const spec = specOf(view, field.width, field.height, {
+    supersample: field.supersample,
+    level: !derive,
+  });
+  return [
+    {
+      kind: "shade",
+      spec: JSON.stringify(spec),
+      lanes: lanes.buffer,
+      bytes: field.width * field.height * 4,
+      derive,
+    },
+    [lanes.buffer],
+  ];
+}
+
+/** A shade worker's answer, turned into what `shadeApart` and `ShadeWorker` resolve with. */
+function settleShade(data, field, derive, started, resolve, reject) {
+  if (data.refused) {
+    reject(new Error("the renderer refused this palette recipe"));
+    return;
+  }
+  // A worker.js older than the page — a browser's cached copy from before `level`
+  // existed — answers without the key. It also drew no curve, so `null` is the truth
+  // about its picture; the warning is what says the page is running two versions.
+  if (derive && !("level" in data)) {
+    console.warn(
+      "shade worker reported no level: worker.js is older than render.js (a cached " +
+        "copy?); the picture is unlevelled. Reload bypassing the cache.",
+      Object.keys(data),
+    );
+  }
+  resolve({
+    image: new ImageData(new Uint8ClampedArray(data.image), field.width, field.height),
+    ...(derive ? { level: data.level ?? null } : {}),
+    elapsed: performance.now() - started,
+  });
+}
+
+/**
+ * One shade worker the screen keeps, one job in it at a time, and the jobs waiting.
+ *
+ * **One job is posted at a time**, and the next only once the worker has answered, so the
+ * answer that lands is always the job in flight's: no id crosses to `worker.js`, and a
+ * browser's cached copy of it answers this the same way it answers `shadeApart`.
+ *
+ * **A stop is not a termination here.** `shadeApart` kills its worker because the worker
+ * holds a download's gigabytes; this one holds a screen's frame and is worth more warm than
+ * the shade it would interrupt. A stopped job resolves with `null` at once. If it is still
+ * waiting it is never posted, so a run of recolours — a palette list walked with the arrow
+ * keys — colours the one in flight and the last one, and nothing between. If it is in
+ * flight its answer is dropped when it lands, and the job behind it waits for that; its
+ * `elapsed` counts the wait, since that is what the reader waited. A worker that fails is
+ * dropped with every job rejected, and the next shade starts another.
+ */
+export class ShadeWorker {
+  constructor(module) {
+    this.module = module;
+    this.worker = null;
+    this.flight = null;
+    this.waiting = [];
+  }
+
+  #start() {
+    const worker = new Worker(new URL("./worker.js", import.meta.url), { type: "module" });
+    worker.onmessage = (event) => {
+      if (event.data.kind !== "shaded") return;
+      const job = this.flight;
+      this.flight = null;
+      if (job !== null && !job.stopped) {
+        settleShade(event.data, job.field, job.derive, job.started, job.resolve, job.reject);
+      }
+      this.#pump();
+    };
+    worker.onerror = (event) => {
+      worker.terminate();
+      if (this.worker === worker) this.worker = null;
+      const failed = [this.flight, ...this.waiting.splice(0)];
+      this.flight = null;
+      for (const job of failed) {
+        if (job !== null && !job.stopped) {
+          job.reject(new Error(event.message ?? "the shade worker stopped"));
+        }
+      }
+    };
+    worker.postMessage({ kind: "start", module: this.module });
+    this.worker = worker;
+  }
+
+  /** Post the next job that is still wanted, if nothing is in flight. */
+  #pump() {
+    if (this.flight !== null) return;
+    while (this.waiting.length > 0 && this.waiting[0].stopped) this.waiting.shift();
+    const job = this.waiting.shift();
+    if (job === undefined) return;
+    this.warm();
+    this.flight = job;
+    this.worker.postMessage(job.message, job.transfer);
+  }
+
+  /** Start the worker ahead of the first shade, so that shade is not the one paying. */
+  warm() {
+    if (this.worker === null) this.#start();
+  }
+
+  /** Colour a field, as `shadeApart` does. `field.values` is transferred when it is posted. */
+  shade(field, view, holder = {}, { derive = false } = {}) {
+    return new Promise((resolve, reject) => {
+      const [message, transfer] = shadeMessage(field, view, derive);
+      const job = {
+        field,
+        derive,
+        message,
+        transfer,
+        started: performance.now(),
+        resolve,
+        reject,
+        stopped: false,
+      };
+      holder.stop = () => {
+        job.stopped = true;
+        resolve(null);
+      };
+      this.waiting.push(job);
+      this.#pump();
+    });
+  }
 }
 
 /**
