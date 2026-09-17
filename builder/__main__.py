@@ -369,8 +369,8 @@ def _parser() -> argparse.ArgumentParser:
         nargs="?",
         const=True,
         metavar="DOTS.JSON",
-        help="rewrite the record and its pictures from the maker's dots.json "
-        "(default: `curate atlas`'s, in the wallpapers checkout)",
+        help="rewrite one plane's record and pictures from the maker's dots.json "
+        "(default: every plane `curate atlas` has written, in the wallpapers checkout)",
     )
     mapped.add_argument(
         "--quality",
@@ -1006,8 +1006,12 @@ def _do_review_read(page: str, *, full: bool) -> int:
 def _do_atlas(options: argparse.Namespace) -> int:
     """What the atlas record holds — or, with a flag, the figure it is drawn into."""
     if options.ingest:
-        source = None if options.ingest is True else options.ingest
-        for line in atlas_module.ingest(source, quality=options.quality):
+        lines = (
+            atlas_module.ingest_every(quality=options.quality)
+            if options.ingest is True
+            else atlas_module.ingest(options.ingest, quality=options.quality)
+        )
+        for line in lines:
             print(line)
     if options.plates:
         for line in atlas_module.plates():

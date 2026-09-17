@@ -26,9 +26,10 @@ frame.js          the frame: the marks, the three slots, and the one size it is
 frame.css         the frame's own stylesheet, loaded by both pages that mount one
 links.js          a slot as a link — the one place a view is spelled, for two callers
 record.js         the record, fetched and read
-atlas.test.mjs    12 tests, `node --test atlas/atlas.test.mjs`
+atlas.test.mjs    17 tests, `node --test atlas/atlas.test.mjs`
 atlas.jsonl       the index: how the record was made, and one row per plane
-mandelbrot.jsonl  that plane's dots
+mandelbrot.jsonl  that plane's dots, and one file like it per plane:
+multibrot3.jsonl  multibrot4.jsonl  multibrot5.jsonl  phoenix.jsonl
 ```
 
 ## The frame is a piece, and two pages mount it
@@ -53,13 +54,29 @@ keeps the whole box the stage's padding leaves. The one-way flow is deliberate �
 that shrank to its figure and a frame fitted to that stage would be each other's input, and
 a pixel of rounding would chase itself.
 
-## Five planes, and four of them waiting
+## Five planes, and what differs between them is words
 
 The record carries a partition per plane — **Mandelbrot · d=3 · d=4 · d=5 · Phoenix** —
-and the frame puts a strip of them above the slots. Only Mandelbrot has marks. The other
-four are plates a reader can look at before the search has reached them: the slots stay
-blank, and a line under the plate says the marks are still to come. Their dot files are
-empty rather than absent, so the marks land later as rows and neither page changes.
+and the frame puts a strip of them above the slots. Every one has marks. A multibrot plane
+is the Mandelbrot plane at another degree, with the Julia places of that degree drawn over
+it. **Phoenix is the classic slice only**: its parameters are pinned, so every place on it
+is a frame on the slice and is drawn red, and its first slot is a neighborhood of the slice
+where a Julia place's is a neighborhood of its parameter plane. A plane the search has not
+reached would be a plate with an empty dot file, and a line under it saying so.
+
+So the partition row carries the words: `slot_labels`, what the two location slots say
+(*Multibrot 3* and *Julia*; on Phoenix, *Phoenix* and *Close-up*), and `julia_place`, what a
+red mark is announced as (*A Julia place*; *A Phoenix place*). The gallery slot's label is
+the page's own. It also carries what is a plane's own rather than the atlas's: the
+absorption radius, the neighborhood width and the tally, because the maker thins every plane
+at twelve pixels of its own base and so at a different distance on each plane.
+
+**Four planes' slot pictures are staged, not deployed.** `pictures` on the partition row is
+`tracked` for Mandelbrot and `staged` for the other four, whose 948 pictures (28 MB) are
+untracked and listed in `.git/info/exclude`. The record commits. Until they are deployed,
+the served page shows those planes' marks over empty slots. A clone has none of the files,
+and `check` and `atlas.test.mjs` each report that as a named skip. One staged picture
+present means the ingest has run, and then the whole plane is held to its record.
 
 The strip and that line sit **outside** the fitted rectangle, and both change only when a
 reader moves to another plane — never under the pointer — so the frame is still the one
@@ -171,11 +188,12 @@ live judge, and the fine bar the population was cut at. The maker is
 `fractal-wallpapers curate atlas`, writing `artifacts/atlas/mandelbrot/` in that checkout,
 which is where `--ingest` reads with no path given. It streams the candidate ledger and
 the fine head's pool scores, queues every seated place and then everything else by best
-fine score, and places them in one greedy pass.
+fine score, and places them in one greedy pass. It writes one directory per plane,
+`artifacts/atlas/<partition>/`, and `--ingest` with no path takes every one that is there.
 
 ```
 python -m builder atlas                                  # what the record holds
-python -m builder atlas --ingest [<maker>/dots.json]     # rewrite it and its pictures
+python -m builder atlas --ingest [<maker>/dots.json]     # rewrite a plane, or all of them
 python -m builder atlas --plates                         # all five plates, dots re-projected
 python -m builder atlas --figure atlas-places            # the plate and its marks, for §11
 ```
@@ -189,10 +207,13 @@ no input in anybody's scratch.
 `--ingest` is the second half of the maker and is committed for the reason the figure
 makers are: a record nobody can rebuild is a record nobody can correct. It re-encodes
 every thumbnail at the page's own quality and no chroma subsampling, sweeps
-`assets/images/atlas/` of anything the new record does not name, and writes both JSONL
-files. The maker still projects onto its own 16:9 `base.jpg`; the ingest ignores that,
-keeps every committed partition and plate, and projects each dot from its `place` onto the
-committed plate, so an ingest never undoes `--plates`.
+`assets/images/atlas/` of anything no plane's record names, and writes the index and that
+plane's dot file. A slot picture is named `<partition>-<id>-<slot>.jpg`, because ids restart
+at nought on every plane and one directory holds them all. The maker still projects onto
+its own 16:9 `base.jpg`; the ingest ignores that, keeps every committed plate, and projects
+each dot from its `place` onto its own plane's plate, so an ingest never undoes `--plates`.
+A plane made against another release, judge, bar, map or thumbnail size than the planes
+already in the record is refused, because the method row says those once.
 
 The figure is the only thing this module draws. It is the plate with the marks on it and
 nothing else — no frames, no captions, no interface — because a still of a tool should be

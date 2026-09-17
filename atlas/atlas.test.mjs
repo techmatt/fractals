@@ -85,9 +85,22 @@ const partitions = index
 /** Every slot on the site, with the dot it belongs to, for the loops below. */
 const everySlot = partitions.flatMap((partition) =>
   partition.dots.flatMap((dot) =>
-    Object.entries(dot.slots).map(([name, slot]) => ({ where: `${dot.id}/${name}`, slot, dot })),
+    Object.entries(dot.slots).map(([name, slot]) => ({
+      where: `${partition.partition}/${dot.id}/${name}`,
+      slot,
+      dot,
+      partition,
+    })),
   ),
 );
+
+/** A staged plane's slot pictures are untracked, so a clone has the record and none of the
+ *  files. One of them present means the ingest ran here, and then all of them are held. */
+const unlanded = (partition) =>
+  partition.pictures === "staged" &&
+  !partition.dots.some((dot) =>
+    Object.values(dot.slots).some((slot) => existsSync(fileURLToPath(new URL(slot.file, IMAGES)))),
+  );
 
 /** The three pictures a dot carries, in the order `atlas.js` lays them out. */
 const SLOTS = ["mandelbrot", "julia", "gallery"];
@@ -292,18 +305,58 @@ test("a link falls back to the default only where the record says it does", () =
   }
 });
 
-test("every picture the record names is on disk", () => {
+test("every picture the record names is on disk", (t) => {
   for (const partition of partitions) {
     assert.ok(
       existsSync(fileURLToPath(new URL(partition.plate.file, IMAGES))),
       `${partition.partition}: the plate names ${partition.plate.file}, which is not there`,
     );
   }
-  for (const { where, slot } of everySlot) {
+  const skipped = partitions.filter(unlanded).map((partition) => partition.partition);
+  for (const { where, slot, partition } of everySlot) {
+    if (skipped.includes(partition.partition)) continue;
     assert.ok(
       existsSync(fileURLToPath(new URL(slot.file, IMAGES))),
       `${where}: names ${slot.file}, which is not there`,
     );
+  }
+  if (skipped.length > 0) {
+    t.skip(`slot pictures of the staged ${skipped.join(", ")} not landed on this machine`);
+  }
+});
+
+test("no two planes name one picture, because one directory holds them all", () => {
+  const seen = new Map();
+  for (const partition of partitions) {
+    const names = [partition.plate.file, ...partition.dots.flatMap((dot) =>
+      Object.values(dot.slots).map((slot) => slot.file))];
+    for (const name of names) {
+      const owner = seen.get(name);
+      assert.ok(owner === undefined || owner === partition.partition,
+        `${name} is named by both ${owner} and ${partition.partition}`);
+      seen.set(name, partition.partition);
+    }
+  }
+});
+
+test("every plane says the words its two location slots and its Julia marks wear", () => {
+  for (const partition of partitions) {
+    for (const name of ["mandelbrot", "julia"]) {
+      assert.equal(typeof partition.slot_labels?.[name], "string", `${partition.partition}: ${name}`);
+      assert.ok(partition.slot_labels[name].length > 0, `${partition.partition}: ${name} label`);
+    }
+    assert.ok(partition.julia_place, `${partition.partition}: no julia_place`);
+    assert.ok(["tracked", "staged"].includes(partition.pictures), `${partition.partition}: pictures`);
+  }
+});
+
+test("every view on a pinned plane is drawn at that plane's own slice", () => {
+  for (const { where, slot, partition } of everySlot) {
+    const pinned = partition.plate.constants;
+    if (pinned === undefined || slot.family !== partition.plate.family) continue;
+    for (const [key, text] of Object.entries(pinned)) {
+      assert.equal(Number(slot[key]), Number(text), `${where}: ${key} is off the plate's slice`);
+    }
   }
 });
 

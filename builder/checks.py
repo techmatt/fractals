@@ -1051,6 +1051,15 @@ def skips() -> tuple[Skip, ...]:
                     NO_STAGED_PICTURES,
                 )
             )
+    for partition in atlas_module.staged_without_pictures():
+        # Half, the same way: the record, the plates and every tracked plane are still held.
+        found.append(
+            Skip(
+                "atlas",
+                f"the staged {partition.name} plane's {len(partition.dots) * 3} slot pictures",
+                NO_STAGED_PICTURES,
+            )
+        )
     return tuple(found)
 
 

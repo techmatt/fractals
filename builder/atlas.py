@@ -16,24 +16,34 @@ spells them, and the page hands them to `permalink.js` without arithmetic.
 
 `atlas/atlas.jsonl` is the index and carries no dots:
 
-* one **`method`** row — the published record the seats were read out of, the judge that
-  scored it, the fine bar the population was cut at, the absorption radius the thinning
-  ran at, the map the neighborhood plates are drawn through, and the tally the page
-  reports;
+* one **`method`** row — what every plane shares: the published record the seats were
+  read out of, the judge that scored it, the fine bar the population was cut at, the map
+  the neighborhood plates are drawn through, the size of a slot picture, and the tally of
+  the whole atlas;
 * one **`partition`** row per plane — the plate its dots are drawn over, that plate's own
-  view, the word the frame's strip of planes puts on it, and the file its dots are in.
-  There are five: the Mandelbrot parameter plane, with the Julia places drawn over the
-  same plate because a Julia place *is* a `c` and a `c` is a point of that plane; the
-  three higher-degree parameter planes; and the classic Phoenix slice. **Only the first
-  has marks today**, and the other four carry an empty dot file rather than none, so the
-  marks land later as rows and no page changes. `python -m builder atlas --plates` draws
-  all five plates, each cropped to its set's own measured extent at one shared aspect,
-  and re-projects the dots from the plane coordinates they already carry.
+  view, the word the frame's strip of planes puts on it, the file its dots are in, and
+  everything that is the plane's own rather than the atlas's: the absorption radius, the
+  neighborhood width, the tally, the two labels its location slots wear, and whether its
+  slot pictures are committed. There are five: the Mandelbrot parameter plane and the
+  three higher-degree ones, each with the Julia places of its degree drawn over the same
+  plate because a Julia place *is* a `c` and a `c` is a point of that plane; and the
+  classic Phoenix slice, whose places are frames on the slice itself. A plane the search
+  has not reached carries an empty dot file rather than none, so marks land later as rows
+  and no page changes. `python -m builder atlas --plates` draws all five plates, each
+  cropped to its set's own measured extent at one shared aspect, and re-projects the dots
+  from the plane coordinates they already carry.
 
-The method row keeps the absorption radius twice: `radius_plane`, the distance on the
-plane the thinning ran at, and `radius_px`, that distance spelled in the pixels of the plate
-the dots are drawn on now. The second is restated from the first whenever the plates are,
-because a plate cropped tighter spells one distance with a bigger number.
+A partition keeps its absorption radius twice: `radius_plane`, the distance on the plane
+the thinning ran at, and `radius_px`, that distance spelled in the pixels of the plate the
+dots are drawn on now. The second is restated from the first whenever the plates are,
+because a plate cropped tighter spells one distance with a bigger number — and it is a
+partition's rather than the atlas's because the maker thins every plane at twelve pixels of
+*its own* base, so the distance on the plane differs from one plane to the next.
+
+`pictures` is `tracked` or `staged`. A staged plane's slot pictures are untracked and
+listed in `.git/info/exclude`, the way the staged gallery's are: the record commits and the
+pictures wait for a deploy. A clone has the record and none of the files, which `check`
+reports as a named skip rather than as a broken page or a pass.
 
 `atlas/<partition>.jsonl` carries one **`dot`** row per place:
 
@@ -134,6 +144,9 @@ SLOTS = ("mandelbrot", "julia", "gallery")
 #: The two kinds of place, and the word each is spelled with. A dot is one of them and
 #: never both.
 PLANES = ("mandelbrot", "julia")
+
+#: Whether a plane's slot pictures are committed, or untracked and waiting for a deploy.
+PICTURES = ("tracked", "staged")
 
 #: What became of a gallery picture's tone curve: untouched, recorded, or not recorded.
 TONES = ("clean", "curved", "lost")
@@ -260,6 +273,7 @@ class Plate:
     aspect: tuple[int, int]
     mode: str
     colormap: str
+    constants: dict[str, str] = field(default_factory=dict)
 
     @property
     def path(self) -> Path:
@@ -278,7 +292,20 @@ class Partition:
     plate: Plate
     plate_width: str
     says: str
+    pictures: str
+    slot_labels: dict[str, str]
+    julia_place: str
+    radius_plane: float | None = None
+    radius_px: float | None = None
+    tally: dict = field(default_factory=dict)
     dots: tuple[Dot, ...] = field(default=())
+
+    @property
+    def staged_without_pictures(self) -> bool:
+        """A staged plane whose slot pictures are not on this machine, which is a clone."""
+        return self.pictures == "staged" and not any(
+            slot.path.is_file() for dot in self.dots for slot in dot.slots.values()
+        )
 
 
 @dataclass(frozen=True)
@@ -289,7 +316,6 @@ class Atlas:
     record: str
     judge: str
     fine_bar: float
-    radius_px: float
     canonical_map: str
     tally: dict
     thumb: tuple[int, int]
@@ -541,8 +567,24 @@ def _plate(row: records.Record) -> Plate:
         aspect=(across, down),
         mode=held["mode"],
         colormap=held["colormap"],
+        constants={key: constants[key] for key in wanted},
         **view,
     )
+
+
+def _labels(row: records.Record) -> dict[str, str]:
+    """The words a plane's two location slots wear. The gallery slot's is the page's own."""
+    held = row.optional_mapping("slot_labels")
+    names = SLOTS[:2]
+    if (
+        held is None
+        or set(held) != set(names)
+        or any(not isinstance(held[name], str) or not held[name] for name in names)
+    ):
+        raise AtlasError(
+            f"{row.where}: slot_labels names the words on the {' and '.join(names)} slots"
+        )
+    return {name: held[name] for name in names}
 
 
 def load_all() -> Atlas:
@@ -595,6 +637,18 @@ def load_all() -> Atlas:
             raise AtlasError(f"{row.where}: dots is how many the file holds, zero included")
         if said != len(dots):
             raise AtlasError(f"{row.where}: says {said} dots and {file} holds {len(dots)}")
+        pictures = row.fields.get("pictures")
+        if pictures not in PICTURES:
+            raise AtlasError(f"{row.where}: pictures is one of {', '.join(PICTURES)}")
+        # A plane with marks was thinned at some radius and counted, and says both; a plane
+        # with none has nothing to have thinned.
+        radius_plane = row.fields.get("radius_plane")
+        radius_px = row.fields.get("radius_px")
+        counted = row.optional_mapping("tally") or {}
+        if dots and (radius_plane is None or radius_px is None or not counted):
+            raise AtlasError(
+                f"{row.where}: a plane with marks carries its radius_plane, radius_px and tally"
+            )
         partitions.append(
             Partition(
                 name=name,
@@ -605,6 +659,14 @@ def load_all() -> Atlas:
                 plate=_plate(row),
                 plate_width=row.text("plate_width"),
                 says=row.text("says"),
+                pictures=pictures,
+                slot_labels=_labels(row),
+                julia_place=row.text("julia_place"),
+                radius_plane=None
+                if radius_plane is None
+                else _number(row, radius_plane, "radius_plane"),
+                radius_px=None if radius_px is None else _number(row, radius_px, "radius_px"),
+                tally=counted,
                 dots=dots,
             )
         )
@@ -615,7 +677,6 @@ def load_all() -> Atlas:
         record=head.text("record"),
         judge=head.text("judge"),
         fine_bar=_number(head, head.fields.get("fine_bar"), "fine_bar"),
-        radius_px=_number(head, head.fields.get("radius_px"), "radius_px"),
         canonical_map=head.text("canonical_map"),
         tally=tally,
         thumb=size,
@@ -645,10 +706,68 @@ def problems() -> list[str]:
     found: list[str] = []
     for partition in atlas.partitions:
         found.extend(_placed(partition))
-        found.extend(_separated(partition, atlas.radius_px))
+        found.extend(_separated(partition, partition.radius_px or 0))
         found.extend(_galleried(partition))
+        found.extend(_sliced(partition))
         found.extend(_pictures(partition, atlas.thumb))
+    found.extend(_named(atlas))
     found.extend(_tallied(atlas))
+    return found
+
+
+def staged_without_pictures() -> list[Partition]:
+    """The staged planes whose slot pictures this machine does not have, for `check`'s skips.
+
+    Never a failure: the pictures are untracked by design, so a clone holds the record and
+    none of the files. One picture present means the ingest has run here, and then the whole
+    plane is held to its record exactly as a tracked one is — a half-landed plane is a real
+    problem and says so.
+    """
+    try:
+        atlas = load_all()
+    except (AtlasError, records.RecordError):
+        return []
+    return [partition for partition in atlas.partitions if partition.staged_without_pictures]
+
+
+def _sliced(partition: Partition) -> list[str]:
+    """Every view on a pinned plane is drawn at that plane's own constants.
+
+    The Phoenix plate is one slice of a six-dimensional family, and a mark on it only means
+    something if the pictures it carries were drawn at that slice. The ingest spells a
+    recipe that named no constants at the plate's — which is the engine's own reading of a
+    bare `phoenix` spec — so this is what holds that choice to being true rather than
+    convenient.
+    """
+    wanted = partition.plate.constants
+    if not wanted:
+        return []
+    found = []
+    for dot in partition.dots:
+        for slot in dot.slots.values():
+            if slot.family != partition.plate.family:
+                continue
+            off = [key for key in wanted if float(slot.view[key]) != float(wanted[key])]
+            if off:
+                found.append(
+                    f"{partition.file}: dot {dot.id}'s {slot.name} is drawn off the plate's "
+                    f"slice, at another {', '.join(off)}"
+                )
+    return found
+
+
+def _named(atlas: Atlas) -> list[str]:
+    """No two partitions name one picture, because one directory holds them all."""
+    seen: dict[str, str] = {}
+    found = []
+    for partition in atlas.partitions:
+        names = [partition.plate.file] + [
+            slot.file for dot in partition.dots for slot in dot.slots.values()
+        ]
+        for name in names:
+            if name in seen and seen[name] != partition.name:
+                found.append(f"{name} is named by both {seen[name]} and {partition.name}")
+            seen.setdefault(name, partition.name)
     return found
 
 
@@ -721,7 +840,10 @@ def _pictures(partition: Partition, size: tuple[int, int]) -> list[str]:
     plate = partition.plate
     if not plate.path.is_file():
         found.append(f"{partition.file}: the plate names {plate.file}, which is not there")
-    for dot in partition.dots:
+    # The plate is committed on every plane; a staged plane's slot pictures are not, and
+    # where none of them is here that is `check`'s named skip rather than a problem.
+    dots = () if partition.staged_without_pictures else partition.dots
+    for dot in dots:
         for slot in dot.slots.values():
             if not slot.path.is_file():
                 found.append(
@@ -736,7 +858,7 @@ def _pictures(partition: Partition, size: tuple[int, int]) -> list[str]:
             f"{partition.file}: {plate.file} is {width}x{height} on disk and "
             f"{plate.width}x{plate.height} in the record"
         )
-    for dot in partition.dots:
+    for dot in dots:
         for slot in dot.slots.values():
             if images.dimensions(slot.path) != size:
                 width, height = images.dimensions(slot.path)
@@ -747,10 +869,9 @@ def _pictures(partition: Partition, size: tuple[int, int]) -> list[str]:
     return found
 
 
-def _tallied(atlas: Atlas) -> list[str]:
-    """The tally the page prints is a count of the dots the record actually carries."""
-    dots = [dot for partition in atlas.partitions for dot in partition.dots]
-    counted = {
+def _counted(dots) -> dict[str, int]:
+    """What a tally counts, counted off the dots themselves."""
+    return {
         "dots": len(dots),
         "mandelbrot": sum(1 for dot in dots if dot.plane == "mandelbrot"),
         "julia": sum(1 for dot in dots if dot.plane == "julia"),
@@ -758,17 +879,32 @@ def _tallied(atlas: Atlas) -> list[str]:
         "gallery_seated": sum(1 for dot in dots if dot.slots["gallery"].seated),
         "dropped": sum(dot.dropped for dot in dots),
     }
-    found = [
-        f"{ATLAS_INDEX.name}: the tally says {key} {atlas.tally[key]} and the dots hold {value}"
-        for key, value in counted.items()
-        if key in atlas.tally and atlas.tally[key] != value
-    ]
-    queued = atlas.tally.get("queued")
-    if queued is not None and queued != counted["dots"] + counted["dropped"]:
-        found.append(
-            f"{ATLAS_INDEX.name}: {queued} places were queued and the dots account for "
-            f"{counted['dots'] + counted['dropped']}"
+
+
+def _tallied(atlas: Atlas) -> list[str]:
+    """Every tally the record carries is a count of the dots it actually holds.
+
+    Each plane's tally is held to that plane's dots, and the method row's to all of them,
+    so the atlas's own figure cannot drift from the sum of its planes.
+    """
+    found: list[str] = []
+    everything = [dot for partition in atlas.partitions for dot in partition.dots]
+    for where, tally, dots in [
+        (f"{ATLAS_INDEX.name} {partition.name}", partition.tally, partition.dots)
+        for partition in atlas.partitions
+    ] + [(ATLAS_INDEX.name, atlas.tally, everything)]:
+        counted = _counted(dots)
+        found.extend(
+            f"{where}: the tally says {key} {tally[key]} and the dots hold {value}"
+            for key, value in counted.items()
+            if key in tally and tally[key] != value
         )
+        queued = tally.get("queued")
+        if queued is not None and queued != counted["dots"] + counted["dropped"]:
+            found.append(
+                f"{where}: {queued} places were queued and the dots account for "
+                f"{counted['dots'] + counted['dropped']}"
+            )
     return found
 
 
@@ -777,15 +913,21 @@ def summary() -> list[str]:
     atlas = load_all()
     lines = [
         f"atlas/atlas.jsonl — made {atlas.made} from the published record {atlas.record}",
-        f"  judge {atlas.judge[:12]}… · fine bar {atlas.fine_bar:g} · absorption radius "
-        f"{atlas.radius_px:g} px · neighborhood plates through {atlas.canonical_map}",
+        f"  judge {atlas.judge[:12]}… · fine bar {atlas.fine_bar:g} · "
+        f"neighborhood plates through {atlas.canonical_map}",
     ]
     for partition in atlas.partitions:
         plate = partition.plate
         lines.append(
             f"  {partition.name}: {len(partition.dots)} dots over {plate.file} "
-            f"({plate.width}x{plate.height}, {plate.mode} through {plate.colormap})"
+            f"({plate.width}x{plate.height}, {plate.mode} through {plate.colormap}) · "
+            f"pictures {partition.pictures}"
         )
+        if partition.radius_px is not None:
+            lines.append(
+                f"    absorption radius {partition.radius_plane:g} on the plane, "
+                f"{partition.radius_px:g} px · neighborhood plates {partition.plate_width} wide"
+            )
         counted = {name: sum(1 for dot in partition.dots if dot.plane == name) for name in PLANES}
         seated = sum(1 for dot in partition.dots if dot.seated)
         lines.append(
@@ -833,12 +975,32 @@ SHADE_DEFAULTS = {
     "rolloff": {"kind": "none"},
 }
 
-#: Where `curate atlas` writes, inside the wallpapers checkout. The maker writes its
+#: Where `curate atlas --plane <partition>` writes, inside the wallpapers checkout: one
+#: directory per plane, named as this record names its partitions. The maker writes its
 #: refusal lines in the site's short forms — `colormap <name>`, `mirror on a cyclic map`,
 #: `autolevel band_autolevel/v1`, `curve <name>` — so they pass through untouched, and
 #: `atlas.test.mjs` holds the first two to the roster in both directions.
-MAKER_OUTPUT = ("artifacts", "atlas", "mandelbrot", "dots.json")
+MAKER_OUTPUT = ("artifacts", "atlas")
+MAKER_FILE = "dots.json"
 MAKER = "fractal-wallpapers curate atlas"
+
+#: What every plane of one atlas has to agree on, because the method row says it once.
+SHARED = (
+    ("record", "record"),
+    ("judge_artifact", "judge"),
+    ("fine_bar", "fine_bar"),
+    ("canonical_map", "canonical_map"),
+)
+
+#: The atlas's own sentence about itself, on the method row.
+METHOD_SAYS = (
+    "Every place the search kept on the planes it has searched, thinned to one dot per "
+    "neighborhood. A place is here because at least one of its rows reads at or above the "
+    "solve's own fine bar, and nothing else puts one here. The seats of the published record "
+    "are placed first and everything else follows by its best fine score; a place landing "
+    "inside the absorption radius of a dot already drawn is dropped, whichever kind either "
+    "of them is, so a dot is one place of one kind."
+)
 
 #: The quality a slot picture is re-encoded at. The maker lands them at the engine's own
 #: quality and they are nearly twice as large as this page can afford to ship; 4:4:4 is not
@@ -860,14 +1022,14 @@ def _shade_of(palette: object) -> dict:
     }
 
 
-def maker_output() -> Path:
-    """The maker's `dots.json` in the configured wallpapers checkout."""
+def maker_output(plane: str = "mandelbrot") -> Path:
+    """The maker's `dots.json` for one plane, in the configured wallpapers checkout."""
     from . import renders
 
-    return renders.wallpapers_root().joinpath(*MAKER_OUTPUT)
+    return renders.wallpapers_root().joinpath(*MAKER_OUTPUT, plane, MAKER_FILE)
 
 
-def _slot_row(name: str, held: dict, file: str) -> dict:
+def _slot_row(name: str, held: dict, file: str, plate: Plate) -> dict:
     """One slot of the maker's `dots.json`, as the record spells it."""
     viewport = held["viewport"]
     row = {
@@ -879,9 +1041,22 @@ def _slot_row(name: str, held: dict, file: str) -> dict:
         "y": str(viewport["center_im"]),
         "w": str(viewport["width"]),
     }
-    constants = list(held["family"].get("c") or [])
-    if CONSTANTS.get(row["family"], ())[:2] == ("cx", "cy"):
-        row["cx"], row["cy"] = str(constants[0]), str(constants[1])
+    wanted = CONSTANTS.get(row["family"], ())
+    for spelled, keys in PLATE_CONSTANTS.items():
+        for key, value in zip(keys, held["family"].get(spelled) or (), strict=False):
+            if key in wanted:
+                row[key] = str(value)
+    missing = [key for key in wanted if key not in row]
+    # **A recipe on a pinned plane may leave the pin unsaid.** Some Phoenix rows next door
+    # spell their family as a bare `{"kind": "phoenix"}`, which the engine writes out as the
+    # classic slice — its own spec test says so — and which the maker only placed on this
+    # plate because its partition is that slice. So the plate's constants are the ones it
+    # was drawn at, and `_sliced` holds every slot on the plane to them. Anywhere else a
+    # missing constant is a recipe this page cannot link, and it is refused.
+    if missing and row["family"] == plate.family and set(missing) <= set(plate.constants):
+        row.update({key: plate.constants[key] for key in missing})
+    elif missing:
+        raise AtlasError(f"a {row['family']} {name} picture gives no {', '.join(missing)}")
     row["mode"] = str(held["mode"])
     if held.get("mode_params"):
         row["mode_params"] = dict(held["mode_params"])
@@ -933,12 +1108,19 @@ def ingest(
     — sweeps `assets/images/atlas/` of anything the new record does not name, and writes
     both JSONL files.
 
+    **One plane at a time, and the plane is the record's to say.** The maker writes one
+    directory per plane and names the plane in the payload; that name picks the partition
+    row the dots land on and the plate they are projected onto. Every other plane's rows and
+    pictures are left as they stand, which is why the sweep reads every partition's dot file
+    rather than this ingest's alone, and why a slot picture's name opens with its plane: ids
+    restart at nought on every plane, and one directory holds all of them.
+
     **The plates are this repository's, not the maker's.** The maker still lands a 16:9
     `base.jpg` and projects its dots onto that; the site draws its own five plates with
-    `--plates`, so the ingest keeps every committed partition row as it stands and projects
-    each dot from its own place onto the committed Mandelbrot plate. The absorption radius
-    comes in as pixels of the maker's base and is kept on the plane, then restated against
-    the plate the dots are drawn on.
+    `--plates`, so the ingest keeps every committed plate as it stands and projects each dot
+    from its own place onto its plane's committed plate. The absorption radius comes in as
+    pixels of the maker's base and is kept on the plane, then restated against the plate the
+    dots are drawn on.
     """
     from datetime import date
 
@@ -947,12 +1129,26 @@ def ingest(
     here = source.parent
     base = payload["base"]
     thumb_across, thumb_down = (int(value) for value in payload["thumb"]["resolution"])
+    plane = str(payload["plane"])
 
     index = records.read(ATLAS_INDEX)
+    method = dict(index[0].fields)
     partitions = [dict(row.fields) for row in index[1:]]
-    target = next((one for one in partitions if one["partition"] == "mandelbrot"), None)
+    target = next((one for one in partitions if one["partition"] == plane), None)
     if target is None:
-        raise AtlasError(f"{ATLAS_INDEX.name}: no mandelbrot partition to ingest dots onto")
+        raise AtlasError(f"{ATLAS_INDEX.name}: no {plane} partition to ingest dots onto")
+    # The method row says once what every plane shares, so a plane made against another
+    # release, judge, bar, map or thumbnail size is two atlases in one record and refused.
+    others = [one for one in partitions if one is not target and one["dots"] > 0]
+    if others:
+        disagree = [ours for theirs, ours in SHARED if method.get(ours) != payload[theirs]]
+        if method.get("thumb") != {"width": thumb_across, "height": thumb_down}:
+            disagree.append("thumb")
+        if disagree:
+            raise AtlasError(
+                f"{source}: {plane} disagrees with the planes already in the record about "
+                f"{', '.join(disagree)}"
+            )
     drawn = _plate(records.Record(ATLAS_INDEX, 1, target))
     radius_plane = round(
         float(payload["radius_px"]) * float(base["viewport"]["width"]) / int(base["resolution"][0]),
@@ -961,6 +1157,13 @@ def ingest(
 
     IMAGE_DIR.mkdir(parents=True, exist_ok=True)
     landed = {one["plate"]["file"] for one in partitions}
+    for one in partitions:
+        path = ATLAS_DIR / one["file"]
+        if one is target or not path.is_file() or path.stat().st_size == 0:
+            continue
+        landed.update(
+            slot["file"] for row in records.read(path) for slot in row.fields["slots"].values()
+        )
 
     rows: list[dict] = []
     for dot in payload["dots"]:
@@ -969,10 +1172,10 @@ def ingest(
             held = dot["slots"].get(name)
             if held is None:
                 raise AtlasError(f"dot {dot['id']} has no {name} picture")
-            file = f"{dot['id']:04d}-{name}.jpg"
+            file = f"{plane}-{dot['id']:04d}-{name}.jpg"
             _encode(here / held["picture"], IMAGE_DIR / file, quality)
             landed.add(file)
-            slots[name] = _slot_row(name, held, file)
+            slots[name] = _slot_row(name, held, file, drawn)
         place = dot["place"]
         px, py = project((float(place["x"]), float(place["y"])), drawn)
         rows.append(
@@ -999,30 +1202,24 @@ def ingest(
     tally = dict(payload["tally"])
     tally.pop("radius_px", None)
     tally["gallery_seated"] = sum(1 for row in rows if row["slots"]["gallery"]["seated"])
-    method = {
-        "schema": records.SCHEMA,
-        "kind": "method",
-        "made": made or date.today().isoformat(),
-        "record": payload["record"],
-        "judge": payload["judge_artifact"],
-        "generator": MAKER,
-        "radius_px": round(radius_plane * drawn.width / float(drawn.w), 2),
-        "canonical_map": payload["canonical_map"],
-        "fine_bar": payload["fine_bar"],
-        "thumb": {"width": thumb_across, "height": thumb_down},
-        "tally": tally,
-        "says": (
-            "Every place the search kept on the two planes it has searched, thinned to one dot "
-            "per neighborhood. A place is here because at least one of its rows reads at or "
-            "above the solve's own fine bar, and nothing else puts one here. The seats of the "
-            "published record are placed first and everything else follows by its best fine "
-            "score; a place landing inside the absorption radius of a dot already drawn is "
-            "dropped, whichever kind either of them is, so a dot is one place of one kind."
-        ),
-        "radius_plane": radius_plane,
-    }
-    target["plate_width"] = str(payload["plate_width"])
-    target["dots"] = len(rows)
+    was = dict(target)
+    partitions[partitions.index(target)] = target = _partition_row(
+        plane,
+        was["plate"],
+        was,
+        dots=len(rows),
+        plate_width=str(payload["plate_width"]),
+        radius_plane=radius_plane,
+        radius_px=round(radius_plane * drawn.width / float(drawn.w), 2),
+        tally=tally,
+        marked=True,
+    )
+    method = _method_row(
+        partitions,
+        made=made or date.today().isoformat(),
+        shared={ours: payload[theirs] for theirs, ours in SHARED},
+        thumb={"width": thumb_across, "height": thumb_down},
+    )
 
     _write_rows(ATLAS_INDEX, [method] + partitions)
     _write_rows(ATLAS_DIR / target["file"], rows)
@@ -1030,13 +1227,97 @@ def ingest(
     swept = [path for path in sorted(IMAGE_DIR.glob("*.jpg")) if path.name not in landed]
     for path in swept:
         path.unlink()
-    total = sum(path.stat().st_size for path in IMAGE_DIR.glob("*.jpg"))
+    ours = sum(
+        (IMAGE_DIR / slot["file"]).stat().st_size for row in rows for slot in row["slots"].values()
+    )
     return [
-        f"atlas/atlas.jsonl: {1 + len(partitions)} rows · atlas/{target['file']}: {len(rows)} dots",
-        f"assets/images/atlas/: {len(landed)} files, {total / 1e6:.2f} MB "
-        f"({len(rows) * len(SLOTS)} slot pictures at {thumb_across}x{thumb_down} quality "
-        f"{quality}, {len(swept)} swept)",
+        f"{plane}: atlas/{target['file']} {len(rows)} dots · {len(rows) * len(SLOTS)} slot "
+        f"pictures at {thumb_across}x{thumb_down} quality {quality}, {ours / 1e6:.2f} MB · "
+        f"{len(swept)} swept",
     ]
+
+
+def ingest_every(*, quality: int = THUMB_QUALITY, made: str | None = None) -> list[str]:
+    """Ingest every plane the maker has written, in the order the strip shows them."""
+    lines: list[str] = []
+    for name, *_ in PLANES_DRAWN:
+        source = maker_output(name)
+        if source.is_file():
+            lines.extend(ingest(source, quality=quality, made=made))
+        else:
+            lines.append(f"{name}: no {source}, left as it stands")
+    return lines
+
+
+def _partition_row(
+    name: str,
+    plate: dict,
+    was: dict,
+    *,
+    dots: int,
+    plate_width: str | None = None,
+    radius_plane: float | None = None,
+    radius_px: float | None = None,
+    tally: dict | None = None,
+    marked: bool | None = None,
+) -> dict:
+    """One partition row, spelled one way by both of the programs that write it.
+
+    `--plates` and `--ingest` each rewrite the index, and a row that came out with its keys
+    in another order depending on which ran last would be a diff with nothing in it. So the
+    row is built here, from `PLANES_DRAWN` for everything that is the table's to say and
+    from the row as it stood for everything that is a plane's own history.
+    """
+    _, label, title, family, labels, julia_place, says = next(
+        entry for entry in PLANES_DRAWN if entry[0] == name
+    )
+    radius_plane = was.get("radius_plane") if radius_plane is None else radius_plane
+    radius_px = was.get("radius_px") if radius_px is None else radius_px
+    tally = was.get("tally") if tally is None else tally
+    marked = dots > 0 if marked is None else marked
+    row = {
+        "schema": records.SCHEMA,
+        "kind": "partition",
+        "partition": name,
+        "title": title,
+        "label": label,
+        "family": plate["family"],
+        "file": f"{name}.jsonl",
+        "plate": plate,
+        "plate_width": plate_width or was.get("plate_width", DEFAULT_PLATE_WIDTH),
+        "dots": dots,
+        "says": says if marked else NO_MARKS_YET,
+        "pictures": was.get("pictures", "tracked"),
+        "slot_labels": labels,
+        "julia_place": julia_place,
+    }
+    if radius_plane is not None:
+        row["radius_plane"] = radius_plane
+        row["radius_px"] = radius_px
+    if tally:
+        row["tally"] = tally
+    return row
+
+
+def _method_row(partitions: list[dict], *, made: str, shared: dict, thumb: dict) -> dict:
+    """The method row: what every plane shares, and the tally of all of them."""
+    tally: dict[str, int] = {}
+    for partition in partitions:
+        for key, value in (partition.get("tally") or {}).items():
+            if isinstance(value, int) and not isinstance(value, bool):
+                tally[key] = tally.get(key, 0) + value
+    return {
+        "schema": records.SCHEMA,
+        "kind": "method",
+        "made": made,
+        **{key: shared[key] for key in ("record", "judge")},
+        "generator": MAKER,
+        "canonical_map": shared["canonical_map"],
+        "fine_bar": shared["fine_bar"],
+        "thumb": thumb,
+        "tally": tally,
+        "says": METHOD_SAYS,
+    }
 
 
 def _encode(source: Path, destination: Path, quality: int) -> None:
@@ -1062,26 +1343,61 @@ def _write_rows(path: Path, rows: list[dict]) -> None:
 
 # ---------------------------------------------------------------------------- the plates
 
+
+def _multibrot_says(degree: int) -> str:
+    """What a multibrot plane's partition says once it has marks."""
+    return (
+        f"the degree-{degree} parameter plane, with the Julia places of that degree drawn over "
+        "the same plane: a Julia place is a c, and c is a point of this plane"
+    )
+
+
 #: The five planes the atlas carries, in the order the frame's strip shows them: the
-#: partition's own name, the word the strip puts on it, what it is, and the family spec
-#: the engine is asked for. Only the first has marks; the other four are plates a reader
-#: can see before the search has kept anything on them, and their dot files are empty by
-#: design rather than by accident.
+#: partition's own name, the word the strip puts on it, what it is, the family spec the
+#: engine is asked for, the words its two location slots wear, what a mark of a Julia-kind
+#: place is announced as, and what the partition says once it has marks. A plane the search
+#: has not reached says `NO_MARKS_YET` instead, and its dot file is empty by design.
 #:
 #: **A plane's constants come from this table and nowhere else.** The Phoenix slice is the
 #: one that has any, and the record's `cx`/`cy`/`px`/`py`/`zx`/`zy` are spelled from the
 #: same spec the render was drawn at, so the plate and the row recording it cannot
 #: disagree about which Phoenix this is.
+#:
+#: **The slot words are the plane's own.** The first slot of a Mandelbrot-kind place is a
+#: frame on that plane and the first slot of a Julia place is a neighborhood of it, so both
+#: wear the plane's name; on Phoenix every place is a frame on the slice, so its second slot
+#: is the place close up rather than a Julia set, and its marks are Phoenix places.
 PLANES_DRAWN = (
-    ("mandelbrot", "Mandelbrot", "Mandelbrot", {"kind": "mandelbrot", "degree": 2}),
-    ("multibrot3", "d=3", "Multibrot, degree 3", {"kind": "multibrot", "degree": 3}),
-    ("multibrot4", "d=4", "Multibrot, degree 4", {"kind": "multibrot", "degree": 4}),
-    ("multibrot5", "d=5", "Multibrot, degree 5", {"kind": "multibrot", "degree": 5}),
+    (
+        "mandelbrot",
+        "Mandelbrot",
+        "Mandelbrot",
+        {"kind": "mandelbrot", "degree": 2},
+        {"mandelbrot": "Mandelbrot", "julia": "Julia"},
+        "A Julia place",
+        "the parameter plane, with the Julia places drawn over the same plane: a Julia place "
+        "is a c, and c is a point of this plane",
+    ),
+    *(
+        (
+            f"multibrot{degree}",
+            f"d={degree}",
+            f"Multibrot, degree {degree}",
+            {"kind": "multibrot", "degree": degree},
+            {"mandelbrot": f"Multibrot {degree}", "julia": "Julia"},
+            "A Julia place",
+            _multibrot_says(degree),
+        )
+        for degree in (3, 4, 5)
+    ),
     (
         "phoenix",
         "Phoenix",
         "Phoenix, the classic slice",
         {"kind": "phoenix", "c": ["0.5667", "0.0"], "p": ["-0.5", "0.0"], "z_prev": ["0", "0"]},
+        {"mandelbrot": "Phoenix", "julia": "Close-up"},
+        "A Phoenix place",
+        "the classic Phoenix slice, and every place kept on it is a frame on the slice itself",
     ),
 )
 
@@ -1221,7 +1537,7 @@ def plates() -> list[str]:
     IMAGE_DIR.mkdir(parents=True, exist_ok=True)
     lines: list[str] = []
     partitions: list[dict] = []
-    for name, label, title, family in PLANES_DRAWN:
+    for name, _, _, family, *_ in PLANES_DRAWN:
         home = renders.home_view(family)
         view = plate_view(home["extent"])
         x, y, w = view
@@ -1256,21 +1572,7 @@ def plates() -> list[str]:
             lines.append(f"  {name}: {echo.get('seconds')}s at cap {maxiter}")
         plate = _plate_row(name, family, view, maxiter)
         shutil.copyfile(out, IMAGE_DIR / plate["file"])
-        partitions.append(
-            {
-                "schema": records.SCHEMA,
-                "kind": "partition",
-                "partition": name,
-                "title": title,
-                "label": label,
-                "family": plate["family"],
-                "file": f"{name}.jsonl",
-                "plate": plate,
-                "plate_width": was.get("plate_width", DEFAULT_PLATE_WIDTH),
-                "dots": 0,
-                "says": was.get("says", NO_MARKS_YET),
-            }
-        )
+        partitions.append(_partition_row(name, plate, was, dots=was.get("dots", 0)))
         lines.append(
             f"  plate-{name}.jpg  {width}x{height}  x {x:.4f} y {y:.4f} w {w:.4f}  "
             f"{(IMAGE_DIR / plate['file']).stat().st_size / 1e3:.0f} kB"
@@ -1302,11 +1604,17 @@ def plates() -> list[str]:
     # another number. So the record keeps the plane distance, `radius_plane`, and
     # `radius_px` is restated from it against whichever plate the dots are drawn on now:
     # `check`'s `_separated` reads the pixels, and the pixels have to describe this plate.
-    radius_plane = method.get("radius_plane")
-    if radius_plane is not None:
-        drawn = next(one for one in partitions if one["dots"] > 0)["plate"]
-        method["radius_px"] = round(radius_plane * drawn["width"] / float(drawn["w"]), 2)
-        lines.append(f"  absorption radius {radius_plane} on the plane: {method['radius_px']} px")
+    # Each plane was thinned at twelve pixels of its own base, so each is restated alone.
+    for partition in partitions:
+        radius_plane = partition.get("radius_plane")
+        if radius_plane is None:
+            continue
+        drawn = partition["plate"]
+        partition["radius_px"] = round(radius_plane * drawn["width"] / float(drawn["w"]), 2)
+        lines.append(
+            f"  {partition['partition']}: absorption radius {radius_plane} on the plane, "
+            f"{partition['radius_px']} px"
+        )
 
     _write_rows(ATLAS_INDEX, [method] + partitions)
     return lines

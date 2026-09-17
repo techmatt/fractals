@@ -32,12 +32,12 @@
 import { contractOf, opened } from "./links.js";
 import { load } from "./record.js";
 
-/** The three pictures a place carries, in the order the frame shows them, left to right. */
-const SLOTS = [
-  ["mandelbrot", "Mandelbrot"],
-  ["julia", "Julia"],
-  ["gallery", "Gallery"],
-];
+/** The three pictures a place carries, in the order the frame shows them, left to right.
+ *  The first two wear their plane's own words — `slot_labels` on the partition row, so the
+ *  first slot on the degree-3 plane says Multibrot 3 and the second on Phoenix says
+ *  Close-up — and the gallery slot's word is the page's, the same on every plane. */
+const SLOTS = ["mandelbrot", "julia", "gallery"];
+const GALLERY_LABEL = "Gallery";
 
 /** Where a gallery slot's recipe came from, said in words a reader of this article has. */
 const SOURCE = {
@@ -218,11 +218,11 @@ export async function mount(host, options = {}) {
    * Which plane is open, and everything that follows from it.
    *
    * **Five partitions, one frame.** The record carries a partition per plane — the
-   * Mandelbrot parameter plane, the three higher degrees, and the Phoenix slice — and
-   * only the first has marks on it today. The other four are plates a reader can look at
-   * before the search has reached them, and their dot lists are empty in the record
-   * rather than absent from it, so nothing here has a second case to handle: the marks
-   * land later as rows in a file, and no page changes.
+   * Mandelbrot parameter plane, the three higher degrees, and the Phoenix slice. A plane
+   * the search has not reached is a plate with an empty dot list rather than an absent
+   * one, so nothing here has a second case to handle: marks land as rows in a file, and no
+   * page changes. What differs between planes is words — the two location slots' labels
+   * and what a Julia-kind mark is announced as — and the partition row carries both.
    */
   let partition = record.partitions.find((one) => one.partition === options.plane)
     ?? record.partitions[0];
@@ -243,15 +243,17 @@ export async function mount(host, options = {}) {
   const strip = made("div", "strip");
   const explorer = new URL("../explorer/index.html", base);
   const slots = new Map();
-  for (const [name, label] of SLOTS) {
+  const labelOf = (name) => partition.slot_labels[name] ?? GALLERY_LABEL;
+  for (const name of SLOTS) {
     const node = made(navigates ? "a" : "button", "slot");
     if (!navigates) node.type = "button";
     node.dataset.slot = name;
     const image = made("img");
     image.alt = "";
-    node.append(image, made("span", "slot-label", label));
+    const caption = made("span", "slot-label", labelOf(name));
+    node.append(image, caption);
     strip.appendChild(node);
-    slots.set(name, { node, image, label });
+    slots.set(name, { node, image, caption });
   }
   const plate = made("div", "plate");
   const plateImage = made("img");
@@ -281,7 +283,8 @@ export async function mount(host, options = {}) {
   /** Fill the three slots from one place, or empty them. The boxes stay either way. */
   const show = (dot) => {
     showing = dot;
-    for (const [name, { node, image, label }] of slots) {
+    for (const [name, { node, image }] of slots) {
+      const label = labelOf(name);
       const slot = dot === null ? undefined : dot.slots[name];
       // Only the gallery slot carries a kind, and only while a mark is showing: the other
       // two are always what their own label says and keep their border at rest.
@@ -331,7 +334,7 @@ export async function mount(host, options = {}) {
       node.style.top = `${(dot.py / partition.plate.height) * 100}%`;
       node.setAttribute(
         "aria-label",
-        `${dot.plane === "mandelbrot" ? "A place on the parameter plane" : "A Julia place"} at ` +
+        `${dot.plane === "mandelbrot" ? "A place on the parameter plane" : partition.julia_place} at ` +
           `${point(dot.place.at)}${dot.place.seat === null ? "" : ", seated"}`,
       );
       const enter = () => {
@@ -393,6 +396,7 @@ export async function mount(host, options = {}) {
 
   /** The plate picture, what it says it is, and the line under it. */
   function dressPlate() {
+    for (const [name, { caption }] of slots) caption.textContent = labelOf(name);
     plateImage.src = new URL(`../assets/images/atlas/${partition.plate.file}`, base);
     plateImage.alt = partition.dots.length
       ? `The ${partition.title} plane in gray, ${partition.dots.length} marks on it where ` +
