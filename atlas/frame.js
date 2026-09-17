@@ -181,18 +181,18 @@ function contentBox(node) {
  *   by the partition's own name. A name the record does not carry opens the first one
  *   rather than nothing: a plane is furniture, and furniture never withholds a picture.
  * - **`onPlane`** (default absent) — called with a partition's name whenever the reader
- *   moves to another plane, so a page can put it in its own URL. The frame does not touch
- *   the address bar itself; two pages mount it and only one of them has an address to
- *   keep.
+ *   clicks a plane chip, the one already open included, so a page can follow it. The
+ *   studio answers it by opening that plane's home view. The frame does not touch the
+ *   address bar itself; two pages mount it and only one of them has an address to keep.
  * - **`onPick`** (default absent) — where a click goes instead of the explorer. Given one,
  *   a click on a mark calls `onPick({ dot, slot, query, palette })` for that mark's gallery
  *   slot and a click on a slot calls it for that slot, the frame navigates nowhere, and the
  *   slots are buttons rather than links so that they stay operable from the keyboard.
  *   Absent, each slot is an `<a href>` into the explorer at the view it shows.
  *
- * The handle is `{ record, refit, destroy }`: the record as `record.js` read it, a `refit`
- * that re-sizes the frame to its host and returns the `{ width, height }` it settled on,
- * and a `destroy` that disconnects the observer, unhooks the key handler and takes the
+ * The handle is `{ record, refit, open, destroy }`: the record as `record.js` read it, a
+ * `refit` that re-sizes the frame to its host and returns the `{ width, height }` it settled
+ * on, an `open` that moves to a plane by name without reporting it, and a `destroy` that disconnects the observer, unhooks the key handler and takes the
  * frame back out of the host.
  *
  * `mount` adds the `frame-host` class to the host and takes it off again at `destroy`,
@@ -272,7 +272,12 @@ export async function mount(host, options = {}) {
     button.type = "button";
     button.title = one.title;
     button.setAttribute("aria-pressed", String(one === partition));
-    button.addEventListener("click", () => openPlane(one));
+    // A click is the reader's, so it is reported even on the plane already open: a page
+    // that answers a chip by going to that plane's home view goes there from anywhere on it.
+    button.addEventListener("click", () => {
+      openPlane(one);
+      options.onPlane?.(one.partition);
+    });
     buttons.set(one, button);
     planes.appendChild(button);
   }
@@ -391,7 +396,6 @@ export async function mount(host, options = {}) {
     }
     show(null);
     refit(true);
-    options.onPlane?.(partition.partition);
   }
 
   /** The plate picture, what it says it is, and the line under it. */
@@ -489,5 +493,12 @@ export async function mount(host, options = {}) {
     host.classList.remove("frame-host");
   };
 
-  return { record, refit, destroy, get plane() { return partition.partition; } };
+  /** Move to a plane by its partition's name, as a page following its own view does. Not a
+   *  click, so `onPlane` is not called; a name the record does not carry changes nothing. */
+  const open = (name) => {
+    const wanted = record.partitions.find((one) => one.partition === name);
+    if (wanted !== undefined) openPlane(wanted);
+  };
+
+  return { record, refit, destroy, open, get plane() { return partition.partition; } };
 }

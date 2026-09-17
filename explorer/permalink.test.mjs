@@ -45,6 +45,7 @@ import {
 } from "./permalink.js";
 import { CONSTANTS, CURVES, MODES as IDENTITIES, SETTLED } from "./catalog.js";
 import * as shade from "./shade.js";
+import * as modeParams from "./params.js";
 import { DEFAULT_PALETTE, PALETTES } from "./palettes.js";
 
 import { familySpecOf } from "./render.js";
@@ -570,6 +571,52 @@ test("a slider writes what a link carries, and sits where the link's value is", 
   }
   assert.equal(shade.sliderAt(cycles, "6"), cycles.slider.max);
   assert.equal(shade.spelling(shade.withKey(view.shade, "cycles", "6"), "cycles"), "6");
+});
+
+test("every mode parameter has a slider, and the slider bounds the control and not the value", () => {
+  const keys = new Set(Object.values(MODE_PARAMETERS).flat());
+  assert.deepEqual([...keys].sort(), Object.keys(modeParams.CONTROLS).sort());
+  // Matt's centres: the kernel's 0.15 at the middle, and each log slider's geometric mean.
+  assert.equal(modeParams.sliderText("sigma", "0.5"), "0.15");
+  assert.equal(modeParams.sliderText("sigma", "0"), "0.05");
+  assert.equal(modeParams.sliderText("sigma", "1"), "10");
+  assert.equal(modeParams.sliderAt("sigma", 0.15), 0.5);
+  assert.equal(modeParams.sliderText("threshold", "0.5"), "0.08");
+  assert.equal(modeParams.sliderText("radius", "0.5"), "1");
+  assert.equal(modeParams.sliderText("density", "6"), "6");
+  // A value past the travel parks the slider at the nearer end, and is nobody's to clamp.
+  assert.equal(modeParams.sliderAt("density", 14), 10);
+  assert.equal(modeParams.sliderAt("sigma", 40), 1);
+  assert.equal(modeParams.sliderAt("sigma", 0.01), 0);
+  assert.equal(modeParams.sliderAt("threshold", 0), 0);
+  const view = parse(`v=${VERSION}&m=threads&sigma=40&weight=0.5&p=viridis`, CONTEXT);
+  assert.equal(view.params.sigma, 40);
+  assert.match(emit(view, CONTEXT), /sigma=40/);
+  // Every stop of every travel writes a value the contract takes, and reads back to its stop.
+  for (const [mode, keysOf] of Object.entries(MODE_PARAMETERS)) {
+    for (const key of keysOf) {
+      const { min, max, step } = modeParams.travel(key);
+      const stops = Math.round((max - min) / step);
+      for (let index = 0; index <= stops; index += key === "density" ? 1 : 5) {
+        const at = Number((min + index * step).toFixed(6));
+        const text = modeParams.sliderText(key, String(at));
+        const others = keysOf.filter((other) => other !== key).map((other) => `&${other}=0.5`).join("");
+        const opened = parse(`v=${VERSION}&m=${mode}&${key}=${text}${others}&p=viridis`, CONTEXT);
+        assert.equal(String(opened.params[key]), text, `${mode} ${key} at ${at}`);
+        assert.ok(Math.abs(modeParams.sliderAt(key, Number(text)) - at) <= step, `${key} at ${at}`);
+      }
+    }
+  }
+});
+
+test("a view's centre spelled any way a link may spell it is a Julia constant", () => {
+  const parent = parse(`v=${VERSION}&x=-7.43e-1&y=1.3120000000000001e-1&w=1e-5&p=viridis`, CONTEXT);
+  const julia = parse(
+    `v=${VERSION}&f=julia&cx=${parent.x.text}&cy=${parent.y.text}&p=viridis`,
+    CONTEXT,
+  );
+  assert.equal(julia.constants.cx.text, parent.x.text);
+  assert.equal(julia.constants.cy.value, parent.y.value);
 });
 
 test("an aspect is a shape, and both sides are bounded", () => {

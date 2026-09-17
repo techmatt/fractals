@@ -464,6 +464,11 @@ summary.section-head:focus-visible { outline: 2px solid var(--well-link); outlin
   font-variant-numeric: tabular-nums;
 }
 
+/* Reset view, Julia here, Random palette and Random phase: the right end of the Download
+   row, which the estimate leaves room for by taking what is between. Each one's shortcut
+   is its tooltip. Where the row wraps they wrap with it, as one group. */
+.download .view-toggles { display: inline-flex; flex-wrap: wrap; gap: 0.25rem; flex: none; margin-left: auto; }
+
 /* The button is the progress bar: `--done` fills it from the left while a render draws,
    and its label is how far along it is. A fixed minimum width, so a label going from
    "Download" to "7%" does not pull the row about. */

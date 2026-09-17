@@ -87,9 +87,13 @@ hands back `total` beside `height` so a page sizing a band leaves room for them;
 clipped its own plate for as long as that was one number.
 
 Which plane is open is the page's to keep. `options.plane` opens one by the partition's own
-name and `options.onPlane` says when the reader moves; the studio puts it in its `panel`
-UI key as `atlas:phoenix`, leaves the record's first plane unsaid, and never emits either
-in a copied link. This page keeps no address for it.
+name, `options.onPlane` says when the reader clicks a chip — the one already open included —
+and the handle's `open(name)` moves the frame without saying so. The studio uses all three
+to hold the chips to its view *(explorer_controls_ckpt129)*: a chip clicked opens that
+plane's home view, and a view that lands on another plane moves the chip, a Julia set's
+being the parameter plane of its degree. So the plane is no longer a key of its own; an
+older `panel=atlas:phoenix` still opens the tab, and the view says which plane. This page
+keeps no address for it.
 
 **Every plate is cropped to its own set, at one aspect.** The engine's `home-view` reports
 the extent it measured for each family; a plate is that rectangle widened to 9:8 with a

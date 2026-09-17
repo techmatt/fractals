@@ -87,7 +87,8 @@ download.js           the same render at a wallpaper's size, and what caps it
 render.js             the worker pool, the plan, the field passes, the shade
 worker.js             one worker: one wasm instance, one band of rows
 permalink.js          the link contract — parse, validate, canonicalize
-permalink.test.mjs    48 tests, `node --test explorer/permalink.test.mjs`
+params.js             a mode parameter's control: its word, its slider's travel, the mapping
+permalink.test.mjs    51 tests, `node --test explorer/permalink.test.mjs`
 bands.test.mjs        3 tests: the pool cuts the frame, never what is in it
 level.test.mjs        7 tests: the module's tone measurement, and a derived curve replays
 derive.test.mjs       6 tests: a derived weight replays, a derived opacity lands where it says
@@ -121,6 +122,29 @@ the marks clicking into the viewer rather than navigating.
 **Right, the viewer**, and under it three sections — Download, Mode, Palette — then
 the folded Details: the render stat line, family, constants, `x`, `y`, `w`, all editable. Copy link is in the bar,
 because it is about the page rather than about a group.
+
+**Four view toggles close the Download row** *(explorer_controls_ckpt129, 2026-09-17)*,
+at its right end, each with a key its tooltip names: **Reset view** (R), the plane's home
+viewport with everything else kept; **Julia here** (J), the view's centre taken as `c` — its
+own decimal strings, so nothing is lost — and that degree's Julia set opened at its home
+view with the mode, palette and recipe carried; **Random palette** (P), any map the picker
+lists but the one on screen; **Random phase** (Shift+P), to three decimals. On a Julia set
+the second button is **Back**, on every Julia set and not only one this tab opened: where
+this tab did, the parent view is held in `sessionStorage` and Back returns to it, and
+anywhere else — a copied link, a seat — Back lands on the parent plane at `c` at its home
+width. The link carries only the Julia view. On Phoenix, which has no parameter plane here,
+the button rests. The keys work with focus on a button, and never with Ctrl, Alt or Meta.
+That is the whole row: anything more is a shortcut, not chrome.
+
+**A mode's parameters are sliders** *(explorer_controls_ckpt129)*, the same slider and box as
+Gamma, Cycles and Phase; `params.js` holds each one's travel and says why. The slider bounds
+the control and never the value: a seat or link carrying a density of 14 opens at 14, the
+box says 14 and the slider parks at 10. Only Texture follows the hand, because a weight is a
+recolour; every other parameter re-iterates, so its slider draws on release.
+
+**The atlas chips follow the view.** A chip clicked opens its plane's home view with the mode
+and palette kept, and a view arriving on another plane by any route moves the chip — a Julia
+set to the parameter plane of its degree — so the two never drift.
 
 **Shade is part of Palette** *(explorer_palette_layout, 2026-09-16)*. The group's header
 names the map — `PALETTE: GILDED LAGOON`, display name only; the underlying name is in
@@ -1387,7 +1411,7 @@ list of what a link may *say*. Two lists on purpose — a contract that read its
 from a generated file could be widened by rebuilding it — and the test suite asserts they
 are the same roster in the same order, which is where a promoted or retired mode shows up.
 
-`permalink.test.mjs` holds all of that: **48 tests**, Node's own runner, nothing
+`permalink.test.mjs` holds all of that: **51 tests**, Node's own runner, nothing
 installed. Among them, encode-then-decode is the identity for **every family crossed with
 a mode of each of the engine's four coloring shapes**, parameters and constants included.
 

@@ -33,6 +33,7 @@
 
 import * as link from "./permalink.js";
 import * as shade from "./shade.js";
+import * as modeParams from "./params.js";
 import { CONSTANTS as ANCHORS, MODES as IDENTITIES, SETTLED } from "./catalog.js";
 import { DEFAULT_PALETTE, PALETTES, PROVENANCE } from "./palettes.js";
 import { fetchStops } from "./stops.js";
@@ -67,34 +68,26 @@ const FINAL_SUPERSAMPLE = 2;
 /** Which panel the left side shows when nothing says otherwise. */
 const DEFAULT_PANEL = "gallery";
 
-/** What separates a panel from the thing it is open at, in the UI key: `atlas:phoenix`.
- *  The atlas carries five planes and which one is open is worth sending somebody; it is
- *  still furniture, so it rides in the key the contract tolerates and never reads. */
+/** What separated a panel from the plane it was open at, in the UI key: `atlas:phoenix`.
+ *  The plane follows the view now and is not written; an older address that says one
+ *  still opens its panel. */
 const PANEL_AT = ":";
 
-/** How a mode's parameter is stepped in its control, and what it is called.
- *
- *  The label is the reader's word for it and the step is a sensible nudge; neither
- *  is an engine constant and neither bounds anything — the contract refuses a value
- *  out of range and the engine refuses it again. What a parameter is SET to when
- *  nobody has moved it comes from the module's plan, never from here. */
-const CONTROLS = {
-  density: {
-    label: "Stripe density",
-    step: 1,
-    tip: "How many stripes wrap around each band: higher is finer.",
-  },
-  radius: { label: "Trap radius", step: 0.1, tip: "The size of the shape the orbit is measured against." },
-  sigma: { label: "Kernel width", step: 0.05, tip: "How soft the threads are: higher is broader and smoother." },
-  weight: {
-    label: "Texture",
-    step: 0.05,
-    tip: "How strongly the detail layer shows over the smooth base: 0 is the base alone.",
-  },
-  shift: { label: "Shift", step: 0.1, tip: "How far each region's colors are moved along the palette." },
-  threshold: { label: "Threshold", step: 0.01, tip: "How close the orbit must come before it paints." },
-  opacity: { label: "Opacity", step: 0.05, tip: "How strongly each painted stroke covers what is under it." },
+/** Each Julia family's parameter plane: where its `c` is a point. Julia here goes one way
+ *  along this and Back the other. Phoenix is on neither side, because no family here is
+ *  the plane its `c` is drawn from. */
+const PARENT_PLANE = {
+  julia: "mandelbrot",
+  julia3: "multibrot3",
+  julia4: "multibrot4",
+  julia5: "multibrot5",
+  julia6: "multibrot6",
 };
+const JULIA_OF = Object.fromEntries(Object.entries(PARENT_PLANE).map(([julia, plane]) => [plane, julia]));
+
+/** Where a parent view opened by Julia here is held for Back: this tab's session, never the
+ *  link, which carries only the Julia view. */
+const HELD_PARENT = "explorer.julia-parent";
 
 /** The one plain sentence each shade control says on hover. */
 const SHADE_TIPS = {
@@ -335,6 +328,7 @@ function setBusy(on) {
     control.disabled = on;
   }
   shadeReset.disabled = on;
+  syncToggles();
   // Released, neither the fold nor the reset is simply enabled again: whether the fold
   // may be touched is the current map's business, whether there is anything to reset is
   // the recipe's, and the sync is what knows both.
@@ -792,8 +786,7 @@ function settle() {
   clearTimeout(settleTimer);
   settleTimer = setTimeout(() => {
     const picture = link.emit(view, contract);
-    const at = showing === "atlas" && plane && plane !== home ? `${PANEL_AT}${plane}` : "";
-    const furniture = showing === DEFAULT_PANEL ? "" : `&panel=${encodeURIComponent(showing + at)}`;
+    const furniture = showing === DEFAULT_PANEL ? "" : `&panel=${encodeURIComponent(showing)}`;
     history.replaceState(null, "", `?${picture}${furniture}`);
   }, 0);
 }
@@ -902,47 +895,72 @@ function syncCoordinates() {
 }
 
 /**
- * The number boxes for the current mode's own parameters.
+ * A slider and a number box for each of the current mode's own parameters.
  *
- * The set comes from the contract and the value from the module's plan, so a box
- * opens at whatever the engine's catalog settled on. A box the reader has not
+ * The set comes from the contract and the value from the module's plan, so a control
+ * opens at whatever the engine's catalog settled on. A control the reader has not
  * touched stays out of the link — see the note in `permalink.js` on why a mode's
  * parameter is not an always-emitted key.
+ *
+ * The slider is `params.js`'s travel and bounds nothing: the box holds the number in
+ * force, whatever a link carried, and the slider parks at the end nearest it.
  */
 function buildParams() {
   paramStrip.replaceChildren();
-  const settled = planOf(view).params ?? {};
   for (const key of link.MODE_PARAMETERS[view.mode] ?? []) {
-    const control = CONTROLS[key];
+    const control = modeParams.CONTROLS[key];
+    const group = document.createElement("span");
+    group.className = "group";
+    group.title = control.tip;
     const label = document.createElement("label");
     label.textContent = control.label;
     label.htmlFor = `param-${key}`;
-    label.title = control.tip;
+    const slider = document.createElement("input");
+    slider.type = "range";
+    slider.className = "slider";
+    Object.assign(slider, modeParams.travel(key));
+    slider.dataset.key = key;
+    slider.setAttribute("aria-label", control.label);
+    // A texture weight is a recolour and follows the hand; everything else re-iterates
+    // and waits for it to let go.
+    slider.addEventListener("input", () => {
+      if (control.live) setParam(key, modeParams.sliderText(key, slider.value));
+    });
+    slider.addEventListener("change", () => setParam(key, modeParams.sliderText(key, slider.value)));
     const input = document.createElement("input");
     input.type = "number";
     input.id = `param-${key}`;
     input.className = "param";
-    input.title = control.tip;
     input.step = control.step;
     input.dataset.key = key;
-    input.value = shownParam(view.params[key] ?? settled[key]);
-    input.addEventListener("change", () => {
-      const value = Number(input.value);
-      if (!Number.isFinite(value)) {
-        input.value = shownParam(view.params[key] ?? settled[key]);
-        return;
-      }
-      view = { ...view, params: { ...view.params, [key]: value } };
-      changed();
-      // A number the reader typed into the derived box is theirs, and a pan does not
-      // measure it away.
-      if (key === link.DERIVED[view.mode]) tuning = "pinned";
-      syncParams();
-      draw();
-    });
-    paramStrip.append(label, input);
+    input.addEventListener("change", () => setParam(key, input.value.trim()));
+    group.append(label, slider, input);
+    paramStrip.append(group);
   }
   syncParams();
+}
+
+/** One mode parameter, as its box or slider now says it. A value that is not a number
+ *  puts the control back; a range is the contract's and the engine's to refuse. */
+function setParam(key, text) {
+  if (locked()) {
+    syncParams();
+    return;
+  }
+  const value = Number(text);
+  if (text === "" || !Number.isFinite(value)) {
+    syncParams();
+    return;
+  }
+  // A slider fires `change` on release after `input` has already set the same value.
+  if (view.params[key] === value) return;
+  view = { ...view, params: { ...view.params, [key]: value } };
+  changed();
+  // A number the reader set in the derived control is theirs, and a pan does not measure
+  // it away.
+  if (key === link.DERIVED[view.mode]) tuning = "pinned";
+  syncParams();
+  draw();
 }
 
 /** A parameter's value as its box shows it: the number in force, which a derivation has
@@ -959,7 +977,12 @@ function syncParams() {
   const settled = planOf(view).params ?? {};
   for (const input of paramStrip.querySelectorAll("input")) {
     if (document.activeElement === input) continue;
-    input.value = shownParam(view.params[input.dataset.key] ?? settled[input.dataset.key]);
+    const value = view.params[input.dataset.key] ?? settled[input.dataset.key];
+    if (input.type === "range") {
+      if (value !== undefined) input.value = String(modeParams.sliderAt(input.dataset.key, value));
+    } else {
+      input.value = shownParam(value);
+    }
   }
   const key = link.DERIVED[view.mode];
   if (key === undefined) {
@@ -1365,6 +1388,8 @@ function rebuild() {
   palettes?.show(view.palette);
   buildConstants();
   buildParams();
+  syncPlane();
+  syncToggles();
   stage.style.aspectRatio = `${view.aspect.across} / ${view.aspect.down}`;
 }
 
@@ -1480,13 +1505,28 @@ function leaveSeat() {
 let showing = DEFAULT_PANEL;
 let atlasStarted = false;
 
-/** Which plane the atlas panel is open at, where a link named one. Held even while the
- *  panel has not been mounted, because a link may name a plane before a reader has ever
- *  opened the tab. */
-let plane = null;
+/** The mounted atlas frame, once the tab has been opened. */
+let atlasFrame = null;
 
-/** The plane the record opens on, learnt at mount. A key says nothing about the default. */
-let home = null;
+/**
+ * The atlas plane a view belongs to: its own family on a parameter plane or Phoenix, and
+ * the parameter plane of the same degree for a Julia set, because a Julia place is a `c`
+ * and `c` is a point of that plane. Partitions are named for their families.
+ *
+ * **The plane chips and the view never drift** *(explorer_controls_ckpt129)*. A chip
+ * clicked opens its plane's home view, and a view that lands on another plane by any
+ * route — a link, a seat, a family change, Julia here — moves the chip. So which plane is
+ * open is the picture's to say and is no longer a key of its own: `panel=atlas:phoenix`
+ * from an older address still opens the atlas tab, and the plane comes from the view.
+ */
+function planeOf(family) {
+  return PARENT_PLANE[family] ?? family;
+}
+
+/** Move the atlas's chip to the view's plane, where the atlas is mounted. */
+function syncPlane() {
+  atlasFrame?.open(planeOf(view.family));
+}
 
 const tabs = [...document.querySelectorAll(".tab")];
 
@@ -1500,17 +1540,15 @@ const tabs = [...document.querySelectorAll(".tab")];
  * that panel.
  */
 function showPanel(asked) {
-  const [name, at] = String(asked).split(PANEL_AT);
+  // An older address may say which plane, after a colon; the view says that now.
+  const [name] = String(asked).split(PANEL_AT);
   showing = tabs.some((tab) => tab.dataset.panel === name) ? name : DEFAULT_PANEL;
   for (const tab of tabs) {
     const mine = tab.dataset.panel === showing;
     tab.setAttribute("aria-selected", String(mine));
     document.getElementById(`panel-${tab.dataset.panel}`).hidden = !mine;
   }
-  if (showing === "atlas") {
-    plane = at ?? plane;
-    startAtlas();
-  }
+  if (showing === "atlas") startAtlas();
   settle();
 }
 
@@ -1521,12 +1559,12 @@ async function startAtlas() {
   const note = document.getElementById("atlas-note");
   try {
     const { mount } = await import("../atlas/frame.js");
-    const frame = await mount(host, {
+    atlasFrame = await mount(host, {
       base: new URL("../atlas/", import.meta.url),
-      plane,
+      plane: planeOf(view.family),
       onPlane: (name) => {
-        plane = name;
-        settle();
+        const family = atlasFrame.record.partitions.find((one) => one.partition === name)?.family;
+        if (family === undefined || !openFamily(family)) syncPlane();
       },
       // Nothing is stored here — no ring on a mark, no Escape to press — but the slots
       // hold the last place they were shown, because a slot that empties when the pointer
@@ -1545,13 +1583,8 @@ async function startAtlas() {
         openLink(query, { gap, what: "this place" });
       },
     });
-    // The default is the record's own first plane, not whichever one this page happened
-    // to open at: a link that named `atlas:multibrot4` has to go on saying so when the
-    // address bar is rewritten, and the key leaves only the default unsaid, exactly as
-    // the picture keys do.
-    home = frame.record.partitions[0]?.partition ?? frame.plane;
-    plane = frame.plane;
-    settle();
+    // The view may have moved plane while the record was being read.
+    syncPlane();
     note.textContent =
       "Hover a mark for its neighborhood, its Julia set and a wallpaper drawn there. " +
       "Click the mark to open the wallpaper, or click one of the three to open that one.";
@@ -1666,7 +1699,17 @@ canvas.addEventListener(
 const TYPING = new Set(["SELECT", "INPUT", "TEXTAREA", "BUTTON", "OPTION"]);
 
 window.addEventListener("keydown", (event) => {
-  if (event.target instanceof Element && TYPING.has(event.target.tagName)) return;
+  // A letter means nothing to a button, so the toggles' keys still work with focus on one
+  // — the button just pressed, most often.
+  const target = event.target instanceof Element ? event.target.tagName : "";
+  const toggle = TOGGLE_KEYS[event.key];
+  if (toggle && !event.ctrlKey && !event.altKey && !event.metaKey && !event.repeat &&
+      (target === "BUTTON" || !TYPING.has(target))) {
+    event.preventDefault();
+    if (!busy && !(document.activeElement?.isContentEditable)) toggle();
+    return;
+  }
+  if (TYPING.has(target)) return;
   if (busy) return;
   const step = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, 1], ArrowDown: [0, -1] }[
     event.key
@@ -1690,22 +1733,177 @@ window.addEventListener("keydown", (event) => {
   }
 });
 
-/** A new family is a new plane, so it opens at that plane's own home view. The
- *  mode, the palette and the shade recipe are the reader's and travel with them. */
-familyPicker.addEventListener("change", () => {
-  if (locked()) return;
-  view = {
-    ...link.fresh(familyPicker.value, view.mode, contract),
+/** A view on another plane with everything the reader chose carried across: the mode and
+ *  its parameters, the aspect, the palette, the shade recipe and the tone. */
+function carried(onto) {
+  return {
+    ...onto,
     params: view.params,
     aspect: view.aspect,
     palette: view.palette,
     shade: view.shade,
     level: view.level,
   };
+}
+
+/** A new family is a new plane, so it opens at that plane's own home view. The mode, the
+ *  palette and the shade recipe are the reader's and travel with them. Returns whether it
+ *  moved, which a download in progress refuses. */
+function openFamily(family) {
+  if (locked()) return false;
+  view = carried(link.fresh(family, view.mode, contract));
   changed();
   rebuild();
   draw();
+  return true;
+}
+
+familyPicker.addEventListener("change", () => {
+  if (!openFamily(familyPicker.value)) familyPicker.value = view.family;
 });
+
+// ------------------------------------------------------------------- the view toggles
+//
+// Four buttons at the right of the Download row, each with a key. They are the whole of
+// this row on purpose: anything further is a shortcut, not chrome.
+
+const resetButton = document.getElementById("view-reset");
+const juliaButton = document.getElementById("view-julia");
+const randomPaletteButton = document.getElementById("view-palette");
+const randomPhaseButton = document.getElementById("view-phase");
+
+/** Each button's words and its key, which is what it says on hover. */
+const TOGGLE_TIPS = {
+  reset: "Back to this plane's home view, keeping the mode and palette. (R)",
+  julia: "Open the Julia set whose c is the center of this view. (J)",
+  back: "Back to the plane this Julia set's c is a point of. (J)",
+  phoenix: "Phoenix has no parameter plane here to take a Julia set from. (J)",
+  palette: "A palette drawn at random from the picker, on the same view. (P)",
+  phase: "A random phase, with everything else kept. (Shift+P)",
+};
+resetButton.title = TOGGLE_TIPS.reset;
+randomPaletteButton.title = TOGGLE_TIPS.palette;
+randomPhaseButton.title = TOGGLE_TIPS.phase;
+
+/** The parent view Julia here left, as `{ julia, cx, cy, parent }` — the Julia family and
+ *  `c` it opened, and the parent's canonical query — or `null`. */
+function heldParent() {
+  try {
+    return JSON.parse(sessionStorage.getItem(HELD_PARENT) ?? "null");
+  } catch {
+    return null;
+  }
+}
+
+function holdParent(held) {
+  try {
+    if (held === null) sessionStorage.removeItem(HELD_PARENT);
+    else sessionStorage.setItem(HELD_PARENT, JSON.stringify(held));
+  } catch {
+    // A tab that stores nothing still has Back: it lands on the parent plane at `c`.
+  }
+}
+
+/** The Julia button's face: Julia here on a parameter plane, Back on a Julia set, and
+ *  resting on Phoenix. Every Julia set gets Back, a copied link's included, because its
+ *  `c` always names a point of a plane to go back to. */
+function syncToggles() {
+  const onJulia = view.family in PARENT_PLANE;
+  juliaButton.textContent = onJulia ? "Back" : "Julia here";
+  const tip = onJulia ? "back" : view.family in JULIA_OF ? "julia" : "phoenix";
+  juliaButton.title = TOGGLE_TIPS[tip];
+  juliaButton.disabled = busy || tip === "phoenix";
+  for (const button of [resetButton, randomPaletteButton, randomPhaseButton]) button.disabled = busy;
+}
+
+/** The current plane's home viewport, with the mode, palette and everything else kept. */
+function resetView() {
+  if (locked()) return;
+  const home = homeOf(view.family);
+  view = { ...view, x: home.x, y: home.y, w: home.w };
+  changed();
+  draw();
+}
+
+/** Julia here, or Back from it. */
+function toggleJulia() {
+  if (locked()) return;
+  if (view.family in PARENT_PLANE) {
+    juliaBack();
+  } else if (view.family in JULIA_OF) {
+    juliaHere();
+  }
+}
+
+/** The view's centre as `c`, opened as that plane's Julia set at its home view. The
+ *  centre's own decimal strings become `c`, so no precision is lost on the way. */
+function juliaHere() {
+  const julia = JULIA_OF[view.family];
+  const parent = link.emit(view, contract);
+  view = carried({
+    ...link.fresh(julia, view.mode, contract),
+    constants: { cx: view.x, cy: view.y },
+  });
+  holdParent({ julia, cx: view.constants.cx.text, cy: view.constants.cy.text, parent });
+  changed();
+  rebuild();
+  draw();
+}
+
+/**
+ * Back to the parameter plane. Where this tab opened the Julia set on the screen, it
+ * returns to the view it left; anywhere else — a copied link, a seat, a `c` typed in
+ * Details — it lands on the parent plane at `c`, at that plane's home width. Either way
+ * the mode, palette and recipe in force now come along, as they did on the way in.
+ */
+function juliaBack() {
+  const plane = PARENT_PLANE[view.family];
+  const held = heldParent();
+  let geometry = { x: view.constants.cx, y: view.constants.cy, w: homeOf(plane).w };
+  if (
+    held !== null &&
+    held.julia === view.family &&
+    held.cx === view.constants.cx.text &&
+    held.cy === view.constants.cy.text
+  ) {
+    try {
+      const parent = link.parse(`?${held.parent}`, contract);
+      if (parent.family === plane) geometry = parent;
+    } catch {
+      // A held view this contract no longer reads is no view to go back to.
+    }
+  }
+  view = carried({
+    ...link.fresh(plane, view.mode, contract),
+    x: geometry.x,
+    y: geometry.y,
+    w: geometry.w,
+  });
+  holdParent(null);
+  changed();
+  rebuild();
+  draw();
+}
+
+/** A palette drawn at random from every map the picker lists, never the one on screen. */
+function randomPalette() {
+  const names = [...PALETTES.keys()].filter((name) => name !== view.palette);
+  if (names.length > 0) pickPalette(names[Math.floor(Math.random() * names.length)]);
+}
+
+/** A random phase, at the slider's own three decimals. */
+function randomPhase() {
+  setShade("phase", String(Number(Math.random().toFixed(3))));
+}
+
+resetButton.addEventListener("click", resetView);
+juliaButton.addEventListener("click", toggleJulia);
+randomPaletteButton.addEventListener("click", randomPalette);
+randomPhaseButton.addEventListener("click", randomPhase);
+
+/** The four toggles' keys. A bare letter, or Shift and one; with Ctrl, Alt or Meta held a
+ *  key is the browser's. */
+const TOGGLE_KEYS = { r: resetView, j: toggleJulia, p: randomPalette, P: randomPhase };
 
 /** A new mode keeps the place and drops the parameters, because they belonged to
  *  the mode that is being left. */
