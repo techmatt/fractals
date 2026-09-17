@@ -1125,15 +1125,14 @@ function syncShade() {
     ? `${shownName(view.palette)} already loops back to its first color, so there is no seam to mirror.`
     : SHADE_TIPS.mirror;
 
-  // And a mirrored map reads the same in both directions, so Reverse has nothing to turn
-  // there: the module bakes the fold first and flips it second, and the flipped table is
-  // byte for byte the one it flipped. The key keeps whatever the link said — a seat
-  // sent mirrored and reversed is the same picture either way — and the chip says why it
-  // is resting.
+  // And a table that reads the same in both directions gives Reverse nothing to turn. The
+  // key keeps whatever the link said — a symmetric map sent reversed is the same picture
+  // either way — and the chip says why it is resting.
   const flip = shadeWidgets.get("reverse");
-  flip.box.disabled = busy || view.shade.mirror;
-  flip.box.title = view.shade.mirror
-    ? "Mirror plays the palette forward and then back, so it already reads the same in both directions."
+  const same = symmetric(view);
+  flip.box.disabled = busy || same;
+  flip.box.title = same
+    ? `${shownName(view.palette)} reads the same in both directions, so Reverse would not change it.`
     : SHADE_TIPS.reverse;
 
   syncFinal();
@@ -1183,6 +1182,50 @@ function syncFinal() {
   }
   const row = new ImageData(pixels, paletteStrip.width, 1);
   paletteStrip.getContext("2d").putImageData(row, 0, 0);
+}
+
+/** How many samples the symmetry test reads the table at, and how far apart, in sRGB8
+ *  per channel, a sample and its mirror image may be and still count as the same. On
+ *  the library as baked the 301 maps that pass are within one step of their reversal
+ *  (the one is the module's rounding) and the nearest map that fails is fourteen away. */
+const SYMMETRY_SAMPLES = 256;
+const SYMMETRY_TOLERANCE = 2;
+
+/** Whether the test has an answer for a map, by name and fold. */
+const SYMMETRIC = new Map();
+
+/**
+ * Whether the view's table reads the same backwards, which is when Reverse is inert.
+ *
+ * **Decided by the table and not by the recipe.** Mirror on passes by construction, but so
+ * does a cyclic map whose own stops are an out-and-back. The table is the strip's — the
+ * module's `ramp`, through the map and the fold — at gamma 1, one cycle, phase 0 and no
+ * tone curve, because each of those places a field value on the table rather than being
+ * part of it, and read before Reverse. Where the module cannot answer yet, Mirror is.
+ */
+function symmetric(view) {
+  const key = `${view.shade.mirror ? 1 : 0}|${view.palette}`;
+  const known = SYMMETRIC.get(key);
+  if (known !== undefined) return known;
+  let pixels;
+  try {
+    const table = { palette: view.palette, shade: { ...shade.defaultShade(), mirror: view.shade.mirror } };
+    pixels = renderer.ramp(table, SYMMETRY_SAMPLES);
+  } catch {
+    return view.shade.mirror;
+  }
+  let same = true;
+  for (let at = 0; same && at < SYMMETRY_SAMPLES; at += 1) {
+    const back = (SYMMETRY_SAMPLES - 1 - at) * 4;
+    for (let channel = 0; channel < 3; channel += 1) {
+      if (Math.abs(pixels[at * 4 + channel] - pixels[back + channel]) > SYMMETRY_TOLERANCE) {
+        same = false;
+        break;
+      }
+    }
+  }
+  SYMMETRIC.set(key, same);
+  return same;
 }
 
 /** `a`, `a and b`, `a, b and c`. */

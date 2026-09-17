@@ -53,10 +53,14 @@ import { SHADE_KEYS, defaultShade, shadeKey } from "./permalink.js";
  * leave gamma at 1, and the other fifteen run from 0.383 to 2.04 — a log₂ of −1.38 to
  * 1.03 — so ±2 holds every one of them with room past both ends. The box beside it takes
  * any positive number, and a value past the travel parks the slider at its end.
+ *
+ * **Cycles' slider runs 1 to 4 in whole steps**, the box's own step, because a whole
+ * number of cycles is what a reader picks; the box still takes a typed value past 4, or
+ * between two whole ones, and the slider parks at the nearest place it has.
  */
 const PRESENTATION = {
   gamma: { step: 0.05, slider: { min: -2, max: 2, step: 0.02, scale: "log" } },
-  cycles: { step: 1 },
+  cycles: { step: 1, slider: { min: 1, max: 4, step: 1, scale: "linear" } },
   phase: { step: 0.005, slider: { min: 0, max: 1, scale: "wrap" } },
   reverse: {},
   mirror: {},
@@ -121,14 +125,15 @@ export function withKey(shade, key, text) {
  *
  * A `wrap` slider is phase's: the engine takes phase modulo one, so a link's 1.25 sits
  * where 0.25 does and the box keeps the number the link said. A `log` slider is gamma's,
- * and holds the power of two; a value past its travel parks at the end it passed.
+ * and holds the power of two. A `linear` slider is cycles', and holds the number itself.
+ * Either one parks a value past its travel at the end it passed.
  */
 export function sliderAt(control, text) {
   const value = Number(text);
   const { min, max, scale } = control.slider;
   if (scale === "wrap") return ((value % 1) + 1) % 1;
-  if (scale === "log") return Math.min(max, Math.max(min, Math.log2(value)));
-  return value;
+  const position = scale === "log" ? Math.log2(value) : value;
+  return Math.min(max, Math.max(min, position));
 }
 
 /**

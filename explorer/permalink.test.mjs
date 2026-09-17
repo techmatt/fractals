@@ -561,6 +561,15 @@ test("a slider writes what a link carries, and sits where the link's value is", 
   // Phase wraps, so a link's 1.25 sits where 0.25 does.
   assert.equal(shade.sliderAt(phase, "1.25"), 0.25);
   assert.equal(shade.sliderText(phase, "0.25"), "0.25");
+  // Cycles runs 1 to 4 in whole steps, and a typed 6 is taken and parks the slider at 4.
+  const cycles = shade.CONTROLS.find((control) => control.key === "cycles");
+  for (const text of ["1", "2", "3", "4"]) {
+    assert.equal(shade.sliderText(cycles, text), text);
+    assert.equal(shade.spelling(shade.withKey(view.shade, "cycles", text), "cycles"), text);
+    assert.equal(shade.sliderAt(cycles, text), Number(text));
+  }
+  assert.equal(shade.sliderAt(cycles, "6"), cycles.slider.max);
+  assert.equal(shade.spelling(shade.withKey(view.shade, "cycles", "6"), "cycles"), "6");
 });
 
 test("an aspect is a shape, and both sides are bounded", () => {
