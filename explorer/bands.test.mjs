@@ -23,7 +23,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import { load, RAMP } from "./bench/engine.mjs";
-import { bandsOf } from "./render.js";
+import { bandsOf, recut } from "./render.js";
 
 /** The hard location deep in the spike that every explorer harness measures on. */
 const ANCHOR = {
@@ -89,6 +89,48 @@ test("and the same above one sample per pixel, where a band is not a row of samp
   const { spec, shape } = anchorFrame(width, height, 2);
 
   assert.deepEqual(assemble(spec, shape, height, 2), assemble(spec, shape, height, 16));
+});
+
+/**
+ * The pool re-cuts what is still queued when a band reports it cost more than the duration
+ * the cut is aimed at, so that abandoning a pass never waits out a long band. That makes a
+ * frame one whose cuts are not all decided before it starts, which is a third way of
+ * cutting and lands under the same claim as the other two.
+ */
+test("a queue re-cut partway through is the same rows and the same bytes", () => {
+  const [width, height] = [320, 180];
+  const { spec, shape } = anchorFrame(width, height, 1);
+
+  const planned = bandsOf(height, 2);
+  const finer = recut(planned, 11);
+  assert.notDeepEqual(planned, finer, "the re-cut has to cut differently to be worth testing");
+
+  // Exactly the rows that were queued, in order, and none of them twice.
+  assert.equal(finer[0][0], 0);
+  assert.equal(finer.at(-1)[1], height);
+  for (let at = 1; at < finer.length; at++) assert.equal(finer[at][0], finer[at - 1][1]);
+
+  const assembled = finer.map(([start, end]) => band(spec, shape, start, end));
+  const total = assembled.reduce((sum, piece) => sum + piece.length, 0);
+  const frame = new Uint8Array(total);
+  let cursor = 0;
+  for (const piece of assembled) {
+    frame.set(piece, cursor);
+    cursor += piece.length;
+  }
+  assert.deepEqual(frame, assemble(spec, shape, height, 2));
+});
+
+test("a re-cut holds to the floor it is given, and the default floor is the pool's", () => {
+  // Overhead is what the row floor is for, and overhead is a duration: eight rows is a
+  // message and a copy for nothing at a screen's size, and over a second under a direct
+  // trap at a deep zoom — where the floor is the reason a pass cannot be cut fine enough
+  // to abandon. So a cut with a measurement behind it passes its own floor of one row.
+  for (const [start, end] of recut(bandsOf(720, 4), 1)) assert.ok(end - start >= 8);
+  const finest = recut(bandsOf(720, 4), 1, 1);
+  assert.ok(finest.length > 720 / 8, "a measured cut can go below the pool's row floor");
+  for (const [start, end] of finest) assert.ok(end - start >= 1);
+  assert.equal(finest.at(-1)[1], 720, "and still covers the frame exactly");
 });
 
 test("the whole frame in one band is the same bytes as any pool's", () => {

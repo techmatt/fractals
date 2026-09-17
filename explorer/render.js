@@ -53,8 +53,55 @@ export const DEFAULT_WORKERS = 8;
  *  of the whole frame's, and it is what bounds how long a cancel takes. */
 const BANDS_PER_WORKER = 4;
 
-/** No band shorter than this, however many workers there are. */
+/**
+ * No band shorter than this in a cut that has nothing measured to go on.
+ *
+ * **It is a guard against overhead, and overhead is a duration.** Eight rows of a screen's
+ * frame is a message and a copy for a fraction of a millisecond of arithmetic, which is
+ * why the default cut will not go below it. But eight rows of a deep view under a direct
+ * trap is over a second — measured at 1.3 to 1.7 s a band, at a zoom where the iteration
+ * cap is in the tens of thousands — and there the floor is not protecting anything, it is
+ * the reason the frame cannot be cut fine enough to abandon. So a cut with a measurement
+ * behind it is held to the duration instead and may go below this; see `Renderer#cut`.
+ */
 const MIN_BAND_ROWS = 8;
+
+/**
+ * What one band is aimed at costing, in milliseconds.
+ *
+ * **A cancel costs one band, so a band is how long the page can ignore the reader.** The
+ * pool abandons a pass by generation rather than by termination, which means the band a
+ * worker is already inside is finished and thrown away; until it is, that worker cannot
+ * touch the view the reader has just asked for. Cut at four bands to a worker and nothing
+ * else, a band is about a quarter of the whole frame — milliseconds under `smooth` at a
+ * screen's size, and seconds under a direct trap at `FINAL_SUPERSAMPLE`. The frame did not
+ * get slower; the unit of "please wait" did.
+ *
+ * So the cut is aimed at a duration instead. A quarter of a second is short enough that a
+ * mode switch feels immediate and long enough that the per-band message and copy are
+ * noise. **It is a target and never a promise**: the first band of a pass is cut before
+ * anything about that pass has been measured, and a band whose rows are all interior costs
+ * what it costs.
+ */
+export const BAND_TARGET_MS = 250;
+
+/** How far over target a band may be predicted to run before the rest of the queue is
+ *  re-cut. Slack, so that a pass whose bands land a little over target is left alone
+ *  rather than re-cut on every message. */
+const RECUT_OVER = 1.5;
+
+/**
+ * How much of the target an in-flight band must still have left before a cancel terminates
+ * its worker rather than waiting for it.
+ *
+ * **The gate is time, not mode.** Terminating is right exactly when waiting would cost
+ * more than a wasm instantiation, and that is a question about this band rather than about
+ * the recurrence: a pan under a direct trap at preview resolution is cheap and a pan is
+ * the one gesture that must never pay for an instantiation, because it makes a cancel per
+ * frame. At four times the target — a second — the reader has noticed, and a few
+ * milliseconds of instantiation is the cheaper of the two.
+ */
+const KILL_OVER = 4;
 
 /**
  * How a frame of `height` OUTPUT rows is cut up for a pool of this many workers.
@@ -79,6 +126,38 @@ export function bandsOf(height, workers) {
     bands.push([start, Math.min(height, start + rows)]);
   }
   return bands;
+}
+
+/**
+ * Re-cut the ranges still queued into bands of at most `rows` rows each.
+ *
+ * The rows themselves do not move: every range is subdivided in place, so what comes back
+ * covers exactly what went in. That is the whole reason this is safe to do in the middle
+ * of a pass — `bands.test.mjs` holds the pool to assembling the same bytes however the
+ * frame is cut, and a re-cut is one more cut.
+ */
+export function recut(queue, rows, least = MIN_BAND_ROWS) {
+  const out = [];
+  for (const [start, end] of queue) {
+    const span = end - start;
+    // As many pieces as the target wants, and never more than the floor allows — so the
+    // floor holds by construction rather than by a check. `least` is that floor, and it is
+    // the caller's because a cut aimed at a duration carries its own: a band cut to last a
+    // quarter of a second is never too cheap to be worth sending, however few rows it is.
+    const wanted = Math.max(1, Math.ceil(span / Math.max(1, rows)));
+    const most = Math.max(1, Math.floor(span / Math.max(1, least)));
+    const pieces = Math.min(wanted, most);
+    // Evenly, rather than in whole steps with the remainder left over: a 45-row range cut
+    // at 8 is six bands of 8 and a straggler of 5, and the straggler is a message and a
+    // copy for five rows of work.
+    for (let piece = 0; piece < pieces; piece++) {
+      out.push([
+        start + Math.round((piece * span) / pieces),
+        start + Math.round(((piece + 1) * span) / pieces),
+      ]);
+    }
+  }
+  return out;
 }
 
 /** Each axis of the preview, as a fraction of the full pass. */
@@ -174,6 +253,24 @@ export function specOf(view, width, height, { colormap = true, supersample = 1, 
 }
 
 /**
+ * One pool worker, instantiated and ready for a band.
+ *
+ * The module arrives compiled, so what this costs is an instantiation and a heap — which
+ * is why the pool can afford to throw a worker away mid-band when waiting for it would
+ * cost more. Written once because it happens in two places: starting the pool, and putting
+ * a fresh worker in the place of one that was abandoned.
+ */
+function spawn(module) {
+  return new Promise((resolve) => {
+    const worker = new Worker(new URL("./worker.js", import.meta.url), { type: "module" });
+    worker.onmessage = (event) => {
+      if (event.data.kind === "ready") resolve(worker);
+    };
+    worker.postMessage({ kind: "start", module });
+  });
+}
+
+/**
  * Everything the page needs to draw, once the module is compiled and the pool is up.
  */
 export class Renderer {
@@ -185,6 +282,23 @@ export class Renderer {
     this.generation = 0;
     this.queue = [];
     this.job = null;
+    /** What each busy worker is inside: its band's rows, when it was posted, and what that
+     *  band was predicted to cost. The pool's only view of work it cannot see. */
+    this.inflight = new Map();
+    /**
+     * Milliseconds per output row per sample-per-pixel, as the last bands measured it.
+     *
+     * **Normalized by the supersample so that a pass's own stages inform each other.** The
+     * preview, the one-sample field and the supersampled finish are the same arithmetic
+     * over different sample counts, so a cost per row alone would say the finish is as
+     * cheap as the preview that came before it and cut it sixteen times too coarse. Per
+     * row per sample, the preview's measurement is a usable opening guess for the finish.
+     *
+     * It survives a pass, because the best guess about the next cut is the last thing
+     * measured; it is only ever a guess, and every pass re-measures and re-cuts from its
+     * own bands. `null` until a band has been timed.
+     */
+    this.rowCost = null;
     this.fields = new Map();
     this.plans = new Map();
     this.ramped = null;
@@ -207,17 +321,7 @@ export class Renderer {
     const count =
       wanted ?? Math.min(MAX_WORKERS, navigator.hardwareConcurrency || DEFAULT_WORKERS);
     const workers = [];
-    for (let index = 0; index < Math.max(1, count); index++) {
-      const worker = new Worker(new URL("./worker.js", import.meta.url), { type: "module" });
-      const ready = new Promise((resolve) => {
-        worker.onmessage = (event) => {
-          if (event.data.kind === "ready") resolve();
-        };
-      });
-      worker.postMessage({ kind: "start", module });
-      await ready;
-      workers.push(worker);
-    }
+    for (let index = 0; index < Math.max(1, count); index++) workers.push(await spawn(module));
     const renderer = new Renderer(module, shader, workers);
     renderer.shading.warm();
     return renderer;
@@ -294,7 +398,61 @@ export class Renderer {
     this.queue = [];
     const job = this.job;
     this.job = null;
+    this.#abandon();
     if (job !== null) job.resolve(null);
+  }
+
+  /**
+   * Take back the workers whose in-flight band is not worth waiting out.
+   *
+   * A band is abandoned by generation everywhere else on this page — the worker finishes
+   * it, the answer is dropped, and the worker is free. That is right while a band is
+   * short: killing it would cost a wasm instantiation to save a fraction of a frame, and a
+   * reader dragging across the set cancels once a frame.
+   *
+   * It stops being right when the band is long. Under a direct trap at the finishing
+   * supersample a single band runs for seconds, and every worker is inside one, so a
+   * reader who switches to `smooth` waits out the picture they have just abandoned before
+   * the one they asked for can start — the page is busy, and busy on nothing. There the
+   * instantiation is the cheap side, and `shadeApart` already makes the same trade for the
+   * same reason.
+   *
+   * **Which side a band is on is measured, not assumed.** A band predicted to have more
+   * than `KILL_OVER` targets left to run is killed; so is one that has already run that
+   * long, which is the same judgement from the other side and is the only one available
+   * before a pass has timed a band of its own. Everything else is left to finish, so the
+   * pan case pays nothing.
+   */
+  #abandon() {
+    const now = performance.now();
+    const bar = BAND_TARGET_MS * KILL_OVER;
+    for (const [worker, band] of [...this.inflight]) {
+      const elapsed = now - band.at;
+      const left = Math.max(0, band.predicted - elapsed);
+      if (left <= bar && elapsed <= bar) continue;
+      this.inflight.delete(worker);
+      this.#replace(worker);
+    }
+  }
+
+  /** Terminate one worker and put a fresh one in its place, ready for the next dispatch.
+   *  The module is compiled once and held, so this is an instantiation and not a build. */
+  #replace(worker) {
+    worker.terminate();
+    const at = this.workers.indexOf(worker);
+    const idle = this.idle.indexOf(worker);
+    if (idle !== -1) this.idle.splice(idle, 1);
+    spawn(this.module).then((fresh) => {
+      // The pool may have been torn down while it was starting, in which case the fresh
+      // worker is the only thing that knows about itself and goes no further.
+      if (at === -1 || this.workers[at] !== worker) {
+        fresh.terminate();
+        return;
+      }
+      this.workers[at] = fresh;
+      this.idle.push(fresh);
+      this.#dispatch(fresh);
+    });
   }
 
   /** A field already computed for this geometry, or `undefined`. */
@@ -418,7 +576,11 @@ export class Renderer {
         ? new Uint8ClampedArray(width * height * 4)
         : new Float64Array(sampleWidth * sampleHeight * shape.lanes);
 
-    const bands = bandsOf(height, this.workers.length);
+    // Four bands to a worker is the load-balancing floor — it is what makes an
+    // interior-heavy band cost somebody else's idle time rather than the whole frame's —
+    // and the duration target only ever cuts finer than that, never coarser. So a cheap
+    // pass is cut exactly as it always was, and an expensive one is subdivided.
+    const bands = this.#cut(bandsOf(height, this.workers.length), supersample);
 
     return new Promise((resolve, reject) => {
       this.job = {
@@ -431,8 +593,10 @@ export class Renderer {
         sampleWidth,
         sampleHeight,
         values,
-        total: bands.length,
-        pending: bands.length,
+        // **Progress is rows, not bands.** The queue is re-cut mid-pass as the bands
+        // report what they cost, so a count of bands is a denominator that moves.
+        rows: height,
+        done: 0,
         onProgress,
         resolve,
         reject,
@@ -441,6 +605,24 @@ export class Renderer {
       this.queue = bands;
       for (const worker of [...this.idle]) this.#dispatch(worker);
     });
+  }
+
+  /**
+   * How finely to cut, given what a band is costing: bands of about `BAND_TARGET_MS`.
+   *
+   * Only ever finer than the cut it is handed. Nothing is measured yet on the first pass
+   * of a session, and then this is the identity.
+   */
+  #cut(bands, supersample) {
+    if (this.rowCost === null) return bands;
+    const perRow = this.rowCost * supersample * supersample;
+    const rows = BAND_TARGET_MS / perRow;
+    const widest = bands.reduce((most, [start, end]) => Math.max(most, end - start), 0);
+    // Down to a single row, because this cut is aimed at a duration and a duration is what
+    // the row floor was standing in for. A view deep enough that one row of it costs more
+    // than the target is a view whose cancel cannot be made any cheaper than one row, and
+    // that is the floor being honest rather than the floor being ignored.
+    return rows * RECUT_OVER < widest ? recut(bands, rows, 1) : bands;
   }
 
   #dispatch(worker) {
@@ -453,6 +635,8 @@ export class Renderer {
     const index = this.idle.indexOf(worker);
     if (index !== -1) this.idle.splice(index, 1);
     const span = rowEnd - rowStart;
+    const perRow = (this.rowCost ?? 0) * job.supersample * job.supersample;
+    this.inflight.set(worker, { at: performance.now(), rows: span, predicted: span * perRow });
     worker.onmessage = (event) => this.#collect(worker, event.data, job);
     worker.postMessage({
       job: job.generation,
@@ -468,8 +652,34 @@ export class Renderer {
     });
   }
 
+  /**
+   * What that band cost, and what the rest of the queue should be cut at because of it.
+   *
+   * **Measured from the pass being drawn, and only from it.** A band that comes back after
+   * its pass was abandoned is a true measurement of a picture nobody is looking at any
+   * more, and seeding the next cut with it would cut the reader's actual view to a mode
+   * they have just left. The estimate is a guess about what is next, so it is taken from
+   * what is current.
+   *
+   * The re-cut is what makes the target self-calibrating: the opening cut of a pass is a
+   * guess carried from the last one, the first band to report replaces the guess with a
+   * measurement, and everything still queued is subdivided to match. A mode the page has
+   * never drawn, on a machine nobody has measured, converges after one band.
+   */
+  #timed(worker, job) {
+    const band = this.inflight.get(worker);
+    if (band === undefined) return;
+    this.inflight.delete(worker);
+    if (job.generation !== this.generation || band.rows <= 0) return;
+    const elapsed = performance.now() - band.at;
+    const cost = elapsed / (band.rows * job.supersample * job.supersample);
+    this.rowCost = this.rowCost === null ? cost : (this.rowCost + cost) / 2;
+    this.queue = this.#cut(this.queue, job.supersample);
+  }
+
   #collect(worker, message, job) {
     if (message.kind !== "band") return;
+    this.#timed(worker, job);
     if (message.job !== this.generation) {
       // A band from a view the reader has already moved on from. Dropped, and the
       // worker goes back in the pool for whatever is current now.
@@ -483,9 +693,9 @@ export class Renderer {
       return;
     }
     this.#place(job, message);
-    job.pending -= 1;
-    if (job.onProgress) job.onProgress((job.total - job.pending) / job.total);
-    if (job.pending === 0) {
+    job.done += message.rowEnd - message.rowStart;
+    if (job.onProgress) job.onProgress(job.done / job.rows);
+    if (job.done >= job.rows) {
       this.job = null;
       job.resolve({
         values: job.values,
