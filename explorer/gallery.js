@@ -144,16 +144,19 @@ export function install({ base, collection, modes, hues, tiles, note, onPick }) 
       `${seats.length} wallpapers, but their pictures could not be loaded here.`;
   }
 
-  function nameOf(name) {
-    return name === GENERAL ? "the general gallery" : `the ${name} collection`;
-  }
-
+  /**
+   * What the footer says, which is nothing unless a chip is narrowing the grid.
+   *
+   * **The collection says its own size.** The dropdown's option reads *General gallery ·
+   * 1000*, so a footer saying *1000 wallpapers in the general gallery* under the tiles was
+   * the same sentence twice, and it cost a line of the panel on every collection whether
+   * or not anything was being filtered. What the dropdown cannot say is what the chips
+   * have done to it, so that is the whole of what is left here.
+   */
   function say() {
     if (!landed) return;
-    const all = members.length;
-    note.textContent = showing.length === all
-      ? `${all} wallpapers in ${nameOf(chosen)}.`
-      : `${showing.length} of ${all} wallpapers in ${nameOf(chosen)}.`;
+    const filtering = wanted.mode.size > 0 || wanted.hue.size > 0;
+    note.textContent = filtering ? `${showing.length} of ${members.length}` : "";
   }
 
   /**

@@ -120,14 +120,45 @@
 
 /* ------------------------------------------------------------------------ the tabs */
 
-.tabs {
+/* The panel's one header row: which of the two panels is showing, and — on the right,
+   where a row's controls go — which gallery the gallery panel is showing.
+
+   **The dropdown is the Collection label.** It sat in a section of its own under the tabs,
+   with a `COLLECTION` header over it and a footer under the tiles saying the same count a
+   third time; the option's own text reads *General gallery · 1000*, which is the label,
+   the collection and its size in the one control. A row of its own for one select was a
+   row of the panel spent saying what the select already said. */
+.side-head {
   flex: none;
   display: flex;
-  gap: 0.25rem;
+  align-items: flex-end;
+  gap: 0.5rem;
   padding: 0.5rem var(--gutter) 0;
   border-bottom: 1px solid var(--well-rule);
   font-family: var(--sans);
 }
+
+.tabs {
+  display: flex;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+/* Right-aligned, and it gives way first: the tabs are two short words and this is a name
+   with a count on it, so a narrow panel shortens the select rather than the tabs. */
+.collection {
+  margin: 0 0 0.35rem auto;
+  min-width: 0;
+  font: inherit;
+  font-size: 0.75rem;
+  color: var(--well-ink);
+  background: var(--well);
+  border: 1px solid var(--well-rule);
+  border-radius: 2px;
+  padding: 0.15rem 0.3rem;
+}
+.collection:focus-visible { outline: 2px solid var(--well-link); outline-offset: -2px; }
+.collection[hidden] { display: none; }
 
 .tab {
   appearance: none;

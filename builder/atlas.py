@@ -299,6 +299,7 @@ class Partition:
     says: str
     pictures: str
     slot_labels: dict[str, str]
+    slot_maps: dict[str, str]
     julia_place: str
     radius_plane: float | None = None
     radius_px: float | None = None
@@ -592,6 +593,29 @@ def _labels(row: records.Record) -> dict[str, str]:
     return {name: held[name] for name in names}
 
 
+def _maps(row: records.Record) -> dict[str, str]:
+    """The map each location slot's header carries under its name, where there is one.
+
+    Derived next door by `maps_of` and carried here because the frame renders words rather
+    than deriving them. **An absent line is a header with a name and no formula**, which is
+    what a family whose recurrence is not one line gets, so the mapping is allowed to be
+    empty or to name one slot and not the other — what it may not be is a line that is not
+    a string, because that is a record somebody edited by hand into something the page
+    would print as `[object Object]`.
+    """
+    held = row.optional_mapping("slot_maps")
+    if held is None:
+        return {}
+    names = SLOTS[:2]
+    if any(key not in names for key in held) or any(
+        not isinstance(value, str) or not value for value in held.values()
+    ):
+        raise AtlasError(
+            f"{row.where}: slot_maps is the map on the {' or '.join(names)} slot's header"
+        )
+    return dict(held)
+
+
 def load_all() -> Atlas:
     """The whole atlas record, read and held to its shape."""
     rows = records.read(ATLAS_INDEX)
@@ -666,6 +690,7 @@ def load_all() -> Atlas:
                 says=row.text("says"),
                 pictures=pictures,
                 slot_labels=_labels(row),
+                slot_maps=_maps(row),
                 julia_place=row.text("julia_place"),
                 radius_plane=None
                 if radius_plane is None
@@ -1297,6 +1322,7 @@ def _partition_row(
         "says": says if marked else NO_MARKS_YET,
         "pictures": was.get("pictures", "tracked"),
         "slot_labels": labels,
+        "slot_maps": maps_of(family),
         "julia_place": julia_place,
     }
     if radius_plane is not None:
@@ -1360,11 +1386,65 @@ def _multibrot_says(degree: int) -> str:
     )
 
 
+#: Superscript digits, so a degree is written once and the same way everywhere it appears.
+SUPERSCRIPTS = str.maketrans("0123456789", "⁰¹²³⁴⁵⁶⁷⁸⁹")
+
+
+def _power(degree: int) -> str:
+    """`z³`, from a degree: what a plane's chip is called and what its map raises."""
+    return f"z{str(degree).translate(SUPERSCRIPTS)}"
+
+
+def maps_of(spec: dict) -> dict[str, str]:
+    """The two location slots' maps, transcribed from the engine's family definitions.
+
+    **A formula is read from the engine's source, never typed from memory.** The
+    recurrences are written down in `engine/src/family.rs` — the doc comment over each
+    `Family` variant, and the arm `Family::step` gives it — and repeated over the
+    `FamilySpec` this site hands the engine in `engine/src/spec.rs`. Three of them reach
+    this table:
+
+    * `Multibrot { degree }` — `z ← z^d + c`, the pixel read as `c`, `z₀ = 0`;
+    * `Julia { degree, c }` — the same `z ← z^d + c` at a fixed `c`, the pixel read as `z₀`;
+    * `Phoenix { c, p, z_prev }` — `z_{n+1} = z_n² + c + p·z_{n-1}`, one step of memory.
+
+    So a map is rendered from the spec rather than written out per plane: the degree lands
+    in one place, and a plane added to the table later gets its formula without anybody
+    spelling a formula. The Julia slot carries its plane's own degree and no numeric `c`,
+    because the recurrence is what the header is for and the constant is in the details.
+
+    Phoenix is the one that is not a map of `z` alone — its next term reads the term before
+    it — so it is written as the engine writes it, indexed, rather than forced into the
+    `z ↦` shape the memoryless families take. **A family whose definition yields no clean
+    one-line map gets no line**: the header is its name alone, which is the truth, where a
+    guessed formula would not be.
+    """
+    kind = spec.get("kind")
+    if kind == "phoenix":
+        # `z_{n+1} = z_n² + c + p·z_{n-1}` (family.rs: `Family::Phoenix`, and its `step`
+        # arm `z * z + c + p * z_prev`). Every place on this plane is a frame on the same
+        # slice, so both slots wear the same recurrence.
+        both = "zₙ₊₁ = zₙ² + c + p·zₙ₋₁"
+        return {"mandelbrot": both, "julia": both}
+    degree = spec.get("degree")
+    if kind in ("mandelbrot", "multibrot") and isinstance(degree, int):
+        # `z ← z^d + c` for both planes: `Family::Multibrot` reads the pixel as `c`, and
+        # `Family::Julia` at the same degree fixes `c` and reads the pixel as `z₀`. One
+        # recurrence, which is why the engine's `step` gives them one arm.
+        map_ = f"z ↦ {_power(degree)} + c"
+        return {"mandelbrot": map_, "julia": map_}
+    return {}
+
+
 #: The six planes the atlas carries, in the order the frame's strip shows them: the
 #: partition's own name, the word the strip puts on it, what it is, the family spec the
 #: engine is asked for, the words its two location slots wear, what a mark of a Julia-kind
 #: place is announced as, and what the partition says once it has marks. A plane the search
 #: has not reached says `NO_MARKS_YET` instead, and its dot file is empty by design.
+#:
+#: **A chip is the plane's power and not its degree.** `z³` rather than `d=3`, because the
+#: chips sit under a strip of headers that carry the same map — the chip and the header a
+#: click on it opens are one sentence, and `d=3` was a second language for one plane.
 #:
 #: **A plane's constants come from this table and nowhere else.** The Phoenix slice is the
 #: one that has any, and the record's `cx`/`cy`/`px`/`py`/`zx`/`zy` are spelled from the
@@ -1378,7 +1458,7 @@ def _multibrot_says(degree: int) -> str:
 PLANES_DRAWN = (
     (
         "mandelbrot",
-        "Mandelbrot",
+        _power(2),
         "Mandelbrot",
         {"kind": "mandelbrot", "degree": 2},
         {"mandelbrot": "Mandelbrot", "julia": "Julia"},
@@ -1389,7 +1469,7 @@ PLANES_DRAWN = (
     *(
         (
             f"multibrot{degree}",
-            f"d={degree}",
+            _power(degree),
             f"Multibrot, degree {degree}",
             {"kind": "multibrot", "degree": degree},
             {"mandelbrot": f"Multibrot {degree}", "julia": "Julia"},

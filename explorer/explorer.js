@@ -1551,6 +1551,10 @@ function showPanel(asked) {
     tab.setAttribute("aria-selected", String(mine));
     document.getElementById(`panel-${tab.dataset.panel}`).hidden = !mine;
   }
+  // The Collection select sits in the header row beside the tabs rather than inside the
+  // gallery panel, so it is the one control the panel has to hide itself: what it chooses
+  // means nothing while the atlas is showing.
+  document.getElementById("gallery-collection").hidden = showing !== "gallery";
   if (showing === "atlas") startAtlas();
   settle();
 }
@@ -1588,9 +1592,6 @@ async function startAtlas() {
     });
     // The view may have moved plane while the record was being read.
     syncPlane();
-    note.textContent =
-      "Hover a mark for its neighborhood, its Julia set and a wallpaper drawn there. " +
-      "Click the mark to open the wallpaper, or click one of the three to open that one.";
   } catch (error) {
     atlasStarted = false;
     console.warn("the atlas could not be read", error);

@@ -35,7 +35,13 @@ import { load } from "./record.js";
 /** The three pictures a place carries, in the order the frame shows them, left to right.
  *  The first two wear their plane's own words — `slot_labels` on the partition row, so the
  *  first slot on the degree-3 plane says Multibrot 3 and the second on Phoenix says
- *  Close-up — and the gallery slot's word is the page's, the same on every plane. */
+ *  Close-up — and the gallery slot's word is the page's, the same on every plane.
+ *
+ *  **A location slot's header carries its map under its name**, from `slot_maps` on the
+ *  same row: `z ↦ z³ + c` over the degree-3 plane, Phoenix's own indexed recurrence over
+ *  its slice. The formula is the record's, derived next door from the engine's family
+ *  definitions, so the page renders one and never spells one. A plane whose recurrence is
+ *  not a line has no entry, and its header is the name alone. */
 const SLOTS = ["mandelbrot", "julia", "gallery"];
 const GALLERY_LABEL = "Gallery";
 
@@ -244,28 +250,34 @@ export async function mount(host, options = {}) {
   const explorer = new URL("../explorer/index.html", base);
   const slots = new Map();
   const labelOf = (name) => partition.slot_labels[name] ?? GALLERY_LABEL;
+  const mapOf = (name) => partition.slot_maps?.[name] ?? "";
   for (const name of SLOTS) {
     const node = made(navigates ? "a" : "button", "slot");
     if (!navigates) node.type = "button";
     node.dataset.slot = name;
     const image = made("img");
     image.alt = "";
-    const caption = made("span", "slot-label", labelOf(name));
+    // The name is the site's kicker treatment and the map is not: a formula's case is its
+    // meaning — `z` and `c` are the recurrence's own letters — so the header is two spans
+    // and the uppercasing stops at the first of them.
+    const caption = made("span", "slot-label");
+    const named = made("span", "slot-name", labelOf(name));
+    const mapped = made("span", "slot-map", mapOf(name));
+    caption.append(named, mapped);
     node.append(image, caption);
     strip.appendChild(node);
-    slots.set(name, { node, image, caption });
+    slots.set(name, { node, image, caption: named, map: mapped });
   }
   const plate = made("div", "plate");
   const plateImage = made("img");
   plate.appendChild(plateImage);
   frame.append(strip, plate);
 
-  // The plane strip and the footer sit outside the fitted rectangle, which is what keeps
-  // the frame the fixed thing it is: both change only when a reader moves to another
-  // plane, never under the pointer, and `refit` takes their height off the box before it
-  // divides. A line that grew on hover would move the plate, which would move the mark.
+  // The plane strip sits outside the fitted rectangle, which is what keeps the frame the
+  // fixed thing it is: it changes only when a reader moves to another plane, never under
+  // the pointer, and `refit` takes its height off the box before it divides. A line that
+  // grew on hover would move the plate, which would move the mark.
   const planes = made("div", "planes");
-  const foot = made("p", "frame-foot");
   const buttons = new Map();
   for (const one of record.partitions) {
     const button = made("button", "plane", one.label);
@@ -375,7 +387,7 @@ export async function mount(host, options = {}) {
   };
 
   /**
-   * Move to another plane: its plate, its marks, its links, and what its footer says.
+   * Move to another plane: its plate, its marks, and its links.
    *
    * Everything a plane owns is rebuilt and nothing a page owns is touched. The slots are
    * emptied because they were showing a place on the plane being left, and a picture from
@@ -398,16 +410,17 @@ export async function mount(host, options = {}) {
     refit(true);
   }
 
-  /** The plate picture, what it says it is, and the line under it. */
+  /** The plate picture, and what it says it is. */
   function dressPlate() {
-    for (const [name, { caption }] of slots) caption.textContent = labelOf(name);
+    for (const [name, { caption, map }] of slots) {
+      caption.textContent = labelOf(name);
+      map.textContent = mapOf(name);
+    }
     plateImage.src = new URL(`../assets/images/atlas/${partition.plate.file}`, base);
     plateImage.alt = partition.dots.length
       ? `The ${partition.title} plane in gray, ${partition.dots.length} marks on it where ` +
         "the search has kept a place."
       : `The ${partition.title} plane in gray, with no marks on it yet.`;
-    foot.textContent = partition.dots.length ? "" : partition.says;
-    foot.hidden = partition.dots.length > 0;
   }
 
   const letGo = (event) => {
@@ -443,10 +456,10 @@ export async function mount(host, options = {}) {
   const refit = (force = false) => {
     const box = contentBox(host);
     if (box.width <= 0 || box.height <= 0) return fitted;
-    // What the strip of planes and the footer take is theirs before the frame divides up
-    // what is left; both are laid out by the page's own stylesheet and neither is part of
-    // the rectangle the plate's aspect describes.
-    const spare = planes.offsetHeight + foot.offsetHeight;
+    // What the strip of planes takes is its own before the frame divides up what is left;
+    // it is laid out by the page's own stylesheet and is no part of the rectangle the
+    // plate's aspect describes.
+    const spare = planes.offsetHeight;
     const room = Math.max(LEAST * ratio, box.height - spare);
     const width = Math.max(LEAST, Math.floor(Math.min(box.width, room / ratio, most)));
     if (width === fitted.width && !force) return fitted;
@@ -464,8 +477,8 @@ export async function mount(host, options = {}) {
     // The height a page lays a band out with is the composed one the aspect gives, not the
     // box's: a border or two either side is what the difference is, and a page that sized a
     // band from the rendered box would be sizing it from a number the frame does not own.
-    // `total` is that height plus the strip of planes and the footer, which is what a page
-    // sizing a band around the whole thing has to leave room for — the atlas page clipped
+    // `total` is that height plus the strip of planes, which is what a page sizing a band
+    // around the whole thing has to leave room for — the atlas page clipped
     // its own plate for exactly as long as this was one number instead of two.
     const height = Math.ceil(width * ratio);
     fitted = { width, height, total: height + spare };
@@ -476,7 +489,7 @@ export async function mount(host, options = {}) {
   dressPlate();
   show(null);
   host.classList.add("frame-host");
-  host.append(planes, frame, foot);
+  host.append(planes, frame);
 
   // A host that changed size is not a mark that was hovered. The frame is fixed against
   // the one and fitted to the other, because a frame sized for a box nobody has any more
@@ -489,7 +502,6 @@ export async function mount(host, options = {}) {
     if (keep) document.removeEventListener("keydown", letGo);
     planes.remove();
     frame.remove();
-    foot.remove();
     host.classList.remove("frame-host");
   };
 

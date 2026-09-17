@@ -118,7 +118,16 @@ pictures and nothing else: no caption, no id, no score, two rows of filter chips
 mode and hue family, each with its count in the collection chosen. The record is the union
 of the collections, so choosing one fetches nothing, and a tile asks for its 316 px WebP
 only when it comes within half a panel of view. A dropdown and not a chip row, because the
-chips filter and this chooses what is being filtered. The Mode select's roster and the
+chips filter and this chooses what is being filtered.
+
+**The dropdown is the panel's header and its own label** *(explorer_side_panel_ckpt129)*.
+It sits in the tab row, right-aligned beside Gallery and Atlas, and it is hidden while the
+atlas is showing. It had a section of its own with a `COLLECTION` header over it and a
+footer under the tiles reading *1000 wallpapers in the general gallery*, which was the
+option's own text — *General gallery · 1000* — said three times over two rows of a panel
+that is meant to be pictures. The footer now says `k of N` and only while a chip is
+narrowing the grid, which is the one thing the dropdown cannot say; unfiltered, there is no
+footer at all. The Mode select's roster and the
 trap-mode defaults stay the general gallery's. Mode chips add up; a hue family chip is one at a time, and pressing
 it again clears it. A tile sets the viewer to that seat's whole recipe. *Atlas* is the
 same frame `atlas/index.html` shows, mounted in the panel through `atlas/frame.js`, with

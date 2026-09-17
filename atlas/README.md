@@ -56,20 +56,30 @@ a pixel of rounding would chase itself.
 
 ## Six planes, and what differs between them is words
 
-The record carries a partition per plane — **Mandelbrot · d=3 · d=4 · d=5 · d=6 · Phoenix**
-— and the frame puts a strip of them above the slots. Every one but d=6 has marks: degree 6
-is a plane the wallpaper project searches without a single labelled row, and until its
-atlas maker has written a directory for it, it is the plate alone. A multibrot plane
+The record carries a partition per plane — **z² · z³ · z⁴ · z⁵ · z⁶ · Phoenix** — and the
+frame puts a strip of them above the slots. A chip is the plane's power rather than its
+degree, because the headers over the slots carry the same map and a chip spelled `d=3` was
+a second language for the one thing; the plane's name is the chip's tooltip. Every one but
+z⁶ has marks: degree 6 is a plane the wallpaper project searches without a single labelled
+row, and until its atlas maker has written a directory for it, it is the plate alone. A multibrot plane
 is the Mandelbrot plane at another degree, with the Julia places of that degree drawn over
 it. **Phoenix is the classic slice only**: its parameters are pinned, so every place on it
 is a frame on the slice and is drawn red, and its first slot is a neighborhood of the slice
 where a Julia place's is a neighborhood of its parameter plane. A plane the search has not
-reached would be a plate with an empty dot file, and a line under it saying so.
+reached is a plate with an empty dot file, and nothing says so: the frame carried a line
+under the plate for it and no longer does.
 
 So the partition row carries the words: `slot_labels`, what the two location slots say
-(*Multibrot 3* and *Julia*; on Phoenix, *Phoenix* and *Close-up*), and `julia_place`, what a
-red mark is announced as (*A Julia place*; *A Phoenix place*). The gallery slot's label is
-the page's own. It also carries what is a plane's own rather than the atlas's: the
+(*Multibrot 3* and *Julia*; on Phoenix, *Phoenix* and *Close-up*), `slot_maps`, the map each
+of those two headers carries under its name (*z ↦ z³ + c*; on Phoenix its own recurrence),
+and `julia_place`, what a red mark is announced as (*A Julia place*; *A Phoenix place*). The
+gallery slot's label is the page's own and it has no map.
+
+**A map is read from the engine and never typed.** `builder/atlas.py`'s `maps_of` renders
+one from the family spec the plate was drawn at, transcribing the recurrences from
+`engine/src/family.rs` — `Family::step`'s arms and the doc comment over each variant. So a
+degree is written in one place, and a family whose definition is not a clean one line gets
+no entry at all and a header with its name alone, which is true where a guess would not be. It also carries what is a plane's own rather than the atlas's: the
 absorption radius, the neighborhood width and the tally, because the maker thins every plane
 at twelve pixels of its own base and so at a different distance on each plane.
 

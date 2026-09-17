@@ -32,22 +32,19 @@
 <main class="studio" id="studio" hidden>
 
   <section class="side" aria-label="Pictures to open">
-    <div class="tabs" role="tablist" aria-label="What the left panel shows">
-      <button type="button" class="tab" role="tab" id="tab-gallery" data-panel="gallery"
-              aria-controls="panel-gallery" aria-selected="true">Gallery</button>
-      <button type="button" class="tab" role="tab" id="tab-atlas" data-panel="atlas"
-              aria-controls="panel-atlas" aria-selected="false">Atlas</button>
+    <div class="side-head">
+      <div class="tabs" role="tablist" aria-label="What the left panel shows">
+        <button type="button" class="tab" role="tab" id="tab-gallery" data-panel="gallery"
+                aria-controls="panel-gallery" aria-selected="true">Gallery</button>
+        <button type="button" class="tab" role="tab" id="tab-atlas" data-panel="atlas"
+                aria-controls="panel-atlas" aria-selected="false">Atlas</button>
+      </div>
+      <select id="gallery-collection" class="collection" aria-label="Collection"
+              title="Which gallery to show: the general one, or a collection seated for one color family or one mode."></select>
     </div>
 
     <div class="tabpanel" id="panel-gallery" role="tabpanel" aria-labelledby="tab-gallery">
       <div class="filters">
-        <div class="chip-group">
-          <div class="section-head"><h2 id="head-gallery-collection">Collection</h2></div>
-          <div class="bar">
-            <select id="gallery-collection" aria-labelledby="head-gallery-collection"
-                    title="Which gallery to show: the general one, or a collection seated for one color family or one mode."></select>
-          </div>
-        </div>
         <div class="chip-group is-scrolling">
           <div class="section-head"><h2 id="head-gallery-modes">Mode</h2></div>
           <div class="chips" id="gallery-modes" role="group" aria-labelledby="head-gallery-modes"></div>

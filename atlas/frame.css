@@ -95,18 +95,6 @@
 }
 .plane:focus-visible { outline: 2px solid var(--well-link); outline-offset: 1px; }
 
-.frame-foot {
-  flex: 0 0 auto;
-  margin: 0;
-  max-width: 34rem;
-  text-align: center;
-  font-family: var(--sans);
-  font-size: 0.72rem;
-  line-height: 1.4;
-  color: var(--well-ink-dim);
-}
-.frame-foot[hidden] { display: none; }
-
 /* `.slot img` sets a display of its own, so the browser's `[hidden]` no longer wins: an
    empty slot's picture is hidden by a rule of the frame's instead. */
 .frame [hidden] { display: none !important; }
@@ -146,7 +134,12 @@ button.slot { margin: 0; padding: 0; font: inherit; color: inherit; cursor: poin
 /* A label on the top edge of the picture, not a row above it: a row is a height, and a
    height is something that can change. The site's kicker treatment, centred the way every
    short label under a picture on this site is centred, over a scrim that fades out so it
-   reads on a bright render and a black one alike. */
+   reads on a bright render and a black one alike.
+
+   It carries two things: the plane's name, and — on the two location slots — the map the
+   engine iterates there. The label sits on the picture rather than in the layout, so a map
+   too long for a narrow slot wraps to a second line and moves nothing; on a plate at full
+   bleed both sit on one. */
 .slot-label {
   position: absolute;
   top: 0;
@@ -163,11 +156,30 @@ button.slot { margin: 0; padding: 0; font: inherit; color: inherit; cursor: poin
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
   font-family: var(--sans);
   font-size: 0.6875rem;
-  line-height: 1;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
+  line-height: 1.25;
   text-align: center;
   pointer-events: none;
+}
+
+/* **The uppercasing stops at the name.** A formula's case is its meaning — `z` is the
+   orbit and `c` the constant, and neither is a `Z` or a `C` — so the kicker treatment is
+   the name's alone and the map is set as the mathematics it is. */
+.slot-name {
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+/* **The map is a line of its own, and it is never broken.** Under the name rather than
+   beside it, because a slot is a third of a plate and the plate is whatever the host is:
+   set inline, Phoenix's three terms wrapped at whichever `+` fell at the edge in a studio
+   panel and sat on one line on a wide plate, so the same header had two shapes and one of
+   them broke a formula in half. Stacked and `nowrap`, every header reads the same way at
+   every width, and the slot with no map — the gallery — is a name on one line as before. */
+.slot-map {
+  display: block;
+  letter-spacing: normal;
+  text-transform: none;
+  white-space: nowrap;
+  color: var(--well-ink-dim);
 }
 
 .plate {
