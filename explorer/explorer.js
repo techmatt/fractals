@@ -151,6 +151,7 @@ const constantStrip = document.getElementById("constants");
 const coordinateStrip = document.getElementById("coordinates");
 const paramStrip = document.getElementById("params");
 const copyButton = document.getElementById("copy");
+const copyViewButton = document.getElementById("copy-view");
 const notice = document.getElementById("notice");
 const shadeBar = document.getElementById("shade-bar");
 const shadeReset = document.getElementById("shade-reset");
@@ -1418,16 +1419,86 @@ levelToggle.addEventListener("change", () => {
   draw();
 });
 
-copyButton.addEventListener("click", async () => {
+/** The picture's permalink, as Copy link writes it: the picture and none of the furniture. */
+function permalink() {
   const url = new URL(window.location.href);
   url.search = `?${link.emit(view, contract)}`;
   url.hash = "";
+  return url.toString();
+}
+
+copyButton.addEventListener("click", async () => {
+  const url = permalink();
   try {
-    await navigator.clipboard.writeText(url.toString());
+    await navigator.clipboard.writeText(url);
     say("Link copied.");
   } catch {
-    say(url.toString());
+    say(url);
   }
+});
+
+/**
+ * The whole view as one JSON object, for pasting into a working session rather than for
+ * a reader: complete and exact, not pretty.
+ *
+ * **The recipe is the final stage's spec**, built by the same `specOf` call the pass makes
+ * and planned by the same module, so `plan` is the engine's own answer — the cap, the
+ * lanes, and every mode parameter at the value it resolved to, not only the ones a link
+ * set. Two substitutions, both said here: the colormap is the map's underlying name in
+ * place of its hundreds of stops, and `autolevel` is the curve in force. A replayed curve
+ * is what the worker was handed; a derived one is what the worker measured and handed
+ * back, and `level.source` says which.
+ */
+function viewRecord() {
+  const recipe = specOf(view, grid.width, grid.height, {
+    colormap: false,
+    supersample: FINAL_SUPERSAMPLE,
+  });
+  const plan = renderer.plan(recipe);
+  recipe.colormap = view.palette;
+  if (view.level) {
+    const { operator, ...curve } = view.level;
+    recipe.autolevel = curve;
+  }
+  return {
+    permalink: permalink(),
+    state: renderState.dataset.state,
+    stats: stats.textContent,
+    recipe,
+    plan,
+    palette: { name: view.palette, shown: shownName(view.palette) },
+    level: {
+      on: levelOn,
+      source: levelling === "stored" ? "replayed" : "derived",
+      operator: view.level?.operator ?? null,
+      curve: view.level,
+      ...(levelling === "derived" ? { in_band: derivedInBand } : {}),
+    },
+    readout: readout.textContent,
+    not_carried: differs.textContent || null,
+    seat,
+    provenance: { line: document.getElementById("provenance").textContent, ...PROVENANCE },
+  };
+}
+
+/** How long Copy view says Copied before it goes back to its own name. */
+const COPIED_FOR = 1500;
+let copiedTimer = 0;
+
+copyViewButton.addEventListener("click", async () => {
+  const text = JSON.stringify(viewRecord(), null, 2);
+  try {
+    await navigator.clipboard.writeText(text);
+  } catch {
+    console.log(text);
+    say("The view could not be copied; it is in the console.");
+    return;
+  }
+  copyViewButton.textContent = "Copied";
+  clearTimeout(copiedTimer);
+  copiedTimer = setTimeout(() => {
+    copyViewButton.textContent = "Copy view";
+  }, COPIED_FOR);
 });
 
 let resizing = 0;
