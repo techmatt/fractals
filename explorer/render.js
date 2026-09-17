@@ -104,12 +104,14 @@ export function familySpecOf(family, constants) {
     case "multibrot3":
     case "multibrot4":
     case "multibrot5":
+    case "multibrot6":
       return { kind: "multibrot", degree: Number(family.slice(-1)) };
     case "julia":
       return { kind: "julia", degree: 2, c: c() };
     case "julia3":
     case "julia4":
     case "julia5":
+    case "julia6":
       return { kind: "julia", degree: Number(family.slice(-1)), c: c() };
     case "phoenix":
       // `z_prev` is the engine's own key for the previous iterate the recurrence

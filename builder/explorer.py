@@ -138,6 +138,7 @@ CONSTANT_FAMILIES = {
     "julia3": "julia",
     "julia4": "julia",
     "julia5": "julia",
+    "julia6": "julia",
     "phoenix": "phoenix",
 }
 

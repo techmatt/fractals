@@ -10,8 +10,8 @@ panel of pictures somebody can open — a thousand seated wallpapers, or the atl
 place the search kept — and on the right the viewer that draws whichever one is picked.
 Same URL, same keys, and every link written before it still opens the same picture.
 
-**Nine families, seventeen modes, `f64`.** The parameter planes `mandelbrot` and
-`multibrot3`–`multibrot5`, the dynamical planes `julia`–`julia5` and `phoenix`, the
+**Eleven families, seventeen modes, `f64`.** The parameter planes `mandelbrot` and
+`multibrot3`–`multibrot6`, the dynamical planes `julia`–`julia6` and `phoenix`, the
 modes `modes.jsonl` offers with the parameters the engine's catalog settles for each,
 and double-precision arithmetic that stops zooming where the engine says two neighbouring
 samples have become the same number. What is **not** here: fractional degrees, which are
@@ -985,8 +985,8 @@ v · f · cx · cy · px · py · zx · zy · m · the mode's parameters · x ·
   Anything else is refused: it was written for a version of this page that no longer
   exists, or for one that does not exist yet.
 - **`f`** — the family. A name is the whole recurrence **including its exponent**, because
-  one picture gets one name: `mandelbrot`, `multibrot3`, `multibrot4`, `multibrot5` on the
-  parameter plane, `julia`, `julia3`, `julia4`, `julia5` and `phoenix` on the dynamical
+  one picture gets one name: `mandelbrot`, `multibrot3` through `multibrot6` on the
+  parameter plane, `julia`, `julia3` through `julia6` and `phoenix` on the dynamical
   one. That is the engine's own view of it — a `Family::Multibrot` at degree 2 *is* the
   Mandelbrot set — spelled the way a reader would say it. `fractional_multibrot` is named
   and refused: it is a real family the article draws, but a non-integer degree needs a

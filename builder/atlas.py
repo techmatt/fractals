@@ -24,12 +24,12 @@ spells them, and the page hands them to `permalink.js` without arithmetic.
   view, the word the frame's strip of planes puts on it, the file its dots are in, and
   everything that is the plane's own rather than the atlas's: the absorption radius, the
   neighborhood width, the tally, the two labels its location slots wear, and whether its
-  slot pictures are committed. There are five: the Mandelbrot parameter plane and the
-  three higher-degree ones, each with the Julia places of its degree drawn over the same
+  slot pictures are committed. There are six: the Mandelbrot parameter plane and the
+  four higher-degree ones, each with the Julia places of its degree drawn over the same
   plate because a Julia place *is* a `c` and a `c` is a point of that plane; and the
   classic Phoenix slice, whose places are frames on the slice itself. A plane the search
   has not reached carries an empty dot file rather than none, so marks land later as rows
-  and no page changes. `python -m builder atlas --plates` draws all five plates, each
+  and no page changes. `python -m builder atlas --plates` draws all six plates, each
   cropped to its set's own measured extent at one shared aspect, and re-projects the dots
   from the plane coordinates they already carry.
 
@@ -121,10 +121,12 @@ FAMILIES = (
     "multibrot3",
     "multibrot4",
     "multibrot5",
+    "multibrot6",
     "julia",
     "julia3",
     "julia4",
     "julia5",
+    "julia6",
     "phoenix",
 )
 
@@ -135,6 +137,7 @@ CONSTANTS = {
     "julia3": ("cx", "cy"),
     "julia4": ("cx", "cy"),
     "julia5": ("cx", "cy"),
+    "julia6": ("cx", "cy"),
     "phoenix": ("cx", "cy", "px", "py", "zx", "zy"),
 }
 
@@ -164,10 +167,12 @@ PLANE_OF_FAMILY = {
     "multibrot3": "mandelbrot",
     "multibrot4": "mandelbrot",
     "multibrot5": "mandelbrot",
+    "multibrot6": "mandelbrot",
     "julia": "julia",
     "julia3": "julia",
     "julia4": "julia",
     "julia5": "julia",
+    "julia6": "julia",
     "phoenix": "julia",
 }
 
@@ -619,7 +624,7 @@ def load_all() -> Atlas:
         if "/" in file or not path.is_file():
             raise AtlasError(f"{row.where}: no atlas/{file}")
         # **An empty file is a plane with nothing kept on it yet, and that is a state the
-        # record is allowed to be in.** Four of the five planes are plates a reader can
+        # record is allowed to be in.** A plane is a plate a reader can
         # look at before the search has reached them, and they carry a dot file like every
         # other partition so that nothing downstream — the ingest, the page, this loader —
         # has a second shape to handle. `records.read` refuses an empty file by design,
@@ -1116,7 +1121,7 @@ def ingest(
     restart at nought on every plane, and one directory holds all of them.
 
     **The plates are this repository's, not the maker's.** The maker still lands a 16:9
-    `base.jpg` and projects its dots onto that; the site draws its own five plates with
+    `base.jpg` and projects its dots onto that; the site draws its own six plates with
     `--plates`, so the ingest keeps every committed plate as it stands and projects each dot
     from its own place onto its plane's committed plate. The absorption radius comes in as
     pixels of the maker's base and is kept on the plane, then restated against the plate the
@@ -1212,7 +1217,10 @@ def ingest(
         radius_plane=radius_plane,
         radius_px=round(radius_plane * drawn.width / float(drawn.w), 2),
         tally=tally,
-        marked=True,
+        # A maker run on a plane with nothing kept on it lands no dots, and that plane says
+        # so rather than claiming the marks it does not have: degree 6 is searched and
+        # never labelled, so an empty directory for it is a real answer, not a failed one.
+        marked=bool(rows),
     )
     method = _method_row(
         partitions,
@@ -1352,7 +1360,7 @@ def _multibrot_says(degree: int) -> str:
     )
 
 
-#: The five planes the atlas carries, in the order the frame's strip shows them: the
+#: The six planes the atlas carries, in the order the frame's strip shows them: the
 #: partition's own name, the word the strip puts on it, what it is, the family spec the
 #: engine is asked for, the words its two location slots wear, what a mark of a Julia-kind
 #: place is announced as, and what the partition says once it has marks. A plane the search
@@ -1388,7 +1396,7 @@ PLANES_DRAWN = (
             "A Julia place",
             _multibrot_says(degree),
         )
-        for degree in (3, 4, 5)
+        for degree in (3, 4, 5, 6)
     ),
     (
         "phoenix",
@@ -1461,7 +1469,7 @@ def plate_view(extent: dict) -> tuple[float, float, float]:
     **Derived, never typed.** `home-view` reports the extent the engine measured for that
     family, so a crop is that rectangle widened to the plate's ratio and given its margin.
     A typed rectangle would be a number somebody has to re-measure the day a family's own
-    answer moves, and four of these five sets have never been framed by anybody.
+    answer moves, and five of these six sets have never been framed by anybody.
     """
     across, down = PLATE_ASPECT
     (re_low, re_high), (im_low, im_high) = extent["re"], extent["im"]
@@ -1516,7 +1524,7 @@ def _plate_row(name: str, family: dict, view: tuple[float, float, float], maxite
 
 
 def plates() -> list[str]:
-    """Draw all five plates, re-project the dots onto them, and rewrite the record.
+    """Draw all six plates, re-project the dots onto them, and rewrite the record.
 
     **Idempotent by construction.** Every number it writes comes from the engine's own
     measurement of a family and from each dot's `place.at`, so running it twice writes the

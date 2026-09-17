@@ -29,7 +29,7 @@ record.js         the record, fetched and read
 atlas.test.mjs    17 tests, `node --test atlas/atlas.test.mjs`
 atlas.jsonl       the index: how the record was made, and one row per plane
 mandelbrot.jsonl  that plane's dots, and one file like it per plane:
-multibrot3.jsonl  multibrot4.jsonl  multibrot5.jsonl  phoenix.jsonl
+multibrot3.jsonl  multibrot4.jsonl  multibrot5.jsonl  multibrot6.jsonl  phoenix.jsonl
 ```
 
 ## The frame is a piece, and two pages mount it
@@ -54,10 +54,12 @@ keeps the whole box the stage's padding leaves. The one-way flow is deliberate �
 that shrank to its figure and a frame fitted to that stage would be each other's input, and
 a pixel of rounding would chase itself.
 
-## Five planes, and what differs between them is words
+## Six planes, and what differs between them is words
 
-The record carries a partition per plane — **Mandelbrot · d=3 · d=4 · d=5 · Phoenix** —
-and the frame puts a strip of them above the slots. Every one has marks. A multibrot plane
+The record carries a partition per plane — **Mandelbrot · d=3 · d=4 · d=5 · d=6 · Phoenix**
+— and the frame puts a strip of them above the slots. Every one but d=6 has marks: degree 6
+is a plane the wallpaper project searches without a single labelled row, and until its
+atlas maker has written a directory for it, it is the plate alone. A multibrot plane
 is the Mandelbrot plane at another degree, with the Julia places of that degree drawn over
 it. **Phoenix is the classic slice only**: its parameters are pinned, so every place on it
 is a frame on the slice and is drawn red, and its first slot is a neighborhood of the slice
@@ -194,7 +196,7 @@ fine score, and places them in one greedy pass. It writes one directory per plan
 ```
 python -m builder atlas                                  # what the record holds
 python -m builder atlas --ingest [<maker>/dots.json]     # rewrite a plane, or all of them
-python -m builder atlas --plates                         # all five plates, dots re-projected
+python -m builder atlas --plates                         # all six plates, dots re-projected
 python -m builder atlas --figure atlas-places            # the plate and its marks, for §11
 ```
 

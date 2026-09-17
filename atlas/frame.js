@@ -217,8 +217,8 @@ export async function mount(host, options = {}) {
   /**
    * Which plane is open, and everything that follows from it.
    *
-   * **Five partitions, one frame.** The record carries a partition per plane — the
-   * Mandelbrot parameter plane, the three higher degrees, and the Phoenix slice. A plane
+   * **Six partitions, one frame.** The record carries a partition per plane — the
+   * Mandelbrot parameter plane, the four higher degrees, and the Phoenix slice. A plane
    * the search has not reached is a plate with an empty dot list rather than an absent
    * one, so nothing here has a second case to handle: marks land as rows in a file, and no
    * page changes. What differs between planes is words — the two location slots' labels

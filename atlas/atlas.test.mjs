@@ -111,10 +111,12 @@ const PLANE_OF_FAMILY = {
   multibrot3: "mandelbrot",
   multibrot4: "mandelbrot",
   multibrot5: "mandelbrot",
+  multibrot6: "mandelbrot",
   julia: "julia",
   julia3: "julia",
   julia4: "julia",
   julia5: "julia",
+  julia6: "julia",
   phoenix: "julia",
 };
 

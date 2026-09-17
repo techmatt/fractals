@@ -131,7 +131,7 @@ export const READS = [1, 2, 3];
  * A name is the whole recurrence including its exponent, because one picture gets
  * one name: `mandelbrot` is the degree-2 parameter plane and `multibrot3` is the
  * degree-3 one, and the same rule gives the dynamical plane `julia` through
- * `julia5`. That is the engine's own view of it too — a `Family::Multibrot` at
+ * `julia6`. That is the engine's own view of it too — a `Family::Multibrot` at
  * degree 2 *is* the Mandelbrot set — spelled the way a reader would say it.
  */
 export const FAMILIES = [
@@ -139,10 +139,12 @@ export const FAMILIES = [
   "multibrot3",
   "multibrot4",
   "multibrot5",
+  "multibrot6",
   "julia",
   "julia3",
   "julia4",
   "julia5",
+  "julia6",
   "phoenix",
 ];
 
@@ -181,10 +183,12 @@ export const CONSTANTS = {
   multibrot3: [],
   multibrot4: [],
   multibrot5: [],
+  multibrot6: [],
   julia: ["cx", "cy"],
   julia3: ["cx", "cy"],
   julia4: ["cx", "cy"],
   julia5: ["cx", "cy"],
+  julia6: ["cx", "cy"],
   phoenix: ["cx", "cy", "px", "py", "zx", "zy"],
 };
 
