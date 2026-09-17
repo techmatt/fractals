@@ -100,14 +100,25 @@
         </div>
       </section>
 
-      <section class="control-group">
-        <div class="section-head"><h2>Palette</h2></div>
-        <div class="palette-final">
-          <canvas id="palette-strip" width="512" height="1" role="img"
-                  aria-label="The palette as this view applies it, from the lowest value to the highest"
-                  title="The palette as this view applies it, with every shade setting included: the left end is where the lowest values land, the right end the highest."></canvas>
-          <p class="palette-names"><span id="palette-shown"></span><span id="palette-underlying"></span></p>
+      <section class="control-group palette-group">
+        <div class="section-head">
+          <h2>Palette: <span id="palette-shown"></span></h2>
+          <button type="button" class="head-action" id="palette-reset">Reset palette</button>
         </div>
+        <canvas class="palette-final" id="palette-strip" width="512" height="1" role="img"
+                aria-label="The palette as this view applies it, from the lowest value to the highest"
+                title="The palette as this view applies it, with every shade setting included: the left end is where the lowest values land, the right end the highest."></canvas>
+        <div class="bar shade" id="shade-bar">
+          <span class="group level" id="level-group">
+            <label for="level-toggle">Autolevel</label>
+            <input type="checkbox" id="level-toggle" class="flag">
+            <span class="help-inline" id="level-note"></span>
+            <button type="button" class="why" id="level-why" aria-expanded="false"
+                    aria-controls="level-explained" aria-label="What autolevel does">?</button>
+          </span>
+        </div>
+        <p class="help" id="level-explained" hidden></p>
+        <p class="help" id="shade-note"></p>
         <div class="palette-tabs" id="palette-tabs" role="tablist" aria-label="Palette family"></div>
         <div class="bar palette-search" id="palette-search" hidden>
           <span class="group">
@@ -116,25 +127,6 @@
           </span>
         </div>
         <div class="swatches" id="palette-list" role="listbox" aria-label="Palettes"></div>
-      </section>
-
-      <section class="control-group">
-        <div class="section-head">
-          <h2>Shade</h2>
-          <button type="button" class="head-action" id="shade-reset">Reset shade</button>
-        </div>
-        <div class="bar" id="shade-bar"></div>
-        <div class="bar">
-          <span class="group">
-            <label for="level-toggle">Autolevel</label>
-            <input type="checkbox" id="level-toggle" class="flag">
-          </span>
-          <span class="help-inline" id="level-note"></span>
-          <button type="button" class="why" id="level-why" aria-expanded="false"
-                  aria-controls="level-explained" aria-label="What autolevel does">?</button>
-        </div>
-        <p class="help" id="level-explained" hidden></p>
-        <p class="help" id="shade-note"></p>
       </section>
 
       <details class="control-group" id="details">

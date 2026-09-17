@@ -156,8 +156,9 @@ const copyButton = document.getElementById("copy");
 const copyViewButton = document.getElementById("copy-view");
 const notice = document.getElementById("notice");
 const shadeBar = document.getElementById("shade-bar");
-const shadeReset = document.getElementById("shade-reset");
+const shadeReset = document.getElementById("palette-reset");
 const shadeNote = document.getElementById("shade-note");
+const levelGroup = document.getElementById("level-group");
 const levelToggle = document.getElementById("level-toggle");
 const levelNote = document.getElementById("level-note");
 const levelWhy = document.getElementById("level-why");
@@ -165,7 +166,6 @@ const levelExplained = document.getElementById("level-explained");
 const details = document.getElementById("details");
 const paletteStrip = document.getElementById("palette-strip");
 const paletteShown = document.getElementById("palette-shown");
-const paletteUnderlying = document.getElementById("palette-underlying");
 const renderState = document.getElementById("render-state");
 
 let renderer = null;
@@ -293,7 +293,10 @@ function setBusy(on) {
   for (const strip of [constantStrip, coordinateStrip, paramStrip]) {
     for (const control of strip.querySelectorAll("input")) control.disabled = on;
   }
-  for (const control of shadeBar.querySelectorAll("input, select, button")) control.disabled = on;
+  // The `?` beside Autolevel only explains, so it stays open while a download runs.
+  for (const control of shadeBar.querySelectorAll("input, select, button:not(.why)")) {
+    control.disabled = on;
+  }
   shadeReset.disabled = on;
   // Released, neither the fold nor the reset is simply enabled again: whether the fold
   // may be touched is the current map's business, whether there is anything to reset is
@@ -1047,11 +1050,14 @@ function buildShade() {
     shadeWidgets.set(control.key, held);
     shadeBar.append(group);
   }
-  shadeBar.append(chips);
+  // Autolevel is written in the page rather than built here, and closes the row: it is a
+  // shade setting a reader turns, though not a key a link carries.
+  shadeBar.append(chips, levelGroup);
 }
 
-/** The one action on the Shade header. It is disabled with nothing to put back, and its
- *  label carries the count that used to be a separate line of text beside the heading. */
+/** The one action on the Palette header. It is disabled with nothing to put back, and its
+ *  label carries the count that used to be a separate line of text beside the heading. It
+ *  resets the shade keys and nothing else: the map itself is a pick, not a setting. */
 shadeReset.addEventListener("click", () => {
   if (locked()) return;
   view = { ...view, shade: shade.defaultShade() };
@@ -1137,7 +1143,7 @@ function syncShade() {
   const set = shade.chosen(view.shade);
   const labels = set.map((key) => shade.CONTROLS.find((control) => control.key === key).label);
   shadeReset.disabled = busy || set.length === 0;
-  shadeReset.textContent = set.length === 0 ? "Reset shade" : `Reset shade (${set.length})`;
+  shadeReset.textContent = set.length === 0 ? "Reset palette" : `Reset palette (${set.length})`;
   shadeReset.title = set.length === 0
     ? "Every shade setting is at its default."
     : `${sentenceList(labels)} ${set.length === 1 ? "differs" : "differ"} from the default.`;
@@ -1147,7 +1153,11 @@ function syncShade() {
   // field, so there is no distribution for a gamma or a transfer to spend. What does
   // reach them is the bake — a reversed or folded map is a different gradient — and the
   // rolloff, which acts after a colour has been chosen and has no control here.
-  shadeNote.textContent = planOf(view).direct
+  // Where Autolevel is unused as well, which is every direct trap today, the same fact is
+  // said on the shade row in the place Autolevel's own note would take, so it costs the
+  // panel no line of its own.
+  const plan = planOf(view);
+  shadeNote.textContent = plan.direct && plan.levels === true
     ? "This mode paints as it draws, so Gamma, Cycles, Phase and Transfer have no effect " +
       "here. Reverse and Mirror still apply, and each one redraws the picture."
     : "";
@@ -1156,16 +1166,15 @@ function syncShade() {
 }
 
 /**
- * The palette strip over the tabs, and the map's names under it.
+ * The palette strip over the tabs, and the map's display name in the header above it.
+ * The underlying name is not shown here; Details and Copy view carry it.
  *
  * Drawn by the module rather than here — see `ramp` in `render.js` — at the canvas's own
  * width, so every column is one lookup. A recipe the module refuses leaves the strip
  * showing the last one it drew; the refusal is said where the picture is.
  */
 function syncFinal() {
-  const shown = shownName(view.palette);
-  paletteShown.textContent = shown;
-  paletteUnderlying.textContent = shown === view.palette ? "" : view.palette;
+  paletteShown.textContent = shownName(view.palette);
   let pixels;
   try {
     pixels = renderer.ramp(view, paletteStrip.width, { direct: planOf(view).direct === true });
@@ -1193,13 +1202,18 @@ function sentenceList(words) {
  * map per sample so a curved map would not be the same picture with its tone moved.
  */
 function syncLevel() {
-  const levels = planOf(view).levels === true;
+  const plan = planOf(view);
+  const levels = plan.levels === true;
   levelToggle.checked = levels && levelOn;
   levelToggle.disabled = busy || !levels;
   // The long reason lives behind the `?` and is the same two sentences whatever the view;
   // the line beside the box is the one thing true of this view. Which operator measured
   // the curve is Details' business, not this line's.
-  if (!levels) {
+  if (!levels && plan.direct) {
+    levelNote.textContent =
+      "This mode paints as it draws, so only Reverse and Mirror apply here, and each one " +
+      "redraws the picture.";
+  } else if (!levels) {
     levelNote.textContent = "Not used by this mode.";
   } else if (!levelOn) {
     levelNote.textContent = "Off: the palette as it is, without a tone curve.";

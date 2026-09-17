@@ -118,9 +118,18 @@ it again clears it. A tile sets the viewer to that seat's whole recipe. *Atlas* 
 same frame `atlas/index.html` shows, mounted in the panel through `atlas/frame.js`, with
 the marks clicking into the viewer rather than navigating.
 
-**Right, the viewer**, and under it four sections — Download, Mode, Palette, Shade — then
+**Right, the viewer**, and under it three sections — Download, Mode, Palette — then
 the folded Details: the render stat line, family, constants, `x`, `y`, `w`, all editable. Copy link is in the bar,
 because it is about the page rather than about a group.
+
+**Shade is part of Palette** *(explorer_palette_layout, 2026-09-16)*. The group's header
+names the map — `PALETTE: GILDED LAGOON`, display name only; the underlying name is in
+Details and Copy view — and under it come the strip, then the shade row (gamma, cycles,
+phase, transfer, Reverse, Mirror, Autolevel), then the family tabs and the swatch grid.
+The controls a reader turns sit nearer the picture than the list they scroll through;
+the grid keeps its bounded height and scrolls inside it. Under a direct trap, the "this
+mode paints as it draws" sentence takes Autolevel's note on the shade row rather than a
+line of its own.
 
 **Mode offers the gallery's modes** *(explorer_palettes, 2026-09-16)*: the set the gallery
 panel's mode chips show, read off the same record — thirteen of the seventeen today — in
@@ -152,8 +161,8 @@ across hue families (every family gets one place before any gets a second), by t
 **A section is a header, and a header is one class.** `.section-head` is the label in
 the accent and a hairline running from it to the section's right edge; the rule is the
 divider, so the sections carry no border of their own. The gallery panel's Mode and Color
-family use the same class. A section's one action sits on its rule: **Engine defaults**
-on Shade's, which is
+family use the same class. A section's one action sits on its rule: **Reset palette**
+on Palette's, which resets the shade keys (never the map itself) and is
 disabled with nothing to reset and carries the count of keys set in its label — the
 separate "N of 7 set" line is gone, and the button's title names the keys, including any
 that have no control.

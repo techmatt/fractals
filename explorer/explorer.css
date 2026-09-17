@@ -419,8 +419,8 @@ summary.section-head:focus-visible { outline: 2px solid var(--well-link); outlin
 
 /* Only what one would turn. Each group is a heading and its own row of controls. The
    download comes first, on one row, and then the groups are in the order a picture is
-   made in: the mode, then the colour it is spent on, then the shading, then the place. The place is last and folded, because a reader
-   who wants to move moves the picture. */
+   made in: the mode, then the colour it is spent on and how it is spent, then the place.
+   The place is last and folded, because a reader who wants to move moves the picture. */
 .controls {
   flex: 1 1 auto;
   padding: 0.5rem var(--gutter) 2rem;
@@ -606,31 +606,24 @@ summary.section-head:focus-visible { outline: 2px solid var(--well-link); outlin
 
 /* --------------------------------------------------------------------- the palettes */
 
+/* One group for the colour: the map's name in the header, the map as this view spends it,
+   the settings that change how it is spent, and then the picker. The shade settings sit
+   between the strip and the picker because the strip is what they move, and because the
+   controls a reader turns belong nearer the picture than a list they scroll through. */
+
 /* The palette in force, drawn the way the view spends it, above the tabs so it is on show
-   whichever tab is open. Its names sit under it: the one a reader is shown, then the one a
-   link spells, dimmed and only where the two differ. */
-.palette-final { margin-bottom: 0.5rem; }
-.palette-final canvas {
+   whichever tab is open. */
+canvas.palette-final {
   display: block;
   width: 100%;
   height: 1.4rem;
+  margin-bottom: 0.4rem;
   border: 1px solid var(--well-rule);
   image-rendering: auto;
 }
-.palette-names {
-  margin: 0.25rem 0 0;
-  font-family: var(--sans);
-  font-size: 0.8rem;
-  color: var(--well-ink);
-  overflow-wrap: anywhere;
-}
-.palette-names #palette-underlying {
-  margin-left: 0.5rem;
-  font-family: var(--mono);
-  font-size: 0.72rem;
-  color: var(--well-ink-dim);
-}
-.palette-names #palette-underlying:empty { display: none; }
+
+.bar.shade { gap: 0.3rem 0.9rem; margin-bottom: 0.4rem; }
+.palette-group .help { margin: 0 0 0.4rem; }
 
 /* A family tab strip, because the library is a thousand maps and a reader wants the one
    that is the colour they are thinking of. Popular is first and is the record's own
