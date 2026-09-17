@@ -535,6 +535,34 @@ test("a tagged control's two halves spell exactly one link value", () => {
   }
 });
 
+test("a slider writes what a link carries, and sits where the link's value is", () => {
+  const gamma = shade.CONTROLS.find((control) => control.key === "gamma");
+  const phase = shade.CONTROLS.find((control) => control.key === "phase");
+  const view = parse(`v=${VERSION}&p=viridis`, CONTEXT);
+  // Gamma travels in powers of two with 1 in the middle, so the middle writes the default.
+  assert.equal(shade.sliderText(gamma, "0"), "1");
+  assert.equal(shade.sliderText(gamma, "1"), "2");
+  assert.equal(shade.sliderText(gamma, "-1"), "0.5");
+  assert.equal(shade.sliderText(gamma, "0.02"), "1.01");
+  assert.equal(shade.sliderAt(gamma, "0.25"), -2);
+  // A typed value past the travel is taken by the contract and parks the slider at its end.
+  assert.equal(shade.sliderAt(gamma, "10"), gamma.slider.max);
+  assert.equal(shade.sliderAt(gamma, "0.01"), gamma.slider.min);
+  assert.equal(shade.spelling(shade.withKey(view.shade, "gamma", "10"), "gamma"), "10");
+  // Every stop of the travel writes a value the contract takes, and reads back to its stop.
+  const stops = Math.round((gamma.slider.max - gamma.slider.min) / gamma.slider.step);
+  for (let index = 0; index <= stops; index++) {
+    const at = gamma.slider.min + index * gamma.slider.step;
+    const text = shade.sliderText(gamma, String(at));
+    const written = shade.spelling(shade.withKey(view.shade, "gamma", text), "gamma");
+    assert.equal(written, text, `gamma at ${at}`);
+    assert.ok(Math.abs(shade.sliderAt(gamma, text) - at) < gamma.slider.step / 2, `gamma at ${at}`);
+  }
+  // Phase wraps, so a link's 1.25 sits where 0.25 does.
+  assert.equal(shade.sliderAt(phase, "1.25"), 0.25);
+  assert.equal(shade.sliderText(phase, "0.25"), "0.25");
+});
+
 test("an aspect is a shape, and both sides are bounded", () => {
   assert.equal(parse(`v=${VERSION}&a=4:3`, CONTEXT).aspect.down, 3);
   assert.throws(() => parse(`v=${VERSION}&a=16x9`, CONTEXT), /across:down/);

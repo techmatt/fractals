@@ -102,6 +102,12 @@
 
       <section class="control-group">
         <div class="section-head"><h2>Palette</h2></div>
+        <div class="palette-final">
+          <canvas id="palette-strip" width="512" height="1" role="img"
+                  aria-label="The palette as this view applies it, from the lowest value to the highest"
+                  title="The palette as this view applies it, with every shade setting included: the left end is where the lowest values land, the right end the highest."></canvas>
+          <p class="palette-names"><span id="palette-shown"></span><span id="palette-underlying"></span></p>
+        </div>
         <div class="palette-tabs" id="palette-tabs" role="tablist" aria-label="Palette family"></div>
         <div class="bar palette-search" id="palette-search" hidden>
           <span class="group">

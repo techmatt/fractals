@@ -163,6 +163,9 @@ const levelNote = document.getElementById("level-note");
 const levelWhy = document.getElementById("level-why");
 const levelExplained = document.getElementById("level-explained");
 const details = document.getElementById("details");
+const paletteStrip = document.getElementById("palette-strip");
+const paletteShown = document.getElementById("palette-shown");
+const paletteUnderlying = document.getElementById("palette-underlying");
 const renderState = document.getElementById("render-state");
 
 let renderer = null;
@@ -646,6 +649,7 @@ async function draw() {
       derivedInBand = shaded.level === null;
       updateReadout();
       syncLevel();
+      syncFinal();
       settle();
     }
     present(shaded.image);
@@ -987,12 +991,14 @@ function buildShade() {
         slider.className = "slider";
         slider.min = control.slider.min;
         slider.max = control.slider.max;
-        slider.step = control.step;
+        slider.step = control.slider.step ?? control.step;
         slider.setAttribute("aria-label", control.label);
         slider.addEventListener("input", () => {
-          if (!planOf(view).direct) setShade(control.key, slider.value);
+          if (!planOf(view).direct) setShade(control.key, shade.sliderText(control, slider.value));
         });
-        slider.addEventListener("change", () => setShade(control.key, slider.value));
+        slider.addEventListener("change", () =>
+          setShade(control.key, shade.sliderText(control, slider.value)),
+        );
         group.append(slider);
         held.slider = slider;
       }
@@ -1090,11 +1096,8 @@ function syncShade() {
       held.box.setAttribute("aria-pressed", String(text === "1"));
     } else if (control.control === "number") {
       held.box.value = text;
-      if (held.slider) {
-        // Phase wraps modulo one, so a link's 1.25 sits where 0.25 does on the slider,
-        // and the box beside it keeps the number the link actually said.
-        held.slider.value = String(((Number(text) % 1) + 1) % 1);
-      }
+      // The box keeps the number the link said; the slider sits where `shade.js` puts it.
+      if (held.slider) held.slider.value = String(shade.sliderAt(control, text));
     } else {
       const said = shade.parts(text);
       held.menu.value = said.kind;
@@ -1115,6 +1118,19 @@ function syncShade() {
   fold.box.title = cyclic
     ? `${shownName(view.palette)} already loops back to its first color, so there is no seam to mirror.`
     : SHADE_TIPS.mirror;
+
+  // And a mirrored map reads the same in both directions, so Reverse has nothing to turn
+  // there: the module bakes the fold first and flips it second, and the flipped table is
+  // byte for byte the one it flipped. The key keeps whatever the link said — a seat
+  // sent mirrored and reversed is the same picture either way — and the chip says why it
+  // is resting.
+  const flip = shadeWidgets.get("reverse");
+  flip.box.disabled = busy || view.shade.mirror;
+  flip.box.title = view.shade.mirror
+    ? "Mirror plays the palette forward and then back, so it already reads the same in both directions."
+    : SHADE_TIPS.reverse;
+
+  syncFinal();
 
   // The count names every key set, the ones with no control included: a link that set
   // the rolloff is a recipe this button resets, and its title is where that is said.
@@ -1137,6 +1153,27 @@ function syncShade() {
     : "";
 
   syncLevel();
+}
+
+/**
+ * The palette strip over the tabs, and the map's names under it.
+ *
+ * Drawn by the module rather than here — see `ramp` in `render.js` — at the canvas's own
+ * width, so every column is one lookup. A recipe the module refuses leaves the strip
+ * showing the last one it drew; the refusal is said where the picture is.
+ */
+function syncFinal() {
+  const shown = shownName(view.palette);
+  paletteShown.textContent = shown;
+  paletteUnderlying.textContent = shown === view.palette ? "" : view.palette;
+  let pixels;
+  try {
+    pixels = renderer.ramp(view, paletteStrip.width, { direct: planOf(view).direct === true });
+  } catch {
+    return;
+  }
+  const row = new ImageData(pixels, paletteStrip.width, 1);
+  paletteStrip.getContext("2d").putImageData(row, 0, 0);
 }
 
 /** `a`, `a and b`, `a, b and c`. */

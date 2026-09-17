@@ -46,11 +46,18 @@ import { SHADE_KEYS, defaultShade, shadeKey } from "./permalink.js";
  * thousand ask for the edge transfer (weights 0.25, 1 and 2) and the rest for `value`:
  * four distinct values. `min` and `max` bound a slider's travel and nothing else — phase
  * wraps modulo one in the engine, so its slider covers every picture there is.
+ *
+ * **Gamma's slider travels in powers of two**, from 1/4 to 4 with 1 in the middle, so a
+ * step toward 2 and a step toward 1/2 are the same size of change and a reader's hand
+ * lands back on 1. The range is counted off the same record: 985 of the thousand seats
+ * leave gamma at 1, and the other fifteen run from 0.383 to 2.04 — a log₂ of −1.38 to
+ * 1.03 — so ±2 holds every one of them with room past both ends. The box beside it takes
+ * any positive number, and a value past the travel parks the slider at its end.
  */
 const PRESENTATION = {
-  gamma: { step: 0.05 },
+  gamma: { step: 0.05, slider: { min: -2, max: 2, step: 0.02, scale: "log" } },
   cycles: { step: 1 },
-  phase: { step: 0.005, slider: { min: 0, max: 1 } },
+  phase: { step: 0.005, slider: { min: 0, max: 1, scale: "wrap" } },
   reverse: {},
   mirror: {},
   transfer: { step: 0.25, opening: { edge: "0.5" } },
@@ -107,6 +114,34 @@ export function spelling(shade, key) {
  */
 export function withKey(shade, key, text) {
   return { ...shade, [key]: shadeKey(key).read(text) };
+}
+
+/**
+ * Where a slider sits for the text its key's box holds.
+ *
+ * A `wrap` slider is phase's: the engine takes phase modulo one, so a link's 1.25 sits
+ * where 0.25 does and the box keeps the number the link said. A `log` slider is gamma's,
+ * and holds the power of two; a value past its travel parks at the end it passed.
+ */
+export function sliderAt(control, text) {
+  const value = Number(text);
+  const { min, max, scale } = control.slider;
+  if (scale === "wrap") return ((value % 1) + 1) % 1;
+  if (scale === "log") return Math.min(max, Math.max(min, Math.log2(value)));
+  return value;
+}
+
+/**
+ * The text a slider position writes into its key, which is what a link would carry.
+ *
+ * A `log` position is written at three significant figures: a slider step is about one
+ * and a half percent, so a fourth figure would be precision the hand did not ask for,
+ * and the middle of the travel writes exactly `1`.
+ */
+export function sliderText(control, position) {
+  const value = Number(position);
+  if (control.slider.scale === "log") return String(Number((2 ** value).toPrecision(3)));
+  return String(value);
 }
 
 /** Whether a key is at the engine's own default — what a link that omits it means. */

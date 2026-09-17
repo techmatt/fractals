@@ -187,6 +187,7 @@ export class Renderer {
     this.job = null;
     this.fields = new Map();
     this.plans = new Map();
+    this.ramped = null;
   }
 
   /**
@@ -355,6 +356,45 @@ export class Renderer {
     const answer = JSON.parse(body);
     if (!answer.ok) throw new Error(answer.why);
     return answer.probed;
+  }
+
+  /**
+   * The palette as this view spends it: `samples` RGBA pixels, the colour a field value of
+   * `i / (samples - 1)` becomes once the mode's curve has placed it.
+   *
+   * **The module draws it, through the table the picture is drawn through.** There is no
+   * export that hands a table over, and a second bake in JavaScript is a second opinion
+   * about OKLab, folds and wraps that would drift the first time the engine moved. So this
+   * shades a field made to be the ramp: one row of it, a row of zeros and a row of ones
+   * under it, so the frame's half-percent stretch lands exactly on 0 and 1 and leaves the
+   * ramp where it is. The mode is `smooth`, a single field under a linear curve, and the
+   * transfer is `value`: both are what come *before* the strip's 0 to 1, and a strip that
+   * folded them in would be a picture of this frame's histogram rather than of the palette.
+   * Everything after that point is the view's own — the map and its tone curve, the fold
+   * and the flip, gamma, cycles and phase, and the rolloff — with one exception: a direct
+   * trap spends no gamma, cycles or phase, so under one they are left out here as well.
+   *
+   * At one sample a pixel the module encodes each colour without a filter, so the pixels
+   * are the table's own lookups. Memoized on the spec, which is what a recolour re-sends.
+   */
+  ramp(view, samples, { direct = false } = {}) {
+    const text = JSON.stringify(rampSpecOf(view, stopsOf(view.palette), samples, { direct }));
+    if (this.ramped !== null && this.ramped.text === text) return this.ramped.pixels;
+
+    const lanes = rampLanes(samples);
+    const wasm = this.shader;
+    const [pointer, length] = this.#put(text);
+    const lanePointer = wasm.alloc(lanes.length);
+    new Uint8Array(wasm.memory.buffer, lanePointer, lanes.length).set(lanes);
+    // `shade` frees the lanes, as it does for a picture; the spec is this caller's.
+    const out = wasm.shade(pointer, length, lanePointer, lanes.length);
+    wasm.dealloc(pointer, length);
+    if (out === 0) throw new Error("the renderer refused this palette recipe");
+    const bytes = samples * 3 * 4;
+    const pixels = new Uint8ClampedArray(wasm.memory.buffer, out, samples * 4).slice();
+    wasm.dealloc(out, bytes);
+    this.ramped = { text, pixels };
+    return pixels;
   }
 
   #run(view, width, height, shape, { supersample, onProgress }) {
@@ -629,6 +669,45 @@ export function shadeApart(module, field, view, holder = {}, { derive = false } 
     };
     worker.postMessage({ kind: "start", module });
   });
+}
+
+/**
+ * The spec `Renderer.ramp` shades: the view's recipe, map and curve over a field that is
+ * the ramp itself. `colormap` is the map's control points, passed in so a test can hand
+ * the module a map without the blob. See `ramp` for why each fixed field is what it is.
+ */
+export function rampSpecOf(view, colormap, samples, { direct = false } = {}) {
+  const recipe = direct ? { ...view.shade, gamma: 1, cycles: 1, phase: 0 } : view.shade;
+  const spec = {
+    schema: 1,
+    family: { kind: "mandelbrot" },
+    viewport: {},
+    resolution: [samples, 3],
+    mode: "smooth",
+    palette: { ...recipe, transfer: { kind: "value" } },
+    colormap,
+  };
+  if (!direct && view.level) {
+    spec.autolevel = {
+      black_pt: view.level.black_pt,
+      white_pt: view.level.white_pt,
+      exponent: view.level.exponent,
+      out_ends: view.level.out_ends,
+    };
+  }
+  return spec;
+}
+
+/** The lanes `rampSpecOf` is shaded over, as bytes: the ramp from 0 to 1 across the first
+ *  row, zeros across the second and ones across the third. The two flat rows are a third
+ *  of the samples each, so the 0.5th and 99.5th percentiles are exactly 0 and 1. */
+export function rampLanes(samples) {
+  const lanes = new Float64Array(samples * 3);
+  for (let at = 0; at < samples; at++) {
+    lanes[at] = at / (samples - 1);
+    lanes[2 * samples + at] = 1;
+  }
+  return new Uint8Array(lanes.buffer);
 }
 
 /** What `shade_level` puts in front of the picture: whether a curve acted and whether a

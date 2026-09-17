@@ -606,6 +606,32 @@ summary.section-head:focus-visible { outline: 2px solid var(--well-link); outlin
 
 /* --------------------------------------------------------------------- the palettes */
 
+/* The palette in force, drawn the way the view spends it, above the tabs so it is on show
+   whichever tab is open. Its names sit under it: the one a reader is shown, then the one a
+   link spells, dimmed and only where the two differ. */
+.palette-final { margin-bottom: 0.5rem; }
+.palette-final canvas {
+  display: block;
+  width: 100%;
+  height: 1.4rem;
+  border: 1px solid var(--well-rule);
+  image-rendering: auto;
+}
+.palette-names {
+  margin: 0.25rem 0 0;
+  font-family: var(--sans);
+  font-size: 0.8rem;
+  color: var(--well-ink);
+  overflow-wrap: anywhere;
+}
+.palette-names #palette-underlying {
+  margin-left: 0.5rem;
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  color: var(--well-ink-dim);
+}
+.palette-names #palette-underlying:empty { display: none; }
+
 /* A family tab strip, because the library is a thousand maps and a reader wants the one
    that is the colour they are thinking of. Popular is first and is the record's own
    answer to which maps this pool actually seats; the families after it are what each map

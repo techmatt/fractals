@@ -11,6 +11,9 @@
 // asked to derive, and a curve it derived **replays** to the same bytes — which is the
 // whole reason Copy link can write five numbers and a link can reopen what was seen.
 //
+// The last few hold the palette strip to the same module: it is a ramp shaded through
+// the table the picture uses, curve included, so it lives beside the curve's tests.
+//
 //   node --test explorer/level.test.mjs
 //
 // The pixels are in ignored `artifacts/level-derive/`, written on a machine with the
@@ -22,6 +25,7 @@ import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "node:fs";
 
 import { load, RAMP } from "./bench/engine.mjs";
+import { rampLanes, rampSpecOf } from "./render.js";
 
 const { plan, band, shade, shadeLevel, deriveLevel } = await load();
 
@@ -171,4 +175,59 @@ test("a spec that already replays a curve is refused a derivation", () => {
   const { lanes } = lanesOf(spec);
   const curve = { black_pt: 0.1, white_pt: 0.6, exponent: 1.2, out_ends: [0.05, 0.9] };
   assert.equal(shadeLevel({ ...spec, autolevel: curve }, lanes, true), null);
+});
+
+// The palette strip over the picker is drawn by the module through the table the picture
+// is drawn through: `render.js`'s `rampSpecOf` over `rampLanes`. What follows holds that
+// construction to the module, and pins the fact the Reverse chip rests on.
+
+const STRIP = 256;
+const HUES = {
+  kind: "sequential",
+  stops: [[0, [20, 10, 60]], [0.4, [200, 60, 40]], [0.7, [240, 200, 90]], [1, [250, 250, 240]]],
+};
+const RECIPE = {
+  gamma: 1,
+  cycles: 1,
+  phase: 0,
+  reverse: false,
+  mirror: false,
+  transfer: { kind: "value" },
+  rolloff: { kind: "none" },
+};
+
+function strip(colormap, recipe, options = {}) {
+  const view = { shade: { ...RECIPE, ...recipe }, level: options.level ?? null };
+  return shade(rampSpecOf(view, colormap, STRIP, options), rampLanes(STRIP)).slice(0, STRIP * 4);
+}
+
+test("the strip runs the map from its first color to its last, and ignores the transfer", () => {
+  const plain = strip(RAMP, {});
+  assert.deepEqual([...plain.slice(0, 3)], [0, 0, 0]);
+  assert.deepEqual([...plain.slice((STRIP - 1) * 4, (STRIP - 1) * 4 + 3)], [255, 255, 255]);
+  for (let at = 1; at < STRIP; at++) assert.ok(plain[at * 4] >= plain[(at - 1) * 4], `column ${at}`);
+  // The transfer spends the map over a frame's histogram, which is before the strip's 0 to 1.
+  assert.deepEqual(strip(RAMP, { transfer: { kind: "rank" } }), plain);
+  assert.notDeepEqual(strip(RAMP, { gamma: 2 }), plain);
+});
+
+test("reverse on a mirrored map changes no byte of the strip", () => {
+  for (const map of [RAMP, DIM, HUES]) {
+    for (const recipe of [{}, { gamma: 0.45, cycles: 3, phase: 0.2 }, { rolloff: { kind: "aces" } }]) {
+      const folded = strip(map, { ...recipe, mirror: true });
+      assert.deepEqual(strip(map, { ...recipe, mirror: true, reverse: true }), folded);
+      assert.notDeepEqual(strip(map, { ...recipe, reverse: true }), strip(map, recipe));
+    }
+  }
+});
+
+test("under a direct trap the strip spends no gamma, cycles or phase, and keeps the fold", () => {
+  const moved = { gamma: 2, cycles: 3, phase: 0.4 };
+  assert.deepEqual(strip(HUES, moved, { direct: true }), strip(HUES, {}));
+  assert.deepEqual(strip(HUES, { ...moved, mirror: true }, { direct: true }), strip(HUES, { mirror: true }));
+});
+
+test("the strip carries the tone curve in force", () => {
+  const curve = { black_pt: 0.1, white_pt: 0.6, exponent: 1.2, out_ends: [0.05, 0.9] };
+  assert.notDeepEqual(strip(DIM, {}, { level: curve }), strip(DIM, {}));
 });
