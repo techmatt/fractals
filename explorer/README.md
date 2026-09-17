@@ -1173,8 +1173,8 @@ verbatim, over the band's six numbers transcribed from `levels_band.json` with i
 
 | state | entered by | the picture | the note beside Autolevel |
 | --- | --- | --- | --- |
-| stored | a seat, an atlas mark, a pasted link | replays `level=` exactly, or no curve where there is none | *Leveled to this wallpaper's stored tone curve* |
-| derived | the first pan, zoom or control change; a bare page | measured on its own finished picture, every pass | *Leveled to this view* |
+| stored | a seat, an atlas mark, a pasted link | replays `level=` exactly, or no curve where there is none | *Leveled to this wallpaper's stored tone curve*, or *…the tone curve this link carries* |
+| derived | the first pan, zoom or control change; a bare page; ticking the box on a view that arrived with no curve | measured on its own finished picture, every pass the box is ticked | *Leveled to this view* |
 
 **15 of the 1,000 published seats carry a recipe maxiter other than `maxiter::for_width`**, which the page always draws at, so a seat opened here may differ slightly from its gallery picture; Details names the difference.
 
@@ -1182,6 +1182,37 @@ The Autolevel box is enabled wherever the operator acts — a field coloring or 
 which the plan now answers as `levels` — and disabled with *Not used by this mode* under a
 direct trap or the modulate. Unticked, the palette is drawn as it is; ticked again, a
 stored view gets its curve back and a derived view is measured again.
+
+**The box is off unless the view arrived with a curve** *(explorer_autolevel_default,
+2026-09-16)*. A curved seat or a link carrying `level=` opens ticked and replays it; a
+clean seat, a link with no `level`, an atlas mark with none and a bare page open unticked,
+with *Off: the palette as it is*. A change of mode, palette or place leaves the box where
+it was, so an unlevelled view stays unlevelled and a levelled one goes on being measured.
+Ticking it on a view with no curve to give back is what makes that view `derived`.
+
+**No permalink version bump, because no link changed meaning.** An arriving link with no
+`level` was already drawn unlevelled — the *stored* row above — and only a bare page, which
+names no picture, and the views a reader made after moving were ever measured without being
+asked. A link written with the box ticked carries the curve it drew, and one whose measured
+tone was already in band carries none and reopens unticked on the same picture. So every
+saved link and every seat opens exactly as it did.
+
+**What ticking it costs**, measured on the served page in headless Chrome with a 1920×1080
+window (a 1088×612 canvas), median of seven alternating runs of `shadeApart` with and
+without `derive` on one cached field, while a degree-6 harvest was running next door:
+
+| view | samples | field | colour, off | colour, on | added |
+| --- | --- | --- | --- | --- | --- |
+| home, `smooth`, `twilight_shifted` (curve acts) | 1× | 132 ms | 235 ms | 851 ms | +616 ms |
+| home, `smooth`, `twilight_shifted` (curve acts) | 4× | 502 ms | 292 ms | 1,045 ms | +752 ms |
+| julia `stripe` seat, curve stripped (acts) | 1× | 462 ms | 159 ms | 766 ms | +607 ms |
+| julia `stripe` seat, curve stripped (acts) | 4× | 1,637 ms | 331 ms | 1,071 ms | +740 ms |
+| clean `smooth` seat (in band, no second colour) | 1× | 86 ms | 250 ms | 767 ms | +518 ms |
+| clean `smooth` seat (in band, no second colour) | 4× | 351 ms | 443 ms | 896 ms | +453 ms |
+
+The measurement is taken on the output picture, which is the same 666,000 pixels at either
+sample count, so most of the added half second does not grow with supersampling; only the
+second colouring does. On a view that is cheap to iterate it roughly doubles the final stage.
 
 **The measurement is on the final stage and nowhere else.** `shade_level` colours the
 two-sample field, measures what it drew, and where the operator acts curves the stops,
@@ -1287,10 +1318,11 @@ recipe** group. What is worth writing down is the shape rather than the widgets:
   at zero and reads *Engine defaults (3)* otherwise; there is no separate counter.
 - **Autolevel is disabled only where the operator has nothing to say** — a direct trap or
   the modulate — with *Not used by this mode* beside it. Everywhere else it is enabled,
-  with one line saying whether the curve in force is this wallpaper's stored one or this
-  view's own; the longer reason is behind the `?`, as a title and as a click-to-reveal
-  paragraph, in two sentences: gallery wallpapers carry the curve they were made with, and
-  any other view is leveled from its own picture.
+  off unless the view arrived with a curve, with one line saying whether it is off or
+  whether the curve in force is a stored one or this view's own; the longer reason is
+  behind the `?`, as a title and as a click-to-reveal paragraph: what Autolevel does,
+  that gallery wallpapers made with it open with it on, and that anywhere else it starts
+  off and levels the view from its own picture when turned on.
 
 ### The rules the keys are read under
 
