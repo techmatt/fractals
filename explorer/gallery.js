@@ -157,8 +157,12 @@ export function install({ base, modes, hues, tiles, note, onPick }) {
     say();
   }
 
+  /** `swatches` marks the color family row, which is also single-choice: choosing a family
+   *  lets go of any other, and choosing the one already held clears the row. A mode row
+   *  stays a union of whatever is pressed. */
   function chipsInto(host, field, counts, label, swatches = false) {
     host.replaceChildren();
+    const chips = [];
     for (const [value, count] of counts) {
       const chip = document.createElement("button");
       chip.type = "button";
@@ -184,10 +188,14 @@ export function install({ base, modes, hues, tiles, note, onPick }) {
       chip.addEventListener("click", () => {
         const set = wanted[field];
         if (set.has(value)) set.delete(value);
-        else set.add(value);
-        chip.setAttribute("aria-pressed", String(set.has(value)));
+        else {
+          if (swatches) set.clear();
+          set.add(value);
+        }
+        for (const [other, held] of chips) other.setAttribute("aria-pressed", String(set.has(held)));
         fill();
       });
+      chips.push([chip, value]);
       host.append(chip);
     }
   }

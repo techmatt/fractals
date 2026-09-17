@@ -61,7 +61,7 @@ const WHEEL_ZOOM = 1.15;
  *  The pass used to end at one sample a pixel, and a fractal's edges alias at one. So
  *  it ends at two: the same field iterated on a grid twice as fine each way and reduced
  *  inside wasm by the engine's own filter — Lanczos-3 in linear light, which is what a
- *  download at 2× and a finished wallpaper are written through. Not a canvas scaled
+ *  download at 4× and a finished wallpaper are written through. Not a canvas scaled
  *  down, which would be a box filter over gamma-encoded bytes and a different picture. */
 const FINAL_SUPERSAMPLE = 2;
 
@@ -616,12 +616,12 @@ async function draw() {
     let field = renderer.cached(finalKey);
     const recolor = field !== undefined;
     if (!recolor) {
-      stat(`${size} · iterating at ${FINAL_SUPERSAMPLE}× on ${renderer.workerCount} workers…`);
+      stat(`${size} · iterating at ${FINAL_SUPERSAMPLE ** 2}× on ${renderer.workerCount} workers…`);
       field = await renderer.field(view, grid.width, grid.height, { supersample: FINAL_SUPERSAMPLE });
       if (field === null || pass !== drawing) return;
       renderer.remember(finalKey, field);
     } else if (!shape.direct) {
-      stat(`${size} · coloring at ${FINAL_SUPERSAMPLE}×…`);
+      stat(`${size} · coloring at ${FINAL_SUPERSAMPLE ** 2}×…`);
     }
 
     // A direct trap arrived painted and reduced, so there is nothing to colour. Anything
@@ -674,8 +674,8 @@ async function draw() {
     const probeCost = probeMs > 0 ? ` · probe ${probeMs.toFixed(0)} ms` : "";
     stat(
       recolor
-        ? `${size} at ${FINAL_SUPERSAMPLE}× · recolored in ${shaded.elapsed.toFixed(0)} ms${probeCost}`
-        : `${size} at ${FINAL_SUPERSAMPLE}× · field ${(field.elapsed / 1000).toFixed(2)} s ` +
+        ? `${size} at ${FINAL_SUPERSAMPLE ** 2}× · recolored in ${shaded.elapsed.toFixed(0)} ms${probeCost}`
+        : `${size} at ${FINAL_SUPERSAMPLE ** 2}× · field ${(field.elapsed / 1000).toFixed(2)} s ` +
             `· shade ${shaded.elapsed.toFixed(0)} ms${probeCost}`,
     );
     panel?.describe();

@@ -113,7 +113,8 @@ Two panels, and the document itself does not scroll.
 **Left, one of two things.** *Gallery* is the staged gallery `python -m builder seats`
 lands — a thousand wallpapers one curation solve seated — as pictures and nothing else:
 no caption, no id, no score, two rows of filter chips over them, mode and hue family,
-each with its count. A tile sets the viewer to that seat's whole recipe. *Atlas* is the
+each with its count. Mode chips add up; a hue family chip is one at a time, and pressing
+it again clears it. A tile sets the viewer to that seat's whole recipe. *Atlas* is the
 same frame `atlas/index.html` shows, mounted in the panel through `atlas/frame.js`, with
 the marks clicking into the viewer rather than navigating.
 
@@ -514,8 +515,8 @@ exactly the same rectangle at exactly a quarter of the samples.
 
 **The last stage is the engine's supersample**, the `supersample` key a download already
 sends: iterated on a grid twice as fine and reduced by `resample::downsample` inside wasm,
-so the screen now shows what a download at 2× of the same size would save — and the
-download menu's first size, *As shown*, at 2× saves that picture without drawing it
+so the screen now shows what a download at 4× of the same size would save — and the
+download menu's first size, *As shown*, at 4× saves that picture without drawing it
 again. One sample per pixel aliased visibly on every fractal edge. The stage's shade goes
 to a worker of its own (`shadeApart`, with a copy of the field so the cached one stays
 whole), because four times the samples is up to half a second on the slower shades and a
@@ -595,7 +596,7 @@ shows more or less height rather than cropping. The estimate's tooltip says so.
 
 **One row, first, and always open.** Download is the studio's first section: two buttons,
 leftmost — *Download PNG* and *Download JPG* — then a size (*As shown*, three wallpaper
-presets, or a custom width and height), a 1× / 2× samples toggle, and an estimate of a few
+presets, or a custom width and height), a 1× / 4× samples toggle, and an estimate of a few
 words. The size, samples and estimate are the same for both; the pressed button is the
 progress bar and the way to cancel, and the other is held still until it finishes. On a
 phone the row wraps. The file is named for what is in it —
@@ -636,7 +637,7 @@ the canvas a PNG is encoded on and is far under the lowest browser cap in circul
 A view that `f64` still resolves on the screen can be one it does not resolve on a grid
 four times finer, and that refusal is the engine's own sentence, shown as it stands.
 
-**The estimate is a few words, scaled from this view.** *ready* where As shown at 2× is
+**The estimate is a few words, scaled from this view.** *ready* where As shown at 4× is
 the picture already on the screen; otherwise `~5 s`, `~40 s`, `~3 min`, which is what the
 screen's own finished pass of this view took — field and shade — scaled by the ratio of
 sample counts. Only before that pass has finished is the per-mode table below the prior.

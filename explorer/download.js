@@ -33,7 +33,7 @@ const PRESETS = [
 
 /** A size menu entry that is no fixed size: the canvas's own pixel grid.
  *
- *  The screen's pass ends at two samples a pixel, so at 2× this entry is the picture
+ *  The screen's pass ends at two samples a pixel each way, so at 4× this entry is the picture
  *  already on the screen and is saved without being drawn again. It was the default
  *  until the display's own size could be offered, and still is where that cannot. */
 const SHOWN = "shown";
@@ -62,8 +62,11 @@ const DEFAULT_PRESET = 1;
 const DEFAULT_SUPERSAMPLE = 2;
 
 /** The samples toggle. Two settings: the one-sample picture a quick look wants, and the
- *  two a pixel the screen's own finished pass ends at, which is what a render sheet uses.
- *  Past two the memory ceiling below refuses the two larger presets. */
+ *  two a pixel each way the screen's own finished pass ends at, which is what a render
+ *  sheet uses. Past two the memory ceiling below refuses the two larger presets.
+ *
+ *  A setting is a factor on each axis, and it is labelled by the samples per pixel it
+ *  makes, which is also what it costs: `2` is shown as `4×`. */
 const SUPERSAMPLES = [1, 2];
 
 /** The two files a picture can be saved as, each with its own button.
@@ -270,7 +273,7 @@ export function install(context) {
     const button = document.createElement("button");
     button.type = "button";
     button.className = "chip";
-    button.textContent = `${factor}×`;
+    button.textContent = `${factor * factor}×`;
     button.title = factor === 1
       ? "One sample per pixel: quicker, with rougher edges."
       : `${factor * factor} samples per pixel: smoother edges, and about ${factor * factor} times as long.`;
