@@ -29,7 +29,9 @@ width, so it stays unlinked by design rather than opening at something near it. 
 parameter left alone is not emitted.** Its default lives in the engine's mode catalog,
 which is the same place the mode's identity lives, so a link that omits `density` is asking
 for "the stripe mode" rather than for "a stripe mode at 6" — and it should move if the
-catalog ever retunes that mode. `permalink.js` states both sides of that, and
+catalog ever retunes that mode. The two exceptions since permalink v3 are an angle mode's
+`weight` and a trap's `opacity`: absent, those are taken from the view. See *A mode's
+parameters, from the view*. `permalink.js` states both sides of that, and
 `builder/links.py`'s `REASONS` is where a refusal gets its name.
 
 Draft 1 was built to a design document that has since been retired; this README and the
@@ -85,9 +87,10 @@ download.js           the same render at a wallpaper's size, and what caps it
 render.js             the worker pool, the plan, the field passes, the shade
 worker.js             one worker: one wasm instance, one band of rows
 permalink.js          the link contract — parse, validate, canonicalize
-permalink.test.mjs    46 tests, `node --test explorer/permalink.test.mjs`
+permalink.test.mjs    48 tests, `node --test explorer/permalink.test.mjs`
 bands.test.mjs        3 tests: the pool cuts the frame, never what is in it
 level.test.mjs        7 tests: the module's tone measurement, and a derived curve replays
+derive.test.mjs       6 tests: a derived weight replays, a derived opacity lands where it says
 palettes.jsonl        the roster palettes.js is baked from; 1,021 maps, 77 offered
 modes.jsonl           the roster catalog.js is baked from: the 17 modes the picker offers
 palette-names.json    every map's display name and whether a person wrote it, by underlying name
@@ -839,10 +842,109 @@ of the table again, which is the thing the change is for. **A tenth of the raw g
 what a reader downloads**: the transfer is gzipped, and 14 KB on 164 is the honest figure
 to compare against 8.4 seconds off `stripe`.
 
-## The permalink contract, version 2
+## A mode's parameters, from the view *(explorer_param_derive_ckpt128, 2026-09-16)*
+
+Two settled constants fail on views they were not settled on, and the page now takes both
+from the view in front of it. `permalink.js`'s `DERIVED` names them.
+
+- **An angle mode's texture weight** (`smooth_mean_angle`, `smooth_angle_min`,
+  `smooth_curvature`). The texture is stretched against its own frame, so its amplitude is
+  already the view's. How busy it is from one pixel to the next is not, and at the
+  catalog's 0.85 a texture that changes at every pixel buries the picture. `shade_level`
+  measures the **roughness** first: the mean absolute difference of the stretched texture
+  between neighbouring samples one output pixel apart, over pixels where the base has a
+  value. Then it draws at `weight = 0.0197 / roughness`, held to `[0.05, 0.85]`
+  (`engine-wasm/src/derive.rs`).
+- **A trap's opacity** (`direct_trap_screen`, `_multiply`, `_lines`). A trap has no field,
+  so before anything is painted the pool runs `probe_band` over a 160-wide grid. It counts
+  each pixel's near misses and their **load**, `Σ (1 − key) · S` (screen) or
+  `Σ (1 − key) · (1 − S)` (multiply), with `S` the sample's luminance. Each hit multiplies
+  the pixel's distance from its ground by `1 − opacity · f · S`, so to first order the pixel
+  lands at `1 − exp(−opacity · load)`, or `exp(−opacity · load)` for multiply.
+  `derive_opacity` solves that for the **median** hit pixel landing at **Oklab L 0.5**, held
+  to the painter's own cap (0.15 for the screened cross). The threshold is never derived: it
+  is the expensive axis, and the mask's shape belongs to the place.
+
+**Both are rounded to three significant figures before anything is drawn**, so a link
+spells the number the picture was drawn at, and spells it short.
+
+### Where the value in force comes from
+
+| `tuning` | when | what the draw does |
+| --- | --- | --- |
+| `stored` | a link, seat or atlas mark carries the value; a mode switch back into the mode a seat sits in at this place | replays it |
+| `derived` | a v3 link without the key; a mode switch into a mode no seat here sits in; the first change a reader makes to a stored view | measures it every pass |
+| `pinned` | the reader typed in the box | keeps it through pans and zooms, until the mode changes |
+
+A switch into a trap mode first seeds the value its seats were most often drawn at: 0.6 for
+multiply, read off the gallery record at load. The probe then replaces it, and the seed only
+survives where the probe found nothing. The line beside the boxes says which of the three
+is in force. A derived value lands in `view.params`, so the box shows it, Copy link writes
+it, and a download draws at it instead of measuring again. **A probe with no hits changes
+nothing**, and the status line says so: "Nothing in this view comes near enough to the trap
+to paint" where the finished frame is one colour, and "Too little of this view comes near
+the trap to measure" where a thin line the probe grid missed is still there.
+
+A composite's `weight` is no longer part of its field's cache key (`fieldKey`), because it
+mixes two fields that are already computed. A probe is cached under `probeKey`, which is
+everything but the opacity.
+
+### What the pilot found
+
+The weight target was set on one view Matt judged by eye:
+`smooth_mean_angle` at `x=-1.251494740103066 y=0.04110849726974509 w=7.98e-8` on
+`cmr.jungle`, mirrored. There 0.85 is far too strong and about 0.1 is right. Its roughness
+is 0.197 on the default 884×496 canvas, so it derives **0.1**. Across 15 angle seats at
+480×270, roughness runs 0.047–0.181, so their derived weights run 0.12–0.45. Those seats
+still open at the 0.85 they were judged at.
+
+On about 170 seat places painted at 160×90 under each trap, the failures were mostly
+**saturation**, not emptiness:
+- screen goes white on 7;
+- lines goes white on 26;
+- multiply goes black on 6 at the catalog's 0.2 and on **46 at the seated 0.6**.
+
+Derived, every saturated case landed with its median painted pixel at L 0.49–0.51. Sparse
+lines views, where 70% of the frame is never hit, derive to opacity 1 and stay mostly black:
+no opacity paints a pixel that no orbit comes near.
+
+**The interior shows the texture at full strength whatever the weight is.** The base has no
+value inside the set, so `coloring::composite` shows the texture there alone. That is the
+engine's behaviour and it is left alone.
+
+### What it costs
+
+- **Weight:** one extra pass over the one-sample field. On your view at 884×496 in Node,
+  the shade takes 77 ms and 84 ms with the weight derived.
+- **Opacity:** the probe, over the pool, before the preview. On the served page it took
+  67–161 ms at 160×90 on the default canvas; the pilot measured a worst of 2.3 s,
+  single-threaded, on a view that is almost all interior at 40,000 iterations. A probe that
+  is cached costs nothing, and the stat line names the probe's time when it ran.
+
+## The permalink contract, version 3
 
 `permalink.js` is the only thing that decides what a link means, and nothing else in the
 explorer is allowed a second opinion. A URL is the only permanent thing this page emits.
+
+### What version 3 changed, and why it is a 3
+
+Version 3 changed what an **absent** `weight` or `opacity` means under the six modes
+`DERIVED` lists. Under v1 and v2 it meant the catalog's constant, and every picture drawn
+before v3 was drawn at it. Under v3 it means "take it from this view". A change of meaning
+is what the contract's own rules say bumps `v`: without the bump, every angle or trap link
+anybody had saved would open as a different picture.
+
+So an older link is read by its own rules. `parse` fills an absent derived parameter of a
+v1 or v2 link with the catalog's constant, which comes from `catalog.js`'s baked `SETTLED`
+through `context.settled`. The view re-emits as v3 with the number written down. The site's
+own links went through the same door:
+- `builder/emit.mjs` and `atlas/links.js` write a record's picture with `settledParams`;
+- 130 seat links gained `weight=0.85` and 33 gained an opacity;
+- five figure links gained theirs;
+- every link on the site now says `v=3`.
+
+A link this page writes always carries the value in force, so an absent one only arrives
+from a person who left it out.
 
 ### What version 2 added, and why it is a 2
 
@@ -864,7 +966,7 @@ the version is cheaper than leaving a reader to find it out.
 v · f · cx · cy · px · py · zx · zy · m · the mode's parameters · x · y · w · a · p · the shade keys · level
 ```
 
-- **`v`** — required. `1` and `2` both parse; every string this page writes says `v=2`.
+- **`v`** — required. `1`, `2` and `3` parse; every string this page writes says `v=3`.
   Anything else is refused: it was written for a version of this page that no longer
   exists, or for one that does not exist yet.
 - **`f`** — the family. A name is the whole recurrence **including its exponent**, because
@@ -1199,7 +1301,7 @@ list of what a link may *say*. Two lists on purpose — a contract that read its
 from a generated file could be widened by rebuilding it — and the test suite asserts they
 are the same roster in the same order, which is where a promoted or retired mode shows up.
 
-`permalink.test.mjs` holds all of that: **43 tests**, Node's own runner, nothing
+`permalink.test.mjs` holds all of that: **48 tests**, Node's own runner, nothing
 installed. Among them, encode-then-decode is the identity for **every family crossed with
 a mode of each of the engine's four coloring shapes**, parameters and constants included.
 

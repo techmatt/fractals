@@ -11,7 +11,7 @@
 // what makes them the same thing rather than two readings of one record.
 
 import * as link from "../explorer/permalink.js";
-import { CONSTANTS as ANCHORS } from "../explorer/catalog.js";
+import { CONSTANTS as ANCHORS, SETTLED } from "../explorer/catalog.js";
 import { DEFAULT_PALETTE, PALETTES } from "../explorer/palettes.js";
 import { familySpecOf } from "../explorer/render.js";
 
@@ -52,6 +52,7 @@ export function contractOf(homeRaw) {
     constants: seedConstants,
     palettes: PALETTES,
     defaultPalette: DEFAULT_PALETTE,
+    settled: (mode) => SETTLED[mode],
   };
 }
 
@@ -115,7 +116,9 @@ export function opened(contract, slot) {
       family,
       constants,
       mode,
-      params,
+      // The mark's picture was drawn at the catalog's constant wherever the slot names
+      // none, and under permalink v3 an absent weight or opacity is one to derive.
+      params: link.settledParams(mode, params, contract),
       x: written(slot.x),
       y: written(slot.y),
       w: written(slot.w),

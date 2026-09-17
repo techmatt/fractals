@@ -1,4 +1,4 @@
-// The permalink contract, version 2. This module owns parse, validate and
+// The permalink contract, version 3. This module owns parse, validate and
 // canonicalize, and nothing else in the explorer is allowed a second opinion
 // about what a link means.
 //
@@ -56,9 +56,29 @@
 // "the stripe mode", not for "a stripe mode at 6". If the catalog ever retunes a
 // mode, that link should move with it — that is what naming a mode is for.
 //
+// **Two parameters are the exception since version 3**, and `DERIVED` names them: an
+// angle mode's `weight` and a screened or multiplied trap's `opacity`. Absent, those
+// mean "taken from this view" — the page measures the view and derives the value —
+// rather than the catalog's constant. See "What version 3 changed" below.
+//
 // Emit order: v · f · cx · cy · px · py · zx · zy · m · the mode's parameters · x · y · w ·
 // a · p · then the shade parameters, in the order the engine's own palette recipe
 // declares them · level.
+//
+// ## What version 3 changed, and why it is a 3
+//
+// Version 3 changed what an absent `weight` or `opacity` MEANS under the modes `DERIVED`
+// lists, and a change of meaning is exactly what the rules above say bumps `v`. Under
+// v1 and v2 an absent value was the catalog's settled constant — 0.85 for an angle
+// mode's texture, the trap's own opacity — and every picture drawn before v3 was drawn
+// at it. Under v3 it asks the page to derive the value from the view in front of it.
+//
+// So an older link is still read by its own rules: `parse` fills an absent derived
+// parameter of a v1 or v2 link with the catalog's constant, which `context.settled`
+// supplies out of the baked catalog, and the view re-emits as v3 with the number
+// written down. Nothing anybody saved changes picture. A v3 link the page writes always
+// carries the value in force, derived or not, so an absent one only ever arrives from a
+// person who left it out on purpose.
 //
 // ## `level`, and why it is last
 //
@@ -100,10 +120,10 @@
 // default and a reader.
 
 /** The contract version this module emits. */
-export const VERSION = 2;
+export const VERSION = 3;
 
 /** The versions this module reads. See the note above on why 1 is still one of them. */
-export const READS = [1, 2];
+export const READS = [1, 2, 3];
 
 /**
  * The families this page draws, by the name a link carries.
@@ -251,6 +271,42 @@ export const MODE_PARAMETERS = {
   threads: ["sigma", "weight"],
   itinerary: ["shift"],
 };
+
+/**
+ * The parameters a view derives when a v3 link leaves them out, by mode.
+ *
+ * An angle mode's texture weight and a trap's opacity were settled once for every view,
+ * and each fails on views its constant was not settled on: a texture that changes at
+ * every pixel buries the picture at 0.85, and a trap whose orbits rarely come close
+ * paints a blank frame. The module measures the view and derives the value; this is
+ * which keys, under which modes, that happens to. `direct_trap_ring` is not here: it is
+ * not a mode the pipeline mines, and nothing measured it.
+ */
+export const DERIVED = {
+  smooth_mean_angle: "weight",
+  smooth_angle_min: "weight",
+  smooth_curvature: "weight",
+  direct_trap_screen: "opacity",
+  direct_trap_multiply: "opacity",
+  direct_trap_lines: "opacity",
+};
+
+/**
+ * A view's parameters with the catalog's constant written in wherever a derived one is
+ * absent: what a *record* of a picture means, because every picture a record describes
+ * was drawn at that constant. Without it a recorded view would emit as a v3 link that
+ * asks the page to derive, and open as a picture nobody made. A reader's view never goes
+ * through here — an absent value on the page is one still to be derived.
+ */
+export function settledParams(mode, params, context) {
+  const derived = DERIVED[mode];
+  if (derived === undefined || params[derived] !== undefined) return params;
+  const settled = context.settled?.(mode)?.[derived];
+  if (settled === undefined) {
+    throw new Error(`the contract context has no settled ${derived} for ${mode}`);
+  }
+  return { ...params, [derived]: settled };
+}
 
 /** Every parameter key the contract spells, so an unknown key is told apart from
  *  a key the current mode has no room for. */
@@ -547,6 +603,9 @@ export function parse(search, context) {
     }
     values[key] = value;
   }
+  // A link written before v3 meant the catalog's constant by an absent derived parameter,
+  // and still does. See "What version 3 changed" at the top.
+  if (Number(version) < 3) Object.assign(values, settledParams(mode, values, context));
 
   const shade = defaultShade();
   for (const spec of SHADE_KEYS) {
@@ -687,8 +746,25 @@ export function canonicalize(search, context) {
 export function fieldKey(view, context, pixelWidth, pixelHeight, direct = false) {
   const geometry = direct
     ? view
-    : { ...view, palette: context.defaultPalette, shade: defaultShade(), level: null };
+    : { ...view, params: shadeless(view.params), palette: context.defaultPalette, shade: defaultShade(), level: null };
   return `${emit(geometry, context)}&px=${pixelWidth}x${pixelHeight}`;
+}
+
+/** A composite's weight mixes two fields that are already computed, so it is a colour
+ *  and not a number the arithmetic reads: a field keyed on it would be iterated again
+ *  for every weight a view is derived or dragged to. */
+function shadeless(params) {
+  const { weight: _, ...rest } = params;
+  return rest;
+}
+
+/**
+ * What a trap's probe of this view depends on: everything its painting does except the
+ * opacity the probe is there to derive. The probe grid is fixed by the page, so no size.
+ */
+export function probeKey(view, context) {
+  const { opacity: _, ...params } = view.params;
+  return `${emit({ ...view, params, level: null }, context)}&probe`;
 }
 
 /**

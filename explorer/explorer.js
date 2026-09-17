@@ -33,7 +33,7 @@
 
 import * as link from "./permalink.js";
 import * as shade from "./shade.js";
-import { CONSTANTS as ANCHORS, MODES as IDENTITIES } from "./catalog.js";
+import { CONSTANTS as ANCHORS, MODES as IDENTITIES, SETTLED } from "./catalog.js";
 import { DEFAULT_PALETTE, PALETTES, PROVENANCE } from "./palettes.js";
 import { fetchStops } from "./stops.js";
 import * as download from "./download.js";
@@ -44,6 +44,7 @@ import {
   Renderer,
   familySpecOf,
   pixelGrid,
+  probeGrid,
   shadeApart,
   specOf,
 } from "./render.js";
@@ -150,6 +151,7 @@ const modePicker = document.getElementById("mode");
 const constantStrip = document.getElementById("constants");
 const coordinateStrip = document.getElementById("coordinates");
 const paramStrip = document.getElementById("params");
+const paramNote = document.getElementById("param-note");
 const copyButton = document.getElementById("copy");
 const copyViewButton = document.getElementById("copy-view");
 const notice = document.getElementById("notice");
@@ -218,6 +220,43 @@ let offeredModes = null;
  *  flag, so a link reopens as the picture that was seen rather than as a fresh measurement
  *  of it. A bare page with no picture in its address is `derived` from the start. */
 let levelling = "stored";
+
+/** Where the value of the mode's derived parameter comes from: `stored`, `derived` or
+ *  `pinned`. The parameter is `link.DERIVED`'s — an angle mode's texture weight, a trap's
+ *  opacity — and the other modes have none, which leaves this with nothing to say.
+ *
+ *  **`stored` replays what a view arrived with**, the same as a tone curve: a seat, an atlas
+ *  mark or a link carries the number its picture was drawn at, and a mode switch back into
+ *  the mode a seat sits in carries that seat's own. **`derived` takes it from the view**:
+ *  a view that arrived without one, a mode switch into a mode no seat here sits in, and
+ *  every view after the first change a reader makes to a stored one. The weight is
+ *  measured on the one-sample field before it is coloured and the opacity on a probe
+ *  before anything is painted, and either lands in `view.params`, which is what the box
+ *  shows and Copy link writes. **`pinned` is a number the reader typed**, and it holds
+ *  through pans and zooms until the mode changes. A link cannot say which of the three
+ *  wrote its number, so a reopened pinned value is `stored`, and moves at the first move
+ *  like any other. */
+let tuning = "stored";
+
+/** Where a `stored` value came from, for the line beside the box: `seat` or `link`. */
+let tunedFrom = "link";
+
+/** What the last probe said — `{ opacity, hit_share, load }` — or `null` where no probe
+ *  ran for the view on the screen. */
+let probed = null;
+
+/** Probes by `link.probeKey` and grid, a handful deep: a pan back, a recolour or a resize
+ *  that lands on the same probe grid asks nothing of the pool. */
+const probes = new Map();
+const PROBE_CACHE = 8;
+
+/** The gallery's seats by place and mode, each with the parameters it was drawn at. A
+ *  mode switch back into a seat's own mode carries these. */
+const seatsByPlace = new Map();
+
+/** The value each trap mode's seats were most often drawn at, by mode: what a switch into
+ *  that mode opens at before its probe has said anything, and keeps where it says nothing. */
+const seatedParams = {};
 
 /** Whether the Autolevel box is ticked. Unticked, the palette is drawn as it is. */
 let levelOn = true;
@@ -476,6 +515,39 @@ async function draw() {
     updateReadout();
   }
 
+  // A trap's opacity decides every pixel it paints, so it is derived before the first of
+  // them: the probe runs over the pool ahead of the preview, and costs a few percent of it.
+  const tuned = link.DERIVED[view.mode];
+  const derivingOpacity = tuning === "derived" && tuned === "opacity" && shape.direct;
+  const derivingWeight = tuning === "derived" && tuned === "weight" && !shape.direct;
+  let probeMs = 0;
+  probed = null;
+  if (derivingOpacity) {
+    const at = probeGrid(grid);
+    const probeKey = `${link.probeKey(view, contract)}&px=${at.width}x${at.height}`;
+    let counts = probes.get(probeKey);
+    if (counts === undefined) {
+      stat(`probing at ${at.width}×${at.height}…`);
+      const started = performance.now();
+      try {
+        counts = await renderer.probe(view, at.width, at.height);
+      } catch (error) {
+        say(String(error.message ?? error));
+        if (pass === drawing) showState("stopped");
+        return;
+      }
+      if (counts === null || pass !== drawing) return;
+      probeMs = performance.now() - started;
+      probes.set(probeKey, counts);
+      while (probes.size > PROBE_CACHE) probes.delete(probes.keys().next().value);
+    }
+    probed = renderer.deriveOpacity(view, counts);
+    if (probed.opacity !== null) {
+      view = { ...view, params: { ...view.params, opacity: probed.opacity } };
+    }
+    syncParams();
+  }
+
   const previewGrid = {
     width: grid.width / PREVIEW_DIVISOR,
     height: grid.height / PREVIEW_DIVISOR,
@@ -494,9 +566,20 @@ async function draw() {
     // modulate, which spends its base by rank already — throws from `shade` rather than
     // from the plan, and a refusal a reader caused with a control has to be said rather
     // than left to the console.
+    // A derived texture weight is measured here, on the one-sample field, before it is
+    // coloured: the preview drew at whatever weight was in force, and every stage after this
+    // one draws at the weight this one derived.
+    const shadeFull = (full) => {
+      const shaded = renderer.shade(full, view, { deriveWeight: derivingWeight });
+      if (derivingWeight && shaded.weight !== null) {
+        view = { ...view, params: { ...view.params, weight: shaded.weight } };
+        syncParams();
+      }
+      present(shaded.image);
+    };
     const cachedFull = renderer.cached(fullKey);
     if (cachedFull !== undefined) {
-      present(renderer.shade(cachedFull, view).image);
+      shadeFull(cachedFull);
     } else {
       const cachedPreview = renderer.cached(previewKey);
       if (cachedPreview !== undefined) {
@@ -513,7 +596,7 @@ async function draw() {
       const full = await renderer.field(view, grid.width, grid.height);
       if (full === null || pass !== drawing) return;
       renderer.remember(fullKey, full);
-      present(renderer.shade(full, view).image);
+      shadeFull(full);
     }
     settle();
     showState("sharpening");
@@ -568,6 +651,15 @@ async function draw() {
     present(shaded.image);
     finished = shaded.image;
     showState("final");
+    if (derivingOpacity && probed.opacity === null) {
+      // No opacity lifts a mask with nothing in it, so the page says what it found rather
+      // than guessing at a number.
+      say(
+        uniform(shaded.image)
+          ? "Nothing in this view comes near enough to the trap to paint, so no opacity can bring it out."
+          : `Too little of this view comes near the trap to measure, so opacity stays at ${shownParam(view.params.opacity ?? planOf(view).params?.opacity)}.`,
+      );
+    }
     // Where the field came off the cache its `elapsed` is still the pass that iterated
     // it, so a recolour keeps the field's cost and re-measures only the shade. The fastest
     // shade of this field is the one kept: the page's first shade starts a worker while
@@ -579,11 +671,12 @@ async function draw() {
       field: (field.elapsed ?? 0) / 1000,
       shade: measure?.key === finalKey ? Math.min(measure.shade, shadeSeconds) : shadeSeconds,
     };
+    const probeCost = probeMs > 0 ? ` · probe ${probeMs.toFixed(0)} ms` : "";
     stat(
       recolor
-        ? `${size} at ${FINAL_SUPERSAMPLE}× · recolored in ${shaded.elapsed.toFixed(0)} ms`
+        ? `${size} at ${FINAL_SUPERSAMPLE}× · recolored in ${shaded.elapsed.toFixed(0)} ms${probeCost}`
         : `${size} at ${FINAL_SUPERSAMPLE}× · field ${(field.elapsed / 1000).toFixed(2)} s ` +
-            `· shade ${shaded.elapsed.toFixed(0)} ms`,
+            `· shade ${shaded.elapsed.toFixed(0)} ms${probeCost}`,
     );
     panel?.describe();
   } catch (error) {
@@ -597,6 +690,16 @@ async function draw() {
     if (pass === drawing) showState("stopped");
   }
 }
+
+/** Whether every pixel of a picture is the same colour: a trap that painted nothing. */
+function uniform(image) {
+  const data = image.data;
+  for (let at = 4; at < data.length; at += 4) {
+    if (data[at] !== data[0] || data[at + 1] !== data[1] || data[at + 2] !== data[2]) return false;
+  }
+  return true;
+}
+
 
 /** Put a quarter-resolution picture up at full size while the real one computes. */
 function stretch(image) {
@@ -764,18 +867,58 @@ function buildParams() {
     input.className = "param";
     input.title = control.tip;
     input.step = control.step;
-    input.value = view.params[key] ?? settled[key] ?? "";
+    input.dataset.key = key;
+    input.value = shownParam(view.params[key] ?? settled[key]);
     input.addEventListener("change", () => {
       const value = Number(input.value);
       if (!Number.isFinite(value)) {
-        input.value = view.params[key] ?? settled[key] ?? "";
+        input.value = shownParam(view.params[key] ?? settled[key]);
         return;
       }
       view = { ...view, params: { ...view.params, [key]: value } };
       changed();
+      // A number the reader typed into the derived box is theirs, and a pan does not
+      // measure it away.
+      if (key === link.DERIVED[view.mode]) tuning = "pinned";
+      syncParams();
       draw();
     });
     paramStrip.append(label, input);
+  }
+  syncParams();
+}
+
+/** A parameter's value as its box shows it: the number in force, which a derivation has
+ *  already rounded to the figures the module keeps. */
+function shownParam(value) {
+  return value === undefined ? "" : String(value);
+}
+
+/**
+ * The boxes' values and the line beside them, after a derivation moved a value or the
+ * reader pinned one. A box somebody is typing in is left alone.
+ */
+function syncParams() {
+  const settled = planOf(view).params ?? {};
+  for (const input of paramStrip.querySelectorAll("input")) {
+    if (document.activeElement === input) continue;
+    input.value = shownParam(view.params[input.dataset.key] ?? settled[input.dataset.key]);
+  }
+  const key = link.DERIVED[view.mode];
+  if (key === undefined) {
+    paramNote.textContent = "";
+    return;
+  }
+  const what = key === "weight" ? "Texture" : "Opacity";
+  if (tuning === "pinned") {
+    paramNote.textContent = `${what} set by hand, and kept as the view moves.`;
+  } else if (tuning === "stored") {
+    paramNote.textContent =
+      tunedFrom === "seat" ? `${what} as this wallpaper was made.` : `${what} as this link carries it.`;
+  } else if (probed !== null && probed.opacity === null) {
+    paramNote.textContent = `${what} left as it was: nothing in this view to measure.`;
+  } else {
+    paramNote.textContent = `${what} taken from this view.`;
   }
 }
 
@@ -1101,6 +1244,7 @@ function openLink(query, { gap = null, key = null, what = "this picture" } = {})
   view = wanted;
   seat = key;
   arrived();
+  if (key !== null) tunedFrom = "seat";
   tiles?.mark(key);
   // The record's sentence names caps, curves and policies, which is Details' vocabulary;
   // the line under the picture only says that there is a difference and where to read it.
@@ -1118,6 +1262,11 @@ function arrived() {
   levelOn = true;
   storedCurve = view.level;
   derivedInBand = false;
+  // A link that carries its derived parameter replays it; one that leaves it out asks for
+  // it to be taken from the view, which is what an absent one means since permalink v3.
+  const key = link.DERIVED[view.mode];
+  tuning = key !== undefined && view.params[key] === undefined ? "derived" : "stored";
+  tunedFrom = "link";
 }
 
 /** The reader changed the picture: the seat note goes, and the tone is measured from now
@@ -1126,6 +1275,44 @@ function arrived() {
 function changed() {
   leaveSeat();
   levelling = "derived";
+  if (tuning === "stored") tuning = "derived";
+}
+
+/** A place, as the identity a seat and a view share: family, constants and frame. */
+function placeOf(current) {
+  return [
+    current.family,
+    ...link.CONSTANTS[current.family].map((key) => current.constants[key].text),
+    current.x.text,
+    current.y.text,
+    current.w.text,
+  ].join("|");
+}
+
+/**
+ * Index the gallery's seats by place and mode, and find what each trap mode's seats were
+ * most often drawn at. Read off the links the record carries, through the contract, so a
+ * seat's parameters are exactly what opening it would give.
+ */
+function indexSeats(rows) {
+  const tallies = {};
+  for (const row of rows) {
+    let seated;
+    try {
+      seated = link.parse(`?${row.link}`, contract);
+    } catch {
+      continue;
+    }
+    seatsByPlace.set(`${placeOf(seated)}|${seated.mode}`, seated.params);
+    const key = link.DERIVED[seated.mode];
+    if (key !== "opacity" || seated.params[key] === undefined) continue;
+    const tally = (tallies[seated.mode] ??= new Map());
+    tally.set(seated.params[key], (tally.get(seated.params[key]) ?? 0) + 1);
+  }
+  for (const [mode, tally] of Object.entries(tallies)) {
+    const [value] = [...tally].sort((a, b) => b[1] - a[1] || a[0] - b[0])[0];
+    seatedParams[mode] = { opacity: value };
+  }
 }
 
 /** Stop claiming the picture is the one that was opened. */
@@ -1372,10 +1559,17 @@ familyPicker.addEventListener("change", () => {
 /** A new mode keeps the place and drops the parameters, because they belonged to
  *  the mode that is being left. */
 modePicker.addEventListener("change", () => {
-  view = { ...view, mode: modePicker.value, params: {} };
+  const mode = modePicker.value;
+  // Where a seat sits at this place in the mode being switched to, the switch is back to
+  // that seat's picture, parameters and all; anywhere else a trap opens at what its seats
+  // were most often drawn at, and the draw takes the derived parameter from the view.
+  const seated = seatsByPlace.get(`${placeOf(view)}|${mode}`);
+  view = { ...view, mode, params: { ...(seated ?? seatedParams[mode] ?? {}) } };
   // A mode that was only listed because the view arrived in it goes, now it is left.
   syncModes();
   changed();
+  tuning = seated !== undefined ? "stored" : "derived";
+  tunedFrom = "seat";
   buildParams();
   // What a download of this view would cost is per mode, so the line under the
   // control moves with the picker rather than at the moment somebody presses it.
@@ -1467,6 +1661,11 @@ function viewRecord() {
     recipe,
     plan,
     palette: { name: view.palette, shown: shownName(view.palette) },
+    params: {
+      derived_key: link.DERIVED[view.mode] ?? null,
+      source: link.DERIVED[view.mode] === undefined ? null : tuning,
+      ...(probed !== null ? { probe: probed } : {}),
+    },
     level: {
       on: levelOn,
       source: levelling === "stored" ? "replayed" : "derived",
@@ -1549,7 +1748,9 @@ async function main() {
     constants: seedConstants,
     palettes: PALETTES,
     defaultPalette: DEFAULT_PALETTE,
+    settled: (mode) => SETTLED[mode],
   };
+  if (!(record instanceof Error)) indexSeats(record.seats);
 
   fill(familyPicker, link.FAMILIES);
 

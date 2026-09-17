@@ -12,6 +12,8 @@
 //! `shade_level` is `shade` with the autolevel operator's measure half after it —
 //! the finished picture measured, and where it acts the same field coloured again
 //! through a curved map — and `derive_level` is that measurement alone, for a test.
+//! `shade_level` also derives an angle mode's texture weight from the lanes it holds, and
+//! `probe_band` and `derive_opacity` do the same for a trap's opacity: see [`derive`].
 //!
 //! A field is what costs seconds; a color is what costs milliseconds. Computing
 //! them apart is what lets a worker own a band of rows, and lets a palette change
@@ -68,6 +70,7 @@ use fractal_engine::{maxiter, mode, resample};
 use num_complex::Complex;
 use serde::Deserialize;
 
+mod derive;
 mod level;
 
 /// The name a colormap baked from control points is given. It exists only to
@@ -169,6 +172,9 @@ struct Plan {
     /// Which lanes must not be narrowed to `f32`. One coloring needs this — see
     /// [`fractal_engine::field::Exact`].
     exact: Vec<bool>,
+    /// The texture weight the catalog settled this mode at, before any parameter the
+    /// spec carried: the ceiling a derived weight is held under. `None` off a composite.
+    settled_weight: Option<f64>,
 }
 
 impl Plan {
@@ -179,7 +185,10 @@ impl Plan {
     /// Whether `band_autolevel/v1` acts on this coloring at all: the operator's own
     /// `applies_to`, a field coloring and a composite and nothing else.
     fn levels(&self) -> bool {
-        matches!(self.coloring, Coloring::Field { .. } | Coloring::Composite { .. })
+        matches!(
+            self.coloring,
+            Coloring::Field { .. } | Coloring::Composite { .. }
+        )
     }
 
     /// Samples in one band of rows.
@@ -242,11 +251,12 @@ fn resolve(text: &str) -> Result<Plan, String> {
         ));
     }
 
-    let coloring = tune(
-        &spec.mode,
-        mode::resolve(&spec.mode, Some(&family))?,
-        &spec.params,
-    )?;
+    let settled = mode::resolve(&spec.mode, Some(&family))?;
+    let settled_weight = match &settled {
+        Coloring::Composite { texture_weight, .. } => Some(*texture_weight),
+        _ => None,
+    };
+    let coloring = tune(&spec.mode, settled, &spec.params)?;
     coloring.validate()?;
     spec.palette.validate()?;
     coloring.agrees_with(&spec.palette)?;
@@ -259,7 +269,10 @@ fn resolve(text: &str) -> Result<Plan, String> {
     // a direct trap or the modulate would be replaying a decision no run ever took.
     if let Some(curve) = &spec.autolevel {
         curve.validate()?;
-        if !matches!(coloring, Coloring::Field { .. } | Coloring::Composite { .. }) {
+        if !matches!(
+            coloring,
+            Coloring::Field { .. } | Coloring::Composite { .. }
+        ) {
             return Err(format!(
                 "{} does not act on this mode: the operator reads a finished picture's tone \
                  and only a field coloring or a composite is measured that way, so there is \
@@ -312,6 +325,7 @@ fn resolve(text: &str) -> Result<Plan, String> {
         replays,
         lanes,
         exact,
+        settled_weight,
     })
 }
 
@@ -439,7 +453,10 @@ fn params_of(coloring: &Coloring) -> BTreeMap<&'static str, f64> {
             params.insert("radius", *trap_radius);
             // Absent means the shape's own calibrated distance, which is a number
             // the engine holds and the page would otherwise have to guess at.
-            params.insert("threshold", threshold.unwrap_or_else(|| shape.default_threshold()));
+            params.insert(
+                "threshold",
+                threshold.unwrap_or_else(|| shape.default_threshold()),
+            );
             params.insert("opacity", *opacity);
         }
         Coloring::Field { .. } => {}
@@ -650,31 +667,8 @@ fn compute_lanes(plan: &Plan, row_start: u32, row_end: u32) -> Vec<u8> {
 /// an output row reads is its own. That is the on-screen path, and it does not pay
 /// a row for a filter that is not filtering.
 fn paint_band(plan: &Plan, out_row_start: u32, out_row_end: u32) -> Option<Vec<u8>> {
-    let Coloring::Direct {
-        shape,
-        trap_radius,
-        threshold,
-        opacity,
-        merge,
-        merge_order,
-        start_color,
-        transform,
-    } = &plan.coloring
-    else {
-        return None;
-    };
     let colormap = plan.colormap.as_ref()?;
-    let painter = direct_trap::Painter::new(
-        *shape,
-        *trap_radius,
-        *threshold,
-        *opacity,
-        *merge,
-        *merge_order,
-        start_color,
-        *transform,
-    )
-    .ok()?;
+    let painter = painter_of(plan)?;
 
     let ss = plan.view.supersample;
     let width = plan.view.sample_width();
@@ -775,14 +769,22 @@ pub extern "C" fn shade(
     }
 }
 
-/// How many bytes [`shade_level`] and [`derive_level`] put in front of what they
-/// return: one saying whether a curve acts, seven of padding, and the curve's five
-/// numbers as little-endian `f64`.
+/// How many bytes [`derive_level`] puts in front of what it returns: one saying whether
+/// a curve acts, seven of padding, and the curve's five numbers as little-endian `f64`.
 const LEVEL_HEADER: usize = 48;
+
+/// How many bytes [`shade_level`] puts in front of the picture: the level header, whose
+/// second byte says whether a texture weight was derived, and that weight as one more
+/// little-endian `f64` (NaN where none was).
+const SHADE_HEADER: usize = LEVEL_HEADER + 8;
+
+/// `shade_level`'s `derive` bits: measure the tone curve, and derive the texture weight.
+const DERIVE_LEVEL: u32 = 1;
+const DERIVE_WEIGHT: u32 = 2;
 
 /// The header: whether the curve acts, and its five numbers (zeros where there is none).
 fn level_header(acts: bool, curve: Option<level::Curve>) -> Vec<u8> {
-    let mut out = Vec::with_capacity(LEVEL_HEADER);
+    let mut out = Vec::with_capacity(SHADE_HEADER);
     out.extend_from_slice(&[u8::from(acts), 0, 0, 0, 0, 0, 0, 0]);
     match curve {
         Some(curve) => {
@@ -810,16 +812,23 @@ fn level_header(acts: bool, curve: Option<level::Curve>) -> Vec<u8> {
 /// would copy and narrow the whole field a second time to get back what was just
 /// dropped.
 ///
-/// With `derive` zero this is `shade` with a header in front. With `derive` set, on a
-/// coloring the operator acts on, the finished picture is measured
-/// ([`level::derive`]); where the curve acts, the map's own stops go through
-/// [`level::curved_stops`], are baked again exactly as [`resolve`] bakes a replayed
-/// curve, and the same fields are coloured through them. The first picture is
-/// dropped before the second is made.
+/// `derive` is two bits. With neither set this is `shade` with a header in front.
 ///
-/// Returns `LEVEL_HEADER + out_width * out_height * 4` bytes, or null on a refusal.
-/// A spec that carries `autolevel` and asks to derive is refused: that picture is
-/// already levelled, and measuring it would level it twice.
+/// - **`DERIVE_WEIGHT`**, on a composite: before anything is coloured, the texture's
+///   roughness is measured on these lanes at one output pixel's spacing
+///   ([`derive::roughness`]) and the weight the coloring is drawn at is replaced by
+///   [`derive::weight`]'s. The weight comes back in the header, so the page can show it
+///   and a link can carry it.
+/// - **`DERIVE_LEVEL`**, on a coloring the operator acts on: the finished picture is
+///   measured ([`level::derive`]); where the curve acts, the map's own stops go through
+///   [`level::curved_stops`], are baked again exactly as [`resolve`] bakes a replayed
+///   curve, and the same fields are coloured through them. The first picture is dropped
+///   before the second is made. The weight goes first, because the picture the tone is
+///   measured on is the one drawn at it.
+///
+/// Returns `SHADE_HEADER + out_width * out_height * 4` bytes, or null on a refusal.
+/// A spec that carries `autolevel` and asks to derive a curve is refused: that picture
+/// is already levelled, and measuring it would level it twice.
 #[unsafe(no_mangle)]
 pub extern "C" fn shade_level(
     spec_ptr: *const u8,
@@ -832,12 +841,31 @@ pub extern "C" fn shade_level(
     if !lanes_ptr.is_null() {
         unsafe { dealloc(lanes_ptr, lanes_len) };
     }
-    let Some((plan, base, texture)) = read else {
+    let Some((mut plan, base, texture)) = read else {
         return std::ptr::null_mut();
     };
-    if derive != 0 && plan.replays {
+    if derive & DERIVE_LEVEL != 0 && plan.replays {
         return std::ptr::null_mut();
     }
+    let mut weighed = None;
+    if derive & DERIVE_WEIGHT != 0 {
+        if let (
+            Coloring::Composite { texture_weight, .. },
+            Texture::Narrow(second),
+            Some(ceiling),
+        ) = (&mut plan.coloring, &texture, plan.settled_weight)
+        {
+            let rough = derive::roughness(
+                &base,
+                second,
+                plan.lanes[1].transform,
+                plan.view.supersample,
+            );
+            *texture_weight = derive::weight(rough.unwrap_or(0.0), ceiling);
+            weighed = Some(*texture_weight);
+        }
+    }
+    let derive = derive & DERIVE_LEVEL;
     let colormap = plan
         .colormap
         .as_ref()
@@ -866,6 +894,8 @@ pub extern "C" fn shade_level(
     }
 
     let mut out = level_header(acted.is_some(), acted);
+    out[1] = u8::from(weighed.is_some());
+    out.extend_from_slice(&weighed.unwrap_or(f64::NAN).to_le_bytes());
     out.reserve(rgb.len() / 3 * 4);
     for pixel in rgb.chunks_exact(3) {
         out.extend_from_slice(pixel);
@@ -892,6 +922,124 @@ pub extern "C" fn derive_level(rgba_ptr: *const u8, rgba_len: usize) -> *mut u8 
         level::Decision::Identity(curve) => level_header(false, Some(curve)),
         level::Decision::Degenerate => level_header(false, None),
     })
+}
+
+/// [`derive::roughness`] on a composite's lanes, which the caller keeps: the number a
+/// derived weight is read off, for the pilot and the tests. NaN where the spec is not a
+/// composite or no pair of samples has a base and a texture.
+#[unsafe(no_mangle)]
+pub extern "C" fn texture_roughness(
+    spec_ptr: *const u8,
+    spec_len: usize,
+    lanes_ptr: *const u8,
+    lanes_len: usize,
+    stride: u32,
+) -> f64 {
+    let Some((plan, base, Texture::Narrow(texture))) =
+        read_lanes(spec_ptr, spec_len, lanes_ptr, lanes_len)
+    else {
+        return f64::NAN;
+    };
+    derive::roughness(&base, &texture, plan.lanes[1].transform, stride).unwrap_or(f64::NAN)
+}
+
+/// A direct trap's near misses over output rows `[row_start, row_end)`, at one sample a
+/// pixel of whatever resolution the spec names: [`derive::PROBE_BYTES`] per pixel, the
+/// hit count and the load as little-endian `f32`. Split over the pool the way
+/// [`compute_band`] is, and read by [`derive_opacity`]. Null for anything but a
+/// screened or multiplied direct trap.
+#[unsafe(no_mangle)]
+pub extern "C" fn probe_band(
+    spec_ptr: *const u8,
+    spec_len: usize,
+    row_start: u32,
+    row_end: u32,
+) -> *mut u8 {
+    let Ok(spec) = text(spec_ptr, spec_len) else {
+        return std::ptr::null_mut();
+    };
+    let Ok(plan) = resolve(&spec) else {
+        return std::ptr::null_mut();
+    };
+    if plan.view.supersample != 1
+        || row_end > plan.view.out_height
+        || row_start >= row_end
+        || !derive::probes(&plan.coloring)
+    {
+        return std::ptr::null_mut();
+    }
+    let (Some(painter), Some(colormap)) = (painter_of(&plan), plan.colormap.as_ref()) else {
+        return std::ptr::null_mut();
+    };
+    let mut out =
+        Vec::with_capacity((row_end - row_start) as usize * plan.view.out_width as usize * 8);
+    for row in row_start..row_end {
+        derive::probe_row(
+            &painter,
+            &plan.coloring,
+            &plan.view,
+            &plan.family,
+            plan.maxiter,
+            colormap,
+            row,
+            &mut out,
+        );
+    }
+    release(out)
+}
+
+/// The opacity a whole probe derives, as JSON: `{"opacity", "hit_share", "load"}`, with
+/// `opacity` null where no pixel was hit. The probe buffer is the caller's to free.
+#[unsafe(no_mangle)]
+pub extern "C" fn derive_opacity(
+    spec_ptr: *const u8,
+    spec_len: usize,
+    probe_ptr: *const u8,
+    probe_len: usize,
+) -> *mut u8 {
+    let report = text(spec_ptr, spec_len)
+        .and_then(|text| resolve(&text))
+        .and_then(|plan| match plan.coloring {
+            Coloring::Direct { shape, merge, .. } if derive::probes(&plan.coloring) => {
+                if probe_ptr.is_null() || probe_len % derive::PROBE_BYTES != 0 {
+                    return Err("the probe is not whole pixels".into());
+                }
+                let probe = unsafe { std::slice::from_raw_parts(probe_ptr, probe_len) };
+                let probed = derive::opacity(probe, merge, derive::opacity_cap(shape, merge));
+                Ok(serde_json::json!({"ok": true, "probed": probed}))
+            }
+            _ => Err("only a screened or multiplied direct trap derives its opacity".into()),
+        })
+        .unwrap_or_else(|why: String| serde_json::json!({"ok": false, "why": why}));
+    release_text(&report.to_string())
+}
+
+/// The painter a direct plan draws with, every clamp applied.
+fn painter_of(plan: &Plan) -> Option<direct_trap::Painter> {
+    let Coloring::Direct {
+        shape,
+        trap_radius,
+        threshold,
+        opacity,
+        merge,
+        merge_order,
+        start_color,
+        transform,
+    } = &plan.coloring
+    else {
+        return None;
+    };
+    direct_trap::Painter::new(
+        *shape,
+        *trap_radius,
+        *threshold,
+        *opacity,
+        *merge,
+        *merge_order,
+        start_color,
+        *transform,
+    )
+    .ok()
 }
 
 /// One whole frame's colour, as RGB: the engine's coloring for this plan's shape, the

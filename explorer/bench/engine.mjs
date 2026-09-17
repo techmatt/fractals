@@ -84,15 +84,45 @@ export async function load(url = new URL("../engine.wasm", import.meta.url)) {
     const [pointer, length] = put(JSON.stringify(spec));
     const lanePointer = wasm.alloc(lanes.length);
     new Uint8Array(wasm.memory.buffer, lanePointer, lanes.length).set(lanes);
-    const out = wasm.shade_level(pointer, length, lanePointer, lanes.length, derive ? 1 : 0);
+    const out = wasm.shade_level(pointer, length, lanePointer, lanes.length, Number(derive));
     wasm.dealloc(pointer, length);
     if (out === 0) return null;
     const [width, height] = spec.resolution;
-    const bytes = 48 + width * height * 4;
+    // 56: the level header, then the texture weight a derivation would have written.
+    const bytes = 56 + width * height * 4;
     const { acts, curve } = header(out);
-    const image = new Uint8Array(wasm.memory.buffer, out + 48, width * height * 4).slice();
+    const tail = new DataView(wasm.memory.buffer, out, 56);
+    const weight = tail.getUint8(1) === 1 ? tail.getFloat64(48, true) : null;
+    const image = new Uint8Array(wasm.memory.buffer, out + 56, width * height * 4).slice();
     wasm.dealloc(out, bytes);
-    return { acts, curve, image };
+    return { acts, curve, weight, image };
+  };
+
+  /** A direct trap's near misses at the spec's resolution: hits and load, `f32` each. */
+  const probe = (spec) => {
+    const [pointer, length] = put(JSON.stringify(spec));
+    const [width, height] = spec.resolution;
+    const out = wasm.probe_band(pointer, length, 0, height);
+    wasm.dealloc(pointer, length);
+    if (out === 0) return null;
+    const bytes = width * height * 8;
+    const copy = new Uint8Array(wasm.memory.buffer, out, bytes).slice();
+    wasm.dealloc(out, bytes);
+    return copy;
+  };
+
+  /** The opacity a probe derives: `{ ok, probed: { opacity, hit_share, load } }`. */
+  const deriveOpacity = (spec, counts) => {
+    const [pointer, length] = put(JSON.stringify(spec));
+    const at = wasm.alloc(counts.length);
+    new Uint8Array(wasm.memory.buffer, at, counts.length).set(counts);
+    const out = wasm.derive_opacity(pointer, length, at, counts.length);
+    wasm.dealloc(at, counts.length);
+    wasm.dealloc(pointer, length);
+    const size = new DataView(wasm.memory.buffer).getUint32(out, true);
+    const text = decoder.decode(new Uint8Array(wasm.memory.buffer, out + 4, size));
+    wasm.dealloc(out, size + 4);
+    return JSON.parse(text);
   };
 
   /** The measure half alone, on RGBA: whether it acts, and the curve it derived. */
@@ -121,7 +151,7 @@ export async function load(url = new URL("../engine.wasm", import.meta.url)) {
     return { shape, image, fieldMs, shadeMs };
   };
 
-  return { wasm, plan, band, shade, shadeLevel, deriveLevel, frame };
+  return { wasm, plan, band, shade, shadeLevel, deriveLevel, probe, deriveOpacity, frame };
 }
 
 /** The two-stop ramp used wherever the picture's colours do not matter. */

@@ -18,8 +18,9 @@
 let wasm = null;
 const encoder = new TextEncoder();
 
-/** What `shade_level` puts in front of the picture: a flag, padding, five `f64`. */
-const LEVEL_HEADER = 48;
+/** What `shade_level` puts in front of the picture: two flags, padding, five `f64` of
+ *  tone curve, and one of texture weight. */
+const SHADE_HEADER = 56;
 
 /** The one tone operator the module derives, by the name a permalink spells it with.
  *  Written here rather than imported so that a worker stays one file with no imports;
@@ -67,7 +68,7 @@ self.onmessage = (event) => {
       self.postMessage({ kind: "shaded", refused: true });
       return;
     }
-    const header = new DataView(wasm.memory.buffer, pointer, LEVEL_HEADER);
+    const header = new DataView(wasm.memory.buffer, pointer, SHADE_HEADER);
     const level =
       header.getUint8(0) === 1
         ? {
@@ -78,9 +79,9 @@ self.onmessage = (event) => {
             out_ends: [header.getFloat64(32, true), header.getFloat64(40, true)],
           }
         : null;
-    const image = new Uint8Array(wasm.memory.buffer, pointer + LEVEL_HEADER, message.bytes)
+    const image = new Uint8Array(wasm.memory.buffer, pointer + SHADE_HEADER, message.bytes)
       .slice().buffer;
-    wasm.dealloc(pointer, LEVEL_HEADER + message.bytes);
+    wasm.dealloc(pointer, SHADE_HEADER + message.bytes);
     self.postMessage({ kind: "shaded", image, level }, [image]);
     return;
   }
@@ -89,7 +90,11 @@ self.onmessage = (event) => {
   const started = performance.now();
 
   const [specPointer, specLength] = put(spec);
-  const pointer = wasm.compute_band(specPointer, specLength, rowStart, rowEnd);
+  // A probe is the same row range over the same orbits, counted rather than drawn: what a
+  // direct trap's opacity is derived from. See `probe` in `render.js`.
+  const pointer = message.probe
+    ? wasm.probe_band(specPointer, specLength, rowStart, rowEnd)
+    : wasm.compute_band(specPointer, specLength, rowStart, rowEnd);
   wasm.dealloc(specPointer, specLength);
 
   if (pointer === 0) {

@@ -26,6 +26,7 @@ import {
   canonicalize,
   coordinateOf,
   defaultShade,
+  DERIVED,
   emit,
   FAMILIES,
   fieldKey,
@@ -36,11 +37,13 @@ import {
   OPERATORS,
   parse,
   PermalinkError,
+  probeKey,
+  settledParams,
   SHADE_KEYS,
   UI_KEYS,
   VERSION,
 } from "./permalink.js";
-import { CONSTANTS, CURVES, MODES as IDENTITIES } from "./catalog.js";
+import { CONSTANTS, CURVES, MODES as IDENTITIES, SETTLED } from "./catalog.js";
 import * as shade from "./shade.js";
 import { DEFAULT_PALETTE, PALETTES } from "./palettes.js";
 
@@ -92,6 +95,7 @@ const CONTEXT = {
   constants: constantsOf,
   palettes: PALETTES,
   defaultPalette: DEFAULT_PALETTE,
+  settled: (mode) => SETTLED[mode],
 };
 
 /** `p` as every canonical string carries it, when nobody picked a palette. */
@@ -129,16 +133,60 @@ test("the home view written out in full canonicalizes to the version and the pal
   assert.equal(canonicalize(spelled, CONTEXT), `v=${VERSION}&${HOUSE}`);
 });
 
-test("a version 1 link still parses, and settles as version 2", () => {
+test("a version 1 link still parses, and settles as the current version", () => {
   // Nothing a v1 link could say has changed meaning, so the whole of the upgrade is
   // the number: the same coordinates, the same palette rule, the same defaults.
   assert.equal(canonicalize(`v=1&${ANCHOR}`, CONTEXT), `v=${VERSION}&${ANCHOR}&${HOUSE}`);
   assert.equal(canonicalize("v=1&p=viridis&gamma=2", CONTEXT), `v=${VERSION}&p=viridis&gamma=2`);
   assert.equal(parse("v=1&f=mandelbrot&m=smooth", CONTEXT).mode, "smooth");
   // And a version nobody has written yet is still refused rather than read hopefully.
-  assert.throws(() => parse("v=3&x=0", CONTEXT), PermalinkError);
+  assert.throws(() => parse("v=4&x=0", CONTEXT), PermalinkError);
   assert.throws(() => parse("v=1.0&x=0", CONTEXT), PermalinkError);
   assert.throws(() => parse("x=0&y=0", CONTEXT), /carries no v/);
+});
+
+test("an older link's absent weight or opacity is the catalog's, and a v3 link's is left to derive", () => {
+  // What v3 changed. A v2 link that names an angle mode and no weight was drawn at the
+  // catalog's weight, so it settles as a v3 link that writes that number down; the same
+  // link written as v3 leaves the key out, which is the page's cue to derive it.
+  for (const [mode, key] of Object.entries(DERIVED)) {
+    const settled = SETTLED[mode][key];
+    assert.ok(settled !== undefined, mode);
+    assert.equal(
+      canonicalize(`v=2&m=${mode}&${ANCHOR}`, CONTEXT),
+      `v=${VERSION}&m=${mode}&${key}=${settled}&${ANCHOR}&${HOUSE}`,
+    );
+    assert.equal(parse(`v=3&m=${mode}&${ANCHOR}`, CONTEXT).params[key], undefined, mode);
+    // A value the older link did carry is kept, not overwritten by the catalog's.
+    assert.equal(parse(`v=2&m=${mode}&${key}=0.3&${ANCHOR}`, CONTEXT).params[key], 0.3, mode);
+    // And a record's view writes the constant its picture was drawn at.
+    assert.deepEqual(settledParams(mode, {}, CONTEXT), { [key]: settled });
+    assert.deepEqual(settledParams(mode, { [key]: 0.3 }, CONTEXT), { [key]: 0.3 });
+  }
+  // Only the listed keys: a v2 stripe link's density is still the catalog's by omission.
+  assert.equal(parse(`v=2&m=smooth_stripe&${ANCHOR}`, CONTEXT).params.weight, undefined);
+  assert.throws(() => parse(`v=2&m=smooth_mean_angle&${ANCHOR}`, { ...CONTEXT, settled: undefined }));
+});
+
+test("a composite's weight is a colour and not part of its field's key; a trap's opacity is", () => {
+  const angle = parse(`v=3&m=smooth_mean_angle&${ANCHOR}`, CONTEXT);
+  assert.equal(
+    fieldKey({ ...angle, params: { weight: 0.2 } }, CONTEXT, 16, 9),
+    fieldKey({ ...angle, params: { weight: 0.7 } }, CONTEXT, 16, 9),
+  );
+  const trap = parse(`v=3&m=direct_trap_multiply&${ANCHOR}`, CONTEXT);
+  assert.notEqual(
+    fieldKey({ ...trap, params: { opacity: 0.2 } }, CONTEXT, 16, 9, true),
+    fieldKey({ ...trap, params: { opacity: 0.7 } }, CONTEXT, 16, 9, true),
+  );
+  assert.equal(
+    probeKey({ ...trap, params: { opacity: 0.2 } }, CONTEXT),
+    probeKey({ ...trap, params: { opacity: 0.7 } }, CONTEXT),
+  );
+  assert.notEqual(
+    probeKey({ ...trap, params: { threshold: 0.2 } }, CONTEXT),
+    probeKey({ ...trap, params: { threshold: 0.3 } }, CONTEXT),
+  );
 });
 
 test("the spike's anchor keeps its coordinates and gains the palette it was drawn in", () => {

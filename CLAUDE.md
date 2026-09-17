@@ -487,10 +487,10 @@ Three Windows cautions that have each cost a session already:
 
 ```
 python -m ruff check . && python -m ruff format --check . && python -m builder check
-node --test explorer/permalink.test.mjs explorer/bands.test.mjs explorer/level.test.mjs atlas/atlas.test.mjs
+node --test explorer/permalink.test.mjs explorer/bands.test.mjs explorer/level.test.mjs explorer/derive.test.mjs atlas/atlas.test.mjs
 ```
 
-The second line is the four JavaScript suites, on Node's own runner with nothing
+The second line is the five JavaScript suites, on Node's own runner with nothing
 installed. `permalink.test.mjs` is the contract held to itself — a URL is the one
 permanent thing this site emits, and it is worth a test suite even though nothing else
 here has one. `bands.test.mjs` is the pool held to the committed wasm: a band is a range
@@ -503,7 +503,9 @@ is the only reason a dot's picture and a dot's link agree. `level.test.mjs` hold
 module's own measurement of a picture's tone to the autolevel operator's, and holds a
 curve the page derived to replaying to the bytes it drew, which is what lets Copy link
 write five numbers; its pixel case skips by name on a machine without the decoded bases
-in `artifacts/level-derive/`.
+in `artifacts/level-derive/`. `derive.test.mjs` holds the module's two derived
+parameters: a derived texture weight replays to the bytes it drew, and a derived trap
+opacity lands the typical painted pixel where it says it does.
 
 After touching placed prose, `python -m builder prose <page>` as well — see **Where prose
 comes from** above for what it holds together and why one edit has several sites.

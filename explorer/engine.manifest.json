@@ -8,9 +8,9 @@
     "colormap::srgb_to_linear, linear_to_srgb, linear_srgb_to_oklab and oklab_to_linear_srgb were ALREADY pub, and are named here because the autolevel port leans on them: `level.rs` replays band_autolevel/v1 on a map's stops through the engine's own copy of Ottosson's matrices rather than a third one. Nothing was changed next door for it."
   ],
   "engine_version": "0.1.0",
-  "gzip_bytes": 209593,
-  "raw_bytes": 684307,
+  "gzip_bytes": 216508,
+  "raw_bytes": 702011,
   "rustc": "1.96.0 (ac68faa20 2026-05-25)",
   "schema": 1,
-  "wallpapers_commit": "b7af4d5f98d5c92793da31588d65881cb82469c3"
+  "wallpapers_commit": "7bbc73b85df1446ca0f84d45a31f7c4e1d585ebf"
 }

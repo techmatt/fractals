@@ -59,5 +59,7 @@ jobs:
         run: node --test explorer/bands.test.mjs
       - name: the tone operator's measure half, against the committed module
         run: node --test explorer/level.test.mjs
+      - name: a mode's derived parameters, against the committed module
+        run: node --test explorer/derive.test.mjs
       - name: the atlas record, and the map its dots are drawn through
         run: node --test atlas/atlas.test.mjs

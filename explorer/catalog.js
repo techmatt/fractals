@@ -85,3 +85,36 @@ export const CURVES = {
   "tia": "linear",
   "trap_circle": "log"
 };
+
+export const SETTLED = {
+  "direct_trap_lines": {
+    "opacity": 0.45
+  },
+  "direct_trap_multiply": {
+    "opacity": 0.2
+  },
+  "direct_trap_ring": {
+    "opacity": 0.45
+  },
+  "direct_trap_screen": {
+    "opacity": 0.15
+  },
+  "smooth_angle_min": {
+    "weight": 0.85
+  },
+  "smooth_curvature": {
+    "weight": 0.85
+  },
+  "smooth_mean_angle": {
+    "weight": 0.85
+  },
+  "smooth_stripe": {
+    "weight": 0.85
+  },
+  "smooth_trap_circle": {
+    "weight": 0.85
+  },
+  "threads": {
+    "weight": 0.5
+  }
+};

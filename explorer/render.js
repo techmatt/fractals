@@ -316,11 +316,49 @@ export class Renderer {
    * and both are assembled by rows the same way.
    */
   field(view, width, height, { supersample = 1, onProgress } = {}) {
+    const shape = this.plan(specOf(view, width, height, { colormap: false, supersample }));
+    if (!shape.ok) return Promise.reject(new Error(shape.why));
+    return this.#run(view, width, height, shape, { supersample, onProgress });
+  }
+
+  /**
+   * Count a direct trap's near misses on a small grid over the whole pool, and resolve
+   * with `{ values, width, height }`: `PROBE_BYTES` per pixel, what `derive_opacity`
+   * reads. The same bands and the same cancellation as a field, because it is the same
+   * orbits at a fraction of the samples.
+   */
+  probe(view, width, height) {
+    const shape = this.plan(specOf(view, width, height, { colormap: false }));
+    if (!shape.ok) return Promise.reject(new Error(shape.why));
+    return this.#run(view, width, height, { ...shape, probe: true }, { supersample: 1 });
+  }
+
+  /**
+   * The opacity a probe derives, asked of the module on this thread: `{ opacity, hit_share,
+   * load }`, `opacity` null where nothing in the probe was hit. Milliseconds: the probe is
+   * a sort of a few thousand numbers.
+   */
+  deriveOpacity(view, probed) {
+    const wasm = this.shader;
+    const [pointer, length] = this.#put(JSON.stringify(specOf(view, probed.width, probed.height)));
+    const bytes = probed.values;
+    const probePointer = wasm.alloc(bytes.length);
+    new Uint8Array(wasm.memory.buffer, probePointer, bytes.length).set(bytes);
+    const out = wasm.derive_opacity(pointer, length, probePointer, bytes.length);
+    wasm.dealloc(probePointer, bytes.length);
+    wasm.dealloc(pointer, length);
+    const size = new DataView(wasm.memory.buffer).getUint32(out, true);
+    const body = new TextDecoder().decode(new Uint8Array(wasm.memory.buffer, out + 4, size));
+    wasm.dealloc(out, size + 4);
+    const answer = JSON.parse(body);
+    if (!answer.ok) throw new Error(answer.why);
+    return answer.probed;
+  }
+
+  #run(view, width, height, shape, { supersample, onProgress }) {
     this.cancel();
     const generation = this.generation;
 
-    const shape = this.plan(specOf(view, width, height, { colormap: false, supersample }));
-    if (!shape.ok) return Promise.reject(new Error(shape.why));
     // A direct trap composites samples from the gradient as it iterates, so its
     // band is already coloured and its spec needs the map in it.
     const spec = JSON.stringify(specOf(view, width, height, { colormap: shape.direct, supersample }));
@@ -329,9 +367,11 @@ export class Renderer {
     // sample grid, and that is what the lanes are sized on.
     const sampleWidth = width * supersample;
     const sampleHeight = height * supersample;
-    const values = shape.direct
-      ? new Uint8ClampedArray(width * height * 4)
-      : new Float64Array(sampleWidth * sampleHeight * shape.lanes);
+    const values = shape.probe
+      ? new Uint8Array(width * height * PROBE_BYTES)
+      : shape.direct
+        ? new Uint8ClampedArray(width * height * 4)
+        : new Float64Array(sampleWidth * sampleHeight * shape.lanes);
 
     const bands = bandsOf(height, this.workers.length);
 
@@ -374,9 +414,12 @@ export class Renderer {
       spec: job.spec,
       rowStart,
       rowEnd,
-      bytes: job.shape.direct
-        ? span * job.width * 4
-        : span * job.supersample * job.sampleWidth * job.shape.lanes * 8,
+      probe: job.shape.probe === true,
+      bytes: job.shape.probe
+        ? span * job.width * PROBE_BYTES
+        : job.shape.direct
+          ? span * job.width * 4
+          : span * job.supersample * job.sampleWidth * job.shape.lanes * 8,
     });
   }
 
@@ -421,6 +464,10 @@ export class Renderer {
    * painted band is one run of RGBA.
    */
   #place(job, message) {
+    if (job.shape.probe) {
+      job.values.set(new Uint8Array(message.band), message.rowStart * job.width * PROBE_BYTES);
+      return;
+    }
     if (job.shape.direct) {
       job.values.set(new Uint8ClampedArray(message.band), message.rowStart * job.width * 4);
       return;
@@ -444,7 +491,7 @@ export class Renderer {
    * exports is that one of them is cheap. A direct trap arrives already painted —
    * it never made a field — so there is nothing to do but hand the pixels over.
    */
-  shade(field, view) {
+  shade(field, view, { deriveWeight = false } = {}) {
     const started = performance.now();
     if (field.shape.direct) {
       return {
@@ -461,17 +508,30 @@ export class Renderer {
     const lanePointer = wasm.alloc(lanes.length);
     new Uint8Array(wasm.memory.buffer, lanePointer, lanes.length).set(lanes);
 
-    // `shade` takes the lanes buffer and frees it — see its doc comment — so the
-    // spec is deallocated here and the lanes deliberately are not.
-    const out = wasm.shade(pointer, length, lanePointer, lanes.length);
+    // `shade_level` takes the lanes buffer and frees it — see its doc comment — so the
+    // spec is deallocated here and the lanes deliberately are not. Asked to derive the
+    // texture weight, it measures these lanes before it colours them, draws at what it
+    // derived, and says what that was. The tone curve is never measured on this thread:
+    // what is drawn here is a stage before the finished picture, and the curve belongs to
+    // that one.
+    const out = wasm.shade_level(
+      pointer,
+      length,
+      lanePointer,
+      lanes.length,
+      deriveWeight ? DERIVE_WEIGHT : 0,
+    );
     wasm.dealloc(pointer, length);
     if (out === 0) throw new Error("the renderer refused this palette recipe");
 
     const count = field.width * field.height;
-    const rgba = new Uint8ClampedArray(wasm.memory.buffer, out, count * 4).slice();
-    wasm.dealloc(out, count * 4);
+    const header = new DataView(wasm.memory.buffer, out, SHADE_HEADER);
+    const weight = header.getUint8(1) === 1 ? header.getFloat64(LEVEL_HEADER, true) : null;
+    const rgba = new Uint8ClampedArray(wasm.memory.buffer, out + SHADE_HEADER, count * 4).slice();
+    wasm.dealloc(out, SHADE_HEADER + count * 4);
     return {
       image: new ImageData(rgba, field.width, field.height),
+      ...(deriveWeight ? { weight } : {}),
       elapsed: performance.now() - started,
     };
   }
@@ -567,6 +627,30 @@ export function shadeApart(module, field, view, holder = {}, { derive = false } 
     };
     worker.postMessage({ kind: "start", module });
   });
+}
+
+/** What `shade_level` puts in front of the picture: whether a curve acted and whether a
+ *  weight was derived, padding, the curve's five `f64`, then the weight. See the crate. */
+const LEVEL_HEADER = 48;
+const SHADE_HEADER = LEVEL_HEADER + 8;
+
+/** `shade_level`'s bit asking for the texture weight to be derived. */
+const DERIVE_WEIGHT = 2;
+
+/** The bytes a probe writes per pixel: hits and load, as `f32`. */
+const PROBE_BYTES = 8;
+
+/** How many probe pixels across. A probe walks the picture's own orbits on a grid a few
+ *  percent of its size: enough hit pixels for a quantile to mean something, and cheap
+ *  beside the quarter-size preview it runs before. */
+export const PROBE_WIDTH = 160;
+
+/** The probe grid for a canvas grid: `PROBE_WIDTH` across, at the canvas's own aspect. */
+export function probeGrid(grid) {
+  return {
+    width: PROBE_WIDTH,
+    height: Math.max(1, Math.round((PROBE_WIDTH * grid.height) / grid.width)),
+  };
 }
 
 /**

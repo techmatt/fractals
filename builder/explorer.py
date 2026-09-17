@@ -902,6 +902,25 @@ def curves(modes: list[dict]) -> dict[str, str]:
     return {mode["name"]: mode["coloring"].get("transform", "linear") for mode in modes}
 
 
+def settled(modes: list[dict]) -> dict[str, dict[str, float]]:
+    """The two constants a view may derive instead, as the catalog settled them, by mode.
+
+    An angle mode's texture weight and a direct trap's opacity. A link written before
+    permalink v3 meant these by leaving the key out, and every picture a record describes
+    was drawn at them, so `permalink.js` reads an old link and `emit.mjs` writes a recorded
+    picture's link with the number the catalog gives here rather than one typed there.
+    Asked of the catalog rather than restated, like the curves above.
+    """
+    found = {}
+    for mode in modes:
+        coloring = mode["coloring"]
+        if coloring.get("kind") == "composite" and "texture_weight" in coloring:
+            found[mode["name"]] = {"weight": coloring["texture_weight"]}
+        elif coloring.get("kind") == "direct" and "opacity" in coloring:
+            found[mode["name"]] = {"opacity": coloring["opacity"]}
+    return found
+
+
 def catalog_module_text() -> tuple[str, int]:
     """The text of `catalog.js`, and how many modes the picker offers.
 
@@ -946,6 +965,8 @@ def catalog_module_text() -> tuple[str, int]:
     lines.append(f"export const CONSTANTS = {json.dumps(constants, indent=2, sort_keys=True)};")
     lines.append("")
     lines.append(f"export const CURVES = {json.dumps(curves(modes), indent=2, sort_keys=True)};")
+    lines.append("")
+    lines.append(f"export const SETTLED = {json.dumps(settled(modes), indent=2, sort_keys=True)};")
     lines.append("")
     return "\n".join(lines), len(modes)
 

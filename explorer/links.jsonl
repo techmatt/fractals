@@ -1,61 +1,61 @@
-{"schema": 1, "kind": "link", "id": "figure:overview-gallery-hook", "link": "v=2&f=multibrot4&x=0.3190049359670787&y=0.7493803355819899&w=0.00000030536169435018664&p=pink&mirror=1", "from": "panel 2"}
-{"schema": 1, "kind": "link", "id": "figure:overview-pipeline", "link": "v=2&f=multibrot4&x=0.3407452442528424&y=0.931615414985041&w=0.00000006344276705989817&p=twilight_shifted", "from": "panel 2"}
+{"schema": 1, "kind": "link", "id": "figure:overview-gallery-hook", "link": "v=3&f=multibrot4&x=0.3190049359670787&y=0.7493803355819899&w=0.00000030536169435018664&p=pink&mirror=1", "from": "panel 2"}
+{"schema": 1, "kind": "link", "id": "figure:overview-pipeline", "link": "v=3&f=multibrot4&x=0.3407452442528424&y=0.931615414985041&w=0.00000006344276705989817&p=twilight_shifted", "from": "panel 2"}
 {"schema": 1, "kind": "link", "id": "figure:escape-families", "no_link": "not_exposed", "why": "the picture reads smooth through a is curve, and the catalog's smooth is linear: a curve is part of a mode's identity here and is not a key a link may carry"}
 {"schema": 1, "kind": "link", "id": "figure:escape-orbit-race", "no_link": "drawn", "why": "a drawn diagram or chart, with no engine render behind it to reopen"}
-{"schema": 1, "kind": "link", "id": "figure:escape-zoom-strip", "link": "v=2&x=-0.8038460387836429&y=0.18284000541838608&p=twilight_shifted", "from": "panel 1"}
-{"schema": 1, "kind": "link", "id": "figure:escape-julia-map", "link": "v=2&y=0.0&p=twilight_shifted", "from": "panel 1"}
-{"schema": 1, "kind": "link", "id": "figure:escape-multibrot-degrees", "link": "v=2&y=0.0&p=twilight_shifted", "from": "panel 1"}
+{"schema": 1, "kind": "link", "id": "figure:escape-zoom-strip", "link": "v=3&x=-0.8038460387836429&y=0.18284000541838608&p=twilight_shifted", "from": "panel 1"}
+{"schema": 1, "kind": "link", "id": "figure:escape-julia-map", "link": "v=3&y=0.0&p=twilight_shifted", "from": "panel 1"}
+{"schema": 1, "kind": "link", "id": "figure:escape-multibrot-degrees", "link": "v=3&y=0.0&p=twilight_shifted", "from": "panel 1"}
 {"schema": 1, "kind": "link", "id": "figure:escape-fractional-degrees", "no_link": "not_exposed", "why": "a non-integer degree is render-only: the engine gives it no home view, so there is nowhere for the explorer to open it at"}
-{"schema": 1, "kind": "link", "id": "figure:escape-phoenix", "link": "v=2&f=phoenix&cx=0.5667&cy=0.0&px=-0.5&py=0.0&zx=0&zy=0&y=0.0&w=5.0&p=twilight_shifted", "from": "panel 1"}
+{"schema": 1, "kind": "link", "id": "figure:escape-phoenix", "link": "v=3&f=phoenix&cx=0.5667&cy=0.0&px=-0.5&py=0.0&zx=0&zy=0&y=0.0&w=5.0&p=twilight_shifted", "from": "panel 1"}
 {"schema": 1, "kind": "link", "id": "figure:render-discrete-and-smooth", "no_link": "not_exposed", "why": "the picture was drawn from a coloring written out in full rather than from a named mode, and a link names a mode"}
 {"schema": 1, "kind": "link", "id": "figure:render-field-anatomy", "no_link": "incomplete_provenance", "why": "no colormap is written down"}
 {"schema": 1, "kind": "link", "id": "figure:render-maxiter", "no_link": "not_exposed", "why": "the picture was drawn at a cap of 300 and the depth policy gives 32,474 at this width — the cap is the engine's own and is not a key a link may carry, so the link would draw a different picture"}
-{"schema": 1, "kind": "link", "id": "figure:render-supersample", "link": "v=2&f=multibrot3&x=-0.0693668444165554&y=0.7786163029308374&w=5.6412438043129286e-08&p=Teal%20Against%20Coral", "from": "panel 1"}
-{"schema": 1, "kind": "link", "id": "figure:render-cyclic-repeats", "link": "v=2&f=julia&cx=-1.2517612129804818&cy=0.038979112285470574&x=-0.2739474295196568&y=0.09521327512869174&w=0.6313752221683463&p=Ember%20Gradient", "from": "panel 1"}
-{"schema": 1, "kind": "link", "id": "figure:render-percentile-stretch", "link": "v=2&x=-0.1592&y=1.0341&w=0.10&p=Gold%20Field%2C%20Blood%20Spark", "from": "panel 1"}
-{"schema": 1, "kind": "link", "id": "figure:modes-tia", "link": "v=2&f=multibrot4&m=tia&x=-0.0654442224838454&y=0.7190498713504007&w=0.0000004659891208886683&p=cmr.jungle&mirror=1", "from": "panel 2"}
-{"schema": 1, "kind": "link", "id": "figure:modes-stripe", "link": "v=2&f=phoenix&cx=-1.4989410059318877&cy=0.1097374257111832&px=-0.20267646248610371&py=-0.04464357650761742&zx=0.02848561971452761&zy=-0.06491096519398402&m=stripe&x=-0.9980313058062354&y=0.04640778794693713&w=0.00013679081090762718&p=795548-3840x2160-desktop-4k-fractal-background", "from": "panel 2"}
+{"schema": 1, "kind": "link", "id": "figure:render-supersample", "link": "v=3&f=multibrot3&x=-0.0693668444165554&y=0.7786163029308374&w=5.6412438043129286e-08&p=Teal%20Against%20Coral", "from": "panel 1"}
+{"schema": 1, "kind": "link", "id": "figure:render-cyclic-repeats", "link": "v=3&f=julia&cx=-1.2517612129804818&cy=0.038979112285470574&x=-0.2739474295196568&y=0.09521327512869174&w=0.6313752221683463&p=Ember%20Gradient", "from": "panel 1"}
+{"schema": 1, "kind": "link", "id": "figure:render-percentile-stretch", "link": "v=3&x=-0.1592&y=1.0341&w=0.10&p=Gold%20Field%2C%20Blood%20Spark", "from": "panel 1"}
+{"schema": 1, "kind": "link", "id": "figure:modes-tia", "link": "v=3&f=multibrot4&m=tia&x=-0.0654442224838454&y=0.7190498713504007&w=0.0000004659891208886683&p=cmr.jungle&mirror=1", "from": "panel 2"}
+{"schema": 1, "kind": "link", "id": "figure:modes-stripe", "link": "v=3&f=phoenix&cx=-1.4989410059318877&cy=0.1097374257111832&px=-0.20267646248610371&py=-0.04464357650761742&zx=0.02848561971452761&zy=-0.06491096519398402&m=stripe&x=-0.9980313058062354&y=0.04640778794693713&w=0.00013679081090762718&p=795548-3840x2160-desktop-4k-fractal-background", "from": "panel 2"}
 {"schema": 1, "kind": "link", "id": "figure:modes-curvature", "no_link": "incomplete_provenance", "why": "no colormap is written down"}
 {"schema": 1, "kind": "link", "id": "figure:modes-smooth-mean-angle", "no_link": "incomplete_provenance", "why": "no colormap is written down"}
 {"schema": 1, "kind": "link", "id": "figure:modes-smooth-angle-min", "no_link": "incomplete_provenance", "why": "no colormap is written down"}
-{"schema": 1, "kind": "link", "id": "figure:modes-smooth-stripe", "link": "v=2&m=smooth_stripe&x=-0.7805192962538873&y=-0.13533181800963165&w=0.000000012327752366020986&p=Orchid%20Procession", "from": "panel 2"}
-{"schema": 1, "kind": "link", "id": "figure:modes-smooth-curvature", "link": "v=2&m=smooth_curvature&x=-0.757146423020352&y=0.07328882879620356&w=0.0000000006987884705315999&p=wallhaven_wallhaven-kwg7v6", "from": "panel 2"}
-{"schema": 1, "kind": "link", "id": "figure:modes-threads", "link": "v=2&f=multibrot4&m=threads&x=0.34023047570455006&y=0.9315184542388448&w=0.000000044486968842909104&p=afmhot&mirror=1", "from": "panel 2"}
-{"schema": 1, "kind": "link", "id": "figure:modes-itinerary", "link": "v=2&f=julia&cx=-0.7713889686976524&cy=-0.10762203592208013&m=itinerary&x=-0.8715045448099162&y=-0.18667305738748546&w=1.094300797237734&p=wallhaven_wallhaven-47xzoe", "from": "panel 2"}
-{"schema": 1, "kind": "link", "id": "figure:modes-direct-trap-screen", "link": "v=2&f=julia3&cx=-0.1914639130015472&cy=-1.0527513723190611&m=direct_trap_screen&x=0.42552177666526836&y=0.03542798402482744&w=0.5305332105250155&p=wallhaven_wallhaven-2ex5zg", "from": "panel 2"}
-{"schema": 1, "kind": "link", "id": "figure:modes-direct-trap-multiply", "link": "v=2&f=multibrot4&m=direct_trap_multiply&x=0.3402783418683059&y=0.9315291418205657&w=0.0000006365358415419879&p=cet_linear_wcmr_100_45_c42&mirror=1", "from": "panel 2"}
-{"schema": 1, "kind": "link", "id": "figure:modes-direct-trap-lines", "link": "v=2&f=multibrot5&m=direct_trap_lines&x=0.5346286758046401&y=0.7421518803373967&w=0.00000022650676563702367&p=Rose%20Quartz%20Vault", "from": "panel 2"}
-{"schema": 1, "kind": "link", "id": "figure:modes-gallery", "link": "v=2&f=julia&cx=-0.7488551646997019&cy=-0.13572339871672048&x=0.7412611769268824&y=-0.049232037629614145&w=0.7535353808279458&p=cmr.redshift&mirror=1", "from": "panel 5"}
+{"schema": 1, "kind": "link", "id": "figure:modes-smooth-stripe", "link": "v=3&m=smooth_stripe&x=-0.7805192962538873&y=-0.13533181800963165&w=0.000000012327752366020986&p=Orchid%20Procession", "from": "panel 2"}
+{"schema": 1, "kind": "link", "id": "figure:modes-smooth-curvature", "link": "v=3&m=smooth_curvature&weight=0.85&x=-0.757146423020352&y=0.07328882879620356&w=0.0000000006987884705315999&p=wallhaven_wallhaven-kwg7v6", "from": "panel 2"}
+{"schema": 1, "kind": "link", "id": "figure:modes-threads", "link": "v=3&f=multibrot4&m=threads&x=0.34023047570455006&y=0.9315184542388448&w=0.000000044486968842909104&p=afmhot&mirror=1", "from": "panel 2"}
+{"schema": 1, "kind": "link", "id": "figure:modes-itinerary", "link": "v=3&f=julia&cx=-0.7713889686976524&cy=-0.10762203592208013&m=itinerary&x=-0.8715045448099162&y=-0.18667305738748546&w=1.094300797237734&p=wallhaven_wallhaven-47xzoe", "from": "panel 2"}
+{"schema": 1, "kind": "link", "id": "figure:modes-direct-trap-screen", "link": "v=3&f=julia3&cx=-0.1914639130015472&cy=-1.0527513723190611&m=direct_trap_screen&opacity=0.15&x=0.42552177666526836&y=0.03542798402482744&w=0.5305332105250155&p=wallhaven_wallhaven-2ex5zg", "from": "panel 2"}
+{"schema": 1, "kind": "link", "id": "figure:modes-direct-trap-multiply", "link": "v=3&f=multibrot4&m=direct_trap_multiply&opacity=0.2&x=0.3402783418683059&y=0.9315291418205657&w=0.0000006365358415419879&p=cet_linear_wcmr_100_45_c42&mirror=1", "from": "panel 2"}
+{"schema": 1, "kind": "link", "id": "figure:modes-direct-trap-lines", "link": "v=3&f=multibrot5&m=direct_trap_lines&opacity=0.45&x=0.5346286758046401&y=0.7421518803373967&w=0.00000022650676563702367&p=Rose%20Quartz%20Vault", "from": "panel 2"}
+{"schema": 1, "kind": "link", "id": "figure:modes-gallery", "link": "v=3&f=julia&cx=-0.7488551646997019&cy=-0.13572339871672048&x=0.7412611769268824&y=-0.049232037629614145&w=0.7535353808279458&p=cmr.redshift&mirror=1", "from": "panel 5"}
 {"schema": 1, "kind": "link", "id": "figure:locations-style-spectrum", "no_link": "not_exposed", "why": "the picture reads smooth through a log curve, and the catalog's smooth is linear: a curve is part of a mode's identity here and is not a key a link may carry"}
-{"schema": 1, "kind": "link", "id": "figure:locations-rating-examples", "link": "v=2&f=multibrot4&x=-0.2348083809007602&y=0.5774475407540084&w=5.20487261e-04&p=twilight_shifted", "from": "panel 1"}
-{"schema": 1, "kind": "link", "id": "figure:locations-random-samples", "link": "v=2&x=-0.7389485586734066&y=0.19464970626314537&w=0.008536898938726294&p=twilight_shifted", "from": "panel 2"}
-{"schema": 1, "kind": "link", "id": "figure:locations-minibrot-examples", "link": "v=2&m=threads&x=-0.7495253183358592&y=0.0944710743517176&w=0.00003933702370861308&p=commons_Mandelbrot_3_B_C3_B4ng_Xoay", "from": "panel 3"}
-{"schema": 1, "kind": "link", "id": "figure:locations-foci-proposals", "link": "v=2&f=multibrot4&x=0.3402210811857287&y=0.9314018675848565&w=0.000020761869075560957&p=twilight_shifted", "from": "panel 1"}
-{"schema": 1, "kind": "link", "id": "figure:locations-walk-descent", "link": "v=2&y=0.0&p=twilight_shifted", "from": "panel 1"}
-{"schema": 1, "kind": "link", "id": "figure:locations-reframe-examples", "link": "v=2&f=multibrot4&x=0.3121380176152481&y=0.7310582944197834&w=0.0000005363856379826955&p=twilight_shifted", "from": "panel 1"}
-{"schema": 1, "kind": "link", "id": "figure:locations-descent-chain", "link": "v=2&f=multibrot5&x=0.6652523700253081&y=0.5097069361860601&w=5.1343761624410145e-05&p=twilight_shifted", "from": "panel 1"}
+{"schema": 1, "kind": "link", "id": "figure:locations-rating-examples", "link": "v=3&f=multibrot4&x=-0.2348083809007602&y=0.5774475407540084&w=5.20487261e-04&p=twilight_shifted", "from": "panel 1"}
+{"schema": 1, "kind": "link", "id": "figure:locations-random-samples", "link": "v=3&x=-0.7389485586734066&y=0.19464970626314537&w=0.008536898938726294&p=twilight_shifted", "from": "panel 2"}
+{"schema": 1, "kind": "link", "id": "figure:locations-minibrot-examples", "link": "v=3&m=threads&x=-0.7495253183358592&y=0.0944710743517176&w=0.00003933702370861308&p=commons_Mandelbrot_3_B_C3_B4ng_Xoay", "from": "panel 3"}
+{"schema": 1, "kind": "link", "id": "figure:locations-foci-proposals", "link": "v=3&f=multibrot4&x=0.3402210811857287&y=0.9314018675848565&w=0.000020761869075560957&p=twilight_shifted", "from": "panel 1"}
+{"schema": 1, "kind": "link", "id": "figure:locations-walk-descent", "link": "v=3&y=0.0&p=twilight_shifted", "from": "panel 1"}
+{"schema": 1, "kind": "link", "id": "figure:locations-reframe-examples", "link": "v=3&f=multibrot4&x=0.3121380176152481&y=0.7310582944197834&w=0.0000005363856379826955&p=twilight_shifted", "from": "panel 1"}
+{"schema": 1, "kind": "link", "id": "figure:locations-descent-chain", "link": "v=3&f=multibrot5&x=0.6652523700253081&y=0.5097069361860601&w=5.1343761624410145e-05&p=twilight_shifted", "from": "panel 1"}
 {"schema": 1, "kind": "link", "id": "figure:locations-walk-lengths", "no_link": "drawn", "why": "a drawn diagram or chart, with no engine render behind it to reopen"}
-{"schema": 1, "kind": "link", "id": "figure:locations-highly-rated", "link": "v=2&x=-0.7493892550988116&y=0.04149385841183289&w=0.0000042814940366928615&p=twilight_shifted", "from": "panel 1"}
-{"schema": 1, "kind": "link", "id": "figure:judges-rating-views", "link": "v=2&x=-0.0777245787904019&y=-0.6514053976217481&w=2.246912508617025e-05&p=twilight_shifted", "from": "panel 1"}
-{"schema": 1, "kind": "link", "id": "figure:judges-what-the-judge-sees", "link": "v=2&x=0.2869760101232717&y=0.4680510345013121&w=2.1585146387249553e-07&p=twilight_shifted", "from": "panel 0"}
-{"schema": 1, "kind": "link", "id": "figure:judges-score-to-decision", "link": "v=2&f=julia3&cx=-0.31883391428477204&cy=0.6947471708446521&x=0.0&y=0.0&w=0.5630695633670507&p=twilight_shifted", "from": "panel 1"}
-{"schema": 1, "kind": "link", "id": "figure:palette-locations", "link": "v=2&x=0.36589157992999566&y=0.3142062593823041&w=0.0005254752858165241&p=Amber%20Highlands", "from": "panel 1"}
+{"schema": 1, "kind": "link", "id": "figure:locations-highly-rated", "link": "v=3&x=-0.7493892550988116&y=0.04149385841183289&w=0.0000042814940366928615&p=twilight_shifted", "from": "panel 1"}
+{"schema": 1, "kind": "link", "id": "figure:judges-rating-views", "link": "v=3&x=-0.0777245787904019&y=-0.6514053976217481&w=2.246912508617025e-05&p=twilight_shifted", "from": "panel 1"}
+{"schema": 1, "kind": "link", "id": "figure:judges-what-the-judge-sees", "link": "v=3&x=0.2869760101232717&y=0.4680510345013121&w=2.1585146387249553e-07&p=twilight_shifted", "from": "panel 0"}
+{"schema": 1, "kind": "link", "id": "figure:judges-score-to-decision", "link": "v=3&f=julia3&cx=-0.31883391428477204&cy=0.6947471708446521&x=0.0&y=0.0&w=0.5630695633670507&p=twilight_shifted", "from": "panel 1"}
+{"schema": 1, "kind": "link", "id": "figure:palette-locations", "link": "v=3&x=0.36589157992999566&y=0.3142062593823041&w=0.0005254752858165241&p=Amber%20Highlands", "from": "panel 1"}
 {"schema": 1, "kind": "link", "id": "figure:palette-moods", "no_link": "drawn", "why": "a drawn diagram or chart, with no engine render behind it to reopen"}
-{"schema": 1, "kind": "link", "id": "figure:palette-fire-ice", "link": "v=2&x=-0.745664851251208303163536352617&y=0.112994057903853818971697158017&w=2.734974e-08&p=Cobalt%20%26%20Coal", "from": "panel 1"}
-{"schema": 1, "kind": "link", "id": "figure:palette-params", "link": "v=2&f=julia&cx=-0.04993036639924727&cy=0.6719657771206978&x=-0.375&y=0.375&w=1.5&p=Ember%20Rising", "from": "panel 1"}
-{"schema": 1, "kind": "link", "id": "figure:palette-spread", "link": "v=2&f=multibrot3&x=-0.4561033363983932&y=0.5492015096676741&w=4.7117926342068356e-05&p=Amethyst%20Veil", "from": "panel 1"}
-{"schema": 1, "kind": "link", "id": "figure:palette-neighborhood", "link": "v=2&x=-0.7482800116735308&y=-0.13563763985784028&w=0.0007193954637897842&p=Rust%20to%20Plum", "from": "panel 1"}
-{"schema": 1, "kind": "link", "id": "figure:palette-autolevel", "link": "v=2&x=-0.800778181691469&y=0.18229482640825037&w=0.0003856391990486722&p=wheelance", "from": "panel 1"}
+{"schema": 1, "kind": "link", "id": "figure:palette-fire-ice", "link": "v=3&x=-0.745664851251208303163536352617&y=0.112994057903853818971697158017&w=2.734974e-08&p=Cobalt%20%26%20Coal", "from": "panel 1"}
+{"schema": 1, "kind": "link", "id": "figure:palette-params", "link": "v=3&f=julia&cx=-0.04993036639924727&cy=0.6719657771206978&x=-0.375&y=0.375&w=1.5&p=Ember%20Rising", "from": "panel 1"}
+{"schema": 1, "kind": "link", "id": "figure:palette-spread", "link": "v=3&f=multibrot3&x=-0.4561033363983932&y=0.5492015096676741&w=4.7117926342068356e-05&p=Amethyst%20Veil", "from": "panel 1"}
+{"schema": 1, "kind": "link", "id": "figure:palette-neighborhood", "link": "v=3&x=-0.7482800116735308&y=-0.13563763985784028&w=0.0007193954637897842&p=Rust%20to%20Plum", "from": "panel 1"}
+{"schema": 1, "kind": "link", "id": "figure:palette-autolevel", "link": "v=3&x=-0.800778181691469&y=0.18229482640825037&w=0.0003856391990486722&p=wheelance", "from": "panel 1"}
 {"schema": 1, "kind": "link", "id": "figure:palette-generator-batch", "no_link": "drawn", "why": "a drawn diagram or chart, with no engine render behind it to reopen"}
-{"schema": 1, "kind": "link", "id": "figure:wallpapers-three-bands", "link": "v=2&x=-0.7493892550988116&y=0.04149385841183289&w=0.0000042814940366928615&p=twilight_shifted", "from": "panel 2"}
-{"schema": 1, "kind": "link", "id": "figure:wallpapers-attempt", "link": "v=2&m=smooth_mean_angle&x=-0.7894061466838949&y=-0.16437809352996482&w=0.0027914350318908217&p=Forge%20Sweep", "from": "panel 1"}
+{"schema": 1, "kind": "link", "id": "figure:wallpapers-three-bands", "link": "v=3&x=-0.7493892550988116&y=0.04149385841183289&w=0.0000042814940366928615&p=twilight_shifted", "from": "panel 2"}
+{"schema": 1, "kind": "link", "id": "figure:wallpapers-attempt", "link": "v=3&m=smooth_mean_angle&weight=0.85&x=-0.7894061466838949&y=-0.16437809352996482&w=0.0027914350318908217&p=Forge%20Sweep", "from": "panel 1"}
 {"schema": 1, "kind": "link", "id": "figure:wallpapers-mine", "no_link": "incomplete_provenance", "why": "no mode is written down"}
 {"schema": 1, "kind": "link", "id": "figure:gallery-pool", "no_link": "drawn", "why": "a drawn diagram or chart, with no engine render behind it to reopen"}
 {"schema": 1, "kind": "link", "id": "figure:gallery-allowance", "no_link": "drawn", "why": "a drawn diagram or chart, with no engine render behind it to reopen"}
 {"schema": 1, "kind": "link", "id": "figure:gallery-twins", "no_link": "incomplete_provenance", "why": "no colormap is written down"}
 {"schema": 1, "kind": "link", "id": "figure:gallery-floors", "no_link": "drawn", "why": "a drawn diagram or chart, with no engine render behind it to reopen"}
-{"schema": 1, "kind": "link", "id": "figure:gallery-release", "link": "v=2&f=julia5&cx=-0.8582951615064046&cy=0.5903709776459439&x=0.006105658486922464&y=-0.021340431347201615&w=0.03533391932886106&p=amazing-25", "from": "panel 1"}
-{"schema": 1, "kind": "link", "id": "figure:gallery-output", "link": "v=2&f=multibrot4&m=stripe&x=0.4463730490973118&y=0.6581827896361206&w=0.00000020629279822204377&p=wallhaven_wallhaven-398e39", "from": "panel 4"}
+{"schema": 1, "kind": "link", "id": "figure:gallery-release", "link": "v=3&f=julia5&cx=-0.8582951615064046&cy=0.5903709776459439&x=0.006105658486922464&y=-0.021340431347201615&w=0.03533391932886106&p=amazing-25", "from": "panel 1"}
+{"schema": 1, "kind": "link", "id": "figure:gallery-output", "link": "v=3&f=multibrot4&m=stripe&x=0.4463730490973118&y=0.6581827896361206&w=0.00000020629279822204377&p=wallhaven_wallhaven-398e39", "from": "panel 4"}
 {"schema": 1, "kind": "link", "id": "figure:pipeline-overview", "no_link": "drawn", "why": "a drawn diagram or chart, with no engine render behind it to reopen"}
 {"schema": 1, "kind": "link", "id": "figure:pipeline-yield-decay", "no_link": "drawn", "why": "a drawn diagram or chart, with no engine render behind it to reopen"}
 {"schema": 1, "kind": "link", "id": "figure:pipeline-growth", "no_link": "drawn", "why": "a drawn diagram or chart, with no engine render behind it to reopen"}

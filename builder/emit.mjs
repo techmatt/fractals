@@ -26,10 +26,17 @@
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
-import { canonicalize, coordinateOf, emit, parse, PermalinkError } from "../explorer/permalink.js";
+import {
+  canonicalize,
+  coordinateOf,
+  emit,
+  parse,
+  PermalinkError,
+  settledParams,
+} from "../explorer/permalink.js";
 import { DEFAULT_PALETTE, PALETTES } from "../explorer/palettes.js";
 import { familySpecOf } from "../explorer/render.js";
-import { CONSTANTS } from "../explorer/catalog.js";
+import { CONSTANTS, SETTLED } from "../explorer/catalog.js";
 
 const WASM = fileURLToPath(new URL("../explorer/engine.wasm", import.meta.url));
 
@@ -80,6 +87,7 @@ const CONTEXT = {
   constants: seedConstants,
   palettes: PALETTES,
   defaultPalette: DEFAULT_PALETTE,
+  settled: (mode) => SETTLED[mode],
 };
 
 const written = (text) => ({ text, value: Number(text) });
@@ -92,7 +100,9 @@ function viewOf(derived) {
     family: derived.family,
     constants,
     mode: derived.mode,
-    params: derived.params ?? {},
+    // A record's picture was drawn at the catalog's constant wherever it names none, and
+    // its link says so: under permalink v3 an absent weight or opacity is one to derive.
+    params: settledParams(derived.mode, derived.params ?? {}, CONTEXT),
     x: written(derived.x),
     y: written(derived.y),
     w: written(derived.w),
