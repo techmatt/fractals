@@ -1,4 +1,4 @@
-"""Seventeen tentative records, landed here as one staged gallery.
+"""Twenty tentative records, landed here as one staged gallery.
 
 ## What this is for
 
@@ -12,8 +12,8 @@ what fills one.
 
 ## Collections, and one row a seat across all of them
 
-The panel shows one **collection** at a time: the general gallery, or one of the sixteen
-the project next door solves on a single axis — twelve hue families and four modes, whose
+The panel shows one **collection** at a time: the general gallery, or one of the nineteen
+the project next door solves on a single axis — twelve hue families and seven modes, whose
 sizes are `curation/targets.py`'s. They overlap, since a seat of the rose collection may
 well be a seat of the general one, so the record is their **union**: one row, and one
 picture, per recipe key, and each row carries `collections`, a map from every collection
@@ -101,15 +101,17 @@ GENERAL = "general"
 #:
 #: The general gallery first; then the nine ordinary hue families, in the codebook's wheel
 #: order; then the three thin ones — `green`, `cyan`, `lime` — the families whose stock
-#: ran short at the old target; then the four modes.
+#: ran short at the old target; then the seven modes, the three smooth-family composites last.
 #:
-#: ⚠ **The sixteen are not published**, and nothing next door names a stamp for a
-#: collection: `tentative.PUBLISHED` lists the general record alone. These are the
-#: `targets_<collection>_n<seats>` solves of 2026-09-15 21:01-21:06Z, the newest recording
-#: of each at the sizes `curation/targets.py` sets, all sixteen taken over one pool in one
-#: batch. Matt's word on them is that they are not final, so a re-solve is a re-pointing of
-#: this table, and `_collection_stamp` refuses a stamp whose solve was not that
-#: collection's so a mistyped line cannot seat one family's pictures under another's name.
+#: ⚠ **The nineteen are not published**, and nothing next door names a stamp for a
+#: collection: `tentative.PUBLISHED` lists the general record alone. These are
+#: `targets_<collection>_n<seats>` solves at the sizes `curation/targets.py` sets: the first
+#: sixteen of 2026-09-15 21:01-21:06Z, taken over one pool in one batch, and the three
+#: smooth-family modes of 2026-09-18 14:42-14:44Z (record_three_modes_ckpt130), over the
+#: pool the angle-modes evening left. Matt's word on them is that they are not final, so a
+#: re-solve is a re-pointing of this table, and `_collection_stamp` refuses a stamp whose
+#: solve was not that collection's so a mistyped line cannot seat one family's pictures
+#: under another's name.
 #: Discard-by-default applies to them next door; a stamp that goes is a `seats` run that
 #: refuses, not a panel that quietly shrinks.
 COLLECTIONS: tuple[tuple[str, str], ...] = (
@@ -130,11 +132,16 @@ COLLECTIONS: tuple[tuple[str, str], ...] = (
     ("smooth", "20260915T210501Z"),
     ("stripe", "20260915T210551Z"),
     ("threads", "20260915T210604Z"),
+    ("smooth_mean_angle", "20260918T144207Z"),
+    ("smooth_angle_min", "20260918T144309Z"),
+    ("smooth_stripe", "20260918T144411Z"),
 )
 
 #: Which of those are a mode, so the header can say which axis each was cut on. The rest
 #: after the general one are hue families.
-MODE_COLLECTIONS = frozenset({"tia", "smooth", "stripe", "threads"})
+MODE_COLLECTIONS = frozenset(
+    {"tia", "smooth", "stripe", "threads", "smooth_mean_angle", "smooth_angle_min", "smooth_stripe"}
+)
 
 #: The one picture size this gallery ships: 316 wide at 16:9. Chosen for the panel's tile,
 #: which is a third of a side panel that is 40% of a desktop window, and no larger size is

@@ -36,7 +36,7 @@ python -m builder pipeline [ID ...] [--run R] [--place] [--replace]
                             walk ledger next door
 python -m builder diagram ID draw one of the three figures that are diagrams, not renders
 python -m builder seats [--records-only]
-                            land the general gallery and the sixteen collections next
+                            land the general gallery and the nineteen collections next
                             door as one staged gallery: the record and a tile per seat
 python -m builder explorer [--palettes-only]  bake the explorer's palettes, wasm, manifest
 python -m builder links [--write]   derive every picture's explorer link from its
@@ -127,8 +127,8 @@ whole gallery is held to its record exactly as a publishable one is — a half-l
 directory is a real problem and reads as one.
 
 `seated-candidates` is the first, and `builder/seats.py` is what fills it: the published
-tentative record and the sixteen collections solved beside it — twelve hue families and four
-modes, not yet published — as one union of 5,626 seats, each row saying which collections
+tentative record and the nineteen collections solved beside it — twelve hue families and seven
+modes, not yet published — as one union of 5,925 seats, each row saying which collections
 seat it and where. **A staged gallery's picture is its tile**, a 316 px WebP, and there are no
 thumbnails: the explorer draws the picture itself on a click, so **assets** holds the file to
 its record and asks for nothing smaller. Every seat is read three times over, for the seat, the recipe and

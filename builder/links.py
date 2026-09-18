@@ -714,6 +714,11 @@ def _constants(family: str, fields: dict, record: dict | None) -> dict:
     return {}
 
 
+#: What the candidate ledger calls a screened composite's drawn texture weight: next door's
+#: `engine_spec.TEXTURE_WEIGHT`, written into `mode_params` since `9c615d6`.
+LEDGER_TEXTURE_WEIGHT = "texture_weight"
+
+
 def ledger_view(recipe: dict, *, level: dict | None = None) -> dict:
     """One candidate-ledger recipe in the shape `emit.mjs` reads.
 
@@ -734,11 +739,17 @@ def ledger_view(recipe: dict, *, level: dict | None = None) -> dict:
         "recipe": recipe.get("palette") or {},
     }
     family = _family({}, record)
+    params = dict(recipe.get("mode_params") or {})
+    # A composite's drawn weight is `texture_weight` in the ledger, which is the engine's
+    # word, and `weight` in a link, which is the contract's. Every other setting a recipe
+    # carries is spelled the same on both sides.
+    if LEDGER_TEXTURE_WEIGHT in params:
+        params["weight"] = params.pop(LEDGER_TEXTURE_WEIGHT)
     view = {
         "family": family,
         "constants": _constants(family, {}, record),
         "mode": str(recipe["mode"]),
-        "params": dict(recipe.get("mode_params") or {}),
+        "params": params,
         **_frame({}, record),
         "palette": str(recipe["colormap"]),
         "shade": _shade({}, record),

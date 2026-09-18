@@ -1,5 +1,5 @@
 {
-  "built": "2026-09-16",
+  "built": "2026-09-18",
   "crate": "explorer/engine-wasm",
   "engine_changes": [
     "coloring::composite, coloring::modulate and direct_trap::Painter::trace are pub: visibility only, no signature moved, engine tests unmoved.",
@@ -12,5 +12,5 @@
   "raw_bytes": 730834,
   "rustc": "1.96.0 (ac68faa20 2026-05-25)",
   "schema": 1,
-  "wallpapers_commit": "7031c90dc984e0558f8d0b467d07d18e0fbba92b"
+  "wallpapers_commit": "371aaa3a12b3abc813d8f153c2e31c55eb27ad01"
 }

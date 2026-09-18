@@ -232,11 +232,11 @@ keeps the mechanics. **Every apply round ends by distilling that round's general
 
 - **The gallery panel shows one collection, and the record is their union**
   *(explorer_gallery_collections_ckpt129, 2026-09-17)*. `seated-candidates` is the
-  published record plus the sixteen collections next door — twelve hue families and four
+  published record plus the nineteen collections next door — twelve hue families and seven
   modes, whose sizes are that project's `curation/targets.py` — as one row per seat, with
   `collections` naming each collection that seats it and where in that collection's
   presentation order it stands. A **Collection** dropdown chooses one; the chips filter
-  what it chose, which is why the collection is not a chip row. ⚠ **The sixteen are
+  what it chose, which is why the collection is not a chip row. ⚠ **The nineteen are
   unpublished and Matt's word is that they are not final**, so `builder/seats.py`'s
   `COLLECTIONS` names a stamp per collection and refuses one whose solve was another
   collection's — a re-solve is a re-pointing of that table. **A staged gallery ships one

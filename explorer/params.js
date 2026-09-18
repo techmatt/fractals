@@ -20,6 +20,8 @@
 //   0.15→10 on the right. The kernel is `exp(−d² / σ²)`, so the left half is where the
 //   threads sharpen and the right is where they go to haze.
 // - `weight` — the texture, 0 to 1, which is the contract's and the engine's whole range.
+//   A hand switch into a screened composite opens it at 0.5, the middle of the travel;
+//   see `TEXTURE_DEFAULT` in `explorer.js`.
 // - `shift` — the itinerary's shift, 0 to 1: a distance along the gradient, and 1 is the
 //   texture's whole spread carried once round it. The catalog's 0.5 sits at the middle.
 // - `threshold` — a direct trap's reach, 0.01 to 0.64 on a log scale, whose middle is

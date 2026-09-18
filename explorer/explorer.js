@@ -245,19 +245,21 @@ let offeredModes = null;
  *  `derived` from the start. Whether anything is measured at all is `levelOn`'s. */
 let levelling = "stored";
 
-/** Where the value of the mode's derived parameter comes from: `stored`, `derived` or
- *  `pinned`. The parameter is `link.DERIVED`'s — an angle mode's texture weight, a trap's
+/** Where the value of the mode's derived parameter comes from: `stored`, `derived`,
+ *  `default` or `pinned`. The parameter is `link.DERIVED`'s — an angle mode's texture weight, a trap's
  *  opacity — and the other modes have none, which leaves this with nothing to say.
  *
  *  **`stored` replays what a view arrived with**, the same as a tone curve: a seat, an atlas
  *  mark or a link carries the number its picture was drawn at, and a mode switch back into
  *  the mode a seat sits in carries that seat's own. **`derived` takes it from the view**:
- *  a view that arrived without one, a mode switch into a mode no seat here sits in, and
+ *  a view that arrived without one, a switch into a trap mode no seat here sits in, and
  *  every view after the first change a reader makes to a stored one. The weight is
  *  measured on the one-sample field before it is coloured and the opacity on a probe
  *  before anything is painted, and either lands in `view.params`, which is what the box
- *  shows and Copy link writes. **`pinned` is a number the reader typed**, and it holds
- *  through pans and zooms until the mode changes. A link cannot say which of the three
+ *  shows and Copy link writes. **`default` is `TEXTURE_DEFAULT`**, which a switch into an
+ *  angle mode no seat here sits in opens at, and it holds like a pinned one. **`pinned` is
+ *  a number the reader typed**, and it holds
+ *  through pans and zooms until the mode changes. A link cannot say which of these
  *  wrote its number, so a reopened pinned value is `stored`, and moves at the first move
  *  like any other. */
 let tuning = "stored";
@@ -281,6 +283,23 @@ const seatsByPlace = new Map();
 /** The value each trap mode's seats were most often drawn at, by mode: what a switch into
  *  that mode opens at before its probe has said anything, and keeps where it says nothing. */
 const seatedParams = {};
+
+/** The texture weight a mode switch opens a screened composite at, where no seat sits at
+ *  that place in that mode *(Matt, explorer_three_collections_texture_ckpt130)*. The
+ *  catalog's 0.85 is what every composite was mined at until the weight was drawn per
+ *  candidate, and the drawn weights clear the judges more often the lower they sit; 0.5 is
+ *  the texture seen without drowning the escape structure. It is written into the view, so
+ *  the link carries it and the contract is unmoved: a link that leaves `weight` out still
+ *  asks for it to be taken from the view. `threads` is already settled here. */
+const TEXTURE_DEFAULT = 0.5;
+
+/** A hand switch's parameters for a mode no seat at this place sits in. */
+function switchedParams(mode) {
+  const params = { ...(seatedParams[mode] ?? {}) };
+  const settled = SETTLED[mode]?.weight;
+  if (settled !== undefined && settled !== TEXTURE_DEFAULT) params.weight = TEXTURE_DEFAULT;
+  return params;
+}
 
 /** Whether the Autolevel box is ticked. Unticked, the palette is drawn as it is.
  *
@@ -1104,6 +1123,8 @@ function syncParams() {
   const what = key === "weight" ? "Texture" : "Opacity";
   if (tuning === "pinned") {
     paramNote.textContent = `${what} set by hand, and kept as the view moves.`;
+  } else if (tuning === "default") {
+    paramNote.textContent = `${what} at the explorer's default, and kept as the view moves.`;
   } else if (tuning === "stored") {
     paramNote.textContent =
       tunedFrom === "seat" ? `${what} as this wallpaper was made.` : `${what} as this link carries it.`;
@@ -2133,13 +2154,18 @@ modePicker.addEventListener("change", () => {
   const mode = modePicker.value;
   // Where a seat sits at this place in the mode being switched to, the switch is back to
   // that seat's picture, parameters and all; anywhere else a trap opens at what its seats
-  // were most often drawn at, and the draw takes the derived parameter from the view.
+  // were most often drawn at, and the draw takes the derived parameter from the view, and
+  // a screened composite opens at `TEXTURE_DEFAULT`.
   const seated = seatsByPlace.get(`${placeOf(view)}|${mode}`);
-  view = { ...view, mode, params: { ...(seated ?? seatedParams[mode] ?? {}) } };
+  const params = seated !== undefined ? { ...seated } : switchedParams(mode);
+  view = { ...view, mode, params };
   // A mode that was only listed because the view arrived in it goes, now it is left.
   syncModes();
   changed();
-  tuning = seated !== undefined ? "stored" : "derived";
+  // The texture default is held as the view moves, the way a number the reader typed is;
+  // a trap's opacity is still taken from the view.
+  if (seated !== undefined) tuning = "stored";
+  else tuning = link.DERIVED[mode] === "weight" ? "default" : "derived";
   tunedFrom = "seat";
   buildParams();
   // What a download of this view would cost is per mode, so the line under the

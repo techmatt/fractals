@@ -1000,8 +1000,20 @@ spells the number the picture was drawn at, and spells it short.
 | `tuning` | when | what the draw does |
 | --- | --- | --- |
 | `stored` | a link, seat or atlas mark carries the value; a mode switch back into the mode a seat sits in at this place | replays it |
-| `derived` | a v3 link without the key; a mode switch into a mode no seat here sits in; the first change a reader makes to a stored view | measures it every pass |
+| `derived` | a v3 link without the key; a switch into a trap mode no seat here sits in; the first change a reader makes to a stored view | measures it every pass |
+| `default` | a switch into an angle mode no seat here sits in | keeps 0.5 through pans and zooms, until the mode changes |
 | `pinned` | the reader typed in the box | keeps it through pans and zooms, until the mode changes |
+
+**A hand switch opens a screened composite at 0.5** *(Matt,
+explorer_three_collections_texture_ckpt130, 2026-09-18)*: all five, the three angle modes
+and `smooth_trap_circle` and `smooth_stripe` beside them, where no seat sits at that place
+in that mode. `TEXTURE_DEFAULT` in `explorer.js` writes it into `view.params`, so Copy link
+carries `weight=0.5` and the contract is unmoved: a v3 link that leaves `weight` out still
+derives, and a seat still opens at the weight it was drawn at. That is its recorded
+`texture_weight` for a seat mined after the weight was drawn per candidate (next door's
+`9c615d6`), carried as `weight` by `links.ledger_view`, and the catalog's 0.85 for every
+seat mined before it, because that is the picture its tile shows. `threads` settles at 0.5
+already and is left alone.
 
 A switch into a trap mode first seeds the value its seats were most often drawn at: 0.6 for
 multiply, read off the gallery record at load. The probe then replaces it, and the seed only
