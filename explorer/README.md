@@ -706,8 +706,10 @@ shows more or less height rather than cropping. The estimate's tooltip says so.
 
 **One row, first, and always open.** Download is the studio's first section: two buttons,
 leftmost — *Download PNG* and *Download JPG* — then a size (*As shown*, three wallpaper
-presets, or a custom width and height), a 1× / 4× samples toggle, and an estimate of a few
-words. The size, samples and estimate are the same for both; the pressed button is the
+presets, or a custom width and height), a 1× / 4× / 16× samples toggle that opens at 4×,
+and an estimate of a few words. 16× is there to hold a download against the same picture
+at 4×, and the sample ceiling below is what bounds it: 2560x1440 fits, 3840x2160 is
+refused by name. The size, samples and estimate are the same for both; the pressed button is the
 progress bar and the way to cancel, and the other is held still until it finishes. On a
 phone the row wraps. The file is named for what is in it —
 `multibrot3_smooth_mean_angle_dimensionality-25_3840x2160.png` — family, mode, palette and

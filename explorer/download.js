@@ -61,13 +61,15 @@ export function screenSize() {
 const DEFAULT_PRESET = 1;
 const DEFAULT_SUPERSAMPLE = 2;
 
-/** The samples toggle. Two settings: the one-sample picture a quick look wants, and the
+/** The samples toggle. Three settings: the one-sample picture a quick look wants; the
  *  two a pixel each way the screen's own finished pass ends at, which is what a render
- *  sheet uses. Past two the memory ceiling below refuses the two larger presets.
+ *  sheet uses and the default; and four each way, for holding a download at 4× against
+ *  the same picture at 16×. The memory ceiling below is what bounds the third: 2560 × 1440
+ *  at 16× is 59 million samples and fits, and 3840 × 2160 at 16× is refused by name.
  *
  *  A setting is a factor on each axis, and it is labelled by the samples per pixel it
  *  makes, which is also what it costs: `2` is shown as `4×`. */
-const SUPERSAMPLES = [1, 2];
+const SUPERSAMPLES = [1, 2, 4];
 
 /** The two files a picture can be saved as, each with its own button.
  *
