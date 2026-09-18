@@ -99,6 +99,70 @@ function made(tag, className, text) {
   return node;
 }
 
+/** The raised digits `builder/atlas.py` writes a degree with, in order from zero. */
+const RAISED = "⁰¹²³⁴⁵⁶⁷⁸⁹";
+
+/** The lowered ones Phoenix's indexed recurrence is written with, and its two signs. */
+const LOWERED = "₀₁₂₃₄₅₆₇₈₉";
+
+/**
+ * Every glyph either class spells, as the tag that sets it and the ordinary character it
+ * stands for. `n`, `+` and `−` are in it because Phoenix's indices are `n+1` and `n−1`,
+ * and a run is only one element where the whole of it is here.
+ */
+const LEVELLED = new Map([
+  ...[...RAISED].map((glyph, digit) => [glyph, ["sup", String(digit)]]),
+  ...[...LOWERED].map((glyph, digit) => [glyph, ["sub", String(digit)]]),
+  ["⁺", ["sup", "+"]],
+  ["⁻", ["sup", "−"]],
+  ["₊", ["sub", "+"]],
+  ["₋", ["sub", "−"]],
+  ["ₙ", ["sub", "n"]],
+]);
+
+/**
+ * One line of the frame's text, with every raised and lowered glyph set as a `sup` or a
+ * `sub` rather than as the character the record spells it with.
+ *
+ * **The record goes on writing `z⁶`, and the page stops drawing it that way.** A raised
+ * digit is one character of the body font, sized by the font's designer at around half the
+ * cap height and never by the page, and at the sizes this frame's text runs at the
+ * exponent — the whole of what a chip says that its neighbour does not — was the least
+ * legible thing on either page that mounts a frame. A `sup` takes a size this stylesheet
+ * picks, so raising a line raises its exponent with it. Phoenix's indices go the same way
+ * for the same reason, and because a line with a set exponent and a font's own subscript
+ * on it reads as two typefaces having an argument.
+ *
+ * The record is untouched, and it is still read as glyphs by the tooltips and by the
+ * Pillow-drawn figure in section 11, neither of which has a stylesheet to ask.
+ */
+function typeset(node, text) {
+  node.replaceChildren();
+  let plain = "";
+  let run = "";
+  let tag = null;
+  const flush = () => {
+    if (plain !== "") node.append(plain);
+    if (run !== "") node.append(made(tag, null, run));
+    plain = "";
+    run = "";
+  };
+  for (const glyph of String(text)) {
+    const levelled = LEVELLED.get(glyph);
+    if (levelled === undefined) {
+      if (run !== "") flush();
+      plain += glyph;
+      continue;
+    }
+    const [wants, ordinary] = levelled;
+    if (plain !== "" || (run !== "" && wants !== tag)) flush();
+    tag = wants;
+    run += ordinary;
+  }
+  flush();
+  return node;
+}
+
 /**
  * What one slot's tooltip says: what it is, how it was drawn, what its link cannot carry.
  *
@@ -262,7 +326,7 @@ export async function mount(host, options = {}) {
     // and the uppercasing stops at the first of them.
     const caption = made("span", "slot-label");
     const named = made("span", "slot-name", labelOf(name));
-    const mapped = made("span", "slot-map", mapOf(name));
+    const mapped = typeset(made("span", "slot-map"), mapOf(name));
     caption.append(named, mapped);
     node.append(image, caption);
     strip.appendChild(node);
@@ -280,7 +344,7 @@ export async function mount(host, options = {}) {
   const planes = made("div", "planes");
   const buttons = new Map();
   for (const one of record.partitions) {
-    const button = made("button", "plane", one.label);
+    const button = typeset(made("button", "plane"), one.label);
     button.type = "button";
     button.title = one.title;
     button.setAttribute("aria-pressed", String(one === partition));
@@ -414,7 +478,7 @@ export async function mount(host, options = {}) {
   function dressPlate() {
     for (const [name, { caption, map }] of slots) {
       caption.textContent = labelOf(name);
-      map.textContent = mapOf(name);
+      typeset(map, mapOf(name));
     }
     plateImage.src = new URL(`../assets/images/atlas/${partition.plate.file}`, base);
     plateImage.alt = partition.dots.length

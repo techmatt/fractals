@@ -74,6 +74,11 @@
   font-family: var(--sans);
 }
 
+/* **A chip is read, not glanced at.** It was set at 0.75rem with the degree in a raised
+   glyph, which put the one character that tells `z³` from `z⁶` at around 7px on a desktop
+   window: the strip looked like a row of identical pills. The chip is now a shade over the
+   tab strip the studio hangs the frame under, which is the smallest control text this
+   project sets, and the exponent is a `sup` sized below. */
 .plane {
   appearance: none;
   border: 1px solid var(--well-rule);
@@ -81,9 +86,9 @@
   background: none;
   color: var(--well-ink-dim);
   font: inherit;
-  font-size: 0.75rem;
+  font-size: 0.9375rem;
   line-height: 1.5;
-  padding: 0.05rem 0.6rem;
+  padding: 0.05rem 0.7rem;
   cursor: pointer;
   white-space: nowrap;
 }
@@ -155,8 +160,8 @@ button.slot { margin: 0; padding: 0; font: inherit; color: inherit; cursor: poin
   color: var(--well-ink);
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
   font-family: var(--sans);
-  font-size: 0.6875rem;
-  line-height: 1.25;
+  font-size: 0.8125rem;
+  line-height: 1.3;
   text-align: center;
   pointer-events: none;
 }
@@ -174,13 +179,36 @@ button.slot { margin: 0; padding: 0; font: inherit; color: inherit; cursor: poin
    panel and sat on one line on a wide plate, so the same header had two shapes and one of
    them broke a formula in half. Stacked and `nowrap`, every header reads the same way at
    every width, and the slot with no map — the gallery — is a name on one line as before. */
+/* **And it is set at the name's size, not a caption's.** The two used to share a font
+   size, which is not the same as reading alike: the name is uppercase, so its every letter
+   stands at cap height, while the map is lowercase mathematics whose `z` and `c` sit at
+   the x-height — a good third shorter — with the exponent smaller again. Set a step above
+   the name, the two lines read as one header rather than as a title with a footnote. */
 .slot-map {
   display: block;
   letter-spacing: normal;
   text-transform: none;
   white-space: nowrap;
+  font-size: 1.15em;
   color: var(--well-ink-dim);
 }
+
+/* An index the page sets rather than the font: big enough to read at the sizes this
+   frame's text runs at, and shifted without `super`'s claim on the line's height, because
+   the strip's height is taken off the plate and a line that grew would cost a picture. */
+.plane sup,
+.plane sub,
+.slot-map sup,
+.slot-map sub {
+  font-size: 0.72em;
+  line-height: 0;
+  vertical-align: baseline;
+  position: relative;
+}
+.plane sup,
+.slot-map sup { top: -0.45em; }
+.plane sub,
+.slot-map sub { top: 0.22em; }
 
 .plate {
   position: relative;
