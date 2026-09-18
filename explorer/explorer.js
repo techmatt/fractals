@@ -100,17 +100,27 @@ const SHADE_TIPS = {
   mirror: "Plays the palette forward and then back, so it has no hard seam.",
 };
 
+/** The mode both mode lists open with, whatever the counts or the alphabet would say.
+ *
+ *  *(Matt, 2026-09-17.)* `smooth` is the mode the article teaches first and the one a
+ *  reader arriving here has already met, so it heads the Mode select and the gallery
+ *  panel's mode chips alike — the chips are tallied and sorted at load, so the pin is a
+ *  fact this page states rather than an order a count happens to produce. Named once and
+ *  handed to the panel, because two spellings of one editorial decision is one of them
+ *  going stale. */
+const MODE_FIRST = "smooth";
+
 /** The order the Mode select lists the gallery's modes in.
  *
- *  Seat count in the published n=1000 record, most first, ties by name, with `curvature`
- *  moved to second-to-last *(explorer_polish, 2026-09-16)*. Baked here rather than counted
- *  at load, so a reseated gallery does not reshuffle a menu somebody has learnt. A mode
- *  the gallery offers that is not named here, or one only listed because a link arrived
- *  in it, goes after these in the contract's order. */
+ *  `MODE_FIRST`, then seat count in the published n=1000 record, most first, ties by name,
+ *  with `curvature` moved to second-to-last *(explorer_polish, 2026-09-16)*. Baked here
+ *  rather than counted at load, so a reseated gallery does not reshuffle a menu somebody
+ *  has learnt. A mode the gallery offers that is not named here, or one only listed
+ *  because a link arrived in it, goes after these in the contract's order. */
 const MODE_ORDER = [
+  MODE_FIRST,
   "tia",
   "stripe",
-  "smooth",
   "threads",
   "smooth_mean_angle",
   "smooth_angle_min",
@@ -2186,8 +2196,12 @@ async function main() {
     collection: document.getElementById("gallery-collection"),
     modes: document.getElementById("gallery-modes"),
     hues: document.getElementById("gallery-hues"),
+    // The hue row asks one of two questions depending on the collection, and says which
+    // in its own heading, so the panel is handed the heading rather than the text.
+    hueHead: document.getElementById("head-gallery-hues"),
     tiles: document.getElementById("gallery-tiles"),
     note: document.getElementById("gallery-note"),
+    firstMode: MODE_FIRST,
     onPick: (row) =>
       openLink(row.link, { gap: row.gap, key: row.key, what: "this wallpaper" }),
   });

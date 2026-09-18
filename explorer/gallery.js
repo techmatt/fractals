@@ -17,6 +17,13 @@
 // something close. The tone curve lives on the run's record rather than in the recipe,
 // and the link carries it wherever a record holds one.
 //
+// **And the filters are a question asked of the collection.** The mode row tallies what
+// drew each picture wherever it stands, but the hue row changes what it is asking: in the
+// general gallery and the mode collections it tallies which family leads a picture, and
+// inside a collection cut on one family — where every seat leads in that family already —
+// it drops that family and tallies what each picture *also* contains. The record carries
+// both readings, and `builder/seats.py` says at what bar a picture contains a hue.
+//
 // **One record, and a collection is a question asked of it.** The collections overlap, so
 // the record is their union: one row and one tile per seat, and each row's `collections`
 // maps the collections that seat it to its place in each. Choosing a collection sorts and
@@ -41,6 +48,14 @@ export const GENERAL = "general";
 
 /** What the dropdown groups each axis under. The general collection stands alone. */
 const AXIS_LABELS = { family: "Color family", mode: "Mode" };
+
+/** The axis a collection cut on one hue family is named by, which is the one the hue chips
+ *  change their question inside. */
+const FAMILY_AXIS = "family";
+
+/** What the hue row is called when it tallies which family leads each picture, and what it
+ *  is called when it tallies which families are merely in one. */
+const HUE_HEADS = { dominant: "Color family", contains: "Also contains" };
 
 /**
  * How far past the visible tiles a picture is asked for, as a share of the panel's height.
@@ -101,14 +116,28 @@ export function membersOf(seats, name) {
     .sort((a, b) => a.collections[name] - b.collections[name]);
 }
 
-/** How many seats a value of one field holds, most first, so a chip row reads as a shape. */
-function tally(seats, field) {
+/**
+ * How many seats a value of one field holds, most first, so a chip row reads as a shape.
+ *
+ * `first` is a value pinned to the head of the row whatever its count, which is the page's
+ * to name: the mode the article teaches first heads the chips as it heads the Mode select,
+ * and a collection where it is the fourth-largest is not a collection where it moves.
+ * Nothing pinned is `undefined` rather than `null`, because `null` is a value a chip row
+ * really holds — the seats filed under no hue — and pinning it was this row opening on
+ * *unfiled 4*.
+ */
+function tally(seats, field, first = undefined) {
   const held = new Map();
   for (const seat of seats) {
     const value = seat[field] ?? null;
     held.set(value, (held.get(value) ?? 0) + 1);
   }
-  return [...held].sort((a, b) => b[1] - a[1] || String(a[0]).localeCompare(String(b[0])));
+  return [...held].sort(
+    (a, b) =>
+      Number(b[0] === first) - Number(a[0] === first) ||
+      b[1] - a[1] ||
+      String(a[0]).localeCompare(String(b[0])),
+  );
 }
 
 /**
@@ -118,7 +147,17 @@ function tally(seats, field) {
  * which is a sentence about what the link cannot carry — is the page's business and not
  * this module's, which knows only how to show pictures and which ones are being asked for.
  */
-export function install({ base, collection, modes, hues, tiles, note, onPick }) {
+export function install({
+  base,
+  collection,
+  modes,
+  hues,
+  hueHead,
+  tiles,
+  note,
+  firstMode = undefined,
+  onPick,
+}) {
   let seats = [];
   let collections = [];
   let chosen = GENERAL;
@@ -128,10 +167,25 @@ export function install({ base, collection, modes, hues, tiles, note, onPick }) 
   let open = null;
   let observer = null;
 
+  /**
+   * The family this collection was cut on, where it was cut on one, which is what turns
+   * the hue row from a reading into a question.
+   *
+   * **Inside a colour collection, "which family leads this picture" is the wrong
+   * question.** Every seat of the green collection is a green picture, so a row of
+   * dominant-hue chips there said green 252, teal 31, lime 12 — a tally of which
+   * green-ish cell happened to lead each one, which is a fact about the codebook's
+   * boundaries and not about anything a reader can see. What is worth asking of a shelf of
+   * green pictures is what *else* is in them, so the row drops the collection's own hue
+   * and every other chip counts the seats whose picture contains that family at all.
+   */
+  let cutOn = null;
+
   function matches(seat) {
     if (wanted.mode.size > 0 && !wanted.mode.has(seat.mode)) return false;
-    if (wanted.hue.size > 0 && !wanted.hue.has(seat.hue ?? null)) return false;
-    return true;
+    if (wanted.hue.size === 0) return true;
+    if (cutOn === null) return wanted.hue.has(seat.hue ?? null);
+    return (seat.hues ?? []).some((name) => wanted.hue.has(name));
   }
 
   /** Said once, the first time a tile is not there. */
@@ -271,16 +325,46 @@ export function install({ base, collection, modes, hues, tiles, note, onPick }) 
     }
   }
 
+  /**
+   * How many seats contain each family other than the one this collection was cut on,
+   * most first, which is what the row means where a collection has a hue of its own.
+   *
+   * A seat stands under every chip its picture carries, so the counts are not a partition
+   * of the collection and are not meant to be read as one; what the record calls contained
+   * is a low bar it names, and `seats.py` says which and why.
+   */
+  function presence(seats, except) {
+    const held = new Map();
+    for (const seat of seats) {
+      for (const name of seat.hues ?? []) {
+        if (name === except) continue;
+        held.set(name, (held.get(name) ?? 0) + 1);
+      }
+    }
+    return [...held].sort((a, b) => b[1] - a[1] || String(a[0]).localeCompare(String(b[0])));
+  }
+
   /** Show one collection: its members, the chips they tally to, and the grid. */
   function choose(name) {
     chosen = collections.some((one) => one.name === name) ? name : GENERAL;
     collection.value = chosen;
+    const axis = collections.find((one) => one.name === chosen)?.axis ?? null;
+    cutOn = axis === FAMILY_AXIS ? chosen : null;
     members = membersOf(seats, chosen);
-    chipsInto(modes, "mode", tally(members, "mode"), "no mode");
+    chipsInto(modes, "mode", tally(members, "mode", firstMode), "no mode");
+    if (hueHead) hueHead.textContent = cutOn === null ? HUE_HEADS.dominant : HUE_HEADS.contains;
     // A seat whose palette the ledger never saw in a picture has no hue family at all.
     // Those get a chip of their own rather than being dropped: a filter that quietly holds
-    // back pictures is worse than one that admits it.
-    chipsInto(hues, "hue", tally(members, "hue"), "unfiled", true);
+    // back pictures is worse than one that admits it. There is no such chip in a colour
+    // collection, where the row is asking what a picture contains and the answer for a
+    // picture that contains nothing else is simply no chip.
+    chipsInto(
+      hues,
+      "hue",
+      cutOn === null ? tally(members, "hue") : presence(members, cutOn),
+      "unfiled",
+      true,
+    );
     fill();
   }
 

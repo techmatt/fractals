@@ -26,12 +26,12 @@ one click away and a second, larger copy of it here would be a gigabyte nobody i
 row's `file` is a WebP at `TILE_SIZE`, encoded through `images.write_thumb` at the one
 quality `images` holds for that format, and it is the only size this gallery ships.
 
-## The three reads, and where each answer comes from
+## The four reads, and where each answer comes from
 
 `builder.picks` already resolves a seat: the recorded gallery for the seat row, the
 candidate ledger for the recipe, and the run's own record for what the tone operator did.
-This module does the same three reads a thousand at a time rather than six, so each store
-is opened once:
+This module does the same reads a thousand at a time rather than six, so each store is
+opened once:
 
 - **the seats**, `artifacts/curation/tentative/<stamp>/gallery.jsonl` — seat order, the
   alias, and the hue family the colour reading rolls the picture up to;
@@ -41,8 +41,14 @@ is opened once:
   by attempt are not among its stores, and `PICTURE_RECORDS` reads theirs here, one pass
   per run record. Neither is `picks.RUN_RECORDS`: that one answers *did the operator
   act*, and this wants the five numbers it acted with.
+- **the hue families each picture contains**, read off the pictures themselves through
+  `palettes.dominance`, at `HUE_PRESENT` rather than at that module's dominance bar. The
+  seat row already says which family *leads* a picture; the panel's chips inside a colour
+  collection ask the other question — *what else is in here* — and a hint of a hue is the
+  answer to it. This is the one read that opens the pictures, and it is a minute and a
+  half for five thousand.
 
-And a fourth thing that is not a read of a record: **the presentation order**. The
+And a fifth thing that is not a read of a record: **the presentation order**. The
 tentative gallery's own page opens on `curation.page_order`'s permutation of the seating,
 computed at its build and written onto no record, and this gallery asks the same module
 for the same permutation so that the explorer's panel opens on the tiles that page does.
@@ -209,6 +215,43 @@ print(json.dumps(answer))
 #: being the picture with no curve in it; `CURVED` carries one; `LOST` is a gap.
 CLEAN, CURVED, LOST = "clean", "curved", "lost"
 
+#: How much of a picture's colour a hue family holds before the row says the picture
+#: **contains** it.
+#:
+#: The share is `palettes.dominance`'s — the codebook's census of the picture with the
+#: neutrals out of the numerator and the denominator, so it is a share of the colour and
+#: not of the pixels, which is the only reading of "what colour is this" the project next
+#: door has. What is different here is the bar. That module answers *what is this picture
+#: of*, at 0.20 for a family; a panel offering "also contains" is asking the other
+#: question, and a hue a picture merely has a hint of is the answer to it.
+#:
+#: **0.03, eyeballed rather than reasoned** *(explorer_smooth_first_colour_contains)*. Two
+#: sheets settled it: across every collection, twelve pictures whose share of a family
+#: three wheel-steps or further away fell between 0.025 and 0.04 — teal spirals through a
+#: red picture, gold through a teal one — and every one of those accents is there to be seen,
+#: so a bar above them would be hiding what a reader can point at. The cost is at the
+#: other end and is a property of the wheel rather than of the number: a green palette's
+#: cool shoulder falls in teal's cells, so 195 of the green collection's 300 seats contain
+#: teal at 0.05 and 221 at 0.03, and raising the bar to 0.08 still leaves 166. A neighbour
+#: reads high at every bar, which is why the bar was chosen for the far hues it catches.
+HUE_PRESENT = 0.03
+
+#: Every seat's hue-family share vector, read the one way this project reads a picture's
+#: colour. The pictures are the candidate renders the seats ship, which is the population
+#: `dominance` is defined over; a tile drawn down to 316 px is a different one.
+SHARES_PROGRAM = """
+import json, sys
+
+from pathlib import Path
+
+from fractal_wallpapers.palettes import dominance
+
+ask = json.load(sys.stdin)
+print(json.dumps({
+    key: dominance.of_picture(Path(path)).family_shares for key, path in ask.items()
+}))
+"""
+
 #: `.gitattributes` normalizes this repository to LF, and `Path.write_text` on Windows
 #: translates a newline back to CRLF, so anything written here spells the ending.
 LF = "\n"
@@ -345,6 +388,36 @@ def stamps_of(resolved: list[picks.Pick]) -> dict[str, dict]:
     return found
 
 
+def hues_of(seats: list[tuple[str, dict]]) -> dict[str, list[str]]:
+    """Which hue families each seat's picture **contains**, most first, by recipe key.
+
+    One process for all of them, the same shape the stamps are read in: the import is most
+    of the cost and a census of five thousand pictures is a minute and a half of it.
+
+    A seat whose picture is not on this machine is refused, the way `pictures` refuses one,
+    which is what makes `--records-only` a run that skips re-encoding the tiles rather than
+    one that can be made without the renders.
+    """
+    ask = {}
+    for _, seat in seats:
+        stored = str(seat["picture"])
+        home = renders.rehome(stored)
+        if home is None or not home.is_file():
+            raise SeatError(f"{seat['key']}: {stored} is not on this machine")
+        ask[str(seat["key"])] = str(home)
+    shares: dict[str, dict[str, float]] = _program(
+        SHARES_PROGRAM, "reading the seats' hue shares", ask=ask
+    )
+    return {
+        key: [
+            name
+            for name, _ in sorted(held.items(), key=lambda item: (-float(item[1]), item[0]))
+            if float(held[name]) >= HUE_PRESENT
+        ]
+        for key, held in shares.items()
+    }
+
+
 @cache
 def presentation_orders() -> dict[str, tuple[list[str], str]]:
     """Every collection's seats as its own page presents them, as recipe keys, and the
@@ -455,6 +528,7 @@ def derive() -> list[dict]:
     seats, places = union()
     resolved = picks.resolve(f"{stamp}{picks.PICK_SEPARATOR}{seat['key']}" for stamp, seat in seats)
     stamps = stamps_of(resolved)
+    hues = hues_of(seats)
     curves = links.catalog_curves()
 
     tones = {pick.key: tone(pick, stamps) for pick in resolved}
@@ -471,7 +545,9 @@ def derive() -> list[dict]:
         answer = emitted[pick.key]
         if not answer.get("ok"):
             raise SeatError(f"{pick.key}: the contract refuses this seat — {answer['why']}")
-        rows.append(_row(seat, pick, tones[pick.key], answer, curves, places[pick.key]))
+        rows.append(
+            _row(seat, pick, tones[pick.key], answer, curves, places[pick.key], hues[pick.key])
+        )
     return rows
 
 
@@ -482,6 +558,7 @@ def _row(
     answer: dict,
     curves: dict[str, str],
     places: dict[str, int],
+    hues: list[str],
 ) -> dict:
     """One seat's metadata row, gap and all."""
     recipe = pick.recipe
@@ -512,6 +589,7 @@ def _row(
         "collections": places,
         "mode": mode,
         "hue": hue,
+        "hues": hues,
         "palette": str(recipe["colormap"]),
         "link": answer["link"],
         "gap": "; ".join(gaps) or None,
@@ -570,7 +648,11 @@ def header(rows: list[dict]) -> dict:
             "record's presentation order, the permutation its own page opens on, whose basis "
             "ordered_on names. Rows run in the general collection's order, then each further "
             "collection's new seats in its own. "
-            "The seat's mode and hue family come from the first record that seats it; the "
+            "The seat's mode and hue family come from the first record that seats it; hues "
+            "is every family holding at least "
+            f"{HUE_PRESENT} of that picture's colour, largest first, read off the picture "
+            "the record ships through palettes.dominance with the neutrals dropped, which "
+            "is what the panel's chips inside a color collection tally. The "
             "recipe every link is built from comes from the candidate ledger by a streamed "
             "lookup; the tone curve a link carries in its level key comes from the run that "
             "drew the candidate. A link is emitted by explorer/permalink.js through "
