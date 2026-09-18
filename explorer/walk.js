@@ -4,13 +4,14 @@
 // **What it does, once per walk.** Pick a parameter plane. Descend it the way the
 // viewport sampler does: a quad-tree over the plane's home box, one cheap probe per cell
 // saying which of its quarters straddle the set's edge, and — where the sampler takes
-// every straddling cell in turn — the judge's opinion of each quarter's smooth picture
-// choosing which one to go into. That stops at a width drawn from the band the sampler
-// draws in, and the frame it reaches is the walk's root: where the pipeline's walk starts,
-// not where its seats are. From the root the walk keeps going by the same rule, rung after
-// rung, until the judge's score has peaked. At the best frame it saw, if that clears the
-// bar, a handful of rendering recipes are tried and the best are kept as tiles. Then the
-// next walk starts.
+// every straddling cell in turn — one straddling quarter at random. That first pass is
+// quick and out of sight: nothing is judged, and only the frame it stops at, at a width
+// drawn from the root band, goes through the screen. That frame is the walk's root, a
+// genuine piece of the boundary. From the root the walk goes on rung by rung with the
+// viewer following, and here the judge's opinion of each quarter's smooth picture chooses
+// which one to go into, until its score has peaked. At the best frame it saw, if that clears
+// the bar, a handful of rendering recipes are tried and the best are kept as tiles. Then
+// the next walk starts.
 //
 // **What it does not claim to be.** It is not the pipeline. The sampler is exhaustive and
 // this is greedy; the pipeline judges JPEG-decoded pictures and this judges the canvas; the
@@ -39,8 +40,10 @@ import * as judges from "./judges.js";
 /** The sampler's home box is the family's home view scaled by this (`HOME_SHARE`). */
 const HOME_SHARE = 0.9;
 
-/** The straddle probe: the sampler's `dump-field` geometry and cap. */
-const PROBE = { width: 64, height: 36, maxiter: 256 };
+/** The straddle probe: the sampler's `dump-field` geometry and cap. The cap is a shortcut
+ *  only the wide rungs can afford, so below `wide` the probe runs at the width's own
+ *  iteration cap; at depth 256 would read escaping points as interior. */
+const PROBE = { width: 64, height: 36, maxiter: 256, wide: 1e-3 };
 
 /** The screen's node field (`screen::NODE_WIDTH`, and 16:9). */
 const NODE = { width: 384, height: 216 };
@@ -101,8 +104,8 @@ const DEFAULTS = {
   planes: new Set(PLANES),
   julia: true,
   roster: "random",
-  widest: 0.1,
-  narrowest: 1e-3,
+  widest: 1e-3,
+  narrowest: 1e-4,
   rungs: 20,
   recipes: 3,
   keep: 1,
@@ -116,8 +119,16 @@ const TEXTURE_DEFAULT = 0.5;
 /** Stage two stops once the judge has scored below its best for this many rungs running. */
 const PEAK_PATIENCE = 2;
 
-/** How many times a walk backs up before it gives the plane up. */
-const MOST_BACKS = 8;
+/** How many times stage one backs up, and how many roots the screen may refuse, before the
+ *  walk gives the plane up. Both are cheap: a back is one probe, a refusal one screen. */
+const MOST_BACKS = 64;
+const MOST_REFUSED_ROOTS = 16;
+
+/** During a walk the viewer is framed wider than the cell it is weighing, so that the
+ *  quarters and their labels sit inside the picture: the cell takes this share of the
+ *  viewport's width, or of its height where the canvas is wider than 16:9. A quarter's
+ *  jitter reaches an eighth of the cell past its edge, so the margin clears it. */
+const CELL_SHARE = 0.65;
 
 /** How many lines the console keeps. */
 const CONSOLE_LINES = 60;
@@ -131,7 +142,9 @@ const QUARTER = [
 // ------------------------------------------------------------------- small things
 
 const pick = (items) => items[Math.floor(Math.random() * items.length)];
-const shortWidth = (w) => (w >= 0.01 ? w.toFixed(3) : w >= 1e-3 ? w.toPrecision(2) : w.toExponential(1));
+const shortWidth = (w) =>
+  w >= 0.01 ? w.toFixed(3) : w >= 1e-4 ? String(Number(w.toPrecision(2))) : w.toExponential(1);
+const shuffled = (items) => items.sort(() => Math.random() - 0.5);
 const score = (value) => value.toFixed(2);
 const megabytes = (bytes) => (bytes / 1e6).toFixed(1);
 
@@ -208,6 +221,10 @@ export function mount(host) {
   const found = [];
   /** One row per walk, for whoever is measuring the tab: where it went and what it saw. */
   const walks = [];
+  /** What the walk last put on the viewer: the frame it stands in and the cells over it, so
+   *  a pause can put the frame back at its own framing and a resume can widen it again.
+   *  `null` while a recipe is up, which is already framed as itself. */
+  let shown = null;
 
   // ----------------------------------------------------------------- the console
 
@@ -410,6 +427,9 @@ export function mount(host) {
     }
     state = "running";
     syncButton();
+    // Widened again whether or not a step was parked: one still in flight at the pause
+    // parks nothing, and only recorded what it would have shown.
+    if (shown !== null) show(shown.family, shown.frame, shown);
     if (resume !== null) {
       log("Carrying on.");
       const go = resume;
@@ -425,11 +445,14 @@ export function mount(host) {
     });
   }
 
-  function pause(why) {
+  /** Pause, and give the viewer back its normal framing — unless whoever paused is about to
+   *  put a view of their own up, which is `reframe: false`. */
+  function pause(why, { reframe = true } = {}) {
     if (state !== "running") return;
     state = "paused";
     syncButton();
     log(why);
+    if (reframe) unframe();
   }
 
   /** Every step of a walk passes through here: it returns at once while the walk runs, and
@@ -463,6 +486,41 @@ export function mount(host) {
       w: link.coordinateOf(frame.w),
       palette,
     };
+  }
+
+  /** The view the viewer is shown for `frame`: the same centre, wide enough that the frame
+   *  takes `CELL_SHARE` of it. Only the viewer is widened — every probe, screen and judged
+   *  picture is of the frame itself. */
+  function framedAround(frame) {
+    const aspect = host.aspect();
+    const w = Math.max(frame.w, frame.h / aspect) / CELL_SHARE;
+    return { ...frame, w };
+  }
+
+  /** The cells, over a faint outline of the frame they subdivide. */
+  function outlined(frame, cells) {
+    return [{ x: frame.x, y: frame.y, w: frame.w, h: frame.h, state: "cell", label: "" }, ...cells];
+  }
+
+  /** Put `frame` on the viewer, widened, with `cells` over it. While the walk is paused
+   *  nothing is pushed — the viewer is the reader's — and a step still finishing only
+   *  records what it would have shown, for the resume. */
+  function show(family, frame, { constants = null, cells = [] } = {}) {
+    shown = { family, frame, constants, cells };
+    if (state !== "running") return;
+    host.follow(viewAt(family, framedAround(frame), { constants }), outlined(frame, cells));
+  }
+
+  /** New states and labels on the cells already up. */
+  function relabel(cells) {
+    if (shown === null) return;
+    shown.cells = cells;
+    if (state === "running") host.showCells(outlined(shown.frame, cells));
+  }
+
+  /** Where a pause leaves the viewer: the frame the walk stands in, at its own framing. */
+  function unframe() {
+    if (shown !== null) host.follow(viewAt(shown.family, shown.frame, { constants: shown.constants }));
   }
 
   /** A step's time, filed under its own name and again under the stage it ran in. */
@@ -596,51 +654,41 @@ export function mount(host) {
   }
 
   /**
-   * Weigh the quarters of `parent` that straddle the set's edge: screen them where the rung
-   * is in the band, then judge each survivor's smooth picture. Returns them best first.
+   * Weigh the quarters of `parent` that straddle the set's edge: screen them, then judge
+   * each survivor's smooth picture. Returns them best first. This is stage two's rung, and
+   * the one the viewer follows: the parent widened on the screen, its quarters boxed inside.
    *
-   * `childOf(a, b)` is the unjittered quarter, `maxiter` the probe's cap (`null` for the
-   * width's own policy), and `constants` a Julia twin's `c`.
+   * `constants` is a Julia twin's `c`.
    */
-  async function weigh(family, parent, { childOf, rung, stage, screening, maxiter, constants = null }) {
+  async function weigh(family, parent, { rung, constants = null }) {
     await going();
-    const shares = await straddles(family, parent, { maxiter, constants });
+    const shares = await straddles(family, parent, { maxiter: null, constants });
     if (shares === null) return [];
     const children = [];
     for (const a of [0, 1]) {
       for (const b of [0, 1]) {
         const share = shares[a][b];
         if (share <= 0 || share >= 1) continue;
-        const child = childOf(a, b);
+        const child = quarterOf(parent, a, b);
         children.push({ cell: child, frame: jittered(child), where: QUARTER[a][b], state: "weighing", label: "" });
       }
     }
-    if (stage === 1) {
-      log(
-        `Probing the cell at width ${shortWidth(parent.w)} · ${children.length} of 4 quarters straddle the set's edge.`,
-      );
-    } else {
-      log(`Rung ${rung} below the root: ${children.length} of 4 quarters straddle the set's edge.`);
-    }
+    log(`Rung ${rung} below the root: ${children.length} of 4 quarters straddle the set's edge.`);
     if (children.length === 0) return [];
-    host.follow(viewAt(family, parent, { constants }), cellsOf(children));
+    show(family, parent, { constants, cells: cellsOf(children) });
 
-    if (screening) {
-      await going();
-      const verdicts = await Promise.all(
-        children.map((child) => screened(viewAt(family, child.frame, { constants }))),
-      );
-      const refused = [];
-      children.forEach((child, index) => {
-        const verdict = verdicts[index];
-        if (verdict.passed) return;
-        child.state = "refused";
-        child.label = "refused";
-        refused.push(`the ${child.where} (${REFUSALS[verdict.fate]?.(verdict.reading) ?? verdict.fate})`);
-      });
-      if (refused.length > 0) log(`The screen refused ${refused.join("; ")}.`);
-      host.showCells(cellsOf(children));
-    }
+    await going();
+    const verdicts = await Promise.all(children.map((child) => screened(viewAt(family, child.frame, { constants }))));
+    const refused = [];
+    children.forEach((child, index) => {
+      const verdict = verdicts[index];
+      if (verdict.passed) return;
+      child.state = "refused";
+      child.label = "refused";
+      refused.push(`the ${child.where} (${REFUSALS[verdict.fate]?.(verdict.reading) ?? verdict.fate})`);
+    });
+    if (refused.length > 0) log(`The screen refused ${refused.join("; ")}.`);
+    relabel(cellsOf(children));
 
     const standing = children.filter((child) => child.state !== "refused");
     for (const child of standing) {
@@ -649,13 +697,12 @@ export function mount(host) {
       if (drawn === null) continue;
       child.read = await gated(drawn.image);
       child.label = score(child.read.p3);
-      host.showCells(cellsOf(children));
+      relabel(cellsOf(children));
     }
     const ranked = standing
       .filter((child) => child.read !== undefined)
       .sort((x, y) => y.read.p3 - x.read.p3 || Math.random() - 0.5);
     walks.at(-1)?.rungs.push({
-      stage,
       family,
       rung,
       w: parent.w / 2,
@@ -664,23 +711,34 @@ export function mount(host) {
       p3: ranked.map((child) => Number(child.read.p3.toFixed(4))),
     });
     if (ranked.length > 0) {
-      const best = ranked[0];
-      best.state = "chosen";
-      host.showCells(cellsOf(children));
-      if (stage === 1) {
-        log(
-          scorer === null
-            ? `Picked the ${best.where} at random.`
-            : `The judge likes the ${best.where} best (${score(best.read.p3)}).`,
-        );
-      }
+      ranked[0].state = "chosen";
+      relabel(cellsOf(children));
     }
     return ranked;
   }
 
+  /** The quarters of quad-tree cell `cell` that straddle the set's edge, in random order:
+   *  stage one's whole rung, one probe and no picture. */
+  async function straddling(family, box, cell) {
+    const maxiter = cell.w >= PROBE.wide ? PROBE.maxiter : null;
+    const shares = await straddles(family, cell, { maxiter });
+    if (shares === null) return [];
+    const children = [];
+    for (const a of [0, 1]) {
+      for (const b of [0, 1]) {
+        if (shares[a][b] > 0 && shares[a][b] < 1) children.push(cellOf(box, cell.r + 1, 2 * cell.i + a, 2 * cell.j + b));
+      }
+    }
+    return shuffled(children);
+  }
+
   /**
-   * Stage one: a walk down one plane to a width drawn from the band, the root. Returns the
-   * root — `{ family, frame, read }` — or `null` where the plane gave out first.
+   * Stage one: a quick descent down one plane to a width drawn from the root band, out of the
+   * viewer's sight. The sampler's quad-tree, one straddle probe a cell, a straddling quarter
+   * taken at random, and a back-up where none straddles; nothing is judged, and only the
+   * frame it stops at goes through the screen. A refused root is dropped for the next
+   * straddling cell without a word. Returns the root — `{ family, frame }` — or `null`
+   * where the plane gave out first.
    */
   async function descend(family) {
     const box = boxOf(family);
@@ -690,41 +748,38 @@ export function mount(host) {
     const first = Math.max(1, Math.ceil(Math.log2(box.w / config.widest)));
     const last = Math.max(first, Math.floor(Math.log2(box.w / config.narrowest)));
     const bottom = Math.min(last, Math.max(first, Math.round(Math.log2(box.w / target))));
-    log(
-      `A new walk on ${planeName(family)}, looking for a root near width ${shortWidth(box.w / 2 ** bottom)}: ${bottom} halvings down.`,
-    );
+    log(`Looking for a root on ${planeName(family)} near width ${shortWidth(box.w / 2 ** bottom)}…`);
 
-    const row = { family, target, first, bottom, rungs: [], backs: 0, outcome: "descending" };
+    const row = { family, target, bottom, rungs: [], probes: 0, backs: 0, refused: 0, outcome: "descending" };
     walks.push(row);
-    const stack = [{ cell: cellOf(box, 0, 0, 0), ranked: null }];
-    let backs = 0;
+    const stack = [{ cell: cellOf(box, 0, 0, 0), open: null }];
     while (stack.length > 0) {
+      await going();
       const level = stack.at(-1);
-      const { cell } = level;
-      level.ranked ??= await weigh(family, cell, {
-        childOf: (a, b) => cellOf(box, cell.r + 1, 2 * cell.i + a, 2 * cell.j + b),
-        rung: cell.r + 1,
-        stage: 1,
-        screening: cell.r + 1 >= first,
-        maxiter: PROBE.maxiter,
-      });
-      const next = level.ranked.shift();
+      if (level.open === null) {
+        level.open = await straddling(family, box, level.cell);
+        row.probes += 1;
+      }
+      const next = level.open.shift();
       if (next === undefined) {
         stack.pop();
-        backs += 1;
-        row.backs = backs;
-        if (stack.length === 0 || backs > MOST_BACKS) break;
-        log("Nothing here is worth going into, so the walk backs up a rung and tries the next-best cell.");
+        if (++row.backs > MOST_BACKS) break;
         continue;
       }
-      if (next.cell.r >= bottom) {
-        row.outcome = "reached";
-        return { family, frame: next.frame, read: next.read };
+      if (next.r < bottom) {
+        stack.push({ cell: next, open: null });
+        continue;
       }
-      stack.push({ cell: next.cell, ranked: null });
+      const frame = jittered(next);
+      const verdict = await screened(viewAt(family, frame));
+      if (verdict.passed) {
+        row.outcome = "reached";
+        return { family, frame };
+      }
+      if (++row.refused >= MOST_REFUSED_ROOTS) break;
     }
     row.outcome = "gave out";
-    log(`${planeName(family)} gave out before the walk reached its width, so it starts again somewhere else.`);
+    log(`${planeName(family)} gave out before the walk found a root, so it starts again somewhere else.`);
     return null;
   }
 
@@ -735,8 +790,7 @@ export function mount(host) {
    * resolving the mining grid, or the rung cap. Returns the best frame seen, which is where
    * the place is mined, with why the descent stopped.
    *
-   * The probe runs at the width's own iteration cap here: 256 is a shortcut the root band
-   * can afford, and at depth it would call escaping points interior.
+   * This is the part the viewer follows, rung by rung.
    */
   async function deepen(family, root, rootRead, constants = null) {
     const what = constants === null ? "Found a root" : "The Julia twin's root is its home view";
@@ -754,14 +808,7 @@ export function mount(host) {
         break;
       }
       const parent = frame;
-      const ranked = await weigh(family, parent, {
-        childOf: (a, b) => quarterOf(parent, a, b),
-        rung,
-        stage: 2,
-        screening: true,
-        maxiter: null,
-        constants,
-      });
+      const ranked = await weigh(family, parent, { rung, constants });
       if (ranked.length === 0) {
         stop = "dead end";
         log(`Descending · rung ${rung} has no quarter worth going into, so the descent stops.`);
@@ -794,7 +841,7 @@ export function mount(host) {
       root_w: root.w,
       root_p3: rootRead.p3,
       stop,
-      rungs: row.rungs.filter((one) => one.stage === 2 && one.family === family).length,
+      rungs: row.rungs.filter((one) => one.family === family).length,
       best_rung: best.rung,
       best_w: best.frame.w,
       best_p3: best.read.p3,
@@ -881,6 +928,7 @@ export function mount(host) {
           phase: direct ? 0 : Number(Math.random().toFixed(3)),
         },
       };
+      shown = null;
       host.follow(view);
       const drawn = await picture(view, MINING_SUPERSAMPLE);
       if (drawn === null) continue;
@@ -952,7 +1000,7 @@ export function mount(host) {
           `The pipeline seats on the mean of three seeds, at ${FINE_BAR} or above.`;
     tile.append(image, badge);
     tile.addEventListener("click", () => {
-      pause("A found picture was opened, so the walk paused.");
+      pause("A found picture was opened, so the walk paused.", { reframe: false });
       for (const other of host.found.querySelectorAll(".tile")) other.classList.toggle("is-open", other === tile);
       host.open(query, "this found picture");
     });
@@ -983,14 +1031,15 @@ export function mount(host) {
       if (config.julia && juliaOf[family] !== undefined) roots.push(twinOf(root));
       for (const [index, one] of roots.entries()) {
         const leg = performance.now();
+        phase = "root";
+        await going();
+        show(one.family, one.frame, { constants: one.constants });
         if (index > 0) {
-          phase = "root";
-          host.follow(viewAt(one.family, one.frame, { constants: one.constants }));
           log(
             `Its Julia twin, at c = ${one.constants.cx.text.slice(0, 9)}, ${one.constants.cy.text.slice(0, 9)}.`,
           );
         }
-        const rootRead = index === 0 ? root.read : await judgePlace(one);
+        const rootRead = await judgePlace(one);
         if (rootRead == null) continue;
         phase = "deep";
         const best = await deepen(one.family, one.frame, rootRead, one.constants);

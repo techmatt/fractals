@@ -282,24 +282,34 @@ viewer: a pan, a zoom, a control, or a picture opened from any panel.
 
 1. It picks one of the ticked planes at random: the sampler's `SERVED` set, meaning
    Mandelbrot, Multibrot 3–6 and the pinned Phoenix slice.
-2. It draws a root width log-uniformly in the band, 0.1 to 1e-3 by default (the sampler's
-   `WIDEST`/`NARROWEST`). That band is where the pipeline's walk *starts*; its seats sit
-   near 1e-7.
-3. It descends the sampler's quad-tree over the plane's home box × 0.9, one rung at a time.
-   Each cell gets a 64×36 smooth probe at maxiter 256, and a quarter *straddles* where its
-   interior share is strictly between 0 and 1.
-4. Each straddling quarter is drawn at its own width, its centre jittered up to a quarter
-   cell. From the band's first rung down, each goes through the engine's screen.
-5. Each survivor's smooth picture (640×360, one sample, `twilight_shifted`) is scored by the
-   render judge. The walk goes into the best one's cell.
-6. A rung with no survivors backs up one rung and tries the next-best cell. A plane that
-   gives out before the band restarts somewhere else.
-7. The frame it reaches at the drawn width is the *root*, and stage one ends there.
-8. **Stage two** carries on from the root by the same rung rule *(walk_descend_ckpt131)*:
-   the current frame is split into quarters, the straddling ones are screened and judged,
-   and the walk goes into the best. Below the root the probe runs at the width's own
-   `maxiter_for_width`; 256 is a shortcut the root band can afford and would read escaping
-   points as interior at depth. It stops at the first of:
+2. It draws a root width log-uniformly in the band, 1e-3 to 1e-4 by default
+   *(walk_view_ckpt131)*. The sampler's own band is 0.1 to 1e-3 (`WIDEST`/`NARROWEST`), and
+   typing it back into the config still works; the default sits deeper because the render
+   judge has nothing to say above about 1e-2, and a walk that showed every halving from
+   the home box spent its first eleven rungs on pictures nobody was weighing.
+3. **Stage one** is quick and the viewer does not follow it: the console says once which
+   plane and width it is looking for. It descends the sampler's quad-tree over the plane's
+   home box × 0.9. Each cell gets a 64×36 smooth probe, at maxiter 256 while the cell is at
+   least 1e-3 wide and at the width's own `maxiter_for_width` below that, where 256 would
+   read escaping points as interior. A quarter *straddles* where its interior share is
+   strictly between 0 and 1, and the walk goes into a straddling quarter at random; nothing
+   is judged. A cell with none straddling backs up and tries the next.
+4. At the drawn width, the cell's centre is jittered up to a quarter cell and that frame
+   goes through the engine's screen, which is the only screen stage one runs. A refused
+   frame is dropped for the next straddling cell without a word; a plane that gives out
+   (64 back-ups, or 16 refused roots) restarts somewhere else.
+5. The frame that passes is the *root*, and the viewer jumps to it.
+6. During stage two the viewer is framed wider than the frame the walk stands in, so the
+   frame takes 65% of the viewport's width and its quarters and their labels sit inside the
+   picture; the frame's own outline is drawn faintly. Only the viewer is widened: every
+   probe, screen and judged picture is of the frame itself. Pausing puts the viewer back on
+   the frame at its own framing, and so does hiding the tab; Start widens it again. Opening a found tile shows the tile.
+7. Every judged picture is the smooth mode at 640×360, one sample, `twilight_shifted`, scored
+   by the render judge's P≥3. The root is judged once before stage two starts.
+8. **Stage two** carries on from the root by the sampler's rung rule *(walk_descend_ckpt131)*
+   and is the part the viewer follows: the current frame is split into quarters, the
+   straddling ones are jittered, screened and judged, and the walk goes into the best. The
+   probe runs at the width's own `maxiter_for_width`. It stops at the first of:
    - a **peak**: the best quarter has scored below the best seen for two rungs running;
    - the **floor**: `f64` would no longer resolve the mining grid (`resolution_ulps`);
    - the **cap**, 20 rungs below the root by default;

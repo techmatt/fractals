@@ -616,11 +616,17 @@ function paintMark() {
 // `frame` — and on the family it was drawn for only.
 
 /** `{ family, cells: [{ x, y, w, h, label, state }] }`, or `null`. `state` is `weighing`,
- *  `refused` or `chosen`. */
+ *  `refused` or `chosen`, or `cell` for the faint outline of the cell they subdivide — the
+ *  walk frames the viewer wider than that cell, so the quarters sit inside the picture. */
 let overlay = null;
 
 /** The ink each state is stroked in, over a dark under-stroke that keeps it legible. */
-const OVERLAY_INK = { weighing: "#fff", refused: "rgba(255, 120, 110, 0.9)", chosen: "#ffd166" };
+const OVERLAY_INK = {
+  weighing: "#fff",
+  refused: "rgba(255, 120, 110, 0.9)",
+  chosen: "#ffd166",
+  cell: "rgba(255, 255, 255, 0.4)",
+};
 
 function paintOverlay() {
   if (overlay === null || overlay.family !== view.family) return;
@@ -633,8 +639,10 @@ function paintOverlay() {
     const b = canvasAt(cell.x + cell.w / 2, cell.y - cell.h / 2);
     const [left, top, width, height] = [a.px, a.py, b.px - a.px, b.py - a.py];
     const ink = OVERLAY_INK[cell.state] ?? OVERLAY_INK.weighing;
-    screen.setLineDash(cell.state === "refused" ? [6 * unit, 4 * unit] : []);
-    for (const [stroke, lineWidth] of [["rgba(0, 0, 0, 0.55)", 3 * unit], [ink, unit]]) {
+    const faint = cell.state === "cell";
+    screen.setLineDash(cell.state === "refused" ? [6 * unit, 4 * unit] : faint ? [2 * unit, 3 * unit] : []);
+    const under = faint ? "rgba(0, 0, 0, 0.25)" : "rgba(0, 0, 0, 0.55)";
+    for (const [stroke, lineWidth] of [[under, 3 * unit], [ink, unit]]) {
       screen.strokeStyle = stroke;
       screen.lineWidth = cell.state === "chosen" ? lineWidth + unit : lineWidth;
       screen.strokeRect(left, top, width, height);
@@ -1792,7 +1800,7 @@ let walkStarted = false;
 /** Pause the walk, if one is running, because the reader took the viewer back. The cells it
  *  was weighing go with it: they were about a view that is no longer the one on screen. */
 function interruptWalk(why) {
-  if (walk?.running()) walk.pause(why);
+  if (walk?.running()) walk.pause(why, { reframe: false });
   showOverlay(null);
 }
 
@@ -1836,6 +1844,7 @@ async function startWalk() {
       showCells: (cells) => showOverlay(cells === null ? null : { family: view.family, cells }),
       open: (query, what) => openLink(query, { what }),
       busy: () => busy,
+      aspect: () => (grid.width > 0 ? grid.height / grid.width : 9 / 16),
     });
   } catch (error) {
     walkStarted = false;
