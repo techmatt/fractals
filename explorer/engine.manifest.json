@@ -5,12 +5,13 @@
     "coloring::composite, coloring::modulate and direct_trap::Painter::trace are pub: visibility only, no signature moved, engine tests unmoved.",
     "iterate::run is #[inline(always)]: the specialization cascade this crate depended on for its own call sites, and now depends on through the engine's table.",
     "field::sweep_row and field::Channels are pub: the engine's own table of specialized call sites, twelve channel sets over nine families, which compute_lanes now calls instead of keeping a hand-written copy of nine of them. Visibility only, no signature moved, engine tests unmoved.",
-    "colormap::srgb_to_linear, linear_to_srgb, linear_srgb_to_oklab and oklab_to_linear_srgb were ALREADY pub, and are named here because the autolevel port leans on them: `level.rs` replays band_autolevel/v1 on a map's stops through the engine's own copy of Ottosson's matrices rather than a third one. Nothing was changed next door for it."
+    "colormap::srgb_to_linear, linear_to_srgb, linear_srgb_to_oklab and oklab_to_linear_srgb were ALREADY pub, and are named here because the autolevel port leans on them: `level.rs` replays band_autolevel/v1 on a map's stops through the engine's own copy of Ottosson's matrices rather than a third one. Nothing was changed next door for it.",
+    "screen::Battery, its Default, Battery::screen and Screening were ALREADY pub, and are named here because the Walk tab's `screen` export leans on them: it runs the pipeline's own gate battery rather than a JavaScript copy of its rule. Nothing was changed next door for it."
   ],
   "engine_version": "0.1.0",
-  "gzip_bytes": 217298,
-  "raw_bytes": 730834,
+  "gzip_bytes": 227760,
+  "raw_bytes": 766191,
   "rustc": "1.96.0 (ac68faa20 2026-05-25)",
   "schema": 1,
-  "wallpapers_commit": "371aaa3a12b3abc813d8f153c2e31c55eb27ad01"
+  "wallpapers_commit": "7f461837f1f5555eb90b93ecbd550e2fea2211fe"
 }

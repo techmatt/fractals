@@ -85,7 +85,11 @@ picker.js             the palette tab strip, and a gradient drawn per row
 shade.js              the recipe's controls, apart from the boxes they are drawn in
 download.js           the same render at a wallpaper's size, and what caps it
 render.js             the worker pool, the plan, the field passes, the shade
-worker.js             one worker: one wasm instance, one band of rows
+worker.js             one worker: one wasm instance, one band of rows (or one screen)
+walk.js               the Walk tab: a simplified mining pipeline, run here and watched
+judges.js             the two judges in onnxruntime-web, loaded on the first Start
+resize.mjs            PIL's bicubic resize, ported byte for byte: what a judge reads
+judges/               UNTRACKED: the two ONNX judges and the runtime, `builder walk`
 permalink.js          the link contract — parse, validate, canonicalize
 params.js             a mode parameter's control: its word, its slider's travel, the mapping
 permalink.test.mjs    51 tests, `node --test explorer/permalink.test.mjs`
@@ -112,7 +116,7 @@ engine-wasm/          the crate that produces engine.wasm
 
 Two panels, and the document itself does not scroll.
 
-**Left, one of two things.** *Gallery* is the staged gallery `python -m builder seats`
+**Left, one of three things.** The third, *Walk*, is its own section below. *Gallery* is the staged gallery `python -m builder seats`
 lands, one **collection** at a time — the general gallery, a collection per hue family,
 a collection per mode, chosen from a dropdown *(explorer_gallery_collections_ckpt129)* — as
 pictures and nothing else: no caption, no id, no score, two rows of filter chips over them,
@@ -266,6 +270,104 @@ picture: `permalink.js` tolerates the key, reads nothing from it and never emits
 the canonical string of a view — what Copy link copies — is the picture alone. Two rules
 keep that from becoming a contract by the back door: a UI key never refuses a link, and a
 UI key never decides what is drawn.
+
+## The walk *(walk_tab_ckpt131, 2026-09-18)*
+
+The third tab runs a simplified version of the mining pipeline, and the viewer shows it
+choosing. **It never starts on its own**: `panel=walk` in an address opens the tab, and only
+Start starts a walk. Hiding the tab pauses it, and so does anything the reader does to the
+viewer: a pan, a zoom, a control, or a picture opened from any panel.
+
+**One walk.**
+
+1. It picks one of the ticked planes at random: the sampler's `SERVED` set, meaning
+   Mandelbrot, Multibrot 3–6 and the pinned Phoenix slice.
+2. It draws a target width log-uniformly in the band, 0.1 to 1e-3 by default (the sampler's
+   `WIDEST`/`NARROWEST`).
+3. It descends the sampler's quad-tree over the plane's home box × 0.9, one rung at a time.
+   Each cell gets a 64×36 smooth probe at maxiter 256, and a quarter *straddles* where its
+   interior share is strictly between 0 and 1.
+4. Each straddling quarter is drawn at its own width, its centre jittered up to a quarter
+   cell. From the band's first rung down, each goes through the engine's screen.
+5. Each survivor's smooth picture (640×360, one sample, `twilight_shifted`) is scored by the
+   render judge. The walk goes into the best one's cell.
+6. A rung with no survivors backs up one rung and tries the next-best cell. A plane that
+   gives out before the band restarts somewhere else.
+7. At the target rung the place is judged once more against the bar. When the Julia box is
+   ticked, the place's centre is also taken as `c` for its Julia twin, which is judged at
+   the twin's home frame. Phoenix has no twin.
+8. A place over the bar is mined:
+   - Recipes are drawn over the ticked modes without replacement, a palette from the roster,
+     the identity shade with `mirror` read off the map's cyclicity, and a uniform phase
+     (0 under a direct trap).
+   - Each is drawn at 640×360×2, the pipeline's candidate geometry. A texture weight or trap
+     opacity is derived exactly as the viewer derives one.
+   - Each is scored by the gate's P≥4 and by the fine head. The best are kept as tiles.
+
+The config's defaults are the pipeline's draw where the page can make one. There are three
+recipes a place (hunt and mine's `PER_LOCATION`), and the twelve modes that are mined start
+ticked, with `curvature` listed and unticked (`mode_policy.UNMINED`).
+
+**Where it is not the pipeline, said once.**
+
+- The descent is greedy on the render judge's P≥3. The sampler is exhaustive, and the
+  pipeline's walk scores with the location head, which is not shipped to a browser.
+- The judges read the canvas, where the pipeline reads a JPEG-decoded picture.
+- The palette is drawn from a roster, where the pipeline uses a palette head or a codebook
+  stratifier.
+- The bar is P≥3 at 0.50 on the smooth picture. The pipeline's release gate is P≥4 at 0.50
+  on a colored one, and P≥3 at 0.50 is only its fallback for a thin mode. The config's
+  tooltip says so.
+- The pipeline keeps every recipe it draws and lets the solve choose. The tab keeps the
+  best.
+
+**Two renderers.** The walk draws through a second `Renderer` over the same compiled module
+(`Renderer.over`), with a pool of `min(3, cores/4)` workers. The viewer's renderer runs one
+job at a time and cancels the last, so sharing it would mean the walk cancelling the
+reader's picture, and every pan cancelling the walk. The screen runs on two workers of its
+own, because the battery iterates on whichever thread calls it.
+
+**The screen is the engine's.** `engine-wasm`'s `screen` export is
+`screen::Battery::screen` at its defaults, run on the 384×216 node frame at the policy cap
+and coloured through `twilight_shifted` for the occupancy floor. It is the pipeline's
+battery, all five gates, with no JavaScript re-statement of any of them. The probe's
+maxiter of 256 is the spec's optional `maxiter`. That is a probe-only knob: the link
+contract has no key for it and nothing a link opens sets it.
+
+**The judges.**
+
+- Both are the judges lab's `fp16w` exports: fp16 weights and fp32 compute. The render
+  judge (gate) reads `[P≥2, P≥3, P≥4]`. The fine head is the fused three-seed graph, and
+  its P≥4 is `p_fine`.
+- They run in `onnxruntime-web` 1.30's default bundle. Its WebGPU backend is JSEP, the
+  runtime the lab's fidelity table was taken on. It uses WebGPU where `navigator.gpu` hands
+  back an adapter, and single-threaded WASM otherwise.
+- Every picture goes through `resize.mjs` to 384×224 and in as [0, 1]. Normalization is
+  inside the graph.
+- The runtime and the gate download on the first Start. The fine head downloads the first
+  time a place clears the bar.
+- Where the runtime cannot load, the walk runs on the screen alone, picks among survivors
+  at random, and says so in its console.
+
+**The assets are untracked.** `explorer/judges/` is named in `.git/info/exclude` and filled
+by
+
+```
+python -m builder walk                      # from ../fractal-judges-lab
+python -m builder walk --from <lab checkout>
+```
+
+That copies about 49 MB:
+
+- `render.fp16w.onnx` (5.1 MB) and `fine.fused.fp16w.onnx` (15.3 MB), from the lab's
+  `models/`.
+- `ort.min.mjs` and the JSEP glue and binary (28.3 MB), from its `node_modules`.
+
+Until Matt says deploy, Pages serves a Walk tab that runs on the screen alone.
+
+**Nothing persists.** A found tile is a blob URL and a permalink that writes the weight or
+opacity in force. Clicking one opens it through `openLink` and pauses the walk. A reload
+forgets them all.
 
 ## Every colormap, and where they live
 

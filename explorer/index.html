@@ -38,6 +38,8 @@
                 aria-controls="panel-gallery" aria-selected="true">Gallery</button>
         <button type="button" class="tab" role="tab" id="tab-atlas" data-panel="atlas"
                 aria-controls="panel-atlas" aria-selected="false">Atlas</button>
+        <button type="button" class="tab" role="tab" id="tab-walk" data-panel="walk"
+                aria-controls="panel-walk" aria-selected="false">Walk</button>
       </div>
       <select id="gallery-collection" class="collection" aria-label="Collection"
               title="Which gallery to show: the general one, or a collection seated for one color family or one mode."></select>
@@ -61,6 +63,23 @@
     <div class="tabpanel" id="panel-atlas" role="tabpanel" aria-labelledby="tab-atlas" hidden>
       <div class="atlas-host" id="atlas-host"></div>
       <p class="side-note" id="atlas-note"></p>
+    </div>
+
+    <div class="tabpanel" id="panel-walk" role="tabpanel" aria-labelledby="tab-walk" hidden>
+      <div class="walk-head">
+        <details class="walk-config" id="walk-config">
+          <summary class="section-head"><h2>Walk config</h2></summary>
+          <div class="walk-fields" id="walk-fields"></div>
+        </details>
+        <div class="walk-go">
+          <button type="button" class="walk-start" id="walk-start">Start</button>
+          <span class="walk-progress" id="walk-progress" role="status"></span>
+        </div>
+        <ol class="walk-console" id="walk-console" aria-label="What the walk is doing" aria-live="polite"></ol>
+      </div>
+      <div class="section-head walk-found-head"><h2 id="head-walk-found">Found</h2></div>
+      <div class="tiles walk-found" id="walk-found" role="group" aria-labelledby="head-walk-found"></div>
+      <p class="side-note" id="walk-note">Nothing found yet. Found pictures last until the page is closed.</p>
     </div>
   </section>
 

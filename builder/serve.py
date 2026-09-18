@@ -42,6 +42,10 @@ HOST = "localhost"
 class Preview(SimpleHTTPRequestHandler):
     """The committed bytes, with every response marked to be revalidated before use."""
 
+    # Python's table leaves `.mjs` out on Windows and serves it as `text/plain`, which a
+    # browser refuses to run as a module. Pages serves it as JavaScript, and so does this.
+    extensions_map = {**SimpleHTTPRequestHandler.extensions_map, ".mjs": "text/javascript"}
+
     def end_headers(self) -> None:
         self.send_header("Cache-Control", "no-cache")
         super().end_headers()

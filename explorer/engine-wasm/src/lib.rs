@@ -121,6 +121,13 @@ struct Spec {
     /// the caller is [`shade_level`] asking to measure one — see [`level`].
     #[serde(default)]
     autolevel: Option<level::Curve>,
+    /// Iterations per sample, where the caller wants a cap other than the engine's
+    /// depth policy. **A probe's knob and never a picture's**: the walk panel asks
+    /// for 256 on the 64×36 straddle probe, which is what the sampler's own
+    /// `dump-field` runs at, and nothing a permalink opens ever sets it — the
+    /// contract has no key for it, because a picture's cap is the policy's.
+    #[serde(default)]
+    maxiter: Option<u32>,
 }
 
 /// A colormap as its control points, because the page has no filesystem to load
@@ -303,6 +310,9 @@ fn resolve(text: &str) -> Result<Plan, String> {
         None => None,
     };
     let source = spec.colormap.map(|map| (map.kind, map.stops));
+    if spec.maxiter == Some(0) {
+        return Err("maxiter has to be at least one".into());
+    }
 
     let lanes = lanes_of(&coloring);
     // The modulate's texture is a base-`k` expansion whose deep digits are the
@@ -317,7 +327,7 @@ fn resolve(text: &str) -> Result<Plan, String> {
         family,
         home,
         view,
-        maxiter: maxiter::for_width(width),
+        maxiter: spec.maxiter.unwrap_or_else(|| maxiter::for_width(width)),
         coloring,
         palette: spec.palette,
         colormap,
@@ -1164,6 +1174,52 @@ fn read_lanes(
 #[unsafe(no_mangle)]
 pub extern "C" fn maxiter_for_width(fw: f64) -> u32 {
     maxiter::for_width(fw)
+}
+
+/// Put one frame through the engine's structural screen, and say what each gate made
+/// of it, as JSON.
+///
+/// **The pipeline's own battery, not a second copy of its rule.** This is
+/// [`fractal_engine::screen::Battery::screen`] at its defaults, handed the view the
+/// spec names at the resolution the spec names (the walk asks at the engine's
+/// `NODE_WIDTH`, 384×216) and the cap the spec resolves to, which is the depth policy
+/// unless `maxiter` was set. The colormap is the spec's by value, because a page has
+/// no directory to load `twilight_shifted` from: the walk sends that map's stops, and
+/// the occupancy floor reads its edges off that coloring exactly as `screen::run` does.
+///
+/// `occupancy` zero waives the last gate, as a walk's first rung does. The answer is
+/// `{ok, fate, passed, interior_fraction, verdicts: [{gate, reading, threshold,
+/// passed}]}`, or `{ok: false, why}`. Everything it iterates runs on the calling thread,
+/// so the page calls it from a worker.
+#[unsafe(no_mangle)]
+pub extern "C" fn screen(spec_ptr: *const u8, spec_len: usize, occupancy: u32) -> *mut u8 {
+    let report = match text(spec_ptr, spec_len).and_then(|text| resolve(&text)) {
+        Ok(plan) => match &plan.colormap {
+            Some(colormap) => {
+                let screening = fractal_engine::screen::Battery::default().screen(
+                    &plan.view,
+                    &plan.family,
+                    plan.maxiter,
+                    colormap,
+                    occupancy != 0,
+                );
+                serde_json::json!({
+                    "ok": true,
+                    "fate": screening.fate,
+                    "passed": screening.passed(),
+                    "interior_fraction": screening.interior_fraction(),
+                    "verdicts": screening.verdicts,
+                    "maxiter": plan.maxiter,
+                })
+            }
+            None => serde_json::json!({
+                "ok": false,
+                "why": "the screen colors the frame for its occupancy floor, so it needs a colormap",
+            }),
+        },
+        Err(why) => serde_json::json!({"ok": false, "why": why}),
+    };
+    release_text(&report.to_string())
 }
 
 /// How many representable numbers one sample step of this view spans.

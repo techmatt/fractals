@@ -1,7 +1,7 @@
 // The explorer: a studio, and an address bar that is always a valid permalink.
 //
-// Two panels. On the left, pictures somebody can open: a thousand seated wallpapers, or
-// the atlas of every place the search kept. On the right, the viewer — the canvas, and
+// Two panels. On the left, pictures somebody can open: a thousand seated wallpapers, the
+// atlas of every place the search kept, or what a walk run here has found. On the right, the viewer — the canvas, and
 // under it only the controls one would actually turn. Everything about what a link MEANS
 // lives in `permalink.js` and everything about how a picture is MADE lives in
 // `render.js`. What is here is the part a reader touches, and the one rule that binds it
@@ -586,6 +586,7 @@ function canvasAt(x, y) {
  * for and read as a smudge rather than as a crosshair.
  */
 function paintMark() {
+  paintOverlay();
   if (mark === null || mark.family !== view.family) return;
   const at = canvasAt(mark.x, mark.y);
   const px = Math.round(at.px);
@@ -605,6 +606,58 @@ function paintMark() {
     screen.stroke();
   }
   screen.restore();
+}
+
+// ------------------------------------------------------------------- the walk's overlay
+//
+// While a walk runs, the viewer shows the cell it is standing in and draws the cells it is
+// weighing over the picture: each child a rectangle in the plane, labelled with what the
+// judge said of it. Painted like the mark — onto the screen after every stage, never into
+// `frame` — and on the family it was drawn for only.
+
+/** `{ family, cells: [{ x, y, w, h, label, state }] }`, or `null`. `state` is `weighing`,
+ *  `refused` or `chosen`. */
+let overlay = null;
+
+/** The ink each state is stroked in, over a dark under-stroke that keeps it legible. */
+const OVERLAY_INK = { weighing: "#fff", refused: "rgba(255, 120, 110, 0.9)", chosen: "#ffd166" };
+
+function paintOverlay() {
+  if (overlay === null || overlay.family !== view.family) return;
+  const unit = Math.max(1, Math.round(Math.min(grid.width, grid.height) / 360));
+  screen.save();
+  screen.font = `${12 * unit}px system-ui, sans-serif`;
+  screen.textBaseline = "top";
+  for (const cell of overlay.cells) {
+    const a = canvasAt(cell.x - cell.w / 2, cell.y + cell.h / 2);
+    const b = canvasAt(cell.x + cell.w / 2, cell.y - cell.h / 2);
+    const [left, top, width, height] = [a.px, a.py, b.px - a.px, b.py - a.py];
+    const ink = OVERLAY_INK[cell.state] ?? OVERLAY_INK.weighing;
+    screen.setLineDash(cell.state === "refused" ? [6 * unit, 4 * unit] : []);
+    for (const [stroke, lineWidth] of [["rgba(0, 0, 0, 0.55)", 3 * unit], [ink, unit]]) {
+      screen.strokeStyle = stroke;
+      screen.lineWidth = cell.state === "chosen" ? lineWidth + unit : lineWidth;
+      screen.strokeRect(left, top, width, height);
+    }
+    if (cell.label) {
+      const pad = 3 * unit;
+      const box = screen.measureText(cell.label).width + 2 * pad;
+      screen.setLineDash([]);
+      screen.fillStyle = "rgba(0, 0, 0, 0.65)";
+      screen.fillRect(left + unit, top + unit, box, 16 * unit);
+      screen.fillStyle = ink;
+      screen.fillText(cell.label, left + unit + pad, top + unit + 2 * unit);
+    }
+  }
+  screen.restore();
+}
+
+/** Put the walk's cells over the picture, or take them away, and repaint. */
+function showOverlay(next) {
+  if (overlay === null && next === null) return;
+  overlay = next;
+  screen.drawImage(frame, 0, 0);
+  paintMark();
 }
 
 /** Mark a point, or take the mark away, and repaint the picture that is up. */
@@ -1548,6 +1601,7 @@ function openLink(query, opts = {}) {
     say(error.message);
     return;
   }
+  interruptWalk("A picture was opened, so the walk paused.");
   view = wanted;
   seat = key;
   // What arrived is what Reset to seat puts back, options and all, so a reset re-enters
@@ -1584,6 +1638,7 @@ function arrived() {
  *  on. Every control that moves the view comes through here and the Autolevel box does
  *  not — switching a curve off is looking at the same view. */
 function changed() {
+  interruptWalk("You moved the view, so the walk paused.");
   leaveSeat();
   levelling = "derived";
   if (tuning === "stored") tuning = "derived";
@@ -1689,13 +1744,13 @@ function syncPlane() {
 const tabs = [...document.querySelectorAll(".tab")];
 
 /**
- * Show one of the two left panels.
+ * Show one of the three left panels.
  *
- * The atlas is mounted the first time it is opened and never before: it reads its own
- * record and instantiates the wasm module for one export, and a reader who came here for
- * the gallery should not wait for either. Its failure is the panel's and not the page's —
- * the viewer is what this page is, and one of two side panels not loading is a note in
- * that panel.
+ * The atlas and the walk are mounted the first time each is opened and never before: the
+ * atlas reads its own record and instantiates the wasm module for one export, the walk
+ * builds its config, and a reader who came here for the gallery should not wait for
+ * either. A failure is the panel's and not the page's — the viewer is what this page is,
+ * and a side panel not loading is a note in that panel.
  */
 function showPanel(asked) {
   // An older address may say which plane, after a colon; the view says that now.
@@ -1711,7 +1766,76 @@ function showPanel(asked) {
   // means nothing while the atlas is showing.
   document.getElementById("gallery-collection").hidden = showing !== "gallery";
   if (showing === "atlas") startAtlas();
+  // The walk is the one panel with work of its own, so it is the one that has to be told
+  // when it stops being seen: a hidden walk pauses, and showing it again never restarts
+  // one — Start does, and only Start.
+  if (showing === "walk") {
+    startWalk();
+  } else {
+    walk?.pause("The Walk tab was hidden, so the walk paused.");
+  }
   settle();
+}
+
+// ------------------------------------------------------------------- the walk
+
+/** The mounted walk, once its tab has been opened. */
+let walk = null;
+let walkStarted = false;
+
+/** Pause the walk, if one is running, because the reader took the viewer back. The cells it
+ *  was weighing go with it: they were about a view that is no longer the one on screen. */
+function interruptWalk(why) {
+  if (walk?.running()) walk.pause(why);
+  showOverlay(null);
+}
+
+/**
+ * The walk moves the viewer: its view, drawn like any other, with nothing about the reader's
+ * own session touched — no seat is left, no tone is taken over, and the address bar follows
+ * because every view the viewer draws is a link. `cells` goes over the picture.
+ */
+function followWalk(next, cells = null) {
+  view = next;
+  seat = null;
+  tiles?.mark(null);
+  opened.textContent = "";
+  differs.textContent = "";
+  arrived();
+  overlay = cells === null ? null : { family: view.family, cells };
+  rebuild();
+  draw();
+}
+
+async function startWalk() {
+  if (walkStarted) return;
+  walkStarted = true;
+  try {
+    const { mount } = await import("./walk.js");
+    walk = mount({
+      fields: document.getElementById("walk-fields"),
+      start: document.getElementById("walk-start"),
+      progress: document.getElementById("walk-progress"),
+      console: document.getElementById("walk-console"),
+      found: document.getElementById("walk-found"),
+      note: document.getElementById("walk-note"),
+      module: renderer.module,
+      contract,
+      palettes: PALETTES,
+      shownName,
+      modeFirst: MODE_FIRST,
+      planeName,
+      juliaOf: JULIA_OF,
+      follow: followWalk,
+      showCells: (cells) => showOverlay(cells === null ? null : { family: view.family, cells }),
+      open: (query, what) => openLink(query, { what }),
+      busy: () => busy,
+    });
+  } catch (error) {
+    walkStarted = false;
+    console.warn("the walk could not be started", error);
+    document.getElementById("walk-note").textContent = "The walk could not be loaded.";
+  }
 }
 
 async function startAtlas() {

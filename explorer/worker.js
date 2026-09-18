@@ -86,6 +86,19 @@ self.onmessage = (event) => {
     return;
   }
 
+  // The Walk tab's screen: the engine's own gate battery over one frame, which iterates
+  // two fields and colours one on this thread. Its answer is the module's JSON as it came.
+  if (message.kind === "screen") {
+    const [specPointer, specLength] = put(message.spec);
+    const pointer = wasm.screen(specPointer, specLength, message.occupancy ? 1 : 0);
+    wasm.dealloc(specPointer, specLength);
+    const size = new DataView(wasm.memory.buffer).getUint32(pointer, true);
+    const text = new TextDecoder().decode(new Uint8Array(wasm.memory.buffer, pointer + 4, size));
+    wasm.dealloc(pointer, size + 4);
+    self.postMessage({ kind: "screened", id: message.id, report: JSON.parse(text) });
+    return;
+  }
+
   const { job, spec, rowStart, rowEnd, bytes } = message;
   const started = performance.now();
 

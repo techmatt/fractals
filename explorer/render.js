@@ -221,7 +221,12 @@ export function familySpecOf(family, constants) {
  * shade-time input, and baking a lookup table into every band would be a table per
  * band.
  */
-export function specOf(view, width, height, { colormap = true, supersample = 1, level = true } = {}) {
+export function specOf(
+  view,
+  width,
+  height,
+  { colormap = true, supersample = 1, level = true, maxiter = null } = {},
+) {
   const spec = {
     schema: 1,
     family: familySpecOf(view.family, view.constants),
@@ -233,6 +238,9 @@ export function specOf(view, width, height, { colormap = true, supersample = 1, 
   // Omitted at one, which is the module's own default, so the screen's specs are
   // the strings they have always been and the plan cache does not split in two.
   if (supersample > 1) spec.supersample = supersample;
+  // A probe's knob and never a picture's: the Walk tab's straddle probe asks for the
+  // sampler's 256, and nothing a link opens sets it, so the screen's specs never carry it.
+  if (maxiter !== null) spec.maxiter = maxiter;
   if (Object.keys(view.params).length > 0) spec.params = view.params;
   if (colormap) spec.colormap = stopsOf(view.palette);
   // The tone operator acts on the map's stops, so it travels with the colormap and is
@@ -316,15 +324,23 @@ export class Renderer {
     const response = await fetch(url);
     if (!response.ok) throw new Error(`${url}: ${response.status} ${response.statusText}`);
     const module = await WebAssembly.compile(await response.arrayBuffer());
-    const shader = new WebAssembly.Instance(module, {}).exports;
-
     const count =
       wanted ?? Math.min(MAX_WORKERS, navigator.hardwareConcurrency || DEFAULT_WORKERS);
-    const workers = [];
-    for (let index = 0; index < Math.max(1, count); index++) workers.push(await spawn(module));
-    const renderer = new Renderer(module, shader, workers);
+    const renderer = await Renderer.over(module, count);
     renderer.shading.warm();
     return renderer;
+  }
+
+  /**
+   * A second renderer over a module already compiled: its own instance, its own pool of
+   * `count` workers, its own one job at a time. What the Walk tab draws through, so that a
+   * walk scoring a picture never cancels the pass the viewer is drawing.
+   */
+  static async over(module, count) {
+    const shader = new WebAssembly.Instance(module, {}).exports;
+    const workers = [];
+    for (let index = 0; index < Math.max(1, count); index++) workers.push(await spawn(module));
+    return new Renderer(module, shader, workers);
   }
 
   get workerCount() {
@@ -478,11 +494,13 @@ export class Renderer {
    * What comes back is lane-major `f64` for a mode that makes a field, and finished
    * RGBA for one that paints during the iteration. Which it is comes from the plan,
    * and both are assembled by rows the same way.
+   *
+   * `maxiter` overrides the depth policy's cap, and only the Walk tab's probe passes it.
    */
-  field(view, width, height, { supersample = 1, onProgress } = {}) {
-    const shape = this.plan(specOf(view, width, height, { colormap: false, supersample }));
+  field(view, width, height, { supersample = 1, onProgress, maxiter = null } = {}) {
+    const shape = this.plan(specOf(view, width, height, { colormap: false, supersample, maxiter }));
     if (!shape.ok) return Promise.reject(new Error(shape.why));
-    return this.#run(view, width, height, shape, { supersample, onProgress });
+    return this.#run(view, width, height, shape, { supersample, onProgress, maxiter });
   }
 
   /**
@@ -558,13 +576,15 @@ export class Renderer {
     return pixels;
   }
 
-  #run(view, width, height, shape, { supersample, onProgress }) {
+  #run(view, width, height, shape, { supersample, onProgress, maxiter = null }) {
     this.cancel();
     const generation = this.generation;
 
     // A direct trap composites samples from the gradient as it iterates, so its
     // band is already coloured and its spec needs the map in it.
-    const spec = JSON.stringify(specOf(view, width, height, { colormap: shape.direct, supersample }));
+    const spec = JSON.stringify(
+      specOf(view, width, height, { colormap: shape.direct, supersample, maxiter }),
+    );
     // A band is a range of OUTPUT rows at every supersample, which is what lets a
     // direct trap reduce its own band. What comes back behind those rows is the
     // sample grid, and that is what the lanes are sized on.

@@ -229,6 +229,10 @@ ENGINE_CHANGES = [
     "were ALREADY pub, and are named here because the autolevel port leans on them: "
     "`level.rs` replays band_autolevel/v1 on a map's stops through the engine's own copy of "
     "Ottosson's matrices rather than a third one. Nothing was changed next door for it.",
+    "screen::Battery, its Default, Battery::screen and Screening were ALREADY pub, and are "
+    "named here because the Walk tab's `screen` export leans on them: it runs the "
+    "pipeline's own gate battery rather than a JavaScript copy of its rule. Nothing was "
+    "changed next door for it.",
 ]
 
 _RUSTC_VERSION = re.compile(r"^rustc (\S+ \([0-9a-f]+ \d{4}-\d{2}-\d{2}\))")

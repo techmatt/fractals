@@ -52,6 +52,7 @@ from . import review as review_module
 from . import seats as seats_module
 from . import sections as sections_module
 from . import serve as serve_module
+from . import walk as walk_module
 from .paths import FIGURE_IMAGES_DIR, IMAGES_DIR, SITE_ROOT
 
 
@@ -400,6 +401,17 @@ def _parser() -> argparse.ArgumentParser:
         "--records-only",
         action="store_true",
         help="rewrite gallery.jsonl alone; leave the tiles as they are",
+    )
+
+    walked = commands.add_parser(
+        "walk", help="place the explorer Walk tab's judges and runtime (untracked)"
+    )
+    walked.add_argument(
+        "--from",
+        dest="lab",
+        type=Path,
+        default=walk_module.DEFAULT_LAB,
+        help="the judges lab checkout to copy from (default: beside this one)",
     )
 
     served = commands.add_parser("serve", help="preview the committed tree over localhost")
@@ -1098,6 +1110,14 @@ def _widen_output() -> None:
             reconfigure(encoding="utf-8")
 
 
+def _do_walk(options: argparse.Namespace) -> int:
+    landed = walk_module.place(options.lab)
+    for path, size in landed:
+        print(f"placed {path.relative_to(SITE_ROOT).as_posix()}  {size:,} bytes")
+    print(f"{sum(size for _, size in landed):,} bytes, untracked (.git/info/exclude)")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     _widen_output()
     options = _parser().parse_args(argv)
@@ -1148,6 +1168,8 @@ def main(argv: list[str] | None = None) -> int:
             return _do_seats(options)
         if options.command == "serve":
             return _do_serve(options)
+        if options.command == "walk":
+            return _do_walk(options)
         return _do_import(options)
     except (
         records.RecordError,
@@ -1165,6 +1187,7 @@ def main(argv: list[str] | None = None) -> int:
         curation_module.CurationError,
         prose_module.ProseError,
         review_module.ReviewError,
+        walk_module.WalkError,
         OSError,
     ) as error:
         print(f"error: {error}", file=sys.stderr)
