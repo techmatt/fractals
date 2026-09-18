@@ -283,10 +283,6 @@ export function install({
    *  stays a union of whatever is pressed. */
   function chipsInto(host, field, counts, label, swatches = false) {
     host.replaceChildren();
-    // A value the new collection does not hold is let go of, so a filter never narrows a
-    // collection to nothing by a choice made in another one.
-    const present = new Set(counts.map(([value]) => value));
-    for (const value of [...wanted[field]]) if (!present.has(value)) wanted[field].delete(value);
     const chips = [];
     for (const [value, count] of counts) {
       const chip = document.createElement("button");
@@ -344,10 +340,21 @@ export function install({
     return [...held].sort((a, b) => b[1] - a[1] || String(a[0]).localeCompare(String(b[0])));
   }
 
-  /** Show one collection: its members, the chips they tally to, and the grid. */
+  /**
+   * Show one collection: its members, the chips they tally to, and the grid.
+   *
+   * **Choosing a collection lets go of every chip.** A filter is a question asked of the
+   * collection, and carrying one across the switch answers the new collection's question
+   * with the old one's words: the hue row is a different question either side of a colour
+   * collection, and a mode chip held over from the general gallery lands the viewer on a
+   * shelf already narrowed by a choice made somewhere else. What the dropdown promises is
+   * that collection, so that collection is what arrives.
+   */
   function choose(name) {
     chosen = collections.some((one) => one.name === name) ? name : GENERAL;
     collection.value = chosen;
+    wanted.mode.clear();
+    wanted.hue.clear();
     const axis = collections.find((one) => one.name === chosen)?.axis ?? null;
     cutOn = axis === FAMILY_AXIS ? chosen : null;
     members = membersOf(seats, chosen);

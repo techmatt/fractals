@@ -129,7 +129,10 @@ that is meant to be pictures. The footer now says `k of N` and only while a chip
 narrowing the grid, which is the one thing the dropdown cannot say; unfiltered, there is no
 footer at all. The Mode select's roster and the
 trap-mode defaults stay the general gallery's. Mode chips add up; a hue family chip is one at a time, and pressing
-it again clears it. A tile sets the viewer to that seat's whole recipe. *Atlas* is the
+it again clears it. Choosing a collection clears both rows: a filter is a question asked of
+the collection, and the hue row is not even asking the same question either side of a color
+collection, so a chip carried across the switch narrows a shelf by a choice made somewhere
+else. A tile sets the viewer to that seat's whole recipe. *Atlas* is the
 same frame `atlas/index.html` shows, mounted in the panel through `atlas/frame.js`, with
 the marks clicking into the viewer rather than navigating.
 
