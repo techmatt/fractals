@@ -502,7 +502,14 @@ function zoomAbout(px, py, factor) {
   const anchor = planeAt(px, py);
   const width = view.w.value * factor;
   if (factor < 1 && !renderer.resolves(view.x.value, view.y.value, width, grid.width, grid.height)) {
-    say("This is as deep as the renderer can zoom: neighboring pixels would land on the same number.");
+    say(
+      "This is as deep as this renderer can zoom here. It does its arithmetic in 64-bit " +
+        "floating point, which carries about 16 significant digits, and at this " +
+        "magnification the coordinates of neighboring pixels differ only in the last few " +
+        "of them. Any deeper and adjacent pixels would round to the same number, so there " +
+        "would be nothing left to draw. Going further needs higher-precision arithmetic, " +
+        "which this renderer does not have.",
+    );
     return;
   }
   const scale = width / view.w.value;

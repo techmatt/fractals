@@ -131,9 +131,10 @@
 .side-head {
   flex: none;
   display: flex;
-  align-items: flex-end;
+  flex-wrap: wrap;
+  align-items: center;
   gap: 0.5rem;
-  padding: 0.5rem var(--gutter) 0;
+  padding: 0.5rem var(--gutter);
   border-bottom: 1px solid var(--well-rule);
   font-family: var(--sans);
 }
@@ -147,7 +148,7 @@
 /* Right-aligned, and it gives way first: the tabs are two short words and this is a name
    with a count on it, so a narrow panel shortens the select rather than the tabs. */
 .collection {
-  margin: 0 0 0.35rem auto;
+  margin: 0 0 0 auto;
   min-width: 0;
   font: inherit;
   font-size: 0.75rem;
@@ -243,26 +244,28 @@
   }
 }
 
+/* Two filled buttons rather than two words on a rule. The tabs choose what the whole
+   panel is, and drawn as folder tabs in the dim ink they read as a caption over the chips
+   and were walked past. So both are light rectangles with the ground's colour for ink,
+   which is the one light surface in the row; the one showing is filled in the accent the
+   section heads use, and the other in the dim ink, which lightens to the full ink under
+   the pointer. Both are the same weight so choosing one does not shift the other. */
 .tab {
   appearance: none;
-  border: 1px solid transparent;
-  border-bottom: none;
-  border-radius: 3px 3px 0 0;
-  background: none;
-  color: var(--well-ink-dim);
+  border: none;
+  border-radius: 4px;
+  background: var(--well-ink-dim);
+  color: var(--well);
   font: inherit;
   font-size: 0.85rem;
-  padding: 0.35rem 0.8rem;
-  margin-bottom: -1px;
+  font-weight: 600;
+  line-height: 1.3;
+  padding: 0.3rem 0.9rem;
   cursor: pointer;
 }
-.tab:hover { color: var(--well-ink); }
-.tab[aria-selected="true"] {
-  color: var(--well-ink);
-  border-color: var(--well-rule);
-  background: var(--well);
-}
-.tab:focus-visible { outline: 2px solid var(--well-link); outline-offset: -2px; }
+.tab:hover { background: var(--well-ink); }
+.tab[aria-selected="true"] { background: var(--well-link); }
+.tab:focus-visible { outline: 2px solid var(--well-link); outline-offset: 2px; }
 
 .tabpanel {
   flex: 1 1 auto;
