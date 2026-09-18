@@ -584,6 +584,22 @@ summary.section-head:focus-visible { outline: 2px solid var(--well-link); outlin
 }
 .walk-console li:first-child { color: var(--well-ink); }
 .walk-console li + li { margin-top: 0.2rem; }
+
+/* Each line says what kind of line it is by a tint down its left edge (walk_console_ckpt131).
+   The refusal tint is the overlay's refused ink, so a line and the box it is about read as
+   the same thing. These live only on the dark well. */
+.walk-console li {
+  --kind: transparent;
+  padding-left: 0.45rem;
+  border-left: 3px solid var(--kind);
+}
+.walk-console li[data-kind="root"] { --kind: #6cb6ff; }
+.walk-console li[data-kind="rung"] { --kind: #8a94a6; }
+.walk-console li[data-kind="refusal"] { --kind: rgb(255 120 110); }
+.walk-console li[data-kind="verdict"] { --kind: #c49bff; }
+.walk-console li[data-kind="mining"] { --kind: #5fd3c0; }
+.walk-console li[data-kind="found"] { --kind: #ffd166; }
+.walk-console li[data-kind="status"] { --kind: #4b5563; }
 .walk-console:empty::before { content: "Press Start to watch a walk look for a picture."; }
 
 .walk-found-head { flex: none; padding: 0 var(--gutter); }

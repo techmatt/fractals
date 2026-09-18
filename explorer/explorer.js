@@ -660,6 +660,49 @@ function paintOverlay() {
   screen.restore();
 }
 
+/** The walk's own pictures, while the viewer is showing them rather than drawing: each
+ *  `{ x, y, w, h, image, dim }`, a frame of the plane and the `ImageData` the walk computed
+ *  for it, widest first. `null` whenever the viewer's renderer owns the screen; any pass
+ *  that starts takes it away. *(walk_console_ckpt131)* */
+let walkLayers = null;
+
+/** How far a layer the walk has already left behind is darkened, so the frame it stands in
+ *  reads as the picture and the one around it as context. */
+const WALK_BACKDROP = 0.45;
+
+/** Each layer's picture as a canvas, made once: `drawImage` scales a canvas and not an
+ *  `ImageData`. */
+const walkCanvases = new WeakMap();
+
+function walkCanvasOf(image) {
+  let made = walkCanvases.get(image);
+  if (made === undefined) {
+    made = document.createElement("canvas");
+    made.width = image.width;
+    made.height = image.height;
+    made.getContext("2d").putImageData(image, 0, 0);
+    walkCanvases.set(image, made);
+  }
+  return made;
+}
+
+/** Paint the walk's layers into `frame`, stretched to where their frames fall in the view,
+ *  over black where they do not reach, and put the overlay back over them. */
+function paintWalk() {
+  frameScreen.fillStyle = "#000";
+  frameScreen.fillRect(0, 0, grid.width, grid.height);
+  frameScreen.imageSmoothingEnabled = true;
+  for (const layer of walkLayers) {
+    const a = canvasAt(layer.x - layer.w / 2, layer.y + layer.h / 2);
+    const b = canvasAt(layer.x + layer.w / 2, layer.y - layer.h / 2);
+    frameScreen.globalAlpha = layer.dim ? WALK_BACKDROP : 1;
+    frameScreen.drawImage(walkCanvasOf(layer.image), a.px, a.py, b.px - a.px, b.py - a.py);
+  }
+  frameScreen.globalAlpha = 1;
+  screen.drawImage(frame, 0, 0);
+  paintMark();
+}
+
 /** Put the walk's cells over the picture, or take them away, and repaint. */
 function showOverlay(next) {
   if (overlay === null && next === null) return;
@@ -734,6 +777,7 @@ async function drawPass() {
   updateReadout();
   syncShade();
   const pass = ++drawing;
+  walkLayers = null;
   holdCopy(false);
   renderer.cancel();
   colouring.stop?.();
@@ -1821,6 +1865,41 @@ function followWalk(next, cells = null) {
   draw();
 }
 
+/**
+ * While a walk runs the viewer draws nothing of its own *(walk_console_ckpt131)*: it shows
+ * the pictures the walk computed, at the walk's resolution, and never starts refining them.
+ * The view is still set — the address bar and every control follow it as they follow
+ * `followWalk` — but the pass that would draw it is stopped rather than started. Pausing
+ * goes back through `followWalk`, which draws the view properly.
+ */
+function showWalk(next, layers, cells = null) {
+  view = next;
+  seat = null;
+  tiles?.mark(null);
+  opened.textContent = "";
+  differs.textContent = "";
+  arrived();
+  overlay = cells === null ? null : { family: view.family, cells };
+  rebuild();
+  updateReadout();
+  syncShade();
+  drawing += 1;
+  renderer.cancel();
+  colouring.stop?.();
+  colouring = {};
+  finished = null;
+  measure = null;
+  holdCopy(false);
+  panel?.describe();
+  say("");
+  const [top] = layers.slice(-1);
+  stat(top ? `${top.image.width}×${top.image.height} · the walk's own picture` : "");
+  showState("stopped");
+  walkLayers = layers;
+  paintWalk();
+  settle();
+}
+
 async function startWalk() {
   if (walkStarted) return;
   walkStarted = true;
@@ -1841,6 +1920,7 @@ async function startWalk() {
       planeName,
       juliaOf: JULIA_OF,
       follow: followWalk,
+      showWalk,
       showCells: (cells) => showOverlay(cells === null ? null : { family: view.family, cells }),
       open: (query, what) => openLink(query, { what }),
       busy: () => busy,
@@ -2451,7 +2531,9 @@ window.addEventListener("resize", () => {
   clearTimeout(resizing);
   resizing = setTimeout(() => {
     if (busy) return;
-    if (resize()) draw();
+    if (!resize()) return;
+    if (walkLayers !== null) paintWalk();
+    else draw();
   }, 200);
 });
 

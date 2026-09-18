@@ -304,6 +304,13 @@ viewer: a pan, a zoom, a control, or a picture opened from any panel.
    picture; the frame's own outline is drawn faintly. Only the viewer is widened: every
    probe, screen and judged picture is of the frame itself. Pausing puts the viewer back on
    the frame at its own framing, and so does hiding the tab; Start widens it again. Opening a found tile shows the tile.
+   **While the walk runs, the viewer draws nothing of its own** *(walk_console_ckpt131)*:
+   it shows the 640×360 picture the walk judged of the frame it stands in, with the picture
+   before it dimmed around it and black beyond, and never refines it (`showWalk`; the
+   render-state dot reads Stopped). A rung's finished state, with its last label and the
+   chosen box, is held 400 ms (`DWELL_MS`) while the walk carries on computing, and each
+   mined recipe is shown as it was drawn and held the same. A pause, a reader's move or an
+   opened tile hands the viewer back to its own renderer at full quality.
 7. Every judged picture is the smooth mode at 640×360, one sample, `twilight_shifted`, scored
    by the render judge's P≥3. The root is judged once before stage two starts.
 8. **Stage two** carries on from the root by the sampler's rung rule *(walk_descend_ckpt131)*
@@ -330,6 +337,13 @@ The config's defaults are the pipeline's draw where the page can make one. There
 recipes a place (hunt and mine's `PER_LOCATION`). The thirteen modes the pipeline accepts are
 listed in the Mode select's own order, handed over by the viewer so the two cannot drift, and
 the last five in it (the three direct traps, `curvature`, `smooth_curvature`) start unticked.
+
+**The console** keeps 40 lines, newest first, one line per event and in words rather than
+numbers where it can. Each line carries a `data-kind` that tints its left edge: `root`,
+`rung`, `refusal`, `verdict`, `mining`, `found` and `status`. A rung shows only the judge's
+score and whether it rose (the width is in the address bar), and a refusal names the
+quarter and the gate in a few words. The per-rung straddle count is not logged, because the
+boxes already show it.
 
 **Where it is not the pipeline, said once.**
 

@@ -105,13 +105,14 @@ GENERAL = "general"
 #:
 #: ⚠ **The nineteen are not published**, and nothing next door names a stamp for a
 #: collection: `tentative.PUBLISHED` lists the general record alone. These are
-#: `targets_<collection>_n<seats>` solves at the sizes `curation/targets.py` sets: the first
-#: sixteen of 2026-09-15 21:01-21:06Z, taken over one pool in one batch, and the three
-#: smooth-family modes of 2026-09-18 14:42-14:44Z (record_three_modes_ckpt130), over the
-#: pool the angle-modes evening left. Matt's word on them is that they are not final, so a
-#: re-solve is a re-pointing of this table, and `_collection_stamp` refuses a stamp whose
-#: solve was not that collection's so a mistyped line cannot seat one family's pictures
-#: under another's name.
+#: `targets_<collection>_n<seats>` solves at the sizes `curation/targets.py` sets: fifteen
+#: of 2026-09-15 21:01-21:06Z, taken over one pool in one batch; `smooth_stripe` of
+#: 2026-09-18 14:44Z (record_three_modes_ckpt130), over the pool the angle-modes evening
+#: left; and `threads`, `smooth_mean_angle` and `smooth_angle_min` re-solved 2026-09-18
+#: 21:21-21:23Z (walk_console_ckpt131 repointed them). Matt's word on them is that they
+#: are not final, so a re-solve is a re-pointing of this table, and `_collection_stamp`
+#: refuses a stamp whose solve was not that collection's so a mistyped line cannot seat one
+#: family's pictures under another's name.
 #: Discard-by-default applies to them next door; a stamp that goes is a `seats` run that
 #: refuses, not a panel that quietly shrinks.
 COLLECTIONS: tuple[tuple[str, str], ...] = (
@@ -131,9 +132,9 @@ COLLECTIONS: tuple[tuple[str, str], ...] = (
     ("tia", "20260915T210422Z"),
     ("smooth", "20260915T210501Z"),
     ("stripe", "20260915T210551Z"),
-    ("threads", "20260915T210604Z"),
-    ("smooth_mean_angle", "20260918T144207Z"),
-    ("smooth_angle_min", "20260918T144309Z"),
+    ("threads", "20260918T212123Z"),
+    ("smooth_mean_angle", "20260918T212229Z"),
+    ("smooth_angle_min", "20260918T212334Z"),
     ("smooth_stripe", "20260918T144411Z"),
 )
 
