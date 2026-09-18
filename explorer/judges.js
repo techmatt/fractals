@@ -1,8 +1,13 @@
-// The pipeline's two judges, in the browser: the render judge (the gate) and the fused
-// three-seed fine head, as the judges lab exported them.
+// The pipeline's two judges, in the browser: the render judge (the gate) and one member of
+// the fine head, as the judges lab exported them.
+//
+// **The fine head is seed 0 alone** *(walk_tab_ckpt131_addendum1)*. The pipeline's `p_fine`
+// is the mean of three seeds' `P≥4`; this page ranks on one member's, unaveraged, for a
+// third of the download. `python -m builder walk --fused` places the three-seed graph under
+// the same name instead, and it answers in the same slot, so nothing here changes with it.
 //
 // **Loaded on the Walk tab's first Start and never before.** The runtime's wasm is 28 MB,
-// the gate 5.1 MB and the fine head 15.3 MB, none of which compresses, so a reader who
+// the gate 5.1 MB and the fine head 5.1 MB, none of which compresses, so a reader who
 // never presses Start downloads none of it. The fine head waits longer still: it is
 // fetched the first time a walk clears the bar, because until then there is nothing for
 // it to read.
@@ -29,7 +34,7 @@ const BASE = new URL("./judges/", import.meta.url);
 const RUNTIME = new URL("ort/ort.min.mjs", BASE);
 const RUNTIME_WASM = new URL("ort/ort-wasm-simd-threaded.jsep.wasm", BASE);
 const GATE = new URL("render.fp16w.onnx", BASE);
-const FINE = new URL("fine.fused.fp16w.onnx", BASE);
+const FINE = new URL("fine.onnx", BASE);
 
 /** Fetch a file, saying how much of it has arrived. */
 async function fetchBytes(url, onProgress) {
@@ -138,7 +143,7 @@ export class Judges {
     return { p2, p3, p4 };
   }
 
-  /** The fine head on one `ImageData`: the three seeds' mean `P≥4`, averaged in the graph. */
+  /** The fine head on one `ImageData`: seed 0's own `P≥4`, with no averaging. */
   async fine(image) {
     return (await this.#read(this.fineSession, image))[2];
   }

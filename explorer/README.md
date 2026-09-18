@@ -337,8 +337,12 @@ contract has no key for it and nothing a link opens sets it.
 **The judges.**
 
 - Both are the judges lab's `fp16w` exports: fp16 weights and fp32 compute. The render
-  judge (gate) reads `[P≥2, P≥3, P≥4]`. The fine head is the fused three-seed graph, and
-  its P≥4 is `p_fine`.
+  judge (gate) reads `[P≥2, P≥3, P≥4]`.
+- **The fine head in use is one member, seed 0** *(walk_tab_ckpt131_addendum1)*. Recipes
+  are ranked on its own P≥4 with no averaging. The pipeline's `p_fine` is the mean of three
+  seeds, so a tile's `fine` is one seed's reading and not the solve's number. The fused
+  three-seed graph is an opt-in, `--fused` below; it lands under the same name and answers
+  in the same slot.
 - They run in `onnxruntime-web` 1.30's default bundle. Its WebGPU backend is JSEP, the
   runtime the lab's fidelity table was taken on. It uses WebGPU where `navigator.gpu` hands
   back an adapter, and single-threaded WASM otherwise.
@@ -353,14 +357,16 @@ contract has no key for it and nothing a link opens sets it.
 by
 
 ```
-python -m builder walk                      # from ../fractal-judges-lab
+python -m builder walk                      # from ../fractal-judges-lab, seed 0
+python -m builder walk --fused              # the three-seed fine head instead
 python -m builder walk --from <lab checkout>
 ```
 
-That copies about 49 MB:
+That copies about 39 MB:
 
-- `render.fp16w.onnx` (5.1 MB) and `fine.fused.fp16w.onnx` (15.3 MB), from the lab's
-  `models/`.
+- `render.fp16w.onnx` (5.1 MB), and `fine.onnx`: seed 0's `fine.seed0.fp16w.onnx`
+  (5.1 MB), or with `--fused` the lab's `fine.fused.fp16w.onnx` (15.3 MB). All from the
+  lab's `models/`.
 - `ort.min.mjs` and the JSEP glue and binary (28.3 MB), from its `node_modules`.
 
 Until Matt says deploy, Pages serves a Walk tab that runs on the screen alone.

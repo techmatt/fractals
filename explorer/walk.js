@@ -819,7 +819,8 @@ export function mount(host) {
     badge.title =
       one.fine === null
         ? "The render judge's probability that this picture is at least a 4."
-        : `The fine judge's score. The pipeline seats a picture at ${FINE_BAR} or above.`;
+        : `One member of the fine judge (seed 0): its probability that this picture is at least a 4. ` +
+          `The pipeline seats on the mean of three seeds, at ${FINE_BAR} or above.`;
     tile.append(image, badge);
     tile.addEventListener("click", () => {
       pause("A found picture was opened, so the walk paused.");

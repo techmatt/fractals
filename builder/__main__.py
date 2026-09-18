@@ -413,6 +413,11 @@ def _parser() -> argparse.ArgumentParser:
         default=walk_module.DEFAULT_LAB,
         help="the judges lab checkout to copy from (default: beside this one)",
     )
+    walked.add_argument(
+        "--fused",
+        action="store_true",
+        help="place the fused three-seed fine head (15.3 MB) instead of seed 0 alone (5.1 MB)",
+    )
 
     served = commands.add_parser("serve", help="preview the committed tree over localhost")
     served.add_argument(
@@ -1111,7 +1116,8 @@ def _widen_output() -> None:
 
 
 def _do_walk(options: argparse.Namespace) -> int:
-    landed = walk_module.place(options.lab)
+    landed = walk_module.place(options.lab, fused=options.fused)
+    print(f"fine head: {'the fused three seeds' if options.fused else 'seed 0 alone'}")
     for path, size in landed:
         print(f"placed {path.relative_to(SITE_ROOT).as_posix()}  {size:,} bytes")
     print(f"{sum(size for _, size in landed):,} bytes, untracked (.git/info/exclude)")
