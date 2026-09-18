@@ -162,9 +162,6 @@ const shadeReset = document.getElementById("palette-reset");
 const shadeNote = document.getElementById("shade-note");
 const levelGroup = document.getElementById("level-group");
 const levelToggle = document.getElementById("level-toggle");
-const levelNote = document.getElementById("level-note");
-const levelWhy = document.getElementById("level-why");
-const levelExplained = document.getElementById("level-explained");
 const details = document.getElementById("details");
 const paletteStrip = document.getElementById("palette-strip");
 const paletteShown = document.getElementById("palette-shown");
@@ -1235,13 +1232,16 @@ function syncShade() {
   // field, so there is no distribution for a gamma or a transfer to spend. What does
   // reach them is the bake — a reversed or folded map is a different gradient — and the
   // rolloff, which acts after a colour has been chosen and has no control here.
-  // Where Autolevel is unused as well, which is every direct trap today, the same fact is
-  // said on the shade row in the place Autolevel's own note would take, so it costs the
-  // panel no line of its own.
+  // Where Autolevel is unused as well, which is every direct trap today, it joins the list:
+  // this line is the whole of what the shade row has to say about a direct trap, since the
+  // box beside it says nothing now but disabled.
   const plan = planOf(view);
-  shadeNote.textContent = plan.direct && plan.levels === true
-    ? "This mode paints as it draws, so Gamma, Cycles, Phase and Transfer have no effect " +
-      "here. Reverse and Mirror still apply, and each one redraws the picture."
+  const inert = plan.levels === true
+    ? "Gamma, Cycles, Phase and Transfer"
+    : "Autolevel, Gamma, Cycles, Phase and Transfer";
+  shadeNote.textContent = plan.direct
+    ? `This mode paints as it draws, so ${inert} have no effect here. Reverse and Mirror ` +
+      "still apply, and each one redraws the picture."
     : "";
 
   syncLevel();
@@ -1317,7 +1317,7 @@ function sentenceList(words) {
 }
 
 /**
- * The autolevel box: ticked or not, and one line saying what is in force.
+ * The autolevel box: ticked or not, and nothing beside it.
  *
  * **Both halves of the operator are on this page now**, and which one runs is
  * `levelling`'s business rather than the box's. A view that arrived replays the curve it
@@ -1327,48 +1327,24 @@ function sentenceList(words) {
  * only where the operator has nothing to say: a direct trap, whose statistics describe the
  * ground rather than the picture, and the modulate, which reads a different place in the
  * map per sample so a curved map would not be the same picture with its tone moved.
+ *
+ * **The row is a label and a box and stops there** *(2026-09-17)*. It used to carry a
+ * running sentence — which curve was in force, whether the measurement had found anything
+ * to do — that changed under the reader as a view arrived or a pass finished, and reflowed
+ * the row with it. A control that rewrites itself while you look at it is a control that
+ * has to be read every time. What the sentence said is either already on the page or is
+ * Details' to say: the box's own state says whether a curve is in force, `disabled` says
+ * the mode has no use for one, and which operator measured it, in band or not, is in the
+ * Details readout and in Copy view. The one thing left that a box cannot say — what
+ * autolevel *is* — is a tooltip on the box, which is where every other control on this
+ * page keeps its explanation.
  */
 function syncLevel() {
   const plan = planOf(view);
   const levels = plan.levels === true;
   levelToggle.checked = levels && levelOn;
   levelToggle.disabled = busy || !levels;
-  // The long reason lives behind the `?` and is the same two sentences whatever the view;
-  // the line beside the box is the one thing true of this view. Which operator measured
-  // the curve is Details' business, not this line's.
-  if (!levels && plan.direct) {
-    levelNote.textContent =
-      "This mode paints as it draws, so only Reverse and Mirror apply here, and each one " +
-      "redraws the picture.";
-  } else if (!levels) {
-    levelNote.textContent = "Not used by this mode.";
-  } else if (!levelOn) {
-    levelNote.textContent = levelling === "stored" && storedCurve !== null
-      ? `Off: the palette as it is, without ${seat === null ? "the link's" : "this wallpaper's"} tone curve.`
-      : "Off: the palette as it is.";
-  } else if (levelling === "stored") {
-    // On and stored is only ever a view that arrived with a curve: one that arrived with
-    // none opens unticked, and ticking it makes the view `derived`.
-    levelNote.textContent = seat === null
-      ? "Leveled to the tone curve this link carries."
-      : "Leveled to this wallpaper's stored tone curve.";
-  } else {
-    levelNote.textContent = derivedInBand
-      ? "Measured for this view, which needed no leveling."
-      : "Leveled to this view.";
-  }
 }
-
-levelExplained.textContent =
-  "Autolevel adjusts the brightness and contrast of the palette to suit the picture. " +
-  "Gallery wallpapers that were made with it open with it on, using exactly the curve they were made with. " +
-  "Anywhere else it starts off; turn it on and the view is leveled from its own finished picture, " +
-  "so the curve moves with the view.";
-levelWhy.title = levelExplained.textContent;
-levelWhy.addEventListener("click", () => {
-  levelExplained.hidden = !levelExplained.hidden;
-  levelWhy.setAttribute("aria-expanded", String(!levelExplained.hidden));
-});
 
 /**
  * The Mode select: the gallery's modes, in `MODE_ORDER`, plus the view's own after them.

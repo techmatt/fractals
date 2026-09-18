@@ -589,17 +589,6 @@ summary.section-head:focus-visible { outline: 2px solid var(--well-link); outlin
 .bar button:not(.chip):disabled:hover { border-color: var(--well-rule); color: var(--well-ink); }
 .bar .chip:disabled:hover { border-color: var(--well-rule); color: var(--well-ink-dim); }
 
-/* The `?` beside a disabled control: a small round button that reveals the long reason. */
-.bar button.why {
-  width: 1.2rem;
-  height: 1.2rem;
-  padding: 0;
-  border-radius: 50%;
-  font-size: 0.7rem;
-  line-height: 1;
-  color: var(--well-ink-dim);
-}
-.bar button.why[aria-expanded="true"] { color: var(--well-ink); border-color: var(--well-ink-dim); }
 .help-inline { font-size: 0.72rem; color: var(--well-ink-dim); }
 .help-inline:empty { display: none; }
 
