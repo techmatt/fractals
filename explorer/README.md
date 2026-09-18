@@ -406,7 +406,9 @@ contract has no key for it and nothing a link opens sets it.
   buffer from `content-length`, which under Pages is the gzipped length, so the runtime
   overflowed a buffer a quarter of its size and the judges never loaded. The walk then ran
   on coin flips and said only that no judge could load. This was never seen locally,
-  because `python -m builder serve` does not gzip.
+  because `python -m builder serve` did not gzip. It does now *(preclose_site_ckpt131)*:
+  every text type, the wasm and `application/octet-stream` at level 6 with the compressed
+  `content-length`, as Pages does, so a local walk takes the deployed load path.
 - Where the runtime cannot load, the walk runs on the screen alone, picks among survivors
   at random, and says so in its console.
 

@@ -28,19 +28,60 @@ first fix here and it was the wrong one — it made every reload re-fetch the ga
 panel's thumbnails, a couple of hundred of them, and on a machine with a solve running
 next door they painted half-decoded, which reads as a grid of broken pictures. Neither
 header is a claim about production: Pages sends its own.
+
+**And it gzips what Pages gzips** *(preclose_site_ckpt131)*. Pages compresses every text
+type and `application/octet-stream` (and so the wasm and the models), gzip only, at about
+level 6, and sends the *compressed* `content-length`. A preview that sent the raw bytes
+hid exactly that: the Walk's `fetchBytes` sized its buffer from `content-length`, which
+under Pages is a quarter of the runtime, and the judges never loaded on the deployed site
+while loading fine here. So the same responses go out the same way, and a local walk takes
+the load path a reader's does. Pictures go out as they are, which is also what Pages does.
+A compressed body is kept per file and modification time, so the 28 MB runtime is
+compressed once per edit rather than once per reload.
 """
 
+import email.utils
 import functools
+import gzip
+import threading
+from http import HTTPStatus
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
+from io import BytesIO
+from pathlib import Path
 
 from .paths import SITE_ROOT
 
 DEFAULT_PORT = 8000
 HOST = "localhost"
+GZIP_LEVEL = 6
+
+# The types Pages compresses. Everything else, which here means pictures, goes out raw.
+COMPRESSED_TYPES = {
+    "application/javascript",
+    "application/json",
+    "application/octet-stream",
+    "application/wasm",
+    "image/svg+xml",
+}
+
+_compressed: dict[Path, tuple[int, bytes]] = {}
+_compressed_lock = threading.Lock()
+
+
+def _gzipped(path: Path, mtime_ns: int) -> bytes:
+    """The file's bytes at `GZIP_LEVEL`, compressed once per modification time."""
+    with _compressed_lock:
+        cached = _compressed.get(path)
+    if cached is not None and cached[0] == mtime_ns:
+        return cached[1]
+    body = gzip.compress(path.read_bytes(), GZIP_LEVEL, mtime=0)
+    with _compressed_lock:
+        _compressed[path] = (mtime_ns, body)
+    return body
 
 
 class Preview(SimpleHTTPRequestHandler):
-    """The committed bytes, with every response marked to be revalidated before use."""
+    """The committed bytes, gzipped where Pages gzips them, marked to be revalidated."""
 
     # Python's table leaves `.mjs` out on Windows and serves it as `text/plain`, which a
     # browser refuses to run as a module. Pages serves it as JavaScript, and so does this.
@@ -49,6 +90,44 @@ class Preview(SimpleHTTPRequestHandler):
     def end_headers(self) -> None:
         self.send_header("Cache-Control", "no-cache")
         super().end_headers()
+
+    def _compressible(self, path: Path) -> bool:
+        kind = self.guess_type(path)
+        return kind.startswith("text/") or kind in COMPRESSED_TYPES
+
+    def send_head(self):
+        path = Path(self.translate_path(self.path))
+        accepts = self.headers.get("Accept-Encoding", "")
+        if (
+            not path.is_file()
+            or self.path.split("?", 1)[0].endswith("/")
+            or "gzip" not in accepts.lower()
+            or not self._compressible(path)
+        ):
+            return super().send_head()
+
+        stat = path.stat()
+        if self.headers.get("If-Modified-Since") and "If-None-Match" not in self.headers:
+            try:
+                since = email.utils.parsedate_to_datetime(self.headers["If-Modified-Since"])
+            except (TypeError, IndexError, OverflowError, ValueError):
+                since = None
+            fresh = since is not None and since.tzinfo is not None
+            if fresh and int(stat.st_mtime) <= since.timestamp():
+                self.send_response(HTTPStatus.NOT_MODIFIED)
+                self.send_header("Vary", "Accept-Encoding")
+                self.end_headers()
+                return None
+
+        body = _gzipped(path, stat.st_mtime_ns)
+        self.send_response(HTTPStatus.OK)
+        self.send_header("Content-Type", self.guess_type(path))
+        self.send_header("Content-Encoding", "gzip")
+        self.send_header("Content-Length", str(len(body)))
+        self.send_header("Vary", "Accept-Encoding")
+        self.send_header("Last-Modified", self.date_time_string(stat.st_mtime))
+        self.end_headers()
+        return BytesIO(body)
 
 
 def serve(port: int = DEFAULT_PORT) -> None:
