@@ -69,10 +69,10 @@ const TILE = { width: 316, height: 178 };
  *  Julia twin, which is the only thing that sets it apart here. */
 const PLANES = ["mandelbrot", "multibrot3", "multibrot4", "multibrot5", "multibrot6", "phoenix"];
 
-/** The thirteen modes the pipeline accepts (`mode_policy.accepted()`), in the engine's
- *  catalog order. `curvature` is accepted and not mined — `mode_policy.UNMINED` — so it is
- *  listed and starts unticked. */
-const MINED_MODES = [
+/** The thirteen modes the pipeline accepts (`mode_policy.accepted()`). The config lists
+ *  them in the viewer's Mode select order, which the host hands over as `modeOrder`, so
+ *  the two lists cannot drift; this set only says which of those the walk may draw. */
+const MINED_MODES = new Set([
   "smooth",
   "tia",
   "stripe",
@@ -86,17 +86,20 @@ const MINED_MODES = [
   "direct_trap_lines",
   "threads",
   "itinerary",
-];
-const UNMINED = new Set(["curvature"]);
+]);
+
+/** How many modes at the foot of that order start unticked *(walk_modes_order_ckpt131)*:
+ *  the three direct traps and the two curvature modes, the gallery's least seated. */
+const UNTICKED_TAIL = 5;
 
 /** What a new tab's config opens at: the pipeline's draw, where the page can make it.
  *  Three recipes a place is hunt and mine's `PER_LOCATION`, each a different mode; the
  *  pipeline keeps every one and lets the solve choose, and a tab that did would fill with
- *  pictures nobody would pick, so it keeps the best. */
+ *  pictures nobody would pick, so it keeps the best. The modes are set in `mount`, where
+ *  their order is known. */
 const DEFAULTS = {
   planes: new Set(PLANES),
   julia: true,
-  modes: new Set(MINED_MODES.filter((mode) => !UNMINED.has(mode))),
   roster: "random",
   widest: 0.1,
   narrowest: 1e-3,
@@ -188,10 +191,11 @@ class Screeners {
 
 export function mount(host) {
   const { contract, palettes, shownName, planeName, juliaOf } = host;
+  const modeOrder = host.modeOrder.filter((mode) => MINED_MODES.has(mode));
   const config = {
     ...DEFAULTS,
     planes: new Set(DEFAULTS.planes),
-    modes: new Set(DEFAULTS.modes),
+    modes: new Set(modeOrder.slice(0, -UNTICKED_TAIL)),
   };
   let state = "idle"; // idle | loading | running | paused
   let resume = null;
@@ -294,7 +298,7 @@ export function mount(host) {
     );
 
     const modes = group("Modes", "Each recipe draws one of these.");
-    for (const mode of MINED_MODES) {
+    for (const mode of modeOrder) {
       checkbox(modes, mode, config.modes.has(mode), (on) => {
         if (on) config.modes.add(mode);
         else config.modes.delete(mode);

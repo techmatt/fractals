@@ -1542,15 +1542,21 @@ function syncLevel() {
  * would be showing the wrong one.
  */
 function syncModes() {
-  const offered = offeredModes ?? link.MODES;
-  const listed = link.MODES.filter((mode) => offered.includes(mode) || mode === view.mode);
-  const wanted = [
-    ...MODE_ORDER.filter((mode) => listed.includes(mode)),
-    ...listed.filter((mode) => !MODE_ORDER.includes(mode)),
-  ];
+  const wanted = listedModes(view.mode);
   const showing = [...modePicker.options].map((option) => option.value);
   if (wanted.join() !== showing.join()) fill(modePicker, wanted, IDENTITIES);
   modePicker.value = view.mode;
+}
+
+/** What the Mode select lists, in its order, with `extra` listed too if it is a mode the
+ *  contract knows; the Walk tab's config lists modes in this same order. */
+function listedModes(extra = null) {
+  const offered = offeredModes ?? link.MODES;
+  const listed = link.MODES.filter((mode) => offered.includes(mode) || mode === extra);
+  return [
+    ...MODE_ORDER.filter((mode) => listed.includes(mode)),
+    ...listed.filter((mode) => !MODE_ORDER.includes(mode)),
+  ];
 }
 
 /** Whatever the reader just chose, drawn — and the strips rebuilt around it. */
@@ -1823,7 +1829,7 @@ async function startWalk() {
       contract,
       palettes: PALETTES,
       shownName,
-      modeFirst: MODE_FIRST,
+      modeOrder: listedModes(),
       planeName,
       juliaOf: JULIA_OF,
       follow: followWalk,

@@ -317,8 +317,9 @@ viewer: a pan, a zoom, a control, or a picture opened from any panel.
    - Each is scored by the gate's P≥4 and by the fine head. The best are kept as tiles.
 
 The config's defaults are the pipeline's draw where the page can make one. There are three
-recipes a place (hunt and mine's `PER_LOCATION`), and the twelve modes that are mined start
-ticked, with `curvature` listed and unticked (`mode_policy.UNMINED`).
+recipes a place (hunt and mine's `PER_LOCATION`). The thirteen modes the pipeline accepts are
+listed in the Mode select's own order, handed over by the viewer so the two cannot drift, and
+the last five in it (the three direct traps, `curvature`, `smooth_curvature`) start unticked.
 
 **Where it is not the pipeline, said once.**
 
