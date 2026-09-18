@@ -107,7 +107,11 @@ keeps no address for it.
 
 **Every plate is cropped to its own set, at one aspect.** The engine's `home-view` reports
 the extent it measured for each family; a plate is that rectangle widened to 9:8 with a
-tenth of air around it, drawn at 4104x3648 through the plate's own grey ramp. 9:8 is the
+tenth of air around it, drawn at 2052x1824 through the plate's own grey ramp and encoded
+once, at JPEG quality 88 with no chroma subsampling. That is half the 4104 of the first
+pass, and the six plates went from 5.44 MB to 1.25 MB *(explorer_slim_ckpt131)*: the panel
+shows a plate well under a thousand CSS pixels across, and a mark is placed from its
+coordinate, so it stays on the same place at any plate size. 9:8 is the
 panel's shape rather than any set's — the studio's atlas panel is about four wide to five
 tall, and the frame's own ratio is the plate's plus a fifth — and it is also the nearest
 simple ratio that holds the Mandelbrot set with a margin, where 4:3 and 5:4 cut the

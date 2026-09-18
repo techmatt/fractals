@@ -9,9 +9,9 @@
     "screen::Battery, its Default, Battery::screen and Screening were ALREADY pub, and are named here because the Walk tab's `screen` export leans on them: it runs the pipeline's own gate battery rather than a JavaScript copy of its rule. Nothing was changed next door for it."
   ],
   "engine_version": "0.1.0",
-  "gzip_bytes": 227760,
-  "raw_bytes": 766191,
+  "gzip_bytes": 213828,
+  "raw_bytes": 717977,
   "rustc": "1.96.0 (ac68faa20 2026-05-25)",
   "schema": 1,
-  "wallpapers_commit": "7f461837f1f5555eb90b93ecbd550e2fea2211fe"
+  "wallpapers_commit": "c26f9c249a10596dbc4667f61b89a62ad96b28e3"
 }

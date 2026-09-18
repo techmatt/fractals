@@ -394,6 +394,29 @@ def _mark(figure: Figure) -> str:
     return f'<span class="figure-draft">{text(DRAFT_MARK)}</span> '
 
 
+_FIGURE_ID = re.compile(r'data-figure="([^"]*)"')
+
+
+def leads_its_page(figure: Figure) -> bool:
+    """Whether this is the first figure its page carries, which is the one loaded eagerly.
+
+    **Every other figure is `loading="lazy"`** *(explorer_slim_ckpt131_addendum1)*. A page
+    like Rendering modes carries thirteen renders, 5.9 MB, and every one of them used to
+    load before a reader had scrolled at all. The first figure is usually on the first
+    screen or just under it, so it stays eager; the rest wait until they are near the
+    viewport. Every `<img>` already carries its `width` and `height`, so a picture that
+    arrives late takes the space it was always given and nothing shifts.
+
+    Read off the page rather than the registry, because the order of figures is the page's.
+    A page not carrying any figure yet is one this figure is about to lead.
+    """
+    page = figure.page_path
+    if not page.is_file():
+        return True
+    first = _FIGURE_ID.search(page.read_text(encoding="utf-8"))
+    return first is None or first.group(1) == figure.id
+
+
 def _well(figure: Figure, opened: str | None = None) -> str:
     """What sits in the figure's well: the picture, or a note saying what will.
 
@@ -406,9 +429,10 @@ def _well(figure: Figure, opened: str | None = None) -> str:
             f'{INDENT}  <p class="pending"><span class="pending-label">Figure pending</span>'
             f"{text(figure.alt)}</p>"
         )
+    lazy = "" if leads_its_page(figure) else ' loading="lazy"'
     picture = (
         f'<img src="{attribute(figure.src)}" width="{figure.width}" '
-        f'height="{figure.height}" alt="{attribute(figure.alt)}">'
+        f'height="{figure.height}" alt="{attribute(figure.alt)}"{lazy}>'
     )
     if not opened:
         return f"{INDENT}  {picture}"

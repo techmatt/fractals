@@ -239,7 +239,12 @@ keeps the mechanics. **Every apply round ends by distilling that round's general
   what it chose, which is why the collection is not a chip row. ⚠ **The nineteen are
   unpublished and Matt's word is that they are not final**, so `builder/seats.py`'s
   `COLLECTIONS` names a stamp per collection and refuses one whose solve was another
-  collection's — a re-solve is a re-pointing of that table. **A staged gallery ships one
+  collection's — a re-solve is a re-pointing of that table, and `seats` removes the tiles
+  a repoint leaves unnamed. **The record is split by collection** *(explorer_slim_ckpt131)*:
+  `gallery.jsonl` is the header alone, carrying the Mode select's roster as `modes`, and
+  each collection's rows are in the file its header entry names. The first frame waits on
+  the header and never the rows, and the panel fetches a collection when it first shows
+  it. **A staged gallery ships one
   size and it is the tile**: 316 px WebP, about 10 KB, the only picture in the directory,
   because the viewer draws the full picture on a click. `assets` asks a staged gallery for
   no thumbnail because of it.
@@ -515,10 +520,10 @@ Three Windows cautions that have each cost a session already:
 
 ```
 python -m ruff check . && python -m ruff format --check . && python -m builder check
-node --test explorer/permalink.test.mjs explorer/bands.test.mjs explorer/level.test.mjs explorer/derive.test.mjs atlas/atlas.test.mjs
+node --test explorer/permalink.test.mjs explorer/bands.test.mjs explorer/level.test.mjs explorer/derive.test.mjs explorer/stops.test.mjs atlas/atlas.test.mjs
 ```
 
-The second line is the five JavaScript suites, on Node's own runner with nothing
+The second line is the six JavaScript suites, on Node's own runner with nothing
 installed. `permalink.test.mjs` is the contract held to itself — a URL is the one
 permanent thing this site emits, and it is worth a test suite even though nothing else
 here has one. `bands.test.mjs` is the pool held to the committed wasm: a band is a range
@@ -533,7 +538,11 @@ curve the page derived to replaying to the bytes it drew, which is what lets Cop
 write five numbers; its pixel case skips by name on a machine without the decoded bases
 in `artifacts/level-derive/`. `derive.test.mjs` holds the module's two derived
 parameters: a derived texture weight replays to the bytes it drew, and a derived trap
-opacity lands the typical painted pixel where it says it does.
+opacity lands the typical painted pixel where it says it does. `stops.test.mjs` holds the
+palette blob's reader to the planar, byte-delta layout the bake writes. That layout is the
+same length as the interleaved one, so a wrong reader would draw real colors from the
+wrong stops rather than fail. Its on-disk case skips by name where `palettes.bin` is not
+baked.
 
 After touching placed prose, `python -m builder prose <page>` as well — see **Where prose
 comes from** above for what it holds together and why one edit has several sites.

@@ -32,8 +32,12 @@ serde_json = { version = "1", features = ["float_roundtrip"] }
 
 # Release only; the module is a committed artifact and there is no debug build of
 # it. LTO is what dead-strips png, jpeg-encoder and flate2 out of the module.
+# `strip = "symbols"` drops the 48 KB `name` section, which only a debugger reads
+# (explorer_slim_ckpt131). `opt-level` stays at 3: `s` and `z` draw the same pixels
+# and were measured 57% and 79% slower on the anchor render.
 [profile.release]
 opt-level = 3
 lto = true
 codegen-units = 1
 panic = "abort"
+strip = "symbols"

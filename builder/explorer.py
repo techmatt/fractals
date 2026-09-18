@@ -71,6 +71,16 @@ with `i/(n-1)` as an exact `f64` and **stops the bake by name** where one differ
 rounding a map's positions would bend its gradient slightly rather than fail, and the
 engine does not require even spacing even though this library happens to have it.
 
+**Stored planar and byte-delta, so that gzip can see it** *(explorer_slim_ckpt131)*. A
+map's stops are written as its reds, then its greens, then its blues, each channel as the
+difference from the stop before it, mod 256, starting from zero at the map's first stop.
+It is the same number of bytes as `r g b r g b` and occupies the same span, so the index's
+`at` and `stops` address a map exactly as before; what changes is that a gradient's
+neighbouring stops are close, so its deltas are small and repeat. Pages gzips the file on
+the way out, and it goes from 897 KB on the wire interleaved to 185 KB. `stops.js` undoes
+it once, on arrival, into the interleaved bytes it always read, and the index names the
+`layout` so a reader of one can tell which it is holding.
+
 **Two fields ride in the index that the library does not hold**, `family` and `seats`,
 and both are frozen into the roster record rather than derived at bake time. `family` is
 the hue family a map most often *produces* — the modal `colour.families[0]` over the
@@ -117,6 +127,8 @@ PALETTES_MODULE = EXPLORER_DIR / "palettes.js"
 #: The control points themselves. Untracked: a megabyte of binary is the one thing here
 #: that is library-sized, and what is committed is the index that addresses it.
 PALETTES_BLOB = EXPLORER_DIR / "palettes.bin"
+#: How the blob lays a map's colours out; `stops.js` refuses an index naming another.
+BLOB_LAYOUT = "planar-delta"
 #: One row of gradient per map, in index order — a picture of what the blob holds, for a
 #: person rather than for the page. Untracked, and nothing serves it.
 PALETTES_SWATCH = EXPLORER_DIR / "palettes-swatch.png"
@@ -458,6 +470,9 @@ def blob(maps: list[Colormap]) -> bytes:
     of every map in this library sits at exactly `i/(n-1)` — and a map where that is not
     true stops the bake here rather than being rounded into the format, because rounding
     a gradient's positions bends it slightly instead of failing.
+
+    **Per map, planar and byte-delta** — `BLOB_LAYOUT`: the map's reds, greens and blues
+    in turn, each byte the difference from the one before it in that channel, mod 256.
     """
     out = bytearray()
     for colormap in maps:
@@ -468,8 +483,11 @@ def blob(maps: list[Colormap]) -> bytes:
                 "i/(n-1). Carrying this map means widening the format to write positions "
                 "beside the colours, which is a deliberate change and not a rounding."
             )
-        for _at, rgb in colormap.stops:
-            out.extend(rgb)
+        for channel in range(3):
+            before = 0
+            for _at, rgb in colormap.stops:
+                out.append((rgb[channel] - before) & 0xFF)
+                before = rgb[channel]
     return bytes(out)
 
 
@@ -588,6 +606,7 @@ def palettes_module_text() -> Baked:
         "default_because": why,
         "blob": {
             "file": PALETTES_BLOB.name,
+            "layout": BLOB_LAYOUT,
             "bytes": len(bytes_),
             "sha256": hashlib.sha256(bytes_).hexdigest(),
             "stops": sum(len(colormap.stops) for colormap in maps),

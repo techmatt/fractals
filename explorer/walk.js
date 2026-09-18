@@ -31,7 +31,6 @@
 
 import * as link from "./permalink.js";
 import { SETTLED } from "./catalog.js";
-import { PROVENANCE } from "./palettes.js";
 import { Renderer, specOf } from "./render.js";
 import * as judges from "./judges.js";
 
@@ -60,9 +59,6 @@ const SCREEN_MAP = "twilight_shifted";
 
 /** The map the descent's smooth pictures are coloured through before the judge reads them. */
 const DESCENT_MAP = "twilight_shifted";
-
-/** The solve's bar on the fine head (`solve.DEFAULT_FINE_BAR`), as the bake read it. */
-const FINE_BAR = PROVENANCE.readings.fine_bar;
 
 /** A found tile's picture: the gallery's tile size. */
 const TILE = { width: 316, height: 178 };
@@ -221,7 +217,11 @@ export function mount(host) {
   let resume = null;
   let renderer = null;
   let screeners = null;
-  let scorer = null; // a `Judges`, or `null` where the runtime would not load
+  let scorer = null; // a `Judges`, or `null` until loaded or where the runtime would not load
+  let judgeless = false; // the runtime would not load here, so the walk goes without
+  let fineless = false; // the fine head would not load here, so the gate ranks alone
+  /** The download in flight, as `{ controller, what, got }`, or `null`. */
+  let download = null;
   let loop = null;
   let phase = "root"; // root | deep | mine: which stage a timing is filed under
   const timings = { probe: [], screen: [], render: [], shade: [], gate: [], fine: [], walk: [] };
@@ -251,9 +251,51 @@ export function mount(host) {
     host.progress.textContent = text;
   }
 
+  /** Pause while a download is under way is the same button as Pause while walking, and
+   *  stops the download. */
   function syncButton() {
-    host.start.textContent = state === "running" ? "Pause" : state === "loading" ? "Loading…" : "Start";
-    host.start.disabled = state === "loading";
+    host.start.textContent = state === "running" || state === "loading" ? "Pause" : "Start";
+  }
+
+  // ----------------------------------------------------------------- the downloads
+
+  /** Start one download: a signal for it, and a progress line that says what and how much. */
+  function downloading(what) {
+    const controller = new AbortController();
+    download = { controller, what, got: 0 };
+    // `now` names the file where one download is several, runtime then gate.
+    const shown = (got, of, now = what) => {
+      if (download?.controller !== controller) return;
+      download.got = got;
+      download.what = now;
+      progress(
+        of > 0
+          ? `Downloading ${now}… ${megabytes(got)} of ${megabytes(of)} MB`
+          : `Downloading ${now}… ${megabytes(got)} MB`,
+      );
+    };
+    return { signal: controller.signal, shown, done: () => {
+      if (download?.controller === controller) download = null;
+      progress("");
+    } };
+  }
+
+  /**
+   * Stop the download in flight, if there is one, and say so in one line. Whatever had
+   * fully arrived is kept by `judges.js`, and the browser's cache holds the rest of what
+   * it saw, so the next Start does not download it again.
+   */
+  function stopDownload(why) {
+    if (download === null) return false;
+    const { controller, what, got } = download;
+    download = null;
+    controller.abort();
+    progress("");
+    log(
+      "status",
+      `${why} Stopped downloading ${what}${got > 0 ? ` (${megabytes(got)} MB in)` : ""}; what had fully arrived is kept for the next Start.`,
+    );
+    return true;
   }
 
   // ----------------------------------------------------------------- the config
@@ -395,40 +437,48 @@ export function mount(host) {
 
   // ----------------------------------------------------------------- start and pause
 
+  /** What Start has to have before the walk can run: the renderer, and the judges unless
+   *  they could not load here. Throws an `AbortError` where the download was stopped. */
   async function begin() {
-    state = "loading";
-    syncButton();
-    log("status", "Starting the walk's renderer…");
-    const cores = navigator.hardwareConcurrency || 8;
-    renderer = await Renderer.over(host.module, Math.max(1, Math.min(4, Math.floor(cores / 3))));
-    if (typeof renderer.shader.screen !== "function") {
-      throw new Error("this page's renderer is older than the walk and has no screen");
+    if (renderer === null) {
+      log("status", "Starting the walk's renderer…");
+      const cores = navigator.hardwareConcurrency || 8;
+      renderer = await Renderer.over(host.module, Math.max(1, Math.min(4, Math.floor(cores / 3))));
+      if (typeof renderer.shader.screen !== "function") {
+        throw new Error("this page's renderer is older than the walk and has no screen");
+      }
+      screeners = new Screeners(host.module, 2);
     }
-    screeners = new Screeners(host.module, 2);
+    // Paused while the renderer was starting: nothing is downloaded until Start again.
+    if (scorer !== null || judgeless || state !== "loading") return;
+    const named ={ runtime: "the judge runtime", gate: "the render judge" };
+    const { signal, shown, done } = downloading(named.runtime);
     try {
-      scorer = await judges.load((what, got, of) => {
-        const name = { runtime: "the judge runtime", gate: "the render judge" }[what];
-        progress(`Downloading ${name}… ${megabytes(got)} of ${megabytes(of)} MB`);
-      });
+      scorer = await judges.load((what, got, of) => shown(got, of, named[what]), signal);
       log("status", `The judge runs on ${scorer.backend === "webgpu" ? "the GPU (WebGPU)" : "the CPU (WebAssembly)"}.`);
     } catch (error) {
+      if (judges.stopped(error, signal)) throw error;
       console.warn("the judges could not be loaded", error);
-      scorer = null;
+      judgeless = true;
       log("status", "No judge could load here, so the walk picks at random among what the screen passes.");
+    } finally {
+      done();
     }
-    progress("");
   }
 
   async function toggle() {
-    if (state === "running") {
+    if (state === "running" || state === "loading") {
       pause("Paused.");
       return;
     }
-    if (state === "loading") return;
-    if (renderer === null) {
+    if (renderer === null || (scorer === null && !judgeless)) {
+      state = "loading";
+      syncButton();
       try {
         await begin();
       } catch (error) {
+        // A stopped download has said so already, and `pause` has set the state.
+        if (judges.stopped(error)) return;
         console.error("the walk could not start", error);
         state = "idle";
         syncButton();
@@ -436,6 +486,8 @@ export function mount(host) {
         progress("");
         return;
       }
+      // Paused while the last step finished: the walk waits for the next Start.
+      if (state !== "loading") return;
     }
     state = "running";
     syncButton();
@@ -460,11 +512,21 @@ export function mount(host) {
   /** Pause, and give the viewer back its normal framing — unless whoever paused is about to
    *  put a view of their own up, which is `reframe: false`. */
   function pause(why, { reframe = true } = {}) {
+    // **Leaving means stopping** *(explorer_slim_ckpt131)*. A download in flight is cut off
+    // whether the walk was starting or already mining, and that is the line the console
+    // gets. A walk that had not started yet goes back to waiting for Start.
+    const cut = stopDownload(why);
+    if (state === "loading") {
+      state = loop === null ? "idle" : "paused";
+      syncButton();
+      if (!cut) log("status", why);
+      return;
+    }
     if (state !== "running") return;
     state = "paused";
     paintEra += 1;
     syncButton();
-    log("status", why);
+    if (!cut) log("status", why);
     if (reframe) unframe();
   }
 
@@ -941,18 +1003,24 @@ export function mount(host) {
       log("verdict", "No modes are ticked, so there is nothing to paint this spot in.");
       return;
     }
-    if (scorer !== null && scorer.fineSession === null) {
-      progress("Downloading the fine judge…");
+    // A pause mid-download stops it, and the walk asks again when it is started again.
+    while (scorer !== null && scorer.fineSession === null && !fineless) {
+      const { signal, shown, done } = downloading("the fine judge");
       try {
-        await scorer.loadFine((what, got, of) =>
-          progress(`Downloading the fine judge… ${megabytes(got)} of ${megabytes(of)} MB`),
-        );
+        await scorer.loadFine((what, got, of) => shown(got, of), signal);
         log("status", "The fine judge is ready.");
       } catch (error) {
+        if (judges.stopped(error, signal)) {
+          await going();
+          continue;
+        }
         console.warn("the fine judge could not be loaded", error);
         log("status", "The fine judge could not load, so the render judge ranks recipes alone.");
+        fineless = true;
+        break;
+      } finally {
+        done();
       }
-      progress("");
     }
     // Modes without replacement, as `hunt.modes_for` draws them: a place tried three times
     // is tried in three modes.
@@ -1003,19 +1071,23 @@ export function mount(host) {
     if (kept.length > 1) log("found", `Kept ${kept.length} (scores ${kept.map(rankNumber).join(", ")}).`);
   }
 
-  /** The number a kept picture was ranked on, as its tile's badge writes it. */
+  /**
+   * The number a kept picture is shown with: the render judge's `P≥4`, the number the
+   * descent already speaks in.
+   *
+   * **Shown, not ranked on** *(explorer_slim_ckpt131_addendum2)*. The recipes at a place
+   * are still ranked on the fine head where it has loaded, which is the pipeline's own
+   * ranking key; but one member's reading lives far below 0.01 and means nothing to a
+   * visitor without the member-versus-mean caveat the README keeps. So a kept picture can
+   * show a lower number than one the walk passed over, and that is the fine head
+   * disagreeing with the gate rather than a mistake.
+   */
   function rankNumber(one) {
-    return one.fine === null ? score(one.read.p4) : fineText(one.fine);
+    return score(one.read.p4);
   }
 
   function rankText(one) {
-    return one.fine === null ? `P≥4 ${score(one.read.p4)}` : `fine ${fineText(one.fine)}`;
-  }
-
-  /** The fine head's number, which lives far below 0.01 — its bar is `FINE_BAR` — so it is
-   *  written to two significant figures rather than to a fixed place. */
-  function fineText(value) {
-    return value.toPrecision(2);
+    return `P≥4 ${score(one.read.p4)}`;
   }
 
   /** A found picture, as a tile at the top of the list. */
@@ -1046,11 +1118,7 @@ export function mount(host) {
     const badge = document.createElement("span");
     badge.className = "walk-score";
     badge.textContent = rankText(one);
-    badge.title =
-      one.fine === null
-        ? "The render judge's probability that this picture is at least a 4."
-        : `One member of the fine judge (seed 0): its probability that this picture is at least a 4. ` +
-          `The pipeline seats on the mean of three seeds, at ${FINE_BAR} or above.`;
+    badge.title = "How likely a person is to rate this 4 or 5.";
     tile.append(image, badge);
     tile.addEventListener("click", () => {
       pause("A found picture was opened, so the walk paused.", { reframe: false });

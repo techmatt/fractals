@@ -129,7 +129,11 @@ directory is a real problem and reads as one.
 `seated-candidates` is the first, and `builder/seats.py` is what fills it: the published
 tentative record and the nineteen collections solved beside it — twelve hue families and seven
 modes, not yet published — as one union of 5,925 seats, each row saying which collections
-seat it and where. **A staged gallery's picture is its tile**, a 316 px WebP, and there are no
+seat it and where. The union is written **split by collection** *(explorer_slim_ckpt131)*:
+`gallery.jsonl` holds the header alone, and each collection's rows go to the file its
+header entry names (`general.jsonl`, `smooth-mean-angle.jsonl`, …), so a seat in three
+collections is a row in three files. `galleries.load` reads the union back from them, and
+`seats` removes any tile the record no longer names. **A staged gallery's picture is its tile**, a 316 px WebP, and there are no
 thumbnails: the explorer draws the picture itself on a click, so **assets** holds the file to
 its record and asks for nothing smaller. Every seat is read three times over, for the seat, the recipe and
 the tone curve the run acted with, with the permalink for each emitted by the contract

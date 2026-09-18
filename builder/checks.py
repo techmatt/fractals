@@ -652,7 +652,11 @@ def _orphans(gallery: galleries.Gallery, named: set[str]) -> list[str]:
             if path.name != THUMBS_DIR_NAME:
                 problems.append(f"{_shown(path)}: unexpected directory in a gallery")
             continue
-        if path.name != GALLERY_METADATA_NAME and path.name not in named:
+        if (
+            path.name != GALLERY_METADATA_NAME
+            and path.name not in gallery.records
+            and path.name not in named
+        ):
             problems.append(f"{_shown(path)}: not named by {GALLERY_METADATA_NAME}")
     if gallery.thumbs_directory.is_dir():
         for path in sorted(gallery.thumbs_directory.iterdir()):

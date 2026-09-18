@@ -377,16 +377,36 @@ contract has no key for it and nothing a link opens sets it.
   judge (gate) reads `[P≥2, P≥3, P≥4]`.
 - **The fine head in use is one member, seed 0** *(walk_tab_ckpt131_addendum1)*. Recipes
   are ranked on its own P≥4 with no averaging. The pipeline's `p_fine` is the mean of three
-  seeds, so a tile's `fine` is one seed's reading and not the solve's number. The fused
-  three-seed graph is an opt-in, `--fused` below; it lands under the same name and answers
-  in the same slot.
+  seeds, so the member's reading is not the solve's number. The fused three-seed graph is
+  an opt-in, `--fused` below; it lands under the same name and answers in the same slot.
+- **What a visitor sees is the render judge's P≥4** *(explorer_slim_ckpt131_addendum2)*.
+  The found tile's badge and the console's *Kept one* line both show it, the same number
+  the descent already speaks in, and the badge's tooltip reads *how likely a person is to
+  rate this 4 or 5*. The fine member stays the hidden ranking key. Its reading lives far
+  below 0.01 and only means something beside the member-versus-mean caveat above, which is
+  why it is kept here and not on the badge. A kept tile can show a lower number than one
+  the walk passed over: that is the fine head disagreeing with the gate.
 - They run in `onnxruntime-web` 1.30's default bundle. Its WebGPU backend is JSEP, the
   runtime the lab's fidelity table was taken on. It uses WebGPU where `navigator.gpu` hands
   back an adapter, and single-threaded WASM otherwise.
 - Every picture goes through `resize.mjs` to 384×224 and in as [0, 1]. Normalization is
   inside the graph.
 - The runtime and the gate download on the first Start. The fine head downloads the first
-  time a place clears the bar.
+  time a place clears the bar. Opening the tab loads only its three modules, about 19 KB.
+- **On the wire the runtime is 6.7 MB, not 28 MB.** Pages gzips everything but images, and
+  the runtime's wasm compresses about fourfold. The two models barely do (5.1 MB to 4.7 MB).
+- **A download says what it is and stops when the walk does** *(explorer_slim_ckpt131)*.
+  The status line under the button names the file and counts megabytes, and gives a total
+  only where the response is not gzipped: a gzipped response's length is the compressed
+  length. The button reads Pause while a download runs. Pressing it, hiding the tab, or
+  switching to Gallery or Atlas aborts the fetch and releases any session still being
+  made, and the console says so in one line. A file that had fully arrived and a session
+  that was made are kept, so the next Start does not download them again.
+- **A gzipped response broke the download until this change.** `fetchBytes` sized its
+  buffer from `content-length`, which under Pages is the gzipped length, so the runtime
+  overflowed a buffer a quarter of its size and the judges never loaded. The walk then ran
+  on coin flips and said only that no judge could load. This was never seen locally,
+  because `python -m builder serve` does not gzip.
 - Where the runtime cannot load, the walk runs on the screen alone, picks among survivors
   at random, and says so in its console.
 
@@ -432,9 +452,20 @@ for each map, whether it closes, whether the picker lists it, where its colours 
 bytes**, in the index's own order. Inline as JavaScript source that is about twelve
 megabytes a browser parses before it draws anything; as a blob it is one `fetch` that
 goes out beside the wasm's, on a boot the page already waits through. `stops.js` is the
-reader, and it checks the blob's length against the index's own stamp before trusting a
-byte of it — an index and a blob that disagree do not fail, they draw map `n`'s bytes at
-map `n+1`'s offset, which is a real gradient belonging to somebody else.
+reader, and it checks the blob's length and SHA-256 against the index's own stamp before
+trusting a byte of it — an index and a blob that disagree do not fail, they draw map
+`n`'s bytes at map `n+1`'s offset, which is a real gradient belonging to somebody else.
+
+**Stored planar and byte-delta, for the wire** *(explorer_slim_ckpt131)*. Within its own
+span, a map is its reds, then its greens, then its blues, each byte the difference from
+the one before it in that channel, mod 256. Neighboring stops of a gradient are close,
+so the differences are small and repeat, and gzip takes the file from **897 KB to 185 KB**
+on the wire. It is the same length and each map keeps its span, so the index addresses it
+unchanged. The index names it — `"layout": "planar-delta"` — and `stops.js` undoes it once
+on arrival. At the change, every stop of all 1,021 maps decoded to the same bytes as the
+interleaved blob before it, and `stops.test.mjs` holds the reader to the bake's encoder.
+Because the two layouts are the same length, the length check alone could not catch a blob
+in the other one; the hash is what does.
 
 **No positions are stored, and the bake refuses a map that would need them.** Stop `i` of
 every map in this library sits at exactly `i/(n-1)` — checked as an `f64` on all 1,021 —

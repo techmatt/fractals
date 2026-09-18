@@ -17,6 +17,11 @@ only there: `title` and `caption`, because such a record is a machine's reading 
 record next door rather than anybody's prose, and a thousand invented captions would be a
 thousand claims nobody made. `alt` does not relax: a picture a reader can be shown owes
 them a description whatever it is filed under.
+
+**A header may split its rows by collection** *(explorer_slim_ckpt131)*. Where its
+`collections` entries each name a `file`, the metadata file is the header alone and the
+images are the union of those files, each image once. That is the staged
+`seated-candidates` gallery, whose panel fetches one collection at a time.
 """
 
 from dataclasses import dataclass
@@ -65,6 +70,8 @@ class Gallery:
     images: tuple[Image, ...]
     #: Whether this is a record and its pictures with no page made from them.
     staged: bool = False
+    #: The files a split record keeps its rows in, beside the metadata file.
+    records: tuple[str, ...] = ()
 
     @property
     def directory(self) -> Path:
@@ -88,6 +95,22 @@ def load(slug: str) -> Gallery:
         raise records.RecordError(
             f"{header.where}: slug {header.text('slug')!r} does not match the directory {slug!r}"
         )
+    split = tuple(
+        one["file"]
+        for one in header.fields.get("collections") or []
+        if isinstance(one, dict) and "file" in one
+    )
+    if split:
+        if rest:
+            raise records.RecordError(
+                f"{header.where}: a record split by collection carries its rows in "
+                f"{', '.join(split)}, and this file holds rows as well"
+            )
+        union: dict[str, records.Record] = {}
+        for name in split:
+            for row in records.read(GALLERY_IMAGES_DIR / slug / name):
+                union.setdefault(row.text("file"), row)
+        rest = list(union.values())
     if not rest:
         raise records.RecordError(f"{header.where}: a gallery needs at least one image")
     # Absent is the ordinary case and says so. Present and not a boolean is refused by
@@ -122,6 +145,7 @@ def load(slug: str) -> Gallery:
         release=header.optional_text("release"),
         images=tuple(images),
         staged=staged,
+        records=split,
     )
 
 

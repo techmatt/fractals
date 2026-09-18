@@ -19,6 +19,14 @@
 // eleven, and nothing about a gradient is approximated: the colours are the library's
 // own sRGB8 and the positions are the ones the library's own files spell.
 //
+// **Planar and byte-delta on disk, interleaved here** *(explorer_slim_ckpt131)*. A map's
+// span of the blob holds its reds, then its greens, then its blues, each byte the
+// difference from the one before it in that channel, mod 256. That is what lets gzip take
+// the file from 897 KB on the wire to 185 KB, since a gradient's neighbouring stops are
+// close and their differences are small and repeat. It is the same length as the
+// interleaved form and each map occupies the same span, so the index addresses it
+// unchanged; `install` undoes it once and `stopsOf` reads `r g b` as it always did.
+//
 // **The blob is untracked.** It is the one library-sized thing the explorer needs, and
 // what is committed is the index that addresses it; `python -m builder explorer
 // --palettes-only` writes it. A clone that has not baked it gets the sentence below
@@ -43,18 +51,50 @@ export function ready() {
  * The length is the whole of the check and it is worth having: an index and a blob that
  * disagree do not fail, they draw the wrong colours — map `n`'s bytes read at map
  * `n+1`'s offset are a real gradient belonging to somebody else. A stale blob beside a
- * fresh index is exactly what a rebake nobody re-served produces.
+ * fresh index is exactly what a rebake nobody re-served produces. A blob in the other
+ * layout is the same length, which is why `fetchStops` also holds it to the index's hash.
  */
 export function install(bytes) {
-  const wanted = PROVENANCE.blob.bytes;
+  const { bytes: wanted, file, layout } = PROVENANCE.blob;
+  if (layout !== LAYOUT) {
+    throw new Error(`the index says ${file} is laid out ${layout}, and this reader reads ${LAYOUT}`);
+  }
   if (bytes.length !== wanted) {
     throw new Error(
-      `${PROVENANCE.blob.file} is ${bytes.length} bytes and the index beside it was baked ` +
+      `${file} is ${bytes.length} bytes and the index beside it was baked ` +
         `against ${wanted}. Rebake with \`python -m builder explorer --palettes-only\`.`,
     );
   }
-  held = bytes;
+  held = interleave(bytes);
   BUILT.clear();
+}
+
+/** The layout this reader undoes, as `builder/explorer.py`'s `BLOB_LAYOUT` spells it. */
+const LAYOUT = "planar-delta";
+
+/** Each map's planar deltas, back to `r g b` a stop. */
+export function interleave(bytes) {
+  const out = new Uint8Array(bytes.length);
+  for (const { at, stops } of PALETTES.values()) {
+    for (let channel = 0; channel < 3; channel += 1) {
+      let value = 0;
+      const from = at + channel * stops;
+      for (let index = 0; index < stops; index += 1) {
+        value = (value + bytes[from + index]) & 0xff;
+        out[at + index * 3 + channel] = value;
+      }
+    }
+  }
+  return out;
+}
+
+/** Whether the bytes are the ones the index was baked against. Where the page has no
+ *  `crypto.subtle` (plain http off localhost) the length check in `install` is all there is. */
+async function matchesIndex(bytes) {
+  if (!globalThis.crypto?.subtle) return true;
+  const digest = new Uint8Array(await crypto.subtle.digest("SHA-256", bytes));
+  const hex = [...digest].map((byte) => byte.toString(16).padStart(2, "0")).join("");
+  return hex === PROVENANCE.blob.sha256;
 }
 
 /** Fetch the blob from beside the page, and take it. */
@@ -68,7 +108,14 @@ export async function fetchStops(url) {
         "--palettes-only`.",
     );
   }
-  install(new Uint8Array(await response.arrayBuffer()));
+  const bytes = new Uint8Array(await response.arrayBuffer());
+  if (!(await matchesIndex(bytes))) {
+    throw new Error(
+      `${PROVENANCE.blob.file} is not the blob the index beside it was baked against. ` +
+        "Rebake with `python -m builder explorer --palettes-only`.",
+    );
+  }
+  install(bytes);
 }
 
 /**

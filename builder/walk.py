@@ -13,8 +13,9 @@ be placed with `--fused`. Either lands as `fine.onnx`, which is the one name the
 fetches, and both graphs answer `probs[2]` — the member's own `P≥4`, or the fused graph's
 in-graph mean — so the page reads the same slot whichever is there.
 
-Nothing here is committed. The models and the runtime's 28 MB of wasm do not compress,
-so they stay out of history the way the palette blob and the gallery tiles do:
+Nothing here is committed. The models are 5.1 MB each and barely compress, and the
+runtime's 28 MB of wasm is 6.7 MB gzipped on the wire, so they stay out of history the
+way the palette blob and the gallery tiles do:
 `.git/info/exclude` names `explorer/judges/`, and this command is what fills it. A tree
 without them still serves a Walk tab, which runs on the screen gates alone and says so in
 its console.

@@ -220,8 +220,8 @@ function bothNamesOf(name) {
   return shown === name ? name : `${shown} · ${name}`;
 }
 
-/** The modes the Mode select offers: the gallery record's, which are the gallery panel's
- *  mode chips. `null` until the record is read, and where it cannot be, every mode the
+/** The modes the Mode select offers: the published collection's, which the gallery header
+ *  carries as `modes`. `null` until the header is read, and where it cannot be, every mode the
  *  contract knows. A link may still name any of those, and `syncModes` adds its mode to
  *  the select for as long as that view is up. */
 let offeredModes = null;
@@ -1734,11 +1734,18 @@ function placeOf(current) {
 }
 
 /**
- * Index the gallery's seats by place and mode, and find what each trap mode's seats were
- * most often drawn at. Read off the links the record carries, through the contract, so a
- * seat's parameters are exactly what opening it would give.
+ * Index one collection's seats by place and mode, and — where it is the published one —
+ * find what each trap mode's seats were most often drawn at. Read off the links the
+ * record carries, through the contract, so a seat's parameters are exactly what opening
+ * it would give.
+ *
+ * **Called as each collection arrives** *(explorer_slim_ckpt131)*. The rows are no longer
+ * read before the first frame, so a mode switch made before the general collection is here
+ * opens a trap at its derived value rather than its seats' usual one, and a seat is found
+ * at its place only once a collection holding it has been shown. The general collection is
+ * fetched right after the first frame, so the window is short.
  */
-function indexSeats(rows) {
+function indexSeats(rows, name) {
   const tallies = {};
   for (const row of rows) {
     let seated;
@@ -1749,8 +1756,9 @@ function indexSeats(rows) {
     }
     seatsByPlace.set(`${placeOf(seated)}|${seated.mode}`, seated.params);
     // What a trap mode is most often drawn at is read off the published gallery alone, so
-    // an unpublished collection cannot move a default somebody has already seen.
-    if (!Object.hasOwn(row.collections ?? {}, gallery.GENERAL)) continue;
+    // an unpublished collection cannot move a default somebody has already seen — and off
+    // the whole of it, which is its own file.
+    if (name !== gallery.GENERAL) continue;
     const key = link.DERIVED[seated.mode];
     if (key !== "opacity" || seated.params[key] === undefined) continue;
     const tally = (tallies[seated.mode] ??= new Map());
@@ -1794,8 +1802,14 @@ function planeOf(family) {
   return PARENT_PLANE[family] ?? family;
 }
 
-/** Move the atlas's chip to the view's plane, where the atlas is mounted. */
+/** Move the atlas's chip to the view's plane, where the atlas is mounted and showing.
+ *
+ *  **Not while it is hidden** *(explorer_slim_ckpt131)*. Opening a plane loads its plate,
+ *  0.2 to 0.3 MB, and a walk that crossed five planes with the panel never on screen
+ *  fetched five of them. The panel catches up once when it is shown again, which is when
+ *  the plate is looked at. */
 function syncPlane() {
+  if (showing !== "atlas") return;
   atlasFrame?.open(planeOf(view.family));
 }
 
@@ -1823,7 +1837,10 @@ function showPanel(asked) {
   // gallery panel, so it is the one control the panel has to hide itself: what it chooses
   // means nothing while the atlas is showing.
   document.getElementById("gallery-collection").hidden = showing !== "gallery";
-  if (showing === "atlas") startAtlas();
+  if (showing === "atlas") {
+    startAtlas();
+    syncPlane();
+  }
   // The walk is the one panel with work of its own, so it is the one that has to be told
   // when it stops being seen: a hidden walk pauses, and showing it again never restarts
   // one — Start does, and only Start.
@@ -2554,10 +2571,15 @@ async function main() {
   // draws with, and the megabyte of control points its index addresses. Neither is
   // wanted before the first frame and both are wanted by it.
   //
-  // Three small records go out beside them, and each is allowed to fail: the gallery's,
-  // which says which modes the Mode select offers; the display names; and the Popular
-  // list. Without any of them the page still draws, showing every mode, every map by its
-  // own name, and Popular by seats alone.
+  // Three small records go out beside them, and each is allowed to fail: the gallery's
+  // header, which says which modes the Mode select offers; the display names; and the
+  // Popular list. Without any of them the page still draws, showing every mode, every map
+  // by its own name, and Popular by seats alone.
+  //
+  // **The header, not the gallery** *(explorer_slim_ckpt131)*. The Mode select's roster
+  // was the only reason the first frame waited on the gallery record, and that record was
+  // 605 KB on the wire for 3 KB of what the select needs. The header carries the roster
+  // and is under 2 KB; the rows come after the first frame, a collection at a time.
   const [started, , record, names, listed] = await Promise.all([
     Renderer.start(new URL("./engine.wasm", import.meta.url)),
     fetchStops(new URL("./palettes.bin", import.meta.url)),
@@ -2567,13 +2589,9 @@ async function main() {
   ]);
   renderer = started;
   paletteNames = shownNames(names);
-  if (!(record instanceof Error)) {
-    // The published gallery's modes, and not every collection's: a collection may seat a
-    // mode the general gallery does not, and the select's roster is the published one's.
-    offeredModes = [
-      ...new Set(gallery.membersOf(record.seats, gallery.GENERAL).map((seat) => seat.mode)),
-    ];
-  }
+  // The published gallery's modes, and not every collection's: a collection may seat a
+  // mode the general gallery does not, and the select's roster is the published one's.
+  if (!(record instanceof Error) && Array.isArray(record.modes)) offeredModes = record.modes;
 
   contract = {
     home: homeOf,
@@ -2582,7 +2600,6 @@ async function main() {
     defaultPalette: DEFAULT_PALETTE,
     settled: (mode) => SETTLED[mode],
   };
-  if (!(record instanceof Error)) indexSeats(record.seats);
 
   fill(familyPicker, link.FAMILIES);
 
@@ -2671,6 +2688,7 @@ async function main() {
     firstMode: MODE_FIRST,
     onPick: (row) =>
       openLink(row.link, { gap: row.gap, key: row.key, what: "this wallpaper" }),
+    onSeats: indexSeats,
   });
   tiles.start(record).catch((error) => {
     // The reason goes to the console: it names a record file, and a reader can do

@@ -24,11 +24,15 @@
 // it drops that family and tallies what each picture *also* contains. The record carries
 // both readings, and `builder/seats.py` says at what bar a picture contains a hue.
 //
-// **One record, and a collection is a question asked of it.** The collections overlap, so
-// the record is their union: one row and one tile per seat, and each row's `collections`
-// maps the collections that seat it to its place in each. Choosing a collection sorts and
-// filters what is already here and fetches nothing, and a picture shared by two
-// collections is one download however often it is shown.
+// **A header, and a file per collection** *(explorer_slim_ckpt131)*. `gallery.jsonl` is
+// the header alone: the collections, each naming its own file, and the modes the
+// published one seats, which is all the Mode select needs and all the page waits for
+// before its first frame. A collection's rows are fetched the first time the panel shows
+// it and kept, so the general gallery costs about 115 KB of rows where the union cost
+// 605 KB, and choosing a collection already shown fetches nothing. The collections
+// overlap, so a seat is a row in each file that seats it, and each row's `collections`
+// still maps every collection it stands in to its place there. A picture shared by two
+// collections is one tile URL, so it is one download however often it is shown.
 //
 // **The record is committed and the pictures are not.** They are tens of megabytes of
 // tiles and stay out of git history until this is deployed, so a clone has the record and
@@ -109,9 +113,29 @@ function rowsOf(text, where) {
   return rows;
 }
 
+/** One file of the gallery's directory, as rows. */
+async function fetchRows(base, file) {
+  const response = await fetch(new URL(`${DIRECTORY}${file}`, base));
+  if (!response.ok) throw new Error(`${SLUG}/${file}: ${response.status}`);
+  return rowsOf(await response.text(), `${SLUG}/${file}`);
+}
+
 /**
- * The gallery's record: its header, its collections in dropdown order, and one row per
- * seat across all of them.
+ * The gallery's header: its collections in dropdown order, each naming the file its rows
+ * are in, and `modes`, the modes the published collection seats. A few kilobytes, which is
+ * why the page can wait for it before its first frame.
+ */
+export async function load(base) {
+  const [header] = await fetchRows(base, "gallery.jsonl");
+  if (header?.kind !== "gallery") throw new Error(`${SLUG}/gallery.jsonl: no header record`);
+  if (!Array.isArray(header.collections) || header.collections.length === 0) {
+    throw new Error(`${SLUG}/gallery.jsonl: the header names no collections`);
+  }
+  return { header, collections: header.collections, modes: header.modes ?? null };
+}
+
+/**
+ * One collection's seats, from its own file.
  *
  * **Presentation order, not seat order.** A solve's seating is its rank order, and its
  * strongest rows look alike: opened on it, the panel's first screen was spirals, three of
@@ -119,23 +143,14 @@ function rowsOf(text, where) {
  * `curation.page_order` spreads modes and colours with, and a row's place in a collection
  * is that permutation, so both pages open on the same tiles.
  */
-export async function load(base) {
-  const url = new URL(`${DIRECTORY}gallery.jsonl`, base);
-  const response = await fetch(url);
-  if (!response.ok) throw new Error(`${SLUG}/gallery.jsonl: ${response.status}`);
-  const rows = rowsOf(await response.text(), `${SLUG}/gallery.jsonl`);
-  const header = rows[0];
-  if (header?.kind !== "gallery") throw new Error(`${SLUG}/gallery.jsonl: no header record`);
-  if (!Array.isArray(header.collections) || header.collections.length === 0) {
-    throw new Error(`${SLUG}/gallery.jsonl: the header names no collections`);
-  }
-  const seats = rows.filter((row) => row.kind === "image");
+async function seatsOf(base, collection) {
+  const seats = (await fetchRows(base, collection.file)).filter((row) => row.kind === "image");
   for (const seat of seats) {
     if (seat.collections === null || typeof seat.collections !== "object") {
-      throw new Error(`${SLUG}/gallery.jsonl: ${seat.key} belongs to no collection`);
+      throw new Error(`${SLUG}/${collection.file}: ${seat.key} belongs to no collection`);
     }
   }
-  return { header, collections: header.collections, seats };
+  return seats;
 }
 
 /** One collection's seats, in its own presentation order. Sorted here rather than trusted
@@ -187,8 +202,13 @@ export function install({
   note,
   firstMode = undefined,
   onPick,
+  onSeats = () => {},
 }) {
-  let seats = [];
+  /** Each collection's rows once asked for, by name: a promise, so two quick choices of
+   *  one collection are one fetch. */
+  const fetched = new Map();
+  /** Which choice is the latest, so a slow fetch cannot put up a collection since left. */
+  let asked = 0;
   let collections = [];
   let chosen = GENERAL;
   let members = [];
@@ -225,7 +245,7 @@ export function install({
     if (!landed) return;
     landed = false;
     note.textContent =
-      `${seats.length} wallpapers, but their pictures could not be loaded here.`;
+      `${members.length} wallpapers, but their pictures could not be loaded here.`;
   }
 
   /**
@@ -371,13 +391,35 @@ export function install({
    * shelf already narrowed by a choice made somewhere else. What the dropdown promises is
    * that collection, so that collection is what arrives.
    */
-  function choose(name) {
+  async function choose(name) {
     chosen = collections.some((one) => one.name === name) ? name : GENERAL;
     collection.value = chosen;
+    const mine = ++asked;
+    const one = collections.find((each) => each.name === chosen);
+    const named = chosen;
+    if (!fetched.has(named)) {
+      const rows = seatsOf(base, one);
+      fetched.set(named, rows);
+      // Forgotten again if it fails, so that choosing it later asks again.
+      rows.then(
+        (seats) => onSeats(seats, named),
+        () => fetched.delete(named),
+      );
+    }
+    let seats;
+    try {
+      seats = await fetched.get(chosen);
+    } catch (error) {
+      if (mine !== asked) return;
+      console.warn(`the ${chosen} collection could not be read`, error);
+      tiles.replaceChildren();
+      note.textContent = "This collection could not be loaded.";
+      return;
+    }
+    if (mine !== asked) return;
     wanted.mode.clear();
     wanted.hue.clear();
-    const axis = collections.find((one) => one.name === chosen)?.axis ?? null;
-    cutOn = axis === FAMILY_AXIS ? chosen : null;
+    cutOn = one?.axis === FAMILY_AXIS ? chosen : null;
     members = membersOf(seats, chosen);
     chipsInto(modes, "mode", tally(members, "mode", firstMode), "no mode");
     if (hueHead) hueHead.textContent = cutOn === null ? HUE_HEADS.dominant : HUE_HEADS.contains;
@@ -417,7 +459,7 @@ export function install({
     for (const one of collections) {
       const option = document.createElement("option");
       option.value = one.name;
-      const count = membersOf(seats, one.name).length;
+      const count = one.seats;
       // A collection cut on one family wears that family's dot — the same span, the same
       // colour and the same source as the chip that filters on it, so the dropdown and the
       // row below it agree about what green looks like. The general gallery and the modes
@@ -450,17 +492,17 @@ export function install({
   }
 
   return {
-    /** Put the panel up from the record, or say why there is nothing to show. `record` is
+    /** Put the panel up from the header, or say why there is nothing to show. `record` is
      *  what `load` already answered, where the page asked it first — a failure included,
-     *  which is thrown here so that the panel is where it is said. */
+     *  which is thrown here so that the panel is where it is said. The general
+     *  collection's rows are fetched here, which is after the first frame. */
     async start(record = null) {
       const answered = record ?? (await load(base));
       if (answered instanceof Error) throw answered;
-      seats = answered.seats;
       collections = answered.collections;
       options();
       collection.addEventListener("change", () => choose(collection.value));
-      choose(GENERAL);
+      await choose(GENERAL);
     },
     /** Which seat the viewer is showing, so the grid can mark it. Cleared by any move
      *  that leaves it, because a tile marked open under a picture somebody has since

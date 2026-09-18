@@ -29,7 +29,8 @@ export const PROVENANCE = {
   "blob": {
     "bytes": 1036950,
     "file": "palettes.bin",
-    "sha256": "831500a5d7704d172855905983a47ef82052b2cbb7c0eb3b3e8d0eb2dd8ce14f",
+    "layout": "planar-delta",
+    "sha256": "28c8b4d82a06523fb7f20cc89b0a91a0c9a19ac5a345d5e085a39740f11a4d74",
     "stops": 345650
   },
   "count": 1021,

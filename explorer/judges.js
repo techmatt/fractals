@@ -6,11 +6,18 @@
 // third of the download. `python -m builder walk --fused` places the three-seed graph under
 // the same name instead, and it answers in the same slot, so nothing here changes with it.
 //
-// **Loaded on the Walk tab's first Start and never before.** The runtime's wasm is 28 MB,
-// the gate 5.1 MB and the fine head 5.1 MB, none of which compresses, so a reader who
-// never presses Start downloads none of it. The fine head waits longer still: it is
-// fetched the first time a walk clears the bar, because until then there is nothing for
-// it to read.
+// **Loaded on the Walk tab's first Start and never before.** The runtime's wasm is 28 MB
+// raw and 6.7 MB gzipped on the wire, and the gate and the fine head are 5.1 MB each, which
+// gzip barely touches (4.7 MB), so a reader who never presses Start downloads none of it.
+// The fine head waits longer still: it is fetched the first time a walk clears the bar,
+// because until then there is nothing for it to read.
+//
+// **A download can be stopped, and what finished is kept** *(explorer_slim_ckpt131)*.
+// Every fetch here takes the walk's `AbortSignal`, so leaving the tab or pressing Pause
+// mid-download cuts it off. A file that had fully arrived stays in this module, and so does
+// a session that was made, so the next Start picks up where this one stopped rather than
+// downloading again. A session still being made when the signal fires is released as soon
+// as it exists, which is the nearest the runtime comes to cancelling one.
 //
 // **fp16 weights, fp32 arithmetic.** The files are the lab's `fp16w` export: weights stored
 // at the precision they shipped at and cast to fp32 when the session loads. Real fp16
@@ -36,27 +43,53 @@ const RUNTIME_WASM = new URL("ort/ort-wasm-simd-threaded.jsep.wasm", BASE);
 const GATE = new URL("render.fp16w.onnx", BASE);
 const FINE = new URL("fine.onnx", BASE);
 
-/** Fetch a file, saying how much of it has arrived. */
-async function fetchBytes(url, onProgress) {
-  const response = await fetch(url);
+/**
+ * Fetch a file, saying how much of it has arrived: `onProgress(received, total)`, where
+ * `total` is `0` when the response does not say how long the file is.
+ *
+ * **A compressed response's length is not the file's.** Pages gzips everything but
+ * images and sends the length of what it gzipped, while the body a page reads is the
+ * file after the browser has unzipped it. This used to size its buffer from that header,
+ * so under Pages the runtime's 28 MB arrived into a 6.7 MB buffer and the judges never
+ * loaded; the walk ran on coin flips and said only that no judge could load. So chunks are
+ * gathered and joined, and a length is reported only where the response is not encoded.
+ */
+async function fetchBytes(url, onProgress, signal) {
+  const response = await fetch(url, { signal });
   if (!response.ok) throw new Error(`${url.pathname.split("/").pop()}: ${response.status}`);
-  const total = Number(response.headers.get("content-length")) || 0;
-  if (!response.body || total === 0) {
+  const encoded = (response.headers.get("content-encoding") ?? "identity") !== "identity";
+  const total = encoded ? 0 : Number(response.headers.get("content-length")) || 0;
+  if (!response.body) {
     const bytes = new Uint8Array(await response.arrayBuffer());
     onProgress?.(bytes.length, bytes.length);
     return bytes;
   }
   const reader = response.body.getReader();
-  const out = new Uint8Array(total);
+  const chunks = [];
   let received = 0;
   for (;;) {
     const { done, value } = await reader.read();
     if (done) break;
-    out.set(value, received);
+    chunks.push(value);
     received += value.length;
     onProgress?.(received, total);
   }
-  return received === total ? out : out.slice(0, received);
+  const out = new Uint8Array(received);
+  let at = 0;
+  for (const chunk of chunks) {
+    out.set(chunk, at);
+    at += chunk.length;
+  }
+  return out;
+}
+
+/** What has fully arrived, kept across Starts: the runtime's bytes, the gate's bytes until
+ *  its session is made, and the judges once they are. */
+const held = { ort: null, runtime: null, gate: null, judges: null };
+
+/** Whether an error is a download being stopped rather than failing. */
+export function stopped(error, signal) {
+  return signal?.aborted === true || error?.name === "AbortError";
 }
 
 /** Whether this browser hands back a WebGPU adapter. */
@@ -72,18 +105,31 @@ async function webgpu() {
  * The runtime and the gate, ready to score. `onProgress(what, received, total)` is told
  * about each download as it arrives. Throws where the runtime cannot be loaded.
  */
-export async function load(onProgress) {
-  const ort = await import(RUNTIME.href);
-  ort.env.wasm.numThreads = 1;
-  ort.env.wasm.wasmPaths = new URL("ort/", BASE).href;
-  ort.env.wasm.wasmBinary = await fetchBytes(RUNTIME_WASM, (got, of) =>
-    onProgress?.("runtime", got, of),
-  );
+export async function load(onProgress, signal) {
+  if (held.judges !== null) return held.judges;
+  if (held.ort === null) {
+    const ort = await import(RUNTIME.href);
+    ort.env.wasm.numThreads = 1;
+    ort.env.wasm.wasmPaths = new URL("ort/", BASE).href;
+    held.ort = ort;
+  }
+  signal?.throwIfAborted();
+  if (held.runtime === null) {
+    held.runtime = await fetchBytes(
+      RUNTIME_WASM,
+      (got, of) => onProgress?.("runtime", got, of),
+      signal,
+    );
+    held.ort.env.wasm.wasmBinary = held.runtime;
+  }
+  if (held.gate === null) {
+    held.gate = await fetchBytes(GATE, (got, of) => onProgress?.("gate", got, of), signal);
+  }
   const gpu = await webgpu();
-  const judges = new Judges(ort, gpu ? "webgpu" : "wasm");
-  judges.gateSession = await judges.session(
-    await fetchBytes(GATE, (got, of) => onProgress?.("gate", got, of)),
-  );
+  const judges = new Judges(held.ort, gpu ? "webgpu" : "wasm");
+  judges.gateSession = await judges.session(held.gate, signal);
+  held.gate = null;
+  held.judges = judges;
   return judges;
 }
 
@@ -95,10 +141,24 @@ export class Judges {
     this.gateSession = null;
     this.fineSession = null;
     this.fineLoading = null;
+    this.fineBytes = null;
   }
 
-  /** One session on the chosen backend, falling back to WASM where WebGPU will not take it. */
-  async session(bytes) {
+  /**
+   * One session on the chosen backend, falling back to WASM where WebGPU will not take it.
+   * A session the signal was fired under while it was being made is released and not
+   * returned: the runtime cannot cancel one, so this is where it stops.
+   */
+  async session(bytes, signal) {
+    const made = await this.#create(bytes);
+    if (signal?.aborted) {
+      await made.release().catch(() => {});
+      signal.throwIfAborted();
+    }
+    return made;
+  }
+
+  async #create(bytes) {
     const options = { graphOptimizationLevel: "all" };
     if (this.backend === "webgpu") {
       try {
@@ -114,14 +174,19 @@ export class Judges {
     return this.ort.InferenceSession.create(bytes, { ...options, executionProviders: ["wasm"] });
   }
 
-  /** The fine head, fetched the first time it is asked for. */
-  loadFine(onProgress) {
-    this.fineLoading ??= fetchBytes(FINE, (got, of) => onProgress?.("fine", got, of))
-      .then((bytes) => this.session(bytes))
-      .then((session) => {
-        this.fineSession = session;
-        return session;
-      });
+  /** The fine head, fetched the first time it is asked for. A stopped or failed load is
+   *  forgotten, so the next ask starts again, keeping the bytes if they had all arrived. */
+  loadFine(onProgress, signal) {
+    this.fineLoading ??= (async () => {
+      this.fineBytes ??= await fetchBytes(FINE, (got, of) => onProgress?.("fine", got, of), signal);
+      const session = await this.session(this.fineBytes, signal);
+      this.fineBytes = null;
+      this.fineSession = session;
+      return session;
+    })().catch((error) => {
+      this.fineLoading = null;
+      throw error;
+    });
     return this.fineLoading;
   }
 

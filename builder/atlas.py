@@ -101,7 +101,6 @@ from __future__ import annotations
 
 import json
 import math
-import shutil
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -1503,7 +1502,17 @@ PLATE_CONSTANTS = {"c": ("cx", "cy"), "p": ("px", "py"), "z_prev": ("zx", "zy")}
 #: holds the Mandelbrot set — 2.45 by 2.20, as the engine measures it — with air around
 #: it, where 4:3 and 5:4 both cut the antennae off the top and bottom bulbs.
 PLATE_ASPECT = (9, 8)
-PLATE_LONG = 4104
+#: **2052, half the first pass's 4104** *(explorer_slim_ckpt131)*. The panel shows a plate
+#: at well under a thousand CSS pixels across, and the first plates were 0.76 to 1.23 MB
+#: each, fetched every time the view changed plane. At this width the six are about a
+#: quarter of what they were. A mark is placed from its coordinate, so it stays on the same
+#: place however many pixels the plate has.
+PLATE_LONG = 2052
+
+#: How a plate is encoded. The engine writes the render losslessly and this is the one
+#: lossy step, at the site's render-sheet quality, with no chroma subsampling for the same
+#: reason as a slot picture's.
+PLATE_QUALITY = 88
 
 #: How much wider than the set a plate is drawn: the engine measures the extent and this
 #: is the air around it.
@@ -1629,7 +1638,9 @@ def plates() -> list[str]:
         home = renders.home_view(family)
         view = plate_view(home["extent"])
         x, y, w = view
-        out = renders.default_cache_root() / "atlas" / f"plate-{name}-{width}x{height}.jpg"
+        # A PNG in the cache: the engine writes one for any extension but `.jpg`, so the
+        # plate below goes through exactly one lossy encode.
+        out = renders.default_cache_root() / "atlas" / f"plate-{name}-{width}x{height}.png"
         out.parent.mkdir(parents=True, exist_ok=True)
         was = held.get(name, {})
         # **The cap is asked for, not remembered.** It is the engine's depth policy at this
@@ -1659,7 +1670,7 @@ def plates() -> list[str]:
             maxiter = echo.get("maxiter")
             lines.append(f"  {name}: {echo.get('seconds')}s at cap {maxiter}")
         plate = _plate_row(name, family, view, maxiter)
-        shutil.copyfile(out, IMAGE_DIR / plate["file"])
+        _encode(out, IMAGE_DIR / plate["file"], PLATE_QUALITY)
         partitions.append(_partition_row(name, plate, was, dots=was.get("dots", 0)))
         lines.append(
             f"  plate-{name}.jpg  {width}x{height}  x {x:.4f} y {y:.4f} w {w:.4f}  "

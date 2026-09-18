@@ -638,9 +638,11 @@ def header(rows: list[dict]) -> dict:
                 "published": name == GENERAL,
                 "seats": held[name],
                 "ordered_on": orders[name][1],
+                "file": collection_file(name),
             }
             for name, stamp in COLLECTIONS
         ],
+        "modes": modes_published(rows),
         "seats": len(rows),
         "wallpapers_commit": _wallpapers_commit(),
         "written_by": "python -m builder seats",
@@ -654,8 +656,10 @@ def header(rows: list[dict]) -> dict:
             "being one tentative record next door, and only the general one published. "
             "collections maps every collection that seats the row to its place in that "
             "record's presentation order, the permutation its own page opens on, whose basis "
-            "ordered_on names. Rows run in the general collection's order, then each further "
-            "collection's new seats in its own. "
+            "ordered_on names. This header is the whole of gallery.jsonl: each collection's "
+            "rows are in the file its entry names, in that collection's presentation order, "
+            "so a seat in several collections is a row in each. modes is every mode the "
+            "published collection seats. "
             "The seat's mode and hue family come from the first record that seats it; hues "
             "is every family holding at least "
             f"{HUE_PRESENT} of that picture's colour, largest first, read off the picture "
@@ -674,6 +678,12 @@ def header(rows: list[dict]) -> dict:
     }
 
 
+def modes_published(rows: list[dict]) -> list[str]:
+    """The modes the published collection seats, which is what the explorer's Mode select
+    lists; in the header so that the page has it without reading any collection's rows."""
+    return sorted({row["mode"] for row in rows if GENERAL in row["collections"]})
+
+
 def _wallpapers_commit() -> str:
     """Which commit of the wallpaper project the records were read at."""
     import subprocess
@@ -689,13 +699,47 @@ def _wallpapers_commit() -> str:
     return finished.stdout.strip()
 
 
-def write(rows: list[dict]) -> Path:
-    """The record, one row a line, in the presentation order `derive` put the rows in."""
-    path = metadata_path()
-    path.parent.mkdir(parents=True, exist_ok=True)
-    body = LF.join(json.dumps(row, ensure_ascii=False) for row in [header(rows), *rows])
+def collection_file(name: str) -> str:
+    """The file one collection's rows are written to: its name, hyphenated, because a
+    filename is a URL and the naming rule spells those with hyphens."""
+    return f"{name.replace('_', '-')}.jsonl"
+
+
+def _write_rows(path: Path, rows: list[dict]) -> Path:
+    body = LF.join(json.dumps(row, ensure_ascii=False) for row in rows)
     path.write_text(body + LF, encoding="utf-8", newline=LF)
     return path
+
+
+def write(rows: list[dict], head: dict | None = None) -> list[Path]:
+    """The header, and then each collection's rows in that collection's presentation order.
+
+    **One file per collection, and the header alone in `gallery.jsonl`**
+    *(explorer_slim_ckpt131)*. The union was one 3.2 MB record, 605 KB on the wire, and the
+    explorer waited for all of it before its first frame because the Mode select's roster
+    was in it. The header is a few kilobytes and carries that roster as `modes`; a
+    collection's rows are fetched the first time the panel shows it, so a visitor who
+    stays in the general gallery downloads about 115 KB of rows. A seat in several
+    collections is a row in each of their files, which is the price of a collection being
+    one fetch: the files add up to more than the union did, and nobody downloads them all.
+
+    `head` is a header already made, where the rows are being re-split rather than
+    re-derived and the provenance should stay that of the derive that made them.
+    """
+    where = directory()
+    where.mkdir(parents=True, exist_ok=True)
+    written = [_write_rows(metadata_path(), [head or header(rows)])]
+    for name, _ in COLLECTIONS:
+        members = sorted(
+            (row for row in rows if name in row["collections"]),
+            key=lambda row: row["collections"][name],
+        )
+        written.append(_write_rows(where / collection_file(name), members))
+    wanted = {path.name for path in written}
+    for stale in where.glob("*.jsonl"):
+        if stale.name not in wanted:
+            stale.unlink()
+    return written
 
 
 def pictures(rows: list[dict]) -> int:
@@ -729,14 +773,36 @@ def pictures(rows: list[dict]) -> int:
     return written
 
 
+def prune(rows: list[dict]) -> int:
+    """Remove every tile the record no longer names, and say how many went.
+
+    **A repoint leaves nothing behind** *(explorer_slim_ckpt131_addendum2)*. A collection
+    re-solved under a new stamp seats some pictures the old one did not and drops some it
+    did, and the dropped seats' tiles used to stay in the directory until `check`'s orphan
+    sweep named them. They are untracked and made from records next door, so a tile
+    nothing names is nothing but a stale file. Only tiles go: the records are written by
+    `write`, which clears its own.
+    """
+    named = {row["file"] for row in rows}
+    gone = 0
+    for tile in directory().glob(f"*{TILE_SUFFIX}"):
+        if tile.name not in named:
+            tile.unlink()
+            gone += 1
+    return gone
+
+
 def land(*, records_only: bool = False) -> list[str]:
     """The whole of `python -m builder seats`, as the lines it prints."""
     rows = derive()
     told = []
     if not records_only:
-        told.append(f"{pictures(rows)} tile(s) written")
-    path = write(rows)
-    told.append(f"wrote {path.relative_to(SITE_ROOT).as_posix()}  {len(rows)} seat(s)")
+        told.append(f"{pictures(rows)} tile(s) written, {prune(rows)} no longer named removed")
+    paths = write(rows)
+    told.append(
+        f"wrote {paths[0].relative_to(SITE_ROOT).as_posix()} and {len(paths) - 1} collection "
+        f"file(s)  {len(rows)} seat(s)"
+    )
     held = {name: 0 for name, _ in COLLECTIONS}
     inside = dict(held)
     for row in rows:
