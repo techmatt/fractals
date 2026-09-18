@@ -282,8 +282,9 @@ viewer: a pan, a zoom, a control, or a picture opened from any panel.
 
 1. It picks one of the ticked planes at random: the sampler's `SERVED` set, meaning
    Mandelbrot, Multibrot 3–6 and the pinned Phoenix slice.
-2. It draws a target width log-uniformly in the band, 0.1 to 1e-3 by default (the sampler's
-   `WIDEST`/`NARROWEST`).
+2. It draws a root width log-uniformly in the band, 0.1 to 1e-3 by default (the sampler's
+   `WIDEST`/`NARROWEST`). That band is where the pipeline's walk *starts*; its seats sit
+   near 1e-7.
 3. It descends the sampler's quad-tree over the plane's home box × 0.9, one rung at a time.
    Each cell gets a 64×36 smooth probe at maxiter 256, and a quarter *straddles* where its
    interior share is strictly between 0 and 1.
@@ -293,10 +294,21 @@ viewer: a pan, a zoom, a control, or a picture opened from any panel.
    render judge. The walk goes into the best one's cell.
 6. A rung with no survivors backs up one rung and tries the next-best cell. A plane that
    gives out before the band restarts somewhere else.
-7. At the target rung the place is judged once more against the bar. When the Julia box is
-   ticked, the place's centre is also taken as `c` for its Julia twin, which is judged at
-   the twin's home frame. Phoenix has no twin.
-8. A place over the bar is mined:
+7. The frame it reaches at the drawn width is the *root*, and stage one ends there.
+8. **Stage two** carries on from the root by the same rung rule *(walk_descend_ckpt131)*:
+   the current frame is split into quarters, the straddling ones are screened and judged,
+   and the walk goes into the best. Below the root the probe runs at the width's own
+   `maxiter_for_width`; 256 is a shortcut the root band can afford and would read escaping
+   points as interior at depth. It stops at the first of:
+   - a **peak**: the best quarter has scored below the best seen for two rungs running;
+   - the **floor**: `f64` would no longer resolve the mining grid (`resolution_ulps`);
+   - the **cap**, 20 rungs below the root by default;
+   - a **dead end**: no quarter straddles or survives the screen.
+9. The best frame seen, root included, is judged against the bar, which is where the place
+   is mined, not the last frame. When the Julia box is ticked, the root's centre is taken as
+   `c` for its Julia twin, which gets a stage two of its own from its home frame. Phoenix
+   has no twin.
+10. A place over the bar is mined:
    - Recipes are drawn over the ticked modes without replacement, a palette from the roster,
      the identity shade with `mirror` read off the map's cyclicity, and a uniform phase
      (0 under a direct trap).
@@ -322,7 +334,7 @@ ticked, with `curvature` listed and unticked (`mode_policy.UNMINED`).
   best.
 
 **Two renderers.** The walk draws through a second `Renderer` over the same compiled module
-(`Renderer.over`), with a pool of `min(3, cores/4)` workers. The viewer's renderer runs one
+(`Renderer.over`), with a pool of `min(4, cores/3)` workers. The viewer's renderer runs one
 job at a time and cancels the last, so sharing it would mean the walk cancelling the
 reader's picture, and every pan cancelling the walk. The screen runs on two workers of its
 own, because the battery iterates on whichever thread calls it.
