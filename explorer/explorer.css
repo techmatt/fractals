@@ -586,10 +586,27 @@ summary.section-head:focus-visible { outline: 2px solid var(--well-link); outlin
   font-variant-numeric: tabular-nums;
 }
 
-/* Reset view, Julia here, Random palette and Random phase: the right end of the Download
-   row, which the estimate leaves room for by taking what is between. Each one's shortcut
-   is its tooltip. Where the row wraps they wrap with it, as one group. */
-.download .view-toggles { display: inline-flex; flex-wrap: wrap; gap: 0.25rem; flex: none; margin-left: auto; }
+/* The view buttons: the right end of the Download row, which the estimate leaves room for
+   by taking what is between. Each one's shortcut is its tooltip. Where the row wraps they
+   wrap with it, as one group, and inside the group they wrap in their own order — so the
+   two random ones go to a second line first, and the three that say where the reader is
+   stay together as long as anything does. */
+.download .view-toggles {
+  display: inline-flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.25rem;
+  /* Shrinkable, and `min-width: 0` so it may shrink below what its buttons measure: with
+     `flex: none` the group kept its max-content width, which meant the wrap above never
+     engaged and the row ran off the side of a phone instead. */
+  flex: 0 1 auto;
+  min-width: 0;
+  margin-left: auto;
+}
+/* The two random ones are a pair and go to a second line together: they are the two that
+   say nothing about where the reader is, so they are what gives first when the row cannot
+   hold five. */
+.download .view-random { display: inline-flex; gap: 0.25rem; flex: none; }
 
 /* The button is the progress bar: `--done` fills it from the left while a render draws,
    and its label is how far along it is. A fixed minimum width, so a label going from

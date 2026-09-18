@@ -140,18 +140,52 @@ the marks clicking into the viewer rather than navigating.
 the folded Details: the render stat line, family, constants, `x`, `y`, `w`, all editable. Copy link is in the bar,
 because it is about the page rather than about a group.
 
-**Four view toggles close the Download row** *(explorer_controls_ckpt129, 2026-09-17)*,
-at its right end, each with a key its tooltip names: **Reset view** (R), the plane's home
-viewport with everything else kept; **Julia here** (J), the view's centre taken as `c` — its
-own decimal strings, so nothing is lost — and that degree's Julia set opened at its home
-view with the mode, palette and recipe carried; **Random palette** (P), any map the picker
-lists but the one on screen; **Random phase** (Shift+P), to three decimals. On a Julia set
-the second button is **Back**, on every Julia set and not only one this tab opened: where
-this tab did, the parent view is held in `sessionStorage` and Back returns to it, and
-anywhere else — a copied link, a seat — Back lands on the parent plane at `c` at its home
-width. The link carries only the Julia view. On Phoenix, which has no parameter plane here,
-the button rests. The keys work with focus on a button, and never with Ctrl, Alt or Meta.
-That is the whole row: anything more is a shortcut, not chrome.
+**Five view buttons close the Download row** *(explorer_view_buttons_ckpt130, 2026-09-17)*,
+at its right end, each with a key its tooltip names, and **the labels carry the state** so
+that the row says where the reader is standing — which is why this page has no status strip
+and no breadcrumb:
+
+- **Reset to seat** (S) — the picture the viewer was opened at, put back exactly as opening
+  it did: frame, mode, palette and recipe, the tile marked again, and the sentence about
+  what its link could not carry back under the canvas. It says **Reset to link** where what
+  was opened was an atlas mark or a pasted address rather than a gallery tile — the split
+  the tuned-parameter note already makes — and a bare page opened at nothing, so its button
+  is greyed and its tooltip says so. The anchor is the last thing that *arrived* and not the
+  last thing on screen, so it survives every move, Julia here included.
+- **Whole ⟨plane⟩** (R) — `Whole Mandelbrot`, `Whole Multibrot 6`, `Whole Julia` — the
+  plane's home viewport with everything else kept. The name is `planeName`'s, a rule over
+  the one shape a family name has rather than a table: the spelling is the atlas record's
+  `slot_labels`, derived rather than read from it because the atlas mounts only when its
+  panel is first opened and a button is named at load.
+- **Julia here** (J) — the view's centre taken as `c`, its own decimal strings so nothing is
+  lost, and that degree's Julia set opened at its home view with the mode, palette and
+  recipe carried. While the button is under the pointer or holding the focus, a crosshair is
+  drawn at the view's centre, so *here* is a point on the picture rather than a word on a
+  button.
+- **Random palette** (P) — any map the picker lists but the one on screen.
+- **Random phase** (Shift+P) — to three decimals.
+
+Inside a Julia set the third button is **Back to ⟨parent plane⟩** — `Back to Mandelbrot` —
+on every Julia set and not only one this tab opened: where this tab did, the parent view is
+held in `sessionStorage` and Back returns to it, and anywhere else — a copied link, a seat —
+it lands on the parent plane at `c` at its home width. Either way `c` is **marked on
+landing** for a moment and then fades. The link carries only the Julia view. On Phoenix,
+which has no parameter plane here, the button is absent rather than present and saying so.
+
+**A button that would change nothing is greyed, never taken away**, because a row that
+loses a button moves the rest of them under the pointer: Reset at the picture that was
+opened, Whole at the home frame. What either compares is `pictureKey` — the canonical query
+with `level` and the derived parameters dropped, since both are measurements of the picture
+that land partway through the pass that draws it, and a button must not come back to life
+when a pass finishes measuring. The keys work with focus on a button, and never with Ctrl,
+Alt or Meta. That is the whole row: anything more is a shortcut, not chrome.
+
+**The mark is painted onto the screen and never into `frame`** — the crosshair and the
+landing mark are one glyph, four arms stroked dark-under-light so that neither disappears
+into a picture — so a drag's preview slides the picture without the mark going with it, and
+every stage of a pass puts the mark back over what it just drew. It carries the family it
+belongs to and is not painted on another, because a plane coordinate means nothing off its
+own plane.
 
 **A mode's parameters are sliders** *(explorer_controls_ckpt129)*, the same slider and box as
 Gamma, Cycles and Phase; `params.js` holds each one's travel and says why. The slider bounds

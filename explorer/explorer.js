@@ -85,6 +85,27 @@ const PARENT_PLANE = {
 };
 const JULIA_OF = Object.fromEntries(Object.entries(PARENT_PLANE).map(([julia, plane]) => [plane, julia]));
 
+/**
+ * The words a button names a plane with: `Mandelbrot`, `Multibrot 6`, `Phoenix`, and
+ * `Julia` for a Julia set of any degree, whose degree is the parent plane's to say and is
+ * on the button beside it.
+ *
+ * A rule rather than a table, over the one shape every family name in the contract has —
+ * a word, and a degree where the family is one of a numbered series. The spelling it
+ * produces is the atlas record's `slot_labels`, which is where a reader meets these words
+ * elsewhere on this page; it is derived here rather than read from there because the atlas
+ * is mounted only when its panel is first opened, and a button is named at load. Details'
+ * Family select still spells a family the way a link spells it, which is the same split
+ * the palettes make: shown by a display name, addressed by its own.
+ */
+function planeName(family) {
+  if (family in PARENT_PLANE) return "Julia";
+  const parts = /^([a-z]+)(\d*)$/.exec(family);
+  if (parts === null) return family;
+  const word = parts[1][0].toUpperCase() + parts[1].slice(1);
+  return parts[2] === "" ? word : `${word} ${parts[2]}`;
+}
+
 /** Where a parent view opened by Julia here is held for Back: this tab's session, never the
  *  link, which carries only the Julia view. */
 const HELD_PARENT = "explorer.julia-parent";
@@ -493,6 +514,89 @@ function resize() {
 function present(image) {
   frameScreen.putImageData(image, 0, 0);
   screen.drawImage(frame, 0, 0);
+  paintMark();
+}
+
+// ------------------------------------------------------------------- the mark
+//
+// A point of the plane drawn over the picture. Two things use it and both are `c`: the
+// crosshair Julia here shows while it is under the pointer, so that "here" is a place a
+// reader can see before pressing anything, and the mark Back to a plane leaves on the `c`
+// it came back from, which goes on its own.
+
+/** The marked point as `{ family, x, y }`, or `null`. The family is carried because a
+ *  plane coordinate means nothing on another plane: a mark left over from the view a
+ *  Julia was opened from is not painted, rather than painted somewhere wrong. */
+let mark = null;
+let markTimer = 0;
+
+/** How long the mark Back leaves on `c` stays up. */
+const MARK_FOR = 1600;
+
+/** The crosshair's arm, as a share of the canvas's shorter side, and the share of it left
+ *  clear at the middle so that the point is not covered by its own mark. */
+const MARK_ARM = 0.05;
+const MARK_CLEAR = 0.35;
+
+/** Where a point of the plane falls on the canvas, in the current view. */
+function canvasAt(x, y) {
+  return {
+    px: ((x - view.x.value) / view.w.value + 0.5) * grid.width,
+    py: (0.5 - (y - view.y.value) / planeHeight()) * grid.height,
+  };
+}
+
+/**
+ * Paint the mark, where there is one and it is on this plane and on the canvas.
+ *
+ * Onto the screen and never into `frame`, so that a drag's preview slides the picture
+ * without the mark going with it, and every stage of a pass puts the mark back over the
+ * picture it just drew. Four arms, each stroked twice — a wide dark stroke under a narrow
+ * light one — because either alone is invisible against some picture on this page.
+ *
+ * The point is rounded to a whole pixel and the light stroke has a floor under its width,
+ * both for the same reason: a hairline between two pixel centres is drawn as two half-lit
+ * ones, and the first version of this mark came out at about half the brightness it asked
+ * for and read as a smudge rather than as a crosshair.
+ */
+function paintMark() {
+  if (mark === null || mark.family !== view.family) return;
+  const at = canvasAt(mark.x, mark.y);
+  const px = Math.round(at.px);
+  const py = Math.round(at.py);
+  if (px < 0 || px > grid.width || py < 0 || py > grid.height) return;
+  const arm = Math.min(grid.width, grid.height) * MARK_ARM;
+  const clear = Math.round(arm * MARK_CLEAR);
+  screen.save();
+  for (const [ink, width, floor] of [["rgba(0, 0, 0, 0.6)", 0.22, 5], ["#fff", 0.09, 2]]) {
+    screen.strokeStyle = ink;
+    screen.lineWidth = Math.max(floor, Math.round(arm * width));
+    screen.beginPath();
+    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      screen.moveTo(px + dx * clear, py + dy * clear);
+      screen.lineTo(px + dx * Math.round(arm), py + dy * Math.round(arm));
+    }
+    screen.stroke();
+  }
+  screen.restore();
+}
+
+/** Mark a point, or take the mark away, and repaint the picture that is up. */
+function showMark(point) {
+  clearTimeout(markTimer);
+  if (mark === null && point === null) return;
+  mark = point;
+  screen.drawImage(frame, 0, 0);
+  paintMark();
+}
+
+/** Mark a point for the pass that is about to draw, and for a moment after it lands.
+ *  Nothing is repainted here: the picture up is the one being left, and the mark belongs
+ *  over the one arriving. */
+function flashMark(point) {
+  clearTimeout(markTimer);
+  mark = point;
+  markTimer = setTimeout(() => showMark(null), MARK_FOR);
 }
 
 let drawing = 0;
@@ -768,6 +872,7 @@ function stretch(image) {
   screen.imageSmoothingEnabled = true;
   screen.drawImage(small, 0, 0, grid.width, grid.height);
   frameScreen.drawImage(small, 0, 0, grid.width, grid.height);
+  paintMark();
 }
 
 function updateReadout() {
@@ -1385,6 +1490,17 @@ function rebuild() {
 let seat = null;
 
 /**
+ * The picture the viewer was opened at, which is what Reset to seat goes back to:
+ * `{ query, opts, at }` — the permalink it arrived as, the options it arrived with, and
+ * the picture key those reduce to. `null` on a bare page, which opened at nothing.
+ *
+ * It is the last thing that *arrived* and not the last thing on the screen, so it
+ * survives every move the reader makes, Julia here included: the way back to the
+ * wallpaper somebody opened is the one thing a pan cannot rebuild for them.
+ */
+let anchor = null;
+
+/**
  * Open a picture from the left panel: its link is parsed, and what the link could not
  * carry is said where the picture is.
  *
@@ -1394,8 +1510,9 @@ let seat = null;
  * cap the recipe pinned is not the cap the depth policy gives for that width. Saying it
  * is the difference between a picture and a picture that is nearly right.
  */
-function openLink(query, { gap = null, key = null, what = "this picture" } = {}) {
+function openLink(query, opts = {}) {
   if (locked()) return;
+  const { gap = null, key = null, what = "this picture" } = opts;
   let wanted;
   try {
     wanted = link.parse(`?${query}`, contract);
@@ -1405,6 +1522,10 @@ function openLink(query, { gap = null, key = null, what = "this picture" } = {})
   }
   view = wanted;
   seat = key;
+  // What arrived is what Reset to seat puts back, options and all, so a reset re-enters
+  // the picture exactly as opening it did — the tile marked, and the sentence about what
+  // the link could not carry back under the canvas.
+  anchor = { query, opts, at: pictureKey(view) };
   arrived();
   if (key !== null) tunedFrom = "seat";
   tiles?.mark(key);
@@ -1438,6 +1559,26 @@ function changed() {
   leaveSeat();
   levelling = "derived";
   if (tuning === "stored") tuning = "derived";
+  // Two of the buttons say whether this view is the one that was opened and whether it is
+  // the whole of its plane, so they are resynced by every move and not only by the routes
+  // that rebuild the strips around one.
+  syncToggles();
+}
+
+/**
+ * A view reduced to the choices somebody made: its canonical query, with the two keys
+ * this page writes on its own taken out.
+ *
+ * A derived parameter and a tone curve are measurements of the picture rather than
+ * choices about it, and both land on the view partway through the pass that draws it. So
+ * a button greyed because this is the picture that was opened must not come back to life
+ * when that pass finishes measuring it.
+ */
+function pictureKey(current) {
+  const params = new URLSearchParams(link.emit(current, contract));
+  params.delete(link.LEVEL_KEY.key);
+  for (const key of new Set(Object.values(link.DERIVED))) params.delete(key);
+  return params.toString();
 }
 
 /** A place, as the identity a seat and a view share: family, constants and frame. */
@@ -1754,24 +1895,34 @@ familyPicker.addEventListener("change", () => {
 
 // ------------------------------------------------------------------- the view toggles
 //
-// Four buttons at the right of the Download row, each with a key. They are the whole of
+// Five buttons at the right of the Download row, each with a key. They are the whole of
 // this row on purpose: anything further is a shortcut, not chrome.
+//
+// **The labels carry the state** *(explorer_view_buttons_ckpt130, 2026-09-17)*. Where the
+// row used to say `Reset view` and `Back` — two words that mean nothing until you know
+// which plane you are on and how you got there — it names the thing each button would go
+// to: the seat that was opened, the whole of this plane by its own name, and the plane a
+// Julia set's `c` is a point of. So the row says where the reader is standing, which is
+// why this page has no status strip and no breadcrumb. A button that would change nothing
+// is greyed rather than taken away, because a row that loses a button moves the rest of
+// them under the pointer.
 
-const resetButton = document.getElementById("view-reset");
+const seatButton = document.getElementById("view-seat");
+const wholeButton = document.getElementById("view-whole");
 const juliaButton = document.getElementById("view-julia");
 const randomPaletteButton = document.getElementById("view-palette");
 const randomPhaseButton = document.getElementById("view-phase");
 
-/** Each button's words and its key, which is what it says on hover. */
+/** Each button's words and its key, which is what it says on hover. The two that name a
+ *  plane are written where they are said, because the name is the view's. */
 const TOGGLE_TIPS = {
-  reset: "Back to this plane's home view, keeping the mode and palette. (R)",
+  seat: "Back to the wallpaper this view was opened at: its frame, its mode and its palette. (S)",
+  link: "Back to the picture this link opened at: its frame, its mode and its palette. (S)",
+  none: "This page opened at the home view, so there is nothing else to go back to. (S)",
   julia: "Open the Julia set whose c is the center of this view. (J)",
-  back: "Back to the plane this Julia set's c is a point of. (J)",
-  phoenix: "Phoenix has no parameter plane here to take a Julia set from. (J)",
   palette: "A palette drawn at random from the picker, on the same view. (P)",
   phase: "A random phase, with everything else kept. (Shift+P)",
 };
-resetButton.title = TOGGLE_TIPS.reset;
 randomPaletteButton.title = TOGGLE_TIPS.palette;
 randomPhaseButton.title = TOGGLE_TIPS.phase;
 
@@ -1794,21 +1945,62 @@ function holdParent(held) {
   }
 }
 
-/** The Julia button's face: Julia here on a parameter plane, Back on a Julia set, and
- *  resting on Phoenix. Every Julia set gets Back, a copied link's included, because its
- *  `c` always names a point of a plane to go back to. */
+/** Whether the view is its plane's home frame, which is all Whole ⟨plane⟩ would set. */
+function atHome() {
+  const home = homeOf(view.family);
+  return ["x", "y", "w"].every((key) => view[key].text === home[key].text);
+}
+
+/**
+ * Every button's face and whether it is live.
+ *
+ * Reset goes back to a seat or to a link, and the word on it is that split — the same one
+ * the tuned-parameter note already makes, a gallery tile being a seat and an atlas mark or
+ * a pasted address being a link. The Julia button goes one way on a parameter plane and
+ * the other inside a Julia set, and every Julia set has the way back, a copied link's
+ * included, because its `c` always names a point of a plane. Phoenix has neither: no
+ * family here is the plane its `c` is drawn from, so the button is absent rather than
+ * present and saying so.
+ */
 function syncToggles() {
   const onJulia = view.family in PARENT_PLANE;
-  juliaButton.textContent = onJulia ? "Back" : "Julia here";
-  const tip = onJulia ? "back" : view.family in JULIA_OF ? "julia" : "phoenix";
-  juliaButton.title = TOGGLE_TIPS[tip];
-  juliaButton.disabled = busy || tip === "phoenix";
-  for (const button of [resetButton, randomPaletteButton, randomPhaseButton]) button.disabled = busy;
+
+  const opened = anchor === null ? "none" : anchor.opts.key ? "seat" : "link";
+  seatButton.textContent = opened === "link" ? "Reset to link" : "Reset to seat";
+  seatButton.title = TOGGLE_TIPS[opened];
+  seatButton.disabled = busy || anchor === null || pictureKey(view) === anchor.at;
+
+  const plane = planeName(view.family);
+  wholeButton.textContent = `Whole ${plane}`;
+  wholeButton.title = `The whole of ${plane}, keeping the mode and palette. (R)`;
+  wholeButton.disabled = busy || atHome();
+
+  const hasJulia = onJulia || view.family in JULIA_OF;
+  juliaButton.hidden = !hasJulia;
+  if (onJulia) {
+    const parent = planeName(PARENT_PLANE[view.family]);
+    juliaButton.textContent = `Back to ${parent}`;
+    juliaButton.title = `Back to ${parent}, framed on the c this Julia set is drawn at, with c marked. (J)`;
+  } else {
+    juliaButton.textContent = "Julia here";
+    juliaButton.title = TOGGLE_TIPS.julia;
+  }
+  juliaButton.disabled = busy || !hasJulia;
+
+  for (const button of [randomPaletteButton, randomPhaseButton]) button.disabled = busy;
+}
+
+/** Back to the picture the viewer was opened at, exactly as opening it did: the seat's
+ *  frame, mode, palette and recipe, its tile marked again, and the sentence about what its
+ *  link could not carry back under the canvas. */
+function resetToSeat() {
+  if (locked() || anchor === null || pictureKey(view) === anchor.at) return;
+  openLink(anchor.query, anchor.opts);
 }
 
 /** The current plane's home viewport, with the mode, palette and everything else kept. */
-function resetView() {
-  if (locked()) return;
+function wholePlane() {
+  if (locked() || atHome()) return;
   const home = homeOf(view.family);
   view = { ...view, x: home.x, y: home.y, w: home.w };
   changed();
@@ -1849,6 +2041,11 @@ function juliaHere() {
 function juliaBack() {
   const plane = PARENT_PLANE[view.family];
   const held = heldParent();
+  // Where this Julia set's `c` is a point of the plane being returned to, marked over the
+  // picture that lands so the reader sees the place they came from. It is the centre of
+  // the view Julia here left, and of the fallback frame as well, but a reader who has
+  // panned the plane since keeps the mark on `c` rather than on the middle of the canvas.
+  const at = { family: plane, x: view.constants.cx.value, y: view.constants.cy.value };
   let geometry = { x: view.constants.cx, y: view.constants.cy, w: homeOf(plane).w };
   if (
     held !== null &&
@@ -1872,6 +2069,7 @@ function juliaBack() {
   holdParent(null);
   changed();
   rebuild();
+  flashMark(at);
   draw();
 }
 
@@ -1886,14 +2084,33 @@ function randomPhase() {
   setShade("phase", String(Number(Math.random().toFixed(3))));
 }
 
-resetButton.addEventListener("click", resetView);
+seatButton.addEventListener("click", resetToSeat);
+wholeButton.addEventListener("click", wholePlane);
 juliaButton.addEventListener("click", toggleJulia);
 randomPaletteButton.addEventListener("click", randomPalette);
 randomPhaseButton.addEventListener("click", randomPhase);
 
-/** The four toggles' keys. A bare letter, or Shift and one; with Ctrl, Alt or Meta held a
+/** While Julia here is under the pointer or holding the focus, the view's centre is
+ *  marked: `here` is then a point on the picture rather than a word on a button. A Julia
+ *  set's own button marks nothing, because it is the one being left. */
+function hoverJulia(on) {
+  const marking = on && !juliaButton.disabled && view.family in JULIA_OF;
+  showMark(marking ? { family: view.family, x: view.x.value, y: view.y.value } : null);
+}
+
+for (const [event, on] of [["pointerenter", true], ["focus", true], ["pointerleave", false], ["blur", false]]) {
+  juliaButton.addEventListener(event, () => hoverJulia(on));
+}
+
+/** The five toggles' keys. A bare letter, or Shift and one; with Ctrl, Alt or Meta held a
  *  key is the browser's. */
-const TOGGLE_KEYS = { r: resetView, j: toggleJulia, p: randomPalette, P: randomPhase };
+const TOGGLE_KEYS = {
+  s: resetToSeat,
+  r: wholePlane,
+  j: toggleJulia,
+  p: randomPalette,
+  P: randomPhase,
+};
 
 /** A new mode keeps the place and drops the parameters, because they belonged to
  *  the mode that is being left. */
@@ -2113,6 +2330,11 @@ async function main() {
     (key) => !link.UI_KEYS.has(key),
   );
   if (named.length === 0) levelling = "derived";
+  // And a page that did name one opened at it, which is where Reset to link goes back to.
+  // A bare page opened at nothing: its button is greyed and says so.
+  if (named.length > 0) {
+    anchor = { query: link.emit(view, contract), opts: {}, at: pictureKey(view) };
+  }
 
   document.getElementById("provenance").textContent =
     `${PROVENANCE.count} palettes and ${IDENTITIES.size} production modes, baked from ` +
