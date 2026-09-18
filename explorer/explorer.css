@@ -160,6 +160,89 @@
 .collection:focus-visible { outline: 2px solid var(--well-link); outline-offset: -2px; }
 .collection[hidden] { display: none; }
 
+/* **The dropdown draws itself here, so that a colour family's entry can wear its colour.**
+   A native drop-down is the operating system's list and takes no markup inside an option,
+   which left the one control that chooses a colour collection as the only place on the
+   panel naming a family without showing it — the chips under it have carried the wheel's
+   dots from the start. `base-select` hands the control and its picker to this stylesheet,
+   and then an option is a box with a span in it like anything else.
+
+   It is an enhancement and reads as one. Where the browser does not know `base-select`,
+   `::picker(select)` is not a selector it knows either, so every rule in this block is
+   dropped whole and the control stays the browser's own with the option text it has
+   always had; `@supports` says that out loud rather than leaving it to that accident.
+   `gallery.js` gates the two pieces of markup that only mean anything in here — the button
+   the closed control becomes, and the `<legend>` a group heading is spelled with — on the
+   same question. */
+@supports (appearance: base-select) {
+  .collection, .collection::picker(select) { appearance: base-select; }
+
+  /* The closed control is the button, and the `.collection` rules above still draw it: all
+     that is owed here is the row — the clone of the chosen option, then the marker. */
+  .collection {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    text-align: left;
+  }
+  .collection::picker-icon { color: var(--well-ink-dim); transition: none; }
+  .collection:open::picker-icon { transform: rotate(180deg); }
+
+  /* The list is the well, a rule and a shadow — the same furniture the panel is made of,
+     because it opens over it. */
+  .collection::picker(select) {
+    background: var(--well);
+    border: 1px solid var(--well-rule);
+    border-radius: 3px;
+    padding: 0.2rem 0;
+    font-family: var(--sans);
+    font-size: 0.75rem;
+    color: var(--well-ink);
+    box-shadow: 0 6px 18px rgb(0 0 0 / 0.45);
+    max-height: min(60vh, 28rem);
+    overflow-y: auto;
+  }
+
+  /* One text column whatever an entry wears: a dot takes exactly the indent every other
+     entry is given, so the names line up down the list rather than stepping in at the
+     families. `--dot` is that width — the dot and the gap after it — and the gap is spelled
+     here rather than on the dot because base appearance lays an option's own contents out
+     as a flex row with a gap of its own, which is six pixels this stylesheet never asked
+     for and cannot see from the dot's margin. */
+  .collection option {
+    --dot: 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.15rem 0.6rem 0.15rem calc(0.6rem + var(--dot));
+    color: var(--well-ink-dim);
+    cursor: pointer;
+  }
+  .collection option .hue { margin-right: 0; }
+  .collection option:has(.hue) { padding-left: 0.6rem; }
+  .collection option:hover { color: var(--well-ink); background: var(--well-rule); }
+  .collection option:checked { color: var(--well-link); }
+  .collection option:focus, .collection option:focus-visible {
+    outline: 2px solid var(--well-link);
+    outline-offset: -2px;
+  }
+  /* The control says what is chosen, and the list marks it in the accent. A checkmark
+     column as well would be a second indent on every row to say it a third time. */
+  .collection option::checkmark { display: none; }
+
+  /* A group heading, in the panel's own section-header voice — the words are the same
+     words the filter rows below carry, so they are set the same way. */
+  .collection optgroup { padding: 0; }
+  .collection optgroup legend {
+    padding: 0.4rem 0.6rem 0.15rem;
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--well-link);
+  }
+}
+
 .tab {
   appearance: none;
   border: 1px solid transparent;
@@ -314,17 +397,25 @@ summary.section-head:focus-visible { outline: 2px solid var(--well-link); outlin
 .chip .count { font-variant-numeric: tabular-nums; opacity: 0.7; margin-left: 0.3rem; }
 
 /* The family's own colour, ahead of its name. It keeps its colour when the chip is
-   pressed, which is the point of it: the row still reads as a wheel. */
-.chip .hue {
+   pressed, which is the point of it: the row still reads as a wheel.
+
+   **One rule, and no ancestor in the selector.** The same dot marks a colour family
+   wherever the panel names one — on a filter chip here, and on the Collection dropdown's
+   entry for that family's gallery, where what the closed control shows is a *clone* of the
+   chosen option's content. The colour itself arrives as `--c` on the element, which is
+   what survives that clone; the shape is this rule's, once, so the two cannot drift. */
+.hue {
   display: inline-block;
+  flex: none;
   width: 0.55rem;
   height: 0.55rem;
   border-radius: 50%;
   margin-right: 0.35rem;
   vertical-align: -0.02em;
+  background: var(--c);
   box-shadow: 0 0 0 1px rgb(0 0 0 / 0.35) inset;
 }
-.chip .hue.is-unfiled {
+.hue.is-unfiled {
   background: var(--well-pending);
   box-shadow: 0 0 0 1px var(--well-ink-dim) inset;
 }

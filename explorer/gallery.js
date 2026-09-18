@@ -58,6 +58,36 @@ const FAMILY_AXIS = "family";
 const HUE_HEADS = { dominant: "Color family", contains: "Also contains" };
 
 /**
+ * Whether this browser lets a stylesheet draw a `<select>` and its drop-down, which is
+ * what allows a colour dot inside an option.
+ *
+ * It gates the two pieces of markup that only mean anything under base appearance — the
+ * button the closed control becomes, and the `<legend>` a group heading is spelled with
+ * there — so a browser without it gets the options it gets today and nothing extra in the
+ * shadow of a control it draws itself. The dots go on either way: an empty span carries no
+ * text into an option's label, and the option's value is set rather than read off it.
+ */
+const DRAWN = typeof CSS !== "undefined" && CSS.supports("appearance", "base-select");
+
+/**
+ * The dot that shows a family's own colour — the codebook's `light_vivid` cell for that
+ * hue, by way of `hues.js`, which is the one source both the chips and the dropdown read.
+ *
+ * **The colour goes on as a custom property rather than as a background.** The closed
+ * select shows a *clone* of the chosen option's content, and what survives the clone is
+ * the style attribute; a rule in the stylesheet supplies the shape and this supplies the
+ * one thing that differs per family. A family the wheel does not name draws neutral.
+ */
+function hueDot(value) {
+  const dot = document.createElement("span");
+  dot.className = "hue";
+  const color = value === null ? null : colorOf(value);
+  if (color !== null) dot.style.setProperty("--c", color);
+  else dot.classList.add("is-unfiled");
+  return dot;
+}
+
+/**
  * How far past the visible tiles a picture is asked for, as a share of the panel's height.
  * Enough that a steady scroll meets pictures already there, and little enough that a
  * visitor who opens the panel and looks at the first screen downloads about that screen.
@@ -289,18 +319,9 @@ export function install({
       chip.type = "button";
       chip.className = "chip";
       chip.setAttribute("aria-pressed", String(wanted[field].has(value)));
-      // A hue chip wears its family's own colour, which is the codebook's `light_vivid`
-      // cell for that hue rather than a colour this page chose. A family the wheel does
-      // not name — the seats filed under nothing — gets the well's neutral, because
-      // inventing a thirteenth colour would say the pipeline had an opinion it does not.
-      if (swatches) {
-        const dot = document.createElement("span");
-        dot.className = "hue";
-        const color = value === null ? null : colorOf(value);
-        if (color !== null) dot.style.background = color;
-        else dot.classList.add("is-unfiled");
-        chip.append(dot);
-      }
+      // A hue chip wears its family's own colour, ahead of its name, and so does the
+      // dropdown entry for that family's own gallery: one dot, `hueDot` above.
+      if (swatches) chip.append(hueDot(value));
       chip.append(value === null ? label : value);
       const tally = document.createElement("span");
       tally.className = "count";
@@ -383,14 +404,28 @@ export function install({
    */
   function options() {
     collection.replaceChildren();
+    // Base appearance draws the closed control from this button, and what it puts in it is
+    // a clone of the chosen option — the dot with it, so the control shows the colour it
+    // is showing a gallery of. A browser drawing its own control never sees this.
+    if (DRAWN) {
+      const shown = document.createElement("button");
+      shown.type = "button";
+      shown.append(document.createElement("selectedcontent"));
+      collection.append(shown);
+    }
     const groups = new Map();
     for (const one of collections) {
       const option = document.createElement("option");
       option.value = one.name;
       const count = membersOf(seats, one.name).length;
-      option.textContent = one.name === GENERAL
-        ? `General gallery · ${count}`
-        : `${one.name} · ${count}`;
+      // A collection cut on one family wears that family's dot — the same span, the same
+      // colour and the same source as the chip that filters on it, so the dropdown and the
+      // row below it agree about what green looks like. The general gallery and the modes
+      // are not colours and get none.
+      if (one.axis === FAMILY_AXIS) option.append(hueDot(one.name));
+      option.append(
+        one.name === GENERAL ? `General gallery · ${count}` : `${one.name} · ${count}`,
+      );
       const label = AXIS_LABELS[one.axis];
       if (label === undefined) {
         collection.append(option);
@@ -398,7 +433,15 @@ export function install({
       }
       if (!groups.has(label)) {
         const group = document.createElement("optgroup");
+        // The heading is spelled twice and each browser reads one of them: the `label`
+        // attribute is what a browser drawing its own drop-down shows, and base appearance
+        // shows none of it and renders a `<legend>` child instead.
         group.label = label;
+        if (DRAWN) {
+          const heading = document.createElement("legend");
+          heading.textContent = label;
+          group.append(heading);
+        }
         groups.set(label, group);
         collection.append(group);
       }
