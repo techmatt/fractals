@@ -101,6 +101,15 @@ def _parser() -> argparse.ArgumentParser:
         ),
     )
     baked.add_argument(
+        "--random",
+        action="store_true",
+        help=(
+            "re-read which maps a Random palette press may draw from — the wallpaper "
+            "project's data/palettes/palettes_for_random_choice.csv — into "
+            "explorer/palettes.jsonl, then bake"
+        ),
+    )
+    baked.add_argument(
         "--popular",
         action="store_true",
         help=(
@@ -511,6 +520,12 @@ def _do_explorer(options: argparse.Namespace) -> int:
                 "back the map's own"
             )
         return 0
+    if options.random:
+        path, listed, marked, skipped = explorer_module.mark_random()
+        print(
+            f"wrote {path.relative_to(SITE_ROOT).as_posix()}  {marked} of {listed} listed maps "
+            f"marked{'' if not skipped else f', {len(skipped)} not carried: ' + ', '.join(skipped)}"
+        )
     if options.roster:
         path, count, families, rows = explorer_module.refresh_roster(options.roster)
         print(

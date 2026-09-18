@@ -196,6 +196,17 @@ keeps the mechanics. **Every apply round ends by distilling that round's general
   right thing — **which maps the page carries is the record's to say, never a derivation**,
   and the 277-entry rebake would still be caught, because the blob and the index are held
   to `palettes.jsonl` and not to a question asked of the library.
+
+  **And which maps Random palette may land on is a third field, imported** *(Matt,
+  2026-09-17)*. `random` is the list next door states in
+  `data/palettes/palettes_for_random_choice.csv` — **232**, the maps that seated more than
+  one wallpaper in the published record — brought in by `python -m builder explorer
+  --random` and frozen on the record like everything else there. It is not derived, even
+  though it equals `seats >= 2` on this record today: that file's own README says it is a
+  reading of one publication rather than a standing rule, so the threshold is that
+  project's to move and a moved list arrives here as a failing `bake`. It narrows one
+  button and nothing else — every map the roster carries is still a hand pick and still
+  resolves in a link.
 - **And so is which modes it offers** *(2026-09-01)*. `explorer/modes.jsonl` names the
   modes `catalog.js` is baked from, in the order the picker shows them. **17 are offered,
   and that number is frozen.** The bake reads the names from it and each mode's identity

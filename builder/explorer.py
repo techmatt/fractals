@@ -96,6 +96,7 @@ is held to the module by `builder check`'s bake, and the module to `permalink.js
 from __future__ import annotations
 
 import contextlib
+import csv
 import gzip
 import hashlib
 import json
@@ -145,6 +146,16 @@ CONSTANT_FAMILIES = {
 #: The wallpaper project's colormap directory, relative to its checkout root. Recorded
 #: in the provenance stamp, so a reader can go and look at what was baked.
 COLORMAP_SOURCE = "data/palettes"
+
+#: The maps a Random palette press may draw from, as that project states them:
+#: `palette name,count` for every colormap that seated more than one wallpaper in the
+#: published n=1000 record. Its own `README.md` documents the join it came out of and
+#: says out loud that it is a reading of one record rather than a standing rule, which is
+#: why the list is imported and frozen here instead of being re-derived at a threshold
+#: this repository would have to hold an opinion about.
+RANDOM_SOURCE = ("data", "palettes", "palettes_for_random_choice.csv")
+RANDOM_NAME_COLUMN = "palette name"
+RANDOM_COUNT_COLUMN = "count"
 
 #: The roster the bake reads: one row per map the explorer carries, beside the module it
 #: is baked into, the way `gallery.jsonl` sits beside the gallery page it writes. Its
@@ -238,6 +249,11 @@ class Colormap:
     only because one of this site's pictures was drawn in it is not — see the note at
     the top on why the two sets differ.
 
+    `random` is whether a Random palette press may land on it: the list the wallpaper
+    project states in [`RANDOM_SOURCE`], imported by `--random` and frozen here like
+    every other roster field. It is neither `offered` nor derivable from `seats` by
+    anything this repository should be deciding — see [`mark_random`].
+
     `family` and `seats` are the two readings the roster carries and the library does
     not: the hue family this map most often produces, and how many seats of the
     published record were drawn in it. Both come off the record rather than off the
@@ -248,6 +264,7 @@ class Colormap:
     cyclic: bool
     stops: tuple[tuple[float, tuple[int, int, int]], ...]
     offered: bool
+    random: bool = False
     family: str | None = None
     seats: int = 0
 
@@ -264,8 +281,43 @@ class Entry:
 
     name: str
     offered: bool
+    random: bool
     family: str | None
     seats: int
+
+
+def random_choice() -> dict[str, int] | None:
+    """The maps a Random palette press may draw from, as `{name: count}`.
+
+    Read from [`RANDOM_SOURCE`] in the checkout next door. `None` where there is no such
+    file: the list is that project's to state, and a checkout that does not state it is
+    not a reason for anything here to stop — the page falls back to the whole library,
+    which is what Random palette did before this list existed.
+
+    A name may carry a comma — `Gold Field, Blood Spark` is a map — so the file is read
+    with the csv module and never split on the character.
+    """
+    path = wallpapers_root().joinpath(*RANDOM_SOURCE)
+    if not path.is_file():
+        return None
+    # `utf-8-sig`: the file is written next door and a BOM is not part of a palette's name.
+    with path.open(encoding="utf-8-sig", newline="") as handle:
+        rows = list(csv.DictReader(handle))
+    if not rows or RANDOM_NAME_COLUMN not in rows[0]:
+        raise ExplorerError(f"{path} has no {RANDOM_NAME_COLUMN!r} column")
+    found: dict[str, int] = {}
+    for row in rows:
+        name = (row.get(RANDOM_NAME_COLUMN) or "").strip()
+        if not name:
+            continue
+        try:
+            count = int(row[RANDOM_COUNT_COLUMN])
+        except (KeyError, TypeError, ValueError) as error:
+            raise ExplorerError(f"{path}: {name} has no whole {RANDOM_COUNT_COLUMN}") from error
+        found[name] = count
+    if not found:
+        raise ExplorerError(f"{path} names no palette")
+    return found
 
 
 def roster() -> tuple[dict, tuple[Entry, ...]]:
@@ -284,10 +336,16 @@ def roster() -> tuple[dict, tuple[Entry, ...]]:
         seats = record.fields.get("seats", 0)
         if not isinstance(seats, int) or isinstance(seats, bool) or seats < 0:
             raise ExplorerError(f"{record.where}: seats must be a whole number, not {seats!r}")
+        # Absent is false, the way an absent `seats` is nought: a roster written before the
+        # random list arrived still reads, and reads as a page that draws from everything.
+        chosen = record.fields.get("random", False)
+        if not isinstance(chosen, bool):
+            raise ExplorerError(f"{record.where}: random must be true or false, not {chosen!r}")
         found.append(
             Entry(
                 record.text("name"),
                 record.flag("offered"),
+                chosen,
                 record.optional_text("family"),
                 seats,
             )
@@ -338,6 +396,7 @@ def baked() -> list[Colormap]:
                 loaded["kind"] == "cyclic",
                 stops,
                 entry.offered,
+                entry.random,
                 entry.family,
                 entry.seats,
             )
@@ -491,6 +550,7 @@ class Baked:
     blob: bytes
     count: int
     offered: int
+    random: int
     chosen: str
     families: int
 
@@ -520,6 +580,7 @@ def palettes_module_text() -> Baked:
         "baked": str(stated["baked"]),
         "count": len(maps),
         "offered": len(names),
+        "random": sum(1 for colormap in maps if colormap.random),
         "default_because": why,
         "blob": {
             "file": PALETTES_BLOB.name,
@@ -547,6 +608,11 @@ def palettes_module_text() -> Baked:
         "// because a link built from a gallery seat's recipe has to be able to name the map",
         "// that seat was drawn in; the picker lists a frozen subset of them.",
         "//",
+        "// `random` is whether Random palette may land on it: the maps that seated more than",
+        "// one wallpaper in the published record, as the wallpaper project's own",
+        "// `data/palettes/palettes_for_random_choice.csv` states them. Every map is still",
+        "// selectable by hand — this narrows one button and nothing else.",
+        "//",
         "// `at` is where this map's colours start in the blob and `stops` is how many there",
         "// are, three sRGB8 bytes each. Position `i` is `i/(stops-1)` — every map in this",
         "// library spaces its stops evenly, and the bake refuses one that does not rather",
@@ -567,6 +633,7 @@ def palettes_module_text() -> Baked:
         row = {
             "cyclic": colormap.cyclic,
             "offered": colormap.offered,
+            "random": colormap.random,
             "at": at,
             "stops": len(colormap.stops),
             "family": colormap.family,
@@ -581,6 +648,7 @@ def palettes_module_text() -> Baked:
         bytes_,
         len(maps),
         len(names),
+        sum(1 for colormap in maps if colormap.random),
         chosen,
         sum(1 for colormap in maps if colormap.family),
     )
@@ -700,6 +768,71 @@ def _seats_per_map(stamp: str) -> dict[str, int]:
     return counts
 
 
+def _roster_row(name: str, entry: Entry | None, seats: int, family: str | None) -> dict:
+    """One row of the roster, in the order every row is written in.
+
+    Both writers go through here — `--roster`, which re-reads the two pool readings, and
+    `--random`, which re-reads one list — so a row written by either has the same shape
+    and a diff shows what actually moved.
+    """
+    row = {
+        "schema": records.SCHEMA,
+        "kind": PICKS_ROW,
+        "name": name,
+        "offered": bool(entry.offered) if entry else False,
+        "random": bool(entry.random) if entry else False,
+        "seats": seats,
+    }
+    if family:
+        row["family"] = family
+    return row
+
+
+#: What the method row says about `random`, written by [`mark_random`] beside the flags.
+RANDOM_METHOD = (
+    "`random` is whether a Random palette press may land on a map. It is the list the "
+    "wallpaper project states in `data/palettes/palettes_for_random_choice.csv` — every "
+    "colormap that seated more than one wallpaper in the published record — imported by "
+    "`python -m builder explorer --random` and frozen here like every other field. It is "
+    "not derived: that file's own README says it is a reading of one record rather than a "
+    "standing rule, and the threshold it was filtered at is that project's to move. The "
+    "page narrows one button by it and nothing else — every map the roster carries is "
+    "still selectable by hand, and still resolves in a link."
+)
+
+
+def mark_random(listed: dict[str, int] | None = None) -> tuple[Path, int, int, tuple[str, ...]]:
+    """Rewrite each roster row's `random` flag from the list next door.
+
+    `(the record, how many names the list holds, how many were marked, the names skipped)`.
+    A listed name the roster does not carry is **skipped and reported**, not an error: the
+    list is a reading of a published gallery and this roster is the library, so a map that
+    has left the library since is a name this page cannot draw and has nothing to mark.
+
+    Nothing else in the record moves — not the two pool readings, not `offered`, not the
+    method row's own prose — because this is one list being re-read and not a re-reading
+    of the roster.
+    """
+    read = random_choice() if listed is None else listed
+    if read is None:
+        raise ExplorerError(
+            f"no list at {wallpapers_root().joinpath(*RANDOM_SOURCE)}, so there is nothing to "
+            "mark — the page falls back to drawing from every map it carries"
+        )
+    stated, entries = roster()
+    carried = {entry.name for entry in entries}
+    method = dict(stated)
+    method["random"] = RANDOM_METHOD
+    method["random_read"] = date.today().isoformat()
+    lines = [json.dumps(method, sort_keys=False)]
+    for entry in entries:
+        marked = Entry(entry.name, entry.offered, entry.name in read, entry.family, entry.seats)
+        lines.append(json.dumps(_roster_row(entry.name, marked, entry.seats, entry.family)))
+    PICKS_RECORD.write_text("\n".join(lines) + "\n", encoding="utf-8", newline="\n")
+    skipped = tuple(sorted(name for name in read if name not in carried))
+    return PICKS_RECORD, len(read), len(read) - len(skipped), skipped
+
+
 def refresh_roster(release: str) -> tuple[Path, int, int, int]:
     """Rewrite `palettes.jsonl`: every map the library holds, with its two readings.
 
@@ -761,17 +894,11 @@ def refresh_roster(release: str) -> tuple[Path, int, int, int]:
     lines = [json.dumps(method, sort_keys=False)]
     for name in names:
         entry = held.get(name)
-        row = {
-            "schema": records.SCHEMA,
-            "kind": PICKS_ROW,
-            "name": name,
-            "offered": bool(entry.offered) if entry else False,
-            "seats": int(seats.get(name, 0)),
-        }
-        family = families.get(name)
-        if family:
-            row["family"] = family
-        lines.append(json.dumps(row))
+        # A name already in the roster keeps its `random` flag as it keeps `offered`: this
+        # act re-reads the pool, and which maps a random pick may draw is another list.
+        lines.append(
+            json.dumps(_roster_row(name, entry, int(seats.get(name, 0)), families.get(name)))
+        )
     PICKS_RECORD.write_text("\n".join(lines) + "\n", encoding="utf-8", newline="\n")
     return PICKS_RECORD, len(names), sum(1 for name in names if families.get(name)), ledger_rows
 
@@ -1100,7 +1227,8 @@ def bake(*, palettes_only: bool = False) -> list[str]:
     made = write_palettes()
     written.append(
         f"{PALETTES_MODULE.relative_to(SITE_ROOT).as_posix()}  {made.count} palettes "
-        f"({made.offered} offered, {made.families} with a hue family), default {made.chosen}"
+        f"({made.offered} offered, {made.random} a random pick may draw, {made.families} with "
+        f"a hue family), default {made.chosen}"
     )
     written.append(
         f"{PALETTES_BLOB.relative_to(SITE_ROOT).as_posix()}  {len(made.blob):,} bytes, untracked"

@@ -822,7 +822,7 @@ def _bake_problems() -> list[str]:
             f"from {_shown(explorer.MODES_RECORD)} and the engine beside it — "
             f"{_first_difference(catalogued, committed)}"
         )
-    return problems + _unbakeable()
+    return problems + _unbakeable() + _random_problems()
 
 
 def _blob_problems(baked: bytes) -> list[str]:
@@ -884,6 +884,39 @@ def _unbakeable() -> list[str]:
         f"{_shown(explorer.PICKS_RECORD)}: a figure is drawn in {name}, which the roster does "
         "not carry, so the explorer cannot open that picture"
         for name in missing
+    ]
+
+
+def _random_problems() -> list[str]:
+    """The roster's `random` flags against the list the wallpaper project states.
+
+    A record next door with a consumer here is a schema with two readers, and the second
+    is invisible from the first: the list is re-derived over there at every publication,
+    and this is what turns a list that moved into a failing check rather than a Random
+    palette button quietly drawing from last month's answer. `python -m builder explorer
+    --random` is the fix, and it names what changed.
+
+    A listed map the roster does not carry is not counted here — [`mark_random`] skips it
+    and says so, because the list reads a published gallery and this roster is the library.
+    """
+    listed = explorer.random_choice()
+    if listed is None:
+        return [
+            f"{_shown(explorer.PICKS_RECORD)}: its `random` flags cite "
+            f"{'/'.join(explorer.RANDOM_SOURCE)} and the checkout no longer holds it — either "
+            "the list moved next door or this record is citing a file nobody wrote"
+        ]
+    entries = explorer.roster()[1]
+    carried = {entry.name for entry in entries}
+    wanted = {name for name in listed if name in carried}
+    marked = {entry.name for entry in entries if entry.random}
+    if wanted == marked:
+        return []
+    return [
+        f"{_shown(explorer.PICKS_RECORD)}: {len(marked)} maps are marked for a random pick and "
+        f"the list next door holds {len(wanted)} this roster carries — "
+        f"{len(wanted - marked)} listed and unmarked, {len(marked - wanted)} marked and no "
+        "longer listed. `python -m builder explorer --random`"
     ]
 
 

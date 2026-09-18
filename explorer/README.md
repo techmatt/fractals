@@ -92,12 +92,13 @@ permalink.test.mjs    51 tests, `node --test explorer/permalink.test.mjs`
 bands.test.mjs        3 tests: the pool cuts the frame, never what is in it
 level.test.mjs        7 tests: the module's tone measurement, and a derived curve replays
 derive.test.mjs       6 tests: a derived weight replays, a derived opacity lands where it says
-palettes.jsonl        the roster palettes.js is baked from; 1,021 maps, 77 offered
+palettes.jsonl        the roster palettes.js is baked from; 1,021 maps, 77 offered,
+                      232 a random pick may draw
 modes.jsonl           the roster catalog.js is baked from: the 17 modes the picker offers
 palette-names.json    every map's display name and whether a person wrote it, by underlying name
 popular.json          the picker's Popular 24, and why each map passed over was passed over
 stops.js              the blob's reader: a map's control points, by name
-palettes.js           generated: the index — name to kind, offer, offset, count
+palettes.js           generated: the index — name to kind, offer, random, offset, count
 palettes.bin          generated and UNTRACKED: every map's control points, sRGB8
 palettes-swatch.png   generated and UNTRACKED: a row of gradient per map, to look at
 catalog.js            generated: the offered modes, their curves, the anchors' constants
@@ -162,7 +163,9 @@ and no breadcrumb:
   recipe carried. While the button is under the pointer or holding the focus, a crosshair is
   drawn at the view's centre, so *here* is a point on the picture rather than a word on a
   button.
-- **Random palette** (P) — any map the picker lists but the one on screen.
+- **Random palette** (P) — one of the **232** maps that seated more than one wallpaper in
+  the published record, never the one on screen. The list is the wallpaper project's own
+  and rides in the baked index as a flag per map; every other map is still a hand pick.
 - **Random phase** (Shift+P) — to three decimals.
 
 Inside a Julia set the third button is **Back to ⟨parent plane⟩** — `Back to Mandelbrot` —
@@ -305,6 +308,27 @@ about the gradient and both are frozen in `palettes.jsonl` rather than derived a
 time, because the ledger is written to while a bake runs and a picker's metadata that
 moved on its own is the failure that record exists for. `python -m builder explorer
 --roster <release>` is what reads them.
+
+**And a third field says which maps Random palette may land on** *(Matt, 2026-09-17)*.
+`random` is the list the wallpaper project states in
+`data/palettes/palettes_for_random_choice.csv` — **232 maps**, every colormap that seated
+more than one wallpaper in the published n=1,000 record, holding 781 of those seats
+between them. The library is about a thousand maps and most of them arrived by mechanical
+conversion, so a uniform draw over all of them mostly landed on a map nothing was ever
+made in. The draw is uniform over the 232, never the map already on screen, and **nothing
+else narrows**: every map the roster carries is still selectable by hand and still
+resolves in a link.
+
+It is **imported and frozen, not derived.** `python -m builder explorer --random` reads
+the CSV out of the checkout and rewrites the flags — nothing else in the record moves —
+and `builder check`'s `bake` holds the flags to that file, so a list re-derived next door
+at a later publication arrives here as a failing check rather than as a button quietly
+drawing from last month's answer. It happens to equal `seats >= 2` on this record today,
+and that is a coincidence worth not building on: the CSV's own README says it is a reading
+of one record rather than a standing rule, and the threshold it was filtered at is that
+project's to move. A baked index that marks no map at all — an older module, or a bake on
+a checkout with no such list — draws from everything, which is what the button did before
+the list existed.
 
 **The blob and the swatch are untracked.** They are the one library-sized thing here and
 what is committed is the index that addresses them; both are in `.git/info/exclude` and

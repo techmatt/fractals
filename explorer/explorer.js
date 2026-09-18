@@ -2073,9 +2073,24 @@ function juliaBack() {
   draw();
 }
 
-/** A palette drawn at random from every map the picker lists, never the one on screen. */
+/**
+ * A palette drawn at random, never the one on screen.
+ *
+ * **From the maps the seating has proven twice** *(Matt, 2026-09-17)*: the 232 colormaps
+ * that seated more than one wallpaper in the published record, which the wallpaper project
+ * states as a list and `palettes.jsonl` freezes as a flag on each map. The library is
+ * about a thousand maps and most of them arrived by mechanical conversion, so a uniform
+ * draw over all of them mostly lands on a map nothing was ever made in. Every map is still
+ * selectable by hand, and still resolves in a link: this narrows one button.
+ *
+ * A baked index that marks none of them — an older module, or a bake on a checkout with no
+ * such list — draws from everything, which is what this button did before the list existed.
+ */
 function randomPalette() {
-  const names = [...PALETTES.keys()].filter((name) => name !== view.palette);
+  const drawable = [...PALETTES].filter(([, map]) => map.random).map(([name]) => name);
+  const names = (drawable.length > 0 ? drawable : [...PALETTES.keys()]).filter(
+    (name) => name !== view.palette,
+  );
   if (names.length > 0) pickPalette(names[Math.floor(Math.random() * names.length)]);
 }
 
