@@ -78,7 +78,6 @@
           <button type="button" class="walk-back" id="walk-back" hidden>Back to the walk</button>
           <span class="walk-progress" id="walk-progress" role="status"></span>
         </div>
-        <ol class="walk-console" id="walk-console" aria-label="What the walk is doing" aria-live="polite"></ol>
       </div>
       <div class="section-head walk-found-head">
         <h2 id="head-walk-found">Found</h2>
@@ -224,7 +223,17 @@
 
     </div>
 
-    <aside class="walk-stack" id="walk-stack" aria-label="Where the walk is" hidden></aside>
+    <div class="walk-view" id="walk-view" hidden>
+      <section class="walk-view-half">
+        <div class="section-head"><h2 id="head-walk-stack">The walk</h2></div>
+        <ol class="walk-stack" id="walk-stack" aria-labelledby="head-walk-stack" aria-live="polite"></ol>
+      </section>
+      <section class="walk-view-half">
+        <div class="section-head"><h2 id="head-walk-candidates">Candidates</h2></div>
+        <div class="walk-candidates" id="walk-candidates" role="group" aria-labelledby="head-walk-candidates"></div>
+        <p class="walk-candidates-note" id="walk-candidates-note">A place that clears the bar is painted once in each ticked mode, and the candidates come up here.</p>
+      </section>
+    </div>
   </section>
 
 </main>

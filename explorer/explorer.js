@@ -618,18 +618,23 @@ function paintMark() {
 // judge said of it. Painted like the mark — onto the screen after every stage, never into
 // `frame` — and on the family it was drawn for only.
 
-/** `{ family, cells: [{ x, y, w, h, label, state }] }`, or `null`. `state` is `weighing`,
- *  `refused` or `chosen`, or `cell` for the faint outline of the cell they subdivide — the
- *  walk frames the viewer wider than that cell, so the quarters sit inside the picture. */
+/** `{ family, cells: [{ x, y, w, h, label, state, ink }] }`, or `null`. `state` is
+ *  `weighing`, `skipped` or `chosen`, or `cell` for the faint outline of the cell they
+ *  subdivide — the walk frames the viewer wider than that cell, so the quarters sit inside
+ *  the picture. `ink` is the quarter's own color, which is its position's
+ *  *(walk_view_ckpt132)*; a cell without one is stroked in the state's. */
 let overlay = null;
 
-/** The ink each state is stroked in, over a dark under-stroke that keeps it legible. */
+/** The ink a cell without one of its own is stroked in, over a dark under-stroke that keeps
+ *  it legible. */
 const OVERLAY_INK = {
   weighing: "#fff",
-  refused: "rgba(255, 120, 110, 0.9)",
-  chosen: "#ffd166",
   cell: "rgba(255, 255, 255, 0.4)",
 };
+
+/** How far a skipped quarter is faded: still drawn, in its color, so the picture and the
+ *  stack's row agree on all four. */
+const SKIPPED_ALPHA = 0.5;
 
 function paintOverlay() {
   if (overlay === null || overlay.family !== view.family) return;
@@ -641,23 +646,27 @@ function paintOverlay() {
     const a = canvasAt(cell.x - cell.w / 2, cell.y + cell.h / 2);
     const b = canvasAt(cell.x + cell.w / 2, cell.y - cell.h / 2);
     const [left, top, width, height] = [a.px, a.py, b.px - a.px, b.py - a.py];
-    const ink = OVERLAY_INK[cell.state] ?? OVERLAY_INK.weighing;
+    const ink = cell.ink ?? OVERLAY_INK[cell.state] ?? OVERLAY_INK.weighing;
     const faint = cell.state === "cell";
-    screen.setLineDash(cell.state === "refused" ? [6 * unit, 4 * unit] : faint ? [2 * unit, 3 * unit] : []);
+    const skipped = cell.state === "skipped";
+    screen.globalAlpha = skipped ? SKIPPED_ALPHA : 1;
+    screen.setLineDash(skipped ? [6 * unit, 4 * unit] : faint ? [2 * unit, 3 * unit] : []);
     const under = faint ? "rgba(0, 0, 0, 0.25)" : "rgba(0, 0, 0, 0.55)";
-    for (const [stroke, lineWidth] of [[under, 3 * unit], [ink, unit]]) {
+    const extra = cell.state === "chosen" ? 2 * unit : 0;
+    for (const [stroke, lineWidth] of [[under, 3 * unit + extra], [ink, unit + extra]]) {
       screen.strokeStyle = stroke;
-      screen.lineWidth = cell.state === "chosen" ? lineWidth + unit : lineWidth;
+      screen.lineWidth = lineWidth;
       screen.strokeRect(left, top, width, height);
     }
     if (cell.label) {
       const pad = 3 * unit;
       const box = screen.measureText(cell.label).width + 2 * pad;
+      const inset = unit + extra;
       screen.setLineDash([]);
       screen.fillStyle = "rgba(0, 0, 0, 0.65)";
-      screen.fillRect(left + unit, top + unit, box, 16 * unit);
+      screen.fillRect(left + inset, top + inset, box, 16 * unit);
       screen.fillStyle = ink;
-      screen.fillText(cell.label, left + unit + pad, top + unit + 2 * unit);
+      screen.fillText(cell.label, left + inset + pad, top + inset + 2 * unit);
     }
   }
   screen.restore();
@@ -2066,8 +2075,11 @@ async function startWalk() {
       start: document.getElementById("walk-start"),
       back: document.getElementById("walk-back"),
       progress: document.getElementById("walk-progress"),
-      console: document.getElementById("walk-console"),
+      view: document.getElementById("walk-view"),
+      controls: document.getElementById("controls"),
       stack: document.getElementById("walk-stack"),
+      candidates: document.getElementById("walk-candidates"),
+      candidatesNote: document.getElementById("walk-candidates-note"),
       found: document.getElementById("walk-found"),
       note: document.getElementById("walk-note"),
       module: renderer.module,

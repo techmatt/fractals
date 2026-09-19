@@ -697,153 +697,129 @@ summary.section-head:focus-visible { outline: 2px solid var(--well-link); outlin
 
 /* Back to the walk (walk_detach_ckpt131): the viewer's way back to the walk, beside the
    process's own button and drawn as the lesser of the two, because it stops nothing. */
-.walk-back, .walk-stack-back {
+.walk-back {
   appearance: none;
   border: 1px solid var(--well-link);
   border-radius: 4px;
   background: none;
   color: var(--well-link);
   font: inherit;
+  font-size: 0.85rem;
   font-weight: 600;
+  padding: 0.25rem 0.8rem;
   cursor: pointer;
   white-space: nowrap;
 }
-.walk-back { font-size: 0.85rem; padding: 0.25rem 0.8rem; }
-.walk-stack-back { flex: none; font-size: 0.7rem; padding: 0.1rem 0.5rem; }
-.walk-back:hover, .walk-stack-back:hover { color: var(--well-ink); border-color: var(--well-ink); }
-.walk-back:focus-visible, .walk-stack-back:focus-visible { outline: 2px solid var(--well-link); outline-offset: 2px; }
-.walk-back[hidden], .walk-stack-back[hidden] { display: none; }
+.walk-back:hover { color: var(--well-ink); border-color: var(--well-ink); }
+.walk-back:focus-visible { outline: 2px solid var(--well-link); outline-offset: 2px; }
+.walk-back[hidden] { display: none; }
 
-.walk-console {
+/* ------------------------------------------------------------------ the walk view */
+
+/* While a walk runs or is paused with the viewer its own, this is the region under the
+   picture, and the controls are not on the page (walk_view_ckpt132). The stack is the top
+   half and the candidates the bottom. On a phone the stack keeps its last few rows. */
+.walk-view {
+  flex: 1 1 auto;
+  padding: 0.5rem var(--gutter) 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+  font-family: var(--sans);
+  color: var(--well-ink);
+}
+.walk-view-half { display: flex; flex-direction: column; gap: 0.35rem; min-width: 0; }
+
+/* One row a rung, newest at the bottom. A row says what kind it is by a tint down its left
+   edge (walk_console_ckpt131), and a stage row is written in the same tint. */
+.walk-stack {
   list-style: none;
   margin: 0;
-  padding: 0.35rem 0.5rem;
-  height: 7.5rem;
+  padding: 0.3rem 0;
+  max-height: 16rem;
   overflow-y: auto;
   border: 1px solid var(--well-rule);
   border-radius: 3px;
   font-size: 0.75rem;
-  line-height: 1.35;
-  color: var(--well-ink-dim);
-}
-.walk-console li:first-child { color: var(--well-ink); }
-.walk-console li + li { margin-top: 0.2rem; }
-
-/* Each line says what kind of line it is by a tint down its left edge (walk_console_ckpt131).
-   The refusal tint is the overlay's refused ink, so a line and the box it is about read as
-   the same thing. These live only on the dark well. */
-.walk-console li {
-  --kind: transparent;
-  padding-left: 0.45rem;
-  border-left: 3px solid var(--kind);
-}
-/* The walk stack wears the same code on its stage labels (walk_tune_ckpt131), from the same
-   declarations, so the two cannot drift apart. */
-.walk-console li[data-kind="root"], .walk-stack [data-kind="root"] { --kind: #6cb6ff; }
-.walk-console li[data-kind="rung"], .walk-stack [data-kind="rung"] { --kind: #8a94a6; }
-.walk-console li[data-kind="refusal"] { --kind: rgb(255 120 110); }
-.walk-console li[data-kind="verdict"], .walk-stack [data-kind="verdict"] { --kind: #c49bff; }
-.walk-console li[data-kind="mining"], .walk-stack [data-kind="mining"] { --kind: #5fd3c0; }
-.walk-console li[data-kind="found"], .walk-stack [data-kind="found"] { --kind: #ffd166; }
-.walk-console li[data-kind="status"] { --kind: #4b5563; }
-.walk-console:empty::before { content: "Press Start to watch a walk look for a picture."; }
-
-/* ------------------------------------------------------------------ the walk stack */
-
-/* Bottom-right of the viewer, over its controls, and only while a walk runs. The viewer
-   column reaches the window's right and bottom edges, so the corner is the window's. */
-.walk-stack {
-  position: fixed;
-  right: var(--gutter);
-  bottom: var(--gutter);
-  z-index: 5;
-  width: 17rem;
-  max-height: calc(100vh - 8rem);
-  overflow: hidden;
-  padding: 0.5rem 0.6rem;
-  border: 1px solid var(--well-rule);
-  border-radius: 4px;
-  background: var(--well);
-  box-shadow: 0 4px 16px rgb(0 0 0 / 0.5);
-  font-family: var(--sans);
-  font-size: 0.7rem;
   line-height: 1.3;
+  font-variant-numeric: tabular-nums;
   color: var(--well-ink-dim);
 }
-.walk-stack [data-kind] { color: var(--kind); }
-.walk-stack p { margin: 0; }
-.walk-stack-line { display: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.walk-stack-head { margin-bottom: 0.4rem; }
-.walk-stack-plane { font-weight: 600; }
-.walk-stack .walk-stack-dim { color: var(--well-ink-dim); }
-.walk-stack-legs { display: grid; grid-template-columns: 1fr 1fr; gap: 0.7rem; }
-.walk-stack-leg { display: flex; flex-direction: column; gap: 0.25rem; min-width: 0; }
-.walk-stack-leg h3 { margin: 0; font-size: inherit; font-weight: 600; white-space: nowrap; }
-.walk-stack-leg h3 .walk-stack-dim { font-weight: 400; }
-
-/* A rung is a bar of its P≥3, shallowest at the top. The best is ringed in the found ink,
-   and the one being weighed is lit. */
-.walk-stack-rungs {
-  list-style: none;
-  margin: 0;
-  padding: 0;
+.walk-stack li {
+  --kind: transparent;
   display: flex;
-  flex-direction: column;
-  gap: 2px;
+  align-items: center;
+  gap: 0.35rem;
+  min-width: 0;
+  padding: 0.12rem 0.5rem 0.12rem 0.45rem;
+  border-left: 3px solid var(--kind);
+  white-space: nowrap;
 }
-.walk-stack-rungs li {
-  position: relative;
-  height: 5px;
-  border-radius: 1px;
-  background: rgb(255 255 255 / 0.07);
-}
-.walk-stack-rungs li::before {
-  content: "";
-  position: absolute;
-  inset: 0 auto 0 0;
-  width: calc(var(--p) * 100%);
-  border-radius: 1px;
-  background: #8a94a6;
-  opacity: 0.6;
-}
-.walk-stack-rungs li.is-current::before { opacity: 1; background: var(--well-ink); }
-.walk-stack-rungs li.is-best { outline: 1px solid #ffd166; outline-offset: 1px; }
-
-.walk-stack-slots {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 3px;
-}
-.walk-stack-slots li {
-  min-width: 2.1rem;
-  padding: 0 0.2rem;
-  border: 1px solid var(--kind);
+.walk-stack [data-kind="root"] { --kind: #6cb6ff; }
+.walk-stack [data-kind="rung"] { --kind: #8a94a6; }
+.walk-stack [data-kind="verdict"] { --kind: #c49bff; }
+.walk-stack [data-kind="mining"] { --kind: #5fd3c0; }
+.walk-stack [data-kind="found"] { --kind: #ffd166; }
+.walk-stack .walk-said { color: var(--kind); overflow: hidden; text-overflow: ellipsis; }
+.walk-stack .walk-dim { color: var(--well-ink-dim); font-size: 0.7rem; }
+.walk-stack.is-running li.is-live { background: rgb(255 255 255 / 0.07); }
+.walk-stack.is-running li.is-live .walk-said { font-weight: 600; }
+.walk-best {
+  margin-left: auto;
+  padding: 0 0.3rem;
+  border: 1px solid #ffd166;
   border-radius: 2px;
-  text-align: center;
-  font-variant-numeric: tabular-nums;
+  color: #ffd166;
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
 }
-.walk-stack-slots li.is-empty { opacity: 0.35; }
-.walk-stack-slots li.is-empty::before { content: "\00a0"; }
-.walk-stack-kept { font-weight: 600; }
 
-/* Detached, the reader is using the controls the stack sits over, so it keeps only its one
-   live line — the stage in its colour and the score or count that moves — with the way
-   back beside it. */
-.walk-stack.is-detached { display: flex; align-items: center; gap: 0.6rem; width: auto; max-width: 26rem; }
-.walk-stack.is-detached[hidden] { display: none; }
-.walk-stack.is-detached .walk-stack-line { display: block; flex: 1 1 auto; min-width: 0; }
-.walk-stack.is-detached .walk-stack-body { display: none; }
+/* A quarter's chip, in the color that quarter is always boxed in on the picture. */
+.walk-chip {
+  flex: none;
+  min-width: 2.7rem;
+  padding: 0 0.25rem;
+  border: 1px solid var(--ink);
+  border-radius: 2px;
+  color: var(--ink);
+  text-align: center;
+}
+.walk-chip.is-empty { border-style: dashed; opacity: 0.55; }
+.walk-chip.is-chosen { box-shadow: 0 0 0 1px var(--ink); font-weight: 700; }
+.walk-into { color: var(--well-ink); }
+.walk-into-name { color: var(--ink); font-weight: 600; }
 
-/* Stacked, the viewer no longer owns the window's corner, so the stack is one line along
-   the bottom edge: where the walk is now, and nothing else. */
+/* The candidates: a place's tiles, one per mode, the kept ones outlined in the found ink. */
+.walk-candidates {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(8.5rem, 1fr));
+  gap: 0.5rem;
+}
+.walk-candidate {
+  margin: 0;
+  min-width: 0;
+  outline: 1px solid var(--well-rule);
+}
+.walk-candidate canvas { display: block; width: 100%; height: auto; aspect-ratio: 16 / 9; }
+.walk-candidate figcaption {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.3rem;
+  padding: 0.15rem 0.3rem;
+  font-size: 0.7rem;
+  color: var(--well-ink-dim);
+}
+.walk-candidate-mode { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.walk-candidate-score { flex: none; color: var(--well-ink); font-variant-numeric: tabular-nums; }
+.walk-candidate.is-kept { outline: 2px solid #ffd166; }
+.walk-candidate.is-waiting { aspect-ratio: 16 / 9; background: rgb(255 255 255 / 0.04); }
+.walk-candidates-note { margin: 0; font-size: 0.75rem; color: var(--well-ink-dim); }
+
 @media (max-width: 60rem) {
-  .walk-stack { left: var(--gutter); width: auto; padding: 0.3rem 0.6rem; }
-  .walk-stack-line { display: block; }
-  .walk-stack-body { display: none; }
-  .walk-stack.is-detached { max-width: none; }
+  .walk-stack { max-height: 7rem; font-size: 0.7rem; }
+  .walk-stack li { gap: 0.25rem; }
+  .walk-chip { min-width: 2.3rem; padding: 0 0.1rem; }
 }
 
 .walk-found-head { flex: none; padding: 0 var(--gutter); }

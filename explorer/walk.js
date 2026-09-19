@@ -92,11 +92,11 @@ const MINED_MODES = new Set([
  *  the three direct traps and the two curvature modes, the gallery's least seated. */
 const UNTICKED_TAIL = 5;
 
-/** What a new tab's config opens at: the pipeline's draw, where the page can make it.
- *  Three recipes a place is hunt and mine's `PER_LOCATION`, each a different mode; the
- *  pipeline keeps every one and lets the solve choose, and a tab that did would fill with
- *  pictures nobody would pick, so it keeps the best. The modes are set in `mount`, where
- *  their order is known. */
+/** What a new tab's config opens at: the pipeline's draw, where the page can make it. A
+ *  place is painted once in each ticked mode *(walk_view_ckpt132)*, which is eight at the
+ *  default ticks, where hunt and mine's `PER_LOCATION` draws three; the pipeline keeps every
+ *  one and lets the solve choose, and a tab that did would fill with pictures nobody would
+ *  pick, so it keeps the best. The modes are set in `mount`, where their order is known. */
 const DEFAULTS = {
   planes: new Set(PLANES),
   julia: true,
@@ -105,7 +105,6 @@ const DEFAULTS = {
   narrowest: 1e-4,
   rungs: 20,
   patience: 0.2,
-  recipes: 3,
   keep: 1,
   bar: 0.5,
   // Recipes rank on the number the tile shows *(saved_tab_ckpt131_addendum1)*: the fine
@@ -141,18 +140,26 @@ const MOST_REFUSED_ROOTS = 16;
  *  jitter reaches an eighth of the cell past its edge, so the margin clears it. */
 const CELL_SHARE = 0.65;
 
-/** How many lines the console keeps, oldest dropped. */
-const CONSOLE_LINES = 40;
-
 /** How long the viewer holds a rung's finished state — its last label drawn — before the
  *  next one replaces it *(walk_console_ckpt131)*. The walk keeps computing through it; only
  *  the repaint waits. */
 const DWELL_MS = 400;
 
-/** Which quarter a child is, by its column and row within its parent (`b` counts up). */
-const QUARTER = [
-  ["lower-left", "upper-left"],
-  ["lower-right", "upper-right"],
+/**
+ * The four quarters, in the order a stack row lists them, each with the color it is always
+ * drawn in *(walk_view_ckpt132)*. The color is bound to the position, so "zooming into red"
+ * means upper-left on every rung of every walk. `a` is the column and `b` the row, counting
+ * up. The four are Okabe and Ito's vermillion, yellow and reddish purple with a brighter
+ * blue. Their least separation, as CIE Lab distance under simulated protanopia,
+ * deuteranopia and tritanopia (Machado 2009, full severity), is 34, against 21 for the
+ * obvious red, sky, yellow and pink. They are stroked over a dark under-stroke, as every
+ * box on the viewer is, so they read on light palettes too.
+ */
+const QUARTERS = [
+  { a: 0, b: 1, where: "upper-left", name: "red", ink: "#d55e00" },
+  { a: 1, b: 1, where: "upper-right", name: "blue", ink: "#3d8bff" },
+  { a: 0, b: 0, where: "lower-left", name: "yellow", ink: "#f0e442" },
+  { a: 1, b: 0, where: "lower-right", name: "pink", ink: "#cc79a7" },
 ];
 
 // ------------------------------------------------------------------- small things
@@ -160,9 +167,11 @@ const QUARTER = [
 const pick = (items) => items[Math.floor(Math.random() * items.length)];
 const shuffled = (items) => items.sort(() => Math.random() - 0.5);
 const score = (value) => value.toFixed(2);
+const width = (value) => value.toExponential(1);
 const megabytes = (bytes) => (bytes / 1e6).toFixed(1);
 
-/** A screen refusal, as a reader would say it: the gate's reason in a few words. */
+/** A screen refusal, as a reader would say it: the gate's reason in a few words. A stack
+ *  row calls every skipped quarter "empty" and keeps the reason for its tooltip. */
 const REFUSALS = {
   interior_cap: "mostly inside the set",
   instant_escape: "almost everything escapes at once",
@@ -170,7 +179,8 @@ const REFUSALS = {
   occupancy_floor: "too empty",
 };
 
-const STEPS = ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine"];
+/** Why a descent stopped, as its stage row opens. */
+const STOPS = { peak: "Peak", floor: "Floor", cap: "Cap", "dead end": "Dead end" };
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -253,180 +263,231 @@ export function mount(host) {
    *  `null` while a recipe is up, which is already framed as itself. */
   let shown = null;
 
-  /** The stack's own way back, kept across its re-renders; the panel has the other. */
-  const backOnStack = document.createElement("button");
-  backOnStack.type = "button";
-  backOnStack.className = "walk-stack-back";
-  backOnStack.textContent = "Back to the walk";
-  backOnStack.addEventListener("click", () => attach());
+  /** Whether the Walk tab is the one showing, or Saved, which leaves a walk alone. */
+  let onTab = true;
 
-  // ----------------------------------------------------------------- the console
-
-  /** One line, newest first. `kind` is what `explorer.css` tints it by: `root` (the search
-   *  for one), `rung` (a step of the descent), `refusal` (the screen said no), `verdict` (why
-   *  a descent stopped, and what happens next), `mining`, `found`, and `status` (the walk's
-   *  own comings and goings). */
-  function log(kind, text) {
-    const line = document.createElement("li");
-    line.dataset.kind = kind;
-    line.textContent = text;
-    host.console.prepend(line);
-    while (host.console.children.length > CONSOLE_LINES) host.console.lastElementChild.remove();
-  }
-
+  /** The status line beside Start: a download's progress, and the few things the walk has
+   *  to say that are not a step of it — that it could not start, or had nothing to walk. */
   function progress(text) {
     host.progress.textContent = text;
   }
 
-  /** Pause while a download is under way is the same button as Pause while walking, and
-   *  stops the download. The walk stack is up only while a walk runs: paused, the viewer
-   *  and its controls are the reader's again. */
+  /**
+   * Pause while a download is under way is the same button as Pause while walking, and stops
+   * the download.
+   *
+   * **The walk view owns the region under the picture** *(walk_view_ckpt132)*. While a walk
+   * is running or paused and the viewer is the walk's, the viewer's controls are not on the
+   * page at all and the walk view is in their place. They come back when the viewer does:
+   * a pan, an opened picture, or hiding the tab. Back to the walk, or Start, puts the walk
+   * view back.
+   */
   function syncButton() {
     host.start.textContent = state === "running" || state === "loading" ? "Pause" : "Start";
-    host.stack.hidden = state !== "running";
-    host.stack.classList.toggle("is-detached", !attached);
     host.back.hidden = attached;
-    backOnStack.hidden = attached;
+    const owns = attached && onTab && (state === "running" || state === "paused");
+    host.view.hidden = !owns;
+    host.controls.hidden = owns;
+    host.stack.classList.toggle("is-running", state === "running");
   }
 
   // ----------------------------------------------------------------- the walk stack
 
   /**
-   * The walk's structure at a glance *(walk_tune_ckpt131)*, over the viewer's controls,
-   * which are not for use while a walk runs. It shows the plane and whether a root has been
-   * found. Then, for the descent and its Julia twin, it shows a column of rungs, each a bar
-   * of the judge's `P≥3`, with the best marked and the current one lit. Then the verdict,
-   * the recipe slots filling with their `P≥4`, and whether one was kept. Every label wears
-   * its console kind, so the stack and the console read as one system. A new walk clears it.
-   * Below the studio's breakpoint only the one-line summary shows.
+   * The walk, one row per rung *(walk_view_ckpt132)*: the top half of the walk view, newest
+   * row at the bottom, and cleared by a new walk. It replaced both the corner widget
+   * (`walk_tune_ckpt131`) and the panel's console, and nothing the console said that is
+   * not a row here survived.
+   *
+   * A **rung row** is the four quarters' `P≥3` as chips in their own colors, upper-left,
+   * upper-right, lower-left, lower-right, with "empty" for a quarter the walk skipped. The
+   * chosen chip is outlined, then the chosen quarter by its color, then the rung's width in
+   * grey. A **stage row** is one line in its kind's tint: the root search, the peak, the
+   * verdict, the twin, the mining and what was kept. The row being worked on is lit, and the
+   * best rung of the leg so far, root or twin home included, carries a mark.
    */
   const stack = (() => {
-    let model = { plane: "", root: "searching", legs: [] };
-    const current = () => model.legs.at(-1);
-    const STOPS = { peak: "peaked", floor: "at the floor", cap: "at the cap", "dead end": "dead end" };
-    const ROOTS = { searching: "finding a root…", found: "root found", "gave out": "gave out" };
+    let rows = [];
+    let best = null;
 
-    function span(kind, text, className = "") {
+    function span(className, text) {
       const one = document.createElement("span");
-      if (kind) one.dataset.kind = kind;
-      if (className) one.className = className;
+      one.className = className;
       one.textContent = text;
       return one;
     }
 
-    /** The one line a phone gets: where the walk is now. */
-    function summary() {
-      const parts = [span("root", model.plane)];
-      const leg = current();
-      if (leg === undefined) {
-        parts.push(span("root", ROOTS[model.root]));
-      } else if (leg.kept !== null) {
-        parts.push(span("found", leg.kept.count > 0 ? `kept, P≥4 ${score(leg.kept.p4)}` : "none kept"));
-      } else if (leg.slots !== null) {
-        const filled = leg.slots.filter((slot) => slot !== undefined).length;
-        parts.push(span("mining", `painting ${filled} of ${leg.slots.length}`));
-      } else if (leg.done !== null) {
-        parts.push(span("verdict", `${STOPS[leg.done.stop]}, ${leg.done.over ? "over" : "under"} the bar`));
-      } else {
-        const now = leg.rungs.at(-1);
-        parts.push(
-          span("rung", `${leg.label === "Descent" ? "" : "twin "}rung ${leg.rungs.length - 1} · ${score(now)} · best ${score(leg.rungs[leg.best])}`),
-        );
-      }
-      const line = document.createElement("p");
-      line.className = "walk-stack-line";
-      parts.forEach((part, index) => line.append(...(index > 0 ? [" · ", part] : [part])));
-      return line;
-    }
-
-    function legOf(leg, last) {
-      const section = document.createElement("section");
-      section.className = "walk-stack-leg";
-      const head = document.createElement("h3");
-      head.append(span("rung", leg.label), span("", ` best ${score(leg.rungs[leg.best])}`, "walk-stack-dim"));
-      const rungs = document.createElement("ol");
-      rungs.className = "walk-stack-rungs";
-      leg.rungs.forEach((p3, index) => {
-        const rung = document.createElement("li");
-        rung.style.setProperty("--p", String(Math.max(0.02, p3)));
-        rung.title = `${index === 0 ? "root" : `rung ${index}`} · P≥3 ${score(p3)}`;
-        if (index === leg.best) rung.classList.add("is-best");
-        if (last && leg.done === null && index === leg.rungs.length - 1) rung.classList.add("is-current");
-        rungs.append(rung);
+    function rungRow(row, line) {
+      line.dataset.kind = "rung";
+      QUARTERS.forEach((quarter, slot) => {
+        const chip = row.chips[slot];
+        const one = span("walk-chip", chip.p3 === undefined ? "…" : chip.p3 === null ? "empty" : score(chip.p3));
+        one.style.setProperty("--ink", quarter.ink);
+        one.title = `The ${quarter.where}, ${quarter.name}: ${chip.p3 === null ? chip.why : chip.p3 === undefined ? "being weighed" : `P≥3 ${score(chip.p3)}`}`;
+        if (chip.p3 === null) one.classList.add("is-empty");
+        if (slot === row.chosen) one.classList.add("is-chosen");
+        line.append(one);
       });
-      section.append(head, rungs);
-      if (leg.done !== null) {
-        const said = document.createElement("p");
-        said.append(span("verdict", STOPS[leg.done.stop]), span("", leg.done.over ? " · over the bar" : " · under the bar", "walk-stack-dim"));
-        section.append(said);
+      if (row.chosen !== null) {
+        const into = span("walk-into", "→ zooming into ");
+        const name = span("walk-into-name", QUARTERS[row.chosen].name);
+        name.style.setProperty("--ink", QUARTERS[row.chosen].ink);
+        into.append(name);
+        line.append(into);
       }
-      if (leg.slots !== null) {
-        const slots = document.createElement("ol");
-        slots.className = "walk-stack-slots";
-        slots.dataset.kind = "mining";
-        for (const slot of leg.slots) {
-          const one = document.createElement("li");
-          one.textContent = slot === undefined ? "" : slot === null ? "–" : score(slot);
-          if (slot === undefined) one.classList.add("is-empty");
-          slots.append(one);
-        }
-        section.append(slots);
-      }
-      if (leg.kept !== null) {
-        section.append(span("found", leg.kept.count > 0 ? `kept, P≥4 ${score(leg.kept.p4)}` : "none kept", "walk-stack-kept"));
-      }
-      return section;
+      line.append(span("walk-dim", width(row.w)));
     }
 
     function render() {
-      const head = document.createElement("p");
-      head.className = "walk-stack-head";
-      head.append(span("root", model.plane, "walk-stack-plane"), " ", span("root", ROOTS[model.root], "walk-stack-dim"));
-      const legs = document.createElement("div");
-      legs.className = "walk-stack-legs";
-      model.legs.forEach((leg, index) => legs.append(legOf(leg, index === model.legs.length - 1)));
-      const body = document.createElement("div");
-      body.className = "walk-stack-body";
-      body.append(head, legs);
-      host.stack.replaceChildren(summary(), body, backOnStack);
+      const list = host.stack;
+      const pinned = list.scrollHeight - list.scrollTop - list.clientHeight < 24;
+      list.replaceChildren(
+        ...rows.map((row, index) => {
+          const line = document.createElement("li");
+          if (row.kind === "rung") {
+            rungRow(row, line);
+          } else {
+            line.dataset.kind = row.kind;
+            line.append(span("walk-said", row.text));
+            if (row.score !== undefined) line.append(span("walk-dim", score(row.score)));
+          }
+          if (index === rows.length - 1) line.classList.add("is-live");
+          if (row === best) {
+            line.classList.add("is-best");
+            line.append(span("walk-best", "best"));
+          }
+          return line;
+        }),
+      );
+      if (pinned) list.scrollTop = list.scrollHeight;
     }
 
     return {
+      /** A new walk: the stack is cleared, and its first row says where it is looking. */
       begin(plane) {
-        model = { plane, root: "searching", legs: [] };
+        rows = [];
+        best = null;
+        this.stage("root", `${plane} · searching for a root`);
+      },
+      /** One stage row, and the row, for a later `best`. */
+      stage(kind, text, p3 = undefined) {
+        const row = { kind, text, score: p3 };
+        rows.push(row);
+        render();
+        return row;
+      },
+      /** A rung row, its four chips waiting to be weighed. */
+      rung(w) {
+        const row = { kind: "rung", w, chosen: null, chips: QUARTERS.map(() => ({ p3: undefined, why: "" })) };
+        rows.push(row);
+        render();
+        return row;
+      },
+      /** A chip's reading: its `P≥3`, or `null` and why, where the quarter was skipped. */
+      chip(row, slot, p3, why = "") {
+        row.chips[slot] = { p3, why };
         render();
       },
-      root(state) {
-        model.root = state;
+      choose(row, slot) {
+        row.chosen = slot;
         render();
       },
-      leg(label, p3) {
-        model.legs.push({ label, rungs: [p3], best: 0, done: null, slots: null, kept: null });
-        render();
-      },
-      rung(p3, best) {
-        current().rungs.push(p3);
-        current().best = best;
-        render();
-      },
-      verdict(stop, over) {
-        current().done = { stop, over };
-        render();
-      },
-      mining(count) {
-        current().slots = new Array(count).fill(undefined);
-        render();
-      },
-      recipe(index, p4) {
-        current().slots[index] = p4;
-        render();
-      },
-      kept(count, p4 = null) {
-        current().kept = { count, p4 };
+      /** The leg's best so far, which a new leg's first row takes over. */
+      best(row) {
+        best = row;
         render();
       },
     };
   })();
+
+  // ----------------------------------------------------------------- the candidates
+
+  /**
+   * The bottom half of the walk view *(walk_view_ckpt132)*: a place's candidates, one per
+   * ticked mode, each a small tile with its mode and the render judge's `P≥4`, filling in as
+   * they are drawn. The ones kept are outlined. Ranked on the fine head, the tiles are in
+   * its order, best first; otherwise they stay in the order they were drawn, which is the
+   * Mode select's.
+   *
+   * They outlast the decision on purpose. A place's candidates stay up through the start of
+   * the next walk and go at the end of its first descent, so they can still be compared
+   * while the next root is being found.
+   */
+  const candidates = (() => {
+    let tried = [];
+    let expected = 0;
+    const SMALL = { width: 240, height: 135 };
+
+    function thumbnail(image) {
+      const full = document.createElement("canvas");
+      full.width = image.width;
+      full.height = image.height;
+      full.getContext("2d").putImageData(image, 0, 0);
+      const small = document.createElement("canvas");
+      small.width = SMALL.width;
+      small.height = SMALL.height;
+      const ink = small.getContext("2d");
+      ink.imageSmoothingQuality = "high";
+      ink.drawImage(full, 0, 0, SMALL.width, SMALL.height);
+      return small;
+    }
+
+    function render() {
+      const order = config.fine ? [...tried].sort((x, y) => y.rank - x.rank) : tried;
+      const kept = new Set([...tried].sort((x, y) => y.rank - x.rank).slice(0, config.keep));
+      const tiles = order.map((one) => {
+        const tile = document.createElement("figure");
+        tile.className = "walk-candidate";
+        if (kept.has(one)) tile.classList.add("is-kept");
+        tile.title = `${one.mode} in ${shownName(one.palette)}`;
+        const caption = document.createElement("figcaption");
+        caption.append(span("walk-candidate-mode", one.mode), span("walk-candidate-score", `P≥4 ${score(one.p4)}`));
+        tile.append(one.canvas, caption);
+        return tile;
+      });
+      for (let index = tried.length; index < expected; index++) {
+        const waiting = document.createElement("div");
+        waiting.className = "walk-candidate is-waiting";
+        tiles.push(waiting);
+      }
+      host.candidates.replaceChildren(...tiles);
+      host.candidatesNote.hidden = tiles.length > 0;
+    }
+
+    function span(className, text) {
+      const one = document.createElement("span");
+      one.className = className;
+      one.textContent = text;
+      return one;
+    }
+
+    return {
+      clear() {
+        tried = [];
+        expected = 0;
+        render();
+      },
+      /** A place is being mined: the last place's tiles go, and `count` wait for theirs. */
+      begin(count) {
+        tried = [];
+        expected = count;
+        render();
+      },
+      /** One candidate drawn, or `null` where its picture could not be. */
+      add(one) {
+        if (one === null) {
+          expected -= 1;
+        } else {
+          const { image, ...kept } = one;
+          tried.push({ ...kept, canvas: thumbnail(image) });
+        }
+        render();
+      },
+      /** The fine head or the kept count changed: the order and the outlines follow. */
+      refresh: render,
+    };
+  })();
+
 
   // ----------------------------------------------------------------- the downloads
 
@@ -461,10 +522,8 @@ export function mount(host) {
     const { controller, what, got } = download;
     download = null;
     controller.abort();
-    progress("");
-    log(
-      "status",
-      `${why} Stopped downloading ${what}${got > 0 ? ` (${megabytes(got)} MB in)` : ""}; what had fully arrived is kept for the next Start.`,
+    progress(
+      `Stopped downloading ${what}${got > 0 ? ` (${megabytes(got)} MB in)` : ""}; what had fully arrived is kept for the next Start.`,
     );
     return true;
   }
@@ -539,7 +598,7 @@ export function mount(host) {
       "Also walk the Julia set whose c is the best place the descent found: from its home view, by the same rung rule.",
     );
 
-    const modes = group("Modes", "Each recipe draws one of these.");
+    const modes = group("Modes", "A place that clears the bar is painted once in each of these.");
     for (const mode of modeOrder) {
       checkbox(modes, mode, config.modes.has(mode), (on) => {
         if (on) config.modes.add(mode);
@@ -598,11 +657,9 @@ export function mount(host) {
     );
 
     const mining = group("At a place");
-    number(mining, "recipes tried", config.recipes, { min: 1, max: 32, step: 1 }, (v) => {
-      config.recipes = v;
-    });
-    number(mining, "kept", config.keep, { min: 1, max: 32, step: 1 }, (v) => {
+    number(mining, "kept", config.keep, { min: 1, max: 13, step: 1 }, (v) => {
       config.keep = v;
+      candidates.refresh();
     });
     number(
       mining,
@@ -620,6 +677,7 @@ export function mount(host) {
       config.fine,
       (on) => {
         config.fine = on;
+        candidates.refresh();
       },
       "Choose which recipes to keep by the fine head the gallery's solve ranks on, rather than by the render judge's P≥4 the tiles show. It downloads (5.1 MB) the next time a place is mined, and a kept tile may then show a lower number than one passed over.",
     );
@@ -631,7 +689,6 @@ export function mount(host) {
    *  they could not load here. Throws an `AbortError` where the download was stopped. */
   async function begin() {
     if (renderer === null) {
-      log("status", "Starting the walk's renderer…");
       const cores = navigator.hardwareConcurrency || 8;
       renderer = await Renderer.over(host.module, Math.max(1, Math.min(4, Math.floor(cores / 3))));
       if (typeof renderer.shader.screen !== "function") {
@@ -645,14 +702,13 @@ export function mount(host) {
     const { signal, shown, done } = downloading(named.runtime);
     try {
       scorer = await judges.load((what, got, of) => shown(got, of, named[what]), signal);
-      log("status", `The judge runs on ${scorer.backend === "webgpu" ? "the GPU (WebGPU)" : "the CPU (WebAssembly)"}.`);
+      done();
     } catch (error) {
+      done();
       if (judges.stopped(error, signal)) throw error;
       console.warn("the judges could not be loaded", error);
       judgeless = true;
-      log("status", "No judge could load here, so the walk picks at random among what the screen passes.");
-    } finally {
-      done();
+      progress("No judge could load here, so the walk picks at random among what the screen passes.");
     }
   }
 
@@ -672,8 +728,7 @@ export function mount(host) {
         console.error("the walk could not start", error);
         state = "idle";
         syncButton();
-        log("status", `The walk could not start: ${error.message ?? error}.`);
-        progress("");
+        progress(`The walk could not start: ${error.message ?? error}.`);
         return;
       }
       // Paused while the last step finished: the walk waits for the next Start.
@@ -689,14 +744,13 @@ export function mount(host) {
     // parks nothing, and only recorded what it would have shown.
     if (shown !== null) display(shown);
     if (resume !== null) {
-      log("status", "Carrying on.");
       const go = resume;
       resume = null;
       go();
     }
     loop ??= forever().catch((error) => {
       console.error("the walk stopped", error);
-      log("status", `The walk stopped: ${error.message ?? error}.`);
+      progress(`The walk stopped: ${error.message ?? error}.`);
       state = "idle";
       loop = null;
       syncButton();
@@ -709,31 +763,28 @@ export function mount(host) {
     // **Leaving means stopping** *(explorer_slim_ckpt131)*. A download in flight is cut off
     // whether the walk was starting or already mining, and that is the line the console
     // gets. A walk that had not started yet goes back to waiting for Start.
-    const cut = stopDownload(why);
+    stopDownload(why);
     if (state === "loading") {
       state = loop === null ? "idle" : "paused";
       syncButton();
-      if (!cut) log("status", why);
       return;
     }
     if (state !== "running") return;
     state = "paused";
     paintEra += 1;
     syncButton();
-    if (!cut) log("status", why);
     // A detached viewer is showing the reader's picture, which a pause leaves alone.
     if (reframe && attached) unframe();
   }
 
   /** Hand the viewer to the reader and leave the walk running *(walk_detach_ckpt131)*:
    *  whatever it would have painted is only recorded, and queued repaints are dropped. */
-  function detach(why) {
+  function detach() {
     // Before any walk has run there is nothing to go back to.
     if (!attached || loop === null) return;
     attached = false;
     paintEra += 1;
     syncButton();
-    if (state === "running") log("status", why);
   }
 
   /** Hand the viewer back: the walk's last frame, as the walk drew it, with no full-quality
@@ -977,6 +1028,7 @@ export function mount(host) {
       h: child.frame.h,
       state: child.state,
       label: child.label,
+      ink: child.ink,
     }));
   }
 
@@ -1004,38 +1056,48 @@ export function mount(host) {
     await going();
     const shares = await straddles(family, parent, { maxiter: null, constants });
     if (shares === null) return [];
-    const children = [];
-    const quarters = (take) => {
-      for (const a of [0, 1]) {
-        for (const b of [0, 1]) {
-          if (!take(shares[a][b])) continue;
-          const child = quarterOf(parent, a, b);
-          children.push({ cell: child, frame: jittered(child), where: QUARTER[a][b], state: "weighing", label: "" });
-        }
-      }
-    };
-    quarters((share) => share > 0 && share < 1);
-    const judgedAlone = children.length === 0 && alone;
-    if (judgedAlone) quarters(() => true);
-    if (children.length === 0) return [];
-    display({
-      view: viewAt(family, parent, { constants }),
-      frame: parent,
-      layers,
-      cells: cellsOf(children),
-      widened: true,
+    // All four quarters are set out, every rung *(walk_view_ckpt132)*: one the walk skips is
+    // drawn dim and dashed in its color and reads "empty" in its row, so the picture and the
+    // stack agree on four.
+    const row = stack.rung(parent.w / 2);
+    const children = QUARTERS.map((quarter, slot) => {
+      const cell = quarterOf(parent, quarter.a, quarter.b);
+      const share = shares[quarter.a][quarter.b];
+      return { ...quarter, slot, cell, frame: jittered(cell), share, state: "weighing", label: "" };
     });
+    const skip = (child, why) => {
+      child.state = "skipped";
+      child.label = "empty";
+      stack.chip(row, child.slot, null, why);
+    };
+    const straddlers = children.filter((child) => child.share > 0 && child.share < 1);
+    const judgedAlone = straddlers.length === 0 && alone;
+    for (const child of children) {
+      if (judgedAlone || straddlers.includes(child)) continue;
+      skip(child, child.share >= 1 ? "all inside the set" : "no part of the set in it");
+    }
+    const weighed = children.filter((child) => child.state === "weighing");
+    display(
+      {
+        view: viewAt(family, parent, { constants }),
+        frame: parent,
+        layers,
+        cells: cellsOf(children),
+        widened: true,
+      },
+      weighed.length === 0 ? DWELL_MS : 0,
+    );
+    if (weighed.length === 0) return Object.assign([], { alone: false, row });
 
     await going();
-    const verdicts = await Promise.all(children.map((child) => screened(viewAt(family, child.frame, { constants }))));
-    children.forEach((child, index) => {
+    const verdicts = await Promise.all(weighed.map((child) => screened(viewAt(family, child.frame, { constants }))));
+    weighed.forEach((child, index) => {
       const verdict = verdicts[index];
       if (verdict.passed) return;
-      child.state = "refused";
-      child.label = "refused";
-      log("refusal", `Skipped the ${child.where}: ${REFUSALS[verdict.fate] ?? verdict.fate}.`);
+      child.refused = true;
+      skip(child, `the screen: ${REFUSALS[verdict.fate] ?? verdict.fate}`);
     });
-    const standing = children.filter((child) => child.state !== "refused");
+    const standing = weighed.filter((child) => !child.refused);
     relabel(cellsOf(children), standing.length === 0 ? DWELL_MS : 0);
 
     for (const child of standing) {
@@ -1045,6 +1107,7 @@ export function mount(host) {
       child.image = drawn.image;
       child.read = await gated(drawn.image);
       child.label = score(child.read.p3);
+      stack.chip(row, child.slot, child.read.p3);
       if (child !== standing.at(-1)) relabel(cellsOf(children));
     }
     const ranked = standing
@@ -1054,16 +1117,20 @@ export function mount(host) {
       family,
       rung,
       w: parent.w / 2,
-      straddling: judgedAlone ? 0 : children.length,
+      straddling: straddlers.length,
       alone: judgedAlone,
-      refused: children.length - standing.length,
+      refused: weighed.length - standing.length,
       p3: ranked.map((child) => Number(child.read.p3.toFixed(4))),
     });
     // The rung's finished state — its last label, and the chosen quarter where there is one —
     // is the one the viewer dwells on.
-    if (ranked.length > 0) ranked[0].state = "chosen";
+    if (ranked.length > 0) {
+      ranked[0].state = "chosen";
+      stack.choose(row, ranked[0].slot);
+    }
     if (standing.length > 0) relabel(cellsOf(children), DWELL_MS);
     ranked.alone = judgedAlone;
+    ranked.row = row;
     return ranked;
   }
 
@@ -1098,7 +1165,6 @@ export function mount(host) {
     const first = Math.max(1, Math.ceil(Math.log2(box.w / config.widest)));
     const last = Math.max(first, Math.floor(Math.log2(box.w / config.narrowest)));
     const bottom = Math.min(last, Math.max(first, Math.round(Math.log2(box.w / target))));
-    log("root", `Looking for a spot on the edge of ${planeName(family)}…`);
 
     const row = { family, target, bottom, rungs: [], probes: 0, backs: 0, refused: 0, outcome: "descending" };
     walks.push(row);
@@ -1129,7 +1195,6 @@ export function mount(host) {
       if (++row.refused >= MOST_REFUSED_ROOTS) break;
     }
     row.outcome = "gave out";
-    log("verdict", `No spot on ${planeName(family)} got past the screen. Starting over.`);
     return null;
   }
 
@@ -1147,12 +1212,12 @@ export function mount(host) {
    * its Julia set is dust. From then on it is descended on the judge alone (`weigh`'s
    * `alone`).
    */
-  async function deepen(family, root, { read: rootRead, image: rootImage }, constants = null) {
+  async function deepen(family, root, { read: rootRead, image: rootImage, row: rootRow }, constants = null) {
     let best = { frame: root, read: rootRead, rung: 0 };
+    stack.best(rootRow);
     let frame = root;
     let layers = [{ frame: root, image: rootImage }];
     let depth = 0;
-    let previous = rootRead.p3;
     let behind = 0;
     let stop = "cap";
     let alone = false;
@@ -1169,24 +1234,18 @@ export function mount(host) {
         stop = "dead end";
         break;
       }
-      if (ranked.alone && !alone) {
-        alone = true;
-        log("rung", "No part of this one is inside the set, so the judge chooses among all four quarters.");
-      }
+      if (ranked.alone) alone = true;
       const top = ranked[0];
-      const arrow = top.read.p3 > previous ? "↑" : "↓";
-      log("rung", `Zooming in · judge ${score(top.read.p3)} ${arrow}`);
-      previous = top.read.p3;
       layers = [{ ...layers.at(-1), dim: true }, { frame: top.frame, image: top.image }];
       frame = top.frame;
       depth = rung;
       if (top.read.p3 > best.read.p3) {
         best = { frame: top.frame, read: top.read, rung };
+        stack.best(ranked.row);
         behind = 0;
       } else {
         behind += 1;
       }
-      stack.rung(top.read.p3, best.rung);
       if (best.read.p3 >= config.patience && behind >= patienceOf(best.read.p3)) {
         stop = "peak";
         break;
@@ -1248,39 +1307,39 @@ export function mount(host) {
 
   /** Try recipes at a place that cleared the bar, and keep the best as tiles. */
   async function mine(place) {
-    if (config.modes.size === 0) {
-      log("verdict", "No modes are ticked, so there is nothing to paint this spot in.");
-      stack.kept(0);
+    // One recipe a ticked mode *(walk_view_ckpt132)*, in the Mode select's order, each with
+    // its own palette and phase: eight at the default ticks, so a place is seen once in each
+    // way the walk may paint it, where three draws over modes × palettes saw three.
+    const modes = modeOrder.filter((mode) => config.modes.has(mode));
+    if (modes.length === 0) {
+      progress("No modes are ticked, so a place has nothing to be painted in.");
+      stack.stage("found", "Nothing kept");
       return;
     }
-    stack.mining(config.recipes);
+    stack.stage("mining", `Mining ${modes.length} ${modes.length === 1 ? "candidate" : "candidates"}`);
+    candidates.begin(modes.length);
     // A pause mid-download stops it, and the walk asks again when it is started again.
     while (config.fine && scorer !== null && scorer.fineSession === null && !fineless) {
       const { signal, shown, done } = downloading("the fine judge");
       try {
         await scorer.loadFine((what, got, of) => shown(got, of), signal);
-        log("status", "The fine judge is ready.");
+        done();
       } catch (error) {
+        done();
         if (judges.stopped(error, signal)) {
           await going();
           continue;
         }
         console.warn("the fine judge could not be loaded", error);
-        log("status", "The fine judge could not load, so the render judge ranks recipes alone.");
+        progress("The fine judge could not load, so the render judge ranks recipes alone.");
         fineless = true;
         break;
-      } finally {
-        done();
       }
     }
-    // Modes without replacement, as `hunt.modes_for` draws them: a place tried three times
-    // is tried in three modes.
-    const modes = [...config.modes].sort(() => Math.random() - 0.5);
     const maps = roster();
     const tried = [];
-    for (let index = 0; index < config.recipes; index++) {
+    for (const mode of modes) {
       await going();
-      const mode = modes[index % modes.length];
       const palette = pick(maps);
       const base = viewAt(place.family, place.frame, { mode, palette, constants: place.constants });
       // The pipeline's shade is the identity with the fold read off the map: a sequential
@@ -1296,10 +1355,9 @@ export function mount(host) {
           phase: direct ? 0 : Number(Math.random().toFixed(3)),
         },
       };
-      log("mining", `Painting it in ${mode}, ${shownName(palette)}…`);
       const drawn = await picture(view, MINING_SUPERSAMPLE);
       if (drawn === null) {
-        stack.recipe(index, null);
+        candidates.add(null);
         continue;
       }
       // The recipe as the walk drew it, at its own framing, held long enough to be seen.
@@ -1315,16 +1373,17 @@ export function mount(host) {
         timed("fine", started);
       }
       const rank = fine ?? read.p4;
-      stack.recipe(index, read.p4);
+      candidates.add({ mode, palette, p4: read.p4, fine, rank, image: drawn.image });
       tried.push({ view: drawn.view, image: drawn.image, read, fine, rank });
       (walks.at(-1).recipes ??= []).push({ family: place.family, w: place.frame.w, mode, palette, p4: read.p4, fine });
     }
     tried.sort((x, y) => y.rank - x.rank);
     const kept = tried.slice(0, config.keep);
     for (const one of kept) await keep(one);
-    stack.kept(kept.length, kept[0]?.read.p4);
-    if (kept.length === 1) log("found", `Kept one (score ${rankNumber(kept[0])}).`);
-    if (kept.length > 1) log("found", `Kept ${kept.length} (scores ${kept.map(rankNumber).join(", ")}).`);
+    stack.stage(
+      "found",
+      kept.length === 0 ? "Nothing kept" : `Kept: ${kept.map((one) => `${one.view.mode} · ${score(one.read.p4)}`).join(", ")}`,
+    );
   }
 
   /**
@@ -1337,10 +1396,6 @@ export function mount(host) {
    * can show a lower number than one the walk passed over, because one member's reading
    * lives far below 0.01 and is not a number to put on a badge.
    */
-  function rankNumber(one) {
-    return score(one.read.p4);
-  }
-
   function rankText(one) {
     return `P≥4 ${score(one.read.p4)}`;
   }
@@ -1395,24 +1450,6 @@ export function mount(host) {
     host.note.textContent = `${found.length} found. They last until the page is closed.`;
   }
 
-  /** Why a descent stopped and what happens next, in one line: where the judge's favorite
-   *  frame was, counted in rungs back up from where the descent ended, and whether it
-   *  cleared the bar. */
-  function verdict(best, over, next) {
-    const lead = {
-      peak: "The judge's score has peaked.",
-      floor: "This is as deep as the arithmetic can draw.",
-      cap: "That is as deep as the walk goes.",
-      "dead end": "Dead end here.",
-    }[best.stop];
-    const up = best.depth - best.rung;
-    const where =
-      best.rung === 0 ? "where it started" : up === 0 ? "right here" : `${STEPS[up] ?? up} ${up === 1 ? "step" : "steps"} up`;
-    if (!over) return `${lead} Nothing scored well enough to paint, so ${next}.`;
-    if (up === 0) return `${lead} This is the judge's favorite, so the walk paints it.`;
-    return `${lead} Its favorite was ${where}, so the walk goes back to paint there.`;
-  }
-
   // ----------------------------------------------------------------- the loop
 
   async function forever() {
@@ -1420,7 +1457,7 @@ export function mount(host) {
       await going();
       const planes = [...config.planes];
       if (planes.length === 0) {
-        log("status", "No planes are ticked. Tick one in Walk config and press Start.");
+        progress("No planes are ticked. Tick one in Walk config and press Start.");
         pause("Paused.");
         continue;
       }
@@ -1430,10 +1467,9 @@ export function mount(host) {
       stack.begin(planeName(family));
       const root = await descend(family);
       if (root === null) {
-        stack.root("gave out");
+        stack.stage("verdict", "No root got past the screen · starting over");
         continue;
       }
-      stack.root("found");
       const row = walks.at(-1);
       row.root_ms = Math.round(performance.now() - started);
       // The twin is walked after the parent, and takes its `c` at the parent's best frame
@@ -1448,8 +1484,11 @@ export function mount(host) {
         await going();
         const judged = await judgePlace(one);
         if (judged === null) continue;
-        log("root", index === 0 ? "Found one. Now the judge takes over." : "Now its Julia twin, the Julia set for this spot.");
-        stack.leg(index === 0 ? "Descent" : "Julia twin", judged.read.p3);
+        judged.row = stack.stage(
+          "root",
+          index === 0 ? `Root found at ${width(one.frame.w)}` : "Julia twin: c from the best frame",
+          judged.read.p3,
+        );
         display({
           view: viewAt(one.family, one.frame, { constants: one.constants }),
           frame: one.frame,
@@ -1459,6 +1498,9 @@ export function mount(host) {
         });
         phase = "deep";
         const best = await deepen(one.family, one.frame, judged, one.constants);
+        stack.stage("verdict", `${STOPS[best.stop]} · best ${score(best.read.p3)} at ${width(best.frame.w)}`);
+        // The last place's candidates stay up until this walk's first descent is over.
+        if (index === 0) candidates.clear();
         const place = { family: one.family, frame: best.frame, constants: one.constants };
         if (index === 0 && twin) legs.push(twinOf(place));
         const read = best.read;
@@ -1475,11 +1517,8 @@ export function mount(host) {
           deep_ms: Math.round(performance.now() - leg),
         });
         const over = read.p3 >= config.bar;
-        const next = index + 1 < legs.length ? "trying its Julia twin" : "starting over";
-        log("verdict", verdict(best, over, next));
-        stack.verdict(best.stop, over);
+        stack.stage("verdict", over ? "Over the bar" : "Under the bar · moving on");
         if (!over) continue;
-        log("mining", `Trying ${config.recipes} ${config.recipes === 1 ? "way" : "ways"} of painting this spot…`);
         phase = "mine";
         const mining = performance.now();
         await mine(place);
@@ -1519,10 +1558,16 @@ export function mount(host) {
     hide(why) {
       hiddenGoing = hiddenGoing || state === "running" || state === "loading";
       pause(why);
+      // The controls come back with the reader's panel: a paused walk still owns the region
+      // under the picture only while its own tab is up.
+      onTab = false;
+      syncButton();
     },
     /** The tab is shown again: a walk that was going when it was hidden goes on, and the
      *  viewer is the walk's again. Nothing else starts one. */
     reveal() {
+      onTab = true;
+      syncButton();
       if (!hiddenGoing) return;
       hiddenGoing = false;
       if (state === "paused" || state === "idle") toggle();

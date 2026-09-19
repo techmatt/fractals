@@ -292,8 +292,8 @@ viewer: a pan, a zoom, a control, or a picture opened from any panel.
    typing it back into the config still works; the default sits deeper because the render
    judge has nothing to say above about 1e-2, and a walk that showed every halving from
    the home box spent its first eleven rungs on pictures nobody was weighing.
-3. **Stage one** is quick and the viewer does not follow it: the console says once which
-   plane and width it is looking for. It descends the sampler's quad-tree over the plane's
+3. **Stage one** is quick and the viewer does not follow it: the stack's first row says
+   which plane it is searching. It descends the sampler's quad-tree over the plane's
    home box × 0.9. Each cell gets a 64×36 smooth probe, at maxiter 256 while the cell is at
    least 1e-3 wide and at the width's own `maxiter_for_width` below that, where 256 would
    read escaping points as interior. A quarter *straddles* where its interior share is
@@ -341,42 +341,77 @@ viewer: a pan, a zoom, a control, or a picture opened from any panel.
    the set, so its Julia set is dust, and all fifteen twins taken there dead-ended at rung
    one. The twin gets a stage two of its own from its home frame. If that frame still has
    no straddling quarter, the twin is descended **on the judge alone**: all four quarters
-   are weighed, only the screen refuses one, and the console says so once. Phoenix has no
+   are weighed, and only the screen refuses one. Phoenix has no
    twin.
 10. A place over the bar is mined:
-   - Recipes are drawn over the ticked modes without replacement, a palette from the roster,
-     the identity shade with `mirror` read off the map's cyclicity, and a uniform phase
-     (0 under a direct trap).
+   - **One recipe per ticked mode** *(walk_view_ckpt132)*, in the Mode select's order: eight
+     at the default ticks. Each gets a palette from the roster, the identity shade with
+     `mirror` read off the map's cyclicity, and a uniform phase (0 under a direct trap). It
+     used to be three draws over modes × palettes (hunt and mine's `PER_LOCATION`), which
+     showed a place three ways out of the thirteen it could be painted.
    - Each is drawn at 640×360×2, the pipeline's candidate geometry. A texture weight or trap
      opacity is derived exactly as the viewer derives one.
-   - Each is scored by the gate's P≥4, and the best are kept as tiles. The fine head
-     ranks instead where the config ticks it.
+   - Each is scored by the gate's P≥4, and the best are kept as tiles (one by default,
+     *kept* in the config). The fine head ranks instead where the config ticks it.
 
-The config's defaults are the pipeline's draw where the page can make one. There are three
-recipes a place (hunt and mine's `PER_LOCATION`). The thirteen modes the pipeline accepts are
-listed in the Mode select's own order, handed over by the viewer so the two cannot drift, and
-the last five in it (the three direct traps, `curvature`, `smooth_curvature`) start unticked.
+The config's defaults are the pipeline's draw where the page can make one. The thirteen modes
+the pipeline accepts are listed in the Mode select's own order, handed over by the viewer so
+the two cannot drift, and the last five in it (the three direct traps, `curvature`,
+`smooth_curvature`) start unticked.
 
-**The console** keeps 40 lines, newest first, one line per event and in words rather than
-numbers where it can. Each line carries a `data-kind` that tints its left edge: `root`,
-`rung`, `refusal`, `verdict`, `mining`, `found` and `status`. A rung shows only the judge's
-score and whether it rose (the width is in the address bar), and a refusal names the
-quarter and the gate in a few words. The per-rung straddle count is not logged, because the
-boxes already show it.
+**The walk view** *(walk_view_ckpt132)* replaces the viewer's controls while a walk is running
+or paused and the viewer is the walk's. Download, Mode, Palette and Details are not on the
+page then. They come back when the reader takes the viewer (a pan, a control's key, an opened
+Found or Saved picture) or leaves the Walk tab for Gallery or Atlas. Back to the walk, Start
+or coming back to the tab puts the walk view back. It has two halves, one above the other,
+and on a phone the stack is cut to its last few rows.
 
-**The walk stack** *(walk_tune_ckpt131)* sits in the viewer's bottom-right corner, over the
-controls, while a walk runs, and is gone the moment it pauses. It shows the current walk's
-structure, updated live:
+**The quarters have fixed colors**, bound to position. They are the same on the picture and
+in the stack:
 
-- the plane and whether a root has been found;
-- a column of rungs for the descent and another for its Julia twin, each rung a bar of its
-  P≥3. The root is the top bar, the best is ringed, and the one being weighed is lit;
-- the verdict, and whether the place cleared the bar;
-- the recipe slots filling in with their P≥4, and whether one was kept.
+| quarter | name | ink |
+|---|---|---|
+| upper-left | red | `#d55e00` (Okabe–Ito vermillion) |
+| upper-right | blue | `#3d8bff` |
+| lower-left | yellow | `#f0e442` (Okabe–Ito yellow) |
+| lower-right | pink | `#cc79a7` (Okabe–Ito reddish purple) |
 
-Its labels wear the console's kinds, from the same CSS declarations, so the two read as one
-system. A new walk clears it. Below the studio's breakpoint it collapses to one line along
-the bottom edge: the plane, then where the walk is now.
+They were chosen by simulating protanopia, deuteranopia and tritanopia (Machado 2009, full
+severity) and taking the set whose closest pair is farthest apart in CIE Lab. That pair is
+34 apart, and deuteranopia is the tightest case. The obvious red, sky blue, yellow and pink
+come to 21. Every box is stroked over a dark under-stroke, so the colors read on light
+palettes as well. Only the current rung's four boxes are drawn. A quarter the walk skipped,
+because it does not straddle the edge or the screen refused it, is still drawn, dashed and
+faded in its color.
+
+**The stack** is the top half: one row per rung, newest at the bottom, cleared by a new walk.
+A rung row has four chips in the quarter colors, in the order upper-left, upper-right,
+lower-left, lower-right. Each chip is that quarter's P≥3, or *empty* where the quarter was
+skipped, with the reason in its tooltip. The chosen chip is outlined. The row ends
+*→ zooming into red* and the rung's width in grey. Stage rows are one line each, tinted by
+kind (`root`, `verdict`, `mining`, `found`):
+
+- *Multibrot 5 · searching for a root*
+- *Root found at 3.2e-4*, with its P≥3
+- *Peak · best 0.61 at 2.5e-5* (or *Floor*, *Cap*, *Dead end*)
+- *Over the bar*, or *Under the bar · moving on*
+- *Julia twin: c from the best frame*, followed by the twin's own rung rows
+- *Mining 8 candidates*
+- *Kept: threads · 0.87*, or *Nothing kept*
+
+The row being worked on is lit, and the leg's best rung so far carries a *best* mark. The root
+and the twin's home frame count as rungs for this. The stack replaced both the panel's
+console (`walk_console_ckpt131`) and a corner widget over the controls (`walk_tune_ckpt131`).
+Whatever the console said that is not one of these rows was dropped. The few things that are
+not steps of a walk, such as a stopped download, a judge that would not load, or nothing
+ticked, go on the status line beside Start.
+
+**The candidates** are the bottom half: one small tile per recipe at a place, with its mode
+and P≥4, filling in as they are drawn. The kept ones are outlined in the found ink. They stay
+in drawing order, except that with the fine head ticked they are sorted by it and re-outlined.
+**They outlast the decision.** A place's candidates stay up past the kept tile and through
+the start of the next walk, and clear when that walk's first descent ends, so they can still
+be compared while the next root is being found. A Julia twin's mining replaces its parent's.
 
 **Where it is not the pipeline, said once.**
 
@@ -409,8 +444,8 @@ contract has no key for it and nothing a link opens sets it.
 - Both are the judges lab's `fp16w` exports: fp16 weights and fp32 compute. The render
   judge (gate) reads `[P≥2, P≥3, P≥4]`.
 - **Recipes are ranked on the number they are shown with** *(saved_tab_ckpt131_addendum1)*.
-  By default that is the render judge's P≥4, which is what the found tile's badge and the
-  console's *Kept one* line show, the same number the descent already speaks in. The badge's
+  By default that is the render judge's P≥4, which is what the found tile's badge, the
+  candidate tiles and the stack's *Kept* row show, the same number the descent already speaks in. The badge's
   tooltip reads *how likely a person is to rate this 4 or 5*. It is the default because a
   displayed number and a ranking number that disagree make a kept tile read as a mistake:
   under the old default the walk could keep a picture badged lower than one it had just
@@ -438,7 +473,7 @@ contract has no key for it and nothing a link opens sets it.
   only where the response is not gzipped: a gzipped response's length is the compressed
   length. The button reads Pause while a download runs. Pressing it, hiding the tab, or
   switching to Gallery or Atlas aborts the fetch and releases any session still being
-  made, and the console says so in one line. A file that had fully arrived and a session
+  made, and the status line says so. A file that had fully arrived and a session
   that was made are kept, so the next Start does not download them again.
 - **A gzipped response broke the download until this change.** `fetchBytes` sized its
   buffer from `content-length`, which under Pages is the gzipped length, so the runtime
@@ -448,7 +483,7 @@ contract has no key for it and nothing a link opens sets it.
   every text type, the wasm and `application/octet-stream` at level 6 with the compressed
   `content-length`, as Pages does, so a local walk takes the deployed load path.
 - Where the runtime cannot load, the walk runs on the screen alone, picks among survivors
-  at random, and says so in its console.
+  at random, and says so on its status line.
 
 **The assets are untracked.** `explorer/judges/` is named in `.git/info/exclude` and filled
 by
