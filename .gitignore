@@ -9,10 +9,9 @@ local.toml
 # never land in this repo; a copy dropped here for a session stays untracked.
 /website_*.md
 
-# The wasm crates' build trees. `engine.wasm` beside the page is the committed
-# artifact; this is the several hundred megabytes cargo needs to produce it.
-# `perturb-wasm` has no committed artifact at all yet — its README says why — so
-# for now its tree is the only thing cargo leaves behind.
+# The wasm crates' build trees. `engine.wasm` and `perturb.wasm` beside the page are
+# the committed artifacts; these are the several hundred megabytes cargo needs to
+# produce them.
 explorer/engine-wasm/target/
 explorer/perturb-wasm/target/
 

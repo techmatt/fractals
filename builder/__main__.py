@@ -119,6 +119,14 @@ def _parser() -> argparse.ArgumentParser:
         ),
     )
     baked.add_argument(
+        "--perturb",
+        action="store_true",
+        help=(
+            "rebuild explorer/perturb.wasm — the Deep tab's perturbation kernel — and its "
+            "manifest, and nothing else; needs cargo but no sibling checkout"
+        ),
+    )
+    baked.add_argument(
         "--names",
         action="store_true",
         help=(
@@ -529,6 +537,18 @@ def _do_explorer(options: argparse.Namespace) -> int:
                 f"their own name, {generated} generated; {restored} generated name(s) given "
                 "back the map's own"
             )
+        return 0
+    if options.perturb:
+        # Its own branch and not a stage of the bake: this module has no palettes, no
+        # catalog and no sibling checkout in it, so folding it into the bare command would
+        # make every palette edit rebuild a second crate for nothing.
+        path, raw_bytes, gzip_bytes = explorer_module.build_perturb()
+        print(
+            f"wrote {path.relative_to(SITE_ROOT).as_posix()}  {raw_bytes:,} bytes, "
+            f"{gzip_bytes:,} gzipped"
+        )
+        path = explorer_module.write_perturb_manifest(raw_bytes, gzip_bytes)
+        print(f"wrote {path.relative_to(SITE_ROOT).as_posix()}")
         return 0
     if options.random:
         path, listed, marked, skipped = explorer_module.mark_random()

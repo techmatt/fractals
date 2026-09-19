@@ -192,6 +192,34 @@ const renderState = document.getElementById("render-state");
 
 let renderer = null;
 let contract = null;
+/** The Deep tab's contract context: the same palette set, and the two numbers neither
+ *  contract owns. Built beside `contract` at boot. */
+let deepContext = null;
+
+/**
+ * `deep-link.js`, once something has needed it.
+ *
+ * **Not a static import, and the 8 KB is the reason.** That module pulls in exact `BigInt`
+ * arithmetic, and a reader who never opens the Deep tab should not download either — the
+ * eager bundle is what the first frame waits through. What the page needs at the door is
+ * only the *question* — is this a deep link — and that is one line in `permalink.js`,
+ * which is eager anyway. So the marker is asked there and the reader is fetched here,
+ * when a deep link is actually in front of the page: in the address, in the saved list,
+ * or because the tab was opened.
+ */
+let deepRules = null;
+
+/** Fetch the deep contract, once, and let every synchronous caller see it. */
+async function loadDeepRules() {
+  if (deepRules === null) {
+    deepRules = await import("./deep-link.js");
+    // Anything asked about a deep link before this landed was told `null`. The answers
+    // are cached, so they are dropped and the marks on the page are dressed again.
+    canonicalLinks.clear();
+    if (saved !== null) saving.remark(saved);
+  }
+  return deepRules;
+}
 let view = null;
 let grid = { width: 0, height: 0 };
 let settleTimer = 0;
@@ -387,6 +415,25 @@ function setBusy(on) {
 
 // ------------------------------------------------------------------- what to say
 
+/**
+ * A message under the canvas with something to press at the end of it.
+ *
+ * The one place the page makes an offer rather than a statement, and it exists for the
+ * one moment where saying no would be unhelpful: a reader who has zoomed until the
+ * arithmetic gives out has asked, as plainly as this page allows, for the thing the Deep
+ * tab does. Telling them it is impossible, when a tab three inches to the left does it,
+ * would be a sentence that is no longer true.
+ */
+function offer(text, label, action) {
+  say(text);
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "say-action";
+  button.textContent = label;
+  button.addEventListener("click", action);
+  status.append(" ", button);
+}
+
 /** A message under the canvas: a refusal, an error, a saved file, a copied link. */
 function say(text) {
   status.textContent = text;
@@ -466,6 +513,51 @@ function planOf(current) {
   return renderer.plan(specOf(current, 16, 9, { colormap: false }));
 }
 
+/**
+ * The plan a deep view implies, which is a constant rather than a question.
+ *
+ * The Deep tab draws `smooth` and nothing else — one field, coloured after the fact — so
+ * it is not a direct trap, and the tone operator acts on it. Asking `engine.wasm` would
+ * mean building a spec around a viewport it refuses, to be told what is already known.
+ */
+const DEEP_SHAPE = { ok: true, direct: false, levels: true };
+
+/**
+ * Whose colour the Palette section is turning.
+ *
+ * The viewer's view, or the Deep tab's while that tab owns the viewer. Both carry the
+ * same three fields — `palette`, `shade` and `level` — and they carry them in the same
+ * shapes, because the deep link spells the colour keys the shallow link's way and both
+ * hand them to the same `Palette` recipe on the module's boundary. So one set of controls
+ * serves both, and the indirection is here rather than a second Palette section.
+ */
+function tinting() {
+  return deep !== null && deep.owns() ? deep.view() : view;
+}
+
+/** And the plan those controls read, for whichever view that is. */
+function tintedShape() {
+  return deep !== null && deep.owns() ? DEEP_SHAPE : planOf(view);
+}
+
+/**
+ * Write back a colour the reader just turned, to whichever view it belongs to.
+ *
+ * A deep recolour never re-iterates — the field is kept, and that is what the Deep tab's
+ * cache is for — so the two sides differ in what follows the write and not in the write.
+ */
+function tint(changes, { moved = true } = {}) {
+  if (deep !== null && deep.owns()) {
+    deep.tint(changes);
+    syncShade();
+    return;
+  }
+  view = { ...view, ...changes };
+  if (moved) changed();
+  syncShade();
+  draw();
+}
+
 // ------------------------------------------------------------------- the geometry
 
 /** The plane height of the current view, from the pixel grid it is drawn on. */
@@ -502,17 +594,33 @@ function moveTo(x, y, w) {
 
 /** Zoom by `factor` about a point of the canvas, refusing to pass the `f64` wall. */
 function zoomAbout(px, py, factor) {
+  // Down in the Deep tab a zoom is exact arithmetic on a decimal centre, and it draws
+  // nothing. There is no floor to refuse at: going deeper is what that tab is for.
+  if (deepOwns()) {
+    deep.zoom(px, py, factor);
+    return;
+  }
   const anchor = planeAt(px, py);
   const width = view.w.value * factor;
   if (factor < 1 && !renderer.resolves(view.x.value, view.y.value, width, grid.width, grid.height)) {
-    say(
+    const wall =
       "This is as deep as this renderer can zoom here. It does its arithmetic in 64-bit " +
-        "floating point, which carries about 16 significant digits, and at this " +
-        "magnification the coordinates of neighboring pixels differ only in the last few " +
-        "of them. Any deeper and adjacent pixels would round to the same number, so there " +
-        "would be nothing left to draw. Going further needs higher-precision arithmetic, " +
-        "which this renderer does not have.",
-    );
+      "floating point, which carries about 16 significant digits, and at this " +
+      "magnification the coordinates of neighboring pixels differ only in the last few " +
+      "of them. Any deeper and adjacent pixels would round to the same number, so there " +
+      "would be nothing left to draw. Going further needs higher-precision arithmetic, " +
+      "which this renderer does not have.";
+    // On the Mandelbrot set the page now has that arithmetic, in a tab of its own, and
+    // this frame is exactly what it opens at.
+    if (view.family === "mandelbrot") {
+      offer(
+        `${wall} The Deep tab does, with a different kernel — slower, and this frame carries over.`,
+        "Open this frame in Deep",
+        () => showPanel("deep"),
+      );
+      return;
+    }
+    say(wall);
     return;
   }
   const scale = width / view.w.value;
@@ -542,6 +650,21 @@ function resize() {
 
 function present(image) {
   frameScreen.putImageData(image, 0, 0);
+  screen.drawImage(frame, 0, 0);
+  paintMark();
+}
+
+/**
+ * Hand the off-screen frame to somebody else to draw, then put it up.
+ *
+ * The Deep tab's seam onto the canvas. Everything else on this page hands over a finished
+ * `ImageData` and lets `present` blit it; the deep tab composes — a stale bitmap somewhere
+ * that is not the whole canvas, and a box over it — so it needs the context rather than a
+ * picture. What it does not need is its own canvas: going through `frame` keeps the double
+ * buffer this page has always had, so a compose never shows a half-drawn screen.
+ */
+function compose(draw) {
+  draw(frameScreen, grid);
   screen.drawImage(frame, 0, 0);
   paintMark();
 }
@@ -1043,7 +1166,11 @@ function settle() {
   panel?.describe();
   clearTimeout(settleTimer);
   settleTimer = setTimeout(() => {
-    const picture = link.emit(view, contract);
+    // Whichever contract the picture on screen belongs to. A deep view is written by the
+    // deep one and a shallow view by the shallow one, and the marker in front of it is
+    // what tells them apart again — so the address bar is always a link that reopens
+    // exactly what is being looked at, on both sides of the floor.
+    const picture = deepOwns() ? deep.link() : link.emit(view, contract);
     const furniture = showing === DEFAULT_PANEL ? "" : `&panel=${encodeURIComponent(showing)}`;
     history.replaceState(null, "", `?${picture}${furniture}`);
     syncSave();
@@ -1394,10 +1521,7 @@ function buildShade() {
  *  resets the shade keys and nothing else: the map itself is a pick, not a setting. */
 shadeReset.addEventListener("click", () => {
   if (locked()) return;
-  view = { ...view, shade: shade.defaultShade() };
-  changed();
-  syncShade();
-  draw();
+  tint({ shade: shade.defaultShade() });
 });
 
 /**
@@ -1412,26 +1536,27 @@ function setShade(key, text) {
     syncShade();
     return;
   }
+  const subject = tinting();
   // A slider fires `change` on release after `input` has already set the same value.
-  if (shade.spelling(view.shade, key) === text) return;
+  if (shade.spelling(subject.shade, key) === text) return;
+  let next;
   try {
-    view = { ...view, shade: shade.withKey(view.shade, key, text) };
+    next = shade.withKey(subject.shade, key, text);
   } catch (error) {
     say(error.message);
     syncShade();
     return;
   }
-  changed();
-  syncShade();
-  draw();
+  tint({ shade: next });
 }
 
 /** Show what the recipe now says, in every control that carries a piece of it. */
 function syncShade() {
+  const subject = tinting();
   for (const control of shade.CONTROLS) {
     const held = shadeWidgets.get(control.key);
     if (held === undefined) continue;
-    const text = shade.spelling(view.shade, control.key);
+    const text = shade.spelling(subject.shade, control.key);
     if (control.control === "flag") {
       held.box.setAttribute("aria-pressed", String(text === "1"));
     } else if (control.control === "number") {
@@ -1453,27 +1578,27 @@ function syncShade() {
   // the map was drawn to have. The control says so where a reader meets it rather than
   // leaving them to find out from a link that will not open.
   const fold = shadeWidgets.get("mirror");
-  const cyclic = PALETTES.get(view.palette).cyclic;
+  const cyclic = PALETTES.get(subject.palette).cyclic;
   fold.box.disabled = busy || cyclic;
   fold.box.title = cyclic
-    ? `${shownName(view.palette)} already loops back to its first color, so there is no seam to mirror.`
+    ? `${shownName(subject.palette)} already loops back to its first color, so there is no seam to mirror.`
     : SHADE_TIPS.mirror;
 
   // And a table that reads the same in both directions gives Reverse nothing to turn. The
   // key keeps whatever the link said — a symmetric map sent reversed is the same picture
   // either way — and the chip says why it is resting.
   const flip = shadeWidgets.get("reverse");
-  const same = symmetric(view);
+  const same = symmetric(subject);
   flip.box.disabled = busy || same;
   flip.box.title = same
-    ? `${shownName(view.palette)} reads the same in both directions, so Reverse would not change it.`
+    ? `${shownName(subject.palette)} reads the same in both directions, so Reverse would not change it.`
     : SHADE_TIPS.reverse;
 
   syncFinal();
 
   // The count names every key set, the ones with no control included: a link that set
   // the rolloff is a recipe this button resets, and its title is where that is said.
-  const set = shade.chosen(view.shade);
+  const set = shade.chosen(subject.shade);
   const labels = set.map((key) => shade.CONTROLS.find((control) => control.key === key).label);
   shadeReset.disabled = busy || set.length === 0;
   shadeReset.textContent = set.length === 0 ? "Reset palette" : `Reset palette (${set.length})`;
@@ -1489,7 +1614,7 @@ function syncShade() {
   // Where Autolevel is unused as well, which is every direct trap today, it joins the list:
   // this line is the whole of what the shade row has to say about a direct trap, since the
   // box beside it says nothing now but disabled.
-  const plan = planOf(view);
+  const plan = tintedShape();
   const inert = plan.levels === true
     ? "Gamma, Cycles, Phase and Transfer"
     : "Autolevel, Gamma, Cycles, Phase and Transfer";
@@ -1510,10 +1635,11 @@ function syncShade() {
  * showing the last one it drew; the refusal is said where the picture is.
  */
 function syncFinal() {
-  paletteShown.textContent = shownName(view.palette);
+  const subject = tinting();
+  paletteShown.textContent = shownName(subject.palette);
   let pixels;
   try {
-    pixels = renderer.ramp(view, paletteStrip.width, { direct: planOf(view).direct === true });
+    pixels = renderer.ramp(subject, paletteStrip.width, { direct: tintedShape().direct === true });
   } catch {
     return;
   }
@@ -1594,7 +1720,7 @@ function sentenceList(words) {
  * page keeps its explanation.
  */
 function syncLevel() {
-  const plan = planOf(view);
+  const plan = tintedShape();
   const levels = plan.levels === true;
   levelToggle.checked = levels && levelOn;
   levelToggle.disabled = busy || !levels;
@@ -1874,8 +2000,33 @@ function showPanel(asked) {
   }
   if (showing === "saved") startSaved();
   else savedPanel?.hide();
+
+  // **The Deep tab takes the viewer, and gives it back.** It is the one panel besides the
+  // walk whose showing changes what the canvas is a picture of: a deep frame is drawn by a
+  // different kernel and cannot be a view of the shallow one. So the viewer is handed over
+  // when the tab is shown and the shallow view is drawn again when it is left, and while it
+  // is held the sections that mean nothing down here — Download, Mode, the family and the
+  // constants — are off the page. Palette stays, because a deep field is a smooth field.
+  document.querySelector(".viewer").classList.toggle("is-deep", showing === "deep");
+  if (showing === "deep") {
+    startDeep().then(() => {
+      if (showing !== "deep") return;
+      deep?.show();
+      if (!deepOpening) deep?.enter(carryable());
+      deepOpening = false;
+      syncShade();
+    });
+  } else if (deep !== null) {
+    deep.hide();
+    syncShade();
+    if (walk === null || showing !== "walk") draw();
+  }
   settle();
 }
+
+/** Whether the Deep tab is being opened on a link rather than entered from the viewer,
+ *  in which case the link's own frame is the one to open at. */
+let deepOpening = false;
 
 // ------------------------------------------------------------------- saved pictures
 
@@ -1897,7 +2048,15 @@ function canonicalOf(query) {
   let known = canonicalLinks.get(query);
   if (known === undefined) {
     try {
-      known = link.emit(link.parse(`?${query}`, contract), contract);
+      // **Each contract canonicalizes its own, and the deep one does not truncate.** A
+      // deep centre is up to sixty-four characters of decimal and every one of them says
+      // where the view is, so putting it through the shallow reader — which holds a
+      // coordinate as a double — would store a link to a place nobody asked for.
+      known = link.isDeep(`?${query}`)
+        ? deepRules === null
+          ? null
+          : deepRules.canonicalize(`?${query}`, deepContext)
+        : link.emit(link.parse(`?${query}`, contract), contract);
     } catch {
       known = null;
     }
@@ -1957,6 +2116,11 @@ async function startSaved() {
   }
   savedStarted = true;
   try {
+    // The Saved tab is one of the three things that can put a deep link in front of the
+    // page, so opening it is one of the three that fetches the reader — and it has to be
+    // here rather than at the first deep entry, because the panel reads a link
+    // synchronously to label a tile.
+    await loadDeepRules();
     const { mount } = await import("./saved-panel.js");
     const at = (id) => document.getElementById(id);
     savedPanel = mount({
@@ -1964,11 +2128,25 @@ async function startSaved() {
       module: renderer.module,
       renderer,
       download: panel,
-      parse: (query) => link.parse(`?${query}`, contract),
+      // A deep entry is described rather than parsed: there is no drawing it at a tile's
+      // size without the perturbation kernel and a wait, so the panel labels it and the
+      // click opens the Deep tab on it.
+      parse: (query) =>
+        link.isDeep(`?${query}`)
+          ? deepRules.describe(query, deepContext)
+          : link.parse(`?${query}`, contract),
       parseImport: saving.parseImport,
       shownName,
       planeName,
-      open: (query) => openLink(query, { what: "this saved picture", from: "saved" }),
+      open: (query) => {
+        if (!link.isDeep(`?${query}`)) {
+          openLink(query, { what: "this saved picture", from: "saved" });
+          return;
+        }
+        deepOpening = true;
+        showPanel("deep");
+        startDeep().then(() => deep?.open(query));
+      },
       // After Download all: the screen's own pass, if the first picture cut it short.
       settle: () => {
         if (finished === null && walkLayers === null) draw();
@@ -2109,6 +2287,136 @@ async function startWalk() {
   }
 }
 
+// ------------------------------------------------------------------- the deep tab
+
+/** The mounted Deep tab, once its tab has been opened. `perturb.wasm` and every module
+ *  behind it are fetched then and never before, which is what keeps the ordinary explorer
+ *  exactly as heavy as it was. */
+let deep = null;
+/** The mount, as a promise, so every caller of `startDeep` waits on the same one. */
+let deepStarted = null;
+
+/** Whether the Deep tab is the one drawing the picture on the canvas. */
+function deepOwns() {
+  return deep !== null && deep.owns();
+}
+
+/** The frame the viewer would carry into the Deep tab, or `null` where it has none to
+ *  carry: deep is the Mandelbrot set at degree 2, and a view of anything else is a view of
+ *  a plane this kernel has no recurrence for. */
+function carryable() {
+  return view.family === "mandelbrot" ? view : null;
+}
+
+/**
+ * Take the frame the Deep tab is standing on back to the ordinary explorer.
+ *
+ * Carried where `f64` can still resolve it, and refused where it cannot — with the
+ * refusal being the module's own question rather than a width written down here. A deep
+ * frame that came back rounded would be a different place under the same name, which is
+ * the one thing this whole tab is built not to do.
+ */
+function leaveDeep(from) {
+  if (!resolvesShallow(from)) {
+    say(
+      "This frame is below what the ordinary explorer's arithmetic can resolve, so it " +
+        "cannot be carried back: every pixel of it would round to the same coordinate. " +
+        "Zoom out here first, and the button will take it over.",
+    );
+    return;
+  }
+  view = {
+    ...link.fresh("mandelbrot", "smooth", contract),
+    x: { text: from.x.text, value: Number(from.x.text) },
+    y: { text: from.y.text, value: Number(from.y.text) },
+    w: { text: from.w.text, value: from.w.value },
+    aspect: view.aspect,
+    palette: from.palette,
+    shade: from.shade,
+    level: from.level,
+  };
+  deep?.detach();
+  showPanel(DEFAULT_PANEL);
+  changed();
+  rebuild();
+  draw();
+}
+
+/** Whether the ordinary renderer would still resolve a deep frame, asked of the module. */
+function resolvesShallow(of) {
+  return (
+    grid.width > 0 &&
+    renderer.resolves(Number(of.x.text), Number(of.y.text), of.w.value, grid.width, grid.height)
+  );
+}
+
+/**
+ * Mount the Deep tab, once.
+ *
+ * **Memoized on the promise and not on a flag**, which is the difference between this and
+ * the three panels above it. Those are started from one place; this one is started from
+ * three — the tab, a deep link at the door, and a saved deep picture — and a second caller
+ * arriving while the first is still importing would be handed `undefined` and go on to use
+ * a `deep` that is still null. `pool()` in `deep.js` is memoized for the same reason.
+ */
+function startDeep() {
+  deepStarted ??= mountDeep();
+  return deepStarted;
+}
+
+async function mountDeep() {
+  const at = (id) => document.getElementById(id);
+  try {
+    // `deep.js` imports it as well, so this costs one fetch between them and makes the
+    // reader available to the synchronous callers the moment the tab exists.
+    await loadDeepRules();
+    const { mount } = await import("./deep.js");
+    deep = mount({
+      elements: {
+        render: at("deep-render"),
+        progress: at("deep-progress"),
+        note: at("deep-note"),
+        cap: at("deep-cap"),
+        capUp: at("deep-cap-up"),
+        capDown: at("deep-cap-down"),
+        policy: at("deep-cap-policy"),
+        centre: at("deep-centre"),
+        width: at("deep-width"),
+        back: at("deep-back"),
+        save: at("deep-save"),
+      },
+      context: deepContext,
+      grid: () => grid,
+      compose,
+      shading: () => renderer.shading,
+      say,
+      stat,
+      showState,
+      settle,
+      // A deep view is always one the reader made, so the curve is measured whenever the
+      // box is ticked. There is no stored half here: nothing arrives from a run.
+      deriving: () => levelOn,
+      resolves: resolvesShallow,
+      leave: leaveDeep,
+      save: (query) => {
+        const answer = saved.toggle(query);
+        if (answer === "added") say("Saved. It is on the Saved tab, in this browser.");
+        else if (answer === "removed") say("Removed from Saved.");
+        else if (answer === "full") say(`Saved is full at ${saving.MAX} pictures. Remove some to save more.`);
+      },
+      onColour: () => {
+        palettes?.show(deep.view().palette);
+        syncShade();
+      },
+    });
+    document.querySelector(".viewer").classList.toggle("is-deep", showing === "deep");
+  } catch (error) {
+    deepStarted = null;
+    console.warn("the deep tab could not be started", error);
+    at("deep-note").textContent = "The Deep tab could not be loaded.";
+  }
+}
+
 async function startAtlas() {
   if (atlasStarted) return;
   atlasStarted = true;
@@ -2219,6 +2527,8 @@ function release(event) {
     drag = null;
     if (Number.isFinite(ratio) && ratio > 0) {
       zoomAbout(grid.width / 2, grid.height / 2, 1 / ratio);
+    } else if (deepOwns()) {
+      deep.repaint();
     } else {
       draw();
     }
@@ -2229,6 +2539,12 @@ function release(event) {
   const dy = drag.at.y - drag.from.y;
   drag = null;
   if (dx === 0 && dy === 0) return;
+  // The Deep tab pans exactly as far, and draws nothing: the frame moves, the last
+  // picture stays where it falls, and Render is what commits it.
+  if (deepOwns()) {
+    deep.pan(dx, dy);
+    return;
+  }
   moveTo(
     view.x.value - (dx / grid.width) * view.w.value,
     view.y.value + (dy / grid.height) * planeHeight(),
@@ -2278,6 +2594,10 @@ window.addEventListener("keydown", (event) => {
   ];
   if (step) {
     event.preventDefault();
+    if (deepOwns()) {
+      deep.nudge(step[0], step[1]);
+      return;
+    }
     moveTo(
       view.x.value + step[0] * PAN_STEP * view.w.value,
       view.y.value + step[1] * PAN_STEP * planeHeight(),
@@ -2588,15 +2908,15 @@ modePicker.addEventListener("change", () => {
  *  the new map refuses a piece of it. */
 function pickPalette(name) {
   if (locked()) return;
-  view = { ...view, palette: name };
+  const subject = tinting();
+  const changes = { palette: name };
   // A cyclic map cannot be folded, so a recipe that arrived folded is dropped
   // rather than carried onto a map it is refused on.
-  if (view.shade.mirror && PALETTES.get(name).cyclic) {
-    view = { ...view, shade: { ...view.shade, mirror: false } };
+  if (subject.shade.mirror && PALETTES.get(name).cyclic) {
+    changes.shade = { ...subject.shade, mirror: false };
   }
-  changed();
   palettes.show(name);
-  draw();
+  tint(changes);
 }
 
 levelToggle.addEventListener("change", () => {
@@ -2608,6 +2928,13 @@ levelToggle.addEventListener("change", () => {
   // A view that arrived with no curve has none to give back, so ticking it on is asking for
   // one to be measured: the view is `derived` from here, the way it would be after a move.
   if (levelOn && levelling === "stored" && storedCurve === null) levelling = "derived";
+  // The Deep tab has one state and not two: every deep view is one the reader made, so
+  // unticking takes the curve away and ticking measures the picture that is up.
+  if (deep !== null && deep.owns()) {
+    deep.tint({ level: levelOn ? deep.view().level : null });
+    syncLevel();
+    return;
+  }
   if (levelling === "stored") {
     view = { ...view, level: levelOn ? storedCurve : null };
   } else if (!levelOn) {
@@ -2719,7 +3046,8 @@ function relayout() {
   resizing = setTimeout(() => {
     if (busy) return;
     if (!resize()) return;
-    if (walkLayers !== null) paintWalk();
+    if (deepOwns()) deep.repaint();
+    else if (walkLayers !== null) paintWalk();
     else draw();
   }, 200);
 }
@@ -2772,14 +3100,47 @@ async function main() {
     settled: (mode) => SETTLED[mode],
   };
 
+  // What the deep contract needs, which is the shallow one's palette set and two numbers
+  // neither contract owns: where the Mandelbrot set comes home to, and what cap a width
+  // implies. The home is `engine.wasm`'s and the cap is `perturb.wasm`'s — asked of the
+  // engine until that module is up, because the two agree everywhere the engine answers
+  // and the tab replaces it with the kernel's the moment it has one.
+  deepContext = {
+    palettes: PALETTES,
+    defaultPalette: DEFAULT_PALETTE,
+    deepHome: () => {
+      const home = homeOf("mandelbrot");
+      return { x: home.x.text, y: home.y.text, w: home.w.text };
+    },
+    deepCap: (width) => renderer.maxiter(width),
+  };
+
   fill(familyPicker, link.FAMILIES);
   makeSaved();
 
+  // **A deep link is read by the deep contract and never by the shallow one.** The marker
+  // is what decides, at the door, before either reader sees a key it would refuse. What
+  // the viewer opens at in that case is the Mandelbrot home — the Deep tab has the picture,
+  // and the viewer behind it is what Back to the explorer comes out onto.
+  const arriving = link.isDeep(window.location.search) ? window.location.search : null;
   try {
-    view = link.parse(window.location.search, contract);
+    view = arriving === null
+      ? link.parse(window.location.search, contract)
+      : link.fresh("mandelbrot", "smooth", contract);
   } catch (error) {
     refuse(`${error.message} Nothing has been drawn, because guessing what was meant would be worse than saying so.`);
     return;
+  }
+  if (arriving !== null || saved.items.some((item) => link.isDeep(`?${item.link}`))) {
+    await loadDeepRules();
+  }
+  if (arriving !== null) {
+    try {
+      deepRules.parse(arriving, deepContext);
+    } catch (error) {
+      refuse(`${error.message} Nothing has been drawn, because guessing what was meant would be worse than saying so.`);
+      return;
+    }
   }
   arrived();
   // A bare page names no picture, so there is nothing it arrived with to replay: the
@@ -2837,11 +3198,25 @@ async function main() {
 
   // Which panel the link asked for. A UI key is never validated by the contract, so an
   // unknown one lands on the default rather than refusing a picture over furniture.
-  showPanel(new URLSearchParams(window.location.search).get("panel") ?? DEFAULT_PANEL);
-
-  rebuild();
-  resize();
-  draw();
+  if (arriving !== null) {
+    // The tab opens on the link's own frame rather than on the viewer's, and draws the
+    // quarter pass and nothing else: a link that started a full deep render on arrival
+    // would be a link that costs a minute to follow.
+    //
+    // Mounted and opened BEFORE the panel is shown, so the tab is never on screen standing
+    // on a frame the link did not name.
+    deepOpening = true;
+    rebuild();
+    resize();
+    await startDeep();
+    deep?.open(saving.queryOf(arriving));
+    showPanel("deep");
+  } else {
+    showPanel(new URLSearchParams(window.location.search).get("panel") ?? DEFAULT_PANEL);
+    rebuild();
+    resize();
+    draw();
+  }
 
   // The gallery is the last thing started and the only one allowed to fail quietly: its
   // pictures are untracked until this is deployed, so a clone has the record and no

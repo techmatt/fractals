@@ -137,6 +137,18 @@ WASM_MODULE = EXPLORER_DIR / "engine.wasm"
 MANIFEST = EXPLORER_DIR / "engine.manifest.json"
 CRATE_DIR = EXPLORER_DIR / "engine-wasm"
 
+#: The second module, and the second manifest. `perturb-wasm` is the perturbation kernel
+#: the Deep tab runs below the `f64` floor, and it is a crate of its own so that nothing in
+#: it is linked into `engine.wasm` — the shallow path cannot be slowed or re-bytes by it.
+#:
+#: **It is built without the sibling checkout, and that is the point of it.** The crate has
+#: no dependencies at all, not even the engine, so `--perturb` runs on a bare clone with a
+#: Rust toolchain and nothing else; `build_wasm` above refuses early without the checkout
+#: because the engine crate is a path dependency of the other one.
+PERTURB_MODULE = EXPLORER_DIR / "perturb.wasm"
+PERTURB_MANIFEST = EXPLORER_DIR / "perturb.manifest.json"
+PERTURB_CRATE_DIR = EXPLORER_DIR / "perturb-wasm"
+
 #: The wallpaper project's shipped anchors, relative to its checkout root. Three rows,
 #: one per family that has constants to remember — a known-good quadratic Julia `c` and
 #: Ushiki's Phoenix pair — and they are what the explorer opens a dynamical plane at.
@@ -218,6 +230,7 @@ FINE_BAR = 0.030242
 #: The wasm target and the file cargo leaves the module at.
 WASM_TARGET = "wasm32-unknown-unknown"
 WASM_ARTIFACT = ("target", WASM_TARGET, "release", "explorer_engine_wasm.wasm")
+PERTURB_ARTIFACT = ("target", WASM_TARGET, "release", "perturb.wasm")
 
 #: The manifest's schema, in the same spirit as every JSONL record here.
 SCHEMA = 1
@@ -1170,6 +1183,56 @@ def write_manifest(raw_bytes: int, gzip_bytes: int) -> Path:
         json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8", newline="\n"
     )
     return MANIFEST
+
+
+def build_perturb() -> tuple[Path, int, int]:
+    """Compile the perturbation kernel for wasm and copy it in beside the page.
+
+    No `wallpapers_root()` here, deliberately: this crate depends on nothing — not the
+    engine, not even as a dev-dependency — so it builds on a clone with a Rust toolchain
+    and no sibling checkout, and refusing early for want of one would be refusing for a
+    reason that does not apply.
+    """
+    if not PERTURB_CRATE_DIR.is_dir():
+        raise ExplorerError(f"no crate at {PERTURB_CRATE_DIR}")
+    finished = subprocess.run(
+        ["cargo", "build", "--target", WASM_TARGET, "--release"],
+        cwd=PERTURB_CRATE_DIR,
+        capture_output=True,
+        text=True,
+    )
+    if finished.returncode != 0:
+        raise ExplorerError(f"cargo build failed:\n{finished.stderr.strip()}")
+    built = PERTURB_CRATE_DIR.joinpath(*PERTURB_ARTIFACT)
+    if not built.is_file():
+        raise ExplorerError(f"cargo reported success and left no module at {built}")
+    shutil.copyfile(built, PERTURB_MODULE)
+    raw = PERTURB_MODULE.read_bytes()
+    return PERTURB_MODULE, len(raw), len(gzip.compress(raw, 9))
+
+
+def write_perturb_manifest(raw_bytes: int, gzip_bytes: int) -> Path:
+    """Record what the committed perturbation module was built from, and with what.
+
+    The same shape as `engine.manifest.json` and two fields lighter: this crate has no
+    `engine_version` and no `engine_changes`, because it does not link the engine and has
+    never needed a change in it. Saying so with the fields absent rather than empty is the
+    honest spelling — an empty `engine_changes` would read as a list somebody forgot to
+    fill in.
+    """
+    manifest = {
+        "schema": SCHEMA,
+        "built": date.today().isoformat(),
+        "crate": PERTURB_CRATE_DIR.relative_to(SITE_ROOT).as_posix(),
+        "dependencies": [],
+        "gzip_bytes": gzip_bytes,
+        "raw_bytes": raw_bytes,
+        "rustc": _rustc_version(),
+    }
+    PERTURB_MANIFEST.write_text(
+        json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8", newline="\n"
+    )
+    return PERTURB_MANIFEST
 
 
 def load_manifest() -> dict | None:

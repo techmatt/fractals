@@ -884,13 +884,21 @@ export function shadeApart(module, field, view, holder = {}, { derive = false } 
 }
 
 /** What a shade worker is asked: the spec as text, the field's lanes transferred, and
- *  whether to measure the curve. The lanes buffer is detached by the transfer. */
-function shadeMessage(field, view, derive) {
+ *  whether to measure the curve. The lanes buffer is detached by the transfer.
+ *
+ *  **`given` is the Deep tab's seam and nothing else uses it.** A deep field is drawn by
+ *  `perturb.wasm` and coloured by this module, so its spec is built by `deep-render.js`
+ *  against a placeholder viewport — `specOf` could not build it, because a deep view has
+ *  no family, no mode and no coordinate a double could carry. Handing the spec in rather
+ *  than widening `specOf` keeps the shallow spec exactly one shape. */
+function shadeMessage(field, view, derive, given = null) {
   const lanes = field.values;
-  const spec = specOf(view, field.width, field.height, {
-    supersample: field.supersample,
-    level: !derive,
-  });
+  const spec =
+    given ??
+    specOf(view, field.width, field.height, {
+      supersample: field.supersample,
+      level: !derive,
+    });
   return [
     {
       kind: "shade",
@@ -992,10 +1000,11 @@ export class ShadeWorker {
     if (this.worker === null) this.#start();
   }
 
-  /** Colour a field, as `shadeApart` does. `field.values` is transferred when it is posted. */
-  shade(field, view, holder = {}, { derive = false } = {}) {
+  /** Colour a field, as `shadeApart` does. `field.values` is transferred when it is posted.
+   *  `spec` is the Deep tab's seam — see `shadeMessage`. */
+  shade(field, view, holder = {}, { derive = false, spec = null } = {}) {
     return new Promise((resolve, reject) => {
-      const [message, transfer] = shadeMessage(field, view, derive);
+      const [message, transfer] = shadeMessage(field, view, derive, spec);
       const job = {
         field,
         derive,

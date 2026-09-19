@@ -494,6 +494,25 @@ export const LEVEL_KEY = {
  */
 export const UI_KEYS = new Set(["panel"]);
 
+/**
+ * The key that marks a query as the Deep tab's rather than this contract's.
+ *
+ * **It lives here, in the module that decides what a query means, and not in
+ * `deep-link.js`.** The page has to know which of the two readers a query belongs to
+ * before it has either answer, at the door, on every boot — and `deep-link.js` pulls in
+ * exact `BigInt` arithmetic that a reader who never opens that tab should not download.
+ * So the one-line question is here and the answer to it is there.
+ *
+ * A `dv` reaching this contract's own key sweep is refused by it like any other unknown
+ * key, which is what makes the two readers safe to have in one address space.
+ */
+export const DEEP_MARKER = "dv";
+
+/** Whether a query is a deep link: the marker, and nothing else about it. */
+export function isDeep(search) {
+  return new URLSearchParams(stripLeadingQuestion(search)).has(DEEP_MARKER);
+}
+
 /** One key's row of the recipe, by the name a link spells it with. */
 export function shadeKey(key) {
   const spec = SHADE_KEYS.find((held) => held.key === key);
@@ -699,8 +718,14 @@ export function emit(view, context) {
  * thing a URL is for — being read by a person. The `+` of an exponent is NOT left
  * alone and must not be: a raw `+` in a query string means a space, so a link
  * carrying `w=1e+3` unencoded arrives here as `1e 3` and is refused.
+ *
+ * **Exported for `deep-link.js` and for nothing else.** The Deep tab's links are a
+ * contract of their own, but they spell the colour keys the way this one does, and this
+ * rule — the colon left alone, the `+` of an exponent emphatically not — is subtle enough
+ * that a second copy of it would be a second thing to get right. Exporting it moves no
+ * rule of this contract; see the note above `DEEP` in that file.
  */
-function encode(text) {
+export function encode(text) {
   return encodeURIComponent(text).replaceAll("%3A", ":");
 }
 
@@ -722,8 +747,10 @@ function encode(text) {
  *
  * The `+` of an exponent is encoded here exactly as it is there, and must be: a
  * raw `+` in a query string means a space.
+ *
+ * Exported beside [`encode`], for `deep-link.js`, for the same reason.
  */
-function encodeCurve(text) {
+export function encodeCurve(text) {
   return encode(text).replaceAll("%2F", "/").replaceAll("%2C", ",");
 }
 

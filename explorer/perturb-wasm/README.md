@@ -315,11 +315,38 @@ into the same binary, which is exactly why it is not in either of them. It
 writes `smooth-cases.json`, runs the engine comparison, prices the native side
 and dumps the ladder's fields; `scratch/perturb_validate/sheet.py` composes them.
 
-## Not committed: `perturb.wasm`
+## Committed: `perturb.wasm`
 
-The module is **not** in the tree, and there is no manifest for it. Nothing on
-the site fetches it, its exports have had no consumer yet to settle them, and the
-tab prompt will rebuild it anyway. A committed binary that no page loads and no
-reader can check is worth less than the line in this README saying how to build
-one. When the tab lands, the module and a manifest land with it, under the same
-rule `engine.manifest.json` keeps.
+The module **is** in the tree, and `perturb.manifest.json` is beside it, since
+`build_deep_tab_ckpt135` (2026-09-19) gave it the consumer that settled its
+exports. `python -m builder explorer --perturb` rebuilds both and nothing else:
+it needs `cargo` and the `wasm32-unknown-unknown` target and **no sibling
+checkout**, which is what this crate having no dependencies buys and is why it is
+its own branch rather than a stage of the explorer's bake.
+
+| field | what it holds |
+| --- | --- |
+| `schema` | the record's own version, `1` |
+| `built` | the date of the build |
+| `crate` | `explorer/perturb-wasm` |
+| `dependencies` | `[]`, and it is written down because it is the design |
+| `rustc` | the compiler, with its commit and date |
+| `raw_bytes` / `gzip_bytes` | **108,310 raw, 50,942 gzipped** |
+
+Two fields of `engine.manifest.json` are **absent** rather than empty:
+`engine_version`, because this crate does not link the engine, and
+`engine_changes`, because it has never needed a change in it. An empty
+`engine_changes` would read as a list somebody forgot to fill in. That the second
+one is still true after the tab landed is worth saying plainly: the tab shades its
+field through `engine.wasm`'s existing `shade_level` on a placeholder viewport,
+which `explorer/deep.test.mjs` holds to being sound, so **`engine.wasm` is
+byte-identical and `engine.manifest.json` is unmoved**.
+
+**What a visitor downloads for it: nothing, unless they open the Deep tab.** The
+module and the tab's five modules are fetched on that tab's first open and never
+before. Against `engine.wasm`'s 213,828 gzipped, the 50,942 here is 24% more —
+paid only by a reader who asked for a renderer for everything below 1e-10.
+
+`core::fmt` is still most of the size and is still not chased: `plan` formats a
+JSON report and every refusal is a sentence, and the tab reads both. Trimming it
+would mean giving up the sentences, which are what a refusal is.

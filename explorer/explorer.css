@@ -1253,3 +1253,155 @@ canvas.palette-final {
   padding: 0.05em 0.3em;
   border-radius: 2px;
 }
+
+
+/* ---------------------------------------------------------------- the Deep tab
+   The Mandelbrot set below the f64 floor. The panel is the controls — Render, the frame
+   it would draw, and the iteration cap — because the viewer beside it is the picture and
+   a deep picture is the one thing on this page worth the whole column.
+
+   What is NOT here is a second Palette section. A deep field is a smooth field and the
+   engine colours it unchanged, so the Palette group under the canvas serves both and the
+   only sections that go away are the ones that would be lying: Download, which this tab
+   does not offer; Mode and the family, which have one value each down here. */
+.viewer.is-deep .control-group:not(.palette-group),
+.viewer.is-deep #details {
+  display: none;
+}
+
+/* The panel's own section heads take the gutter, as the Walk tab's Found head does: the
+   rule is drawn from the label to the section's right edge, and a head with no padding
+   would start its label at the panel's very edge while everything under it is inset. */
+#panel-deep .section-head {
+  flex: none;
+  padding: 0 var(--gutter);
+}
+
+.deep-head {
+  flex: none;
+  padding: var(--gutter) var(--gutter) 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.deep-go { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; }
+
+/* Render is the one action this tab has, so it is drawn the way Start is on the Walk tab.
+   Running, it is Cancel and carries its own progress as a fill, because a button that is
+   also the bar is one thing to look at rather than two. */
+.deep-render {
+  appearance: none;
+  border: none;
+  border-radius: 4px;
+  background: var(--well-link);
+  color: var(--well);
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 0.3rem 1.1rem;
+  cursor: pointer;
+}
+.deep-render:hover { background: var(--well-ink); }
+.deep-render:focus-visible { outline: 2px solid var(--well-link); outline-offset: 2px; }
+.deep-render.is-running { background: var(--well-ink-dim); }
+
+.deep-progress {
+  position: relative;
+  color: var(--well-ink-dim);
+  font-size: 0.75rem;
+  padding-bottom: 0.3rem;
+}
+.deep-progress::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 2px;
+  background: linear-gradient(
+    to right,
+    var(--well-link) 0 var(--done, 0%),
+    var(--well-rule) var(--done, 0%) 100%
+  );
+}
+
+.deep-note {
+  margin: 0;
+  color: var(--well-ink-dim);
+  font-size: 0.75rem;
+  line-height: 1.5;
+}
+.deep-note:empty { display: none; }
+
+/* The frame, spelled out. The centre is the one number on this page that is worth reading
+   digit by digit — it is what a deep link carries and what a double could not hold — so it
+   is monospaced, wrapped where it has to be, and never abbreviated. */
+.deep-frame {
+  flex: none;
+  margin: 0;
+  padding: 0.3rem var(--gutter) 0.6rem;
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 0.15rem 0.6rem;
+  font-size: 0.75rem;
+}
+.deep-frame dt { color: var(--well-ink-dim); }
+.deep-frame dd { margin: 0; }
+.deep-frame code {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  color: var(--well-ink);
+  overflow-wrap: anywhere;
+}
+.deep-centre { white-space: pre-line; }
+
+.deep-iterations, .deep-actions {
+  flex: none;
+  padding: 0.3rem var(--gutter) 0.6rem;
+  gap: 0.4rem;
+}
+.deep-iterations input { width: 6.5rem; text-align: right; }
+
+.deep-iterations button, .deep-actions button {
+  appearance: none;
+  border: 1px solid var(--well-rule);
+  border-radius: 4px;
+  background: none;
+  color: var(--well-ink);
+  font: inherit;
+  font-size: 0.75rem;
+  padding: 0.2rem 0.6rem;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.deep-iterations button:hover, .deep-actions button:hover {
+  border-color: var(--well-ink-dim);
+  color: var(--well-link);
+}
+.deep-iterations button:disabled, .deep-actions button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* The one thing under the canvas a reader can press: the offer at the zoom stop. */
+.say-action {
+  appearance: none;
+  border: 1px solid var(--well-link);
+  border-radius: 4px;
+  background: none;
+  color: var(--well-link);
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 0.1rem 0.6rem;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.say-action:hover { background: var(--well-link); color: var(--well); }
+.say-action:focus-visible { outline: 2px solid var(--well-link); outline-offset: 2px; }
+
+/* A saved deep picture carries no thumbnail — drawing one needs the perturbation kernel
+   and a wait of seconds a tile — so its cell is the label over the well it would have
+   filled, which says what it is rather than showing a broken image. */
+.saved-tile.is-deep { background: var(--well-pending); }
+.saved-tile.is-deep img { visibility: hidden; }

@@ -528,10 +528,10 @@ Three Windows cautions that have each cost a session already:
 
 ```
 python -m ruff check . && python -m ruff format --check . && python -m builder check
-node --test explorer/permalink.test.mjs explorer/bands.test.mjs explorer/level.test.mjs explorer/derive.test.mjs explorer/stops.test.mjs explorer/saved.test.mjs explorer/zip.test.mjs atlas/atlas.test.mjs
+node --test explorer/permalink.test.mjs explorer/bands.test.mjs explorer/level.test.mjs explorer/derive.test.mjs explorer/stops.test.mjs explorer/saved.test.mjs explorer/zip.test.mjs explorer/deep-fx.test.mjs explorer/deep-link.test.mjs explorer/deep.test.mjs atlas/atlas.test.mjs
 ```
 
-The second line is the eight JavaScript suites, on Node's own runner with nothing
+The second line is the eleven JavaScript suites, on Node's own runner with nothing
 installed. `permalink.test.mjs` is the contract held to itself — a URL is the one
 permanent thing this site emits, and it is worth a test suite even though nothing else
 here has one. `bands.test.mjs` is the pool held to the committed wasm: a band is a range
@@ -553,7 +553,16 @@ wrong stops rather than fail. Its on-disk case skips by name where `palettes.bin
 baked. `saved.test.mjs` holds the Saved tab's list to its promises: a stored value it cannot
 read is an empty list and never a throw, one picture is one entry however its link was
 spelled, and the cap evicts nothing. `zip.test.mjs` holds Download all's stored-zip writer
-to the format, read back through its own central directory.
+to the format, read back through its own central directory. The last three are the Deep
+tab's: `deep-fx.test.mjs` holds its coordinates to being exact where a double is not —
+a thousand steps of 1e-30 landing where one of 1e-27 does, and a difference taken in
+decimal where `f64` says zero; `deep-link.test.mjs` holds the deep contract to itself and
+**the shallow one to not having moved**; and `deep.test.mjs` holds the seam between the
+two wasm modules, which is the one place on this page where a mistake draws a plausible
+picture rather than raising — that the lanes `perturb.wasm` writes are the ones
+`engine.wasm` colours, that `shade_level` cannot see the placeholder viewport it is
+given, and that the deep kernel's sample grid is the engine's, with a frame nudged a
+tenth of a pixel as the control that proves the test has teeth.
 
 After touching placed prose, `python -m builder prose <page>` as well — see **Where prose
 comes from** above for what it holds together and why one edit has several sites.

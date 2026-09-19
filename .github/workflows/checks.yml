@@ -67,3 +67,7 @@ jobs:
         run: node --test explorer/stops.test.mjs
       - name: the Saved tab's list, and the zip Download all writes
         run: node --test explorer/saved.test.mjs explorer/zip.test.mjs
+      - name: the Deep tab's exact coordinates, and its own link contract
+        run: node --test explorer/deep-fx.test.mjs explorer/deep-link.test.mjs
+      - name: where the two kernels meet, against both committed modules
+        run: node --test explorer/deep.test.mjs

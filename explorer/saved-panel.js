@@ -59,7 +59,12 @@ export function mount(host) {
 
   // ------------------------------------------------------------------ the tiles
 
+  /** A tile's label.
+   *
+   *  A deep entry says so and says how wide it is, because "smooth · Mandelbrot" is true
+   *  of it and tells a reader nothing: what makes it worth keeping is the depth. */
   function describeView(view) {
+    if (view.deep) return `deep · ${view.said}`;
     return `${view.mode} · ${planeName(view.family)}`;
   }
 
@@ -99,8 +104,15 @@ export function mount(host) {
       view = parse(key);
       const said = describeView(view);
       label.textContent = said;
-      tile.title = `${view.mode} in ${shownName(view.palette)} on ${planeName(view.family)}`;
-      image.alt = tile.title;
+      tile.title = view.deep
+        ? `The Mandelbrot set at ${view.said}, in ${shownName(view.palette)} — below what ` +
+          "the ordinary renderer resolves. Opens in the Deep tab."
+        : `${view.mode} in ${shownName(view.palette)} on ${planeName(view.family)}`;
+      image.alt = view.deep ? "" : tile.title;
+      // **A deep picture is not drawn here.** There is no thumbnail of one without the
+      // perturbation kernel and a wait of seconds to minutes a tile, so the tab labels it
+      // and the click opens it where it can be drawn.
+      if (view.deep) tile.classList.add("is-deep");
     } catch (error) {
       label.textContent = "cannot be read";
       tile.title = String(error.message ?? error);
@@ -174,6 +186,8 @@ export function mount(host) {
         } catch {
           continue;
         }
+        // A deep entry has no tile to draw: see `cell`.
+        if (view.deep) continue;
         const pictures = await pool();
         let url = null;
         try {
@@ -365,7 +379,12 @@ export function mount(host) {
     const entries = [];
     for (const { link } of saved.items) {
       try {
-        entries.push({ link, view: parse(link) });
+        const view = parse(link);
+        // A deep picture is left out for the reason its tile is: this path draws through
+        // the ordinary renderer, which cannot resolve one. Download from the Deep tab is
+        // not offered at all yet, so leaving it out is honest rather than a gap.
+        if (view.deep) continue;
+        entries.push({ link, view });
       } catch {
         // Unreadable links are left out and counted at the end.
       }

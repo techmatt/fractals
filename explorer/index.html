@@ -40,6 +40,8 @@
                 aria-controls="panel-atlas" aria-selected="false">Atlas</button>
         <button type="button" class="tab" role="tab" id="tab-walk" data-panel="walk"
                 aria-controls="panel-walk" aria-selected="false">Walk</button>
+        <button type="button" class="tab" role="tab" id="tab-deep" data-panel="deep"
+                aria-controls="panel-deep" aria-selected="false">Deep</button>
         <button type="button" class="tab" role="tab" id="tab-saved" data-panel="saved"
                 aria-controls="panel-saved" aria-selected="false">Saved</button>
       </div>
@@ -86,6 +88,47 @@
       </div>
       <div class="tiles walk-found" id="walk-found" role="group" aria-labelledby="head-walk-found"></div>
       <p class="side-note" id="walk-note">Nothing found yet. Found pictures last until the page is closed.</p>
+    </div>
+
+    <div class="tabpanel" id="panel-deep" role="tabpanel" aria-labelledby="tab-deep" hidden>
+      <div class="deep-head">
+        <div class="deep-go">
+          <button type="button" class="deep-render" id="deep-render"
+                  title="Draw this frame: a quarter-resolution pass first, then the full one, then four samples a pixel. Press again to stop.">Render</button>
+          <span class="deep-progress" id="deep-progress" role="status" aria-live="polite" hidden></span>
+        </div>
+        <p class="deep-note" id="deep-note" role="status"></p>
+      </div>
+
+      <div class="section-head"><h2 id="head-deep-frame">Frame</h2></div>
+      <dl class="deep-frame" aria-labelledby="head-deep-frame">
+        <dt>Center</dt>
+        <dd><code class="deep-centre" id="deep-centre"></code></dd>
+        <dt>Width</dt>
+        <dd><code id="deep-width"></code></dd>
+      </dl>
+
+      <div class="section-head">
+        <h2 id="head-deep-iterations">Iterations</h2>
+        <button type="button" class="head-action" id="deep-cap-policy"
+                title="Back to the cap this kernel's own depth policy gives a frame of this width.">From the width</button>
+      </div>
+      <div class="bar deep-iterations" role="group" aria-labelledby="head-deep-iterations">
+        <button type="button" id="deep-cap-down" title="Halve the cap: a faster, shallower picture.">Halve</button>
+        <input type="number" id="deep-cap" class="param" min="50" max="1000000" step="1"
+               aria-label="Iteration cap">
+        <button type="button" id="deep-cap-up" title="Double the cap: a slower picture with more of the boundary in it.">Double</button>
+      </div>
+
+      <div class="bar deep-actions">
+        <button type="button" id="deep-save"
+                title="Keep this frame on the Saved tab, in this browser.">Save</button>
+        <button type="button" id="deep-back"
+                title="Open this frame in the ordinary explorer.">Back to the explorer</button>
+      </div>
+
+      <p class="side-note" id="deep-side-note">Smooth, Mandelbrot, degree 2 — the one recurrence
+      this kernel has. Drag and scroll to move the frame; nothing is drawn until you press Render.</p>
     </div>
 
     <div class="tabpanel" id="panel-saved" role="tabpanel" aria-labelledby="tab-saved" hidden>

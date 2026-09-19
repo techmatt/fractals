@@ -15,10 +15,18 @@ Same URL, same keys, and every link written before it still opens the same pictu
 modes `modes.jsonl` offers with the parameters the engine's catalog settles for each,
 and double-precision arithmetic that stops zooming where the engine says two neighbouring
 samples have become the same number. What is **not** here: fractional degrees, which are
-render-only and have no home view to open at; the niche `de` mode, which the engine
-renders by name and no production draw picks; and deep zoom, because a picture that needs
-perturbation needs a renderer this page does not carry. The article's deep-zoom figures
-stay baked rasters.
+render-only and have no home view to open at; and the niche `de` mode, which the engine
+renders by name and no production draw picks.
+
+**Deep zoom is here, in a tab of its own** *(build_deep_tab_ckpt135, 2026-09-19)*. This
+line used to rule it out — *a picture that needs perturbation needs a renderer this page
+does not carry* — and the page carries one now: `perturb.wasm`, a second module from a
+second crate, fetched only when somebody opens the **Deep** tab. What the old line got
+right is that it is a different renderer and not a wider one, which is why it is a tab
+rather than a widening: degree-2 Mandelbrot, `smooth`, an exact decimal centre, a link
+contract of its own, and a Render button, because a deep frame costs a minute. The
+eleven families and seventeen modes above are still `f64` and still stop where they
+stopped. The article's deep-zoom figures stay baked rasters.
 
 Two more things are outside the contract **by ruling**, and each is a refusal a figure can
 run into. **The iteration cap is not a link key.** The depth a picture is drawn to is the
@@ -87,6 +95,11 @@ download.js           the same render at a wallpaper's size, and what caps it
 render.js             the worker pool, the plan, the field passes, the shade
 worker.js             one worker: one wasm instance, one band of rows (or one screen)
 walk.js               the Walk tab: a simplified mining pipeline, run here and watched
+deep.js               the Deep tab: the Mandelbrot set below the f64 floor — see below
+deep-render.js        its pool, its one reference orbit a frame, and its shade spec
+deep-worker.js        one worker: one perturb instance, one held orbit, one band
+deep-fx.js            exact decimal coordinates, BigInt fixed point
+deep-link.js          the deep link contract, its own beside the shallow one
 saved.js              the Saved list: one localStorage value of links, and the save mark
 saved-panel.js        the Saved tab: tiles drawn from their links, import, export, Download all
 zip.js                a stored (uncompressed) zip writer, for Download all
@@ -101,6 +114,9 @@ level.test.mjs        7 tests: the module's tone measurement, and a derived curv
 derive.test.mjs       6 tests: a derived weight replays, a derived opacity lands where it says
 saved.test.mjs        8 tests: a bad stored value is an empty list, one link is one entry, the cap
 zip.test.mjs          2 tests: CRC-32's check values, and an archive read back to its bytes
+deep-fx.test.mjs      12 tests: the Deep tab's arithmetic is exact where a double is not
+deep-link.test.mjs    20 tests: the deep contract, and the shallow one held to not moving
+deep.test.mjs         10 tests: where the two modules meet, against both committed ones
 palettes.jsonl        the roster palettes.js is baked from; 1,021 maps, 77 offered,
                       232 a random pick may draw
 modes.jsonl           the roster catalog.js is baked from: the 17 modes the picker offers
@@ -114,15 +130,18 @@ catalog.js            generated: the offered modes, their curves, the anchors' c
 links.jsonl           generated: every figure and tile, as a link here or a reason not
 engine.wasm           generated: the engine, compiled
 engine.manifest.json  generated: what engine.wasm was built from
+perturb.wasm          generated: the perturbation kernel, compiled
+perturb.manifest.json generated: what perturb.wasm was built from
 engine-wasm/          the crate that produces engine.wasm
-perturb-wasm/         the crate that will produce perturb.wasm — see below
+perturb-wasm/         the crate that produces perturb.wasm — see The Deep tab
 ```
 
 ## The studio
 
 Two panels, and the document itself does not scroll.
 
-**Left, one of four things.** The third and fourth, *Walk* and *Saved*, are sections of their own below. *Gallery* is the staged gallery `python -m builder seats`
+**Left, one of five things.** The third, fourth and fifth — *Walk*, *Deep* and *Saved* — are
+sections of their own below. *Gallery* is the staged gallery `python -m builder seats`
 lands, one **collection** at a time — the general gallery, a collection per hue family,
 a collection per mode, chosen from a dropdown *(explorer_gallery_collections_ckpt129)* — as
 pictures and nothing else: no caption, no id, no score, two rows of filter chips over them,
@@ -536,6 +555,266 @@ writes the weight or opacity in force. Clicking one opens it through `openLink` 
 the viewer, and the walk carries on. A reload forgets them all, except the ones saved by
 their mark or by *Save all found* at the head of the list, which go to the Saved tab below.
 
+## Deep *(build_deep_tab_ckpt135, 2026-09-19)*
+
+The fourth tab draws the Mandelbrot set **below the `f64` floor**, through `perturb.wasm`
+rather than `engine.wasm`. It is a deliberate, rare, slower mode and everything about its
+shape follows from that.
+
+**What it draws:** degree-2 Mandelbrot in `smooth`, and nothing else. No mode picker and no
+family picker, because the kernel has one recurrence written in it — which is the shape
+*The other kernel* below always said a deep renderer would have to take. Palette, the seven
+shade keys and Autolevel work exactly as they do everywhere else, because a deep field **is**
+a smooth field: one `f64` a sample with `NaN` for the interior, in the layout `compute_band`
+produces, so `shade_level` colours it without being told which kernel drew it.
+
+**The ordinary explorer is not slower, heavier or different for it.** `perturb.wasm` and the
+tab's four modules are fetched on the tab's first open and never before, the Walk tab's
+pattern. `engine.wasm` is byte-identical — the Shading branch the prompt allowed was not
+needed, and `engine.manifest.json` is unmoved. The shallow permalink did not move: `VERSION`
+is 3, `READS` is `[1, 2, 3]`, the unknown-key sweep is unchanged and the cap is still not a
+key. Two functions of `permalink.js` are newly **exported** — `encode` and `encodeCurve` —
+and nothing about what a link means changed with them.
+
+### The centre is exact, and that is the whole of the arithmetic
+
+`deep-fx.js` holds a coordinate as `{ units: BigInt, scale }`, meaning `units × 10⁻ˢᶜᵃˡᵉ`.
+Decimal rather than binary because the thing being held is a decimal *string*: what a link
+carries, what a reader pastes, and what the kernel's `Fx::parse` reads on the other side of
+the boundary. Every pan and zoom is an exact addition; nothing routes a deep coordinate
+through `coordinateOf`, `shortest` or any other `f64` re-spelling.
+
+**The one place a double is allowed in is the size of a step.** A gesture is measured off
+the canvas as a fraction of the view's width, and the width is an `f64`, so the increment
+arrives as a double and `fromNumber` turns it into the shortest decimal that reads back as
+that double. That decimal is then added exactly. So a step is a double and a *place* is a
+decimal, and the seam is named rather than hidden. Measured: a thousand additions of 1e-30
+land on exactly the same digits as one addition of 1e-27, and the scale does not ratchet,
+because `make` trims trailing zeros.
+
+`MAX_SCALE` is 120 fraction digits — a guard against a number that can be made to cost
+`BigInt` time by scrolling, not a precision limit; the digit count is bounded by how deep
+the reader has gone and grows by decades rather than by gestures. The link's own limit
+binds first: a plain decimal at about 1e-45 reaches the shallow contract's 64-character
+`COORDINATE_LIMIT`, and past that the link says so rather than truncating.
+
+### Rendering is explicit
+
+**A gesture never starts a full render.** It slides and scales the last picture as a stale
+bitmap — `preview(dx, dy, scale)`'s job, done through a `compose` callback so the tab can
+put a box over it — and draws the **pending frame** as an outline. While something is
+pending the canvas shows the pending frame widened to 65%, which is the walk's framing and
+the walk's reason: at that framing a box drawn inside the picture reads as a box rather
+than as the edge of the canvas. The stale picture is dimmed to 0.55, the walk's backdrop,
+because dim says *old* without hiding it.
+
+**Render commits**, through the passes the explorer normally stages: a quarter-resolution
+field, then the full one at one sample a pixel, then the same grid at two samples each
+way. A progress line names the stage and the percentage, and **the time left comes from the
+bands this pass has already finished** and from nothing else — a deep frame's cost swings
+over orders of magnitude with how much of it is interior, so the only honest predictor of
+the rest of this frame is the part already drawn.
+
+**Auto-preview is the one exception, and it is conditional on a measurement.** After a
+gesture settles for 350 ms, the quarter pass alone may start by itself **if the previous
+quarter pass came back under `AUTO_PREVIEW_MS`** — provisional at 1.5 s. Over that,
+nothing draws until Render. The full passes are always manual.
+
+**An auto-preview does not take the Render button.** It is a pass the reader did not ask
+for, so turning Render into Cancel while it runs would put the tab's one control out of
+reach at exactly the moment it is wanted. Cancel appears for a pass somebody commanded;
+pressing Render through an auto-preview upgrades it, and picks that quarter field straight
+back out of the cache if it had finished.
+
+### The reference orbit, and the pool
+
+**One high-precision orbit per frame, computed on the main thread and held in each worker.**
+It is a couple of megabytes of `f64` pairs and every sample of every band reads it, so a
+band call that computed its own would compute it some fifty times a frame. `deep-worker.js`
+takes an `orbit` message, keeps the buffer in its own heap, and every `band` after it uses
+the one that is there; a frame whose orbit is still good sends none.
+
+**It is kept while the new view is still within its reach**, and the test is conservative
+on purpose: the same limb count, a cap no larger, and the reference still inside the frame
+being drawn. Recomputing costs fifteen to twenty-five milliseconds against a frame of
+seconds, so there is nothing to buy by being clever — and the gesture it does keep it for is
+the one that matters, a zoom in about a point near the middle, so a descent pays for one
+orbit rather than one a rung. At the anchor the orbit is **48,552 points at three limbs**,
+53,408 bytes on the boundary.
+
+**Bands are cut to the explorer's own `BAND_TARGET_MS`, and the opening cut is two rows.**
+A cancel costs one band, so a band is how long the tab can ignore the reader; the viewer's
+four-bands-to-a-worker is right when a frame is a second and wrong when it is a minute. Two
+rows is certainly too fine and costs a few messages to find that out — the first band to
+report replaces the guess with a measurement and everything still queued is re-cut. Erring
+fine is the cheap direction.
+
+### Shading, through `engine.wasm`, on a placeholder viewport
+
+The shade spec names the Mandelbrot **home** view, because `engine.wasm` refuses any spec
+whose viewport `f64` cannot resolve and a deep viewport is exactly one of those. What makes
+that sound rather than a shortcut is that the colouring never reads it: `colour` takes
+`sample_width`, `sample_height`, `out_width`, `out_height` and `supersample` off the
+viewport and nothing else, because a percentile stretch is a statement about the numbers in
+the buffer and not about where they were taken.
+
+**That is measured rather than argued.** `deep.test.mjs` shades one deep lane buffer under
+two different f64-resolvable viewports — the placeholder, and a frame somewhere else
+entirely — and asserts the two pictures are **byte for byte the same**. There is no "shade
+it the real way" to compare against, so two viewports over one buffer is the comparison
+available, and a colouring that read either of them would fail it. So no viewport-free
+shade entry was added to `engine-wasm` and the module was not rebuilt.
+
+**A deep lane is not narrowed through `f32`**, where the engine narrows every inexact lane
+on the way out. At this depth that rounding is visible — the `f32` step at a smooth count of
+65,000 is about 0.008 — and the stretch downstream would band on it.
+
+### The field is kept, so a recolour never re-iterates
+
+Three fields: the current view's three stages, keyed on the centre, the width, the cap and
+the grid — never on the palette or the seven, because nothing on the colour side can move a
+sample. **The arithmetic of that:** at a 1136×636 canvas the quarter pass is 0.4 MB, the
+full pass 5.8 MB and the supersampled finish 23 MB, so the current view alone is about
+29 MB held. The viewer keeps six because its fields are cheap to recompute; here a field is
+the most expensive thing on the page, and keeping one view back would double the memory to
+save a re-iterate the reader presses a button for anyway. A recolour walks back from the
+finished stage to the cheapest one that is here.
+
+### Iterations
+
+The cap opens at the kernel's own policy for the width — the engine's shape with the
+engine's ceiling lifted to a million, so 48,551 at 2e-11 and 117,518 at 1e-28 where
+`maxiter::for_width` would flatten both to 67,000. **Halve** and **Double** move it, and a
+reader who has moved it has pinned it: a zoom then leaves it alone until *From the width*
+gives it back. **The cap in force is part of the view**, which is why the deep link always
+carries it.
+
+### Getting in and out
+
+- **Clicking the tab** carries the viewer's frame over when it is on Mandelbrot at degree 2
+  — its coordinates are already exact decimal text, so nothing is lost crossing the floor.
+  Anywhere else the tab opens at the last deep view it had, or at the Mandelbrot home, and
+  says deep is Mandelbrot only.
+- **At the ordinary explorer's zoom stop**, unchanged, on Mandelbrot, the refusal now ends
+  with an offer: *Open this frame in Deep*, the view carried. It is the one place on this
+  page that offers rather than states, and it is there because telling a reader who has
+  zoomed until the arithmetic gave out that the thing is impossible would be a sentence that
+  is no longer true.
+- **A cost warning shows once per session**, on the first entry, in `sessionStorage`.
+- **Zooming back out is fine at any depth.** *Back to the explorer* carries the view where
+  `f64` can still resolve it and says why not where it cannot — the module's own question,
+  not a width written down here.
+
+### Deep links are their own contract
+
+```
+dv · x · y · w · n · a · p · the shade keys · level
+```
+
+**`dv` is the marker and it is what dispatches.** A query carrying it is read by
+`deep-link.js`; a query without it by `permalink.js`. Each refuses the other's by its own
+rules — a deep link reaches the shallow reader with no `v` and is refused before a key of it
+is looked at — so a deep link pasted into a page that did not understand it is a visible
+refusal rather than a shallow picture at a rounded coordinate.
+
+Why a second contract and not a wider first one: a deep view is not a shallow view with more
+digits. Widening `permalink.js` would have moved three of its own rulings at once — that `x`
+is echoed as written and read as a double, that the cap is emphatically **not** a key, and
+that `f` and `m` say what is being drawn. Every shallow link ever written is held by those.
+
+What is shared is shared rather than copied: the seven shade keys, the `level` operator and
+the two encoders come from `permalink.js` by import. They are the engine's palette recipe
+and a URL's escaping rule, neither of which has anything to do with how deep the view is.
+
+- **`x` and `y`** are the exact decimal centre, up to the shallow contract's 64 characters.
+  **Normalized to one spelling rather than echoed** — the one place this contract
+  deliberately differs. The shallow one echoes a coordinate exactly as it arrived because
+  reading it means reading it into a double, which cannot give it back; here it is read into
+  an exact decimal, so writing it back as a plain decimal loses nothing at all, and one
+  spelling per place is what lets the Saved tab tell two links apart by comparing them.
+- **`w`** is the width, as a double and the shortest string that reads back as it. A width
+  is a *spacing* and not a place, which is why it is the one number down here a double still
+  holds honestly.
+- **`n`** is the iteration cap, **always written**. The opposite of the shallow ruling, for
+  the opposite reason: there the cap is the policy answering for a width and a key would let
+  a link say "this frame, but shallower"; here a deep frame's policy cap runs to six figures
+  and costs minutes, so the number in force is one a reader chose and part of what they are
+  sending. A link that left it out would open at whatever the policy said today.
+- **No `f` and no `m`.** There is one of each down here, and naming them would be a lie
+  waiting to be edited.
+- The place, the width, the cap and the palette are emitted unconditionally; the shade keys
+  are omitted at the engine's defaults. `panel` rides as a UI key and is never emitted.
+- **Loading a deep link** opens the tab on that view and runs the quarter pass and nothing
+  else. A link that started a full deep render on arrival would be a link that costs a
+  minute to follow.
+
+`deep-link.test.mjs` is 20 tests and `deep-fx.test.mjs` is 12, on Node's own runner with
+nothing installed; two of them hold the shallow contract to not having moved.
+
+### Saved takes deep entries
+
+`Saved.canonical` dispatches on the marker, so a deep link is canonicalized by the deep
+contract and **its centre is never truncated** — putting it through the shallow reader,
+which holds a coordinate as a double, would store a link to a place nobody asked for. A
+deep entry is **described rather than parsed** for its tile: there is no drawing one at a
+tile's size without the perturbation kernel and a wait, so the panel labels it and a click
+opens the Deep tab on it.
+
+### What it cost, measured
+
+On this machine, 2026-09-19, a 1600×1000 window and a 908×512 canvas, driven over CDP:
+
+| | |
+|---|---|
+| the Mandelbrot home, all three stages | field 0.15 s, shade 246 ms |
+| the audit's anchor at 2e-11, cap 48,551, all three stages | **field 62.7 s**, shade 180 ms |
+| the same, its quarter pass alone | field 1.22 s |
+| a palette change on the anchor's kept field | **recolored in 126 ms** |
+| `perturb.wasm` | **108,310 bytes raw, 50,942 gzipped** |
+
+So the tab is about four hundred times the wait of a shallow frame and a recolour of it is
+a shade, which is the whole reason the field is kept. The anchor's quarter pass at 1.22 s is
+just under `AUTO_PREVIEW_MS`, which is worth knowing: at the anchor a gesture does settle
+into a preview, and one decade deeper it stops doing so.
+
+**One deep link to paste**, the audit's anchor — a period-2838 minibrot nucleus in the
+seahorse valley, at a width four decades below where `f64` gives out:
+
+```
+explorer/?dv=1&x=-0.74501772828532335842941892835857434&y=0.14993443275456819177805709088257971&w=2e-11&n=48551&p=twilight_shifted&panel=deep
+```
+
+### What is not here
+
+Full-size download from the Deep tab, "find the minibrot here" and nucleus references in
+the UI, and BLA — all three out of scope by the prompt that built this, and none of them
+blocked by anything above. BLA's seam is marked at the top of `Kernel::sample`'s loop and
+changes how long a picture takes rather than what it is.
+
+### What it is made of
+
+```
+deep.js            the tab: state, the staged passes, the gestures, the pending frame
+deep-render.js     the pool, the orbit per frame, and the shade spec's placeholder viewport
+deep-worker.js     one worker: one perturb instance, one held orbit, one band
+deep-fx.js         exact decimal coordinates, BigInt fixed point
+deep-link.js       the deep link contract — parse, emit, canonicalize, describe
+deep-fx.test.mjs   12 tests: the arithmetic is exact where a double is not
+deep-link.test.mjs 20 tests: the contract, and the shallow one held to not moving
+deep.test.mjs      10 tests: where the two modules meet, against both committed ones
+perturb.wasm       generated: the perturbation kernel, compiled
+perturb.manifest.json  generated: what perturb.wasm was built from
+perturb-wasm/      the crate that produces it
+```
+
+`python -m builder explorer --perturb` rebuilds the module and its manifest and nothing
+else. It needs `cargo` and the `wasm32-unknown-unknown` target and **no sibling checkout** —
+the crate has no dependencies at all, which is what makes that true and is why it is its own
+branch rather than a stage of the bake. The manifest has no `engine_version` and no
+`engine_changes`, with the fields absent rather than empty: this crate does not link the
+engine and has never needed a change in it, and an empty `engine_changes` would read as a
+list somebody forgot to fill in.
+
 ## Saved *(saved_tab_ckpt131, 2026-09-18)*
 
 The fourth tab is the visitor's own list of pictures, kept in this browser. Nothing leaves
@@ -774,11 +1053,12 @@ same pixels it drew before. The two would meet on the page, at a buffer of `f64`
 lanes: its output is what `compute_band` produces for `smooth`, in the same
 layout, so `shade_level` colours it unchanged.
 
-There is **no Deep tab, no link contract and no committed `perturb.wasm`** —
-those are the next prompt's, and the module lands when it has a consumer to
-settle its exports against. `perturb-wasm/README.md` owns the design and the
-numbers: the limb rule, the rebasing, the cap policy, and the proof that where
-the two kernels disagree at depth it is this page's kernel that is wrong.
+**The Deep tab, the link contract and the committed `perturb.wasm` all landed
+together** *(build_deep_tab_ckpt135, 2026-09-19)*, which is what settled the
+exports the module was waiting for a consumer to settle. See *Deep* above for the
+tab; `perturb-wasm/README.md` owns the design and the numbers: the limb rule, the
+rebasing, the cap policy, and the proof that where the two kernels disagree at
+depth it is this page's kernel that is wrong.
 
 That disagreement is worth reading before assuming the intro's scope line still
 holds. At width 2e-11 the two fields agree on **no sample at all** — median 61
@@ -1562,7 +1842,10 @@ v · f · cx · cy · px · py · zx · zy · m · the mode's parameters · x ·
   strings**, exponent form allowed, capped at 64 characters, and **echoed back
   verbatim**. The decimal string is the identity of a location: `f64` is a lossy view of
   it that stops being enough the moment deep zoom arrives, and a round trip through a
-  double would quietly rewrite a link that was more precise than today's renderer. `w`
+  double would quietly rewrite a link that was more precise than today's renderer. Deep
+  zoom has since arrived, and it did **not** arrive through this key: reading a coordinate
+  here still means reading it into a double, so a deep view is a contract of its own with
+  an exact decimal centre. See *Deep* above. `w`
   must be positive. Omitted means the **family's own home view**, which is
   `Family::home_view()` and not a number this file holds.
 - **`a`** — the aspect, written `across:down`, defaulting to `16:9`, each side between 1
@@ -2012,7 +2295,6 @@ are the engine's — but now with a failing check to announce it rather than onl
 
 Listed, not designed:
 
-- **Deep zoom**, which needs perturbation and is a different renderer, not a wider one.
 - **Cooperative cancellation**: a flag the engine checks inside the iterate loop, so that a
   cancel stops the band in flight instead of waiting it out. It is the right final shape for
   cancel latency (see *Cancel is by generation* above), it is an engine change rather than a
