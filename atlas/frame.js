@@ -259,6 +259,12 @@ function contentBox(node) {
  *   slot and a click on a slot calls it for that slot, the frame navigates nowhere, and the
  *   slots are buttons rather than links so that they stay operable from the keyboard.
  *   Absent, each slot is an `<a href>` into the explorer at the view it shows.
+ * - **`slotMark`** (default absent) — a page's own control over each slot, which the frame
+ *   places and points and knows nothing else about *(saved_tab_ckpt131)*. Called once per
+ *   slot, it returns `{ node, show(query) }`; the node sits beside the slot in a cell of its
+ *   own, because the studio's slots are buttons and a button cannot hold another, and
+ *   `show` is told the query the slot now opens, or `null` while the slot is empty. The
+ *   studio's is the save mark; the atlas page passes none, and its strip is as it was.
  *
  * The handle is `{ record, refit, open, destroy }`: the record as `record.js` read it, a
  * `refit` that re-sizes the frame to its host and returns the `{ width, height }` it settled
@@ -274,6 +280,7 @@ export async function mount(host, options = {}) {
   const linger = options.linger ?? false;
   const onPick = options.onPick;
   const navigates = onPick === undefined;
+  const slotMark = options.slotMark;
 
   const plan = await planner(base);
   const contract = contractOf((spec) => {
@@ -329,8 +336,15 @@ export async function mount(host, options = {}) {
     const mapped = typeset(made("span", "slot-map"), mapOf(name));
     caption.append(named, mapped);
     node.append(image, caption);
-    strip.appendChild(node);
-    slots.set(name, { node, image, caption: named, map: mapped });
+    const mark = slotMark?.() ?? null;
+    if (mark === null) {
+      strip.appendChild(node);
+    } else {
+      const cell = made("span", "slot-cell");
+      cell.append(node, mark.node);
+      strip.appendChild(cell);
+    }
+    slots.set(name, { node, image, caption: named, map: mapped, mark });
   }
   const plate = made("div", "plate");
   const plateImage = made("img");
@@ -364,7 +378,7 @@ export async function mount(host, options = {}) {
   /** Fill the three slots from one place, or empty them. The boxes stay either way. */
   const show = (dot) => {
     showing = dot;
-    for (const [name, { node, image }] of slots) {
+    for (const [name, { node, image, mark }] of slots) {
       const label = labelOf(name);
       const slot = dot === null ? undefined : dot.slots[name];
       // Only the gallery slot carries a kind, and only while a mark is showing: the other
@@ -377,9 +391,11 @@ export async function mount(host, options = {}) {
         image.hidden = true;
         image.removeAttribute("src");
         image.alt = "";
+        mark?.show(null);
         continue;
       }
       const { query, palette } = links.get(slot);
+      mark?.show(query);
       if (navigates) node.href = `${explorer}?${query}`;
       node.title = titleOf(label, slot, palette, named);
       image.hidden = false;

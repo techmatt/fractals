@@ -22,7 +22,7 @@ GALLERY_METADATA_NAME = "gallery.jsonl"
 THUMBS_DIR_NAME = "thumbs"
 
 # Trees that are not part of the served site and are never walked by the checks.
-UNSERVED_DIRS = frozenset({".git", ".github", ".ruff_cache", "artifacts", "scratch"})
+UNSERVED_DIRS = frozenset({".git", ".github", ".ruff_cache", ".venv", "artifacts", "scratch"})
 
 
 def carrier_path(page: str) -> Path:

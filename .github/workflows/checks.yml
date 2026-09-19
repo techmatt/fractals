@@ -65,3 +65,5 @@ jobs:
         run: node --test atlas/atlas.test.mjs
       - name: the palette blob's reader, against the layout the bake writes
         run: node --test explorer/stops.test.mjs
+      - name: the Saved tab's list, and the zip Download all writes
+        run: node --test explorer/saved.test.mjs explorer/zip.test.mjs

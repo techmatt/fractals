@@ -520,10 +520,10 @@ Three Windows cautions that have each cost a session already:
 
 ```
 python -m ruff check . && python -m ruff format --check . && python -m builder check
-node --test explorer/permalink.test.mjs explorer/bands.test.mjs explorer/level.test.mjs explorer/derive.test.mjs explorer/stops.test.mjs atlas/atlas.test.mjs
+node --test explorer/permalink.test.mjs explorer/bands.test.mjs explorer/level.test.mjs explorer/derive.test.mjs explorer/stops.test.mjs explorer/saved.test.mjs explorer/zip.test.mjs atlas/atlas.test.mjs
 ```
 
-The second line is the six JavaScript suites, on Node's own runner with nothing
+The second line is the eight JavaScript suites, on Node's own runner with nothing
 installed. `permalink.test.mjs` is the contract held to itself — a URL is the one
 permanent thing this site emits, and it is worth a test suite even though nothing else
 here has one. `bands.test.mjs` is the pool held to the committed wasm: a band is a range
@@ -542,7 +542,10 @@ opacity lands the typical painted pixel where it says it does. `stops.test.mjs` 
 palette blob's reader to the planar, byte-delta layout the bake writes. That layout is the
 same length as the interleaved one, so a wrong reader would draw real colors from the
 wrong stops rather than fail. Its on-disk case skips by name where `palettes.bin` is not
-baked.
+baked. `saved.test.mjs` holds the Saved tab's list to its promises: a stored value it cannot
+read is an empty list and never a throw, one picture is one entry however its link was
+spelled, and the cap evicts nothing. `zip.test.mjs` holds Download all's stored-zip writer
+to the format, read back through its own central directory.
 
 After touching placed prose, `python -m builder prose <page>` as well — see **Where prose
 comes from** above for what it holds together and why one edit has several sites.

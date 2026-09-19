@@ -22,7 +22,8 @@
 //
 // What is capped and why is `withinLimits` below.
 
-import { shadeApart, specOf } from "./render.js";
+import { DERIVED } from "./permalink.js";
+import { PROBE_WIDTH, shadeApart, specOf } from "./render.js";
 
 /** The offered sizes, and the shape each of them is. */
 const PRESETS = [
@@ -212,6 +213,71 @@ export function fileNameOf(view, width, height, extension = "png") {
   return `${view.family}_${view.mode}_${palette}_${width}x${height}.${extension}`;
 }
 
+/** The widest one-sample field a derived texture weight is measured on, away from the
+ *  screen: the walk's candidate width, which is what the weight was fitted against. */
+const WEIGHT_WIDTH = 640;
+
+/**
+ * A picture of a view as opening its link draws it, at any size and not on the screen:
+ * what a saved picture's thumbnail and Download all both are *(saved_tab_ckpt131)*.
+ *
+ * **A link that leaves out its derived parameter asks for it to be taken from the
+ * view**, and arriving at one the viewer does exactly that, so this does too: a trap's
+ * opacity from a probe at `PROBE_WIDTH`, and a texture weight from a one-sample field
+ * measured before it is coloured, both as the walk's `picture` takes them. A carried tone
+ * curve is replayed and an absent one stays absent, which is what `arrived` does with a
+ * link. Returns `{ image, view }`, the view carrying what was derived, or `null` where
+ * the render was cancelled.
+ *
+ * `apart` colours in a worker of its own, which is what a download-sized field needs; a
+ * thumbnail is milliseconds and is coloured on this thread. `holder.stop` cancels the
+ * colouring once it has begun, as the download's cancel does.
+ */
+export async function pictureOf(
+  renderer,
+  view,
+  width,
+  height,
+  { supersample = 1, onProgress, holder = {}, apart = true } = {},
+) {
+  const derived = DERIVED[view.mode];
+  let drawn = view;
+  if (derived === "opacity" && view.params?.opacity === undefined) {
+    const probeHeight = Math.max(1, Math.round((PROBE_WIDTH * height) / width));
+    const counts = await renderer.probe(view, PROBE_WIDTH, probeHeight);
+    if (counts === null) return null;
+    const probed = renderer.deriveOpacity(view, counts);
+    if (probed.opacity !== null) drawn = { ...view, params: { ...view.params, opacity: probed.opacity } };
+  }
+  if (derived === "weight" && view.params?.weight === undefined) {
+    const across = Math.min(width, WEIGHT_WIDTH);
+    const down = Math.max(1, Math.round((across * height) / width));
+    const once = await renderer.field(view, across, down);
+    if (once === null) return null;
+    const measured = renderer.shade(once, view, { deriveWeight: true });
+    if (measured.weight !== null) drawn = { ...view, params: { ...view.params, weight: measured.weight } };
+  }
+  const field = await renderer.field(drawn, width, height, { supersample, onProgress });
+  if (field === null) return null;
+  if (!apart || field.shape.direct) return { image: renderer.shade(field, drawn).image, view: drawn };
+  const shaded = await shadeApart(renderer.module, field, drawn, holder);
+  return shaded === null ? null : { image: shaded.image, view: drawn };
+}
+
+/** A picture encoded in one of the formats, as a `Blob`. */
+export function encode(image, format) {
+  const canvas = document.createElement("canvas");
+  canvas.width = image.width;
+  canvas.height = image.height;
+  canvas.getContext("2d", { alpha: false }).putImageData(image, 0, 0);
+  return new Promise((resolve, reject) => {
+    canvas.toBlob((blob) => {
+      if (blob === null) reject(new Error(`The browser could not encode a ${format.label} this large.`));
+      else resolve(blob);
+    }, format.type, format.quality);
+  });
+}
+
 /**
  * Wire the download control: one row, always open — size, samples, the estimate, and a
  * button per format, the pressed one of which is also the progress bar while a render is
@@ -299,6 +365,8 @@ export function install(context) {
   heightBox.value = PRESETS[DEFAULT_PRESET].height;
 
   let running = null;
+  /** Whether Download all has the row: its size and samples held, and both buttons off. */
+  let batch = false;
 
   /** What the controls currently ask for. */
   function wanted() {
@@ -342,7 +410,7 @@ export function install(context) {
       widthBox.value = width;
       heightBox.value = height;
     }
-    if (running !== null) return;
+    if (running !== null || batch) return;
     const { width, height } = wanted();
     if (ready() !== null) {
       enable(true);
@@ -496,6 +564,7 @@ export function install(context) {
 
   for (const go of buttons) {
     go.button.addEventListener("click", () => {
+      if (batch) return;
       if (running === null) {
         download(go);
         return;
@@ -515,32 +584,45 @@ export function install(context) {
     control.addEventListener("input", describe);
   }
 
-  return { describe, get running() { return running !== null; } };
+  return {
+    describe,
+    get running() {
+      return running !== null || batch;
+    },
+    /** What the row asks for now: the size and the samples a download would draw at. */
+    asked: () => ({ ...wanted(), supersample }),
+    /**
+     * Hand the row and the view to Download all, or take them back *(saved_tab_ckpt131)*.
+     * It draws on the viewer's renderer as a download does, so it holds what a download
+     * holds: the size, the samples, both buttons, and every control that would move the
+     * view. `false` when a download is already drawing, which has the row first.
+     */
+    hold(on) {
+      if (on && running !== null) return false;
+      batch = on;
+      lock(on, null);
+      setBusy(on);
+      if (!on) describe();
+      return true;
+    },
+  };
 }
 
 /** Encode an image in one of `FORMATS` and hand it to the browser to save. */
-function save(image, name, format) {
-  const canvas = document.createElement("canvas");
-  canvas.width = image.width;
-  canvas.height = image.height;
-  canvas.getContext("2d", { alpha: false }).putImageData(image, 0, 0);
-  return new Promise((resolve, reject) => {
-    canvas.toBlob((blob) => {
-      if (blob === null) {
-        reject(new Error(`The browser could not save a ${format.label} this large.`));
-        return;
-      }
-      const url = URL.createObjectURL(blob);
-      const anchor = document.createElement("a");
-      anchor.href = url;
-      anchor.download = name;
-      anchor.click();
-      // Revoked on the next turn: the click has to have been dispatched first,
-      // and the blob is tens of megabytes to leave behind.
-      setTimeout(() => URL.revokeObjectURL(url), 0);
-      resolve();
-    }, format.type, format.quality);
-  });
+async function save(image, name, format) {
+  hand(await encode(image, format), name);
 }
 
-export { MAX_PIXELS, MAX_SAMPLES, MAX_SIDE, PRESETS, SUPERSAMPLES };
+/** Hand a finished file to the browser to save under `name`. */
+export function hand(blob, name) {
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = name;
+  anchor.click();
+  // Revoked on the next turn: the click has to have been dispatched first, and the blob
+  // is tens of megabytes to leave behind.
+  setTimeout(() => URL.revokeObjectURL(url), 0);
+}
+
+export { FORMATS, MAX_PIXELS, MAX_SAMPLES, MAX_SIDE, PRESETS, SUPERSAMPLES };

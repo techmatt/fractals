@@ -106,6 +106,10 @@
 
 .strip { display: flex; justify-content: space-between; font-size: 0; }
 
+/* A page that puts a control of its own beside each slot wraps the slot in a cell, which
+   takes the slot's place in the strip and is what the control is positioned against. */
+.slot-cell { position: relative; display: block; flex: 0 0 auto; }
+
 .slot {
   position: relative;
   display: block;

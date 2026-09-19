@@ -40,6 +40,8 @@
                 aria-controls="panel-atlas" aria-selected="false">Atlas</button>
         <button type="button" class="tab" role="tab" id="tab-walk" data-panel="walk"
                 aria-controls="panel-walk" aria-selected="false">Walk</button>
+        <button type="button" class="tab" role="tab" id="tab-saved" data-panel="saved"
+                aria-controls="panel-saved" aria-selected="false">Saved</button>
       </div>
       <select id="gallery-collection" class="collection" aria-label="Collection"
               title="Which gallery to show: the general one, or a collection seated for one color family or one mode."></select>
@@ -78,9 +80,49 @@
         </div>
         <ol class="walk-console" id="walk-console" aria-label="What the walk is doing" aria-live="polite"></ol>
       </div>
-      <div class="section-head walk-found-head"><h2 id="head-walk-found">Found</h2></div>
+      <div class="section-head walk-found-head">
+        <h2 id="head-walk-found">Found</h2>
+        <button type="button" class="head-action" id="walk-save-all" hidden
+                title="Put every found picture on the Saved tab, where it stays after the page is closed.">Save all found</button>
+      </div>
       <div class="tiles walk-found" id="walk-found" role="group" aria-labelledby="head-walk-found"></div>
       <p class="side-note" id="walk-note">Nothing found yet. Found pictures last until the page is closed.</p>
+    </div>
+
+    <div class="tabpanel" id="panel-saved" role="tabpanel" aria-labelledby="tab-saved" hidden>
+      <div class="saved-head">
+        <div class="saved-bar">
+          <span class="saved-count" id="saved-count"></span>
+          <span class="saved-actions">
+            <select id="saved-format" aria-label="Format for Download all"
+                    title="The format Download all saves each picture as. JPG is several times smaller.">
+              <option value="jpg">JPG</option>
+              <option value="png">PNG</option>
+            </select>
+            <button type="button" id="saved-download">Download all</button>
+            <button type="button" id="saved-export"
+                    title="Download the list as a file this page can import again.">Export</button>
+            <button type="button" id="saved-copy"
+                    title="Copy every saved link, one to a line.">Copy links</button>
+            <button type="button" id="saved-import" aria-expanded="false" aria-controls="saved-import-box"
+                    title="Add links from a file this page exported, or pasted text.">Import</button>
+            <button type="button" id="saved-clear">Clear all</button>
+          </span>
+        </div>
+        <div class="saved-import" id="saved-import-box" hidden>
+          <textarea id="saved-paste" rows="3" aria-label="Links or an exported list to import"
+                    placeholder="Paste links, one to a line, or an exported list"></textarea>
+          <span class="saved-import-go">
+            <button type="button" id="saved-import-go">Add</button>
+            <label class="saved-file">or choose a file <input type="file" id="saved-file" accept=".json,.txt,application/json,text/plain"></label>
+          </span>
+        </div>
+        <p class="saved-progress" id="saved-progress" role="status" aria-live="polite"></p>
+        <p class="saved-warning" id="saved-warning" role="alert"></p>
+      </div>
+      <p class="saved-empty" id="saved-empty">Nothing saved yet. The bookmark on any picture, or Save beside the downloads, keeps it here. Saved pictures stay in this browser only, so export the list to keep it or move it.</p>
+      <div class="tiles saved-tiles" id="saved-tiles" role="group" aria-label="Saved pictures"></div>
+      <p class="side-note" id="saved-note">Kept in this browser only. Safari may clear it after a week without a visit.</p>
     </div>
   </section>
 
@@ -101,6 +143,7 @@
                   title="The picture exactly, as a lossless file."><span class="download-label">Download PNG</span></button>
           <button type="button" class="download-go" id="download-jpg"
                   title="A much smaller file, at quality 95."><span class="download-label">Download JPG</span></button>
+          <button type="button" class="save-view" id="save-view" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M6.5 3.5h11v17l-5.5-4.2-5.5 4.2z"/></svg><span class="save-label">Save</span></button>
           <select id="download-size" aria-label="Size"></select>
           <span class="group" id="download-custom" hidden>
             <input type="number" id="download-width" class="param" min="16" max="8192" step="16" aria-label="Width">

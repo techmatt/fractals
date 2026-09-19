@@ -40,6 +40,7 @@ import { fetchStops } from "./stops.js";
 import * as download from "./download.js";
 import * as picker from "./picker.js";
 import * as gallery from "./gallery.js";
+import * as saving from "./saved.js";
 import {
   PREVIEW_DIVISOR,
   Renderer,
@@ -177,6 +178,7 @@ const paramStrip = document.getElementById("params");
 const paramNote = document.getElementById("param-note");
 const copyButton = document.getElementById("copy");
 const copyViewButton = document.getElementById("copy-view");
+const saveButton = document.getElementById("save-view");
 const notice = document.getElementById("notice");
 const shadeBar = document.getElementById("shade-bar");
 const shadeReset = document.getElementById("palette-reset");
@@ -348,6 +350,7 @@ function syncCopy() {
   copyViewButton.disabled = copyHeld;
   copyButton.title = copyHeld ? COPY_HELD_TITLE : "";
   copyViewButton.title = copyHeld ? COPY_HELD_TITLE : copyViewTitle;
+  syncSave();
 }
 
 function holdCopy(on) {
@@ -1031,6 +1034,7 @@ function settle() {
     const picture = link.emit(view, contract);
     const furniture = showing === DEFAULT_PANEL ? "" : `&panel=${encodeURIComponent(showing)}`;
     history.replaceState(null, "", `?${picture}${furniture}`);
+    syncSave();
   }, 0);
 }
 
@@ -1669,6 +1673,7 @@ function openLink(query, opts = {}) {
   arrived();
   if (key !== null) tunedFrom = "seat";
   tiles?.mark(key);
+  if (opts.from !== "saved") savedPanel?.unmark();
   // The record's sentence names caps, curves and policies, which is Details' vocabulary;
   // the line under the picture only says that there is a difference and where to read it.
   opened.textContent = gap
@@ -1816,7 +1821,7 @@ function syncPlane() {
 const tabs = [...document.querySelectorAll(".tab")];
 
 /**
- * Show one of the three left panels.
+ * Show one of the four left panels.
  *
  * The atlas and the walk are mounted the first time each is opened and never before: the
  * atlas reads its own record and instantiates the wasm module for one export, the walk
@@ -1845,13 +1850,141 @@ function showPanel(asked) {
   // when it stops being seen: a hidden walk pauses, and showing it again takes up a walk
   // the hiding paused, with the viewer back on it *(walk_detach_ckpt131)*. Nothing else
   // starts one — an address saying `panel=walk` included.
+  //
+  // **Saved is the one exception** *(saved_tab_ckpt131)*: it does nothing to a running walk,
+  // so a walk goes on while it is showing, and going from it back to Walk has nothing to
+  // take up because nothing was paused.
   if (showing === "walk") {
     if (walk === null) startWalk();
     else walk.reveal();
-  } else {
+  } else if (showing !== "saved") {
     walk?.hide("The Walk tab was hidden, so the walk paused.");
   }
+  if (showing === "saved") startSaved();
+  else savedPanel?.hide();
   settle();
+}
+
+// ------------------------------------------------------------------- saved pictures
+
+/**
+ * The visitor's saved pictures *(saved_tab_ckpt131)*: the list itself is `saved.js`, made
+ * at boot because every save mark on the page asks it a question; the tab that shows the
+ * list is mounted the first time it is opened, like the atlas and the walk.
+ */
+let saved = null;
+let savedPanel = null;
+let savedStarted = false;
+
+/** Canonical links already worked out, by the spelling they arrived in: a gallery refill
+ *  asks again for a thousand links it asked for a moment ago. */
+const canonicalLinks = new Map();
+
+/** The link a picture is saved under: its query through the contract and back. */
+function canonicalOf(query) {
+  let known = canonicalLinks.get(query);
+  if (known === undefined) {
+    try {
+      known = link.emit(link.parse(`?${query}`, contract), contract);
+    } catch {
+      known = null;
+    }
+    canonicalLinks.set(query, known);
+  }
+  return known;
+}
+
+/** The Save button beside the downloads: which way it points, for the view on the screen.
+ *  Held while the pass is still deriving something the link carries, as Copy link is. */
+function syncSave() {
+  if (saved === null) return;
+  const key = canonicalOf(link.emit(view, contract));
+  const on = saved.has(key);
+  saveButton.setAttribute("aria-pressed", String(on));
+  saveButton.querySelector(".save-label").textContent = on ? "Saved" : "Save";
+  saveButton.disabled = copyHeld;
+  saveButton.title = copyHeld
+    ? COPY_HELD_TITLE
+    : on
+      ? "This view is on the Saved tab. Press to remove it."
+      : "Keep this view on the Saved tab, in this browser.";
+}
+
+function makeSaved() {
+  let storage = null;
+  try {
+    storage = window.localStorage;
+  } catch {
+    storage = null;
+  }
+  saved = new saving.Saved({
+    storage,
+    canonical: canonicalOf,
+    persist: () => navigator.storage?.persist?.().catch(() => {}),
+  });
+  saved.subscribe(() => {
+    saving.remark(saved);
+    syncSave();
+  });
+  // Another tab of this page wrote the list: this one reads it again.
+  window.addEventListener("storage", (event) => {
+    if (event.key === saving.KEY) saved.reload();
+  });
+  saveButton.addEventListener("click", () => {
+    const answer = saved.toggle(link.emit(view, contract));
+    if (answer === "added") say("Saved. It is on the Saved tab, in this browser.");
+    else if (answer === "removed") say("Removed from Saved.");
+    else if (answer === "full") say(`Saved is full at ${saving.MAX} pictures. Remove some to save more.`);
+  });
+}
+
+async function startSaved() {
+  if (savedStarted) {
+    savedPanel?.show();
+    return;
+  }
+  savedStarted = true;
+  try {
+    const { mount } = await import("./saved-panel.js");
+    const at = (id) => document.getElementById(id);
+    savedPanel = mount({
+      saved,
+      module: renderer.module,
+      renderer,
+      download: panel,
+      parse: (query) => link.parse(`?${query}`, contract),
+      parseImport: saving.parseImport,
+      shownName,
+      planeName,
+      open: (query) => openLink(query, { what: "this saved picture", from: "saved" }),
+      // After Download all: the screen's own pass, if the first picture cut it short.
+      settle: () => {
+        if (finished === null && walkLayers === null) draw();
+      },
+      elements: {
+        tiles: at("saved-tiles"),
+        count: at("saved-count"),
+        empty: at("saved-empty"),
+        warning: at("saved-warning"),
+        progress: at("saved-progress"),
+        download: at("saved-download"),
+        format: at("saved-format"),
+        exportFile: at("saved-export"),
+        copy: at("saved-copy"),
+        importToggle: at("saved-import"),
+        importBox: at("saved-import-box"),
+        paste: at("saved-paste"),
+        importGo: at("saved-import-go"),
+        file: at("saved-file"),
+        clear: at("saved-clear"),
+      },
+    });
+    if (showing === "saved") savedPanel.show();
+  } catch (error) {
+    savedStarted = false;
+    console.warn("the saved tab could not be started", error);
+    document.getElementById("saved-warning").textContent = "The Saved tab could not be loaded.";
+  }
 }
 
 // ------------------------------------------------------------------- the walk
@@ -1945,6 +2078,9 @@ async function startWalk() {
       showWalk,
       showCells: (cells) => showOverlay(cells === null ? null : { family: view.family, cells }),
       open: (query, what) => openLink(query, { what }),
+      mark: (query) => saving.mark(saved, canonicalOf(query)),
+      saveAll: document.getElementById("walk-save-all"),
+      keepAll: (queries) => saved.merge(queries.map((query) => ({ link: query }))),
       busy: () => busy,
       aspect: () => (grid.width > 0 ? grid.height / grid.width : 9 / 16),
     });
@@ -1974,6 +2110,14 @@ async function startAtlas() {
       // leaves the mark is a picture nobody can click.
       keep: false,
       linger: true,
+      // Each slot carries a save mark, pointed at whatever the slot is showing.
+      slotMark: () => {
+        const node = saving.mark(saved);
+        return {
+          node,
+          show: (query) => saving.point(saved, node, query === null ? null : canonicalOf(query)),
+        };
+      },
       onPick: ({ query, palette, slot }) => {
         const refused = slot?.refused ?? [];
         const gap = refused.length === 0
@@ -2607,6 +2751,7 @@ async function main() {
   };
 
   fill(familyPicker, link.FAMILIES);
+  makeSaved();
 
   try {
     view = link.parse(window.location.search, contract);
@@ -2693,6 +2838,7 @@ async function main() {
     firstMode: MODE_FIRST,
     onPick: (row) =>
       openLink(row.link, { gap: row.gap, key: row.key, what: "this wallpaper" }),
+    saveMark: (row) => saving.mark(saved, canonicalOf(row.link)),
     onSeats: indexSeats,
   });
   tiles.start(record).catch((error) => {

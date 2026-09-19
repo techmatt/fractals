@@ -87,6 +87,9 @@ download.js           the same render at a wallpaper's size, and what caps it
 render.js             the worker pool, the plan, the field passes, the shade
 worker.js             one worker: one wasm instance, one band of rows (or one screen)
 walk.js               the Walk tab: a simplified mining pipeline, run here and watched
+saved.js              the Saved list: one localStorage value of links, and the save mark
+saved-panel.js        the Saved tab: tiles drawn from their links, import, export, Download all
+zip.js                a stored (uncompressed) zip writer, for Download all
 judges.js             the two judges in onnxruntime-web, loaded on the first Start
 resize.mjs            PIL's bicubic resize, ported byte for byte: what a judge reads
 judges/               UNTRACKED: the two ONNX judges and the runtime, `builder walk`
@@ -96,6 +99,8 @@ permalink.test.mjs    51 tests, `node --test explorer/permalink.test.mjs`
 bands.test.mjs        3 tests: the pool cuts the frame, never what is in it
 level.test.mjs        7 tests: the module's tone measurement, and a derived curve replays
 derive.test.mjs       6 tests: a derived weight replays, a derived opacity lands where it says
+saved.test.mjs        8 tests: a bad stored value is an empty list, one link is one entry, the cap
+zip.test.mjs          2 tests: CRC-32's check values, and an archive read back to its bytes
 palettes.jsonl        the roster palettes.js is baked from; 1,021 maps, 77 offered,
                       232 a random pick may draw
 modes.jsonl           the roster catalog.js is baked from: the 17 modes the picker offers
@@ -469,9 +474,77 @@ That copies about 39 MB:
 
 Until Matt says deploy, Pages serves a Walk tab that runs on the screen alone.
 
-**Nothing persists.** A found tile is a blob URL and a permalink that writes the weight or
-opacity in force. Clicking one opens it through `openLink` and pauses the walk. A reload
-forgets them all.
+**Nothing persists unless it is saved.** A found tile is a blob URL and a permalink that
+writes the weight or opacity in force. Clicking one opens it through `openLink` and detaches
+the viewer, and the walk carries on. A reload forgets them all, except the ones saved by
+their mark or by *Save all found* at the head of the list, which go to the Saved tab below.
+
+## Saved *(saved_tab_ckpt131, 2026-09-18)*
+
+The fourth tab is the visitor's own list of pictures, kept in this browser. Nothing leaves
+it and nothing needs a server.
+
+**What is stored is links.** One `localStorage` key, `fractal-website.explorer.saved`,
+holds `{ v: 1, items: [{ link, added }] }`, newest first, and it is written on every
+change. The key carries the site's name because every project page under `github.io`
+shares one origin. A missing, malformed or other-version value reads as an empty list, and
+storage that throws reads as empty too. A failed write keeps the list in memory and says so
+in the tab. `navigator.storage.persist()` is asked once, on the first save. The tab's footer
+says the one thing a visitor needs to know about all this: the list lives in this browser,
+and Safari may drop it after a week away.
+
+**One picture is one entry.** Every link is put through the contract and back
+(`link.emit(link.parse(…))`) before it is compared or stored. A gallery row's link, an atlas
+slot's and the viewer's are then one string when they are one picture, and saving is
+idempotent on it. The list stops at 5,000 links, about 1.75 million characters against a
+quota of five million. At the cap a save is refused with a sentence, and nothing is
+evicted.
+
+**Saving, from anywhere.** *Save*, beside the download buttons, saves the view on the screen,
+whatever that is, a walk's own frame included. It is held while a pass is still deriving
+something the link carries, as Copy link is. Every gallery tile, Found tile and atlas slot
+carries a bookmark mark in its corner: hollow, shown on hover or focus, and filled and
+always shown once saved. Pressing it again removes the picture. A mark is a button of its
+own, so a tile that carries one is wrapped in a `.tile-cell` beside it, since a button
+cannot hold a button. The atlas frame takes the mark through a `slotMark` option it knows
+nothing else about, and the atlas page passes none. Every mark carries its canonical link in
+`data-key`, so one query of the document re-dresses all of them when the list changes. A
+`storage` event from another tab of this page reads the list again.
+
+**The tab.**
+- Tiles come newest first, each labelled with its mode and plane. A click opens the picture
+  as a gallery tile does, and × removes it.
+- Each tile is drawn from its link by the engine at the gallery's tile size, 316×178 at four
+  samples a pixel. It uses a renderer pool of the tab's own, for the walk's reason: the
+  viewer's renderer cancels whatever it was doing on every pan.
+- Only tiles near the panel's window are drawn, one at a time, and nothing is drawn while
+  the tab is hidden. A drawn tile is a WebP blob kept in memory for the visit. On this
+  machine the first five tiles, pool start included, drew in 2.9 s.
+- *Export* downloads the list as the same JSON it is stored as, and *Copy links* copies full
+  explorer URLs, one to a line.
+- *Import* takes a pasted text or a chosen file: an export, a JSON list, or lines of URLs or
+  bare queries. It merges and dedupes, and says how many were added, already saved, or not
+  links.
+- *Clear all* asks first.
+
+**Download all** draws every saved picture at the download row's current size and samples,
+in the format chosen beside it. JPG is the default, because forty 3840×2160 PNGs come to about
+half a gigabyte, all held until the zip is handed over. It goes through `pictureOf` in `download.js` on the viewer's renderer, holding
+the row and the view still exactly as one download does, and its button becomes Cancel. A
+link that leaves out its derived opacity or weight gets one taken from the view, as the
+viewer does on arrival. A trap's opacity comes from a probe at `PROBE_WIDTH`, a texture
+weight from a one-sample field up to 640 wide, and a carried tone curve is replayed. The
+pictures go one at a time into a stored zip, `zip.js`: PNG and JPG are compressed already,
+so each entry is written as it is, and the archive is a `Blob` of the encoded pictures
+rather than a copy of them. Before a run of more than a minute, or more than 25 pictures, it
+says the estimate, from the prior cost table, and a rough zip size, and asks. Six pictures at
+640×360 took about 5 s. A picture the renderer refuses at that size is left out and named.
+The zip stops at 65,535 files and 4 GB, since there is no zip64.
+
+**It does nothing to a running walk.** Showing Saved neither pauses nor resumes one, so
+going from Saved back to Walk has nothing to take up. Opening a saved picture detaches the
+viewer as opening any picture does, and the walk carries on. Gallery and Atlas still pause
+it when shown.
 
 ## Every colormap, and where they live
 

@@ -483,6 +483,67 @@ summary.section-head:focus-visible { outline: 2px solid var(--well-link); outlin
 .tile:focus-visible { outline: 2px solid var(--well-link); outline-offset: -2px; }
 .tile.is-open { border-color: var(--well-ink); }
 
+/* A tile with a control of its own beside it *(saved_tab_ckpt131)*: the cell is the grid's
+   item and the tile fills it, so the grid is the same grid whether a tile carries a mark or
+   not. The mark and the remove button sit over the tile's top-right corner. */
+.tile-cell { position: relative; min-width: 0; }
+.tile-cell > .tile { display: block; width: 100%; }
+
+/* The save mark: a bookmark, hollow until the picture is saved and filled once it is. It
+   shows on a tile that is pointed at or focused, and always once saved, so a grid reads at
+   a glance for which of its pictures are kept without every tile wearing a control. On a
+   screen with no pointer to hover it always shows, because there is no other way to it. */
+.save-mark, .tile-remove {
+  position: absolute;
+  top: 0.2rem;
+  right: 0.2rem;
+  width: 1.6rem;
+  height: 1.6rem;
+  padding: 0.2rem;
+  border: none;
+  border-radius: 3px;
+  background: rgb(0 0 0 / 0.55);
+  color: var(--well-ink);
+  cursor: pointer;
+  line-height: 1;
+  opacity: 0;
+  transition: opacity 120ms ease-out;
+}
+.save-mark svg { display: block; width: 100%; height: 100%; }
+.save-mark path { fill: none; stroke: currentColor; stroke-width: 2; stroke-linejoin: round; }
+.save-mark[aria-pressed="true"] { color: var(--well-link); opacity: 1; }
+.save-mark[aria-pressed="true"] path { fill: currentColor; }
+.save-mark[hidden] { display: none; }
+.tile-cell:hover > .save-mark, .tile-cell:focus-within > .save-mark,
+.slot-cell:hover > .save-mark, .slot-cell:focus-within > .save-mark,
+.tile-cell:hover > .tile-remove, .tile-cell:focus-within > .tile-remove { opacity: 1; }
+.save-mark:hover, .tile-remove:hover { background: rgb(0 0 0 / 0.8); color: var(--well-link); }
+.save-mark:focus-visible, .tile-remove:focus-visible { outline: 2px solid var(--well-link); outline-offset: 1px; opacity: 1; }
+@media (hover: none) {
+  .save-mark, .tile-remove { opacity: 1; }
+}
+.tile-remove { font: inherit; font-size: 1.1rem; }
+
+/* What a saved tile is, in the corner the walk's score takes on a found one. */
+.tile-label {
+  position: absolute;
+  left: 0.2rem;
+  bottom: 0.2rem;
+  max-width: calc(100% - 0.4rem);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 0.05rem 0.3rem;
+  border-radius: 2px;
+  background: rgb(0 0 0 / 0.65);
+  color: var(--well-ink);
+  font-family: var(--sans);
+  font-size: 0.65rem;
+  line-height: 1.3;
+}
+.saved-tile { position: relative; }
+.saved-tile.is-refused { background: var(--well-rule); }
+
 .side-note {
   flex: none;
   margin: 0;
@@ -493,6 +554,70 @@ summary.section-head:focus-visible { outline: 2px solid var(--well-link); outlin
   color: var(--well-ink-dim);
 }
 .side-note:empty { display: none; }
+
+/* ----------------------------------------------------------------------- saved */
+
+/* The Saved tab's head: the count and what can be done with the list, a line for what the
+   last action did, and the import box when it is open. It does not scroll with the tiles. */
+.saved-head {
+  flex: none;
+  padding: 0.5rem var(--gutter) 0.3rem;
+  font-family: var(--sans);
+  font-size: 0.8rem;
+}
+.saved-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 0.35rem 0.6rem; }
+.saved-count { color: var(--well-link); font-weight: 600; font-variant-numeric: tabular-nums; }
+.saved-count:empty { display: none; }
+.saved-actions { display: flex; flex-wrap: wrap; gap: 0.3rem; margin-left: auto; }
+.saved-head button, .saved-head select {
+  font: inherit;
+  font-size: 0.78rem;
+  color: var(--well-ink);
+  background: var(--well);
+  border: 1px solid var(--well-rule);
+  border-radius: 2px;
+  padding: 0.15rem 0.5rem;
+  cursor: pointer;
+}
+.saved-head button:hover { border-color: var(--well-ink-dim); color: var(--well-link); }
+.saved-head button:disabled, .saved-head select:disabled { opacity: 0.45; cursor: not-allowed; }
+.saved-head button:disabled:hover { border-color: var(--well-rule); color: var(--well-ink); }
+.saved-head button:focus-visible, .saved-head select:focus-visible { outline: 2px solid var(--well-link); outline-offset: 1px; }
+#saved-download { border-color: var(--well-ink-dim); font-weight: 600; }
+#saved-download.is-running { border-color: var(--well-link); color: var(--well-link); }
+.saved-import { display: flex; flex-direction: column; gap: 0.35rem; margin-top: 0.45rem; }
+.saved-import[hidden] { display: none; }
+.saved-import textarea {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  color: var(--well-ink);
+  background: var(--well);
+  border: 1px solid var(--well-rule);
+  border-radius: 2px;
+  padding: 0.3rem;
+  resize: vertical;
+}
+.saved-import-go { display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem; color: var(--well-ink-dim); }
+.saved-file input { font: inherit; font-size: 0.72rem; color: var(--well-ink-dim); max-width: 14rem; }
+.saved-progress, .saved-warning {
+  margin: 0.35rem 0 0;
+  font-size: 0.75rem;
+  color: var(--well-ink-dim);
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+.saved-warning { color: var(--state-sharpening); }
+.saved-progress:empty, .saved-warning:empty { display: none; }
+.saved-empty {
+  flex: none;
+  margin: 0;
+  padding: 0.6rem var(--gutter);
+  font-family: var(--sans);
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: var(--well-ink-dim);
+}
+.saved-empty[hidden] { display: none; }
 
 /* ----------------------------------------------------------------------- the atlas */
 
@@ -925,6 +1050,14 @@ summary.section-head:focus-visible { outline: 2px solid var(--well-link); outlin
   cursor: pointer;
 }
 .bar button:not(.chip):hover { border-color: var(--well-ink-dim); color: var(--well-link); }
+
+/* Save, beside the downloads: the same bookmark a tile's mark is, and the word for what it
+   will do, filled in the accent once the view is on the Saved tab. */
+.bar button.save-view { display: inline-flex; align-items: center; gap: 0.3rem; }
+.bar button.save-view svg { width: 0.85rem; height: 0.85rem; }
+.bar button.save-view path { fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linejoin: round; }
+.bar button.save-view[aria-pressed="true"] { color: var(--well-link); border-color: var(--well-link); }
+.bar button.save-view[aria-pressed="true"] path { fill: currentColor; }
 .bar select:disabled,
 .bar input:disabled,
 .bar button:disabled { opacity: 0.45; cursor: not-allowed; }

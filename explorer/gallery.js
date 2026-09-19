@@ -202,6 +202,7 @@ export function install({
   note,
   firstMode = undefined,
   onPick,
+  saveMark = null,
   onSeats = () => {},
 }) {
   /** Each collection's rows once asked for, by name: a promise, so two quick choices of
@@ -320,7 +321,13 @@ export function install({
         }
         onPick(seat);
       });
-      return tile;
+      if (saveMark === null) return tile;
+      // A save mark is a button of its own, so it sits beside the tile rather than in it
+      // *(saved_tab_ckpt131)*: a button inside a button is not a thing a page may hold.
+      const cell = document.createElement("div");
+      cell.className = "tile-cell";
+      cell.append(tile, saveMark(seat));
+      return cell;
     });
     tiles.replaceChildren(...made);
     tiles.scrollTop = 0;

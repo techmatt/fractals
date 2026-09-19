@@ -26,8 +26,9 @@
 // runs on two workers of its own because the battery iterates on the thread it is called
 // from.
 //
-// **Nothing persists.** Found pictures are blob URLs in this page's memory, and a reload
-// forgets them. Each tile is a permalink, which is how one outlives the page.
+// **Nothing persists unless it is saved.** Found pictures are blob URLs in this page's
+// memory, and a reload forgets them. Each tile is a permalink, which is how one outlives
+// the page: its save mark, or Save all found, puts it on the Saved tab *(saved_tab_ckpt131)*.
 
 import * as link from "./permalink.js";
 import { SETTLED } from "./catalog.js";
@@ -1384,7 +1385,13 @@ export function mount(host) {
       for (const other of host.found.querySelectorAll(".tile")) other.classList.toggle("is-open", other === tile);
       host.open(query, "this found picture");
     });
-    host.found.prepend(tile);
+    // The save mark beside it, and the head's Save all found once there is anything to
+    // save *(saved_tab_ckpt131)*. Found pictures last until the page closes; saved ones stay.
+    const cell = document.createElement("div");
+    cell.className = "tile-cell";
+    cell.append(tile, host.mark(query));
+    host.saveAll.hidden = false;
+    host.found.prepend(cell);
     host.note.textContent = `${found.length} found. They last until the page is closed.`;
   }
 
@@ -1495,6 +1502,13 @@ export function mount(host) {
   let hiddenGoing = false;
 
   host.back.addEventListener("click", attach);
+  host.saveAll.addEventListener("click", () => {
+    const tally = host.keepAll(found.map(({ query }) => query));
+    const said = tally.added === 0
+      ? "Every found picture is already saved."
+      : `Saved ${tally.added} found ${tally.added === 1 ? "picture" : "pictures"}.`;
+    host.note.textContent = tally.full > 0 ? `${said} Saved is full, so ${tally.full} were left out.` : said;
+  });
 
   return {
     running: () => state === "running",
