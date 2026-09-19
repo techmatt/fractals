@@ -344,7 +344,8 @@ viewer: a pan, a zoom, a control, or a picture opened from any panel.
      (0 under a direct trap).
    - Each is drawn at 640×360×2, the pipeline's candidate geometry. A texture weight or trap
      opacity is derived exactly as the viewer derives one.
-   - Each is scored by the gate's P≥4 and by the fine head. The best are kept as tiles.
+   - Each is scored by the gate's P≥4, and the best are kept as tiles. The fine head
+     ranks instead where the config ticks it.
 
 The config's defaults are the pipeline's draw where the page can make one. There are three
 recipes a place (hunt and mine's `PER_LOCATION`). The thirteen modes the pipeline accepts are
@@ -402,24 +403,29 @@ contract has no key for it and nothing a link opens sets it.
 
 - Both are the judges lab's `fp16w` exports: fp16 weights and fp32 compute. The render
   judge (gate) reads `[P≥2, P≥3, P≥4]`.
-- **The fine head in use is one member, seed 0** *(walk_tab_ckpt131_addendum1)*. Recipes
-  are ranked on its own P≥4 with no averaging. The pipeline's `p_fine` is the mean of three
-  seeds, so the member's reading is not the solve's number. The fused three-seed graph is
-  an opt-in, `--fused` below; it lands under the same name and answers in the same slot.
-- **What a visitor sees is the render judge's P≥4** *(explorer_slim_ckpt131_addendum2)*.
-  The found tile's badge and the console's *Kept one* line both show it, the same number
-  the descent already speaks in, and the badge's tooltip reads *how likely a person is to
-  rate this 4 or 5*. The fine member stays the hidden ranking key. Its reading lives far
-  below 0.01 and only means something beside the member-versus-mean caveat above, which is
-  why it is kept here and not on the badge. A kept tile can show a lower number than one
-  the walk passed over: that is the fine head disagreeing with the gate.
+- **Recipes are ranked on the number they are shown with** *(saved_tab_ckpt131_addendum1)*.
+  By default that is the render judge's P≥4, which is what the found tile's badge and the
+  console's *Kept one* line show, the same number the descent already speaks in. The badge's
+  tooltip reads *how likely a person is to rate this 4 or 5*. It is the default because a
+  displayed number and a ranking number that disagree make a kept tile read as a mistake:
+  under the old default the walk could keep a picture badged lower than one it had just
+  passed over.
+- **The fine head is an opt-in**: *rank with the gallery's fine head*, under *At a place*
+  in the config. Ticked, recipes rank on the fine head's P≥4, the solve's own key, while the
+  badge still shows the gate's. It downloads the next time a place is mined, and not before.
+  The member's reading lives far below 0.01 and only means something beside the
+  member-versus-mean caveat below, which is why it is never on the badge.
+- **The fine head in use is one member, seed 0** *(walk_tab_ckpt131_addendum1)*. The
+  pipeline's `p_fine` is the mean of three seeds, so the member's reading is not the solve's
+  number. The fused three-seed graph is an opt-in, `--fused` below; it lands under the same
+  name and answers in the same slot.
 - They run in `onnxruntime-web` 1.30's default bundle. Its WebGPU backend is JSEP, the
   runtime the lab's fidelity table was taken on. It uses WebGPU where `navigator.gpu` hands
   back an adapter, and single-threaded WASM otherwise.
 - Every picture goes through `resize.mjs` to 384×224 and in as [0, 1]. Normalization is
   inside the graph.
-- The runtime and the gate download on the first Start. The fine head downloads the first
-  time a place clears the bar. Opening the tab loads only its three modules, about 19 KB.
+- The runtime and the gate download on the first Start. The fine head downloads only where
+  it is ticked, the first time a place is mined after. Opening the tab loads only its three modules, about 19 KB.
 - **On the wire the runtime is 6.7 MB, not 28 MB.** Pages gzips everything but images, and
   the runtime's wasm compresses about fourfold. The two models barely do (5.1 MB to 4.7 MB).
 - **A download says what it is and stops when the walk does** *(explorer_slim_ckpt131)*.

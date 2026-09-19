@@ -8,8 +8,9 @@ which the lab measured at 3.6e-6 from PyTorch with no bar crossings on any backe
 fp16-compute export is not shipped because it is the one that moves decisions.
 
 **The fine head is one member, seed 0, by default** *(walk_tab_ckpt131_addendum1)*. The
-pipeline's `p_fine` is the mean of three seeds; the page ranks on a single member's `P≥4`,
-at a third of the download (5.1 MB against 15.3 MB). The fused three-seed graph can still
+pipeline's `p_fine` is the mean of three seeds; where the walk's config ticks the fine head
+(it is an opt-in since saved_tab_ckpt131_addendum1), the page ranks on a single member's
+`P≥4`, at a third of the download (5.1 MB against 15.3 MB). The fused three-seed graph can still
 be placed with `--fused`. Either lands as `fine.onnx`, which is the one name the page
 fetches, and both graphs answer `probs[2]` — the member's own `P≥4`, or the fused graph's
 in-graph mean — so the page reads the same slot whichever is there.

@@ -9,8 +9,9 @@
 // **Loaded on the Walk tab's first Start and never before.** The runtime's wasm is 28 MB
 // raw and 6.7 MB gzipped on the wire, and the gate and the fine head are 5.1 MB each, which
 // gzip barely touches (4.7 MB), so a reader who never presses Start downloads none of it.
-// The fine head waits longer still: it is fetched the first time a walk clears the bar,
-// because until then there is nothing for it to read.
+// The fine head waits longer still, and by default forever: it is an opt-in in the walk's
+// config *(saved_tab_ckpt131_addendum1)*, fetched the first time a place is mined with it
+// ticked, because recipes rank on the gate's `P≥4` unless it is.
 //
 // **A download can be stopped, and what finished is kept** *(explorer_slim_ckpt131)*.
 // Every fetch here takes the walk's `AbortSignal`, so leaving the tab or pressing Pause

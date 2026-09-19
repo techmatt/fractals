@@ -107,6 +107,9 @@ const DEFAULTS = {
   recipes: 3,
   keep: 1,
   bar: 0.5,
+  // Recipes rank on the number the tile shows *(saved_tab_ckpt131_addendum1)*: the fine
+  // head is an opt-in, and nothing of it downloads until it is ticked.
+  fine: false,
 };
 
 /** Where a composite's texture weight opens when this page derives none for its mode: the
@@ -609,6 +612,15 @@ export function mount(host) {
         config.bar = v;
       },
       "The render judge's probability that a place's smooth picture is at least a 3. A place under it is not colored. The pipeline's own release gate is P≥4 at 0.50 on a colored picture, and P≥3 at 0.50 is the bar it falls back on for a mode with too few places.",
+    );
+    checkbox(
+      mining,
+      "rank with the gallery's fine head",
+      config.fine,
+      (on) => {
+        config.fine = on;
+      },
+      "Choose which recipes to keep by the fine head the gallery's solve ranks on, rather than by the render judge's P≥4 the tiles show. It downloads (5.1 MB) the next time a place is mined, and a kept tile may then show a lower number than one passed over.",
     );
   }
 
@@ -1242,7 +1254,7 @@ export function mount(host) {
     }
     stack.mining(config.recipes);
     // A pause mid-download stops it, and the walk asks again when it is started again.
-    while (scorer !== null && scorer.fineSession === null && !fineless) {
+    while (config.fine && scorer !== null && scorer.fineSession === null && !fineless) {
       const { signal, shown, done } = downloading("the fine judge");
       try {
         await scorer.loadFine((what, got, of) => shown(got, of), signal);
@@ -1296,7 +1308,7 @@ export function mount(host) {
       );
       const read = await gated(drawn.image);
       let fine = null;
-      if (scorer?.fineSession) {
+      if (config.fine && scorer?.fineSession) {
         const started = performance.now();
         fine = await scorer.fine(drawn.image);
         timed("fine", started);
@@ -1318,12 +1330,11 @@ export function mount(host) {
    * The number a kept picture is shown with: the render judge's `P≥4`, the number the
    * descent already speaks in.
    *
-   * **Shown, not ranked on** *(explorer_slim_ckpt131_addendum2)*. The recipes at a place
-   * are still ranked on the fine head where it has loaded, which is the pipeline's own
-   * ranking key; but one member's reading lives far below 0.01 and means nothing to a
-   * visitor without the member-versus-mean caveat the README keeps. So a kept picture can
-   * show a lower number than one the walk passed over, and that is the fine head
-   * disagreeing with the gate rather than a mistake.
+   * **Shown and ranked on** *(saved_tab_ckpt131_addendum1)*. By default the recipes at a
+   * place are ranked on this same number, so the best badge is the one kept. The fine head,
+   * the pipeline's own ranking key, is the config's opt-in; with it ticked a kept picture
+   * can show a lower number than one the walk passed over, because one member's reading
+   * lives far below 0.01 and is not a number to put on a badge.
    */
   function rankNumber(one) {
     return score(one.read.p4);
