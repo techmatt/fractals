@@ -1,0 +1,31 @@
+[package]
+name = "perturb"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+# The perturbation kernel, as a raw wasm module of its own. Separate from
+# `engine-wasm` on purpose: the shallow path — `engine.wasm`, every shallow
+# picture, every shallow key — cannot be slowed or changed by anything in here,
+# because none of it is linked into that module. The two meet on the page, at a
+# buffer of `f64` lanes.
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+# **No dependencies, and that is the design.** The engine is not one — not even a
+# dev-dependency, because cargo resolves a path dev-dependency for every command
+# and `perturb.wasm` would stop rebuilding on a machine with no sibling checkout.
+# The engine's smooth field is pinned instead by `smooth-cases.json`, committed
+# beside this file, which is the same shape `engine-wasm/level-cases.json` uses to
+# hold the autolevel port to Python. `serde_json` is not here either: the spec is
+# small and flat and `src/json.rs` reads it.
+[dependencies]
+
+# The same profile as `engine-wasm`, for the same reasons, measured there: `s` and
+# `z` draw the same pixels and were 57% and 79% slower.
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = "symbols"

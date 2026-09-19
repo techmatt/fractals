@@ -115,6 +115,7 @@ links.jsonl           generated: every figure and tile, as a link here or a reas
 engine.wasm           generated: the engine, compiled
 engine.manifest.json  generated: what engine.wasm was built from
 engine-wasm/          the crate that produces engine.wasm
+perturb-wasm/         the crate that will produce perturb.wasm — see below
 ```
 
 ## The studio
@@ -761,6 +762,29 @@ an expression choosing the channel set rather than an `#[cfg]` attribute above i
 an attribute is a line, a line moves every panic location under it, and nineteen bytes of
 `Location` line numbers is the difference between a module that reproduces and one that
 nearly does.
+
+### The other kernel, and why it is not this one
+
+`perturb-wasm/` is a second crate and will be a second module. It renders the
+degree-2 Mandelbrot set **below the `f64` floor** — by perturbation against one
+high-precision reference orbit, with rebasing — and it is deliberately not part
+of `engine.wasm`. Nothing in it is linked into that module, so the shallow path
+cannot be slowed, re-ordered or moved by it, and a shallow permalink draws the
+same pixels it drew before. The two would meet on the page, at a buffer of `f64`
+lanes: its output is what `compute_band` produces for `smooth`, in the same
+layout, so `shade_level` colours it unchanged.
+
+There is **no Deep tab, no link contract and no committed `perturb.wasm`** —
+those are the next prompt's, and the module lands when it has a consumer to
+settle its exports against. `perturb-wasm/README.md` owns the design and the
+numbers: the limb rule, the rebasing, the cap policy, and the proof that where
+the two kernels disagree at depth it is this page's kernel that is wrong.
+
+That disagreement is worth reading before assuming the intro's scope line still
+holds. At width 2e-11 the two fields agree on **no sample at all** — median 61
+iterations apart, worst 34,250 — and against a 384-bit oracle the perturbation
+kernel is nearer the truth on 307 of 311 escaping samples and the plain `f64`
+loop on 4.
 
 ### What the engine needed
 
