@@ -1659,7 +1659,7 @@ function openLink(query, opts = {}) {
     say(error.message);
     return;
   }
-  interruptWalk("A picture was opened, so the walk paused.");
+  interruptWalk("A picture was opened. The walk carries on; Back to the walk returns to it.");
   view = wanted;
   seat = key;
   // What arrived is what Reset to seat puts back, options and all, so a reset re-enters
@@ -1696,7 +1696,7 @@ function arrived() {
  *  on. Every control that moves the view comes through here and the Autolevel box does
  *  not — switching a curve off is looking at the same view. */
 function changed() {
-  interruptWalk("You moved the view, so the walk paused.");
+  interruptWalk("You moved the view. The walk carries on; Back to the walk returns to it.");
   leaveSeat();
   levelling = "derived";
   if (tuning === "stored") tuning = "derived";
@@ -1842,12 +1842,14 @@ function showPanel(asked) {
     syncPlane();
   }
   // The walk is the one panel with work of its own, so it is the one that has to be told
-  // when it stops being seen: a hidden walk pauses, and showing it again never restarts
-  // one — Start does, and only Start.
+  // when it stops being seen: a hidden walk pauses, and showing it again takes up a walk
+  // the hiding paused, with the viewer back on it *(walk_detach_ckpt131)*. Nothing else
+  // starts one — an address saying `panel=walk` included.
   if (showing === "walk") {
-    startWalk();
+    if (walk === null) startWalk();
+    else walk.reveal();
   } else {
-    walk?.pause("The Walk tab was hidden, so the walk paused.");
+    walk?.hide("The Walk tab was hidden, so the walk paused.");
   }
   settle();
 }
@@ -1858,10 +1860,11 @@ function showPanel(asked) {
 let walk = null;
 let walkStarted = false;
 
-/** Pause the walk, if one is running, because the reader took the viewer back. The cells it
- *  was weighing go with it: they were about a view that is no longer the one on screen. */
+/** The reader took the viewer: it stops following the walk, and the walk carries on
+ *  *(walk_detach_ckpt131)* — Pause is the one control that stops it. The cells it was
+ *  weighing go with it: they were about a view that is no longer the one on screen. */
 function interruptWalk(why) {
-  if (walk?.running()) walk.pause(why, { reframe: false });
+  walk?.detach(why);
   showOverlay(null);
 }
 
@@ -1925,6 +1928,7 @@ async function startWalk() {
     walk = mount({
       fields: document.getElementById("walk-fields"),
       start: document.getElementById("walk-start"),
+      back: document.getElementById("walk-back"),
       progress: document.getElementById("walk-progress"),
       console: document.getElementById("walk-console"),
       stack: document.getElementById("walk-stack"),

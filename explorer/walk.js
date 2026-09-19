@@ -225,6 +225,11 @@ export function mount(host) {
     modes: new Set(modeOrder.slice(0, -UNTICKED_TAIL)),
   };
   let state = "idle"; // idle | loading | running | paused
+  /** Whether the viewer follows the walk *(walk_detach_ckpt131)*. It is the other half of
+   *  what `state` used to mean alone: opening a found picture, or moving the view, hands the
+   *  viewer to the reader and leaves the walk running on its own renderer. Start, Back to the
+   *  walk, and showing the tab again after hiding it a running walk hand it back. */
+  let attached = true;
   let resume = null;
   let renderer = null;
   let screeners = null;
@@ -243,6 +248,13 @@ export function mount(host) {
    *  a pause can put the frame back at its own framing and a resume can widen it again.
    *  `null` while a recipe is up, which is already framed as itself. */
   let shown = null;
+
+  /** The stack's own way back, kept across its re-renders; the panel has the other. */
+  const backOnStack = document.createElement("button");
+  backOnStack.type = "button";
+  backOnStack.className = "walk-stack-back";
+  backOnStack.textContent = "Back to the walk";
+  backOnStack.addEventListener("click", () => attach());
 
   // ----------------------------------------------------------------- the console
 
@@ -268,6 +280,9 @@ export function mount(host) {
   function syncButton() {
     host.start.textContent = state === "running" || state === "loading" ? "Pause" : "Start";
     host.stack.hidden = state !== "running";
+    host.stack.classList.toggle("is-detached", !attached);
+    host.back.hidden = attached;
+    backOnStack.hidden = attached;
   }
 
   // ----------------------------------------------------------------- the walk stack
@@ -369,7 +384,7 @@ export function mount(host) {
       const body = document.createElement("div");
       body.className = "walk-stack-body";
       body.append(head, legs);
-      host.stack.replaceChildren(summary(), body);
+      host.stack.replaceChildren(summary(), body, backOnStack);
     }
 
     return {
@@ -651,8 +666,12 @@ export function mount(host) {
       // Paused while the last step finished: the walk waits for the next Start.
       if (state !== "loading") return;
     }
+    // Start hands the viewer back to the walk as well: a reader who presses it wants to watch.
+    const was = attached;
+    attached = true;
     state = "running";
     syncButton();
+    if (!was) clearOpen();
     // Widened again whether or not a step was parked: one still in flight at the pause
     // parks nothing, and only recorded what it would have shown.
     if (shown !== null) display(shown);
@@ -689,13 +708,43 @@ export function mount(host) {
     paintEra += 1;
     syncButton();
     if (!cut) log("status", why);
-    if (reframe) unframe();
+    // A detached viewer is showing the reader's picture, which a pause leaves alone.
+    if (reframe && attached) unframe();
+  }
+
+  /** Hand the viewer to the reader and leave the walk running *(walk_detach_ckpt131)*:
+   *  whatever it would have painted is only recorded, and queued repaints are dropped. */
+  function detach(why) {
+    // Before any walk has run there is nothing to go back to.
+    if (!attached || loop === null) return;
+    attached = false;
+    paintEra += 1;
+    syncButton();
+    if (state === "running") log("status", why);
+  }
+
+  /** Hand the viewer back: the walk's last frame, as the walk drew it, with no full-quality
+   *  pass — whether the walk is running or paused. */
+  function attach() {
+    if (attached) return;
+    attached = true;
+    paintEra += 1;
+    syncButton();
+    clearOpen();
+    if (shown !== null) paint(shown);
+  }
+
+  /** The found tile marked as open stops being so once the viewer is the walk's again. */
+  function clearOpen() {
+    for (const tile of host.found.querySelectorAll(".tile.is-open")) tile.classList.remove("is-open");
   }
 
   /** Every step of a walk passes through here: it returns at once while the walk runs, and
    *  otherwise waits for Start. */
   function going() {
-    if (state === "running" && !host.busy()) return Promise.resolve();
+    // A download holds the viewer still, and so the walk while it follows the viewer; a
+    // detached walk moves nothing the download is drawing, and goes on.
+    if (state === "running" && !(attached && host.busy())) return Promise.resolve();
     return new Promise((resolve) => {
       if (state === "running") {
         // A download holds the viewer still; the walk waits on it rather than moving it.
@@ -754,7 +803,7 @@ export function mount(host) {
   function onScreen(paint, dwell = 0) {
     const era = paintEra;
     painting = painting.then(async () => {
-      if (era !== paintEra || state !== "running") return;
+      if (era !== paintEra || state !== "running" || !attached) return;
       paint();
       if (dwell > 0) await sleep(dwell);
     });
@@ -764,10 +813,11 @@ export function mount(host) {
    *  `view` is of `frame` itself and `layers` are `{ frame, image, dim }`. A widened entry is
    *  framed so `frame` takes `CELL_SHARE` of the viewer and has its cells over it; a recipe
    *  is not widened and has none. While the walk is paused nothing is pushed — the viewer is
-   *  the reader's — and a step still finishing only records what it would have shown. */
+   *  the reader's — and a step still finishing only records what it would have shown. The
+   *  same holds while the viewer is detached, so Back to the walk has its latest frame. */
   function display(next, dwell = 0) {
     shown = next;
-    if (state !== "running") return;
+    if (state !== "running" || !attached) return;
     onScreen(() => paint(next), dwell);
   }
 
@@ -786,7 +836,7 @@ export function mount(host) {
     if (shown === null) return;
     shown.cells = cells;
     const { frame } = shown;
-    if (state === "running") onScreen(() => host.showCells(outlined(frame, cells)), dwell);
+    if (state === "running" && attached) onScreen(() => host.showCells(outlined(frame, cells)), dwell);
   }
 
   /** Where a pause leaves the viewer: the view the walk stands in, at its own framing, drawn
@@ -1314,7 +1364,12 @@ export function mount(host) {
     badge.title = "How likely a person is to rate this 4 or 5.";
     tile.append(image, badge);
     tile.addEventListener("click", () => {
-      pause("A found picture was opened, so the walk paused.", { reframe: false });
+      // A download holds the viewer, and opening refuses; the viewer stays the walk's.
+      if (host.busy()) {
+        host.open(query, "this found picture");
+        return;
+      }
+      detach("A found picture is open. The walk carries on; Back to the walk returns to it.");
       for (const other of host.found.querySelectorAll(".tile")) other.classList.toggle("is-open", other === tile);
       host.open(query, "this found picture");
     });
@@ -1425,8 +1480,27 @@ export function mount(host) {
   host.start.addEventListener("click", toggle);
   window.__walk = { timings, found, config, walks };
 
+  /** Whether a hidden tab left a walk to take up again when it is shown. */
+  let hiddenGoing = false;
+
+  host.back.addEventListener("click", attach);
+
   return {
     running: () => state === "running",
+    attached: () => attached,
     pause,
+    detach,
+    /** The tab was hidden: the walk pauses, and any download stops, as ever. */
+    hide(why) {
+      hiddenGoing = hiddenGoing || state === "running" || state === "loading";
+      pause(why);
+    },
+    /** The tab is shown again: a walk that was going when it was hidden goes on, and the
+     *  viewer is the walk's again. Nothing else starts one. */
+    reveal() {
+      if (!hiddenGoing) return;
+      hiddenGoing = false;
+      if (state === "paused" || state === "idle") toggle();
+    },
   };
 }

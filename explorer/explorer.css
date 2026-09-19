@@ -570,6 +570,25 @@ summary.section-head:focus-visible { outline: 2px solid var(--well-link); outlin
 .walk-start:focus-visible { outline: 2px solid var(--well-link); outline-offset: 2px; }
 .walk-progress { color: var(--well-ink-dim); font-size: 0.75rem; }
 
+/* Back to the walk (walk_detach_ckpt131): the viewer's way back to the walk, beside the
+   process's own button and drawn as the lesser of the two, because it stops nothing. */
+.walk-back, .walk-stack-back {
+  appearance: none;
+  border: 1px solid var(--well-link);
+  border-radius: 4px;
+  background: none;
+  color: var(--well-link);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.walk-back { font-size: 0.85rem; padding: 0.25rem 0.8rem; }
+.walk-stack-back { flex: none; font-size: 0.7rem; padding: 0.1rem 0.5rem; }
+.walk-back:hover, .walk-stack-back:hover { color: var(--well-ink); border-color: var(--well-ink); }
+.walk-back:focus-visible, .walk-stack-back:focus-visible { outline: 2px solid var(--well-link); outline-offset: 2px; }
+.walk-back[hidden], .walk-stack-back[hidden] { display: none; }
+
 .walk-console {
   list-style: none;
   margin: 0;
@@ -685,12 +704,21 @@ summary.section-head:focus-visible { outline: 2px solid var(--well-link); outlin
 .walk-stack-slots li.is-empty::before { content: "\00a0"; }
 .walk-stack-kept { font-weight: 600; }
 
+/* Detached, the reader is using the controls the stack sits over, so it keeps only its one
+   live line — the stage in its colour and the score or count that moves — with the way
+   back beside it. */
+.walk-stack.is-detached { display: flex; align-items: center; gap: 0.6rem; width: auto; max-width: 26rem; }
+.walk-stack.is-detached[hidden] { display: none; }
+.walk-stack.is-detached .walk-stack-line { display: block; flex: 1 1 auto; min-width: 0; }
+.walk-stack.is-detached .walk-stack-body { display: none; }
+
 /* Stacked, the viewer no longer owns the window's corner, so the stack is one line along
    the bottom edge: where the walk is now, and nothing else. */
 @media (max-width: 60rem) {
   .walk-stack { left: var(--gutter); width: auto; padding: 0.3rem 0.6rem; }
   .walk-stack-line { display: block; }
   .walk-stack-body { display: none; }
+  .walk-stack.is-detached { max-width: none; }
 }
 
 .walk-found-head { flex: none; padding: 0 var(--gutter); }
