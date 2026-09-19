@@ -816,6 +816,9 @@ async function drawPass() {
   const derivingOpacity = tuning === "derived" && tuned === "opacity" && shape.direct;
   const derivingWeight = tuning === "derived" && tuned === "weight" && !shape.direct;
   holdCopy(deriving || derivingOpacity || derivingWeight);
+  // Whether this view is saved is known from its link now, not once the field lands: a
+  // tile opened out of the gallery says Saved at the click rather than seconds after it.
+  syncSave();
   let probeMs = 0;
   probed = null;
   if (derivingOpacity) {
