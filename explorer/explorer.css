@@ -717,69 +717,102 @@ summary.section-head:focus-visible { outline: 2px solid var(--well-link); outlin
 /* ------------------------------------------------------------------ the walk view */
 
 /* While a walk runs or is paused with the viewer its own, this is the region under the
-   picture, and the controls are not on the page (walk_view_ckpt132). The stack is the top
-   half and the candidates the bottom. On a phone the stack keeps its last few rows. */
+   picture, and the controls are not on the page (walk_view_ckpt132). It is two strips, the
+   walk above its candidates, each running right and scrolling when it overflows
+   (walk_strip_ckpt132). */
 .walk-view {
+  --walk-card: 9.5rem;
+  --walk-tile: 9.5rem;
   flex: 1 1 auto;
-  padding: 0.5rem var(--gutter) 2rem;
+  padding: 0.5rem var(--gutter) 1rem;
   display: flex;
   flex-direction: column;
-  gap: 0.8rem;
+  gap: 0.6rem;
   font-family: var(--sans);
   color: var(--well-ink);
 }
-.walk-view-half { display: flex; flex-direction: column; gap: 0.35rem; min-width: 0; }
+.walk-view-half { display: flex; flex-direction: column; min-width: 0; }
 
-/* One row a rung, newest at the bottom. A row says what kind it is by a tint down its left
-   edge (walk_console_ckpt131), and a stage row is written in the same tint. */
-.walk-stack {
-  list-style: none;
+/* The picture gives up height where the window is short, so both strips are in sight: a
+   big picture is good, and not necessary. `--walk-room` is what the strips, their rules, the
+   site bar and the status line take. Stacked, the page scrolls instead. */
+.viewer.is-walking {
+  --walk-room: 29rem;
+}
+.viewer.is-walking .stage {
+  width: min(calc(100% - 2 * var(--gutter)), calc((100dvh - var(--walk-room)) * 16 / 9));
+  margin-inline: auto;
+}
+
+.walk-strip, .walk-candidates {
+  position: relative;
+  display: flex;
+  gap: 0.4rem;
   margin: 0;
-  padding: 0.3rem 0;
-  max-height: 16rem;
-  overflow-y: auto;
+  padding: 0 0 0.35rem;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: thin;
+}
+.walk-strip { list-style: none; align-items: stretch; }
+
+/* One card a frame: its own P≥3, its picture boxed as the viewer boxes it, the four
+   quarters' P≥3 in their places, and a sentence. */
+.walk-card {
+  flex: none;
+  width: var(--walk-card);
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.3rem;
   border: 1px solid var(--well-rule);
   border-radius: 3px;
-  font-size: 0.75rem;
-  line-height: 1.3;
+  font-size: 0.7rem;
+  line-height: 1.25;
   font-variant-numeric: tabular-nums;
   color: var(--well-ink-dim);
 }
-.walk-stack li {
-  --kind: transparent;
-  display: flex;
+.walk-card canvas { display: block; width: 100%; height: auto; aspect-ratio: 16 / 9; }
+.walk-card-head { display: flex; align-items: center; gap: 0.3rem; min-height: 1.1rem; }
+.walk-card-score { font-size: 0.85rem; font-weight: 700; color: var(--well-ink); }
+.walk-card-quarters { display: grid; grid-template-columns: 1fr 1fr; gap: 2px; }
+.walk-card-said { color: var(--well-ink); }
+.walk-strip.is-running .walk-card.is-live { border-color: var(--well-ink-dim); background: rgb(255 255 255 / 0.06); }
+.walk-card.is-peak.is-over { border-color: #ffd166; box-shadow: 0 0 0 1px #ffd166; }
+.walk-card.is-peak.is-under { border-style: dashed; border-color: var(--well-ink-dim); }
+.walk-card.is-peak .walk-card-said { font-weight: 600; }
+
+/* The root search, and a plane giving out: words only, until the root lands. */
+.walk-card.is-text { justify-content: center; font-size: 0.75rem; }
+.walk-card.is-text .walk-card-said { color: #6cb6ff; }
+
+/* The Julia twin's cards follow a slim card that says so, in the same strip. */
+.walk-card.is-divider {
+  width: auto;
+  padding: 0.4rem 0.15rem;
   align-items: center;
-  gap: 0.35rem;
-  min-width: 0;
-  padding: 0.12rem 0.5rem 0.12rem 0.45rem;
-  border-left: 3px solid var(--kind);
-  white-space: nowrap;
+  justify-content: center;
+  border-style: dashed;
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  color: #c49bff;
+  letter-spacing: 0.04em;
 }
-.walk-stack [data-kind="root"] { --kind: #6cb6ff; }
-.walk-stack [data-kind="rung"] { --kind: #8a94a6; }
-.walk-stack [data-kind="verdict"] { --kind: #c49bff; }
-.walk-stack [data-kind="mining"] { --kind: #5fd3c0; }
-.walk-stack [data-kind="found"] { --kind: #ffd166; }
-.walk-stack .walk-said { color: var(--kind); overflow: hidden; text-overflow: ellipsis; }
-.walk-stack .walk-dim { color: var(--well-ink-dim); font-size: 0.7rem; }
-.walk-stack.is-running li.is-live { background: rgb(255 255 255 / 0.07); }
-.walk-stack.is-running li.is-live .walk-said { font-weight: 600; }
 .walk-best {
   margin-left: auto;
   padding: 0 0.3rem;
   border: 1px solid #ffd166;
   border-radius: 2px;
   color: #ffd166;
-  font-size: 0.65rem;
+  font-size: 0.6rem;
   text-transform: uppercase;
   letter-spacing: 0.06em;
 }
 
 /* A quarter's chip, in the color that quarter is always boxed in on the picture. */
 .walk-chip {
-  flex: none;
-  min-width: 2.7rem;
-  padding: 0 0.25rem;
+  min-width: 0;
+  padding: 0 0.2rem;
   border: 1px solid var(--ink);
   border-radius: 2px;
   color: var(--ink);
@@ -787,18 +820,21 @@ summary.section-head:focus-visible { outline: 2px solid var(--well-link); outlin
 }
 .walk-chip.is-empty { border-style: dashed; opacity: 0.55; }
 .walk-chip.is-chosen { box-shadow: 0 0 0 1px var(--ink); font-weight: 700; }
-.walk-into { color: var(--well-ink); }
 .walk-into-name { color: var(--ink); font-weight: 600; }
 
-/* The candidates: a place's tiles, one per mode, the kept ones outlined in the found ink. */
-.walk-candidates {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(8.5rem, 1fr));
-  gap: 0.5rem;
+/* The candidates: a place's tiles, one per mode, the kept ones outlined in the found ink.
+   The place they are of sits on the rule, where a section's aside goes. */
+.walk-candidates-place {
+  order: 2;
+  flex: none;
+  font-size: 0.7rem;
+  color: var(--well-ink-dim);
+  font-variant-numeric: tabular-nums;
 }
 .walk-candidate {
-  margin: 0;
-  min-width: 0;
+  flex: none;
+  width: var(--walk-tile);
+  margin: 2px;
   outline: 1px solid var(--well-rule);
 }
 .walk-candidate canvas { display: block; width: 100%; height: auto; aspect-ratio: 16 / 9; }
@@ -817,9 +853,8 @@ summary.section-head:focus-visible { outline: 2px solid var(--well-link); outlin
 .walk-candidates-note { margin: 0; font-size: 0.75rem; color: var(--well-ink-dim); }
 
 @media (max-width: 60rem) {
-  .walk-stack { max-height: 7rem; font-size: 0.7rem; }
-  .walk-stack li { gap: 0.25rem; }
-  .walk-chip { min-width: 2.3rem; padding: 0 0.1rem; }
+  .walk-view { --walk-card: 8rem; --walk-tile: 8rem; }
+  .viewer.is-walking .stage { width: auto; margin-inline: var(--gutter); }
 }
 
 .walk-found-head { flex: none; padding: 0 var(--gutter); }

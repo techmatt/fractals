@@ -146,7 +146,7 @@ const CELL_SHARE = 0.65;
 const DWELL_MS = 400;
 
 /**
- * The four quarters, in the order a stack row lists them, each with the color it is always
+ * The four quarters, in the order a card's chips read them, each with the color it is always
  * drawn in *(walk_view_ckpt132)*. The color is bound to the position, so "zooming into red"
  * means upper-left on every rung of every walk. `a` is the column and `b` the row, counting
  * up. The four are Okabe and Ito's vermillion, yellow and reddish purple with a brighter
@@ -170,8 +170,8 @@ const score = (value) => value.toFixed(2);
 const width = (value) => value.toExponential(1);
 const megabytes = (bytes) => (bytes / 1e6).toFixed(1);
 
-/** A screen refusal, as a reader would say it: the gate's reason in a few words. A stack
- *  row calls every skipped quarter "empty" and keeps the reason for its tooltip. */
+/** A screen refusal, as a reader would say it: the gate's reason in a few words. A card
+ *  calls every skipped quarter "empty" and keeps the reason for its tooltip. */
 const REFUSALS = {
   interior_cap: "mostly inside the set",
   instant_escape: "almost everything escapes at once",
@@ -179,8 +179,8 @@ const REFUSALS = {
   occupancy_floor: "too empty",
 };
 
-/** Why a descent stopped, as its stage row opens. */
-const STOPS = { peak: "Peak", floor: "Floor", cap: "Cap", "dead end": "Dead end" };
+/** Why a descent stopped, as the sentence on the last card it made. */
+const ENDS = { peak: "past the peak", floor: "as deep as it can draw", cap: "rung cap", "dead end": "dead end" };
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -286,29 +286,47 @@ export function mount(host) {
     host.start.textContent = state === "running" || state === "loading" ? "Pause" : "Start";
     host.back.hidden = attached;
     const owns = attached && onTab && (state === "running" || state === "paused");
+    const showing = !host.view.hidden;
     host.view.hidden = !owns;
     host.controls.hidden = owns;
-    host.stack.classList.toggle("is-running", state === "running");
+    strip.running(state === "running");
+    // The picture may give up some height to the two strips *(walk_strip_ckpt132)*, so the
+    // canvas is sized again whenever the walk view comes or goes.
+    host.walking(owns);
+    if (showing !== owns) host.relayout();
   }
 
-  // ----------------------------------------------------------------- the walk stack
+  // ----------------------------------------------------------------- the walk strip
 
   /**
-   * The walk, one row per rung *(walk_view_ckpt132)*: the top half of the walk view, newest
-   * row at the bottom, and cleared by a new walk. It replaced both the corner widget
-   * (`walk_tune_ckpt131`) and the panel's console, and nothing the console said that is
-   * not a row here survived.
+   * The walk, one card per frame *(walk_strip_ckpt132)*: the top half of the walk view, a
+   * filmstrip that runs right and keeps its newest card in sight. It replaced the one-line
+   * rows of `walk_view_ckpt132`, and there is no text log anywhere now.
    *
-   * A **rung row** is the four quarters' `P≥3` as chips in their own colors, upper-left,
-   * upper-right, lower-left, lower-right, with "empty" for a quarter the walk skipped. The
-   * chosen chip is outlined, then the chosen quarter by its color, then the rung's width in
-   * grey. A **stage row** is one line in its kind's tint: the root search, the peak, the
-   * verdict, the twin, the mining and what was kept. The row being worked on is lit, and the
-   * best rung of the leg so far, root or twin home included, carries a mark.
+   * A **frame card** is one frame the descent stood in. Over its thumbnail is that frame's
+   * own `P≥3`, the number the peak rule tracks; the thumbnail is the picture the walk judged
+   * of it, framed and boxed as the viewer shows it, with its four quarters in their inks and a
+   * skipped one dashed and dim; under it the four quarters' `P≥3` as a 2×2 of chips, in
+   * their positions and inks, filling in as they are judged, the chosen one outlined; and at
+   * the foot one short sentence. The card being worked on is lit, and the leg's best so far
+   * carries the BEST mark on the card itself.
+   *
+   * A **text card** is the root search, which becomes the root's frame card when the root
+   * lands, or the plane giving out. A **divider** is the slim card a Julia twin's own cards
+   * follow, in the same strip, because one place is one strip.
+   *
+   * A walk that ends without mining **lingers** for `LINGER_MS` before a new walk clears it,
+   * so its last sentence can be read. The new walk searches for its root meanwhile, out of
+   * sight as ever, and waits on `ready` before it touches the strip.
    */
-  const stack = (() => {
-    let rows = [];
+  const strip = (() => {
+    const LINGER_MS = 4000;
+    const THUMB = { width: 288, height: 162 };
+    let cards = [];
     let best = null;
+    let lingerUntil = 0;
+    let pending = null; // `{ plane, timer, done: Promise }` while a lingering strip waits to clear
+    const canvases = new WeakMap();
 
     function span(className, text) {
       const one = document.createElement("span");
@@ -317,85 +335,231 @@ export function mount(host) {
       return one;
     }
 
-    function rungRow(row, line) {
-      line.dataset.kind = "rung";
-      QUARTERS.forEach((quarter, slot) => {
-        const chip = row.chips[slot];
-        const one = span("walk-chip", chip.p3 === undefined ? "…" : chip.p3 === null ? "empty" : score(chip.p3));
-        one.style.setProperty("--ink", quarter.ink);
-        one.title = `The ${quarter.where}, ${quarter.name}: ${chip.p3 === null ? chip.why : chip.p3 === undefined ? "being weighed" : `P≥3 ${score(chip.p3)}`}`;
-        if (chip.p3 === null) one.classList.add("is-empty");
-        if (slot === row.chosen) one.classList.add("is-chosen");
-        line.append(one);
-      });
-      if (row.chosen !== null) {
-        const into = span("walk-into", "→ zooming into ");
-        const name = span("walk-into-name", QUARTERS[row.chosen].name);
-        name.style.setProperty("--ink", QUARTERS[row.chosen].ink);
-        into.append(name);
-        line.append(into);
+    function canvasOf(image) {
+      let made = canvases.get(image);
+      if (made === undefined) {
+        made = document.createElement("canvas");
+        made.width = image.width;
+        made.height = image.height;
+        made.getContext("2d").putImageData(image, 0, 0);
+        canvases.set(image, made);
       }
-      line.append(span("walk-dim", width(row.w)));
+      return made;
     }
 
-    function render() {
-      const list = host.stack;
-      const pinned = list.scrollHeight - list.scrollTop - list.clientHeight < 24;
-      list.replaceChildren(
-        ...rows.map((row, index) => {
-          const line = document.createElement("li");
-          if (row.kind === "rung") {
-            rungRow(row, line);
-          } else {
-            line.dataset.kind = row.kind;
-            line.append(span("walk-said", row.text));
-            if (row.score !== undefined) line.append(span("walk-dim", score(row.score)));
-          }
-          if (index === rows.length - 1) line.classList.add("is-live");
-          if (row === best) {
-            line.classList.add("is-best");
-            line.append(span("walk-best", "best"));
-          }
-          return line;
-        }),
-      );
-      if (pinned) list.scrollTop = list.scrollHeight;
+    /** The card's picture as the viewer frames it: the frame at `CELL_SHARE` of the width,
+     *  the pictures behind it dimmed, and its quarters boxed in their inks. */
+    function thumbnail(card) {
+      const ink = card.canvas.getContext("2d");
+      const { frame } = card;
+      const w = frame.w / CELL_SHARE;
+      const h = (w * THUMB.height) / THUMB.width;
+      const left = frame.x - w / 2;
+      const top = frame.y + h / 2;
+      const at = (box) => [
+        ((box.x - box.w / 2 - left) / w) * THUMB.width,
+        ((top - (box.y + box.h / 2)) / h) * THUMB.height,
+        (box.w / w) * THUMB.width,
+        (box.h / h) * THUMB.height,
+      ];
+      ink.globalAlpha = 1;
+      ink.fillStyle = "#000";
+      ink.fillRect(0, 0, THUMB.width, THUMB.height);
+      ink.imageSmoothingQuality = "high";
+      for (const layer of card.layers) {
+        ink.globalAlpha = layer.dim ? 0.45 : 1;
+        ink.drawImage(canvasOf(layer.image), ...at(layer.frame));
+      }
+      ink.globalAlpha = 1;
+      ink.setLineDash([2, 3]);
+      ink.strokeStyle = "rgba(255, 255, 255, 0.4)";
+      ink.lineWidth = 1;
+      ink.strokeRect(...at(frame));
+      for (const [slot, quarter] of (card.quarters ?? []).entries()) {
+        const skipped = quarter.p3 === null;
+        const chosen = slot === card.chosen;
+        ink.globalAlpha = skipped ? 0.5 : 1;
+        ink.setLineDash(skipped ? [5, 3] : []);
+        for (const [stroke, lineWidth] of [["rgba(0, 0, 0, 0.55)", chosen ? 5 : 3], [QUARTERS[slot].ink, chosen ? 3 : 1.5]]) {
+          ink.strokeStyle = stroke;
+          ink.lineWidth = lineWidth;
+          ink.strokeRect(...at(quarter.frame));
+        }
+      }
+      ink.globalAlpha = 1;
+      ink.setLineDash([]);
+    }
+
+    /** One card's element, rebuilt around its canvas, which is kept. */
+    function draw(card) {
+      const el = card.el;
+      el.className = `walk-card is-${card.kind}`;
+      if (card === best) el.classList.add("is-best");
+      if (card.peak) el.classList.add("is-peak", `is-${card.peak}`);
+      if (card.kind !== "frame") {
+        el.replaceChildren(span("walk-card-said", card.said));
+        return;
+      }
+      el.title = `${card.plane} at width ${width(card.frame.w)}`;
+      const head = document.createElement("div");
+      head.className = "walk-card-head";
+      head.append(span("walk-card-score", score(card.p3)));
+      head.title = "This frame's own P≥3, the number the peak rule follows.";
+      if (card === best) head.append(span("walk-best", "best"));
+      const parts = [head, card.canvas];
+      if (card.quarters !== null) {
+        const grid = document.createElement("div");
+        grid.className = "walk-card-quarters";
+        card.quarters.forEach((quarter, slot) => {
+          const { where, name, ink } = QUARTERS[slot];
+          const text = quarter.p3 === undefined ? "…" : quarter.p3 === null ? "empty" : score(quarter.p3);
+          const chip = span("walk-chip", text);
+          chip.style.setProperty("--ink", ink);
+          chip.title = `The ${where}, ${name}: ${quarter.p3 === null ? quarter.why : quarter.p3 === undefined ? "being weighed" : `P≥3 ${score(quarter.p3)}`}`;
+          if (quarter.p3 === null) chip.classList.add("is-empty");
+          if (slot === card.chosen) chip.classList.add("is-chosen");
+          grid.append(chip);
+        });
+        parts.push(grid);
+      }
+      const said = span("walk-card-said", "");
+      if (card.into !== null && card.said === "") {
+        const name = span("walk-into-name", QUARTERS[card.into].name);
+        name.style.setProperty("--ink", QUARTERS[card.into].ink);
+        said.append("zoom into ", name);
+      } else {
+        said.textContent = card.said;
+      }
+      parts.push(said);
+      el.replaceChildren(...parts);
+      thumbnail(card);
+    }
+
+    /** Redraw `card`, light the last one, and keep the newest in sight unless the reader has
+     *  scrolled back along the strip. */
+    function show(...changed) {
+      const list = host.strip;
+      const pinned = list.scrollWidth - list.scrollLeft - list.clientWidth < 48;
+      for (const card of changed) draw(card);
+      for (const card of cards) card.el.classList.toggle("is-live", card === cards.at(-1));
+      if (pinned) list.scrollLeft = list.scrollWidth;
+    }
+
+    function add(card) {
+      card.el = document.createElement("li");
+      cards.push(card);
+      host.strip.append(card.el);
+      show(card);
+      return card;
+    }
+
+    function clear(plane) {
+      cards = [];
+      best = null;
+      host.strip.replaceChildren();
+      host.strip.scrollLeft = 0;
+      add({ kind: "text", said: `${plane} · searching for a root` });
     }
 
     return {
-      /** A new walk: the stack is cleared, and its first row says where it is looking. */
+      /** A new walk. The strip clears at once, or once a lingering one has been read. */
       begin(plane) {
-        rows = [];
-        best = null;
-        this.stage("root", `${plane} · searching for a root`);
+        const wait = lingerUntil - performance.now();
+        lingerUntil = 0;
+        if (wait <= 0) {
+          clear(plane);
+          return;
+        }
+        let release;
+        const done = new Promise((resolve) => {
+          release = resolve;
+        });
+        pending = { done };
+        setTimeout(() => {
+          pending = null;
+          clear(plane);
+          release();
+        }, wait);
       },
-      /** One stage row, and the row, for a later `best`. */
-      stage(kind, text, p3 = undefined) {
-        const row = { kind, text, score: p3 };
-        rows.push(row);
-        render();
-        return row;
+      /** Resolves once the strip is this walk's: after a lingering one has cleared. */
+      ready: () => pending?.done ?? Promise.resolve(),
+      /** The strip ends here without mining: the next walk leaves it up a while first. */
+      linger() {
+        lingerUntil = performance.now() + LINGER_MS;
       },
-      /** A rung row, its four chips waiting to be weighed. */
-      rung(w) {
-        const row = { kind: "rung", w, chosen: null, chips: QUARTERS.map(() => ({ p3: undefined, why: "" })) };
-        rows.push(row);
-        render();
-        return row;
+      /** The root search gave out: its card says so. */
+      gaveOut(plane) {
+        const card = cards.at(-1);
+        card.said = `${plane} · no root got past the screen`;
+        show(card);
       },
-      /** A chip's reading: its `P≥3`, or `null` and why, where the quarter was skipped. */
-      chip(row, slot, p3, why = "") {
-        row.chips[slot] = { p3, why };
-        render();
+      /** The slim card a Julia twin's own cards follow. */
+      divider(text) {
+        add({ kind: "divider", said: text });
       },
-      choose(row, slot) {
-        row.chosen = slot;
-        render();
+      /**
+       * A frame the walk stands in, with its own `P≥3`, the layers it is shown over and a
+       * first sentence. The root search's text card becomes the root's frame card.
+       */
+      frame(plane, frame, p3, layers, said = "") {
+        const card = {
+          kind: "frame",
+          plane,
+          frame,
+          p3,
+          layers,
+          said,
+          quarters: null,
+          chosen: null,
+          into: null,
+          peak: null,
+          canvas: Object.assign(document.createElement("canvas"), THUMB),
+        };
+        const last = cards.at(-1);
+        if (last?.kind === "text") {
+          card.el = last.el;
+          cards[cards.length - 1] = card;
+          show(card);
+          return card;
+        }
+        return add(card);
       },
-      /** The leg's best so far, which a new leg's first row takes over. */
-      best(row) {
-        best = row;
-        render();
+      /** The card's four quarters are set out, at the frames they are judged at. */
+      quarters(card, frames) {
+        card.quarters = frames.map((frame) => ({ frame, p3: undefined, why: "" }));
+        card.said = "";
+        show(card);
+      },
+      /** A quarter's reading: its `P≥3`, or `null` and why, where the quarter was skipped. */
+      chip(card, slot, p3, why = "") {
+        Object.assign(card.quarters[slot], { p3, why });
+        show(card);
+      },
+      /** The quarter the walk goes into; the sentence says so while nothing overrides it. */
+      choose(card, slot) {
+        card.chosen = slot;
+        card.into = slot;
+        show(card);
+      },
+      /** The card's sentence. */
+      say(card, text) {
+        card.said = text;
+        show(card);
+      },
+      /** The leg's best so far, which a new leg's first card takes over. */
+      best(card) {
+        const was = best;
+        best = card;
+        show(...[was, card].filter((one) => one !== null && cards.includes(one)));
+      },
+      /** The descent's end: the best card is outlined, over or under the bar, and says so. */
+      peak(card, over, text) {
+        card.peak = over ? "over" : "under";
+        card.said = text;
+        show(card);
+      },
+      running(on) {
+        host.strip.classList.toggle("is-running", on);
       },
     };
   })();
@@ -403,7 +567,7 @@ export function mount(host) {
   // ----------------------------------------------------------------- the candidates
 
   /**
-   * The bottom half of the walk view *(walk_view_ckpt132)*: a place's candidates, one per
+   * The lower strip of the walk view *(walk_view_ckpt132)*: a place's candidates, one per
    * ticked mode, each a small tile with its mode and the render judge's `P≥4`, filling in as
    * they are drawn. The ones kept are outlined. Ranked on the fine head, the tiles are in
    * its order, best first; otherwise they stay in the order they were drawn, which is the
@@ -416,6 +580,7 @@ export function mount(host) {
   const candidates = (() => {
     let tried = [];
     let expected = 0;
+    let place = "";
     const SMALL = { width: 240, height: 135 };
 
     function thumbnail(image) {
@@ -452,6 +617,17 @@ export function mount(host) {
       }
       host.candidates.replaceChildren(...tiles);
       host.candidatesNote.hidden = tiles.length > 0;
+      host.candidatesPlace.textContent = tiles.length > 0 ? place : "";
+      return tiles[order.indexOf(tried.at(-1))];
+    }
+
+    /** Bring the newest tile into sight along the row, which is its tiles' offset parent. */
+    function reach(tile) {
+      if (tile === undefined) return;
+      const list = host.candidates;
+      const end = tile.offsetLeft + tile.offsetWidth;
+      if (end > list.scrollLeft + list.clientWidth) list.scrollLeft = end - list.clientWidth;
+      else if (tile.offsetLeft < list.scrollLeft) list.scrollLeft = tile.offsetLeft;
     }
 
     function span(className, text) {
@@ -467,10 +643,13 @@ export function mount(host) {
         expected = 0;
         render();
       },
-      /** A place is being mined: the last place's tiles go, and `count` wait for theirs. */
-      begin(count) {
+      /** A place is being mined: the last place's tiles go, and `count` wait for theirs.
+       *  `where` names the place on the row's rule, which outlasts the strip above moving on. */
+      begin(count, where) {
         tried = [];
         expected = count;
+        place = where;
+        host.candidates.scrollLeft = 0;
         render();
       },
       /** One candidate drawn, or `null` where its picture could not be. */
@@ -481,10 +660,12 @@ export function mount(host) {
           const { image, ...kept } = one;
           tried.push({ ...kept, canvas: thumbnail(image) });
         }
-        render();
+        reach(render());
       },
       /** The fine head or the kept count changed: the order and the outlines follow. */
-      refresh: render,
+      refresh() {
+        render();
+      },
     };
   })();
 
@@ -1052,23 +1233,26 @@ export function mount(host) {
    * That is how a dust Julia set is descended, since it has no interior to straddle at any
    * depth. The returned list records which rule it used, as `ranked.alone`.
    */
-  async function weigh(family, parent, { rung, constants = null, layers, alone = false }) {
+  async function weigh(family, parent, { rung, constants = null, layers, alone = false, card }) {
     await going();
     const shares = await straddles(family, parent, { maxiter: null, constants });
     if (shares === null) return [];
     // All four quarters are set out, every rung *(walk_view_ckpt132)*: one the walk skips is
-    // drawn dim and dashed in its color and reads "empty" in its row, so the picture and the
-    // stack agree on four.
-    const row = stack.rung(parent.w / 2);
+    // drawn dim and dashed in its color and reads "empty" on its card, so the picture and the
+    // strip agree on four.
     const children = QUARTERS.map((quarter, slot) => {
       const cell = quarterOf(parent, quarter.a, quarter.b);
       const share = shares[quarter.a][quarter.b];
       return { ...quarter, slot, cell, frame: jittered(cell), share, state: "weighing", label: "" };
     });
+    strip.quarters(
+      card,
+      children.map((child) => child.frame),
+    );
     const skip = (child, why) => {
       child.state = "skipped";
       child.label = "empty";
-      stack.chip(row, child.slot, null, why);
+      strip.chip(card, child.slot, null, why);
     };
     const straddlers = children.filter((child) => child.share > 0 && child.share < 1);
     const judgedAlone = straddlers.length === 0 && alone;
@@ -1087,7 +1271,7 @@ export function mount(host) {
       },
       weighed.length === 0 ? DWELL_MS : 0,
     );
-    if (weighed.length === 0) return Object.assign([], { alone: false, row });
+    if (weighed.length === 0) return Object.assign([], { alone: false });
 
     await going();
     const verdicts = await Promise.all(weighed.map((child) => screened(viewAt(family, child.frame, { constants }))));
@@ -1103,11 +1287,14 @@ export function mount(host) {
     for (const child of standing) {
       await going();
       const drawn = await picture(viewAt(family, child.frame, { constants }), DESCENT_SUPERSAMPLE);
-      if (drawn === null) continue;
+      if (drawn === null) {
+        strip.chip(card, child.slot, null, "its picture could not be drawn");
+        continue;
+      }
       child.image = drawn.image;
       child.read = await gated(drawn.image);
       child.label = score(child.read.p3);
-      stack.chip(row, child.slot, child.read.p3);
+      strip.chip(card, child.slot, child.read.p3);
       if (child !== standing.at(-1)) relabel(cellsOf(children));
     }
     const ranked = standing
@@ -1126,11 +1313,10 @@ export function mount(host) {
     // is the one the viewer dwells on.
     if (ranked.length > 0) {
       ranked[0].state = "chosen";
-      stack.choose(row, ranked[0].slot);
+      strip.choose(card, ranked[0].slot);
     }
     if (standing.length > 0) relabel(cellsOf(children), DWELL_MS);
     ranked.alone = judgedAlone;
-    ranked.row = row;
     return ranked;
   }
 
@@ -1212,24 +1398,36 @@ export function mount(host) {
    * its Julia set is dust. From then on it is descended on the judge alone (`weigh`'s
    * `alone`).
    */
-  async function deepen(family, root, { read: rootRead, image: rootImage, row: rootRow }, constants = null) {
-    let best = { frame: root, read: rootRead, rung: 0 };
-    stack.best(rootRow);
+  async function deepen(family, root, { read: rootRead, card: rootCard }, constants = null) {
+    let best = { frame: root, read: rootRead, rung: 0, card: rootCard };
+    strip.best(rootCard);
     let frame = root;
-    let layers = [{ frame: root, image: rootImage }];
+    let read = rootRead;
+    let card = rootCard;
+    let layers = rootCard.layers;
     let depth = 0;
     let behind = 0;
     let stop = "cap";
     let alone = false;
+    /** The frame the walk stands in gets its card, and the best mark if it is the best. */
+    const cardOf = () => {
+      if (card.frame === frame) return;
+      card = strip.frame(planeName(family), frame, read.p3, layers);
+      if (best.frame === frame) {
+        best.card = card;
+        strip.best(card);
+      }
+    };
     for (let rung = 1; rung <= config.rungs; rung++) {
       const grid = { width: JUDGED.width * MINING_SUPERSAMPLE, height: JUDGED.height * MINING_SUPERSAMPLE };
       if (!renderer.resolves(frame.x, frame.y, frame.w / 2, grid.width, grid.height)) {
         stop = "floor";
         break;
       }
+      cardOf();
       const parent = frame;
       const twinHome = constants !== null && rung === 1;
-      const ranked = await weigh(family, parent, { rung, constants, layers, alone: alone || twinHome });
+      const ranked = await weigh(family, parent, { rung, constants, layers, alone: alone || twinHome, card });
       if (ranked.length === 0) {
         stop = "dead end";
         break;
@@ -1238,10 +1436,10 @@ export function mount(host) {
       const top = ranked[0];
       layers = [{ ...layers.at(-1), dim: true }, { frame: top.frame, image: top.image }];
       frame = top.frame;
+      read = top.read;
       depth = rung;
       if (top.read.p3 > best.read.p3) {
-        best = { frame: top.frame, read: top.read, rung };
-        stack.best(ranked.row);
+        best = { frame: top.frame, read: top.read, rung, card: null };
         behind = 0;
       } else {
         behind += 1;
@@ -1251,6 +1449,10 @@ export function mount(host) {
         break;
       }
     }
+    // A descent that ran out of rungs or of arithmetic ends in a frame no card has shown yet,
+    // and it may be the best: it gets a card of its own, with no quarters.
+    if (stop === "cap" || stop === "floor") cardOf();
+    strip.say(card, ENDS[stop]);
     const row = walks.at(-1);
     (row.deep ??= []).push({
       family,
@@ -1264,7 +1466,7 @@ export function mount(host) {
       best_p3: best.read.p3,
       alone,
     });
-    return { ...best, stop, depth };
+    return { ...best, stop, depth, last: card };
   }
 
   // ----------------------------------------------------------------- mining
@@ -1305,19 +1507,18 @@ export function mount(host) {
     return { read: await gated(drawn.image), image: drawn.image };
   }
 
-  /** Try recipes at a place that cleared the bar, and keep the best as tiles. */
-  async function mine(place) {
+  /** Try recipes at a place that cleared the bar, and keep the best as tiles. `where` is
+   *  the place as the candidates' rule names it. */
+  async function mine(place, where) {
     // One recipe a ticked mode *(walk_view_ckpt132)*, in the Mode select's order, each with
     // its own palette and phase: eight at the default ticks, so a place is seen once in each
     // way the walk may paint it, where three draws over modes × palettes saw three.
     const modes = modeOrder.filter((mode) => config.modes.has(mode));
     if (modes.length === 0) {
       progress("No modes are ticked, so a place has nothing to be painted in.");
-      stack.stage("found", "Nothing kept");
       return;
     }
-    stack.stage("mining", `Mining ${modes.length} ${modes.length === 1 ? "candidate" : "candidates"}`);
-    candidates.begin(modes.length);
+    candidates.begin(modes.length, where);
     // A pause mid-download stops it, and the walk asks again when it is started again.
     while (config.fine && scorer !== null && scorer.fineSession === null && !fineless) {
       const { signal, shown, done } = downloading("the fine judge");
@@ -1380,10 +1581,6 @@ export function mount(host) {
     tried.sort((x, y) => y.rank - x.rank);
     const kept = tried.slice(0, config.keep);
     for (const one of kept) await keep(one);
-    stack.stage(
-      "found",
-      kept.length === 0 ? "Nothing kept" : `Kept: ${kept.map((one) => `${one.view.mode} · ${score(one.read.p4)}`).join(", ")}`,
-    );
   }
 
   /**
@@ -1464,10 +1661,13 @@ export function mount(host) {
       const started = performance.now();
       const family = pick(planes);
       phase = "root";
-      stack.begin(planeName(family));
+      strip.begin(planeName(family));
       const root = await descend(family);
+      // The search is out of sight, so it runs while a lingering strip is still being read.
+      await strip.ready();
       if (root === null) {
-        stack.stage("verdict", "No root got past the screen · starting over");
+        strip.gaveOut(planeName(family));
+        strip.linger();
         continue;
       }
       const row = walks.at(-1);
@@ -1477,28 +1677,37 @@ export function mount(host) {
       // twin taken there is dust and every one dead-ended at its first rung.
       const legs = [{ ...root, constants: null }];
       const twin = config.julia && juliaOf[family] !== undefined;
+      /** Whether the strip ends on a place that was mined; one that does not lingers. */
+      let mined = false;
       for (let index = 0; index < legs.length; index++) {
         const one = legs[index];
         const leg = performance.now();
+        const last = !(index === 0 && twin);
         phase = "root";
+        mined = false;
+        // One place is one strip: the twin's cards follow its parent's, after a divider.
+        if (index > 0) strip.divider("Julia twin");
         await going();
         const judged = await judgePlace(one);
         if (judged === null) continue;
-        judged.row = stack.stage(
-          "root",
-          index === 0 ? `Root found at ${width(one.frame.w)}` : "Julia twin: c from the best frame",
-          judged.read.p3,
-        );
+        const layers = [{ frame: one.frame, image: judged.image }];
+        judged.card = strip.frame(planeName(one.family), one.frame, judged.read.p3, layers, index === 0 ? "root" : "home view");
         display({
           view: viewAt(one.family, one.frame, { constants: one.constants }),
           frame: one.frame,
-          layers: [{ frame: one.frame, image: judged.image }],
+          layers,
           cells: [],
           widened: true,
         });
         phase = "deep";
         const best = await deepen(one.family, one.frame, judged, one.constants);
-        stack.stage("verdict", `${STOPS[best.stop]} · best ${score(best.read.p3)} at ${width(best.frame.w)}`);
+        const over = best.read.p3 >= config.bar;
+        // The peak card is outlined and says the verdict; where it is also the last card,
+        // the verdict follows why the descent stopped.
+        const peak = best.card ?? best.last;
+        const verdict = `peak ${score(best.read.p3)} · ${over ? "over the bar" : "under the bar"}`;
+        strip.peak(peak, over, peak === best.last ? `${ENDS[best.stop]} · ${verdict}` : verdict);
+        if (best.stop === "dead end" && !over && last && peak !== best.last) strip.say(best.last, "dead end · restart");
         // The last place's candidates stay up until this walk's first descent is over.
         if (index === 0) candidates.clear();
         const place = { family: one.family, frame: best.frame, constants: one.constants };
@@ -1516,14 +1725,15 @@ export function mount(host) {
           mined: read.p3 >= config.bar,
           deep_ms: Math.round(performance.now() - leg),
         });
-        const over = read.p3 >= config.bar;
-        stack.stage("verdict", over ? "Over the bar" : "Under the bar · moving on");
         if (!over) continue;
         phase = "mine";
         const mining = performance.now();
-        await mine(place);
+        const where = `${index === 0 ? planeName(family) : `Julia twin of ${planeName(family)}`} at ${width(best.frame.w)}`;
+        await mine(place, where);
+        mined = true;
         row.places.at(-1).mine_ms = Math.round(performance.now() - mining);
       }
+      if (!mined) strip.linger();
       phase = "root";
       timed("walk", started);
       row.ms = Math.round(performance.now() - started);

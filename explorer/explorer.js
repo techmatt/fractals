@@ -2077,9 +2077,12 @@ async function startWalk() {
       progress: document.getElementById("walk-progress"),
       view: document.getElementById("walk-view"),
       controls: document.getElementById("controls"),
-      stack: document.getElementById("walk-stack"),
+      strip: document.getElementById("walk-strip"),
       candidates: document.getElementById("walk-candidates"),
       candidatesNote: document.getElementById("walk-candidates-note"),
+      candidatesPlace: document.getElementById("walk-candidates-place"),
+      walking: (on) => document.querySelector(".viewer").classList.toggle("is-walking", on),
+      relayout,
       found: document.getElementById("walk-found"),
       note: document.getElementById("walk-note"),
       module: renderer.module,
@@ -2707,8 +2710,11 @@ copyViewButton.addEventListener("click", async () => {
   }, COPIED_FOR);
 });
 
+/** The canvas's display size changed: the backing store follows, and what is up is drawn
+ *  again — the walk's own pictures while it shows them. Also run when the walk view comes
+ *  or goes, which moves the picture's size without the window's. */
 let resizing = 0;
-window.addEventListener("resize", () => {
+function relayout() {
   clearTimeout(resizing);
   resizing = setTimeout(() => {
     if (busy) return;
@@ -2716,7 +2722,8 @@ window.addEventListener("resize", () => {
     if (walkLayers !== null) paintWalk();
     else draw();
   }, 200);
-});
+}
+window.addEventListener("resize", relayout);
 
 // ------------------------------------------------------------------- starting up
 

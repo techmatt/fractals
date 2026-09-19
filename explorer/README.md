@@ -292,7 +292,7 @@ viewer: a pan, a zoom, a control, or a picture opened from any panel.
    typing it back into the config still works; the default sits deeper because the render
    judge has nothing to say above about 1e-2, and a walk that showed every halving from
    the home box spent its first eleven rungs on pictures nobody was weighing.
-3. **Stage one** is quick and the viewer does not follow it: the stack's first row says
+3. **Stage one** is quick and the viewer does not follow it: the strip's first card says
    which plane it is searching. It descends the sampler's quad-tree over the plane's
    home box × 0.9. Each cell gets a 64×36 smooth probe, at maxiter 256 while the cell is at
    least 1e-3 wide and at the width's own `maxiter_for_width` below that, where 256 would
@@ -363,11 +363,13 @@ the two cannot drift, and the last five in it (the three direct traps, `curvatur
 or paused and the viewer is the walk's. Download, Mode, Palette and Details are not on the
 page then. They come back when the reader takes the viewer (a pan, a control's key, an opened
 Found or Saved picture) or leaves the Walk tab for Gallery or Atlas. Back to the walk, Start
-or coming back to the tab puts the walk view back. It has two halves, one above the other,
-and on a phone the stack is cut to its last few rows.
+or coming back to the tab puts the walk view back. It is two horizontal strips, *The walk*
+above *Candidates* *(walk_strip_ckpt132)*, each scrolling right when it overflows and kept on
+its newest item. Where the window is short the picture gives up height so both strips are in
+sight (`--walk-room` in `explorer.css`); stacked on a phone the page scrolls instead.
 
 **The quarters have fixed colors**, bound to position. They are the same on the picture and
-in the stack:
+on the strip's cards:
 
 | quarter | name | ink |
 |---|---|---|
@@ -384,31 +386,39 @@ palettes as well. Only the current rung's four boxes are drawn. A quarter the wa
 because it does not straddle the edge or the screen refused it, is still drawn, dashed and
 faded in its color.
 
-**The stack** is the top half: one row per rung, newest at the bottom, cleared by a new walk.
-A rung row has four chips in the quarter colors, in the order upper-left, upper-right,
-lower-left, lower-right. Each chip is that quarter's P≥3, or *empty* where the quarter was
-skipped, with the reason in its tooltip. The chosen chip is outlined. The row ends
-*→ zooming into red* and the rung's width in grey. Stage rows are one line each, tinted by
-kind (`root`, `verdict`, `mining`, `found`):
+**The walk strip** is one card per frame the descent stood in, cleared by a new walk. There is
+no text log. A card has, top to bottom:
 
-- *Multibrot 5 · searching for a root*
-- *Root found at 3.2e-4*, with its P≥3
-- *Peak · best 0.61 at 2.5e-5* (or *Floor*, *Cap*, *Dead end*)
-- *Over the bar*, or *Under the bar · moving on*
-- *Julia twin: c from the best frame*, followed by the twin's own rung rows
-- *Mining 8 candidates*
-- *Kept: threads · 0.87*, or *Nothing kept*
+- the frame's own P≥3, the number the peak rule tracks, to two decimals;
+- a thumbnail of the picture the walk judged of that frame, framed as the viewer frames it
+  (the frame at 65% of the width, the picture before it dimmed around it) with its four
+  quarters boxed in their inks, a skipped one dashed and faded, the chosen one thicker;
+- the four quarters' P≥3 as a 2×2 of chips in their positions and inks, *empty* for a skipped
+  quarter with the reason in its tooltip, filling in as each is judged, the chosen chip
+  outlined;
+- one sentence: *root*, *zoom into red*, *past the peak*, *rung cap*, *as deep as it can
+  draw*, *dead end*, *dead end · restart*.
 
-The row being worked on is lit, and the leg's best rung so far carries a *best* mark. The root
-and the twin's home frame count as rungs for this. The stack replaced both the panel's
+The card being worked on is lit, and the leg's best so far carries a *best* mark on the card.
+The root search is a words-only card, *Phoenix · searching for a root*, which becomes the
+root's card when the root lands, or says *no root got past the screen* when the plane gives
+out. A descent that ends on the rung cap or the arithmetic floor stands in a frame no card has
+shown, and that frame gets a card with no quarters. At the descent's end the best card is
+outlined, in the found ink when it cleared the bar and dashed when it did not, and its
+sentence is the verdict: *peak 0.61 · over the bar*. A Julia twin continues in the same strip
+after a slim *Julia twin* divider. A strip that ends without mining **lingers** four seconds
+before the next walk clears it; that walk's root search runs meanwhile, out of sight as ever.
+
+The strip replaced one-line rows (`walk_view_ckpt132`), which replaced both the panel's
 console (`walk_console_ckpt131`) and a corner widget over the controls (`walk_tune_ckpt131`).
-Whatever the console said that is not one of these rows was dropped. The few things that are
-not steps of a walk, such as a stopped download, a judge that would not load, or nothing
-ticked, go on the status line beside Start.
+The few things that are not steps of a walk, such as a stopped download, a judge that would
+not load, or nothing ticked, go on the status line beside Start.
 
-**The candidates** are the bottom half: one small tile per recipe at a place, with its mode
-and P≥4, filling in as they are drawn. The kept ones are outlined in the found ink. They stay
-in drawing order, except that with the fine head ticked they are sorted by it and re-outlined.
+**The candidates** are the lower strip: one small tile per recipe at a place, with its mode
+and P≥4, filling in as they are drawn, and the place they are of (plane and width) on the
+row's rule, so the row still says whose it is once the strip above has moved on. The kept
+ones are outlined in the found ink. They stay in drawing order, except that with the fine head
+ticked they are sorted by it and re-outlined.
 **They outlast the decision.** A place's candidates stay up past the kept tile and through
 the start of the next walk, and clear when that walk's first descent ends, so they can still
 be compared while the next root is being found. A Julia twin's mining replaces its parent's.
@@ -445,7 +455,7 @@ contract has no key for it and nothing a link opens sets it.
   judge (gate) reads `[P≥2, P≥3, P≥4]`.
 - **Recipes are ranked on the number they are shown with** *(saved_tab_ckpt131_addendum1)*.
   By default that is the render judge's P≥4, which is what the found tile's badge, the
-  candidate tiles and the stack's *Kept* row show, the same number the descent already speaks in. The badge's
+  candidate tiles show, the same number the descent already speaks in. The badge's
   tooltip reads *how likely a person is to rate this 4 or 5*. It is the default because a
   displayed number and a ranking number that disagree make a kept tile read as a mistake:
   under the old default the walk could keep a picture badged lower than one it had just
