@@ -111,6 +111,15 @@ def _parser() -> argparse.ArgumentParser:
         ),
     )
     baked.add_argument(
+        "--families",
+        action="store_true",
+        help=(
+            "re-read which colours each map has actually made — the wallpaper project's "
+            "data/palettes/palette_family_shares.csv — into explorer/palettes.jsonl as the "
+            "families the Walk tab offers each map under, then bake"
+        ),
+    )
+    baked.add_argument(
         "--popular",
         action="store_true",
         help=(
@@ -555,6 +564,12 @@ def _do_explorer(options: argparse.Namespace) -> int:
         print(
             f"wrote {path.relative_to(SITE_ROOT).as_posix()}  {marked} of {listed} listed maps "
             f"marked{'' if not skipped else f', {len(skipped)} not carried: ' + ', '.join(skipped)}"
+        )
+    if options.families:
+        path, listed, filed, moved = explorer_module.mark_families()
+        print(
+            f"wrote {path.relative_to(SITE_ROOT).as_posix()}  {filed} of {listed} mapped maps "
+            f"under at least one family, {moved} roster row(s) moved"
         )
     if options.roster:
         path, count, families, rows = explorer_module.refresh_roster(options.roster)

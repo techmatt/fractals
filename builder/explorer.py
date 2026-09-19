@@ -118,6 +118,7 @@ from datetime import date
 from pathlib import Path
 
 from . import figures, records, renders
+from .palettes import HUES
 from .paths import SITE_ROOT
 from .renders import EngineError, wallpapers_root
 
@@ -180,6 +181,24 @@ COLORMAP_SOURCE = "data/palettes"
 RANDOM_SOURCE = ("data", "palettes", "palettes_for_random_choice.csv")
 RANDOM_NAME_COLUMN = "palette name"
 RANDOM_COUNT_COLUMN = "count"
+
+#: Which colours each map has actually made, as that project states them:
+#: `palette name,pictures,` then the twelve hue families in the wheel's order, the counts
+#: being how many of the map's candidate-ledger pictures the dominance rule calls dominant
+#: in that family. Imported by `--families` and frozen on the roster, the same way the
+#: random list is. Its own `README.md` documents the pass it came out of.
+FAMILY_SOURCE = ("data", "palettes", "palette_family_shares.csv")
+FAMILY_COUNT_COLUMN = "pictures"
+
+#: The share of a map's pictures that has to read as a family before the walk offers the
+#: map under that family. **This bar is this repository's**, unlike the random list's,
+#: which arrives pre-filtered: the table next door is the measurement and carries every
+#: count, and how wide one of this page's controls reaches is a decision about the
+#: control. Generous on purpose — a walk narrowed to a family wants more maps in it, not
+#: fewer, and a map that gives a twentieth of its output to a colour is a map that makes
+#: that colour. At 0.05 the twelve families hold 199 to 388 maps each, a map is in 3.15 of
+#: them on average, and no map with output lands in none.
+WALK_FAMILY_BAR = 0.05
 
 #: The roster the bake reads: one row per map the explorer carries, beside the module it
 #: is baked into, the way `gallery.jsonl` sits beside the gallery page it writes. Its
@@ -283,6 +302,12 @@ class Colormap:
     every other roster field. It is neither `offered` nor derivable from `seats` by
     anything this repository should be deciding — see [`mark_random`].
 
+    `families` is every hue family the walk offers this map under: the families it gives
+    at least [`WALK_FAMILY_BAR`] of its ledger pictures to, imported by `--families` from
+    the table next door. `family` beside it is the single family it most often produces,
+    which is what the picker's tabs file it under — one answer and a set, and they are
+    different questions.
+
     `family` and `seats` are the two readings the roster carries and the library does
     not: the hue family this map most often produces, and how many seats of the
     published record were drawn in it. Both come off the record rather than off the
@@ -296,6 +321,7 @@ class Colormap:
     random: bool = False
     family: str | None = None
     seats: int = 0
+    families: tuple[str, ...] = ()
 
     @property
     def even(self) -> bool:
@@ -313,6 +339,7 @@ class Entry:
     random: bool
     family: str | None
     seats: int
+    families: tuple[str, ...] = ()
 
 
 def random_choice() -> dict[str, int] | None:
@@ -349,6 +376,53 @@ def random_choice() -> dict[str, int] | None:
     return found
 
 
+def family_output() -> dict[str, tuple[str, ...]] | None:
+    """Which families the walk offers each map under, as `{name: families}`.
+
+    Read from [`FAMILY_SOURCE`] in the checkout next door and reduced here by
+    [`WALK_FAMILY_BAR`]: the table states counts, which is the measurement, and the bar
+    it is cut at is this page's. `None` where there is no such file — the same courtesy
+    [`random_choice`] pays, and the page falls back to drawing from every map it carries.
+
+    A map with no pictures at all is an empty tuple rather than a refusal. `blue_orange`
+    and `atlas_grey` are in the library next door and out of its candidate pool, so they
+    have made nothing to read; a map nothing was ever drawn in belongs under no family,
+    and is still selectable by hand and still resolves in a link.
+
+    Read with the csv module and never split on the character, because a name may carry
+    a comma — `Gold Field, Blood Spark` is a map.
+    """
+    path = wallpapers_root().joinpath(*FAMILY_SOURCE)
+    if not path.is_file():
+        return None
+    with path.open(encoding="utf-8-sig", newline="") as handle:
+        reader = csv.DictReader(handle)
+        columns = list(reader.fieldnames or ())
+        wanted = [RANDOM_NAME_COLUMN, FAMILY_COUNT_COLUMN, *HUES]
+        if columns != wanted:
+            raise ExplorerError(
+                f"{path} has columns {columns!r}, not {wanted!r} — a table with a family "
+                "missing would read back as a family no map ever made"
+            )
+        found: dict[str, tuple[str, ...]] = {}
+        for row in reader:
+            name = (row.get(RANDOM_NAME_COLUMN) or "").strip()
+            if not name:
+                continue
+            try:
+                pictures = int(row[FAMILY_COUNT_COLUMN])
+                counts = {hue: int(row[hue]) for hue in HUES}
+            except (TypeError, ValueError) as error:
+                raise ExplorerError(f"{path}: {name} has a count that is not whole") from error
+            if pictures <= 0:
+                found[name] = ()
+                continue
+            found[name] = tuple(hue for hue in HUES if counts[hue] / pictures >= WALK_FAMILY_BAR)
+    if not found:
+        raise ExplorerError(f"{path} names no palette")
+    return found
+
+
 def roster() -> tuple[dict, tuple[Entry, ...]]:
     """The committed roster: its method row, and one [`Entry`] per map.
 
@@ -370,6 +444,16 @@ def roster() -> tuple[dict, tuple[Entry, ...]]:
         chosen = record.fields.get("random", False)
         if not isinstance(chosen, bool):
             raise ExplorerError(f"{record.where}: random must be true or false, not {chosen!r}")
+        # Absent is none, the way an absent `random` is false: a roster written before the
+        # family table arrived still reads, and reads as a walk that draws from everything.
+        offers = record.fields.get("families", [])
+        if not isinstance(offers, list) or any(one not in HUES for one in offers):
+            raise ExplorerError(
+                f"{record.where}: families must be a list of the wheel's twelve hue names, "
+                f"not {offers!r}"
+            )
+        if list(offers) != [hue for hue in HUES if hue in offers]:
+            raise ExplorerError(f"{record.where}: families must be in the wheel's order")
         found.append(
             Entry(
                 record.text("name"),
@@ -377,6 +461,7 @@ def roster() -> tuple[dict, tuple[Entry, ...]]:
                 chosen,
                 record.optional_text("family"),
                 seats,
+                tuple(offers),
             )
         )
     if not found:
@@ -428,6 +513,7 @@ def baked() -> list[Colormap]:
                 entry.random,
                 entry.family,
                 entry.seats,
+                entry.families,
             )
         )
     return found
@@ -628,6 +714,8 @@ def palettes_module_text() -> Baked:
             "release": str(stated["release"]),
             "ledger_rows": int(stated["ledger_rows"]),
             "fine_bar": FINE_BAR,
+            "family_bar": WALK_FAMILY_BAR,
+            "filed": sum(1 for colormap in maps if colormap.families),
         },
     }
 
@@ -657,6 +745,12 @@ def palettes_module_text() -> Baked:
         "// `family` is the hue family this map most often produces, read off the candidate",
         "// ledger; `seats` is how many seats of the published record were drawn in it.",
         "// Neither is a fact about the gradient — both are frozen in `palettes.jsonl`.",
+        "//",
+        "// `families` is every family the Walk tab offers this map under: the families it",
+        "// gives at least a twentieth of its ledger pictures to. `family` is one answer and",
+        "// this is a set, and they are different questions — a map can most often make",
+        "// amber and still make teal often enough to be worth drawing when teal is asked",
+        "// for. Frozen here too; an empty list is a map nothing was ever drawn in.",
         "",
         f"export const PROVENANCE = {json.dumps(stamp, indent=2, sort_keys=True)};",
         "",
@@ -673,6 +767,7 @@ def palettes_module_text() -> Baked:
             "at": at,
             "stops": len(colormap.stops),
             "family": colormap.family,
+            "families": list(colormap.families),
             "seats": colormap.seats,
         }
         lines.append(f"  [{json.dumps(colormap.name)}, {json.dumps(row, sort_keys=True)}],")
@@ -821,6 +916,8 @@ def _roster_row(name: str, entry: Entry | None, seats: int, family: str | None) 
     }
     if family:
         row["family"] = family
+    if entry and entry.families:
+        row["families"] = list(entry.families)
     return row
 
 
@@ -862,11 +959,65 @@ def mark_random(listed: dict[str, int] | None = None) -> tuple[Path, int, int, t
     method["random_read"] = date.today().isoformat()
     lines = [json.dumps(method, sort_keys=False)]
     for entry in entries:
-        marked = Entry(entry.name, entry.offered, entry.name in read, entry.family, entry.seats)
+        marked = Entry(
+            entry.name,
+            entry.offered,
+            entry.name in read,
+            entry.family,
+            entry.seats,
+            entry.families,
+        )
         lines.append(json.dumps(_roster_row(entry.name, marked, entry.seats, entry.family)))
     PICKS_RECORD.write_text("\n".join(lines) + "\n", encoding="utf-8", newline="\n")
     skipped = tuple(sorted(name for name in read if name not in carried))
     return PICKS_RECORD, len(read), len(read) - len(skipped), skipped
+
+
+#: What the method row says about `families`, written by [`mark_families`] beside them.
+FAMILIES_METHOD = (
+    "`families` is every hue family the Walk tab offers a map under: the families the map "
+    "gives at least {bar} of its candidate-ledger pictures to, read off the wallpaper "
+    "project's `data/palettes/palette_family_shares.csv` by `python -m builder explorer "
+    "--families` and frozen here like every other field. That table states counts and no "
+    "threshold — it is the measurement — and the bar is this repository's, because how wide "
+    "one of this page's controls reaches is a decision about the control. It conditions the "
+    "DRAW and filters nothing: a walk narrowed to a family paints in maps that make that "
+    "colour often, and a picture it finds need not be of it. A map with no ledger pictures "
+    "at all — one the library holds and the candidate pool does not — has no family here, "
+    "and is still selectable by hand and still resolves in a link."
+)
+
+
+def mark_families(listed: dict[str, tuple[str, ...]] | None = None) -> tuple[Path, int, int, int]:
+    """Rewrite each roster row's `families` from the table next door.
+
+    `(the record, how many maps the table holds, how many were given a family, how many
+    rows of the roster moved)`. A named map the roster does not carry is passed over in
+    silence, the way [`mark_random`] reports one: the table is the library next door and
+    this roster is what this page carries, and the two are allowed to differ by a map.
+
+    Nothing else in the record moves — not `family`, not `seats`, not `random`, not
+    `offered` — because this is one table being re-read.
+    """
+    read = family_output() if listed is None else listed
+    if read is None:
+        raise ExplorerError(
+            f"no table at {wallpapers_root().joinpath(*FAMILY_SOURCE)}, so there is nothing "
+            "to mark — the walk falls back to drawing from every map it carries"
+        )
+    stated, entries = roster()
+    method = dict(stated)
+    method["families"] = FAMILIES_METHOD.format(bar=WALK_FAMILY_BAR)
+    method["families_read"] = date.today().isoformat()
+    lines = [json.dumps(method, sort_keys=False)]
+    moved = 0
+    for entry in entries:
+        offers = tuple(read.get(entry.name, ()))
+        moved += offers != entry.families
+        marked = Entry(entry.name, entry.offered, entry.random, entry.family, entry.seats, offers)
+        lines.append(json.dumps(_roster_row(entry.name, marked, entry.seats, entry.family)))
+    PICKS_RECORD.write_text("\n".join(lines) + "\n", encoding="utf-8", newline="\n")
+    return PICKS_RECORD, len(read), sum(1 for offers in read.values() if offers), moved
 
 
 def refresh_roster(release: str) -> tuple[Path, int, int, int]:

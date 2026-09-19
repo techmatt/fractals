@@ -32,6 +32,7 @@
 
 import * as link from "./permalink.js";
 import { SETTLED } from "./catalog.js";
+import { HUES, colorOf } from "./hues.js";
 import { Renderer, specOf } from "./render.js";
 import * as judges from "./judges.js";
 
@@ -100,7 +101,6 @@ const UNTICKED_TAIL = 5;
 const DEFAULTS = {
   planes: new Set(PLANES),
   julia: true,
-  roster: "random",
   widest: 1e-3,
   narrowest: 1e-4,
   rungs: 20,
@@ -233,10 +233,20 @@ class Screeners {
 export function mount(host) {
   const { contract, palettes, shownName, planeName, juliaOf } = host;
   const modeOrder = host.modeOrder.filter((mode) => MINED_MODES.has(mode));
+  /** How many of the maps this page carries stand under each family, in wheel order.
+   *  Counted off the baked index's own `families`, which the roster record froze: a page
+   *  that read the colours itself would be deriving what the bake was written to fix. */
+  const filed = new Map(
+    HUES.map((hue) => [
+      hue,
+      [...palettes].filter(([, map]) => (map.families ?? []).includes(hue)).length,
+    ]),
+  );
   const config = {
     ...DEFAULTS,
     planes: new Set(DEFAULTS.planes),
     modes: new Set(modeOrder.slice(0, -UNTICKED_TAIL)),
+    families: new Set(HUES),
   };
   let state = "idle"; // idle | loading | running | paused
   /** Whether the viewer follows the walk *(walk_detach_ckpt131)*. It is the other half of
@@ -787,23 +797,36 @@ export function mount(host) {
       });
     }
 
-    const drawable = [...palettes].filter(([, map]) => map.random).length;
-    const roster = group("Palettes");
-    for (const [value, label] of [
-      ["random", `The ${drawable} that Random palette draws from`],
-      ["all", `All ${palettes.size}`],
-    ]) {
-      const box = document.createElement("label");
-      box.className = "walk-check";
-      const input = document.createElement("input");
-      input.type = "radio";
-      input.name = "walk-roster";
-      input.checked = config.roster === value;
-      input.addEventListener("change", () => {
-        if (input.checked) config.roster = value;
-      });
-      box.append(input, ` ${label}`);
-      roster.append(box);
+    const maps = group(
+      "Palettes",
+      "A recipe's map is drawn from the checked families together. A family's maps are the " +
+        "ones that have made that colour often; what a walk finds is not filtered by it.",
+    );
+    for (const hue of HUES) {
+      const held = filed.get(hue) ?? 0;
+      const input = checkbox(
+        maps,
+        hue,
+        config.families.has(hue),
+        (on) => {
+          if (on) config.families.add(hue);
+          else config.families.delete(hue);
+        },
+        `${held} of this page's ${palettes.size} maps give at least a twentieth of their ` +
+          `mined pictures to ${hue}.`,
+      );
+      // The family's own swatch, between the box and its name, and the count after it: the
+      // same dot and the same tally the gallery panel's hue chips wear, from `hues.js`.
+      const label = input.parentElement;
+      const dot = document.createElement("span");
+      dot.className = "hue";
+      const color = colorOf(hue);
+      if (color !== null) dot.style.setProperty("--c", color);
+      label.insertBefore(dot, input.nextSibling);
+      const tally = document.createElement("span");
+      tally.className = "count";
+      tally.textContent = held;
+      label.append(tally);
     }
 
     const depth = group(
@@ -1482,9 +1505,24 @@ export function mount(host) {
     return {};
   }
 
-  /** The palettes a recipe may draw. */
+  /**
+   * The palettes a recipe may draw: the **union** of the checked families' maps.
+   *
+   * A map stands under a family when it gave at least a twentieth of its mined pictures
+   * to it, which is a fact about what the map has made and not about its gradient — so a
+   * walk narrowed to teal paints in maps that make teal often, and what it finds is not
+   * held to being teal. Nothing here filters a result.
+   *
+   * **None checked draws from all of them**, rather than from nothing: a reader who
+   * unticks the last box has said nothing about what they want. And an index that files
+   * no map at all — an older module, or a bake on a checkout with no such table — draws
+   * from everything, which is what this did before the families existed.
+   */
   function roster() {
-    const names = [...palettes].filter(([, map]) => config.roster === "all" || map.random).map(([name]) => name);
+    const wanted = config.families.size > 0 ? config.families : new Set(HUES);
+    const names = [...palettes]
+      .filter(([, map]) => (map.families ?? []).some((hue) => wanted.has(hue)))
+      .map(([name]) => name);
     return names.length > 0 ? names : [...palettes.keys()];
   }
 

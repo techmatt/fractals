@@ -418,10 +418,6 @@ summary.section-head:focus-visible { outline: 2px solid var(--well-link); outlin
   background: var(--c);
   box-shadow: 0 0 0 1px rgb(0 0 0 / 0.35) inset;
 }
-.hue.is-unfiled {
-  background: var(--well-pending);
-  box-shadow: 0 0 0 1px var(--well-ink-dim) inset;
-}
 
 /* Pictures and nothing else. No caption, no name, no score: the grid is for finding one
    worth opening, and everything a tile could say about itself is something the viewer
@@ -676,6 +672,10 @@ summary.section-head:focus-visible { outline: 2px solid var(--well-link); outlin
 .walk-hint { flex-basis: 100%; margin: 0; color: var(--well-ink-dim); font-size: 0.75rem; }
 .walk-check, .walk-number { white-space: nowrap; color: var(--well-ink-dim); }
 .walk-number input { width: 5.5rem; }
+/* A family's box wears the wheel's own dot and its map count, the same two marks the
+   gallery panel's hue chips wear. `.hue` above is the dot and is not restated here. */
+.walk-check .hue { margin-left: 0.3rem; }
+.walk-check .count { font-variant-numeric: tabular-nums; opacity: 0.6; margin-left: 0.3rem; }
 
 .walk-go { display: flex; align-items: center; gap: 0.6rem; }
 .walk-start {

@@ -159,7 +159,11 @@ that is meant to be pictures. The footer now says `k of N` and only while a chip
 narrowing the grid, which is the one thing the dropdown cannot say; unfiltered, there is no
 footer at all. The Mode select's roster and the
 trap-mode defaults stay the general gallery's. Mode chips add up; a hue family chip is one at a time, and pressing
-it again clears it. Choosing a collection clears both rows: a filter is a question asked of
+it again clears it. **The hue row is the wheel's twelve and nothing else**
+*(2026-09-19)*: it used to open on *unfiled 4*, the seats the dominance rule found
+dominant in no family, and a chip named after a threshold is no answer to a reader
+looking for a colour. `builder/seats.py` gives such a seat the family its own colour
+reading favours most — ten of 6,062 — and the chip is gone. Choosing a collection clears both rows: a filter is a question asked of
 the collection, and the hue row is not even asking the same question either side of a color
 collection, so a chip carried across the switch narrows a shelf by a choice made somewhere
 else. A tile sets the viewer to that seat's whole recipe. *Atlas* is the
@@ -373,7 +377,8 @@ walk runs and whether the viewer follows it are two states, `state` and `attache
    twin.
 10. A place over the bar is mined:
    - **One recipe per ticked mode** *(walk_view_ckpt132)*, in the Mode select's order: eight
-     at the default ticks. Each gets a palette from the roster, the identity shade with
+     at the default ticks. Each gets a palette drawn uniformly from the checked colour
+     families together *(walk_palette_families_ckpt135)*, the identity shade with
      `mirror` read off the map's cyclicity, and a uniform phase (0 under a direct trap). It
      used to be three draws over modes × palettes (hunt and mine's `PER_LOCATION`), which
      showed a place three ways out of the thirteen it could be painted.
@@ -388,7 +393,10 @@ walk runs and whether the viewer follows it are two states, `state` and `attache
 The config's defaults are the pipeline's draw where the page can make one. The thirteen modes
 the pipeline accepts are listed in the Mode select's own order, handed over by the viewer so
 the two cannot drift, and the last five in it (the three direct traps, `curvature`,
-`smooth_curvature`) start unticked.
+`smooth_curvature`) start unticked. **Palettes is the twelve colour families**, all ticked
+*(walk_palette_families_ckpt135)*; it used to be a two-way choice between the 232 maps
+Random palette draws from and all 1,021, which asked a reader to pick a size when the
+thing they would want to pick is a colour. None ticked draws from all of them.
 
 **The walk view** *(walk_view_ckpt132)* replaces the viewer's controls while a walk is running
 or paused and the viewer is the walk's. Download, Mode, Palette and Details are not on the
@@ -459,8 +467,10 @@ be compared while the next root is being found. A Julia twin's mining replaces i
 - The descent is greedy on the render judge's P≥3. The sampler is exhaustive, and the
   pipeline's walk scores with the location head, which is not shipped to a browser.
 - The judges read the canvas, where the pipeline reads a JPEG-decoded picture.
-- The palette is drawn from a roster, where the pipeline uses a palette head or a codebook
-  stratifier.
+- The palette is drawn uniformly from the maps the checked colour families hold, where the
+  pipeline uses a palette head or a codebook stratifier. A family's maps are the ones that
+  have made that colour often — see *Every colormap* below — so the config conditions what
+  a place is painted in and never what the walk is willing to keep.
 - The bar is P≥3 at 0.50 on the smooth picture. The pipeline's release gate is P≥4 at 0.50
   on a colored one, and P≥3 at 0.50 is only its fallback for a thin mode. The config's
   tooltip says so.
@@ -955,6 +965,30 @@ of one record rather than a standing rule, and the threshold it was filtered at 
 project's to move. A baked index that marks no map at all — an older module, or a bake on
 a checkout with no such list — draws from everything, which is what the button did before
 the list existed.
+
+**And a fourth says which colours each map has actually made** *(2026-09-19)*.
+`families` is every hue family the Walk tab offers a map under: the families it gives at
+least **5%** of its candidate-ledger pictures to. It comes from a table the wallpaper
+project now ships beside the random list — `data/palettes/palette_family_shares.csv`,
+one row per library map with its picture count and how many of those pictures the
+dominance rule calls dominant in each of the twelve families — imported by `python -m
+builder explorer --families` and frozen here like everything else. At that bar the
+families hold **199 to 388 maps** each (lime fewest, orange most), a map stands under
+**3.15** of them on average, and the one map with no family at all is `blue_orange`,
+which the library holds and the candidate pool does not, so it has made nothing to read.
+
+**The bar is this repository's, and that is the difference from `random`.** The table
+next door states counts and no threshold, because it is the measurement; how wide one of
+this page's controls reaches is a decision about the control. A re-measured table
+therefore arrives here as a rebake rather than as an argument about where the line is.
+
+**`family` and `families` answer different questions, and their counts differ a lot.**
+The picker's hue tabs file a map under the one family it *most often* produces, over the
+thin above-the-bar slice of the ledger — rose 80 maps. The walk's rose box holds 235,
+because a map that mostly makes amber and makes rose a fifth of the time is worth
+drawing when a reader asks for rose. It conditions the **draw** and filters nothing: a
+walk narrowed to teal paints in maps that make teal often, and the picture it finds does
+not have to be teal.
 
 **The blob and the swatch are untracked.** They are the one library-sized thing here and
 what is committed is the index that addresses them; both are in `.git/info/exclude` and

@@ -34,7 +34,8 @@ This module does the same reads a thousand at a time rather than six, so each st
 opened once:
 
 - **the seats**, `artifacts/curation/tentative/<stamp>/gallery.jsonl` — seat order, the
-  alias, and the hue family the colour reading rolls the picture up to;
+  alias, and the hue family the colour reading rolls the picture up to, where there is
+  one: see *Every seat has a family* below;
 - **the recipes**, the candidate ledger, in one streamed pass through `picks.ledger_rows`;
 - **the tone curves**, asked of that project's own reader, `curation.stamps.for_rows` with
   the backfill overlay beneath it, in one call for the thousand. The two kinds that draw
@@ -47,6 +48,25 @@ opened once:
   collection ask the other question — *what else is in here* — and a hint of a hue is the
   answer to it. This is the one read that opens the pictures, and it is a minute and a
   half for five thousand.
+
+## Every seat has a family *(2026-09-19)*
+
+The record next door files a seat under a hue family only where the picture is
+**dominant** in one — `dominance`'s `FAMILY_LEAD` of 0.20, or `FAMILY_ALONE` of 0.30 —
+and a picture spread evenly enough across the wheel clears neither. Ten of the 6,062
+seats came out that way, and the panel's filter carried an *unfiled* chip for them.
+
+A chip that means *the ones the rule could not decide* is a worse answer than a family:
+it is a technical fact about a threshold offered to a reader looking for a colour, and
+every one of those ten pictures does have a colour it has more of than any other. So
+where the record files a seat under nothing, the row takes **the family its own colour
+reading favours most** — the first of `hues`, which is sorted by share — and the chip is
+gone. Nothing next door moves: no solve, no record, no collection, and the dominance rule
+is untouched. This is what the page shows, not what the pipeline believes.
+
+A seat whose picture reads no chromatic colour at all would still have no family, and is
+a [`SeatError`] rather than a quiet `null`, because the panel no longer has anywhere to
+put one.
 
 And a fifth thing that is not a read of a record: **the presentation order**. The
 tentative gallery's own page opens on `curation.page_order`'s permutation of the seating,
@@ -510,16 +530,16 @@ def tone(pick: picks.Pick, stamps: dict[str, dict]) -> Tone:
 CURVE_GAP = "the {read} curve this seat reads {mode} through, where the catalog's {mode} is {held}"
 
 
-def alt_text(mode: str, hue: str | None) -> str:
+def alt_text(mode: str, hue: str) -> str:
     """What a reader's screen reader says about one tile.
 
     Derived by rule and never written, because a thousand written sentences would be a
     thousand chances to say something the record does not. Two facts, both of them on the
-    record: what drew the picture, and the colour the reading finds it dominant in.
+    record: what drew the picture, and the family its colour reading puts it in. Every
+    seat has one — see *Every seat has a family* at the top — so there is no second
+    sentence for a tile that does not.
     """
-    if hue:
-        return f"A wallpaper drawn in {mode}, in the {hue} family."
-    return f"A wallpaper drawn in {mode}."
+    return f"A wallpaper drawn in {mode}, in the {hue} family."
 
 
 def union() -> tuple[list[tuple[str, dict]], dict[str, dict[str, int]]]:
@@ -590,7 +610,16 @@ def _row(
     """One seat's metadata row, gap and all."""
     recipe = pick.recipe
     mode = str(recipe["mode"])
-    hue = seat.get("hue_family") or None
+    # The record's family where it has one, and otherwise the family this picture has most
+    # of — see *Every seat has a family* above. `hues` is sorted by share, so its first
+    # entry is that family; a picture with no chromatic colour at all has none and is
+    # refused, because there is no longer an *unfiled* chip to land under.
+    hue = seat.get("hue_family") or (hues[0] if hues else None)
+    if not hue:
+        raise SeatError(
+            f"{pick.key}: its picture reads no colour at all, so no hue family can be "
+            "read off it and the gallery's filter has nowhere to put it"
+        )
     gaps = []
     if toned.why:
         gaps.append(toned.why)
@@ -681,7 +710,11 @@ def header(rows: list[dict]) -> dict:
             "rows are in the file its entry names, in that collection's presentation order, "
             "so a seat in several collections is a row in each. modes is every mode the "
             "general collection seats. "
-            "The seat's mode and hue family come from the first record that seats it; hues "
+            "The seat's mode and hue family come from the first record that seats it, and "
+            "where that record files the seat under no family — its picture is dominant in "
+            "none — hue is the family the picture has most of, which is hues[0]. That is a "
+            "reading of the same shares and a decision of this site's: the record next door "
+            "is unchanged, and the panel has no unfiled chip. hues "
             "is every family holding at least "
             f"{HUE_PRESENT} of that picture's colour, largest first, read off the picture "
             "the record ships through palettes.dominance with the neutrals dropped, which "

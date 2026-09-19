@@ -125,7 +125,16 @@ become optional, because such a record is a machine's reading of records next do
 than anybody's prose, and a thousand invented captions would be a thousand claims nobody
 made. **`alt` does not relax.** A picture a reader can be shown owes them a description
 whatever it is filed under, so a staged row derives one by rule — what drew the picture,
-and the hue family the colour reading finds it dominant in.
+and the hue family its colour reading puts it in.
+
+**Every seat has a family** *(2026-09-19)*. The record next door files a seat under a
+family only where the picture is *dominant* in one, and ten of the 6,062 were dominant in
+none; the panel's filter carried an *unfiled* chip for them, which is a threshold's name
+offered to a reader looking for a colour. A seat the record leaves unfiled now takes the
+family its own colour reading favours most — the first entry of `hues`, which is sorted by
+share — and a seat whose picture reads no colour at all is a `SeatError` rather than a
+quiet `null`. This is presentation: nothing next door moves, and the dominance rule the
+record was written under is untouched.
 
 The pictures are untracked, the record commits. So the **assets** check has a third
 machine state to report beside the missing checkout and the missing Pillow: a staged

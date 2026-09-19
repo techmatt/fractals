@@ -80,14 +80,18 @@ const DRAWN = typeof CSS !== "undefined" && CSS.supports("appearance", "base-sel
  * **The colour goes on as a custom property rather than as a background.** The closed
  * select shows a *clone* of the chosen option's content, and what survives the clone is
  * the style attribute; a rule in the stylesheet supplies the shape and this supplies the
- * one thing that differs per family. A family the wheel does not name draws neutral.
+ * one thing that differs per family.
+ *
+ * Every family it is ever handed is one the wheel names: a chip row is a tally over seats
+ * and every seat now has a family *(2026-09-19)*, and the dropdown only dots a collection
+ * cut on one. A name the wheel does not carry would draw no colour at all, which is the
+ * honest failure — there is no thirteenth swatch to invent.
  */
 function hueDot(value) {
   const dot = document.createElement("span");
   dot.className = "hue";
-  const color = value === null ? null : colorOf(value);
+  const color = colorOf(value);
   if (color !== null) dot.style.setProperty("--c", color);
-  else dot.classList.add("is-unfiled");
   return dot;
 }
 
@@ -167,9 +171,10 @@ export function membersOf(seats, name) {
  * `first` is a value pinned to the head of the row whatever its count, which is the page's
  * to name: the mode the article teaches first heads the chips as it heads the Mode select,
  * and a collection where it is the fourth-largest is not a collection where it moves.
- * Nothing pinned is `undefined` rather than `null`, because `null` is a value a chip row
- * really holds — the seats filed under no hue — and pinning it was this row opening on
- * *unfiled 4*.
+ * Nothing pinned is `undefined` rather than `null`, because `null` is a value this counts
+ * — the seats holding no value of the field — and pinning it once had the hue row opening
+ * on *unfiled 4*. No seat is filed under no hue any more *(2026-09-19)*, and the mode row
+ * still names its own absence, so the distinction is kept rather than collapsed.
  */
 function tally(seats, field, first = undefined) {
   const held = new Map();
@@ -337,11 +342,19 @@ export function install({
 
   /** `swatches` marks the color family row, which is also single-choice: choosing a family
    *  lets go of any other, and choosing the one already held clears the row. A mode row
-   *  stays a union of whatever is pressed. */
-  function chipsInto(host, field, counts, label, swatches = false) {
+   *  stays a union of whatever is pressed.
+   *
+   *  `label` is what a row calls the seats that hold no value of its field, and a row that
+   *  passes none is saying there are none. The hue row is the second kind since every seat
+   *  gained a family *(2026-09-19)*, so a `null` there is a record that has gone back on
+   *  that, and it throws rather than putting the word `null` in front of a reader. */
+  function chipsInto(host, field, counts, label = null, swatches = false) {
     host.replaceChildren();
     const chips = [];
     for (const [value, count] of counts) {
+      if (value === null && label === null) {
+        throw new Error(`${SLUG}: ${count} seat(s) hold no ${field}, and this row names none`);
+      }
       const chip = document.createElement("button");
       chip.type = "button";
       chip.className = "chip";
@@ -430,18 +443,13 @@ export function install({
     members = membersOf(seats, chosen);
     chipsInto(modes, "mode", tally(members, "mode", firstMode), "no mode");
     if (hueHead) hueHead.textContent = cutOn === null ? HUE_HEADS.dominant : HUE_HEADS.contains;
-    // A seat whose palette the ledger never saw in a picture has no hue family at all.
-    // Those get a chip of their own rather than being dropped: a filter that quietly holds
-    // back pictures is worse than one that admits it. There is no such chip in a colour
-    // collection, where the row is asking what a picture contains and the answer for a
-    // picture that contains nothing else is simply no chip.
-    chipsInto(
-      hues,
-      "hue",
-      cutOn === null ? tally(members, "hue") : presence(members, cutOn),
-      "unfiled",
-      true,
-    );
+    // Twelve families and no thirteenth chip *(2026-09-19)*. The row used to open on
+    // *unfiled 4* — the seats the dominance rule found dominant in no family — and that
+    // chip was a threshold's name offered to a reader looking for a colour. The record
+    // now gives every seat the family its own colour reading favours most, so the row is
+    // the wheel and nothing else; `chipsInto` throws if a seat turns up without one.
+    const row = cutOn === null ? tally(members, "hue") : presence(members, cutOn);
+    chipsInto(hues, "hue", row, null, true);
     fill();
   }
 
