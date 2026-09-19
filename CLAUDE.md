@@ -22,6 +22,13 @@ these holds:
 - **named in `engine.manifest.json`**, so that a committed wasm nobody can rebuild is
   never how this ends.
 
+**A website prompt holds the lock on that repository only when it builds the wasm or
+commits into it.** The carve-out commits by explicit file path precisely so that it does not
+need the lock. Running `builder check` locks nothing but makes a prompt **pool-adjacent**:
+never beside a wallpapers merge or a pool-holding leg, because `check` streams records that
+work rewrites (`builder/README.md` has the transient red it produces). A prompt's header says
+which of the two it is.
+
 Everything else in that repository stays read-only to a website prompt: its code and its
 records are read, and a change to either is somebody else's prompt. **Running its CLI is
 reading** — `builder/renders.py` shells `fractal-engine` to draw a figure's panels, and
@@ -79,9 +86,10 @@ Two paths, and a page arrives by one of them.
   reads **the site**: the doc is built from the page as served, and the master is what the
   page is held to rather than what is reviewed.
 
-A master lives at the **root** of `prose\` on the synced drive, and `prose\old\` is what
-has been superseded — a registry row naming a master under `old\` is either a stale row or
-a file in the wrong folder, and which one it is worth saying. A draft may arrive with a
+A master lives at the **root** of `prose\` on the synced drive. A superseded master is
+**trashed in Drive** when its replacement is placed; `prose\old\` held them until
+2026-09-04 and has been empty since. So a registry row naming a master that is not at the
+root is a stale row, and worth saying. A draft may arrive with a
 **verification list at its foot**, headed *VERIFY AT PLACEMENT*: every number, ratio,
 constant and file name the prose leans on. Placement is where that list is worked — each
 line checked against the source it names, the prose corrected where the source disagrees,
@@ -649,6 +657,11 @@ Each prompt in this project ends the same way:
   confirmation. This repo carries images, so the aggregate half of that gate is the
   one that will bite: check the total added size of an image drop before staging it,
   not after.
+- **Staged, not deployed: no gallery-sized or library-sized commit until Matt says deploy.**
+  Such files land in the working tree untracked and are named in `.git/info/exclude`, the
+  record beside them commits, and `builder/README.md`'s *What is staged* lists the set,
+  since that exclude file is local to this machine. A push before deploy serves a site
+  missing them; nothing is live, so that is expected rather than a break.
 - **Prompts never land in the repo.** They live in
   `C:\Code\fractal-drive-sync\prompts\`; a working copy in this directory stays
   untracked.

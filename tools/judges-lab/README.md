@@ -28,7 +28,7 @@ web/bench.html     one configuration in onnxruntime-web
 web/browser-run.mjs  Chrome over CDP through every configuration
 ```
 
-**What is tracked and what is not.** Tracked: the scripts, `samples.jsonl`, the raw
+**What is tracked and what is not.** Tracked, about 658 KB (2026-09-19): the scripts, `samples.jsonl`, the raw
 readings in `results/`, the tables and reference readings in `measured/`, and `REPORT.md`.
 Not tracked, and kept out by the root `.gitignore`: `.venv/`, `node_modules/`, `weights/`,
 `models/`, `samples/`, and `artifacts/`, which holds the large inputs (`inputs.u8`,

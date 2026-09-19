@@ -121,7 +121,7 @@ engine-wasm/          the crate that produces engine.wasm
 
 Two panels, and the document itself does not scroll.
 
-**Left, one of three things.** The third, *Walk*, is its own section below. *Gallery* is the staged gallery `python -m builder seats`
+**Left, one of four things.** The third and fourth, *Walk* and *Saved*, are sections of their own below. *Gallery* is the staged gallery `python -m builder seats`
 lands, one **collection** at a time — the general gallery, a collection per hue family,
 a collection per mode, chosen from a dropdown *(explorer_gallery_collections_ckpt129)* — as
 pictures and nothing else: no caption, no id, no score, two rows of filter chips over them,
@@ -280,8 +280,13 @@ UI key never decides what is drawn.
 
 The third tab runs a simplified version of the mining pipeline, and the viewer shows it
 choosing. **It never starts on its own**: `panel=walk` in an address opens the tab, and only
-Start starts a walk. Hiding the tab pauses it, and so does anything the reader does to the
-viewer: a pan, a zoom, a control, or a picture opened from any panel.
+Start starts a walk. Hiding the tab pauses it, and so does Pause; nothing else does
+*(walk_detach_ckpt131)*. Anything the reader does to the viewer (a pan, a zoom, a control,
+or a picture opened from any panel) **detaches** the viewer instead: it becomes the reader's
+editor again and the walk carries on, on its own renderer, recording what it would have
+painted. Start, Back to the walk, or showing the tab again hands the viewer back. Whether a
+walk runs and whether the viewer follows it are two states, `state` and `attached` in
+`walk.js`, and Saved is the one tab whose showing touches neither.
 
 **One walk.**
 
@@ -333,7 +338,10 @@ viewer: a pan, a zoom, a control, or a picture opened from any panel.
 
    The old rule stopped at two rungs under the best whatever the best was. At low scores
    that is two noisy readings, so descents ended three decades short of seat depth, and a
-   root scoring near zero ended its descent at rung two.
+   root scoring near zero ended its descent at rung two. Measured on 31 descents under the
+   patience rule (walk_tune_ckpt131, 2026-09-18), the best frame's width has a **median of
+   2.5e-5**, against 1.6e-3 under the old rule, and the deepest reached 1.7e-8, which is
+   seat depth.
 9. The best frame seen, root included, is judged against the bar, which is where the place
    is mined, not the last frame. When the Julia box is ticked, the walk goes on to the Julia
    twin once the plane's place is finished. The twin's `c` is the centre of that **best
@@ -353,6 +361,9 @@ viewer: a pan, a zoom, a control, or a picture opened from any panel.
      opacity is derived exactly as the viewer derives one.
    - Each is scored by the gate's P≥4, and the best are kept as tiles (one by default,
      *kept* in the config). The fine head ranks instead where the config ticks it.
+   - **A place costs about 16 s on an idle machine** (walk_view_ckpt132, 2026-09-18): eight
+     mining renders at about 2 s each. With a render leg running next door the same place
+     took about two minutes.
 
 The config's defaults are the pipeline's draw where the page can make one. The thirteen modes
 the pipeline accepts are listed in the Mode select's own order, handed over by the viewer so
@@ -689,6 +700,11 @@ python -m builder serve          # http://localhost:8000/explorer/index.html
 The page says so itself where the picture would be, rather than failing silently. Every
 other page on the site still opens from disk, and stays script-free.
 
+**Chrome's `--screenshot` cannot photograph it.** It shoots at load and never waits for the
+wasm module or the workers, so every shot is *Starting the renderer…*. Drive the served page
+over CDP instead, with Node's own `WebSocket` against `--remote-debugging-port`, and wait on
+the page's state before taking the picture.
+
 ## The engine, compiled
 
 `engine-wasm/` is a `cdylib` crate that depends on the engine **by path**, at
@@ -716,7 +732,7 @@ Committed beside the module, `engine.manifest.json` records what it was built fr
 | `rustc` | the compiler, with its commit and date |
 | `wallpapers_commit` | the sibling checkout's `HEAD` at bake time |
 | `engine_changes` | every change this consumer has needed in the engine, one line each |
-| `raw_bytes` / `gzip_bytes` | 634,824 raw, **184,458 gzipped** |
+| `raw_bytes` / `gzip_bytes` | 717,977 raw, **213,828 gzipped** |
 
 `engine_changes` is typed, in `builder/explorer.py`, and is the condition CLAUDE.md puts
 on a website prompt touching the sibling engine at all: a zero-behaviour change is allowed
@@ -974,6 +990,14 @@ bands are dispatched, and the band still in flight is finished and thrown away �
 a worker mid-band would cost a wasm instantiation to save at most one band. The abandoned
 pass resolves with `null` rather than being left pending: a promise nobody settles holds
 its whole `await` chain alive, and a reader who drags across the set makes one per drag.
+So a cancel waits out the band in flight, because the engine has no flag to stop one early
+(*Cooperative cancellation*, under *Next*).
+
+**Measuring cancel latency takes a set-up, or it measures something else.** Draw the cheap
+view first so it is cached, switch into an expensive mode once, wait for the supersampled
+stage to start, then switch to a mode nothing has drawn yet and time to the first changed
+pixel. Re-picking a mode already drawn is a cache hit; re-drawing the same view, or timing
+to the finished picture, times a render rather than the wait for the old one to stop.
 
 **`Renderer.field` cancels whatever is in flight, so a caller queues rather than
 races.** Every call bumps the generation, which is what makes a pan responsive and what
@@ -1289,8 +1313,10 @@ mandelbrot `smooth_trap_circle` 1.47 s, and the worst seen, julia5 `threads` at 
 0.25, 7.77 s. Shade is main-thread and pool-independent at 150–500 ms, and a preview
 lands at a sixteenth of the samples before any of it.
 
-**The module** is 634,824 bytes raw and 184,458 gzipped, against draft 1's 190,240 and
-70,639. The tone operator is 18,955 of that raw and 6,043 gzipped — two bisections and a
+**The module** is 717,977 bytes raw and 213,828 gzipped (2026-09-18), against draft 1's
+190,240 and 70,639. It was 766,191 raw once the Walk tab's `screen` export was in, and
+`strip = "symbols"` in `Cargo.toml` took the 48 KB `name` section back off; only a debugger
+reads it. Pages' own gzip sends it as 217,606 bytes, measured on the live site 2026-09-19. The tone operator is 18,955 of that raw and 6,043 gzipped — two bisections and a
 subdivision, and it buys a gallery seat's own colour. Most of that is the eighteen modes' worth of engine that is reachable at all —
 every field reduction, both blends, the trap painter, all nine families — plus
 `serde_json` and the derived readers for the spec.
@@ -1303,6 +1329,36 @@ the nine channel sets the explorer's own modes actually reach, is a hand-written
 of the table again, which is the thing the change is for. **A tenth of the raw growth is
 what a reader downloads**: the transfer is gzipped, and 14 KB on 164 is the honest figure
 to compare against 8.4 seconds off `stripe`.
+
+### What a visitor downloads *(explorer_slim_ckpt131, 2026-09-18)*
+
+Audited against the live site's own headers: Pages sends gzip, at about level 6, and no
+brotli. It gzips every text type and `application/octet-stream`, so `.jsonl`, `.bin` and
+`.onnx` are compressed too; `image/*` is not. Headless Chrome over CDP, a fresh profile, a
+1600×1000 window, sizes from `encodedDataLength`, with the staged files served:
+
+| what | on the wire |
+| --- | --- |
+| cold open, to the first frame | **556 KB** (was 1,968) |
+| … of which `engine.wasm` | 217 KB |
+| … of which the 12 static JS modules | 115 KB |
+| … of which `palettes.bin` | 182 KB (was 953) |
+| … of which `gallery.jsonl`, the header | 1.6 KB |
+| one gallery screen scrolled | about 150 KB |
+| opening the atlas: records and one plate | 283 KB |
+| the heaviest article page, `rendering-modes.html`, first load | 936 KB |
+
+What moved it: `palettes.bin` went planar and byte-delta (`stops.js`), the gallery record
+split by collection so only the header is in the first frame's wait, the plates were
+rebaked at 2052 wide, the atlas stopped fetching plates while hidden, and every article
+figure after a page's first carries `loading="lazy"`. The eager JS is about 126 KB on
+2026-09-19, with the Saved tab's module in it. The Walk tab's own cost is under *The walk*.
+
+**Declined** (Matt, 2026-09-18), each with the audit's estimate: AVIF tiles, about a third
+off a screen of them; ORT's JSPI bundle, 2.6 MB off a Start but Chromium-only and not the
+runtime the lab's fidelity table was taken on; ORT's CPU-only bundle, 3.0 MB off a Start at
+the cost of the GPU; and a runtime of this page's own in WGSL for the two judges, about
+6.6 MB off a Start and a week or two with its fidelity re-checked.
 
 ## A mode's parameters, from the view *(explorer_param_derive_ckpt128, 2026-09-16)*
 
@@ -1878,7 +1934,7 @@ python -m builder links --write            # the link registry, from figure prov
 
 Needs the sibling checkout, `cargo`, and the `wasm32-unknown-unknown` target
 (`rustup target add wasm32-unknown-unknown`). `engine-wasm/target/` is gitignored — it is
-the several hundred megabytes cargo needs to produce a 480 KB file.
+the several hundred megabytes cargo needs to produce a 718 KB file.
 
 **The bare command rebuilds the wasm every time, and that is why `--palettes-only`
 exists.** `explorer.bake` compiles the crate and rewrites `engine.manifest.json` unless
@@ -1933,6 +1989,10 @@ are the engine's — but now with a failing check to announce it rather than onl
 Listed, not designed:
 
 - **Deep zoom**, which needs perturbation and is a different renderer, not a wider one.
+- **Cooperative cancellation**: a flag the engine checks inside the iterate loop, so that a
+  cancel stops the band in flight instead of waiting it out. It is the right final shape for
+  cancel latency (see *Cancel is by generation* above), it is an engine change rather than a
+  visibility one, and it is not scheduled.
 - **A native per-mode column measured on this machine.** The one comparison the
   per-mode table above can no longer make: what each mode costs `fractal-engine render`
   at the same frame, so the wasm/native slope is read off two readings of the same day

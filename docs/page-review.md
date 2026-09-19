@@ -492,10 +492,11 @@ says** rather than how it says it, and that neither of those two files carries.
 A page with no row is a page whose HTML is its own master — legitimate for a section
 written straight into the page, and the review doc is built from the page alone.
 
-The masters themselves live at the **root** of `prose\` in the synced folder;
-`prose\old\` holds what has been superseded. A row that names a master under `old\` is
-saying the page is held to a document the drafting side has already moved past — report
-it rather than reading around it.
+The masters themselves live at the **root** of `prose\` in the synced folder. A superseded
+master is trashed in Drive when its replacement is placed; `prose\old\` is a folder from
+before that practice and has been empty since 2026-09-04. A row that names a master not at
+the root is saying the page is held to a document the drafting side has already moved
+past — report it rather than reading around it.
 
 A **divergence** is a place where the page deliberately says something the master does
 not, because the master was approved before a correction landed. Each one records the
@@ -506,3 +507,28 @@ divergence nobody wrote down is indistinguishable from a page somebody quietly e
 deliberately does not read the masters: they live on a synced drive that a clone need not
 have and CI certainly does not. `python -m builder prose` is what reads them, and it runs
 where the documents are.
+
+## Leftovers
+
+Known and not scheduled, one line each, so that nothing else has to carry them. Each is
+Matt's to raise; a prompt that fixes one strikes its line.
+
+- **The phone layout clips the viewer above the tabs.**
+- **The Galleries page and the explorer part company past tile 78**: the tentative gallery's
+  own page shows an older presentation order until `curate solve browse` is rebuilt next
+  door. Nothing is live, so it is left.
+- **Reverse barely moves ten authored maps**, which run out and nearly back again.
+- **`direct_trap_screen`'s sliders have dead travel**: the engine holds the screened cross
+  under an opacity of 0.15 and a threshold of 0.08, and `params.js` gives both the full range.
+- **A hue-family collection's label promises one hue**; the family pass splices a theme, and
+  the chip a seat lands under is the color reading's own.
+- **The seven mode collections show their raw names** in the Collection dropdown
+  (`smooth_mean_angle · 300`); readable names are a separate decision.
+- **The download bar parks during the shade**: `download.js` reserves up to half the bar for
+  the coloring and nothing advances it until the picture lands.
+- **The walk's candidates row scrolls each new tile into view**, so the kept tile can end
+  up off to the left.
+- **Deploy preparation** *(Matt: preparing, not deploying)*: the staged set in
+  `builder/README.md`'s *What is staged* goes in at deploy. The judges reach Pages as release
+  assets fetched at deploy time, the way the wallpaper project ships its weights, and never
+  through git.

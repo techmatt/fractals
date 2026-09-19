@@ -207,8 +207,12 @@ instantiated for that one export, which is exactly what `builder/emit.mjs` and
 
 ## Where the record came from, and how to rebuild it
 
-`atlas.jsonl`'s method row names it: the published record the seats were read out of, the
-live judge, and the fine bar the population was cut at. The maker is
+`atlas.jsonl`'s method row names it: the record the seats were read out of, the live
+judge, and the fine bar the population was cut at. The record is not necessarily a
+published one: since `site_rebase_ckpt132` it is the pinned general record
+`20260919T171003Z`, which is the general collection of the staged gallery too. Its `tally`
+is the census the maker took, from places queued to dots drawn and seated, and each
+partition row's `dots` is that plane's share. The maker is
 `fractal-wallpapers curate atlas`, writing `artifacts/atlas/mandelbrot/` in that checkout,
 which is where `--ingest` reads with no path given. It streams the candidate ledger and
 the fine head's pool scores, queues every seated place and then everything else by best

@@ -73,6 +73,14 @@ figure cites are certified **only on a machine that has the checkout**. Run `pyt
 `local.toml` in place, before a checkpoint — and read the exit summary's skip count, which
 is what says whether the run that just passed was the whole question or part of it.
 
+**And a red run on this machine can be the checkout moving under it.** A `candidate` source
+key is resolved by streaming the candidate ledger next door, and a streamed read of a file
+being rewritten under it reports a missing key rather than an error: `check` failed twice on
+*not in the candidate ledger* on 2026-09-17 while a running leg rewrote `rows.jsonl`, and
+the same keys resolved once it finished. So a missing key during a live merge, depth leg or
+solve next door is transient before it is anything else; run `check` again when that work
+is done before believing it.
+
 ## A gallery is a directory
 
 ```
@@ -126,10 +134,15 @@ not a pass and not a failure. One picture present means the command has run, and
 whole gallery is held to its record exactly as a publishable one is — a half-landed
 directory is a real problem and reads as one.
 
-`seated-candidates` is the first, and `builder/seats.py` is what fills it: the published
-tentative record and the nineteen collections solved beside it — twelve hue families and seven
-modes, not yet published — as one union of 5,925 seats, each row saying which collections
-seat it and where. The union is written **split by collection** *(explorer_slim_ckpt131)*:
+`seated-candidates` is the first, and `builder/seats.py` is what fills it: twenty tentative
+records, the general n=1000 solve and the nineteen collections solved beside it (twelve hue
+families and seven modes), as one union of 6,062 seats, each row saying which collections
+seat it and where *(site_rebase_ckpt132, 2026-09-19)*. None of the twenty is published. The
+header's `published` is asked of the project next door's `tentative.PUBLISHED` rather than
+assumed. `COLLECTIONS` hand-lists the twenty as (name, stamp) pairs and `MODE_COLLECTIONS`
+says which are modes, so a re-solve is an edit to that table. A stamp is refused unless its
+solve was that collection's: `general_n1000_…` for the general one, `targets_<collection>_n…`
+for the rest, the convention `curation/targets.py` states next door. The union is written **split by collection** *(explorer_slim_ckpt131)*:
 `gallery.jsonl` holds the header alone, and each collection's rows go to the file its
 header entry names (`general.jsonl`, `smooth-mean-angle.jsonl`, …), so a seat in three
 collections is a row in three files. `galleries.load` reads the union back from them, and
@@ -140,6 +153,30 @@ the tone curve the run acted with, with the permalink for each emitted by the co
 itself through `builder/emit.mjs`. Where the link is not quite the picture the row says so
 in a `gap` clause: a curve the run recorded as a fact and not as coefficients, a curve a
 mode's identity fixes, an iteration cap the depth policy answers differently.
+
+## What is staged, and goes in at deploy
+
+`CLAUDE.md`'s staging rule keeps gallery- and library-sized files out of history until Matt
+says deploy. They sit in the working tree untracked, named in `.git/info/exclude`. That file
+is local and no clone has it, so this list is the tracked record of the set:
+
+| what | size (2026-09-19) | written by |
+| --- | --- | --- |
+| `assets/images/galleries/seated-candidates/*.webp`, one tile a seat | 6,062 files, 60.4 MB | `python -m builder seats` |
+| `explorer/palettes.bin`, every map's control points | 1.04 MB | `python -m builder explorer --palettes-only` |
+| `explorer/palettes-swatch.png`, to look at | 0.3 MB | the same |
+| every plane's atlas slot pictures, `assets/images/atlas/<plane>-*.jpg` | 1,455 files, 42.1 MB | `python -m builder atlas --ingest` |
+| `explorer/judges/`, the ORT runtime, the gate and the fine head | 38.9 MB | `python -m builder walk` |
+
+**`palettes.bin` is not optional.** The tracked tree alone never draws a first frame: served
+without the blob, the explorer's first fetch is a 404 and the canvas stays empty. Until a
+deploy, a push to Pages shows the atlas marks over empty slots, a gallery panel without
+tiles and a Walk tab running on the screen alone.
+
+What stays tracked: every record (`gallery.jsonl` and the per-collection files, the atlas
+record), `palettes.js`, and the six atlas plates, because a plate is drawn from the
+engine's home view rather than from a record. How each item reaches Pages is deploy
+preparation, and `docs/page-review.md`'s *Leftovers* carries it.
 
 ## A page may hang off a section without being one
 
