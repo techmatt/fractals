@@ -317,14 +317,27 @@ viewer: a pan, a zoom, a control, or a picture opened from any panel.
    and is the part the viewer follows: the current frame is split into quarters, the
    straddling ones are jittered, screened and judged, and the walk goes into the best. The
    probe runs at the width's own `maxiter_for_width`. It stops at the first of:
-   - a **peak**: the best quarter has scored below the best seen for two rungs running;
+   - a **peak**, counted only once the best rung seen, root included, has cleared the
+     patience floor (P≥3 0.20 by default, *peak counts from P≥3* under Depth). After that
+     it is a peak when the score has stayed under that best for two rungs running while
+     the best is under 0.5, and for three once it is over. Below the floor there is no
+     peak, and the descent goes on to one of the three below *(walk_tune_ckpt131)*;
    - the **floor**: `f64` would no longer resolve the mining grid (`resolution_ulps`);
    - the **cap**, 20 rungs below the root by default;
    - a **dead end**: no quarter straddles or survives the screen.
+
+   The old rule stopped at two rungs under the best whatever the best was. At low scores
+   that is two noisy readings, so descents ended three decades short of seat depth, and a
+   root scoring near zero ended its descent at rung two.
 9. The best frame seen, root included, is judged against the bar, which is where the place
-   is mined, not the last frame. When the Julia box is ticked, the root's centre is taken as
-   `c` for its Julia twin, which gets a stage two of its own from its home frame. Phoenix
-   has no twin.
+   is mined, not the last frame. When the Julia box is ticked, the walk goes on to the Julia
+   twin once the plane's place is finished. The twin's `c` is the centre of that **best
+   frame**, not the root *(walk_tune_ckpt131)*: a root-band `c` is almost always outside
+   the set, so its Julia set is dust, and all fifteen twins taken there dead-ended at rung
+   one. The twin gets a stage two of its own from its home frame. If that frame still has
+   no straddling quarter, the twin is descended **on the judge alone**: all four quarters
+   are weighed, only the screen refuses one, and the console says so once. Phoenix has no
+   twin.
 10. A place over the bar is mined:
    - Recipes are drawn over the ticked modes without replacement, a palette from the roster,
      the identity shade with `mirror` read off the map's cyclicity, and a uniform phase
@@ -344,6 +357,20 @@ numbers where it can. Each line carries a `data-kind` that tints its left edge: 
 score and whether it rose (the width is in the address bar), and a refusal names the
 quarter and the gate in a few words. The per-rung straddle count is not logged, because the
 boxes already show it.
+
+**The walk stack** *(walk_tune_ckpt131)* sits in the viewer's bottom-right corner, over the
+controls, while a walk runs, and is gone the moment it pauses. It shows the current walk's
+structure, updated live:
+
+- the plane and whether a root has been found;
+- a column of rungs for the descent and another for its Julia twin, each rung a bar of its
+  P≥3. The root is the top bar, the best is ringed, and the one being weighed is lit;
+- the verdict, and whether the place cleared the bar;
+- the recipe slots filling in with their P≥4, and whether one was kept.
+
+Its labels wear the console's kinds, from the same CSS declarations, so the two read as one
+system. A new walk clears it. Below the studio's breakpoint it collapses to one line along
+the bottom edge: the plane, then where the walk is now.
 
 **Where it is not the pipeline, said once.**
 
@@ -416,10 +443,16 @@ contract has no key for it and nothing a link opens sets it.
 by
 
 ```
-python -m builder walk                      # from ../fractal-judges-lab, seed 0
+python -m builder walk                      # from tools/judges-lab, seed 0
 python -m builder walk --fused              # the three-seed fine head instead
-python -m builder walk --from <lab checkout>
 ```
+
+**The lab is `tools/judges-lab/`** *(walk_tune_ckpt131)*. Its export script, the frozen
+model definitions and preprocessing spec in `lab/judges.py`, the fidelity and retime
+scripts, its measurements and `REPORT.md` are tracked there. Its torch venv, npm packages,
+weights, exports and samples sit beside them, untracked. Its README says how to set it up
+from nothing. It used to be a checkout of its own beside this one, `fractal-judges-lab`,
+which is gone.
 
 That copies about 39 MB:
 

@@ -3,11 +3,6 @@
 // ImagingResampleHorizontal_8bpc / Vertical_8bpc). Horizontal pass first, then vertical,
 // each rounding to uint8 in 22-bit fixed point — the intermediate rounding is part of
 // what the judges were trained on, so it is reproduced rather than approximated.
-//
-// Brought over unchanged from the judges lab (`tools/judges-lab/web/resize.mjs`), where
-// it matched PIL on 0 differing bytes of 31M, in Node from PIL's decode and in Chrome from
-// Chrome's. The Walk tab (`walk.js`) is its one caller here: every picture a judge reads
-// goes through `resizeBicubic` to 384×224 and `toTensorData` to NCHW in [0, 1].
 
 const PRECISION_BITS = 32 - 8 - 2;
 const ONE = 2 ** PRECISION_BITS;

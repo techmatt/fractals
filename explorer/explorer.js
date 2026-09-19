@@ -1927,6 +1927,7 @@ async function startWalk() {
       start: document.getElementById("walk-start"),
       progress: document.getElementById("walk-progress"),
       console: document.getElementById("walk-console"),
+      stack: document.getElementById("walk-stack"),
       found: document.getElementById("walk-found"),
       note: document.getElementById("walk-note"),
       module: renderer.module,

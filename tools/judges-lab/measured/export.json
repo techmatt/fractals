@@ -1,0 +1,117 @@
+[
+ {
+  "name": "render",
+  "opset": 17,
+  "ops": [
+   "Add",
+   "Concat",
+   "Constant",
+   "Conv",
+   "Div",
+   "Flatten",
+   "Gemm",
+   "GlobalAveragePool",
+   "Mul",
+   "Relu",
+   "Sigmoid",
+   "Slice",
+   "Sub"
+  ],
+  "nodes": 110,
+  "fp32_bytes": 9963870,
+  "fp16_bytes": 5003782,
+  "fp16w_bytes": 5101279
+ },
+ {
+  "name": "fine.seed0",
+  "opset": 17,
+  "ops": [
+   "Add",
+   "Concat",
+   "Constant",
+   "Conv",
+   "Div",
+   "Flatten",
+   "Gemm",
+   "GlobalAveragePool",
+   "Mul",
+   "Relu",
+   "Sigmoid",
+   "Slice",
+   "Sub"
+  ],
+  "nodes": 110,
+  "fp32_bytes": 9963870,
+  "fp16_bytes": 5003782,
+  "fp16w_bytes": 5101279
+ },
+ {
+  "name": "fine.seed1",
+  "opset": 17,
+  "ops": [
+   "Add",
+   "Concat",
+   "Constant",
+   "Conv",
+   "Div",
+   "Flatten",
+   "Gemm",
+   "GlobalAveragePool",
+   "Mul",
+   "Relu",
+   "Sigmoid",
+   "Slice",
+   "Sub"
+  ],
+  "nodes": 110,
+  "fp32_bytes": 9963870,
+  "fp16_bytes": 5003782,
+  "fp16w_bytes": 5101279
+ },
+ {
+  "name": "fine.seed2",
+  "opset": 17,
+  "ops": [
+   "Add",
+   "Concat",
+   "Constant",
+   "Conv",
+   "Div",
+   "Flatten",
+   "Gemm",
+   "GlobalAveragePool",
+   "Mul",
+   "Relu",
+   "Sigmoid",
+   "Slice",
+   "Sub"
+  ],
+  "nodes": 110,
+  "fp32_bytes": 9963870,
+  "fp16_bytes": 5003782,
+  "fp16w_bytes": 5101279
+ },
+ {
+  "name": "fine.fused",
+  "opset": 17,
+  "ops": [
+   "Add",
+   "Concat",
+   "Constant",
+   "Conv",
+   "Div",
+   "Flatten",
+   "Gemm",
+   "GlobalAveragePool",
+   "Mul",
+   "Relu",
+   "Sigmoid",
+   "Slice",
+   "Sub"
+  ],
+  "nodes": 330,
+  "fp32_bytes": 29895453,
+  "fp16_bytes": 15015829,
+  "fp16w_bytes": 15314886
+ }
+]

@@ -593,14 +593,105 @@ summary.section-head:focus-visible { outline: 2px solid var(--well-link); outlin
   padding-left: 0.45rem;
   border-left: 3px solid var(--kind);
 }
-.walk-console li[data-kind="root"] { --kind: #6cb6ff; }
-.walk-console li[data-kind="rung"] { --kind: #8a94a6; }
+/* The walk stack wears the same code on its stage labels (walk_tune_ckpt131), from the same
+   declarations, so the two cannot drift apart. */
+.walk-console li[data-kind="root"], .walk-stack [data-kind="root"] { --kind: #6cb6ff; }
+.walk-console li[data-kind="rung"], .walk-stack [data-kind="rung"] { --kind: #8a94a6; }
 .walk-console li[data-kind="refusal"] { --kind: rgb(255 120 110); }
-.walk-console li[data-kind="verdict"] { --kind: #c49bff; }
-.walk-console li[data-kind="mining"] { --kind: #5fd3c0; }
-.walk-console li[data-kind="found"] { --kind: #ffd166; }
+.walk-console li[data-kind="verdict"], .walk-stack [data-kind="verdict"] { --kind: #c49bff; }
+.walk-console li[data-kind="mining"], .walk-stack [data-kind="mining"] { --kind: #5fd3c0; }
+.walk-console li[data-kind="found"], .walk-stack [data-kind="found"] { --kind: #ffd166; }
 .walk-console li[data-kind="status"] { --kind: #4b5563; }
 .walk-console:empty::before { content: "Press Start to watch a walk look for a picture."; }
+
+/* ------------------------------------------------------------------ the walk stack */
+
+/* Bottom-right of the viewer, over its controls, and only while a walk runs. The viewer
+   column reaches the window's right and bottom edges, so the corner is the window's. */
+.walk-stack {
+  position: fixed;
+  right: var(--gutter);
+  bottom: var(--gutter);
+  z-index: 5;
+  width: 17rem;
+  max-height: calc(100vh - 8rem);
+  overflow: hidden;
+  padding: 0.5rem 0.6rem;
+  border: 1px solid var(--well-rule);
+  border-radius: 4px;
+  background: var(--well);
+  box-shadow: 0 4px 16px rgb(0 0 0 / 0.5);
+  font-family: var(--sans);
+  font-size: 0.7rem;
+  line-height: 1.3;
+  color: var(--well-ink-dim);
+}
+.walk-stack [data-kind] { color: var(--kind); }
+.walk-stack p { margin: 0; }
+.walk-stack-line { display: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.walk-stack-head { margin-bottom: 0.4rem; }
+.walk-stack-plane { font-weight: 600; }
+.walk-stack .walk-stack-dim { color: var(--well-ink-dim); }
+.walk-stack-legs { display: grid; grid-template-columns: 1fr 1fr; gap: 0.7rem; }
+.walk-stack-leg { display: flex; flex-direction: column; gap: 0.25rem; min-width: 0; }
+.walk-stack-leg h3 { margin: 0; font-size: inherit; font-weight: 600; white-space: nowrap; }
+.walk-stack-leg h3 .walk-stack-dim { font-weight: 400; }
+
+/* A rung is a bar of its P≥3, shallowest at the top. The best is ringed in the found ink,
+   and the one being weighed is lit. */
+.walk-stack-rungs {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.walk-stack-rungs li {
+  position: relative;
+  height: 5px;
+  border-radius: 1px;
+  background: rgb(255 255 255 / 0.07);
+}
+.walk-stack-rungs li::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: calc(var(--p) * 100%);
+  border-radius: 1px;
+  background: #8a94a6;
+  opacity: 0.6;
+}
+.walk-stack-rungs li.is-current::before { opacity: 1; background: var(--well-ink); }
+.walk-stack-rungs li.is-best { outline: 1px solid #ffd166; outline-offset: 1px; }
+
+.walk-stack-slots {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+}
+.walk-stack-slots li {
+  min-width: 2.1rem;
+  padding: 0 0.2rem;
+  border: 1px solid var(--kind);
+  border-radius: 2px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+.walk-stack-slots li.is-empty { opacity: 0.35; }
+.walk-stack-slots li.is-empty::before { content: "\00a0"; }
+.walk-stack-kept { font-weight: 600; }
+
+/* Stacked, the viewer no longer owns the window's corner, so the stack is one line along
+   the bottom edge: where the walk is now, and nothing else. */
+@media (max-width: 60rem) {
+  .walk-stack { left: var(--gutter); width: auto; padding: 0.3rem 0.6rem; }
+  .walk-stack-line { display: block; }
+  .walk-stack-body { display: none; }
+}
 
 .walk-found-head { flex: none; padding: 0 var(--gutter); }
 

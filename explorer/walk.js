@@ -103,6 +103,7 @@ const DEFAULTS = {
   widest: 1e-3,
   narrowest: 1e-4,
   rungs: 20,
+  patience: 0.2,
   recipes: 3,
   keep: 1,
   bar: 0.5,
@@ -112,8 +113,18 @@ const DEFAULTS = {
  *  explorer's own hand-switch default, `TEXTURE_DEFAULT`. */
 const TEXTURE_DEFAULT = 0.5;
 
-/** Stage two stops once the judge has scored below its best for this many rungs running. */
-const PEAK_PATIENCE = 2;
+/**
+ * When stage two calls a peak *(walk_tune_ckpt131)*. It used to stop after two rungs under
+ * the best, and at low scores that is two noisy readings. Descents stopped by 5e-5, three
+ * decades short of the seats, and a silent root (a score near zero) counted as a peak at
+ * rung two. So a peak counts only once the best rung has cleared the config's patience floor
+ * (`P≥3`, 0.20 by default). Even then the score must stay under that best for this many
+ * rungs running: two while the best is under `PATIENT_ABOVE`, three above it, because a
+ * high best is worth a longer look before the descent gives it up. Under the floor the
+ * descent goes on until the cap, the resolution floor or a dead end.
+ */
+const PATIENT_ABOVE = 0.5;
+const patienceOf = (best) => (best < PATIENT_ABOVE ? 2 : 3);
 
 /** How many times stage one backs up, and how many roots the screen may refuse, before the
  *  walk gives the plane up. Both are cheap: a back is one probe, a refusal one screen. */
@@ -252,10 +263,151 @@ export function mount(host) {
   }
 
   /** Pause while a download is under way is the same button as Pause while walking, and
-   *  stops the download. */
+   *  stops the download. The walk stack is up only while a walk runs: paused, the viewer
+   *  and its controls are the reader's again. */
   function syncButton() {
     host.start.textContent = state === "running" || state === "loading" ? "Pause" : "Start";
+    host.stack.hidden = state !== "running";
   }
+
+  // ----------------------------------------------------------------- the walk stack
+
+  /**
+   * The walk's structure at a glance *(walk_tune_ckpt131)*, over the viewer's controls,
+   * which are not for use while a walk runs. It shows the plane and whether a root has been
+   * found. Then, for the descent and its Julia twin, it shows a column of rungs, each a bar
+   * of the judge's `P≥3`, with the best marked and the current one lit. Then the verdict,
+   * the recipe slots filling with their `P≥4`, and whether one was kept. Every label wears
+   * its console kind, so the stack and the console read as one system. A new walk clears it.
+   * Below the studio's breakpoint only the one-line summary shows.
+   */
+  const stack = (() => {
+    let model = { plane: "", root: "searching", legs: [] };
+    const current = () => model.legs.at(-1);
+    const STOPS = { peak: "peaked", floor: "at the floor", cap: "at the cap", "dead end": "dead end" };
+    const ROOTS = { searching: "finding a root…", found: "root found", "gave out": "gave out" };
+
+    function span(kind, text, className = "") {
+      const one = document.createElement("span");
+      if (kind) one.dataset.kind = kind;
+      if (className) one.className = className;
+      one.textContent = text;
+      return one;
+    }
+
+    /** The one line a phone gets: where the walk is now. */
+    function summary() {
+      const parts = [span("root", model.plane)];
+      const leg = current();
+      if (leg === undefined) {
+        parts.push(span("root", ROOTS[model.root]));
+      } else if (leg.kept !== null) {
+        parts.push(span("found", leg.kept.count > 0 ? `kept, P≥4 ${score(leg.kept.p4)}` : "none kept"));
+      } else if (leg.slots !== null) {
+        const filled = leg.slots.filter((slot) => slot !== undefined).length;
+        parts.push(span("mining", `painting ${filled} of ${leg.slots.length}`));
+      } else if (leg.done !== null) {
+        parts.push(span("verdict", `${STOPS[leg.done.stop]}, ${leg.done.over ? "over" : "under"} the bar`));
+      } else {
+        const now = leg.rungs.at(-1);
+        parts.push(
+          span("rung", `${leg.label === "Descent" ? "" : "twin "}rung ${leg.rungs.length - 1} · ${score(now)} · best ${score(leg.rungs[leg.best])}`),
+        );
+      }
+      const line = document.createElement("p");
+      line.className = "walk-stack-line";
+      parts.forEach((part, index) => line.append(...(index > 0 ? [" · ", part] : [part])));
+      return line;
+    }
+
+    function legOf(leg, last) {
+      const section = document.createElement("section");
+      section.className = "walk-stack-leg";
+      const head = document.createElement("h3");
+      head.append(span("rung", leg.label), span("", ` best ${score(leg.rungs[leg.best])}`, "walk-stack-dim"));
+      const rungs = document.createElement("ol");
+      rungs.className = "walk-stack-rungs";
+      leg.rungs.forEach((p3, index) => {
+        const rung = document.createElement("li");
+        rung.style.setProperty("--p", String(Math.max(0.02, p3)));
+        rung.title = `${index === 0 ? "root" : `rung ${index}`} · P≥3 ${score(p3)}`;
+        if (index === leg.best) rung.classList.add("is-best");
+        if (last && leg.done === null && index === leg.rungs.length - 1) rung.classList.add("is-current");
+        rungs.append(rung);
+      });
+      section.append(head, rungs);
+      if (leg.done !== null) {
+        const said = document.createElement("p");
+        said.append(span("verdict", STOPS[leg.done.stop]), span("", leg.done.over ? " · over the bar" : " · under the bar", "walk-stack-dim"));
+        section.append(said);
+      }
+      if (leg.slots !== null) {
+        const slots = document.createElement("ol");
+        slots.className = "walk-stack-slots";
+        slots.dataset.kind = "mining";
+        for (const slot of leg.slots) {
+          const one = document.createElement("li");
+          one.textContent = slot === undefined ? "" : slot === null ? "–" : score(slot);
+          if (slot === undefined) one.classList.add("is-empty");
+          slots.append(one);
+        }
+        section.append(slots);
+      }
+      if (leg.kept !== null) {
+        section.append(span("found", leg.kept.count > 0 ? `kept, P≥4 ${score(leg.kept.p4)}` : "none kept", "walk-stack-kept"));
+      }
+      return section;
+    }
+
+    function render() {
+      const head = document.createElement("p");
+      head.className = "walk-stack-head";
+      head.append(span("root", model.plane, "walk-stack-plane"), " ", span("root", ROOTS[model.root], "walk-stack-dim"));
+      const legs = document.createElement("div");
+      legs.className = "walk-stack-legs";
+      model.legs.forEach((leg, index) => legs.append(legOf(leg, index === model.legs.length - 1)));
+      const body = document.createElement("div");
+      body.className = "walk-stack-body";
+      body.append(head, legs);
+      host.stack.replaceChildren(summary(), body);
+    }
+
+    return {
+      begin(plane) {
+        model = { plane, root: "searching", legs: [] };
+        render();
+      },
+      root(state) {
+        model.root = state;
+        render();
+      },
+      leg(label, p3) {
+        model.legs.push({ label, rungs: [p3], best: 0, done: null, slots: null, kept: null });
+        render();
+      },
+      rung(p3, best) {
+        current().rungs.push(p3);
+        current().best = best;
+        render();
+      },
+      verdict(stop, over) {
+        current().done = { stop, over };
+        render();
+      },
+      mining(count) {
+        current().slots = new Array(count).fill(undefined);
+        render();
+      },
+      recipe(index, p4) {
+        current().slots[index] = p4;
+        render();
+      },
+      kept(count, p4 = null) {
+        current().kept = { count, p4 };
+        render();
+      },
+    };
+  })();
 
   // ----------------------------------------------------------------- the downloads
 
@@ -365,7 +517,7 @@ export function mount(host) {
       (on) => {
         config.julia = on;
       },
-      "Also walk the Julia set whose c is the root: from its home view, by the same rung rule.",
+      "Also walk the Julia set whose c is the best place the descent found: from its home view, by the same rung rule.",
     );
 
     const modes = group("Modes", "Each recipe draws one of these.");
@@ -414,6 +566,16 @@ export function mount(host) {
         config.rungs = v;
       },
       "Each rung halves the width. Twenty take a root at 0.001 to about 1e-9.",
+    );
+    number(
+      depth,
+      "peak counts from P≥3",
+      config.patience,
+      { min: 0, max: 1, step: 0.01 },
+      (v) => {
+        config.patience = v;
+      },
+      "A descent can stop on a peak only once its best rung has scored this. Until then it keeps going down, to the cap or as deep as the arithmetic can draw. After that it stops once the score has stayed under the best for two rungs running, or three once the best is over 0.5.",
     );
 
     const mining = group("At a place");
@@ -770,21 +932,28 @@ export function mount(host) {
    * behind it, its quarters boxed inside. Each quarter carries the picture it was judged on,
    * which is the next rung's parent picture.
    *
-   * `constants` is a Julia twin's `c`.
+   * `constants` is a Julia twin's `c`. Where `alone` is set and no quarter straddles, every
+   * quarter is weighed instead, and only the screen can refuse one: the judge alone chooses.
+   * That is how a dust Julia set is descended, since it has no interior to straddle at any
+   * depth. The returned list records which rule it used, as `ranked.alone`.
    */
-  async function weigh(family, parent, { rung, constants = null, layers }) {
+  async function weigh(family, parent, { rung, constants = null, layers, alone = false }) {
     await going();
     const shares = await straddles(family, parent, { maxiter: null, constants });
     if (shares === null) return [];
     const children = [];
-    for (const a of [0, 1]) {
-      for (const b of [0, 1]) {
-        const share = shares[a][b];
-        if (share <= 0 || share >= 1) continue;
-        const child = quarterOf(parent, a, b);
-        children.push({ cell: child, frame: jittered(child), where: QUARTER[a][b], state: "weighing", label: "" });
+    const quarters = (take) => {
+      for (const a of [0, 1]) {
+        for (const b of [0, 1]) {
+          if (!take(shares[a][b])) continue;
+          const child = quarterOf(parent, a, b);
+          children.push({ cell: child, frame: jittered(child), where: QUARTER[a][b], state: "weighing", label: "" });
+        }
       }
-    }
+    };
+    quarters((share) => share > 0 && share < 1);
+    const judgedAlone = children.length === 0 && alone;
+    if (judgedAlone) quarters(() => true);
     if (children.length === 0) return [];
     display({
       view: viewAt(family, parent, { constants }),
@@ -822,7 +991,8 @@ export function mount(host) {
       family,
       rung,
       w: parent.w / 2,
-      straddling: children.length,
+      straddling: judgedAlone ? 0 : children.length,
+      alone: judgedAlone,
       refused: children.length - standing.length,
       p3: ranked.map((child) => Number(child.read.p3.toFixed(4))),
     });
@@ -830,6 +1000,7 @@ export function mount(host) {
     // is the one the viewer dwells on.
     if (ranked.length > 0) ranked[0].state = "chosen";
     if (standing.length > 0) relabel(cellsOf(children), DWELL_MS);
+    ranked.alone = judgedAlone;
     return ranked;
   }
 
@@ -902,12 +1073,16 @@ export function mount(host) {
   /**
    * Stage two: from a root, keep descending by the same rung rule — the root's frame split
    * into quarters, the straddling ones screened and judged, the best one gone into — until
-   * the judge has scored below its best for `PEAK_PATIENCE` rungs running, `f64` stops
-   * resolving the mining grid, or the rung cap. Returns the best frame seen, which is where
-   * the place is mined, with why the descent stopped and how many rungs it went down.
+   * the judge has peaked (`patienceOf`, once the best has cleared the patience floor), `f64`
+   * stops resolving the mining grid, or the rung cap. Returns the best frame seen, which is
+   * where the place is mined, with why the descent stopped and how many rungs it went down.
    *
    * This is the part the viewer follows, rung by rung, on the pictures it judges: `rootImage`
    * is the root's, and each rung's parent is shown over the one before it, dimmed.
+   *
+   * If a Julia twin's home frame has no straddling quarter, its `c` is outside the set and
+   * its Julia set is dust. From then on it is descended on the judge alone (`weigh`'s
+   * `alone`).
    */
   async function deepen(family, root, { read: rootRead, image: rootImage }, constants = null) {
     let best = { frame: root, read: rootRead, rung: 0 };
@@ -917,6 +1092,7 @@ export function mount(host) {
     let previous = rootRead.p3;
     let behind = 0;
     let stop = "cap";
+    let alone = false;
     for (let rung = 1; rung <= config.rungs; rung++) {
       const grid = { width: JUDGED.width * MINING_SUPERSAMPLE, height: JUDGED.height * MINING_SUPERSAMPLE };
       if (!renderer.resolves(frame.x, frame.y, frame.w / 2, grid.width, grid.height)) {
@@ -924,10 +1100,15 @@ export function mount(host) {
         break;
       }
       const parent = frame;
-      const ranked = await weigh(family, parent, { rung, constants, layers });
+      const twinHome = constants !== null && rung === 1;
+      const ranked = await weigh(family, parent, { rung, constants, layers, alone: alone || twinHome });
       if (ranked.length === 0) {
         stop = "dead end";
         break;
+      }
+      if (ranked.alone && !alone) {
+        alone = true;
+        log("rung", "No part of this one is inside the set, so the judge chooses among all four quarters.");
       }
       const top = ranked[0];
       const arrow = top.read.p3 > previous ? "↑" : "↓";
@@ -939,7 +1120,11 @@ export function mount(host) {
       if (top.read.p3 > best.read.p3) {
         best = { frame: top.frame, read: top.read, rung };
         behind = 0;
-      } else if (++behind >= PEAK_PATIENCE) {
+      } else {
+        behind += 1;
+      }
+      stack.rung(top.read.p3, best.rung);
+      if (best.read.p3 >= config.patience && behind >= patienceOf(best.read.p3)) {
         stop = "peak";
         break;
       }
@@ -955,6 +1140,7 @@ export function mount(host) {
       best_rung: best.rung,
       best_w: best.frame.w,
       best_p3: best.read.p3,
+      alone,
     });
     return { ...best, stop, depth };
   }
@@ -978,7 +1164,7 @@ export function mount(host) {
     return names.length > 0 ? names : [...palettes.keys()];
   }
 
-  /** The Julia twin of a root: its centre as `c`, at the Julia family's home frame. */
+  /** The Julia twin of a place: its centre as `c`, at the Julia family's home frame. */
   function twinOf(root) {
     const julia = juliaOf[root.family];
     const constants = { cx: link.coordinateOf(root.frame.x), cy: link.coordinateOf(root.frame.y) };
@@ -1001,8 +1187,10 @@ export function mount(host) {
   async function mine(place) {
     if (config.modes.size === 0) {
       log("verdict", "No modes are ticked, so there is nothing to paint this spot in.");
+      stack.kept(0);
       return;
     }
+    stack.mining(config.recipes);
     // A pause mid-download stops it, and the walk asks again when it is started again.
     while (scorer !== null && scorer.fineSession === null && !fineless) {
       const { signal, shown, done } = downloading("the fine judge");
@@ -1047,7 +1235,10 @@ export function mount(host) {
       };
       log("mining", `Painting it in ${mode}, ${shownName(palette)}…`);
       const drawn = await picture(view, MINING_SUPERSAMPLE);
-      if (drawn === null) continue;
+      if (drawn === null) {
+        stack.recipe(index, null);
+        continue;
+      }
       // The recipe as the walk drew it, at its own framing, held long enough to be seen.
       display(
         { view: drawn.view, frame: place.frame, layers: [{ frame: place.frame, image: drawn.image }], cells: [], widened: false },
@@ -1061,12 +1252,14 @@ export function mount(host) {
         timed("fine", started);
       }
       const rank = fine ?? read.p4;
+      stack.recipe(index, read.p4);
       tried.push({ view: drawn.view, image: drawn.image, read, fine, rank });
       (walks.at(-1).recipes ??= []).push({ family: place.family, w: place.frame.w, mode, palette, p4: read.p4, fine });
     }
     tried.sort((x, y) => y.rank - x.rank);
     const kept = tried.slice(0, config.keep);
     for (const one of kept) await keep(one);
+    stack.kept(kept.length, kept[0]?.read.p4);
     if (kept.length === 1) log("found", `Kept one (score ${rankNumber(kept[0])}).`);
     if (kept.length > 1) log("found", `Kept ${kept.length} (scores ${kept.map(rankNumber).join(", ")}).`);
   }
@@ -1161,20 +1354,29 @@ export function mount(host) {
       const started = performance.now();
       const family = pick(planes);
       phase = "root";
+      stack.begin(planeName(family));
       const root = await descend(family);
-      if (root === null) continue;
+      if (root === null) {
+        stack.root("gave out");
+        continue;
+      }
+      stack.root("found");
       const row = walks.at(-1);
       row.root_ms = Math.round(performance.now() - started);
-      // The twin takes its `c` at the root, before the parent descends any further.
-      const roots = [{ ...root, constants: null }];
-      if (config.julia && juliaOf[family] !== undefined) roots.push(twinOf(root));
-      for (const [index, one] of roots.entries()) {
+      // The twin is walked after the parent, and takes its `c` at the parent's best frame
+      // *(walk_tune_ckpt131)*. A root-band `c` sits outside the set nearly every time, so a
+      // twin taken there is dust and every one dead-ended at its first rung.
+      const legs = [{ ...root, constants: null }];
+      const twin = config.julia && juliaOf[family] !== undefined;
+      for (let index = 0; index < legs.length; index++) {
+        const one = legs[index];
         const leg = performance.now();
         phase = "root";
         await going();
         const judged = await judgePlace(one);
         if (judged === null) continue;
         log("root", index === 0 ? "Found one. Now the judge takes over." : "Now its Julia twin, the Julia set for this spot.");
+        stack.leg(index === 0 ? "Descent" : "Julia twin", judged.read.p3);
         display({
           view: viewAt(one.family, one.frame, { constants: one.constants }),
           frame: one.frame,
@@ -1185,20 +1387,25 @@ export function mount(host) {
         phase = "deep";
         const best = await deepen(one.family, one.frame, judged, one.constants);
         const place = { family: one.family, frame: best.frame, constants: one.constants };
+        if (index === 0 && twin) legs.push(twinOf(place));
         const read = best.read;
         (row.places ??= []).push({
           family: one.family,
+          twin: index > 0,
           root_w: one.frame.w,
           w: best.frame.w,
           rung: best.rung,
           stop: best.stop,
+          alone: row.deep?.at(-1)?.alone ?? false,
           p3: read.p3,
           mined: read.p3 >= config.bar,
           deep_ms: Math.round(performance.now() - leg),
         });
-        const next = index + 1 < roots.length ? "trying its Julia twin" : "starting over";
-        log("verdict", verdict(best, read.p3 >= config.bar, next));
-        if (read.p3 < config.bar) continue;
+        const over = read.p3 >= config.bar;
+        const next = index + 1 < legs.length ? "trying its Julia twin" : "starting over";
+        log("verdict", verdict(best, over, next));
+        stack.verdict(best.stop, over);
+        if (!over) continue;
         log("mining", `Trying ${config.recipes} ${config.recipes === 1 ? "way" : "ways"} of painting this spot…`);
         phase = "mine";
         const mining = performance.now();

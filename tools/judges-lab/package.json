@@ -1,0 +1,19 @@
+{
+  "name": "fractal-judges-lab",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "jpeg-js": "^0.4.4",
+    "onnxruntime-node": "^1.30.0",
+    "onnxruntime-web": "^1.30.0",
+    "puppeteer-core": "^25.11.0"
+  }
+}

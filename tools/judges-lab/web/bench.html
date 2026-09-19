@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>judges bench</title>
+</head>
+<body>
+<pre id="log"></pre>
+<script type="module">
+// One configuration per page load: ?set=render|fine3|fused &variant=fp32|fp16|fp16w
+// &ep=webgpu|wasm &threads=N &prep=pil|js. Result lands on window.__result.
+import * as ort from "../node_modules/onnxruntime-web/dist/ort.all.min.mjs";
+import { runConfig, WIDTH, HEIGHT } from "./core.mjs";
+import { resizeBicubic } from "./resize.mjs";
+
+const q = new URLSearchParams(location.search);
+const log = (s) => (document.getElementById("log").textContent += s + "\n");
+
+async function bytesOf(url) {
+  const r = await fetch(url, { cache: "no-store" });
+  if (!r.ok) throw new Error(`${url}: ${r.status}`);
+  return new Uint8Array(await r.arrayBuffer());
+}
+
+// Decode every sample the way a page would: the browser's own JPEG decoder, then the
+// PIL-bicubic port. Compared byte for byte with the PIL-prepared inputs.
+async function jsPrep(reference) {
+  const rows = (await (await fetch("../samples.jsonl")).text()).trim().split("\n").map(JSON.parse);
+  const plane = WIDTH * HEIGHT * 3;
+  const out = new Uint8Array(rows.length * plane);
+  let decodeMs = 0, resizeMs = 0, differing = 0, maxDiff = 0, sumDiff = 0;
+  for (let i = 0; i < rows.length; i++) {
+    const blob = await (await fetch("../" + rows[i].file)).blob();
+    let t = performance.now();
+    const bmp = await createImageBitmap(blob, { colorSpaceConversion: "none", premultiplyAlpha: "none" });
+    const canvas = new OffscreenCanvas(bmp.width, bmp.height);
+    const ctx = canvas.getContext("2d", { willReadFrequently: true });
+    ctx.drawImage(bmp, 0, 0);
+    const rgba = ctx.getImageData(0, 0, bmp.width, bmp.height).data;
+    decodeMs += performance.now() - t;
+    t = performance.now();
+    const px = resizeBicubic(rgba, bmp.width, bmp.height, 4, WIDTH, HEIGHT);
+    resizeMs += performance.now() - t;
+    out.set(px, i * plane);
+    for (let j = 0; j < plane; j++) {
+      const d = Math.abs(px[j] - reference[i * plane + j]);
+      if (d) { differing++; sumDiff += d; if (d > maxDiff) maxDiff = d; }
+    }
+  }
+  return {
+    pixels: out,
+    prep: {
+      decode_ms_per_image: decodeMs / rows.length,
+      resize_ms_per_image: resizeMs / rows.length,
+      differing_bytes: differing,
+      differing_fraction: differing / out.length,
+      max_byte_diff: maxDiff,
+      mean_byte_diff_over_all: sumDiff / out.length,
+    },
+  };
+}
+
+try {
+  const ep = q.get("ep");
+  const threads = Number(q.get("threads") || 0);
+  ort.env.wasm.wasmPaths = new URL("../node_modules/onnxruntime-web/dist/", location.href).href;
+  if (threads) ort.env.wasm.numThreads = threads;
+  const reference = await bytesOf("../artifacts/inputs.u8");
+  let pixels = reference, prep = null;
+  if (q.get("prep") === "js") ({ pixels, prep } = await jsPrep(reference));
+  let gpu = null;
+  if (ep === "webgpu") {
+    const adapter = await navigator.gpu?.requestAdapter();
+    if (!adapter) throw new Error("no WebGPU adapter");
+    const info = adapter.info || {};
+    gpu = { vendor: info.vendor, architecture: info.architecture, description: info.description,
+            shader_f16: adapter.features.has("shader-f16") };
+  }
+  const result = await runConfig(ort, {
+    set: q.get("set"), variant: q.get("variant"), ep,
+    loadBytes: (f) => bytesOf("../models/" + f),
+    pixels, count: pixels.length / (WIDTH * HEIGHT * 3),
+  });
+  Object.assign(result, {
+    runtime: "onnxruntime-web", ua: navigator.userAgent, gpu, prep,
+    crossOriginIsolated, threads: ort.env.wasm.numThreads, hardwareConcurrency: navigator.hardwareConcurrency,
+  });
+  window.__result = result;
+  log(JSON.stringify({ ...result, probs: `[${result.probs.length}]` }, null, 1));
+} catch (e) {
+  window.__result = { error: String(e?.message ?? e).slice(0, 400) };
+  log("ERROR " + window.__result.error);
+}
+</script>
+</body>
+</html>

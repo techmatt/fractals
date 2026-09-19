@@ -13,6 +13,16 @@ local.toml
 # artifact; this is the several hundred megabytes cargo needs to produce it.
 explorer/engine-wasm/target/
 
+# The judges lab's working state (walk_tune_ckpt131). Its scripts, measurements and
+# report are tracked under tools/judges-lab/; what they read and write is not: the weights
+# copied from the wallpapers release, the ONNX exports, the sample pictures, and the npm
+# packages the ORT runtime is placed from. Its large inputs are under its own `artifacts/`,
+# which the line at the top already covers, and its torch venv is `.venv/` below.
+tools/judges-lab/weights/
+tools/judges-lab/models/
+tools/judges-lab/samples/
+node_modules/
+
 # Builder output that is regenerated rather than reviewed.
 builder/__pycache__/
 __pycache__/

@@ -1,0 +1,2282 @@
+[
+ {
+  "key": "ffd0e3bae900e1f2",
+  "stratum": "near_q4",
+  "mode": "smooth_angle_min",
+  "partition": "julia:mandelbrot",
+  "file": "samples/ffd0e3bae900e1f2.jpg",
+  "source": "artifacts/curation/depth/ame_a2_deep/pictures/ffd0e3bae900e1f2.jpg",
+  "recorded_p_ge3": 0.7397535806319244,
+  "recorded_p_ge4": 0.31985484653984,
+  "recorded_p_fine": null,
+  "p_ge3": 0.7397527848100941,
+  "p_ge4": 0.31985376657598846,
+  "p_fine": 0.09510166355062004,
+  "p_fine_members": [
+   0.25932403822116085,
+   0.008002021651431948,
+   0.01797893077926733
+  ]
+ },
+ {
+  "key": "30525ace43d844f0",
+  "stratum": "near_q4",
+  "mode": "tia",
+  "partition": "julia:mandelbrot",
+  "file": "samples/30525ace43d844f0.jpg",
+  "source": "artifacts/curation/depth/thin_a/pictures/30525ace43d844f0.jpg",
+  "recorded_p_ge3": 0.8178168530375328,
+  "recorded_p_ge4": 0.40986649069928555,
+  "recorded_p_fine": null,
+  "p_ge3": 0.8178162924948302,
+  "p_ge4": 0.4098657040379242,
+  "p_fine": 0.06366265977880359,
+  "p_fine_members": [
+   0.03398620804068206,
+   0.1548281042652245,
+   0.002173667030504196
+  ]
+ },
+ {
+  "key": "1f76836a1e6fc435",
+  "stratum": "near_q4",
+  "mode": "tia",
+  "partition": "julia:multibrot6",
+  "file": "samples/1f76836a1e6fc435.jpg",
+  "source": "artifacts/curation/depth/d6o_c3_deep/pictures/1f76836a1e6fc435.jpg",
+  "recorded_p_ge3": 0.7393739898457161,
+  "recorded_p_ge4": 0.5353724377238726,
+  "recorded_p_fine": 0.0016178799971705068,
+  "p_ge3": 0.7393739917321965,
+  "p_ge4": 0.5353735132388807,
+  "p_fine": 0.0016247496424687605,
+  "p_fine_members": [
+   0.0002988642155842227,
+   0.004381019298205707,
+   0.0001943654136163518
+  ]
+ },
+ {
+  "key": "c8eda3bae9894801",
+  "stratum": "near_q4",
+  "mode": "stripe",
+  "partition": "mandelbrot",
+  "file": "samples/c8eda3bae9894801.jpg",
+  "source": "artifacts/curation/depth/on125_wide1/pictures/c8eda3bae9894801.jpg",
+  "recorded_p_ge3": 0.6151589618316876,
+  "recorded_p_ge4": 0.4055952797784573,
+  "recorded_p_fine": null,
+  "p_ge3": 0.6151596415823398,
+  "p_ge4": 0.40559608209751985,
+  "p_fine": 9.340743051740143e-06,
+  "p_fine_members": [
+   1.2044465988607127e-05,
+   1.5915640472333578e-05,
+   6.212269427972555e-08
+  ]
+ },
+ {
+  "key": "0346e7725ab8504d",
+  "stratum": "near_q4",
+  "mode": "smooth",
+  "partition": "julia:mandelbrot",
+  "file": "samples/0346e7725ab8504d.jpg",
+  "source": "artifacts/curation/rotation/ckpt120/pictures/0346e7725ab8504d.jpg",
+  "recorded_p_ge3": 0.7687783927391665,
+  "recorded_p_ge4": 0.4560568937726969,
+  "recorded_p_fine": null,
+  "p_ge3": 0.7687781835712416,
+  "p_ge4": 0.45605692449400936,
+  "p_fine": 0.1193051945333569,
+  "p_fine_members": [
+   0.14888565104449958,
+   0.0002005503115755227,
+   0.20882938224399558
+  ]
+ },
+ {
+  "key": "7184333d439d0b3f",
+  "stratum": "near_q4",
+  "mode": "smooth",
+  "partition": "julia:multibrot5",
+  "file": "samples/7184333d439d0b3f.jpg",
+  "source": "artifacts/curation/depth/armB_freeslots_0906/pictures/7184333d439d0b3f.jpg",
+  "recorded_p_ge3": 0.9561679381766939,
+  "recorded_p_ge4": 0.6705686782313167,
+  "recorded_p_fine": 0.0011189439814032357,
+  "p_ge3": 0.95616786786435,
+  "p_ge4": 0.6705687960582887,
+  "p_fine": 0.0011041041414627624,
+  "p_fine_members": [
+   0.0003778008488089045,
+   0.002494216098035832,
+   0.0004402954775435505
+  ]
+ },
+ {
+  "key": "62457aa94fc2414d",
+  "stratum": "near_q4",
+  "mode": "smooth",
+  "partition": "julia:multibrot5",
+  "file": "samples/62457aa94fc2414d.jpg",
+  "source": "artifacts/curation/depth/smooth500_leg/pictures/62457aa94fc2414d.jpg",
+  "recorded_p_ge3": 0.9793682021626897,
+  "recorded_p_ge4": 0.5388360402017404,
+  "recorded_p_fine": 0.006565581460327062,
+  "p_ge3": 0.979368102997005,
+  "p_ge4": 0.5388347360031275,
+  "p_fine": 0.006549708773010925,
+  "p_fine_members": [
+   0.006497841859381544,
+   0.005999444255761774,
+   0.007151840203889455
+  ]
+ },
+ {
+  "key": "8f90a05712570e9e",
+  "stratum": "near_q4",
+  "mode": "smooth_curvature",
+  "partition": "multibrot4",
+  "file": "samples/8f90a05712570e9e.jpg",
+  "source": "artifacts/curation/mine/mine1/pictures/8f90a05712570e9e.jpg",
+  "recorded_p_ge3": 0.9633969915943696,
+  "recorded_p_ge4": 0.6902446625362111,
+  "recorded_p_fine": 0.0010985087942328913,
+  "p_ge3": 0.9633969772374436,
+  "p_ge4": 0.6902453754760568,
+  "p_fine": 0.0011040457714177763,
+  "p_fine_members": [
+   0.0008437711573724404,
+   0.002048517458127435,
+   0.00041984869875345365
+  ]
+ },
+ {
+  "key": "e5613554bd88ddf0",
+  "stratum": "near_q4",
+  "mode": "smooth",
+  "partition": "julia:multibrot3",
+  "file": "samples/e5613554bd88ddf0.jpg",
+  "source": "artifacts/curation/depth/armB_freeslots_0906/pictures/e5613554bd88ddf0.jpg",
+  "recorded_p_ge3": 0.9550141562074226,
+  "recorded_p_ge4": 0.5072924983260333,
+  "recorded_p_fine": 0.0025801659885753728,
+  "p_ge3": 0.9550140891982639,
+  "p_ge4": 0.5072918673626591,
+  "p_fine": 0.0025852567109200977,
+  "p_fine_members": [
+   1.1372264195891263e-07,
+   0.007754303659381487,
+   1.3527507368471522e-06
+  ]
+ },
+ {
+  "key": "37fca409c1cc42a1",
+  "stratum": "near_q4",
+  "mode": "tia",
+  "partition": "julia:multibrot5",
+  "file": "samples/37fca409c1cc42a1.jpg",
+  "source": "artifacts/curation/depth/sheet_pilot/pictures/37fca409c1cc42a1.jpg",
+  "recorded_p_ge3": 0.8989423244230027,
+  "recorded_p_ge4": 0.36758399456698604,
+  "recorded_p_fine": null,
+  "p_ge3": 0.898942078567474,
+  "p_ge4": 0.3675831752729107,
+  "p_fine": 0.0007386454578790311,
+  "p_fine_members": [
+   2.9360328713422323e-05,
+   0.0003737456901867856,
+   0.0018128303547368856
+  ]
+ },
+ {
+  "key": "cf2642eea0fac7de",
+  "stratum": "near_q4",
+  "mode": "direct_trap_multiply",
+  "partition": "multibrot4",
+  "file": "samples/cf2642eea0fac7de.jpg",
+  "source": "artifacts/curation/depth/armF_0908/pictures/cf2642eea0fac7de.jpg",
+  "recorded_p_ge3": 0.9895068288701194,
+  "recorded_p_ge4": 0.6879508789162448,
+  "recorded_p_fine": 5.216152949577582e-05,
+  "p_ge3": 0.9895068090563924,
+  "p_ge4": 0.6879501278498116,
+  "p_fine": 5.188804307706526e-05,
+  "p_fine_members": [
+   4.4695272272442664e-06,
+   8.541900174409161e-05,
+   6.57756002598599e-05
+  ]
+ },
+ {
+  "key": "415a649886b08045",
+  "stratum": "near_q4",
+  "mode": "smooth_angle_min",
+  "partition": "julia:multibrot4",
+  "file": "samples/415a649886b08045.jpg",
+  "source": "artifacts/curation/depth/empty_modes/pictures/415a649886b08045.jpg",
+  "recorded_p_ge3": 0.8437634967518131,
+  "recorded_p_ge4": 0.3286010421504644,
+  "recorded_p_fine": null,
+  "p_ge3": 0.8437627437222809,
+  "p_ge4": 0.32860049178047973,
+  "p_fine": 0.004636808294285797,
+  "p_fine_members": [
+   0.0031438740262411616,
+   0.00938590195771869,
+   0.00138064889889754
+  ]
+ },
+ {
+  "key": "0297d7991b14d569",
+  "stratum": "near_q4",
+  "mode": "smooth",
+  "partition": "multibrot4",
+  "file": "samples/0297d7991b14d569.jpg",
+  "source": "artifacts/curation/depth/armA_places_0906/pictures/0297d7991b14d569.jpg",
+  "recorded_p_ge3": 0.6764475567395251,
+  "recorded_p_ge4": 0.47944215987589556,
+  "recorded_p_fine": null,
+  "p_ge3": 0.676446923452144,
+  "p_ge4": 0.47944114508570973,
+  "p_fine": 0.0005368706235141434,
+  "p_fine_members": [
+   1.492733900393801e-05,
+   0.001402305660654663,
+   0.00019337887088382894
+  ]
+ },
+ {
+  "key": "1b20abc493491baa",
+  "stratum": "near_q4",
+  "mode": "threads",
+  "partition": "julia:multibrot5",
+  "file": "samples/1b20abc493491baa.jpg",
+  "source": "artifacts/curation/depth/a129_graded_deep/pictures/1b20abc493491baa.jpg",
+  "recorded_p_ge3": 0.9920735993092399,
+  "recorded_p_ge4": 0.32827030963733894,
+  "recorded_p_fine": null,
+  "p_ge3": 0.9920735915650711,
+  "p_ge4": 0.3282718650290803,
+  "p_fine": 0.002167750576109635,
+  "p_fine_members": [
+   0.0004929253153576554,
+   0.004128475183820544,
+   0.001881851229150704
+  ]
+ },
+ {
+  "key": "3c9ba7fa1c177d72",
+  "stratum": "near_q4",
+  "mode": "smooth",
+  "partition": "julia:mandelbrot",
+  "file": "samples/3c9ba7fa1c177d72.jpg",
+  "source": "artifacts/curation/depth/smooth500_leg/pictures/3c9ba7fa1c177d72.jpg",
+  "recorded_p_ge3": 0.8304401129057916,
+  "recorded_p_ge4": 0.5154182783739861,
+  "recorded_p_fine": 0.028125724162904372,
+  "p_ge3": 0.8304393177404334,
+  "p_ge4": 0.5154165611872367,
+  "p_fine": 0.028123813162055252,
+  "p_fine_members": [
+   0.0016614995143305075,
+   0.05667058962321503,
+   0.026039350348620222
+  ]
+ },
+ {
+  "key": "9b5261f3847347c4",
+  "stratum": "near_q4",
+  "mode": "threads",
+  "partition": "julia:multibrot3",
+  "file": "samples/9b5261f3847347c4.jpg",
+  "source": "artifacts/curation/depth/on125_threads/pictures/9b5261f3847347c4.jpg",
+  "recorded_p_ge3": 0.9865282141551279,
+  "recorded_p_ge4": 0.45032875594898925,
+  "recorded_p_fine": null,
+  "p_ge3": 0.9865282143769234,
+  "p_ge4": 0.4503281797833067,
+  "p_fine": 0.036914695272762914,
+  "p_fine_members": [
+   0.07083148380920187,
+   0.03116744501963546,
+   0.008745156989451408
+  ]
+ },
+ {
+  "key": "e5f167828ca47fdb",
+  "stratum": "near_q4",
+  "mode": "tia",
+  "partition": "julia:multibrot3",
+  "file": "samples/e5f167828ca47fdb.jpg",
+  "source": "artifacts/curation/depth/armB2_0907/pictures/e5f167828ca47fdb.jpg",
+  "recorded_p_ge3": 0.9317758278497353,
+  "recorded_p_ge4": 0.321405460784011,
+  "recorded_p_fine": null,
+  "p_ge3": 0.9317760648724519,
+  "p_ge4": 0.32140586882114514,
+  "p_fine": 0.000765602217258893,
+  "p_fine_members": [
+   3.670820724360111e-05,
+   0.0022509485385702136,
+   9.149905962864388e-06
+  ]
+ },
+ {
+  "key": "425fd43fc3d70629",
+  "stratum": "near_q4",
+  "mode": "tia",
+  "partition": "julia:multibrot3",
+  "file": "samples/425fd43fc3d70629.jpg",
+  "source": "artifacts/curation/depth/night_b/pictures/425fd43fc3d70629.jpg",
+  "recorded_p_ge3": 0.9941061464525843,
+  "recorded_p_ge4": 0.6606043897561377,
+  "recorded_p_fine": 0.026569012318497908,
+  "p_ge3": 0.9941061410543919,
+  "p_ge4": 0.6606049938064135,
+  "p_fine": 0.026219134816750093,
+  "p_fine_members": [
+   0.016306452647178674,
+   0.05742160806290204,
+   0.0049293437401695655
+  ]
+ },
+ {
+  "key": "82116655c6b71e74",
+  "stratum": "near_q4",
+  "mode": "smooth",
+  "partition": "mandelbrot",
+  "file": "samples/82116655c6b71e74.jpg",
+  "source": "artifacts/curation/remode/smooth_twins/pictures/82116655c6b71e74.jpg",
+  "recorded_p_ge3": 0.9561112352559757,
+  "recorded_p_ge4": 0.6708811163316707,
+  "recorded_p_fine": 0.0001040930075888776,
+  "p_ge3": 0.9561110543424699,
+  "p_ge4": 0.6708797606762479,
+  "p_fine": 0.00010458273832336647,
+  "p_fine_members": [
+   5.651735291035062e-05,
+   6.96002307460219e-05,
+   0.00018763063131372687
+  ]
+ },
+ {
+  "key": "2ba514224e2ca247",
+  "stratum": "near_q4",
+  "mode": "smooth_angle_min",
+  "partition": "julia:mandelbrot",
+  "file": "samples/2ba514224e2ca247.jpg",
+  "source": "artifacts/curation/depth/armB1_0909/pictures/2ba514224e2ca247.jpg",
+  "recorded_p_ge3": 0.8452564976278918,
+  "recorded_p_ge4": 0.5993746188698025,
+  "recorded_p_fine": 0.15933082615434113,
+  "p_ge3": 0.8452556415485631,
+  "p_ge4": 0.5993733674911327,
+  "p_fine": 0.15866042409131068,
+  "p_fine_members": [
+   0.0691754458001661,
+   0.28320616223805195,
+   0.12359966423571397
+  ]
+ },
+ {
+  "key": "31c4e1872b9c2111",
+  "stratum": "near_q4",
+  "mode": "tia",
+  "partition": "julia:multibrot4",
+  "file": "samples/31c4e1872b9c2111.jpg",
+  "source": "artifacts/curation/depth/thin2_a_tia/pictures/31c4e1872b9c2111.jpg",
+  "recorded_p_ge3": 0.9952813440438759,
+  "recorded_p_ge4": 0.3194557120981146,
+  "recorded_p_fine": null,
+  "p_ge3": 0.9952813533133182,
+  "p_ge4": 0.3194551591078613,
+  "p_fine": 0.0012789604931715617,
+  "p_fine_members": [
+   5.29146209611365e-06,
+   0.0020039111845186787,
+   0.0018276788328998928
+  ]
+ },
+ {
+  "key": "e134563a75735cf4",
+  "stratum": "near_q4",
+  "mode": "smooth",
+  "partition": "julia:multibrot5",
+  "file": "samples/e134563a75735cf4.jpg",
+  "source": "artifacts/curation/depth/sheet_leg_0905/pictures/e134563a75735cf4.jpg",
+  "recorded_p_ge3": 0.989683822972926,
+  "recorded_p_ge4": 0.3358268558167598,
+  "recorded_p_fine": null,
+  "p_ge3": 0.9896838025645848,
+  "p_ge4": 0.3358252751687332,
+  "p_fine": 0.0005390574896439545,
+  "p_fine_members": [
+   0.000469405236034358,
+   0.0006034554756755877,
+   0.0005443117572219178
+  ]
+ },
+ {
+  "key": "41e047d2ea71957d",
+  "stratum": "near_q4",
+  "mode": "smooth",
+  "partition": "julia:multibrot4",
+  "file": "samples/41e047d2ea71957d.jpg",
+  "source": "artifacts/curation/depth/rare_b/pictures/41e047d2ea71957d.jpg",
+  "recorded_p_ge3": 0.9818831901798118,
+  "recorded_p_ge4": 0.67487651464939,
+  "recorded_p_fine": 8.159451858423651e-05,
+  "p_ge3": 0.9818830358206935,
+  "p_ge4": 0.6748758048363654,
+  "p_fine": 8.047282234141069e-05,
+  "p_fine_members": [
+   1.0111887869789428e-05,
+   0.00021907134011281545,
+   1.223523904162722e-05
+  ]
+ },
+ {
+  "key": "4c513c93b087ebe5",
+  "stratum": "near_q4",
+  "mode": "tia",
+  "partition": "julia:multibrot5",
+  "file": "samples/4c513c93b087ebe5.jpg",
+  "source": "artifacts/curation/depth/armB_freeslots_0906/pictures/4c513c93b087ebe5.jpg",
+  "recorded_p_ge3": 0.5919930190126683,
+  "recorded_p_ge4": 0.46824300439240457,
+  "recorded_p_fine": null,
+  "p_ge3": 0.5919912630581664,
+  "p_ge4": 0.4682408570587217,
+  "p_fine": 0.009132670248649846,
+  "p_fine_members": [
+   0.0037747049087598875,
+   0.0004918302794334525,
+   0.023131475557756197
+  ]
+ },
+ {
+  "key": "c4fe985ef20b8684",
+  "stratum": "near_q4",
+  "mode": "smooth",
+  "partition": "julia:multibrot6",
+  "file": "samples/c4fe985ef20b8684.jpg",
+  "source": "artifacts/curation/hunt/d6s_open_b/pictures/c4fe985ef20b8684.jpg",
+  "recorded_p_ge3": 0.9938063081625302,
+  "recorded_p_ge4": 0.4983495580485652,
+  "recorded_p_fine": null,
+  "p_ge3": 0.9938062621899149,
+  "p_ge4": 0.4983501162384631,
+  "p_fine": 0.0002857287873734456,
+  "p_fine_members": [
+   4.398475992217603e-05,
+   0.0005463884497494373,
+   0.00026681315244872337
+  ]
+ },
+ {
+  "key": "716209b7971fe559",
+  "stratum": "near_q4",
+  "mode": "tia",
+  "partition": "julia:multibrot5",
+  "file": "samples/716209b7971fe559.jpg",
+  "source": "artifacts/curation/depth/on125_recolour1/pictures/716209b7971fe559.jpg",
+  "recorded_p_ge3": 0.7596887070983187,
+  "recorded_p_ge4": 0.4347283558522572,
+  "recorded_p_fine": null,
+  "p_ge3": 0.759688808632708,
+  "p_ge4": 0.43472799276634433,
+  "p_fine": 0.004183352198386699,
+  "p_fine_members": [
+   0.0009095360291712375,
+   0.0013578477165890994,
+   0.01028267284939976
+  ]
+ },
+ {
+  "key": "1b248a2a5bc9d623",
+  "stratum": "near_q4",
+  "mode": "stripe",
+  "partition": "julia:multibrot4",
+  "file": "samples/1b248a2a5bc9d623.jpg",
+  "source": "artifacts/curation/depth/thin2_a_stripe/pictures/1b248a2a5bc9d623.jpg",
+  "recorded_p_ge3": 0.5664160857717936,
+  "recorded_p_ge4": 0.3433018853155747,
+  "recorded_p_fine": null,
+  "p_ge3": 0.5664159175072353,
+  "p_ge4": 0.34330168660844046,
+  "p_fine": 0.001594597203447701,
+  "p_fine_members": [
+   8.463784210613418e-05,
+   0.00026849791716875,
+   0.004430655851068219
+  ]
+ },
+ {
+  "key": "dd6fc0892a396ae6",
+  "stratum": "near_q4",
+  "mode": "smooth",
+  "partition": "multibrot4",
+  "file": "samples/dd6fc0892a396ae6.jpg",
+  "source": "artifacts/curation/depth/dc2/pictures/dd6fc0892a396ae6.jpg",
+  "recorded_p_ge3": 0.8560692074853472,
+  "recorded_p_ge4": 0.5778470329271329,
+  "recorded_p_fine": 0.029309441249588588,
+  "p_ge3": 0.8560689069918163,
+  "p_ge4": 0.5778463823435971,
+  "p_fine": 0.029235383370213506,
+  "p_fine_members": [
+   0.08643562796805773,
+   0.0008083545371180435,
+   0.0004621676054647521
+  ]
+ },
+ {
+  "key": "1afd179c850f63d7",
+  "stratum": "near_q4",
+  "mode": "exp_smoothing",
+  "partition": "julia:mandelbrot",
+  "file": "samples/1afd179c850f63d7.jpg",
+  "source": "artifacts/curation/depth/overnight_c_main/pictures/1afd179c850f63d7.jpg",
+  "recorded_p_ge3": 0.7939586852493127,
+  "recorded_p_ge4": 0.4085333478571541,
+  "recorded_p_fine": null,
+  "p_ge3": 0.7939591271229824,
+  "p_ge4": 0.40853400668682305,
+  "p_fine": 0.0003158756433448876,
+  "p_fine_members": [
+   6.225683870061064e-06,
+   0.0003237719621389766,
+   0.0006176292840256251
+  ]
+ },
+ {
+  "key": "80069880a232c693",
+  "stratum": "near_q4",
+  "mode": "direct_trap_multiply",
+  "partition": "julia:multibrot5",
+  "file": "samples/80069880a232c693.jpg",
+  "source": "artifacts/curation/depth/armA2_0908/pictures/80069880a232c693.jpg",
+  "recorded_p_ge3": 0.945019274235022,
+  "recorded_p_ge4": 0.5743556509292082,
+  "recorded_p_fine": 0.00023691178416583084,
+  "p_ge3": 0.945019131290698,
+  "p_ge4": 0.5743543555619183,
+  "p_fine": 0.00023196272594317032,
+  "p_fine_members": [
+   0.00012183865943956172,
+   0.0005730896545287804,
+   9.598638611688581e-07
+  ]
+ },
+ {
+  "key": "d339f3a9a9f8fbbc",
+  "stratum": "near_q4",
+  "mode": "stripe",
+  "partition": "multibrot5",
+  "file": "samples/d339f3a9a9f8fbbc.jpg",
+  "source": "artifacts/curation/depth/thin2_a_stripe/pictures/d339f3a9a9f8fbbc.jpg",
+  "recorded_p_ge3": 0.9975289161704364,
+  "recorded_p_ge4": 0.593972347935597,
+  "recorded_p_fine": 0.019545532025114082,
+  "p_ge3": 0.9975289031003738,
+  "p_ge4": 0.5939726552527292,
+  "p_fine": 0.019541218638706177,
+  "p_fine_members": [
+   0.01199997759001109,
+   0.03179366151234143,
+   0.014830016813766016
+  ]
+ },
+ {
+  "key": "9d95b0536b313864",
+  "stratum": "near_q4",
+  "mode": "smooth",
+  "partition": "julia:mandelbrot",
+  "file": "samples/9d95b0536b313864.jpg",
+  "source": "artifacts/curation/depth/armB_freeslots_0906/pictures/9d95b0536b313864.jpg",
+  "recorded_p_ge3": 0.8842438005222274,
+  "recorded_p_ge4": 0.5554933922546118,
+  "recorded_p_fine": 0.0013671257095584238,
+  "p_ge3": 0.8842441929325561,
+  "p_ge4": 0.5554946728002831,
+  "p_fine": 0.0013746514965079003,
+  "p_fine_members": [
+   0.0025501125605195854,
+   0.0012081472477281096,
+   0.00036569468127600546
+  ]
+ },
+ {
+  "key": "c29fc80c051c8a43",
+  "stratum": "near_q4",
+  "mode": "stripe",
+  "partition": "mandelbrot",
+  "file": "samples/c29fc80c051c8a43.jpg",
+  "source": "artifacts/curation/depth/on125_recolour2/pictures/c29fc80c051c8a43.jpg",
+  "recorded_p_ge3": 0.9806484237277873,
+  "recorded_p_ge4": 0.3346692743096956,
+  "recorded_p_fine": null,
+  "p_ge3": 0.980648372729067,
+  "p_ge4": 0.33466881013944166,
+  "p_fine": 0.000838406217969373,
+  "p_fine_members": [
+   0.000394596301761918,
+   0.0003127415122969703,
+   0.0018078808398492305
+  ]
+ },
+ {
+  "key": "f5a3a0aa808595b9",
+  "stratum": "near_q4",
+  "mode": "stripe",
+  "partition": "julia:multibrot3",
+  "file": "samples/f5a3a0aa808595b9.jpg",
+  "source": "artifacts/curation/depth/armA1_0908/pictures/f5a3a0aa808595b9.jpg",
+  "recorded_p_ge3": 0.9994853826025155,
+  "recorded_p_ge4": 0.6472853446339317,
+  "recorded_p_fine": 0.0029401410111094747,
+  "p_ge3": 0.9994853811182929,
+  "p_ge4": 0.6472846775026827,
+  "p_fine": 0.0029170120003855233,
+  "p_fine_members": [
+   4.17640873762741e-05,
+   0.005878663190708386,
+   0.0028306087230719097
+  ]
+ },
+ {
+  "key": "c3b7fb19cd4098bf",
+  "stratum": "near_q4",
+  "mode": "smooth",
+  "partition": "multibrot5",
+  "file": "samples/c3b7fb19cd4098bf.jpg",
+  "source": "artifacts/curation/depth/mag130_u2/pictures/c3b7fb19cd4098bf.jpg",
+  "recorded_p_ge3": 0.9442843639852848,
+  "recorded_p_ge4": 0.3209370670501054,
+  "recorded_p_fine": null,
+  "p_ge3": 0.9442842879285138,
+  "p_ge4": 0.3209387333259929,
+  "p_fine": 0.004472048050568844,
+  "p_fine_members": [
+   0.0004410082416926522,
+   0.004899897432043807,
+   0.008075238477970073
+  ]
+ },
+ {
+  "key": "e0a01b7b575bf30a",
+  "stratum": "near_q4",
+  "mode": "smooth",
+  "partition": "julia:multibrot5",
+  "file": "samples/e0a01b7b575bf30a.jpg",
+  "source": "artifacts/curation/depth/armA1_0906/pictures/e0a01b7b575bf30a.jpg",
+  "recorded_p_ge3": 0.9990565150682054,
+  "recorded_p_ge4": 0.4524455383262216,
+  "recorded_p_fine": null,
+  "p_ge3": 0.9990565123935609,
+  "p_ge4": 0.45244423131132877,
+  "p_fine": 0.0009398411817188989,
+  "p_fine_members": [
+   2.3422068774489142e-05,
+   0.002795750755871744,
+   3.507205104634132e-07
+  ]
+ },
+ {
+  "key": "ef513aa47096c787",
+  "stratum": "near_q4",
+  "mode": "direct_trap_multiply",
+  "partition": "julia:multibrot3",
+  "file": "samples/ef513aa47096c787.jpg",
+  "source": "artifacts/curation/depth/u3_dearrest_night2/pictures/ef513aa47096c787.jpg",
+  "recorded_p_ge3": 0.8457641438362652,
+  "recorded_p_ge4": 0.4336352172286849,
+  "recorded_p_fine": null,
+  "p_ge3": 0.8457633521578096,
+  "p_ge4": 0.4336332054986537,
+  "p_fine": 0.00022538613508172147,
+  "p_fine_members": [
+   0.0002714824752345425,
+   0.00040001282899375704,
+   4.663101016864945e-06
+  ]
+ },
+ {
+  "key": "691038d8b6234bdd",
+  "stratum": "near_q4",
+  "mode": "tia",
+  "partition": "multibrot5",
+  "file": "samples/691038d8b6234bdd.jpg",
+  "source": "artifacts/curation/depth/on125_recolour1/pictures/691038d8b6234bdd.jpg",
+  "recorded_p_ge3": 0.9697417270332094,
+  "recorded_p_ge4": 0.6762071471185018,
+  "recorded_p_fine": 0.0020041062248335566,
+  "p_ge3": 0.969741880534572,
+  "p_ge4": 0.6762082545625953,
+  "p_fine": 0.0019593248539659,
+  "p_fine_members": [
+   5.007885409597442e-05,
+   0.005495379687340786,
+   0.00033251602046093886
+  ]
+ },
+ {
+  "key": "fcf43e5e6f60afe3",
+  "stratum": "near_q4",
+  "mode": "smooth",
+  "partition": "julia:multibrot3",
+  "file": "samples/fcf43e5e6f60afe3.jpg",
+  "source": "artifacts/curation/depth/smooth500_leg/pictures/fcf43e5e6f60afe3.jpg",
+  "recorded_p_ge3": 0.997059315432508,
+  "recorded_p_ge4": 0.5361629558390986,
+  "recorded_p_fine": 0.0002245063104613698,
+  "p_ge3": 0.9970593153805379,
+  "p_ge4": 0.5361634876274675,
+  "p_fine": 0.0002242492593198342,
+  "p_fine_members": [
+   7.359414032182706e-05,
+   0.000126079594236459,
+   0.00047307404340121657
+  ]
+ },
+ {
+  "key": "cf3c31c513d3d6ca",
+  "stratum": "near_q4",
+  "mode": "tia",
+  "partition": "julia:mandelbrot",
+  "file": "samples/cf3c31c513d3d6ca.jpg",
+  "source": "artifacts/curation/depth/maps_tia_0905/pictures/cf3c31c513d3d6ca.jpg",
+  "recorded_p_ge3": 0.9919874518598613,
+  "recorded_p_ge4": 0.3128734018209209,
+  "recorded_p_fine": null,
+  "p_ge3": 0.9919874560236764,
+  "p_ge4": 0.31287262435411733,
+  "p_fine": 0.0020870306032673923,
+  "p_fine_members": [
+   7.32335738706609e-05,
+   0.005001130755281822,
+   0.0011867274806496944
+  ]
+ },
+ {
+  "key": "dcaf3794da4f642f",
+  "stratum": "near_fine",
+  "mode": "tia",
+  "partition": "julia:multibrot5",
+  "file": "samples/dcaf3794da4f642f.jpg",
+  "source": "artifacts/curation/depth/overnight_d_main/pictures/dcaf3794da4f642f.jpg",
+  "recorded_p_ge3": 0.9990735596853235,
+  "recorded_p_ge4": 0.9911889837057741,
+  "recorded_p_fine": 0.02039059327154547,
+  "p_ge3": 0.9990735565811609,
+  "p_ge4": 0.9911889507861492,
+  "p_fine": 0.02004581984232646,
+  "p_fine_members": [
+   0.003329552243943455,
+   0.056573096832288595,
+   0.00023481045074732836
+  ]
+ },
+ {
+  "key": "d1d7b33901f1e412",
+  "stratum": "near_fine",
+  "mode": "stripe",
+  "partition": "julia:multibrot3",
+  "file": "samples/d1d7b33901f1e412.jpg",
+  "source": "artifacts/curation/depth/armA_places_0906/pictures/d1d7b33901f1e412.jpg",
+  "recorded_p_ge3": 0.996537200087268,
+  "recorded_p_ge4": 0.9690079493284395,
+  "recorded_p_fine": 0.030144589966884055,
+  "p_ge3": 0.9965371834647918,
+  "p_ge4": 0.9690078310502687,
+  "p_fine": 0.029984502202730745,
+  "p_fine_members": [
+   0.012113133817681336,
+   0.027697481209876317,
+   0.05014289158063458
+  ]
+ },
+ {
+  "key": "2fdd1bafafee2c4e",
+  "stratum": "near_fine",
+  "mode": "threads",
+  "partition": "multibrot4",
+  "file": "samples/2fdd1bafafee2c4e.jpg",
+  "source": "artifacts/curation/depth/overnight_a_main/pictures/2fdd1bafafee2c4e.jpg",
+  "recorded_p_ge3": 0.9993635244024557,
+  "recorded_p_ge4": 0.7216114718618759,
+  "recorded_p_fine": 0.01467403665887178,
+  "p_ge3": 0.9993635219834125,
+  "p_ge4": 0.7216105855100122,
+  "p_fine": 0.014576175950794752,
+  "p_fine_members": [
+   0.00947458666199571,
+   0.03215926421683718,
+   0.0020946769735513673
+  ]
+ },
+ {
+  "key": "76ae7a7fa48444fe",
+  "stratum": "near_fine",
+  "mode": "smooth_curvature",
+  "partition": "multibrot3",
+  "file": "samples/76ae7a7fa48444fe.jpg",
+  "source": "artifacts/curation/depth/overnight_a_main/pictures/76ae7a7fa48444fe.jpg",
+  "recorded_p_ge3": 0.9436089714571566,
+  "recorded_p_ge4": 0.8715502955691796,
+  "recorded_p_fine": 0.023395996670652855,
+  "p_ge3": 0.9436082806430808,
+  "p_ge4": 0.8715490386486008,
+  "p_fine": 0.023079248459054052,
+  "p_fine_members": [
+   0.06500709848832095,
+   0.002833887802779132,
+   0.0013967590860620679
+  ]
+ },
+ {
+  "key": "b37663b63d33f93c",
+  "stratum": "near_fine",
+  "mode": "smooth",
+  "partition": "julia:mandelbrot",
+  "file": "samples/b37663b63d33f93c.jpg",
+  "source": "artifacts/curation/depth/smooth500_leg/pictures/b37663b63d33f93c.jpg",
+  "recorded_p_ge3": 0.999963153394641,
+  "recorded_p_ge4": 0.9705126141800342,
+  "recorded_p_fine": 0.04318947663439123,
+  "p_ge3": 0.9999631531484608,
+  "p_ge4": 0.9705124299420408,
+  "p_fine": 0.0434754886924548,
+  "p_fine_members": [
+   0.010674279866207387,
+   0.057775536860106766,
+   0.061976649351050246
+  ]
+ },
+ {
+  "key": "2b2574bc003a1041",
+  "stratum": "near_fine",
+  "mode": "tia",
+  "partition": "multibrot5",
+  "file": "samples/2b2574bc003a1041.jpg",
+  "source": "artifacts/curation/depth/on125_wide1/pictures/2b2574bc003a1041.jpg",
+  "recorded_p_ge3": 0.9995975552088028,
+  "recorded_p_ge4": 0.9880928825577232,
+  "recorded_p_fine": 0.020810585285044186,
+  "p_ge3": 0.9995975525071997,
+  "p_ge4": 0.9880927660095993,
+  "p_fine": 0.020950374435660103,
+  "p_fine_members": [
+   0.0016391231513872848,
+   0.017023314113237663,
+   0.04418868604235536
+  ]
+ },
+ {
+  "key": "97630712e8e8fd99",
+  "stratum": "near_fine",
+  "mode": "smooth",
+  "partition": "julia:multibrot3",
+  "file": "samples/97630712e8e8fd99.jpg",
+  "source": "artifacts/curation/depth/smooth500_pilot/pictures/97630712e8e8fd99.jpg",
+  "recorded_p_ge3": 0.999998893089998,
+  "recorded_p_ge4": 0.9645934463203706,
+  "recorded_p_fine": 0.03217892771793603,
+  "p_ge3": 0.9999988930847191,
+  "p_ge4": 0.9645932427535298,
+  "p_fine": 0.03251074413666952,
+  "p_fine_members": [
+   0.002540447320454746,
+   0.09015810871671473,
+   0.0048336763728390715
+  ]
+ },
+ {
+  "key": "a57bea4e2fb0c0a5",
+  "stratum": "near_fine",
+  "mode": "stripe",
+  "partition": "julia:mandelbrot",
+  "file": "samples/a57bea4e2fb0c0a5.jpg",
+  "source": "artifacts/curation/depth/fss125_recolour/pictures/a57bea4e2fb0c0a5.jpg",
+  "recorded_p_ge3": 0.9306738904642959,
+  "recorded_p_ge4": 0.7238199898542058,
+  "recorded_p_fine": 0.03310677470219316,
+  "p_ge3": 0.930673489572368,
+  "p_ge4": 0.7238191410768706,
+  "p_fine": 0.03296829913067362,
+  "p_fine_members": [
+   0.01272030920449581,
+   0.08016980795380745,
+   0.0060147802337176
+  ]
+ },
+ {
+  "key": "56369a7bf61c2e04",
+  "stratum": "near_fine",
+  "mode": "tia",
+  "partition": "multibrot5",
+  "file": "samples/56369a7bf61c2e04.jpg",
+  "source": "artifacts/curation/depth/fss125_recolour/pictures/56369a7bf61c2e04.jpg",
+  "recorded_p_ge3": 0.9830673374872668,
+  "recorded_p_ge4": 0.8463532198366636,
+  "recorded_p_fine": 0.053950545141457196,
+  "p_ge3": 0.9830672976473933,
+  "p_ge4": 0.846352961039467,
+  "p_fine": 0.05284445872924944,
+  "p_fine_members": [
+   0.000365304266104341,
+   0.1578269878580653,
+   0.0003410840635786768
+  ]
+ },
+ {
+  "key": "63fda1a6c7d46135",
+  "stratum": "near_fine",
+  "mode": "smooth",
+  "partition": "julia:multibrot4",
+  "file": "samples/63fda1a6c7d46135.jpg",
+  "source": "artifacts/curation/depth/c129_julia_deep/pictures/63fda1a6c7d46135.jpg",
+  "recorded_p_ge3": 0.9913258478120964,
+  "recorded_p_ge4": 0.9024945996699791,
+  "recorded_p_fine": 0.05961376736928081,
+  "p_ge3": 0.9913258229636955,
+  "p_ge4": 0.9024941528609219,
+  "p_fine": 0.05888492322635322,
+  "p_fine_members": [
+   0.17014822047781297,
+   0.005795171319733148,
+   0.000711377881513543
+  ]
+ },
+ {
+  "key": "9bbe5728e679ee67",
+  "stratum": "near_fine",
+  "mode": "smooth",
+  "partition": "julia:multibrot5",
+  "file": "samples/9bbe5728e679ee67.jpg",
+  "source": "artifacts/curation/remode/smooth_twins/pictures/9bbe5728e679ee67.jpg",
+  "recorded_p_ge3": 0.9869654221367434,
+  "recorded_p_ge4": 0.8880104235883752,
+  "recorded_p_fine": 0.01571990693096304,
+  "p_ge3": 0.986965421922859,
+  "p_ge4": 0.8880106568955605,
+  "p_fine": 0.01566810986263803,
+  "p_fine_members": [
+   0.04235054113168431,
+   0.0012073295291370393,
+   0.0034464589270927445
+  ]
+ },
+ {
+  "key": "5093aee0ac03f1ce",
+  "stratum": "near_fine",
+  "mode": "stripe",
+  "partition": "julia:multibrot5",
+  "file": "samples/5093aee0ac03f1ce.jpg",
+  "source": "artifacts/curation/depth/thin2_top_b/pictures/5093aee0ac03f1ce.jpg",
+  "recorded_p_ge3": 0.9948144445721675,
+  "recorded_p_ge4": 0.7684015589883187,
+  "recorded_p_fine": 0.022188589295669914,
+  "p_ge3": 0.994814449707555,
+  "p_ge4": 0.7684024802508276,
+  "p_fine": 0.022070941111502155,
+  "p_fine_members": [
+   0.00839707414360032,
+   0.01434107459341725,
+   0.043474674597488897
+  ]
+ },
+ {
+  "key": "e36031c592a6849e",
+  "stratum": "near_fine",
+  "mode": "smooth",
+  "partition": "julia:multibrot4",
+  "file": "samples/e36031c592a6849e.jpg",
+  "source": "artifacts/curation/rotation/ckpt120/pictures/e36031c592a6849e.jpg",
+  "recorded_p_ge3": 0.9779438097144043,
+  "recorded_p_ge4": 0.864161584056542,
+  "recorded_p_fine": 0.06217029637041313,
+  "p_ge3": 0.977943720526387,
+  "p_ge4": 0.864161145672149,
+  "p_fine": 0.062359851802596324,
+  "p_fine_members": [
+   0.009462335450223324,
+   0.00010935875743202055,
+   0.17750786120013362
+  ]
+ },
+ {
+  "key": "b9974084cf86cd66",
+  "stratum": "near_fine",
+  "mode": "stripe",
+  "partition": "mandelbrot",
+  "file": "samples/b9974084cf86cd66.jpg",
+  "source": "artifacts/curation/rotation/ckpt120/pictures/b9974084cf86cd66.jpg",
+  "recorded_p_ge3": 0.9941097624984497,
+  "recorded_p_ge4": 0.9694438979081267,
+  "recorded_p_fine": 0.06406919775673277,
+  "p_ge3": 0.9941097792822265,
+  "p_ge4": 0.9694439716242591,
+  "p_fine": 0.06333575520425926,
+  "p_fine_members": [
+   0.1408578142121925,
+   0.00529174411618028,
+   0.043857707284405
+  ]
+ },
+ {
+  "key": "9debffebc22d79ba",
+  "stratum": "near_fine",
+  "mode": "stripe",
+  "partition": "julia:mandelbrot",
+  "file": "samples/9debffebc22d79ba.jpg",
+  "source": "artifacts/curation/depth/armB_freeslots_0906/pictures/9debffebc22d79ba.jpg",
+  "recorded_p_ge3": 0.9994759626142589,
+  "recorded_p_ge4": 0.9590937876383913,
+  "recorded_p_fine": 0.018478637175579616,
+  "p_ge3": 0.9994759625886893,
+  "p_ge4": 0.9590938153304346,
+  "p_fine": 0.018450639329301473,
+  "p_fine_members": [
+   0.0026854861486896526,
+   0.05265644148655433,
+   9.990352660437634e-06
+  ]
+ },
+ {
+  "key": "c7f0d0a23aa32aad",
+  "stratum": "near_fine",
+  "mode": "direct_trap_multiply",
+  "partition": "julia:multibrot3",
+  "file": "samples/c7f0d0a23aa32aad.jpg",
+  "source": "artifacts/curation/depth/dtm_known_full/pictures/c7f0d0a23aa32aad.jpg",
+  "recorded_p_ge3": 0.9998127816427999,
+  "recorded_p_ge4": 0.9673500611793653,
+  "recorded_p_fine": 0.03950773565931535,
+  "p_ge3": 0.9998127821770135,
+  "p_ge4": 0.9673500467193975,
+  "p_fine": 0.03928273399025472,
+  "p_fine_members": [
+   0.0778899476044599,
+   0.03879297852944817,
+   0.0011652758368560887
+  ]
+ },
+ {
+  "key": "5ce25d39289fc5fd",
+  "stratum": "near_fine",
+  "mode": "smooth",
+  "partition": "multibrot5",
+  "file": "samples/5ce25d39289fc5fd.jpg",
+  "source": "artifacts/curation/depth/night_b/pictures/5ce25d39289fc5fd.jpg",
+  "recorded_p_ge3": 0.9996597731242843,
+  "recorded_p_ge4": 0.9673759025241795,
+  "recorded_p_fine": 0.03716036413961494,
+  "p_ge3": 0.9996597742600324,
+  "p_ge4": 0.9673760004535906,
+  "p_fine": 0.037210112758264406,
+  "p_fine_members": [
+   0.004827433752454347,
+   0.021405307690918366,
+   0.0853975968314205
+  ]
+ },
+ {
+  "key": "936e0227dd2a269f",
+  "stratum": "near_fine",
+  "mode": "tia",
+  "partition": "multibrot3",
+  "file": "samples/936e0227dd2a269f.jpg",
+  "source": "artifacts/curation/depth/night_a1/pictures/936e0227dd2a269f.jpg",
+  "recorded_p_ge3": 0.9793811445414453,
+  "recorded_p_ge4": 0.8245052707213419,
+  "recorded_p_fine": 0.015117548625887418,
+  "p_ge3": 0.9793811780928662,
+  "p_ge4": 0.8245054233112296,
+  "p_fine": 0.015068542827175476,
+  "p_fine_members": [
+   0.002456581579769142,
+   0.04194918024057552,
+   0.0007998666611817645
+  ]
+ },
+ {
+  "key": "f00ccb8a83dd0306",
+  "stratum": "near_fine",
+  "mode": "direct_trap_multiply",
+  "partition": "julia:multibrot5",
+  "file": "samples/f00ccb8a83dd0306.jpg",
+  "source": "artifacts/curation/depth/dtm_sweep_ckpt121/pictures/f00ccb8a83dd0306.jpg",
+  "recorded_p_ge3": 0.983456879229057,
+  "recorded_p_ge4": 0.681517964102412,
+  "recorded_p_fine": 0.01755581462865427,
+  "p_ge3": 0.9834568481878393,
+  "p_ge4": 0.6815174811430794,
+  "p_fine": 0.017637645327278895,
+  "p_fine_members": [
+   0.0196095420442081,
+   0.005074275154794558,
+   0.028229118782834035
+  ]
+ },
+ {
+  "key": "b41e71fb28151088",
+  "stratum": "near_fine",
+  "mode": "smooth",
+  "partition": "mandelbrot",
+  "file": "samples/b41e71fb28151088.jpg",
+  "source": "artifacts/curation/depth/armB1_0906/pictures/b41e71fb28151088.jpg",
+  "recorded_p_ge3": 0.9975572245158303,
+  "recorded_p_ge4": 0.9842686290839578,
+  "recorded_p_fine": 0.013760930828797166,
+  "p_ge3": 0.9975572068704798,
+  "p_ge4": 0.984268524144166,
+  "p_fine": 0.014011082208379296,
+  "p_fine_members": [
+   0.0009496485103822586,
+   0.0028924731318794934,
+   0.038191124982876135
+  ]
+ },
+ {
+  "key": "e533e432156e32bf",
+  "stratum": "near_fine",
+  "mode": "smooth_angle_min",
+  "partition": "julia:multibrot3",
+  "file": "samples/e533e432156e32bf.jpg",
+  "source": "artifacts/curation/depth/u1_angle_night2/pictures/e533e432156e32bf.jpg",
+  "recorded_p_ge3": 0.9812364310102345,
+  "recorded_p_ge4": 0.8179402041912655,
+  "recorded_p_fine": 0.015574950115931832,
+  "p_ge3": 0.9812363820500525,
+  "p_ge4": 0.8179397252536628,
+  "p_fine": 0.015614756369801407,
+  "p_fine_members": [
+   0.0002583564300505648,
+   0.04633602655783826,
+   0.00024988612151540305
+  ]
+ },
+ {
+  "key": "8ffd0513b11875d3",
+  "stratum": "near_fine",
+  "mode": "smooth",
+  "partition": "multibrot5",
+  "file": "samples/8ffd0513b11875d3.jpg",
+  "source": "artifacts/curation/rotation/mine_ckpt120/pictures/8ffd0513b11875d3.jpg",
+  "recorded_p_ge3": 0.9848217997816585,
+  "recorded_p_ge4": 0.5283959332492857,
+  "recorded_p_fine": 0.02546170199410897,
+  "p_ge3": 0.9848218128413888,
+  "p_ge4": 0.528396275978491,
+  "p_fine": 0.025249399176116735,
+  "p_fine_members": [
+   0.0028441730530060676,
+   0.07148137295586658,
+   0.0014226515194775584
+  ]
+ },
+ {
+  "key": "0dae89083efa4156",
+  "stratum": "near_fine",
+  "mode": "stripe",
+  "partition": "multibrot3",
+  "file": "samples/0dae89083efa4156.jpg",
+  "source": "artifacts/curation/depth/sheet_leg_0905/pictures/0dae89083efa4156.jpg",
+  "recorded_p_ge3": 0.9928813647575225,
+  "recorded_p_ge4": 0.9302469320524291,
+  "recorded_p_fine": 0.022891077170112642,
+  "p_ge3": 0.9928813795130137,
+  "p_ge4": 0.9302470298240799,
+  "p_fine": 0.02282221576808001,
+  "p_fine_members": [
+   0.0014943127044434084,
+   0.04659371538842789,
+   0.020378619211368725
+  ]
+ },
+ {
+  "key": "3839b328cf78a427",
+  "stratum": "near_fine",
+  "mode": "threads",
+  "partition": "julia:multibrot5",
+  "file": "samples/3839b328cf78a427.jpg",
+  "source": "artifacts/curation/mine/mine1/pictures/3839b328cf78a427.jpg",
+  "recorded_p_ge3": 0.9850973058163557,
+  "recorded_p_ge4": 0.8506174114440715,
+  "recorded_p_fine": 0.04261655154111931,
+  "p_ge3": 0.9850971798781799,
+  "p_ge4": 0.850616347545293,
+  "p_fine": 0.04302823607646782,
+  "p_fine_members": [
+   0.007907710272086086,
+   0.052104063387813856,
+   0.06907293456950352
+  ]
+ },
+ {
+  "key": "2d23cdceb66d895d",
+  "stratum": "near_fine",
+  "mode": "threads",
+  "partition": "julia:mandelbrot",
+  "file": "samples/2d23cdceb66d895d.jpg",
+  "source": "artifacts/curation/depth/armB2_0907/pictures/2d23cdceb66d895d.jpg",
+  "recorded_p_ge3": 0.9970181403315382,
+  "recorded_p_ge4": 0.89379222160584,
+  "recorded_p_fine": 0.01892302832555203,
+  "p_ge3": 0.9970181331916405,
+  "p_ge4": 0.8937919283872728,
+  "p_fine": 0.018783152002933665,
+  "p_fine_members": [
+   0.012518614465380884,
+   0.018628787526807456,
+   0.02520205401661265
+  ]
+ },
+ {
+  "key": "15592229cbe0456d",
+  "stratum": "near_fine",
+  "mode": "tia",
+  "partition": "julia:multibrot4",
+  "file": "samples/15592229cbe0456d.jpg",
+  "source": "artifacts/curation/depth/on125_recolour2/pictures/15592229cbe0456d.jpg",
+  "recorded_p_ge3": 0.9085453646467226,
+  "recorded_p_ge4": 0.7924287075728518,
+  "recorded_p_fine": 0.020954710839553914,
+  "p_ge3": 0.9085454876337856,
+  "p_ge4": 0.7924289114261985,
+  "p_fine": 0.02100634925857071,
+  "p_fine_members": [
+   0.0029330235199788862,
+   6.283040704091248e-05,
+   0.06002319384869233
+  ]
+ },
+ {
+  "key": "225925de8c58a9cd",
+  "stratum": "near_fine",
+  "mode": "smooth",
+  "partition": "multibrot4",
+  "file": "samples/225925de8c58a9cd.jpg",
+  "source": "artifacts/curation/depth/armA_places_0906/pictures/225925de8c58a9cd.jpg",
+  "recorded_p_ge3": 0.973233298092506,
+  "recorded_p_ge4": 0.7791858076750389,
+  "recorded_p_fine": 0.01467156225486732,
+  "p_ge3": 0.9732331740009258,
+  "p_ge4": 0.7791852638438016,
+  "p_fine": 0.015024004546862792,
+  "p_fine_members": [
+   0.0009405893854007415,
+   0.0015770113193590068,
+   0.04255441293582863
+  ]
+ },
+ {
+  "key": "dd16655daa9c43e8",
+  "stratum": "near_fine",
+  "mode": "stripe",
+  "partition": "julia:mandelbrot",
+  "file": "samples/dd16655daa9c43e8.jpg",
+  "source": "artifacts/curation/depth/night_b/pictures/dd16655daa9c43e8.jpg",
+  "recorded_p_ge3": 0.9984828980119522,
+  "recorded_p_ge4": 0.8636395293189764,
+  "recorded_p_fine": 0.022243851680496956,
+  "p_ge3": 0.9984829032506106,
+  "p_ge4": 0.8636400899987176,
+  "p_fine": 0.022044241354386224,
+  "p_fine_members": [
+   0.06153202835635694,
+   0.002420125219332857,
+   0.0021805704874688736
+  ]
+ },
+ {
+  "key": "4a93290c476576f9",
+  "stratum": "near_fine",
+  "mode": "stripe",
+  "partition": "phoenix:classic",
+  "file": "samples/4a93290c476576f9.jpg",
+  "source": "artifacts/curation/depth/armB2_0907/pictures/4a93290c476576f9.jpg",
+  "recorded_p_ge3": 0.9993283020711066,
+  "recorded_p_ge4": 0.7103403017973043,
+  "recorded_p_fine": 0.02036699082442985,
+  "p_ge3": 0.99932830201279,
+  "p_ge4": 0.7103412078002882,
+  "p_fine": 0.020369854269899765,
+  "p_fine_members": [
+   0.001784836565720937,
+   0.05905327383687768,
+   0.00027145240710067326
+  ]
+ },
+ {
+  "key": "d8e33734ce91f91f",
+  "stratum": "near_fine",
+  "mode": "stripe",
+  "partition": "julia:multibrot3",
+  "file": "samples/d8e33734ce91f91f.jpg",
+  "source": "artifacts/curation/depth/maps_stripe_0905/pictures/d8e33734ce91f91f.jpg",
+  "recorded_p_ge3": 0.8665749626715461,
+  "recorded_p_ge4": 0.7263770383973122,
+  "recorded_p_fine": 0.050288133904203565,
+  "p_ge3": 0.8665749109080217,
+  "p_ge4": 0.7263771771254064,
+  "p_fine": 0.0499109979149576,
+  "p_fine_members": [
+   0.003865210352774414,
+   0.10976951558420155,
+   0.03609826780789685
+  ]
+ },
+ {
+  "key": "90891aeca3a71a85",
+  "stratum": "near_fine",
+  "mode": "threads",
+  "partition": "julia:multibrot6",
+  "file": "samples/90891aeca3a71a85.jpg",
+  "source": "artifacts/curation/depth/d6o_c1_deep/pictures/90891aeca3a71a85.jpg",
+  "recorded_p_ge3": 0.9812141095563572,
+  "recorded_p_ge4": 0.9061789055326148,
+  "recorded_p_fine": 0.022662013126414245,
+  "p_ge3": 0.9812140648156323,
+  "p_ge4": 0.9061787155176615,
+  "p_fine": 0.022673164537994634,
+  "p_fine_members": [
+   0.006878333904856389,
+   0.035895493150013114,
+   0.025245666559114394
+  ]
+ },
+ {
+  "key": "443c1fccf8f51dfa",
+  "stratum": "near_fine",
+  "mode": "smooth",
+  "partition": "julia:multibrot5",
+  "file": "samples/443c1fccf8f51dfa.jpg",
+  "source": "artifacts/curation/depth/wm2_near/pictures/443c1fccf8f51dfa.jpg",
+  "recorded_p_ge3": 0.9989182317259895,
+  "recorded_p_ge4": 0.6100433953547006,
+  "recorded_p_fine": 0.01419755719427958,
+  "p_ge3": 0.9989182291991002,
+  "p_ge4": 0.6100438963264677,
+  "p_fine": 0.014283783282925204,
+  "p_fine_members": [
+   0.005438757112350566,
+   0.0019692487093503313,
+   0.03544334402707471
+  ]
+ },
+ {
+  "key": "d9546c3b8977c94e",
+  "stratum": "near_fine",
+  "mode": "tia",
+  "partition": "julia:mandelbrot",
+  "file": "samples/d9546c3b8977c94e.jpg",
+  "source": "artifacts/curation/depth/overnight_c_main/pictures/d9546c3b8977c94e.jpg",
+  "recorded_p_ge3": 0.9321222838752053,
+  "recorded_p_ge4": 0.8135803558284795,
+  "recorded_p_fine": 0.07034148286469641,
+  "p_ge3": 0.9321216753551811,
+  "p_ge4": 0.8135790599768629,
+  "p_fine": 0.0707196846910816,
+  "p_fine_members": [
+   0.08517414191282462,
+   0.004666135816113025,
+   0.12231877634430718
+  ]
+ },
+ {
+  "key": "b7a540777144f9b9",
+  "stratum": "near_fine",
+  "mode": "stripe",
+  "partition": "julia:mandelbrot",
+  "file": "samples/b7a540777144f9b9.jpg",
+  "source": "artifacts/curation/depth/on125_recolour1/pictures/b7a540777144f9b9.jpg",
+  "recorded_p_ge3": 0.9399007326150063,
+  "recorded_p_ge4": 0.8590782638368889,
+  "recorded_p_fine": 0.030983983520354908,
+  "p_ge3": 0.9399006713127431,
+  "p_ge4": 0.8590780316800831,
+  "p_fine": 0.03092745210465352,
+  "p_fine_members": [
+   0.021287009755938106,
+   0.0010964345545480371,
+   0.07039891200347442
+  ]
+ },
+ {
+  "key": "5f4ad36fdeccc41d",
+  "stratum": "near_fine",
+  "mode": "smooth",
+  "partition": "julia:multibrot4",
+  "file": "samples/5f4ad36fdeccc41d.jpg",
+  "source": "artifacts/curation/depth/smooth500_leg/pictures/5f4ad36fdeccc41d.jpg",
+  "recorded_p_ge3": 0.999920785974329,
+  "recorded_p_ge4": 0.9847195903670013,
+  "recorded_p_fine": 0.03134709702214819,
+  "p_ge3": 0.999920785673787,
+  "p_ge4": 0.9847196186242035,
+  "p_fine": 0.031486666457099376,
+  "p_fine_members": [
+   0.02261353963170351,
+   0.01935691607355322,
+   0.05248954366604138
+  ]
+ },
+ {
+  "key": "34d766eb9b7a5eb0",
+  "stratum": "near_fine",
+  "mode": "stripe",
+  "partition": "julia:multibrot3",
+  "file": "samples/34d766eb9b7a5eb0.jpg",
+  "source": "artifacts/curation/depth/thin2_top_b/pictures/34d766eb9b7a5eb0.jpg",
+  "recorded_p_ge3": 0.9114110334189232,
+  "recorded_p_ge4": 0.7316640206595288,
+  "recorded_p_fine": 0.05012524838455771,
+  "p_ge3": 0.9114095665079376,
+  "p_ge4": 0.7316606240353895,
+  "p_fine": 0.04975675509454077,
+  "p_fine_members": [
+   0.02841660684865297,
+   0.049187172401360876,
+   0.07166648603360845
+  ]
+ },
+ {
+  "key": "33a98e208e9989c0",
+  "stratum": "near_fine",
+  "mode": "tia",
+  "partition": "mandelbrot",
+  "file": "samples/33a98e208e9989c0.jpg",
+  "source": "artifacts/curation/depth/sheet_leg_0905/pictures/33a98e208e9989c0.jpg",
+  "recorded_p_ge3": 0.9971233734451971,
+  "recorded_p_ge4": 0.9006897232784797,
+  "recorded_p_fine": 0.018352208993430815,
+  "p_ge3": 0.9971233665981979,
+  "p_ge4": 0.9006896132535368,
+  "p_fine": 0.01797510653107431,
+  "p_fine_members": [
+   0.007207702000302503,
+   0.003833362843356659,
+   0.042884254749563776
+  ]
+ },
+ {
+  "key": "dbf02a4b93d5b927",
+  "stratum": "near_fine",
+  "mode": "smooth",
+  "partition": "julia:multibrot5",
+  "file": "samples/dbf02a4b93d5b927.jpg",
+  "source": "artifacts/curation/depth/smooth500_leg/pictures/dbf02a4b93d5b927.jpg",
+  "recorded_p_ge3": 0.9995514978616113,
+  "recorded_p_ge4": 0.9955874235726598,
+  "recorded_p_fine": 0.018858759156378,
+  "p_ge3": 0.9995514950548724,
+  "p_ge4": 0.9955873963015959,
+  "p_fine": 0.01877478080862767,
+  "p_fine_members": [
+   0.03996951696267689,
+   0.00316909934703615,
+   0.01318572611616996
+  ]
+ },
+ {
+  "key": "26603265686c1450",
+  "stratum": "near_fine",
+  "mode": "smooth",
+  "partition": "julia:mandelbrot",
+  "file": "samples/26603265686c1450.jpg",
+  "source": "artifacts/curation/depth/night_b/pictures/26603265686c1450.jpg",
+  "recorded_p_ge3": 0.9988825489302088,
+  "recorded_p_ge4": 0.9432024435589722,
+  "recorded_p_fine": 0.024677409054599007,
+  "p_ge3": 0.9988825430616171,
+  "p_ge4": 0.9432023001303508,
+  "p_fine": 0.02464050744433484,
+  "p_fine_members": [
+   0.012464209475173479,
+   0.060384179865684576,
+   0.0010731329921464684
+  ]
+ },
+ {
+  "key": "9974016eb1d373eb",
+  "stratum": "near_fine",
+  "mode": "smooth",
+  "partition": "multibrot4",
+  "file": "samples/9974016eb1d373eb.jpg",
+  "source": "artifacts/curation/depth/u5_easy_night2/pictures/9974016eb1d373eb.jpg",
+  "recorded_p_ge3": 0.7396928232956228,
+  "recorded_p_ge4": 0.5019848276498624,
+  "recorded_p_fine": 0.01359545039963215,
+  "p_ge3": 0.7396922488084601,
+  "p_ge4": 0.5019842743200416,
+  "p_fine": 0.01361604354989337,
+  "p_fine_members": [
+   0.0009621547448959558,
+   0.03810112439915627,
+   0.0017848515056278803
+  ]
+ },
+ {
+  "key": "d21ef82f14cc6946",
+  "stratum": "random",
+  "mode": "direct_trap_multiply",
+  "partition": "julia:multibrot5",
+  "file": "samples/d21ef82f14cc6946.jpg",
+  "source": "artifacts/curation/depth/rare_a2/pictures/d21ef82f14cc6946.jpg",
+  "recorded_p_ge3": 1.835118093481191e-06,
+  "recorded_p_ge4": 5.932032242748673e-08,
+  "recorded_p_fine": null,
+  "p_ge3": 1.835115473873106e-06,
+  "p_ge4": 5.9320224062599444e-08,
+  "p_fine": 9.251533639329501e-09,
+  "p_fine_members": [
+   1.1547299335673627e-15,
+   2.7753538465744848e-08,
+   1.0612975137177386e-12
+  ]
+ },
+ {
+  "key": "99f087001ab8658b",
+  "stratum": "random",
+  "mode": "threads",
+  "partition": "multibrot6",
+  "file": "samples/99f087001ab8658b.jpg",
+  "source": "artifacts/curation/depth/d6o_c5_deep/pictures/99f087001ab8658b.jpg",
+  "recorded_p_ge3": 0.377134258230328,
+  "recorded_p_ge4": 0.004567771431701646,
+  "recorded_p_fine": null,
+  "p_ge3": 0.37713401566150323,
+  "p_ge4": 0.004567764190358111,
+  "p_fine": 0.000599019559796846,
+  "p_fine_members": [
+   1.0577592090157883e-06,
+   0.0017801130132390915,
+   1.588790694243062e-05
+  ]
+ },
+ {
+  "key": "0d9673e24cd658d0",
+  "stratum": "random",
+  "mode": "smooth_mean_angle",
+  "partition": "mandelbrot",
+  "file": "samples/0d9673e24cd658d0.jpg",
+  "source": "artifacts/curation/depth/overnight_b_main/pictures/0d9673e24cd658d0.jpg",
+  "recorded_p_ge3": 0.00013462891178849396,
+  "recorded_p_ge4": 4.72983217097025e-06,
+  "recorded_p_fine": null,
+  "p_ge3": 0.00013462807830756461,
+  "p_ge4": 4.729798536595042e-06,
+  "p_fine": 0.0029519633270947525,
+  "p_fine_members": [
+   2.8181832055546885e-05,
+   0.008730209414181907,
+   9.749873504680482e-05
+  ]
+ },
+ {
+  "key": "9fa4c14cf4e7f0f4",
+  "stratum": "random",
+  "mode": "threads",
+  "partition": "phoenix",
+  "file": "samples/9fa4c14cf4e7f0f4.jpg",
+  "source": "artifacts/curation/depth/humanplaces_ckpt126/pictures/9fa4c14cf4e7f0f4.jpg",
+  "recorded_p_ge3": 0.9817430481532088,
+  "recorded_p_ge4": 0.006498837938529962,
+  "recorded_p_fine": null,
+  "p_ge3": 0.9817430829945001,
+  "p_ge4": 0.00649884124754319,
+  "p_fine": 1.032538040658189e-07,
+  "p_fine_members": [
+   2.2201367202492502e-19,
+   3.09761412190111e-07,
+   7.12362761579649e-18
+  ]
+ },
+ {
+  "key": "8d3394c08932866c",
+  "stratum": "random",
+  "mode": "stripe",
+  "partition": "julia:mandelbrot",
+  "file": "samples/8d3394c08932866c.jpg",
+  "source": "artifacts/curation/depth/thin2_b_stripe/pictures/8d3394c08932866c.jpg",
+  "recorded_p_ge3": 0.9919399212234837,
+  "recorded_p_ge4": 0.9352847784417327,
+  "recorded_p_fine": 0.02891443289294196,
+  "p_ge3": 0.9919398522197461,
+  "p_ge4": 0.9352842930850194,
+  "p_fine": 0.02880080357909989,
+  "p_fine_members": [
+   0.007749492426891954,
+   0.07728401031128872,
+   0.0013689079991190032
+  ]
+ },
+ {
+  "key": "0839a49aa43e0a02",
+  "stratum": "random",
+  "mode": "stripe",
+  "partition": "multibrot3",
+  "file": "samples/0839a49aa43e0a02.jpg",
+  "source": "artifacts/curation/depth/overnight_d_pilot/pictures/0839a49aa43e0a02.jpg",
+  "recorded_p_ge3": 0.1780085189854058,
+  "recorded_p_ge4": 0.004908877437655191,
+  "recorded_p_fine": null,
+  "p_ge3": 0.1780076310758057,
+  "p_ge4": 0.004908870023424144,
+  "p_fine": 0.009384420597746043,
+  "p_fine_members": [
+   0.00595950746432487,
+   0.002619368029313044,
+   0.019574386299600215
+  ]
+ },
+ {
+  "key": "4c919aebd55e72bb",
+  "stratum": "random",
+  "mode": "tia",
+  "partition": "julia:multibrot5",
+  "file": "samples/4c919aebd55e72bb.jpg",
+  "source": "artifacts/curation/depth/mag130_u1/pictures/4c919aebd55e72bb.jpg",
+  "recorded_p_ge3": 0.7828422229558697,
+  "recorded_p_ge4": 0.1607364780587194,
+  "recorded_p_fine": null,
+  "p_ge3": 0.7828418081665952,
+  "p_ge4": 0.16073689538394387,
+  "p_fine": 0.3833126913349296,
+  "p_fine_members": [
+   0.6664730192549612,
+   0.1760206304758159,
+   0.30744442427401175
+  ]
+ },
+ {
+  "key": "0256464a78b1b7c3",
+  "stratum": "random",
+  "mode": "smooth_angle_min",
+  "partition": "multibrot5",
+  "file": "samples/0256464a78b1b7c3.jpg",
+  "source": "artifacts/curation/depth/armA2_0909/pictures/0256464a78b1b7c3.jpg",
+  "recorded_p_ge3": 0.019484226464191113,
+  "recorded_p_ge4": 0.002794022682925564,
+  "recorded_p_fine": null,
+  "p_ge3": 0.01948416738250461,
+  "p_ge4": 0.00279401563720931,
+  "p_fine": 0.0004580338432451536,
+  "p_fine_members": [
+   0.0006667906408327092,
+   0.0005020454834691804,
+   0.0002052654054335712
+  ]
+ },
+ {
+  "key": "cbb56484f7a5e1b9",
+  "stratum": "random",
+  "mode": "tia",
+  "partition": "phoenix",
+  "file": "samples/cbb56484f7a5e1b9.jpg",
+  "source": "artifacts/curation/depth/night_b/pictures/cbb56484f7a5e1b9.jpg",
+  "recorded_p_ge3": 0.030804546704936393,
+  "recorded_p_ge4": 0.003282134857994022,
+  "recorded_p_fine": null,
+  "p_ge3": 0.030804279123305568,
+  "p_ge4": 0.0032820986574128154,
+  "p_fine": 4.554318641509355e-06,
+  "p_fine_members": [
+   8.003003787428107e-06,
+   1.5730307962839467e-07,
+   5.502649057471564e-06
+  ]
+ },
+ {
+  "key": "2075c23321e18fb8",
+  "stratum": "random",
+  "mode": "stripe",
+  "partition": "multibrot3",
+  "file": "samples/2075c23321e18fb8.jpg",
+  "source": "artifacts/curation/depth/night_a3/pictures/2075c23321e18fb8.jpg",
+  "recorded_p_ge3": 0.8533279703241592,
+  "recorded_p_ge4": 0.013208714581006906,
+  "recorded_p_fine": null,
+  "p_ge3": 0.853327892550199,
+  "p_ge4": 0.013208738180809892,
+  "p_fine": 2.7483985892390822e-05,
+  "p_fine_members": [
+   4.425255497606675e-05,
+   7.538103114432222e-06,
+   3.066129958667349e-05
+  ]
+ },
+ {
+  "key": "ad5188002543232a",
+  "stratum": "random",
+  "mode": "tia",
+  "partition": "julia:multibrot3",
+  "file": "samples/ad5188002543232a.jpg",
+  "source": "artifacts/curation/depth/thin2_a_tia/pictures/ad5188002543232a.jpg",
+  "recorded_p_ge3": 0.9859801618477458,
+  "recorded_p_ge4": 0.7027834258413506,
+  "recorded_p_fine": 0.024563857296129876,
+  "p_ge3": 0.9859801883292542,
+  "p_ge4": 0.7027844072400192,
+  "p_fine": 0.024508266579264498,
+  "p_fine_members": [
+   0.000279393081954133,
+   0.010410817925704866,
+   0.06283458873013449
+  ]
+ },
+ {
+  "key": "771b35c90d0246bf",
+  "stratum": "random",
+  "mode": "tia",
+  "partition": "multibrot4",
+  "file": "samples/771b35c90d0246bf.jpg",
+  "source": "artifacts/curation/depth/overnight_c_pilot/pictures/771b35c90d0246bf.jpg",
+  "recorded_p_ge3": 0.9973684056811951,
+  "recorded_p_ge4": 0.9494632455073865,
+  "recorded_p_fine": null,
+  "p_ge3": 0.9973684171687436,
+  "p_ge4": 0.9494635935015979,
+  "p_fine": 0.09954991942805042,
+  "p_fine_members": [
+   0.07620345186238185,
+   0.03912487479931288,
+   0.1833214316224565
+  ]
+ },
+ {
+  "key": "dbd15074021e9b29",
+  "stratum": "random",
+  "mode": "stripe",
+  "partition": "multibrot5",
+  "file": "samples/dbd15074021e9b29.jpg",
+  "source": "artifacts/curation/depth/on125_wide1/pictures/dbd15074021e9b29.jpg",
+  "recorded_p_ge3": 0.41239769032471085,
+  "recorded_p_ge4": 0.005062948676013389,
+  "recorded_p_fine": null,
+  "p_ge3": 0.4123971252931108,
+  "p_ge4": 0.005062941739199583,
+  "p_fine": 0.02101788858478591,
+  "p_fine_members": [
+   7.357672587550357e-05,
+   0.039919227904232586,
+   0.02306086112424963
+  ]
+ },
+ {
+  "key": "a43b5ecd760dd47d",
+  "stratum": "random",
+  "mode": "curvature",
+  "partition": "multibrot5",
+  "file": "samples/a43b5ecd760dd47d.jpg",
+  "source": "artifacts/curation/depth/rare_a2/pictures/a43b5ecd760dd47d.jpg",
+  "recorded_p_ge3": 0.04026681012801922,
+  "recorded_p_ge4": 0.004150733255920851,
+  "recorded_p_fine": null,
+  "p_ge3": 0.04026670596604463,
+  "p_ge4": 0.004150718080829381,
+  "p_fine": 1.7117506310895507e-06,
+  "p_fine_members": [
+   3.4986706240694065e-07,
+   6.984335597331332e-08,
+   4.715541474888398e-06
+  ]
+ },
+ {
+  "key": "2eba9005ed40e6da",
+  "stratum": "random",
+  "mode": "smooth",
+  "partition": "julia:mandelbrot",
+  "file": "samples/2eba9005ed40e6da.jpg",
+  "source": "artifacts/curation/depth/smooth500_leg/pictures/2eba9005ed40e6da.jpg",
+  "recorded_p_ge3": 0.7129785608300736,
+  "recorded_p_ge4": 0.02558225486401267,
+  "recorded_p_fine": null,
+  "p_ge3": 0.7129781843364121,
+  "p_ge4": 0.02558215902915742,
+  "p_fine": 9.283513066946932e-05,
+  "p_fine_members": [
+   4.4982810579757684e-05,
+   0.0001403340300464591,
+   9.318855138219118e-05
+  ]
+ },
+ {
+  "key": "f72f3aea56f70e85",
+  "stratum": "random",
+  "mode": "smooth_mean_angle",
+  "partition": "multibrot3",
+  "file": "samples/f72f3aea56f70e85.jpg",
+  "source": "artifacts/curation/depth/ame_b2_deep/pictures/f72f3aea56f70e85.jpg",
+  "recorded_p_ge3": 0.10360016980889876,
+  "recorded_p_ge4": 0.009059865841629414,
+  "recorded_p_fine": null,
+  "p_ge3": 0.10359999136275361,
+  "p_ge4": 0.00905985023646064,
+  "p_fine": 0.0008983198953878172,
+  "p_fine_members": [
+   0.0004851823903238928,
+   0.0021278131570168857,
+   8.196413882267325e-05
+  ]
+ },
+ {
+  "key": "0fda1cb8fbfde688",
+  "stratum": "random",
+  "mode": "smooth_curvature",
+  "partition": "multibrot5",
+  "file": "samples/0fda1cb8fbfde688.jpg",
+  "source": "artifacts/curation/depth/overnight_a_main/pictures/0fda1cb8fbfde688.jpg",
+  "recorded_p_ge3": 0.8613304541338808,
+  "recorded_p_ge4": 0.02289738536318811,
+  "recorded_p_fine": null,
+  "p_ge3": 0.861330026868005,
+  "p_ge4": 0.0228973846329343,
+  "p_fine": 4.306949427014024e-05,
+  "p_fine_members": [
+   1.6878284235834424e-05,
+   3.2604418104876284e-05,
+   7.972578046971e-05
+  ]
+ },
+ {
+  "key": "d31657d8f57c7483",
+  "stratum": "random",
+  "mode": "smooth",
+  "partition": "mandelbrot",
+  "file": "samples/d31657d8f57c7483.jpg",
+  "source": "artifacts/curation/depth/night_b/pictures/d31657d8f57c7483.jpg",
+  "recorded_p_ge3": 0.9953791009969364,
+  "recorded_p_ge4": 0.5276884009824938,
+  "recorded_p_fine": 5.6092509684435706e-05,
+  "p_ge3": 0.9953791162368345,
+  "p_ge4": 0.5276897612865474,
+  "p_fine": 5.616702300661826e-05,
+  "p_fine_members": [
+   0.0001094039101166293,
+   4.336444423603105e-05,
+   1.5732714667194406e-05
+  ]
+ },
+ {
+  "key": "36bdc129c062333f",
+  "stratum": "random",
+  "mode": "tia",
+  "partition": "julia:multibrot5",
+  "file": "samples/36bdc129c062333f.jpg",
+  "source": "artifacts/curation/depth/thin2_a_tia/pictures/36bdc129c062333f.jpg",
+  "recorded_p_ge3": 0.29155163089843106,
+  "recorded_p_ge4": 0.0002364073549351398,
+  "recorded_p_fine": null,
+  "p_ge3": 0.2915516261835624,
+  "p_ge4": 0.00023640757638495802,
+  "p_fine": 6.317019949705632e-07,
+  "p_fine_members": [
+   6.121017187113341e-09,
+   1.8773278155837135e-06,
+   1.1657152140862924e-08
+  ]
+ },
+ {
+  "key": "db6b6c47edef4d71",
+  "stratum": "random",
+  "mode": "smooth_trap_circle",
+  "partition": "julia:multibrot3",
+  "file": "samples/db6b6c47edef4d71.jpg",
+  "source": "artifacts/curation/depth/sm_comp/pictures/db6b6c47edef4d71.jpg",
+  "recorded_p_ge3": 0.00023616484557683178,
+  "recorded_p_ge4": 1.7486069515599198e-05,
+  "recorded_p_fine": null,
+  "p_ge3": 0.00023616272503499886,
+  "p_ge4": 1.748588934515384e-05,
+  "p_fine": 0.00030764108061331506,
+  "p_fine_members": [
+   4.9540981696483825e-05,
+   0.0008388078157171031,
+   3.457444442635818e-05
+  ]
+ },
+ {
+  "key": "94e55ba049a0ac8b",
+  "stratum": "random",
+  "mode": "smooth_curvature",
+  "partition": "multibrot5",
+  "file": "samples/94e55ba049a0ac8b.jpg",
+  "source": "artifacts/curation/depth/overnight_a_main/pictures/94e55ba049a0ac8b.jpg",
+  "recorded_p_ge3": 0.5078609893251659,
+  "recorded_p_ge4": 0.056119554697134345,
+  "recorded_p_fine": null,
+  "p_ge3": 0.5078595854119405,
+  "p_ge4": 0.05611930435103437,
+  "p_fine": 0.001963701443462832,
+  "p_fine_members": [
+   0.0006471875021698848,
+   2.1113173903214636e-05,
+   0.005222803654315396
+  ]
+ },
+ {
+  "key": "e266223a27ff99c3",
+  "stratum": "random",
+  "mode": "tia",
+  "partition": "mandelbrot",
+  "file": "samples/e266223a27ff99c3.jpg",
+  "source": "artifacts/curation/depth/on125_wide1/pictures/e266223a27ff99c3.jpg",
+  "recorded_p_ge3": 0.9960818958766025,
+  "recorded_p_ge4": 0.037763393226854354,
+  "recorded_p_fine": null,
+  "p_ge3": 0.9960818902060493,
+  "p_ge4": 0.03776337568756733,
+  "p_fine": 0.6541901006320822,
+  "p_fine_members": [
+   0.5840106959098658,
+   0.6280149874497399,
+   0.7505446185366407
+  ]
+ },
+ {
+  "key": "5660748f44ed8d17",
+  "stratum": "random",
+  "mode": "stripe",
+  "partition": "mandelbrot",
+  "file": "samples/5660748f44ed8d17.jpg",
+  "source": "artifacts/curation/depth/mine_diverse_0903_d/pictures/5660748f44ed8d17.jpg",
+  "recorded_p_ge3": 0.9994319832431027,
+  "recorded_p_ge4": 0.9576353740874051,
+  "recorded_p_fine": 0.009909039288111895,
+  "p_ge3": 0.9994319848943211,
+  "p_ge4": 0.9576354711529101,
+  "p_fine": 0.009829361445531875,
+  "p_fine_members": [
+   0.0006619650093222109,
+   0.004932526958682327,
+   0.02389359236859109
+  ]
+ },
+ {
+  "key": "2bd29434836dd299",
+  "stratum": "random",
+  "mode": "stripe",
+  "partition": "mandelbrot",
+  "file": "samples/2bd29434836dd299.jpg",
+  "source": "artifacts/curation/depth/on125_wide1/pictures/2bd29434836dd299.jpg",
+  "recorded_p_ge3": 0.728039464988136,
+  "recorded_p_ge4": 0.01626320125746638,
+  "recorded_p_fine": null,
+  "p_ge3": 0.7280391566380817,
+  "p_ge4": 0.016263266395396613,
+  "p_fine": 0.00018819009678500078,
+  "p_fine_members": [
+   3.1885606918798595e-05,
+   0.0004416420910885683,
+   9.104259234763551e-05
+  ]
+ },
+ {
+  "key": "6e9be66682346f69",
+  "stratum": "random",
+  "mode": "stripe",
+  "partition": "julia:multibrot3",
+  "file": "samples/6e9be66682346f69.jpg",
+  "source": "artifacts/curation/depth/breadth_strange/pictures/6e9be66682346f69.jpg",
+  "recorded_p_ge3": 0.7050152431182444,
+  "recorded_p_ge4": 0.004913079618249729,
+  "recorded_p_fine": null,
+  "p_ge3": 0.7050141118509732,
+  "p_ge4": 0.004913074061133244,
+  "p_fine": 0.019326696651136024,
+  "p_fine_members": [
+   0.03511242115967437,
+   0.005880276541982823,
+   0.016987392251750878
+  ]
+ },
+ {
+  "key": "43320e167669dfc2",
+  "stratum": "random",
+  "mode": "smooth_stripe",
+  "partition": "julia:multibrot6",
+  "file": "samples/43320e167669dfc2.jpg",
+  "source": "artifacts/curation/depth/d6o_c1_open/pictures/43320e167669dfc2.jpg",
+  "recorded_p_ge3": 0.3714258216516595,
+  "recorded_p_ge4": 0.007106176657379952,
+  "recorded_p_fine": null,
+  "p_ge3": 0.37142530821428643,
+  "p_ge4": 0.007106183452512172,
+  "p_fine": 0.00047549785317556494,
+  "p_fine_members": [
+   0.0001080254275758265,
+   0.0013025468994874317,
+   1.5921232463436537e-05
+  ]
+ },
+ {
+  "key": "4966f5d391ce45b9",
+  "stratum": "random",
+  "mode": "exp_smoothing",
+  "partition": "julia:multibrot5",
+  "file": "samples/4966f5d391ce45b9.jpg",
+  "source": "artifacts/curation/depth/mine_diverse_0903_a/pictures/4966f5d391ce45b9.jpg",
+  "recorded_p_ge3": 0.07022655083055011,
+  "recorded_p_ge4": 0.002181226601001964,
+  "recorded_p_fine": null,
+  "p_ge3": 0.07022647019973004,
+  "p_ge4": 0.0021812261121885402,
+  "p_fine": 3.813014007887355e-05,
+  "p_fine_members": [
+   2.0848374900182636e-05,
+   6.826772484769771e-05,
+   2.5274320488740312e-05
+  ]
+ },
+ {
+  "key": "68ef114092ef42a7",
+  "stratum": "random",
+  "mode": "smooth_mean_angle",
+  "partition": "julia:multibrot5",
+  "file": "samples/68ef114092ef42a7.jpg",
+  "source": "artifacts/curation/depth/armA2_0908/pictures/68ef114092ef42a7.jpg",
+  "recorded_p_ge3": 0.0013122973326257356,
+  "recorded_p_ge4": 0.0002467720420192044,
+  "recorded_p_fine": null,
+  "p_ge3": 0.0013122988477687787,
+  "p_ge4": 0.000246772303049832,
+  "p_fine": 0.00048653956893451384,
+  "p_fine_members": [
+   0.0001059935498141206,
+   0.0012897243255200106,
+   6.390083146941027e-05
+  ]
+ },
+ {
+  "key": "fabb2fc68a49de37",
+  "stratum": "random",
+  "mode": "stripe",
+  "partition": "julia:multibrot4",
+  "file": "samples/fabb2fc68a49de37.jpg",
+  "source": "artifacts/curation/depth/easy125_recolour/pictures/fabb2fc68a49de37.jpg",
+  "recorded_p_ge3": 0.3174534705970776,
+  "recorded_p_ge4": 0.0036044715858100014,
+  "recorded_p_fine": null,
+  "p_ge3": 0.31745274167163584,
+  "p_ge4": 0.003604465008576984,
+  "p_fine": 0.010552658936286546,
+  "p_fine_members": [
+   0.030025502696690572,
+   0.0014370166481858023,
+   0.00019545746398326618
+  ]
+ },
+ {
+  "key": "6ca78100f1fff944",
+  "stratum": "random",
+  "mode": "direct_trap_lines",
+  "partition": "julia:multibrot3",
+  "file": "samples/6ca78100f1fff944.jpg",
+  "source": "artifacts/curation/depth/sm_direct/pictures/6ca78100f1fff944.jpg",
+  "recorded_p_ge3": 0.07406989674861134,
+  "recorded_p_ge4": 0.0032056330850633533,
+  "recorded_p_fine": null,
+  "p_ge3": 0.07407000297807054,
+  "p_ge4": 0.003205644994587057,
+  "p_fine": 5.97355293354141e-06,
+  "p_fine_members": [
+   4.666729335825706e-06,
+   1.5669790551039762e-08,
+   1.3238259674247484e-05
+  ]
+ },
+ {
+  "key": "1a448183dc6ccf04",
+  "stratum": "random",
+  "mode": "smooth",
+  "partition": "julia:multibrot5",
+  "file": "samples/1a448183dc6ccf04.jpg",
+  "source": "artifacts/curation/depth/mine_diverse_0903_c/pictures/1a448183dc6ccf04.jpg",
+  "recorded_p_ge3": 0.7732451960797982,
+  "recorded_p_ge4": 0.0002862214179695132,
+  "recorded_p_fine": null,
+  "p_ge3": 0.773244796993586,
+  "p_ge4": 0.00028622127024532153,
+  "p_fine": 1.6053976885030266e-05,
+  "p_fine_members": [
+   3.1322829475999737e-05,
+   1.0633266939254926e-05,
+   6.205834239836129e-06
+  ]
+ },
+ {
+  "key": "0ee138a10da13c90",
+  "stratum": "random",
+  "mode": "smooth",
+  "partition": "multibrot4",
+  "file": "samples/0ee138a10da13c90.jpg",
+  "source": "artifacts/curation/depth/thin_b1b/pictures/0ee138a10da13c90.jpg",
+  "recorded_p_ge3": 0.9919138599009789,
+  "recorded_p_ge4": 0.005429576564526334,
+  "recorded_p_fine": null,
+  "p_ge3": 0.9919138522168297,
+  "p_ge4": 0.005429594546457871,
+  "p_fine": 0.0004000982588311087,
+  "p_fine_members": [
+   7.115659286970063e-08,
+   0.0010069974558949576,
+   0.0001932261640054989
+  ]
+ },
+ {
+  "key": "066643d4bbcd9d69",
+  "stratum": "random",
+  "mode": "smooth",
+  "partition": "multibrot3",
+  "file": "samples/066643d4bbcd9d69.jpg",
+  "source": "artifacts/curation/depth/wm1_deep/pictures/066643d4bbcd9d69.jpg",
+  "recorded_p_ge3": 0.1045244823282896,
+  "recorded_p_ge4": 0.003276973399893957,
+  "recorded_p_fine": null,
+  "p_ge3": 0.10452446622910877,
+  "p_ge4": 0.0032769744087583442,
+  "p_fine": 3.699385271244791e-05,
+  "p_fine_members": [
+   7.950780505737617e-11,
+   0.00011098103490142272,
+   4.437281159500563e-10
+  ]
+ },
+ {
+  "key": "0273ee596c1e40cf",
+  "stratum": "random",
+  "mode": "smooth_mean_angle",
+  "partition": "julia:mandelbrot",
+  "file": "samples/0273ee596c1e40cf.jpg",
+  "source": "artifacts/curation/runs/gallery2/pictures/0403.jpg",
+  "recorded_p_ge3": 0.7642678992532015,
+  "recorded_p_ge4": 0.035054894475010194,
+  "recorded_p_fine": null,
+  "p_ge3": 0.7642675666491855,
+  "p_ge4": 0.03505475960374246,
+  "p_fine": 0.4977466699406616,
+  "p_fine_members": [
+   0.46964192531969046,
+   0.7431173719296467,
+   0.28048071257264756
+  ]
+ },
+ {
+  "key": "4b5c1723d032fe79",
+  "stratum": "random",
+  "mode": "smooth",
+  "partition": "multibrot4",
+  "file": "samples/4b5c1723d032fe79.jpg",
+  "source": "artifacts/curation/depth/u5_easy_night2/pictures/4b5c1723d032fe79.jpg",
+  "recorded_p_ge3": 0.9000592618891166,
+  "recorded_p_ge4": 0.019212597444934327,
+  "recorded_p_fine": null,
+  "p_ge3": 0.9000592618891166,
+  "p_ge4": 0.01921261985925803,
+  "p_fine": 1.0437624186222867e-05,
+  "p_fine_members": [
+   1.5701366321755922e-06,
+   2.9661669860879838e-05,
+   8.106606561317241e-08
+  ]
+ },
+ {
+  "key": "89a362a597943091",
+  "stratum": "random",
+  "mode": "smooth",
+  "partition": "mandelbrot",
+  "file": "samples/89a362a597943091.jpg",
+  "source": "artifacts/curation/depth/smooth500_leg/pictures/89a362a597943091.jpg",
+  "recorded_p_ge3": 0.4049729833580759,
+  "recorded_p_ge4": 0.005720064561334779,
+  "recorded_p_fine": null,
+  "p_ge3": 0.40497321663104185,
+  "p_ge4": 0.005720062478183724,
+  "p_fine": 0.013699508291579557,
+  "p_fine_members": [
+   0.0027360074605362623,
+   0.02867589352630209,
+   0.009686623887900316
+  ]
+ },
+ {
+  "key": "1ca34451b1583446",
+  "stratum": "random",
+  "mode": "tia",
+  "partition": "julia:mandelbrot",
+  "file": "samples/1ca34451b1583446.jpg",
+  "source": "artifacts/curation/depth/armA_places_0906/pictures/1ca34451b1583446.jpg",
+  "recorded_p_ge3": 0.12630408897165132,
+  "recorded_p_ge4": 0.005247792234087829,
+  "recorded_p_fine": null,
+  "p_ge3": 0.12630376589157546,
+  "p_ge4": 0.005247766818655194,
+  "p_fine": 0.0002808306741388299,
+  "p_fine_members": [
+   8.101897368609753e-06,
+   0.0003847049853365694,
+   0.00044968513971131046
+  ]
+ },
+ {
+  "key": "a73ca4a36fa1060f",
+  "stratum": "random",
+  "mode": "stripe",
+  "partition": "julia:multibrot3",
+  "file": "samples/a73ca4a36fa1060f.jpg",
+  "source": "artifacts/curation/depth/fss125_recolour/pictures/a73ca4a36fa1060f.jpg",
+  "recorded_p_ge3": 0.9499709833258957,
+  "recorded_p_ge4": 0.25318721969559815,
+  "recorded_p_fine": null,
+  "p_ge3": 0.9499709240628823,
+  "p_ge4": 0.25318603058538036,
+  "p_fine": 0.00017990712350042176,
+  "p_fine_members": [
+   6.144434630317075e-05,
+   2.5641578324520235e-05,
+   0.00045263544587357423
+  ]
+ },
+ {
+  "key": "53000dcad70cc401",
+  "stratum": "random",
+  "mode": "smooth_stripe",
+  "partition": "julia:multibrot5",
+  "file": "samples/53000dcad70cc401.jpg",
+  "source": "artifacts/curation/depth/armA2_0908/pictures/53000dcad70cc401.jpg",
+  "recorded_p_ge3": 0.03213631880850305,
+  "recorded_p_ge4": 0.0013776235360383957,
+  "recorded_p_fine": null,
+  "p_ge3": 0.03213621156180959,
+  "p_ge4": 0.0013776198816844508,
+  "p_fine": 0.00028977805011902924,
+  "p_fine_members": [
+   0.00019219424818599836,
+   0.0005004754528582598,
+   0.00017666444931282952
+  ]
+ },
+ {
+  "key": "c83517f35b441cc4",
+  "stratum": "random",
+  "mode": "stripe",
+  "partition": "multibrot5",
+  "file": "samples/c83517f35b441cc4.jpg",
+  "source": "artifacts/curation/depth/on125_recolour1/pictures/c83517f35b441cc4.jpg",
+  "recorded_p_ge3": 0.9382087985850187,
+  "recorded_p_ge4": 0.6812759602888778,
+  "recorded_p_fine": 0.002679437992049573,
+  "p_ge3": 0.938209074393086,
+  "p_ge4": 0.681277016841451,
+  "p_fine": 0.0026814081038562354,
+  "p_fine_members": [
+   0.0017881154815421354,
+   0.005404417995209518,
+   0.0008516908348170521
+  ]
+ }
+]
