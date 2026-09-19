@@ -88,10 +88,17 @@ from pathlib import Path
 from . import images, links, picks, renders
 from .paths import GALLERY_IMAGES_DIR, GALLERY_METADATA_NAME, SITE_ROOT
 
-#: The published tentative record the general collection is. A stamp rather than "the
-#: latest": a second solve writes a second stamp, and a staged gallery that re-pointed
-#: itself would replace a thousand committed rows without anybody deciding to.
-STAMP = "20260914T171846Z"
+#: The tentative record the general collection is. A stamp rather than "the latest": a
+#: second solve writes a second stamp, and a staged gallery that re-pointed itself would
+#: replace a thousand committed rows without anybody deciding to.
+#:
+#: **Since `site_rebase_ckpt132` (2026-09-19) it is not a published record.** It is the
+#: `general_n1000` solve of the pinned batch — the first solves with the project's pinned
+#: seats seated first — and it is kept next door by `tentative.KEPT_UNPUBLISHED`, not by
+#: `PUBLISHED`, which still ends at `20260914T171846Z`. The header's `published` asks that
+#: tuple rather than assuming the general collection is the published one. The batch's
+#: `general_n2000` record is a comparison only and is not a collection here.
+STAMP = "20260919T171003Z"
 
 #: The general collection's name, which is what `collections` keys it by.
 GENERAL = "general"
@@ -103,40 +110,43 @@ GENERAL = "general"
 #: order; then the three thin ones — `green`, `cyan`, `lime` — the families whose stock
 #: ran short at the old target; then the seven modes, the three smooth-family composites last.
 #:
-#: ⚠ **The nineteen are not published**, and nothing next door names a stamp for a
-#: collection: `tentative.PUBLISHED` lists the general record alone. These are
-#: `targets_<collection>_n<seats>` solves at the sizes `curation/targets.py` sets: fifteen
-#: of 2026-09-15 21:01-21:06Z, taken over one pool in one batch; `smooth_stripe` of
-#: 2026-09-18 14:44Z (record_three_modes_ckpt130), over the pool the angle-modes evening
-#: left; and `threads`, `smooth_mean_angle` and `smooth_angle_min` re-solved 2026-09-18
-#: 21:21-21:23Z (walk_console_ckpt131 repointed them). Matt's word on them is that they
-#: are not final, so a re-solve is a re-pointing of this table, and `_collection_stamp`
-#: refuses a stamp whose solve was not that collection's so a mistyped line cannot seat one
-#: family's pictures under another's name.
-#: Discard-by-default applies to them next door; a stamp that goes is a `seats` run that
-#: refuses, not a panel that quietly shrinks.
+#: ⚠ **None of the twenty is published.** They are one batch, the pinned records of
+#: 2026-09-19 17:10-17:38Z (`site_rebase_ckpt132` repointed every line here): the general
+#: `general_n1000` solve and nineteen `targets_<collection>_n<seats>` solves at the sizes
+#: `curation/targets.py` sets, all with `data/curation/pins.json` seated first and all
+#: kept next door by `tentative.KEPT_UNPUBLISHED`. Matt's word on the collections is that
+#: they are not final, so a re-solve is a re-pointing of this table, and
+#: `_collection_stamp` refuses a stamp whose solve was not that collection's so a mistyped
+#: line cannot seat one family's pictures under another's name.
+#: A stamp that leaves the keep list next door is a `seats` run that refuses once it is
+#: deleted, not a panel that quietly shrinks.
 COLLECTIONS: tuple[tuple[str, str], ...] = (
     (GENERAL, STAMP),
-    ("rose", "20260915T210135Z"),
-    ("red", "20260915T210149Z"),
-    ("orange", "20260915T210155Z"),
-    ("yellow", "20260915T210203Z"),
-    ("teal", "20260915T210219Z"),
-    ("azure", "20260915T210232Z"),
-    ("blue", "20260915T210238Z"),
-    ("purple", "20260915T210246Z"),
-    ("magenta", "20260915T210351Z"),
-    ("green", "20260915T210214Z"),
-    ("cyan", "20260915T210224Z"),
-    ("lime", "20260915T210208Z"),
-    ("tia", "20260915T210422Z"),
-    ("smooth", "20260915T210501Z"),
-    ("stripe", "20260915T210551Z"),
-    ("threads", "20260918T212123Z"),
-    ("smooth_mean_angle", "20260918T212229Z"),
-    ("smooth_angle_min", "20260918T212334Z"),
-    ("smooth_stripe", "20260918T144411Z"),
+    ("rose", "20260919T171517Z"),
+    ("red", "20260919T171636Z"),
+    ("orange", "20260919T171754Z"),
+    ("yellow", "20260919T171915Z"),
+    ("teal", "20260919T172300Z"),
+    ("azure", "20260919T172535Z"),
+    ("blue", "20260919T172651Z"),
+    ("purple", "20260919T172806Z"),
+    ("magenta", "20260919T172927Z"),
+    ("green", "20260919T172144Z"),
+    ("cyan", "20260919T172420Z"),
+    ("lime", "20260919T172029Z"),
+    ("tia", "20260919T173059Z"),
+    ("smooth", "20260919T173230Z"),
+    ("stripe", "20260919T173402Z"),
+    ("threads", "20260919T173514Z"),
+    ("smooth_mean_angle", "20260919T173625Z"),
+    ("smooth_angle_min", "20260919T173732Z"),
+    ("smooth_stripe", "20260919T173838Z"),
 )
+
+#: What the general collection's solve is called by the pass that recorded it. The rest are
+#: `targets_<collection>_n<seats>`; this one is the batch's n=1000 general solve, and the
+#: `_n1000_` is what keeps its n=2000 comparison from being taken for it.
+GENERAL_SOLVE = "general_n1000_"
 
 #: Which of those are a mode, so the header can say which axis each was cut on. The rest
 #: after the general one are hue families.
@@ -219,6 +229,16 @@ for stamp in sys.argv[1:]:
 print(json.dumps(answer))
 """
 
+#: The stamps the project next door has published, asked of its own tuple so the header's
+#: `published` says what that project says rather than what this one assumes.
+PUBLISHED_PROGRAM = """
+import json
+
+from fractal_wallpapers.curation import tentative
+
+print(json.dumps(list(tentative.PUBLISHED)))
+"""
+
 #: What `tone` answers with, in the one word a caller branches on. `CLEAN` is the link
 #: being the picture with no curve in it; `CURVED` carries one; `LOST` is a gap.
 CLEAN, CURVED, LOST = "clean", "curved", "lost"
@@ -299,17 +319,16 @@ def seat_rows(stamp: str = STAMP) -> list[dict]:
 def _collection_stamp(name: str, stamp: str) -> str:
     """The stamp, once its own manifest says the solve behind it was this collection's.
 
-    The general record is published and its solve predates the collection passes, so it
-    is taken as named. Every other stamp's solve is called `targets_<collection>_n<seats>`
-    by the pass that recorded it, and a stamp whose solve says another name is refused.
+    The general record's solve is called `GENERAL_SOLVE…` and every other stamp's
+    `targets_<collection>_n<seats>`, by the pass that recorded it, and a stamp whose solve
+    says another name is refused.
     """
-    if name == GENERAL:
-        return stamp
     path = renders.artifact("curation", "tentative", stamp, "manifest.json")
     if not path.is_file():
         raise SeatError(f"the {name} collection's record {stamp} is not there — {path}")
     solved = str(json.loads(path.read_text(encoding="utf-8"))["solve"]["name"])
-    if not solved.startswith(f"targets_{name}_n"):
+    wanted = GENERAL_SOLVE if name == GENERAL else f"targets_{name}_n"
+    if not solved.startswith(wanted):
         raise SeatError(f"{stamp} is the solve {solved!r}, not the {name} collection's")
     return stamp
 
@@ -615,6 +634,7 @@ def header(rows: list[dict]) -> dict:
     nobody can reproduce, and this one is a thousand rows nobody would reproduce by hand.
     """
     orders = presentation_orders()
+    published = set(_program(PUBLISHED_PROGRAM, "reading the published stamps"))
     held = {name: 0 for name, _ in COLLECTIONS}
     for row in rows:
         for name in row["collections"]:
@@ -635,7 +655,7 @@ def header(rows: list[dict]) -> dict:
                 if name in MODE_COLLECTIONS
                 else "family",
                 "stamp": stamp,
-                "published": name == GENERAL,
+                "published": stamp in published,
                 "seats": held[name],
                 "ordered_on": orders[name][1],
                 "file": collection_file(name),
@@ -653,13 +673,14 @@ def header(rows: list[dict]) -> dict:
         ),
         "rule": (
             "One row per recipe key seated by any collection named above, each collection "
-            "being one tentative record next door, and only the general one published. "
+            "being one tentative record next door, published where that project's "
+            "tentative.PUBLISHED lists its stamp. "
             "collections maps every collection that seats the row to its place in that "
             "record's presentation order, the permutation its own page opens on, whose basis "
             "ordered_on names. This header is the whole of gallery.jsonl: each collection's "
             "rows are in the file its entry names, in that collection's presentation order, "
             "so a seat in several collections is a row in each. modes is every mode the "
-            "published collection seats. "
+            "general collection seats. "
             "The seat's mode and hue family come from the first record that seats it; hues "
             "is every family holding at least "
             f"{HUE_PRESENT} of that picture's colour, largest first, read off the picture "

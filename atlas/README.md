@@ -59,9 +59,10 @@ a pixel of rounding would chase itself.
 The record carries a partition per plane — **z² · z³ · z⁴ · z⁵ · z⁶ · Phoenix** — and the
 frame puts a strip of them above the slots. A chip is the plane's power rather than its
 degree, because the headers over the slots carry the same map and a chip spelled `d=3` was
-a second language for the one thing; the plane's name is the chip's tooltip. Every one but
-z⁶ has marks: degree 6 is a plane the wallpaper project searches without a single labelled
-row, and until its atlas maker has written a directory for it, it is the plate alone. A multibrot plane
+a second language for the one thing; the plane's name is the chip's tooltip. Every one has
+marks. z⁶ was the plate alone until `site_rebase_ckpt132`: degree 6 is a plane the
+wallpaper project searches without a single labelled row, and its first marks came with the
+pinned general record, the first record to seat it. A multibrot plane
 is the Mandelbrot plane at another degree, with the Julia places of that degree drawn over
 it. **Phoenix is the classic slice only**: its parameters are pinned, so every place on it
 is a frame on the slice and is drawn red, and its first slot is a neighborhood of the slice
@@ -83,10 +84,13 @@ no entry at all and a header with its name alone, which is true where a guess wo
 absorption radius, the neighborhood width and the tally, because the maker thins every plane
 at twelve pixels of its own base and so at a different distance on each plane.
 
-**Four planes' slot pictures are staged, not deployed.** `pictures` on the partition row is
-`tracked` for Mandelbrot and `staged` for the other four, whose 948 pictures (28 MB) are
-untracked and listed in `.git/info/exclude`. The record commits. Until they are deployed,
-the served page shows those planes' marks over empty slots. A clone has none of the files,
+**Every plane's slot pictures are staged, not deployed.** `pictures` on the partition row is
+`staged` for all six since `site_rebase_ckpt132` (2026-09-19), which rebuilt every plane from
+the pinned general record `20260919T171003Z` and untracked Mandelbrot's slot pictures rather
+than re-committing them; the pictures are listed in `.git/info/exclude` and the record
+commits. The six plates stay tracked: a plate is drawn from the engine's home view and not
+from a record, so a rebuild leaves them as they are. Until the pictures are deployed, the
+served page shows the marks over empty slots. A clone has none of the files,
 and `check` and `atlas.test.mjs` each report that as a named skip. One staged picture
 present means the ingest has run, and then the whole plane is held to its record.
 

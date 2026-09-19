@@ -16,7 +16,7 @@ spells them, and the page hands them to `permalink.js` without arithmetic.
 
 `atlas/atlas.jsonl` is the index and carries no dots:
 
-* one **`method`** row — what every plane shares: the published record the seats were
+* one **`method`** row — what every plane shares: the record the seats were
   read out of, the judge that scored it, the fine bar the population was cut at, the map
   the neighborhood plates are drawn through, the size of a slot picture, and the tally of
   the whole atlas;
@@ -941,7 +941,7 @@ def summary() -> list[str]:
     """What the record holds, for `python -m builder atlas`."""
     atlas = load_all()
     lines = [
-        f"atlas/atlas.jsonl — made {atlas.made} from the published record {atlas.record}",
+        f"atlas/atlas.jsonl — made {atlas.made} from the record {atlas.record}",
         f"  judge {atlas.judge[:12]}… · fine bar {atlas.fine_bar:g} · "
         f"neighborhood plates through {atlas.canonical_map}",
     ]
@@ -1025,7 +1025,7 @@ SHARED = (
 METHOD_SAYS = (
     "Every place the search kept on the planes it has searched, thinned to one dot per "
     "neighborhood. A place is here because at least one of its rows reads at or above the "
-    "solve's own fine bar, and nothing else puts one here. The seats of the published record "
+    "solve's own fine bar, and nothing else puts one here. The seats of the general gallery "
     "are placed first and everything else follows by its best fine score; a place landing "
     "inside the absorption radius of a dot already drawn is dropped, whichever kind either "
     "of them is, so a dot is one place of one kind."
@@ -1126,7 +1126,11 @@ def _family_name(family: dict) -> str:
 
 
 def ingest(
-    source: Path | None = None, *, quality: int = THUMB_QUALITY, made: str | None = None
+    source: Path | None = None,
+    *,
+    quality: int = THUMB_QUALITY,
+    made: str | None = None,
+    rewriting: frozenset[str] = frozenset(),
 ) -> list[str]:
     """Turn the maker's `dots.json` and `thumbs/` into the committed record and pictures.
 
@@ -1168,7 +1172,15 @@ def ingest(
         raise AtlasError(f"{ATLAS_INDEX.name}: no {plane} partition to ingest dots onto")
     # The method row says once what every plane shares, so a plane made against another
     # release, judge, bar, map or thumbnail size is two atlases in one record and refused.
-    others = [one for one in partitions if one is not target and one["dots"] > 0]
+    # **A plane the same pass is rewriting is not a plane already in the record**
+    # *(site_rebase_ckpt132)*: moving every plane to a new record at once would otherwise
+    # refuse its first plane against five that are about to change with it. A plane left
+    # standing is still held to it.
+    others = [
+        one
+        for one in partitions
+        if one is not target and one["dots"] > 0 and one["partition"] not in rewriting
+    ]
     if others:
         disagree = [ours for theirs, ours in SHARED if method.get(ours) != payload[theirs]]
         if method.get("thumb") != {"width": thumb_across, "height": thumb_down}:
@@ -1270,12 +1282,17 @@ def ingest(
 
 
 def ingest_every(*, quality: int = THUMB_QUALITY, made: str | None = None) -> list[str]:
-    """Ingest every plane the maker has written, in the order the strip shows them."""
+    """Ingest every plane the maker has written, in the order the strip shows them.
+
+    The planes landing together are named to each ingest as `rewriting`, so a pass that
+    moves the whole atlas to another record is one pass and not a refusal.
+    """
     lines: list[str] = []
+    landing = frozenset(name for name, *_ in PLANES_DRAWN if maker_output(name).is_file())
     for name, *_ in PLANES_DRAWN:
         source = maker_output(name)
         if source.is_file():
-            lines.extend(ingest(source, quality=quality, made=made))
+            lines.extend(ingest(source, quality=quality, made=made, rewriting=landing))
         else:
             lines.append(f"{name}: no {source}, left as it stands")
     return lines
