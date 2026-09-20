@@ -283,6 +283,135 @@ test("the deep kernel's sample grid is the engine's, measured where both are hon
   );
 });
 
+/**
+ * **The Julia field, against the engine's own Julia render of the same `c`.**
+ *
+ * The deep kernel's Julia case is the one thing on this page drawn by an arithmetic
+ * nothing else here can check — except at a width where `f64` is still honest, which is
+ * exactly where `engine.wasm` draws the same set through a completely different loop:
+ * `z ↦ z² + c` iterated directly, with no reference orbit, no delta and no rebasing. Two
+ * kernels sharing no code and agreeing about a picture is the strongest statement
+ * available about the recurrence, the entry index and the geometry all at once.
+ */
+test("a shallow julia field is the engine's own julia render of the same c", { skip }, () => {
+  const [width, height] = [96, 54];
+  const cap = 3000;
+  // The Douady rabbit, `c` in the period-3 bulb and so inside the Mandelbrot set: a filled
+  // Julia set with a boundary that has structure at this width, so the frame has both
+  // interior and exterior in it. A `c` outside the set would give a dust with neither.
+  const c = ["-0.123", "0.745"];
+  const frame = { center_re: c[0], center_im: c[1], width: 3 };
+
+  const deepLanes = new Float64Array(
+    perturb.frame({
+      ...frame,
+      schema: 1,
+      resolution: [width, height],
+      maxiter: cap,
+      julia_re: c[0],
+      julia_im: c[1],
+    }).buffer,
+  );
+
+  const engineSpec = {
+    schema: 1,
+    family: { kind: "julia", degree: 2, c },
+    viewport: { center_re: frame.center_re, center_im: frame.center_im, width: String(frame.width) },
+    resolution: [width, height],
+    mode: "smooth",
+    maxiter: cap,
+    colormap: RAMP,
+  };
+  const shape = engine.plan(engineSpec);
+  assert.ok(shape.ok, shape.why);
+  assert.equal(shape.lanes, 1);
+  const engineLanes = new Float64Array(engine.band(engineSpec, shape, 0, height).buffer);
+  assert.equal(deepLanes.length, engineLanes.length);
+
+  let disagreements = 0;
+  let interior = 0;
+  const relative = [];
+  for (let at = 0; at < deepLanes.length; at++) {
+    const mine = deepLanes[at];
+    const theirs = engineLanes[at];
+    if (Number.isNaN(mine) !== Number.isNaN(theirs)) {
+      disagreements += 1;
+      continue;
+    }
+    if (Number.isNaN(theirs)) {
+      interior += 1;
+      continue;
+    }
+    relative.push(Math.abs(mine - theirs) / Math.max(1, Math.abs(theirs)));
+  }
+  relative.sort((a, b) => a - b);
+  const median = relative[relative.length >> 1];
+
+  // Both halves of the picture have to be there, or the agreement is about a blank.
+  assert.ok(interior > width * height * 0.1, `only ${interior} interior samples`);
+  assert.ok(relative.length > width * height * 0.3, `only ${relative.length} escaping samples`);
+  assert.equal(disagreements, 0, `${disagreements} samples disagree about the interior`);
+  // Held to the median, for the reason the Mandelbrot comparison above is.
+  assert.ok(median < 1e-6, `median relative difference ${median.toExponential(2)}`);
+
+  // **The control: the same field at a neighbouring parameter.** A Julia set is a
+  // different picture for every `c`, so a test that passed at the wrong one would be
+  // measuring nothing at all — and the parameter is the one thing here that no geometry
+  // check further up would have caught.
+  const elsewhere = new Float64Array(
+    perturb.frame({
+      ...frame,
+      schema: 1,
+      resolution: [width, height],
+      maxiter: cap,
+      julia_re: "-0.113",
+      julia_im: c[1],
+    }).buffer,
+  );
+  let moved = 0;
+  for (let at = 0; at < elsewhere.length; at++) {
+    const mine = elsewhere[at];
+    const theirs = engineLanes[at];
+    // Any disagreement at all: the mask, or the count by more than the agreement above
+    // was held to. A tenth of a percent on `c` is a different picture, not a nudge.
+    if (Number.isNaN(mine) !== Number.isNaN(theirs)) moved += 1;
+    else if (!Number.isNaN(theirs) && Math.abs(mine - theirs) > 1e-6) moved += 1;
+  }
+  assert.ok(moved > 1000, `a different c moved only ${moved} samples, so this test is blind`);
+});
+
+test("a julia frame's reference orbit is the mandelbrot orbit at the same c", { skip }, () => {
+  // The claim that makes *Julia at this c* free: the workers are already holding it.
+  const at = { center_re: "-0.123", center_im: "0.745", width: 3, resolution: [16, 9], maxiter: 500 };
+  const mandelbrot = perturb.reference({ ...at, schema: 1 });
+  const julia = perturb.reference({ ...at, schema: 1, julia_re: "-0.123", julia_im: "0.745" });
+  // One point longer, because a view entered at `Z₁` has one step less in front of it —
+  // so the sixteen-byte headers differ, by exactly that count, and the points do not.
+  assert.equal(julia.length, mandelbrot.length + 16);
+  assert.deepEqual(julia.slice(16, mandelbrot.length), mandelbrot.slice(16));
+});
+
+test("a julia frame too far from both anchors is refused, and says why", { skip }, () => {
+  const far = {
+    schema: 1,
+    julia_re: ANCHOR.center_re,
+    julia_im: ANCHOR.center_im,
+    center_re: "0",
+    center_im: "0",
+    width: 1e-20,
+    resolution: [96, 54],
+  };
+  const refusal = perturb.plan(far);
+  assert.equal(refusal.ok, false);
+  assert.match(refusal.why, /flat/);
+  // And the same frame drawn from the anchor it actually stands on is fine, which is
+  // what the second anchor exists for.
+  const anchored = perturb.plan({ ...far, anchor: "origin" });
+  assert.ok(anchored.ok, anchored.why);
+  assert.equal(anchored.anchor, "origin");
+  assert.equal(anchored.julia, true);
+});
+
 test("the tab's own spec builder produces what the module reads", { skip }, () => {
   const context = {
     palettes: new Map([["ramp", { cyclic: false }]]),

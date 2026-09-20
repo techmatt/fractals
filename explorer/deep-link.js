@@ -24,7 +24,7 @@
 // readers of one thing drift apart.
 //
 // ```
-// dv · x · y · w · n · a · p · the shade keys · level
+// dv · cx · cy · x · y · w · n · a · p · the shade keys · level
 // ```
 //
 // Nothing here touches the DOM or the module, so `deep-link.test.mjs` runs it under
@@ -51,11 +51,19 @@ import * as fx from "./deep-fx.js";
  *  half that should not be in a cold open. */
 export const MARKER = DEEP_MARKER;
 
-/** The contract version this module emits. One, and it reads one. */
-export const VERSION = 1;
+/** The contract version this module emits. Two, and it reads both.
+ *
+ *  **Version 2 is the Julia case**, and it is a version rather than a widening
+ *  for the shallow contract's own reason. `cx` and `cy` have a default — absent
+ *  is the Mandelbrot set — so every v1 link still parses and still means exactly
+ *  what it meant, which is the test a widening passes. What bumps it is that the
+ *  answer to "what does this tab draw" is no longer one recurrence: a link can
+ *  now say which of two sets it is a picture of, and that is worth saying in the
+ *  version rather than leaving a reader to find out from a key. */
+export const VERSION = 2;
 
 /** The versions this module reads. */
-export const READS = [1];
+export const READS = [1, 2];
 
 /** The key carrying the iteration cap.
  *
@@ -85,6 +93,8 @@ const ASPECT_LIMIT = 10000;
 /** Every key this contract spells, so an unknown one is told apart from a misspelled one. */
 const KNOWN = new Set([
   MARKER,
+  "cx",
+  "cy",
   "x",
   "y",
   "w",
@@ -130,9 +140,13 @@ export function parse(search, context) {
     throw new PermalinkError(`the link carries a key the Deep tab does not know: ${key}.`);
   }
 
+  const julia = juliaOf(params);
   const home = context.deepHome();
-  const x = coordinate(params.get("x"), "x") ?? coordinate(home.x, "x");
-  const y = coordinate(params.get("y"), "y") ?? coordinate(home.y, "y");
+  // **A Julia link that names no frame opens at `z = c`**, and not at the
+  // Mandelbrot home: the home is where the *parameter* plane starts, and on the
+  // dynamical plane it means nothing. `z = c` is where the picture is.
+  const x = coordinate(params.get("x"), "x") ?? julia?.x ?? coordinate(home.x, "x");
+  const y = coordinate(params.get("y"), "y") ?? julia?.y ?? coordinate(home.y, "y");
   const w = width(params.get("w") ?? home.w);
 
   // A link that leaves the cap out gets the kernel's policy answer for its width, so the
@@ -163,7 +177,30 @@ export function parse(search, context) {
   const levelText = params.get(LEVEL_KEY.key);
   const level = levelText === null ? LEVEL_KEY.fallback : LEVEL_KEY.read(levelText);
 
-  return { version: VERSION, x, y, w, maxiter, aspect, palette, shade, level };
+  return { version: VERSION, julia, x, y, w, maxiter, aspect, palette, shade, level };
+}
+
+/**
+ * The Julia parameter a query names, or `null` where it names none.
+ *
+ * **The shallow contract's own spelling, deliberately.** `cx` and `cy` are what
+ * `permalink.js` calls the same number on the dynamical plane — the `c` of
+ * `z² + c`, which is half of a location's identity there — and a second name for
+ * one quantity is how two readers of one thing drift apart. What differs is the
+ * arithmetic behind them: here they are read into exact decimals, because a deep
+ * `c` is a `c` no double can hold and rounding it would draw a different set
+ * under the same name.
+ */
+function juliaOf(params) {
+  const re = params.get("cx");
+  const im = params.get("cy");
+  if (re === null && im === null) return null;
+  if (re === null || im === null) {
+    throw new PermalinkError(
+      "cx and cy are the two halves of one number — the c of z² + c — so a link carries both or neither.",
+    );
+  }
+  return { x: coordinate(re, "cx"), y: coordinate(im, "cy") };
 }
 
 /** A deep view nobody has said anything about: the home frame, at the policy's cap. */
@@ -172,6 +209,7 @@ export function fresh(context) {
   const w = width(home.w);
   return {
     version: VERSION,
+    julia: null,
     x: coordinate(home.x, "x"),
     y: coordinate(home.y, "y"),
     w,
@@ -203,6 +241,13 @@ export function fresh(context) {
  */
 export function emit(view) {
   const parts = [`${MARKER}=${VERSION}`];
+  // **The parameter comes before the frame**, the way `f` does in the shallow
+  // contract: it says which set is being drawn, and the centre and width are a
+  // statement about where in that set to look.
+  if (view.julia) {
+    parts.push(`cx=${encode(view.julia.x.text)}`);
+    parts.push(`cy=${encode(view.julia.y.text)}`);
+  }
   for (const key of ["x", "y"]) parts.push(`${key}=${encode(view[key].text)}`);
   parts.push(`w=${encode(view.w.text)}`);
   parts.push(`${CAP_KEY}=${view.maxiter}`);
@@ -239,23 +284,37 @@ export function describe(search, context) {
   return {
     deep: true,
     mode: "smooth",
-    family: "mandelbrot",
+    family: view.julia === null ? "mandelbrot" : "julia",
     palette: view.palette,
-    said: `width ${view.w.text}`,
+    said:
+      view.julia === null
+        ? `width ${view.w.text}`
+        : `Julia at c = ${view.julia.x.text} ${sign(view.julia.y.text)}i · width ${view.w.text}`,
     view,
   };
+}
+
+/** `+ 0.14…` or `− 0.14…`: an imaginary part read as a person would say it. */
+function sign(text) {
+  return text.startsWith("-") ? `- ${text.slice(1)}` : `+ ${text}`;
 }
 
 /**
  * The part of a deep view that decides the arithmetic: what a kept field is keyed on.
  *
- * The centre, the width, the cap and the grid. Not the palette and not one of the seven,
- * because a deep field is `smooth` — one scalar per sample — and nothing on the colour
- * side can move a sample. That is what makes a recolour of a frame that took a minute
- * cost a shade.
+ * The set, the centre, the width, the cap and the grid. Not the palette and not one of
+ * the seven, because a deep field is `smooth` — one scalar per sample — and nothing on
+ * the colour side can move a sample. That is what makes a recolour of a frame that took a
+ * minute cost a shade.
+ *
+ * **The set is in the key and has to be**, because the two are drawn at the same place: a
+ * Julia view opens centred on the `c` its Mandelbrot view was centred on, so the two
+ * frames agree about the centre, the width and the cap and are entirely different
+ * pictures.
  */
 export function fieldKey(view, pixelWidth, pixelHeight, supersample = 1) {
-  return `${view.x.text}|${view.y.text}|${view.w.text}|${view.maxiter}|${pixelWidth}x${pixelHeight}x${supersample}`;
+  const set = view.julia === null ? "m" : `j${view.julia.x.text},${view.julia.y.text}`;
+  return `${set}|${view.x.text}|${view.y.text}|${view.w.text}|${view.maxiter}|${pixelWidth}x${pixelHeight}x${supersample}`;
 }
 
 // ------------------------------------------------------------------------ the readers
@@ -292,6 +351,23 @@ function coordinate(text, key) {
 /** A coordinate built here rather than read: an exact decimal, spelled its one way. */
 export function coordinateOf(dec) {
   return { text: fx.text(dec), dec };
+}
+
+/**
+ * Whether a double holds this coordinate exactly — asked of the value and never of
+ * the spelling.
+ *
+ * **This is what decides whether a deep Julia view can go back to the ordinary
+ * explorer.** That contract reads a family constant into a double, so a `c` with
+ * more digits than one holds would arrive next door as a *different parameter*: not
+ * a coarser view of the same set, a different set, under the name of this one. A
+ * frame can be too deep to carry back and be honestly refused; a parameter that is
+ * too precise to carry back cannot be refused any other way, because nothing about
+ * the picture would look wrong.
+ */
+export function exactInDouble(coordinate) {
+  const back = fx.parse(String(fx.toNumber(coordinate.dec)));
+  return back !== null && fx.compare(back, coordinate.dec) === 0;
 }
 
 /**

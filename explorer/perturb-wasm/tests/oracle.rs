@@ -16,7 +16,7 @@
 use perturb::fx::Fx;
 use perturb::kernel::{Kernel, smooth_count};
 use perturb::reference::{self, BAILOUT};
-use perturb::{Spec, cap};
+use perturb::{Anchor, Spec, cap};
 
 /// The audit's anchor: a period-2838 minibrot nucleus in the seahorse valley,
 /// atom size 6.478e-12.
@@ -60,9 +60,16 @@ const TILE: (u32, u32) = (16, 9);
 /// One sample, iterated the long way.
 fn oracle(c_re: &Fx, c_im: &Fx, maxiter: u32) -> f64 {
     let n = c_re.n;
+    oracle_from(&Fx::zero(n), &Fx::zero(n), c_re, c_im, maxiter)
+}
+
+/// The same, from a named `z₀` — which is what a Julia sample is: the parameter
+/// held and the *start* varying, where Mandelbrot holds the start at zero and
+/// varies the parameter.
+fn oracle_from(x0: &Fx, y0: &Fx, c_re: &Fx, c_im: &Fx, maxiter: u32) -> f64 {
     let bailout_sq = BAILOUT * BAILOUT;
-    let mut x = Fx::zero(n);
-    let mut y = Fx::zero(n);
+    let mut x = *x0;
+    let mut y = *y0;
     for step in 1..=maxiter {
         let x2 = x.sqr();
         let y2 = y.sqr();
@@ -95,6 +102,36 @@ fn spec_at(width: f64, periodic: bool, offset_frames: f64) -> Spec {
         maxiter: None,
         reference: periodic.then(|| (ANCHOR_RE.to_string(), ANCHOR_IM.to_string())),
         period: periodic.then_some(ANCHOR_PERIOD),
+        julia: None,
+        anchor: Anchor::Parameter,
+        interior: false,
+    }
+}
+
+/// The Julia set of `c`, framed on one of its two anchors.
+///
+/// **`c = i` is the ladder for the same reason it is the Mandelbrot one.** Its
+/// Julia set is a dendrite — no interior at all, structure at every scale, and
+/// asymptotically self-similar about both of the points this kernel can anchor
+/// at, since `0 → i → i−1 → −i → i−1 → …` puts the critical point on the set.
+/// So every rung has escaping samples in it rather than flat interior, and the
+/// parameter is exactly representable with no stored digits to be wrong about.
+fn julia_spec(c: (&str, &str), width: f64, anchor: Anchor) -> Spec {
+    let (centre_re, centre_im) = match anchor {
+        Anchor::Parameter => (c.0.to_string(), c.1.to_string()),
+        Anchor::Origin => ("0".to_string(), "0".to_string()),
+    };
+    Spec {
+        center_re: centre_re,
+        center_im: centre_im,
+        width,
+        resolution: [TILE.0, TILE.1],
+        supersample: 1,
+        maxiter: None,
+        reference: None,
+        period: None,
+        julia: Some((c.0.to_string(), c.1.to_string())),
+        anchor,
         interior: false,
     }
 }
@@ -109,6 +146,8 @@ fn misiurewicz_spec(width: f64) -> Spec {
         maxiter: None,
         reference: None,
         period: None,
+        julia: None,
+        anchor: Anchor::Parameter,
         interior: false,
     }
 }
@@ -171,11 +210,36 @@ fn walk(spec: Spec) -> Rung {
     let maxiter = spec.maxiter();
     let limbs = spec.limbs();
     let orbit = spec.reference_orbit().unwrap();
-    let kernel = Kernel::new(&orbit, maxiter, false);
+    let kernel = Kernel::new(&orbit, maxiter, false).at_entry(spec.entry());
     let offset = spec.centre_offset().unwrap();
 
-    let centre_re = Fx::parse(&spec.center_re, limbs).unwrap();
-    let centre_im = Fx::parse(&spec.center_im, limbs).unwrap();
+    // **The oracle's own precision is its own business, and at the origin
+    // anchor it needs twice the kernel's.** A Julia sample anchored at `z = 0`
+    // has `z₁ = z₀² + c`, so the thing that tells two neighbouring pixels apart
+    // is the *square* of a spacing — 4e-59 at the bottom rung. Fixed point is
+    // absolute precision: at the frame's own four limbs that is below the last
+    // bit and every pixel of the tile becomes the same number, so the oracle
+    // draws a flat tile and calls the kernel wrong. The kernel is not: it
+    // carries the delta in `f64`, which is *relative* precision and holds 4e-59
+    // to sixteen digits. Doubling the limbs is the oracle catching up, and the
+    // first run of this ladder without it is the reason the sentence is here.
+    let oracle_limbs = if spec.julia.is_some() && spec.entry() == 0 {
+        (limbs * 2).min(perturb::fx::MAX_LIMBS)
+    } else {
+        limbs
+    };
+
+    let centre_re = Fx::parse(&spec.center_re, oracle_limbs).unwrap();
+    let centre_im = Fx::parse(&spec.center_im, oracle_limbs).unwrap();
+    // For a Julia rung the parameter is held and the grid is `z₀`; for a
+    // Mandelbrot one the grid is the parameter and `z₀` is zero. One walk, and
+    // the fork is here and in the two lines below that use it.
+    let julia = spec.julia.as_ref().map(|(re, im)| {
+        (
+            Fx::parse(re, oracle_limbs).unwrap(),
+            Fx::parse(im, oracle_limbs).unwrap(),
+        )
+    });
 
     let mut interior_disagreements = 0usize;
     let mut errors: Vec<f64> = Vec::new();
@@ -187,7 +251,10 @@ fn walk(spec: Spec) -> Rung {
     for row in 0..spec.resolution[1] {
         for col in 0..spec.resolution[0] {
             let (dc_re, dc_im) = spec.dc(offset, col, row);
-            let outcome = kernel.sample(dc_re, dc_im);
+            let outcome = match &julia {
+                Some(_) => kernel.sample_julia(dc_re, dc_im),
+                None => kernel.sample(dc_re, dc_im),
+            };
             rebases_total += outcome.rebases as u64;
             rebases_max = rebases_max.max(outcome.rebases);
             samples += 1;
@@ -196,12 +263,22 @@ fn walk(spec: Spec) -> Rung {
             // geometry, formed from the grid rather than by undoing the offset
             // in `f64`.
             let (geometry_re, geometry_im) = spec.dc((0.0, 0.0), col, row);
-            let c_re = centre_re.add(&Fx::from_f64(geometry_re, limbs).unwrap());
-            let c_im = centre_im.add(&Fx::from_f64(geometry_im, limbs).unwrap());
-            let truth = oracle(&c_re, &c_im, maxiter);
+            let c_re = centre_re.add(&Fx::from_f64(geometry_re, oracle_limbs).unwrap());
+            let c_im = centre_im.add(&Fx::from_f64(geometry_im, oracle_limbs).unwrap());
+            let truth = match &julia {
+                // The grid is `z₀`, iterated under the held parameter.
+                Some((param_re, param_im)) => {
+                    oracle_from(&c_re, &c_im, param_re, param_im, maxiter)
+                }
+                None => oracle(&c_re, &c_im, maxiter),
+            };
 
             if outcome.smooth.is_nan() != truth.is_nan() {
                 interior_disagreements += 1;
+                println!(
+                    "  DISAGREE at {:e}: kernel {} (n={}, rebases={}), oracle {}, cap {maxiter}",
+                    spec.width, outcome.smooth, outcome.iterations, outcome.rebases, truth
+                );
                 continue;
             }
             if !truth.is_nan() {
@@ -434,6 +511,119 @@ fn the_ladders_caps_are_the_engines_shape_past_its_ceiling() {
         }
     }
     assert_eq!(cap::for_width(2e-11), 48_551);
+}
+
+/// **The Julia ladder at `z = c`, entered at `Z₁`.**
+///
+/// This is the one that proves the Julia arithmetic, and it is the same claim as
+/// the Misiurewicz ladder above in the other variable: every sample of every
+/// rung iterated the long way under a held parameter, from its own `z₀`, with no
+/// reference and no delta in front of it. At the bottom rung the sample spacing
+/// is 6e-30 and every `z₀` in the tile is the same `f64`, so there is no reading
+/// of a passing run in which the delta machinery is working by accident.
+#[test]
+#[ignore = "seconds"]
+fn the_julia_kernel_matches_the_oracle_down_a_dendrite_ladder_at_the_parameter() {
+    let rungs: Vec<Rung> = DEEP_RUNGS
+        .iter()
+        .map(|&width| walk(julia_spec(MISIUREWICZ, width, Anchor::Parameter)))
+        .collect();
+    report("julia at c = i, anchored at z = c", &rungs);
+    julia_assertions(&rungs);
+}
+
+/// **And at `z = 0`, entered at `Z₀`** — the critical point, where the picture
+/// has exact two-fold symmetry and the delta starts against the orbit's own
+/// first point.
+#[test]
+#[ignore = "seconds"]
+fn the_julia_kernel_matches_the_oracle_down_a_dendrite_ladder_at_the_origin() {
+    let rungs: Vec<Rung> = DEEP_RUNGS
+        .iter()
+        .map(|&width| walk(julia_spec(MISIUREWICZ, width, Anchor::Origin)))
+        .collect();
+    report("julia at c = i, anchored at z = 0", &rungs);
+    julia_assertions(&rungs);
+}
+
+/// The Julia set of the audit's own deep `c`: a parameter of thirty-five digits,
+/// held, with the grid a neighbourhood of `z = c`. This is the view the tab's
+/// button opens, measured.
+///
+/// **This ladder is held to its median and not to its worst sample, and it has a
+/// named allowance for the interior mask** — which is the anchor ladder's ruling
+/// rather than the dendrite ladders', and for the anchor ladder's reason. Around
+/// a period-2838 nucleus at a cap of forty thousand, a boundary sample's escape
+/// count is chaotically sensitive to the last bit of anything, and where the cap
+/// falls between the two answers the disagreement shows up as interior rather
+/// than as a count. `tests/probe.rs`'s `three_ways_on_a_deep_julia_frame` is
+/// what settles who is right on those samples, and the answer is unambiguous:
+/// against the fixed-point oracle at 2e-9, **the kernel is nearer on 250 of 256
+/// samples and the plain `f64` loop on 1**, with the plain loop reading 20,283
+/// where the oracle reads 29,223. The dendrite ladders above, which have no
+/// interior at all, are the ones held to every sample.
+///
+/// The bottom two rungs are entirely interior, and that is the picture rather
+/// than the kernel: inside a superattracting basin every point converges to the
+/// cycle, so a frame narrower than the structure around `z = c` is filled.
+#[test]
+#[ignore = "minutes: every sample iterated the long way in fixed point"]
+fn the_julia_kernel_matches_the_oracle_at_the_audits_own_deep_c() {
+    let rungs: Vec<Rung> = [2e-6, 2e-8, 2e-9, 2e-10, 2e-11, 1e-13]
+        .iter()
+        .map(|&width| walk(julia_spec((ANCHOR_RE, ANCHOR_IM), width, Anchor::Parameter)))
+        .collect();
+    report("julia at the audit's anchor, anchored at z = c", &rungs);
+    for rung in &rungs {
+        // 144 samples a tile, so this is "a couple, and never a corner of the
+        // picture". Two is what the 2e-9 rung produced.
+        assert!(
+            rung.interior_disagreements * 50 <= (TILE.0 * TILE.1) as usize,
+            "{:e}: {} samples disagreed about the interior",
+            rung.width,
+            rung.interior_disagreements
+        );
+        if rung.compared > 0 {
+            assert!(
+                rung.median_relative < 1e-9,
+                "{:e}: median relative error {:e} over {} escaping samples",
+                rung.width,
+                rung.median_relative,
+                rung.compared
+            );
+        }
+    }
+    // The top rungs have to have real exterior in them, or the ladder is only
+    // checking that a filled basin is filled.
+    assert!(
+        rungs[0].compared > 100 && rungs[1].compared > 100,
+        "the top rungs had {} and {} escaping samples",
+        rungs[0].compared,
+        rungs[1].compared
+    );
+}
+
+/// What a dendrite ladder is allowed to claim, and it is the Misiurewicz
+/// ladder's own bar: every sample escapes, every sample agrees about whether it
+/// escaped, and the smooth counts agree to a part in a million — not a share and
+/// not a median, because a dendrite has no interior and so no boundary samples
+/// whose escape count is chaotic.
+fn julia_assertions(rungs: &[Rung]) {
+    for rung in rungs {
+        assert!(
+            rung.compared > 100,
+            "{:e}: only {} escaping samples",
+            rung.width,
+            rung.compared
+        );
+        assert_eq!(rung.interior_disagreements, 0, "{:e}", rung.width);
+        assert!(
+            rung.worst < 1e-6,
+            "{:e}: worst smooth error {:e}",
+            rung.width,
+            rung.worst
+        );
+    }
 }
 
 /// The round trip the ladder's own scaffolding leans on: a fixed-point value

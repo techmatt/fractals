@@ -59,6 +59,16 @@ pub const SCHEMA: u32 = 1;
 /// `|dz|` has no room to fall.
 pub const SHIPS_INTERIOR: bool = true;
 
+/// The fewest representable numbers one sample step may span in the delta before
+/// a frame is refused. See [`Spec::delta_ulps`].
+///
+/// **Four, and it is the engine's own `viewport::RESOLUTION_ULPS` restated** —
+/// the same shape as [`cap::for_width`], and restated for the same reason, which
+/// is that this crate does not link the engine. The number says the same thing on
+/// both sides of the floor: below it a picture is of the arithmetic rather than
+/// of the set, and the honest answer is a sentence.
+pub const DELTA_ULPS: f64 = 4.0;
+
 // ------------------------------------------------------------------- the cap policy
 
 /// The engine's own depth policy, continued past the point where it gives up.
@@ -132,7 +142,32 @@ pub struct Spec {
     /// The reference's period, where it is a nucleus. The orbit is then stored
     /// for one period and the index wraps instead of rebasing.
     pub period: Option<u32>,
+    /// The Julia parameter: the `c` of `z ↦ z² + c`, held fixed while `z₀` is the
+    /// pixel. **Absent is the Mandelbrot set**, which is what every spec written
+    /// before this member existed is.
+    pub julia: Option<(String, String)>,
+    /// Which point of the reference orbit a Julia view's offset is taken from.
+    /// No meaning without [`Spec::julia`], and refused without it.
+    pub anchor: Anchor,
     pub interior: bool,
+}
+
+/// The point a Julia view measures its offset from, which is always a point of
+/// the stored reference orbit and never an arbitrary place.
+///
+/// The orbit is `Z₀ = 0, Z₁ = c, Z₂ = c² + c, …` — the critical orbit of `c` —
+/// and it is simultaneously the Julia orbit of `z = 0` and, shifted by one, the
+/// Julia orbit of `z = c`. So both anchors are *on* it, their offsets are exact
+/// fixed-point subtractions, and which one a frame uses changes nothing about
+/// the mathematics: it changes only how much of the pixel step survives into
+/// `f64`. See [`Spec::delta_ulps`].
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Anchor {
+    /// `z = c`, entered at index 1. Where the filigree is.
+    Parameter,
+    /// `z = 0`, entered at index 0 — the critical point itself, and the one
+    /// place the picture has exact two-fold symmetry.
+    Origin,
 }
 
 const KNOWN: &[&str] = &[
@@ -146,6 +181,9 @@ const KNOWN: &[&str] = &[
     "reference_re",
     "reference_im",
     "period",
+    "julia_re",
+    "julia_im",
+    "anchor",
     "interior",
 ];
 
@@ -204,6 +242,39 @@ impl Spec {
             None | Some(Value::Null) => SHIPS_INTERIOR,
             _ => return Err("`interior` is a boolean".to_string()),
         };
+        let julia = match (object.get("julia_re"), object.get("julia_im")) {
+            (None, None) => None,
+            _ => Some((text_of("julia_re")?, text_of("julia_im")?)),
+        };
+        let anchor = match object.get("anchor") {
+            None | Some(Value::Null) => Anchor::Parameter,
+            Some(Value::Str(name)) if name == "parameter" => Anchor::Parameter,
+            Some(Value::Str(name)) if name == "origin" => Anchor::Origin,
+            Some(_) => return Err("`anchor` is \"parameter\" or \"origin\"".to_string()),
+        };
+        let period = count_of("period");
+
+        // Each of these three is a member that means something only on the other
+        // side of the fork, and a spec that carries both is a spec whose author
+        // believed something untrue about what is being drawn. Said rather than
+        // ignored, for the reason every refusal in this module is a sentence.
+        if julia.is_some() {
+            if reference.is_some() {
+                return Err("a Julia frame's reference is the critical orbit of its own \
+                            `julia_re`/`julia_im`, so it cannot also be given a \
+                            `reference_re`/`reference_im`"
+                    .to_string());
+            }
+            if period.is_some() {
+                return Err("`period` wraps a Mandelbrot nucleus's reference, and a Julia \
+                            frame's reference is a critical orbit rather than a nucleus"
+                    .to_string());
+            }
+        } else if object.get("anchor").is_some() {
+            return Err("`anchor` says which point of the Julia reference a view is offset \
+                        from, and this spec has no `julia_re`"
+                .to_string());
+        }
 
         Ok(Spec {
             center_re,
@@ -213,7 +284,9 @@ impl Spec {
             supersample: count_of("supersample").unwrap_or(1),
             maxiter: count_of("maxiter"),
             reference,
-            period: count_of("period"),
+            period,
+            julia,
+            anchor,
             interior,
         })
     }
@@ -239,26 +312,58 @@ impl Spec {
     }
 
     /// The reference orbit this spec asks for.
+    ///
+    /// **A Julia frame's is the critical orbit of its own parameter** — `Z₀ = 0,
+    /// Z₁ = c, Z₂ = c² + c, …`, which is byte for byte the orbit a Mandelbrot
+    /// frame centred at that `c` computes. That is the whole reason the jump
+    /// costs nothing: the workers are already holding it.
     pub fn reference_orbit(&self) -> Result<Reference, String> {
         let limbs = self.limbs();
-        let (re, im) = match &self.reference {
-            Some((re, im)) => (re.as_str(), im.as_str()),
-            None => (self.center_re.as_str(), self.center_im.as_str()),
+        let (re, im) = match (&self.julia, &self.reference) {
+            (Some((re, im)), _) => (re.as_str(), im.as_str()),
+            (None, Some((re, im))) => (re.as_str(), im.as_str()),
+            (None, None) => (self.center_re.as_str(), self.center_im.as_str()),
         };
         let c_re = Fx::parse(re, limbs).ok_or_else(|| format!("`{re}` is not a decimal"))?;
         let c_im = Fx::parse(im, limbs).ok_or_else(|| format!("`{im}` is not a decimal"))?;
-        Ok(reference::orbit(&c_re, &c_im, self.maxiter(), self.period))
+        // A view entered at `Z₁` has one step less of reference in front of it
+        // than one entered at `Z₀`, so it asks for one more point rather than
+        // rebasing a step early.
+        let steps = self.maxiter() + self.entry() as u32;
+        Ok(reference::orbit(&c_re, &c_im, steps, self.period))
     }
 
-    /// How far the view centre is from the reference point, in `f64`, taken in
-    /// fixed point.
+    /// The index of the stored orbit a sample's delta starts against.
+    ///
+    /// One for a Julia view anchored at `z = c`, because `Z₁ = c`; zero for
+    /// everything else, `Z₀ = 0` being both the Mandelbrot start and the Julia
+    /// orbit of the critical point.
+    pub fn entry(&self) -> usize {
+        matches!((&self.julia, self.anchor), (Some(_), Anchor::Parameter)) as usize
+    }
+
+    /// The point a sample's delta is measured from: the Julia view's anchor, the
+    /// named Mandelbrot reference, or the view centre itself.
+    fn offset_from(&self) -> Option<(&str, &str)> {
+        match (&self.julia, self.anchor) {
+            (Some(_), Anchor::Origin) => Some(("0", "0")),
+            (Some((re, im)), Anchor::Parameter) => Some((re.as_str(), im.as_str())),
+            (None, _) => self
+                .reference
+                .as_ref()
+                .map(|(re, im)| (re.as_str(), im.as_str())),
+        }
+    }
+
+    /// How far the view centre is from the point the delta is measured from, in
+    /// `f64`, taken in fixed point.
     ///
     /// **Never `f64(center) − f64(reference)`.** At the depths this crate is for,
     /// those two are the same `f64` and the difference is exactly zero — which
     /// would draw the reference's own neighbourhood wherever the view actually
     /// is, and look entirely plausible.
     pub fn centre_offset(&self) -> Result<(f64, f64), String> {
-        let Some((re, im)) = &self.reference else {
+        let Some((re, im)) = self.offset_from() else {
             return Ok((0.0, 0.0));
         };
         let limbs = self.limbs();
@@ -269,12 +374,46 @@ impl Spec {
         ))
     }
 
-    /// `dc` for sample cell `(col, row)` of the supersampled grid.
+    /// How many representable numbers one sample step spans, in the `f64` the
+    /// delta starts from.
+    ///
+    /// **This is the engine's own `resolution_ulps` asked of a different
+    /// number.** There the question is whether two neighbouring sample centres
+    /// are the same `f64` coordinate; here the coordinates are exact decimals
+    /// and it is the *delta* that is a double — the offset from the anchor plus
+    /// the pixel's own geometry. A view a long way from its anchor at a width far
+    /// below it has an offset whose last bit is coarser than the whole frame, and
+    /// every pixel of it would start from the same delta: one flat picture, drawn
+    /// with total confidence. [`DELTA_ULPS`] is what that is refused against.
+    ///
+    /// Infinite where the offset is exactly zero, which is every view centred on
+    /// its anchor — including, always, a Mandelbrot frame referenced at its own
+    /// centre.
+    pub fn delta_ulps(&self) -> f64 {
+        let (re, im) = match self.centre_offset() {
+            Ok(offset) => offset,
+            Err(_) => return f64::INFINITY,
+        };
+        let far = re.abs().max(im.abs());
+        if !(far > 0.0) {
+            return f64::INFINITY;
+        }
+        (self.width / self.sample_width() as f64) / (far.next_up() - far)
+    }
+
+    /// `dc` for sample cell `(col, row)` of the supersampled grid — and, for a
+    /// Julia frame, the same number under its other name, `δ₀`.
     ///
     /// The geometry is the engine's `Viewport::sample_point`, offset by the
     /// reference rather than added to the centre: row 0 is the top of the image
     /// and so the largest imaginary part, which is why the vertical term is
     /// subtracted.
+    ///
+    /// **One expression, two jobs, and that is the shape of the whole Julia
+    /// case.** For Mandelbrot this is the sample's distance from the reference
+    /// *parameter*, and it enters every step of the recurrence; for Julia it is
+    /// the sample's distance from the anchor *point*, and it enters once, as the
+    /// delta the loop starts from.
     pub fn dc(&self, offset: (f64, f64), col: u32, row: u32) -> (f64, f64) {
         let across = (col as f64 + 0.5) / self.sample_width() as f64 - 0.5;
         let down = 0.5 - (row as f64 + 0.5) / self.sample_height() as f64;
@@ -302,17 +441,41 @@ impl Spec {
 /// available — but it belongs to whoever puts a picture on a page, and until
 /// then this hands over everything it computed.
 pub fn compute_rows(spec: &Spec, orbit: &Reference, first: u32, last: u32) -> Vec<u8> {
-    let kernel = Kernel::new(orbit, spec.maxiter(), spec.interior);
+    let kernel = Kernel::new(orbit, spec.maxiter(), spec.interior).at_entry(spec.entry());
     let offset = spec.centre_offset().unwrap_or((0.0, 0.0));
     let width = spec.sample_width();
     let mut bytes = Vec::with_capacity(((last - first) * width) as usize * 8);
-    for row in first..last {
-        for col in 0..width {
-            let (dc_re, dc_im) = spec.dc(offset, col, row);
-            bytes.extend_from_slice(&kernel.sample(dc_re, dc_im).smooth.to_le_bytes());
-        }
+    // The fork is taken once for the band rather than once for each of its
+    // samples: the two loops are the same text and different monomorphizations,
+    // which is what keeps the Mandelbrot loop exactly the loop it was.
+    if spec.julia.is_some() {
+        fill::<true>(spec, &kernel, offset, first, last, &mut bytes);
+    } else {
+        fill::<false>(spec, &kernel, offset, first, last, &mut bytes);
     }
     bytes
+}
+
+fn fill<const JULIA: bool>(
+    spec: &Spec,
+    kernel: &Kernel,
+    offset: (f64, f64),
+    first: u32,
+    last: u32,
+    bytes: &mut Vec<u8>,
+) {
+    let width = spec.sample_width();
+    for row in first..last {
+        for col in 0..width {
+            let (re, im) = spec.dc(offset, col, row);
+            let outcome = if JULIA {
+                kernel.sample_julia(re, im)
+            } else {
+                kernel.sample(re, im)
+            };
+            bytes.extend_from_slice(&outcome.smooth.to_le_bytes());
+        }
+    }
 }
 
 // ------------------------------------------------------------------- the exports
@@ -379,11 +542,23 @@ pub extern "C" fn plan(spec_ptr: *const u8, spec_len: usize) -> *mut u8 {
     let read = text(spec_ptr, spec_len)
         .ok_or_else(|| "the spec is not UTF-8".to_string())
         .and_then(|text| Spec::parse(&text));
-    let report = match read {
+    let report = match read.and_then(|spec| match spec.delta_ulps() {
+        ulps if ulps >= DELTA_ULPS => Ok(spec),
+        ulps => Err(format!(
+            "this frame is {} from the point its arithmetic is anchored at, and one pixel of it \
+             spans {:.2} of the numbers a double has left there — fewer than the {} it takes to \
+             tell two pixels apart. Every sample would start from the same delta and the picture \
+             would be flat. Zoom out, or move back toward the anchor.",
+            if spec.julia.is_some() { "too far" } else { "too far from its reference" },
+            ulps,
+            DELTA_ULPS,
+        )),
+    }) {
         Ok(spec) => format!(
             concat!(
                 r#"{{"ok":true,"maxiter":{},"limbs":{},"fraction_bits":{},"#,
                 r#""sample_width":{},"sample_height":{},"interior":{},"#,
+                r#""julia":{},"anchor":"{}","delta_ulps":{},"#,
                 r#""reference_bytes":{},"ceiling":{}}}"#
             ),
             spec.maxiter(),
@@ -392,10 +567,21 @@ pub extern "C" fn plan(spec_ptr: *const u8, spec_len: usize) -> *mut u8 {
             spec.sample_width(),
             spec.sample_height(),
             spec.interior,
+            spec.julia.is_some(),
+            match spec.anchor {
+                Anchor::Parameter => "parameter",
+                Anchor::Origin => "origin",
+            },
+            // `null` rather than `inf`, which is not JSON — and infinite is the
+            // ordinary case, an offset of exactly zero.
+            match spec.delta_ulps() {
+                ulps if ulps.is_finite() => format!("{ulps:.3}"),
+                _ => "null".to_string(),
+            },
             REFERENCE_HEADER
                 + 16 * match spec.period {
                     Some(period) => period as usize,
-                    None => spec.maxiter() as usize + 1,
+                    None => spec.maxiter() as usize + 1 + spec.entry(),
                 },
             cap::CEILING as u32,
         ),
@@ -736,5 +922,126 @@ mod tests {
             close as f64 / escaping as f64 > 0.90,
             "only {close} of {escaping} escaping samples were within 1e-6"
         );
+    }
+
+    // ------------------------------------------------------------------ julia
+
+    /// The anchor spec with a Julia parameter bolted on: the same deep `c`, now
+    /// drawn as the Julia set of itself at `z = c`.
+    fn julia_spec() -> String {
+        ANCHOR.replace(
+            r#""resolution": [480, 270]"#,
+            r#""resolution": [480, 270],
+              "julia_re": "-0.74501772828532335842941892835857434",
+              "julia_im": "0.14993443275456819177805709088257971""#,
+        )
+    }
+
+    #[test]
+    fn a_julia_frames_reference_is_the_mandelbrot_orbit_at_the_same_c() {
+        let mandelbrot = Spec::parse(ANCHOR).unwrap();
+        let julia = Spec::parse(&julia_spec()).unwrap();
+        assert!(julia.julia.is_some());
+        // The one point of difference is the extra step a view entered at `Z₁`
+        // needs; every point they share is the same point.
+        let theirs = mandelbrot.reference_orbit().unwrap();
+        let ours = julia.reference_orbit().unwrap();
+        assert_eq!(ours.len(), theirs.len() + 1);
+        assert_eq!(&ours.points[..theirs.len()], &theirs.points[..]);
+    }
+
+    #[test]
+    fn the_entry_index_is_the_anchor_and_nothing_else() {
+        assert_eq!(Spec::parse(ANCHOR).unwrap().entry(), 0);
+        assert_eq!(Spec::parse(&julia_spec()).unwrap().entry(), 1);
+        let origin = julia_spec().replace(r#""schema": 1"#, r#""schema": 1, "anchor": "origin""#);
+        let spec = Spec::parse(&origin).unwrap();
+        assert_eq!(spec.anchor, Anchor::Origin);
+        assert_eq!(spec.entry(), 0);
+    }
+
+    /// A view centred on its anchor has an offset of exactly zero, so the pixel
+    /// step is all the `f64` is carrying and the question does not arise.
+    #[test]
+    fn a_view_on_its_anchor_resolves_and_a_far_one_does_not() {
+        let spec = Spec::parse(&julia_spec()).unwrap();
+        assert!(spec.delta_ulps().is_infinite());
+        assert!(Spec::parse(ANCHOR).unwrap().delta_ulps().is_infinite());
+
+        // **The wall is a long way out, and where it is is worth pinning.** The
+        // same frame moved to `z = 0` while still anchored at `z = c` has an
+        // offset of about 0.76, whose ulp is 1.1e-16 — so at 2e-11 across 480
+        // samples a pixel still spans 375 of them and the frame is perfectly
+        // drawable. It is the deep widths that cannot afford it.
+        let away = far_spec(2e-11);
+        assert!(Spec::parse(&away).unwrap().delta_ulps() > 300.0);
+
+        // Nine decades down, the same offset leaves less than one number to a
+        // pixel: every sample would start from the same delta.
+        let spec = Spec::parse(&far_spec(1e-20)).unwrap();
+        assert!(spec.delta_ulps() < DELTA_ULPS, "{}", spec.delta_ulps());
+
+        // And from the origin anchor the very same frame is exact. That is what
+        // the second anchor is for, and the only thing it is for.
+        let anchored = far_spec(1e-20).replace(r#""schema": 1"#, r#""schema": 1, "anchor": "origin""#);
+        assert!(Spec::parse(&anchored).unwrap().delta_ulps().is_infinite());
+    }
+
+    /// The anchor's `c`, drawn as a Julia set, framed at `z = 0` — a full 0.76
+    /// away from the anchor the arithmetic is measured against.
+    fn far_spec(width: f64) -> String {
+        julia_spec()
+            .replace(r#""center_re": "-0.74501772828532335842941892835857434""#, r#""center_re": "0""#)
+            .replace(r#""center_im": "0.14993443275456819177805709088257971""#, r#""center_im": "0""#)
+            .replace(r#""width": 2e-11"#, &format!(r#""width": {width:e}"#))
+    }
+
+    #[test]
+    fn a_frame_too_far_from_its_anchor_is_refused_in_a_sentence() {
+        let report = plan_text(&far_spec(1e-20));
+        assert!(report.contains(r#""ok":false"#), "{report}");
+        assert!(report.contains("flat"), "{report}");
+    }
+
+    #[test]
+    fn a_julia_spec_plans_and_says_which_anchor_it_is_drawn_from() {
+        let report = plan_text(&julia_spec());
+        assert!(report.contains(r#""julia":true"#), "{report}");
+        assert!(report.contains(r#""anchor":"parameter""#), "{report}");
+        // Infinite is not JSON, and a reader of this report is `JSON.parse`.
+        assert!(report.contains(r#""delta_ulps":null"#), "{report}");
+        assert!(!report.contains("inf"), "{report}");
+    }
+
+    #[test]
+    fn the_members_that_mean_nothing_together_are_refused() {
+        let with_reference = julia_spec().replace(
+            r#""schema": 1"#,
+            r#""schema": 1, "reference_re": "0", "reference_im": "0""#,
+        );
+        assert!(Spec::parse(&with_reference).unwrap_err().contains("critical orbit"));
+
+        let with_period = julia_spec().replace(r#""schema": 1"#, r#""schema": 1, "period": 2838"#);
+        assert!(Spec::parse(&with_period).unwrap_err().contains("nucleus"));
+
+        // And an anchor with nothing to anchor to.
+        let stray = ANCHOR.replace(r#""schema": 1"#, r#""schema": 1, "anchor": "origin""#);
+        assert!(Spec::parse(&stray).unwrap_err().contains("`julia_re`"));
+
+        // Half a parameter is not a parameter.
+        let half = ANCHOR.replace(r#""schema": 1"#, r#""schema": 1, "julia_re": "0.25""#);
+        assert!(Spec::parse(&half).unwrap_err().contains("julia_im"));
+    }
+
+    /// `plan`'s report, read back as text.
+    fn plan_text(spec: &str) -> String {
+        let bytes = spec.as_bytes();
+        let out = plan(bytes.as_ptr(), bytes.len());
+        let size = unsafe { std::ptr::read_unaligned(out as *const u32) } as usize;
+        let body =
+            unsafe { std::slice::from_raw_parts(out.add(4), size) };
+        let text = String::from_utf8(body.to_vec()).unwrap();
+        unsafe { dealloc(out, size + 4) };
+        text
     }
 }

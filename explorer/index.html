@@ -102,6 +102,8 @@
 
       <div class="section-head"><h2 id="head-deep-frame">Frame</h2></div>
       <dl class="deep-frame" aria-labelledby="head-deep-frame">
+        <dt id="deep-param-row" hidden>Julia c</dt>
+        <dd id="deep-param-value" hidden><code class="deep-centre" id="deep-param"></code></dd>
         <dt>Center</dt>
         <dd><code class="deep-centre" id="deep-centre"></code></dd>
         <dt>Width</dt>
@@ -121,14 +123,22 @@
       </div>
 
       <div class="bar deep-actions">
+        <button type="button" id="deep-julia"
+                title="Draw the Julia set of this view's own center.">Julia at this c</button>
+        <button type="button" id="deep-origin" hidden
+                title="The same structure at the critical point, where it is exactly two-fold symmetric. The frame widens to the square root of its width, because z² + c maps a disc about 0 onto a disc of its square about c.">Same view at z = 0</button>
+      </div>
+
+      <div class="bar deep-actions">
         <button type="button" id="deep-save"
                 title="Keep this frame on the Saved tab, in this browser.">Save</button>
         <button type="button" id="deep-back"
                 title="Open this frame in the ordinary explorer.">Back to the explorer</button>
       </div>
 
-      <p class="side-note" id="deep-side-note">Smooth, Mandelbrot, degree 2 — the one recurrence
-      this kernel has. Drag and scroll to move the frame; nothing is drawn until you press Render.</p>
+      <p class="side-note" id="deep-side-note">Smooth, degree 2 — the Mandelbrot set, and the
+      Julia set of any c on it. Drag and scroll to move the frame; nothing is drawn until you
+      press Render.</p>
     </div>
 
     <div class="tabpanel" id="panel-saved" role="tabpanel" aria-labelledby="tab-saved" hidden>

@@ -104,11 +104,40 @@ export function deepSpecOf(view, width, height, { supersample = 1, reference = n
     maxiter: view.maxiter,
   };
   if (supersample > 1) spec.supersample = supersample;
-  if (reference !== null) {
+  if (view.julia !== null && view.julia !== undefined) {
+    spec.julia_re = view.julia.x.text;
+    spec.julia_im = view.julia.y.text;
+    spec.anchor = anchorOf(view);
+  } else if (reference !== null) {
     spec.reference_re = reference.x;
     spec.reference_im = reference.y;
   }
   return spec;
+}
+
+/**
+ * Which of a Julia frame's two anchors it is drawn from: the nearer one.
+ *
+ * **Derived from the view and never carried in the link**, which is the ruling
+ * worth stating. Both anchors are points of the same stored orbit and both are
+ * exact, so they are two spellings of one picture — what differs is only how much
+ * of the pixel step survives into the `f64` delta, and that is a property of where
+ * the frame is rather than a decision anybody made about it. A link that carried
+ * the anchor would be carrying a precision choice as though it were part of the
+ * picture, and would go stale the moment the reader panned.
+ *
+ * The distance is the larger of the two components, because that is the number the
+ * kernel's own `delta_ulps` is taken against. Ties go to the parameter, which is
+ * where the filigree is and so where a reader is more likely to be.
+ */
+export function anchorOf(view) {
+  if (!view.julia) return null;
+  const toParameter = Math.max(
+    Math.abs(fx.difference(view.x.dec, view.julia.x.dec)),
+    Math.abs(fx.difference(view.y.dec, view.julia.y.dec)),
+  );
+  const toOrigin = Math.max(Math.abs(fx.toNumber(view.x.dec)), Math.abs(fx.toNumber(view.y.dec)));
+  return toOrigin < toParameter ? "origin" : "parameter";
 }
 
 /** One pool worker, instantiated and ready. */
@@ -241,6 +270,16 @@ export class DeepRenderer {
     if (held === null) return false;
     if (held.limbs !== limbs) return false;
     if (held.maxiter < view.maxiter) return false;
+    // **A Julia frame's orbit does not depend on its frame at all.** It is the
+    // critical orbit of the parameter, so the reach test is only "the same
+    // parameter, computed deeply enough and far enough" — and a pan or a zoom
+    // inside a Julia view never recomputes one. The two kinds are never swapped
+    // for each other even at the same point, because a view entered at `Z₁` is
+    // handed an orbit one step longer.
+    if ((held.julia !== null) !== (view.julia !== null)) return false;
+    if (view.julia !== null) {
+      return held.julia.x === view.julia.x.text && held.julia.y === view.julia.y.text;
+    }
     // In decimal, and it has to be: two deep coordinates agree in every digit a double
     // holds, so `Number(a) - Number(b)` is exactly zero and would say the reference is at
     // the centre wherever it actually is.
@@ -277,6 +316,10 @@ export class DeepRenderer {
     this.orbit = {
       x: view.x,
       y: view.y,
+      // The parameter this orbit is the critical orbit of, as text — what the
+      // reach test compares. `null` on the Mandelbrot side, where the orbit is
+      // of the frame's own reference point.
+      julia: view.julia ? { x: view.julia.x.text, y: view.julia.y.text } : null,
       limbs,
       maxiter: view.maxiter,
       points: count,
@@ -310,6 +353,13 @@ export class DeepRenderer {
   async field(view, width, height, { supersample = 1, onProgress, onOrbit } = {}) {
     this.cancel();
     const generation = this.generation;
+
+    // **Asked before the orbit, not after it.** A frame the kernel will refuse —
+    // a Julia view too far from both its anchors for the width it is asking for —
+    // should cost a sentence rather than a reference orbit, and the refusal is
+    // the module's own words either way.
+    const refusal = this.plan(deepSpecOf(view, width, height, { supersample }));
+    if (!refusal.ok) throw new Error(refusal.why);
 
     const reference = await this.#reference(view, width, height, supersample);
     if (generation !== this.generation) return null;

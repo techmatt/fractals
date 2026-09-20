@@ -579,17 +579,18 @@ writes the weight or opacity in force. Clicking one opens it through `openLink` 
 the viewer, and the walk carries on. A reload forgets them all, except the ones saved by
 their mark or by *Save all found* at the head of the list, which go to the Saved tab below.
 
-## Deep *(build_deep_tab_ckpt135, 2026-09-19)*
+## Deep *(build_deep_tab_ckpt135, 2026-09-19; the Julia case deep_julia_at_c_ckpt136, 2026-09-20)*
 
-The fourth tab draws the Mandelbrot set **below the `f64` floor**, through `perturb.wasm`
-rather than `engine.wasm`. It is a deliberate, rare, slower mode and everything about its
-shape follows from that.
+The fourth tab draws `z² + c` **below the `f64` floor**, through `perturb.wasm` rather than
+`engine.wasm`. It is a deliberate, rare, slower mode and everything about its shape follows
+from that.
 
-**What it draws:** degree-2 Mandelbrot in `smooth`, and nothing else. No mode picker and no
-family picker, because the kernel has one recurrence written in it — which is the shape
-*The other kernel* below always said a deep renderer would have to take. Palette, the seven
-shade keys and Autolevel work exactly as they do everywhere else, because a deep field **is**
-a smooth field: one `f64` a sample with `NaN` for the interior, in the layout `compute_band`
+**What it draws:** degree 2 in `smooth`, on both of the planes that recurrence has — the
+Mandelbrot set, and the Julia set of any `c`. No mode picker and no family picker: there is
+one mode down here, and the two sets are one recurrence read two ways rather than two
+families, which is what *Julia at this c* below is about. Palette, the seven shade keys and
+Autolevel work exactly as they do everywhere else, because a deep field **is** a smooth
+field: one `f64` a sample with `NaN` for the interior, in the layout `compute_band`
 produces, so `shade_level` colours it without being told which kernel drew it.
 
 **The ordinary explorer is not slower, heavier or different for it.** `perturb.wasm` and the
@@ -649,6 +650,64 @@ for, so turning Render into Cancel while it runs would put the tab's one control
 reach at exactly the moment it is wanted. Cancel appears for a pass somebody commanded;
 pressing Render through an auto-preview upgrades it, and picks that quarter field straight
 back out of the cache if it had finished.
+
+### Julia at this c *(deep_julia_at_c_ckpt136, 2026-09-20)*
+
+A button in the Deep tab takes the current view's centre as `c` and opens **the Julia set
+of `z² + c`**, centred at `z = c`, at the same width and the same cap. *Back to the
+Mandelbrot set* returns to the frame it was pressed on. From there the Julia view pans,
+zooms and renders exactly as the tab already did.
+
+**Why this view is only possible here.** Near `z = c` the Julia set of a deep `c` looks
+like the Mandelbrot set near `c` at the same scale — so the filigree around a deep minibrot
+reappears, but filling the frame homogeneously with no minibrot in the middle. A shallow
+Julia view cannot show it: an `f64` `c` does not carry the digits, and a view wide enough
+for `f64` could not see them.
+
+**The kernel change is small, and that is the finding rather than a boast.** The stored
+reference orbit is `Z₀ = 0, Z₁ = c, Z₂ = c² + c, …`, the critical orbit of `c` — which is
+*simultaneously* the Julia orbit of `z = 0` and, shifted by one index, the Julia orbit of
+`z = c`. So a Julia frame is drawn from the orbit a Mandelbrot frame at that `c` already
+computes, the recurrence loses its `dc` term and gains a starting delta, and rebasing is
+untouched and still exact — `δ := z` works because `Z₀ = 0`, with no subtraction and so no
+cancellation. `perturb-wasm/README.md` has the arithmetic and the proof.
+
+**Two anchors, and the link carries neither.** A frame measures its offset from `z = c` or
+from `z = 0`, whichever is nearer; both are points of the stored orbit, both offsets are
+exact, and the choice changes only how much of the pixel step survives into the `f64`
+delta. It is derived from the view because it is a precision fact rather than a picture
+fact — a link that carried it would carry a decision nobody made, and one that went stale
+the moment the reader panned. Where neither anchor can resolve the frame, the tab says so
+before the reader presses anything, in the module's own words: the offset's last bit is
+coarser than a pixel, so every sample would start from the same delta and the picture would
+be flat. That wall is far out — an offset of 0.76 still leaves 375 numbers to a pixel at
+2e-11 — and only bites below about 3e-13, which is exactly where the second anchor earns
+its keep.
+
+**Same view at z = 0** is the other button, and **it widens the frame to the square root of
+its width**. `z ↦ z² + c` maps the disc of radius `r` about 0 onto the disc of radius `r²`
+about `c`, two to one, so the structure at `z = c` at 2e-9 is the structure at `z = 0` at
+6e-5 — the same picture, with exact two-fold symmetry, in a frame four decades wider. The
+first version of this button kept the width and drew a black rectangle, which is what sent
+it through the arithmetic: a frame 2e-9 across at the critical point of a nucleus `c` is
+deep inside the basin of the attracting cycle and every sample of it is interior. The cap
+is deliberately not re-derived from the new width, because the two frames' escape counts
+differ by exactly one step and the cap that drew one draws the other.
+
+**Getting back out is refused for a second reason now**, and it is the more surprising one.
+*Back to the explorer* already refused a frame below what `f64` resolves; a deep Julia view
+can also have a `c` with more digits than a double carries, and that frame would draw
+perfectly well next door — as **a different set, under this one's name**. So the parameter
+is checked against a double by value, and the refusal says which of the two is in force.
+
+**What it cost to press the button**, measured on 221×124 at one thread, 2026-09-20: the
+orbit is recomputed, at 18 to 25 ms, because a view entered at `Z₁` asks for one point more
+than a Mandelbrot frame's; every other point of it is one that frame already had. A Julia
+frame against the Mandelbrot frame at the same `c`, width and cap ran 1.01×, 1.67× and
+0.32× at 2e-9, 2e-10 and 2e-11 — a ratio that swings with how much of each frame is
+interior and says nothing about the loop. With the work held equal instead — a cap no
+sample escapes, the interior switch off — **the Julia loop is 4.07 ns a sample-iteration
+against the Mandelbrot loop's 5.08**, which is the two additions it does not do.
 
 ### The reference orbit, and the pool
 
@@ -715,24 +774,29 @@ carries it.
 
 ### Getting in and out
 
-- **Clicking the tab** carries the viewer's frame over when it is on Mandelbrot at degree 2
-  — its coordinates are already exact decimal text, so nothing is lost crossing the floor.
-  Anywhere else the tab opens at the last deep view it had, or at the Mandelbrot home, and
-  says deep is Mandelbrot only.
-- **At the ordinary explorer's zoom stop**, unchanged, on Mandelbrot, the refusal now ends
-  with an offer: *Open this frame in Deep*, the view carried. It is the one place on this
+- **Clicking the tab** carries the viewer's frame over when it is on Mandelbrot or Julia at
+  degree 2 — its coordinates are already exact decimal text, so nothing is lost crossing
+  the floor, and a shallow Julia view brings its parameter with it. Anywhere else the tab
+  opens at the last deep view it had, or at the Mandelbrot home, and says that deep is
+  `z² + c` and nothing else.
+- **At the ordinary explorer's zoom stop**, unchanged, on either of the two sets this
+  kernel draws, the refusal now ends with an offer: *Open this frame in Deep*, the view
+  carried. It is the one place on this
   page that offers rather than states, and it is there because telling a reader who has
   zoomed until the arithmetic gave out that the thing is impossible would be a sentence that
   is no longer true.
 - **A cost warning shows once per session**, on the first entry, in `sessionStorage`.
 - **Zooming back out is fine at any depth.** *Back to the explorer* carries the view where
   `f64` can still resolve it and says why not where it cannot — the module's own question,
-  not a width written down here.
+  not a width written down here. A Julia view has a second way to fail it, and the refusal
+  names which one is in force: a `c` with more digits than a double carries cannot go, not
+  because the frame is too deep but because the picture next door would be a different set
+  wearing this one's name.
 
-### Deep links are their own contract
+### Deep links are their own contract, version 2
 
 ```
-dv · x · y · w · n · a · p · the shade keys · level
+dv · cx · cy · x · y · w · n · a · p · the shade keys · level
 ```
 
 **`dv` is the marker and it is what dispatches.** A query carrying it is read by
@@ -764,21 +828,43 @@ and a URL's escaping rule, neither of which has anything to do with how deep the
   a link say "this frame, but shallower"; here a deep frame's policy cap runs to six figures
   and costs minutes, so the number in force is one a reader chose and part of what they are
   sending. A link that left it out would open at whatever the policy said today.
-- **No `f` and no `m`.** There is one of each down here, and naming them would be a lie
-  waiting to be edited.
+- **`cx` and `cy`** are the Julia parameter, exact decimals, **both or neither**, and they
+  are the shallow contract's own spelling of the same quantity — the `c` of `z² + c`, half
+  of a dynamical location's identity. A second name for one number is how two readers of
+  one thing drift apart. What differs is the arithmetic behind them: read into exact
+  decimals here, because a deep `c` is one no double holds. **Absent is the Mandelbrot
+  set**, which is what every v1 link is. They come before the frame, the way `f` does in
+  the shallow contract, because they say which set the centre and width are talking about.
+  A Julia link that names no frame opens at `z = c` rather than at the Mandelbrot home,
+  which is a place that means nothing on the dynamical plane.
+- **Why this is a version 2 and not a widening.** `cx` and `cy` have a default, so every v1
+  link still parses and still means exactly what it meant — the test a widening passes, and
+  `deep-link.test.mjs` holds a v1 link to canonicalizing into its v2 spelling with every
+  digit of the place, the width, the cap and the palette unmoved. What bumps it is that the
+  answer to *what does this tab draw* is no longer one recurrence: a link can now say which
+  of two sets it is a picture of, and that is worth saying in the version rather than
+  leaving a reader to infer it from a key. Every string this page writes says `dv=2`.
+- **No `f` and no `m`.** There is one mode down here, and the two sets are told apart by
+  the parameter rather than by a family name — spelling `f` would be putting the engine's
+  roster in front of a kernel that has two members of it.
 - The place, the width, the cap and the palette are emitted unconditionally; the shade keys
   are omitted at the engine's defaults. `panel` rides as a UI key and is never emitted.
 - **Loading a deep link** opens the tab on that view and runs the quarter pass and nothing
   else. A link that started a full deep render on arrival would be a link that costs a
   minute to follow.
 
-`deep-link.test.mjs` is 20 tests and `deep-fx.test.mjs` is 12, on Node's own runner with
-nothing installed; two of them hold the shallow contract to not having moved.
+`deep-link.test.mjs` is 27 tests and `deep-fx.test.mjs` is 12, on Node's own runner with
+nothing installed; three of them hold the shallow contract to not having moved, including
+that a deep Julia link is refused by it at both doors — `cx` and `cy` are keys that reader
+knows, which is exactly why the marker has to be what dispatches.
 
 ### Saved takes deep entries
 
+A deep Julia entry is labelled *Julia at c = …* rather than by its width alone, because two
+Julia views of different sets at one frame are otherwise the same line of text.
+
 `Saved.canonical` dispatches on the marker, so a deep link is canonicalized by the deep
-contract and **its centre is never truncated** — putting it through the shallow reader,
+contract and **its centre and its parameter are never truncated** — putting it through the shallow reader,
 which holds a coordinate as a double, would store a link to a place nobody asked for. A
 deep entry is **described rather than parsed** for its tile: there is no drawing one at a
 tile's size without the perturbation kernel and a wait, so the panel labels it and a click
@@ -794,18 +880,26 @@ On this machine, 2026-09-19, a 1600×1000 window and a 908×512 canvas, driven o
 | the audit's anchor at 2e-11, cap 48,551, all three stages | **field 62.7 s**, shade 180 ms |
 | the same, its quarter pass alone | field 1.22 s |
 | a palette change on the anchor's kept field | **recolored in 126 ms** |
-| `perturb.wasm` | **108,310 bytes raw, 50,942 gzipped** |
+| `perturb.wasm` | **112,675 bytes raw, 52,786 gzipped** (2026-09-20, with the Julia case) |
 
 So the tab is about four hundred times the wait of a shallow frame and a recolour of it is
 a shade, which is the whole reason the field is kept. The anchor's quarter pass at 1.22 s is
 just under `AUTO_PREVIEW_MS`, which is worth knowing: at the anchor a gesture does settle
 into a preview, and one decade deeper it stops doing so.
 
-**One deep link to paste**, the audit's anchor — a period-2838 minibrot nucleus in the
+**Two deep links to paste.** The audit's anchor — a period-2838 minibrot nucleus in the
 seahorse valley, at a width four decades below where `f64` gives out:
 
 ```
-explorer/?dv=1&x=-0.74501772828532335842941892835857434&y=0.14993443275456819177805709088257971&w=2e-11&n=48551&p=twilight_shifted&panel=deep
+explorer/?dv=2&x=-0.74501772828532335842941892835857434&y=0.14993443275456819177805709088257971&w=2e-11&n=48551&p=twilight_shifted&panel=deep
+```
+
+And the Julia set of that same `c`, at `z = c`, two decades up where the filigree fills the
+frame — the picture the ordinary explorer cannot draw at all, because this `c` is not a
+double:
+
+```
+explorer/?dv=2&cx=-0.74501772828532335842941892835857434&cy=0.14993443275456819177805709088257971&x=-0.74501772828532335842941892835857434&y=0.14993443275456819177805709088257971&w=2e-9&n=8000&p=twilight_shifted&panel=deep
 ```
 
 ### What is not here
@@ -814,6 +908,13 @@ Full-size download from the Deep tab, "find the minibrot here" and nucleus refer
 the UI, and BLA — all three out of scope by the prompt that built this, and none of them
 blocked by anything above. BLA's seam is marked at the top of `Kernel::sample`'s loop and
 changes how long a picture takes rather than what it is.
+
+And on the Julia side: **no Julia view anchored anywhere but `z = 0` and `z = c`.** A frame
+far from both at depth is refused rather than drawn, which is the honest answer and not a
+limitation anybody has to route around — the structure this view exists for is at the
+anchors. Lifting it means a reference orbit started at the view's own centre in fixed point
+and a second one to rebase onto, which is a real design with a real cost, and nothing above
+depends on it.
 
 ### What it is made of
 
@@ -824,8 +925,9 @@ deep-worker.js     one worker: one perturb instance, one held orbit, one band
 deep-fx.js         exact decimal coordinates, BigInt fixed point
 deep-link.js       the deep link contract — parse, emit, canonicalize, describe
 deep-fx.test.mjs   12 tests: the arithmetic is exact where a double is not
-deep-link.test.mjs 20 tests: the contract, and the shallow one held to not moving
-deep.test.mjs      10 tests: where the two modules meet, against both committed ones
+deep-link.test.mjs 27 tests: the contract, and the shallow one held to not moving
+deep.test.mjs      13 tests: where the two modules meet, against both committed ones
+bench/julia.mjs    what a Julia frame costs against the Mandelbrot frame at the same c
 perturb.wasm       generated: the perturbation kernel, compiled
 perturb.manifest.json  generated: what perturb.wasm was built from
 perturb-wasm/      the crate that produces it

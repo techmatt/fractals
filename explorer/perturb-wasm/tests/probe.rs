@@ -8,6 +8,7 @@
 use perturb::fx::Fx;
 use perturb::kernel::{Kernel, smooth_count};
 use perturb::reference::{self, BAILOUT};
+use perturb::Anchor;
 
 fn oracle(c_re: &Fx, c_im: &Fx, maxiter: u32) -> (f64, u32) {
     let n = c_re.n;
@@ -129,6 +130,8 @@ fn where_the_interior_switch_should_fire() {
         maxiter: None,
         reference: None,
         period: None,
+        julia: None,
+        anchor: Anchor::Parameter,
         interior: true,
     };
     let maxiter = spec.maxiter();
@@ -198,6 +201,8 @@ fn three_ways_on_the_committed_cases_view() {
         maxiter: None,
         reference: None,
         period: None,
+        julia: None,
+        anchor: Anchor::Parameter,
         interior: false,
     };
     let maxiter = spec.maxiter();
@@ -285,4 +290,121 @@ fn what_a_misiurewicz_ladder_looks_like() {
             orbit.len()
         );
     }
+}
+
+/// **Which of the three is right where the Julia kernel and the oracle part.**
+///
+/// The deep-`c` Julia ladder in `tests/oracle.rs` has a handful of samples that
+/// the kernel runs to the cap and the oracle escapes from thousands of
+/// iterations earlier. That is either a defect in the delta recurrence or the
+/// same chaos this file already pinned on the Mandelbrot side, and the way to
+/// tell them apart is a third opinion: a plain `f64` Julia loop, at a width
+/// where `f64` is still honest — 2e-9 across sixteen samples is a million
+/// representable numbers to a pixel.
+///
+/// If the kernel were wrong, the plain loop would sit with the oracle and the
+/// kernel would be the outlier on every hard sample.
+#[test]
+#[ignore = "probe"]
+fn three_ways_on_a_deep_julia_frame() {
+    let limbs = 3;
+    let width = 2e-9f64;
+    let (c_re_text, c_im_text) = (
+        "-0.74501772828532335842941892835857434",
+        "0.14993443275456819177805709088257971",
+    );
+    let c_re = Fx::parse(c_re_text, limbs).unwrap();
+    let c_im = Fx::parse(c_im_text, limbs).unwrap();
+    let maxiter = perturb::cap::for_width(width);
+    // A Julia frame's reference is the critical orbit of its own parameter.
+    let orbit = reference::orbit(&c_re, &c_im, maxiter + 1, None);
+    let kernel = Kernel::new(&orbit, maxiter, false).at_entry(1);
+    let (c_re_f64, c_im_f64) = (c_re.to_f64(), c_im.to_f64());
+
+    let mut rows: Vec<(f64, f64, f64, f64, f64, f64)> = Vec::new();
+    let (mut kernel_nearer, mut plain_nearer) = (0, 0);
+    for row in 0..16 {
+        for col in 0..16 {
+            let dx = ((col as f64 + 0.5) / 16.0 - 0.5) * width;
+            let dy = (0.5 - (row as f64 + 0.5) / 16.0) * (width * 9.0 / 16.0);
+            let ours = kernel.sample_julia(dx, dy).smooth;
+            // `z₀` for the oracle and the plain loop: the anchor plus the same
+            // geometry, in fixed point and in `f64` respectively.
+            let (truth, _) = julia_oracle(
+                &c_re.add(&Fx::from_f64(dx, limbs).unwrap()),
+                &c_im.add(&Fx::from_f64(dy, limbs).unwrap()),
+                &c_re,
+                &c_im,
+                maxiter,
+            );
+            let theirs = plain_julia(c_re_f64 + dx, c_im_f64 + dy, c_re_f64, c_im_f64, maxiter);
+            // A cap on one side and an escape on the other is a disagreement of
+            // at least the distance to the cap, which is what makes it
+            // comparable with a count difference.
+            let gap = |value: f64| {
+                if value.is_nan() != truth.is_nan() {
+                    (maxiter as f64 - truth.min(maxiter as f64)).max(1.0)
+                } else if truth.is_nan() {
+                    0.0
+                } else {
+                    (value - truth).abs()
+                }
+            };
+            let (ours_gap, theirs_gap) = (gap(ours), gap(theirs));
+            if ours_gap < theirs_gap {
+                kernel_nearer += 1;
+            } else if theirs_gap < ours_gap {
+                plain_nearer += 1;
+            }
+            rows.push((dx, dy, ours, truth, theirs, ours_gap));
+        }
+    }
+    rows.sort_by(|a, b| b.5.partial_cmp(&a.5).unwrap());
+    println!("julia at the audit's c, width {width:e}, cap {maxiter}");
+    println!("worst ten, perturbation vs oracle vs plain f64:");
+    for row in rows.iter().take(10) {
+        println!(
+            "  z-c ({:+.3e}, {:+.3e})  perturb {:>12.2}  oracle {:>12.2}  plain {:>12.2}",
+            row.0, row.1, row.2, row.3, row.4
+        );
+    }
+    println!(
+        "nearer the oracle: kernel on {kernel_nearer}, plain f64 on {plain_nearer}, of {} samples",
+        rows.len()
+    );
+}
+
+fn julia_oracle(x0: &Fx, y0: &Fx, c_re: &Fx, c_im: &Fx, maxiter: u32) -> (f64, u32) {
+    let bailout_sq = BAILOUT * BAILOUT;
+    let mut x = *x0;
+    let mut y = *y0;
+    for step in 1..=maxiter {
+        let x2 = x.sqr();
+        let y2 = y.sqr();
+        let xy = x.mul(&y);
+        let next = x2.sub(&y2).add(c_re);
+        y = xy.shl1().add(c_im);
+        x = next;
+        let (fx, fy) = (x.to_f64(), y.to_f64());
+        let magnitude_sq = fx * fx + fy * fy;
+        if magnitude_sq > bailout_sq {
+            return (smooth_count(step, magnitude_sq), step);
+        }
+    }
+    (f64::NAN, maxiter)
+}
+
+fn plain_julia(z_re: f64, z_im: f64, c_re: f64, c_im: f64, maxiter: u32) -> f64 {
+    let bailout_sq = BAILOUT * BAILOUT;
+    let (mut x, mut y) = (z_re, z_im);
+    for step in 1..=maxiter {
+        let next = x * x - y * y + c_re;
+        y = 2.0 * x * y + c_im;
+        x = next;
+        let magnitude_sq = x * x + y * y;
+        if magnitude_sq > bailout_sq {
+            return smooth_count(step, magnitude_sq);
+        }
+    }
+    f64::NAN
 }

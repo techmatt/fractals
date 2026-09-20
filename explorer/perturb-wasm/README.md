@@ -1,9 +1,18 @@
-# perturb — the Mandelbrot set below the `f64` floor
+# perturb — `z² + c` below the `f64` floor
 
-A Rust crate that renders the smooth field of the degree-2 Mandelbrot set by
-**perturbation with rebasing**, and builds to a wasm module of its own. It has no
-UI, no page and no link contract: those are the next prompt's, written against
-what this one exports.
+A Rust crate that renders the smooth field of the degree-2 Mandelbrot set — and,
+since `deep_julia_at_c_ckpt136`, of the Julia set of any `c` — by **perturbation
+with rebasing**, and builds to a wasm module of its own. It has no UI, no page and
+no link contract: those are `explorer/README.md`'s, written against what this
+exports.
+
+**The two sets are one kernel and one reference orbit**, which is the shape the
+whole Julia case takes and is worth reading before anything below. The stored
+orbit is `Z₀ = 0, Z₁ = c, Z₂ = c² + c, …` — the critical orbit of `c` — and it is
+*simultaneously* the Julia orbit of `z = 0` and, shifted by one index, the Julia
+orbit of `z = c`. So a Julia frame is drawn from the orbit a Mandelbrot frame
+centred at that `c` already computed, and the only differences in the loop are
+where it enters and whether `dc` is spent every step or once.
 
 **Why a second crate and a second module.** `engine.wasm` is the renderer the
 explorer runs today, and nothing in here is linked into it. The shallow path —
@@ -46,6 +55,35 @@ tests/probe.rs     three-way probes; not proofs, and they say so
 - **`δ' = (2·Z[m] + δ)·δ + dc`, and rebasing is Zhuoran's**: when `|z| < |δ|`, or
   the reference runs out, `δ := z` and `m := 0`. That is the whole of the glitch
   handling — no Pauldelbrot test, no secondary reference, no correction pass.
+- **The Julia case is that recurrence with `dc` spent once instead of every
+  step.** Holding `c` and varying `z₀`, the delta obeys `δ' = (2·Z[m] + δ)·δ` with
+  no `dc` term at all: the offset that was added every iteration becomes the delta
+  the loop opens with, and the entry index moves from `Z₀` to the point the view is
+  anchored at. `JULIA` is a const generic and not a field, because `x + 0.0` is not
+  `x` when `x` is `-0.0` — a zero `dc` carried as data would cost the Julia loop two
+  additions an iteration that no optimizer is permitted to remove.
+- **And rebasing is untouched, which is the reason there is no second reference
+  here.** `δ := z` is only a rebase because `Z₀ = 0`: the delta becomes the iterate
+  itself, with no subtraction and so no cancellation. Under `z ↦ z² + c` the stored
+  orbit from index 0 is the orbit of the critical point, a valid reference for any
+  `z`, so the same two lines say the same true thing. Rebasing onto an orbit that
+  started anywhere else would need `δ := z − Z₀` in `f64`, and that subtraction is
+  exactly the precision a deep frame has none of to spare.
+- **Two anchors, and both are points of the orbit**: `z = c` at index 1, where the
+  filigree is, and `z = 0` at index 0, the critical point, where the picture has
+  exact two-fold symmetry. Both offsets are exact fixed-point subtractions, so
+  which one a frame uses changes nothing about the mathematics — only how much of
+  the pixel step survives into the `f64` delta.
+- **`delta_ulps` is the engine's `resolution_ulps` asked of the delta**, and it is
+  what refuses a frame too far from its anchor. There the question is whether two
+  neighbouring sample *centres* are the same `f64`; here the centres are exact
+  decimals and it is the delta that is a double, so a view a long way from its
+  anchor at a width far below it starts every pixel from the same number and would
+  draw one flat colour with total confidence. The floor is `DELTA_ULPS = 4.0`, the
+  engine's own, restated the way `cap::for_width` is. The wall is further out than
+  it sounds: an offset of 0.76 at 480 samples across still leaves 375 numbers to a
+  pixel at 2e-11, and only bites below about 3e-13 — which is why the second anchor
+  matters at depth and nowhere else.
 - **`dc` is geometry plus a fixed-point centre difference**, never `f64(centre) −
   f64(reference)`. At 1e-28 those two are the same `f64` and the difference is
   exactly zero, which would draw the reference's neighbourhood wherever the view
@@ -65,8 +103,11 @@ tests/probe.rs     three-way probes; not proofs, and they say so
 
 ### What it does not do
 
-Degree-2 Mandelbrot, `smooth`, and nothing else. It is not a wider engine; it is
-one kernel — which is the shape `explorer/README.md` already said a deep renderer
+Degree 2, `smooth`, and nothing else. It draws the two sets `z² + c` has — the
+parameter plane and the dynamical one — because they are one recurrence read two
+ways and one reference orbit to draw either from, and **not** because it is
+growing into a wider engine. No other degree, no other family, no other mode. It
+is one kernel, which is the shape `explorer/README.md` always said a deep renderer
 would have to take.
 
 ## What the engine needed
@@ -179,6 +220,73 @@ suite is held to the median for that reason, and the share within a relative
 sample at 1e-28 against the view centre, and none at all against the wrapped
 nucleus, because the wrap is what the rebase was standing in for.
 
+### 2b. The Julia case, against the same oracle
+
+Measured 2026-09-20, same box. Three ladders, all in `tests/oracle.rs`, and the
+oracle for a Julia sample is the same fixed-point loop with `z₀` the pixel and `c`
+held.
+
+**`c = i` is the ladder for the same reason it is the Mandelbrot one**: its Julia
+set is a dendrite — no interior at all, structure at every scale, and the critical
+point on the set, so both anchors sit on real structure — and `0 + 1i` is exactly
+representable with no stored digits to be wrong about. Every rung, both anchors,
+1e-4 down to 1e-28, 144 samples a tile:
+
+| | escaping | interior disagreements | median Δ | worst Δ | within 1e-6 | rebases mean / max |
+|---|--:|--:|--:|--:|--:|--:|
+| anchored at `z = c` | 144 of 144, every rung | **0** | **0** at every rung | 1.8e-12 | 100% | 2.0–2.3 / 6–9 |
+| anchored at `z = 0` | 144 of 144, every rung | **0** | **0** at every rung | 1.3e-12 | 100% | 2.1–2.7 / 5–7 |
+
+At the bottom rung the sample spacing is 6e-30 and every `z₀` in the tile is the
+same `f64`, so there is no reading of this in which the delta machinery is working
+by accident.
+
+**A finding the first run of that ladder produced, and it is about the oracle.**
+At the origin anchor the ladder failed below 1e-16 — 20 interior disagreements at
+1e-28 and a median Δ of 0.3 — and the kernel was not the one that was wrong. A
+Julia sample anchored at `z = 0` has `z₁ = z₀² + c`, so what tells two neighbouring
+pixels apart is the *square* of a spacing: 4e-59 at the bottom rung. Fixed point is
+absolute precision, and at the frame's own four limbs 4e-59 is below the last bit —
+every pixel of the oracle's tile became the same number and the oracle drew a flat
+tile. The kernel carries that delta in `f64`, which is *relative* precision and
+holds it to sixteen digits. The oracle runs at twice the limbs at that anchor now,
+and the walk says so where it does it.
+
+**The audit's own deep `c`, drawn as a Julia set at `z = c`** — the view the tab's
+button opens — is held to its median and not its worst sample, which is the anchor
+ladder's ruling and is here for the anchor ladder's reason:
+
+| width | cap | escaping | interior disagreements | median Δ/ν | worst Δ | within 1e-6 |
+|---|--:|--:|--:|--:|--:|--:|
+| 2e-6 | 28,619 | 142 | 0 | 3.9e-14 | 1.5e-1 | 99.3% |
+| 2e-8 | 36,592 | 141 | 0 | 7.0e-12 | 1.7e2 | 89.4% |
+| 2e-9 | 40,578 | 136 | **2** | 5.5e-12 | 5.9e2 | 86.0% |
+| 2e-10 | 44,565 | 15 | 0 | 1.2e-11 | 6.2e1 | 86.7% |
+| 2e-11 | 48,551 | 0 | 0 | — | — | — |
+
+The bottom rungs are entirely interior, and that is the picture rather than the
+kernel: inside a superattracting basin every point converges to the cycle, so a
+frame narrower than the structure around `z = c` is filled.
+
+**The two interior disagreements at 2e-9 are chaos, and that is settled rather
+than asserted.** The oracle escapes at 32,897 and 36,223 where the kernel runs to a
+cap of 40,578 — not cap-straddling, a difference of thousands, which is the same
+signature as the Mandelbrot anchor's worst Δ of 7.6e3 one section up. So
+`tests/probe.rs` asks the third opinion at a width where `f64` is still honest
+(2e-9 across sixteen samples is a million representable numbers to a pixel), and
+the answer is unambiguous: **the kernel is nearer the oracle on 250 of 256 samples
+and the plain `f64` loop on 1**, with the plain loop reading 20,283 where the
+oracle reads 29,223. A kernel carrying the wrong recurrence could not produce that
+table.
+
+And the shallow end, where a completely different program can be asked:
+`explorer/deep.test.mjs` draws the Douady rabbit's Julia set through this module
+and through **`engine.wasm`'s own `f=julia` render** of the same `c` — no reference
+orbit, no delta, no rebasing — and holds the two to agreeing about the interior
+mask sample for sample and about the smooth count to a median relative 1e-6. Two
+kernels sharing no code and agreeing about a picture is the strongest statement
+available about the recurrence, the entry index and the geometry at once.
+
 ### 3. The interior switch
 
 `dz_n = ∏ 2·z_k` is the derivative of the `n`-fold map along the orbit: it decays
@@ -286,9 +394,45 @@ and excluded build flags, engine version and thread count as causes. Whatever V8
 is doing for that loop it is not doing for this one, and a deep tab should price
 its own frames rather than scale a native figure.
 
-**`perturb.wasm` is 108,310 bytes raw and 50,943 gzipped** at level 9. Beside
-`engine.wasm`'s 717,977 / 213,828 that is 15% more to download, and it buys a
-renderer for everything below 1e-10. It is large for a dependency-free crate of
+**What a Julia frame costs against the Mandelbrot frame at the same `c`, width and
+cap** — `explorer/bench/julia.mjs`, 221×124 on one thread, 2026-09-20:
+
+| width | cap | mandelbrot | julia | ratio |
+|---|--:|--:|--:|--:|
+| 2e-9 | 40,578 | 2,025 ms · 14% interior | 2,038 ms · 4% interior | **1.01×** |
+| 2e-10 | 44,565 | 1,957 ms · 1% interior | 3,275 ms · 89% interior | **1.67×** |
+| 2e-11 | 48,551 | 5,751 ms · 39% interior | 1,858 ms · 100% interior | **0.32×** |
+
+**A frame time cannot answer whether the Julia loop is the same price**, and that
+table is why: the two frames do different amounts of work because their interior
+shares are different, and an interior sample either stops early under the switch or
+pays the whole cap. The ratio swings from 0.32 to 1.67 with the picture and says
+nothing about the recurrence.
+
+So the loop is priced with the work held equal — a cap of 1,200, low enough that
+**no sample of either frame escapes**, and the interior switch off, so every sample
+of both runs exactly `cap` iterations:
+
+| | ms | ns / sample-iteration |
+|---|--:|--:|
+| mandelbrot | 167 | **5.08** |
+| julia | 134 | **4.07** |
+
+**The Julia loop is 20% cheaper per sample-iteration**, which is the two additions
+it does not do and, on frames that rebase differently, some part of that too — the
+two are not separated here. It is the first thing in this crate that is *faster*
+than the Mandelbrot path, and it wants no explanation beyond the recurrence being
+shorter.
+
+**The orbit the jump needs is 18 to 25 ms**, and every point of it is a point the
+Mandelbrot frame's orbit already had: the Julia orbit is asked for one step longer,
+because a view entered at `Z₁` has one step less of reference in front of it, so it
+is recomputed rather than reused. Against a frame of seconds that is 1%, and it is
+the whole price of pressing the button.
+
+**`perturb.wasm` is 112,675 bytes raw and 52,786 gzipped** at level 9. Beside
+`engine.wasm`'s 763,343 / 228,670 that is 15% more to download, and it buys a
+renderer for everything below 1e-10, on both of the sets `z² + c` has. It is large for a dependency-free crate of
 1,200 lines, and the reason is `core::fmt`: `plan` formats a JSON report and every
 refusal is a sentence. That is an attribution from what the module contains rather
 than a measurement by subtraction, and if the tab wants the bytes back that is
@@ -331,20 +475,22 @@ its own branch rather than a stage of the explorer's bake.
 | `crate` | `explorer/perturb-wasm` |
 | `dependencies` | `[]`, and it is written down because it is the design |
 | `rustc` | the compiler, with its commit and date |
-| `raw_bytes` / `gzip_bytes` | **108,310 raw, 50,942 gzipped** |
+| `raw_bytes` / `gzip_bytes` | **112,675 raw, 52,786 gzipped** |
 
 Two fields of `engine.manifest.json` are **absent** rather than empty:
 `engine_version`, because this crate does not link the engine, and
 `engine_changes`, because it has never needed a change in it. An empty
 `engine_changes` would read as a list somebody forgot to fill in. That the second
-one is still true after the tab landed is worth saying plainly: the tab shades its
-field through `engine.wasm`'s existing `shade_level` on a placeholder viewport,
-which `explorer/deep.test.mjs` holds to being sound, so **`engine.wasm` is
-byte-identical and `engine.manifest.json` is unmoved**.
+one is still true after the tab landed, and still true after the Julia case landed,
+is worth saying plainly: the tab shades its field through `engine.wasm`'s existing
+`shade_level` on a placeholder viewport, which `explorer/deep.test.mjs` holds to
+being sound, so **this crate has never asked the engine for anything**. (The engine
+module's own bytes have moved since, for a reason that has nothing to do with this
+crate: `explorer_shade_pool_ckpt136` banded the shade.)
 
 **What a visitor downloads for it: nothing, unless they open the Deep tab.** The
 module and the tab's five modules are fetched on that tab's first open and never
-before. Against `engine.wasm`'s 213,828 gzipped, the 50,942 here is 24% more —
+before. Against `engine.wasm`'s 228,670 gzipped, the 52,786 here is 23% more —
 paid only by a reader who asked for a renderer for everything below 1e-10.
 
 `core::fmt` is still most of the size and is still not chased: `plan` formats a

@@ -22,15 +22,17 @@
 // allowed in is the *size* of a step, which is a fraction of a width that is itself a
 // double.
 //
-// What this tab is: smooth, Mandelbrot, degree 2. No mode picker and no family picker,
-// because there is one of each down here — the kernel has no other recurrence written in
-// it. Palette, the shade recipe and Autolevel work exactly as they do everywhere else,
-// because a deep field is a smooth field and `engine.wasm` colours it without being told
-// which kernel drew it.
+// What this tab is: smooth, `z² + c`, degree 2. No mode picker, because there is one mode
+// down here, and no family picker, because the two sets this kernel draws are two ways of
+// reading one recurrence rather than two families — **Julia at this c** holds the `c` the
+// view is centred on and lets `z` vary instead, which is the same orbit seen from the
+// other side and the same reference orbit to draw it from. Palette, the shade recipe and
+// Autolevel work exactly as they do everywhere else, because a deep field is a smooth
+// field and `engine.wasm` colours it without being told which kernel drew it.
 
 import * as fx from "./deep-fx.js";
 import * as deepLink from "./deep-link.js";
-import { DeepRenderer } from "./deep-render.js";
+import { DeepRenderer, deepSpecOf } from "./deep-render.js";
 
 /**
  * How long the last quarter-resolution pass may have taken for the next one to start on
@@ -123,6 +125,15 @@ export function mount(host) {
   let colouring = {};
   /** Whether the reader has set a cap of their own, which a zoom then leaves alone. */
   let pinnedCap = false;
+  /**
+   * The Mandelbrot view *Julia at this c* was pressed on, so the way back is the
+   * frame it came from rather than a frame derived from where the reader has got to.
+   *
+   * `null` for a Julia view that arrived as a link, and the button says so: there is
+   * nothing in a link that says where its reader was standing when they made it, and
+   * inventing one would be putting a fact in front of a reader that nobody knows.
+   */
+  let cameFrom = null;
 
   /**
    * How many fields are kept.
@@ -441,6 +452,7 @@ export function mount(host) {
       // **The only pass that ever starts by itself**, and only on the evidence of the last
       // one. Nothing here can reach the full passes.
       if (!shown || !owns || running !== null || !pending()) return;
+      if (refused() !== null) return;
       if (quarterMs === null || quarterMs > AUTO_PREVIEW_MS) {
         syncControls();
         return;
@@ -499,6 +511,111 @@ export function mount(host) {
     moved();
   }
 
+  // ----------------------------------------------------------------- the two sets
+
+  /**
+   * Move to a view of the other set, keeping the frame where the reader can see
+   * what happened.
+   *
+   * **Nothing is slid and nothing is dimmed.** A gesture keeps the last picture
+   * because the new frame is a piece of the old one; here the frame does not move
+   * at all and the set under it does, so the picture that is up is not a stale
+   * view of this one — it is a picture of something else at the same coordinates.
+   * Boxing it would draw the box exactly on the edge of the canvas and say
+   * nothing. So the canvas is cleared and the tab is honestly back at "nothing
+   * drawn yet", which is what it is.
+   */
+  function swap(next) {
+    view = next;
+    drawn = null;
+    stale = null;
+    host.compose((ink, grid) => {
+      ink.fillStyle = "#000";
+      ink.fillRect(0, 0, grid.width, grid.height);
+    });
+    host.stat("");
+    host.say("");
+    // The fields are NOT cleared: the cache is keyed on the set as well as the
+    // frame, so the two views cannot be confused for one another, and a small
+    // enough pair of frames survives the trip both ways.
+    moved();
+  }
+
+  /** The Julia set of this view's own centre, framed on that centre. */
+  function toJulia() {
+    if (view.julia !== null) return;
+    cameFrom = view;
+    swap({ ...view, julia: { x: view.x, y: view.y } });
+  }
+
+  /**
+   * Back to the Mandelbrot set.
+   *
+   * The frame that was left, where the reader came from one; otherwise the frame
+   * this Julia view implies — the parameter's own place, at the width being
+   * looked at. A pasted link carries no history, and this is the honest
+   * reconstruction of what it would have been.
+   */
+  function toMandelbrot() {
+    if (view.julia === null) return;
+    const home = cameFrom ?? {
+      ...view,
+      julia: null,
+      x: view.julia.x,
+      y: view.julia.y,
+      maxiter: pinnedCap ? view.maxiter : policyCap(view.w.value),
+    };
+    cameFrom = null;
+    swap({ ...home, palette: view.palette, shade: view.shade, level: view.level });
+  }
+
+  /**
+   * The same structure, at the critical point, where it is exactly two-fold
+   * symmetric.
+   *
+   * **The frame widens to the square root of itself, and it has to.** `z ↦ z² + c`
+   * maps the disc of radius `r` about 0 *onto* the disc of radius `r²` about `c`,
+   * two to one — so what sits at `z = c` at a width of 2e-9 sits at `z = 0` at a
+   * width of 6e-5, and a button that kept the width would land a reader deep inside
+   * the basin of the attracting cycle, where every sample is interior and the
+   * picture is black. Measured, on the audit's own `c`: it drew a black frame, which
+   * is what sent this through the arithmetic.
+   *
+   * The cap is deliberately **not** re-derived from the new width. The two frames are
+   * the same picture and their escape counts differ by exactly one step — the step
+   * that takes 0 to c — so the cap that drew one is the cap that draws the other, and
+   * the width policy's answer for a frame 4 decades wider would be a different
+   * picture of the same place.
+   */
+  function toOrigin() {
+    if (view.julia === null) return;
+    const root = Math.sqrt(2 * view.w.value);
+    if (!(root > 0) || !Number.isFinite(root)) return;
+    view = {
+      ...view,
+      x: deepLink.coordinateOf(fx.ZERO),
+      y: deepLink.coordinateOf(fx.ZERO),
+      w: deepLink.widthOf(root),
+    };
+    moved();
+  }
+
+  /**
+   * Why this frame cannot be drawn, in the kernel's words, or `null`.
+   *
+   * Asked of the module rather than worked out here, and asked before the reader
+   * presses anything: a frame too far from both its anchors is refused by `plan`,
+   * and a tab that only found that out on Render would have taken the press and
+   * given back a sentence.
+   */
+  function refused() {
+    if (renderer === null || view.julia === null) return null;
+    const grid = host.grid();
+    if (grid.width < 1 || grid.height < 1) return null;
+    const answer = renderer.plan(deepSpecOf(view, grid.width, grid.height));
+    return answer.ok ? null : answer.why;
+  }
+
   // ----------------------------------------------------------------- the controls
 
   function setCap(value) {
@@ -512,6 +629,7 @@ export function mount(host) {
 
   function syncControls() {
     const busy = running !== null;
+    const why = busy ? null : refused();
     // **An auto-preview does not take the button.** It is a pass the reader did not ask
     // for, so turning Render into Cancel while it runs would put the one control this tab
     // has out of reach at exactly the moment it is wanted: a reader who gestures and then
@@ -520,6 +638,7 @@ export function mount(host) {
     const committed = busy && !running.auto;
     els.render.textContent = committed ? "Cancel" : pending() || drawn === null ? "Render" : "Render again";
     els.render.classList.toggle("is-running", committed);
+    els.render.disabled = why !== null;
     els.progress.hidden = !busy;
     if (!busy) els.progress.style.removeProperty("--done");
     els.cap.value = String(view.maxiter);
@@ -528,15 +647,46 @@ export function mount(host) {
     els.width.textContent = view.w.text;
     els.centre.textContent = `${view.x.text}\n${view.y.text}`;
     els.centre.title = `${view.x.text} + ${view.y.text}i`;
+
+    // The parameter, where there is one. A Mandelbrot view has no `c` to show:
+    // every point of it is one.
+    const julia = view.julia !== null;
+    // Both halves of the row, or neither: an empty `dd` still takes its cell in the
+    // grid and shifts every label after it into the wrong column.
+    els.paramRow.hidden = !julia;
+    els.paramValue.hidden = !julia;
+    if (julia) {
+      els.param.textContent = `${view.julia.x.text}\n${view.julia.y.text}`;
+      els.param.title = `${view.julia.x.text} + ${view.julia.y.text}i`;
+    }
+    els.julia.textContent = julia ? "Back to the Mandelbrot set" : "Julia at this c";
+    els.julia.disabled = committed;
+    els.julia.title = julia
+      ? cameFrom !== null
+        ? "Back to the frame this Julia set was opened from."
+        : "Open the Mandelbrot set at this c, at the width you are looking at."
+      : "Draw the Julia set of this view's own center — the same c, with z varying instead.";
+    els.origin.hidden = !julia;
+    els.origin.disabled = committed || (julia && fx.isZero(view.x.dec) && fx.isZero(view.y.dec));
     els.back.disabled = committed;
-    els.back.title = host.resolves(view)
-      ? "Open this frame in the ordinary explorer, which can still draw it."
-      : "This frame is below what the ordinary explorer's arithmetic can resolve, so it cannot be carried back.";
+    // Two reasons it might not go, and the title names the one in force. A parameter
+    // that cannot cross is the more surprising of the two, because the frame would
+    // draw perfectly well next door — as a different set.
+    const carries =
+      view.julia === null ||
+      (deepLink.exactInDouble(view.julia.x) && deepLink.exactInDouble(view.julia.y));
+    els.back.title = !carries
+      ? "This Julia set's c has more digits than the ordinary explorer carries, so it cannot be taken back: rounding it would open a different Julia set."
+      : host.resolves(view)
+        ? "Open this frame in the ordinary explorer, which can still draw it."
+        : "This frame is below what the ordinary explorer's arithmetic can resolve, so it cannot be carried back.";
     els.back.hidden = false;
 
     // What the tab says about itself, in one line: what Render would do, and whether the
     // quarter pass will start on its own.
-    if (busy) {
+    if (why !== null) {
+      els.note.textContent = why;
+    } else if (busy) {
       els.note.textContent = "";
     } else if (drawn === null) {
       els.note.textContent = "Nothing has been drawn yet. Render draws this frame.";
@@ -594,9 +744,12 @@ export function mount(host) {
         stale = null;
         fields.clear();
         pinnedCap = false;
+        cameFrom = null;
       }
     } else if (drawn === null && stale === null) {
-      host.say("Deep is the Mandelbrot set only: it is the one recurrence this kernel has.");
+      host.say(
+        "Deep draws z² + c and nothing else: the Mandelbrot set, and the Julia set of any c on it.",
+      );
     }
     owns = true;
     paint();
@@ -609,8 +762,20 @@ export function mount(host) {
     const x = fx.parse(from.x.text);
     const y = fx.parse(from.y.text);
     if (x === null || y === null) return null;
+    // A shallow Julia view brings its parameter with it, which is the same trip
+    // *Back to the explorer* makes in the other direction. The constants are
+    // already decimal text on that side, so nothing is lost crossing the floor —
+    // and a `c` that came from a double stays exactly the `c` that double spells.
+    let julia = null;
+    if (from.family === "julia") {
+      const re = fx.parse(from.constants.cx.text);
+      const im = fx.parse(from.constants.cy.text);
+      if (re === null || im === null) return null;
+      julia = { x: deepLink.coordinateOf(re), y: deepLink.coordinateOf(im) };
+    }
     return {
       version: deepLink.VERSION,
+      julia,
       x: deepLink.coordinateOf(x),
       y: deepLink.coordinateOf(y),
       w: deepLink.widthOf(from.w.value),
@@ -654,6 +819,8 @@ export function mount(host) {
     }
   });
 
+  els.julia.addEventListener("click", () => (view.julia === null ? toJulia() : toMandelbrot()));
+  els.origin.addEventListener("click", toOrigin);
   els.back.addEventListener("click", () => host.leave(view));
   els.save.addEventListener("click", () => host.save(deepLink.emit(view)));
 
@@ -692,6 +859,8 @@ export function mount(host) {
       stale = null;
       fields.clear();
       pinnedCap = true;
+      // A link says where it points and not where its writer was standing.
+      cameFrom = null;
       owns = true;
       warn();
       syncControls();

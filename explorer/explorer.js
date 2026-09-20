@@ -612,9 +612,9 @@ function zoomAbout(px, py, factor) {
       "of them. Any deeper and adjacent pixels would round to the same number, so there " +
       "would be nothing left to draw. Going further needs higher-precision arithmetic, " +
       "which this renderer does not have.";
-    // On the Mandelbrot set the page now has that arithmetic, in a tab of its own, and
-    // this frame is exactly what it opens at.
-    if (view.family === "mandelbrot") {
+    // On the two sets `z² + c` draws, the page now has that arithmetic in a tab of its
+    // own, and this frame is exactly what it opens at.
+    if (carryable() !== null) {
       offer(
         `${wall} The Deep tab does, with a different kernel — slower, and this frame carries over.`,
         "Open this frame in Deep",
@@ -2443,10 +2443,10 @@ function deepOwns() {
 }
 
 /** The frame the viewer would carry into the Deep tab, or `null` where it has none to
- *  carry: deep is the Mandelbrot set at degree 2, and a view of anything else is a view of
- *  a plane this kernel has no recurrence for. */
+ *  carry: deep draws `z² + c` at degree 2 — the Mandelbrot set and its Julia sets — and a
+ *  view of anything else is a view of a plane this kernel has no recurrence for. */
 function carryable() {
-  return view.family === "mandelbrot" ? view : null;
+  return view.family === "mandelbrot" || view.family === "julia" ? view : null;
 }
 
 /**
@@ -2458,6 +2458,19 @@ function carryable() {
  * the one thing this whole tab is built not to do.
  */
 function leaveDeep(from) {
+  // **Two ways a deep view can fail to cross back, and they are different
+  // failures.** A frame below the ordinary arithmetic is a picture nobody could
+  // draw; a parameter below it is a picture of *a different set* that would draw
+  // perfectly well and be mislabelled. The second is the worse of the two, and it
+  // is the one a reader could not possibly spot, so it is named separately.
+  if (from.julia && !carriesParameter(from)) {
+    say(
+      "This Julia set's c has more digits than the ordinary explorer's arithmetic carries, " +
+        "so it cannot be taken over: rounding it would open a different Julia set under " +
+        "this one's name. The Deep tab is the only place this c exists.",
+    );
+    return;
+  }
   if (!resolvesShallow(from)) {
     say(
       "This frame is below what the ordinary explorer's arithmetic can resolve, so it " +
@@ -2466,8 +2479,9 @@ function leaveDeep(from) {
     );
     return;
   }
+  const family = from.julia ? "julia" : "mandelbrot";
   view = {
-    ...link.fresh("mandelbrot", "smooth", contract),
+    ...link.fresh(family, "smooth", contract),
     x: { text: from.x.text, value: Number(from.x.text) },
     y: { text: from.y.text, value: Number(from.y.text) },
     w: { text: from.w.text, value: from.w.value },
@@ -2476,6 +2490,12 @@ function leaveDeep(from) {
     shade: from.shade,
     level: from.level,
   };
+  if (from.julia) {
+    view.constants = {
+      cx: { text: from.julia.x.text, value: Number(from.julia.x.text) },
+      cy: { text: from.julia.y.text, value: Number(from.julia.y.text) },
+    };
+  }
   deep?.detach();
   showPanel(DEFAULT_PANEL);
   changed();
@@ -2486,9 +2506,16 @@ function leaveDeep(from) {
 /** Whether the ordinary renderer would still resolve a deep frame, asked of the module. */
 function resolvesShallow(of) {
   return (
+    carriesParameter(of) &&
     grid.width > 0 &&
     renderer.resolves(Number(of.x.text), Number(of.y.text), of.w.value, grid.width, grid.height)
   );
+}
+
+/** Whether a deep view's Julia parameter, if it has one, survives a double. */
+function carriesParameter(of) {
+  if (!of.julia || deepRules === null) return true;
+  return deepRules.exactInDouble(of.julia.x) && deepRules.exactInDouble(of.julia.y);
 }
 
 /**
@@ -2523,6 +2550,11 @@ async function mountDeep() {
         policy: at("deep-cap-policy"),
         centre: at("deep-centre"),
         width: at("deep-width"),
+        param: at("deep-param"),
+        paramRow: at("deep-param-row"),
+        paramValue: at("deep-param-value"),
+        julia: at("deep-julia"),
+        origin: at("deep-origin"),
         back: at("deep-back"),
         save: at("deep-save"),
       },

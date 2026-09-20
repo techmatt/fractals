@@ -37,9 +37,12 @@ test("the anchor parses to the place it names, digit for digit", () => {
   assert.equal(view.palette, "inferno");
 });
 
-test("parse then emit is a fixed point", () => {
+test("parse then emit is a fixed point, and a v1 link settles into its v2 spelling", () => {
   const once = deep.canonicalize(`?${ANCHOR}`, context);
-  assert.equal(once, ANCHOR);
+  // The version is the only thing that moves. Every digit of the place, the
+  // width, the cap and the palette comes back as it went in, which is what it
+  // means for v2 to have added a key rather than changed one.
+  assert.equal(once, ANCHOR.replace("dv=1", "dv=2"));
   assert.equal(deep.canonicalize(`?${once}`, context), once);
 });
 
@@ -76,8 +79,8 @@ test("a key given twice is refused", () => {
 });
 
 test("a version this page does not speak is refused", () => {
-  assert.throws(() => deep.parse("?dv=2&p=inferno", context), /deep contract v1/);
-  assert.throws(() => deep.parse("?dv=x&p=inferno", context), /deep contract v1/);
+  assert.throws(() => deep.parse("?dv=3&p=inferno", context), /deep contract v2/);
+  assert.throws(() => deep.parse("?dv=x&p=inferno", context), /deep contract v2/);
 });
 
 test("the colour keys are the shallow contract's, in their existing spellings", () => {
@@ -90,7 +93,7 @@ test("the colour keys are the shallow contract's, in their existing spellings", 
   assert.equal(view.shade.reverse, true);
   assert.deepEqual(view.shade.transfer, { kind: "edge", weight: 0.5 });
   // And they come back spelled the way the shallow contract spells them.
-  assert.equal(deep.emit(view), query);
+  assert.equal(deep.emit(view), query.replace("dv=1", "dv=2"));
 });
 
 test("a tone curve rides along under its own name", () => {
@@ -175,7 +178,7 @@ test("the UI key rides on a deep link as it rides on a shallow one", () => {
   const view = deep.parse(`?${ANCHOR}&panel=deep`, context);
   assert.equal(view.palette, "inferno");
   // And is never emitted: the canonical string of a view is the picture alone.
-  assert.equal(deep.emit(view), ANCHOR);
+  assert.equal(deep.emit(view), ANCHOR.replace("dv=1", "dv=2"));
 });
 
 test("a fresh view is the home frame and carries a cap", () => {
@@ -183,7 +186,7 @@ test("a fresh view is the home frame and carries a cap", () => {
   assert.equal(view.x.text, "-0.5");
   assert.equal(view.w.value, 3);
   assert.equal(view.maxiter, 4000);
-  assert.equal(deep.emit(view), "dv=1&x=-0.5&y=0&w=3&n=4000&p=twilight_shifted");
+  assert.equal(deep.emit(view), "dv=2&x=-0.5&y=0&w=3&n=4000&p=twilight_shifted");
 });
 
 test("a field key moves with the arithmetic and not with the colour", () => {
@@ -202,4 +205,79 @@ test("what Saved is told about a deep link needs no renderer", () => {
   assert.equal(said.family, "mandelbrot");
   assert.equal(said.palette, "inferno");
   assert.match(said.said, /2e-11/);
+});
+
+// ----------------------------------------------------------------- the julia case
+
+/** The anchor's `c`, as the Julia set of itself at `z = c`. */
+const JULIA =
+  "dv=2&cx=-0.74501772828532335842941892835857434&cy=0.14993443275456819177805709088257971" +
+  "&x=-0.74501772828532335842941892835857434&y=0.14993443275456819177805709088257971&w=2e-11&n=48551&p=inferno";
+
+test("a julia link carries its parameter to the last digit", () => {
+  const view = deep.parse(`?${JULIA}`, context);
+  assert.equal(view.julia.x.text, "-0.74501772828532335842941892835857434");
+  assert.equal(view.julia.y.text, "0.14993443275456819177805709088257971");
+  // The digits are the whole point: this `c` is not a double, and a round trip
+  // through one would name a different set.
+  assert.notEqual(String(Number(view.julia.x.text)), view.julia.x.text);
+  assert.equal(deep.canonicalize(`?${JULIA}`, context), JULIA);
+});
+
+test("a link with no parameter is the mandelbrot set, which is every v1 link", () => {
+  assert.equal(deep.parse(`?${ANCHOR}`, context).julia, null);
+  assert.equal(deep.fresh(context).julia, null);
+});
+
+test("half a parameter is refused, because it is half of one number", () => {
+  assert.throws(() => deep.parse("?dv=2&cx=-0.5&p=inferno", context), /both or neither/);
+  assert.throws(() => deep.parse("?dv=2&cy=0.5&p=inferno", context), /both or neither/);
+});
+
+test("a julia link that names no frame opens at z = c", () => {
+  const view = deep.parse("?dv=2&cx=-0.8&cy=0.156&n=4000&p=inferno", context);
+  assert.equal(view.x.text, "-0.8");
+  assert.equal(view.y.text, "0.156");
+  // And a Mandelbrot link with no frame still opens at the Mandelbrot home,
+  // which is the thing that would have been quietly broken by sharing a default.
+  assert.equal(deep.parse("?dv=1&p=inferno", context).x.text, "-0.5");
+});
+
+test("the parameter is part of what a field is, and two sets at one place are two fields", () => {
+  const mandelbrot = deep.parse(`?${ANCHOR}`, context);
+  const julia = deep.parse(`?${JULIA}`, context);
+  // Same centre, same width, same cap — and entirely different pictures.
+  assert.equal(mandelbrot.x.text, julia.x.text);
+  assert.equal(mandelbrot.w.value, julia.w.value);
+  assert.notEqual(deep.fieldKey(mandelbrot, 320, 180), deep.fieldKey(julia, 320, 180));
+
+  // A different `c` at the same frame is a different field too.
+  const elsewhere = deep.parse(`?${JULIA.replace("cy=0.149", "cy=0.148")}`, context);
+  assert.notEqual(deep.fieldKey(julia, 320, 180), deep.fieldKey(elsewhere, 320, 180));
+});
+
+test("Saved is told which set a julia picture is of", () => {
+  const said = deep.describe(JULIA, context);
+  assert.equal(said.family, "julia");
+  assert.match(said.said, /Julia at c = -0\.74501772828532335842941892835857434 \+ 0\.149/);
+});
+
+test("a julia link is refused by the shallow contract, marker and all", () => {
+  const shallow = {
+    palettes: PALETTES,
+    defaultPalette: "twilight_shifted",
+    home: () => ({ x: "-0.5", y: "0", w: "3" }),
+    constants: () => ({}),
+    settled: () => ({}),
+  };
+  // **`cx` and `cy` are keys the shallow contract knows**, which is exactly why
+  // the marker has to be what dispatches: a deep julia link pasted into the
+  // shallow reader must be refused rather than drawn at a `c` rounded to a
+  // double. It is refused at the first door, for carrying no `v` at all…
+  assert.throws(() => link.parse(`?${JULIA}`, shallow), /carries no v/);
+  // …and at the second, if one were added to it.
+  assert.throws(
+    () => link.parse("?v=3&dv=2&cx=-0.5&cy=0.1&f=julia", shallow),
+    /does not know: dv/,
+  );
 });

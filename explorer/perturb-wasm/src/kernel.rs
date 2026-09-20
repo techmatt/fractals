@@ -11,6 +11,16 @@
 //! z  = Z[m] + δ                     the actual iterate, and what escapes
 //! ```
 //!
+//! **The Julia case is the same loop with `dc` spent once.** Holding `c` fixed
+//! and moving `z₀` instead, the delta of a pixel from a reference *point* obeys
+//! `δ' = (2·Z[m] + δ)·δ` with no `dc` term at all — the offset that was added
+//! every step becomes the delta the loop starts from, and the entry index moves
+//! from `Z₀` to whichever point of the orbit the view is anchored at. Nothing
+//! else changes, because the stored orbit `Z₀ = 0, Z₁ = c, …` is the critical
+//! orbit of `c` and therefore *is* the Julia orbit of `z = 0`, shifted by one
+//! from the Julia orbit of `z = c`. Rebasing in particular is untouched and
+//! stays exact: see below.
+//!
 //! **Rebasing is Zhuoran's**, and it is what replaces the whole apparatus of
 //! glitch detection and secondary references: when `|z| < |δ|` the delta has
 //! grown past the thing it is a perturbation of and has stopped carrying any
@@ -19,6 +29,15 @@
 //! move covers the reference running out. The archive's kernel does exactly this
 //! and carries no Pauldelbrot test, no secondary reference and no correction
 //! pass.
+//!
+//! **And it stays exact in the Julia case, which is the reason there is no
+//! second reference in this file.** `δ := z` is only a rebase at all because
+//! `Z₀ = 0` — the delta is the iterate itself, with no subtraction and so no
+//! cancellation. Under `z ↦ z² + c` the stored orbit from index 0 is the orbit
+//! of the critical point, which is a perfectly good reference for any `z`, so
+//! the same two lines say the same true thing. Rebasing onto a reference that
+//! started anywhere else would need `δ := z − Z₀` in `f64`, and that subtraction
+//! is exactly the precision a deep frame does not have to spare.
 //!
 //! ## Where a skip table would go
 //!
@@ -85,7 +104,9 @@ pub struct Kernel<'a> {
     /// never to escape. The derivative
     /// with respect to `z₀` — the usual one — is useless here, because
     /// Mandelbrot fixes `z₀ = 0` and the product is identically zero from its
-    /// first factor.
+    /// first factor. **On a Julia frame the two coincide**: `z₀` is the pixel
+    /// and is exactly what varies, so `∏ 2·z_k` *is* the derivative with respect
+    /// to it, and the same test means the more ordinary thing.
     ///
     /// **Why it is a switch.** It is a heuristic with a threshold, and a
     /// threshold that fires early paints an escaping sample black. So it ships
@@ -100,6 +121,10 @@ pub struct Kernel<'a> {
     /// the value it is trying. Lower is later and safer; higher is sooner and
     /// eventually wrong. Nothing on the boundary sets it.
     pub floor: i32,
+    /// The index of the stored orbit a Julia sample's delta starts against:
+    /// one at `z = c`, zero at `z = 0`. Ignored by [`Kernel::sample`], which
+    /// always starts at `Z₀` with a delta of zero.
+    pub entry: usize,
 }
 
 impl<'a> Kernel<'a> {
@@ -109,7 +134,15 @@ impl<'a> Kernel<'a> {
             maxiter,
             interior,
             floor: INTERIOR_EXPONENT,
+            entry: 0,
         }
+    }
+
+    /// The same kernel entered at another point of the orbit — which is how a
+    /// Julia view says which of its two anchors it is drawn from.
+    pub fn at_entry(mut self, entry: usize) -> Self {
+        self.entry = entry;
+        self
     }
 
     /// The same kernel with the interior threshold moved — for the sweep the
@@ -126,6 +159,30 @@ impl<'a> Kernel<'a> {
     /// two absolute coordinates — which at 1e-28 would be the difference of two
     /// numbers that are the same `f64`.
     pub fn sample(&self, dc_re: f64, dc_im: f64) -> Outcome {
+        self.run::<false>(dc_re, dc_im)
+    }
+
+    /// One sample of a Julia frame, given its offset from the anchor point.
+    ///
+    /// The same number [`Kernel::sample`] takes, spent differently: there it is
+    /// added at every step, here it is the delta the loop opens with and the
+    /// recurrence carries no `dc` at all. The count is the pixel's own — `n`
+    /// counts steps and never the reference index, so entering at `Z₁` costs it
+    /// nothing.
+    pub fn sample_julia(&self, delta_re: f64, delta_im: f64) -> Outcome {
+        self.run::<true>(delta_re, delta_im)
+    }
+
+    /// The loop, once, for both.
+    ///
+    /// **`JULIA` is a const parameter and not a field, and the reason is
+    /// arithmetic rather than taste**: `x + 0.0` is not `x` when `x` is `-0.0`,
+    /// so a `dc` of zero carried as data would cost the Julia path two additions
+    /// an iteration that no optimizer is allowed to remove. Monomorphized, each
+    /// loop is exactly the loop it would have been written as by hand, and the
+    /// Mandelbrot one is byte for byte the loop that was here before.
+    #[inline(always)]
+    fn run<const JULIA: bool>(&self, a_re: f64, a_im: f64) -> Outcome {
         // Everything the loop reads more than once, read once. A field access
         // through `&Reference` is a load the optimizer cannot always hoist past
         // the indexing below it, and this loop runs tens of thousands of times
@@ -138,14 +195,19 @@ impl<'a> Kernel<'a> {
         let length = points.len();
         let last = length - 1;
         let bailout_sq = BAILOUT * BAILOUT;
-        let offset_is_zero = dc_re == 0.0 && dc_im == 0.0;
+        let offset_is_zero = a_re == 0.0 && a_im == 0.0;
+        // Spent every step, or spent once — never both.
+        let (dc_re, dc_im) = if JULIA { (0.0, 0.0) } else { (a_re, a_im) };
 
-        let mut delta_re = 0.0f64;
-        let mut delta_im = 0.0f64;
+        let mut delta_re = if JULIA { a_re } else { 0.0f64 };
+        let mut delta_im = if JULIA { a_im } else { 0.0f64 };
+        // Where the delta is measured from. Clamped, because a reference that
+        // escaped in one step has no `Z₁` to enter at.
+        let start = if JULIA { self.entry.min(last) } else { 0 };
         // `Z[m]`, carried across the step rather than loaded twice.
-        let mut zr = points[0][0];
-        let mut zi = points[0][1];
-        let mut m = 0usize;
+        let mut zr = points[start][0];
+        let mut zi = points[start][1];
+        let mut m = start;
         let mut n = 0u32;
         let mut rebases = 0u32;
         let mut degenerate = false;
@@ -159,8 +221,12 @@ impl<'a> Kernel<'a> {
             // ---- the BLA seam: a skip table would be consulted here. ----
             let ar = zr + zr + delta_re;
             let ai = zi + zi + delta_im;
-            let next_re = ar * delta_re - ai * delta_im + dc_re;
-            let next_im = ar * delta_im + ai * delta_re + dc_im;
+            let mut next_re = ar * delta_re - ai * delta_im;
+            let mut next_im = ar * delta_im + ai * delta_re;
+            if !JULIA {
+                next_re += dc_re;
+                next_im += dc_im;
+            }
             delta_re = next_re;
             delta_im = next_im;
 
@@ -452,5 +518,232 @@ mod tests {
     fn a_degenerate_overshoot_falls_back_to_the_integer_count() {
         assert_eq!(smooth_count(7, f64::INFINITY), 8.0);
         assert_eq!(smooth_count(7, 0.0), 8.0);
+    }
+
+    // ------------------------------------------------------------------ julia
+
+    /// Iterate a Julia sample the plain way: `c` held, `z₀` the pixel.
+    fn plain_julia(z_re: f64, z_im: f64, c_re: f64, c_im: f64, maxiter: u32) -> f64 {
+        let (mut x, mut y) = (z_re, z_im);
+        let bailout_sq = BAILOUT * BAILOUT;
+        for n in 1..=maxiter {
+            let next = x * x - y * y + c_re;
+            y = 2.0 * x * y + c_im;
+            x = next;
+            let magnitude_sq = x * x + y * y;
+            if magnitude_sq > bailout_sq {
+                return smooth_count(n, magnitude_sq);
+            }
+        }
+        f64::NAN
+    }
+
+    /// The Douady rabbit: `c` in the period-3 bulb, so it is **inside** the
+    /// Mandelbrot set. That matters twice over — the critical orbit is bounded,
+    /// so the reference runs to the cap rather than escaping in a few steps, and
+    /// the Julia set is filled, so a frame of it has interior as well as
+    /// boundary. A `c` outside the set gives a dust with neither.
+    const JULIA_C: (&str, &str, f64, f64) = ("-0.123", "0.745", -0.123, 0.745);
+
+    /// What a grid of samples came to against something to compare it with.
+    ///
+    /// **The share and the median, never the worst sample**, which is the
+    /// ruling `tests/oracle.rs` already makes for the Mandelbrot ladders and it
+    /// holds here for the same reason: on a boundary where escape counts run to
+    /// the hundreds, the last bit of the arithmetic decides them, and the plain
+    /// `f64` loop is as often the wrong one as this kernel is. A worst-case
+    /// assertion would be asserting that chaos is not chaotic. A *systematic*
+    /// error — the wrong recurrence, the wrong entry, a missing term — moves the
+    /// median, which is what these are held to.
+    #[derive(Debug)]
+    struct Agreement {
+        compared: usize,
+        equal: usize,
+        within: usize,
+        median_relative: f64,
+    }
+
+    fn agreement(pairs: &[(f64, f64)]) -> Agreement {
+        let mut relative: Vec<f64> = Vec::new();
+        let (mut equal, mut within) = (0, 0);
+        for &(ours, theirs) in pairs {
+            if ours.to_bits() == theirs.to_bits() {
+                equal += 1;
+            }
+            let error = (ours - theirs).abs();
+            if error < 1e-6 {
+                within += 1;
+            }
+            relative.push(error / theirs.abs().max(1.0));
+        }
+        relative.sort_by(|a, b| a.partial_cmp(b).unwrap());
+        Agreement {
+            compared: pairs.len(),
+            equal,
+            within,
+            median_relative: relative.get(relative.len() / 2).copied().unwrap_or(0.0),
+        }
+    }
+
+    /// Where `f64` is still right, the Julia kernel must agree with the plain
+    /// loop — the same claim the Mandelbrot side makes, and the one that says
+    /// the delta recurrence without its `dc` is the right recurrence.
+    #[test]
+    fn a_shallow_julia_frame_matches_the_plain_f64_loop() {
+        let maxiter = 4000;
+        let (c_text, c_im_text, c_re, c_im) = JULIA_C;
+        let orbit = kernel_at(c_text, c_im_text, 3, maxiter);
+        // Entered at `Z₁ = c`: the frame is the neighbourhood of `z = c`.
+        let kernel = Kernel::new(&orbit, maxiter, false).at_entry(1);
+        let mut pairs = Vec::new();
+        for row in 0..41 {
+            for col in 0..41 {
+                let delta_re = (col as f64 - 20.0) * 0.06;
+                let delta_im = (row as f64 - 20.0) * 0.06;
+                let ours = kernel.sample_julia(delta_re, delta_im).smooth;
+                let theirs = plain_julia(c_re + delta_re, c_im + delta_im, c_re, c_im, maxiter);
+                assert_eq!(
+                    ours.is_nan(),
+                    theirs.is_nan(),
+                    "({delta_re}, {delta_im}): {ours} against {theirs}"
+                );
+                if !theirs.is_nan() {
+                    pairs.push((ours, theirs));
+                }
+            }
+        }
+        let how = agreement(&pairs);
+        println!("shallow julia against the plain loop: {how:?}");
+        assert!(how.compared > 800, "only {} escaping samples", how.compared);
+        // The interior masks agreed exactly, above, sample for sample.
+        assert!(
+            how.median_relative < 1e-12,
+            "median relative error {:e}",
+            how.median_relative
+        );
+        // About half are bit-equal — 840 of 1,681 as this was written, which is
+        // as near half as makes no difference and is not a number to assert to
+        // the sample. The bar is that a large share of them agree to the last
+        // bit, which a kernel carrying the wrong recurrence could not manage at
+        // all.
+        assert!(
+            how.equal * 5 > how.compared * 2,
+            "only {} of {} were bit-equal",
+            how.equal,
+            how.compared
+        );
+        assert!(
+            how.within * 100 >= how.compared * 95,
+            "only {} of {} were within 1e-6",
+            how.within,
+            how.compared
+        );
+    }
+
+    /// **The two anchors are two spellings of one picture.** Both are points of
+    /// the stored orbit, so a frame drawn from either is the same mathematics
+    /// with a different `f64` starting delta — and where both can resolve the
+    /// frame, they have to agree.
+    #[test]
+    fn the_two_anchors_draw_the_same_julia_picture() {
+        let maxiter = 2000;
+        let (c_text, c_im_text, c_re, c_im) = JULIA_C;
+        let orbit = kernel_at(c_text, c_im_text, 3, maxiter);
+        let from_c = Kernel::new(&orbit, maxiter, false).at_entry(1);
+        let from_zero = Kernel::new(&orbit, maxiter, false).at_entry(0);
+        let mut pairs = Vec::new();
+        for row in 0..21 {
+            for col in 0..21 {
+                // One frame, named twice: as an offset from `c` and as an offset
+                // from the origin, which differ by `c` itself.
+                let z_re = c_re + (col as f64 - 10.0) * 0.05;
+                let z_im = c_im + (row as f64 - 10.0) * 0.05;
+                let a = from_c.sample_julia(z_re - c_re, z_im - c_im).smooth;
+                let b = from_zero.sample_julia(z_re, z_im).smooth;
+                assert_eq!(a.is_nan(), b.is_nan(), "({z_re}, {z_im}): {a} against {b}");
+                if !a.is_nan() {
+                    pairs.push((a, b));
+                }
+            }
+        }
+        let how = agreement(&pairs);
+        println!("the two anchors against each other: {how:?}");
+        assert!(how.compared > 100, "only {} escaping samples", how.compared);
+        assert!(
+            how.median_relative < 1e-12,
+            "median relative error {:e}",
+            how.median_relative
+        );
+        assert!(
+            how.within * 100 >= how.compared * 95,
+            "only {} of {} were within 1e-6",
+            how.within,
+            how.compared
+        );
+    }
+
+    /// **The count is the pixel's own, and the entry index cannot shift it.**
+    /// An off-by-one here would move every escape count in the frame by one and
+    /// look like nothing at all, so it is asserted against the plain loop at the
+    /// one sample whose delta is exactly zero: the anchor itself.
+    #[test]
+    fn a_julia_sample_counts_its_own_steps_and_not_the_reference_index() {
+        let maxiter = 500;
+        // Outside the set, so the orbit of `c` escapes and there is a count to
+        // be wrong about.
+        let orbit = kernel_at("0.5", "0.5", 3, maxiter);
+        let kernel = Kernel::new(&orbit, maxiter, false).at_entry(1);
+        let ours = kernel.sample_julia(0.0, 0.0);
+        let theirs = plain_julia(0.5, 0.5, 0.5, 0.5, maxiter);
+        assert!(!theirs.is_nan(), "the anchor was supposed to escape");
+        assert!(
+            (ours.smooth - theirs).abs() < 1e-9,
+            "the pixel at the anchor read {} and the plain loop {theirs}",
+            ours.smooth
+        );
+        // And from the origin the same orbit is one step longer, which is the
+        // whole content of the entry index.
+        let from_zero = Kernel::new(&orbit, maxiter, false).at_entry(0);
+        let at_origin = from_zero.sample_julia(0.0, 0.0);
+        assert_eq!(at_origin.iterations, ours.iterations + 1);
+    }
+
+    /// Rebasing under the Julia recurrence: a sample whose iterate falls past
+    /// its own delta restarts against `Z₀ = 0`, which is the orbit of the
+    /// critical point and a true reference for any `z`. If that were wrong the
+    /// picture would be wrong only where it rebases, which is the boundary.
+    #[test]
+    fn a_julia_sample_that_rebases_still_lands_where_the_plain_loop_does() {
+        let maxiter = 3000;
+        let (c_text, c_im_text, c_re, c_im) = JULIA_C;
+        let orbit = kernel_at(c_text, c_im_text, 3, maxiter);
+        let kernel = Kernel::new(&orbit, maxiter, false).at_entry(1);
+        let mut rebased = 0;
+        let mut pairs = Vec::new();
+        for row in 0..31 {
+            for col in 0..31 {
+                let delta_re = (col as f64 - 15.0) * 0.02;
+                let delta_im = (row as f64 - 15.0) * 0.02;
+                let ours = kernel.sample_julia(delta_re, delta_im);
+                if ours.rebases == 0 {
+                    continue;
+                }
+                rebased += 1;
+                let theirs = plain_julia(c_re + delta_re, c_im + delta_im, c_re, c_im, maxiter);
+                assert_eq!(ours.smooth.is_nan(), theirs.is_nan());
+                if !theirs.is_nan() {
+                    pairs.push((ours.smooth, theirs));
+                }
+            }
+        }
+        let how = agreement(&pairs);
+        println!("{rebased} rebasing samples against the plain loop: {how:?}");
+        assert!(rebased > 20, "only {rebased} samples rebased at all");
+        assert!(
+            how.median_relative < 1e-12,
+            "median relative error {:e} over {} escaping samples",
+            how.median_relative,
+            how.compared
+        );
     }
 }
