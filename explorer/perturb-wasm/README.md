@@ -26,22 +26,21 @@ being told which kernel drew it.
 It also has **no dependencies at all** — not `serde`, not the engine, not even as
 a dev-dependency, because cargo resolves a path dev-dependency for every command
 and `perturb.wasm` would then stop building on a machine with no sibling
-checkout. `src/json.rs` reads the eleven-member spec and `smooth-cases.json`
+checkout. `src/json.rs` reads the fourteen-member spec and `smooth-cases.json`
 pins the one formula that had to come from next door.
 
 ```text
 src/fx.rs          fixed-point reals, n × u64 limbs, written for wasm32
 src/reference.rs   one high-precision orbit per frame, projected to f64
 src/kernel.rs      the per-sample f64 delta loop, with rebasing
-src/bla.rs         the skip table, built off the orbit — off unless a spec asks
 src/json.rs        a reader for one flat JSON object
 src/lib.rs         the spec, the cap policy, and the exports
 smooth-cases.json  400 of the engine's own samples, as the pin
 tests/oracle.rs    the kernel against a brute-force oracle (ignored by default)
 tests/probe.rs     three-way probes; not proofs, and they say so
-tests/bla.rs       the skip against the plain loop (ignored by default)
 tests/descend.rs   the frame finder: deep frames with structure, and the exact
                    decimal walk that gets to them (ignored by default)
+tests/frames.rs    the seven it settled on, as cases, with their links
 ```
 
 ## The design, in one page
@@ -101,16 +100,13 @@ tests/descend.rs   the frame finder: deep frames with structure, and the exact
   here and only `CEILING` moves, to a provisional 1,000,000. Touching
   `maxiter::for_width` itself was never an option: six callers read it and a
   wider ceiling there moves the cap of every shallow picture the project has.
-- **BLA is built, it is off, and §7 recommends taking it out.** `src/bla.rs` is
-  the skip table; `Spec::bla` is its tolerance and absent is the default, so every
-  picture the page draws is still the plain loop's. It is a pure function of
-  `(orbit, ε, one frame-wide |dc| bound)` and of nothing else, which is what lets a
-  band stay bit for bit the rows a whole-frame pass would produce. §6 priced it and
-  found it a loss at both widths the tab's links use and a 59× below 1e-20; §7 went
-  and got seven deep frames with structure in them, and on those it is **between a
-  21% loss and 2.6×, and moves the picture at every tolerance including the
-  tightest one that means anything**. The 59× was a property of a frame with no
-  exterior in it.
+- **There is no skip table, and §6 is why.** Bivariate linear approximation was
+  built, priced over two rounds and taken back out: on the anchor's own ladder it
+  looked like a 59×, but every frame it was measured deep enough to pay on was
+  100% interior, and on seven deep frames that have something in them it is
+  between a 21% loss and 2.6× **and moves the picture at every tolerance,
+  including the tightest one the approximation admits**. Every picture the page
+  draws is the plain loop's, which is the whole of what §1 through §3 argue.
 
 ### What it does not do
 
@@ -441,21 +437,17 @@ because a view entered at `Z₁` has one step less of reference in front of it, 
 is recomputed rather than reused. Against a frame of seconds that is 1%, and it is
 the whole price of pressing the button.
 
-**`perturb.wasm` is 122,098 bytes raw and 56,147 gzipped** at level 9. Beside
-`engine.wasm`'s 763,343 / 228,670 that is 16% more to download, and it buys a
+**`perturb.wasm` is 112,675 bytes raw and 52,784 gzipped** at level 9. Beside
+`engine.wasm`'s 763,343 / 228,670 that is 15% more to download, and it buys a
 renderer for everything below 1e-10, on both of the sets `z² + c` has. It is large for a dependency-free crate of
 1,500 lines, and the reason is `core::fmt`: `plan` formats a JSON report and every
 refusal is a sentence. That is an attribution from what the module contains rather
 than a measurement by subtraction, and if the tab wants the bytes back that is
 where to look. There is no `serde`, no `serde_json` and no engine in it.
 
-⚠ **9,423 of those bytes are the skip table, and nothing on the page can reach
-it.** The module grew 8.4% raw and 6.4% gzipped for a code path that is off by
-default and that no page sets, which is a real cost paid by every reader who opens
-the Deep tab. It is here rather than behind a cargo feature because a committed
-module that cannot be rebuilt from the committed source is the failure this
-manifest exists to prevent, and nothing in `builder check` would have caught the
-drift. Stage 2 either turns the table on or takes those bytes back.
+**9,423 of those bytes were the skip table**, and they came back when it did —
+the module was 122,098 raw and 56,147 gzipped while the table was in it, for a
+code path that was off by default and that no page could set. §6 is the ruling.
 
 ### 5. Pictures
 
@@ -463,204 +455,39 @@ drift. Stage 2 either turns the table on or takes those bytes back.
 1e-28, coloured by a percentile stretch and a plain gradient. Not committed;
 `scratch/` is ignored, and the sheet is for Matt's eye rather than for a page.
 
-### 6. The skip table, and why it is off
+### 6. The skip table, and why it is not here
 
-`src/bla.rs`, `tests/bla.rs`, measured 2026-09-20 on the same box. One entry stands
-for a run of `2^k` steps as `δ ← A·δ + B·dc`; the derivation, the merge rule and
-every guard are in that file's header. Tiles are 64×36, the plain loop and the
-skipping loop are the same spec and the same orbit, and the runs alternate.
+Bivariate linear approximation — one entry standing for a run of `2^k` steps as
+`δ ← A·δ + B·dc`, read out of a table built off the reference orbit — was built,
+priced twice, and taken back out. What follows is what it cost to find out, kept
+because the seam comment in `kernel.rs` will give somebody the same idea and this
+is the only thing that should talk them out of it.
 
-**Four guards, and each is held where it is a property of something.** No run may
-reach the index the plain loop rebases at, or pass a reference point near enough to
-the bailout that `(1+ε)·|Z|` could clear it — both at build, where they are
-properties of the orbit. No run may step over the cap, and none may cross a step at
-which the interior switch would have fired — both at lookup, where they are the
-sample's. **Rebasing needs no guard**: the merge rule's own induction puts
-`|δ_j| ≤ ε·|Z_j|` at every index a valid run passes through, and `(1−ε)·|Z|` is
-above `ε·|Z|`, so `|z| < |δ|` cannot happen inside one. What a run *lands* on is
-bounded by nothing, so the landed delta falls into the loop's own escape, interior,
-cap and rebase tests rather than resuming past them.
+**Measured 2026-09-20**, tiles of 64×36, the plain loop and the skipping loop the
+same spec and the same orbit, alternated. `ε` is the share of a linear step the
+dropped quadratic term is allowed to be; `2⁻⁵³` is the tightest tolerance the
+approximation admits, since below it the dropped term is asked to be under the
+last bit of the term beside it.
 
-**What a table costs.** Levels below a minimum are built and not stored, and the
-total is `len · 2^(1−min)` entries of 64 bytes:
+**On the anchor's own ladder it looked like an order of magnitude and more.** The
+headline rows, single thread, interior switch off:
 
-| cap | orbit | min level | entries | bytes | vs the orbit | build |
-|--:|--:|--:|--:|--:|--:|--:|
-| 48,551 | 48,552 pts | 0 | 131,070 | 8,388,480 | 10.8× | 3.2 ms |
-| 48,551 | 48,552 pts | **4** | **8,190** | **524,160** | **0.67×** | 1.9 ms |
-| 48,551 | 48,552 pts | 8 | 510 | 32,640 | 0.04× | 1.6 ms |
-| 1,000,000 | 1,000,001 pts | 0 | 2,097,150 | 134,217,600 | 8.4× | 56.0 ms |
-| 1,000,000 | 1,000,001 pts | **4** | **131,070** | **8,388,480** | **0.52×** | 33.4 ms |
-| 1,000,000 | 1,000,001 pts | 8 | 8,190 | 524,160 | 0.03× | 30.0 ms |
+| frame | cap | interior | ε = 2⁻⁵³ | 1e-12 | 1e-9 | 1e-6 |
+|---|--:|--:|--:|--:|--:|--:|
+| mandelbrot 2e-11 | 48,551 | 38.9% | 0.59× | 0.59× | 0.60× | 0.88× |
+| julia 2e-10 | 44,565 | 89.3% | 2.32× | 2.52× | 2.93× | 4.69× |
+| mandelbrot 1e-22 | 93,600 | 100% | 1.08× | **59.08×** | 59.11× | 59.51× |
+| mandelbrot 1e-28 | 117,518 | 100% | **59.19×** | 58.93× | 58.78× | 60.08× |
 
-At `MIN_LEVEL = 4` a table is **two thirds of its orbit** rather than the five times
-the audit budgeted for, and two milliseconds against the orbit's fifteen. The build
-is **blocked** — the whole tree over one aligned run of `2^kmax` starts, then
-dropped — so the peak is a block and not `1.5 ×` the orbit, which at a cap of a
-million would have been 108 MB of working entries in a wasm heap that also holds the
-orbit.
+⚠ **And every Mandelbrot rung of that ladder below the minibrot's own 6.5e-12
+atom is inside its body and 100% interior** — the deepest frame either ladder
+carries with exterior in it is `julia 2e-10` — so the depth at which the skip paid
+and the depth at which its accuracy had been checked did not overlap. The second round closed that
+gap the only way it could be closed — by going and finding deep frames that have
+something in them. They are the seven in `tests/frames.rs`, and on them the 59× is
+**between a 21% loss and 2.6×**:
 
-**The one law the whole sweep is.** A merged radius has to clear `|B|·dcmax`, and
-`|B|` grows like the run's own derivative, so a run is long enough to be worth taking
-only when `ε` is something like `2e10 ×` the frame's half-diagonal. **The skip is
-therefore a function of the width and not of the cap**, and the speedup does not ramp
-— it steps, in one decade of `ε`, from about 1× to about 50×:
-
-| frame | cap | interior | ε = 2⁻⁵³ | 1e-12 | 1e-9 | 1e-6 | 1e-4 |
-|---|--:|--:|--:|--:|--:|--:|--:|
-| mandelbrot 2e-11 | 48,551 | 38.9% | 0.59× | 0.59× | 0.60× | 0.88× | 1.13× |
-| julia 2e-9 | 40,578 | 3.7% | 0.89× | 0.89× | 0.87× | 1.04× | 1.47× |
-| julia 2e-10 | 44,565 | 89.3% | 2.32× | **2.52×** | 2.93× | 4.69× | 6.79× |
-| mandelbrot 1e-16 | 69,682 | 100% | 0.59× | 0.79× | 1.22× | **43.68×** | 43.95× |
-| mandelbrot 1e-19 | 81,641 | 100% | 0.66× | 1.22× | **57.93×** | 57.94× | 58.21× |
-| mandelbrot 1e-22 | 93,600 | 100% | 1.08× | **59.08×** | 59.11× | 59.51× | 59.36× |
-| mandelbrot 1e-28 | 117,518 | 100% | **59.19×** | 58.93× | 58.78× | 60.08× | 59.32× |
-
-Single thread, interior switch off, and the step moves one decade of `ε` left for
-every three decades of depth — which is the law above, read off the table.
-
-**And what it costs the picture.** Nothing at all at the two tightest tolerances, on
-every frame that has exterior in it: zero samples flipped between interior and
-escaping, zero escape counts moved, zero error on the smooth value, while 3.6% to
-58.6% of the iterations were skipped. The damage starts at `1e-9` and is severe by
-`1e-6`:
-
-| frame | ε | skipped | → interior | → escaping | counts moved | median Δ | p99 Δ | median Δ/ν |
-|---|--:|--:|--:|--:|--:|--:|--:|--:|
-| mandelbrot 2e-11 | 1e-12 | 0.0% | 0 | 0 | 0 | 0 | 0 | 0 |
-| mandelbrot 2e-11 | 1e-9 | 1.3% | 17 | 20 | 437 | 4.2e-3 | 9.7e3 | 2.0e-7 |
-| mandelbrot 2e-11 | 1e-6 | 37.8% | 27 | 35 | 1,062 | 3.5e1 | 2.0e4 | 1.8e-3 |
-| julia 2e-9 | 1e-12 | 4.0% | 0 | 0 | 0 | 0 | 0 | 0 |
-| julia 2e-9 | 1e-6 | 21.8% | 27 | 27 | 1,453 | 1.2e1 | 1.9e4 | 1.2e-3 |
-| julia 2e-10 | 1e-12 | 58.6% | 0 | 0 | 0 | 0 | 0 | 0 |
-| julia 2e-10 | 1e-6 | 80.2% | 14 | 15 | 194 | 6.5e1 | 1.6e4 | 2.7e-3 |
-
-⚠ **The deep rungs are blank in those columns, and blank for a reason that is not
-reassuring**: every Mandelbrot frame below the atom's 6.5e-12 is inside the
-minibrot's body and **100% interior**, so there is no escaping sample there for a
-skip to be wrong about. The three frames above are the only ones either ladder
-carries with exterior in them, and the deepest is `julia 2e-10`. **So the depth at
-which the skip pays and the depth at which its accuracy has been measured do not
-overlap.** §7 is that gap measured, on seven frames found for the purpose, and it
-is where this table's recommendation is withdrawn: at the depths the skip pays,
-every frame with structure in it is one the skip is either slower on or wrong
-about, and 1e-12 moves the picture on all seven.
-
-**What the median and the p99 are saying** is worth separating. At `1e-9` on the
-anchor the *median* escaping sample is right to seven digits while the p99 is off by
-9,700 iterations — which is this frame's own chaos and not the table's: §1 already
-measured this kernel and the plain `f64` loop disagreeing by a median of 61 and a
-worst of 34,250 on the same view, with nothing bit-equal. On a frame whose escape
-counts are chaotically sensitive to the last bit, **an error budget cannot be read
-off `ε`**, and the only honest bar is the one the two tightest columns clear: that
-nothing moved at all.
-
-**The seam costs 70% on every iteration it does not skip.** The `2⁻⁵³` rows at
-2e-11 and 1e-16 are 0% skipped and run at 0.59×, which is the lookup alone — an
-alignment mask, a bounds-checked index into the table and a radius compare, against a
-loop body of about ten flops. That is the number stage 2 has to beat or route around,
-and it is why a frame that skips half its iterations is still slower than one that
-skips none.
-
-**The interior switch, beside the skip.** The audit's finding holds, the skip makes
-it worse, and there is a second finding underneath it:
-
-| frame | interior | plain: off → on | skip at 1e-6: off → on |
-|---|--:|--:|--:|
-| mandelbrot 2e-11 | 38.9% | 366 → 405 ms (**+11%**) | 418 → 530 ms (**+27%**) |
-| julia 2e-9 | 3.7% | 113 → 145 ms (+28%) | 110 → 144 ms (+30%) |
-| julia 2e-10 | 89.3% | 497 → 235 ms (**−53%**) | 108 → 140 ms (**+30%**) |
-| mandelbrot 1e-16 | 100% | 793 → 70 ms (−91%) | 19 → 2 ms (−91%) |
-| mandelbrot 1e-19 | 100% | 925 → 70 ms (−92%) | 18 → 1 ms (−93%) |
-| mandelbrot 1e-22 | 100% | 1053 → 35 ms (−97%) | 18 → 1 ms (−97%) |
-| mandelbrot 1e-28 | 100% | 1315 → 35 ms (−97%) | 22 → 1 ms (−98%) |
-
-`julia 2e-10` is the row to read: the switch is worth **−53%** on the plain loop and
-**+30%** beside the skip. **The two compete wherever the interior a frame has is
-reachable by skipping**, and they compose only where the switch does something no run
-of the recurrence can — below 1e-16 it stops an interior sample after about one
-period of the reference, 2,838 iterations of a cap of 117,518, which is a 97% cut a
-skip cannot reproduce because a skip still has to walk the orbit.
-
-**The frame's own profile, re-measured**, since the program that produced §4's
-figures no longer compiles: the anchor at 2e-11 runs a mean of **32,480 iterations a
-sample** with the switch off and 32,358 with it on, 38.9% interior. At 480×270 that
-is **4.21e9 sample-iterations** — so §4's 4.22e9 was right, and what was lost with
-`scratch/perturb_validate` was the program and not the number. **58.2% of those
-sample-iterations belong to interior samples**, which is the audit's own 58%.
-
-### 7. The frames that have something in them, and why the skip comes back out
-
-`tests/descend.rs` and `tests/bla.rs`'s deep half, measured 2026-09-20 on the same box —
-the plain loop at **4.76 ns** against §4's 4.80, so the machine is the machine. §6 closes on
-a warning: the depth at which the skip pays and the depth at which its accuracy has been
-measured do not overlap, and closing that is stage 2's first job. This is that job. The gap
-turns out not to be a gap in the evidence but in the claim — **the skip does not pay where
-there is anything for it to be wrong about.**
-
-**How the frames were got.** From the anchor's minibrot at 1e-11: render a 64×64 tile at
-the policy cap, recentre on the busiest boundary neighbourhood it offers, shrink the width
-tenfold, repeat. **The centre is an exact decimal the whole way**, which the square tile is
-what makes possible — the sample step is `width/64` on both axes, so a recentre is
-`(2·col − 63)·78125·10^−(7+p)`, and the walk is integer addition rather than a double that
-ran out of bits twenty rungs up. `Dec` in that file is the arithmetic, held to the kernel's
-own `dc` to the last bit the double carries.
-
-Three routes, because the first two agreed too well. `tangle` takes the most boundary
-crossings in a 5×5; `pinch` takes the deepest escaping sample beside a bounded one; `body`
-walks **every rung at four times the policy cap**, which is what it takes to see a frame
-that has genuine interior in it. Neither of the first two backtracked once — every rung
-from 1e-12 to 1e-54 came back mixed and busy, 12% to 35% of adjacencies crossing the
-boundary, escape counts spread over 8,000 to 27,000.
-
-| frame | cap | escaped | centre | `dv` link, after `explorer/?` |
-|---|--:|--:|--:|:--|
-| tangle 1e-22 | 93,600 | 69.5% | 33 ch | `dv=2&x=-0.745017728290198619298817365858&y=0.149934432756897045833502403382&w=1e-22&n=93600` |
-| tangle 1e-28 | 117,518 | 80.9% | 38 ch | `dv=2&x=-0.74501772829019861929877929889763684&y=0.14993443275689704583350282968726721&w=1e-28&n=117518` |
-| pinch 1e-28 | 117,518 | 82.5% | 38 ch | `dv=2&x=-0.74501772828897655304632685480388684&y=0.14993443275858764694789167606226721&w=1e-28&n=117518` |
-| tangle 1e-40 | 165,354 | 74.9% | 49 ch | `dv=2&x=-0.7450177282901986192987792989188510315333046875&y=0.1499344327568970458335028296517884911675546875&w=1e-40&n=165354` |
-| tangle 1e-54 | 221,162 | 71.3% | **63 ch** | `dv=2&x=-0.745017728290198619298779298918851031533262270733325571484375&y=0.149934432756897045833502829651788491167588360989048041953125&w=1e-54&n=221162` |
-| body 1e-22 | **374,400** | 55.7% | 33 ch | `dv=2&x=-0.745017728288852579046129865858&y=0.149934432757626550615361778382&w=1e-22&n=374400` |
-| body 1e-28 | **470,072** | 78.9% | 38 ch | `dv=2&x=-0.74501772828885257904614927236638684&y=0.14993443275762655061538134007789221&w=1e-28&n=470072` |
-
-All seven parse and round-trip byte for byte through `explorer/deep-link.js`. Each is
-committed in `DEEP_FRAMES` with its cap, and a **cheap** test holds every centre to the 64
-characters a coordinate is capped at and every cap to the policy's or a stated multiple —
-the two ways a committed frame goes quietly wrong without rendering anything.
-
-**The deepest is 1e-54 because of the link and not the renderer.** A rung costs about five
-seconds a tile there and the descent was still going down; a centre is 63 characters at that
-width and `COORDINATE_LIMIT` is 64.
-
-⚠ **The policy cap paints exterior as interior on every one of these frames**, and this is
-the most consequential thing in the section. It has nothing to do with the skip.
-
-| frame | at the policy cap | 2× | 4× | 8× |
-|---|--:|--:|--:|--:|
-| tangle 1e-22 | 29.3% unresolved | 0.2% | 0.0% | 0.0% |
-| tangle 1e-28 | 21.0% | 0.0% | 0.0% | 0.0% |
-| pinch 1e-28 | 16.5% | 0.0% | 0.0% | 0.0% |
-| tangle 1e-40 | 22.7% | 0.0% | 0.0% | 0.0% |
-| tangle 1e-54 | 27.4% | 0.0% | 0.0% | 0.0% |
-| body 1e-22 | **100%** | — | 43.6% | 1.7% |
-| body 1e-28 | **100%** | — | 21.5% | 0.2% |
-
-On the five tangle and pinch frames a sixth to a third of the picture is unresolved at the
-cap the tab would use, and **at twice that cap every one of them is 100% escaping** for
-about 2% more mean iterations: those samples were never interior, they were exterior the cap
-stopped a few thousand short. The body pair is the same fault four times over — at the
-policy cap they are a **flat interior fill**, over escape counts that run from about 100,000
-to 400,000. The policy's cap lands inside the frame's own escape-count distribution, and
-what a reader sees is the shortfall painted as set.
-
-**And not one sample of any of the seven is *proven* interior.** The switch needs `|dz|²`
-under `2⁻⁶⁴`, which takes many periods of whatever component a sample is in, and at this
-depth the nearby periods are of the order of the cap itself.
-
-**What the skip is worth on them**, at each frame's own cap, the interior switch **on**
-because that is what ships:
-
-| frame | plain wait | ε = 2⁻⁵³ | 1e-12 | 1e-9 | Δ counts @1e-12 | @2⁻⁵³ | mask moved @2⁻⁵³ |
+| frame | plain wait | ε = 2⁻⁵³ | 1e-12 | 1e-9 | counts moved @1e-12 | @2⁻⁵³ | mask moved @2⁻⁵³ |
 |---|--:|--:|--:|--:|--:|--:|--:|
 | tangle 1e-22 | 197 s | 0.64× | **1.00×** | 1.38× | 76 | 24 | 0 |
 | tangle 1e-28 | 244 s | 0.98× | **1.38×** | 2.19× | 161 | 56 | 0 |
@@ -670,91 +497,154 @@ because that is what ships:
 | body 1e-22 | 786 s | 0.58× | **0.79×** | 1.22× | 372 | 190 | **15** |
 | body 1e-28 | 1,049 s | 0.87× | **1.15×** | 1.84× | 371 | 174 | **20** |
 
-64×36, one thread, alternated, best of two. The wait is the tab's own fine pass, derived as
-`1,859,584 lanes × mean iterations × ns × 1.05 / 4.7` — the canvas `explorer/README.md`
-measures on, wasm's 5% over native from §4, and the pool's effective parallelism from the
-audit.
+At each frame's own cap, the interior switch **on** because that is what ships.
+The wait is the tab's own fine pass, derived as `1,859,584 lanes × mean iterations
+× ns × 1.05 / 4.7` — the canvas `explorer/README.md` measures on, wasm's 5% over
+native from §4, and the pool's effective parallelism.
 
-**§6's 59× was a property of having no exterior in the frame.** An interior sample sits by
-the reference and never rebases, so a run of 2,048 is available to it at every index; an
-escaping sample wanders off and rebases, and the runs the table can offer it are short. Put
-structure in the frame and the speedup falls by a factor of twenty to sixty, to between a
-21% **loss** and 2.6×.
+Three findings, and together they are the ruling.
 
-**The body pair was expected to be the skip's best case and is its worst.** Forty-four
-percent of `body 1e-22` runs 374,400 iterations without escaping, which is exactly the
-shape a skip table wants — and the table can only skip 12.7% of the frame's iterations at
-`2⁻⁵³` and 37.4% at `1e-12`, against 22% to 73% on the tangle frames. Those long samples do
-not stay by the reference; they rebase.
+**The 59× was a property of having no exterior in the frame.** An interior sample
+sits by the reference and never rebases, so a run of 2,048 is available to it at
+every index; an escaping sample wanders off and rebases, and the runs the table
+can offer it are short. The plain loop's own rebase is also the hard ceiling on a
+run — no entry may be built whose run reaches the index the loop rebases at — and
+a **periodic reference is refused a table outright**, because the kernel's wrap
+assigns `m = 0` rather than `m % length` and a table indexed on an absolute orbit
+index has nothing to say about an index that wraps. Put structure in a frame and
+the speedup falls by a factor of twenty to sixty. The `body` pair was expected to
+be the skip's best case and is its worst: 44% of `body 1e-22` runs 374,400
+iterations without escaping, which is exactly the shape a skip table wants, and
+the table can still only skip 12.7% of the frame's iterations at `2⁻⁵³` against
+22% to 73% on the tangle frames. Those long samples do not stay by the reference;
+they rebase.
 
-**And there is no tolerance at which nothing moves.** Walked from 1e-12 down through nine
-tolerances to `2⁻⁵³`, every frame moved escape counts at every one of them — 24 to 190 at
-the floor, while still skipping 13% to 73% of the iterations. Worse, on the body pair the
-**interior mask itself moves at the floor**: 8 escaping samples painted interior and 7 let
-escape on `body 1e-22`, 8 and 12 on `body 1e-28`, with a worst error of 35,000 and 11,700
-smooth counts. That is the one thing this crate has never let an approximation touch, and
-`2⁻⁵³` is the tightest tolerance the approximation admits — there is nothing below it to
-try. **The knob cannot be set to a value at which the skip both fires and agrees.**
+**And there is no tolerance at which nothing moves.** Walked from 1e-12 down
+through nine tolerances to `2⁻⁵³`, every frame moved escape counts at every one of
+them — 24 to 190 at the floor, while still skipping 13% to 73% of the iterations.
+On the `body` pair the **interior mask itself moves at the floor**: 8 escaping
+samples painted interior and 7 let escape on `body 1e-22`, 8 and 12 on `body
+1e-28`, with a worst error of 35,000 and 11,700 smooth counts. That is the one
+thing this crate has never let an approximation touch, and there is nothing below
+`2⁻⁵³` to try. The differentials are the same kernel against itself on the same
+orbit, differing only by the skip, so a moved count is the skip's and not the
+frame's own chaos.
 
-These differentials are the same kernel against itself on the same orbit, differing only by
-the skip, so a moved count here is the skip's and not the frame's own chaos — which is what
-§6 could fairly say about its `1e-9` column and cannot be said about these.
+**The seam costs 70% on every iteration it does not skip.** The `2⁻⁵³` rows at
+2e-11 and 1e-16 are 0% skipped and run at 0.59×, which is the lookup alone — an
+alignment mask, a bounds-checked index into the table and a radius compare,
+against a loop body of about ten flops.
 
-**Where the skip is still enormous is where the picture is one colour.** On the
-100%-interior `anchor 1e-22` the switch alone takes the frame from 1,034 ms to 34 ms and the
-skip beside it to **1 ms** — a further 34×, on a rectangle of uniform interior.
+So the skip buys 1.0× to 2.6× on the frames a reader opens, rising with depth, in
+exchange for a picture that is no longer the one the plain loop draws — and this
+crate's whole argument, from §1 through §3, is that it draws what the engine
+draws. What would have to change for it to come back is not code but the bar.
+Taking it out returned **9,423 bytes raw and 3,363 gzipped** — 8.4% and 6.4% of
+what the module weighs without it, paid until then by every reader who opened the
+Deep tab, for a path nothing on the page could reach.
 
-**So the recommendation is that the skip comes out**: `src/bla.rs`, the `BLA` arm in
-`kernel.rs`, the `bla` field on `Spec`, and the 8.4% of `perturb.wasm` they cost for a path
-nothing can reach. What would have to change for it to stay is not code but the bar. The
-skip buys 1.0× to 2.6× on the frames a reader opens, rising with depth, in exchange for a
-picture that is no longer the one the plain loop draws — and this crate's whole argument,
-from §1 through §3, is that it draws what the engine draws. Trading that for 2.6× at 1e-54
-is a decision about pictures, and this crate has never made one of those.
+**The frames stay**, because they are the only deep frames this project has that
+are not one flat colour. `tests/descend.rs` is how they were got: from the
+anchor's minibrot at 1e-11, render a 64×64 tile at the policy cap, recentre on the
+busiest boundary neighbourhood it offers, shrink the width tenfold, repeat. **The
+centre is an exact decimal the whole way**, which the square tile is what makes
+possible — the sample step is `width/64` on both axes, so a recentre is
+`(2·col − 63)·78125·10^−(7+p)`, integer addition rather than a double that ran out
+of bits twenty rungs up. Three routes, because the first two agreed too well:
+`tangle` takes the most boundary crossings in a 5×5, `pinch` the deepest escaping
+sample beside a bounded one, and `body` walks every rung at four times the policy
+cap, which is what it takes to see a frame with genuine interior in it. Neither of
+the first two backtracked once.
 
-### 8. The interior switch's rule, and why it cannot be a width rule
+| frame | cap | escaped | `dv` link, after `explorer/?` |
+|---|--:|--:|:--|
+| tangle 1e-22 | 93,600 | 69.5% | `dv=2&x=-0.745017728290198619298817365858&y=0.149934432756897045833502403382&w=1e-22&n=93600` |
+| tangle 1e-28 | 117,518 | 80.9% | `dv=2&x=-0.74501772829019861929877929889763684&y=0.14993443275689704583350282968726721&w=1e-28&n=117518` |
+| pinch 1e-28 | 117,518 | 82.5% | `dv=2&x=-0.74501772828897655304632685480388684&y=0.14993443275858764694789167606226721&w=1e-28&n=117518` |
+| tangle 1e-40 | 165,354 | 74.9% | `dv=2&x=-0.7450177282901986192987792989188510315333046875&y=0.1499344327568970458335028296517884911675546875&w=1e-40&n=165354` |
+| tangle 1e-54 | 221,162 | 71.3% | `dv=2&x=-0.745017728290198619298779298918851031533262270733325571484375&y=0.149934432756897045833502829651788491167588360989048041953125&w=1e-54&n=221162` |
+| body 1e-22 | **374,400** | 55.7% | `dv=2&x=-0.745017728288852579046129865858&y=0.149934432757626550615361778382&w=1e-22&n=374400` |
+| body 1e-28 | **470,072** | 78.9% | `dv=2&x=-0.74501772828885257904614927236638684&y=0.14993443275762655061538134007789221&w=1e-28&n=470072` |
 
-| frame | proven interior | plain: off → on | skip at 1e-12: off → on |
-|---|--:|--:|--:|
-| anchor 2e-11 | 1.3% | +11% | +31% |
-| anchor 1e-11 | 4.8% | +13% | +30% |
-| anchor 8e-12 | 7.4% | +14% | +30% |
-| anchor 6.5e-12 | 11.5% | +13% | +29% |
-| anchor 5e-12 | 19.1% | +9% | +26% |
-| **anchor 3e-12** | 56.7% | **−3%** | +14% |
-| anchor 2e-12 | 89.8% | **−17%** | −5% |
-| anchor 1e-12 | 100% | −43% | −35% |
-| anchor 5e-13 | 100% | −56% | −50% |
-| anchor 1e-13 | 100% | −72% | −68% |
-| anchor 1e-16 | 100% | −91% | −90% |
-| anchor 1e-19 | 100% | −92% | −91% |
-| anchor 1e-22 | 100% | −97% | −97% |
-| anchor 1e-28 | 100% | −97% | −98% |
-| tangle 1e-22 · 1e-28 · 1e-40 · 1e-54 | 0% | +9% to +10% | +19% to +25% |
-| pinch 1e-28, body 1e-22, body 1e-28 | 0% | +10% to +11% | +22% to +23% |
+All seven parse and round-trip byte for byte through `explorer/deep-link.js`, and
+a cheap test in `tests/frames.rs` holds every centre to the 64 characters a
+coordinate is capped at and every cap to the policy's or the stated multiple of it
+— the two ways a committed frame goes quietly wrong without rendering anything.
+**The deepest is 1e-54 because of the link and not the renderer**: a rung costs
+about five seconds a tile there and the descent was still going down, but a centre
+is 63 characters at that width and `COORDINATE_LIMIT` is 64.
 
-**The crossing is at 3e-12**, where two runs of this table gave +4% and −3% — so that rung
-is the crossing to within what the measurement can say, at about **half to two thirds proven
-interior**. The minibrot's own atom, 6.5e-12, is *not* the crossing: a frame is still 13%
-slower there. Below it the return deepens with the frame, because what the switch waits for
-is `|dz|` to fall and a sample further inside the body falls faster.
+⚠ **And they found something that is not about the skip at all: at these depths
+the policy cap paints exterior as interior.** This is the open problem the section
+leaves behind, and it is the most consequential thing in it.
+`tests/frames.rs`'s `what_a_deeper_cap_resolves` is the evidence, at 32×18, each
+rung a multiple of the width's own **policy** cap:
 
-⚠ **But `anchor 1e-22` is −97% and `tangle 1e-22` is +12%.** Same width, opposite verdicts,
-and the same again at 1e-28. **There is no width at which to turn the switch on or off**:
-what it pays on is what the frame contains, which is not something a link, a policy or a
-worker knows before the frame has been drawn. It ships on, at −64, and on the frames a
-reader actually opens it costs 9% to 11%; beside the skip, 19% to 25%, the two competing the
-way §6 found. A width rule was the thing this section set out to write, and the table is the
+| frame | at the policy cap | 2× | 4× | 8× |
+|---|--:|--:|--:|--:|
+| tangle 1e-22 | 29.3% unresolved | 0.2% | 0.0% | 0.0% |
+| tangle 1e-28 | 21.0% | 0.0% | 0.0% | 0.0% |
+| pinch 1e-28 | 16.5% | 0.0% | 0.0% | 0.0% |
+| tangle 1e-40 | 22.7% | 0.0% | 0.0% | 0.0% |
+| tangle 1e-54 | 27.4% | 0.0% | 0.0% | 0.0% |
+| body 1e-22 | **100%** | 100% | 43.6% | 1.7% |
+| body 1e-28 | **100%** | 100% | 21.5% | 0.2% |
+
+On the five tangle and pinch frames a sixth to a third of the picture is
+unresolved at the cap the tab would use, and **at twice that cap every one of them
+is 100% escaping** for about 2% more mean iterations: those samples were never
+interior, they were exterior the cap stopped a few thousand short. The `body` pair
+is the same fault four times over — at the policy cap they are a **flat interior
+fill**, over escape counts that run from about 100,000 to 400,000. The policy's cap
+lands inside the frame's own escape-count distribution, and what a reader sees is
+the shortfall painted as set. **Moving the policy is a prompt of its own**, and
+these seven frames are what it should be argued on.
+
+**Not one sample of any of the seven is *proven* interior.** The switch needs
+`|dz|²` under `2⁻⁶⁴`, which takes many periods of whatever component a sample is
+in, and at this depth the nearby periods are of the order of the cap itself.
+
+### 7. The interior switch's rule, and why it cannot be a width rule
+
+| frame | proven interior | plain: off → on |
+|---|--:|--:|
+| anchor 2e-11 | 1.3% | +11% |
+| anchor 1e-11 | 4.8% | +13% |
+| anchor 8e-12 | 7.4% | +14% |
+| anchor 6.5e-12 | 11.5% | +13% |
+| anchor 5e-12 | 19.1% | +9% |
+| **anchor 3e-12** | 56.7% | **−3%** |
+| anchor 2e-12 | 89.8% | **−17%** |
+| anchor 1e-12 | 100% | −43% |
+| anchor 1e-13 | 100% | −72% |
+| anchor 1e-16 | 100% | −91% |
+| anchor 1e-22 | 100% | −97% |
+| anchor 1e-28 | 100% | −97% |
+| the seven deep frames | 0% | +9% to +12% |
+
+**The crossing is at 3e-12**, where two runs of this table gave +4% and −3% — so
+that rung is the crossing to within what the measurement can say, at about **half
+to two thirds proven interior**. The minibrot's own atom, 6.5e-12, is *not* the
+crossing: a frame is still 13% slower there. Below it the return deepens with the
+frame, because what the switch waits for is `|dz|` to fall and a sample further
+inside the body falls faster.
+
+⚠ **But `anchor 1e-22` is −97% and `tangle 1e-22` is +12%.** Same width, opposite
+verdicts, and the same again at 1e-28. **There is no width at which to turn the
+switch on or off**: what it pays on is what the frame contains, which is not
+something a link, a policy or a worker knows before the frame has been drawn. It
+ships on, at −64, and on the frames a reader actually opens it costs 9% to 12%. A
+width rule was the thing this section set out to write, and the table is the
 reason there is not one.
 
 ## Running it
 
 ```text
-cargo test  --release                                  # 52 unit tests, under a second
+cargo test  --release                                  # 45 unit tests and five
+                                                       #   cheap pins, under a second
 cargo test  --release --test oracle -- --ignored --nocapture   # the ladders, ~30 s
 cargo test  --release --test probe  -- --ignored --nocapture   # the three-way probes
-cargo test  --release --test bla    -- --ignored --nocapture   # the skip sweep, ~70 s
-                                                               #   + the deep half, ~11 min
+cargo test  --release --test frames -- --ignored --nocapture   # the cap sweep, ~20 s
 cargo test  --release --test descend -- --ignored --nocapture  # the frame finder, ~12 min
 cargo build --release --target wasm32-unknown-unknown          # perturb.wasm
 node scratch/perturb_validate/bench.mjs                        # the wasm price
@@ -781,7 +671,7 @@ its own branch rather than a stage of the explorer's bake.
 | `crate` | `explorer/perturb-wasm` |
 | `dependencies` | `[]`, and it is written down because it is the design |
 | `rustc` | the compiler, with its commit and date |
-| `raw_bytes` / `gzip_bytes` | **122,098 raw, 56,147 gzipped** |
+| `raw_bytes` / `gzip_bytes` | **112,675 raw, 52,784 gzipped** |
 
 Two fields of `engine.manifest.json` are **absent** rather than empty:
 `engine_version`, because this crate does not link the engine, and
@@ -796,7 +686,7 @@ crate: `explorer_shade_pool_ckpt136` banded the shade.)
 
 **What a visitor downloads for it: nothing, unless they open the Deep tab.** The
 module and the tab's five modules are fetched on that tab's first open and never
-before. Against `engine.wasm`'s 228,670 gzipped, the 56,147 here is 25% more —
+before. Against `engine.wasm`'s 228,670 gzipped, the 52,784 here is 23% more —
 paid only by a reader who asked for a renderer for everything below 1e-10.
 
 `core::fmt` is still most of the size and is still not chased: `plan` formats a

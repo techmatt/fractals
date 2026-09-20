@@ -105,7 +105,6 @@ fn spec_at(width: f64, periodic: bool, offset_frames: f64) -> Spec {
         julia: None,
         anchor: Anchor::Parameter,
         interior: false,
-        bla: None,
     }
 }
 
@@ -134,7 +133,6 @@ fn julia_spec(c: (&str, &str), width: f64, anchor: Anchor) -> Spec {
         julia: Some((c.0.to_string(), c.1.to_string())),
         anchor,
         interior: false,
-        bla: None,
     }
 }
 
@@ -151,7 +149,6 @@ fn misiurewicz_spec(width: f64) -> Spec {
         julia: None,
         anchor: Anchor::Parameter,
         interior: false,
-        bla: None,
     }
 }
 

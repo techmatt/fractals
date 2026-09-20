@@ -970,7 +970,7 @@ one — read off its own `about 12 s left` progress line rather than timed — a
 | the audit's anchor at 2e-11, cap 48,551, its fine pass at 4× | **field 62.7 s**, shade 180 ms |
 | the same, its quarter pass alone | field 1.22 s |
 | a palette change on the anchor's kept field | **recolored in 126 ms** |
-| `perturb.wasm` | **122,098 bytes raw, 56,147 gzipped** (2026-09-20, with the skip table) |
+| `perturb.wasm` | **112,675 bytes raw, 52,784 gzipped** (2026-09-20) |
 
 So the tab is about four hundred times the wait of a shallow frame and a recolour of it is
 a shade, which is the whole reason the field is kept. The anchor's quarter pass at 1.22 s is
@@ -1008,18 +1008,14 @@ correctly-stamped picture of somewhere else. Making the row deep-aware is a view
 link reader, a renderer and a cost estimate that all switch with the tab, and `deep.js`'s
 staged passes are not the shallow renderer's `plan`/`render` shape.
 
-**BLA is built, it is off, and the crate now recommends taking it out.**
-`perturb-wasm/src/bla.rs` is the skip table and `Spec`'s `bla` is its tolerance; no page
-sets it, no worker builds one, and every picture this tab draws is still the plain loop's,
-byte for byte. §6 of the crate README priced it — a net loss at both of the widths the two
-links above use, and 50× or more below about 1e-20 — but every frame it was measured deep
-enough to pay on was 100% interior, so nothing there said what it does to a picture that
-has something in it. **§7 went and got seven such frames**, by descending the boundary of
-the anchor's own minibrot to 1e-54 with the centre carried as an exact decimal, and on them
-the skip is **between a 21% loss and 2.6×** and **moves the picture at every tolerance,
-including the tightest one the approximation admits** — on two of the seven it moves the
-interior mask itself. The 50× was a property of a frame with no exterior in it: an interior
-sample sits by the reference and never rebases, and an escaping one does.
+**BLA was built, priced and taken back out, and §6 of the crate README is why.** The skip
+table bought 50× or more on the ladder it was first measured on — but every frame there
+deep enough for it to pay on was 100% interior, and on seven deep frames that have
+something in them it is **between a 21% loss and 2.6×** and **moves the picture at every
+tolerance, including the tightest one the approximation admits**. It cost 9,423 bytes of
+`perturb.wasm` for a path no page could reach, and those bytes are back. The seven frames
+stay, in `perturb-wasm/tests/frames.rs` with their `dv` links, because they are the only
+deep frames this project has that are not one flat colour.
 
 ⚠ And those frames found something about this tab that is not about the skip at all: **at
 these depths the cap policy paints exterior as interior.** A sixth to a third of each frame

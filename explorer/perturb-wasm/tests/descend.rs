@@ -1,11 +1,11 @@
 //! Deep frames that have something in them.
 //!
-//! `tests/bla.rs` measures the skip on an anchor ladder where every rung below
-//! the minibrot's own 6.5e-12 atom is **100% interior**, so the depth at which
-//! the skip pays and the depth at which it has been checked do not overlap.
-//! This is the program that closes that gap: a descent down the boundary of
-//! that minibrot, and a second one down the filaments that lead away from it,
-//! keeping the rungs that are mixed and busy.
+//! Every rung of the anchor's own ladder below the minibrot's 6.5e-12 atom is
+//! **100% interior**, so a sweep run down it says nothing about what a deep
+//! frame with a picture in it costs or looks like. This is the program that
+//! closes that gap: a descent down the boundary of that minibrot, and a second
+//! one down the filaments that lead away from it, keeping the rungs that are
+//! mixed and busy. What it settled on is committed in `tests/frames.rs`.
 //!
 //! ```text
 //! cargo test --release --test descend -- --ignored --nocapture
@@ -236,7 +236,6 @@ fn spec_at(re: &str, im: &str, width: f64, maxiter: Option<u32>, switch: bool) -
         julia: None,
         anchor: Anchor::Parameter,
         interior: switch,
-        bla: None,
     }
 }
 
@@ -253,7 +252,7 @@ fn render(spec: &Spec) -> Tile {
     for row in 0..spec.resolution[1] {
         for col in 0..spec.resolution[0] {
             let (re, im) = spec.dc(offset, col, row);
-            let outcome = kernel.sample_with::<false, false>(re, im);
+            let outcome = kernel.sample_with::<false>(re, im);
             class.push(if !outcome.smooth.is_nan() {
                 Class::Escaped
             } else if outcome.detected_interior {
@@ -358,7 +357,7 @@ enum Route {
 }
 
 /// How far past the policy cap a rung is walked before a sample that has not
-/// escaped is believed. **Four**, because the cap ladder in `tests/bla.rs`
+/// escaped is believed. **Four**, because the cap ladder in `tests/frames.rs`
 /// found every structured frame fully resolved by two.
 const PROBE: u32 = 4;
 
