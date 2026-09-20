@@ -42,6 +42,8 @@
                 aria-controls="panel-walk" aria-selected="false">Walk</button>
         <button type="button" class="tab" role="tab" id="tab-deep" data-panel="deep"
                 aria-controls="panel-deep" aria-selected="false">Deep</button>
+        <button type="button" class="tab" role="tab" id="tab-inflect" data-panel="inflect"
+                aria-controls="panel-inflect" aria-selected="false">Inflection</button>
         <button type="button" class="tab" role="tab" id="tab-saved" data-panel="saved"
                 aria-controls="panel-saved" aria-selected="false">Saved</button>
       </div>
@@ -139,6 +141,40 @@
       <p class="side-note" id="deep-side-note">Smooth, degree 2 — the Mandelbrot set, and the
       Julia set of any c on it. Drag and scroll to move the frame; nothing is drawn until you
       press Render.</p>
+    </div>
+
+    <div class="tabpanel" id="panel-inflect" role="tabpanel" aria-labelledby="tab-inflect" hidden>
+      <div class="section-head"><h2 id="head-inflect-start">Start</h2></div>
+      <div class="bar inflect-start" role="group" aria-labelledby="head-inflect-start">
+        <select id="inflect-seed" aria-label="The Julia set to sculpt">
+          <option value="">Choose a set…</option>
+        </select>
+        <label class="inflect-snap" title="Move each click onto the nearest point of the set. Inflecting a point inside a node gives a plain disc, so this is on by default.">
+          <input type="checkbox" id="inflect-snap" checked> Snap to node</label>
+      </div>
+      <p class="inflect-say" id="inflect-seed-say" role="status"></p>
+
+      <div class="section-head">
+        <h2 id="head-inflect-stack">Inflections</h2>
+        <span class="inflect-count" id="inflect-count"></span>
+      </div>
+      <div class="bar inflect-actions" role="group" aria-labelledby="head-inflect-stack">
+        <button type="button" id="inflect-back" title="One point back through the construction.">◀ Back</button>
+        <button type="button" id="inflect-forward" title="One point forward again.">Forward ▶</button>
+        <button type="button" id="inflect-undo" title="Take the last point off for good.">Undo</button>
+        <button type="button" id="inflect-clear" title="Back to the plain Julia set.">Clear all</button>
+      </div>
+      <p class="inflect-empty" id="inflect-empty">Nothing clicked yet. Click the picture to
+      inflect it there: the point you click stays put and everything around it comes back
+      wrapped twice, so clicking the same place again gives four-fold, then eight. Drag to
+      pan, scroll to zoom, and drag a marker to move that point.</p>
+      <ol class="inflect-stack" id="inflect-stack"></ol>
+
+      <p class="side-note" id="inflect-note">A trial. Degree 2, <code>z² + c</code>, and
+      nothing here reaches a gallery, a record or a wallpaper. Every mode, palette and
+      shade control works as it does everywhere else, because an inflection changes only
+      where each orbit starts. Save and Copy link under the picture carry the construction;
+      leaving this tab puts the plain Julia set back.</p>
     </div>
 
     <div class="tabpanel" id="panel-saved" role="tabpanel" aria-labelledby="tab-saved" hidden>

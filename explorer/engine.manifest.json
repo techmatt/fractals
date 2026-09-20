@@ -11,8 +11,8 @@
     "coloring::shade_samples, composite_samples and modulate_samples are new and public: the second half of shade, composite and modulate, over a run of samples rather than over a Field. Each of the three is now its own measure followed by its own _samples over one band that is the whole field, so the pipeline's arithmetic is unmoved and the engine's 217 tests are unmoved with it. This is a signature added rather than a visibility widened, which is further than the carve-out in CLAUDE.md reaches; explorer_shade_pool_ckpt136 was told to make the seam."
   ],
   "engine_version": "0.1.0",
-  "gzip_bytes": 228670,
-  "raw_bytes": 763343,
+  "gzip_bytes": 235800,
+  "raw_bytes": 793590,
   "rustc": "1.96.0 (ac68faa20 2026-05-25)",
   "schema": 1,
   "wallpapers_commit": "3870f44fb468919b7b2517c059a36d5e7996500c"

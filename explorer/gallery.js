@@ -303,7 +303,15 @@ export function install({
       },
       { root: scrolls ? tiles : null, rootMargin: `${AHEAD} 0px` },
     );
-    for (const tile of tiles.querySelectorAll(".tile")) observer.observe(tile);
+    watchIn(tiles.querySelectorAll(".tile"));
+  }
+
+  /** The same, for tiles appended after the observer was made — `fill`'s later chunks.
+   *  A chunk that arrives while a newer fill is already running has no observer of its
+   *  own to join, and its tiles are about to be replaced anyway, so it is dropped. */
+  function watchIn(added) {
+    if (observer === null) return;
+    for (const tile of added) observer.observe(tile);
   }
 
   /** One seat's tile, built the moment it is wanted and never before.

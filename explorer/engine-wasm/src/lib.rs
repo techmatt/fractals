@@ -71,6 +71,7 @@ use num_complex::Complex;
 use serde::Deserialize;
 
 mod derive;
+mod inflect;
 mod level;
 
 /// The name a colormap baked from control points is given. It exists only to
@@ -128,6 +129,15 @@ struct Spec {
     /// contract has no key for it, because a picture's cap is the policy's.
     #[serde(default)]
     maxiter: Option<u32>,
+    /// The inflection points, in click order, each as a decimal pair — see [`inflect`].
+    ///
+    /// **Absent is the whole of the compatibility story.** An empty list means no
+    /// pre-map, which means the starting point is `view.sample_point` exactly as it has
+    /// always been, and the code that draws it is the engine's table exactly as it has
+    /// always been. Every spec this page wrote before this key existed is a spec without
+    /// it, and draws the same bytes.
+    #[serde(default)]
+    inflections: Vec<[String; 2]>,
 }
 
 /// A colormap as its control points, because the page has no filesystem to load
@@ -185,6 +195,9 @@ struct Plan {
     /// The texture weight the catalog settled this mode at, before any parameter the
     /// spec carried: the ceiling a derived weight is held under. `None` off a composite.
     settled_weight: Option<f64>,
+    /// The inflection pre-map, in click order. Empty on every spec but the Inflection
+    /// tab's, and empty is the identity — see [`inflect::premap`].
+    inflections: Vec<Complex<f64>>,
 }
 
 impl Plan {
@@ -317,7 +330,38 @@ fn resolve(text: &str) -> Result<Plan, String> {
         return Err("maxiter has to be at least one".into());
     }
 
+    // The pre-map, and every refusal it brings, before a band is planned. An empty list
+    // takes none of these branches and leaves the plan exactly as it was.
+    let mut inflections = Vec::with_capacity(spec.inflections.len());
+    if !spec.inflections.is_empty() {
+        if spec.inflections.len() > inflect::MAX_INFLECTIONS {
+            return Err(format!(
+                "an inflected picture carries at most {} points, and this spec has {}",
+                inflect::MAX_INFLECTIONS,
+                spec.inflections.len()
+            ));
+        }
+        if let Some(why) = inflect::refuse_family(&family) {
+            return Err(why);
+        }
+        for (at, [re, im]) in spec.inflections.iter().enumerate() {
+            inflections.push(Complex::new(
+                decimal(re, &format!("inflections[{at}].re"))?,
+                decimal(im, &format!("inflections[{at}].im"))?,
+            ));
+        }
+    }
+
     let lanes = lanes_of(&coloring);
+    if !inflections.is_empty() {
+        let wants = lanes
+            .iter()
+            .map(|layer| layer.field.wants())
+            .fold(Wants::default(), Wants::union);
+        if let Some(why) = inflect::refuse_wants(&wants) {
+            return Err(why);
+        }
+    }
     // The modulate's texture is a base-`k` expansion whose deep digits are the
     // picture, so it is the one lane the engine never narrows. Everything else
     // crosses at the `f32` a dumped field would have been stored as, which is what
@@ -340,6 +384,7 @@ fn resolve(text: &str) -> Result<Plan, String> {
         lanes,
         exact,
         settled_weight,
+        inflections,
     })
 }
 
@@ -631,15 +676,32 @@ fn compute_lanes(plan: &Plan, row_start: u32, row_end: u32) -> Vec<u8> {
     let per_lane = plan.band_samples(row_start, row_end);
     let mut lanes: Vec<Vec<f64>> = vec![Vec::with_capacity(per_lane); fields.len()];
     for row in row_start..row_end {
-        field::sweep_row(
-            &plan.view,
-            &plan.family,
-            plan.maxiter,
-            &fields,
-            channels,
-            row,
-            &mut lanes,
-        );
+        // **The empty list takes the engine's own call, untouched.** Not `premap` over an
+        // empty slice through a shared loop — the branch is here, at the row, so that a
+        // frame nobody inflected reaches `field::sweep_row` by the same line it always
+        // did and cannot be slowed or re-byted by a feature it is not using.
+        if plan.inflections.is_empty() {
+            field::sweep_row(
+                &plan.view,
+                &plan.family,
+                plan.maxiter,
+                &fields,
+                channels,
+                row,
+                &mut lanes,
+            );
+        } else {
+            inflect::sweep_row(
+                &plan.view,
+                &plan.family,
+                &plan.inflections,
+                plan.maxiter,
+                &fields,
+                wants,
+                row,
+                &mut lanes,
+            );
+        }
     }
 
     let mut bytes = Vec::with_capacity(per_lane * lanes.len() * 8);
@@ -697,7 +759,7 @@ fn paint_band(plan: &Plan, out_row_start: u32, out_row_end: u32) -> Option<Vec<u
         for col in 0..width {
             let (color, _escaped) = painter.trace(
                 &plan.family,
-                plan.view.sample_point(col, row),
+                inflect::premap(&plan.inflections, plan.view.sample_point(col, row)),
                 plan.maxiter,
                 colormap,
             );
@@ -1361,6 +1423,7 @@ pub extern "C" fn probe_band(
             &plan.family,
             plan.maxiter,
             colormap,
+            &plan.inflections,
             row,
             &mut out,
         );

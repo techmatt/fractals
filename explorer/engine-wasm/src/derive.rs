@@ -203,6 +203,7 @@ pub fn probe_row(
     family: &Family,
     maxiter: u32,
     colormap: &Colormap,
+    inflections: &[num_complex::Complex<f64>],
     row: u32,
     out: &mut Vec<u8>,
 ) {
@@ -224,7 +225,7 @@ pub fn probe_row(
             *merge,
             *transform,
             family,
-            view.sample_point(col, row),
+            crate::inflect::premap(inflections, view.sample_point(col, row)),
             maxiter,
             colormap,
         );
