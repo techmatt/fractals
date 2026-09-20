@@ -998,6 +998,16 @@ Full-size download from the Deep tab, and "find the minibrot here" and nucleus r
 in the UI — both out of scope by the prompt that built this, and neither blocked by
 anything above.
 
+⚠ **The Download row is not deep-aware, and that is the first thing a deep download has to
+fix.** While the Deep tab owns the canvas the row still draws `currentView()` — the shallow
+view — and stamps the shallow link on it: `download.js` reads the view and `queryOf()` once
+at the press, and both are the shallow contract's by construction *(the module's own header
+says so, and says why: asking the page for "the current link" would put the deep link on a
+shallow picture, which is worse)*. So a reader who downloads from the Deep tab gets a
+correctly-stamped picture of somewhere else. Making the row deep-aware is a view reader, a
+link reader, a renderer and a cost estimate that all switch with the tab, and `deep.js`'s
+staged passes are not the shallow renderer's `plan`/`render` shape.
+
 **BLA is built, it is off, and the crate now recommends taking it out.**
 `perturb-wasm/src/bla.rs` is the skip table and `Spec`'s `bla` is its tolerance; no page
 sets it, no worker builds one, and every picture this tab draws is still the plain loop's,

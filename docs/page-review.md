@@ -532,3 +532,12 @@ Matt's to raise; a prompt that fixes one strikes its line.
   `builder/README.md`'s *What is staged* goes in at deploy. The judges reach Pages as release
   assets fetched at deploy time, the way the wallpaper project ships its weights, and never
   through git.
+- **No picture a visitor takes off this site carries an embedded link** — to be decided at
+  deploy preparation, not before. The explorer stamps every picture it hands over
+  (`explorer/README.md`, *Every downloaded picture carries its own link*), and nothing else
+  here does: the figures and gallery tiles the builder writes go through `images.land`, which
+  is the one encoder a stamp would go in on this side, and `explorer/links.jsonl` already
+  holds the permalink for 40 of its 62 rows, so most of what a stamp would say is derived
+  already. The full-size wallpapers are the harder half — they are built in
+  `fractal-wallpapers` and ship as Release assets, so they never pass through a page here at
+  all, and stamping them is that repository's encoder rather than this one's.

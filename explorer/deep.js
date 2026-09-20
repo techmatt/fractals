@@ -288,9 +288,6 @@ export function mount(host) {
     host.showState("rendering");
     host.say("");
 
-    const deep = await pool();
-    if (generation !== pass) return;
-
     const stages = [
       { name: "preview", width: grid.width / PREVIEW_DIVISOR, height: grid.height / PREVIEW_DIVISOR, supersample: 1 },
       { name: "full", width: grid.width, height: grid.height, supersample: 1 },
@@ -299,6 +296,14 @@ export function mount(host) {
     const wanted = upto === "preview" ? stages.slice(0, 1) : stages;
 
     try {
+      // **Inside the guard.** A pool that fails to start — a fetch that 404s, a module
+      // that will not compile — is a throw like any other, and a throw from outside the
+      // try left `running` set: the button read *Cancel* for the rest of the session and
+      // nothing was said. It is the same failure as a field that raises, and takes the
+      // same exit.
+      const deep = await pool();
+      if (generation !== pass) return;
+
       for (const stage of wanted) {
         running.stage = stage.name;
         const key = deepLink.fieldKey(target, stage.width, stage.height, stage.supersample);
