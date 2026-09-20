@@ -10,6 +10,18 @@ publish = false
 [lib]
 crate-type = ["cdylib"]
 
+[features]
+# The paged Inflection tab's seam, and **off in the shipped build**. The tab is out of the
+# explorer's working set (`explorer/paged-inflection/README.md`); with this off, `inflect.rs`
+# is not compiled, `Spec` has no `inflections` key and `deny_unknown_fields` refuses one, and
+# the module carries no pre-map. `--features inflection` is the whole of putting it back.
+#
+# A cargo feature rather than the bare `--cfg` `build.rs` uses for `generic_loop`, because
+# this one is a shipped/not-shipped switch rather than a bench knob, and the default build
+# has to be the one nobody has to remember a flag for. Renders were measured identical
+# across the bench ladder with it off.
+inflection = []
+
 [dependencies]
 # A path dependency on the sibling checkout, and deliberately not a git one: the
 # engine crate is versioned `0.1.0` and never bumped, so a git dependency could

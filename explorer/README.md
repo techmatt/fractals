@@ -100,9 +100,7 @@ deep-render.js        its pool, its one reference orbit a frame, and its shade s
 deep-worker.js        one worker: one perturb instance, one held orbit, one band
 deep-fx.js            exact decimal coordinates, BigInt fixed point
 deep-link.js          the deep link contract, its own beside the shallow one
-inflect.js            the Inflection tab: Julia morphing, degree 2, a trial
-inflect-link.js       its contract, its own beside the other two
-features.js           filaments, arms and branch points in a field — not loaded by the page
+paged-inflection/     PAGED: the Inflection tab, out of the working set — see below
 saved.js              the Saved list: one localStorage value of links, and the save mark
 saved-panel.js        the Saved tab: tiles drawn from their links, import, export, Download all
 zip.js                a stored (uncompressed) zip writer, for Download all
@@ -120,8 +118,6 @@ zip.test.mjs          2 tests: CRC-32's check values, and an archive read back t
 deep-fx.test.mjs      12 tests: the Deep tab's arithmetic is exact where a double is not
 deep-link.test.mjs    20 tests: the deep contract, and the shallow one held to not moving
 deep.test.mjs         10 tests: where the two modules meet, against both committed ones
-inflect-link.test.mjs 26 tests: the third contract, and the other two held to not moving
-features.test.mjs     13 tests: the finder, on shapes whose answers are known
 palettes.jsonl        the roster palettes.js is baked from; 1,021 maps, 77 offered,
                       232 a random pick may draw
 modes.jsonl           the roster catalog.js is baked from: the 17 modes the picker offers
@@ -145,8 +141,8 @@ perturb-wasm/         the crate that produces perturb.wasm — see The Deep tab
 
 Two panels, and the document itself does not scroll.
 
-**Left, one of six things.** The third, fourth, fifth and sixth — *Walk*, *Deep*,
-*Inflection* and *Saved* — are sections of their own below. *Gallery* is the staged gallery `python -m builder seats`
+**Left, one of five things.** The third, fourth and fifth — *Walk*, *Deep* and
+*Saved* — are sections of their own below. *Gallery* is the staged gallery `python -m builder seats`
 lands, one **collection** at a time — the general gallery, a collection per hue family,
 a collection per mode, chosen from a dropdown *(explorer_gallery_collections_ckpt129)* — as
 pictures and nothing else: no caption, no id, no score, two rows of filter chips over them,
@@ -946,300 +942,33 @@ branch rather than a stage of the bake. The manifest has no `engine_version` and
 engine and has never needed a change in it, and an empty `engine_changes` would read as a
 list somebody forgot to fill in.
 
-## Inflection *(inflection_tab_ckpt136, 2026-09-20)* — a trial
+## Inflection — **paged** *(inflection_tab_ckpt136, 2026-09-20; paged out by Matt's ruling, inflection_page_out_ckpt136, 2026-09-20)*
 
-The fifth tab sculpts a Julia set by **inflection**, which deep-zoom people also call
-Julia morphing. It is a **trial**: Matt does not yet know whether he likes these pictures,
-so it is a tab of its own, degree 2 only, and every piece of it is written to be deleted.
+A fifth tab sculpted a degree-2 Julia set by **inflection** — Julia morphing — under its
+own contract, `iv=1`. Matt looked at both contact sheets: the feature is okay and he does
+not actively like it, so it is **paged out**. The code is kept and made unreachable: no
+tab, no panel, no stylesheet block, nothing the page loads imports it, and nothing here
+runs in a suite or in a `builder check` step.
 
-**The math, in three lines.** An ordinary Julia render takes a pixel's coordinate `z` and
-iterates `z ← z² + c`. An inflection at a point `p` replaces `z` by `(z − p)² + p` before
-the first iteration. With a list `p₁ … pₙ` in click order a pixel is mapped through `pₙ`
-first, then `pₙ₋₁`, and last through `p₁`, and only then iterates.
+**`explorer/paged-inflection/README.md` is the file to read.** It carries what the tab was,
+what the work taught — interior-free seeds by the critical orbit's multiplier, snap as a
+requirement rather than an option, three to five clicks before the ornament closes into a
+disc, the three click primitives differing only in 4–16× crops, and `tia` and `curvature`
+as the modes that suit it — and the exact steps to put it back.
 
-That map fixes `p` and is two-to-one around it, so the picture that was at `p` reappears
-wrapped twice about it — **exact two-fold symmetry there**. Repeat at the same point for
-four-, eight-, sixteen-fold; inflect off to one side to build trees, lines and chains.
+Three things stayed behind, each because a URL outlives a trial: `permalink.js` keeps
+`INFLECT_MARKER` and `isInflected`; `explorer.js` keeps one sentence, `INFLECTION_PAGED`,
+which is what an `iv` link, an `iv` Saved tile and an `iv` Saved open are answered with;
+and `deep-link.test.mjs` keeps the two guards the paged suite owned — that `iv` is sorted
+by its own marker and by neither live contract, and that both live contracts refuse `iv`
+and `q` by name.
 
-**Where to click is published practice, and it is not guesswork** *(sources in
-`fractal-drive-sync/preserve/art_techniques_links.md`; the operative one is
-Heiland-Allen's ALPACA 2025 paper on patterns in deep Mandelbrot zooms)*. Work within the
-**shortest arm** of the structure around the last click; a click at its **central node**
-makes a disk, one **beside** that node makes a tree, one **beyond** it makes a line. Making
-the same choice each time the pattern comes round is an **evolution**, and leaves copies of
-the construction's earlier stages standing outward at diminishing scale; alternating two
-choices on the period's cycle interleaves two progressions. The paper's own worked example
-is ten clicks — tree, disk, line, three times over.
-
-**Repeating one point is not that**, and it is the thing to avoid: clicking the same
-coordinate `k` times is `(z − p)^(2^k)`, everything inside radius one flattens, and the
-detail retreats to a thin ring. The tab's first contact sheet stopped paying at three
-repeats for exactly this reason. What artists do is **move to a new feature every click** —
-which is where trees, chains and evolutions come from.
-
-**Only the orbit's starting point moves**, and that is the whole of why this was cheap.
-The recurrence, the cap, the escape test, every channel the modes read and every reduction
-over them are the engine's, untouched. So every mode, every palette, the whole shade
-recipe, Autolevel, the wheel, the drag, the arrow keys and the download work here because
-**none of them is told anything**. The tab owns three things: which `c` the set is of, the
-ordered list, and what a click on the canvas means.
-
-### The seam, and why the engine did not move
-
-`engine.wasm` grew a feature; **`fractal-engine` did not change at all**, and
-`engine.manifest.json`'s `engine_changes` is unmoved. The seam the pre-map needs turned out
-to be one substitution at one expression — `plan.view.sample_point(col, row)`, which this
-crate already passes to `iterate::run` at both of its call sites and to
-`Painter::trace` at the direct trap's. So the whole of it is `engine-wasm/src/inflect.rs`
-plus a field on `Spec` and on `Plan`.
-
-**The engine fingerprint has not moved**, so nothing that rests on it is invalidated:
-`wallpapers_commit` is the same, the pipeline is untouched, and `builder check`'s `bake`,
-`seats`, `library` and `figures` all still pass on the same records. `engine.wasm` itself
-is new — 763,343 bytes to 793,590, 4.0% more, and 228,670 to 235,800 gzipped — and
-`bands.test.mjs`,
-`deep.test.mjs` and the acceptance battery below are what hold it to drawing the same
-pictures.
-
-**With an empty list every render is byte-identical to today's, and that was measured.**
-`compute_lanes` branches at the *row*: an empty list takes `field::sweep_row` by the same
-line it always did, so a frame nobody inflected cannot be slowed or re-byted by a feature
-it is not using. The check was the committed module before this change and the one after
-it, both driven through `bench/engine.mjs`, over **204 frames** — six families by the
-seventeen modes by two supersamples, four palettes — comparing the finished RGBA *and* the
-raw lanes: **29.1 MB, zero bytes different**.
-
-### What is not carried, and it is a refusal rather than an approximation
-
-**A distance-estimate mode cannot be inflected**, and a spec that asks is refused by name.
-Every channel the modes read is a statement about the *orbit*, and the orbit is the
-engine's from an altered starting point; `derivative` is a statement about how the orbit
-moves when the *pixel* moves, and a pre-map puts a factor `g'(z) = ∏ 2(zₖ − pₖ)` between
-the two. Carrying it means multiplying that factor into the orbit's derivative before the
-field reduces it, which is inside `iterate::Orbit` and so is a change next door rather than
-a seam here.
-
-It costs nothing: `de` is the only field that sets the flag and `de` is not one of the
-seventeen modes this page offers. The reason it is a guard rather than an approximation is
-that the wrong answer here is a *plausible* picture — a distance estimate off by a smooth
-factor still looks like a distance estimate.
-
-### The gesture split, which was a choice
-
-- **A click — press and release without moving — inflects.** The point joins the list and
-  becomes the view's centre.
-- **A drag pans**, exactly as everywhere else on this page.
-- **A drag that starts on a point's marker moves that point**, live, at draft quality,
-  coalesced.
-- **The wheel zooms**, exactly as everywhere else.
-
-No modifier key, and that is the point of it: **a press with no movement was already a
-gesture this page threw away** — `release` has always returned early on a zero-length drag
-— so nothing a reader can already do here has been taken away or given a second meaning. A
-modifier would have been safer and would also have made the tab's one verb the one thing a
-visitor has to be told about. The cursor turns to a hand over a marker, which is how a
-reader finds the second gesture without being told about that one either.
-
-**The width is re-derived on every click, and it has to be.** Content within `r` of `p`
-comes back within about `√r` of it, so a click that kept the width would show a tiny disc
-of what it just made in the middle of an otherwise unchanged frame. Half-width to
-half-width, `h' = √h`, so `w' = √(2w)` — the same square root the Deep tab's *Same view at
-z = 0* takes, for the same reason. Its fixed point is `w = 2`, which is about the scale the
-whole construction lives at, so repeated clicks settle there from either side rather than
-running away.
-
-**Draft quality while a point is held.** The shade sliders can afford a whole pass each
-because a recolour is milliseconds off a field already computed; dragging a point moves
-every orbit's starting place, so each frame is an iterate from nothing. So a pass started
-by a held point stops at the quarter-resolution stage — a sixteenth of the samples — and
-the release draws the picture out. The coalescing is `live`'s, the sliders' own: one pass
-at a time, and the last value wins.
-
-### Snap to node, which turned out to be the difference between a tab and a black disc
-
-The prompt had this as optional-if-cheap. It is cheap — one 64×64 field, about a
-thousandth of the frame the click is about to start — and it is **not optional in
-practice**, which is a finding rather than a preference.
-
-The pre-map wraps a neighbourhood of `p` twice around `p`, so what has to be at `p` is
-*structure*. A click a few pixels inside a node inflects the node's **interior**: a disc of
-interior maps two-to-one onto a disc of interior, and the picture is a black disc with a
-rim on it. The first contact sheet was half black for exactly this, and so was the first
-working build of the tab.
-
-**On the presets as they are now, that failure cannot happen**, because none of them has
-any interior to click into — see *The stack* above. The snap stays on, and earns its place
-differently: the sets it now opens are dendrites and dusts whose filaments are a pixel or
-two wide, so a click is off the structure far more often than it was on a fat minibrot,
-and a point that is off the structure inflects a neighbourhood of nothing.
-
-So a click is moved onto the nearest point of the set: iterate a small grid about it and
-take the escaping sample that took longest to escape — a sample that escapes is outside the
-set, and one that takes a long time about it is against the boundary. It reads the picture
-**as inflected**, because that is the picture the reader clicked on, and at the cap that
-picture is drawn to. Three percent of the view's width, so the snap moves a click by about
-twenty pixels at most: near enough to read as *it went where I meant* rather than *it went
-somewhere else*. Where every sample in reach is interior the click stands where it fell and
-the page says why, after the pass has started — because the pass opens by clearing that
-line.
-
-The toggle is on by default, which is the honest default given the above.
-
-### The stack
-
-The panel lists the points in click order. **Undo** takes the last one off for good, **×**
-on a row takes that one out, **Clear all** goes back to the plain Julia set, and
-**◀ Back** / **Forward ▶** walk a cursor through the construction without destroying it —
-the points past the cursor are still listed, dimmed, and still there to step forward into.
-A click while stepped back **truncates**, the way an editor's undo history does: the
-forward half was a construction this click is no longer on the way to, and keeping it would
-leave Forward stepping into a point placed on a picture that no longer exists.
-
-The **Start** row is eight Julia sets, and **every one of them has empty interior**
-*(inflection_sheet2_ckpt136)*. This paragraph used to say the opposite — that a `c` inside
-a small minibrot has solid nodes joined by filaments and sculpts best — which is true of
-real deep-zoom morphing and exactly wrong here. The pre-map sends a disc of interior
-two-to-one onto a disc of interior, so **a filled node inflects to a black disc with a rim
-on it**, and the tab's first six presets were all of that kind.
-
-Interior is a property of `c` that can be decided rather than guessed. Iterate `z ← z² + c`
-from the critical point `z₀ = 0`, find the cycle it settles on, and take the multiplier
-`|λ| = |∏ 2z|` around that cycle: under one the cycle attracts, so it has a basin and the
-basin is the interior; over one it repels, nothing is drawn in, and the set is a dendrite
-or a dust with no interior at all. Exactly one is parabolic, which has a basin too. Closing
-a cycle is **not** the test and reads `c = i` — the classic dendrite — as a filled set of
-period 2: its critical orbit does land on a 2-cycle, and that cycle repels.
-
-So the presets are seven **Misiurewicz points**, where the critical orbit is strictly
-preperiodic and the Julia set is a dendrite, and one `c` just outside the set beside
-elephant valley, where it is a dust that still carries the shape of the connected set next
-to it. Each was checked by that test and then picked off a rendered survey of forty-seven
-candidates for looking unlike the others.
-
-Choosing a set clears the construction, because the points were placed on the old set's
-nodes and mean nothing on the new one's — and so does coming back to the tab with a
-different `c` in force, which the `cx` box in Details and the Deep tab's *Julia at this c*
-can both do while it is away.
-
-**The family picker is held while the tab shows**, and it is the only control that is. The
-pre-map is defined here for `z² + c` and the module refuses anything else by name, so a
-live picker would be a control whose every other entry is a refusal; the Start row chooses
-the set instead, and leaving the tab gives the picker back. There is no *bring the viewer's
-c* button, because there is nothing to bring: the tab does not take the viewer, so the
-viewer's view **is** the tab's, and entering carries whatever `c` was already in force.
-
-### Its own contract, version 1, marker `iv`
-
-```
-iv · cx · cy · q · x · y · w · a · m · the mode's parameters · p · the shade keys · level
-```
-
-**A third contract rather than two keys on the first**, and the reason that settles it is
-the standing rule: *nothing inflected enters the pipeline, a gallery, a record, or any
-shallow tab's keys or links*. A key on `permalink.js` would be a key `builder/links.py`
-could derive, a gallery seat could carry and a figure row could cite. A marker of its own
-cannot be reached by any of them.
-
-`q` is the whole of what is new: the ordered points, flat, `re,im,re,im,…`, in click order.
-Flat and not paired on purpose — a list written that way cannot lose a point without losing
-a number, so a truncated link is a refusal rather than a picture with one fewer inflection
-in it, which would draw perfectly well and be the wrong picture. `cx`, `cy` and `q` are
-never conditional: the `c` is what the picture is *of* and the points are what it *is*.
-
-**The shallow contract did not move.** `VERSION` is 3, `READS` is `[1, 2, 3]`, the
-unknown-key sweep is unchanged, and every ruling is where it was. Two things are newly
-exported from it — `INFLECT_MARKER` with its one-line `isInflected`, which lives there for
-the reason `DEEP_MARKER` does (the page sorts a query before it loads a reader), and
-`PARAMETERS`, so that what a `weight` or an `opacity` may be is not spelled twice. The deep
-contract did not move either. `inflect-link.test.mjs` holds all three: **26 tests**, and
-the last group is the one that matters — each contract refuses the other two's markers, and
-the shallow and deep ones are pinned to not having moved.
-
-`fieldKey` and `probeKey` carry the points as a **cache-key suffix**, which is not a link
-key and is empty where there are none. Two pictures that differ only in where they were
-clicked are different fields, and left out the second would have been served the first's
-lanes — a real picture of somewhere else, which is the worst shape a cache bug takes.
-
-**Saved takes inflected entries and draws their tiles.** A deep entry is labelled rather
-than drawn because a tile would need the perturbation kernel and a wait of seconds; an
-inflected one is the ordinary renderer drawing an ordinary view that happens to carry a
-list, at a plain Julia's cost, so the panel is handed a parsed view and never knows.
-
-### What it cost, measured
-
-**The obvious measurement is confounded, and `bench/inflect.mjs` exists because of it.**
-Timing the tab's own frame with and without a list compares two different *pictures*: the
-pre-map throws most of the plane far from the origin, those samples escape on the first
-iteration, and an inflected frame at the same view comes back **several times faster** than
-the plain one — `smooth` at 177 ms with nothing clicked and 8 ms with six points. True,
-useful, and not what a pre-map costs.
-
-So the reading below holds the work still: a frame entirely **inside** the set at a pinned
-cap of 2,000, where every sample of every column escapes nothing and runs the cap to the
-end. The inflection points are the frame's own centre repeated, which is what keeps it
-interior — the map fixes `p` and sends the disc of radius `r` about it onto the disc of
-radius `r²`. Same samples, same iterations, same channels; the only difference is the
-pre-map. 320x180, one thread, whole frame in one band, best of three.
-
-| mode | 0 points | 1 | 2 | 4 | 6 | 1 ÷ 0 | 6 ÷ 0 |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| smooth | 394 ms | 384 ms | 386 ms | 386 ms | 388 ms | 0.975x | 0.986x |
-| tia | 1 708 ms | 1 651 ms | 1 683 ms | 1 724 ms | 1 678 ms | 0.967x | 0.983x |
-| stripe | 4 708 ms | 4 650 ms | 4 624 ms | 4 589 ms | 4 613 ms | 0.988x | 0.980x |
-| smooth_stripe | 4 750 ms | 4 622 ms | 4 669 ms | 4 676 ms | 4 631 ms | 0.973x | 0.975x |
-| itinerary | 2 962 ms | 3 043 ms | 2 955 ms | 2 987 ms | 2 902 ms | 1.028x | 0.980x |
-| curvature | 3 245 ms | 3 147 ms | 3 163 ms | 3 221 ms | 3 178 ms | 0.970x | 0.979x |
-
-**`1 ÷ 0` is the seam**, and it is the column this table is for: the *same arithmetic*
-through the engine's own specialized sweep and through this crate's one-family copy of it.
-**0.97x to 1.03x** — parity, which is what writing that table out was for. Without it the
-generic loop is 3.3x on `julia`.
-
-**Six points cost what one does.** The pre-map is a complex multiply against an orbit
-running to two thousand iterations, and at that ratio five more of them do not show above
-the noise. The curve against the point count is flat, which is also the regression guard:
-a slope there would be a bug in the loop rather than a price.
-
-**It took two goes, and the first reading was real.** `iterate::run` collapses to the bare
-recurrence only where the inliner can see the family at the *call site*, which is why the
-engine's own table expands one arm per family rather than passing a `&Family` through.
-Handing it the caller's reference left the match over eleven families live in the innermost
-loop and measured **1.29x on `smooth`** — the cheapest recurrence, where a fixed
-per-iteration overhead is the largest share — against 1.02x on `curvature`. Rebuilding the
-family as a literal inside `sweep_row` recovered all of it. The note is in `inflect.rs`
-where the line is, because it is a line that looks like a formality and is not.
-
-### What is not here
-
-**Degree 2 only.** The pre-map is a statement about the plane rather than about the
-recurrence, so `z³ + c` inflects just as well arithmetically — but this is a trial of one
-kind of picture, and eleven families behind it would make the question harder to answer
-rather than easier. `inflect.rs`'s `refuse_family` is one match arm.
-
-**No inflected Mandelbrot.** A parameter-plane pixel is `c` and not `z₀`, so the same
-pre-map means something else there and is a different thing to try.
-
-**Nothing inflected reaches anything.** Not the pipeline, not a gallery, not a record, not
-a figure, not a link `builder/links.py` can derive. The tab is a place to look at these
-pictures and decide.
-
-### What it is made of
-
-```
-inflect.js               the tab: the stack, the start, the snap, what a click means
-inflect-link.js          its contract — parse, emit, canonicalize, fresh
-inflect-link.test.mjs    26 tests: the contract, and the other two held to not moving
-features.js              the feature finder — see Next; nothing on the page imports it
-features.test.mjs        13 tests: arms, nodes and the three choices, on drawn shapes
-engine-wasm/src/inflect.rs   the pre-map, the one-family sweep, and 5 tests of the math
-bench/inflect.mjs        what a list costs, against the same frame with none
-```
-
-Plus one panel in `index.html`, one block at the foot of `explorer.css`, and the branches
-in `explorer.js` that name `inflect` — the tab's mount, the four gesture branches, one line
-in `paintMark`, one in `currentQuery`, one in `canonicalOf`, and the Saved tab's two. **To
-delete the trial: those five files, that panel, that block, and those branches.** Nothing
-else in the tree knows it exists.
+`engine-wasm/src/inflect.rs` stays in the crate behind the `inflection` cargo feature,
+**off in the shipped build**, so the module is 763,343 bytes rather than 793,590 and a spec
+carrying `inflections` is refused by name. Renders were measured identical across the bench
+ladder with it off — 153 frames, 72.9 MB, zero bytes different — and the shipped module
+differs from the one that stood before the tab landed in 32 bytes, every one of them a
+panic `Location` line number.
 
 ## Saved *(saved_tab_ckpt131, 2026-09-18)*
 
@@ -3076,24 +2805,9 @@ are the engine's — but now with a failing check to announce it rather than onl
 
 ## Next
 
-- **A feature finder, built and not wired to anything** *(inflection_sheet2_ckpt136)*.
-  `explorer/features.js` reads a rendered field and answers the questions the Julia-morphing
-  sources ask in words: where are the filaments, what arms leave this point and which is
-  shortest, where are its branch points, and which of them is the *central node*, the one
-  *beside* it and the one *beyond* it. It is pure functions over an `f64` lane, tested under
-  node against drawn shapes, and **nothing on the page imports it** — it exists because the
-  second inflection contact sheet needed to click the way a person does, thirty times over,
-  without eyes.
-
-  Two things it could become, and neither is built. **A smarter snap**: the Inflection tab
-  moves a click to the deepest escaping sample nearby, which is the right point about as
-  often as not; snapping to the nearest *node* instead would put it on the feature a reader
-  was aiming at rather than on the brightest pixel near their finger. **Suggest the next
-  click**: the tab could mark the three named places and let a reader take one, which is
-  the published practice turned into a control. Both want the finder to run on the
-  quarter-resolution preview the pass already has rather than on a pass of its own, and
-  neither should be built before Matt has said he likes these pictures — the tab is still a
-  trial.
+Nothing here is the Inflection tab's. Its two entries — a smarter snap, and marking the
+three named places for a reader to take — were about a tab that is now paged out, and they
+went into `paged-inflection/README.md` with it.
 
 Listed, not designed. The first three are `explorer_perf_audit_ckpt136`'s, and each says what
 it would buy and **how large the difference from the pipeline render would be** — an

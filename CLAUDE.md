@@ -10,11 +10,18 @@ The companion code repository is `C:\Code\fractal-wallpapers`. The article links
 per section; nothing is copied across without being rewritten to read as prose.
 
 **It is read-only from here, with one carve-out** *(Matt, 2026-08-21, after
-`explorer_generalize` landed engine changes under the old rule)*. A website prompt may
-make **minimal engine changes that serve the wasm consumer**, and only where every one of
-these holds:
+`explorer_generalize` landed engine changes under the old rule; widened 2026-09-20, after
+the shade seam was made under an authorisation that lived in a manifest line rather than in
+this rule)*. A website prompt may make **minimal engine changes that serve the wasm
+consumer**, and only where every one of these holds:
 
-- **zero behaviour** — visibility, inlining, `cfg`, and nothing else;
+- **zero behaviour, measured** — the pipeline's renders are byte-identical after the change
+  and it is the prompt's job to have shown that, not to have argued it;
+- **widening, or adding when the prompt says so** — visibility, inlining and `cfg` need no
+  permission beyond this rule; a **new signature** — a function, a trait impl, a derive —
+  needs the website prompt's own brief to have asked for the seam, and nothing else in the
+  engine may move to make room for it. A prompt that finds it wants one it was not sent for
+  says so and stops;
 - **no new dependency and no new feature** in the default build;
 - **the engine's tests and the native anchor unmoved**;
 - **committed in `fractal-wallpapers` by explicit file path only** — never `git add -A`,
@@ -528,10 +535,10 @@ Three Windows cautions that have each cost a session already:
 
 ```
 python -m ruff check . && python -m ruff format --check . && python -m builder check
-node --test explorer/permalink.test.mjs explorer/bands.test.mjs explorer/level.test.mjs explorer/derive.test.mjs explorer/stops.test.mjs explorer/saved.test.mjs explorer/zip.test.mjs explorer/deep-fx.test.mjs explorer/deep-link.test.mjs explorer/deep.test.mjs explorer/inflect-link.test.mjs atlas/atlas.test.mjs
+node --test explorer/permalink.test.mjs explorer/bands.test.mjs explorer/level.test.mjs explorer/derive.test.mjs explorer/stops.test.mjs explorer/saved.test.mjs explorer/zip.test.mjs explorer/deep-fx.test.mjs explorer/deep-link.test.mjs explorer/deep.test.mjs atlas/atlas.test.mjs
 ```
 
-The second line is the twelve JavaScript suites, on Node's own runner with nothing
+The second line is the eleven JavaScript suites, on Node's own runner with nothing
 installed. `permalink.test.mjs` is the contract held to itself — a URL is the one
 permanent thing this site emits, and it is worth a test suite even though nothing else
 here has one. `bands.test.mjs` is the pool held to the committed wasm: a band is a range
@@ -562,11 +569,12 @@ two wasm modules, which is the one place on this page where a mistake draws a pl
 picture rather than raising — that the lanes `perturb.wasm` writes are the ones
 `engine.wasm` colours, that `shade_level` cannot see the placeholder viewport it is
 given, and that the deep kernel's sample grid is the engine's, with a frame nudged a
-tenth of a pixel as the control that proves the test has teeth. `inflect-link.test.mjs`
-is the Inflection tab's contract, and the reason a trial got a suite of its own is that a
-URL outlives the trial: it holds `iv` to itself, and holds the shallow and deep contracts
-to **not having moved** — each of the three refuses the other two's markers, which is what
-keeps an inflected link from ever being drawn as a plain Julia set at a dropped key.
+tenth of a pixel as the control that proves the test has teeth. `deep-link.test.mjs` also
+carries the **paged** Inflection tab's marker, because a URL outlives a trial: the tab is
+out of the working set (`explorer/paged-inflection/README.md`) and its own suite went with
+it, and what stays behind is that `iv` is sorted by its own marker and that both live
+contracts refuse `iv` and `q` by name — which is what keeps a link somebody saved from ever
+being drawn as the plain Julia set underneath it.
 
 After touching placed prose, `python -m builder prose <page>` as well — see **Where prose
 comes from** above for what it holds together and why one edit has several sites.

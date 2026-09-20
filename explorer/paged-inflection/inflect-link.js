@@ -1,3 +1,7 @@
+// **PAGED** — this file is out of the explorer's working set and nothing the page
+// loads imports it. `README.md` beside it says why, what was learned, and how to put
+// the tab back. Do not wire it in again without Matt asking for it.
+//
 // The Inflection tab's link contract — its own, beside the other two and inside neither.
 //
 // **Why a third contract rather than two keys added to the first.** An inflected picture
@@ -47,7 +51,7 @@ import {
   encode,
   encodeCurve,
   shortest,
-} from "./permalink.js";
+} from "../permalink.js";
 
 /** Re-exported rather than declared — see the note above it in `permalink.js`. */
 export const MARKER = INFLECT_MARKER;

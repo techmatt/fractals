@@ -1,9 +1,13 @@
 // What an inflection costs, asked in the one way that has an answer.
 //
-//   node explorer/bench/inflect.mjs [width] [height]
+//   node explorer/paged-inflection/bench.mjs [width] [height]
+//
+// **Paged.** This is the Inflection tab's bench and the tab is out of the working set;
+// it runs only against a module built with the `inflection` feature on, and it runs in no
+// suite. `README.md` beside it says what that means and how to put it back.
 //
 // One thread, the whole frame in one band, through the committed module — the same shape
-// as `families.mjs` and `modes.mjs` beside it, and for the same reason: the pool and the
+// as `bench/families.mjs` and `bench/modes.mjs`, and for the same reason: the pool and the
 // canvas are not what is being asked about here.
 //
 // **The obvious measurement is confounded and this file exists because of it.** Timing
@@ -27,8 +31,8 @@
 //
 // Nothing here asserts anything, the same as the rest of `bench/`.
 
-import { load } from "./engine.mjs";
-import { record } from "./output.mjs";
+import { load } from "../bench/engine.mjs";
+import { record } from "../bench/output.mjs";
 
 const [, , widthArg = "640", heightArg = "360"] = process.argv;
 const WIDTH = Number(widthArg);

@@ -1,5 +1,9 @@
+// **PAGED** — this file is out of the explorer's working set and nothing the page
+// loads imports it. `README.md` beside it says why, what was learned, and how to put
+// the tab back. Do not wire it in again without Matt asking for it.
+//
 // The Inflection tab's contract, held to itself — and the other two held to not having
-// moved. `node --test explorer/inflect-link.test.mjs`, nothing installed.
+// moved. `node --test explorer/paged-inflection/inflect-link.test.mjs`, nothing installed.
 //
 // The shallow suite is the model: a URL is the one permanent thing this site emits, and a
 // tab that is a trial is exactly the one whose link rules are most likely to be reached
@@ -11,8 +15,8 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
 import * as link from "./inflect-link.js";
-import * as shallow from "./permalink.js";
-import * as deep from "./deep-link.js";
+import * as shallow from "../permalink.js";
+import * as deep from "../deep-link.js";
 
 /** The contract's context: the julia anchor, its home frame, and a few maps. */
 const PALETTES = new Map([
@@ -217,7 +221,7 @@ test("the points' ceiling is one number on both sides of the boundary", () => {
   // module refuses past it and this refuses past it, and two ceilings that drifted apart
   // would be a link this page accepts and the renderer will not draw.
   const source = readFileSync(
-    new URL("./engine-wasm/src/inflect.rs", import.meta.url),
+    new URL("../engine-wasm/src/inflect.rs", import.meta.url),
     "utf8",
   );
   const found = /MAX_INFLECTIONS: usize = (\d+)/.exec(source);

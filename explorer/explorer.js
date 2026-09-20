@@ -393,28 +393,10 @@ function locked() {
   return true;
 }
 
-/**
- * The family picker is held while the Inflection tab shows.
- *
- * The pre-map is defined here for `z² + c` and the module refuses anything else by name,
- * so a live picker on that tab is a control whose every other entry is a refusal. The
- * tab's own Start row is where the set is chosen, and leaving the tab gives the picker
- * back. Called from `setBusy` too, because a download re-enables what it disabled and
- * would otherwise hand the picker back under the tab.
- */
-function syncFamilyLock() {
-  const held = showing === "inflect";
-  familyPicker.disabled = busy || held;
-  familyPicker.title = held
-    ? "The Inflection tab draws z² + c only. Its Start row chooses the set; leave the tab to change family."
-    : "";
-}
-
 /** Freeze or release every control that would change what is being drawn. */
 function setBusy(on) {
   busy = on;
   for (const control of [familyPicker, modePicker, levelToggle]) control.disabled = on;
-  syncFamilyLock();
   syncCopy();
   for (const strip of [constantStrip, coordinateStrip, paramStrip]) {
     for (const control of strip.querySelectorAll("input")) control.disabled = on;
@@ -772,10 +754,6 @@ function canvasAt(x, y) {
  */
 function paintMark() {
   paintOverlay();
-  // The inflection markers, on the same terms as the overlay and the mark: onto the
-  // screen after every stage, never into `frame`, so a reprojection during a drag carries
-  // the picture and the markers are redrawn where they now belong.
-  inflect?.paint(screen);
   if (mark === null || mark.family !== view.family) return;
   const at = canvasAt(mark.x, mark.y);
   const px = Math.round(at.px);
@@ -1017,22 +995,6 @@ let inFlight = null;
 let wantsLive = false;
 
 /**
- * Whether a pass is to stop at the quarter-resolution stage.
- *
- * **For a control the hand is on that changes the *field* rather than the colour.** The
- * shade sliders can afford a whole pass each because a recolour is milliseconds off a
- * field that is already computed; dragging an inflection point moves every orbit's
- * starting place, so each frame is an iterate from nothing. At a Julia's smooth cost that
- * is a fraction of a second and would be fine; at `stripe`'s it is seconds, and a hand on
- * a point would be dragging a picture several gestures behind itself.
- *
- * So a draft pass puts the preview up and stops, and the release draws the picture out.
- * It is a quarter of each axis, which is a sixteenth of the samples, so the expensive
- * modes come back at about the cheap ones' full cost.
- */
-let draft = false;
-
-/**
  * Redraw for a control the reader's hand is **still on**: one pass at a time, and the
  * last value wins.
  *
@@ -1188,16 +1150,6 @@ async function drawPass() {
         stretch(renderer.shade(preview, view).image);
       }
 
-      // A draft pass ends here, with the preview up: see `draft`. `stopped` rather than
-      // `rendering`, because the pass really did end — the hand is what starts the next
-      // one, and a dot that said Rendering while nothing ran would be the lie `refuse`
-      // used to tell.
-      if (draft) {
-        stat(`${previewGrid.width}×${previewGrid.height} · a draft while the point is held`);
-        showState("stopped");
-        return;
-      }
-
       stat(`iterating at ${size} on ${renderer.workerCount} workers…`);
       const full = await renderer.field(view, grid.width, grid.height);
       if (full === null || pass !== drawing) return;
@@ -1342,6 +1294,18 @@ function updateReadout() {
   syncCoordinates();
 }
 
+/**
+ * The query for whatever is on screen, by whichever contract owns it.
+ *
+ * **One place, because three things ask it**: the address bar, Copy link and Save. A deep
+ * view is written by the deep contract and a shallow one by the shallow one, and the
+ * marker in front of it is what tells them apart again.
+ */
+function currentQuery() {
+  if (deepOwns()) return deep.link();
+  return link.emit(view, contract);
+}
+
 /** Write the canonical permalink into the address bar, and re-price a download.
  *
  *  Both are properties of the settled view: the estimate is per mode, and whether
@@ -1351,29 +1315,12 @@ function updateReadout() {
  *  nothing else; which side panel is open is a UI key the contract tolerates and never
  *  reads, added here on top. So the address bar restores the whole page and a link
  *  copied out of it is the picture. */
-/**
- * The query for whatever is on screen, by whichever of the three contracts owns it.
- *
- * **One place, because three things ask it**: the address bar, Copy link and Save. A deep
- * view is written by the deep contract and a shallow one by the shallow one, and the
- * marker in front of it is what tells them apart again. The Inflection tab's is its own
- * for the reason `inflect-link.js` states — a construction must not be spellable in a key
- * any record, gallery or figure link could reach — and it is asked for while the tab is
- * showing rather than while the list is non-empty, so that a tab opened on the plain set
- * still writes a link that reopens the tab.
- */
-function currentQuery() {
-  if (deepOwns()) return deep.link();
-  if (inflectOwns()) return inflectRules.emit(view, contract);
-  return link.emit(view, contract);
-}
-
 function settle() {
   panel?.describe();
   clearTimeout(settleTimer);
   settleTimer = setTimeout(() => {
-    // Whichever of the three contracts the picture belongs to — see `currentQuery` — so
-    // the address bar is always a link that reopens exactly what is being looked at.
+    // Whichever contract the picture belongs to — see `currentQuery` — so the address
+    // bar is always a link that reopens exactly what is being looked at.
     const picture = currentQuery();
     const furniture = showing === DEFAULT_PANEL ? "" : `&panel=${encodeURIComponent(showing)}`;
     history.replaceState(null, "", `?${picture}${furniture}`);
@@ -1409,17 +1356,8 @@ function retype(key, text) {
   if (locked()) return false;
   const params = new URLSearchParams(link.emit(view, contract));
   params.set(key, text);
-  // **The round trip is through the shallow reader and would drop a construction.** That
-  // route is the whole point of this function for the *coordinate* — it is read and
-  // refused by exactly the reader a link's is — and `permalink.js` has nothing to say
-  // about inflection, so the list has to be carried over the gap by hand. A constant is
-  // the one key that does not carry it: `cx` or `cy` retyped is a different Julia set,
-  // and points placed on the old set's nodes mean nothing on the new one's, which is the
-  // same rule as choosing another set from the tab's own picker.
-  const held = link.CONSTANTS[view.family].includes(key) ? [] : inflections();
   try {
-    view = { ...link.parse(`?${params}`, contract), inflections: held };
-    inflect?.open(held);
+    view = link.parse(`?${params}`, contract);
   } catch (error) {
     say(error.message);
     return false;
@@ -2243,27 +2181,6 @@ function showPanel(asked) {
     syncShade();
     if (walk === null || showing !== "walk") draw();
   }
-
-  // The Inflection tab does not take the viewer — it takes the *click*. Showing it puts a
-  // construction on whatever `c` is to hand; leaving it puts the plain Julia set back,
-  // because a picture whose markers are gone and whose tab is closed should not still be
-  // the inflected one.
-  if (showing === "inflect") {
-    startInflect().then(() => {
-      if (showing !== "inflect") return;
-      inflect.show();
-      enterInflect();
-      // The address bar again, now that the tab owns the click: `showPanel` settled it
-      // before this promise resolved, so it still said the shallow link. A pass of
-      // several seconds would otherwise leave the wrong contract in the address bar for
-      // all of them, and a link copied in that window would open the wrong page.
-      settle();
-    });
-  } else if (inflect !== null) {
-    inflect.hide();
-    leaveInflect();
-  }
-  syncFamilyLock();
   settle();
 }
 
@@ -2271,159 +2188,23 @@ function showPanel(asked) {
  *  in which case the link's own frame is the one to open at. */
 let deepOpening = false;
 
-// ------------------------------------------------------------------- the inflection tab
+// -------------------------------------------------------------- the paged Inflection tab
 //
-// A trial, and the wiring is written to be deleted: this block, the `inflect` branches in
-// the gesture handlers, one line each in `paintMark`, `currentQuery`, `retype`,
-// `canonicalOf` and the boot, the Saved tab's two, and the five files it names.
-// `inflect.js` says what the tab is and why it is built this way.
+// The tab that sculpted a Julia set by inflection is **paged out** — Matt's ruling, and
+// `paged-inflection/README.md` beside its files says what it was, what it taught and how
+// to put it back. Nothing the page loads imports any of it, and there is no tab, no
+// panel and no stylesheet block left to reach one.
 //
-// **It does not take the viewer the way the Deep tab does.** An inflected picture is the
-// ordinary `f64` renderer's, at a plain Julia's cost, so the pool, the stages, the cache,
-// the mode picker, the palette and the whole shade recipe are the ones already on the
-// page. What the tab owns is the `c`, the ordered points, and what a click means.
+// What stays is the refusal below, because a link outlives the trial: a reader who copied
+// one, or saved one, still has `iv` in their hands, and the plain Julia set underneath it
+// is a different picture wearing that picture's name. `permalink.js` keeps `iv` as a
+// marker it can sort on for exactly this, and both live contracts go on refusing the key.
 
-/** The mounted Inflection tab, once its tab has been opened. */
-let inflect = null;
-let inflectStarted = null;
-/** The Inflection tab's contract, imported with the tab and not before. */
-let inflectRules = null;
-/** Whether the tab is being opened on a link, in which case the link's construction is
- *  what it opens at rather than whatever the viewer was on. */
-let inflectOpening = null;
-
-/** Whether the Inflection tab is the one deciding what a click on the canvas means. */
-function inflectOwns() {
-  return inflect !== null && inflect.owns();
-}
-
-/** The points in force, for a spec and for a cache key. Empty everywhere else, which is
- *  what makes every other render on this page the render it was. */
-function inflections() {
-  return view.inflections ?? [];
-}
-
-async function startInflect() {
-  if (inflectStarted !== null) return inflectStarted;
-  inflectStarted = (async () => {
-    inflectRules = await import("./inflect-link.js");
-    const { mount } = await import("./inflect.js");
-    const at = (id) => document.getElementById(id);
-    inflect = mount({
-      elements: {
-        seed: at("inflect-seed"),
-        seedSay: at("inflect-seed-say"),
-        stack: at("inflect-stack"),
-        empty: at("inflect-empty"),
-        count: at("inflect-count"),
-        undo: at("inflect-undo"),
-        clear: at("inflect-clear"),
-        back: at("inflect-back"),
-        forward: at("inflect-forward"),
-        snap: at("inflect-snap"),
-      },
-      grid: () => grid,
-      width: () => view.w.value,
-      /** One small field about a point, for the snap: the lane the smooth mode makes,
-       *  at the cap this view is drawn to, over the construction already in force. The
-       *  pool's own `null` for a pass that was overtaken comes straight back. */
-      probe: async (x, y, width, size) => {
-        const at = {
-          ...view,
-          mode: "smooth",
-          params: {},
-          level: null,
-          x: link.coordinateOf(x),
-          y: link.coordinateOf(y),
-          w: link.coordinateOf(width),
-        };
-        const field = await renderer.field(at, size, size, {
-          maxiter: renderer.maxiter(view.w.value),
-        });
-        // `values` is already the `f64` lane at one sample a pixel, and the smooth mode
-        // has exactly one lane, so the first `size * size` of it is the whole answer.
-        return field === null ? null : field.values;
-      },
-      planeAt,
-      canvasAt,
-      say,
-      /** The `c` in force, as the two decimal strings the link spells. */
-      currentC: () => ({ cx: view.constants.cx?.text ?? "", cy: view.constants.cy?.text ?? "" }),
-      setC: (cx, cy) => {
-        view = link.parse(
-          `?${new URLSearchParams({ v: String(link.VERSION), f: "julia", cx, cy, p: view.palette })}`,
-          contract,
-        );
-      },
-      /** The construction into the viewer's view, and a pass. `live` is the shade
-       *  sliders' own coalescing — one pass at a time, the last value wins. */
-      setView: (changes, how) => {
-        const { x, y, w, ...rest } = changes;
-        view = { ...view, ...rest };
-        if (x !== undefined) {
-          view = {
-            ...view,
-            x: link.coordinateOf(x),
-            y: link.coordinateOf(y),
-            w: link.coordinateOf(w),
-          };
-          updateReadout();
-        }
-        if (how === "live") {
-          draft = true;
-          live();
-        } else {
-          draft = false;
-          draw();
-        }
-      },
-    });
-  })();
-  return inflectStarted;
-}
-
-/** Enter the tab: a fresh construction on whichever `c` is to hand.
- *
- *  A view that is already a degree-2 Julia carries across, which is what makes *find a c
- *  in the viewer, then sculpt it* one gesture rather than two. Anything else opens on the
- *  first seed, because the tab has to be a picture of something. */
-function enterInflect() {
-  if (inflectOpening !== null) {
-    const arriving = inflectOpening;
-    inflectOpening = null;
-    view = arriving;
-    inflect.open(arriving.inflections);
-    arrived();
-    rebuild();
-    draw();
-    return;
-  }
-  // A view of anything but a degree-2 Julia has no `c` to sculpt, so the tab opens on its
-  // first seed — and on nothing clicked, because whatever the tab was holding was placed
-  // on a set this is not.
-  if (view.family !== "julia") {
-    const seed = inflect.seeds[0];
-    view = link.parse(
-      `?${new URLSearchParams({ v: String(link.VERSION), f: "julia", cx: seed.cx, cy: seed.cy, p: view.palette })}`,
-      contract,
-    );
-    inflect.open([]);
-    rebuild();
-  }
-  // The list goes on the view before anything draws or emits. It comes from the tab
-  // rather than from the view: leaving strips the view and keeps the tab's own, so a
-  // reader who stepped out to the palette picker comes back to their construction.
-  // `emit` writes `q` unconditionally, so the field has to be there either way.
-  view = { ...view, inflections: inflect.held(view.constants.cx.text, view.constants.cy.text) };
-  draw();
-}
-
-/** Leave it: the same Julia set with nothing inflected. */
-function leaveInflect() {
-  if (inflections().length === 0) return;
-  view = { ...view, inflections: [] };
-  draw();
-}
+/** What the page says to a link the paged tab wrote. */
+const INFLECTION_PAGED =
+  "This link was made by the explorer's Inflection tab, which is no longer part of this " +
+  "page. Nothing has been drawn, because the plain Julia set underneath it is not the " +
+  "picture the link names.";
 
 // ------------------------------------------------------------------- saved pictures
 
@@ -2453,15 +2234,7 @@ function canonicalOf(query) {
         ? deepRules === null
           ? null
           : deepRules.canonicalize(`?${query}`, deepContext)
-        : link.isInflected(`?${query}`)
-          ? // An inflected link is canonicalized by its own contract, and by nothing
-            // before that contract is loaded: the shallow reader would refuse `iv`
-            // outright, and a `null` here is a picture Saved cannot key — which is a
-            // save mark that never lights rather than a wrong one that does.
-            inflectRules === null
-            ? null
-            : inflectRules.canonicalize(`?${query}`, contract)
-          : link.emit(link.parse(`?${query}`, contract), contract);
+        : link.emit(link.parse(`?${query}`, contract), contract);
     } catch {
       known = null;
     }
@@ -2536,23 +2309,21 @@ async function startSaved() {
       // A deep entry is described rather than parsed: there is no drawing it at a tile's
       // size without the perturbation kernel and a wait, so the panel labels it and the
       // click opens the Deep tab on it.
-      // **An inflected entry draws its own tile, and a deep one does not.** A deep tile
-      // would need the perturbation kernel and a wait of seconds; an inflected one is the
-      // ordinary renderer drawing an ordinary view that happens to carry a list, at a
-      // plain Julia's cost. So the panel is handed a parsed view and never knows.
-      parse: (query) =>
-        link.isDeep(`?${query}`)
+      // **And an entry the paged Inflection tab wrote is neither.** The panel's own
+      // handling of a link it cannot read is what says so: the tile reads *cannot be
+      // read* and carries this sentence as its title, which is the truth about it.
+      parse: (query) => {
+        if (link.isInflected(`?${query}`)) throw new Error(INFLECTION_PAGED);
+        return link.isDeep(`?${query}`)
           ? deepRules.describe(query, deepContext)
-          : link.isInflected(`?${query}`)
-            ? inflectRules.parse(`?${query}`, contract)
-            : link.parse(`?${query}`, contract),
+          : link.parse(`?${query}`, contract);
+      },
       parseImport: saving.parseImport,
       shownName,
       planeName,
       open: (query) => {
         if (link.isInflected(`?${query}`)) {
-          inflectOpening = inflectRules.parse(`?${query}`, contract);
-          showPanel("inflect");
+          say(INFLECTION_PAGED);
           return;
         }
         if (!link.isDeep(`?${query}`)) {
@@ -2946,13 +2717,7 @@ canvas.addEventListener("pointerdown", (event) => {
   canvas.setPointerCapture(event.pointerId);
   pointers.set(event.pointerId, canvasPoint(event));
   if (pointers.size === 1) {
-    const at = canvasPoint(event);
-    // A press that lands on an inflection's marker grabs it instead of starting a pan.
-    // The marker is the only thing on this page that a press can mean something other
-    // than a drag over, and it is checked here so that the pan never starts at all —
-    // a grab that had to cancel a pan in flight would slide the picture first.
-    if (inflectOwns() && inflect.press(at.x, at.y)) return;
-    drag = { from: at, at };
+    drag = { from: canvasPoint(event), at: canvasPoint(event) };
   } else if (pointers.size === 2) {
     drag = null;
     pinch = { spread: spread(), width: view.w.value };
@@ -2966,19 +2731,9 @@ canvas.addEventListener("pointermove", (event) => {
     preview(0, 0, spread() / pinch.spread);
     return;
   }
-  if (inflectOwns() && inflect.move(canvasPoint(event).x, canvasPoint(event).y)) return;
   if (drag === null) return;
   drag.at = canvasPoint(event);
   preview(drag.at.x - drag.from.x, drag.at.y - drag.from.y);
-});
-
-// The cursor says which of the two a press would be, which is the whole of how a reader
-// learns that a marker is draggable: over a marker it is a hand, and everywhere else it
-// is whatever the stylesheet gives the canvas.
-canvas.addEventListener("pointermove", (event) => {
-  if (!inflectOwns() || pointers.size > 0) return;
-  const at = canvasPoint(event);
-  canvas.style.cursor = inflect.cursorAt(at.x, at.y);
 });
 
 function release(event) {
@@ -2998,21 +2753,11 @@ function release(event) {
     }
     return;
   }
-  // A point that was being dragged is put down here, and the picture drawn out in full.
-  if (inflectOwns() && inflect.release()) return;
   if (drag === null) return;
   const dx = drag.at.x - drag.from.x;
   const dy = drag.at.y - drag.from.y;
-  const from = drag.from;
   drag = null;
-  if (dx === 0 && dy === 0) {
-    // **A press with no movement was already a gesture this page threw away**, which is
-    // what makes it free to give a meaning to. On the Inflection tab it is the tab's one
-    // verb; everywhere else it still means nothing, so no gesture anybody already has
-    // here has been taken away or given a second reading.
-    if (inflectOwns()) inflect.click(from.x, from.y);
-    return;
-  }
+  if (dx === 0 && dy === 0) return;
   // The Deep tab pans exactly as far, and draws nothing: the frame moves, the last
   // picture stays where it falls, and Render is what commits it.
   if (deepOwns()) {
@@ -3599,39 +3344,26 @@ async function main() {
   // the viewer opens at in that case is the Mandelbrot home — the Deep tab has the picture,
   // and the viewer behind it is what Back to the explorer comes out onto.
   const arriving = link.isDeep(window.location.search) ? window.location.search : null;
-  // An inflected link is read by its own contract, at the same door and on the same
-  // terms: the marker decides before any of the three readers sees a key it would refuse.
-  // Unlike a deep link it opens the viewer at the picture rather than at a stand-in,
-  // because an inflected picture *is* a view of the shallow renderer.
-  const inflecting = link.isInflected(window.location.search) ? window.location.search : null;
-  if (inflecting !== null) {
-    await startInflect();
-    try {
-      inflectOpening = inflectRules.parse(inflecting, contract);
-    } catch (error) {
-      refuse(`${error.message} Nothing has been drawn, because guessing what was meant would be worse than saying so.`);
-      return;
-    }
+  // **And a link the paged Inflection tab wrote is refused at that same door**, before the
+  // shallow reader sees it — see `INFLECTION_PAGED`. It would be refused either way, by the
+  // unknown-key sweep on `iv`, but a reader holding a picture's link is owed the reason
+  // rather than the mechanism.
+  if (link.isInflected(window.location.search)) {
+    refuse(INFLECTION_PAGED);
+    return;
   }
   try {
     view =
-      arriving !== null
-        ? link.fresh("mandelbrot", "smooth", contract)
-        : inflecting !== null
-          ? inflectOpening
-          : link.parse(window.location.search, contract);
+      arriving === null
+        ? link.parse(window.location.search, contract)
+        : link.fresh("mandelbrot", "smooth", contract);
   } catch (error) {
     refuse(`${error.message} Nothing has been drawn, because guessing what was meant would be worse than saying so.`);
     return;
   }
   if (arriving !== null || saved.items.some((item) => link.isDeep(`?${item.link}`))) {
     await loadDeepRules();
-  }
-  // And the same for an inflected entry, for the same reason: the Saved tab keys every
-  // entry by its canonical link, and a contract that is not loaded cannot canonicalize
-  // one — so a saved construction would key as `null` and its tile would never light.
-  if (saved.items.some((item) => link.isInflected(`?${item.link}`))) await startInflect();
-  if (arriving !== null) {
+  }  if (arriving !== null) {
     try {
       deepRules.parse(arriving, deepContext);
     } catch (error) {
@@ -3649,14 +3381,7 @@ async function main() {
   // And a page that did name one opened at it, which is where Reset to link goes back to.
   // A bare page opened at nothing: its button is greyed and says so.
   if (named.length > 0) {
-    // **Not for an inflected arrival**, which leaves *Reset to link* greyed and saying so.
-    // `anchor.query` is replayed through `openLink`, which reads it with the shallow
-    // contract, so an anchor written here for an inflected boot would reset a reader to
-    // the plain Julia set under the name of the picture they arrived on. Greyed is the
-    // honest state: this trial has no reset, rather than a reset that goes somewhere else.
-    if (inflecting === null) {
-      anchor = { query: link.emit(view, contract), opts: {}, at: pictureKey(view) };
-    }
+    anchor = { query: link.emit(view, contract), opts: {}, at: pictureKey(view) };
   }
 
   document.getElementById("provenance").textContent =
@@ -3715,13 +3440,6 @@ async function main() {
     await startDeep();
     deep?.open(saving.queryOf(arriving));
     showPanel("deep");
-  } else if (inflecting !== null) {
-    // The construction is already in `view` — it was parsed at the door — so this only
-    // has to put the tab on screen standing on it. `showPanel` finds `inflectOpening`
-    // still set and enters on that rather than on a fresh construction.
-    rebuild();
-    resize();
-    showPanel("inflect");
   } else {
     showPanel(new URLSearchParams(window.location.search).get("panel") ?? DEFAULT_PANEL);
     rebuild();

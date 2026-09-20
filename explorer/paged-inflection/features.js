@@ -1,3 +1,7 @@
+// **PAGED** — this file is out of the explorer's working set and nothing the page
+// loads imports it. `README.md` beside it says why, what was learned, and how to put
+// the tab back. Do not wire it in again without Matt asking for it.
+//
 // Finding the features an inflection is placed on, in a rendered field, without eyes.
 //
 // **What this is for.** The published practice for Julia morphing says *where* to click in

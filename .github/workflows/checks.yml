@@ -71,5 +71,3 @@ jobs:
         run: node --test explorer/deep-fx.test.mjs explorer/deep-link.test.mjs
       - name: where the two kernels meet, against both committed modules
         run: node --test explorer/deep.test.mjs
-      - name: the Inflection tab's contract, and the other two held to not moving
-        run: node --test explorer/inflect-link.test.mjs

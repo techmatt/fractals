@@ -1,5 +1,6 @@
 // The Deep tab's link contract, held to itself — and held to leaving the shallow one
-// exactly where it was.
+// exactly where it was. The last two groups are the paged Inflection tab's `iv` marker,
+// which both of these contracts go on refusing although the tab is gone.
 //
 // node --test explorer/deep-link.test.mjs
 
@@ -280,4 +281,35 @@ test("a julia link is refused by the shallow contract, marker and all", () => {
     () => link.parse("?v=3&dv=2&cx=-0.5&cy=0.1&f=julia", shallow),
     /does not know: dv/,
   );
+});
+
+// ------------------------------------------- the paged Inflection tab's marker
+
+// A fifth tab sculpted a Julia set by inflection under a third contract, `iv=1`, and it
+// is **paged out** — `paged-inflection/README.md`. Its own suite went with it, and these
+// two groups are the part of it that stays, because a URL outlives the trial: somebody's
+// saved link still spells `iv`, and the plain Julia set underneath it is a different
+// picture wearing that picture's name. So both live contracts have to go on refusing the
+// key, and the page has to go on being able to sort a query onto it.
+
+test("iv is sorted by its own marker, and belongs to neither live contract", () => {
+  assert.equal(link.INFLECT_MARKER, "iv");
+  assert.equal(link.isInflected("?iv=1&q=0.1,0.2"), true);
+  assert.equal(link.isInflected("?v=3&f=julia"), false);
+  assert.equal(link.isInflected(`?${ANCHOR}`), false);
+  assert.equal(link.isDeep("?iv=1&q=0.1,0.2"), false);
+});
+
+test("the shallow and deep contracts both refuse iv and q", () => {
+  const shallow = {
+    palettes: PALETTES,
+    defaultPalette: "twilight_shifted",
+    home: () => ({ x: "-0.5", y: "0", w: "3" }),
+    constants: () => ({}),
+    settled: () => ({}),
+  };
+  assert.throws(() => link.parse("?v=3&iv=1", shallow), /does not know: iv/);
+  assert.throws(() => link.parse("?v=3&q=0.1,0.2", shallow), /does not know: q/);
+  assert.throws(() => deep.parse(`?${ANCHOR}&iv=1`, context), /iv/);
+  assert.throws(() => deep.parse(`?${ANCHOR}&q=0.1,0.2`, context), /q/);
 });

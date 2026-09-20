@@ -315,14 +315,6 @@ export function specOf(
   // sampler's 256, and nothing a link opens sets it, so the screen's specs never carry it.
   if (maxiter !== null) spec.maxiter = maxiter;
   if (Object.keys(view.params).length > 0) spec.params = view.params;
-  // **Omitted when there are none, which is every spec but the Inflection tab's.** An
-  // absent key is the module's empty list, the empty list is the identity pre-map, and a
-  // spec that never carried this key is the string it has always been — so a shallow
-  // link, a gallery seat and a download all send exactly what they sent yesterday. Each
-  // point crosses as the decimal pair the link spells, never as a float re-spelled here.
-  if (view.inflections?.length > 0) {
-    spec.inflections = view.inflections.map((point) => [point.re.text, point.im.text]);
-  }
   if (colormap) spec.colormap = stopsOf(view.palette);
   // The tone operator acts on the map's stops, so it travels with the colormap and is
   // left out of the specs that carry none — a field pass has no ramp to curve, and a

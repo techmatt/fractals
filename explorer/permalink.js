@@ -238,11 +238,12 @@ export const NICHE_MODES = {
  * than the only one, which is why a bound here is never tighter than the engine's:
  * a link this module accepted and the renderer refused would still say so.
  *
- * **Exported for `inflect-link.js` and for nothing else**, the way `encode` is exported
- * for `deep-link.js`: the Inflection tab spells `m` and its mode's parameters the way
- * this contract does, and a second table of what a `weight` or an `opacity` may be is a
- * second thing to keep in step. Exporting it moves no rule of this contract — the keys,
- * their checks and their sentences are unchanged.
+ * **Exported for `paged-inflection/inflect-link.js` and for nothing else**, the way
+ * `encode` is exported for `deep-link.js`. That contract is paged out and nothing on the
+ * page reads this table, and the export stays because the paged suite still runs against
+ * it: a second table of what a `weight` or an `opacity` may be would be a second thing to
+ * keep in step. It moves no rule of this contract — the keys, their checks and their
+ * sentences are unchanged.
  */
 export const PARAMETERS = {
   density: { check: (value) => value > 0, says: "positive" },
@@ -520,13 +521,14 @@ export function isDeep(search) {
 }
 
 /**
- * The same, for the Inflection tab, and here for the same reason `DEEP_MARKER` is.
+ * The same, for the **paged** Inflection tab — see `paged-inflection/README.md`.
  *
- * Three contracts now share one address bar, so the door has to sort a query into one of
- * them before any of the three readers is loaded. Each refuses the other two's markers by
- * its own unknown-key sweep, which is what keeps a link written for one of them from ever
- * being drawn by another at a rounded or a dropped key — an inflected picture read by the
- * shallow contract would be a plain Julia set wearing an inflected picture's name.
+ * The tab is out of the working set and its contract went with it, and this marker stays
+ * because a link outlives the trial. A reader who saved or copied one still has `iv` in
+ * their hands, and the page sorts on it here so that it can say what the link is rather
+ * than refuse it as an unknown key. Both live contracts go on refusing `iv` and `q` by
+ * their own unknown-key sweeps, which is what keeps an inflected picture from ever being
+ * drawn as the plain Julia set underneath it wearing that picture's name.
  */
 export const INFLECT_MARKER = "iv";
 
@@ -800,25 +802,7 @@ export function fieldKey(view, context, pixelWidth, pixelHeight, direct = false)
   const geometry = direct
     ? view
     : { ...view, params: shadeless(view.params), palette: context.defaultPalette, shade: defaultShade(), level: null };
-  return `${emit(geometry, context)}${inflectionKey(view)}&px=${pixelWidth}x${pixelHeight}`;
-}
-
-/**
- * The inflection points as a suffix on a cache key, and empty where there are none.
- *
- * **A cache key and never a link key.** `emit` above writes the contract, and the
- * contract has nothing to say about inflection — that is `inflect-link.js`'s, under its
- * own marker, for the reasons stated there. But `fieldKey` is not a link: it is the
- * question *does the cache already hold this field*, and two pictures that differ only in
- * where they were clicked are different fields. Left out, the second one would be served
- * the first one's lanes — a real picture of somewhere else, which is the worst shape a
- * cache bug takes. An uninflected view adds nothing, so every key this page has ever
- * built is the string it was.
- */
-function inflectionKey(view) {
-  const points = view.inflections;
-  if (!points || points.length === 0) return "";
-  return `&q=${points.map((point) => `${point.re.text},${point.im.text}`).join(",")}`;
+  return `${emit(geometry, context)}&px=${pixelWidth}x${pixelHeight}`;
 }
 
 /** A composite's weight mixes two fields that are already computed, so it is a colour
@@ -835,7 +819,7 @@ function shadeless(params) {
  */
 export function probeKey(view, context) {
   const { opacity: _, ...params } = view.params;
-  return `${emit({ ...view, params, level: null }, context)}${inflectionKey(view)}&probe`;
+  return `${emit({ ...view, params, level: null }, context)}&probe`;
 }
 
 /**

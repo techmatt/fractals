@@ -1,3 +1,7 @@
+// **PAGED** — this file is out of the explorer's working set and nothing the page
+// loads imports it. `README.md` beside it says why, what was learned, and how to put
+// the tab back. Do not wire it in again without Matt asking for it.
+//
 // The Inflection tab: Julia morphing, at a plain Julia's cost, as a trial.
 //
 // **It is a trial and it is built to be thrown away.** Matt does not yet know whether he

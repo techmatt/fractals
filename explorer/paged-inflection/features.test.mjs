@@ -1,6 +1,10 @@
+// **PAGED** — this file is out of the explorer's working set and nothing the page
+// loads imports it. `README.md` beside it says why, what was learned, and how to put
+// the tab back. Do not wire it in again without Matt asking for it.
+//
 // The feature finder, on shapes whose answers are known by construction.
 //
-// `node --test explorer/features.test.mjs`, nothing installed. The point of testing it on
+// `node --test explorer/paged-inflection/features.test.mjs`, nothing installed. The point of testing it on
 // drawn shapes rather than on a Julia set is that a Julia set has no right answer written
 // down anywhere — if the finder disagreed with one, I could not say which was wrong. A
 // three-armed star has exactly three arms, and the shortest one is the one I drew short.

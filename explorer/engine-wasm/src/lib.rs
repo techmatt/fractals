@@ -71,8 +71,34 @@ use num_complex::Complex;
 use serde::Deserialize;
 
 mod derive;
+#[cfg(feature = "inflection")]
 mod inflect;
 mod level;
+
+/// The inflection points a plan carries, and **nothing at all in the shipped build**.
+///
+/// The Inflection tab is paged out — `explorer/paged-inflection/README.md` — and the
+/// `inflection` feature is off by default, so this crate compiles without a pre-map, a
+/// point list or a second sweep. Turning the feature on is the whole of putting the seam
+/// back: every site below is written once, against these two names.
+#[cfg(feature = "inflection")]
+type Inflections = Vec<Complex<f64>>;
+#[cfg(not(feature = "inflection"))]
+type Inflections = ();
+
+/// Where a sample's orbit starts: the viewport's point through the pre-map, or that point
+/// itself. The second is the identity and is inlined away, so a build without the feature
+/// hands `iterate::run` exactly the expression it was handed before the tab existed.
+#[cfg(feature = "inflection")]
+#[inline(always)]
+fn start_at(points: &Inflections, z: Complex<f64>) -> Complex<f64> {
+    inflect::premap(points, z)
+}
+#[cfg(not(feature = "inflection"))]
+#[inline(always)]
+fn start_at(_points: &Inflections, z: Complex<f64>) -> Complex<f64> {
+    z
+}
 
 /// The name a colormap baked from control points is given. It exists only to
 /// appear in the engine's own refusal messages — the page addresses maps by the
@@ -131,11 +157,11 @@ struct Spec {
     maxiter: Option<u32>,
     /// The inflection points, in click order, each as a decimal pair — see [`inflect`].
     ///
-    /// **Absent is the whole of the compatibility story.** An empty list means no
-    /// pre-map, which means the starting point is `view.sample_point` exactly as it has
-    /// always been, and the code that draws it is the engine's table exactly as it has
-    /// always been. Every spec this page wrote before this key existed is a spec without
-    /// it, and draws the same bytes.
+    /// **Not a key of the shipped build.** With the `inflection` feature off this field is
+    /// not on the struct at all, so `deny_unknown_fields` above refuses a spec carrying it
+    /// by name rather than quietly drawing the picture underneath it. Nothing the page
+    /// sends has carried it since the tab was paged out.
+    #[cfg(feature = "inflection")]
     #[serde(default)]
     inflections: Vec<[String; 2]>,
 }
@@ -195,9 +221,9 @@ struct Plan {
     /// The texture weight the catalog settled this mode at, before any parameter the
     /// spec carried: the ceiling a derived weight is held under. `None` off a composite.
     settled_weight: Option<f64>,
-    /// The inflection pre-map, in click order. Empty on every spec but the Inflection
-    /// tab's, and empty is the identity — see [`inflect::premap`].
-    inflections: Vec<Complex<f64>>,
+    /// The inflection pre-map, in click order — see [`Inflections`]. Nothing at all
+    /// without the `inflection` feature, and the empty list is the identity with it.
+    inflections: Inflections,
 }
 
 impl Plan {
@@ -331,28 +357,36 @@ fn resolve(text: &str) -> Result<Plan, String> {
     }
 
     // The pre-map, and every refusal it brings, before a band is planned. An empty list
-    // takes none of these branches and leaves the plan exactly as it was.
-    let mut inflections = Vec::with_capacity(spec.inflections.len());
-    if !spec.inflections.is_empty() {
-        if spec.inflections.len() > inflect::MAX_INFLECTIONS {
-            return Err(format!(
-                "an inflected picture carries at most {} points, and this spec has {}",
-                inflect::MAX_INFLECTIONS,
-                spec.inflections.len()
-            ));
+    // takes none of these branches and leaves the plan exactly as it was; without the
+    // feature there is no list to take them.
+    #[cfg(not(feature = "inflection"))]
+    let inflections = ();
+    #[cfg(feature = "inflection")]
+    let inflections = {
+        let mut inflections = Vec::with_capacity(spec.inflections.len());
+        if !spec.inflections.is_empty() {
+            if spec.inflections.len() > inflect::MAX_INFLECTIONS {
+                return Err(format!(
+                    "an inflected picture carries at most {} points, and this spec has {}",
+                    inflect::MAX_INFLECTIONS,
+                    spec.inflections.len()
+                ));
+            }
+            if let Some(why) = inflect::refuse_family(&family) {
+                return Err(why);
+            }
+            for (at, [re, im]) in spec.inflections.iter().enumerate() {
+                inflections.push(Complex::new(
+                    decimal(re, &format!("inflections[{at}].re"))?,
+                    decimal(im, &format!("inflections[{at}].im"))?,
+                ));
+            }
         }
-        if let Some(why) = inflect::refuse_family(&family) {
-            return Err(why);
-        }
-        for (at, [re, im]) in spec.inflections.iter().enumerate() {
-            inflections.push(Complex::new(
-                decimal(re, &format!("inflections[{at}].re"))?,
-                decimal(im, &format!("inflections[{at}].im"))?,
-            ));
-        }
-    }
+        inflections
+    };
 
     let lanes = lanes_of(&coloring);
+    #[cfg(feature = "inflection")]
     if !inflections.is_empty() {
         let wants = lanes
             .iter()
@@ -679,18 +713,10 @@ fn compute_lanes(plan: &Plan, row_start: u32, row_end: u32) -> Vec<u8> {
         // **The empty list takes the engine's own call, untouched.** Not `premap` over an
         // empty slice through a shared loop — the branch is here, at the row, so that a
         // frame nobody inflected reaches `field::sweep_row` by the same line it always
-        // did and cannot be slowed or re-byted by a feature it is not using.
-        if plan.inflections.is_empty() {
-            field::sweep_row(
-                &plan.view,
-                &plan.family,
-                plan.maxiter,
-                &fields,
-                channels,
-                row,
-                &mut lanes,
-            );
-        } else {
+        // did and cannot be slowed or re-byted by a feature it is not using. Without the
+        // feature there is no branch at all, and the call below is the only one compiled.
+        #[cfg(feature = "inflection")]
+        if !plan.inflections.is_empty() {
             inflect::sweep_row(
                 &plan.view,
                 &plan.family,
@@ -701,7 +727,17 @@ fn compute_lanes(plan: &Plan, row_start: u32, row_end: u32) -> Vec<u8> {
                 row,
                 &mut lanes,
             );
+            continue;
         }
+        field::sweep_row(
+            &plan.view,
+            &plan.family,
+            plan.maxiter,
+            &fields,
+            channels,
+            row,
+            &mut lanes,
+        );
     }
 
     let mut bytes = Vec::with_capacity(per_lane * lanes.len() * 8);
@@ -759,7 +795,7 @@ fn paint_band(plan: &Plan, out_row_start: u32, out_row_end: u32) -> Option<Vec<u
         for col in 0..width {
             let (color, _escaped) = painter.trace(
                 &plan.family,
-                inflect::premap(&plan.inflections, plan.view.sample_point(col, row)),
+                start_at(&plan.inflections, plan.view.sample_point(col, row)),
                 plan.maxiter,
                 colormap,
             );
