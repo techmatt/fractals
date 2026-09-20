@@ -535,10 +535,10 @@ Three Windows cautions that have each cost a session already:
 
 ```
 python -m ruff check . && python -m ruff format --check . && python -m builder check
-node --test explorer/permalink.test.mjs explorer/bands.test.mjs explorer/level.test.mjs explorer/derive.test.mjs explorer/stops.test.mjs explorer/saved.test.mjs explorer/undo.test.mjs explorer/zip.test.mjs explorer/deep-fx.test.mjs explorer/deep-link.test.mjs explorer/deep.test.mjs atlas/atlas.test.mjs
+node --test explorer/permalink.test.mjs explorer/bands.test.mjs explorer/level.test.mjs explorer/derive.test.mjs explorer/stops.test.mjs explorer/saved.test.mjs explorer/undo.test.mjs explorer/zip.test.mjs explorer/stamp.test.mjs explorer/deep-fx.test.mjs explorer/deep-link.test.mjs explorer/deep.test.mjs atlas/atlas.test.mjs
 ```
 
-The second line is the twelve JavaScript suites, on Node's own runner with nothing
+The second line is the thirteen JavaScript suites, on Node's own runner with nothing
 installed. `permalink.test.mjs` is the contract held to itself — a URL is the one
 permanent thing this site emits, and it is worth a test suite even though nothing else
 here has one. `bands.test.mjs` is the pool held to the committed wasm: a band is a range
@@ -563,7 +563,12 @@ spelled, and the cap evicts nothing. `undo.test.mjs` holds the way back's list t
 rules that make one action one entry: a commit on the picture already under the cursor
 refreshes it rather than pushing, which is what collapses the second settle a measured pass
 makes, and a push drops whatever the cursor had ahead of it. `zip.test.mjs` holds Download all's stored-zip writer
-to the format, read back through its own central directory. The last three are the Deep
+to the format, read back through its own central directory. `stamp.test.mjs` holds the link
+a downloaded picture carries to going in without the picture moving: a PNG built there is
+stamped and both inflate to the same raster, and the stamp taken back out gives the
+original file byte for byte. It cannot decode a browser's JPEG — node has no decoder and
+there is not going to be a dependency — so that side is checked segment by segment here and
+pixel for pixel out of band, which `explorer/README.md` records. The last three are the Deep
 tab's: `deep-fx.test.mjs` holds its coordinates to being exact where a double is not —
 a thousand steps of 1e-30 landing where one of 1e-27 does, and a difference taken in
 decimal where `f64` says zero; `deep-link.test.mjs` holds the deep contract to itself and

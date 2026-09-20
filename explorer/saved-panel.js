@@ -17,6 +17,10 @@
 // does, one picture at a time into a stored zip (`zip.js`). It says what it will cost
 // before it starts where that is more than a minute, and its button is the way to cancel.
 //
+// **A picture dropped here is kept, not opened** *(explorer_download_carries_link_ckpt137)*.
+// A file saved from this page carries its own link, so dropping one on this tab is another
+// way of saving it; dropping it on the canvas is how it is opened instead.
+//
 // **The panel does nothing to a running walk.** Showing it neither pauses nor resumes
 // one; opening a saved picture detaches the viewer from it the way opening any picture
 // does, and the walk carries on.
@@ -42,6 +46,11 @@ const BYTES_PER_PIXEL = { png: 1.6, jpg: 0.4 };
 
 /** Every thumbnail drawn this visit, by canonical link. Kept across refills. */
 const drawnTiles = new Map();
+
+/** Whether a drag is carrying files, which is the only kind this tab takes. */
+function dragsFiles(event) {
+  return [...(event.dataTransfer?.types ?? [])].includes("Files");
+}
 
 export function mount(host) {
   const { saved, parse, shownName, planeName } = host;
@@ -302,6 +311,37 @@ export function mount(host) {
     els.file.value = "";
   });
 
+  // A picture dropped on this tab is **saved** rather than opened
+  // *(explorer_download_carries_link_ckpt137)*: its link is read out of the file exactly as
+  // the canvas reads a picture dropped there, and then goes through the import the paste
+  // box and the file button already use, so the tally at the end is the same sentence.
+  // Anything else dropped here is read as text, which is what those two take.
+  els.panel.addEventListener("dragover", (event) => {
+    if (!dragsFiles(event)) return;
+    event.preventDefault();
+    event.dataTransfer.dropEffect = "copy";
+  });
+  els.panel.addEventListener("drop", async (event) => {
+    if (!dragsFiles(event)) return;
+    event.preventDefault();
+    const [file] = event.dataTransfer.files;
+    if (file === undefined) return;
+    try {
+      const { isJpeg, isPng, linkInFile } = await import("./stamp.js");
+      // Eight bytes decide which of the two this is, rather than a type the drag reported.
+      const head = new Uint8Array(await file.slice(0, 8).arrayBuffer());
+      if (!isPng(head) && !isJpeg(head)) {
+        take(await file.text());
+        return;
+      }
+      const query = await linkInFile(file);
+      if (query === null) say("That picture carries no explorer link, so there is nothing to save.");
+      else take(query);
+    } catch {
+      say("That file could not be read.");
+    }
+  });
+
   els.clear.addEventListener("click", () => {
     const count = saved.size;
     if (count === 0) return;
@@ -413,7 +453,7 @@ export function mount(host) {
     const skipped = [];
     const started = performance.now();
     try {
-      for (const [index, { view }] of entries.entries()) {
+      for (const [index, { link: query, view }] of entries.entries()) {
         if (mine.cancelled) break;
         const name = uniqueName(fileNameOf(view, width, height, format.extension), taken);
         say(`Drawing ${index + 1} of ${entries.length}: ${name}`);
@@ -434,7 +474,8 @@ export function mount(host) {
           continue;
         }
         if (drawn === null || mine.cancelled) break;
-        const blob = await encode(drawn.image, format);
+        // Every picture in the archive carries its own link, the one it was drawn from.
+        const blob = await encode(drawn.image, format, query);
         if (!zip.fits(name, blob.size)) {
           skipped.push(`${name} and after: the zip is full`);
           break;

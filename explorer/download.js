@@ -264,18 +264,38 @@ export async function pictureOf(
   return shaded === null ? null : { image: shaded.image, view: drawn };
 }
 
-/** A picture encoded in one of the formats, as a `Blob`. */
-export function encode(image, format) {
+/**
+ * A picture encoded in one of the formats, as a `Blob`.
+ *
+ * **Where a `query` is given, the file carries it** *(explorer_download_carries_link_ckpt137)*
+ * — written into the PNG's chunks or the JPEG's comment by `stamp.js`, which leaves the
+ * image data alone. This is the one encoder both download paths go through, the single
+ * picture and Download all's archive, so it is the one place the stamp has to be.
+ *
+ * A stamp that fails hands over the picture unstamped rather than losing it: a download is
+ * what the reader asked for and the link is what the page added. The module is imported
+ * here rather than at the top because a download is a gesture minutes into a visit, and
+ * the first frame should not carry it.
+ */
+export async function encode(image, format, query = null) {
   const canvas = document.createElement("canvas");
   canvas.width = image.width;
   canvas.height = image.height;
   canvas.getContext("2d", { alpha: false }).putImageData(image, 0, 0);
-  return new Promise((resolve, reject) => {
+  const blob = await new Promise((resolve, reject) => {
     canvas.toBlob((blob) => {
       if (blob === null) reject(new Error(`The browser could not encode a ${format.label} this large.`));
       else resolve(blob);
     }, format.type, format.quality);
   });
+  if (query === null) return blob;
+  try {
+    const { stamp } = await import("./stamp.js");
+    return await stamp(blob, format.type, query);
+  } catch (error) {
+    console.warn("the picture could not be given its link", error);
+    return blob;
+  }
 }
 
 /**
@@ -287,11 +307,17 @@ export function encode(image, format) {
  * current view and whether its tone is measured or replayed, the screen's grid and
  * finished picture, what the pass that drew it cost, somewhere to say things, and the
  * lock that stops the view moving under a render that is drawing it.
+ *
+ * `queryOf` is the link the saved file carries, and it is the **shallow** contract's even
+ * while the Deep tab is on the screen, because this row draws `currentView()` and that is
+ * the picture it draws. Asking the page for "the current link" would give the deep one and
+ * put it on a shallow picture.
  */
 export function install(context) {
   const {
     renderer,
     currentView,
+    queryOf,
     deriving,
     shownGrid,
     shownImage,
@@ -474,6 +500,9 @@ export function install(context) {
   async function download(go) {
     const { format } = go;
     const view = currentView();
+    // Read once, with the view: the row is locked from here until the file is handed over,
+    // so this is the link of the picture that is about to be drawn.
+    const query = queryOf();
     const { width, height } = wanted();
     const samples = width * height * supersample * supersample;
 
@@ -481,7 +510,7 @@ export function install(context) {
     if (drawn !== null) {
       const name = fileNameOf(view, drawn.width, drawn.height, format.extension);
       try {
-        await save(drawn, name, format);
+        await save(drawn, name, format, query);
         say(`Saved ${name}.`);
       } catch (error) {
         say(String(error.message ?? error));
@@ -552,7 +581,7 @@ export function install(context) {
       progress(1);
 
       const name = fileNameOf(view, width, height, format.extension);
-      await save(image, name, format);
+      await save(image, name, format, query);
       const spent = (performance.now() - started) / 1000;
       say(`Saved ${name} in ${spent.toFixed(1)} s.`);
       finish();
@@ -609,8 +638,8 @@ export function install(context) {
 }
 
 /** Encode an image in one of `FORMATS` and hand it to the browser to save. */
-async function save(image, name, format) {
-  hand(await encode(image, format), name);
+async function save(image, name, format, query) {
+  hand(await encode(image, format, query), name);
 }
 
 /** Hand a finished file to the browser to save under `name`. */

@@ -105,6 +105,7 @@ undo.js               the way back: the pictures shown, and the cursor into them
 saved.js              the Saved list: one localStorage value of links, and the save mark
 saved-panel.js        the Saved tab: tiles drawn from their links, import, export, Download all
 zip.js                a stored (uncompressed) zip writer, for Download all
+stamp.js              a picture's own link, written into the file and read back out
 judges.js             the two judges in onnxruntime-web, loaded on the first Start
 resize.mjs            PIL's bicubic resize, ported byte for byte: what a judge reads
 judges/               UNTRACKED: the two ONNX judges and the runtime, `builder walk`
@@ -117,6 +118,7 @@ derive.test.mjs       6 tests: a derived weight replays, a derived opacity lands
 saved.test.mjs        8 tests: a bad stored value is an empty list, one link is one entry, the cap
 undo.test.mjs         8 tests: one action is one entry, a step back keeps what is ahead, the cap
 zip.test.mjs          2 tests: CRC-32's check values, and an archive read back to its bytes
+stamp.test.mjs        12 tests: the link goes in, and the picture does not move
 deep-fx.test.mjs      12 tests: the Deep tab's arithmetic is exact where a double is not
 deep-link.test.mjs    20 tests: the deep contract, and the shallow one held to not moving
 deep.test.mjs         10 tests: where the two modules meet, against both committed ones
@@ -1762,6 +1764,56 @@ press while it draws cancels, by generation exactly as a pan does.
 While a download is drawing, **the view is held still** — a wheel notch would cancel the
 pass it is waiting on, and losing a two-minute render to a stray scroll is not a trade
 anybody would make. The button is the way out.
+
+### Every downloaded picture carries its own link *(explorer_download_carries_link_ckpt137, 2026-09-20)*
+
+A file saved from this page holds the permalink of the view it is, in the file's metadata,
+and dropping that file back on the canvas reopens the view. Nothing about it is visible:
+there is no drop zone, no badge on a saved file and no line of instructions, the same way
+the way back is two keys and no buttons.
+
+**The seam is the encoder, and there is only one.** `download.js`'s `encode` is what the
+single PNG or JPG goes through and what each picture in Download all's archive goes
+through, so the stamp is in one place and no path can be added that quietly skips it.
+`stamp.js` does the bytes: a PNG gets an `iTXt` chunk between `IHDR` and the image data, a
+JPEG a `COM` segment after the `APPn` run at the front, and a WebP — the thumbnails, which
+are not downloads — comes back untouched, so a call site may hand over whatever it encoded.
+
+**The pixels do not move, measured.** In `stamp.test.mjs` a PNG built there is stamped and
+both are inflated: the same raster, and taking the chunk back out gives the original file
+byte for byte. The browsers' own encoders were held to the same thing out of band — a
+640×360 frame of saturated bands encoded by Chrome, stamped, and both decoded back through
+`createImageBitmap`: **0 of 230,400 pixels differ** as PNG and **0 of 230,400** as JPG at
+quality 95. The file grows by the payload and its header — 194 bytes and 165 bytes for a
+144-character link.
+
+**The payload is the query and a tag in front of it, and no host.** Nothing here is live,
+the site is served from a project-Pages subpath that could move, and a picture saved today
+should open on whatever origin the reader has — so the file carries
+`fractal-explorer v=3&f=…` and the page it is dropped on supplies the rest. *Which*
+contract it belongs to is already in the query, because a deep link leads with `dv` in a
+file exactly as it does in a URL. There is **no version of its own** either: the query
+carries `v=3` or `dv=2`, so a payload this page cannot read is refused by the contract in
+the contract's own words, which is a better sentence than a second version number could
+produce. The tag is what the JPEG side needs — a comment segment is free text with no
+keyword — and is how a reader tells our comment from somebody else's.
+
+**Reading is metadata and never pixels.** A dropped file is parsed for the chunk or the
+segment, and what comes out goes through `openAny` — the same door the Saved tab's tiles
+use, with the same three branches and the same refusals, so a dropped deep link opens the
+Deep tab and a dropped Inflection link is refused by name. There is no inferring a view
+from a picture: a file with nothing in it says *That picture carries no explorer link* and
+changes nothing. The Saved tab takes a drop too, and **keeps** it rather than opening it —
+eight bytes decide whether what landed is a picture or the JSON its Import box already
+takes, and a picture's link then goes through the same import and gets the same tally.
+
+**What still reaches a reader without one.** Every picture the builder writes — the article's
+figure sheets, the atlas plates, `palettes-swatch.png`, and gallery tiles when there are
+any — is saved by a right-click and carries nothing, although `links.jsonl` already holds a
+permalink for most of them and `images.land` is where a stamp would go. So does the canvas
+itself, saved by a right-click rather than by the button. So do the Saved and Walk tabs'
+WebP thumbnails, and so will the full-size wallpapers when they ship, which are release
+assets built next door and never touch this page. None of that is fixed here.
 
 ## Measured
 

@@ -2143,6 +2143,29 @@ function changed() {
 }
 
 /**
+ * Open a link by whichever contract owns it *(explorer_download_carries_link_ckpt137)*.
+ *
+ * **The one door for a link that came from outside the page** — a tile in Saved, and a
+ * picture dropped on the canvas. The three branches are the three kinds of link this site
+ * has emitted: an ordinary one, a deep one, and one the paged Inflection tab wrote, which
+ * is refused by name so that a URL somebody saved is never drawn as the plain Julia set
+ * underneath it. The way back has a door of its own, `restore`, because a step back is
+ * putting a picture back rather than opening one — it moves no anchor and refuses nothing,
+ * having drawn every entry already.
+ */
+function openAny(query, opts = {}) {
+  if (link.isInflected(`?${query}`)) {
+    say(INFLECTION_PAGED);
+    return false;
+  }
+  if (!link.isDeep(`?${query}`)) return openLink(query, opts);
+  deepOpening = true;
+  showPanel("deep");
+  startDeep().then(() => deep?.open(query));
+  return true;
+}
+
+/**
  * A view reduced to the choices somebody made: its canonical query, with the two keys
  * this page writes on its own taken out.
  *
@@ -2467,23 +2490,14 @@ async function startSaved() {
       shownName,
       planeName,
       open: (query) => {
-        if (link.isInflected(`?${query}`)) {
-          say(INFLECTION_PAGED);
-          return;
-        }
-        if (!link.isDeep(`?${query}`)) {
-          openLink(query, { what: "this saved picture", from: "saved" });
-          return;
-        }
-        deepOpening = true;
-        showPanel("deep");
-        startDeep().then(() => deep?.open(query));
+        openAny(query, { what: "this saved picture", from: "saved" });
       },
       // After Download all: the screen's own pass, if the first picture cut it short.
       settle: () => {
         if (finished === null && walkLayers === null) draw();
       },
       elements: {
+        panel: at("panel-saved"),
         tiles: at("saved-tiles"),
         count: at("saved-count"),
         empty: at("saved-empty"),
@@ -2940,6 +2954,73 @@ canvas.addEventListener(
   },
   { passive: false },
 );
+
+// --------------------------------------------------------- a picture dropped back
+//
+// A picture this page saved carries its own link *(explorer_download_carries_link_ckpt137)*,
+// and dropping it on the canvas reopens that view. `stamp.js` writes the link on the way
+// out and reads it on the way back; what is here is the drop and the sentence for a file
+// that has nothing in it.
+//
+// **The metadata and never the pixels.** The link is read out of the PNG's chunks or the
+// JPEG's comment. Nothing here looks at the picture, and there is no inferring a view from
+// one: a file without the stamp says so and changes nothing.
+//
+// **No visible UI.** No drop zone, no outline, no line of instructions — the page says what
+// it can do when somebody does it, which is how the two keys of the way back work as well.
+
+/** What a dropped file with nothing of ours in it is told. */
+const NO_LINK =
+  "That picture carries no explorer link. A picture downloaded from this page does, " +
+  "written into the file when it was saved.";
+
+/** Whether a drag is carrying files, which is the only kind this page takes. */
+function draggingFiles(event) {
+  return [...(event.dataTransfer?.types ?? [])].includes("Files");
+}
+
+/**
+ * Open the link a dropped file carries. `where` says what is done with it, so that the
+ * canvas opens a picture and the Saved tab keeps one.
+ */
+async function dropped(file, where) {
+  if (file === undefined) return;
+  let query = null;
+  try {
+    const { linkInFile } = await import("./stamp.js");
+    query = await linkInFile(file);
+  } catch (error) {
+    console.warn("a dropped file could not be read", error);
+  }
+  if (query === null) {
+    say(NO_LINK);
+    return;
+  }
+  where(query);
+}
+
+// A file dropped anywhere on this page would otherwise be *navigated to*, which would take
+// the reader off the view they were looking at to a picture of it in a bare tab. So the
+// default is refused for a file drag wherever it lands, and the two places that do
+// something with one say so themselves.
+for (const kind of ["dragover", "drop"]) {
+  window.addEventListener(kind, (event) => {
+    if (draggingFiles(event)) event.preventDefault();
+  });
+}
+
+stage.addEventListener("dragover", (event) => {
+  if (!draggingFiles(event)) return;
+  event.preventDefault();
+  event.dataTransfer.dropEffect = "copy";
+});
+
+stage.addEventListener("drop", (event) => {
+  if (!draggingFiles(event)) return;
+  event.preventDefault();
+  if (locked()) return;
+  dropped(event.dataTransfer.files[0], (query) => openAny(query, { what: "this picture" }));
+});
 
 /** Form controls keep their own keys: the pickers are selects and the constants are
  *  text boxes, and a reader typing in one is not panning the plane. */
@@ -3587,6 +3668,9 @@ async function main() {
   panel = download.install({
     renderer,
     currentView: () => view,
+    // The link the saved file carries. The shallow contract's, deliberately, and not
+    // `currentQuery()` — see the note on `install`'s context.
+    queryOf: () => link.emit(view, contract),
     // Whether a download measures its own tone. A derived view's curve is a measurement
     // of the frame on the screen, and a download is a different frame, so it derives
     // again on the picture it draws; a stored view replays its curve at any size.
