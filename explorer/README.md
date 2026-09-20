@@ -998,17 +998,26 @@ Full-size download from the Deep tab, and "find the minibrot here" and nucleus r
 in the UI — both out of scope by the prompt that built this, and neither blocked by
 anything above.
 
-**BLA is built now and it is off**, which is a third thing and a different kind of thing.
+**BLA is built, it is off, and the crate now recommends taking it out.**
 `perturb-wasm/src/bla.rs` is the skip table and `Spec`'s `bla` is its tolerance; no page
 sets it, no worker builds one, and every picture this tab draws is still the plain loop's,
-byte for byte. It is off because the crate README's §6 measured it: **it is a net loss at
-both of the widths the two links above use** — 0.59× at the anchor and 0.89× on the
-Julia frame at the tightest tolerance that changes nothing — and it turns into 50× or
-more only below about 1e-20, because the run length a skip can take is set by the frame's
-own width and not by its cap. Turning it on is a prompt of its own, and its first job is
-not the plumbing: it is that every frame deep enough for the skip to pay is, on the ladders
-this repository carries, 100% interior, so the depth at which it pays and the depth at
-which it has been checked do not yet overlap.
+byte for byte. §6 of the crate README priced it — a net loss at both of the widths the two
+links above use, and 50× or more below about 1e-20 — but every frame it was measured deep
+enough to pay on was 100% interior, so nothing there said what it does to a picture that
+has something in it. **§7 went and got seven such frames**, by descending the boundary of
+the anchor's own minibrot to 1e-54 with the centre carried as an exact decimal, and on them
+the skip is **between a 21% loss and 2.6×** and **moves the picture at every tolerance,
+including the tightest one the approximation admits** — on two of the seven it moves the
+interior mask itself. The 50× was a property of a frame with no exterior in it: an interior
+sample sits by the reference and never rebases, and an escaping one does.
+
+⚠ And those frames found something about this tab that is not about the skip at all: **at
+these depths the cap policy paints exterior as interior.** A sixth to a third of each frame
+is unresolved at the cap the tab would use, and at twice that cap every one of them is
+fully escaping for about 2% more work; in the slow regions it takes four times the cap, and
+below that the frame is a flat interior fill over escape counts running to 400,000. The cap
+lands inside the frame's own escape-count distribution and a reader sees the shortfall
+painted as set. Moving the policy is a prompt of its own.
 
 And on the Julia side: **no Julia view anchored anywhere but `z = 0` and `z = c`.** A frame
 far from both at depth is refused rather than drawn, which is the honest answer and not a

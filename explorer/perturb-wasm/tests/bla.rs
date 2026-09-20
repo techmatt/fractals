@@ -107,6 +107,13 @@ struct Walk {
     skipped: u64,
     skips: u64,
     interior: usize,
+    /// Of those, the ones the interior switch **proved** bounded rather than the
+    /// ones the cap gave up on. Zero with the switch off, where the two are not
+    /// distinguishable and every unresolved sample is only unresolved.
+    detected: usize,
+    /// `NaN`, not proven, and out of iterations: the frame is cap-starved here,
+    /// and a deeper cap would move these samples rather than confirm them.
+    capped: usize,
     seconds: f64,
 }
 
@@ -135,6 +142,7 @@ fn walk_with<const JULIA: bool, const BLA: bool>(spec: &Spec, kernel: &Kernel) -
     let mut smooth = Vec::with_capacity(count);
     let mut iterations = Vec::with_capacity(count);
     let (mut total, mut skipped, mut skips, mut interior) = (0u64, 0u64, 0u64, 0usize);
+    let (mut detected, mut capped) = (0usize, 0usize);
 
     let at = Instant::now();
     for row in 0..spec.resolution[1] {
@@ -147,6 +155,13 @@ fn walk_with<const JULIA: bool, const BLA: bool>(spec: &Spec, kernel: &Kernel) -
             skipped += outcome.skipped as u64;
             skips += outcome.skips as u64;
             interior += outcome.smooth.is_nan() as usize;
+            if outcome.smooth.is_nan() {
+                if outcome.detected_interior {
+                    detected += 1;
+                } else {
+                    capped += 1;
+                }
+            }
         }
     }
     let seconds = at.elapsed().as_secs_f64();
@@ -157,6 +172,8 @@ fn walk_with<const JULIA: bool, const BLA: bool>(spec: &Spec, kernel: &Kernel) -
         skipped,
         skips,
         interior,
+        detected,
+        capped,
         seconds,
     }
 }
@@ -373,6 +390,373 @@ fn which_runs_the_table_actually_gives() {
     }
 }
 
+// -------------------------------------------------- the frames that have something in them
+
+/// **Deep frames with escaping structure in them**, which is the one thing the
+/// ladder above does not have: every anchor rung below the minibrot's 6.5e-12
+/// atom is inside its body and 100% interior, so the columns that say whether
+/// the skip *moved* anything have nothing to read on them.
+///
+/// Found by `tests/descend.rs` — a descent from the anchor's own minibrot at
+/// 1e-11, recentring each rung on the busiest boundary neighbourhood a 64×64
+/// tile offers and shrinking the width tenfold, with the centre carried as an
+/// exact decimal the whole way. Each is `(label, centre re, centre im, width,
+/// cap)`, the cap being the policy's at that width, and each is given as a
+/// `dv` link in `README.md`.
+///
+/// **The centres are trimmed to what a link can spell** — the width's decade
+/// and eight digits more — and the trimmed frame is the one measured, so the
+/// number in a table and the picture behind a link are the same frame.
+const DEEP_FRAMES: &[(&str, &str, &str, f64, u32)] = &[
+    (
+        "tangle 1e-22",
+        "-0.745017728290198619298817365858",
+        "0.149934432756897045833502403382",
+        1e-22,
+        93_600,
+    ),
+    (
+        "tangle 1e-28",
+        "-0.74501772829019861929877929889763684",
+        "0.14993443275689704583350282968726721",
+        1e-28,
+        117_518,
+    ),
+    (
+        "tangle 1e-40",
+        "-0.7450177282901986192987792989188510315333046875",
+        "0.1499344327568970458335028296517884911675546875",
+        1e-40,
+        165_354,
+    ),
+    (
+        "pinch 1e-28",
+        "-0.74501772828897655304632685480388684",
+        "0.14993443275858764694789167606226721",
+        1e-28,
+        117_518,
+    ),
+    // **The deepest frame a link can spell.** Not the deepest the crate draws —
+    // a rung costs about five seconds a tile here and the descent was still
+    // going down — but the deepest whose centre fits the 64 characters
+    // `explorer/deep-link.js` caps a coordinate at, with the eight guard digits
+    // that put the truncation well under a pixel. It is 63.
+    (
+        "tangle 1e-54",
+        "-0.745017728290198619298779298918851031533262270733325571484375",
+        "0.149934432756897045833502829651788491167588360989048041953125",
+        1e-54,
+        221_162,
+    ),
+];
+
+/// The tolerances the deep sweep walks: the shipped recommendation, the
+/// tightest tolerance that means anything, and the one decade above.
+const DEEP_EPSILONS: &[f64] = &[1.1102230246251565e-16, 1e-12, 1e-9];
+
+/// Finer than 1e-12, for the frames where 1e-12 moves something.
+const FINER: &[f64] = &[
+    1e-12,
+    3e-13,
+    1e-13,
+    3e-14,
+    1e-14,
+    3e-15,
+    1e-15,
+    3e-16,
+    1.1102230246251565e-16,
+];
+
+/// The fine pass's sample lanes: 908×512 at two samples a side, the canvas
+/// `explorer/README.md`'s cost table was taken on.
+const FINE_LANES: f64 = 1_859_584.0;
+/// Wasm against native on this kernel, `README.md` §4.
+const WASM_OVER_NATIVE: f64 = 1.05;
+/// The pool's effective parallelism, derived in `audit_perturb_bla_ckpt137`
+/// from the anchor's own 62.7 s fine pass against its single-thread price.
+const PARALLELISM: f64 = 4.7;
+
+/// **What a person waits**, from what a sweep measures: the frame's own
+/// sample-iterations at the frame's own price, in a browser, over the pool.
+/// Nanoseconds a sample-iteration — the crate's own unit of price. Free
+/// rather than a method on [`Walk`], because the seconds are the best of
+/// several passes and the count is one walk's.
+fn ns_per_iteration(seconds: f64, iterations: u64) -> f64 {
+    1e9 * seconds / iterations.max(1) as f64
+}
+
+fn fine_pass_seconds(mean_iterations: f64, ns: f64) -> f64 {
+    FINE_LANES * mean_iterations * ns * 1e-9 * WASM_OVER_NATIVE / PARALLELISM
+}
+
+fn deep(frame: &(&str, &str, &str, f64, u32), maxiter: Option<u32>) -> Spec {
+    Spec {
+        center_re: frame.1.to_string(),
+        center_im: frame.2.to_string(),
+        width: frame.3,
+        resolution: [TILE.0, TILE.1],
+        supersample: 1,
+        maxiter,
+        reference: None,
+        period: None,
+        julia: None,
+        anchor: Anchor::Parameter,
+        interior: false,
+        bla: None,
+    }
+}
+
+/// **What the box is worth today**, against the price `README.md` §4 committed.
+///
+/// The work held equal the way that section held it — the anchor at a cap no
+/// sample escapes from, the switch off — so a run of this sweep says in its own
+/// first line whether the machine under it is the machine the table was taken
+/// on. A speedup is a ratio and survives a slow box; a nanosecond is not, and
+/// every wait below is derived from one.
+fn the_box_today() {
+    /// `README.md` §4: perturbation, interior off, native.
+    const COMMITTED_NS: f64 = 4.80;
+    let mut spec = mandelbrot(2e-11);
+    spec.maxiter = Some(1_200);
+    let orbit = spec.reference_orbit().unwrap();
+    let mut best = f64::INFINITY;
+    let mut walked = None;
+    for _ in 0..5 {
+        let run = walk(&spec, &orbit, false, None);
+        best = best.min(run.seconds);
+        walked = Some(run.total_iterations);
+    }
+    let ns = ns_per_iteration(best, walked.unwrap());
+    println!(
+        "\nThe plain loop is **{ns:.2} ns a sample-iteration** today, against the {COMMITTED_NS:.2} \
+         `README.md` §4 committed — {:+.0}%.\n",
+        100.0 * (ns / COMMITTED_NS - 1.0)
+    );
+}
+
+/// One frame's worth of the differential, as rows of the deep table.
+fn measure(label: &str, spec: &Spec) {
+    let orbit = spec.reference_orbit().unwrap();
+    let dc_bound = spec.dc_bound();
+    for interior in [false, true] {
+        let switch = if interior { "on" } else { "off" };
+        let mut plain_seconds = f64::INFINITY;
+        let mut best: Vec<(f64, Walk)> = Vec::new();
+        let mut plain: Option<Walk> = None;
+        for pass in 0..2 {
+            let run = walk(spec, &orbit, interior, None);
+            plain_seconds = plain_seconds.min(run.seconds);
+            if pass == 0 {
+                plain = Some(run);
+            }
+            for (index, &epsilon) in DEEP_EPSILONS.iter().enumerate() {
+                let table = Table::build(&orbit, epsilon, dc_bound, bla::MIN_LEVEL).unwrap();
+                let run = walk(spec, &orbit, interior, Some(&table));
+                if pass == 0 {
+                    best.push((run.seconds, run));
+                } else {
+                    best[index].0 = best[index].0.min(run.seconds);
+                }
+            }
+        }
+        let plain = plain.unwrap();
+        let count = plain.smooth.len() as f64;
+        let plain_ns = ns_per_iteration(plain_seconds, plain.total_iterations);
+        println!(
+            "| {label} | {} | {switch} | plain | — | {:.1}% | {:.1}% | {:.1}% | {:.0} | {:.2} | — | {:.0} s | — | — | — | — |",
+            spec.maxiter(),
+            100.0 * (count - plain.interior as f64) / count,
+            100.0 * plain.detected as f64 / count,
+            100.0 * plain.capped as f64 / count,
+            plain.mean_iterations(),
+            plain_ns,
+            fine_pass_seconds(plain.mean_iterations(), plain_ns),
+        );
+        for (index, &epsilon) in DEEP_EPSILONS.iter().enumerate() {
+            let (seconds, run) = &best[index];
+            let how = difference(&plain, run);
+            let ns = ns_per_iteration(*seconds, run.total_iterations);
+            println!(
+                "| {label} | {} | {switch} | {epsilon:.1e} | **{:.2}×** | {:.1}% | {:.1}% | {:.1}% | {:.0} | {:.2} | {:.1}% | {:.0} s | {} | {} | {} | {:.2e} |",
+                spec.maxiter(),
+                plain_seconds / seconds,
+                100.0 * (count - run.interior as f64) / count,
+                100.0 * run.detected as f64 / count,
+                100.0 * run.capped as f64 / count,
+                run.mean_iterations(),
+                ns,
+                100.0 * run.skipped as f64 / run.total_iterations.max(1) as f64,
+                fine_pass_seconds(run.mean_iterations(), ns),
+                how.to_interior,
+                how.to_escaping,
+                how.count_mismatches,
+                how.worst,
+            );
+        }
+    }
+}
+
+/// **The differential, on frames that have escaping structure in them.**
+///
+/// The sweep above asked what the skip costs where the answer could only be a
+/// price; this one asks what it costs where the answer can also be a wrong
+/// picture. Every frame is walked plain and at three tolerances, the interior
+/// switch both ways, alternated, best of two — and where a frame is cap-starved
+/// it is walked again at twice the cap, because a sample that ran out of
+/// iterations is a sample whose cost the policy is still deciding.
+#[test]
+#[ignore = "minutes: four deep frames, three tolerances, both ways, twice"]
+fn what_the_skip_buys_on_a_frame_with_structure() {
+    assert!(!DEEP_FRAMES.is_empty(), "no deep frames are committed yet");
+    the_box_today();
+    println!(
+        "\n| frame | cap | switch | ε | speedup | escaped | proven interior | cap-starved | mean iterations | ns | skipped | fine pass | → interior | → escaping | count Δ | worst Δ |"
+    );
+    println!("|---|--:|:--|--:|--:|--:|--:|--:|--:|--:|--:|--:|--:|--:|--:|--:|");
+    for frame in DEEP_FRAMES {
+        let spec = deep(frame, None);
+        measure(frame.0, &spec);
+        // Is it cap-starved? One cheap walk with the switch on says so: an
+        // unresolved sample the switch did not prove is one the cap stopped.
+        let orbit = spec.reference_orbit().unwrap();
+        let probe = walk(&spec, &orbit, true, None);
+        if probe.capped * 20 > probe.smooth.len() {
+            let doubled = 2 * spec.maxiter();
+            let label = format!("{} at 2× cap", frame.0);
+            measure(&label, &deep(frame, Some(doubled)));
+        }
+    }
+}
+
+/// **What a deeper cap resolves**, which is the question the policy cap leaves
+/// open on every one of these frames.
+///
+/// Not one of them has a single *proven* interior sample: the interior switch
+/// needs `|dz|²` under `2^-64` and that takes many periods of whatever
+/// component a sample is in, while at these depths the nearby periods are of
+/// the same order as the cap itself. So the frame's unresolved share is not
+/// interior — it is **cap-starved**, and this is what says by how much. A
+/// smaller tile than the sweep's, because the deepest arm is eight times the
+/// policy cap and the question is a share rather than a price.
+#[test]
+#[ignore = "minutes"]
+fn what_a_deeper_cap_resolves_on_a_deep_frame() {
+    println!("\n| frame | cap | escaped | proven interior | cap-starved | mean iterations |");
+    println!("|---|--:|--:|--:|--:|--:|");
+    for frame in DEEP_FRAMES {
+        for multiple in [1u32, 2, 4, 8] {
+            let mut spec = deep(frame, None);
+            spec.resolution = [32, 18];
+            spec.maxiter = Some(multiple * frame.4);
+            let orbit = spec.reference_orbit().unwrap();
+            let run = walk(&spec, &orbit, true, None);
+            let count = run.smooth.len() as f64;
+            println!(
+                "| {} | {}× = {} | {:.1}% | {:.1}% | {:.1}% | {:.0} |",
+                frame.0,
+                multiple,
+                spec.maxiter(),
+                100.0 * (count - run.interior as f64) / count,
+                100.0 * run.detected as f64 / count,
+                100.0 * run.capped as f64 / count,
+                run.mean_iterations(),
+            );
+        }
+    }
+}
+
+/// **The largest tolerance that moves nothing**, where 1e-12 moves something.
+///
+/// The recommendation `1e-12` was the largest tolerance that moved nothing on
+/// frames whose escaping samples were all shallow. A deep frame's escaping
+/// samples run for tens of thousands of iterations before they leave, and a
+/// merged radius they were inside at step 200 is not one they are inside at
+/// step 90,000 — so the tolerance the recommendation rests on is exactly what
+/// this walks back down.
+#[test]
+#[ignore = "minutes"]
+fn the_largest_tolerance_that_moves_nothing_on_a_deep_frame() {
+    println!("\n| frame | switch | ε | skipped | → interior | → escaping | count Δ | worst Δ | verdict |");
+    println!("|---|:--|--:|--:|--:|--:|--:|--:|:--|");
+    for frame in DEEP_FRAMES {
+        let spec = deep(frame, None);
+        let orbit = spec.reference_orbit().unwrap();
+        let dc_bound = spec.dc_bound();
+        for interior in [false, true] {
+            let switch = if interior { "on" } else { "off" };
+            let plain = walk(&spec, &orbit, interior, None);
+            for &epsilon in FINER {
+                let table = Table::build(&orbit, epsilon, dc_bound, bla::MIN_LEVEL).unwrap();
+                let run = walk(&spec, &orbit, interior, Some(&table));
+                let how = difference(&plain, &run);
+                let moved = how.to_interior + how.to_escaping + how.count_mismatches;
+                println!(
+                    "| {} | {switch} | {epsilon:.1e} | {:.1}% | {} | {} | {} | {:.2e} | {} |",
+                    frame.0,
+                    100.0 * run.skipped as f64 / run.total_iterations.max(1) as f64,
+                    how.to_interior,
+                    how.to_escaping,
+                    how.count_mismatches,
+                    how.worst,
+                    if moved == 0 { "**nothing moved**" } else { "moved" },
+                );
+                if moved == 0 {
+                    break;
+                }
+            }
+        }
+    }
+}
+
+/// **The width at which the interior switch turns from a loss into a win**,
+/// with the skip and without it.
+///
+/// The anchor ladder brackets the minibrot's own 6.5e-12 atom, because that is
+/// where a frame stops having exterior in it and starts being body — and the
+/// switch's whole return is bodies. The deep frames are below all of it and
+/// have no body at all, which is the other half of the rule.
+#[test]
+#[ignore = "minutes"]
+fn where_the_interior_switch_turns_from_a_loss_into_a_win() {
+    println!("\n| frame | width | cap | escaped | proven interior | cap-starved | plain: off → on | skip at 1e-12: off → on |");
+    println!("|---|--:|--:|--:|--:|--:|--:|--:|");
+    let ladder: Vec<(String, Spec)> = [
+        2e-11f64, 1e-11, 8e-12, 6.5e-12, 5e-12, 3e-12, 2e-12, 1e-12, 5e-13, 1e-13, 1e-16, 1e-19,
+        1e-22, 1e-28,
+    ]
+    .iter()
+    .map(|&width| (format!("anchor {width:e}"), mandelbrot(width)))
+    .chain(
+        DEEP_FRAMES
+            .iter()
+            .map(|frame| (frame.0.to_string(), deep(frame, None))),
+    )
+    .collect();
+    for (label, spec) in &ladder {
+        let orbit = spec.reference_orbit().unwrap();
+        let table = Table::build(&orbit, 1e-12, spec.dc_bound(), bla::MIN_LEVEL).unwrap();
+        let plain_off = walk(spec, &orbit, false, None);
+        let plain_on = walk(spec, &orbit, true, None);
+        let skip_off = walk(spec, &orbit, false, Some(&table));
+        let skip_on = walk(spec, &orbit, true, Some(&table));
+        let count = plain_on.smooth.len() as f64;
+        println!(
+            "| {label} | {:e} | {} | {:.1}% | {:.1}% | {:.1}% | {:.0} → {:.0} ms ({:+.0}%) | {:.0} → {:.0} ms ({:+.0}%) |",
+            spec.width,
+            spec.maxiter(),
+            100.0 * (count - plain_on.interior as f64) / count,
+            100.0 * plain_on.detected as f64 / count,
+            100.0 * plain_on.capped as f64 / count,
+            1e3 * plain_off.seconds,
+            1e3 * plain_on.seconds,
+            100.0 * (plain_on.seconds / plain_off.seconds - 1.0),
+            1e3 * skip_off.seconds,
+            1e3 * skip_on.seconds,
+            100.0 * (skip_on.seconds / skip_off.seconds - 1.0),
+        );
+    }
+}
+
 // ------------------------------------------------------------------- the pins
 
 /// **The band-assembly pin, with the knob on.**
@@ -474,6 +858,46 @@ fn at_the_tightest_tolerance_the_skip_decides_what_the_plain_loop_decides() {
             how.median_relative < 1e-9,
             "median relative error {:e}",
             how.median_relative
+        );
+    }
+}
+
+/// **The deep frames are still frames a link can spell**, and still at the cap
+/// the policy gives their width.
+///
+/// Cheap on purpose — it renders nothing. What it guards is the two ways a
+/// committed frame goes quietly wrong: a centre that grew past the 64
+/// characters `explorer/deep-link.js` caps a coordinate at, so the `dv` link
+/// beside it in `README.md` would be refused by the page rather than by
+/// anything here; and a cap that stopped being the policy's, which would make
+/// every price in the table beside it a price of a frame the tab does not draw.
+#[test]
+fn the_deep_frames_are_spellable_and_at_the_policy_cap() {
+    /// `explorer/permalink.js`'s `COORDINATE_LIMIT`, which the deep contract
+    /// shares rather than restating — a URL is one thing however deep it is.
+    const COORDINATE_LIMIT: usize = 64;
+    assert!(!DEEP_FRAMES.is_empty(), "no deep frames are committed yet");
+    for (label, re, im, width, maxiter) in DEEP_FRAMES {
+        assert_eq!(cap::for_width(*width), *maxiter, "{label} is off the policy");
+        for text in [re, im] {
+            assert!(
+                text.len() <= COORDINATE_LIMIT,
+                "{label}: a centre of {} characters is past what a link carries",
+                text.len()
+            );
+            assert!(
+                perturb::fx::Fx::parse(text, 16).is_some(),
+                "{label}: `{text}` is not a decimal"
+            );
+        }
+        // The digits are there to be spent: a centre trimmed so hard that the
+        // frame's own pixels fall inside one of its ulps is a frame nobody can
+        // return to, and it would look exactly like this one.
+        let digits = re.split_once('.').map_or(0, |(_, frac)| frac.len());
+        let decade = -width.log10();
+        assert!(
+            (digits as f64) > decade + 3.0,
+            "{label}: {digits} digits is not enough to place a pixel of a {width:e} frame"
         );
     }
 }

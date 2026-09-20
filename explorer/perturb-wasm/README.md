@@ -40,6 +40,8 @@ smooth-cases.json  400 of the engine's own samples, as the pin
 tests/oracle.rs    the kernel against a brute-force oracle (ignored by default)
 tests/probe.rs     three-way probes; not proofs, and they say so
 tests/bla.rs       the skip against the plain loop (ignored by default)
+tests/descend.rs   the frame finder: deep frames with structure, and the exact
+                   decimal walk that gets to them (ignored by default)
 ```
 
 ## The design, in one page
@@ -99,13 +101,16 @@ tests/bla.rs       the skip against the plain loop (ignored by default)
   here and only `CEILING` moves, to a provisional 1,000,000. Touching
   `maxiter::for_width` itself was never an option: six callers read it and a
   wider ceiling there moves the cap of every shallow picture the project has.
-- **BLA is built and it is off.** `src/bla.rs` is the skip table; `Spec::bla` is
-  its tolerance and absent is the default, so every picture the page draws is
-  still the plain loop's. It is a pure function of `(orbit, ε, one frame-wide
-  |dc| bound)` and of nothing else, which is what lets a band stay bit for bit
-  the rows a whole-frame pass would produce. **Measured below, it does not pay at
-  either width the tab's own links use** — the price and the depth it turns at are
-  in §6.
+- **BLA is built, it is off, and §7 recommends taking it out.** `src/bla.rs` is
+  the skip table; `Spec::bla` is its tolerance and absent is the default, so every
+  picture the page draws is still the plain loop's. It is a pure function of
+  `(orbit, ε, one frame-wide |dc| bound)` and of nothing else, which is what lets a
+  band stay bit for bit the rows a whole-frame pass would produce. §6 priced it and
+  found it a loss at both widths the tab's links use and a 59× below 1e-20; §7 went
+  and got seven deep frames with structure in them, and on those it is **between a
+  21% loss and 2.6×, and moves the picture at every tolerance including the
+  tightest one that means anything**. The 59× was a property of a frame with no
+  exterior in it.
 
 ### What it does not do
 
@@ -536,8 +541,10 @@ minibrot's body and **100% interior**, so there is no escaping sample there for 
 skip to be wrong about. The three frames above are the only ones either ladder
 carries with exterior in them, and the deepest is `julia 2e-10`. **So the depth at
 which the skip pays and the depth at which its accuracy has been measured do not
-overlap**, and closing that gap — a deep frame with structure in it — is stage 2's
-first job rather than a caveat on a number.
+overlap.** §7 is that gap measured, on seven frames found for the purpose, and it
+is where this table's recommendation is withdrawn: at the depths the skip pays,
+every frame with structure in it is one the skip is either slower on or wrong
+about, and 1e-12 moves the picture on all seven.
 
 **What the median and the p99 are saying** is worth separating. At `1e-9` on the
 anchor the *median* escaping sample is right to seven digits while the p99 is off by
@@ -582,6 +589,164 @@ is **4.21e9 sample-iterations** — so §4's 4.22e9 was right, and what was lost
 `scratch/perturb_validate` was the program and not the number. **58.2% of those
 sample-iterations belong to interior samples**, which is the audit's own 58%.
 
+### 7. The frames that have something in them, and why the skip comes back out
+
+`tests/descend.rs` and `tests/bla.rs`'s deep half, measured 2026-09-20 on the same box —
+the plain loop at **4.76 ns** against §4's 4.80, so the machine is the machine. §6 closes on
+a warning: the depth at which the skip pays and the depth at which its accuracy has been
+measured do not overlap, and closing that is stage 2's first job. This is that job. The gap
+turns out not to be a gap in the evidence but in the claim — **the skip does not pay where
+there is anything for it to be wrong about.**
+
+**How the frames were got.** From the anchor's minibrot at 1e-11: render a 64×64 tile at
+the policy cap, recentre on the busiest boundary neighbourhood it offers, shrink the width
+tenfold, repeat. **The centre is an exact decimal the whole way**, which the square tile is
+what makes possible — the sample step is `width/64` on both axes, so a recentre is
+`(2·col − 63)·78125·10^−(7+p)`, and the walk is integer addition rather than a double that
+ran out of bits twenty rungs up. `Dec` in that file is the arithmetic, held to the kernel's
+own `dc` to the last bit the double carries.
+
+Three routes, because the first two agreed too well. `tangle` takes the most boundary
+crossings in a 5×5; `pinch` takes the deepest escaping sample beside a bounded one; `body`
+walks **every rung at four times the policy cap**, which is what it takes to see a frame
+that has genuine interior in it. Neither of the first two backtracked once — every rung
+from 1e-12 to 1e-54 came back mixed and busy, 12% to 35% of adjacencies crossing the
+boundary, escape counts spread over 8,000 to 27,000.
+
+| frame | cap | escaped | centre | `dv` link, after `explorer/?` |
+|---|--:|--:|--:|:--|
+| tangle 1e-22 | 93,600 | 69.5% | 33 ch | `dv=2&x=-0.745017728290198619298817365858&y=0.149934432756897045833502403382&w=1e-22&n=93600` |
+| tangle 1e-28 | 117,518 | 80.9% | 38 ch | `dv=2&x=-0.74501772829019861929877929889763684&y=0.14993443275689704583350282968726721&w=1e-28&n=117518` |
+| pinch 1e-28 | 117,518 | 82.5% | 38 ch | `dv=2&x=-0.74501772828897655304632685480388684&y=0.14993443275858764694789167606226721&w=1e-28&n=117518` |
+| tangle 1e-40 | 165,354 | 74.9% | 49 ch | `dv=2&x=-0.7450177282901986192987792989188510315333046875&y=0.1499344327568970458335028296517884911675546875&w=1e-40&n=165354` |
+| tangle 1e-54 | 221,162 | 71.3% | **63 ch** | `dv=2&x=-0.745017728290198619298779298918851031533262270733325571484375&y=0.149934432756897045833502829651788491167588360989048041953125&w=1e-54&n=221162` |
+| body 1e-22 | **374,400** | 55.7% | 33 ch | `dv=2&x=-0.745017728288852579046129865858&y=0.149934432757626550615361778382&w=1e-22&n=374400` |
+| body 1e-28 | **470,072** | 78.9% | 38 ch | `dv=2&x=-0.74501772828885257904614927236638684&y=0.14993443275762655061538134007789221&w=1e-28&n=470072` |
+
+All seven parse and round-trip byte for byte through `explorer/deep-link.js`. Each is
+committed in `DEEP_FRAMES` with its cap, and a **cheap** test holds every centre to the 64
+characters a coordinate is capped at and every cap to the policy's or a stated multiple —
+the two ways a committed frame goes quietly wrong without rendering anything.
+
+**The deepest is 1e-54 because of the link and not the renderer.** A rung costs about five
+seconds a tile there and the descent was still going down; a centre is 63 characters at that
+width and `COORDINATE_LIMIT` is 64.
+
+⚠ **The policy cap paints exterior as interior on every one of these frames**, and this is
+the most consequential thing in the section. It has nothing to do with the skip.
+
+| frame | at the policy cap | 2× | 4× | 8× |
+|---|--:|--:|--:|--:|
+| tangle 1e-22 | 29.3% unresolved | 0.2% | 0.0% | 0.0% |
+| tangle 1e-28 | 21.0% | 0.0% | 0.0% | 0.0% |
+| pinch 1e-28 | 16.5% | 0.0% | 0.0% | 0.0% |
+| tangle 1e-40 | 22.7% | 0.0% | 0.0% | 0.0% |
+| tangle 1e-54 | 27.4% | 0.0% | 0.0% | 0.0% |
+| body 1e-22 | **100%** | — | 43.6% | 1.7% |
+| body 1e-28 | **100%** | — | 21.5% | 0.2% |
+
+On the five tangle and pinch frames a sixth to a third of the picture is unresolved at the
+cap the tab would use, and **at twice that cap every one of them is 100% escaping** for
+about 2% more mean iterations: those samples were never interior, they were exterior the cap
+stopped a few thousand short. The body pair is the same fault four times over — at the
+policy cap they are a **flat interior fill**, over escape counts that run from about 100,000
+to 400,000. The policy's cap lands inside the frame's own escape-count distribution, and
+what a reader sees is the shortfall painted as set.
+
+**And not one sample of any of the seven is *proven* interior.** The switch needs `|dz|²`
+under `2⁻⁶⁴`, which takes many periods of whatever component a sample is in, and at this
+depth the nearby periods are of the order of the cap itself.
+
+**What the skip is worth on them**, at each frame's own cap, the interior switch **on**
+because that is what ships:
+
+| frame | plain wait | ε = 2⁻⁵³ | 1e-12 | 1e-9 | Δ counts @1e-12 | @2⁻⁵³ | mask moved @2⁻⁵³ |
+|---|--:|--:|--:|--:|--:|--:|--:|
+| tangle 1e-22 | 197 s | 0.64× | **1.00×** | 1.38× | 76 | 24 | 0 |
+| tangle 1e-28 | 244 s | 0.98× | **1.38×** | 2.19× | 161 | 56 | 0 |
+| pinch 1e-28 | 241 s | 0.96× | **1.21×** | 1.49× | 213 | 78 | 1 |
+| tangle 1e-40 | 363 s | 1.38× | **1.72×** | 2.45× | 127 | 45 | 0 |
+| tangle 1e-54 | 480 s | 1.92× | **2.58×** | 3.49× | 113 | 39 | 0 |
+| body 1e-22 | 786 s | 0.58× | **0.79×** | 1.22× | 372 | 190 | **15** |
+| body 1e-28 | 1,049 s | 0.87× | **1.15×** | 1.84× | 371 | 174 | **20** |
+
+64×36, one thread, alternated, best of two. The wait is the tab's own fine pass, derived as
+`1,859,584 lanes × mean iterations × ns × 1.05 / 4.7` — the canvas `explorer/README.md`
+measures on, wasm's 5% over native from §4, and the pool's effective parallelism from the
+audit.
+
+**§6's 59× was a property of having no exterior in the frame.** An interior sample sits by
+the reference and never rebases, so a run of 2,048 is available to it at every index; an
+escaping sample wanders off and rebases, and the runs the table can offer it are short. Put
+structure in the frame and the speedup falls by a factor of twenty to sixty, to between a
+21% **loss** and 2.6×.
+
+**The body pair was expected to be the skip's best case and is its worst.** Forty-four
+percent of `body 1e-22` runs 374,400 iterations without escaping, which is exactly the
+shape a skip table wants — and the table can only skip 12.7% of the frame's iterations at
+`2⁻⁵³` and 37.4% at `1e-12`, against 22% to 73% on the tangle frames. Those long samples do
+not stay by the reference; they rebase.
+
+**And there is no tolerance at which nothing moves.** Walked from 1e-12 down through nine
+tolerances to `2⁻⁵³`, every frame moved escape counts at every one of them — 24 to 190 at
+the floor, while still skipping 13% to 73% of the iterations. Worse, on the body pair the
+**interior mask itself moves at the floor**: 8 escaping samples painted interior and 7 let
+escape on `body 1e-22`, 8 and 12 on `body 1e-28`, with a worst error of 35,000 and 11,700
+smooth counts. That is the one thing this crate has never let an approximation touch, and
+`2⁻⁵³` is the tightest tolerance the approximation admits — there is nothing below it to
+try. **The knob cannot be set to a value at which the skip both fires and agrees.**
+
+These differentials are the same kernel against itself on the same orbit, differing only by
+the skip, so a moved count here is the skip's and not the frame's own chaos — which is what
+§6 could fairly say about its `1e-9` column and cannot be said about these.
+
+**Where the skip is still enormous is where the picture is one colour.** On the
+100%-interior `anchor 1e-22` the switch alone takes the frame from 1,034 ms to 34 ms and the
+skip beside it to **1 ms** — a further 34×, on a rectangle of uniform interior.
+
+**So the recommendation is that the skip comes out**: `src/bla.rs`, the `BLA` arm in
+`kernel.rs`, the `bla` field on `Spec`, and the 8.4% of `perturb.wasm` they cost for a path
+nothing can reach. What would have to change for it to stay is not code but the bar. The
+skip buys 1.0× to 2.6× on the frames a reader opens, rising with depth, in exchange for a
+picture that is no longer the one the plain loop draws — and this crate's whole argument,
+from §1 through §3, is that it draws what the engine draws. Trading that for 2.6× at 1e-54
+is a decision about pictures, and this crate has never made one of those.
+
+### 8. The interior switch's rule, and why it cannot be a width rule
+
+| frame | proven interior | plain: off → on | skip at 1e-12: off → on |
+|---|--:|--:|--:|
+| anchor 2e-11 | 1.3% | +11% | +31% |
+| anchor 1e-11 | 4.8% | +13% | +30% |
+| anchor 8e-12 | 7.4% | +14% | +30% |
+| anchor 6.5e-12 | 11.5% | +13% | +29% |
+| anchor 5e-12 | 19.1% | +9% | +26% |
+| **anchor 3e-12** | 56.7% | **−3%** | +14% |
+| anchor 2e-12 | 89.8% | **−17%** | −5% |
+| anchor 1e-12 | 100% | −43% | −35% |
+| anchor 5e-13 | 100% | −56% | −50% |
+| anchor 1e-13 | 100% | −72% | −68% |
+| anchor 1e-16 | 100% | −91% | −90% |
+| anchor 1e-19 | 100% | −92% | −91% |
+| anchor 1e-22 | 100% | −97% | −97% |
+| anchor 1e-28 | 100% | −97% | −98% |
+| tangle 1e-22 · 1e-28 · 1e-40 · 1e-54 | 0% | +9% to +10% | +19% to +25% |
+| pinch 1e-28, body 1e-22, body 1e-28 | 0% | +10% to +11% | +22% to +23% |
+
+**The crossing is at 3e-12**, where two runs of this table gave +4% and −3% — so that rung
+is the crossing to within what the measurement can say, at about **half to two thirds proven
+interior**. The minibrot's own atom, 6.5e-12, is *not* the crossing: a frame is still 13%
+slower there. Below it the return deepens with the frame, because what the switch waits for
+is `|dz|` to fall and a sample further inside the body falls faster.
+
+⚠ **But `anchor 1e-22` is −97% and `tangle 1e-22` is +12%.** Same width, opposite verdicts,
+and the same again at 1e-28. **There is no width at which to turn the switch on or off**:
+what it pays on is what the frame contains, which is not something a link, a policy or a
+worker knows before the frame has been drawn. It ships on, at −64, and on the frames a
+reader actually opens it costs 9% to 11%; beside the skip, 19% to 25%, the two competing the
+way §6 found. A width rule was the thing this section set out to write, and the table is the
+reason there is not one.
+
 ## Running it
 
 ```text
@@ -589,6 +754,8 @@ cargo test  --release                                  # 52 unit tests, under a 
 cargo test  --release --test oracle -- --ignored --nocapture   # the ladders, ~30 s
 cargo test  --release --test probe  -- --ignored --nocapture   # the three-way probes
 cargo test  --release --test bla    -- --ignored --nocapture   # the skip sweep, ~70 s
+                                                               #   + the deep half, ~11 min
+cargo test  --release --test descend -- --ignored --nocapture  # the frame finder, ~12 min
 cargo build --release --target wasm32-unknown-unknown          # perturb.wasm
 node scratch/perturb_validate/bench.mjs                        # the wasm price
 ```
