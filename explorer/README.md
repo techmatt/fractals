@@ -1459,7 +1459,11 @@ anybody would make. The button is the way out.
 
 ## Measured
 
-Two harnesses, and they answer two different questions.
+Two kinds of harness, and they answer two different questions. The first asks what the
+arithmetic costs and the second asks why a page feels the way it does, and **each of them
+is blind to something the other sees** — which is not a figure of speech here: the row
+floor below was very nearly retired on a measurement that could not see the thing the floor
+was for.
 
 **The kernel, one thread, no browser.** `explorer/bench/kernel.mjs` instantiates the
 committed module under Node and asks for one whole frame, so the number is the arithmetic
@@ -1468,18 +1472,51 @@ the spike. Both in mode `smooth` at 1280x720.
 
 ```
 node explorer/bench/kernel.mjs kernel.json          # both views, 3 runs each
-node explorer/bench/modes.mjs                       # every mode, mandelbrot home
+node explorer/bench/modes.mjs [other.wasm]          # every mode, mandelbrot home
 node explorer/bench/sweep.mjs                       # every family x mode pair
 node explorer/bench/families.mjs [generic.wasm]     # every family, smooth, at its home
+node explorer/bench/cut.mjs                         # one frame, cut into 1 to 410 bands
+node explorer/bench/level.mjs                       # the tone operator, by a map's stops
 ```
+
+**The page, in a real browser with a real pool.** `explorer/bench/page.mjs` drives the
+committed page in headless Chrome over CDP and splits the wall time from an input to a
+finished picture into its stages. It needs nothing installed: Node has `WebSocket` in the
+global scope and Chrome speaks CDP over one, which is the only reason a browser-driven
+harness is tracked here rather than being a session's worth of scratch scripts.
+
+```
+python -m builder serve                             # in another terminal
+node explorer/bench/page.mjs ladder                 # nine views, stage by stage
+node explorer/bench/page.mjs edits                  # palette, phase, level, mode, pan, zoom
+node explorer/bench/page.mjs cancel                 # what a new view waits for the old one
+node explorer/bench/page.mjs load                   # cold open: bytes, compile, first picture
+LADDER=interior,trap REPEAT=2 node explorer/bench/page.mjs ladder   # narrowed, repeated
+```
+
+Two seams into the page and both are read-only. `#render-state`'s `data-state` and
+`#stats`'s text are what a reader sees, so a `MutationObserver` on the pair is a timeline of
+the stages with no instrumentation at all. What that cannot see is inside a worker, and
+`render.js` exports a `passes` ring buffer on `globalThis.__render` — every band's rows and
+milliseconds — which is the only way to tell a frame that is slow because the recurrence is
+expensive from one that is slow because eleven workers spent the tail waiting on the
+twelfth. Nothing on the page reads it. `walk.js`'s `__walk` is the same seam.
+
+**`LADDER` and `REPEAT` are there because this machine drifts, and the drift is larger than
+most of what is being measured.** A full ladder takes ten minutes, and a reading taken ten
+minutes after another is not a reading of the same machine: two runs of identical code came
+in 1.34x apart on the same view, and an early before/after read a change that cannot touch
+a field pass as having slowed one by 1.7x. Every before/after figure below was taken
+**alternated** — before, after, before, after, on two views — and anything under about 30%
+on a single pair of full-ladder runs here is noise rather than a result.
 
 **Every figure below is the specialized build, and a figure from before it is not a
 number about this tree.** The rewrite that put `field::sweep_row` under `compute_band`
 moved thirteen of the eighteen modes it was measured over by 1.41x to 4.18x, so a pre-specialization reading —
 draft 1's, the `x generic` column that has been retired, anything in a report written
 before the manifest's third `engine_changes` line — describes a module this repository no
-longer serves. Re-measure rather than quote: the four harnesses below are here so that
-there is always something to re-measure with.
+longer serves. Re-measure rather than quote: the harnesses above are here so that there is
+always something to re-measure with.
 
 **This harness is tracked, and it is a re-measure harness rather than a guard.** Nothing
 in it asserts anything: no script carries a threshold, no script exits non-zero, and
@@ -1495,11 +1532,17 @@ over them would be red on somebody else's.
 It is tracked for the half of the job it does do. It started under `scratch/`, which is
 wiped, and a record a wipe can delete is not a record; three harnesses moved here —
 `kernel.mjs`, `modes.mjs`, `sweep.mjs` — with the two helpers they lean on, and
-`families.mjs` was written here the next day. `engine.mjs` is the wasm loader all four
-call, and `output.mjs` sends every run's numbers to `artifacts/`, which is ignored. Code
-is committed, measurements are not. The browser-driven rig that produced the pool figures
-below stays under `scratch/`: it is a session's worth of driver scripts and probe pages,
-and not even this much.
+`families.mjs` was written here the next day. `cut.mjs` and `level.mjs` joined them with
+`explorer_perf_audit_ckpt136`. `engine.mjs` is the wasm loader every one of them calls, and
+`output.mjs` sends every run's numbers to `artifacts/`, which is ignored. Code is committed,
+measurements are not.
+
+**And the browser-driven rig is tracked now too**, which this said it was not. It stayed
+under `scratch/` while it was a session's worth of driver scripts and probe pages; what
+finally moved it is that the figures it produces are the ones under *Where a page's time
+goes*, and the rule is the plain one — a harness whose numbers are promoted to a README is
+a harness a later reader has to be able to run. `page.mjs` is the four runs and `cdp.mjs`
+is the fifty lines of websocket underneath them, and neither asserts anything either.
 
 | frame | cap | draft 1 | now |
 | --- | --- | --- | --- |
@@ -1650,6 +1693,95 @@ density 9 0.71 s, phoenix `itinerary` 0.39 s, multibrot3 `direct_trap_ring` 1.53
 mandelbrot `smooth_trap_circle` 1.47 s, and the worst seen, julia5 `threads` at sigma
 0.25, 7.77 s. Shade is main-thread and pool-independent at 150–500 ms, and a preview
 lands at a sixteenth of the samples before any of it.
+
+### Where a page's time goes *(explorer_perf_audit_ckpt136, 2026-09-19)*
+
+884x496, which is what a 1600x1000 window gives the canvas; 12 logical cores over 6
+physical; nine views spanning the cost range, driven by permalink through `page.mjs ladder`.
+
+**The pool is finished, and that is the headline.** Utilisation on the full and the
+supersampled pass is **0.92 to 1.00** on every view of the ladder, and the tail — what the
+frame waits on after the second-slowest worker is done — is 0 to 65 ms of passes that run
+for seconds. Against one thread, `smooth` at the spike anchor is 4 470 ms and the pool draws
+it in 618 ms (**7.2x**); at the finishing supersample, 17 816 ms against 1 901 ms
+(**9.4x**). On six physical cores that is the machine, not a scheduling problem, and it
+means **worker count, tile size, transfer instead of copy and centre-out order have nothing
+left to give here**. What is left is the main thread, the cut, and the arithmetic.
+
+**A field band has no fixed cost, and a direct trap's band has a large one.**
+`bench/cut.mjs` draws one frame as 1, 12, 46, 91, 181 and 410 bands: under `smooth` the six
+readings are within a percent of each other at both supersamples, so the duration target may
+cut as fine as it likes. Under a direct trap above one sample a pixel it may not. Those four
+modes are reduced in the band that painted them and Lanczos-3 reaches three output pixels
+either side, so `paint_band` iterates six output rows it will throw away — `(rows + 6) /
+rows` of its own work, measured at **1.52x, 2.50x and 4.02x at 11, 4 and 2 rows a band**
+against a predicted 1.55, 2.50 and 4.00. Aimed at `BAND_TARGET_MS` the finishing pass
+reached two rows a band, so **most of what a direct trap cost was padding**. `TRAP_PAD_SHARE`
+holds it to a quarter and the kill path in `#abandon` carries the cancel latency that the
+fine cut was buying.
+
+**The row floor was nearly retired on that measurement, and the measurement was blind.**
+`MIN_BAND_ROWS` existed as a guess at per-band overhead; `cut.mjs` measured that overhead at
+zero, so the floor went to one row, which let the quarter-resolution preview reach the pool's
+own four-bands-to-a-worker target — 42 bands over 124 rows instead of sixteen — and its
+utilisation went from 0.54–0.67 to 0.77–0.99. **And the preview got slower**, 14 ms to 61 ms
+at the home view and worse on seven of the nine. A band is a `postMessage`, a transfer and a
+`#place` on the main thread, about **1.8 ms** of it, and a harness that calls the module
+directly cannot see a millisecond of that. Eight rows is the reading that won.
+
+**The tone curve's cost is per stop and not per pixel.** `bench/level.mjs` shades one
+1.75M-sample frame through maps of 2, 16, 64, 256 and 1 024 control points, with and without
+a derived curve: the colouring holds at 117 ms and the curve costs **82, 175, 234, 452 and
+1 353 ms**. `level::curved_stops` densifies the stops and pulls each one's chroma back into
+sRGB by a 28-step bisection with an 18-step cap bisection inside it, and both already
+early-out where the colour is in gamut — the cost is the stops. The library's median map has
+**257** and its 95th percentile **512**, so a view a reader made pays 450–800 ms of it, twice:
+once in the shade worker for the picture, and once on the main thread for the 512-pixel
+palette strip.
+
+**A screen shade is mostly memory.** The finishing stage's shade measures 194–430 ms in the
+kept worker where the module's own colouring of the same frame is 68–117 ms under Node. The
+difference is the copies: the field is sliced on the main thread so the cache keeps it whole,
+copied again into the worker's heap, and the picture is copied out and once more into an
+`ImageData`.
+
+**Cancel latency is 64 to 353 ms** to the first pixels of the view the reader asked for, at
+80, 400 and 1 200 ms into a pass being abandoned, across the spike, a direct trap and a view
+two ulps off the `f64` wall. A band in flight is waited out unless it is over `KILL_OVER`
+targets, and that gate is what keeps a 3.9-second trap band from being the number.
+
+**Before and after, alternated.** Cold open, medians of three, `page.mjs load`:
+
+| cold open | before | after |
+| --- | --- | --- |
+| the first pass begins | 252 ms | **194 ms** |
+| the first picture is up | 575 ms | **361 ms** |
+| the finished picture is up | 1 471 ms | **1 221 ms** |
+| longest main-thread task | 206 ms | **109 ms** |
+
+And two views, four alternated readings each, `LADDER=interior,trap REPEAT=2`:
+
+| | before | after | x |
+| --- | --- | --- | --- |
+| `interior`, first pixels | 238 ms | 148 ms | 1.6 |
+| `interior`, finished | 6 595 ms | 6 650 ms | 1.0 |
+| `direct_trap_ring`, first pixels | 199 ms | 78 ms | 2.6 |
+| `direct_trap_ring`, one sample a pixel | 937 ms | 758 ms | 1.2 |
+| `direct_trap_ring`, finished | 17 073 ms | **4 253 ms** | **4.0** |
+
+`interior` is the control and says what it should: a field pass did not move, because
+nothing in the change touches one. What moved is the padded band, the main thread, and the
+pool's startup. A derived picture also reaches the screen at 845 ms instead of 1 191, which
+is the palette strip's curve deferred to a task of its own rather than made faster.
+
+**`simd128` is worth nothing here, measured.** A module built with
+`-C target-feature=+simd128` was timed against the committed one per mode, alternated within
+a run: **1.00x on all seventeen fields**, and 0.89–1.04 on the shades, which is this
+harness's spread. That is the shape of the arithmetic rather than a compiler failing — an
+escape-time recurrence is a serial dependency per sample, and vectorizing it means iterating
+several samples at once, which is a different loop in the engine. The build flag is not
+taken; `node explorer/bench/modes.mjs <other.wasm>` is how it was read and how it can be
+read again.
 
 **The module** is 717,977 bytes raw and 213,828 gzipped (2026-09-18), against draft 1's
 190,240 and 70,639. It was 766,191 raw once the Walk tab's `screen` export was in, and
@@ -2327,8 +2459,59 @@ are the engine's — but now with a failing check to announce it rather than onl
 
 ## Next
 
-Listed, not designed:
+Listed, not designed. The first five are `explorer_perf_audit_ckpt136`'s, and each says what
+it would buy and **how large the difference from the pipeline render would be** — an
+explorer-only fast path is allowed here in principle and only where that difference can be
+bounded, so a candidate that cannot state its bound is not a candidate.
 
+- **The shade in bands, over the pool.** The finishing shade is 194–430 ms on one thread
+  while twelve workers sit idle, and on a cheap view it is *more* than the field it colours
+  — `julia` at home is 71 ms of field against 307 ms of shade. A frame is normalized against
+  its own distribution, the 0.5th and 99.5th percentiles of its valid samples, so a band
+  coloured alone would be stretched against its own histogram; split into a reduction that
+  answers those two numbers and a colouring that is handed them, every band is independent.
+  **The bound is zero**: the same percentiles over the same samples are the same numbers, so
+  the bytes are the bytes. What it costs is a seam — the percentile machinery is the engine's
+  `coloring`, so either that crate hands the statistics back or this one keeps a second
+  opinion about them, and a second opinion about the engine's normalization is the thing this
+  crate exists not to have. Worth up to 8x on a stage every finished picture and every
+  recolour pays.
+- **The tone curve applied once instead of twice.** A derived view spends 450–800 ms on
+  `curved_stops` for the picture, in the shade worker, and the same again on the main thread
+  redrawing a 512-pixel palette strip through the same map and the same curve. **The bound is
+  zero** — it is the same call with the same arguments — and `shade_level` returning the
+  stops it curved is the whole of it, an export of this crate and no engine change. Deferring
+  the strip to a task of its own has already taken it off the path to the picture; this would
+  take it off the page.
+- **`stripe` and the angle modes without the per-iteration `atan2` and `sin`.** `stripe` is
+  18.0 s a frame at 1280x720 against `smooth`'s 1.62 s, and the per-mode table above says why
+  the specialization bought it only 1.45x: the transcendentals are real arithmetic that the
+  channel checks were a fraction of. **The bound is stateable and is not zero.** The stripe
+  average is a sum of `sin(k·θ)` over the orbit, so a minimax approximation with relative
+  error ε per term lands the field within about ε of the exact one and the colour within ε of
+  a palette step — at 1e-7 that is orders under one sRGB8 code and invisible by construction;
+  at 1e-4 it is not, and the bound is what says which. Engine change. Estimated 1.5–2x on the
+  four most expensive modes on the page.
+- **Interior and periodicity detection on the shallow path.** The ladder's `interior` view,
+  a frame inside the main cardioid, is 6.6 s where the home view is 0.85 s, and it is
+  expensive for one reason: every sample runs to the cap. The cardioid and period-2 bulb
+  tests are two comparisons and **exactly zero difference** — a point inside them provably
+  never escapes, so the field value is the value the loop would have reached. Cycle detection
+  is the other half and its bound is *not* zero: it declares a point interior on a tolerance,
+  and can mis-declare one whose orbit escapes slowly. What bounds it is that a point declared
+  periodic at tolerance τ differs from the exact answer only where the true escape falls after
+  the cap — that is, nowhere the picture distinguishes — and a mis-declaration inside that is
+  a pixel that was going to be interior anyway. Engine change. Worth 2–5x on interior-heavy
+  views and nothing at all on the rest, which is most of them.
+- **`wasm-opt`, and why it is not measured.** Binaryen is not on this machine, and the
+  locked conventions say no npm, so taking it would put a new build dependency in front of
+  `python -m builder explorer`, which today needs cargo and nothing else. The honest estimate
+  is **nothing on speed** — `simd128` measured 1.00x, and the module is already `lto = true`,
+  `codegen-units = 1`, `opt-level = 3`, so LLVM has had its say — and 10–20% off the 210 KB
+  gzipped transfer, which is a load figure rather than a render one. If it is ever worth the
+  dependency, that is the number it has to beat.
+- **A cheaper preview kernel, declined.** The quarter-resolution preview costs 14–185 ms
+  across the ladder, which is 2% to 8% of the view it previews. There is nothing there.
 - **Cooperative cancellation**: a flag the engine checks inside the iterate loop, so that a
   cancel stops the band in flight instead of waiting it out. It is the right final shape for
   cancel latency (see *Cancel is by generation* above), it is an engine change rather than a

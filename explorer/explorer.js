@@ -624,11 +624,13 @@ function zoomAbout(px, py, factor) {
     return;
   }
   const scale = width / view.w.value;
+  const before = view;
   moveTo(
     anchor.x + (view.x.value - anchor.x) * scale,
     anchor.y + (view.y.value - anchor.y) * scale,
     width,
   );
+  reproject(before);
   draw();
 }
 
@@ -651,6 +653,34 @@ function resize() {
 function present(image) {
   frameScreen.putImageData(image, 0, 0);
   screen.drawImage(frame, 0, 0);
+  paintMark();
+}
+
+/**
+ * Put the picture that is up where the view now current would have drawn it.
+ *
+ * **A drag has always had this and a wheel did not.** Dragging slides the last frame under
+ * the hand, so a pan already shows the reader where they are going while the pass runs; a
+ * wheel zoom and an arrow key changed the view and left the old picture exactly where it
+ * was, at the wrong scale and about the wrong point, until the quarter-resolution preview
+ * replaced it a few hundred milliseconds later. Nothing about it was wrong except that it
+ * was a picture of somewhere else.
+ *
+ * `before` is the view as it was. The old frame covers a rectangle of the plane, and where
+ * that rectangle falls on the canvas now is exactly what `canvasAt` answers, so this is the
+ * move rather than an approximation of it — one `drawImage` for a pan, a zoom, or both at
+ * once. **It touches nothing but the canvas**: the frame buffer keeps the picture it was
+ * given, so the next `present` and the next reprojection both start from the real one.
+ */
+function reproject(before) {
+  const scale = before.w.value / view.w.value;
+  const at = canvasAt(before.x.value, before.y.value);
+  const width = grid.width * scale;
+  const height = grid.height * scale;
+  screen.fillStyle = "#000";
+  screen.fillRect(0, 0, grid.width, grid.height);
+  screen.imageSmoothingEnabled = true;
+  screen.drawImage(frame, at.px - width / 2, at.py - height / 2, width, height);
   paintMark();
 }
 
@@ -1071,17 +1101,35 @@ async function drawPass() {
           { derive: deriving },
         );
     if (shaded === null || pass !== drawing) return;
+    // **The picture first, and the controls after it** *(explorer_perf_audit_ckpt136)*. The
+    // derived block below ends in `syncFinal`, which redraws the palette strip through the
+    // curve that was just measured — and a tone curve acts on the *map* rather than on the
+    // picture, so what that costs is per stop: `level::curved_stops` pulls every densified
+    // stop's chroma back into sRGB by a 28-step bisection with an 18-step cap bisection
+    // inside it. Measured at 452 ms on a 256-stop map and 1 353 ms on a 1024-stop one, where
+    // the library's median map has 257 stops and its 95th percentile has 512. Run before
+    // `present`, that is half a second of main thread between a finished picture and the
+    // screen, for a strip 512 pixels wide.
+    present(shaded.image);
+    finished = shaded.image;
+    showState("final");
     if (deriving) {
       view = { ...view, level: shaded.level };
       derivedInBand = shaded.level === null;
       updateReadout();
       syncLevel();
-      syncFinal();
+      // **And the strip in a task of its own**, because a canvas drawn in the middle of a
+      // task is not composited until that task ends: presenting the picture and then
+      // redrawing the strip in the same turn puts the strip's half-second *in front of* the
+      // picture as surely as calling it first did. One `setTimeout` is the whole of the
+      // fix, and what it costs is a frame in which the strip is still showing the curve
+      // before this one.
+      setTimeout(() => {
+        if (pass !== drawing) return;
+        syncFinal();
+      }, 0);
       settle();
     }
-    present(shaded.image);
-    finished = shaded.image;
-    showState("final");
     if (derivingOpacity && probed.opacity === null) {
       // No opacity lifts a mask with nothing in it, so the page says what it found rather
       // than guessing at a number.
@@ -2598,11 +2646,13 @@ window.addEventListener("keydown", (event) => {
       deep.nudge(step[0], step[1]);
       return;
     }
+    const before = view;
     moveTo(
       view.x.value + step[0] * PAN_STEP * view.w.value,
       view.y.value + step[1] * PAN_STEP * planeHeight(),
       view.w.value,
     );
+    reproject(before);
     draw();
     return;
   }

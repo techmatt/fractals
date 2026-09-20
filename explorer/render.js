@@ -35,6 +35,22 @@
 
 import { stopsOf } from "./stops.js";
 
+/**
+ * The last few passes, band by band, for a harness to read.
+ *
+ * **What a profiler cannot see.** A band's arithmetic happens in a worker, and how much of
+ * the pool was busy while a frame was drawn is the difference between a frame that is slow
+ * because the recurrence is expensive and one that is slow because eleven workers spent
+ * the tail waiting on the twelfth. Nothing on the page reads this — it is an array that
+ * grows to `PASSES_KEPT` and stops — and `bench/page.mjs` is what it is for.
+ *
+ * On `globalThis` because the harness drives the real page over CDP and has no import of
+ * its own; `walk.js`'s `__walk` is the same seam for the same reason.
+ */
+const PASSES_KEPT = 24;
+export const passes = [];
+globalThis.__render = { passes };
+
 /** The pool is the machine's, up to this. Eight was a guess and it cost a twelve-core
  *  machine a third of its frame; the ceiling is here because the returns stop, not
  *  because anything breaks above it — a frame is cut into at most `height /
@@ -56,13 +72,26 @@ const BANDS_PER_WORKER = 4;
 /**
  * No band shorter than this in a cut that has nothing measured to go on.
  *
- * **It is a guard against overhead, and overhead is a duration.** Eight rows of a screen's
- * frame is a message and a copy for a fraction of a millisecond of arithmetic, which is
- * why the default cut will not go below it. But eight rows of a deep view under a direct
- * trap is over a second — measured at 1.3 to 1.7 s a band, at a zoom where the iteration
- * cap is in the tens of thousands — and there the floor is not protecting anything, it is
- * the reason the frame cannot be cut fine enough to abandon. So a cut with a measurement
- * behind it is held to the duration instead and may go below this; see `Renderer#cut`.
+ * **It is a guard against overhead, and the overhead is the message rather than the
+ * arithmetic** *(explorer_perf_audit_ckpt136)*. This used to say the overhead was a
+ * duration and leave it there. It is now measured from both sides, and the two answers
+ * disagree in a way worth writing down. `bench/cut.mjs` draws one frame of `smooth` as a
+ * single band and as four hundred and ten, at one sample a pixel and at two, and the four
+ * readings are within a percent of each other: **a field band carries no engine-side fixed
+ * cost at all.** So the floor was lowered to one row, which let the quarter-resolution
+ * preview reach the pool's own four-bands-to-a-worker target — 42 bands over 124 rows
+ * instead of sixteen — and its utilisation went from 0.54–0.67 to 0.77–0.99, which is the
+ * imbalance the floor was causing and it was real.
+ *
+ * And the preview got **slower**: 14 ms to 61 ms at the home view, and worse on seven of the
+ * ladder's nine. A band is a `postMessage`, a transfer, and a `#place` on the main thread,
+ * which is where the pass is assembled and where every band's answer is serialized — about
+ * 1.8 ms a band, measured as the difference across those two cuts. A harness that calls the
+ * module directly cannot see a millisecond of that, which is why the floor survived a
+ * measurement that appeared to retire it.
+ *
+ * At a screen's height this never binds — the four-per-worker target cuts at eleven rows —
+ * so the whole of what it decides is the preview, and eight rows is the reading that won.
  */
 const MIN_BAND_ROWS = 8;
 
@@ -104,6 +133,38 @@ const RECUT_OVER = 1.5;
 const KILL_OVER = 4;
 
 /**
+ * How many OUTPUT rows a direct trap's band computes beyond its own, at any supersample.
+ *
+ * A direct trap is reduced in the band that painted it, and its Lanczos-3 kernel reaches
+ * three output pixels either side — so `paint_band` iterates three output rows past itself
+ * at each end and keeps only its own. That is what makes a painted band cut-independent and
+ * it is not free: a band of `rows` rows does `(rows + 6) / rows` of its own work.
+ *
+ * **At one sample a pixel it is zero.** The taps are then the identity — `lanczos3` is 1 at
+ * 0 and 0 at every other integer — so the preview and the one-sample pass pad nothing and
+ * this only ever applies to the finishing supersample.
+ */
+const TRAP_PAD_ROWS = 6;
+
+/**
+ * The most of a padded band's work that may go on rows belonging to its neighbours.
+ *
+ * **The duration target and the pad pull against each other, and the pad wins where they
+ * meet.** Cut at `BAND_TARGET_MS` a direct trap's finishing pass reaches about two rows a
+ * band, where the pad is three times the band — measured at 3.3x the whole frame's work on
+ * one thread, which is most of the fifteen seconds that pass used to cost. Held to a
+ * quarter, the floor is `TRAP_PAD_ROWS / TRAP_PAD_SHARE` rows and the frame is cut into
+ * twenty bands rather than three hundred.
+ *
+ * What pays for it is cancel latency, and it is already paid for: a band over `KILL_OVER`
+ * targets is terminated rather than waited out, which is the mechanism `#abandon` exists
+ * for and is exactly the case a direct trap's band is. A coarse cut makes the kill path the
+ * one a trap cancels through, instead of making the whole frame four times the work so that
+ * the wait path can be used.
+ */
+const TRAP_PAD_SHARE = 0.25;
+
+/**
  * How a frame of `height` OUTPUT rows is cut up for a pool of this many workers.
  *
  * The pool's one claim on the byte-identity chain lives here: a band is a range of
@@ -114,18 +175,23 @@ const KILL_OVER = 4;
  *
  * Exported so `bands.test.mjs` can hold that claim to the committed module rather
  * than to a second copy of this function.
+ *
+ * `least` is the fewest rows a band may have, `MIN_BAND_ROWS` unless the caller has a
+ * reason of its own — a direct trap's padded band does; see `TRAP_PAD_SHARE`. It bounds the
+ * cut from the coarse side, so a frame of fewer than `least * workers * BANDS_PER_WORKER`
+ * rows gets fewer bands than the pool would like rather than bands that are too small.
  */
-export function bandsOf(height, workers) {
+export function bandsOf(height, workers, least = MIN_BAND_ROWS) {
+  // `floor`, so that the floor is a floor: `ceil` asks for one more piece than the frame
+  // can give at that size and leaves the remainder as a straggler below it.
   const target = Math.max(
     1,
-    Math.min(Math.ceil(height / MIN_BAND_ROWS), workers * BANDS_PER_WORKER),
+    Math.min(Math.floor(height / Math.max(1, least)), workers * BANDS_PER_WORKER),
   );
-  const rows = Math.ceil(height / target);
-  const bands = [];
-  for (let start = 0; start < height; start += rows) {
-    bands.push([start, Math.min(height, start + rows)]);
-  }
-  return bands;
+  // Through `recut`, which is where the even distribution lives — the rest of this function
+  // was a stepped loop that left the remainder as a last short band, which is a message and
+  // a copy for a few rows on a field pass and a band below its own floor on a padded one.
+  return recut([[0, height]], Math.ceil(height / target), least);
 }
 
 /**
@@ -323,7 +389,21 @@ export class Renderer {
   static async start(url, wanted) {
     const response = await fetch(url);
     if (!response.ok) throw new Error(`${url}: ${response.status} ${response.statusText}`);
-    const module = await WebAssembly.compile(await response.arrayBuffer());
+    // Streaming, so the two hundred kilobytes are compiled as they arrive rather than
+    // after: the module is the largest thing a cold open fetches and the compile is the
+    // longest task before the first pass. It needs `application/wasm` on the response, which
+    // Pages sends and `builder serve` sends, and it is a browser feature rather than a
+    // guarantee — so a response it will not take falls back to the buffer it always used,
+    // and the page opens either way.
+    // The clone is taken before the body is touched, because a body is read once and a
+    // fallback that had nothing left to read would be no fallback at all.
+    const spare = response.clone();
+    let module;
+    try {
+      module = await WebAssembly.compileStreaming(response);
+    } catch {
+      module = await WebAssembly.compile(await spare.arrayBuffer());
+    }
     const count =
       wanted ?? Math.min(MAX_WORKERS, navigator.hardwareConcurrency || DEFAULT_WORKERS);
     const renderer = await Renderer.over(module, count);
@@ -338,8 +418,13 @@ export class Renderer {
    */
   static async over(module, count) {
     const shader = new WebAssembly.Instance(module, {}).exports;
-    const workers = [];
-    for (let index = 0; index < Math.max(1, count); index++) workers.push(await spawn(module));
+    // Together, not one after another. A worker costs a thread, a module instantiation and a
+    // message round trip, and twelve of those in sequence is the pool's whole startup on the
+    // critical path of the first picture; started at once they overlap, and the pool is ready
+    // when the slowest of them is.
+    const workers = await Promise.all(
+      Array.from({ length: Math.max(1, count) }, () => spawn(module)),
+    );
     return new Renderer(module, shader, workers);
   }
 
@@ -600,10 +685,35 @@ export class Renderer {
     // interior-heavy band cost somebody else's idle time rather than the whole frame's —
     // and the duration target only ever cuts finer than that, never coarser. So a cheap
     // pass is cut exactly as it always was, and an expensive one is subdivided.
-    const bands = this.#cut(bandsOf(height, this.workers.length), supersample);
+    // The opening cut takes the coarser of the two floors: the pool's own row floor, which
+    // is a message-overhead guard, and a padded band's, which is a work guard. They are not
+    // the same kind of thing and the pad's is the larger where it applies.
+    const bands = this.#cut(
+      bandsOf(
+        height,
+        this.workers.length,
+        Math.max(MIN_BAND_ROWS, this.#least(supersample, shape)),
+      ),
+      supersample,
+      shape,
+    );
+
+    const record = {
+      kind: shape.probe ? "probe" : shape.direct ? "direct" : "field",
+      width,
+      height,
+      supersample,
+      workers: this.workers.length,
+      at: performance.now(),
+      bands: [],
+      elapsed: null,
+    };
+    passes.push(record);
+    while (passes.length > PASSES_KEPT) passes.shift();
 
     return new Promise((resolve, reject) => {
       this.job = {
+        record,
         generation,
         spec,
         shape,
@@ -632,17 +742,39 @@ export class Renderer {
    *
    * Only ever finer than the cut it is handed. Nothing is measured yet on the first pass
    * of a session, and then this is the identity.
+   *
+   * `shape` is the plan, for the one mode family whose bands are not free to be any size:
+   * see `#least`.
    */
-  #cut(bands, supersample) {
+  #cut(bands, supersample, shape) {
+    const least = this.#least(supersample, shape);
+    const widest = bands.reduce((most, [start, end]) => Math.max(most, end - start), 0);
+    // Nothing measured yet, and `bandsOf` already cut no finer than the floor allows.
     if (this.rowCost === null) return bands;
     const perRow = this.rowCost * supersample * supersample;
-    const rows = BAND_TARGET_MS / perRow;
-    const widest = bands.reduce((most, [start, end]) => Math.max(most, end - start), 0);
+    const rows = Math.max(least, BAND_TARGET_MS / perRow);
     // Down to a single row, because this cut is aimed at a duration and a duration is what
     // the row floor was standing in for. A view deep enough that one row of it costs more
     // than the target is a view whose cancel cannot be made any cheaper than one row, and
     // that is the floor being honest rather than the floor being ignored.
-    return rows * RECUT_OVER < widest ? recut(bands, rows, 1) : bands;
+    return rows * RECUT_OVER < widest ? recut(bands, rows, least) : bands;
+  }
+
+  /**
+   * The fewest rows a band of this pass may have **once something has been measured**.
+   *
+   * One row everywhere but a direct trap at more than one sample a pixel, where a band
+   * computes `TRAP_PAD_ROWS` rows it will throw away and the floor is what keeps that from
+   * being most of the frame. See `TRAP_PAD_SHARE`.
+   *
+   * One row and not `MIN_BAND_ROWS`, because that floor is a guess at what is worth a
+   * message and this is the case where the target has a measurement behind it: a view deep
+   * enough that one row costs more than `BAND_TARGET_MS` is a view whose cancel cannot be
+   * made cheaper than one row. The opening cut takes the coarser of the two — see `#run`.
+   */
+  #least(supersample, shape) {
+    const padded = shape?.direct === true && supersample > 1;
+    return padded ? Math.ceil(TRAP_PAD_ROWS / TRAP_PAD_SHARE) : 1;
   }
 
   #dispatch(worker) {
@@ -690,11 +822,12 @@ export class Renderer {
     const band = this.inflight.get(worker);
     if (band === undefined) return;
     this.inflight.delete(worker);
-    if (job.generation !== this.generation || band.rows <= 0) return;
     const elapsed = performance.now() - band.at;
+    job.record.bands.push({ at: band.at - job.record.at, rows: band.rows, ms: elapsed });
+    if (job.generation !== this.generation || band.rows <= 0) return;
     const cost = elapsed / (band.rows * job.supersample * job.supersample);
     this.rowCost = this.rowCost === null ? cost : (this.rowCost + cost) / 2;
-    this.queue = this.#cut(this.queue, job.supersample);
+    this.queue = this.#cut(this.queue, job.supersample, job.shape);
   }
 
   #collect(worker, message, job) {
@@ -717,6 +850,7 @@ export class Renderer {
     if (job.onProgress) job.onProgress(job.done / job.rows);
     if (job.done >= job.rows) {
       this.job = null;
+      job.record.elapsed = performance.now() - job.started;
       job.resolve({
         values: job.values,
         width: job.width,

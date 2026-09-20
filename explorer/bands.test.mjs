@@ -121,16 +121,29 @@ test("a queue re-cut partway through is the same rows and the same bytes", () =>
   assert.deepEqual(frame, assemble(spec, shape, height, 2));
 });
 
-test("a re-cut holds to the floor it is given, and the default floor is the pool's", () => {
-  // Overhead is what the row floor is for, and overhead is a duration: eight rows is a
-  // message and a copy for nothing at a screen's size, and over a second under a direct
-  // trap at a deep zoom — where the floor is the reason a pass cannot be cut fine enough
-  // to abandon. So a cut with a measurement behind it passes its own floor of one row.
-  for (const [start, end] of recut(bandsOf(720, 4), 1)) assert.ok(end - start >= 8);
+test("a cut holds to the floor it is given, and a re-cut may pass the default", () => {
+  // The default floor is the pool's own, and a cut aimed at a duration passes it: `recut`
+  // takes its own `least` and one row is a legitimate band on a view deep enough that one
+  // row costs more than the target.
+  for (const [start, end] of bandsOf(720, 4)) assert.ok(end - start >= 8);
   const finest = recut(bandsOf(720, 4), 1, 1);
   assert.ok(finest.length > 720 / 8, "a measured cut can go below the pool's row floor");
   for (const [start, end] of finest) assert.ok(end - start >= 1);
   assert.equal(finest.at(-1)[1], 720, "and still covers the frame exactly");
+
+  // **The floor that is left is the padded band's, and it binds from the coarse side.** A
+  // direct trap above one sample a pixel computes six output rows it will throw away, so a
+  // two-row band does four times its own work — measured, 4.02x — and `Renderer#least`
+  // hands that floor to both the opening cut and every re-cut. A regression here is silent
+  // in the picture and a quadrupling in the wait, which is why it is pinned.
+  for (const [start, end] of bandsOf(496, 12, 24)) assert.ok(end - start >= 24);
+  for (const [start, end] of recut(bandsOf(496, 12, 24), 1, 24)) assert.ok(end - start >= 24);
+  assert.equal(bandsOf(496, 12, 24).at(-1)[1], 496, "and the frame is still covered");
+  assert.equal(recut(bandsOf(496, 12, 24), 1, 24).at(-1)[1], 496);
+
+  // A frame shorter than the floor is one band, rather than none and rather than a band
+  // below it: the floor bounds how fine a cut may be and never how much is drawn.
+  assert.deepEqual(bandsOf(10, 12, 24), [[0, 10]]);
 });
 
 test("the whole frame in one band is the same bytes as any pool's", () => {

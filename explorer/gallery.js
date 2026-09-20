@@ -102,6 +102,16 @@ function hueDot(value) {
  */
 const AHEAD = "50%";
 
+/** How many tiles the first task builds, and how many each task after it adds.
+ *
+ *  The first number is a panel's worth and a little over — three to a row in the side
+ *  panel, so sixty tiles is twenty rows and more than the tallest window shows, which is
+ *  what makes the chunking invisible to a reader who does not scroll immediately. The
+ *  second is a compromise: large enough that a thousand tiles is eight tasks rather than
+ *  sixteen, small enough that none of them is a long task at fifty microseconds a tile. */
+const FIRST_TILES = 60;
+const MORE_TILES = 120;
+
 /** One JSONL record, as rows. A blank line is nothing and a bad line is worth naming. */
 function rowsOf(text, where) {
   const rows = [];
@@ -222,6 +232,8 @@ export function install({
   const wanted = { mode: new Set(), hue: new Set() };
   let open = null;
   let observer = null;
+  /** Which fill is current; a chunked build a newer fill superseded stops. */
+  let filling = 0;
 
   /**
    * The family this collection was cut on, where it was cut on one, which is what turns
@@ -294,50 +306,88 @@ export function install({
     for (const tile of tiles.querySelectorAll(".tile")) observer.observe(tile);
   }
 
+  /** One seat's tile, built the moment it is wanted and never before.
+   *
+   *  Lifted out of `fill` so that the panel's thousand tiles can be built a few tasks
+   *  at a time rather than in one — see `fill`. */
+  function tileOf(seat) {
+    const tile = document.createElement("button");
+    tile.type = "button";
+    tile.className = "tile";
+    tile.dataset.key = seat.key;
+    if (seat.key === open) tile.classList.add("is-open");
+    const picture = document.createElement("img");
+    picture.decoding = "async";
+    picture.width = seat.width;
+    picture.height = seat.height;
+    picture.dataset.src = new URL(`${DIRECTORY}${seat.file}`, base).href;
+    picture.alt = seat.alt ?? "";
+    // The record commits and the pictures do not, so a tree can hold one without the
+    // other: the record written, `seats` never run here. A grid of broken images is a
+    // panel that looks broken rather than one that is unlanded, and the difference is a
+    // sentence somebody can act on. Said once, by whichever tile fails first.
+    picture.addEventListener("error", missing, { once: true });
+    // **Shown when it is whole, and not before.** A browser paints the part of a picture
+    // it has received, so a grid asking for a screen of tiles at once fills with
+    // pictures cut into bands, and the panel reads as broken rather than as loading.
+    // The tile is a dark well until its picture is there.
+    picture.addEventListener("load", () => tile.classList.add("is-ready"), { once: true });
+    tile.append(picture);
+    tile.addEventListener("click", () => {
+      open = seat.key;
+      for (const other of tiles.querySelectorAll(".tile")) {
+        other.classList.toggle("is-open", other.dataset.key === open);
+      }
+      onPick(seat);
+    });
+    if (saveMark === null) return tile;
+    // A save mark is a button of its own, so it sits beside the tile rather than in it
+    // *(saved_tab_ckpt131)*: a button inside a button is not a thing a page may hold.
+    const cell = document.createElement("div");
+    cell.className = "tile-cell";
+    cell.append(tile, saveMark(seat));
+    return cell;
+  }
+
+  /**
+   * Show what the filters have chosen, a screenful at a time.
+   *
+   * **A thousand tiles is a quarter of a second of main thread, and it used to be one
+   * task.** The general collection seats a thousand pictures; a tile is a button, a
+   * picture, a save mark and two listeners, and building them all at once measured 223 ms
+   * on a twelve-core desktop — landing, on a cold open, exactly on the quarter-resolution
+   * preview, because the panel starts right after the first pass does. The pool was idle
+   * for most of it: a band's answer is placed on this thread, so a main thread blocked for
+   * a quarter of a second is a pool that cannot be handed its next band for a quarter of
+   * a second.
+   *
+   * So the first chunk is built and shown, and the rest follow in tasks of their own. What
+   * a reader sees is unchanged — the same tiles in the same order, and the scroll box grows
+   * to its full height over the next few tasks instead of arriving at it. A newer fill
+   * abandons an older one's remaining chunks by generation, the way a pass abandons a
+   * band, because a filter can move while a build is still running.
+   *
+   * `setTimeout` and not `requestIdleCallback`: idle time is exactly what a page drawing a
+   * picture does not have, and a panel that waited for it would stay a screenful deep for
+   * as long as the render ran.
+   */
   function fill() {
     showing = members.filter(matches);
-    const made = showing.map((seat) => {
-      const tile = document.createElement("button");
-      tile.type = "button";
-      tile.className = "tile";
-      tile.dataset.key = seat.key;
-      if (seat.key === open) tile.classList.add("is-open");
-      const picture = document.createElement("img");
-      picture.decoding = "async";
-      picture.width = seat.width;
-      picture.height = seat.height;
-      picture.dataset.src = new URL(`${DIRECTORY}${seat.file}`, base).href;
-      picture.alt = seat.alt ?? "";
-      // The record commits and the pictures do not, so a tree can hold one without the
-      // other: the record written, `seats` never run here. A grid of broken images is a
-      // panel that looks broken rather than one that is unlanded, and the difference is a
-      // sentence somebody can act on. Said once, by whichever tile fails first.
-      picture.addEventListener("error", missing, { once: true });
-      // **Shown when it is whole, and not before.** A browser paints the part of a picture
-      // it has received, so a grid asking for a screen of tiles at once fills with
-      // pictures cut into bands, and the panel reads as broken rather than as loading.
-      // The tile is a dark well until its picture is there.
-      picture.addEventListener("load", () => tile.classList.add("is-ready"), { once: true });
-      tile.append(picture);
-      tile.addEventListener("click", () => {
-        open = seat.key;
-        for (const other of tiles.querySelectorAll(".tile")) {
-          other.classList.toggle("is-open", other.dataset.key === open);
-        }
-        onPick(seat);
-      });
-      if (saveMark === null) return tile;
-      // A save mark is a button of its own, so it sits beside the tile rather than in it
-      // *(saved_tab_ckpt131)*: a button inside a button is not a thing a page may hold.
-      const cell = document.createElement("div");
-      cell.className = "tile-cell";
-      cell.append(tile, saveMark(seat));
-      return cell;
-    });
-    tiles.replaceChildren(...made);
+    const generation = ++filling;
+    tiles.replaceChildren(...showing.slice(0, FIRST_TILES).map(tileOf));
     tiles.scrollTop = 0;
     watch();
     say();
+    let at = FIRST_TILES;
+    const more = () => {
+      if (generation !== filling) return;
+      const next = showing.slice(at, at + MORE_TILES).map(tileOf);
+      at += MORE_TILES;
+      tiles.append(...next);
+      watchIn(next);
+      if (at < showing.length) setTimeout(more, 0);
+    };
+    if (at < showing.length) setTimeout(more, 0);
   }
 
   /** `swatches` marks the color family row, which is also single-choice: choosing a family
