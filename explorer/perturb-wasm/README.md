@@ -33,11 +33,13 @@ pins the one formula that had to come from next door.
 src/fx.rs          fixed-point reals, n × u64 limbs, written for wasm32
 src/reference.rs   one high-precision orbit per frame, projected to f64
 src/kernel.rs      the per-sample f64 delta loop, with rebasing
+src/bla.rs         the skip table, built off the orbit — off unless a spec asks
 src/json.rs        a reader for one flat JSON object
 src/lib.rs         the spec, the cap policy, and the exports
 smooth-cases.json  400 of the engine's own samples, as the pin
 tests/oracle.rs    the kernel against a brute-force oracle (ignored by default)
 tests/probe.rs     three-way probes; not proofs, and they say so
+tests/bla.rs       the skip against the plain loop (ignored by default)
 ```
 
 ## The design, in one page
@@ -97,9 +99,13 @@ tests/probe.rs     three-way probes; not proofs, and they say so
   here and only `CEILING` moves, to a provisional 1,000,000. Touching
   `maxiter::for_width` itself was never an option: six callers read it and a
   wider ceiling there moves the cap of every shallow picture the project has.
-- **BLA is not built here.** The seam is marked at the top of `Kernel::sample`'s
-  loop. It changes how long a picture takes and not what it is, and it wants the
-  plain loop's correctness settled first.
+- **BLA is built and it is off.** `src/bla.rs` is the skip table; `Spec::bla` is
+  its tolerance and absent is the default, so every picture the page draws is
+  still the plain loop's. It is a pure function of `(orbit, ε, one frame-wide
+  |dc| bound)` and of nothing else, which is what lets a band stay bit for bit
+  the rows a whole-frame pass would produce. **Measured below, it does not pay at
+  either width the tab's own links use** — the price and the depth it turns at are
+  in §6.
 
 ### What it does not do
 
@@ -430,13 +436,21 @@ because a view entered at `Z₁` has one step less of reference in front of it, 
 is recomputed rather than reused. Against a frame of seconds that is 1%, and it is
 the whole price of pressing the button.
 
-**`perturb.wasm` is 112,675 bytes raw and 52,786 gzipped** at level 9. Beside
-`engine.wasm`'s 763,343 / 228,670 that is 15% more to download, and it buys a
+**`perturb.wasm` is 122,098 bytes raw and 56,147 gzipped** at level 9. Beside
+`engine.wasm`'s 763,343 / 228,670 that is 16% more to download, and it buys a
 renderer for everything below 1e-10, on both of the sets `z² + c` has. It is large for a dependency-free crate of
-1,200 lines, and the reason is `core::fmt`: `plan` formats a JSON report and every
+1,500 lines, and the reason is `core::fmt`: `plan` formats a JSON report and every
 refusal is a sentence. That is an attribution from what the module contains rather
 than a measurement by subtraction, and if the tab wants the bytes back that is
 where to look. There is no `serde`, no `serde_json` and no engine in it.
+
+⚠ **9,423 of those bytes are the skip table, and nothing on the page can reach
+it.** The module grew 8.4% raw and 6.4% gzipped for a code path that is off by
+default and that no page sets, which is a real cost paid by every reader who opens
+the Deep tab. It is here rather than behind a cargo feature because a committed
+module that cannot be rebuilt from the committed source is the failure this
+manifest exists to prevent, and nothing in `builder check` would have caught the
+drift. Stage 2 either turns the table on or takes those bytes back.
 
 ### 5. Pictures
 
@@ -444,12 +458,137 @@ where to look. There is no `serde`, no `serde_json` and no engine in it.
 1e-28, coloured by a percentile stretch and a plain gradient. Not committed;
 `scratch/` is ignored, and the sheet is for Matt's eye rather than for a page.
 
+### 6. The skip table, and why it is off
+
+`src/bla.rs`, `tests/bla.rs`, measured 2026-09-20 on the same box. One entry stands
+for a run of `2^k` steps as `δ ← A·δ + B·dc`; the derivation, the merge rule and
+every guard are in that file's header. Tiles are 64×36, the plain loop and the
+skipping loop are the same spec and the same orbit, and the runs alternate.
+
+**Four guards, and each is held where it is a property of something.** No run may
+reach the index the plain loop rebases at, or pass a reference point near enough to
+the bailout that `(1+ε)·|Z|` could clear it — both at build, where they are
+properties of the orbit. No run may step over the cap, and none may cross a step at
+which the interior switch would have fired — both at lookup, where they are the
+sample's. **Rebasing needs no guard**: the merge rule's own induction puts
+`|δ_j| ≤ ε·|Z_j|` at every index a valid run passes through, and `(1−ε)·|Z|` is
+above `ε·|Z|`, so `|z| < |δ|` cannot happen inside one. What a run *lands* on is
+bounded by nothing, so the landed delta falls into the loop's own escape, interior,
+cap and rebase tests rather than resuming past them.
+
+**What a table costs.** Levels below a minimum are built and not stored, and the
+total is `len · 2^(1−min)` entries of 64 bytes:
+
+| cap | orbit | min level | entries | bytes | vs the orbit | build |
+|--:|--:|--:|--:|--:|--:|--:|
+| 48,551 | 48,552 pts | 0 | 131,070 | 8,388,480 | 10.8× | 3.2 ms |
+| 48,551 | 48,552 pts | **4** | **8,190** | **524,160** | **0.67×** | 1.9 ms |
+| 48,551 | 48,552 pts | 8 | 510 | 32,640 | 0.04× | 1.6 ms |
+| 1,000,000 | 1,000,001 pts | 0 | 2,097,150 | 134,217,600 | 8.4× | 56.0 ms |
+| 1,000,000 | 1,000,001 pts | **4** | **131,070** | **8,388,480** | **0.52×** | 33.4 ms |
+| 1,000,000 | 1,000,001 pts | 8 | 8,190 | 524,160 | 0.03× | 30.0 ms |
+
+At `MIN_LEVEL = 4` a table is **two thirds of its orbit** rather than the five times
+the audit budgeted for, and two milliseconds against the orbit's fifteen. The build
+is **blocked** — the whole tree over one aligned run of `2^kmax` starts, then
+dropped — so the peak is a block and not `1.5 ×` the orbit, which at a cap of a
+million would have been 108 MB of working entries in a wasm heap that also holds the
+orbit.
+
+**The one law the whole sweep is.** A merged radius has to clear `|B|·dcmax`, and
+`|B|` grows like the run's own derivative, so a run is long enough to be worth taking
+only when `ε` is something like `2e10 ×` the frame's half-diagonal. **The skip is
+therefore a function of the width and not of the cap**, and the speedup does not ramp
+— it steps, in one decade of `ε`, from about 1× to about 50×:
+
+| frame | cap | interior | ε = 2⁻⁵³ | 1e-12 | 1e-9 | 1e-6 | 1e-4 |
+|---|--:|--:|--:|--:|--:|--:|--:|
+| mandelbrot 2e-11 | 48,551 | 38.9% | 0.59× | 0.59× | 0.60× | 0.88× | 1.13× |
+| julia 2e-9 | 40,578 | 3.7% | 0.89× | 0.89× | 0.87× | 1.04× | 1.47× |
+| julia 2e-10 | 44,565 | 89.3% | 2.32× | **2.52×** | 2.93× | 4.69× | 6.79× |
+| mandelbrot 1e-16 | 69,682 | 100% | 0.59× | 0.79× | 1.22× | **43.68×** | 43.95× |
+| mandelbrot 1e-19 | 81,641 | 100% | 0.66× | 1.22× | **57.93×** | 57.94× | 58.21× |
+| mandelbrot 1e-22 | 93,600 | 100% | 1.08× | **59.08×** | 59.11× | 59.51× | 59.36× |
+| mandelbrot 1e-28 | 117,518 | 100% | **59.19×** | 58.93× | 58.78× | 60.08× | 59.32× |
+
+Single thread, interior switch off, and the step moves one decade of `ε` left for
+every three decades of depth — which is the law above, read off the table.
+
+**And what it costs the picture.** Nothing at all at the two tightest tolerances, on
+every frame that has exterior in it: zero samples flipped between interior and
+escaping, zero escape counts moved, zero error on the smooth value, while 3.6% to
+58.6% of the iterations were skipped. The damage starts at `1e-9` and is severe by
+`1e-6`:
+
+| frame | ε | skipped | → interior | → escaping | counts moved | median Δ | p99 Δ | median Δ/ν |
+|---|--:|--:|--:|--:|--:|--:|--:|--:|
+| mandelbrot 2e-11 | 1e-12 | 0.0% | 0 | 0 | 0 | 0 | 0 | 0 |
+| mandelbrot 2e-11 | 1e-9 | 1.3% | 17 | 20 | 437 | 4.2e-3 | 9.7e3 | 2.0e-7 |
+| mandelbrot 2e-11 | 1e-6 | 37.8% | 27 | 35 | 1,062 | 3.5e1 | 2.0e4 | 1.8e-3 |
+| julia 2e-9 | 1e-12 | 4.0% | 0 | 0 | 0 | 0 | 0 | 0 |
+| julia 2e-9 | 1e-6 | 21.8% | 27 | 27 | 1,453 | 1.2e1 | 1.9e4 | 1.2e-3 |
+| julia 2e-10 | 1e-12 | 58.6% | 0 | 0 | 0 | 0 | 0 | 0 |
+| julia 2e-10 | 1e-6 | 80.2% | 14 | 15 | 194 | 6.5e1 | 1.6e4 | 2.7e-3 |
+
+⚠ **The deep rungs are blank in those columns, and blank for a reason that is not
+reassuring**: every Mandelbrot frame below the atom's 6.5e-12 is inside the
+minibrot's body and **100% interior**, so there is no escaping sample there for a
+skip to be wrong about. The three frames above are the only ones either ladder
+carries with exterior in them, and the deepest is `julia 2e-10`. **So the depth at
+which the skip pays and the depth at which its accuracy has been measured do not
+overlap**, and closing that gap — a deep frame with structure in it — is stage 2's
+first job rather than a caveat on a number.
+
+**What the median and the p99 are saying** is worth separating. At `1e-9` on the
+anchor the *median* escaping sample is right to seven digits while the p99 is off by
+9,700 iterations — which is this frame's own chaos and not the table's: §1 already
+measured this kernel and the plain `f64` loop disagreeing by a median of 61 and a
+worst of 34,250 on the same view, with nothing bit-equal. On a frame whose escape
+counts are chaotically sensitive to the last bit, **an error budget cannot be read
+off `ε`**, and the only honest bar is the one the two tightest columns clear: that
+nothing moved at all.
+
+**The seam costs 70% on every iteration it does not skip.** The `2⁻⁵³` rows at
+2e-11 and 1e-16 are 0% skipped and run at 0.59×, which is the lookup alone — an
+alignment mask, a bounds-checked index into the table and a radius compare, against a
+loop body of about ten flops. That is the number stage 2 has to beat or route around,
+and it is why a frame that skips half its iterations is still slower than one that
+skips none.
+
+**The interior switch, beside the skip.** The audit's finding holds, the skip makes
+it worse, and there is a second finding underneath it:
+
+| frame | interior | plain: off → on | skip at 1e-6: off → on |
+|---|--:|--:|--:|
+| mandelbrot 2e-11 | 38.9% | 366 → 405 ms (**+11%**) | 418 → 530 ms (**+27%**) |
+| julia 2e-9 | 3.7% | 113 → 145 ms (+28%) | 110 → 144 ms (+30%) |
+| julia 2e-10 | 89.3% | 497 → 235 ms (**−53%**) | 108 → 140 ms (**+30%**) |
+| mandelbrot 1e-16 | 100% | 793 → 70 ms (−91%) | 19 → 2 ms (−91%) |
+| mandelbrot 1e-19 | 100% | 925 → 70 ms (−92%) | 18 → 1 ms (−93%) |
+| mandelbrot 1e-22 | 100% | 1053 → 35 ms (−97%) | 18 → 1 ms (−97%) |
+| mandelbrot 1e-28 | 100% | 1315 → 35 ms (−97%) | 22 → 1 ms (−98%) |
+
+`julia 2e-10` is the row to read: the switch is worth **−53%** on the plain loop and
+**+30%** beside the skip. **The two compete wherever the interior a frame has is
+reachable by skipping**, and they compose only where the switch does something no run
+of the recurrence can — below 1e-16 it stops an interior sample after about one
+period of the reference, 2,838 iterations of a cap of 117,518, which is a 97% cut a
+skip cannot reproduce because a skip still has to walk the orbit.
+
+**The frame's own profile, re-measured**, since the program that produced §4's
+figures no longer compiles: the anchor at 2e-11 runs a mean of **32,480 iterations a
+sample** with the switch off and 32,358 with it on, 38.9% interior. At 480×270 that
+is **4.21e9 sample-iterations** — so §4's 4.22e9 was right, and what was lost with
+`scratch/perturb_validate` was the program and not the number. **58.2% of those
+sample-iterations belong to interior samples**, which is the audit's own 58%.
+
 ## Running it
 
 ```text
-cargo test  --release                                  # 35 unit tests, under a second
-cargo test  --release --test oracle -- --ignored --nocapture   # the ladders, ~2 min
+cargo test  --release                                  # 52 unit tests, under a second
+cargo test  --release --test oracle -- --ignored --nocapture   # the ladders, ~30 s
 cargo test  --release --test probe  -- --ignored --nocapture   # the three-way probes
+cargo test  --release --test bla    -- --ignored --nocapture   # the skip sweep, ~70 s
 cargo build --release --target wasm32-unknown-unknown          # perturb.wasm
 node scratch/perturb_validate/bench.mjs                        # the wasm price
 ```
@@ -475,7 +614,7 @@ its own branch rather than a stage of the explorer's bake.
 | `crate` | `explorer/perturb-wasm` |
 | `dependencies` | `[]`, and it is written down because it is the design |
 | `rustc` | the compiler, with its commit and date |
-| `raw_bytes` / `gzip_bytes` | **112,675 raw, 52,786 gzipped** |
+| `raw_bytes` / `gzip_bytes` | **122,098 raw, 56,147 gzipped** |
 
 Two fields of `engine.manifest.json` are **absent** rather than empty:
 `engine_version`, because this crate does not link the engine, and
@@ -490,7 +629,7 @@ crate: `explorer_shade_pool_ckpt136` banded the shade.)
 
 **What a visitor downloads for it: nothing, unless they open the Deep tab.** The
 module and the tab's five modules are fetched on that tab's first open and never
-before. Against `engine.wasm`'s 228,670 gzipped, the 52,786 here is 23% more —
+before. Against `engine.wasm`'s 228,670 gzipped, the 56,147 here is 25% more —
 paid only by a reader who asked for a renderer for everything below 1e-10.
 
 `core::fmt` is still most of the size and is still not chased: `plan` formats a

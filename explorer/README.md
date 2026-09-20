@@ -724,7 +724,8 @@ being drawn. Recomputing costs fifteen to twenty-five milliseconds against a fra
 seconds, so there is nothing to buy by being clever — and the gesture it does keep it for is
 the one that matters, a zoom in about a point near the middle, so a descent pays for one
 orbit rather than one a rung. At the anchor the orbit is **48,552 points at three limbs**,
-53,408 bytes on the boundary.
+**776,848 bytes** on the boundary — `16 + 16·count`, `pack_reference`'s own layout, sixteen
+a point rather than the twelve the pairs need so that they land `f64` aligned.
 
 **Bands are cut to the explorer's own `BAND_TARGET_MS`, and the opening cut is two rows.**
 A cancel costs one band, so a band is how long the tab can ignore the reader; the viewer's
@@ -875,13 +876,20 @@ opens the Deep tab on it.
 
 On this machine, 2026-09-19, a 1600×1000 window and a 908×512 canvas, driven over CDP:
 
+**Every row is one stage and not a Render.** `said` (`deep.js:386-399`) emits the stage's
+own `field.elapsed`, so the figure a reader sees when a frame settles is the *last* stage's
+— the fine pass at four samples a pixel, which is the one that dominates. A whole Render at
+the anchor is the three of them: 1.2 s for the quarter pass, something near 13 s for the full
+one — read off its own `about 12 s left` progress line rather than timed — and then the
+62.7 s below, so **about 77 s**, of which the fine pass is four fifths.
+
 | | |
 |---|---|
-| the Mandelbrot home, all three stages | field 0.15 s, shade 246 ms |
-| the audit's anchor at 2e-11, cap 48,551, all three stages | **field 62.7 s**, shade 180 ms |
+| the Mandelbrot home, its fine pass | field 0.15 s, shade 246 ms |
+| the audit's anchor at 2e-11, cap 48,551, its fine pass at 4× | **field 62.7 s**, shade 180 ms |
 | the same, its quarter pass alone | field 1.22 s |
 | a palette change on the anchor's kept field | **recolored in 126 ms** |
-| `perturb.wasm` | **112,675 bytes raw, 52,786 gzipped** (2026-09-20, with the Julia case) |
+| `perturb.wasm` | **122,098 bytes raw, 56,147 gzipped** (2026-09-20, with the skip table) |
 
 So the tab is about four hundred times the wait of a shallow frame and a recolour of it is
 a shade, which is the whole reason the field is kept. The anchor's quarter pass at 1.22 s is
@@ -905,10 +913,21 @@ explorer/?dv=2&cx=-0.74501772828532335842941892835857434&cy=0.149934432754568191
 
 ### What is not here
 
-Full-size download from the Deep tab, "find the minibrot here" and nucleus references in
-the UI, and BLA — all three out of scope by the prompt that built this, and none of them
-blocked by anything above. BLA's seam is marked at the top of `Kernel::sample`'s loop and
-changes how long a picture takes rather than what it is.
+Full-size download from the Deep tab, and "find the minibrot here" and nucleus references
+in the UI — both out of scope by the prompt that built this, and neither blocked by
+anything above.
+
+**BLA is built now and it is off**, which is a third thing and a different kind of thing.
+`perturb-wasm/src/bla.rs` is the skip table and `Spec`'s `bla` is its tolerance; no page
+sets it, no worker builds one, and every picture this tab draws is still the plain loop's,
+byte for byte. It is off because the crate README's §6 measured it: **it is a net loss at
+both of the widths the two links above use** — 0.59× at the anchor and 0.89× on the
+Julia frame at the tightest tolerance that changes nothing — and it turns into 50× or
+more only below about 1e-20, because the run length a skip can take is set by the frame's
+own width and not by its cap. Turning it on is a prompt of its own, and its first job is
+not the plumbing: it is that every frame deep enough for the skip to pay is, on the ladders
+this repository carries, 100% interior, so the depth at which it pays and the depth at
+which it has been checked do not yet overlap.
 
 And on the Julia side: **no Julia view anchored anywhere but `z = 0` and `z = c`.** A frame
 far from both at depth is refused rather than drawn, which is the honest answer and not a

@@ -35,11 +35,13 @@
 //! wider engine, it is one kernel — which is the shape the explorer's own README
 //! already said a deep renderer would have to take.
 
+use crate::bla::Table;
 use crate::fx::Fx;
 use crate::json::Value;
 use crate::kernel::Kernel;
 use crate::reference::Reference;
 
+pub mod bla;
 pub mod fx;
 pub mod json;
 pub mod kernel;
@@ -150,6 +152,15 @@ pub struct Spec {
     /// No meaning without [`Spec::julia`], and refused without it.
     pub anchor: Anchor,
     pub interior: bool,
+    /// The skip table's tolerance, or **off**, which is the default and what
+    /// ships.
+    ///
+    /// A number is `ε`, the share of a linear step the dropped quadratic term is
+    /// allowed to be — see [`crate::bla`]. Absent or `null` is the plain loop,
+    /// and the plain loop is what every picture on the page is drawn by: the
+    /// table changes how long a frame takes and, unlike the interior switch, it
+    /// does not come with the evidence that it changes nothing else.
+    pub bla: Option<f64>,
 }
 
 /// The point a Julia view measures its offset from, which is always a point of
@@ -185,6 +196,7 @@ const KNOWN: &[&str] = &[
     "julia_im",
     "anchor",
     "interior",
+    "bla",
 ];
 
 impl Spec {
@@ -253,6 +265,15 @@ impl Spec {
             Some(_) => return Err("`anchor` is \"parameter\" or \"origin\"".to_string()),
         };
         let period = count_of("period");
+        let bla = match object.get("bla") {
+            None | Some(Value::Null) => None,
+            Some(Value::Num(value)) if *value > 0.0 && value.is_finite() => Some(*value),
+            _ => {
+                return Err(
+                    "`bla` is a positive tolerance, or absent for the plain loop".to_string(),
+                );
+            }
+        };
 
         // Each of these three is a member that means something only on the other
         // side of the fork, and a spec that carries both is a spec whose author
@@ -260,20 +281,26 @@ impl Spec {
         // ignored, for the reason every refusal in this module is a sentence.
         if julia.is_some() {
             if reference.is_some() {
-                return Err("a Julia frame's reference is the critical orbit of its own \
+                return Err(
+                    "a Julia frame's reference is the critical orbit of its own \
                             `julia_re`/`julia_im`, so it cannot also be given a \
                             `reference_re`/`reference_im`"
-                    .to_string());
+                        .to_string(),
+                );
             }
             if period.is_some() {
-                return Err("`period` wraps a Mandelbrot nucleus's reference, and a Julia \
+                return Err(
+                    "`period` wraps a Mandelbrot nucleus's reference, and a Julia \
                             frame's reference is a critical orbit rather than a nucleus"
-                    .to_string());
+                        .to_string(),
+                );
             }
         } else if object.get("anchor").is_some() {
-            return Err("`anchor` says which point of the Julia reference a view is offset \
+            return Err(
+                "`anchor` says which point of the Julia reference a view is offset \
                         from, and this spec has no `julia_re`"
-                .to_string());
+                    .to_string(),
+            );
         }
 
         Ok(Spec {
@@ -288,6 +315,7 @@ impl Spec {
             julia,
             anchor,
             interior,
+            bla,
         })
     }
 
@@ -374,6 +402,37 @@ impl Spec {
         ))
     }
 
+    /// The largest `|dc|` any sample of this frame carries — one number for the
+    /// whole frame, and never for a band.
+    ///
+    /// **This is the third argument the skip table is a function of**, and it is
+    /// the reason the table can be built once and used by every band: a merged
+    /// validity radius has to hold for every sample, so it is taken against the
+    /// largest `|dc|` any of them has rather than against the sample's own. A
+    /// bound computed from a band's rows instead would make the table a function
+    /// of where the band was cut, and the assembly pin in `deep.test.mjs` —
+    /// three bands, byte-identical to the whole frame — is exactly the assertion
+    /// that nothing in this module is.
+    ///
+    /// Zero on a Julia frame, where `dc` is identically zero and the offset is
+    /// spent once into the opening delta.
+    pub fn dc_bound(&self) -> f64 {
+        if self.julia.is_some() {
+            return 0.0;
+        }
+        let (re, im) = self.centre_offset().unwrap_or((0.0, 0.0));
+        // The corner of the frame, from the reference: the offset plus half the
+        // diagonal. `dc` runs over `offset ± width/2` and `offset ± height/2`.
+        (re * re + im * im).sqrt() + 0.5 * self.width.hypot(self.plane_height())
+    }
+
+    /// The skip table this spec asks for, or `None` where it asks for none or
+    /// where the orbit cannot carry one.
+    pub fn bla_table(&self, orbit: &Reference) -> Option<Table> {
+        let epsilon = self.bla?;
+        Table::build(orbit, epsilon, self.dc_bound(), bla::MIN_LEVEL)
+    }
+
     /// How many representable numbers one sample step spans, in the `f64` the
     /// delta starts from.
     ///
@@ -441,22 +500,32 @@ impl Spec {
 /// available — but it belongs to whoever puts a picture on a page, and until
 /// then this hands over everything it computed.
 pub fn compute_rows(spec: &Spec, orbit: &Reference, first: u32, last: u32) -> Vec<u8> {
-    let kernel = Kernel::new(orbit, spec.maxiter(), spec.interior).at_entry(spec.entry());
+    // Built here and not handed in, because the table is a pure function of the
+    // orbit, the tolerance and the frame's own `dc` bound — so a worker that has
+    // the orbit has everything it needs, and a band cannot make a different one.
+    // Building it once a band rather than once a frame is this stage's waste and
+    // is priced in the crate README.
+    let table = spec.bla_table(orbit);
+    let mut kernel = Kernel::new(orbit, spec.maxiter(), spec.interior).at_entry(spec.entry());
+    if let Some(table) = table.as_ref() {
+        kernel = kernel.with_bla(table);
+    }
     let offset = spec.centre_offset().unwrap_or((0.0, 0.0));
     let width = spec.sample_width();
     let mut bytes = Vec::with_capacity(((last - first) * width) as usize * 8);
-    // The fork is taken once for the band rather than once for each of its
-    // samples: the two loops are the same text and different monomorphizations,
+    // The forks are taken once for the band rather than once for each of its
+    // samples: the loops are the same text and different monomorphizations,
     // which is what keeps the Mandelbrot loop exactly the loop it was.
-    if spec.julia.is_some() {
-        fill::<true>(spec, &kernel, offset, first, last, &mut bytes);
-    } else {
-        fill::<false>(spec, &kernel, offset, first, last, &mut bytes);
+    match (spec.julia.is_some(), kernel.bla.is_some()) {
+        (false, false) => fill::<false, false>(spec, &kernel, offset, first, last, &mut bytes),
+        (false, true) => fill::<false, true>(spec, &kernel, offset, first, last, &mut bytes),
+        (true, false) => fill::<true, false>(spec, &kernel, offset, first, last, &mut bytes),
+        (true, true) => fill::<true, true>(spec, &kernel, offset, first, last, &mut bytes),
     }
     bytes
 }
 
-fn fill<const JULIA: bool>(
+fn fill<const JULIA: bool, const BLA: bool>(
     spec: &Spec,
     kernel: &Kernel,
     offset: (f64, f64),
@@ -468,11 +537,7 @@ fn fill<const JULIA: bool>(
     for row in first..last {
         for col in 0..width {
             let (re, im) = spec.dc(offset, col, row);
-            let outcome = if JULIA {
-                kernel.sample_julia(re, im)
-            } else {
-                kernel.sample(re, im)
-            };
+            let outcome = kernel.sample_with::<JULIA, BLA>(re, im);
             bytes.extend_from_slice(&outcome.smooth.to_le_bytes());
         }
     }
@@ -549,7 +614,11 @@ pub extern "C" fn plan(spec_ptr: *const u8, spec_len: usize) -> *mut u8 {
              spans {:.2} of the numbers a double has left there — fewer than the {} it takes to \
              tell two pixels apart. Every sample would start from the same delta and the picture \
              would be flat. Zoom out, or move back toward the anchor.",
-            if spec.julia.is_some() { "too far" } else { "too far from its reference" },
+            if spec.julia.is_some() {
+                "too far"
+            } else {
+                "too far from its reference"
+            },
             ulps,
             DELTA_ULPS,
         )),
@@ -772,8 +841,8 @@ mod tests {
         // the offset and twenty-five below the sample spacing this view has.
         assert!((dx + 4.34e-33).abs() < 1e-38, "offset was {dx:e}");
         // The same subtraction the engine would have done.
-        let narrowed = -0.74501772828532335842941892835857434f64
-            - -0.74501772828532335842941892835857000f64;
+        let narrowed =
+            -0.74501772828532335842941892835857434f64 - -0.74501772828532335842941892835857000f64;
         assert_eq!(narrowed, 0.0);
     }
 
@@ -983,7 +1052,8 @@ mod tests {
 
         // And from the origin anchor the very same frame is exact. That is what
         // the second anchor is for, and the only thing it is for.
-        let anchored = far_spec(1e-20).replace(r#""schema": 1"#, r#""schema": 1, "anchor": "origin""#);
+        let anchored =
+            far_spec(1e-20).replace(r#""schema": 1"#, r#""schema": 1, "anchor": "origin""#);
         assert!(Spec::parse(&anchored).unwrap().delta_ulps().is_infinite());
     }
 
@@ -991,8 +1061,14 @@ mod tests {
     /// away from the anchor the arithmetic is measured against.
     fn far_spec(width: f64) -> String {
         julia_spec()
-            .replace(r#""center_re": "-0.74501772828532335842941892835857434""#, r#""center_re": "0""#)
-            .replace(r#""center_im": "0.14993443275456819177805709088257971""#, r#""center_im": "0""#)
+            .replace(
+                r#""center_re": "-0.74501772828532335842941892835857434""#,
+                r#""center_re": "0""#,
+            )
+            .replace(
+                r#""center_im": "0.14993443275456819177805709088257971""#,
+                r#""center_im": "0""#,
+            )
             .replace(r#""width": 2e-11"#, &format!(r#""width": {width:e}"#))
     }
 
@@ -1019,7 +1095,11 @@ mod tests {
             r#""schema": 1"#,
             r#""schema": 1, "reference_re": "0", "reference_im": "0""#,
         );
-        assert!(Spec::parse(&with_reference).unwrap_err().contains("critical orbit"));
+        assert!(
+            Spec::parse(&with_reference)
+                .unwrap_err()
+                .contains("critical orbit")
+        );
 
         let with_period = julia_spec().replace(r#""schema": 1"#, r#""schema": 1, "period": 2838"#);
         assert!(Spec::parse(&with_period).unwrap_err().contains("nucleus"));
@@ -1038,8 +1118,7 @@ mod tests {
         let bytes = spec.as_bytes();
         let out = plan(bytes.as_ptr(), bytes.len());
         let size = unsafe { std::ptr::read_unaligned(out as *const u32) } as usize;
-        let body =
-            unsafe { std::slice::from_raw_parts(out.add(4), size) };
+        let body = unsafe { std::slice::from_raw_parts(out.add(4), size) };
         let text = String::from_utf8(body.to_vec()).unwrap();
         unsafe { dealloc(out, size + 4) };
         text

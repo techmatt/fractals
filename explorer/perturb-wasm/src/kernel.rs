@@ -39,18 +39,25 @@
 //! started anywhere else would need `δ := z − Z₀` in `f64`, and that subtraction
 //! is exactly the precision a deep frame does not have to spare.
 //!
-//! ## Where a skip table would go
+//! ## The skip table
 //!
 //! Bivariate linear approximation replaces a run of steps of the loop below with
-//! one `δ ← A·δ + B·dc`, read out of a table built off the reference orbit, and
-//! it is worth an order of magnitude on a frame that spends most of its
-//! iterations far from the boundary. It is deliberately **not** built here: it
-//! changes nothing about what a picture *is*, only how long it takes, and it
-//! wants the correctness of the plain loop settled first. The seam is the top of
-//! [`Kernel::sample`]'s loop, marked there — a lookup on `(m, |δ|)` that either
-//! advances `m` and `n` by a run length or falls through to the single step
-//! below it.
+//! one `δ ← A·δ + B·dc`, read out of a table built off the reference orbit — see
+//! [`crate::bla`], which holds the derivation and every guard. The seam is the
+//! top of [`Kernel::sample`]'s loop, marked there: a lookup on `(m, |δ|²)` that
+//! either advances `m` and `n` by a run length or falls through to the single
+//! step below it.
+//!
+//! **It is a const parameter and it defaults off**, for `JULIA`'s reason and one
+//! of its own. The reason of its own is that the plain loop is what every picture
+//! on the page is drawn by and what every number in the crate README prices, so
+//! the loop it compiles to with `BLA = false` has to be the loop that was here
+//! before rather than that loop with a branch in it. The seam, the `|δ|²` the
+//! seam needs carried across the back edge, and the two counters the differential
+//! reads are all inside `if BLA`, and there is no run-time flag anywhere in the
+//! loop.
 
+use crate::bla::Table;
 use crate::reference::{BAILOUT, Reference};
 
 /// How far `|dz|²` has to fall before a sample is taken as interior, as a
@@ -83,6 +90,11 @@ pub struct Outcome {
     /// orbit. The archive's only glitch test, kept as a diagnostic and never as a
     /// branch in the picture — rebasing covers it.
     pub degenerate: bool,
+    /// Iterations the skip table advanced past rather than ran. Zero under the
+    /// plain loop, and the numerator of the share a differential reports.
+    pub skipped: u32,
+    /// Times the table was consulted and answered.
+    pub skips: u32,
 }
 
 /// The reference orbit plus the policy a frame reads it under.
@@ -125,6 +137,14 @@ pub struct Kernel<'a> {
     /// one at `z = c`, zero at `z = 0`. Ignored by [`Kernel::sample`], which
     /// always starts at `Z₀` with a delta of zero.
     pub entry: usize,
+    /// The skip table, or the plain loop.
+    ///
+    /// **Absent is the default and absent is what ships.** A table is a
+    /// measured trade — a run of steps replaced by one multiply-add, against an
+    /// approximation whose price is in [`crate::bla`] and in the crate README —
+    /// and the loop with none is the loop every picture on the page was drawn
+    /// by.
+    pub bla: Option<&'a Table>,
 }
 
 impl<'a> Kernel<'a> {
@@ -135,7 +155,14 @@ impl<'a> Kernel<'a> {
             interior,
             floor: INTERIOR_EXPONENT,
             entry: 0,
+            bla: None,
         }
+    }
+
+    /// The same kernel with a skip table in front of its loop.
+    pub fn with_bla(mut self, table: &'a Table) -> Self {
+        self.bla = Some(table);
+        self
     }
 
     /// The same kernel entered at another point of the orbit — which is how a
@@ -159,7 +186,11 @@ impl<'a> Kernel<'a> {
     /// two absolute coordinates — which at 1e-28 would be the difference of two
     /// numbers that are the same `f64`.
     pub fn sample(&self, dc_re: f64, dc_im: f64) -> Outcome {
-        self.run::<false>(dc_re, dc_im)
+        if self.bla.is_some() {
+            self.run::<false, true>(dc_re, dc_im)
+        } else {
+            self.run::<false, false>(dc_re, dc_im)
+        }
     }
 
     /// One sample of a Julia frame, given its offset from the anchor point.
@@ -170,7 +201,32 @@ impl<'a> Kernel<'a> {
     /// counts steps and never the reference index, so entering at `Z₁` costs it
     /// nothing.
     pub fn sample_julia(&self, delta_re: f64, delta_im: f64) -> Outcome {
-        self.run::<true>(delta_re, delta_im)
+        if self.bla.is_some() {
+            self.run::<true, true>(delta_re, delta_im)
+        } else {
+            self.run::<true, false>(delta_re, delta_im)
+        }
+    }
+
+    /// One sample with both forks named, so a caller that has already taken them
+    /// — a band fill, a differential — takes them once rather than once a
+    /// sample.
+    ///
+    /// `BLA = true` with no table is the plain loop: the seam is compiled in and
+    /// never answers.
+    ///
+    /// ⚠ **`inline(never)`, and it is worth 63%.** `run` is `inline(always)`, so
+    /// without this the whole per-sample loop lands inside
+    /// [`crate::compute_rows`]'s row-and-column loop — and measured on the anchor
+    /// at 96×54 that took the plain path from **4.79 ns a sample-iteration to
+    /// 7.80**, with the bytes unchanged. Whatever the register allocator is doing
+    /// with the band's own loop, it is not doing it while this one is in the same
+    /// body. [`Kernel::sample`] gets the same treatment for free by not being
+    /// `inline(always)`, which is what the band fill used to call and is why the
+    /// price was never visible before.
+    #[inline(never)]
+    pub fn sample_with<const JULIA: bool, const BLA: bool>(&self, a_re: f64, a_im: f64) -> Outcome {
+        self.run::<JULIA, BLA>(a_re, a_im)
     }
 
     /// The loop, once, for both.
@@ -182,12 +238,16 @@ impl<'a> Kernel<'a> {
     /// loop is exactly the loop it would have been written as by hand, and the
     /// Mandelbrot one is byte for byte the loop that was here before.
     #[inline(always)]
-    fn run<const JULIA: bool>(&self, a_re: f64, a_im: f64) -> Outcome {
+    fn run<const JULIA: bool, const BLA: bool>(&self, a_re: f64, a_im: f64) -> Outcome {
         // Everything the loop reads more than once, read once. A field access
         // through `&Reference` is a load the optimizer cannot always hoist past
         // the indexing below it, and this loop runs tens of thousands of times
         // per sample and millions of times per frame.
         let points = &self.reference.points[..];
+        // Hoisted for the reason every other invariant in this loop is: a field
+        // read through `&self` is a load the optimizer cannot always lift past
+        // the indexing below it, and this one sits at the top of the loop.
+        let table = if BLA { self.bla } else { None };
         let periodic = self.reference.periodic;
         let track_interior = self.interior;
         let floor = self.floor;
@@ -211,31 +271,86 @@ impl<'a> Kernel<'a> {
         let mut n = 0u32;
         let mut rebases = 0u32;
         let mut degenerate = false;
+        let mut skipped = 0u32;
+        let mut skips = 0u32;
 
         // |dz|², as a mantissa in [1, 2^64) and a power-of-two exponent. Only
         // touched under the switch.
         let mut derivative = 1.0f64;
         let mut exponent = 0i32;
 
-        loop {
-            // ---- the BLA seam: a skip table would be consulted here. ----
-            let ar = zr + zr + delta_re;
-            let ai = zi + zi + delta_im;
-            let mut next_re = ar * delta_re - ai * delta_im;
-            let mut next_im = ar * delta_im + ai * delta_re;
-            if !JULIA {
-                next_re += dc_re;
-                next_im += dc_im;
-            }
-            delta_re = next_re;
-            delta_im = next_im;
+        // `|δ|²`, carried across the back edge. The plain loop forms it at the
+        // bottom, where the rebase test wants it; the seam wants it at the top,
+        // and re-forming it there would be two multiplies and an add an
+        // iteration for the sake of one branch. Every store to it is inside
+        // `if BLA`, so under the plain loop it does not exist.
+        let mut carried_norm_sq = if BLA {
+            delta_re * delta_re + delta_im * delta_im
+        } else {
+            0.0
+        };
 
-            m += 1;
-            n += 1;
-            if periodic && m >= length {
-                // `Z[period] = 0 = Z[0]`, so the index wraps and the delta is
-                // untouched. This is the whole payoff of naming a period.
-                m = 0;
+        loop {
+            // ---- the BLA seam. ----
+            //
+            // **The skip replaces the step and nothing after it.** A run of `l`
+            // is only ever taken when the table can show that none of the `l−1`
+            // steps *inside* it would have escaped, rebased, reached the cap or
+            // tripped the interior switch — `crate::bla` holds each of those
+            // guards and says where. What the run lands on is a different
+            // question, and it is not asked here: the delta the run produces
+            // falls through into the same escape, interior, cap and rebase tests
+            // the single step below falls into, because those are the tests the
+            // plain loop would have run at that index and there is no version of
+            // this that skips them.
+            let jump = if BLA {
+                table.and_then(|table| {
+                    let guard = if track_interior {
+                        Some((derivative, exponent, floor))
+                    } else {
+                        None
+                    };
+                    table.lookup(m, carried_norm_sq, maxiter - n, guard)
+                })
+            } else {
+                None
+            };
+            if let Some((step, run)) = jump {
+                let next_re = step.a_re * delta_re - step.a_im * delta_im;
+                let next_im = step.a_re * delta_im + step.a_im * delta_re;
+                // `B·dc` is structurally absent on a Julia frame: `dc` is
+                // identically zero there and the offset was spent once, into the
+                // delta the loop opened with.
+                if JULIA {
+                    delta_re = next_re;
+                    delta_im = next_im;
+                } else {
+                    delta_re = next_re + step.b_re * dc_re - step.b_im * dc_im;
+                    delta_im = next_im + step.b_re * dc_im + step.b_im * dc_re;
+                }
+                m += run as usize;
+                n += run;
+                skipped += run;
+                skips += 1;
+            } else {
+                let ar = zr + zr + delta_re;
+                let ai = zi + zi + delta_im;
+                let mut next_re = ar * delta_re - ai * delta_im;
+                let mut next_im = ar * delta_im + ai * delta_re;
+                if !JULIA {
+                    next_re += dc_re;
+                    next_im += dc_im;
+                }
+                delta_re = next_re;
+                delta_im = next_im;
+
+                m += 1;
+                n += 1;
+                if periodic && m >= length {
+                    // `Z[period] = 0 = Z[0]`, so the index wraps and the delta is
+                    // untouched. This is the whole payoff of naming a period.
+                    m = 0;
+                }
             }
 
             let point = points[m];
@@ -252,23 +367,39 @@ impl<'a> Kernel<'a> {
                     rebases,
                     detected_interior: false,
                     degenerate,
+                    skipped,
+                    skips,
                 };
             }
 
             if track_interior {
-                derivative *= 4.0 * z_norm_sq;
-                if derivative >= TWO64 {
-                    derivative *= TWO64_INV;
-                    exponent += 64;
+                // A run carries the product it stands for, `∏4|Z|²` over its own
+                // steps, in this very form — see `crate::bla` for why it is not
+                // `|A|²` and not derivable from it.
+                if let Some((step, _)) = jump {
+                    derivative *= step.deriv;
+                    exponent += step.deriv_exp;
+                    while derivative >= TWO64 {
+                        derivative *= TWO64_INV;
+                        exponent += 64;
+                    }
                 } else {
-                    while derivative < 1.0 {
-                        if derivative == 0.0 {
-                            // `z` passed exactly through the origin: this is the
-                            // nucleus itself, and it is interior.
-                            return interior_outcome(n, rebases, true, degenerate);
+                    derivative *= 4.0 * z_norm_sq;
+                    if derivative >= TWO64 {
+                        derivative *= TWO64_INV;
+                        exponent += 64;
+                    } else {
+                        while derivative < 1.0 {
+                            if derivative == 0.0 {
+                                // `z` passed exactly through the origin: this is the
+                                // nucleus itself, and it is interior.
+                                return interior_outcome(
+                                    n, rebases, true, degenerate, skipped, skips,
+                                );
+                            }
+                            derivative *= TWO64;
+                            exponent -= 64;
                         }
-                        derivative *= TWO64;
-                        exponent -= 64;
                     }
                 }
                 // `derivative · 2^exponent < 2^floor`, exactly. The integer
@@ -276,15 +407,18 @@ impl<'a> Kernel<'a> {
                 // of iterations of an interior sample, so the `f64` compare
                 // behind it costs nothing on the frames that do not use it.
                 if exponent <= floor + 64 && derivative < pow2_at_most(floor - exponent) {
-                    return interior_outcome(n, rebases, true, degenerate);
+                    return interior_outcome(n, rebases, true, degenerate, skipped, skips);
                 }
             }
 
             if n >= maxiter {
-                return interior_outcome(n, rebases, false, degenerate);
+                return interior_outcome(n, rebases, false, degenerate, skipped, skips);
             }
 
             let delta_norm_sq = delta_re * delta_re + delta_im * delta_im;
+            if BLA {
+                carried_norm_sq = delta_norm_sq;
+            }
             if delta_norm_sq == 0.0 && !offset_is_zero {
                 degenerate = true;
             }
@@ -293,6 +427,9 @@ impl<'a> Kernel<'a> {
             if z_norm_sq < delta_norm_sq || (!periodic && m >= last) {
                 delta_re = z_re;
                 delta_im = z_im;
+                if BLA {
+                    carried_norm_sq = z_norm_sq;
+                }
                 zr = points[0][0];
                 zi = points[0][1];
                 m = 0;
@@ -316,13 +453,22 @@ fn pow2_at_most(k: i32) -> f64 {
     }
 }
 
-fn interior_outcome(n: u32, rebases: u32, detected: bool, degenerate: bool) -> Outcome {
+fn interior_outcome(
+    n: u32,
+    rebases: u32,
+    detected: bool,
+    degenerate: bool,
+    skipped: u32,
+    skips: u32,
+) -> Outcome {
     Outcome {
         smooth: f64::NAN,
         iterations: n,
         rebases,
         detected_interior: detected,
         degenerate,
+        skipped,
+        skips,
     }
 }
 
