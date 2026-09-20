@@ -102,6 +102,7 @@ deep-fx.js            exact decimal coordinates, BigInt fixed point
 deep-link.js          the deep link contract, its own beside the shallow one
 inflect.js            the Inflection tab: Julia morphing, degree 2, a trial
 inflect-link.js       its contract, its own beside the other two
+features.js           filaments, arms and branch points in a field — not loaded by the page
 saved.js              the Saved list: one localStorage value of links, and the save mark
 saved-panel.js        the Saved tab: tiles drawn from their links, import, export, Download all
 zip.js                a stored (uncompressed) zip writer, for Download all
@@ -120,6 +121,7 @@ deep-fx.test.mjs      12 tests: the Deep tab's arithmetic is exact where a doubl
 deep-link.test.mjs    20 tests: the deep contract, and the shallow one held to not moving
 deep.test.mjs         10 tests: where the two modules meet, against both committed ones
 inflect-link.test.mjs 26 tests: the third contract, and the other two held to not moving
+features.test.mjs     13 tests: the finder, on shapes whose answers are known
 palettes.jsonl        the roster palettes.js is baked from; 1,021 maps, 77 offered,
                       232 a random pick may draw
 modes.jsonl           the roster catalog.js is baked from: the 17 modes the picker offers
@@ -959,6 +961,22 @@ That map fixes `p` and is two-to-one around it, so the picture that was at `p` r
 wrapped twice about it — **exact two-fold symmetry there**. Repeat at the same point for
 four-, eight-, sixteen-fold; inflect off to one side to build trees, lines and chains.
 
+**Where to click is published practice, and it is not guesswork** *(sources in
+`fractal-drive-sync/preserve/art_techniques_links.md`; the operative one is
+Heiland-Allen's ALPACA 2025 paper on patterns in deep Mandelbrot zooms)*. Work within the
+**shortest arm** of the structure around the last click; a click at its **central node**
+makes a disk, one **beside** that node makes a tree, one **beyond** it makes a line. Making
+the same choice each time the pattern comes round is an **evolution**, and leaves copies of
+the construction's earlier stages standing outward at diminishing scale; alternating two
+choices on the period's cycle interleaves two progressions. The paper's own worked example
+is ten clicks — tree, disk, line, three times over.
+
+**Repeating one point is not that**, and it is the thing to avoid: clicking the same
+coordinate `k` times is `(z − p)^(2^k)`, everything inside radius one flattens, and the
+detail retreats to a thin ring. The tab's first contact sheet stopped paying at three
+repeats for exactly this reason. What artists do is **move to a new feature every click** —
+which is where trees, chains and evolutions come from.
+
 **Only the orbit's starting point moves**, and that is the whole of why this was cheap.
 The recurrence, the cap, the escape test, every channel the modes read and every reduction
 over them are the engine's, untouched. So every mode, every palette, the whole shade
@@ -1049,6 +1067,12 @@ interior maps two-to-one onto a disc of interior, and the picture is a black dis
 rim on it. The first contact sheet was half black for exactly this, and so was the first
 working build of the tab.
 
+**On the presets as they are now, that failure cannot happen**, because none of them has
+any interior to click into — see *The stack* above. The snap stays on, and earns its place
+differently: the sets it now opens are dendrites and dusts whose filaments are a pixel or
+two wide, so a click is off the structure far more often than it was on a fat minibrot,
+and a point that is off the structure inflects a neighbourhood of nothing.
+
 So a click is moved onto the nearest point of the set: iterate a small grid about it and
 take the escaping sample that took longest to escape — a sample that escapes is outside the
 set, and one that takes a long time about it is against the boundary. It reads the picture
@@ -1071,13 +1095,31 @@ A click while stepped back **truncates**, the way an editor's undo history does:
 forward half was a construction this click is no longer on the way to, and keeping it would
 leave Forward stepping into a point placed on a picture that no longer exists.
 
-The **Start** row is six Julia sets. They are hand picks: a `c` inside a small minibrot of
-period 1 to 3 has solid nodes joined by filaments and sculpts; a `c` deep in the main
-cardioid is one fat disc whose inflections are bulges on a blob, and a `c` outside the set
-is dust, where doubling a neighbourhood of nothing is nothing. Choosing a set clears the
-construction, because the points were placed on the old set's nodes and mean nothing on the
-new one's — and so does coming back to the tab with a different `c` in force, which the
-`cx` box in Details and the Deep tab's *Julia at this c* can both do while it is away.
+The **Start** row is eight Julia sets, and **every one of them has empty interior**
+*(inflection_sheet2_ckpt136)*. This paragraph used to say the opposite — that a `c` inside
+a small minibrot has solid nodes joined by filaments and sculpts best — which is true of
+real deep-zoom morphing and exactly wrong here. The pre-map sends a disc of interior
+two-to-one onto a disc of interior, so **a filled node inflects to a black disc with a rim
+on it**, and the tab's first six presets were all of that kind.
+
+Interior is a property of `c` that can be decided rather than guessed. Iterate `z ← z² + c`
+from the critical point `z₀ = 0`, find the cycle it settles on, and take the multiplier
+`|λ| = |∏ 2z|` around that cycle: under one the cycle attracts, so it has a basin and the
+basin is the interior; over one it repels, nothing is drawn in, and the set is a dendrite
+or a dust with no interior at all. Exactly one is parabolic, which has a basin too. Closing
+a cycle is **not** the test and reads `c = i` — the classic dendrite — as a filled set of
+period 2: its critical orbit does land on a 2-cycle, and that cycle repels.
+
+So the presets are seven **Misiurewicz points**, where the critical orbit is strictly
+preperiodic and the Julia set is a dendrite, and one `c` just outside the set beside
+elephant valley, where it is a dust that still carries the shape of the connected set next
+to it. Each was checked by that test and then picked off a rendered survey of forty-seven
+candidates for looking unlike the others.
+
+Choosing a set clears the construction, because the points were placed on the old set's
+nodes and mean nothing on the new one's — and so does coming back to the tab with a
+different `c` in force, which the `cx` box in Details and the Deep tab's *Julia at this c*
+can both do while it is away.
 
 **The family picker is held while the tab shows**, and it is the only control that is. The
 pre-map is defined here for `z² + c` and the module refuses anything else by name, so a
@@ -1187,6 +1229,8 @@ pictures and decide.
 inflect.js               the tab: the stack, the start, the snap, what a click means
 inflect-link.js          its contract — parse, emit, canonicalize, fresh
 inflect-link.test.mjs    26 tests: the contract, and the other two held to not moving
+features.js              the feature finder — see Next; nothing on the page imports it
+features.test.mjs        13 tests: arms, nodes and the three choices, on drawn shapes
 engine-wasm/src/inflect.rs   the pre-map, the one-family sweep, and 5 tests of the math
 bench/inflect.mjs        what a list costs, against the same frame with none
 ```
@@ -3031,6 +3075,25 @@ retuned mode still arrives on this page by rebuilding** — its identity line an
 are the engine's — but now with a failing check to announce it rather than only a diff.
 
 ## Next
+
+- **A feature finder, built and not wired to anything** *(inflection_sheet2_ckpt136)*.
+  `explorer/features.js` reads a rendered field and answers the questions the Julia-morphing
+  sources ask in words: where are the filaments, what arms leave this point and which is
+  shortest, where are its branch points, and which of them is the *central node*, the one
+  *beside* it and the one *beyond* it. It is pure functions over an `f64` lane, tested under
+  node against drawn shapes, and **nothing on the page imports it** — it exists because the
+  second inflection contact sheet needed to click the way a person does, thirty times over,
+  without eyes.
+
+  Two things it could become, and neither is built. **A smarter snap**: the Inflection tab
+  moves a click to the deepest escaping sample nearby, which is the right point about as
+  often as not; snapping to the nearest *node* instead would put it on the feature a reader
+  was aiming at rather than on the brightest pixel near their finger. **Suggest the next
+  click**: the tab could mark the three named places and let a reader take one, which is
+  the published practice turned into a control. Both want the finder to run on the
+  quarter-resolution preview the pass already has rather than on a pass of its own, and
+  neither should be built before Matt has said he likes these pictures — the tab is still a
+  trial.
 
 Listed, not designed. The first three are `explorer_perf_audit_ckpt136`'s, and each says what
 it would buy and **how large the difference from the pipeline render would be** — an

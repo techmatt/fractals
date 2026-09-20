@@ -7,7 +7,17 @@ local.toml
 
 # Prompt working copies. Prompts live in C:\Code\fractal-drive-sync\prompts and
 # never land in this repo; a copy dropped here for a session stays untracked.
-/website_*.md
+#
+# **Written as a deny-list of the two markdown files the root is allowed to have**, and
+# that is the point of it: this used to read `/website_*.md`, which caught the naming one
+# session happened to use and nothing else. A copy named for its own prompt —
+# `explorer_side_panel_ckpt129.md` sat here untracked for weeks — was one `git add -A`
+# away from being committed. An allow-list cannot go stale the way a name pattern does:
+# a new root document is a deliberate line here, and a prompt copy under any name is
+# ignored without anybody having to think about it.
+/*.md
+!/CLAUDE.md
+!/README.md
 
 # The wasm crates' build trees. `engine.wasm` and `perturb.wasm` beside the page are
 # the committed artifacts; these are the several hundred megabytes cargo needs to

@@ -47,23 +47,38 @@ import * as inflectLink from "./inflect-link.js";
 /**
  * Starting `c` values worth sculpting, and why each.
  *
- * **A `c` inside a small minibrot sculpts and dust does not.** The pre-map wraps whatever
- * is around `p` twice about it, so what there is to wrap has to be *structure*: solid
- * nodes joined by filaments. A `c` in the interior of the main cardioid gives one fat
- * disc whose inflections are bulges on a blob; a `c` outside the set gives Cantor dust,
- * where doubling a neighbourhood of nothing is nothing. Periods 1 to 3 are where the
- * nodes are big enough to see and the filaments fine enough to sculpt with.
+ * **They all have no interior, and that is the rule** *(inflection_sheet2_ckpt136,
+ * correcting this list's first version)*. The first set of presets were `c` inside small
+ * minibrots — the rabbit, the basilica, the airplane — chosen because solid nodes joined
+ * by filaments is what sculpts in real deep-zoom morphing. Here it is exactly wrong: the
+ * pre-map sends a disc of interior two-to-one onto a disc of interior, so a filled node
+ * inflects to a **black disc with a rim on it**, and the first contact sheet was half
+ * black because of it.
  *
- * Six, and they are hand picks in the sense the rest of this project means it: each was
- * looked at. The names are the ones the literature uses where it has one.
+ * What sculpts here is a Julia set with no interior at all, which is a property of `c`
+ * that can be decided rather than guessed: iterate `z ← z² + c` from the critical point
+ * `z₀ = 0`, find the cycle it settles on, and take the multiplier `|λ| = |∏ 2z|` around
+ * that cycle. Under one the cycle attracts, it has a basin, and the basin is the
+ * interior — reject. Over one it repels, nothing is drawn into it, and the Julia set is a
+ * dendrite or a dust with empty interior — keep. Exactly one is parabolic, which has a
+ * basin too.
+ *
+ * So these are **Misiurewicz points**, where the critical orbit is strictly preperiodic
+ * and the set is a dendrite, plus one `c` just outside the set where the Julia set is a
+ * dust that still has the shape of the connected set beside it. Each was found by
+ * `scratch/inflect2-seeds.mjs`, checked by that test, and then picked off a rendered
+ * survey of forty-seven candidates for having visibly different character from the rest.
+ * The names are the ones the literature uses where it has one.
  */
 export const SEEDS = [
-  { name: "Rabbit", cx: "-0.12256117", cy: "0.74486177", why: "period 3 — three nodes at every branch, the classic thing to sculpt" },
-  { name: "Basilica", cx: "-1", cy: "0", why: "period 2 — two big nodes in a chain" },
-  { name: "Airplane", cx: "-1.7548777", cy: "0", why: "period 3 on the real axis — a line of nodes" },
-  { name: "Siegel disc", cx: "-0.390541", cy: "-0.586788", why: "period 1 — a fat interior with filament arms" },
-  { name: "Dendrite", cx: "-0.1", cy: "0.8", why: "no interior at all — thin, branchy, and it sculpts sharp" },
-  { name: "Spiral", cx: "-0.7269", cy: "0.1889", why: "this page's own julia anchor" },
+  { name: "Dendrite", cx: "0", cy: "1", why: "c = i, the classic dendrite — open, sparse branching" },
+  { name: "Branches", cx: "-0.101096364", cy: "0.956286511", why: "a Misiurewicz point with long clean arms" },
+  { name: "Hooks", cx: "-0.506294458", cy: "0.683991968", why: "hooked filaments, nodes that curl" },
+  { name: "Feathers", cx: "0.164679752", cy: "0.630301832", why: "dense feathering — the finest filigree here" },
+  { name: "Star", cx: "0.437924241", cy: "0.341892084", why: "five-armed nodes, the easiest to aim at" },
+  { name: "Lace", cx: "0.141232142", cy: "0.687966245", why: "fine lace, close-packed branch points" },
+  { name: "Spine", cx: "-1.5436890126920763", cy: "0", why: "the Feigenbaum point — a spine on the real axis" },
+  { name: "Spiral dust", cx: "0.382624004", cy: "0.229711513", why: "just outside the set beside elephant valley: spirals, and dust rather than a dendrite" },
 ];
 
 /** How near a click has to fall to a point's marker to grab it rather than inflect,
