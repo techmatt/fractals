@@ -101,6 +101,7 @@ deep-worker.js        one worker: one perturb instance, one held orbit, one band
 deep-fx.js            exact decimal coordinates, BigInt fixed point
 deep-link.js          the deep link contract, its own beside the shallow one
 paged-inflection/     PAGED: the Inflection tab, out of the working set — see below
+undo.js               the way back: the pictures shown, and the cursor into them
 saved.js              the Saved list: one localStorage value of links, and the save mark
 saved-panel.js        the Saved tab: tiles drawn from their links, import, export, Download all
 zip.js                a stored (uncompressed) zip writer, for Download all
@@ -114,6 +115,7 @@ bands.test.mjs        3 tests: the pool cuts the frame, never what is in it
 level.test.mjs        7 tests: the module's tone measurement, and a derived curve replays
 derive.test.mjs       6 tests: a derived weight replays, a derived opacity lands where it says
 saved.test.mjs        8 tests: a bad stored value is an empty list, one link is one entry, the cap
+undo.test.mjs         8 tests: one action is one entry, a step back keeps what is ahead, the cap
 zip.test.mjs          2 tests: CRC-32's check values, and an archive read back to its bytes
 deep-fx.test.mjs      12 tests: the Deep tab's arithmetic is exact where a double is not
 deep-link.test.mjs    20 tests: the deep contract, and the shallow one held to not moving
@@ -214,8 +216,15 @@ loses a button moves the rest of them under the pointer: Reset at the picture th
 opened, Whole at the home frame. What either compares is `pictureKey` — the canonical query
 with `level` and the derived parameters dropped, since both are measurements of the picture
 that land partway through the pass that draws it, and a button must not come back to life
-when a pass finishes measuring. The keys work with focus on a button, and never with Ctrl,
-Alt or Meta. That is the whole row: anything more is a shortcut, not chrome.
+when a pass finishes measuring. It is `keyOf` over the view's own query, and **the way back
+keys its entries the same way** — see *The way back*, which needs the same identity over a
+deep link as well, which is why the reduction reads a query rather than a view.
+
+These five keys are bare letters and never take Ctrl, Alt or Meta, and they work with focus
+on a button — the button just pressed, most often. **Ctrl/Cmd is now spelled here too**, by
+the two keys that have no button at all *(explorer_undo_redo_ckpt137)*, and those are the
+one thing on this row that is a shortcut rather than chrome. That is deliberate: the row is
+what a reader can see, and anything more on it would be clutter.
 
 **The mark is painted onto the screen and never into `frame`** — the crosshair and the
 landing mark are one glyph, four arms stroked dark-under-light so that neither disappears
@@ -1055,6 +1064,90 @@ The zip stops at 65,535 files and 4 GB, since there is no zip64.
 going from Saved back to Walk has nothing to take up. Opening a saved picture detaches the
 viewer as opening any picture does, and the walk carries on. Gallery and Atlas still pause
 it when shown.
+
+## The way back *(explorer_undo_redo_ckpt137, 2026-09-20)*
+
+**Ctrl/Cmd+Z steps back through the pictures this session has shown; Ctrl+Shift+Z and
+Ctrl+Y step forward.** There is no button and no panel — the two keys are named once, in
+the `title` on the row of view toggles, which is where this page already says what its keys
+are. `undo.js` holds the list and the cursor and has **8 tests** of its own
+(`node --test explorer/undo.test.mjs`); the two ends of it are in `explorer.js` under *the
+way back*.
+
+The problem it solves is that one press could destroy a picture that took a minute to find.
+Random palette, Random phase, a mode change, Julia here, a gallery or Saved tile, a Walk
+pick — every one of them replaces the view, and before this the only way back was to have
+copied the link first.
+
+**An entry is the picture's canonical link and nothing else.** That link is already the
+complete state — it is what the address bar carries and what Copy link hands out — so a
+step back goes through the same door as opening a link, and nothing here can drift away
+from either contract. There is no second serialization to keep in step, and no state a
+step back can reach that a link cannot spell.
+
+**It rides on `settle`, and that is the whole design.** A picture settled enough to be
+written into the address bar is a picture settled enough to step back to, and `settle` is
+already the one place both contracts agree about that — the shallow viewer calls it when a
+pass finishes and the Deep tab is handed it as a host callback. So there is no hook on the
+mode select, none on Random palette, none on Julia here and none on a gallery tile. Three
+of the four things that would otherwise have to be arranged fall out of that:
+
+- **A wheel burst is one entry** on the shallow side without anything being arranged, because
+  `drawPass` cancels every superseded pass before it reaches `settle`.
+- **A panel change is no entry at all**, because the panel is furniture appended after
+  `currentQuery()` and is not part of the picture.
+- **A deep entry is restored by the Deep tab's own rule**: `deep.open` draws the quarter
+  pass and waits for Render, which is what a deep link does, and an entry is a link.
+
+**The key is `keyOf` — the query with `level` and the derived parameters dropped**, the same
+reduction the greyed buttons use, which is why `pictureKey` is now a thin call over it and
+why the reduction reads a query rather than a view: it has to say the same thing about a
+deep link, and it does, because both contracts spell the curve with `LEVEL_KEY.key` and the
+deep one has no derived parameters. A commit whose key matches the entry under the cursor
+**refreshes** it instead of pushing. That is what makes one action one entry when a pass
+settles twice — once with the picture, once again when it has measured the tone — and the
+entry keeps the second, measured link, so a step back replays the curve that was on screen
+rather than measuring a new one.
+
+**Two things had to be arranged, and both are named where they live.**
+
+- **A debounce of `REMEMBER_MS`, 350 ms**, which is the Deep tab's own `SETTLE_MS` for the
+  same reason it chose that number. The cancellation above is the shallow viewer's alone:
+  the Deep tab's `moved` calls back once per gesture with nothing coalescing, so a wheel
+  burst down there would otherwise be an entry a notch, and a slowly dragged slider can
+  complete more than one shallow pass.
+- **The running walk is the one picture not remembered.** `showWalk` is the walk's own
+  frame-at-a-time display, and a minute of it would fill the trail with pictures nobody
+  chose and bury the ones somebody did, so it alone passes `settle({ remember: false })`.
+  What a reader *did* still commits: pausing lands on `followWalk`, and opening a found
+  picture goes through `openLink`.
+
+**The anchor does not move on a step back.** Reset to seat goes back to what *arrived*, and
+an undo is not an arrival — it is the reader taking back a move they made since. That is the
+only thing `openLink`'s `restoring` option changes, besides the sentence it hands the walk.
+Everything else it does is wanted, which is how stepping back onto a gallery tile puts the
+tile's mark and its *not exact* line back with the picture: the options a picture was opened
+with come off the anchor at commit time, where the settled picture **is** the anchor's, so a
+tile's `key` and `gap` survive into the entry with no second list to keep in step.
+
+**A restore must not commit**, and it is several tasks long, so `restoring` holds the key of
+the entry being put back. It is cleared by the settle that lands on that key and **by nothing
+else** — a settle with any other key on the way there is ignored and leaves the flag up,
+which is what covers the one real case: stepping out of the Deep tab calls `showPanel`, and
+that redraws and settles the old shallow view before `openLink` has replaced it. A restore
+that cannot go ahead returns false and the cursor goes back where it was standing.
+
+**Not `history.pushState`.** The stack is this page's own array, so the browser's Back button
+still means *leave this page* and nothing collides with the `replaceState` that `settle`
+writes the address bar with. It is session-only and never stored: **300** entries, which is
+three hundred short strings and far more steps back than a reader will ever take at once,
+and the cap evicts from the front, the end nobody is standing on.
+
+Two things it deliberately does not do. It **never** triggers a download, a save or a change
+to the Saved list — it restores pictures, and `syncSave` only reads. And it says nothing at
+either end of the trail: a key that does nothing where there is nothing to do is what every
+program does, and a message there would take the line under the canvas away from something
+the page had a better reason to say.
 
 ## Every colormap, and where they live
 

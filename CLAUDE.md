@@ -535,10 +535,10 @@ Three Windows cautions that have each cost a session already:
 
 ```
 python -m ruff check . && python -m ruff format --check . && python -m builder check
-node --test explorer/permalink.test.mjs explorer/bands.test.mjs explorer/level.test.mjs explorer/derive.test.mjs explorer/stops.test.mjs explorer/saved.test.mjs explorer/zip.test.mjs explorer/deep-fx.test.mjs explorer/deep-link.test.mjs explorer/deep.test.mjs atlas/atlas.test.mjs
+node --test explorer/permalink.test.mjs explorer/bands.test.mjs explorer/level.test.mjs explorer/derive.test.mjs explorer/stops.test.mjs explorer/saved.test.mjs explorer/undo.test.mjs explorer/zip.test.mjs explorer/deep-fx.test.mjs explorer/deep-link.test.mjs explorer/deep.test.mjs atlas/atlas.test.mjs
 ```
 
-The second line is the eleven JavaScript suites, on Node's own runner with nothing
+The second line is the twelve JavaScript suites, on Node's own runner with nothing
 installed. `permalink.test.mjs` is the contract held to itself — a URL is the one
 permanent thing this site emits, and it is worth a test suite even though nothing else
 here has one. `bands.test.mjs` is the pool held to the committed wasm: a band is a range
@@ -559,7 +559,10 @@ same length as the interleaved one, so a wrong reader would draw real colors fro
 wrong stops rather than fail. Its on-disk case skips by name where `palettes.bin` is not
 baked. `saved.test.mjs` holds the Saved tab's list to its promises: a stored value it cannot
 read is an empty list and never a throw, one picture is one entry however its link was
-spelled, and the cap evicts nothing. `zip.test.mjs` holds Download all's stored-zip writer
+spelled, and the cap evicts nothing. `undo.test.mjs` holds the way back's list to the two
+rules that make one action one entry: a commit on the picture already under the cursor
+refreshes it rather than pushing, which is what collapses the second settle a measured pass
+makes, and a push drops whatever the cursor had ahead of it. `zip.test.mjs` holds Download all's stored-zip writer
 to the format, read back through its own central directory. The last three are the Deep
 tab's: `deep-fx.test.mjs` holds its coordinates to being exact where a double is not —
 a thousand steps of 1e-30 landing where one of 1e-27 does, and a difference taken in

@@ -41,6 +41,7 @@ import * as download from "./download.js";
 import * as picker from "./picker.js";
 import * as gallery from "./gallery.js";
 import * as saving from "./saved.js";
+import { Trail } from "./undo.js";
 import {
   PREVIEW_DIVISOR,
   Renderer,
@@ -1314,8 +1315,14 @@ function currentQuery() {
  *  **The panel rides along and is not part of the link.** `emit` writes the picture and
  *  nothing else; which side panel is open is a UI key the contract tolerates and never
  *  reads, added here on top. So the address bar restores the whole page and a link
- *  copied out of it is the picture. */
-function settle() {
+ *  copied out of it is the picture.
+ *
+ *  **And the way back is a second reader of the same event**
+ *  *(explorer_undo_redo_ckpt137)*. A picture that has settled enough to be written into
+ *  the address bar has settled enough to step back to, so `trail` is committed from here
+ *  rather than from a hook on every control — see `remember`. `remember: false` is the
+ *  walk's alone. */
+function settle({ remember = true } = {}) {
   panel?.describe();
   clearTimeout(settleTimer);
   settleTimer = setTimeout(() => {
@@ -1326,6 +1333,118 @@ function settle() {
     history.replaceState(null, "", `?${picture}${furniture}`);
     syncSave();
   }, 0);
+  if (remember) rememberLater();
+}
+
+// ------------------------------------------------------------------- the way back
+//
+// Ctrl/Cmd+Z steps back through the pictures this session has shown, and Ctrl+Shift+Z or
+// Ctrl+Y steps forward *(explorer_undo_redo_ckpt137)*. `undo.js` holds the list and the
+// cursor; what is here is the two ends of it — when a picture is worth remembering, and
+// how one is put back on the screen.
+//
+// **It rides on `settle`, and that is the whole design.** A picture settled enough to be
+// written into the address bar is a picture settled enough to step back to, and `settle`
+// is already the one place both contracts agree about that. So there is no hook on the
+// mode select, on Random palette, on Julia here or on a gallery tile: each of them ends in
+// a settled picture, which is the only thing this needs to know. It also means a step back
+// can never address a state the link contract cannot spell, because the entry *is* the
+// link.
+
+/** The pictures this session has shown, and where in them the reader is standing. */
+const trail = new Trail();
+let trailTimer = 0;
+
+/**
+ * The key of the entry being restored, while it is being restored, and `null` otherwise.
+ *
+ * A step back is not an action and must not commit — and the restore is several tasks
+ * long, so a flag is needed rather than an ordering. It is cleared by the settle that
+ * lands on the restored picture, and **by nothing else**: a settle with any other key on
+ * the way there — `showPanel`'s, which fires before `openLink` has replaced the view when
+ * a step back leaves the Deep tab — is ignored and leaves the flag up.
+ */
+let restoring = null;
+
+/**
+ * How long after a settle a picture is committed.
+ *
+ * **Why there is a debounce at all**, when `drawPass` already cancels a superseded pass and
+ * a wheel burst therefore settles once: the Deep tab does not. Its `moved` calls back here
+ * once per gesture with nothing coalescing, so a wheel burst down there is a settle a
+ * notch. And a slider dragged slowly can complete more than one shallow pass. The value is
+ * the Deep tab's own `SETTLE_MS`, for the same reason it chose it — long enough that a drag
+ * followed by a notch is one picture.
+ */
+const REMEMBER_MS = 350;
+
+function rememberLater() {
+  clearTimeout(trailTimer);
+  trailTimer = setTimeout(remember, REMEMBER_MS);
+}
+
+/**
+ * Commit the settled picture, unless it is the one already under the cursor.
+ *
+ * **The options a picture was opened with come off the anchor**, which is the last thing
+ * that *arrived*: where the settled picture is that picture, its options are the anchor's,
+ * and a gallery tile's `key`, its `gap` and the words for it survive into the entry with no
+ * second list to keep in step. Anywhere else — a pan, a palette, a mode — there were none.
+ */
+function remember() {
+  if (view === null) return;
+  const query = currentQuery();
+  const key = keyOf(query);
+  if (restoring !== null) {
+    if (key === restoring) restoring = null;
+    return;
+  }
+  const opts = anchor !== null && anchor.at === key ? anchor.opts : {};
+  trail.commit(key, { query, opts });
+}
+
+/**
+ * Put an entry back on the screen, through the same door that opened it.
+ *
+ * Both doors are the page's own: a shallow link goes through `openLink`, and a deep one
+ * through the Deep tab's `open` — which draws the quarter pass and **waits for Render**,
+ * because that is what a deep link does, and an entry is a link. Returns whether the
+ * restore went ahead.
+ */
+function restore(entry) {
+  const { query, opts } = entry;
+  restoring = keyOf(query);
+  if (link.isDeep(`?${query}`)) {
+    deepOpening = true;
+    showPanel("deep");
+    startDeep()
+      .then(() => deep?.open(query))
+      .catch((error) => {
+        restoring = null;
+        console.warn("a step back could not reopen a deep picture", error);
+      });
+    return true;
+  }
+  // Coming up out of the Deep tab: the tab keeps its own view and gives the viewer back,
+  // exactly as `leaveDeep` does — but without its refusals, because this frame is a
+  // shallow link that this page has already drawn rather than a deep one being carried up.
+  if (deepOwns()) {
+    deep?.detach();
+    showPanel(DEFAULT_PANEL);
+  }
+  return openLink(query, { ...opts, restoring: true });
+}
+
+/** One step back (`-1`) or forward (`1`). A restore that could not go ahead puts the
+ *  cursor back where it was standing, so a refusal costs the reader nothing. */
+function stepTrail(direction) {
+  if (view === null || busy) return;
+  const entry = direction < 0 ? trail.back() : trail.forward();
+  if (entry === null) return;
+  if (restore(entry)) return;
+  restoring = null;
+  if (direction < 0) trail.forward();
+  else trail.back();
 }
 
 // ------------------------------------------------------------------- the controls
@@ -1950,24 +2069,37 @@ let anchor = null;
  * is the one the builder wrote when it found the run had kept no tone curve, or that the
  * cap the recipe pinned is not the cap the depth policy gives for that width. Saying it
  * is the difference between a picture and a picture that is nearly right.
+ *
+ * **`restoring` is a step back through it, and it changes exactly one thing**
+ * *(explorer_undo_redo_ckpt137)*: the anchor does not move. Reset to seat goes back to what
+ * *arrived*, and an undo is not an arrival — it is the reader taking back a move they made
+ * since. Everything else here is wanted, and is what makes stepping back onto a gallery
+ * tile put its mark and its *not exact* line back with the picture.
+ *
+ * Returns whether the picture was opened, which is what a step back reads to know its
+ * cursor may move.
  */
 function openLink(query, opts = {}) {
-  if (locked()) return;
-  const { gap = null, key = null, what = "this picture" } = opts;
+  if (locked()) return false;
+  const { gap = null, key = null, what = "this picture", restoring: stepping = false } = opts;
   let wanted;
   try {
     wanted = link.parse(`?${query}`, contract);
   } catch (error) {
     say(error.message);
-    return;
+    return false;
   }
-  interruptWalk("A picture was opened. The walk carries on; Back to the walk returns to it.");
+  interruptWalk(
+    stepping
+      ? "The view stepped back. The walk carries on; Back to the walk returns to it."
+      : "A picture was opened. The walk carries on; Back to the walk returns to it.",
+  );
   view = wanted;
   seat = key;
   // What arrived is what Reset to seat puts back, options and all, so a reset re-enters
   // the picture exactly as opening it did — the tile marked, and the sentence about what
   // the link could not carry back under the canvas.
-  anchor = { query, opts, at: pictureKey(view) };
+  if (!stepping) anchor = { query, opts, at: pictureKey(view) };
   arrived();
   if (key !== null) tunedFrom = "seat";
   tiles?.mark(key);
@@ -1980,6 +2112,7 @@ function openLink(query, opts = {}) {
   differs.textContent = gap ? `Not carried by this link: ${gap}.` : "";
   rebuild();
   draw();
+  return true;
 }
 
 /** A view just arrived from a link: it replays what it carries. See `levelling`. */
@@ -2019,7 +2152,19 @@ function changed() {
  * when that pass finishes measuring it.
  */
 function pictureKey(current) {
-  const params = new URLSearchParams(link.emit(current, contract));
+  return keyOf(link.emit(current, contract));
+}
+
+/**
+ * The same identity, taken off a query rather than off a shallow view.
+ *
+ * **It is the way back's key as well as the buttons'** *(explorer_undo_redo_ckpt137)*, and
+ * it has to work on a deep link too — which is why it reads the query. Both contracts spell
+ * the tone curve with `LEVEL_KEY.key` and the deep one has no derived parameters, so the
+ * same two deletions say the same thing on either side.
+ */
+function keyOf(query) {
+  const params = new URLSearchParams(query);
   params.delete(link.LEVEL_KEY.key);
   for (const key of new Set(Object.values(link.DERIVED))) params.delete(key);
   return params.toString();
@@ -2427,7 +2572,12 @@ function showWalk(next, layers, cells = null) {
   showState("stopped");
   walkLayers = layers;
   paintWalk();
-  settle();
+  // **The one picture the way back does not remember** *(explorer_undo_redo_ckpt137)*. This
+  // is the running walk's own display, a frame at a time as it searches: a minute of it
+  // would fill the whole trail with pictures nobody chose and bury the ones somebody did.
+  // What a reader *did* here still commits — pausing lands on `followWalk`, and opening a
+  // found picture goes through `openLink` — so what is lost is only the flicker between.
+  settle({ remember: false });
 }
 
 async function startWalk() {
@@ -2795,10 +2945,35 @@ canvas.addEventListener(
  *  text boxes, and a reader typing in one is not panning the plane. */
 const TYPING = new Set(["SELECT", "INPUT", "TEXTAREA", "BUTTON", "OPTION"]);
 
+/** The controls that have a text undo of their own: there Ctrl+Z is the browser's, always.
+ *  A select and a button have none, which is why neither is here — and a button is the
+ *  focus right after Random palette, which is the press a reader is likeliest to take
+ *  back. */
+const TEXT_FIELDS = new Set(["INPUT", "TEXTAREA"]);
+
 window.addEventListener("keydown", (event) => {
   // A letter means nothing to a button, so the toggles' keys still work with focus on one
   // — the button just pressed, most often.
   const target = event.target instanceof Element ? event.target.tagName : "";
+  // **The way back, above everything else here**, because the gate below sends every key
+  // with focus on a button or a select straight back to the browser, and those two are
+  // exactly where the focus sits after the action a reader wants to take back.
+  if ((event.ctrlKey || event.metaKey) && !event.altKey) {
+    const pressed = event.key.toLowerCase();
+    const back = pressed === "z" && !event.shiftKey;
+    const forward = (pressed === "z" && event.shiftKey) || pressed === "y";
+    if (back || forward) {
+      if (TEXT_FIELDS.has(target) || (event.target instanceof Element && event.target.isContentEditable)) {
+        return;
+      }
+      event.preventDefault();
+      // Nothing is said at either end of the trail: a key that does nothing where there is
+      // nothing to do is what every program does, and a message here would take the line
+      // under the canvas away from something the page had a better reason to say.
+      stepTrail(back ? -1 : 1);
+      return;
+    }
+  }
   const toggle = TOGGLE_KEYS[event.key];
   if (toggle && !event.ctrlKey && !event.altKey && !event.metaKey && !event.repeat &&
       (target === "BUTTON" || !TYPING.has(target))) {
