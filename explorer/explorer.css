@@ -881,6 +881,7 @@ summary.section-head:focus-visible { outline: 2px solid var(--well-link); outlin
    the link's and not the window's. The canvas is rendered at its own display size — the
    picture is made at the resolution it is shown at. */
 .stage {
+  position: relative;
   flex: none;
   margin: var(--gutter) var(--gutter) 0;
   aspect-ratio: 16 / 9;
@@ -889,14 +890,79 @@ summary.section-head:focus-visible { outline: 2px solid var(--well-link); outlin
   border: 1px solid var(--well-rule);
 }
 
-.stage canvas {
+/* The picture's own canvas, and not the preview card's — which is why the child
+   combinator is spelled out on both of these. */
+.stage > canvas {
   display: block;
   width: 100%;
   height: 100%;
   cursor: grab;
   touch-action: none;
 }
-.stage canvas:active { cursor: grabbing; }
+.stage > canvas:active { cursor: grabbing; }
+
+/* The Julia preview under the pointer. It sits in a bottom corner of the stage — the one
+   farthest from the pointer, which is what `is-right` switches — so it covers neither the
+   hand aiming it nor anything outside the picture. It takes no pointer events at all: a
+   card that could be hovered would be a card the pointer could fall into, and the click
+   it is previewing belongs to the canvas underneath. Its own × is the exception. */
+.julia-preview {
+  position: absolute;
+  bottom: 0.5rem;
+  left: 0.5rem;
+  pointer-events: none;
+  background: rgb(0 0 0 / 0.75);
+  border: 1px solid var(--well-rule);
+  padding: 0.3rem;
+}
+.julia-preview.is-right { left: auto; right: 0.5rem; }
+
+/* A share of the stage rather than the 320px it is drawn at, so the card is the same size
+   against the picture on every display, and it never grows past a quarter of the canvas. */
+.julia-preview-picture {
+  display: block;
+  width: min(20rem, 30vw);
+  height: auto;
+  aspect-ratio: 16 / 9;
+}
+
+.julia-preview-said {
+  display: flex;
+  gap: 0.35rem;
+  align-items: baseline;
+  margin: 0.25rem 0 0;
+  font-family: var(--mono);
+  font-size: 0.65rem;
+  line-height: 1.3;
+  color: var(--well-ink-dim);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Said only where the mode fell back, because the picture is then not the one entering
+   gives and the card has no business implying it is. */
+.julia-preview-fell {
+  margin-left: auto;
+  font-family: var(--sans);
+  color: var(--state-sharpening);
+}
+
+.julia-preview-off {
+  position: absolute;
+  top: 0;
+  right: 0;
+  pointer-events: auto;
+  width: 1.2rem;
+  height: 1.2rem;
+  padding: 0;
+  border: none;
+  background: rgb(0 0 0 / 0.55);
+  color: var(--well-ink-dim);
+  font-family: var(--sans);
+  font-size: 0.8rem;
+  line-height: 1;
+  cursor: pointer;
+}
+.julia-preview-off:hover { color: var(--well-ink); }
 
 .status {
   flex: none;

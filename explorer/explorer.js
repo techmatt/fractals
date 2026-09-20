@@ -41,6 +41,7 @@ import * as download from "./download.js";
 import * as picker from "./picker.js";
 import * as gallery from "./gallery.js";
 import * as saving from "./saved.js";
+import * as juliaPreview from "./julia-preview.js";
 import { Trail } from "./undo.js";
 import {
   PREVIEW_DIVISOR,
@@ -227,6 +228,8 @@ let settleTimer = 0;
 let panel = null;
 let palettes = null;
 let tiles = null;
+/** The Julia preview under the pointer, once the page is up. */
+let juliaCard = null;
 const homes = new Map();
 
 /** `palette-names.json`: the name each map is shown by. A map it does not name, or a page
@@ -397,6 +400,9 @@ function locked() {
 /** Freeze or release every control that would change what is being drawn. */
 function setBusy(on) {
   busy = on;
+  // A download is about to have every core it can get, and a hover is not what they are
+  // for. `previewable` keeps it away until the download is done.
+  if (on) juliaCard?.hide();
   for (const control of [familyPicker, modePicker, levelToggle]) control.disabled = on;
   syncCopy();
   for (const strip of [constantStrip, coordinateStrip, paramStrip]) {
@@ -2134,6 +2140,9 @@ function arrived() {
 function changed() {
   interruptWalk("You moved the view. The walk carries on; Back to the walk returns to it.");
   leaveSeat();
+  // The plane moved under a pointer that may not have: whatever the card was showing is
+  // a picture of somewhere else now. The next move over the canvas offers the new place.
+  juliaCard?.hide();
   levelling = "derived";
   if (tuning === "stored") tuning = "derived";
   // Two of the buttons say whether this view is the one that was opened and whether it is
@@ -2921,6 +2930,17 @@ function release(event) {
   const dx = drag.at.x - drag.from.x;
   const dy = drag.at.y - drag.from.y;
   drag = null;
+  // **A click enters the Julia set the preview is showing** — and only while it is
+  // showing, which is what keeps the gesture from surprising anybody: the reader is
+  // clicking a picture the page already has in front of them, and a click anywhere the
+  // card is not up still does what it has always done, which is nothing but take the
+  // focus. It enters at the `c` the card drew rather than at the pointer's own place,
+  // because the picture is what was chosen.
+  const previewed = event.pointerType === "mouse" ? juliaCard?.showing() : null;
+  if (previewed != null && Math.abs(dx) <= CLICK_SLOP && Math.abs(dy) <= CLICK_SLOP) {
+    juliaTo(link.coordinateOf(previewed.cx), link.coordinateOf(previewed.cy));
+    return;
+  }
   if (dx === 0 && dy === 0) return;
   // The Deep tab pans exactly as far, and draws nothing: the frame moves, the last
   // picture stays where it falls, and Render is what commits it.
@@ -2951,9 +2971,76 @@ canvas.addEventListener(
     if (locked()) return;
     const at = canvasPoint(event);
     zoomAbout(at.x, at.y, event.deltaY > 0 ? WHEEL_ZOOM : 1 / WHEEL_ZOOM);
+    // The zoom moved the plane under a pointer that has not moved, so the `c` the card
+    // was showing is not the one under the pointer any more. `changed` has already taken
+    // the card away; this is what offers the new place, and it waits for the pass the
+    // zoom started the way every preview waits.
+    hoverPreview(event);
   },
   { passive: false },
 );
+
+// ------------------------------------------------- the Julia preview under the pointer
+//
+// On a parameter plane, the point under the pointer is a `c`. The card draws that `c`'s
+// Julia set — see `julia-preview.js` — and a click enters it. The page owns the gate and
+// the geometry; the module owns the card, the pool and the stored switch.
+
+/** Whether this is a machine with a pointer that hovers. The preview is a mouse gesture
+ *  and there is nothing here for touch: a finger has no hover, and the tap that would
+ *  stand in for one is the pan. */
+const HOVERS = window.matchMedia?.("(hover: hover) and (pointer: fine)")?.matches ?? false;
+
+/** How far a mouse may travel between press and release and still be a click rather than
+ *  a very short pan, in canvas pixels. A hand on a mouse is never quite still, and
+ *  exact-zero was only ever safe because nothing was bound to it. */
+const CLICK_SLOP = 4;
+
+/** Whether the preview may be showing at all: a parameter plane, drawn by the studio
+ *  itself, with nothing in the middle of happening. */
+function previewable() {
+  return (
+    HOVERS &&
+    view !== null &&
+    view.family in JULIA_OF &&
+    !busy &&
+    !deepOwns() &&
+    walkLayers === null &&
+    drag === null &&
+    pinch === null
+  );
+}
+
+/** The pointer is somewhere over the canvas: offer that place to the card, or take the
+ *  card away where this is not a place it may show. */
+function hoverPreview(event) {
+  if (juliaCard === null) return;
+  // **A press leaves the card exactly as it is.** A button going down fires a move of its
+  // own first, and taking the card away on it would mean the release had nothing left to
+  // enter at — the click would be eaten by the gesture that is supposed to make it. A
+  // drag that actually moves the view takes the card with it through `changed`, and a
+  // press that does not move is the click.
+  if (drag !== null || pinch !== null) return;
+  if (event.pointerType !== undefined && event.pointerType !== "mouse") {
+    juliaCard.hide();
+    return;
+  }
+  if (!previewable()) {
+    juliaCard.hide();
+    return;
+  }
+  const at = canvasPoint(event);
+  const c = planeAt(at.x, at.y);
+  juliaCard.at({
+    cx: c.x,
+    cy: c.y,
+    across: at.x / grid.width,
+    span: view.w.value / grid.width,
+  });
+}
+
+canvas.addEventListener("pointermove", hoverPreview);
+canvas.addEventListener("pointerleave", () => juliaCard?.hide());
 
 // --------------------------------------------------------- a picture dropped back
 //
@@ -3245,19 +3332,37 @@ function toggleJulia() {
   }
 }
 
-/** The view's centre as `c`, opened as that plane's Julia set at its home view. The
- *  centre's own decimal strings become `c`, so no precision is lost on the way. */
-function juliaHere() {
+/**
+ * The Julia view a `c` of this plane opens: that degree's Julia set at its home frame,
+ * with the mode, palette, recipe and tone carried.
+ *
+ * **The one place that view is built**, because two things build it now — Julia here, and
+ * the preview under the pointer, which is only honest if the picture it draws is the
+ * picture entering gives. `cx` and `cy` arrive as coordinates rather than as numbers, so
+ * the centre's own decimal strings survive the way they always have.
+ */
+function juliaViewOf(cx, cy) {
+  return carried({
+    ...link.fresh(JULIA_OF[view.family], view.mode, contract),
+    constants: { cx, cy },
+  });
+}
+
+/** Enter the Julia set at a `c` of this plane, holding the view being left for Back. */
+function juliaTo(cx, cy) {
   const julia = JULIA_OF[view.family];
   const parent = link.emit(view, contract);
-  view = carried({
-    ...link.fresh(julia, view.mode, contract),
-    constants: { cx: view.x, cy: view.y },
-  });
+  view = juliaViewOf(cx, cy);
   holdParent({ julia, cx: view.constants.cx.text, cy: view.constants.cy.text, parent });
   changed();
   rebuild();
   draw();
+}
+
+/** The view's centre as `c`, opened as that plane's Julia set at its home view. The
+ *  centre's own decimal strings become `c`, so no precision is lost on the way. */
+function juliaHere() {
+  juliaTo(view.x, view.y);
 }
 
 /**
@@ -3683,6 +3788,27 @@ async function main() {
     setBusy,
   });
   panel.describe();
+
+  juliaCard = juliaPreview.mount({
+    module: renderer.module,
+    card: document.getElementById("julia-preview"),
+    picture: document.getElementById("julia-preview-picture"),
+    readout: document.getElementById("julia-preview-c"),
+    fallen: document.getElementById("julia-preview-fell"),
+    off: document.getElementById("julia-preview-off"),
+    toggle: document.getElementById("julia-preview-on"),
+    // The view entering would give, which is the whole point of the card.
+    viewFor: (cx, cy) => juliaViewOf(link.coordinateOf(cx), link.coordinateOf(cy)),
+    // The same two facts the download row asks for: whether this view measures its own
+    // tone, and nothing about the size it is drawn at.
+    deriving: () => levelling === "derived" && levelOn,
+    // **It yields to the main picture.** Nothing is started while a pass is running, and
+    // the settle re-arms instead — a preview that competed with the render it is standing
+    // next to would be a preview that made the page feel slower to use.
+    quiet: () => inFlight === null,
+    live: previewable,
+    say,
+  });
 
   // Which panel the link asked for. A UI key is never validated by the contract, so an
   // unknown one lands on the default rather than refusing a picture over furniture.

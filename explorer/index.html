@@ -181,6 +181,16 @@
   <section class="viewer" aria-label="The view">
     <div class="stage" id="stage">
       <canvas id="canvas" tabindex="0" aria-label="The fractal at the current family, mode and view"></canvas>
+      <!-- The Julia set of the point under the pointer, on a parameter plane. A hover
+           affordance and nothing a reader can reach any other way, so it is out of the
+           accessibility tree: Julia here (J) is the button it previews. -->
+      <div class="julia-preview is-right" id="julia-preview" hidden aria-hidden="true">
+        <canvas class="julia-preview-picture" id="julia-preview-picture" width="320" height="180"></canvas>
+        <p class="julia-preview-said"><span id="julia-preview-c"></span><span
+              class="julia-preview-fell" id="julia-preview-fell" hidden>smooth</span></p>
+        <button type="button" class="julia-preview-off" id="julia-preview-off" tabindex="-1"
+                title="Turn the Julia preview off. Details switches it back on.">×</button>
+      </div>
     </div>
 
     <p class="status" id="status"></p>
@@ -270,6 +280,11 @@
         <p class="readout" id="differs"></p>
         <p class="provenance" id="provenance"></p>
         <div class="bar">
+          <span class="group">
+            <label for="julia-preview-on">Julia preview</label>
+            <input type="checkbox" id="julia-preview-on" class="flag"
+                   title="On a parameter plane, shows the Julia set of the point under the pointer, and a click there opens it. Remembered in this browser.">
+          </span>
           <button type="button" id="copy-view"
                   title="Copies everything about this view as text: the recipe, the stat line and the link.">Copy view</button>
         </div>

@@ -91,6 +91,7 @@ explorer.js           what a reader touches: drag, wheel, keys, pickers, copy li
 gallery.js            the left panel's grid: a staged gallery's record, filtered
 picker.js             the palette tab strip, and a gradient drawn per row
 shade.js              the recipe's controls, apart from the boxes they are drawn in
+julia-preview.js      the Julia set of the point under the pointer, and the click into it
 download.js           the same render at a wallpaper's size, and what caps it
 render.js             the worker pool, the plan, the field passes, the shade
 worker.js             one worker: one wasm instance, one band of rows (or one screen)
@@ -200,7 +201,8 @@ and no breadcrumb:
   lost, and that degree's Julia set opened at its home view with the mode, palette and
   recipe carried. While the button is under the pointer or holding the focus, a crosshair is
   drawn at the view's centre, so *here* is a point on the picture rather than a word on a
-  button.
+  button. **A click on the picture does the same at the pointer's own `c`** — see *The
+  Julia preview under the pointer* — and the key is still the centre's, deliberately.
 - **Random palette** (P) — one of the **232** maps that seated more than one wallpaper in
   the published record, never the one on screen. The list is the wallpaper project's own
   and rides in the baked index as a flag per map; every other map is still a hand pick.
@@ -325,6 +327,74 @@ picture: `permalink.js` tolerates the key, reads nothing from it and never emits
 the canonical string of a view — what Copy link copies — is the picture alone. Two rules
 keep that from becoming a contract by the back door: a UI key never refuses a link, and a
 UI key never decides what is drawn.
+
+## The Julia preview under the pointer *(explorer_julia_hover_preview_ckpt137, 2026-09-20)*
+
+On a parameter plane — the Mandelbrot set and the four multibrots — the point under the
+pointer is a `c`, and a small card draws that `c`'s Julia set while the pointer rests on
+it. A click enters it. `julia-preview.js` owns the card, its pool and its switch; the page
+owns the gate and the geometry.
+
+**It exists because Julia here takes `c` from the centre.** That is the right thing for a
+button — the crosshair says exactly where *here* is — but it means choosing a `c` is
+panning it to the middle and pressing J, looking, and panning again. The gesture this adds
+is the one the article's own argument wants: zoom the plane in on a cusp or a valley edge,
+move the mouse, and watch the Julia set change. So `c` is taken at full `f64` from the
+pointer's place, and the card tracks small movements at whatever zoom the plane is at.
+
+**The card is the picture entering gives, at one sample a pixel.** `juliaViewOf` is the
+one place that view is built and both callers use it, so the preview and the entry cannot
+drift: same family, same home frame, same mode, palette, recipe and tone. The three
+differences are all size — 320x180, one sample where the screen finishes at two, and the
+preview's own pool — and the fourth is not, which is why the card says so:
+
+**A mode too slow for the card falls back to `smooth`, and the card marks it.** The gate is
+`download.js`'s per-mode prior, read at 320x180 on the preview's own worker count, against a
+quarter-second budget. On this machine (12 cores, so three workers) it demotes **`stripe`
+and `smooth_stripe`** and nothing else. A frame that then overruns **twice** the budget
+demotes its mode for the rest of the visit — twice, and not merely over, because the place
+costs as much as the mode: `smooth` measures 190-250 ms over a `c` inside the main cardioid,
+whose Julia set is nearly all interior and runs every sample to the cap, against about 20 ms
+a thumb's width outside it. Demoting on that would take a mode away over a region and keep
+it away everywhere. Measured over all thirteen modes the select offers, a frame lands at
+78-193 ms end to end, the 90 ms settle included; none was demoted by measurement.
+
+**It yields to the main picture and never competes with it.** Its own small pool, a third
+of the cores and never more than three — the walk's and the Saved tab's are half, because
+those run while a reader is watching them and this one runs while a reader is watching
+something else. Pointer moves coalesce to the latest and draw once the pointer has been
+still for 90 ms, and nothing is started at all while the viewer's own pass is in flight:
+the settle re-arms instead. Measured, a `tia` pass is 104, 114, 113 ms with the pointer
+sweeping the canvas for the whole of it against 105, 104 ms with the pointer still.
+
+**The gesture is a plain click, and only while the card is up.** That is what keeps it from
+surprising anybody: the reader is clicking a picture the page already has in front of them,
+and a click anywhere the card is not — every Julia set, Phoenix, the Deep tab, a running
+walk, the preview switched off — still does what it always did, which is take the focus. It
+enters at the `c` the card drew rather than at the pointer's own place, because the picture
+is what was chosen. It goes through the same `juliaTo` the button does, so Back to
+Mandelbrot returns to the frame that was left and Ctrl+Z steps back out of it, both for
+free. A release counts as a click under **4 canvas pixels** of travel; exact-zero was only
+ever safe because nothing was bound to it, and a hand on a mouse is never quite still.
+
+⚠ **A button going down fires a `pointermove` of its own, before `pointerdown`.** The first
+version tore the card down on it — the gate includes "no drag in progress" — and the release
+then had nothing left to enter at, so the click was eaten by the very gesture meant to make
+it. `hoverPreview` returns without touching the card while a press or a pinch is live; a
+drag that actually moves the view takes the card away through `changed`, which every move
+already goes through.
+
+**Nothing else is added.** No link key, no panel, no second setting. One stored flag,
+`explorer.julia-preview` in `localStorage`, on unless it says otherwise, behind try/catch
+like everything else this page stores — a browser that stores nothing still gets the
+preview and just forgets the switch. Two places touch it and they are one switch: the
+card's own `×`, which is where a reader meets it, and a checkbox in the Details fold, which
+is where a reader who switched it off finds it again — the `×` says so under the canvas as
+it goes. The Download row's five buttons are untouched; that row is closed on purpose.
+
+**Desktop pointer only.** `(hover: hover) and (pointer: fine)`, and a `pointerType` of
+`mouse` on the event itself. A finger has no hover, and the tap that would stand in for one
+is the pan.
 
 ## The walk *(walk_tab_ckpt131, 2026-09-18)*
 
