@@ -546,7 +546,7 @@ function tintedShape() {
  * A deep recolour never re-iterates — the field is kept, and that is what the Deep tab's
  * cache is for — so the two sides differ in what follows the write and not in the write.
  */
-function tint(changes, { moved = true } = {}) {
+function tint(changes, { moved = true, moving = false } = {}) {
   if (deep !== null && deep.owns()) {
     deep.tint(changes);
     syncShade();
@@ -555,7 +555,9 @@ function tint(changes, { moved = true } = {}) {
   view = { ...view, ...changes };
   if (moved) changed();
   syncShade();
-  draw();
+  // `moving` is a hand still on the control — see `live`. Everything else draws at once.
+  if (moving) live();
+  else draw();
 }
 
 // ------------------------------------------------------------------- the geometry
@@ -904,6 +906,40 @@ let finished = null;
 /** The worker colouring the last stage, while it is. A pass that starts stops it. */
 let colouring = {};
 
+/**
+ * The map the picture on the screen was drawn through, with the tone curve on it.
+ *
+ * **The curve is spent once a pass and this is where the answer is kept.** It acts on the
+ * map rather than on the picture, so drawing the palette strip through the curve again
+ * would be `level::curved_stops` a second time on the same map for the same stops — per
+ * stop, and hundreds of milliseconds of main thread on a map with hundreds of them. What
+ * the pass hands back goes here and the strip takes it.
+ *
+ * Held with what it is an answer *about*, and spent only where both agree: the stops
+ * depend on the map's name and on the curve, and on nothing else in the recipe — the fold
+ * and the flip are the bake's and happen after, and gamma, cycles and phase place a value
+ * on the table rather than making it. `null` where the last pass curved nothing, which is
+ * every view with no curve in force and is most of them.
+ */
+let curved = null;
+
+/** What the pass drew through, for the strip: the map, the curve it answers for, and the
+ *  stops themselves. A pass that curved nothing clears it. */
+function keepStops(stops, level = view.level) {
+  curved =
+    stops === null || stops === undefined
+      ? null
+      : { palette: view.palette, level: JSON.stringify(level ?? null), stops };
+}
+
+/** The curved stops for this view, or `null` where the kept ones answer a different
+ *  question — a palette the reader has just changed, or a curve this pass has not drawn
+ *  yet. Then the strip asks for the curve as it always did. */
+function curvedFor(subject) {
+  if (curved === null || subject.palette !== curved.palette) return null;
+  return JSON.stringify(subject.level ?? null) === curved.level ? curved.stops : null;
+}
+
 /** What the finished stage of this view cost: `{ key, samples, field, shade }`, seconds.
  *
  *  A download's estimate is scaled from it. Kept across a recolour of the same field —
@@ -930,11 +966,47 @@ async function draw() {
   const running = drawPass();
   // `drawPass` bumps `drawing` before its first await, so this is the pass just started.
   const pass = drawing;
+  inFlight = running;
   try {
     await running;
   } finally {
+    if (inFlight === running) inFlight = null;
     if (pass === drawing) holdCopy(false);
+    if (wantsLive) {
+      wantsLive = false;
+      draw();
+    }
   }
+}
+
+/** The pass that is running, while it is. `live` waits on it rather than cutting it off. */
+let inFlight = null;
+
+/** Whether a control moved while a pass was running, so the latest value is still owed. */
+let wantsLive = false;
+
+/**
+ * Redraw for a control the reader's hand is **still on**: one pass at a time, and the
+ * last value wins.
+ *
+ * **A drag is not a queue and it is not a cancel either.** A pointer fires as often as it
+ * likes — sixty or a hundred and twenty times a second on the mouse that costs extra —
+ * and a slider wired straight to `draw` would either stack passes up behind the hand or
+ * abandon each one a few milliseconds in and never finish a picture at all. So a move
+ * while a pass is running is remembered rather than acted on, and the pass that follows
+ * draws whatever the control says by then: a machine that keeps up recolours every frame,
+ * and a machine that does not degrades to the newest value rather than to the oldest
+ * queued one. Nothing is cancelled, so no colouring is thrown away half done.
+ *
+ * `drawPass` clears the flag as it starts, so a pan or a mode change that lands in the
+ * middle takes the pending redraw with it rather than adding one after it.
+ */
+function live() {
+  if (inFlight === null) {
+    draw();
+    return;
+  }
+  wantsLive = true;
 }
 
 /** One pass, as `draw` describes it; `draw` is what releases the copy controls after it. */
@@ -942,6 +1014,9 @@ async function drawPass() {
   updateReadout();
   syncShade();
   const pass = ++drawing;
+  // A pass that starts takes the pending live redraw with it: whatever a slider was
+  // owed, this pass is drawing the view that slider left behind.
+  wantsLive = false;
   walkLayers = null;
   holdCopy(false);
   renderer.cancel();
@@ -1030,17 +1105,30 @@ async function drawPass() {
     // A derived texture weight is measured here, on the one-sample field, before it is
     // coloured: the preview drew at whatever weight was in force, and every stage after this
     // one draws at the weight this one derived.
-    const shadeFull = (full) => {
-      const shaded = renderer.shade(full, view, { deriveWeight: derivingWeight });
-      if (derivingWeight && shaded.weight !== null) {
-        view = { ...view, params: { ...view.params, weight: shaded.weight } };
-        syncParams();
+    // Over the pool, like the finishing stage — a quarter of its samples is still a
+    // colouring the main thread has no business doing, and this is the stage a dragged
+    // control pays on every frame. The two exceptions stay on this thread and are cheap
+    // there: a direct trap arrived painted, and a derived texture weight is measured off
+    // these lanes in the one call that colours them.
+    const shadeFull = async (full) => {
+      if (full.shape.direct || derivingWeight) {
+        const shaded = renderer.shade(full, view, { deriveWeight: derivingWeight });
+        if (derivingWeight && shaded.weight !== null) {
+          view = { ...view, params: { ...view.params, weight: shaded.weight } };
+          syncParams();
+        }
+        present(shaded.image);
+        return true;
       }
+      const shaded = await renderer.shadePooled(full, view, colouring, { key: fullKey });
+      if (shaded === null || pass !== drawing) return false;
+      keepStops(shaded.stops);
       present(shaded.image);
+      return true;
     };
     const cachedFull = renderer.cached(fullKey);
     if (cachedFull !== undefined) {
-      shadeFull(cachedFull);
+      if (!(await shadeFull(cachedFull))) return;
     } else {
       const cachedPreview = renderer.cached(previewKey);
       if (cachedPreview !== undefined) {
@@ -1057,7 +1145,7 @@ async function drawPass() {
       const full = await renderer.field(view, grid.width, grid.height);
       if (full === null || pass !== drawing) return;
       renderer.remember(fullKey, full);
-      shadeFull(full);
+      if (!(await shadeFull(full))) return;
     }
     settle();
     showState("sharpening");
@@ -1094,22 +1182,18 @@ async function drawPass() {
     // picture is the one on the screen.
     const shaded = shape.direct
       ? renderer.shade(field, view)
-      : await renderer.shadeKept(
-          { ...field, values: field.values.slice() },
-          view,
-          colouring,
-          { derive: deriving },
-        );
+      : await renderer.shadePooled(field, view, colouring, { derive: deriving, key: finalKey });
     if (shaded === null || pass !== drawing) return;
+    // The curve the picture was drawn through is this pass's where it derived one, and
+    // the view's where it replayed one — and the view has not been told about a derived
+    // curve yet, which is why the level is named here rather than read off it.
+    keepStops(shaded.stops, deriving ? shaded.level : view.level);
     // **The picture first, and the controls after it** *(explorer_perf_audit_ckpt136)*. The
-    // derived block below ends in `syncFinal`, which redraws the palette strip through the
-    // curve that was just measured — and a tone curve acts on the *map* rather than on the
-    // picture, so what that costs is per stop: `level::curved_stops` pulls every densified
-    // stop's chroma back into sRGB by a 28-step bisection with an 18-step cap bisection
-    // inside it. Measured at 452 ms on a 256-stop map and 1 353 ms on a 1024-stop one, where
-    // the library's median map has 257 stops and its 95th percentile has 512. Run before
-    // `present`, that is half a second of main thread between a finished picture and the
-    // screen, for a strip 512 pixels wide.
+    // derived block below ends in `syncFinal`, which redraws the palette strip — and that
+    // used to be the second place this page spent the tone curve, because a curve acts on
+    // the *map* rather than on the picture and what it costs is per stop. It is spent once
+    // now: `shadePooled` curves the stops in the worker and hands them back, and the strip
+    // is drawn through the very stops the picture was. What is left here is 512 lookups.
     present(shaded.image);
     finished = shaded.image;
     showState("final");
@@ -1118,12 +1202,12 @@ async function drawPass() {
       derivedInBand = shaded.level === null;
       updateReadout();
       syncLevel();
-      // **And the strip in a task of its own**, because a canvas drawn in the middle of a
-      // task is not composited until that task ends: presenting the picture and then
-      // redrawing the strip in the same turn puts the strip's half-second *in front of* the
-      // picture as surely as calling it first did. One `setTimeout` is the whole of the
-      // fix, and what it costs is a frame in which the strip is still showing the curve
-      // before this one.
+      // **And the strip still in a task of its own**, which is now belt and braces rather
+      // than the fix it was: a canvas drawn in the middle of a task is not composited
+      // until that task ends, so presenting the picture and then redrawing the strip in
+      // the same turn used to put the strip's half-second in front of the picture. The
+      // half-second is gone — the stops arrive curved — and the task of its own costs
+      // nothing, so it stays.
       setTimeout(() => {
         if (pass !== drawing) return;
         syncFinal();
@@ -1358,7 +1442,7 @@ function buildParams() {
     // A texture weight is a recolour and follows the hand; everything else re-iterates
     // and waits for it to let go.
     slider.addEventListener("input", () => {
-      if (control.live) setParam(key, modeParams.sliderText(key, slider.value));
+      if (control.live) setParam(key, modeParams.sliderText(key, slider.value), { moving: true });
     });
     slider.addEventListener("change", () => setParam(key, modeParams.sliderText(key, slider.value)));
     const input = document.createElement("input");
@@ -1376,7 +1460,7 @@ function buildParams() {
 
 /** One mode parameter, as its box or slider now says it. A value that is not a number
  *  puts the control back; a range is the contract's and the engine's to refuse. */
-function setParam(key, text) {
+function setParam(key, text, { moving = false } = {}) {
   if (locked()) {
     syncParams();
     return;
@@ -1394,7 +1478,11 @@ function setParam(key, text) {
   // it away.
   if (key === link.DERIVED[view.mode]) tuning = "pinned";
   syncParams();
-  draw();
+  // A hand still on the slider coalesces — see `live`. A texture weight is the one mode
+  // parameter that recolours rather than re-iterating, so it is the one that gets here
+  // while the hand is moving.
+  if (moving) live();
+  else draw();
 }
 
 /** A parameter's value as its box shows it: the number in force, which a derivation has
@@ -1506,7 +1594,9 @@ function buildShade() {
         slider.step = control.slider.step ?? control.step;
         slider.setAttribute("aria-label", control.label);
         slider.addEventListener("input", () => {
-          if (!planOf(view).direct) setShade(control.key, shade.sliderText(control, slider.value));
+          if (!planOf(view).direct) {
+            setShade(control.key, shade.sliderText(control, slider.value), { moving: true });
+          }
         });
         slider.addEventListener("change", () =>
           setShade(control.key, shade.sliderText(control, slider.value)),
@@ -1579,7 +1669,7 @@ shadeReset.addEventListener("click", () => {
  * the contract's own reader — and a refusal is the contract's own sentence, shown as
  * it stands and the control put back to the value that is still in force.
  */
-function setShade(key, text) {
+function setShade(key, text, { moving = false } = {}) {
   if (locked()) {
     syncShade();
     return;
@@ -1595,7 +1685,7 @@ function setShade(key, text) {
     syncShade();
     return;
   }
-  tint({ shade: next });
+  tint({ shade: next }, { moving });
 }
 
 /** Show what the recipe now says, in every control that carries a piece of it. */
@@ -1687,7 +1777,10 @@ function syncFinal() {
   paletteShown.textContent = shownName(subject.palette);
   let pixels;
   try {
-    pixels = renderer.ramp(subject, paletteStrip.width, { direct: tintedShape().direct === true });
+    pixels = renderer.ramp(subject, paletteStrip.width, {
+      direct: tintedShape().direct === true,
+      stops: curvedFor(subject),
+    });
   } catch {
     return;
   }

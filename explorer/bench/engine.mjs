@@ -64,6 +64,57 @@ export async function load(url = new URL("../engine.wasm", import.meta.url)) {
     return copy;
   };
 
+  /** The frame-wide statistics a pooled shade spends: `{ok, pooled, stats}`. Takes the
+   *  lanes and frees them, as `shade` does. */
+  const shadeStats = (spec, lanes) => {
+    const [pointer, length] = put(JSON.stringify(spec));
+    const lanePointer = wasm.alloc(lanes.length);
+    new Uint8Array(wasm.memory.buffer, lanePointer, lanes.length).set(lanes);
+    const out = wasm.shade_stats(pointer, length, lanePointer, lanes.length);
+    wasm.dealloc(pointer, length);
+    const size = new DataView(wasm.memory.buffer).getUint32(out, true);
+    const text = decoder.decode(new Uint8Array(wasm.memory.buffer, out + 4, size));
+    wasm.dealloc(out, size + 4);
+    return JSON.parse(text);
+  };
+
+  /** Which SAMPLE rows a band of output rows has to be handed, the pad included. */
+  const bandLanes = (spec, rowStart, rowEnd) => {
+    const [pointer, length] = put(JSON.stringify(spec));
+    const out = wasm.band_lanes(pointer, length, rowStart, rowEnd);
+    wasm.dealloc(pointer, length);
+    const size = new DataView(wasm.memory.buffer).getUint32(out, true);
+    const text = decoder.decode(new Uint8Array(wasm.memory.buffer, out + 4, size));
+    wasm.dealloc(out, size + 4);
+    return JSON.parse(text);
+  };
+
+  /** One band of a shade, through statistics measured over the whole field: the
+   *  band's RGBA. `lanes` is the padded sample rows `bandLanes` names, and is freed. */
+  const shadeBand = (spec, stats, lanes, rowStart, rowEnd) => {
+    const [pointer, length] = put(JSON.stringify(spec));
+    const [statsPointer, statsLength] = put(JSON.stringify(stats));
+    const lanePointer = wasm.alloc(lanes.length);
+    new Uint8Array(wasm.memory.buffer, lanePointer, lanes.length).set(lanes);
+    const out = wasm.shade_band(
+      pointer,
+      length,
+      statsPointer,
+      statsLength,
+      lanePointer,
+      lanes.length,
+      rowStart,
+      rowEnd,
+    );
+    wasm.dealloc(pointer, length);
+    wasm.dealloc(statsPointer, statsLength);
+    if (out === 0) throw new Error("shade_band refused");
+    const bytes = (rowEnd - rowStart) * spec.resolution[0] * 4;
+    const copy = new Uint8Array(wasm.memory.buffer, out, bytes).slice();
+    wasm.dealloc(out, bytes);
+    return copy;
+  };
+
   /** The five numbers and the flag in front of `shade_level` and `derive_level`. */
   const header = (pointer) => {
     const view = new DataView(wasm.memory.buffer, pointer, 48);
@@ -151,7 +202,20 @@ export async function load(url = new URL("../engine.wasm", import.meta.url)) {
     return { shape, image, fieldMs, shadeMs };
   };
 
-  return { wasm, plan, band, shade, shadeLevel, deriveLevel, probe, deriveOpacity, frame };
+  return {
+    wasm,
+    plan,
+    band,
+    shade,
+    shadeStats,
+    bandLanes,
+    shadeBand,
+    shadeLevel,
+    deriveLevel,
+    probe,
+    deriveOpacity,
+    frame,
+  };
 }
 
 /** The two-stop ramp used wherever the picture's colours do not matter. */

@@ -133,18 +133,25 @@ const RECUT_OVER = 1.5;
 const KILL_OVER = 4;
 
 /**
- * How many OUTPUT rows a direct trap's band computes beyond its own, at any supersample.
+ * How many OUTPUT rows a band computes beyond its own, at any supersample.
  *
  * A direct trap is reduced in the band that painted it, and its Lanczos-3 kernel reaches
  * three output pixels either side — so `paint_band` iterates three output rows past itself
  * at each end and keeps only its own. That is what makes a painted band cut-independent and
  * it is not free: a band of `rows` rows does `(rows + 6) / rows` of its own work.
  *
+ * **A band of the shade pads by the same three, for the same reason** *(the pooled shade)*.
+ * Colouring is per sample and needs no neighbours; the reduction after it is the same
+ * Lanczos-3 at the same reach, so `shade_band` is handed the padded sample rows and keeps
+ * only its own output rows. The module states the rule once more in its length check — a
+ * buffer that is not exactly this pad is refused rather than coloured — so the two
+ * statements are tied rather than merely alike.
+ *
  * **At one sample a pixel it is zero.** The taps are then the identity — `lanczos3` is 1 at
  * 0 and 0 at every other integer — so the preview and the one-sample pass pad nothing and
  * this only ever applies to the finishing supersample.
  */
-const TRAP_PAD_ROWS = 6;
+export const TRAP_PAD_ROWS = 6;
 
 /**
  * The most of a padded band's work that may go on rows belonging to its neighbours.
@@ -375,6 +382,10 @@ export class Renderer {
     this.rowCost = null;
     this.fields = new Map();
     this.plans = new Map();
+    /** The frame-wide statistics a pooled shade spends, by field and transfer. A palette,
+     *  phase, cycles, gamma or level edit changes none of them, which is the whole reason
+     *  a recolour is a colouring and nothing else. */
+    this.measured = new Map();
     this.ramped = null;
     this.shading = new ShadeWorker(module);
   }
@@ -641,8 +652,10 @@ export class Renderer {
    * At one sample a pixel the module encodes each colour without a filter, so the pixels
    * are the table's own lookups. Memoized on the spec, which is what a recolour re-sends.
    */
-  ramp(view, samples, { direct = false } = {}) {
-    const text = JSON.stringify(rampSpecOf(view, stopsOf(view.palette), samples, { direct }));
+  ramp(view, samples, { direct = false, stops = null } = {}) {
+    const text = JSON.stringify(
+      rampSpecOf(view, stops ?? stopsOf(view.palette), samples, { direct, curved: stops !== null }),
+    );
     if (this.ramped !== null && this.ramped.text === text) return this.ramped.pixels;
 
     const lanes = rampLanes(samples);
@@ -790,6 +803,23 @@ export class Renderer {
     const perRow = (this.rowCost ?? 0) * job.supersample * job.supersample;
     this.inflight.set(worker, { at: performance.now(), rows: span, predicted: span * perRow });
     worker.onmessage = (event) => this.#collect(worker, event.data, job);
+    if (job.shade) {
+      const [lanes, transfer] = this.#laneBand(job, rowStart, rowEnd);
+      worker.postMessage(
+        {
+          kind: "shade_band",
+          job: job.generation,
+          spec: job.spec,
+          stats: job.stats,
+          lanes,
+          rowStart,
+          rowEnd,
+          bytes: span * job.width * 4,
+        },
+        transfer,
+      );
+      return;
+    }
     worker.postMessage({
       job: job.generation,
       spec: job.spec,
@@ -802,6 +832,35 @@ export class Renderer {
           ? span * job.width * 4
           : span * job.supersample * job.sampleWidth * job.shape.lanes * 8,
     });
+  }
+
+  /**
+   * The lanes one band of a shade is handed: its own sample rows and the pad either side,
+   * lane-major, in a buffer of its own that is transferred.
+   *
+   * **The copy is the one the field cache forces and there is no way around it.** The
+   * assembled field has to stay whole for the next recolour, and a transfer detaches what
+   * it sends — so a band's rows are copied out. What it is not is the copy this replaced:
+   * the whole field used to be sliced in one go for one worker, and now each band copies
+   * its own share, which is the same bytes moved and then twelve heaps growing in parallel
+   * instead of one growing alone.
+   */
+  #laneBand(job, rowStart, rowEnd) {
+    const ss = job.supersample;
+    const pad = ss === 1 ? 0 : TRAP_PAD_ROWS / 2;
+    const first = Math.max(0, rowStart - pad) * ss;
+    const last = Math.min(job.height, rowEnd + pad) * ss;
+    const rows = last - first;
+    const stride = job.sampleWidth * job.sampleHeight;
+    const lanes = new Float64Array(rows * job.sampleWidth * job.shape.lanes);
+    for (let lane = 0; lane < job.shape.lanes; lane++) {
+      const at = lane * stride;
+      lanes.set(
+        job.lanes.subarray(at + first * job.sampleWidth, at + last * job.sampleWidth),
+        lane * rows * job.sampleWidth,
+      );
+    }
+    return [lanes.buffer, [lanes.buffer]];
   }
 
   /**
@@ -824,7 +883,10 @@ export class Renderer {
     this.inflight.delete(worker);
     const elapsed = performance.now() - band.at;
     job.record.bands.push({ at: band.at - job.record.at, rows: band.rows, ms: elapsed });
-    if (job.generation !== this.generation || band.rows <= 0) return;
+    // A shade band is a colouring and the estimate is about iteration, so it says
+    // nothing here: seeding `rowCost` with one would cut the next field pass to what a
+    // palette lookup costs.
+    if (job.shade || job.generation !== this.generation || band.rows <= 0) return;
     const cost = elapsed / (band.rows * job.supersample * job.supersample);
     this.rowCost = this.rowCost === null ? cost : (this.rowCost + cost) / 2;
     this.queue = this.#cut(this.queue, job.supersample, job.shape);
@@ -853,6 +915,7 @@ export class Renderer {
       job.record.elapsed = performance.now() - job.started;
       job.resolve({
         values: job.values,
+        shade: job.shade === true,
         width: job.width,
         height: job.height,
         supersample: job.supersample,
@@ -877,7 +940,7 @@ export class Renderer {
       job.values.set(new Uint8Array(message.band), message.rowStart * job.width * PROBE_BYTES);
       return;
     }
-    if (job.shape.direct) {
+    if (job.shade || job.shape.direct) {
       job.values.set(new Uint8ClampedArray(message.band), message.rowStart * job.width * 4);
       return;
     }
@@ -946,19 +1009,191 @@ export class Renderer {
   }
 
   /**
-   * Colour the screen's finished field in the page's own shade worker, which is kept.
+   * Colour an assembled field **over the whole pool**, and return it as `ImageData`.
    *
-   * The screen's last stage, and the recolour of it. It used to go through `shadeApart`
-   * like a download, and so paid a fresh worker on every final pass: a new instance of a
-   * module already compiled, and a heap grown from nothing to a frame's worth of lanes
-   * before the first byte of colour. At a screen's size that start was most of what the
-   * pass cost. A download still throws its worker away, for the memory `shadeApart` says;
-   * the screen's frame is small enough that a heap sized to it is worth keeping, the way
-   * each pool worker keeps one sized to its largest band. See `ShadeWorker`.
+   * The screen's finishing stage and every recolour of it. A shade used to be one
+   * worker's whole job — 194 to 430 ms with eleven workers idle, and on a cheap view more
+   * than the field it colours — because a frame is normalized against its own
+   * distribution and a band coloured alone would be stretched against its own histogram.
+   * Split into a reduction that answers those numbers and a colouring that is handed them,
+   * every band is independent and the bytes are the whole frame's. `bands.test.mjs` holds
+   * that to the module.
+   *
+   * Three things happen here and the order is the whole of it:
+   *
+   * 1. **The statistics, once.** In the kept worker, over the whole field, and
+   *    **remembered** — they depend on the field and on the recipe's `transfer` and on
+   *    nothing else, so a palette, gamma, cycles, phase or level edit spends the same
+   *    answer and pays no reduction at all.
+   * 2. **The stops, once.** The tone curve acts on the map rather than on the picture, so
+   *    it is worth exactly one application: `curve_stops` measures it off the picture (a
+   *    view the reader made) or replays the one the spec carries (a seat or a link), and
+   *    what the bands are handed is the curved stops. The strip takes the same stops.
+   * 3. **The colouring, over the pool.** One band a worker.
+   *
+   * A derived view colours twice, which is what the operator is: once to have a picture to
+   * measure, once through the map that measurement curved. Both passes are pooled.
+   *
+   * **Where the statistics are the field over again, this hands the job back.** The
+   * modulate and a rank transfer normalize by a sort of the frame's own samples — eight
+   * bytes a sample — and sending that to twelve workers would cost more than the colouring
+   * it splits. `shade_stats` says so and the one-worker shade takes it, unchanged.
    */
-  shadeKept(field, view, holder = {}, options = {}) {
-    return this.shading.shade(field, view, holder, options);
+  async shadePooled(field, view, holder = {}, { derive = false, key = null } = {}) {
+    const started = performance.now();
+    // Cancelled once, here, and **not again between the phases**: the generation is what
+    // says whether somebody else has asked for a different picture, and a phase that
+    // bumped it on its way past would answer that question wrong for the phase after it.
+    this.cancel();
+    const generation = this.generation;
+    const stats = await this.#statsOf(field, view, key, holder);
+    if (stats === null || this.generation !== generation) return null;
+    if (stats === false) {
+      // Not poolable, and the one-worker shade is still the right answer — the page's own
+      // kept worker, which holds a heap sized to a screen's frame rather than paying for a
+      // fresh instance on every final pass the way a download's does. It takes the field by
+      // transfer, so it gets a copy: the cache has to keep its own whole.
+      return this.shading.shade({ ...field, values: field.values.slice() }, view, holder, {
+        derive,
+      });
+    }
+
+    const plain = specOf(view, field.width, field.height, {
+      supersample: field.supersample,
+      level: false,
+    });
+    let stops = null;
+    let level = null;
+    let image = null;
+
+    if (derive) {
+      const first = await this.#shadeBands(field, plain, stats, holder, generation);
+      if (first === null) return null;
+      const curved = await this.shading.curve(plain, first, holder);
+      if (curved === null || this.generation !== generation) return null;
+      if (!curved.ok) throw new Error(curved.why);
+      stops = curved.colormap;
+      level = curved.curve;
+      image = curved.acts
+        ? await this.#shadeBands(field, { ...plain, colormap: stops }, stats, holder, generation)
+        : first;
+      if (image === null) return null;
+    } else if (view.level) {
+      // A curve the view already carries. `resolve` would spend it again in every band,
+      // and a per-stop cost is exactly what must not be paid per band.
+      const replayed = specOf(view, field.width, field.height, {
+        supersample: field.supersample,
+      });
+      const curved = await this.shading.curve(replayed, null, holder);
+      if (curved === null || this.generation !== generation) return null;
+      if (!curved.ok) throw new Error(curved.why);
+      stops = curved.colormap;
+      const levelled = { ...plain, colormap: stops };
+      image = await this.#shadeBands(field, levelled, stats, holder, generation);
+      if (image === null) return null;
+    } else {
+      image = await this.#shadeBands(field, plain, stats, holder, generation);
+      if (image === null) return null;
+    }
+
+    return {
+      image: new ImageData(image, field.width, field.height),
+      ...(derive ? { level } : {}),
+      stops,
+      elapsed: performance.now() - started,
+    };
   }
+
+  /**
+   * The statistics for this field, measured once in the kept worker and remembered.
+   *
+   * `false` where this coloring has none worth sending, `null` where the pass was
+   * abandoned while they were being measured.
+   */
+  async #statsOf(field, view, key, holder) {
+    const spec = specOf(view, field.width, field.height, {
+      colormap: false,
+      supersample: field.supersample,
+      level: false,
+    });
+    // The transfer is the only part of the recipe a statistic reads, so it is the only
+    // part of the recipe in the key.
+    const remembered =
+      key === null ? null : `${key}|${JSON.stringify(spec.palette?.transfer ?? null)}`;
+    if (remembered !== null && this.measured.has(remembered)) {
+      return this.measured.get(remembered);
+    }
+    const answer = await this.shading.stats(field, spec, holder);
+    if (answer === null) return null;
+    if (!answer.ok) throw new Error(answer.why);
+    const held = answer.pooled ? answer.text : false;
+    if (remembered !== null) {
+      this.measured.set(remembered, held);
+      while (this.measured.size > CACHE_LIMIT * 2) {
+        this.measured.delete(this.measured.keys().next().value);
+      }
+    }
+    return held;
+  }
+
+  /**
+   * One pooled colouring of a field: the bands dispatched over the pool and assembled.
+   *
+   * **One band a worker**, where a field pass cuts four. A field band's cost is a property
+   * of its rows — an interior-heavy band runs to the cap on every sample and a band of
+   * open plane does not — so a field is cut finer than the pool to give the stragglers
+   * somebody else's idle time. Colouring is a lookup per sample and costs the same
+   * wherever the band lands, so there is nothing to balance and every extra band is a
+   * message, a copy and a `#place` for no gain.
+   */
+  #shadeBands(field, spec, stats, holder, generation) {
+    if (this.generation !== generation) return Promise.resolve(null);
+    const { width, height, supersample } = field;
+    const least = supersample > 1 ? Math.ceil(TRAP_PAD_ROWS / TRAP_PAD_SHARE) : MIN_BAND_ROWS;
+    const bands = recut([[0, height]], Math.ceil(height / this.workers.length), least);
+    const record = {
+      kind: "shade",
+      width,
+      height,
+      supersample,
+      workers: this.workers.length,
+      at: performance.now(),
+      bands: [],
+      elapsed: null,
+    };
+    passes.push(record);
+    while (passes.length > PASSES_KEPT) passes.shift();
+
+    return new Promise((resolve, reject) => {
+      holder.stop = () => {
+        if (this.generation === generation) this.cancel();
+        else resolve(null);
+      };
+      this.job = {
+        shade: true,
+        record,
+        generation,
+        spec: JSON.stringify(spec),
+        stats,
+        shape: field.shape,
+        width,
+        height,
+        supersample,
+        sampleWidth: width * supersample,
+        sampleHeight: height * supersample,
+        lanes: field.values,
+        values: new Uint8ClampedArray(width * height * 4),
+        rows: height,
+        done: 0,
+        resolve,
+        reject,
+        started: performance.now(),
+      };
+      this.queue = bands;
+      for (const worker of [...this.idle]) this.#dispatch(worker);
+    }).then((answer) => (answer === null ? null : answer.values));
+  }
+
 }
 
 /**
@@ -1095,12 +1330,10 @@ export class ShadeWorker {
   #start() {
     const worker = new Worker(new URL("./worker.js", import.meta.url), { type: "module" });
     worker.onmessage = (event) => {
-      if (event.data.kind !== "shaded") return;
+      if (event.data.kind === "ready") return;
       const job = this.flight;
       this.flight = null;
-      if (job !== null && !job.stopped) {
-        settleShade(event.data, job.field, job.derive, job.started, job.resolve, job.reject);
-      }
+      if (job !== null && !job.stopped) job.settle(event.data);
       this.#pump();
     };
     worker.onerror = (event) => {
@@ -1134,21 +1367,17 @@ export class ShadeWorker {
     if (this.worker === null) this.#start();
   }
 
-  /** Colour a field, as `shadeApart` does. `field.values` is transferred when it is posted.
-   *  `spec` is the Deep tab's seam — see `shadeMessage`. */
-  shade(field, view, holder = {}, { derive = false, spec = null } = {}) {
+  /**
+   * One job in the kept worker, in the order they were asked for.
+   *
+   * `settle` is the job's own reader of the worker's reply, because this worker answers
+   * four different questions now and the reply shape is the question's. A stopped job
+   * resolves with `null` at once and its answer is dropped when it lands.
+   */
+  #ask(message, transfer, holder, settle) {
     return new Promise((resolve, reject) => {
-      const [message, transfer] = shadeMessage(field, view, derive, spec);
-      const job = {
-        field,
-        derive,
-        message,
-        transfer,
-        started: performance.now(),
-        resolve,
-        reject,
-        stopped: false,
-      };
+      const job = { message, transfer, resolve, reject, stopped: false, settle: null };
+      job.settle = (data) => settle(data, resolve, reject);
       holder.stop = () => {
         job.stopped = true;
         resolve(null);
@@ -1157,6 +1386,61 @@ export class ShadeWorker {
       this.#pump();
     });
   }
+
+  /** Colour a field, as `shadeApart` does. `field.values` is transferred when it is posted.
+   *  `spec` is the Deep tab's seam — see `shadeMessage`. */
+  shade(field, view, holder = {}, { derive = false, spec = null } = {}) {
+    const [message, transfer] = shadeMessage(field, view, derive, spec);
+    const started = performance.now();
+    return this.#ask(message, transfer, holder, (data, resolve, reject) =>
+      settleShade(data, field, derive, started, resolve, reject),
+    );
+  }
+
+  /**
+   * The frame-wide statistics a pooled shade spends, measured over this whole field.
+   *
+   * **The lanes are copied rather than transferred**, because the field in the cache has
+   * to stay whole for the next recolour — and this is the one place a whole field crosses
+   * to a worker at all now. It is worth it once: the answer is remembered, so a run of
+   * palette edits over one field measures nothing after the first.
+   */
+  stats(field, spec, holder = {}) {
+    const lanes = field.values.slice();
+    return this.#ask(
+      { kind: "stats", spec: JSON.stringify(spec), lanes: lanes.buffer },
+      [lanes.buffer],
+      holder,
+      (data, resolve) => {
+        // The statistics themselves, as the text a band is handed. A round trip through
+        // JavaScript's numbers is exact in both directions — `serde_json` writes the
+        // shortest decimal that reads back to the same `f64` and reads one back with
+        // `float_roundtrip` — so what a band parses is bit for bit what was measured.
+        const answer = JSON.parse(data.answer);
+        const text = answer.ok && answer.pooled ? JSON.stringify(answer.stats) : null;
+        resolve({ ...answer, text });
+      },
+    );
+  }
+
+  /**
+   * The map's stops with this view's tone curve spent on them: measured off `image` where
+   * one is given, replayed from the spec where it is not. See `curve_stops`.
+   */
+  curve(spec, image, holder = {}) {
+    const message = { kind: "curve", spec: JSON.stringify(spec) };
+    const transfer = [];
+    if (image !== null) {
+      // The picture is the caller's to keep — it is the one that goes on the screen where
+      // no curve acts — so this is a copy and not a transfer.
+      const copy = image.slice();
+      message.image = copy.buffer;
+      transfer.push(copy.buffer);
+    }
+    return this.#ask(message, transfer, holder, (data, resolve) =>
+      resolve(JSON.parse(data.answer)),
+    );
+  }
 }
 
 /**
@@ -1164,7 +1448,7 @@ export class ShadeWorker {
  * the ramp itself. `colormap` is the map's control points, passed in so a test can hand
  * the module a map without the blob. See `ramp` for why each fixed field is what it is.
  */
-export function rampSpecOf(view, colormap, samples, { direct = false } = {}) {
+export function rampSpecOf(view, colormap, samples, { direct = false, curved = false } = {}) {
   const recipe = direct ? { ...view.shade, gamma: 1, cycles: 1, phase: 0 } : view.shade;
   const spec = {
     schema: 1,
@@ -1175,7 +1459,11 @@ export function rampSpecOf(view, colormap, samples, { direct = false } = {}) {
     palette: { ...recipe, transfer: { kind: "value" } },
     colormap,
   };
-  if (!direct && view.level) {
+  // `curved` says the map handed in has the curve on it already — the very stops the
+  // picture was drawn through, which the pass curved once and kept. Asking for the curve
+  // again would spend `level::curved_stops` a second time on the same map for the same
+  // answer, and that is per stop and hundreds of milliseconds on a map with hundreds.
+  if (!direct && !curved && view.level) {
     spec.autolevel = {
       black_pt: view.level.black_pt,
       white_pt: view.level.white_pt,

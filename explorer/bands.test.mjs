@@ -23,7 +23,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import { load, RAMP } from "./bench/engine.mjs";
-import { bandsOf, recut } from "./render.js";
+import { bandsOf, recut, TRAP_PAD_ROWS } from "./render.js";
 
 /** The hard location deep in the spike that every explorer harness measures on. */
 const ANCHOR = {
@@ -32,7 +32,7 @@ const ANCHOR = {
   width: "0.5622541254857749",
 };
 
-const { plan, band } = await load();
+const { plan, band, shade, shadeStats, shadeBand } = await load();
 
 /**
  * The anchor's field, assembled from the bands a pool of `workers` would be given.
@@ -151,4 +151,131 @@ test("the whole frame in one band is the same bytes as any pool's", () => {
   const { spec, shape } = anchorFrame(width, height, 1);
 
   assert.deepEqual(band(spec, shape, 0, height), assemble(spec, shape, height, 16));
+});
+
+// --------------------------------------------------------------- and the colour
+//
+// The same claim, one stage later. A shade normalizes a frame against its own
+// distribution, so unlike a field band its bytes are NOT a function of its own rows
+// alone — they are a function of its rows and of two numbers measured over the whole
+// frame. `shade_stats` answers those numbers once and `shade_band` is handed them, and
+// what has to hold is that the assembled picture is the one `shade` makes in one call.
+//
+// Above one sample a pixel there is a second way for a cut to reach the picture: the
+// Lanczos-3 reduction reaches three output pixels either side, so a band is handed
+// padded sample rows and keeps only its own output rows. That is the case a wrong pad
+// draws a lighter line between every pair of bands in, and it is the case below.
+
+/** One picture, assembled out of the bands a pool of `workers` would colour. */
+function assembleShade(spec, shape, height, workers, stats, lanes) {
+  const [width] = spec.resolution;
+  const ss = spec.supersample ?? 1;
+  const sampleWidth = width * ss;
+  const sampleHeight = height * ss;
+  const picture = new Uint8Array(width * height * 4);
+  for (const [start, end] of bandsOf(height, workers)) {
+    const where = lanesFor(start, end, ss, height);
+    const rows = where.last - where.first;
+    // Lane-major, the way `render.js` cuts a band's lanes out of the field it keeps.
+    const slice = new Uint8Array(rows * sampleWidth * shape.lanes * 8);
+    for (let lane = 0; lane < shape.lanes; lane++) {
+      slice.set(
+        lanes.subarray(
+          (lane * sampleHeight + where.first) * sampleWidth * 8,
+          (lane * sampleHeight + where.last) * sampleWidth * 8,
+        ),
+        lane * rows * sampleWidth * 8,
+      );
+    }
+    picture.set(shadeBand(spec, stats, slice, start, end), start * width * 4);
+  }
+  return picture;
+}
+
+/**
+ * Which SAMPLE rows a band of output rows has to be handed, the pad included.
+ *
+ * **The pad is the page's rule and the module's length check is what holds it there.**
+ * `shade_band` refuses a lanes buffer that is not exactly the padded rows the band needs,
+ * so a page padding by a different rule draws nothing rather than drawing a seam; that is
+ * the tie, and this is `render.js`'s own constant rather than a third opinion.
+ */
+function lanesFor(rowStart, rowEnd, ss, height) {
+  const pad = ss === 1 ? 0 : TRAP_PAD_ROWS / 2;
+  return {
+    first: Math.max(0, rowStart - pad) * ss,
+    last: Math.min(height, rowEnd + pad) * ss,
+  };
+}
+
+/** A frame, its lanes, and the statistics a pooled shade of it spends. */
+function shadeable(mode, width, height, supersample) {
+  const spec = {
+    schema: 1,
+    family: { kind: "mandelbrot" },
+    viewport: ANCHOR,
+    resolution: [width, height],
+    mode,
+    colormap: RAMP,
+    palette: { gamma: 0.8, cycles: 2, phase: 0.125 },
+    ...(supersample > 1 ? { supersample } : {}),
+  };
+  const shape = plan(spec);
+  assert.ok(shape.ok, shape.why);
+  const lanes = band(spec, shape, 0, height);
+  const answer = shadeStats(spec, lanes.slice());
+  assert.ok(answer.ok, answer.why);
+  assert.equal(answer.pooled, true, `${mode} should colour over the pool`);
+  return { spec, shape, lanes, stats: answer.stats };
+}
+
+test("a pooled shade is the picture the whole-frame shade makes, at one sample a pixel", () => {
+  const [width, height] = [320, 180];
+  const { spec, shape, lanes, stats } = shadeable("smooth", width, height, 1);
+
+  const whole = shade(spec, lanes.slice());
+  assert.deepEqual(assembleShade(spec, shape, height, 2, stats, lanes), whole);
+  assert.deepEqual(assembleShade(spec, shape, height, 16, stats, lanes), whole);
+});
+
+test("and above it, where a band is handed sample rows it colours and throws away", () => {
+  const [width, height] = [192, 108];
+  const { spec, shape, lanes, stats } = shadeable("smooth", width, height, 2);
+
+  assert.ok(lanesFor(1, 2, 2, height).first < 2, "a band above the first is padded above it");
+  const whole = shade(spec, lanes.slice());
+  assert.deepEqual(assembleShade(spec, shape, height, 2, stats, lanes), whole);
+  assert.deepEqual(assembleShade(spec, shape, height, 16, stats, lanes), whole);
+});
+
+test("a two-lane composite colours over the pool the same way", () => {
+  const [width, height] = [192, 108];
+  const { spec, shape, lanes, stats } = shadeable("smooth_trap_circle", width, height, 2);
+  assert.equal(shape.lanes, 2);
+
+  assert.deepEqual(assembleShade(spec, shape, height, 16, stats, lanes), shade(spec, lanes.slice()));
+});
+
+test("a rank transfer and the modulate say they have no statistics to send", () => {
+  // Both normalize by a sort of the frame's own samples, which is the field over
+  // again: `shade_stats` says `pooled: false` and the caller keeps the one-worker
+  // shade. A refusal that came back as a wrong picture instead is the failure this pins.
+  const [width, height] = [96, 54];
+  const base = {
+    schema: 1,
+    family: { kind: "mandelbrot" },
+    viewport: ANCHOR,
+    resolution: [width, height],
+    colormap: RAMP,
+  };
+  for (const spec of [
+    { ...base, mode: "smooth", palette: { transfer: { kind: "rank" } } },
+    { ...base, mode: "itinerary" },
+  ]) {
+    const shape = plan(spec);
+    assert.ok(shape.ok, shape.why);
+    const answer = shadeStats(spec, band(spec, shape, 0, height));
+    assert.ok(answer.ok, answer.why);
+    assert.equal(answer.pooled, false, `${spec.mode} has no statistics worth sending`);
+  }
 });

@@ -1,17 +1,19 @@
 {
-  "built": "2026-09-18",
+  "built": "2026-09-20",
   "crate": "explorer/engine-wasm",
   "engine_changes": [
     "coloring::composite, coloring::modulate and direct_trap::Painter::trace are pub: visibility only, no signature moved, engine tests unmoved.",
     "iterate::run is #[inline(always)]: the specialization cascade this crate depended on for its own call sites, and now depends on through the engine's table.",
     "field::sweep_row and field::Channels are pub: the engine's own table of specialized call sites, twelve channel sets over nine families, which compute_lanes now calls instead of keeping a hand-written copy of nine of them. Visibility only, no signature moved, engine tests unmoved.",
     "colormap::srgb_to_linear, linear_to_srgb, linear_srgb_to_oklab and oklab_to_linear_srgb were ALREADY pub, and are named here because the autolevel port leans on them: `level.rs` replays band_autolevel/v1 on a map's stops through the engine's own copy of Ottosson's matrices rather than a third one. Nothing was changed next door for it.",
-    "screen::Battery, its Default, Battery::screen and Screening were ALREADY pub, and are named here because the Walk tab's `screen` export leans on them: it runs the pipeline's own gate battery rather than a JavaScript copy of its rule. Nothing was changed next door for it."
+    "screen::Battery, its Default, Battery::screen and Screening were ALREADY pub, and are named here because the Walk tab's `screen` export leans on them: it runs the pipeline's own gate battery rather than a JavaScript copy of its rule. Nothing was changed next door for it.",
+    "coloring::Spend is pub, with measure and position, and Stretch, Edges and Ranks carry Serialize/Deserialize: a frame's normalization has to cross to a worker so that a band of the shade can be coloured against the whole frame's distribution rather than its own. Zero behaviour; serde was already a dependency of that crate.",
+    "coloring::shade_samples, composite_samples and modulate_samples are new and public: the second half of shade, composite and modulate, over a run of samples rather than over a Field. Each of the three is now its own measure followed by its own _samples over one band that is the whole field, so the pipeline's arithmetic is unmoved and the engine's 217 tests are unmoved with it. This is a signature added rather than a visibility widened, which is further than the carve-out in CLAUDE.md reaches; explorer_shade_pool_ckpt136 was told to make the seam."
   ],
   "engine_version": "0.1.0",
-  "gzip_bytes": 213828,
-  "raw_bytes": 717977,
+  "gzip_bytes": 228670,
+  "raw_bytes": 763343,
   "rustc": "1.96.0 (ac68faa20 2026-05-25)",
   "schema": 1,
-  "wallpapers_commit": "c26f9c249a10596dbc4667f61b89a62ad96b28e3"
+  "wallpapers_commit": "3870f44fb468919b7b2517c059a36d5e7996500c"
 }

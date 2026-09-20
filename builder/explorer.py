@@ -277,6 +277,17 @@ ENGINE_CHANGES = [
     "named here because the Walk tab's `screen` export leans on them: it runs the "
     "pipeline's own gate battery rather than a JavaScript copy of its rule. Nothing was "
     "changed next door for it.",
+    "coloring::Spend is pub, with measure and position, and Stretch, Edges and Ranks carry "
+    "Serialize/Deserialize: a frame's normalization has to cross to a worker so that a band "
+    "of the shade can be coloured against the whole frame's distribution rather than its "
+    "own. Zero behaviour; serde was already a dependency of that crate.",
+    "coloring::shade_samples, composite_samples and modulate_samples are new and public: "
+    "the second half of shade, composite and modulate, over a run of samples rather than "
+    "over a Field. Each of the three is now its own measure followed by its own _samples "
+    "over one band that is the whole field, so the pipeline's arithmetic is unmoved and "
+    "the engine's 217 tests are unmoved with it. This is a signature added rather than a "
+    "visibility widened, which is further than the carve-out in CLAUDE.md reaches; "
+    "explorer_shade_pool_ckpt136 was told to make the seam.",
 ]
 
 _RUSTC_VERSION = re.compile(r"^rustc (\S+ \([0-9a-f]+ \d{4}-\d{2}-\d{2}\))")

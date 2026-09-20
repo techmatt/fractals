@@ -173,6 +173,9 @@ struct Plan {
     /// Whether the spec carried a curve to replay. A picture drawn through one is
     /// already levelled, and measuring it would level it twice.
     replays: bool,
+    /// The curve it carried, kept so that [`curve_stops`] can hand a caller the stops
+    /// this plan's own map was baked from rather than making it send the curve back.
+    curve: Option<level::Curve>,
     /// The fields this coloring reads, in the order this module stores them: base
     /// first, texture second. Empty for a direct trap, which reads none.
     lanes: Vec<Layer>,
@@ -333,6 +336,7 @@ fn resolve(text: &str) -> Result<Plan, String> {
         colormap,
         source,
         replays,
+        curve: spec.autolevel,
         lanes,
         exact,
         settled_weight,
@@ -762,7 +766,7 @@ pub extern "C" fn shade(
     lanes_ptr: *mut u8,
     lanes_len: usize,
 ) -> *mut u8 {
-    let read = read_lanes(spec_ptr, spec_len, lanes_ptr, lanes_len);
+    let read = read_lanes(spec_ptr, spec_len, lanes_ptr, lanes_len, true);
     if !lanes_ptr.is_null() {
         unsafe { dealloc(lanes_ptr, lanes_len) };
     }
@@ -847,7 +851,7 @@ pub extern "C" fn shade_level(
     lanes_len: usize,
     derive: u32,
 ) -> *mut u8 {
-    let read = read_lanes(spec_ptr, spec_len, lanes_ptr, lanes_len);
+    let read = read_lanes(spec_ptr, spec_len, lanes_ptr, lanes_len, true);
     if !lanes_ptr.is_null() {
         unsafe { dealloc(lanes_ptr, lanes_len) };
     }
@@ -914,6 +918,282 @@ pub extern "C" fn shade_level(
     release(out)
 }
 
+// ------------------------------------------------------ the shade, over the pool
+
+/// The frame-wide statistics a colouring reads, apart from the samples it reads them
+/// for: what [`shade_stats`] measures once and hands to every [`shade_band`].
+///
+/// A frame is normalized against its own distribution — the 0.5th and 99.5th
+/// percentiles of its valid samples — so a band coloured alone would be stretched
+/// against its own histogram and would draw a step between itself and its
+/// neighbours. Split into a reduction that answers those numbers and a colouring that
+/// is handed them, **every band is independent and the bytes are the whole frame's**.
+/// The statistics are the engine's own [`coloring::Spend`], measured by the engine's
+/// own code over the whole field; this module keeps no second opinion about what a
+/// frame's normalization is.
+///
+/// **There is no variant for the modulate or for a rank transfer, and that is the
+/// refusal.** Both normalize by [`coloring::Ranks`], which is the frame's valid
+/// samples sorted — eight bytes a sample, the field over again. Sending that to
+/// twelve workers costs more than the colouring it splits, so those two keep the
+/// one-worker shade and [`shade_stats`] says so rather than guessing.
+#[derive(serde::Serialize, Deserialize)]
+enum Stats {
+    Field(coloring::Spend),
+    Composite(coloring::Spend, coloring::Stretch),
+}
+
+/// Measure what a band will need, or `None` where this coloring's statistics are the
+/// field over again. See [`Stats`].
+fn measure_stats(plan: &Plan, base: &Field, texture: &Texture) -> Option<Stats> {
+    let composite = match (&plan.coloring, texture) {
+        (Coloring::Field { .. }, _) => false,
+        (Coloring::Composite { .. }, Texture::Narrow(_)) => true,
+        _ => return None,
+    };
+    let spend = coloring::Spend::measure(base, plan.palette.transfer);
+    if matches!(spend, coloring::Spend::Rank(_)) {
+        return None;
+    }
+    match (composite, texture) {
+        (true, Texture::Narrow(second)) => {
+            Some(Stats::Composite(spend, coloring::Stretch::measure(second)))
+        }
+        _ => Some(Stats::Field(spend)),
+    }
+}
+
+/// The statistics a pooled shade of this field needs, as JSON, or why it has none.
+///
+/// `{"ok": true, "pooled": true, "stats": …}`, `{"ok": true, "pooled": false}` where
+/// the caller should take the one-worker [`shade_level`] instead, or `{"ok": false,
+/// "why": …}`. **This export takes the lanes buffer and frees it**, on every path
+/// including a refusal, exactly as [`shade`] does and for the same reason.
+///
+/// The statistics depend on the field and on the recipe's `transfer` and on nothing
+/// else — not on the map, the gamma, the cycles, the phase or the curve — so a caller
+/// that is recolouring a field it already measured may keep this answer and spend it
+/// again. That is what makes a palette edit a colouring and nothing more.
+#[unsafe(no_mangle)]
+pub extern "C" fn shade_stats(
+    spec_ptr: *const u8,
+    spec_len: usize,
+    lanes_ptr: *mut u8,
+    lanes_len: usize,
+) -> *mut u8 {
+    let read = read_lanes(spec_ptr, spec_len, lanes_ptr, lanes_len, false);
+    if !lanes_ptr.is_null() {
+        unsafe { dealloc(lanes_ptr, lanes_len) };
+    }
+    let report = match read {
+        None => serde_json::json!({
+            "ok": false,
+            "why": "this spec, this colormap and these lanes do not describe one picture",
+        }),
+        Some((plan, base, texture)) => match measure_stats(&plan, &base, &texture) {
+            Some(stats) => serde_json::json!({"ok": true, "pooled": true, "stats": stats}),
+            None => serde_json::json!({"ok": true, "pooled": false}),
+        },
+    };
+    release_text(&report.to_string())
+}
+
+/// How many OUTPUT pixels the reduction reaches either side of its own, which is
+/// [`resample`]'s Lanczos-3 radius. The same three [`paint_band`] pads by.
+const REDUCE_REACH: u32 = 3;
+
+/// Which SAMPLE rows a band of output rows `[row_start, row_end)` has to be handed,
+/// padding included: `[first, last)`.
+///
+/// **The pad is the reduction's, and it is the only thing about a shade that is not
+/// per-sample.** Colouring reads one sample; the Lanczos-3 reduction that follows it
+/// reaches three output pixels either side, so a band that was handed only its own
+/// sample rows would renormalize a clipped kernel at both edges and draw a lighter
+/// line between every pair of bands. At one sample a pixel the taps are the identity
+/// and the pad is zero, which is [`paint_band`]'s reasoning exactly.
+fn band_rows(view: &Viewport, row_start: u32, row_end: u32) -> (u32, u32) {
+    let ss = view.supersample;
+    let pad = if ss == 1 { 0 } else { REDUCE_REACH * ss };
+    (
+        (row_start * ss).saturating_sub(pad),
+        (row_end * ss + pad).min(view.sample_height()),
+    )
+}
+
+/// One band of a shade: output rows `[row_start, row_end)`, through statistics
+/// [`shade_stats`] measured over the whole field.
+///
+/// The lanes are the **padded** sample rows [`band_rows`] names, lane-major exactly
+/// as [`compute_band`] writes them: lane 0's rows, then lane 1's. **This export takes
+/// that buffer and frees it**, before it allocates a byte of colour, for the reason
+/// [`shade`] gives.
+///
+/// The caller states the pad — it is `render.js`'s `TRAP_PAD_ROWS`, the same three
+/// output rows either side a direct trap's band already pads by, because it is the
+/// same reduction reaching the same distance. What ties the two statements together
+/// is the length check below: a buffer that is not exactly the padded rows this band
+/// needs is refused rather than coloured, so a page that padded by a different rule
+/// draws nothing instead of drawing a seam.
+///
+/// Returns `(row_end - row_start) * out_width * 4` RGBA bytes, or null on a refusal.
+/// Every stage is the same call the whole-frame [`shade`] makes: the engine's own
+/// colouring over a run of samples, the rolloff, and the engine's own Lanczos-3
+/// reduction at the origin this band's first output row sits at.
+#[unsafe(no_mangle)]
+pub extern "C" fn shade_band(
+    spec_ptr: *const u8,
+    spec_len: usize,
+    stats_ptr: *const u8,
+    stats_len: usize,
+    lanes_ptr: *mut u8,
+    lanes_len: usize,
+    row_start: u32,
+    row_end: u32,
+) -> *mut u8 {
+    let read = read_band(
+        spec_ptr, spec_len, stats_ptr, stats_len, lanes_ptr, lanes_len, row_start, row_end,
+    );
+    if !lanes_ptr.is_null() {
+        unsafe { dealloc(lanes_ptr, lanes_len) };
+    }
+    let Some((plan, stats, base, texture)) = read else {
+        return std::ptr::null_mut();
+    };
+    let colormap = plan
+        .colormap
+        .as_ref()
+        .expect("a colormap, which read_band refuses without");
+    match colour_band(
+        &plan,
+        &stats,
+        &base,
+        texture.as_deref(),
+        colormap,
+        row_start,
+        row_end,
+    ) {
+        Some(bytes) => release(bytes),
+        None => std::ptr::null_mut(),
+    }
+}
+
+/// Everything [`shade_band`] reads out of its caller's buffers, and nothing else —
+/// split out so the lanes are freed at exactly one point and on every path.
+#[allow(clippy::too_many_arguments)]
+fn read_band(
+    spec_ptr: *const u8,
+    spec_len: usize,
+    stats_ptr: *const u8,
+    stats_len: usize,
+    lanes_ptr: *const u8,
+    lanes_len: usize,
+    row_start: u32,
+    row_end: u32,
+) -> Option<(Plan, Stats, Vec<f32>, Option<Vec<f32>>)> {
+    let plan = resolve(&text(spec_ptr, spec_len).ok()?).ok()?;
+    plan.colormap.as_ref()?;
+    if lanes_ptr.is_null() || plan.lanes.is_empty() {
+        return None;
+    }
+    if row_end > plan.view.out_height || row_start >= row_end {
+        return None;
+    }
+    let stats: Stats = serde_json::from_str(&text(stats_ptr, stats_len).ok()?).ok()?;
+    // The statistics and the coloring have to be the same shape, or the picture would
+    // be drawn against a normalization of a field it is not.
+    match (&stats, &plan.coloring) {
+        (Stats::Field(_), Coloring::Field { .. }) => {}
+        (Stats::Composite(..), Coloring::Composite { .. }) => {}
+        _ => return None,
+    }
+    let (first, last) = band_rows(&plan.view, row_start, row_end);
+    let width = plan.view.sample_width() as usize;
+    let count = (last - first) as usize * width;
+    if lanes_len != count * plan.lanes.len() * 8 {
+        return None;
+    }
+    let raw = unsafe { std::slice::from_raw_parts(lanes_ptr, lanes_len) };
+    let narrow = |index: usize| -> Vec<f32> {
+        raw[index * count * 8..(index + 1) * count * 8]
+            .chunks_exact(8)
+            .map(|eight| f64::from_le_bytes(eight.try_into().expect("eight bytes")) as f32)
+            .collect()
+    };
+    let base = narrow(0);
+    let texture = matches!(stats, Stats::Composite(..)).then(|| narrow(1));
+    Some((plan, stats, base, texture))
+}
+
+/// One band's colour: the engine's colouring over these samples, the rolloff, and the
+/// reduction at this band's own origin.
+fn colour_band(
+    plan: &Plan,
+    stats: &Stats,
+    base: &[f32],
+    texture: Option<&[f32]>,
+    colormap: &Colormap,
+    row_start: u32,
+    row_end: u32,
+) -> Option<Vec<u8>> {
+    let ss = plan.view.supersample;
+    let width = plan.view.sample_width() as usize;
+    let (first, last) = band_rows(&plan.view, row_start, row_end);
+    let rows = (last - first) as usize;
+
+    let mut linear = match (&plan.coloring, stats, texture) {
+        (Coloring::Field { transform, .. }, Stats::Field(spend), _) => {
+            coloring::shade_samples(base, spend, *transform, &plan.palette, colormap)
+        }
+        (
+            Coloring::Composite {
+                blend,
+                texture_weight,
+                texture_gamma,
+                ..
+            },
+            Stats::Composite(spend, stretch),
+            Some(second),
+        ) => coloring::composite_samples(
+            base,
+            second,
+            spend,
+            stretch,
+            plan.lanes[0].transform,
+            plan.lanes[1].transform,
+            *blend,
+            *texture_weight,
+            *texture_gamma,
+            &plan.palette,
+            colormap,
+        ),
+        _ => return None,
+    };
+    if plan.palette.rolloff != Rolloff::None {
+        for pixel in &mut linear {
+            *pixel = plan.palette.rolloff.shade(*pixel);
+        }
+    }
+    let out_width = plan.view.out_width as usize;
+    let out_rows = (row_end - row_start) as usize;
+    // At one sample a pixel the reduction is the encode `downsample` skips to, and the
+    // band is its own rows: the same call the whole frame makes, over fewer of them.
+    if ss == 1 {
+        return Some(rgba(&resample::downsample(
+            &linear, width, rows, out_width, out_rows, 1,
+        )));
+    }
+    let horizontal = resample::build_taps_at(out_width, width, 0.0, ss as f64);
+    let vertical =
+        resample::build_taps_at(out_rows, rows, (row_start * ss - first) as f64, ss as f64);
+    Some(rgba(&resample::apply_taps(
+        &linear,
+        width,
+        rows,
+        &horizontal,
+        &vertical,
+    )))
+}
+
 /// The operator's measure half on a finished RGBA picture, alone, as the same
 /// `LEVEL_HEADER` [`shade_level`] writes. The curve is written for an identity as well
 /// as for an acting curve, and is zeros for a degenerate range.
@@ -934,6 +1214,96 @@ pub extern "C" fn derive_level(rgba_ptr: *const u8, rgba_len: usize) -> *mut u8 
     })
 }
 
+/// A colormap spec as the page sends one: the kind, and the stops.
+fn map_of(kind: Kind, stops: &[(f64, [u8; 3])]) -> serde_json::Value {
+    serde_json::json!({
+        "kind": match kind {
+            Kind::Cyclic => "cyclic",
+            Kind::Sequential => "sequential",
+        },
+        "stops": stops,
+    })
+}
+
+/// The map's stops with this view's tone curve already spent on them, and the curve.
+///
+/// **The curve acts on the map and never on the picture, so it is worth exactly one
+/// application.** It used to be worth two or twelve: the page redrew a 512-pixel
+/// palette strip through the same map and the same curve on the main thread, and a
+/// shade split over the pool would have had every band replay it — [`level::curved_stops`]
+/// densifies the ramp and pulls each stop's chroma back into sRGB by a bisection with
+/// a bisection inside it, which is per stop and is hundreds of milliseconds on a map
+/// with hundreds. Curved once here, the stops go into the band specs, into the strip,
+/// and into the download, and nothing replays anything.
+///
+/// The curve comes from one of two places, and the picture says which:
+///
+/// * **`rgba_len` of zero** — the curve the spec carries, replayed. That is a gallery
+///   seat or a pasted link: the measurement was made by the run that recorded it.
+/// * **a picture** — measured off it ([`level::derive`]), the way [`shade_level`] does.
+///   A spec that already replays a curve is refused, because that picture is levelled
+///   already and measuring it would level it twice.
+///
+/// `{"ok": true, "acts": bool, "curve": {…}|null, "colormap": {kind, stops}}`, with the
+/// map handed straight back where no curve acts — a whole colormap spec rather than the
+/// stops alone, so a caller drops it into the next spec without knowing what a kind is.
+/// Or `{"ok": false, "why": …}`. The picture is the caller's buffer to free.
+#[unsafe(no_mangle)]
+pub extern "C" fn curve_stops(
+    spec_ptr: *const u8,
+    spec_len: usize,
+    rgba_ptr: *const u8,
+    rgba_len: usize,
+) -> *mut u8 {
+    let report = text(spec_ptr, spec_len)
+        .and_then(|text| resolve(&text))
+        .and_then(|plan| {
+            let (kind, stops) = plan
+                .source
+                .as_ref()
+                .ok_or("this spec carries no colormap to curve")?;
+            let measured = if rgba_len == 0 {
+                if !plan.replays {
+                    return Ok(serde_json::json!({
+                        "ok": true, "acts": false, "curve": null, "colormap": map_of(*kind, stops),
+                    }));
+                }
+                // The spec's own curve, which `resolve` has already spent on `plan`'s
+                // baked map: re-spending it on the source stops is the same call with
+                // the same arguments, and what comes back is that map's stops.
+                plan.curve
+            } else {
+                if plan.replays {
+                    return Err("this picture is levelled already".into());
+                }
+                if rgba_ptr.is_null() || rgba_len % 4 != 0 {
+                    return Err("the picture is not whole pixels".into());
+                }
+                let raw = unsafe { std::slice::from_raw_parts(rgba_ptr, rgba_len) };
+                level::derive(raw, 4)
+            };
+            Ok(match measured {
+                Some(curve) => serde_json::json!({
+                    "ok": true,
+                    "acts": true,
+                    "curve": {
+                        "operator": level::OPERATOR,
+                        "black_pt": curve.black_pt,
+                        "white_pt": curve.white_pt,
+                        "exponent": curve.exponent,
+                        "out_ends": curve.out_ends,
+                    },
+                    "colormap": map_of(*kind, &level::curved_stops(stops, &curve)),
+                }),
+                None => serde_json::json!({
+                    "ok": true, "acts": false, "curve": null, "colormap": map_of(*kind, stops),
+                }),
+            })
+        })
+        .unwrap_or_else(|why: String| serde_json::json!({"ok": false, "why": why}));
+    release_text(&report.to_string())
+}
+
 /// [`derive::roughness`] on a composite's lanes, which the caller keeps: the number a
 /// derived weight is read off, for the pilot and the tests. NaN where the spec is not a
 /// composite or no pair of samples has a base and a texture.
@@ -946,7 +1316,7 @@ pub extern "C" fn texture_roughness(
     stride: u32,
 ) -> f64 {
     let Some((plan, base, Texture::Narrow(texture))) =
-        read_lanes(spec_ptr, spec_len, lanes_ptr, lanes_len)
+        read_lanes(spec_ptr, spec_len, lanes_ptr, lanes_len, true)
     else {
         return f64::NAN;
     };
@@ -1129,9 +1499,15 @@ fn read_lanes(
     spec_len: usize,
     lanes_ptr: *const u8,
     lanes_len: usize,
+    colormap: bool,
 ) -> Option<(Plan, Field, Texture)> {
     let plan = resolve(&text(spec_ptr, spec_len).ok()?).ok()?;
-    plan.colormap.as_ref()?;
+    // A colouring needs a map and a measurement does not: [`shade_stats`] reads a
+    // frame's own distribution, which is a fact about the field, so the spec it is sent
+    // carries no colormap at all and a page recolouring one field measures it once.
+    if colormap {
+        plan.colormap.as_ref()?;
+    }
     if lanes_ptr.is_null() || plan.lanes.is_empty() {
         return None;
     }

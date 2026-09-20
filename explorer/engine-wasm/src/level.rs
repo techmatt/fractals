@@ -166,33 +166,118 @@ fn oklab_of(rgb: [f64; 3]) -> [f64; 3] {
     ])
 }
 
-/// Oklab back to the 0–255 scale, clipped and **not** rounded.
+/// Oklab to the 0–255 scale, clipped and **not** rounded.
 ///
 /// `fractal_engine::colormap::linear_to_srgb` clamps its input to the unit
 /// interval and returns inside it, which is exactly what the Python side's
 /// `clip(_linear_to_srgb(linear), 0, 1)` does over every input either can be
 /// handed. The clip is not a gamut fit and this function does not pretend to be
-/// one — [`gamut_fit`] is.
-fn srgb_of(lab: [f64; 3]) -> [f64; 3] {
+/// one — [`gamut_fit`] is. The linear colour comes back with it because whether that
+/// clip bit is the whole of what [`in_gamut`] wants to know.
+fn srgb_of(lab: [f64; 3]) -> ([f64; 3], [f64; 3]) {
     let linear = oklab_to_linear_srgb(lab);
-    [
-        linear_to_srgb(linear[0]) * 255.0,
-        linear_to_srgb(linear[1]) * 255.0,
-        linear_to_srgb(linear[2]) * 255.0,
-    ]
+    (
+        [
+            linear_to_srgb(linear[0]) * 255.0,
+            linear_to_srgb(linear[1]) * 255.0,
+            linear_to_srgb(linear[2]) * 255.0,
+        ],
+        linear,
+    )
+}
+
+/// The one band of linear light where sRGB's two pieces do not meet.
+///
+/// `linear_to_srgb` switches from the linear ramp to the power law at 0.0031308 and
+/// `srgb_to_linear` switches back at 0.04045 — and the first sends a value a hair
+/// above 0.0031308 to one a hair *below* 0.04045, which the second then decodes
+/// through the wrong piece. The band is 7.3e-9 wide and a value inside it comes back
+/// 7.3e-7 relatively adrift; everywhere else in the unit interval the round trip
+/// lands within 8.6e-16 of where it started. **This is a property of the sRGB
+/// standard's own constants**, not of this code or of floating point, and it is
+/// named here because it is the only thing the two shortcuts below have to avoid.
+/// The bracket is generous: a tenth of a part per million either side of a band a
+/// hundredth that wide.
+const SEAM: (f64, f64) = (0.0031308, 0.0031309);
+
+/// Whether a linear channel is one the encode leaves alone and the decode gives back:
+/// inside the unit interval that [`linear_to_srgb`] clamps to, and off the [`SEAM`].
+fn faithful(channel: f64) -> bool {
+    (0.0..=1.0).contains(&channel) && !(SEAM.0 < channel && channel < SEAM.1)
+}
+
+/// How far a round trip moved a colour, by its furthest Oklab axis.
+fn apart(lab: [f64; 3], back: [f64; 3]) -> f64 {
+    (0..3)
+        .map(|channel| (back[channel] - lab[channel]).abs())
+        .fold(0.0_f64, f64::max)
 }
 
 /// `(is it inside, what it converts to)` — asked by round trip, because the
 /// conversion clips. Asking the *clipped* output whether it is in range always
 /// answers yes; an in-gamut colour survives Oklab → sRGB → Oklab unchanged and an
 /// out-of-gamut one does not, which is the only question that tells them apart.
+///
+/// **Two shortcuts, and neither is an approximation of that question.**
+///
+/// 1. A colour whose linear channels are all [`faithful`] was not clipped at all, so
+///    the trip is the identity to within 8.6e-16 — nine orders under [`IN_GAMUT`] —
+///    and there is nothing for the second conversion to find. It is inside, and
+///    neither [`oklab_of`] nor its three `cbrt` runs.
+/// 2. Where the clip did bite, the trip still goes through the transfer function and
+///    back, and **that pair is the identity on every faithful channel**. So the
+///    decoded linear colour is the clamped one, measured at 8.9e-16 over eight
+///    hundred thousand adversarial triples, and the three `powf` of the decode are
+///    skipped. Where a clamped channel lands on the [`SEAM`] the long way is taken,
+///    through the encoded bytes, exactly as before.
+///
+/// What is left for a verdict is a matrix, three cubes and three `cbrt`, where it was
+/// six `powf` and three `cbrt`. The stop-for-stop bytes are unchanged, which is what
+/// `explorer/bench/curves.mjs` holds the whole colormap library to.
 fn in_gamut(lab: [f64; 3]) -> (bool, [f64; 3]) {
-    let rgb = srgb_of(lab);
-    let back = oklab_of(rgb);
-    let far = (0..3)
-        .map(|channel| (back[channel] - lab[channel]).abs())
-        .fold(0.0_f64, f64::max);
-    (far < IN_GAMUT, rgb)
+    let (rgb, linear) = srgb_of(lab);
+    if linear.iter().all(|&channel| faithful(channel)) {
+        return (true, rgb);
+    }
+    (apart(lab, decoded(rgb, linear)) < IN_GAMUT, rgb)
+}
+
+/// [`in_gamut`]'s verdict without its colour, which is all a bisection probe wants.
+///
+/// The bisection in [`gamut_fit`] asks this twenty-eight times a stop and the cap's
+/// asks for that whole bisection eighteen times, so it is where the operator's cost
+/// per stop actually lives. Skipping [`srgb_of`]'s three `powf` as well as the
+/// decode's is what makes an inside probe free.
+fn fits(lab: [f64; 3]) -> bool {
+    let linear = oklab_to_linear_srgb(lab);
+    if linear.iter().all(|&channel| faithful(channel)) {
+        return true;
+    }
+    let clamped = clamped(linear);
+    if clamped.iter().all(|&channel| faithful(channel)) {
+        return apart(lab, linear_srgb_to_oklab(clamped)) < IN_GAMUT;
+    }
+    in_gamut(lab).0
+}
+
+/// What the sRGB8 bytes decode back to, in Oklab: the clamp where that is exact, and
+/// the transfer function itself where a channel sits on the [`SEAM`].
+fn decoded(rgb: [f64; 3], linear: [f64; 3]) -> [f64; 3] {
+    let clamped = clamped(linear);
+    if clamped.iter().all(|&channel| faithful(channel)) {
+        linear_srgb_to_oklab(clamped)
+    } else {
+        oklab_of(rgb)
+    }
+}
+
+/// The unit interval [`linear_to_srgb`] clamps to, applied where it can be seen.
+fn clamped(linear: [f64; 3]) -> [f64; 3] {
+    [
+        linear[0].clamp(0.0, 1.0),
+        linear[1].clamp(0.0, 1.0),
+        linear[2].clamp(0.0, 1.0),
+    ]
 }
 
 /// Round half to even, which is what `numpy.rint` does and what
@@ -220,8 +305,7 @@ fn gamut_fit(lab: [f64; 3]) -> [u8; 3] {
         let (mut low, mut high) = (0.0_f64, 1.0_f64);
         for _ in 0..GAMUT_STEPS {
             let middle = 0.5 * (low + high);
-            let (fits, _) = in_gamut([lab[0], lab[1] * middle, lab[2] * middle]);
-            if fits {
+            if fits([lab[0], lab[1] * middle, lab[2] * middle]) {
                 low = middle;
             } else {
                 high = middle;
@@ -238,10 +322,15 @@ fn gamut_fit(lab: [f64; 3]) -> [u8; 3] {
 
 /// The chroma that survives the gamut pull-back, measured back in Oklab — and
 /// measured on the **rounded** sRGB8, because that is what a stop ships as.
-fn chroma_after(lab: [f64; 3]) -> f64 {
+///
+/// The fitted colour comes back with it because [`curved_stops`] wants exactly that
+/// colour at the end: the lightness it settles on was the argument to one of these
+/// calls, and fitting it a second time would run the whole bisection again for an
+/// answer this one already has.
+fn chroma_after(lab: [f64; 3]) -> (f64, [u8; 3]) {
     let fitted = gamut_fit(lab);
     let back = oklab_of([fitted[0] as f64, fitted[1] as f64, fitted[2] as f64]);
-    back[1].hypot(back[2])
+    (back[1].hypot(back[2]), fitted)
 }
 
 /// Walk one stop's new lightness back until it keeps [`RETAIN`] of its chroma.
@@ -250,25 +339,37 @@ fn chroma_after(lab: [f64; 3]) -> f64 {
 /// stop's own original lightness — where retention is one by construction, because
 /// the stop came from a real sRGB8 colour. So the bisection always has a valid
 /// bracket. `autolevel.cap_lightness`.
-fn cap_lightness(before: f64, after: f64, green_red: f64, blue_yellow: f64) -> f64 {
+/// `(the lightness it settles on, the sRGB8 that lightness fits to where that is
+/// already known)`. The second is never a different answer from fitting the first
+/// again — it *is* that answer, kept from the call that produced it.
+fn cap_lightness(
+    before: f64,
+    after: f64,
+    green_red: f64,
+    blue_yellow: f64,
+) -> (f64, Option<[u8; 3]>) {
     let chroma = green_red.hypot(blue_yellow);
     if chroma < 1e-6 || (after - before).abs() < 1e-9 {
-        return after;
+        return (after, None);
     }
     let threshold = RETAIN * chroma;
-    if chroma_after([after, green_red, blue_yellow]) >= threshold {
-        return after;
+    let (kept, fitted) = chroma_after([after, green_red, blue_yellow]);
+    if kept >= threshold {
+        return (after, Some(fitted));
     }
     let (mut good, mut bad) = (before, after);
+    let mut held = None;
     for _ in 0..CAP_STEPS {
         let middle = 0.5 * (good + bad);
-        if chroma_after([middle, green_red, blue_yellow]) >= threshold {
+        let (kept, fitted) = chroma_after([middle, green_red, blue_yellow]);
+        if kept >= threshold {
             good = middle;
+            held = Some(fitted);
         } else {
             bad = middle;
         }
     }
-    good
+    (good, held)
 }
 
 /// The ramp, subdivided and interpolated in Oklab. `autolevel.densify`.
@@ -324,8 +425,9 @@ pub fn curved_stops(stops: &[(f64, [u8; 3])], curve: &Curve) -> Vec<(f64, [u8; 3
         .zip(lab)
         .map(|(position, [lightness, green_red, blue_yellow])| {
             let moved = curve.lightness(lightness);
-            let capped = cap_lightness(lightness, moved, green_red, blue_yellow);
-            (position, gamut_fit([capped, green_red, blue_yellow]))
+            let (capped, fitted) = cap_lightness(lightness, moved, green_red, blue_yellow);
+            let rgb = fitted.unwrap_or_else(|| gamut_fit([capped, green_red, blue_yellow]));
+            (position, rgb)
         })
         .collect()
 }

@@ -229,6 +229,20 @@ the control and never the value: a seat or link carrying a density of 14 opens a
 box says 14 and the slider parks at 10. Only Texture follows the hand, because a weight is a
 recolour; every other parameter re-iterates, so its slider draws on release.
 
+**A slider that follows the hand coalesces, and that is the whole of what it needed**
+*(`explorer_shade_pool_ckpt136`, 2026-09-20)*. Gamma, Cycles, Phase and Texture already
+drew on `input` rather than on release, so no control's event moved here — what was wrong
+was behind them, a shade of two to four hundred milliseconds under a pointer that fires
+sixty or a hundred and twenty times a second. Wired straight to a redraw that would either
+stack passes up behind the hand or abandon each a few milliseconds in and never finish a
+picture. So a move while a pass is running is **remembered rather than acted on**, and the
+pass that follows draws whatever the control says by then: a machine that keeps up
+recolours every frame, and a machine that does not degrades to the newest value rather
+than the oldest queued one, with nothing thrown away half drawn. A pan or a mode change
+landing in the middle takes the pending redraw with it rather than adding one after it.
+Under a direct trap every value re-iterates and the sliders still wait for release, which
+is unchanged and is not about the shade.
+
 **The atlas chips follow the view.** A chip clicked opens its plane's home view with the mode
 and palette kept, and a view arriving on another plane by any route moves the chip — a Julia
 set to the parameter plane of its degree — so the two never drift.
@@ -1046,12 +1060,21 @@ Committed beside the module, `engine.manifest.json` records what it was built fr
 | `rustc` | the compiler, with its commit and date |
 | `wallpapers_commit` | the sibling checkout's `HEAD` at bake time |
 | `engine_changes` | every change this consumer has needed in the engine, one line each |
-| `raw_bytes` / `gzip_bytes` | 717,977 raw, **213,828 gzipped** |
+| `raw_bytes` / `gzip_bytes` | 763,343 raw, **228,670 gzipped** |
 
 `engine_changes` is typed, in `builder/explorer.py`, and is the condition CLAUDE.md puts
 on a website prompt touching the sibling engine at all: a zero-behaviour change is allowed
 there only if it is named here. Nothing in the sibling repository marks a commit as one of
 these, so a derived list would be a guessed one.
+
+**And one of the seven lines is further than that carve-out reaches, and says so.**
+`coloring::shade_samples` and its two siblings are signatures *added* to the engine rather
+than visibility widened — the shade over the pool needs the frame's normalization apart from
+the colouring it feeds, and no amount of `pub` on what was there gives a caller that.
+`explorer_shade_pool_ckpt136` was told to make that seam. It is still zero behaviour: each
+of the three public colorings is its own measure followed by its own `_samples` over one
+band that is the whole field, the pipeline's renders are the renders, and the engine's 217
+tests are unmoved.
 
 `python -m builder check` reads the manifest back and prints a **note** when
 `wallpapers_commit` is no longer an ancestor of the sibling checkout's `HEAD`. A note and
@@ -1155,6 +1178,44 @@ plan(spec)                -> JSON        what this spec implies, or why not
 compute_band(spec, rows)  -> f64 lanes   in a worker, a band at a time
 shade(spec, lanes)        -> RGBA bytes  a frame at a time, and it owns them
 ```
+
+**And the shade is banded now too, which is three exports rather than one**
+*(`explorer_shade_pool_ckpt136`, 2026-09-20)*. The `shade` above is still there and still
+what a download takes; what the screen takes is the same colouring cut the way the field
+is cut:
+
+```
+shade_stats(spec, lanes)               -> JSON   the frame-wide statistics, once
+shade_band(spec, stats, lanes, rows)   -> RGBA   one band, through those statistics
+curve_stops(spec, picture)             -> JSON   the map with the tone curve on it, once
+```
+
+**A field band is a pure function of its own rows and a shade band is not**, which is why
+this is a seam and not a row range. The engine normalizes a frame against its own
+distribution — the 0.5th and 99.5th percentiles of its valid samples — so a band coloured
+alone would be stretched against its own histogram and would draw a step between itself
+and its neighbours. `shade_stats` answers those numbers over the whole field and every
+`shade_band` is handed the same ones, so **the cut cannot reach the bytes**, which
+`bands.test.mjs` holds to the whole-frame `shade` at one and at two samples a pixel and on
+a two-lane composite. The statistics are the engine's own `coloring::Spend`, measured by
+the engine's own code; this module keeps no second opinion about what a frame's
+normalization is, and the engine's README says what it took to hand one back.
+
+**Two colorings decline, and say so rather than being wrong.** The modulate and a rank
+transfer normalize by `coloring::Ranks`, which is the frame's valid samples sorted — eight
+bytes a sample, the field over again. Sending that to twelve workers costs more than the
+colouring it splits, so `shade_stats` answers `pooled: false` and the page keeps the
+one-worker `shade_level` for those two. It is a size, not a taste: the other statistics are
+three numbers or two hundred.
+
+**`curve_stops` is why the tone curve is spent once.** The operator acts on the *map* and
+not on the picture, and what it costs is per stop — a bisection inside a bisection over
+every densified stop, which is hundreds of milliseconds on a map with hundreds of them. A
+banded shade would otherwise have had every band replay it. So the curve is spent here, the
+curved stops go into the band specs, and **the palette strip is drawn through the very
+stops the picture was** rather than through the curve again. The curve comes off the
+finished picture where the view is one the reader made, and off the spec where it is a seat
+or a link replaying a run's own.
 
 Five more are exported and none of them is a fourth render path: `alloc` and `dealloc`,
 through which JavaScript owns every buffer that crosses, and `maxiter_for_width`,
@@ -1316,12 +1377,14 @@ exactly the same rectangle at exactly a quarter of the samples.
 sends: iterated on a grid twice as fine and reduced by `resample::downsample` inside wasm,
 so the screen now shows what a download at 4× of the same size would save — and the
 download menu's first size, *As shown*, at 4× saves that picture without drawing it
-again. One sample per pixel aliased visibly on every fractal edge. The stage's shade goes
-to the page's kept shade worker (`ShadeWorker`, with a copy of the field so the cached one
-stays whole), because four times the samples is up to half a second on the slower shades and a
-recolour should not freeze the page; a recolour puts the one-sample picture up from the
-cache first, on this thread. Where `f64` resolves the screen's grid and not one twice as
-fine, the module's refusal is said beside the one-sample picture, which stays up.
+again. One sample per pixel aliased visibly on every fractal edge. **That stage's shade
+goes over the pool**, the way its field does — measured once over the whole frame in the
+page's kept worker, then coloured a band a worker — because four times the samples was up
+to half a second on one thread while eleven workers sat idle, and a recolour should not
+freeze the page. A recolour puts the one-sample picture up first, and that one is pooled
+too: it is a quarter of the samples and it is the stage a dragged control pays on every
+frame. Where `f64` resolves the screen's grid and not one twice as fine, the module's
+refusal is said beside the one-sample picture, which stays up.
 
 **Cancel is by generation, not by termination.** A pan bumps the generation, no further
 bands are dispatched, and the band still in flight is finished and thrown away — killing
@@ -1477,6 +1540,7 @@ node explorer/bench/sweep.mjs                       # every family x mode pair
 node explorer/bench/families.mjs [generic.wasm]     # every family, smooth, at its home
 node explorer/bench/cut.mjs                         # one frame, cut into 1 to 410 bands
 node explorer/bench/level.mjs                       # the tone operator, by a map's stops
+node explorer/bench/curves.mjs [other.wasm]         # every map x four curves, one hash
 ```
 
 **The page, in a real browser with a real pool.** `explorer/bench/page.mjs` drives the
@@ -1536,6 +1600,13 @@ wiped, and a record a wipe can delete is not a record; three harnesses moved her
 `explorer_perf_audit_ckpt136`. `engine.mjs` is the wasm loader every one of them calls, and
 `output.mjs` sends every run's numbers to `artifacts/`, which is ignored. Code is committed,
 measurements are not.
+
+**One of them asserts after all, and it is the exception that says what the rule is.**
+`curves.mjs` is a *comparison* rather than a reading: it shades a ramp through every map in
+the library and four tone curves and prints one hash, so a change to the operator's
+arithmetic can be held to having drawn what it drew. It carries no threshold, because a
+hash is not a number about this machine — it is the same answer everywhere, which is
+exactly what the rest of these cannot be.
 
 **And the browser-driven rig is tracked now too**, which this said it was not. It stayed
 under `scratch/` while it was a session's worth of driver scripts and probe pages; what
@@ -1691,8 +1762,9 @@ twelve and the numbers below are a ceiling rather than a reading:
 mandelbrot `smooth` at home 0.23 s, the spike anchor 1.52 s, julia `smooth_stripe` at
 density 9 0.71 s, phoenix `itinerary` 0.39 s, multibrot3 `direct_trap_ring` 1.53 s,
 mandelbrot `smooth_trap_circle` 1.47 s, and the worst seen, julia5 `threads` at sigma
-0.25, 7.77 s. Shade is main-thread and pool-independent at 150–500 ms, and a preview
-lands at a sixteenth of the samples before any of it.
+0.25, 7.77 s. A preview lands at a sixteenth of the samples before any of it. The shade
+was main-thread and pool-independent at 150–500 ms when that was read, and is neither now:
+see *The shade over the pool* below.
 
 ### Where a page's time goes *(explorer_perf_audit_ckpt136, 2026-09-19)*
 
@@ -1737,7 +1809,8 @@ sRGB by a 28-step bisection with an 18-step cap bisection inside it, and both al
 early-out where the colour is in gamut — the cost is the stops. The library's median map has
 **257** and its 95th percentile **512**, so a view a reader made pays 450–800 ms of it, twice:
 once in the shade worker for the picture, and once on the main thread for the 512-pixel
-palette strip.
+palette strip. *(Both halves of that are fixed below — it is spent once now, and what it
+costs is a third of this.)*
 
 **A screen shade is mostly memory.** The finishing stage's shade measures 194–430 ms in the
 kept worker where the module's own colouring of the same frame is 68–117 ms under Node. The
@@ -1783,8 +1856,11 @@ several samples at once, which is a different loop in the engine. The build flag
 taken; `node explorer/bench/modes.mjs <other.wasm>` is how it was read and how it can be
 read again.
 
-**The module** is 717,977 bytes raw and 213,828 gzipped (2026-09-18), against draft 1's
-190,240 and 70,639. It was 766,191 raw once the Walk tab's `screen` export was in, and
+**The module** is 763,343 bytes raw and 228,670 gzipped (2026-09-20), against draft 1's
+190,240 and 70,639. **The pooled shade cost 45,366 of that raw and 14,842 gzipped** —
+`shade_stats`, `shade_band` and `curve_stops`, and a colouring path that takes a row range
+rather than a frame — which is what a reader pays for a finishing shade that is three or
+four times faster and a main thread that does no colouring at all. It was 766,191 raw once the Walk tab's `screen` export was in, and
 `strip = "symbols"` in `Cargo.toml` took the 48 KB `name` section back off; only a debugger
 reads it. Pages' own gzip sends it as 217,606 bytes, measured on the live site 2026-09-19. The tone operator is 18,955 of that raw and 6,043 gzipped — two bisections and a
 subdivision, and it buys a gallery seat's own colour. Most of that is the eighteen modes' worth of engine that is reachable at all —
@@ -1799,6 +1875,133 @@ the nine channel sets the explorer's own modes actually reach, is a hand-written
 of the table again, which is the thing the change is for. **A tenth of the raw growth is
 what a reader downloads**: the transfer is gzipped, and 14 KB on 164 is the honest figure
 to compare against 8.4 seconds off `stripe`.
+
+### The shade over the pool *(explorer_shade_pool_ckpt136, 2026-09-20)*
+
+The audit above left the field pass finished and the shade running on one thread. This is
+what moving it took and what it was worth, and **both halves are bound at zero**: the
+picture a reader sees is the picture they saw, and the pipeline's renders are the renders.
+
+**What holds that, and it is not an argument.** `bands.test.mjs` assembles a pooled shade
+and compares it with the whole-frame `shade` byte for byte — at one sample a pixel, at two
+where the reduction pads, and on a two-lane composite. The page is held the same way from
+outside: every view of the ladder plus a recipe, a flip, the edge transfer and two stored
+tone curves, opened on the committed tree and on this one and hashed off the canvas and off
+the palette strip. And the curve's own change is held to the whole colormap library —
+**1,022 maps through four curves, 4,088 levelled ramps, one hash, unchanged.**
+
+**What an edit costs, alternated.** `page.mjs edits` at the spike anchor, 884x496, twelve
+workers: the page driven through its own controls, wall time from the click to the settled
+picture, and `final` the same thing measured from the pass's own first stat line. Two after
+runs and one before (a third was lost to a harness crash), and the three rows that touch no
+shade — a pan, a zoom in, and the switch to `itinerary`, whose field is 29 seconds — come in
+unchanged across all of them, which is what says the machine did not move under the reading.
+
+| edit | before | after | x | before `final` | after `final` |
+| --- | --- | --- | --- | --- | --- |
+| palette | 246 ms | **98 ms** | 2.4 | 130 ms | **40 ms** |
+| phase | 257 ms | **82 ms** | 3.1 | 155 ms | **41 ms** |
+| cycles | 209 ms | **80 ms** | 2.6 | 122 ms | **36 ms** |
+| gamma | 318 ms | **120 ms** | 2.7 | 211 ms | **47 ms** |
+| Autolevel on (derives a curve) | 1 327 ms | **343 ms** | 3.9 | 837 ms | **277 ms** |
+| Autolevel off | 346 ms | **86 ms** | 4.0 | 211 ms | **49 ms** |
+| pan | 3 697 ms | 3 431 ms | — | 3 655 ms | 3 398 ms |
+| mode → `itinerary` | 29 484 ms | 29 615 ms | — | 29 434 ms | 29 594 ms |
+
+**And the longest main-thread task during an edit is zero.** Not "shorter": the observer
+sees no long task at all on any of the thirteen interactions, against 68 to 363 ms before,
+with the worst of those on the derived pass — the 512-pixel palette strip, redrawn through
+`curved_stops`. The main thread now dispatches bands, places them and paints; the colouring
+is in the pool and the curve is in the kept worker.
+
+**The pool's own share of a shade is 0.57 to 0.97**, read off `__render.passes` the same way
+the field passes are. It alternates by stage: the finishing pass at two samples a pixel sits
+at 0.90–0.97 and the one-sample pass before it at 0.57–0.7, which is the right shape —
+a quarter of the samples over the same twelve workers is where a band's `postMessage`, its
+copy into the wasm heap and its `#place` stop being noise. **One band a worker** is the cut,
+and not the four a field pass takes: a colouring costs the same per row wherever the band
+lands, so there is nothing to balance and every extra band is another message.
+
+**Cold open, medians of three alternated pairs.** `page.mjs load`:
+
+| cold open | before | after |
+| --- | --- | --- |
+| the first pass begins | 185 ms | 186 ms |
+| the first picture is up | 351 ms | 350 ms |
+| the finished picture is up | 1 182 ms | **1 034 ms** |
+| longest main-thread task | 107 ms | **67 ms** |
+| long tasks in the open | 3, 230 ms | **2, 125 ms** |
+
+A cold open is mostly the module and the pool, so the first two rows are the same reading
+twice and should be; what moved is the finishing shade at the end of it, and one of the
+three long tasks — the shade's — is gone.
+
+**Where the time went instead.** A shade is three things now and only one of them is the
+colouring. The frame-wide statistics are measured once in the kept worker and
+**remembered**, because they read the field and the recipe's `transfer` and nothing else —
+so a palette, gamma, cycles, phase or level edit over a field already measured pays no
+reduction at all, which is most of what a recolour was. The tone curve is spent once on the
+map rather than once for the picture and again for the strip. What is left is the colouring,
+and that is the part the pool takes.
+
+**The modulate and a rank transfer keep the one-worker shade, and that is a size rather
+than a taste.** Both normalize by `coloring::Ranks`, which is the frame's valid samples
+sorted: eight bytes a sample, 14 MB at the finishing supersample, against three numbers for
+the percentile stretch and two hundred for the edge transfer's profile. Twelve copies of
+the field is more than the colouring it would split. `itinerary` at the home view measures
+**766 ms before and 733 ms after**, which is the old path unchanged and is the honest cost
+of the carve-out: the modulate is now by a long way the slowest recolour on
+this page, where the same edit under `smooth` is forty milliseconds.
+
+**The tone curve's cost was an algorithm, not a price.** The audit measured it per stop —
+82 ms at 2 stops to 1 353 ms at 1 024 — and read that as inherent to the bisections. It is
+not. `level::gamut_fit` asks whether an Oklab colour survives the trip to sRGB by *making
+the trip*: encode, decode, and see whether the colour came back. That is six `powf` and
+three `cbrt` a probe, twenty-eight probes a bisection, and the cap's own bisection asks for
+that whole bisection eighteen times. But the only lossy step in the trip is
+`linear_to_srgb`'s clamp — so a colour whose linear channels are already inside the unit
+interval **is** in gamut, by a range check and no transcendentals at all; and where the
+clamp does bite, the decode is the clamp, because the transfer function and its inverse are
+each other on every value that is not on the one seam where sRGB's two pieces fail to meet.
+That seam is 7.3e-9 wide in linear light, it is named in the code, and a colour on it takes
+the long way round. Everywhere else the substitution lands within **8.9e-16** in Oklab
+against a threshold of 1e-6, measured over eight hundred thousand adversarial triples.
+
+| map | the curve costs, before | after | x |
+| --- | --- | --- | --- |
+| 2 stops | 83 ms | 83 ms | 1.0 |
+| 16 stops | 181 ms | 161 ms | 1.1 |
+| 64 stops | 234 ms | 186 ms | 1.3 |
+| 256 stops | 455 ms | 232 ms | 2.0 |
+| 1 024 stops | 1 352 ms | 513 ms | 2.6 |
+
+Those figures are `bench/level.mjs`, and each one is the whole derive — the tone measured
+over the picture, the stops curved, and the picture coloured a second time. **`curved_stops`
+alone is 3.3x**: 324 ms to 97 ms on a 256-stop map, 1 221 ms to 378 ms on a 1 024-stop one,
+taking the colouring and the measurement off both sides. The library's median map has 257
+stops, so that is what a view a reader made pays — and it pays it once now rather than
+twice.
+
+**What the pooled shade made worse.** Two things, and the second is the one worth watching.
+
+**The module is 45,366 bytes larger raw**, 717,977 to 763,343, and **14,842 of that** after
+gzip — `page.mjs load` reads the cold open at 981 KB on the wire against 961 KB. Three
+exports and a colouring path that takes a row range rather than a frame is what it buys,
+and the finishing shade is where it is spent.
+
+**A fresh field's shade now crosses the lanes twice rather than once.** The statistics pass
+copies the whole field into the kept worker, and then every band copies its own rows into
+its own; a recolour skips the first of those because the statistics are remembered, and a
+*first* shade of a new field does not. It is paid for and then some — the cold open's
+finished picture is up at 1 034 ms against 1 182, and a pan is unchanged inside the noise —
+but it is the shape of the trade and a machine with slower memory than this one would see
+less of the win.
+
+**And a third that is not this change's but is now the visible one**: `mode → smooth` and
+`zoom out` moved by more than they should have between the two after runs — 280 against 114,
+338 against 124 — which is a second pass landing on a cached field or not, rather than
+anything about the colouring. Both are the cache's, both are unchanged here, and they are
+named so that a later reading does not mistake that spread for this change's.
 
 ### What a visitor downloads *(explorer_slim_ckpt131, 2026-09-18)*
 
@@ -2215,17 +2418,29 @@ reading, unverified, is the measure path running for the first time in that inst
 job that is still waiting is dropped unposted, and one already in flight finishes and is
 thrown away, so a recolour asked mid-shade waits for that shade.
 
+**And then the shade left that worker** *(`explorer_shade_pool_ckpt136`, 2026-09-20)*. The
+two tables above are readings of a colouring that ran on one thread; what the kept worker
+does now is measure the frame's statistics once and curve the map's stops once, and the
+colouring itself goes over the pool a band a worker. The numbers that replace them are
+under *The shade over the pool*. What survives unchanged is the paragraph above this one:
+the kept worker is still where the serial half lives, it is still never interrupted, and a
+recolour asked mid-measurement still waits for that measurement.
+
 **Copy link and Copy view wait for a derived pass.** A pass that derives anything a link
 carries — the tone curve, a texture weight, a trap's opacity — disables both buttons from
 its start until it ends, because until the value lands the view still holds the last
 pass's, and a link copied then would name a picture that is never on the screen. A pass
 that derives nothing leaves them alone.
 
-**The measurement is on the final stage and nowhere else.** `shade_level` colours the
-two-sample field, measures what it drew, and where the operator acts curves the stops,
-bakes again and colours **the same field** a second time — one export, because `shade`
-frees the lanes before it colours and a second call would copy the whole field back in.
-It runs in the kept shade worker, so the render dot turns final only when the levelled
+**The measurement is on the final stage and nowhere else.** The two-sample field is
+coloured, what it drew is measured, and where the operator acts the stops are curved and
+**the same field** is coloured a second time. That was one export — `shade_level`, in the
+kept worker — because `shade` frees the lanes before it colours and a second call would
+copy the whole field back in; since the shade went over the pool it is three calls whose
+seam is the same one, `shade_band` over the pool, then `curve_stops` on the assembled
+picture, then `shade_band` again through the stops it returned. Nothing measures the same
+thing twice and nothing copies the field twice: the bands hold the lanes and the
+measurement reads a finished picture. The render dot turns final only when the levelled
 picture is up. The preview and one-sample stages draw in the last derived curve, so a pan
 does not flash to the unlevelled tone and back.
 
@@ -2459,30 +2674,19 @@ are the engine's — but now with a failing check to announce it rather than onl
 
 ## Next
 
-Listed, not designed. The first five are `explorer_perf_audit_ckpt136`'s, and each says what
+Listed, not designed. The first three are `explorer_perf_audit_ckpt136`'s, and each says what
 it would buy and **how large the difference from the pipeline render would be** — an
 explorer-only fast path is allowed here in principle and only where that difference can be
 bounded, so a candidate that cannot state its bound is not a candidate.
 
-- **The shade in bands, over the pool.** The finishing shade is 194–430 ms on one thread
-  while twelve workers sit idle, and on a cheap view it is *more* than the field it colours
-  — `julia` at home is 71 ms of field against 307 ms of shade. A frame is normalized against
-  its own distribution, the 0.5th and 99.5th percentiles of its valid samples, so a band
-  coloured alone would be stretched against its own histogram; split into a reduction that
-  answers those two numbers and a colouring that is handed them, every band is independent.
-  **The bound is zero**: the same percentiles over the same samples are the same numbers, so
-  the bytes are the bytes. What it costs is a seam — the percentile machinery is the engine's
-  `coloring`, so either that crate hands the statistics back or this one keeps a second
-  opinion about them, and a second opinion about the engine's normalization is the thing this
-  crate exists not to have. Worth up to 8x on a stage every finished picture and every
-  recolour pays.
-- **The tone curve applied once instead of twice.** A derived view spends 450–800 ms on
-  `curved_stops` for the picture, in the shade worker, and the same again on the main thread
-  redrawing a 512-pixel palette strip through the same map and the same curve. **The bound is
-  zero** — it is the same call with the same arguments — and `shade_level` returning the
-  stops it curved is the whole of it, an export of this crate and no engine change. Deferring
-  the strip to a task of its own has already taken it off the path to the picture; this would
-  take it off the page.
+**Two of that audit's five are built and are gone from this list**
+*(`explorer_shade_pool_ckpt136`, 2026-09-20)*: the shade in bands over the pool, and the
+tone curve applied once instead of twice. Both were bounded at zero and both landed at
+zero — see *The shade over the pool* under *Measured*. What that prompt also found and did
+**not** put in `§Next` is worth saying here, because it is the shape the remaining three
+have: the tone curve's per-stop cost turned out to be an algorithm rather than a price, and
+the fix held the bytes, so it was taken rather than listed.
+
 - **`stripe` and the angle modes without the per-iteration `atan2` and `sin`.** `stripe` is
   18.0 s a frame at 1280x720 against `smooth`'s 1.62 s, and the per-mode table above says why
   the specialization bought it only 1.45x: the transcendentals are real arithmetic that the

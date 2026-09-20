@@ -86,6 +86,50 @@ self.onmessage = (event) => {
     return;
   }
 
+  // The frame-wide statistics a pooled shade spends, measured once over the whole field
+  // and handed to every band. The answer crosses back as the module's JSON **as text**,
+  // because that is exactly what a band is handed next: parsing it here and stringifying
+  // it again on the main thread would be two conversions for no reader.
+  if (message.kind === "stats") {
+    const [specPointer, specLength] = put(message.spec);
+    const lanes = new Uint8Array(message.lanes);
+    const lanePointer = wasm.alloc(lanes.length);
+    new Uint8Array(wasm.memory.buffer, lanePointer, lanes.length).set(lanes);
+    // `shade_stats` takes the lanes and frees them, as `shade_level` does.
+    const pointer = wasm.shade_stats(specPointer, specLength, lanePointer, lanes.length);
+    wasm.dealloc(specPointer, specLength);
+    const size = new DataView(wasm.memory.buffer).getUint32(pointer, true);
+    const answer = new TextDecoder().decode(new Uint8Array(wasm.memory.buffer, pointer + 4, size));
+    wasm.dealloc(pointer, size + 4);
+    self.postMessage({ kind: "stats", answer });
+    return;
+  }
+
+  // The map's stops with the tone curve already spent on them — measured off a finished
+  // picture, or the one the spec carries replayed. Once for the whole pass: the bands,
+  // the palette strip and a download all take the stops rather than the curve.
+  if (message.kind === "curve") {
+    const [specPointer, specLength] = put(message.spec);
+    const picture = message.image === undefined ? null : new Uint8Array(message.image);
+    const picturePointer = picture === null ? 0 : wasm.alloc(picture.length);
+    if (picture !== null) {
+      new Uint8Array(wasm.memory.buffer, picturePointer, picture.length).set(picture);
+    }
+    const pointer = wasm.curve_stops(
+      specPointer,
+      specLength,
+      picturePointer,
+      picture === null ? 0 : picture.length,
+    );
+    wasm.dealloc(specPointer, specLength);
+    if (picture !== null) wasm.dealloc(picturePointer, picture.length);
+    const size = new DataView(wasm.memory.buffer).getUint32(pointer, true);
+    const answer = new TextDecoder().decode(new Uint8Array(wasm.memory.buffer, pointer + 4, size));
+    wasm.dealloc(pointer, size + 4);
+    self.postMessage({ kind: "curve", answer });
+    return;
+  }
+
   // The Walk tab's screen: the engine's own gate battery over one frame, which iterates
   // two fields and colours one on this thread. Its answer is the module's JSON as it came.
   if (message.kind === "screen") {
@@ -101,6 +145,42 @@ self.onmessage = (event) => {
 
   const { job, spec, rowStart, rowEnd, bytes } = message;
   const started = performance.now();
+
+  // One band of the *colour*, through statistics the whole field was measured for. It
+  // answers as a field band does — `kind: "band"`, its own rows, transferred — because
+  // the pool assembles it the same way a painted band is assembled, and a second reply
+  // shape would be a second path through `#collect` for no difference.
+  if (message.kind === "shade_band") {
+    const [statsPointer, statsLength] = put(message.stats);
+    const lanes = new Uint8Array(message.lanes);
+    const lanePointer = wasm.alloc(lanes.length);
+    new Uint8Array(wasm.memory.buffer, lanePointer, lanes.length).set(lanes);
+    const [specAt, specLen] = put(spec);
+    // `shade_band` takes the lanes and frees them before it allocates a byte of colour.
+    const pointer = wasm.shade_band(
+      specAt,
+      specLen,
+      statsPointer,
+      statsLength,
+      lanePointer,
+      lanes.length,
+      rowStart,
+      rowEnd,
+    );
+    wasm.dealloc(specAt, specLen);
+    wasm.dealloc(statsPointer, statsLength);
+    if (pointer === 0) {
+      self.postMessage({ kind: "band", job, rowStart, rowEnd, refused: true });
+      return;
+    }
+    const band = new Uint8Array(wasm.memory.buffer, pointer, bytes).slice().buffer;
+    wasm.dealloc(pointer, bytes);
+    self.postMessage(
+      { kind: "band", job, rowStart, rowEnd, band, elapsed: performance.now() - started },
+      [band],
+    );
+    return;
+  }
 
   const [specPointer, specLength] = put(spec);
   // A probe is the same row range over the same orbits, counted rather than drawn: what a
