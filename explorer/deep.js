@@ -929,8 +929,43 @@ export function mount(host) {
     try {
       const deep = await pool();
       if (generation !== pass) return;
-      host.stat("looking for nuclei…");
-      const found = await deep.nuclei(target, grid.width, grid.height, {
+
+      // **The search escalates the cap even where the picture does not**
+      // *(pre_closeout_ckpt138, 2026-09-20)*. A nucleus is detected by the index of the
+      // smallest `|z|` an orbit reaches, and that index can never exceed the cap the walk
+      // was given — so a nucleus whose period is past the cap is not merely missed, it is
+      // arithmetically undetectable, and the cells that would have reported it report some
+      // lower argmin instead, which is a spurious seed. On the committed `tangle 1e-22`
+      // this listed **3** where the record says **6**: the link carries `n=93600`, opening
+      // a `dv` link pins the cap so nothing settles it, and the largest nucleus there is
+      // **period 94,776** — 1,176 over. Every recorded six was measured at the settled cap
+      // of 187,200.
+      //
+      // So the cap is settled for the **search spec alone**, and `view` is not touched.
+      // A cap is a picture choice everywhere else on this tab — it is what `pinnedCap`
+      // exists to defend — but here it is a floor under correctness, and moving the
+      // reader's picture and rewriting their link as a side effect of pressing a search
+      // button would be the wrong trade. Where the cap is already settled this costs one
+      // rung, because `settle` starts where it is and stops as soon as the fault share is
+      // met.
+      running.stage = "settling";
+      const floor = await deep.settle(target, grid.width, grid.height, {
+        supersample: 1,
+        onRung: (counts) => {
+          if (generation !== pass) return;
+          host.stat(`finding the cap to search at · ${counts.maxiter.toLocaleString("en-US")}`);
+        },
+      });
+      if (floor === null || generation !== pass) return;
+      running.stage = "searching";
+      const searched =
+        floor.maxiter > target.maxiter ? { ...target, maxiter: floor.maxiter } : target;
+      host.stat(
+        searched === target
+          ? "looking for nuclei…"
+          : `looking for nuclei · to ${floor.maxiter.toLocaleString("en-US")}`,
+      );
+      const found = await deep.nuclei(searched, grid.width, grid.height, {
         supersample: 1,
         tileSamples: TILE.width,
       });
@@ -941,7 +976,7 @@ export function mount(host) {
         els.minibrotNote.hidden = false;
         els.minibrotNote.textContent =
           "No minibrot was found in this view. Either there is none here, or every one of " +
-          "them has a period past the cap this frame was drawn at.";
+          "them has a period past the cap the search could settle on.";
         return;
       }
 
@@ -1354,5 +1389,18 @@ export function mount(host) {
     key: (px, py, out) => zoom(px, py, out ? KEY_ZOOM : 1 / KEY_ZOOM),
     repaint: paint,
     stop,
+    /** The document is going away: the deep pool goes with it.
+     *
+     *  Distinct from `stop`, which cancels the pass and keeps the workers — a reader who
+     *  cancels a deep render is still on the tab. This one is the tab's whole share of
+     *  `pagehide`, and it is the larger half of what a deep document holds: `perturb.wasm`
+     *  is instantiated once per worker and the reference orbit is held in every one of
+     *  them. `DeepRenderer.stop()` existed and had no caller until now. */
+    close() {
+      stop();
+      renderer?.stop();
+      renderer = null;
+      starting = null;
+    },
   };
 }
