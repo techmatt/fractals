@@ -1123,7 +1123,7 @@ one — read off its own `about 12 s left` progress line rather than timed — a
 | the audit's anchor at 2e-11, cap 48,551, its fine pass at 4× | **field 62.7 s**, shade 180 ms |
 | the same, its quarter pass alone | field 1.22 s |
 | a palette change on the anchor's kept field | **recolored in 126 ms** |
-| `perturb.wasm` | **147,547 bytes raw, 65,370 gzipped** (2026-09-20) |
+| `perturb.wasm` | **167,361 bytes raw, 69,376 gzipped** (2026-09-20) |
 | choosing the cap, at the anchor and at `tangle 1e-22` | **0.08% and 0.16%** of the fine pass |
 | a deep download, 640×360 at 4×, the anchor | **31.2 s**, against the row's own estimate of 35 s |
 | the same at 3840×2160 at 4× | **~24 min**, the row's estimate; 16× is refused on memory |

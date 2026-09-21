@@ -497,11 +497,11 @@ because a view entered at `Z₁` has one step less of reference in front of it, 
 is recomputed rather than reused. Against a frame of seconds that is 1%, and it is
 the whole price of pressing the button.
 
-**`perturb.wasm` is 147,547 bytes raw and 65,370 gzipped** at level 9 — 112,675 /
-52,784 when this paragraph was first written, grown by the cap policy (§8) and the
+**`perturb.wasm` is 167,361 bytes raw and 69,376 gzipped** at level 9 — 112,675 /
+52,784 when this paragraph was first written, grown by the cap policy (§8), the
 nucleus search (§9), whose Newton solve, decimal writer and second walk of the
-loop are most of it. Beside
-`engine.wasm`'s 763,343 / 228,670 that is 19% more to download, and it buys a
+loop are most of it, and the multiply's fifteen specializations above. Beside
+`engine.wasm`'s 763,343 / 228,670 that is 22% more to download, and it buys a
 renderer for everything below 1e-10, on both of the sets `z² + c` has. It is large for a dependency-free crate of
 1,500 lines, and the reason is `core::fmt`: `plan` formats a JSON report and every
 refusal is a sentence. That is an attribution from what the module contains rather
@@ -992,7 +992,7 @@ its own branch rather than a stage of the explorer's bake.
 | `crate` | `explorer/perturb-wasm` |
 | `dependencies` | `[]`, and it is written down because it is the design |
 | `rustc` | the compiler, with its commit and date |
-| `raw_bytes` / `gzip_bytes` | **147,547 raw, 65,370 gzipped** |
+| `raw_bytes` / `gzip_bytes` | **167,361 raw, 69,376 gzipped** |
 
 Two fields of `engine.manifest.json` are **absent** rather than empty:
 `engine_version`, because this crate does not link the engine, and
@@ -1007,7 +1007,7 @@ crate: `explorer_shade_pool_ckpt136` banded the shade.)
 
 **What a visitor downloads for it: nothing, unless they open the Deep tab.** The
 module and the tab's five modules are fetched on that tab's first open and never
-before. Against `engine.wasm`'s 228,670 gzipped, the 65,370 here is 29% more —
+before. Against `engine.wasm`'s 228,670 gzipped, the 69,376 here is 30% more —
 paid only by a reader who asked for a renderer for everything below 1e-10.
 
 `core::fmt` is still most of the size and is still not chased: `plan` formats a
