@@ -547,7 +547,7 @@ pub extern "C" fn plan(spec_ptr: *const u8, spec_len: usize) -> *mut u8 {
     let read = text(spec_ptr, spec_len)
         .ok_or_else(|| "the spec is not UTF-8".to_string())
         .and_then(|text| Spec::parse(&text));
-    let report = match read.and_then(|spec| match spec.delta_ulps() {
+    report(read.and_then(|spec| match spec.delta_ulps() {
         ulps if ulps >= DELTA_ULPS => Ok(spec),
         ulps => Err(format!(
             "this frame is {} from the point its arithmetic is anchored at, and one pixel of it \
@@ -562,8 +562,8 @@ pub extern "C" fn plan(spec_ptr: *const u8, spec_len: usize) -> *mut u8 {
             ulps,
             DELTA_ULPS,
         )),
-    }) {
-        Ok(spec) => format!(
+    }).map(|spec| {
+        format!(
             concat!(
                 r#"{{"ok":true,"maxiter":{},"limbs":{},"fraction_bits":{},"#,
                 r#""sample_width":{},"sample_height":{},"interior":{},"#,
@@ -583,9 +583,9 @@ pub extern "C" fn plan(spec_ptr: *const u8, spec_len: usize) -> *mut u8 {
             },
             // `null` rather than `inf`, which is not JSON — and infinite is the
             // ordinary case, an offset of exactly zero.
-            match spec.delta_ulps() {
-                ulps if ulps.is_finite() => format!("{ulps:.3}"),
-                _ => "null".to_string(),
+            match json::finite(spec.delta_ulps()) {
+                Some(ulps) => format!("{ulps:.3}"),
+                None => "null".to_string(),
             },
             REFERENCE_HEADER
                 + 16 * match spec.period {
@@ -593,10 +593,8 @@ pub extern "C" fn plan(spec_ptr: *const u8, spec_len: usize) -> *mut u8 {
                     None => spec.maxiter() as usize + 1 + spec.entry(),
                 },
             cap::CEILING as u32,
-        ),
-        Err(why) => format!(r#"{{"ok":false,"why":{}}}"#, json::quote(&why)),
-    };
-    release_text(&report)
+        )
+    }))
 }
 
 /// The reference orbit for this spec: **once per frame**, and handed to the
@@ -691,24 +689,20 @@ pub extern "C" fn seed_band(
                 &spec, &orbit, cols, rows, row_start, row_end,
             ))
         });
-    let report = match read {
-        Ok(seeds) => {
-            let mut body = String::from(r#"{"ok":true,"seeds":["#);
-            for (index, seed) in seeds.iter().enumerate() {
-                if index > 0 {
-                    body.push(',');
-                }
-                body.push_str(&format!(
-                    r#"{{"period":{},"from_re":{:e},"from_im":{:e},"minimum":{:e},"cells":{}}}"#,
-                    seed.period, seed.from_re, seed.from_im, seed.minimum, seed.cells,
-                ));
+    report(read.map(|seeds| {
+        let mut body = String::from(r#"{"ok":true,"seeds":["#);
+        for (index, seed) in seeds.iter().enumerate() {
+            if index > 0 {
+                body.push(',');
             }
-            body.push_str("]}");
-            body
+            body.push_str(&format!(
+                r#"{{"period":{},"from_re":{:e},"from_im":{:e},"minimum":{:e},"cells":{}}}"#,
+                seed.period, seed.from_re, seed.from_im, seed.minimum, seed.cells,
+            ));
         }
-        Err(why) => format!(r#"{{"ok":false,"why":{}}}"#, json::quote(&why)),
-    };
-    release_text(&report)
+        body.push_str("]}");
+        body
+    }))
 }
 
 /// One Newton step on `z_p(c) = 0`, from a `c` that arrives as text and leaves
@@ -761,25 +755,21 @@ pub extern "C" fn newton_step(request_ptr: *const u8, request_len: usize) -> *mu
                 .ok_or_else(|| format!("`{im_text}` is not a decimal"))?;
             Ok((nuclei::newton_step(&c_re, &c_im, period), limbs))
         });
-    let report = match read {
-        Ok((step, limbs)) => {
-            let digits = 64 * (limbs - 1);
-            format!(
-                concat!(
-                    r#"{{"ok":true,"c_re":"{}","c_im":"{}","moved":{:e},"#,
-                    r#""size_log2":{:e},"window_log2":{:e},"escaped":{}}}"#
-                ),
-                step.c_re.to_decimal(digits),
-                step.c_im.to_decimal(digits),
-                finite(step.moved),
-                finite(step.size_log2),
-                finite(step.window_log2),
-                step.escaped,
-            )
-        }
-        Err(why) => format!(r#"{{"ok":false,"why":{}}}"#, json::quote(&why)),
-    };
-    release_text(&report)
+    report(read.map(|(step, limbs)| {
+        let digits = 64 * (limbs - 1);
+        format!(
+            concat!(
+                r#"{{"ok":true,"c_re":"{}","c_im":"{}","moved":{:e},"#,
+                r#""size_log2":{:e},"window_log2":{:e},"escaped":{}}}"#
+            ),
+            step.c_re.to_decimal(digits),
+            step.c_im.to_decimal(digits),
+            finite(step.moved),
+            finite(step.size_log2),
+            finite(step.window_log2),
+            step.escaped,
+        )
+    }))
 }
 
 /// The limb count a nucleus found in a view of this width is solved at, so the
@@ -806,11 +796,14 @@ pub extern "C" fn tile_width(size: f64) -> f64 {
     size * nuclei::TILE_BODIES
 }
 
-/// `NaN` and the infinities are not JSON, and a reader of these reports is
-/// `JSON.parse`. Zero stands in, which is what every one of these means where it
-/// can happen: a step that did not move.
+/// What [`newton_step`] means by a number JSON cannot carry: a step that did not
+/// move.
+///
+/// [`json::finite`] is where the rule that `NaN` and the infinities are not JSON
+/// lives; the answer is here because it is this export's and not `plan`'s, which
+/// says `null` to the same question.
 fn finite(value: f64) -> f64 {
-    if value.is_finite() { value } else { 0.0 }
+    json::finite(value).unwrap_or(0.0)
 }
 
 /// This crate's cap policy, so a page does not restate it.
@@ -870,8 +863,8 @@ pub extern "C" fn probe_band(
                 &spec, &orbit, cols, rows, row_start, row_end,
             ))
         });
-    let report = match read {
-        Ok(counts) => format!(
+    report(read.map(|counts| {
+        format!(
             concat!(
                 r#"{{"ok":true,"maxiter":{},"samples":{},"escaped":{},"proven":{},"#,
                 r#""starved":{},"fault":{},"iterations":{}}}"#
@@ -883,10 +876,8 @@ pub extern "C" fn probe_band(
             counts.starved,
             counts.fault,
             counts.iterations,
-        ),
-        Err(why) => format!(r#"{{"ok":false,"why":{}}}"#, json::quote(&why)),
-    };
-    release_text(&report)
+        )
+    }))
 }
 
 /// The share of a frame that may still be the cap's fault before the cap is
@@ -943,6 +934,22 @@ fn release(bytes: Vec<u8>) -> *mut u8 {
     let pointer = bytes.as_mut_ptr();
     std::mem::forget(bytes);
     pointer
+}
+
+/// **What every export that answers with a sentence hands back**: the report it
+/// produced, or the refusal, as length-prefixed JSON.
+///
+/// Four exports answer this way — [`plan`], [`probe_band`], [`seed_band`] and
+/// [`newton_step`] — and each used to carry its own `{"ok":false,"why":…}` arm
+/// *(deep_refactor_ckpt138)*. One of them was going to get it subtly wrong: the
+/// page reads `ok` before anything else, so a refusal missing that field is a
+/// report the tab treats as an answer. The shape is written once here, and a
+/// fifth export gets it by construction.
+fn report(answer: Result<String, String>) -> *mut u8 {
+    release_text(&match answer {
+        Ok(body) => body,
+        Err(why) => format!(r#"{{"ok":false,"why":{}}}"#, json::quote(&why)),
+    })
 }
 
 /// The same, for text: four bytes of little-endian length, then the UTF-8.

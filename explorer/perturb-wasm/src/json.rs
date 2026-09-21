@@ -226,6 +226,23 @@ pub fn quote(text: &str) -> String {
     out
 }
 
+/// The value where JSON can carry it, and `None` where it cannot.
+///
+/// **Infinity and NaN are not JSON**, and both of them reach this boundary
+/// honestly: a view centred on its own reference is an infinite `delta_ulps`,
+/// and a Newton step that escaped has no residual. `JSON.parse` refuses `inf`
+/// and `NaN` outright, so a writer that formatted one would hand the page a
+/// string it cannot read — which is a whole report lost, not a field.
+///
+/// The rule lives here and **the answer does not**, because the two writers mean
+/// different things by it: `plan` writes `null`, since "there is no such
+/// distance" is the truth about an offset of exactly zero; `newton_step` writes
+/// `0`, since the page multiplies `size_log2` into a width and a `null` would
+/// come back as 2⁰ = 1. One place knows, each caller says what it means.
+pub fn finite(value: f64) -> Option<f64> {
+    value.is_finite().then_some(value)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
