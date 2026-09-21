@@ -411,8 +411,8 @@ mod tests {
             "difference was {difference:e}"
         );
         // And the same subtraction done the way the engine would: nothing left.
-        let narrowed = -0.74501772828532335842941892835857434f64
-            - -0.74501772828532335842941892835857400f64;
+        let narrowed =
+            -0.74501772828532335842941892835857434f64 - -0.74501772828532335842941892835857400f64;
         assert_eq!(narrowed, 0.0);
     }
 

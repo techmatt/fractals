@@ -299,7 +299,11 @@ fn walk(spec: Spec) -> Rung {
         compared,
         interior_disagreements,
         worst: errors.last().copied().unwrap_or(0.0),
-        median: if compared == 0 { 0.0 } else { errors[compared / 2] },
+        median: if compared == 0 {
+            0.0
+        } else {
+            errors[compared / 2]
+        },
         agreeing: if compared == 0 {
             1.0
         } else {
@@ -383,7 +387,10 @@ fn anchor_assertions(rungs: &[Rung]) {
 #[test]
 #[ignore = "minutes: every sample iterated the long way in fixed point"]
 fn the_kernel_matches_a_brute_force_oracle_at_the_view_centre() {
-    let rungs: Vec<Rung> = RUNGS.iter().map(|&w| walk(spec_at(w, false, 0.0))).collect();
+    let rungs: Vec<Rung> = RUNGS
+        .iter()
+        .map(|&w| walk(spec_at(w, false, 0.0)))
+        .collect();
     report("reference at the view centre", &rungs);
     anchor_assertions(&rungs);
 }
@@ -394,7 +401,10 @@ fn the_kernel_matches_a_brute_force_oracle_at_the_view_centre() {
 #[test]
 #[ignore = "minutes: every sample iterated the long way in fixed point"]
 fn the_kernel_matches_the_oracle_against_a_periodic_nucleus_reference() {
-    let rungs: Vec<Rung> = RUNGS.iter().map(|&w| walk(spec_at(w, true, 0.25))).collect();
+    let rungs: Vec<Rung> = RUNGS
+        .iter()
+        .map(|&w| walk(spec_at(w, true, 0.25)))
+        .collect();
     report(
         "reference at the period-2838 nucleus, view a quarter-frame off it",
         &rungs,

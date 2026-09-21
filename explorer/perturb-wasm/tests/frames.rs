@@ -347,8 +347,7 @@ const CANVAS: (u32, u32) = (1136, 636);
 const FINE_SUPERSAMPLE: u32 = 2;
 
 /// Lanes in the fine pass, which is four fifths of a Render's wait.
-const FINE_LANES: f64 =
-    (CANVAS.0 * FINE_SUPERSAMPLE) as f64 * (CANVAS.1 * FINE_SUPERSAMPLE) as f64;
+const FINE_LANES: f64 = (CANVAS.0 * FINE_SUPERSAMPLE) as f64 * (CANVAS.1 * FINE_SUPERSAMPLE) as f64;
 
 /// The seven and the six as one list of `(label, re, im, width, julia)`.
 fn every_frame() -> Vec<(&'static str, &'static str, &'static str, f64, bool)> {
@@ -362,13 +361,7 @@ fn every_frame() -> Vec<(&'static str, &'static str, &'static str, f64, bool)> {
 /// A frame as the Deep tab asks for it: the tab's canvas, the fine pass's
 /// supersample, and no nucleus — the tab has no solver, so the reference is the
 /// view's own centre.
-fn canvas_spec(
-    re: &str,
-    im: &str,
-    width: f64,
-    julia: bool,
-    maxiter: Option<u32>,
-) -> Spec {
+fn canvas_spec(re: &str, im: &str, width: f64, julia: bool, maxiter: Option<u32>) -> Spec {
     Spec {
         center_re: re.to_string(),
         center_im: im.to_string(),
@@ -468,7 +461,10 @@ fn where_the_policy_settles() {
             settled.rungs[0].maxiter, policy_cap,
             "{label}: the walk opens at the width's own cap"
         );
-        assert!(!settled.at_ceiling, "{label}: settled by running out of ceiling");
+        assert!(
+            !settled.at_ceiling,
+            "{label}: settled by running out of ceiling"
+        );
         let rungs = settled
             .rungs
             .iter()
@@ -687,7 +683,9 @@ fn draw(spec: &Spec) -> (f64, f64, f64) {
 #[test]
 #[ignore = "minutes: the whole search on eight frames, with every tile drawn twice"]
 fn what_the_nucleus_search_finds_and_what_it_costs() {
-    println!("\n| frame | settled cap | detect s | domains | solved | s/solve | kept | reachable |");
+    println!(
+        "\n| frame | settled cap | detect s | domains | solved | s/solve | kept | reachable |"
+    );
     println!("|---|--:|--:|--:|--:|--:|--:|--:|");
     let mut entries: Vec<(String, nuclei::Nucleus, f64)> = Vec::new();
 
@@ -750,7 +748,9 @@ fn what_the_nucleus_search_finds_and_what_it_costs() {
          reader waits for one tile.",
         TILE_TIMED.0, TILE_TIMED.1, TILE_PREVIEW.0, TILE_PREVIEW.1,
     );
-    println!("\n| frame | period | tile cap | interior | view-centre ref | nucleus ref | gain | rebases | reader waits |");
+    println!(
+        "\n| frame | period | tile cap | interior | view-centre ref | nucleus ref | gain | rebases | reader waits |"
+    );
     println!("|---|--:|--:|--:|--:|--:|--:|--:|--:|");
     let mut timed: Vec<String> = Vec::new();
     for (label, nucleus, _) in &entries {

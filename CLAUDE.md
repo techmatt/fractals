@@ -536,7 +536,21 @@ Three Windows cautions that have each cost a session already:
 ```
 python -m ruff check . && python -m ruff format --check . && python -m builder check
 node --test explorer/permalink.test.mjs explorer/bands.test.mjs explorer/level.test.mjs explorer/derive.test.mjs explorer/stops.test.mjs explorer/saved.test.mjs explorer/undo.test.mjs explorer/zip.test.mjs explorer/stamp.test.mjs explorer/deep-fx.test.mjs explorer/deep-link.test.mjs explorer/deep.test.mjs atlas/atlas.test.mjs
+(cd explorer/perturb-wasm && cargo fmt --check)
 ```
+
+**The third line is there so that a reformat can never arrive as a side effect**
+*(deep_refactor_ckpt138, 2026-09-20)*. The crate was 25 `rustfmt` diffs from clean across
+seven files, which meant a contributor who ran `cargo fmt` produced a repo-wide reformat —
+the state the formatting rule below says should never be possible. The reformat was taken
+deliberately, in a commit of its own, and this line is what holds it. It is **scoped to
+that crate on purpose**: `engine-wasm` is eight diffs from clean in `src/level.rs` and is
+not held to this yet, because proving its module still builds the same wants an
+`engine.wasm` build. ⚠ **A reformat moves `perturb.wasm`'s bytes** — `panic = "abort"`
+still embeds `#[track_caller]` line numbers, so a shifted line in `src/` is a shifted
+immediate — and the module is the same length and a different file. Measured, not
+supposed: the commit before the reformat rebuilt byte for byte, and the reformat alone did
+not. So a formatting commit in that crate owes a rebake like any other.
 
 The second line is the thirteen JavaScript suites, on Node's own runner with nothing
 installed. `permalink.test.mjs` is the contract held to itself — a URL is the one

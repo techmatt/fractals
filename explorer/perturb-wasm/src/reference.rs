@@ -175,7 +175,12 @@ mod tests {
         let zero = Fx::zero(3);
         let reference = orbit(&zero, &zero, 50, None);
         assert_eq!(reference.len(), 51);
-        assert!(reference.points.iter().all(|&[re, im]| re == 0.0 && im == 0.0));
+        assert!(
+            reference
+                .points
+                .iter()
+                .all(|&[re, im]| re == 0.0 && im == 0.0)
+        );
         assert!(!reference.escaped);
     }
 

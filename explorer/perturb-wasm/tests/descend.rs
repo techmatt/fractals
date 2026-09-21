@@ -100,13 +100,19 @@ impl Dec {
 
     /// `units · 10^−shift`.
     fn scaled(units: i64, shift: usize) -> Dec {
-        assert!(shift <= SCALE, "a shift of {shift} is past the carried scale");
+        assert!(
+            shift <= SCALE,
+            "a shift of {shift} is past the carried scale"
+        );
         let mut out = Dec::zero();
         out.neg = units < 0;
         let mut magnitude = units.unsigned_abs();
         let mut at = SCALE - shift;
         while magnitude > 0 {
-            assert!(at < out.digits.len(), "the offset overflowed the integer digits");
+            assert!(
+                at < out.digits.len(),
+                "the offset overflowed the integer digits"
+            );
             out.digits[at] = (magnitude % 10) as u8;
             magnitude /= 10;
             at += 1;
@@ -288,9 +294,7 @@ struct Shape {
 
 fn shape(tile: &Tile) -> Shape {
     let count = tile.class.len() as f64;
-    let share = |want: Class| {
-        tile.class.iter().filter(|&&c| c == want).count() as f64 / count
-    };
+    let share = |want: Class| tile.class.iter().filter(|&&c| c == want).count() as f64 / count;
     let side = TILE as usize;
     let (mut crossings, mut pairs) = (0usize, 0usize);
     let mut cross = |a: Class, b: Class| {
@@ -376,7 +380,8 @@ fn candidates(tile: &Tile, route: Route) -> Vec<(u32, u32)> {
             let mut near_other = false;
             for dy in -1i32..=1 {
                 for dx in -1i32..=1 {
-                    let c = tile.class[(row as i32 + dy) as usize * side + (col as i32 + dx) as usize];
+                    let c =
+                        tile.class[(row as i32 + dy) as usize * side + (col as i32 + dx) as usize];
                     if c == Class::Escaped {
                         near_escaped = true;
                     } else {
@@ -440,7 +445,10 @@ fn candidates(tile: &Tile, route: Route) -> Vec<(u32, u32)> {
 ///
 /// `(col + 0.5)/64 − 0.5` is `(2·col − 63)/128`, and `1/128` is `78125·10^−7`.
 fn offset_of(col: u32, row: u32, p: usize) -> (Dec, Dec) {
-    assert!(p <= MAX_P, "a rung at 1e-{p} is past what {SCALE} digits carry");
+    assert!(
+        p <= MAX_P,
+        "a rung at 1e-{p} is past what {SCALE} digits carry"
+    );
     let across = (2 * col as i64 - (TILE as i64 - 1)) * 78_125;
     let down = ((TILE as i64 - 1) - 2 * row as i64) * 78_125;
     (Dec::scaled(across, p + 7), Dec::scaled(down, p + 7))
@@ -500,7 +508,11 @@ fn descend(route: Route, re: Dec, im: Dec, from: usize, deepest: usize) -> Vec<R
 
     let (rung, tile) = open(from, re, im);
     budget -= 1;
-    let mut stack: Vec<Level> = vec![Level { rung, tile, tried: 0 }];
+    let mut stack: Vec<Level> = vec![Level {
+        rung,
+        tile,
+        tried: 0,
+    }];
     let mut kept: Vec<Rung> = Vec::new();
 
     while let Some(top) = stack.len().checked_sub(1) {
@@ -546,7 +558,11 @@ fn descend(route: Route, re: Dec, im: Dec, from: usize, deepest: usize) -> Vec<R
             if held { "kept" } else { "thin" },
         );
         if held {
-            stack.push(Level { rung, tile, tried: 0 });
+            stack.push(Level {
+                rung,
+                tile,
+                tried: 0,
+            });
         }
     }
     for level in stack {

@@ -375,7 +375,8 @@ impl Spec {
             return Ok((0.0, 0.0));
         };
         let limbs = self.limbs();
-        let parse = |text: &str| Fx::parse(text, limbs).ok_or_else(|| format!("`{text}` is not a decimal"));
+        let parse =
+            |text: &str| Fx::parse(text, limbs).ok_or_else(|| format!("`{text}` is not a decimal"));
         Ok((
             parse(&self.center_re)?.sub(&parse(re)?).to_f64(),
             parse(&self.center_im)?.sub(&parse(im)?).to_f64(),

@@ -5,10 +5,10 @@
 //! cargo test --release --test probe -- --ignored --nocapture
 //! ```
 
+use perturb::Anchor;
 use perturb::fx::Fx;
 use perturb::kernel::{Kernel, smooth_count};
 use perturb::reference::{self, BAILOUT};
-use perturb::Anchor;
 
 fn oracle(c_re: &Fx, c_im: &Fx, maxiter: u32) -> (f64, u32) {
     let n = c_re.n;
@@ -72,23 +72,14 @@ fn three_ways_on_a_shallow_grid() {
             if truth.is_nan() {
                 continue;
             }
-            rows.push((
-                dx,
-                dy,
-                ours,
-                truth,
-                theirs,
-                (ours - truth).abs(),
-            ));
+            rows.push((dx, dy, ours, truth, theirs, (ours - truth).abs()));
         }
     }
     rows.sort_by(|a, b| b.5.partial_cmp(&a.5).unwrap());
     let escaping = rows.len();
     let exact = rows.iter().filter(|r| r.5 == 0.0).count();
     let close = rows.iter().filter(|r| r.5 < 1e-6).count();
-    println!(
-        "{escaping} escaping samples: {exact} bit-equal to the oracle, {close} within 1e-6"
-    );
+    println!("{escaping} escaping samples: {exact} bit-equal to the oracle, {close} within 1e-6");
     println!("worst ten, perturbation vs oracle vs plain f64:");
     for row in rows.iter().take(10) {
         println!(
@@ -102,10 +93,7 @@ fn three_ways_on_a_shallow_grid() {
             (row.4 - row.3).abs()
         );
     }
-    let perturb_worse = rows
-        .iter()
-        .filter(|r| r.5 > (r.4 - r.3).abs())
-        .count();
+    let perturb_worse = rows.iter().filter(|r| r.5 > (r.4 - r.3).abs()).count();
     println!(
         "perturbation further from the oracle than plain f64 on {perturb_worse} of {escaping}"
     );
@@ -156,7 +144,9 @@ fn where_the_interior_switch_should_fire() {
     );
     println!("| floor | caught | wrongly painted | iterations saved |");
     println!("|--:|--:|--:|--:|");
-    for floor in [-300i32, -200, -160, -120, -100, -80, -64, -48, -32, -24, -16, -12, -8, -4] {
+    for floor in [
+        -300i32, -200, -160, -120, -100, -80, -64, -48, -32, -24, -16, -12, -8, -4,
+    ] {
         let on = Kernel::new(&orbit, maxiter, true).at_floor(floor);
         let (mut caught, mut wrong) = (0u32, 0u32);
         let mut with = 0u64;
@@ -249,7 +239,10 @@ fn three_ways_on_the_committed_cases_view() {
     println!(
         "{escaping} escaping: perturbation nearer the oracle on {perturb_wins}, plain f64 nearer on {plain_wins}, equal on {tie}"
     );
-    println!("the {} samples where perturbation is past 1e-6:", worst.len());
+    println!(
+        "the {} samples where perturbation is past 1e-6:",
+        worst.len()
+    );
     for (dx, dy, ours, truth, theirs) in worst.iter().take(24) {
         println!(
             "  dc ({dx:+.6}, {dy:+.6})  perturb {ours:>11.3}  oracle {truth:>11.3}  plain {theirs:>11.3}"

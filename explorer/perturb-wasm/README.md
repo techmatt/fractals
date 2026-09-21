@@ -909,6 +909,9 @@ nucleus, is a different question and is still open.**
 ## Running it
 
 ```text
+cargo fmt   --check                                    # the formatting, held: the
+                                                       #   crate is rustfmt-clean and
+                                                       #   stays that way
 cargo test  --release                                  # 60 unit tests and five
                                                        #   cheap pins, under a second
 cargo test  --release --test oracle -- --ignored --nocapture   # the ladders, ~30 s
