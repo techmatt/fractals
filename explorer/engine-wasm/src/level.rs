@@ -54,7 +54,7 @@
 //! here is a different picture from the one the gallery ships.
 
 use fractal_engine::colormap::{
-    linear_srgb_to_oklab, linear_to_srgb, oklab_to_linear_srgb, srgb8_to_oklab, srgb_to_linear,
+    linear_srgb_to_oklab, linear_to_srgb, oklab_to_linear_srgb, srgb_to_linear, srgb8_to_oklab,
 };
 use serde::Deserialize;
 
@@ -383,7 +383,10 @@ fn cap_lightness(
 fn densify(stops: &[(f64, [u8; 3])]) -> (Vec<f64>, Vec<[f64; 3]>) {
     let mut ordered: Vec<(f64, [u8; 3])> = stops.to_vec();
     ordered.sort_by(|a, b| a.0.total_cmp(&b.0));
-    let lab: Vec<[f64; 3]> = ordered.iter().map(|&(_, rgb)| srgb8_to_oklab(rgb)).collect();
+    let lab: Vec<[f64; 3]> = ordered
+        .iter()
+        .map(|&(_, rgb)| srgb8_to_oklab(rgb))
+        .collect();
 
     let mut positions = Vec::with_capacity((ordered.len() - 1) * DENSIFY + 1);
     let mut colours = Vec::with_capacity((ordered.len() - 1) * DENSIFY + 1);
@@ -710,9 +713,8 @@ mod tests {
         };
         match (ours, theirs) {
             (Decision::Degenerate, Decision::Degenerate) => true,
-            (Decision::Identity(a), Decision::Identity(b)) | (Decision::Acts(a), Decision::Acts(b)) => {
-                bits(a) == bits(b)
-            }
+            (Decision::Identity(a), Decision::Identity(b))
+            | (Decision::Acts(a), Decision::Acts(b)) => bits(a) == bits(b),
             _ => false,
         }
     }
@@ -746,7 +748,10 @@ mod tests {
         let sidecar = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
             .join("../../../fractal-wallpapers/artifacts/curation/autolevel_backfill.jsonl");
         let Ok(text) = std::fs::read_to_string(&sidecar) else {
-            eprintln!("no autolevel_backfill.jsonl at {}; skipped", sidecar.display());
+            eprintln!(
+                "no autolevel_backfill.jsonl at {}; skipped",
+                sidecar.display()
+            );
             return;
         };
         let (mut rows, mut different) = (0, Vec::new());
@@ -759,8 +764,16 @@ mod tests {
                 different.push(row["key"].to_string());
             }
         }
-        eprintln!("{} of {rows} backfill rows derive the stored curve", rows - different.len());
-        assert!(different.is_empty(), "{} row(s) differ: {:?}", different.len(), &different[..different.len().min(10)]);
+        eprintln!(
+            "{} of {rows} backfill rows derive the stored curve",
+            rows - different.len()
+        );
+        assert!(
+            different.is_empty(),
+            "{} row(s) differ: {:?}",
+            different.len(),
+            &different[..different.len().min(10)]
+        );
     }
 
     /// **`tone_stats` reads a picture the way the operator does.** Each stats case is a
@@ -775,11 +788,18 @@ mod tests {
         for case in cases["stats"].as_array().expect("stats cases") {
             let key = case["key"].as_str().expect("a key");
             let Ok(rgb) = std::fs::read(pixels.join(format!("{key}.rgb"))) else {
-                eprintln!("{key}: no decoded base in artifacts/level-derive; skipped (run make-derive-cases.py)");
+                eprintln!(
+                    "{key}: no decoded base in artifacts/level-derive; skipped (run make-derive-cases.py)"
+                );
                 continue;
             };
-            let expected_len = case["width"].as_u64().unwrap() * case["height"].as_u64().unwrap() * 3;
-            assert_eq!(rgb.len() as u64, expected_len, "{key}: the decoded base is the wrong size");
+            let expected_len =
+                case["width"].as_u64().unwrap() * case["height"].as_u64().unwrap() * 3;
+            assert_eq!(
+                rgb.len() as u64,
+                expected_len,
+                "{key}: the decoded base is the wrong size"
+            );
             let ours = tone_stats(&rgb, 3);
             let theirs = stats_of(&case["measured"]);
             let far = |a: f64, b: f64| (a - b).abs();
@@ -793,7 +813,10 @@ mod tests {
                 ("white_pt", ours.white_pt, theirs.white_pt),
                 ("mid", ours.mid, theirs.mid),
             ] {
-                assert!(far(a, b) < 1e-6, "{key}: {name} {a} here and {b} in the operator");
+                assert!(
+                    far(a, b) < 1e-6,
+                    "{key}: {name} {a} here and {b} in the operator"
+                );
             }
             eprintln!(
                 "{key}: largest difference {:e}",
@@ -839,7 +862,10 @@ mod tests {
         let library = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
             .join("../../../fractal-wallpapers/data/palettes");
         if !library.is_dir() {
-            eprintln!("no sibling colormap library at {}; skipped", library.display());
+            eprintln!(
+                "no sibling colormap library at {}; skipped",
+                library.display()
+            );
             return;
         }
         let fixture = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("level-cases.json");
