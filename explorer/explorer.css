@@ -79,6 +79,22 @@
 }
 .studio-site:hover { color: var(--well-link); }
 
+/* **The page's `<h1>`, at the size of the bar it sits in.** Every other page on the site
+   opens with a masthead; this one is a tool and has no room for one, and its outline
+   started at `<h2>` until now (`explorer_bug_hunt_ckpt138`, finding 7). `site.css` sets an
+   `h1` at 1.75rem serif, which would break the bar's single line, so the whole of this
+   rule is taking that back — the heading is the bar's own furniture and reads as such. */
+.studio-bar-name { display: flex; align-items: baseline; gap: 0.5rem; min-width: 0; }
+.studio-title {
+  margin: 0;
+  font: inherit;
+  font-weight: 400;
+  letter-spacing: inherit;
+  color: var(--well-ink-dim);
+  white-space: nowrap;
+}
+.studio-title::before { content: "/ "; }
+
 .studio-bar-links { display: flex; align-items: center; gap: 1rem; }
 .studio-bar-links a { color: var(--well-ink-dim); text-decoration: none; }
 .studio-bar-links a:hover { color: var(--well-link); text-decoration: underline; }

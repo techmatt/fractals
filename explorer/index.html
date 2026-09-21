@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="data:,">
 <title>Explorer — Making Fractal Wallpapers</title>
 <meta name="description" content="A studio for the fractal renderer the wallpapers are made with: a thousand seated wallpapers and every place the search kept on the left, and on the right the same renderer drawing whichever one you pick. Every view has a link.">
 <link rel="stylesheet" href="../assets/css/site.css">
@@ -12,7 +13,10 @@
 <body class="studio-body">
 
 <nav class="studio-bar">
-  <a class="studio-site" href="../index.html">Making Fractal Wallpapers</a>
+  <span class="studio-bar-name">
+    <a class="studio-site" href="../index.html">Making Fractal Wallpapers</a>
+    <h1 class="studio-title">Explorer</h1>
+  </span>
   <span class="studio-bar-links">
     <button type="button" id="copy">Copy link</button>
     <a href="../galleries/index.html">Galleries</a>
@@ -21,12 +25,14 @@
 </nav>
 
 <div class="notice" id="notice">
+  <div id="notice-boot">
   <p>Starting the renderer…</p>
-  <p>If this message stays, the page is being opened straight off the filesystem. A browser
+  <p id="notice-boot-file">If this message stays, the page is being opened straight off the filesystem. A browser
   will not load a page's module, its workers or its renderer over <code>file://</code>, so the
   explorer needs to be served — <code>python -m builder serve</code> puts this tree on
   localhost — or read at
   <a href="https://techmatt.github.io/fractal-website/explorer/">techmatt.github.io</a>.</p>
+  </div>
 </div>
 
 <main class="studio" id="studio" hidden>
@@ -314,6 +320,42 @@
 
 </main>
 
+<!-- **The one thing a module cannot say about itself.** `explorer.js` statically imports a
+     dozen files, and a static import that fails takes the whole graph down before a line of
+     it evaluates — so `main()`, its `catch` and `refuse()` never run and the boot notice
+     stays up for good, telling a served reader their page is off the filesystem
+     (`explorer_bug_hunt_ckpt138`, finding 4). Nothing inside the graph can catch that. This
+     is outside it, and classic rather than a module so that it runs before one.
+
+     Two jobs, and the first is unconditional: the filesystem paragraph is only true over
+     `file://`, and it is taken out anywhere else at once rather than after a delay.
+
+     The second is the timer, and **45 seconds is measured rather than picked**. With the
+     HTTP cache disabled, the studio came up in 222-456 ms locally, ~4.9 s on fast 3G, ~17 s
+     on slow 3G and ~42 s on a 2G-ish profile. A false "this failed" is the expensive error —
+     the notice is honest while it is up, and a reader told to reload on a slow connection
+     restarts the whole download — so the delay sits past the slowest boot that still
+     arrived rather than close to the common one.
+
+     It fires only while the boot markup is still the boot markup: `refuse()` replaces the
+     notice's children with its own sentence, so a page that refused for a reason it knows
+     keeps that reason. -->
+<script>
+(function () {
+  if (location.protocol !== "file:") {
+    var said = document.getElementById("notice-boot-file");
+    if (said) said.remove();
+  }
+  setTimeout(function () {
+    var studio = document.getElementById("studio");
+    var boot = document.getElementById("notice-boot");
+    var notice = document.getElementById("notice");
+    if (!studio || !boot || !notice || !studio.hidden) return;
+    notice.textContent =
+      "The explorer did not finish loading. Reloading the page usually fixes it.";
+  }, 45000);
+})();
+</script>
 <script type="module" src="explorer.js"></script>
 </body>
 </html>

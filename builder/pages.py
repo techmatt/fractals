@@ -78,6 +78,15 @@ def _shell(*, title: str, css: str, bar: str, rail: str, header: str, blocks: li
                 GENERATED_NOTICE,
                 '<meta charset="utf-8">',
                 '<meta name="viewport" content="width=device-width, initial-scale=1">',
+                # **An empty data URL, and the same string on every page.** A browser asks
+                # every origin for `/favicon.ico` unbidden, and under a project-Pages
+                # subpath this site cannot answer at the origin root at all, so every page
+                # load logged a 404 (`explorer_bug_hunt_ckpt138`, finding 8). Declaring an
+                # icon is what stops the ask. It is `data:,` rather than a picture because
+                # a real one is a crop of a wallpaper, and which crop is Matt's to pick
+                # under the tile rule — this takes the 404 away without picking for him,
+                # and a chosen icon is a one-line change here and on each written page.
+                '<link rel="icon" href="data:,">',
                 f"<title>{text(title)}</title>",
                 f'<link rel="stylesheet" href="{css}">',
                 "</head>",
