@@ -2886,6 +2886,9 @@ for (const tab of tabs) {
 const pointers = new Map();
 let drag = null;
 let pinch = null;
+/** Whether the canvas is showing a slid or scaled preview rather than a settled picture.
+ *  `release` needs it for the one path out of a gesture that draws nothing. */
+let slid = false;
 
 function canvasPoint(event) {
   const box = canvas.getBoundingClientRect();
@@ -2897,6 +2900,7 @@ function canvasPoint(event) {
 
 /** Slide the last picture drawn, so a drag has something to follow. */
 function preview(dx, dy, scale = 1) {
+  slid = true;
   showState("rendering");
   screen.fillStyle = "#000";
   screen.fillRect(0, 0, grid.width, grid.height);
@@ -2932,6 +2936,9 @@ canvas.addEventListener("pointermove", (event) => {
 function release(event) {
   if (!pointers.has(event.pointerId)) return;
   pointers.delete(event.pointerId);
+  // Read once and clear: every path below this but the zero-length one ends in a draw.
+  const wasSlid = slid;
+  slid = false;
   if (pinch !== null) {
     const ratio = spread() / pinch.spread;
     pinch = null;
@@ -2961,7 +2968,22 @@ function release(event) {
     juliaTo(link.coordinateOf(previewed.cx), link.coordinateOf(previewed.cy));
     return;
   }
-  if (dx === 0 && dy === 0) return;
+  // **A gesture that slid the picture and then measured zero has to put it back.** A
+  // plain click measures zero too and is the case the comment above describes — nothing
+  // was slid there, so nothing is owed. But a *second* press during a drag arrives with
+  // the mouse's own pointer id, which leaves `pointers` at one and resets `drag` to a
+  // fresh zero-length one under the moves that have already slid the canvas. Returning
+  // there left the slid preview on the screen for good, with the dot still reading
+  // `rendering` and the view never having moved — a picture that is not the link beside
+  // it. Drawing is the same work the release would have done had the drag measured
+  // anything, and the field is already cached at this view, so it costs a recolour.
+  if (dx === 0 && dy === 0) {
+    if (wasSlid) {
+      if (deepOwns()) deep.repaint();
+      else draw();
+    }
+    return;
+  }
   // The Deep tab pans exactly as far, and draws nothing: the frame moves, the last
   // picture stays where it falls, and Render is what commits it.
   if (deepOwns()) {
