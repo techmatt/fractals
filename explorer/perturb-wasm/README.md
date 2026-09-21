@@ -401,10 +401,51 @@ had the engine's loop inside its own timer, worth about 4.7 ns an iteration,
 which is a measurement bug found and fixed afterwards. The 4.80 and the 4.68 above
 are clean.*
 
-**The reference orbit**: 48,552 points at three limbs in **14.7 ms** native and
-**25.4 ms** in wasm, once per frame. Against a frame of 20 s that is
-0.07%, and it is the number that would have been paid fifty times over had it
+**The reference orbit**: 48,552 points at three limbs in **6.3 ms** native and
+**11.2 ms** in wasm, once per frame. Against a frame of 20 s that is
+0.03%, and it is the number that would have been paid fifty times over had it
 been computed inside a band's `resolve` instead of handed across as a buffer.
+
+⚠ **It was 14.7 ms and 25.4 ms** until `deep_refactor_ckpt138`, and what moved is
+`Fx::mul`: the limb count is a compile-time constant inside it now, through a
+dispatch to a specialization per `n`, where it used to be a field read off the
+operand. The scratch array is the frame's own width rather than the widest this
+module carries — twelve `u32`s zeroed at three limbs instead of sixty-four — and,
+which is most of the win, every trip count in the loop is known.
+
+| | before | after | |
+|---|--:|--:|--:|
+| `Fx::mul`, 3 limbs | 97.5 ns | **37.6 ns** | 2.6× |
+| `Fx::mul`, 4 limbs | 131.5 ns | **57.8 ns** | 2.3× |
+| `Fx::mul`, 6 limbs | 231.8 ns | **99.9 ns** | 2.3× |
+| `Fx::mul`, 16 limbs | 1,373 ns | 1,372 ns | 1.0× |
+| reference orbit, native | 13.9 ms | **6.3 ms** | 2.2× |
+| reference orbit, wasm | 21.6 ms | **11.2 ms** | 1.9× |
+| `newton_step`, period 2,838 | 0.82 ms | **0.38 ms** | 2.2× |
+| `newton_step`, period 94,776 | 28.1 ms | **12.8 ms** | 2.2× |
+
+Native figures are `scratch/fx_bench`, best of five, the two versions run
+alternately because the box drifts about 30%; the wasm pair is the same orbit
+through both committed modules. **`ns / sample-iteration` is not in that table
+because there is no mechanism for it to move**: nothing per-sample is fixed
+point. It was measured anyway — 4.73 against the 4.80 above, interior off, and
+5.42 against 5.24 with the switch on — and those are the box on the day, not the
+multiply.
+
+**Sixteen limbs buys nothing** and is the fallback arm, still the unspecialized
+loop: 256 half-limb products, where the zeroing was never what it was spending.
+**The cost is 19.8 KB of module**, 4.0 KB gzipped — fifteen specializations of
+one function, and the only reason the gzip figure is the smaller half is
+`#[inline(never)]` on it, which is worth 1.1 KB compressed and nothing
+measurable in time. The whole of it is paid by a reader who opens the Deep tab,
+and what it buys them is a nucleus search at twice the speed: a solve at 1e-54
+was 1.96 s.
+
+**Bit-identical, and checked rather than argued.** `Fx::mul` has a test of its
+own against the unspecialized version — 3,000 products at every limb count from
+2 to 16, both signs, zero limbs among them — and across the two committed
+modules the reference orbits at 3, 4, 5 and 6 limbs and the fields drawn from
+them are byte for byte the same (`scratch/orbit-parity.mjs`).
 
 **In wasm**, Node v24.19.0, single instance, single thread, same frame:
 

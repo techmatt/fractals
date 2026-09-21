@@ -120,15 +120,52 @@ impl Fx {
     /// Schoolbook over `2n` half-limbs. The full product is `2n` limbs and the
     /// answer is the window starting at limb `n-1`, because both operands carry
     /// `64(n-1)` fraction bits and the product carries twice that.
+    ///
+    /// **The limb count is a constant inside the multiply, not a variable**,
+    /// which is what [`mul_at`] is for *(deep_refactor_ckpt138)*. `P` is `4N`
+    /// half-limbs, so a three-limb frame zeroes twelve `u32`s rather than the
+    /// sixty-four a fixed `4 * MAX_LIMBS` array would — and, which turned out to
+    /// be most of it, every trip count in the loop is known where it used to be
+    /// read from `self`. **2.6× at three limbs, 2.3× at four and six**, and the
+    /// reference orbit with it; §4 of the crate README has the table and the
+    /// 19.8 KB of module it costs.
+    ///
+    /// It buys nothing at the widest limb count, which is the fallback arm and
+    /// is still the unspecialized loop — and that is the honest shape of it,
+    /// because a sixteen-limb multiply is 256 half-limb products and the zeroing
+    /// was never what it was spending.
     pub fn mul(&self, b: &Self) -> Self {
-        let n = self.n;
+        // Each arm is a whole specialization, and the compiler knows every trip
+        // count in it. `n` is `2..=MAX_LIMBS` by construction — `Fx::zero`,
+        // `parse` and `from_f64` are the only ways to make one — and the widest
+        // arm stands in for anything that ever got past them.
+        macro_rules! at {
+            ($($n:literal => $p:literal,)*) => {
+                match self.n {
+                    $($n => self.mul_at::<$n, $p>(b),)*
+                    _ => self.mul_at::<MAX_LIMBS, { 4 * MAX_LIMBS }>(b),
+                }
+            };
+        }
+        at! {
+            2 => 8, 3 => 12, 4 => 16, 5 => 20, 6 => 24, 7 => 28, 8 => 32,
+            9 => 36, 10 => 40, 11 => 44, 12 => 48, 13 => 52, 14 => 56, 15 => 60,
+        }
+    }
+
+    /// The multiply at a known limb count. `P` has to be `4 * N`, and is spelled
+    /// at the call site because `[0u32; 4 * N]` is not something stable Rust will
+    /// size for itself.
+    #[inline(never)]
+    fn mul_at<const N: usize, const P: usize>(&self, b: &Self) -> Self {
+        let n = N;
         let (sa, a) = self.abs();
         let (sb, b) = b.abs();
         let halves = 2 * n;
 
-        // `4 * MAX_LIMBS` half-limbs is `2 * MAX_LIMBS` limbs, which is the widest
-        // product two `MAX_LIMBS` numbers can have.
-        let mut p = [0u32; 4 * MAX_LIMBS];
+        // `4N` half-limbs is `2N` limbs, which is the widest product two
+        // `N`-limb numbers can have.
+        let mut p = [0u32; P];
         for i in 0..halves {
             let ai = half(&a.w, i) as u64;
             if ai == 0 {
@@ -378,6 +415,90 @@ mod tests {
 
     fn fx(text: &str) -> Fx {
         Fx::parse(text, 4).unwrap()
+    }
+
+    /// [`Fx::mul`] as it was written until `deep_refactor_ckpt138`: one
+    /// unspecialized loop over a scratch array of the widest number this module
+    /// carries. Kept here and nowhere else, as the thing the dispatch is held
+    /// to.
+    fn mul_unspecialized(a0: &Fx, b0: &Fx) -> Fx {
+        let n = a0.n;
+        let (sa, a) = a0.abs();
+        let (sb, b) = b0.abs();
+        let halves = 2 * n;
+        let mut p = [0u32; 4 * MAX_LIMBS];
+        for i in 0..halves {
+            let ai = half(&a.w, i) as u64;
+            if ai == 0 {
+                continue;
+            }
+            let mut carry = 0u64;
+            for j in 0..halves {
+                let t = ai * (half(&b.w, j) as u64) + (p[i + j] as u64) + carry;
+                p[i + j] = t as u32;
+                carry = t >> 32;
+            }
+            p[i + halves] = carry as u32;
+        }
+        let mut r = Fx::zero(n);
+        for k in 0..n {
+            let src = 2 * (n - 1 + k);
+            r.w[k] = (p[src] as u64) | ((p[src + 1] as u64) << 32);
+        }
+        if sa ^ sb { r.neg() } else { r }
+    }
+
+    /// **Every bit of every product, at every limb count.**
+    ///
+    /// The dispatch in [`Fx::mul`] is fifteen arms of `N` and `P` written out by
+    /// hand, and an arm pointing at the wrong specialization is a multiply that
+    /// answers plausibly and wrongly — the pins that would catch it are all
+    /// downstream, a smooth value or a picture or a link. This is the one that
+    /// catches it here: a deterministic spread of operands of both signs, with
+    /// zero limbs among them, held to the unspecialized version limb for limb.
+    #[test]
+    fn the_product_is_the_same_at_every_limb_count() {
+        // A 64-bit LCG, written out rather than depended on.
+        let mut state = 0x2545_f491_4f6c_dd1du64;
+        let mut next = || {
+            state = state
+                .wrapping_mul(6364136223846793005)
+                .wrapping_add(1442695040888963407);
+            state
+        };
+        for n in 2..=MAX_LIMBS {
+            for case in 0..200 {
+                let mut make = || {
+                    let mut value = Fx::zero(n);
+                    for limb in value.w.iter_mut().take(n) {
+                        *limb = next();
+                    }
+                    // The integer limb stays small: these are the coordinates
+                    // and deltas of a frame, never numbers with a large whole
+                    // part, and `mul` truncates rather than reporting overflow.
+                    value.w[n - 1] &= 0x3;
+                    if case % 3 == 0 {
+                        value = value.neg();
+                    }
+                    if case % 7 == 0 {
+                        // A limb of zeros, which is the row the loop skips.
+                        value.w[case % n] = 0;
+                    }
+                    value
+                };
+                let (a, b) = (make(), make());
+                let wanted = mul_unspecialized(&a, &b);
+                let got = a.mul(&b);
+                assert_eq!(got.n, wanted.n);
+                assert_eq!(
+                    got.w[..n],
+                    wanted.w[..n],
+                    "n = {n}, case {case}: {:?} × {:?}",
+                    &a.w[..n],
+                    &b.w[..n]
+                );
+            }
+        }
     }
 
     #[test]
