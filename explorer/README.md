@@ -36,6 +36,8 @@ Each line is a `##` below, and the question it is the answer to.
 | **A mode's parameters, from the view** | which parameters are derived rather than asked for |
 | **The permalink contract, version 3** | what a link may say, what it refuses, and why a URL is permanent |
 | **The link registry** | how a figure's link is derived, and what a refusal is called |
+| **Every pool is given back** | why a document's workers are terminated, and what it cost not to |
+| **What the last bug hunt covered** | what was exercised and came back clean, so a next hunt need not |
 | **Rebuilding** | the commands, and which of them need the sibling checkout |
 | **Next** | what is deliberately not here yet |
 
@@ -114,7 +116,8 @@ recorded here so the reasoning behind them is not lost:
 ## What is here
 
 ```
-index.html            the page
+index.html            the page, and the inline script that answers for a module
+                      that never evaluated
 explorer.css          its own stylesheet, on top of the site's
 explorer.js           what a reader touches: drag, wheel, keys, pickers, copy link
 gallery.js            the left panel's grid: a staged gallery's record, filtered
@@ -141,7 +144,7 @@ resize.mjs            PIL's bicubic resize, ported byte for byte: what a judge r
 judges/               UNTRACKED: the two ONNX judges and the runtime, `builder walk`
 permalink.js          the link contract — parse, validate, canonicalize
 params.js             a mode parameter's control: its word, its slider's travel, the mapping
-permalink.test.mjs    51 tests, `node --test explorer/permalink.test.mjs`
+permalink.test.mjs    53 tests, `node --test explorer/permalink.test.mjs`
 bands.test.mjs        3 tests: the pool cuts the frame, never what is in it
 level.test.mjs        7 tests: the module's tone measurement, and a derived curve replays
 derive.test.mjs       6 tests: a derived weight replays, a derived opacity lands where it says
@@ -150,8 +153,8 @@ undo.test.mjs         8 tests: one action is one entry, a step back keeps what i
 zip.test.mjs          2 tests: CRC-32's check values, and an archive read back to its bytes
 stamp.test.mjs        12 tests: the link goes in, and the picture does not move
 deep-fx.test.mjs      12 tests: the Deep tab's arithmetic is exact where a double is not
-deep-link.test.mjs    20 tests: the deep contract, and the shallow one held to not moving
-deep.test.mjs         10 tests: where the two modules meet, against both committed ones
+deep-link.test.mjs    29 tests: the deep contract, and the shallow one held to not moving
+deep.test.mjs         17 tests: where the two modules meet, against both committed ones
 palettes.jsonl        the roster palettes.js is baked from; 1,021 maps, 77 offered,
                       232 a random pick may draw
 modes.jsonl           the roster catalog.js is baked from: the 17 modes the picker offers
@@ -169,11 +172,21 @@ perturb.wasm          generated: the perturbation kernel, compiled
 perturb.manifest.json generated: what perturb.wasm was built from
 engine-wasm/          the crate that produces engine.wasm
 perturb-wasm/         the crate that produces perturb.wasm — see The Deep tab
+bench/                the timing harnesses — see Measured
+bench/hunt/           the bug hunt's own: lib.mjs, eight units, four probes
 ```
 
 ## The studio
 
 Two panels, and the document itself does not scroll.
+
+**The bar carries the page's `<h1>`** *(pre_closeout_ckpt138, 2026-09-20)*. Every other
+page on the site opens with a masthead and this one has no room for one, so its outline
+started at `<h2>` and had no top — the only page on the site without one
+*(explorer_bug_hunt_ckpt138, finding 7)*. It reads *Explorer*, after the way back to the
+front page and at the bar's own size: `site.css` sets an `h1` at 1.75rem serif, and
+`.studio-title` takes all of that back, because a heading that broke the bar's single line
+to satisfy an outline would be the wrong trade.
 
 **Left, one of five things.** The third, fourth and fifth — *Walk*, *Deep* and
 *Saved* — are sections of their own below. *Gallery* is the staged gallery `python -m builder seats`
@@ -393,7 +406,9 @@ of the cores and never more than three — the walk's and the Saved tab's are a 
 at four, because those run while a reader is watching them and this one runs while a reader
 is watching something else. This said the other two were *half* the cores
 *(walk_faster_ckpt138)*, which the code has never said; it is the reading that was wrong
-rather than the rule. Pointer moves coalesce to the latest and draw once the
+rather than the rule. **All three start at their first use and all three are given back on
+`pagehide`** — see *Every pool is given back* below; the preview's is the last of the four
+to exist and often never does. Pointer moves coalesce to the latest and draw once the
 pointer has been still for 90 ms, and nothing is started at all while the viewer's own pass
 is in flight: the settle re-arms instead. Measured, a `tia` pass is 104, 114, 113 ms with the pointer
 sweeping the canvas for the whole of it against 105, 104 ms with the pointer still.
@@ -466,7 +481,7 @@ walk runs and whether the viewer follows it are two states, `state` and `attache
    probe, screen and judged picture is of the frame itself. Pausing puts the viewer back on
    the frame at its own framing, and so does hiding the tab; Start widens it again. Opening a found tile shows the tile.
    **While the walk runs, the viewer draws nothing of its own** *(walk_console_ckpt131)*:
-   it shows the 640×360 picture the walk judged of the frame it stands in, with the picture
+   it shows the 384×216 picture the walk judged of the frame it stands in, upscaled, with the picture
    before it dimmed around it and black beyond, and never refines it (`showWalk`; the
    render-state dot reads Stopped). A rung's finished state, with its last label and the
    chosen box, is held 400 ms (`DWELL_MS`) while the walk carries on computing. Each
@@ -474,8 +489,14 @@ walk runs and whether the viewer follows it are two states, `state` and `attache
    because sixteen of them at the rung's hold would leave the viewer six seconds behind the
    strip; the picture the place keeps is held the full 400. A pause, a reader's move or an
    opened tile hands the viewer back to its own renderer at full quality.
-7. Every judged picture is the smooth mode at 640×360, one sample, `twilight_shifted`, scored
-   by the render judge's P≥3. The root is judged once before stage two starts.
+7. Every judged picture is the smooth mode at **384×216**, one sample, `twilight_shifted`,
+   scored by the render judge's P≥3. It was 640×360 until *(pre_closeout_ckpt138,
+   2026-09-20)* — the gate reads 384×224, so 2.7x the samples were being drawn for the
+   viewer alone in the largest part of a rung, and the viewer gets the same picture
+   upscaled. **384×216 and not the gate's own 384×224**: the walk's geometry is 16:9 from
+   `boxOf` down, and 12:7 would judge a taller slice of the plane than the frame the screen
+   passed. What the width buys is the most of it anyway — the gate stretches to 384 wide, so
+   the horizontal resample is now the identity and only the vertical is a stretch. The root is judged once before stage two starts.
 8. **Stage two** carries on from the root by the sampler's rung rule *(walk_descend_ckpt131)*
    and is the part the viewer follows: the current frame is split into quarters, the
    straddling ones are jittered, screened and judged, and the walk goes into the best. The
@@ -495,7 +516,10 @@ walk runs and whether the viewer follows it are two states, `state` and `attache
      it painted nothing at either end of it. Over a dozen walks the old rule ran to a median
      of 14 steps and a p90 of 21. The budget holds back one step for the mining, because a
      walk that descended until it ran out and then drew nothing would be shorter and worse,
-     and a Julia twin is not started at all below four (`TWIN_STEPS`);
+     and a Julia twin is not started at all below four (`TWIN_STEPS`). **The twin has five
+     steps of its own on top of the fourteen** (`TWIN_RESERVE`, *pre_closeout_ckpt138*),
+     added when its leg starts so that a plane leg which ran to the end of the budget
+     cannot have spent them;
    - a **dead end**: no quarter straddles or survives the screen.
 
    The old rule stopped at two rungs under the best whatever the best was. At low scores
@@ -631,6 +655,10 @@ be compared while the next root is being found. A Julia twin's mining replaces i
   tooltip says so.
 - The pipeline keeps every recipe it draws and lets the solve choose. The tab keeps the
   best.
+
+**The walk's two pools are the tab's for as long as the document is**, started at Start
+and terminated on `pagehide` (*Every pool is given back*, below). A walk that is merely
+paused keeps them: the reader is expected back.
 
 **Two renderers.** The walk draws through a second `Renderer` over the same compiled module
 (`Renderer.over`), with a pool of `min(4, cores/3)` workers. The viewer's renderer runs one
@@ -1003,6 +1031,27 @@ down to the low 1e-14s and the deeper frames give a list without pictures.
 | tangle 1e-40 | 18 domains, 6 kept | **0 of 6** | past the ceiling: 100% interior |
 | tangle 1e-54 | 29 domains, 6 kept | **0 of 6** | past the ceiling: 100% interior |
 
+⚠ **That table was measured at each view's settled cap, and the tab was searching at the
+view's own** *(pre_closeout_ckpt138, 2026-09-20)*. Opening the committed `tangle 1e-22`
+link and pressing the button listed **3** of those 6. It is not a detection resolution, a
+dedupe or a ranking problem and it is not the "body already fills the view" exclusion —
+those bodies are fourteen decades under the frame. A nucleus is detected by the **index of
+the smallest `|z|` the orbit reaches**, and an index can never exceed the cap the walk was
+given: past the cap a nucleus is not missed, it is undetectable, and the cells that would
+have reported it report some lower argmin instead, which is a spurious seed. The link
+carries `n=93600`, a `dv` link pins the cap so nothing settles it, and the largest nucleus
+in that frame is **period 94,776** — 1,176 over the wall. The row above was taken at the
+settled 187,200.
+
+So the search settles a cap of its own and uses it for the **search spec alone**, leaving
+`view` and the address bar where the reader left them: a cap is a picture choice everywhere
+else on this tab, and that is what `pinnedCap` defends, but here it is a floor under
+correctness. Where the cap is already settled — which it is after any ordinary Render — it
+costs one rung, because `settle` starts where it is and stops as soon as the fault share is
+met. Measured through the page after the change: the committed `tangle 1e-22` link lists
+**6**, and the anchor at 2e-11 still lists its 6
+(`PORT=8014 node explorer/bench/hunt/probe-minibrots.mjs`).
+
 **Both walls land in the same place.** Eight periods of a nucleus past 125,000 is over the
 million-iteration ceiling, so those tiles cannot resolve either — and that is the same view
 depth, about 1e-30, at which a centre stops fitting in a link. Below it this feature finds
@@ -1064,10 +1113,18 @@ and a URL's escaping rule, neither of which has anything to do with how deep the
   a link say "this frame, but shallower"; here a deep frame's policy cap runs to six figures
   and costs minutes, so the number in force is one a reader chose and part of what they are
   sending. A link that left it out would open at whatever the policy said today.
+  **And a link that leaves it out is still accepted** *(pre_closeout_ckpt138)*, which is
+  the qualification that sentence needs: always written is a rule about emitting, not about
+  reading. Absent is not a hole — the width's policy cap plus the escalation ladder is
+  deterministic, so an `n`-less deep link names exactly one picture, the same one on every
+  machine and on every day the policy has not moved. What it cannot do is promise that
+  picture against a policy that *does* move, which is why emit writes the number down.
 - **`cx` and `cy`** are the Julia parameter, exact decimals, **both or neither**, and they
   are the shallow contract's own spelling of the same quantity — the `c` of `z² + c`, half
   of a dynamical location's identity. A second name for one number is how two readers of
-  one thing drift apart. What differs is the arithmetic behind them: read into exact
+  one thing drift apart. **The shallow contract holds both or neither too now**
+  *(pre_closeout_ckpt138)*, so this is no longer the rule one of the two has; what is still
+  its own down here is the arithmetic. What differs is the arithmetic behind them: read into exact
   decimals here, because a deep `c` is one no double holds. **Absent is the Mandelbrot
   set**, which is what every v1 link is. They come before the frame, the way `f` does in
   the shallow contract, because they say which set the centre and width are talking about.
@@ -1194,8 +1251,8 @@ deep-worker.js     one worker: one perturb instance, one held orbit, one band
 deep-fx.js         exact decimal coordinates, BigInt fixed point
 deep-link.js       the deep link contract — parse, emit, canonicalize, describe
 deep-fx.test.mjs   12 tests: the arithmetic is exact where a double is not
-deep-link.test.mjs 27 tests: the contract, and the shallow one held to not moving
-deep.test.mjs      16 tests: where the two modules meet, against both committed ones —
+deep-link.test.mjs 29 tests: the contract, and the shallow one held to not moving
+deep.test.mjs      17 tests: where the two modules meet, against both committed ones —
                    and the cap policy's seam, which fails the same way the rest of
                    this file does, by drawing a plausible picture
 bench/julia.mjs    what a Julia frame costs against the Mandelbrot frame at the same c
@@ -1512,6 +1569,32 @@ python -m builder serve          # http://localhost:8000/explorer/index.html
 
 The page says so itself where the picture would be, rather than failing silently. Every
 other page on the site still opens from disk, and stays script-free.
+
+**And it says it only where it is true** *(pre_closeout_ckpt138, 2026-09-20)*. The boot
+notice's second paragraph is the filesystem sentence above, and it used to be shown to
+everyone while the module loaded — so the one case it was written for, a page that never
+comes up, told a *served* reader the opposite of their problem
+*(explorer_bug_hunt_ckpt138, finding 4)*. A small inline script in `index.html` removes that
+paragraph at once anywhere but `file://`.
+
+**The same script is the one thing a module cannot say about itself.** `explorer.js`
+statically imports a dozen files, and a static import that fails takes the whole graph down
+before a line of it evaluates: `main()`, its `catch` and `refuse()` never run, so nothing
+replaces the notice and the page reads *Starting the renderer…* for good. Failing each
+resource at the door, `engine.wasm` and `palettes.bin` refuse with a sentence and
+`perturb.wasm`, `palette-names.json`, `popular.json` and `gallery.jsonl` are non-fatal —
+but `palettes.js`, `catalog.js` and `worker.js` left the notice up forever. Nothing inside
+the graph can catch that. The script is outside it, and classic rather than a module so
+that it runs before one.
+
+**Forty-five seconds, and the number is measured.** With the HTTP cache disabled the studio
+came up in 222-456 ms locally, ~4.9 s on fast 3G, ~17 s on slow 3G and ~42 s on a 2G-ish
+profile (`node explorer/bench/hunt/probe-boot.mjs`). A false *this failed* is the expensive
+error in both directions — the notice is honest while it is up, and a reader told to reload
+on a slow connection restarts the whole download — so the delay sits past the slowest boot
+that still arrived rather than near the common one. It fires only while the boot markup is
+still the boot markup, because `refuse()` replaces the notice's children with its own
+sentence and a page that refused for a reason it knows keeps that reason.
 
 **Chrome's `--screenshot` cannot photograph it.** It shoots at load and never waits for the
 wasm module or the workers, so every shot is *Starting the renderer…*. Drive the served page
@@ -2096,6 +2179,9 @@ the spike. Both in mode `smooth` at 1280x720.
 
 ```
 node explorer/bench/kernel.mjs kernel.json          # both views, 3 runs each
+node explorer/bench/hunt/smoke.mjs                  # the hunt harness's own self-test
+PORT=8014 node explorer/bench/hunt/u1-links.mjs     # one unit; u1..u8 are the hunt
+PORT=8014 node explorer/bench/hunt/probe-oom.mjs    # 30 loads in one tab, workers per load
 node explorer/bench/modes.mjs [other.wasm]          # every mode, mandelbrot home
 node explorer/bench/sweep.mjs                       # every family x mode pair
 node explorer/bench/families.mjs [generic.wasm]     # every family, smooth, at its home
@@ -2172,9 +2258,22 @@ It is tracked for the half of the job it does do. It started under `scratch/`, w
 wiped, and a record a wipe can delete is not a record; three harnesses moved here —
 `kernel.mjs`, `modes.mjs`, `sweep.mjs` — with the two helpers they lean on, and
 `families.mjs` was written here the next day. `cut.mjs` and `level.mjs` joined them with
-`explorer_perf_audit_ckpt136`. `engine.mjs` is the wasm loader every one of them calls, and
-`output.mjs` sends every run's numbers to `artifacts/`, which is ignored. Code is committed,
-measurements are not.
+`explorer_perf_audit_ckpt136`. **`bench/hunt/` is the next entry and the largest**
+*(pre_closeout_ckpt138, 2026-09-20)*: the bug hunt's own harness — `lib.mjs`, eight units and
+four probes, ~2,400 lines — moved whole for the same reason, pruned of the one-shot probes
+that confirmed a finding now fixed. `engine.mjs` is the wasm loader every one of them calls,
+and `output.mjs` sends every run's numbers to `artifacts/`, which is ignored. Code is
+committed, measurements are not.
+
+**The hunt is a fourth kind of harness, and the only one that asserts.** The two above ask
+what the arithmetic costs and why a page feels the way it does; `walk.mjs` is the third and
+measures a program rather than a picture. A hunt unit measures neither — it drives the page
+the way an impatient reader would and records a `findings` list beside its rows. It still
+exits zero and `builder check` still runs none of it. It is also a **second CDP client**,
+deliberately: `cdp.mjs`'s `send` has no timeout because a bench run sets patiences of three
+and four hundred seconds on purpose, and a hunt needs the opposite — a call that does not
+answer is itself the finding. `bench/hunt/lib.mjs` opens by saying so, and carries the eight
+false alarms that each cost a verification.
 
 **One of them asserts after all, and it is the exception that says what the rule is.**
 `curves.mjs` is a *comparison* rather than a reading: it shades a ramp through every map in
@@ -2493,6 +2592,63 @@ set's plane mix as much as it is the code. What the cap does unambiguously is th
 42 steps**: one before walk ran 40 rungs over its two legs, took 166 s and painted nothing
 at either end.
 
+### The three levers, measured *(pre_closeout_ckpt138, 2026-09-20)*
+
+The two the section above left for somebody else, and the twin's reserve, alternated the same
+way and on the same machine. **A rung is the subject** — a walk's own length moved for a
+second reason at the same time, which is the twin now always running.
+
+**One recolour, which is the cleanest reading on the page.** Two independent pairs, pinned
+and default, gave the identical pair of numbers:
+
+| | before | after |
+| --- | --- | --- |
+| one candidate, median | 96 ms | **35 ms** |
+
+**2.7x**, and 640x360 over 384x216 is 2.78 — so what this bought is exactly the samples it
+stopped drawing, with nothing else in it. A rung follows it down: 3 761 -> 1 803/1 926 ms
+pinned to multibrot6, 2 563 -> 601 ms over the default set, and a place painted 3 821 ->
+1 375 ms.
+
+**A whole walk is confounded and the record says so rather than picking the flattering
+number.** Twelve walks a side over the default set:
+
+| default set, 12 a side | before | after |
+| --- | --- | --- |
+| seconds per walk | 23.9 s | **20.6 s** |
+| mean | 38.4 s | **24.5 s** |
+| p90 | 84.4 s | **53.9 s** |
+| a rung | 2 563 ms | **601 ms** |
+| places actually painted | 4 | **12** |
+
+and pinned to multibrot6, alternated after / before / after, eight walks each, with a
+fourth run of the code as it is committed:
+
+| multibrot6 | after | before | after | after (shipped) |
+| --- | --- | --- | --- | --- |
+| seconds per walk | 37.6 s | 47.4 s | 27.0 s | 21.2 s |
+| mean | 53.2 s | 52.9 s | 31.8 s | 23.0 s |
+| p90 | 149.0 s | 88.8 s | 75.6 s | 49.1 s |
+| a rung | 1 926 ms | 3 761 ms | 1 803 ms | 1 286 ms |
+| steps, median | 18 | 13 | 14 | 9 |
+
+⚠ **The three after runs span 1.77x, and they fall in the order they were run.** 37.6, then
+27.0, then 21.2, on code that differs only in how one batch of screens is awaited — a
+machine getting quieter over an evening, not a program getting faster. The round before this
+one put its drift floor at 1.11x and treated that as the bar any claim had to clear; this is
+half again as bad. So **there is no whole-walk claim to make on the pinned plane at all**,
+and `before` landing between the afters is the honest summary of it. The per-unit numbers
+are where the reading is, because a recolour is the same arithmetic every time it is drawn
+and came back **96 ms against 35 ms in two independent pairs**. The default set's mean and
+p90 move further than its median for the older reason: the plane mixes differ again, three
+phoenix against two and one multibrot6 against two.
+
+**The twin comes back, and by construction rather than by luck.** 6 of 8 pinned and 8 of 12
+over the default set before; **8 of 8 and 10 of 12 after** — and the two misses are the two
+phoenix walks, which have no Julia twin at all. So it is every walk whose plane has one. It
+is paid for in steps: 13 -> 18 at the median on the pinned pair, which is a walk doing
+about forty per cent more work, and is why the median improves while the tail does not.
+
 **The roster, measured where the walk paints rather than at a home view.** One recipe is a
 field, its colouring and its gate, median over 13 draws each, at the widths the descent
 actually reached:
@@ -2533,20 +2689,40 @@ budget binds on the tail, which is what it is for. What it does change is the **
 twin**: both legs spend one budget and the plane leg spends it first, so a twin was walked
 on 8 of 8 walks before and on 2 and 3 of 8 after. Splitting the budget in half would keep
 every twin and halve the plane descent, which is the thing the patience rule was added to
-fix, so it is not split.
+fix, so it is not split. **A reserve is, instead** *(pre_closeout_ckpt138, 2026-09-20)*:
+five steps that are the twin's and are added when its leg starts, so the plane leg is
+exactly as long as it was and a walk with a twin runs a little longer. Five is over
+`TWIN_STEPS`, so the twin is reached on every walk whose plane has one.
 
-**What is left, and it is the descent.** A rung is one probe, four 384×216 screens and up to
-four 640×360 judged pictures, and on multibrot6 a single rung reaches 11.8 s at p90. Two
-things are visible from here and neither is taken:
+**What was left was the descent, and both of its levers were taken**
+*(pre_closeout_ckpt138, 2026-09-20)*. A rung is one probe, four 384×216 screens and up to
+four judged pictures, and on multibrot6 a single rung reached 11.8 s at p90. The two things
+`walk_faster_ckpt138` could see and did not take:
 
-- **the judged picture is drawn at 640×360 and the judge reads 384×224**, so 2.7x the
-  samples the gate uses are drawn for the viewer's sake alone. Drawing it smaller is a
-  straight halving of the largest part of a rung, and it is a visible change to what a
-  reader watches, which makes it Matt's call rather than a measurement's;
-- **the root search screens one candidate root at a time** while both screeners idle —
-  7.4 s median and 28 s at p90 on multibrot6, all of it out of the reader's sight.
-  Screening them in parallel changes which root the search settles on, so it is its own
-  prompt.
+- **the judged picture was drawn at 640×360 while the gate reads 384×224**, so 2.7x the
+  samples the gate uses were drawn for the viewer's sake alone. It is drawn at 384×216 now
+  and upscaled for the viewer — lower on-screen quality, taken deliberately for the speed;
+- **the root search screened one candidate root at a time** while both screeners idled. A
+  cell's straddling quarters are all at one rung, so at the bottom they are all candidates
+  and go through the screen together, up to `ROOT_BATCH` — dispatched together and then
+  **resolved in order**, returning the moment the first one passes. **It is the same
+  search**: the batch is the level's own list in the order it was already going to be read,
+  each is jittered in that order, and the verdicts are walked in that order, so the frame
+  returned is the one the serial loop would have returned and the refusals counted before
+  it are the ones it would have counted. What changes is only that some frames behind the
+  winner are screened too, and a screen decides nothing but its own frame.
+
+  ⚠ **And what it is worth cannot be read off `root_ms`, because most of that search is
+  already free.** `row.root_ms` is measured through `await strip.ready()`, and a walk whose
+  predecessor lingered waits `LINGER_MS` — **4,000 ms** of deliberate reading time — with
+  the search running behind it. So `root_ms` is `max(search, linger remaining)`, with a
+  four-second floor that four of one eight-walk run's values landed within 12 ms of. Over
+  three alternated eight-walk runs the medians were 4,012 · 4,015 · 4,018 ms and the spread
+  was 608 to 21,466: indistinguishable, which is what a change hidden behind a fixed wait
+  looks like. The search is only on anybody's critical path in the half of walks that run
+  past the linger, and n=8 cannot resolve a tail. The first cut of this was worse than
+  serial and the measurement is what said so — it used `Promise.all`, so a descent that
+  passed on its first candidate paid for four screens where the old loop paid one.
 
 ### The shade over the pool *(explorer_shade_pool_ckpt136, 2026-09-20)*
 
@@ -2856,7 +3032,21 @@ v · f · cx · cy · px · py · zx · zy · m · the mode's parameters · x ·
   project's walk requires and refuses to guess; `p` is Ushiki's Phoenix memory
   coefficient; `z₋₁` is the previous iterate its recurrence starts with. A constant key
   on a family that has no such constant is refused, and says which constants that family
-  does have. **`z₋₁` was left out of v2's first draft, and the reason was wrong.** It is
+  does have. **And each of the three is two halves of one number, so a link carries both
+  or neither** *(pre_closeout_ckpt138, 2026-09-20)* — the deep contract's rule, arriving
+  here, and the refusal names the half that is missing. Half of a pair used to be filled
+  from the shipped anchor: `?v=3&f=julia&cx=-0.4` drew
+  c = −0.4 − 0.6514609012382414i, which is neither the set the link half-named nor the
+  anchor, and the address bar then canonicalized to that hybrid — a saved link naming a
+  set nobody chose, which is the one wrong this page cannot tell a reader about. **It can
+  refuse no link this repository has ever written**: `emit` writes a family's whole
+  constant list unconditionally, and all 40 linked rows of `links.jsonl` carry both halves
+  of each pair. A truncated or hand-typed link is the only thing it catches, which is the
+  point. **`x` without `y` is not the same thing and stays fine** — a frame coordinate has
+  a stated default, the home view, so half a frame still names a place somebody could have
+  meant; half an identity names a different object. The pairs are a declared table in
+  `permalink.js` rather than the key list chunked in twos, which gives the same three
+  today and is an accident of the emit order. **`z₋₁` was left out of v2's first draft, and the reason was wrong.** It is
   true that a non-zero `z₋₁` is a different set rather than a different view of one —
   and that is the argument for spelling it, not against. Of the 48 distinct `(c, p, z₋₁)`
   triples the wallpaper project's walk ledgers hold, **39 carry a non-zero one**; a
@@ -3223,6 +3413,11 @@ recipe** group. What is worth writing down is the shape rather than the widgets:
 - **An unknown key is refused.** A typo that silently rendered the default view would look
   exactly like the link working.
 - **A key given twice is refused**, because there is no rule for which wins.
+- **Half of an identity is refused** *(pre_closeout_ckpt138)*. `cx`/`cy`, `px`/`py` and
+  `zx`/`zy` are each two halves of one number, and a link carries both or neither; the
+  sentence names the half that is missing. Filling the other from the anchor drew a set
+  nobody named and then canonicalized to it. `x` without `y` is not this — a frame
+  coordinate has a stated default and half a frame still names a place.
 - **Every refusal is visible.** The page says what is wrong and draws nothing — guessing
   what was meant would be worse than saying so. That includes the refusals that come from
   the module rather than from this file: a modulate under a rank transfer, a view past the
@@ -3251,7 +3446,7 @@ list of what a link may *say*. Two lists on purpose — a contract that read its
 from a generated file could be widened by rebuilding it — and the test suite asserts they
 are the same roster in the same order, which is where a promoted or retired mode shows up.
 
-`permalink.test.mjs` holds all of that: **51 tests**, Node's own runner, nothing
+`permalink.test.mjs` holds all of that: **53 tests**, Node's own runner, nothing
 installed. Among them, encode-then-decode is the identity for **every family crossed with
 a mode of each of the engine's four coloring shapes**, parameters and constants included.
 
@@ -3282,6 +3477,98 @@ The links are held to the contract in `permalink.test.mjs`, where the contract l
 every row parses, and every row is the canonical spelling of its own view. `builder
 check`'s `explorer` check holds the other half: every picture on the site has a row, and
 every row is a picture on the site.
+
+## Every pool is given back *(pre_closeout_ckpt138, 2026-09-20)*
+
+**A document that navigates away does not take its threads with it.** Chrome keeps the old
+document alive for the back/forward cache, and its workers are part of what it keeps. So a
+reader moving about this site in one tab accumulated pools: alternating a deep link, the home
+view and a gallery link, live worker count climbed 26 · 39 · 53 · 66 · 91 · 104 · 117 and
+plateaued there, and past the plateau `WebAssembly.Instance(): Out of memory` came back from
+`render.js` and `deep-worker.js`. The page answered with the studio up, the dot on
+`rendering`, and no picture — **five of thirty loads**, and it recovered on a later one,
+which is worse than failing cleanly: the explorer *sometimes* did not come up
+*(explorer_bug_hunt_ckpt138, finding 1)*.
+
+**Nothing leaks inside a document, and that is what made it hard to see.** 250 in-page
+actions and 20 started and cancelled walks moved the heap 3.5 → 10 MB and the pools by
+twelve workers, flat once the tabs' own pools had started. It is only the transition between
+documents that accumulates, and no amount of looking at one document shows it.
+
+So `explorer.js` listens for `pagehide` and asks every pool's owner for its workers back, in
+the order they cost: the deep pool, which holds an instance and a reference orbit per worker;
+the walk's renderer and its two screeners; the Saved tab's; the preview's; and the viewer's,
+which is the largest. `Renderer.stop`, `ShadeWorker.stop`, `Screeners.stop` and the three
+tabs' own are new; `DeepRenderer.stop` already existed and had no caller. One owner throwing
+does not keep the rest alive — there is no reader left to tell, so the console is the whole
+of the report.
+
+**`pagehide` and not `unload`**, because a page carrying an `unload` listener is not eligible
+for the back/forward cache at all, and that would trade this bug for a slower Back on every
+navigation in the site. `pagehide` fires for both and `event.persisted` tells them apart. A
+document that *is* restored from that cache has no workers any more, so it is a picture of a
+page rather than a page: `pageshow` with `persisted` reloads it, which costs a render and is
+the only honest answer.
+
+**Measured, thirty alternating loads in one tab, deep link / home / gallery link:**
+
+| | before | after |
+| --- | --- | --- |
+| loads that did not come up | **5 of 30** | **0 of 30** |
+| live workers, peak | 117 | 27 |
+| live workers, settled | 103-117 | 13 |
+| boot ms, median / p90 / max | 1466 / 1562 / 2402 | 1465 / 1503 / 1514 |
+
+`PORT=8014 node explorer/bench/hunt/probe-oom.mjs`. The worker count after is exactly one
+document's worth — 13 for a shallow document, 25-27 for a deep one — which is the shape a fix
+rather than a mitigation leaves. Boot did not pay for it: the median is the same to a
+millisecond and the spread is tighter, because a load no longer starts against a hundred
+live workers.
+
+**The lazy starts the finding asked for were already there**, which is worth saying because
+the finding's own fix line names them: the walk's pools start at Start, the Saved tab's at
+the first tile it has to draw, and the preview's at the first hover that would draw one. What
+started at boot was the viewer's pool and its shade worker, and the deep pool on a deep link
+— and those are the page's subject rather than a tab's, so they stay. Nothing about a first
+Walk, a first Save or a first preview moved: each costs a thread, one `WebAssembly.Instance`
+of the already-compiled module and a message round trip, per worker, started together — no
+fetch and no compile, because the module crosses to a worker as a compiled `WebAssembly.Module`.
+
+## What the last bug hunt covered *(explorer_bug_hunt_ckpt138, 2026-09-20)*
+
+So that the next hunt starts where this one stopped. Eight units over CDP, ~700 navigations,
+215 link cases, 25 impatience bursts, 250 in-page actions, 20 walks. The harness is
+`bench/hunt/` and is tracked; what it found is in this file, under the sections the findings
+belong to.
+
+- **Links**, 215 cases — every registry link, eleven families × four coloring shapes, and
+  ~130 malformed across both contracts: bad, missing and duplicated version, family, mode and
+  mode parameters; coordinates past 64 characters; `w` at zero, negative and overflowing;
+  every aspect malformation; unknown and duplicated palettes; all seven shade keys at and past
+  their bounds; both tagged kinds with and without their parameter; constants on families that
+  have none; `iv` and `q` at both doors; each contract's keys at the other's; invalid escapes,
+  a null byte, 200 unknown keys, and a 60 KB query. Every one either refused with the notice
+  up and the dot stopped, or drew a picture whose address bar is a fixed point.
+- **Impatience**, 23 of 25 bursts settled with the canvas matching its own link, verified by
+  reopening in a second browser and comparing rasters. The two that did not were the drag
+  bug (`f83b199`) and a burst that inherited its state.
+- **The way back** across zoom, pan, mode, palette, phase and a minibrot returns both the link
+  and the raster; forty steps past each end move nothing.
+- **Files** — stamped PNG and JPEG reopen; plain PNG, text, JSON, empty, 50 MB and a corrupted
+  stamp are each refused with a sentence; every download at every size round-trips its stamp,
+  the deep one included at 88.3 s.
+- **Storage** — a brace, `null`, an empty string, an array, a bumped version, non-link items
+  and a 6 MB value each give an empty Saved list and never a throw.
+- **Math** — every family's home view, all 17 modes × a cyclic and a non-cyclic map, all three
+  `f64`-floor refusals, extreme aspects, all-interior and all-exterior frames.
+- **The site** — 18 pages, clean consoles, no broken image, no root-absolute href, 19 gallery
+  collections all non-empty, the atlas's 112 marks and its link into the explorer.
+
+⚠ **The dev server has a capacity limit, and it looks exactly like a wrong-picture bug.** Four
+browsers against one `python -m builder serve` produced `ERR_CONNECTION_REFUSED` on the
+gallery's tile flood, which drew the home view under someone else's link. Three such refusals
+survive even in a clean single-browser re-run. Run the units serially; `bench/hunt/lib.mjs`
+carries this and the eight other false alarms that each cost a verification.
 
 ## Rebuilding
 
