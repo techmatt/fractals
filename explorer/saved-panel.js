@@ -529,6 +529,15 @@ export function mount(host) {
       visible = false;
       queue.length = 0;
     },
+    /** The document is going away: the tab's own pool goes with it. Merely hiding the
+     *  tab keeps it, because a reader who comes back should not wait for it twice. */
+    stop() {
+      visible = false;
+      queue.length = 0;
+      renderer?.stop();
+      renderer = null;
+      starting = null;
+    },
     /** The viewer moved to a picture that is not the saved one marked open. */
     unmark() {
       openKey = null;

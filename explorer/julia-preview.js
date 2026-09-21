@@ -322,6 +322,13 @@ export function mount(host) {
     },
     /** The pointer left, or the page moved: nothing is being previewed. */
     hide,
+    /** The document is going away: the preview's own small pool goes with it. */
+    stop() {
+      hide();
+      renderer?.stop();
+      renderer = null;
+      starting = null;
+    },
     /** What the card is showing, or `null`. A click enters here and nowhere else. */
     showing: () => shown,
     /** Whether the preview is switched on at all, which is what the Details box says. */

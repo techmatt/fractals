@@ -443,6 +443,31 @@ export class Renderer {
     return this.workers.length;
   }
 
+  /**
+   * Give the workers back, and everything they were holding.
+   *
+   * **A document that navigates away does not take its threads with it.** Chrome keeps the
+   * old document alive for the back/forward cache, and its pool with it, so eight loads in
+   * one tab stood at a hundred and fifteen live workers and the ninth could not instantiate
+   * the module at all — a page that answered with neither a picture nor a notice
+   * *(explorer_bug_hunt_ckpt138, finding 1)*. `pagehide` in `explorer.js` is what calls
+   * this; nothing inside a document needs it, because nothing inside a document leaks.
+   *
+   * The cached fields go too. They are the largest thing here after the workers and the
+   * only reason to keep one is a pass that is no longer going to happen.
+   */
+  stop() {
+    this.cancel();
+    for (const worker of this.workers) worker.terminate();
+    this.workers = [];
+    this.idle = [];
+    this.inflight.clear();
+    this.fields.clear();
+    this.plans.clear();
+    this.measured.clear();
+    this.shading.stop();
+  }
+
   /** Write a string into the module's heap, and hand back what frees it. */
   #put(text) {
     const raw = new TextEncoder().encode(text);
@@ -1365,6 +1390,15 @@ export class ShadeWorker {
   /** Start the worker ahead of the first shade, so that shade is not the one paying. */
   warm() {
     if (this.worker === null) this.#start();
+  }
+
+  /** Give the worker back. The page is going away; a job still waiting is dropped
+   *  rather than rejected, because there is nobody left to tell. */
+  stop() {
+    this.worker?.terminate();
+    this.worker = null;
+    this.flight = null;
+    this.waiting.length = 0;
   }
 
   /**

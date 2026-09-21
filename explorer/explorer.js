@@ -3677,6 +3677,57 @@ function relayout() {
 }
 window.addEventListener("resize", relayout);
 
+/**
+ * Give this document's workers back before the next one asks for its own.
+ *
+ * **Nothing here leaks inside a document, and that is the point.** Two hundred and fifty
+ * in-page actions and twenty walks moved the pools by twelve workers and the heap by six
+ * megabytes; it is the transition between documents that accumulated, because a document
+ * Chrome is holding for the back/forward cache is holding its threads too. Alternating a
+ * deep link, the home view and a gallery link in one tab, live workers climbed
+ * 26 · 39 · 53 · 66 · 91 · 104 · 117 and stuck there, and five of thirty loads answered
+ * with `WebAssembly.Instance(): Out of memory` — the studio up, the dot on `rendering`
+ * and no picture *(explorer_bug_hunt_ckpt138, finding 1)*.
+ *
+ * Every pool's owner is asked, in the order they cost: the deep pool holds an instance and
+ * a reference orbit per worker, the viewer's pool is the largest, and the three lazy ones
+ * are usually not there at all. Each `stop` is written to be safe when its pool was never
+ * started, because most loads never start them.
+ *
+ * **`pagehide` and not `unload`**: a page with an `unload` listener is not eligible for the
+ * back/forward cache at all, which would trade this bug for a slower Back on every
+ * navigation. `pagehide` fires for both, and `event.persisted` tells them apart.
+ */
+function giveBack() {
+  const asked = [
+    () => deep?.close(),
+    () => walk?.stop(),
+    () => savedPanel?.stop(),
+    () => juliaCard?.stop(),
+    () => renderer?.stop(),
+  ];
+  for (const ask of asked) {
+    // One owner throwing must not keep the rest of them alive. There is no reader left to
+    // tell, so the console is the whole of the report.
+    try {
+      ask();
+    } catch (error) {
+      console.warn("a pool would not stop", error);
+    }
+  }
+}
+
+window.addEventListener("pagehide", giveBack);
+
+/**
+ * A document restored from the back/forward cache has no workers any more, so it is not a
+ * document — it is a picture of one. Reloading is the honest answer and costs a render;
+ * leaving it would show a reader a page whose every control had quietly stopped working.
+ */
+window.addEventListener("pageshow", (event) => {
+  if (event.persisted) location.reload();
+});
+
 // ------------------------------------------------------------------- starting up
 
 /** A small JSON record beside the page, or `null` where it cannot be had. */
