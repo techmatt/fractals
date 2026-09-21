@@ -195,6 +195,54 @@ export const CONSTANTS = {
 /** Every constant key the contract spells, in emit order. */
 const CONSTANT_KEYS = ["cx", "cy", "px", "py", "zx", "zy"];
 
+/**
+ * The constants that are two halves of one number, and the number each names.
+ *
+ * **A link carries both or neither**, which is the deep contract's rule arriving
+ * here *(pre_closeout_ckpt138, 2026-09-20)*. Half of one of these used to be
+ * filled from the shipped anchor: `?v=3&f=julia&cx=-0.4` drew
+ * c = −0.4 − 0.6514609012382414i, which is neither the set the link half-named nor
+ * the anchor, and the address bar then canonicalized to that hybrid — so a reader
+ * who saved it had a link naming a set nobody chose. A truncated link is the
+ * realistic route in, and the page could not tell them.
+ *
+ * **`x` without `y` is not the same thing and stays fine.** A frame coordinate has
+ * a stated default, the home view, so half a frame still names a place somebody
+ * could have meant. Half an identity names a different object.
+ *
+ * Declared rather than derived. `CONSTANT_KEYS` chunked in twos happens to give
+ * these three pairs today, and that is an accident of the emit order rather than a
+ * rule — `both()` below holds the two tables to each other instead.
+ */
+const CONSTANT_PAIRS = [
+  ["cx", "cy", "one number — the c of z² + c"],
+  ["px", "py", "one number — the Phoenix memory coefficient p"],
+  ["zx", "zy", "one number — the previous iterate z₋₁ the recurrence starts with"],
+];
+
+/** Every paired key, so the pair table can be held to the key table. */
+const PAIRED_KEYS = new Set(CONSTANT_PAIRS.flatMap(([re, im]) => [re, im]));
+
+/** A family's constants are pairs, and a link that names half of one is refused. */
+function both(params, family) {
+  for (const key of CONSTANTS[family]) {
+    if (!PAIRED_KEYS.has(key)) {
+      throw new PermalinkError(`${key} is a constant this contract does not know how to pair.`);
+    }
+  }
+  for (const [re, im, names] of CONSTANT_PAIRS) {
+    if (!CONSTANTS[family].includes(re)) continue;
+    const given = params.get(re) !== null ? re : params.get(im) !== null ? im : null;
+    if (given === null) continue;
+    const missing = given === re ? im : re;
+    if (params.get(missing) !== null) continue;
+    throw new PermalinkError(
+      `${re} and ${im} are the two halves of ${names}, so a link carries both or neither; ` +
+        `this one names ${given} and not ${missing}.`,
+    );
+  }
+}
+
 /** The modes this page draws: `modes.jsonl`'s roster, in catalog order. */
 export const MODES = [
   "smooth",
@@ -624,6 +672,10 @@ export function parse(search, context) {
   for (const key of CONSTANTS[family]) {
     constants[key] = coordinate(params.get(key), key) ?? seeds[key];
   }
+  // **After the spelling, not before it.** `cx=0x10` with no `cy` is both a half and a
+  // number this contract cannot read, and the spelling is the more useful sentence —
+  // it names what to fix rather than what else to add.
+  both(params, family);
 
   const home = context.home(family);
   const x = coordinate(params.get("x"), "x") ?? home.x;

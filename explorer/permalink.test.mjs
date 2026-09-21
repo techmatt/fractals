@@ -24,6 +24,7 @@ import test from "node:test";
 
 import {
   canonicalize,
+  CONSTANTS as FAMILY_CONSTANTS,
   coordinateOf,
   defaultShade,
   DERIVED,
@@ -272,6 +273,48 @@ test("z₋₁ is a phoenix constant, and a link written before it existed still 
 
   assert.throws(() => parse(`v=${VERSION}&zx=0.3`, CONTEXT), /mandelbrot has none/);
   assert.throws(() => parse(`v=${VERSION}&f=julia&zy=0.3`, CONTEXT), /julia has cx and cy/);
+});
+
+test("half an identity is refused, and the sentence names the half that is missing", () => {
+  // The deep contract's both-or-neither rule, arriving here. Half of a pair used to
+  // be filled from the shipped anchor, so `cx` alone drew a c nobody chose and the
+  // address bar canonicalized to it — a saved link naming a set that was never
+  // picked, which is the one wrong this page cannot tell a reader about.
+  assert.throws(() => parse(`v=${VERSION}&f=julia&cx=-0.4`, CONTEXT), /names cx and not cy/);
+  assert.throws(() => parse(`v=${VERSION}&f=julia&cy=0.6`, CONTEXT), /names cy and not cx/);
+  assert.throws(() => parse(`v=${VERSION}&f=julia4&cx=-0.4`, CONTEXT), /both or neither/);
+
+  // Each of phoenix's three pairs is its own identity, and names its own number.
+  const whole = `v=${VERSION}&f=phoenix&cx=0.5667&cy=0&px=-0.5&py=0&zx=0&zy=0`;
+  assert.equal(canonicalize(whole, CONTEXT), `${whole}&${HOUSE}`);
+  assert.throws(
+    () => parse(`v=${VERSION}&f=phoenix&cx=0.5667&cy=0&px=-0.5&zx=0&zy=0`, CONTEXT),
+    /px and py .*memory coefficient p.*names px and not py/s,
+  );
+  assert.throws(
+    () => parse(`v=${VERSION}&f=phoenix&cx=0.5667&cy=0&px=-0.5&py=0&zy=-0.45`, CONTEXT),
+    /zx and zy .*previous iterate.*names zy and not zx/s,
+  );
+
+  // A frame coordinate has a stated default, so half a frame is not half an identity.
+  assert.equal(parse(`v=${VERSION}&x=-0.5`, CONTEXT).x.text, "-0.5");
+  assert.equal(parse(`v=${VERSION}&y=0.25`, CONTEXT).y.value, 0.25);
+  assert.equal(parse(`v=${VERSION}&f=julia&x=-0.5`, CONTEXT).x.text, "-0.5");
+
+  // And a family with no constants is untouched by the rule.
+  assert.equal(parse(`v=${VERSION}&f=mandelbrot`, CONTEXT).family, "mandelbrot");
+});
+
+test("every constant this contract spells is half of a declared pair", () => {
+  // The rule is a table rather than `CONSTANT_KEYS` chunked in twos, which happens
+  // to give the same three pairs today and would stop doing so the moment a family
+  // gained a constant that stands alone. `both()` refuses that family rather than
+  // letting it through unpaired, and this is the test that says so out loud.
+  for (const [family, keys] of Object.entries(FAMILY_CONSTANTS)) {
+    if (keys.length === 0) continue;
+    assert.equal(keys.length % 2, 0, `${family} has an odd number of constants`);
+    assert.doesNotThrow(() => parse(`v=${VERSION}&f=${family}`, CONTEXT));
+  }
 });
 
 test("a mode's parameters are its own, and a mode with none refuses them all", () => {
