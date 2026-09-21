@@ -33,10 +33,43 @@ use std::time::Instant;
 /// something.
 const TILE: (u32, u32) = (32, 18);
 
+/// One deep frame: where it is, how wide, and the cap it was measured at.
+///
+/// **Named rather than positional, and that is the whole reason it is a struct**
+/// *(deep_refactor_ckpt138)*. This was a six-field tuple decoded as `frame.4`
+/// and `frame.5` at four call sites, and those two are both `u32` — a cap and
+/// the multiple of the policy cap it is — so swapping them would have drawn a
+/// picture and moved a table rather than failing.
+pub struct Frame {
+    pub label: &'static str,
+    pub re: &'static str,
+    pub im: &'static str,
+    pub width: f64,
+    /// The cap every number on this frame was taken at.
+    pub maxiter: u32,
+    /// What multiple of [`cap::for_width`] that is, which
+    /// [`the_deep_frames_are_spellable_and_at_the_cap_they_claim`] checks.
+    pub multiple: u32,
+}
+
+impl Frame {
+    /// The same frame as a [`Control`], which is what the harnesses that take
+    /// both lists walk. Never a Julia frame: the descent that found these was
+    /// on the parameter plane.
+    fn control(&self) -> Control {
+        Control {
+            label: self.label,
+            re: self.re,
+            im: self.im,
+            width: self.width,
+            julia: false,
+        }
+    }
+}
+
 /// **Deep frames with escaping structure in them.**
 ///
-/// Each is `(label, centre re, centre im, width, cap, the multiple of the
-/// policy cap that is)`. Five were found at the policy's own cap; the two
+/// Five were found at the policy's own cap; the two
 /// `body` frames are the route that walks every rung at **four times** it,
 /// which is what it takes at this depth to see a frame that has genuine
 /// interior in it rather than exterior the cap gave up on.
@@ -51,82 +84,82 @@ const TILE: (u32, u32) = (32, 18);
 /// so the number in a table and the picture behind a link are the same frame.
 /// [`link`] is the `dv` query each one opens under, and the crate README spells
 /// all seven out.
-pub const DEEP_FRAMES: &[(&str, &str, &str, f64, u32, u32)] = &[
-    (
-        "tangle 1e-22",
-        "-0.745017728290198619298817365858",
-        "0.149934432756897045833502403382",
-        1e-22,
-        93_600,
-        1,
-    ),
-    (
-        "tangle 1e-28",
-        "-0.74501772829019861929877929889763684",
-        "0.14993443275689704583350282968726721",
-        1e-28,
-        117_518,
-        1,
-    ),
-    (
-        "tangle 1e-40",
-        "-0.7450177282901986192987792989188510315333046875",
-        "0.1499344327568970458335028296517884911675546875",
-        1e-40,
-        165_354,
-        1,
-    ),
-    (
-        "pinch 1e-28",
-        "-0.74501772828897655304632685480388684",
-        "0.14993443275858764694789167606226721",
-        1e-28,
-        117_518,
-        1,
-    ),
+pub const DEEP_FRAMES: &[Frame] = &[
+    Frame {
+        label: "tangle 1e-22",
+        re: "-0.745017728290198619298817365858",
+        im: "0.149934432756897045833502403382",
+        width: 1e-22,
+        maxiter: 93_600,
+        multiple: 1,
+    },
+    Frame {
+        label: "tangle 1e-28",
+        re: "-0.74501772829019861929877929889763684",
+        im: "0.14993443275689704583350282968726721",
+        width: 1e-28,
+        maxiter: 117_518,
+        multiple: 1,
+    },
+    Frame {
+        label: "tangle 1e-40",
+        re: "-0.7450177282901986192987792989188510315333046875",
+        im: "0.1499344327568970458335028296517884911675546875",
+        width: 1e-40,
+        maxiter: 165_354,
+        multiple: 1,
+    },
+    Frame {
+        label: "pinch 1e-28",
+        re: "-0.74501772828897655304632685480388684",
+        im: "0.14993443275858764694789167606226721",
+        width: 1e-28,
+        maxiter: 117_518,
+        multiple: 1,
+    },
     // **The deepest frame a link can spell.** Not the deepest the crate draws —
     // a rung costs about five seconds a tile here and the descent was still
     // going down — but the deepest whose centre fits the 64 characters
     // `explorer/deep-link.js` caps a coordinate at, with the eight guard digits
     // that put the truncation well under a pixel. It is 63.
-    (
-        "tangle 1e-54",
-        "-0.745017728290198619298779298918851031533262270733325571484375",
-        "0.149934432756897045833502829651788491167588360989048041953125",
-        1e-54,
-        221_162,
-        1,
-    ),
-    (
-        "body 1e-22",
-        "-0.745017728288852579046129865858",
-        "0.149934432757626550615361778382",
-        1e-22,
-        374_400,
-        4,
-    ),
-    (
-        "body 1e-28",
-        "-0.74501772828885257904614927236638684",
-        "0.14993443275762655061538134007789221",
-        1e-28,
-        470_072,
-        4,
-    ),
+    Frame {
+        label: "tangle 1e-54",
+        re: "-0.745017728290198619298779298918851031533262270733325571484375",
+        im: "0.149934432756897045833502829651788491167588360989048041953125",
+        width: 1e-54,
+        maxiter: 221_162,
+        multiple: 1,
+    },
+    Frame {
+        label: "body 1e-22",
+        re: "-0.745017728288852579046129865858",
+        im: "0.149934432757626550615361778382",
+        width: 1e-22,
+        maxiter: 374_400,
+        multiple: 4,
+    },
+    Frame {
+        label: "body 1e-28",
+        re: "-0.74501772828885257904614927236638684",
+        im: "0.14993443275762655061538134007789221",
+        width: 1e-28,
+        maxiter: 470_072,
+        multiple: 4,
+    },
 ];
 
 /// The frame as the Deep tab would be asked for it, after `explorer/?`.
 ///
 /// Derived rather than typed, for the reason every other link on this site is:
 /// a centre written twice is a centre that can disagree with itself, and the
-/// one in the tuple above is the one the numbers were taken at.
-pub fn link(frame: &(&str, &str, &str, f64, u32, u32)) -> String {
+/// one in the row above is the one the numbers were taken at.
+pub fn link(frame: &Frame) -> String {
     format!(
         "dv=2&x={}&y={}&w=1e-{}&n={}",
-        frame.1,
-        frame.2,
-        decade(frame.3),
-        frame.4
+        frame.re,
+        frame.im,
+        decade(frame.width),
+        frame.maxiter
     )
 }
 
@@ -135,14 +168,14 @@ fn decade(width: f64) -> i32 {
     -width.log10().round() as i32
 }
 
-fn spec_of(frame: &(&str, &str, &str, f64, u32, u32), maxiter: Option<u32>) -> Spec {
+fn spec_of(frame: &Frame, maxiter: Option<u32>) -> Spec {
     Spec {
-        center_re: frame.1.to_string(),
-        center_im: frame.2.to_string(),
-        width: frame.3,
+        center_re: frame.re.to_string(),
+        center_im: frame.im.to_string(),
+        width: frame.width,
         resolution: [TILE.0, TILE.1],
         supersample: 1,
-        maxiter: maxiter.or(Some(frame.4)),
+        maxiter: maxiter.or(Some(frame.maxiter)),
         reference: None,
         period: None,
         julia: None,
@@ -223,11 +256,11 @@ fn what_a_deeper_cap_resolves() {
     println!("|---|--:|--:|--:|--:|--:|");
     for frame in DEEP_FRAMES {
         for multiple in [1u32, 2, 4, 8] {
-            let cap = multiple * cap::for_width(frame.3);
+            let cap = multiple * cap::for_width(frame.width);
             let run = walk(&spec_of(frame, Some(cap)));
             println!(
                 "| {} | {}× = {} | {:.1}% | {:.1}% | {:.1}% | {:.0} |",
-                frame.0,
+                frame.label,
                 multiple,
                 cap,
                 run.share(run.escaped),
@@ -255,7 +288,14 @@ fn the_deep_frames_are_spellable_and_at_the_cap_they_claim() {
     const COORDINATE_LIMIT: usize = 64;
     assert_eq!(DEEP_FRAMES.len(), 7, "the descent settled on seven");
     for frame in DEEP_FRAMES {
-        let (label, re, im, width, maxiter, multiple) = frame;
+        let Frame {
+            label,
+            re,
+            im,
+            width,
+            maxiter,
+            multiple,
+        } = frame;
         assert_eq!(
             multiple * cap::for_width(*width),
             *maxiter,
@@ -309,10 +349,36 @@ fn the_policy_cap_at_the_widths_these_frames_sit_at() {
 const ANCHOR_RE: &str = "-0.74501772828532335842941892835857434";
 const ANCHOR_IM: &str = "0.14993443275456819177805709088257971";
 
+/// One frame a policy is asked about, with no cap of its own: the width's is
+/// what it must settle from.
+#[derive(Clone, Copy)]
+pub struct Control {
+    pub label: &'static str,
+    pub re: &'static str,
+    pub im: &'static str,
+    pub width: f64,
+    /// Whether this is the Julia set at that point rather than the parameter
+    /// plane around it.
+    pub julia: bool,
+}
+
+impl Control {
+    /// A frame on the parameter plane, which all but one of them are.
+    const fn at(label: &'static str, re: &'static str, im: &'static str, width: f64) -> Control {
+        Control {
+            label,
+            re,
+            im,
+            width,
+            julia: false,
+        }
+    }
+}
+
 /// **The frames a cap policy has to leave alone**, which are as much of the case
 /// as the seven above.
 ///
-/// Each is `(label, centre re, centre im, width, julia)`. A rule that resolves
+/// A rule that resolves
 /// the deep frames by escalating everything has solved nothing: these six are
 /// what it must walk past at the width's own cap, and they are the reason the
 /// stopping rule reads a derivative rather than a share.
@@ -329,13 +395,19 @@ const ANCHOR_IM: &str = "0.14993443275456819177805709088257971";
 ///   policy has any business moving.
 /// - **julia anchor 2e-9** is the tab's other committed link, so the rule is
 ///   asked about both of the sets this kernel draws.
-pub const CONTROL_FRAMES: &[(&str, &str, &str, f64, bool)] = &[
-    ("anchor 2e-11", ANCHOR_RE, ANCHOR_IM, 2e-11, false),
-    ("anchor 1e-22", ANCHOR_RE, ANCHOR_IM, 1e-22, false),
-    ("misiurewicz 1e-22", "0", "1", 1e-22, false),
-    ("home 3", "0", "0", 3.0, false),
-    ("seahorse 1e-6", "-0.745017", "0.149934", 1e-6, false),
-    ("julia anchor 2e-9", ANCHOR_RE, ANCHOR_IM, 2e-9, true),
+pub const CONTROL_FRAMES: &[Control] = &[
+    Control::at("anchor 2e-11", ANCHOR_RE, ANCHOR_IM, 2e-11),
+    Control::at("anchor 1e-22", ANCHOR_RE, ANCHOR_IM, 1e-22),
+    Control::at("misiurewicz 1e-22", "0", "1", 1e-22),
+    Control::at("home 3", "0", "0", 3.0),
+    Control::at("seahorse 1e-6", "-0.745017", "0.149934", 1e-6),
+    Control {
+        label: "julia anchor 2e-9",
+        re: ANCHOR_RE,
+        im: ANCHOR_IM,
+        width: 2e-9,
+        julia: true,
+    },
 ];
 
 /// The canvas `explorer/README.md` prices the tab on, and the supersample its
@@ -349,11 +421,11 @@ const FINE_SUPERSAMPLE: u32 = 2;
 /// Lanes in the fine pass, which is four fifths of a Render's wait.
 const FINE_LANES: f64 = (CANVAS.0 * FINE_SUPERSAMPLE) as f64 * (CANVAS.1 * FINE_SUPERSAMPLE) as f64;
 
-/// The seven and the six as one list of `(label, re, im, width, julia)`.
-fn every_frame() -> Vec<(&'static str, &'static str, &'static str, f64, bool)> {
+/// The seven and the six as one list.
+fn every_frame() -> Vec<Control> {
     DEEP_FRAMES
         .iter()
-        .map(|frame| (frame.0, frame.1, frame.2, frame.3, false))
+        .map(Frame::control)
         .chain(CONTROL_FRAMES.iter().copied())
         .collect()
 }
@@ -361,17 +433,19 @@ fn every_frame() -> Vec<(&'static str, &'static str, &'static str, f64, bool)> {
 /// A frame as the Deep tab asks for it: the tab's canvas, the fine pass's
 /// supersample, and no nucleus — the tab has no solver, so the reference is the
 /// view's own centre.
-fn canvas_spec(re: &str, im: &str, width: f64, julia: bool, maxiter: Option<u32>) -> Spec {
+fn canvas_spec(frame: &Control, maxiter: Option<u32>) -> Spec {
     Spec {
-        center_re: re.to_string(),
-        center_im: im.to_string(),
-        width,
+        center_re: frame.re.to_string(),
+        center_im: frame.im.to_string(),
+        width: frame.width,
         resolution: [CANVAS.0, CANVAS.1],
         supersample: FINE_SUPERSAMPLE,
         maxiter,
         reference: None,
         period: None,
-        julia: julia.then(|| (re.to_string(), im.to_string())),
+        julia: frame
+            .julia
+            .then(|| (frame.re.to_string(), frame.im.to_string())),
         anchor: Anchor::Parameter,
         interior: true,
     }
@@ -453,8 +527,9 @@ fn where_the_policy_settles() {
         "\n| frame | policy cap | settled | × | the cap's fault, rung by rung | mean iterations | decision |"
     );
     println!("|---|--:|--:|--:|:--|--:|--:|");
-    for (label, re, im, width, julia) in every_frame() {
-        let spec = canvas_spec(re, im, width, julia, None);
+    for frame in every_frame() {
+        let (label, width) = (frame.label, frame.width);
+        let spec = canvas_spec(&frame, None);
         let policy_cap = cap::for_width(width);
         let settled = policy::settle(&spec, policy::PROBE_COLS, policy::PROBE_ROWS).unwrap();
         assert_eq!(
@@ -496,8 +571,9 @@ fn where_the_policy_settles() {
 fn what_the_settled_cap_repaints() {
     println!("\n| frame | escaped | proven interior | unresolved | repainted |");
     println!("|---|--:|--:|--:|--:|");
-    for (label, re, im, width, julia) in every_frame() {
-        let spec = canvas_spec(re, im, width, julia, None);
+    for frame in every_frame() {
+        let (label, width) = (frame.label, frame.width);
+        let spec = canvas_spec(&frame, None);
         let policy_cap = cap::for_width(width);
         let settled = policy::settle(&spec, policy::PROBE_COLS, policy::PROBE_ROWS).unwrap();
         let before = probe_at(&spec, policy_cap);
@@ -534,9 +610,10 @@ fn the_bar_and_the_share_sit_on_a_plateau() {
         }
     }
     println!();
-    for (label, re, im, width, julia) in every_frame() {
+    for frame in every_frame() {
+        let (label, width) = (frame.label, frame.width);
         let policy_cap = cap::for_width(width);
-        let spec = canvas_spec(re, im, width, julia, None);
+        let spec = canvas_spec(&frame, None);
         // Every rung's fault share at every bar, walked once and read
         // twenty-five ways.
         let mut table: Vec<(u32, Vec<f64>)> = Vec::new();
@@ -595,15 +672,15 @@ const COORDINATE_LIMIT: usize = 64;
 /// The frames the nucleus search is measured on: the seven, plus the shallow
 /// deep frame the prompt asks for, which is the anchor the whole tab is priced
 /// on.
-fn search_frames() -> Vec<(&'static str, &'static str, &'static str, f64, bool)> {
+fn search_frames() -> Vec<Control> {
     DEEP_FRAMES
         .iter()
-        .map(|frame| (frame.0, frame.1, frame.2, frame.3, false))
+        .map(Frame::control)
         .chain(
             CONTROL_FRAMES
                 .iter()
                 .copied()
-                .filter(|f| f.0 == "anchor 2e-11"),
+                .filter(|frame| frame.label == "anchor 2e-11"),
         )
         .collect()
 }
@@ -689,10 +766,11 @@ fn what_the_nucleus_search_finds_and_what_it_costs() {
     println!("|---|--:|--:|--:|--:|--:|--:|--:|");
     let mut entries: Vec<(String, nuclei::Nucleus, f64)> = Vec::new();
 
-    for (label, re, im, width, julia) in search_frames() {
-        let base = canvas_spec(re, im, width, julia, None);
+    for frame in search_frames() {
+        let (label, width) = (frame.label, frame.width);
+        let base = canvas_spec(&frame, None);
         let settled = policy::settle(&base, policy::PROBE_COLS, policy::PROBE_ROWS).unwrap();
-        let spec = canvas_spec(re, im, width, julia, Some(settled.maxiter));
+        let spec = canvas_spec(&frame, Some(settled.maxiter));
 
         let orbit = spec.reference_orbit().unwrap();
         let started = Instant::now();
@@ -791,10 +869,10 @@ fn what_the_nucleus_search_finds_and_what_it_costs() {
 #[ignore = "~2 min: three nuclei, seven caps each, on a small tile"]
 fn what_a_preview_tile_needs() {
     const PROBE_TILE: (u32, u32) = (80, 45);
-    let frame = &DEEP_FRAMES[0];
-    let base = canvas_spec(frame.1, frame.2, frame.3, false, None);
+    let frame = DEEP_FRAMES[0].control();
+    let base = canvas_spec(&frame, None);
     let settled = policy::settle(&base, policy::PROBE_COLS, policy::PROBE_ROWS).unwrap();
-    let spec = canvas_spec(frame.1, frame.2, frame.3, false, Some(settled.maxiter));
+    let spec = canvas_spec(&frame, Some(settled.maxiter));
     let kept = nuclei::search(&spec, nuclei::GRID_COLS, nuclei::GRID_ROWS, 12, 3).unwrap();
 
     println!("\n| period | rule | cap | escaped | proven | starved | mean iters | s (80x45) |");
