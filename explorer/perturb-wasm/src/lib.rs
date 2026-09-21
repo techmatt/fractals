@@ -43,6 +43,7 @@ use crate::reference::Reference;
 pub mod fx;
 pub mod json;
 pub mod kernel;
+pub mod nuclei;
 pub mod policy;
 pub mod reference;
 
@@ -645,6 +646,170 @@ pub extern "C" fn compute_band(
     };
     let ss = spec.supersample;
     release(compute_rows(&spec, &orbit, row_start * ss, row_end * ss))
+}
+
+// ------------------------------------------------- the minibrots in and around a view
+
+/// One band of the atom-domain walk: the nuclei whose domains these probe rows
+/// fall in.
+///
+/// **A band, for [`probe_band`]'s reason**, and the two are cut the same way over
+/// the same grid: the walk runs to the escape or to the cap with no interior
+/// shortcut, so on a frame that is mostly inside a minibrot it is seconds on one
+/// worker and well under one over the pool. The orbit is **borrowed**, and it is
+/// the frame's own.
+///
+/// Returns `{"ok":true,"seeds":[{"period":…,"from_re":…,"from_im":…,"minimum":…,
+/// "cells":…}]}`, the offsets being **from the view centre**, which the page merges across bands by period — `cells` adds
+/// and the smallest `minimum` wins, which is what [`nuclei::seeds`] does within
+/// one.
+#[unsafe(no_mangle)]
+#[allow(clippy::too_many_arguments)]
+pub extern "C" fn seed_band(
+    spec_ptr: *const u8,
+    spec_len: usize,
+    orbit_ptr: *const u8,
+    orbit_len: usize,
+    cols: u32,
+    rows: u32,
+    row_start: u32,
+    row_end: u32,
+) -> *mut u8 {
+    let read = text(spec_ptr, spec_len)
+        .ok_or_else(|| "the spec is not UTF-8".to_string())
+        .and_then(|text| Spec::parse(&text))
+        .and_then(|spec| {
+            if orbit_ptr.is_null() {
+                return Err("no reference orbit".to_string());
+            }
+            let bytes = unsafe { std::slice::from_raw_parts(orbit_ptr, orbit_len) };
+            let orbit = unpack_reference(bytes).ok_or("the reference orbit is malformed")?;
+            let cols = if cols == 0 { nuclei::GRID_COLS } else { cols };
+            let rows = if rows == 0 { nuclei::GRID_ROWS } else { rows };
+            Ok(nuclei::seeds_in_rows(
+                &spec, &orbit, cols, rows, row_start, row_end,
+            ))
+        });
+    let report = match read {
+        Ok(seeds) => {
+            let mut body = String::from(r#"{"ok":true,"seeds":["#);
+            for (index, seed) in seeds.iter().enumerate() {
+                if index > 0 {
+                    body.push(',');
+                }
+                body.push_str(&format!(
+                    r#"{{"period":{},"from_re":{:e},"from_im":{:e},"minimum":{:e},"cells":{}}}"#,
+                    seed.period, seed.from_re, seed.from_im, seed.minimum, seed.cells,
+                ));
+            }
+            body.push_str("]}");
+            body
+        }
+        Err(why) => format!(r#"{{"ok":false,"why":{}}}"#, json::quote(&why)),
+    };
+    release_text(&report)
+}
+
+/// One Newton step on `z_p(c) = 0`, from a `c` that arrives as text and leaves
+/// as text.
+///
+/// **One step a call, and that is the cancel granularity.** A wasm call cannot be
+/// interrupted, and a step at a period of a hundred thousand is a tenth of a
+/// second; the page drives the iteration so that a new search or a navigation
+/// stops between steps rather than not at all.
+///
+/// **The `c` that comes back is the full decimal of what is stored**, all
+/// `64(limbs−1)` digits of it, because the page feeds it straight back in as the
+/// next step's input and a truncation there would be precision thrown away once
+/// a step. `explorer/deep-link.js` is what trims a centre to what a link can
+/// carry, and it happens once, at the end.
+///
+/// Takes `{"c_re":"…","c_im":"…","period":n,"limbs":k}` and returns
+/// `{"ok":true,"c_re":"…","c_im":"…","moved":…,"size_log2":…,"window_log2":…,
+/// "escaped":false}`.
+#[unsafe(no_mangle)]
+pub extern "C" fn newton_step(request_ptr: *const u8, request_len: usize) -> *mut u8 {
+    const KNOWN: &[&str] = &["c_re", "c_im", "period", "limbs"];
+    let read = text(request_ptr, request_len)
+        .ok_or_else(|| "the request is not UTF-8".to_string())
+        .and_then(|text| {
+            let object = json::object(&text).ok_or("the request is not a flat JSON object")?;
+            if let Some(name) = object.unknown(KNOWN) {
+                return Err(format!("the request carries no member named `{name}`"));
+            }
+            let count = |key: &str| match object.get(key) {
+                Some(json::Value::Num(value)) if *value >= 1.0 && value.fract() == 0.0 => {
+                    Ok(*value as u32)
+                }
+                _ => Err(format!("`{key}` is a whole number of at least one")),
+            };
+            let coordinate = |key: &str| match object.get(key) {
+                Some(json::Value::Str(value)) => Ok(value.clone()),
+                _ => Err(format!(
+                    "`{key}` has to be a string: a coordinate written as a JSON number has \
+                     already lost the digits this module exists for"
+                )),
+            };
+            let limbs = (count("limbs")? as usize).clamp(3, fx::MAX_LIMBS);
+            let period = count("period")?;
+            let re_text = coordinate("c_re")?;
+            let im_text = coordinate("c_im")?;
+            let c_re = Fx::parse(&re_text, limbs)
+                .ok_or_else(|| format!("`{re_text}` is not a decimal"))?;
+            let c_im = Fx::parse(&im_text, limbs)
+                .ok_or_else(|| format!("`{im_text}` is not a decimal"))?;
+            Ok((nuclei::newton_step(&c_re, &c_im, period), limbs))
+        });
+    let report = match read {
+        Ok((step, limbs)) => {
+            let digits = 64 * (limbs - 1);
+            format!(
+                concat!(
+                    r#"{{"ok":true,"c_re":"{}","c_im":"{}","moved":{:e},"#,
+                    r#""size_log2":{:e},"window_log2":{:e},"escaped":{}}}"#
+                ),
+                step.c_re.to_decimal(digits),
+                step.c_im.to_decimal(digits),
+                finite(step.moved),
+                finite(step.size_log2),
+                finite(step.window_log2),
+                step.escaped,
+            )
+        }
+        Err(why) => format!(r#"{{"ok":false,"why":{}}}"#, json::quote(&why)),
+    };
+    release_text(&report)
+}
+
+/// The limb count a nucleus found in a view of this width is solved at, so the
+/// page does not restate the rule. See [`nuclei::limbs_for_nucleus`].
+#[unsafe(no_mangle)]
+pub extern "C" fn nucleus_limbs(width: f64, tile_samples: u32) -> u32 {
+    nuclei::limbs_for_nucleus(width, tile_samples) as u32
+}
+
+/// The cap a preview tile of a period-`p` nucleus is drawn at.
+///
+/// **The page asks rather than restates**, because this one is not the width
+/// policy and a page that guessed it would draw a black rectangle: see
+/// [`nuclei::TILE_PERIODS`], which is where the measurement is.
+#[unsafe(no_mangle)]
+pub extern "C" fn tile_cap(period: u32, width: f64) -> u32 {
+    nuclei::tile_cap(period, width)
+}
+
+/// How wide a preview tile is, given the body it frames. See
+/// [`nuclei::TILE_BODIES`].
+#[unsafe(no_mangle)]
+pub extern "C" fn tile_width(size: f64) -> f64 {
+    size * nuclei::TILE_BODIES
+}
+
+/// `NaN` and the infinities are not JSON, and a reader of these reports is
+/// `JSON.parse`. Zero stands in, which is what every one of these means where it
+/// can happen: a step that did not move.
+fn finite(value: f64) -> f64 {
+    if value.is_finite() { value } else { 0.0 }
 }
 
 /// This crate's cap policy, so a page does not restate it.

@@ -634,6 +634,7 @@ export function mount(host) {
   /** After a gesture: repaint, and consider the quarter pass. */
   function moved() {
     paint();
+    clearMinibrots();
     host.settle();
     syncControls();
     clearTimeout(settleTimer);
@@ -806,6 +807,215 @@ export function mount(host) {
     return answer.ok ? null : answer.why;
   }
 
+  // ----------------------------------------------------------------- nearby minibrots
+
+  /**
+   * What the list is showing, or `null` when there is nothing to show.
+   *
+   * **Ephemeral, and that word is doing work.** Nothing here is stored, nothing reaches
+   * Saved, and no entry has a link contract of its own: an entry's target is an ordinary
+   * `dv` frame, which is why clicking one is a navigation like any other and the way back
+   * returns from it. The list is cleared by the next search and by any change of location.
+   */
+  let minibrots = null;
+
+  /**
+   * How long a preview tile may be estimated to take before it is drawn on its own.
+   *
+   * **Five seconds, and the reason it exists at all is a measurement.** A tile is drawn at
+   * eight periods of its own nucleus — below that a minibrot's neighbourhood is a flat
+   * black rectangle, which `perturb-wasm`'s `nuclei::TILE_PERIODS` is the table for — and
+   * the periods at these depths run to six figures. So a tile of a period-95,000 minibrot
+   * is about forty seconds, and one of the audit anchor's period-2,838 minibrot is under
+   * three: the same feature is cheap at 2e-11 and expensive at 1e-22, and which one a
+   * reader is in is not something a constant can know.
+   *
+   * This is `AUTO_PREVIEW_MS`'s ruling applied to a second place — nothing expensive
+   * starts without being asked — and it is why an entry over the budget is still a full
+   * entry: it names its minibrot, says what a preview would cost, and **goes to the frame
+   * when clicked**, which is what the list is for. The picture is the preview, not the
+   * point.
+   */
+  const TILE_BUDGET_MS = 5000;
+
+  /** The preview tile: the staged gallery's own 316 px, at 16:9 and one sample a pixel. */
+  const TILE = { width: 316, height: 178 };
+
+  /** Seconds a tile of this many samples at this cap is expected to take, from the crate's
+   *  own ns a sample-iteration, wasm's 5% over native, and the pool. The mean is 0.85 of
+   *  the cap on the tiles `tests/frames.rs` measured, which is what a frame mostly inside
+   *  a minibrot's body looks like. */
+  function tileSeconds(cap) {
+    const lanes = TILE.width * TILE.height;
+    const threads = Math.max(1, (renderer?.workerCount ?? 8) * 0.6);
+    return (lanes * cap * 0.85 * 5.0e-9 * 1.05) / threads;
+  }
+
+  /** The view one entry opens: its own centre, framed at six body widths, at the cap the
+   *  kernel says a tile of that period needs. The palette and the shade recipe come with
+   *  the reader, because a preview a reader cannot recognise as theirs is a different
+   *  picture of the same place. */
+  function frameOf(nucleus) {
+    const width = renderer.tileWidth(nucleus.size);
+    return {
+      ...view,
+      x: nucleus.x,
+      y: nucleus.y,
+      w: deepLink.widthOf(width),
+      maxiter: renderer.tileCap(nucleus.period, width),
+      julia: null,
+    };
+  }
+
+  function clearMinibrots() {
+    if (minibrots === null) return;
+    minibrots = null;
+    els.minibrotList.replaceChildren();
+    els.minibrotList.hidden = true;
+    els.minibrotNote.hidden = true;
+    syncControls();
+  }
+
+  /**
+   * Search this view for the minibrots in and around it, and fill the list.
+   *
+   * Three phases: the atom-domain walk over the pool, the Newton solves over the pool, and
+   * then the tiles one at a time — which is the order the ranking forces, since *largest
+   * first* cannot be known until every solve is in.
+   */
+  async function findMinibrots() {
+    if (view.julia !== null || running !== null) return;
+    const generation = ++pass;
+    const grid = host.grid();
+    const target = view;
+    running = { upto: "minibrots", auto: false, stage: "searching", started: performance.now() };
+    syncControls();
+    host.say("");
+    clearMinibrots();
+
+    try {
+      const deep = await pool();
+      if (generation !== pass) return;
+      host.stat("looking for nuclei…");
+      const found = await deep.nuclei(target, grid.width, grid.height, {
+        supersample: 1,
+        tileSamples: TILE.width,
+      });
+      if (found === null || generation !== pass) return;
+
+      if (found.length === 0) {
+        host.stat("");
+        els.minibrotNote.hidden = false;
+        els.minibrotNote.textContent =
+          "No minibrot was found in this view. Either there is none here, or every one of " +
+          "them has a period past the cap this frame was drawn at.";
+        return;
+      }
+
+      minibrots = found;
+      show(found);
+      // **The unreachable ones are said rather than hidden.** A `dv` centre is capped at 64
+      // characters, and a minibrot found in a view at 1e-n sits near 1e-2n — so below about
+      // 1e-30 the best entries are places this site can find and cannot spell a link to.
+      const reachable = found.filter((one) => spellable(one));
+      const lost = found.length - reachable.length;
+      els.minibrotNote.hidden = false;
+      els.minibrotNote.textContent =
+        `${found.length} found, largest first.` +
+        (lost === 0
+          ? ""
+          : ` ${lost} of them ${lost === 1 ? "sits" : "sit"} deeper than a link can spell a ` +
+            "center for, so they are listed without one.");
+
+      for (const nucleus of reachable) {
+        if (generation !== pass) return;
+        const frame = frameOf(nucleus);
+        if (tileSeconds(frame.maxiter) * 1000 > TILE_BUDGET_MS) continue;
+        const field = await deep.field(frame, TILE.width, TILE.height, {
+          supersample: 1,
+          period: nucleus.period,
+        });
+        if (field === null || generation !== pass) return;
+        const shaded = await deep.shade(field, frame, {}, { derive: false });
+        if (shaded === null || generation !== pass) return;
+        paintTile(nucleus, shaded.image);
+      }
+      host.stat("");
+    } catch (error) {
+      host.say(String(error.message ?? error));
+    } finally {
+      if (generation === pass) {
+        running = null;
+        host.showState(drawn === null ? "stopped" : "final");
+        syncControls();
+      }
+    }
+  }
+
+  /** Whether a `dv` link can carry this entry's frame — the same 64 characters every other
+   *  coordinate on this site is held to. */
+  function spellable(nucleus) {
+    return (
+      nucleus.x.text.length <= deepLink.COORDINATE_LIMIT &&
+      nucleus.y.text.length <= deepLink.COORDINATE_LIMIT
+    );
+  }
+
+  /** The list, as entries with nothing drawn in them yet. */
+  function show(found) {
+    els.minibrotList.replaceChildren();
+    els.minibrotList.hidden = false;
+    for (const nucleus of found) {
+      const entry = document.createElement("button");
+      entry.type = "button";
+      entry.className = "minibrot";
+      const reachable = spellable(nucleus);
+      entry.disabled = !reachable;
+
+      const well = document.createElement("div");
+      well.className = "minibrot-tile";
+      const frame = frameOf(nucleus);
+      const seconds = tileSeconds(frame.maxiter);
+      well.textContent = !reachable
+        ? "past what a link can spell"
+        : seconds * 1000 > TILE_BUDGET_MS
+          ? `a preview here is about ${said_time(seconds)}`
+          : "";
+      entry.append(well);
+
+      const said = document.createElement("span");
+      said.className = "minibrot-said";
+      said.textContent = `period ${nucleus.period.toLocaleString("en-US")} · ${exponent(nucleus.size)} across`;
+      entry.append(said);
+
+      entry.title = reachable
+        ? `Go to this minibrot: ${frame.w.text} across, ${frame.maxiter.toLocaleString("en-US")} iterations.`
+        : "This minibrot's center needs more digits than a link carries, so the tab cannot open it.";
+      // **The frame this entry was built with**, and never one derived at click time: by
+      // then `view` may have moved, and an entry that quietly re-aims is an entry that
+      // sends a reader somewhere they were not shown.
+      if (reachable) entry.addEventListener("click", () => swap({ ...frame }));
+      nucleus.node = well;
+      els.minibrotList.append(entry);
+    }
+  }
+
+  /** One tile's picture, once it has been drawn. */
+  function paintTile(nucleus, image) {
+    const canvas = document.createElement("canvas");
+    canvas.width = image.width;
+    canvas.height = image.height;
+    canvas.getContext("2d").putImageData(image, 0, 0);
+    nucleus.node.replaceChildren(canvas);
+  }
+
+  /** A width as a reader reads it: one figure and a decade. */
+  function exponent(value) {
+    if (!(value > 0) || !Number.isFinite(value)) return "unknown";
+    const decade = Math.floor(Math.log10(value));
+    return `${(value / 10 ** decade).toFixed(1)}e${decade}`;
+  }
+
   // ----------------------------------------------------------------- the controls
 
   function setCap(value) {
@@ -857,6 +1067,11 @@ export function mount(host) {
         : "Open the Mandelbrot set at this c, at the width you are looking at."
       : "Draw the Julia set of this view's own center — the same c, with z varying instead.";
     els.origin.hidden = !julia;
+    // **Mandelbrot only.** There are no minibrots on a dynamical plane: a Julia set has no
+    // parameter-space nuclei in it, so the button is not disabled there, it is absent.
+    els.minibrots.hidden = julia;
+    els.minibrots.disabled = committed || busy;
+    els.minibrots.textContent = running?.upto === "minibrots" ? "Looking…" : "Nearby minibrots";
     els.origin.disabled = committed || (julia && fx.isZero(view.x.dec) && fx.isZero(view.y.dec));
     els.back.disabled = committed;
     // Two reasons it might not go, and the title names the one in force. A parameter
@@ -1011,6 +1226,7 @@ export function mount(host) {
 
   els.julia.addEventListener("click", () => (view.julia === null ? toJulia() : toMandelbrot()));
   els.origin.addEventListener("click", toOrigin);
+  els.minibrots.addEventListener("click", findMinibrots);
   els.back.addEventListener("click", () => host.leave(view));
   els.save.addEventListener("click", () => host.save(deepLink.emit(view)));
 

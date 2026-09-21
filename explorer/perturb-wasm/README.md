@@ -35,6 +35,8 @@ src/reference.rs   one high-precision orbit per frame, projected to f64
 src/kernel.rs      the per-sample f64 delta loop, with rebasing
 src/policy.rs      the cap a frame asks for: what died at a cap, and whether
                    raising it would change the picture
+src/nuclei.rs      the minibrots in and around a view: atom domains, then a
+                   high-precision Newton solve, then a size and a frame
 src/json.rs        a reader for one flat JSON object
 src/lib.rs         the spec, the width's cap, and the exports
 smooth-cases.json  400 of the engine's own samples, as the pin
@@ -448,8 +450,11 @@ because a view entered at `Z₁` has one step less of reference in front of it, 
 is recomputed rather than reused. Against a frame of seconds that is 1%, and it is
 the whole price of pressing the button.
 
-**`perturb.wasm` is 112,675 bytes raw and 52,784 gzipped** at level 9. Beside
-`engine.wasm`'s 763,343 / 228,670 that is 15% more to download, and it buys a
+**`perturb.wasm` is 147,547 bytes raw and 65,370 gzipped** at level 9 — 112,675 /
+52,784 when this paragraph was first written, grown by the cap policy (§8) and the
+nucleus search (§9), whose Newton solve, decimal writer and second walk of the
+loop are most of it. Beside
+`engine.wasm`'s 763,343 / 228,670 that is 19% more to download, and it buys a
 renderer for everything below 1e-10, on both of the sets `z² + c` has. It is large for a dependency-free crate of
 1,500 lines, and the reason is `core::fmt`: `plan` formats a JSON report and every
 refusal is a sentence. That is an attribution from what the module contains rather
@@ -766,15 +771,151 @@ million, and `Settled::at_ceiling` says the frame is still the cap's fault there
 None of the thirteen reaches it. What a page does with that is a sentence, not a
 retry.
 
+### 9. The minibrots in and around a view *(deep_nearby_minibrots_ckpt138, 2026-09-20)*
+
+`src/nuclei.rs`. Find the nuclei a frame holds, rank them by size, and frame each
+one. Two halves, cheap then expensive: **atom domains** say where and roughly
+what, **Newton** says exactly where.
+
+The index at which a sample's `|z|` is smallest is the period of the component
+whose atom domain it sits in, so a coarse grid partitions a view into one region
+per nucleus for one walk of a few thousand cells
+(`Kernel::domain_with`). Then `z_p(c) = 0` is solved from the best cell of each
+region. The grid is `policy`'s own probe grid, for `policy`'s reason.
+
+#### The derivative does not go in fixed point, and that is what makes it affordable
+
+`d = dz_p/dc` at a nucleus of atom size 1e-44 is of order **1e44**, and `Fx`'s
+integer limb holds about 4.6e18 — so carried there it would overflow, silently,
+which is the failure `reference::orbit`'s bailout check exists to avoid. It does
+not need to be there: a Newton correction and a size estimate want **relative**
+precision, so `d` and the size product ride as an `f64` mantissa with a
+power-of-two exponent, which is the interior switch's own representation.
+
+Two things follow. A step costs **three `Fx` multiplies per orbit step** instead
+of seven, because only `z` is still fixed point. And the correction is formed in
+`f64`, so one step is worth sixteen digits past the size of the step before it:
+from a seed a grid cell away at 1e-22 the errors run 1e-22 → 1e-38 → 1e-54 →
+1e-70. **Four to eight steps**, measured, with residuals of 1e-53 to 1e-125.
+
+`Fx::to_decimal` was written for this and is the crate's first way *out* of a
+fixed-point number: until now `parse` read a centre in and `to_f64` — two limbs —
+was the only way back, and a nucleus solved at 1e-44 that could only leave as a
+double would be a place nobody could open.
+
+#### Harmonics, and the two rules that make a list
+
+**`z_p(c) = 0` implies `z_kp(c) = 0`**, so the domain walk reports multiples of a
+period as readily as the period, and Newton takes every one of them to the *same
+point*. Their size is then degenerate, because the product `l = ∏ 2·z_k` runs
+through `z_p = 0` and collapses. On the audit's anchor the first run returned
+periods 5,676, 8,514, 17,028, 22,704 and 39,732 — 2×, 3×, 6×, 8× and 14× of 2,838
+— all at the anchor's own centre, reporting bodies of 1e11 to 1e44. So: **lowest
+period first, then one nucleus per place**, where a place is one sample of the
+frame. Deduplicating by *where Newton lands* and never by what it was asked for
+is the whole fix.
+
+**And a minibrot larger than the view is not in the view, it contains it.** All
+four tangle frames sit inside one period-14,190 body of 5.2e-13, which the walk
+duly finds from 1e-22 and from 1e-54 alike.
+
+#### The size is the body, and it is the *square* of what `1/|A|` gives
+
+`1/|l|` is the atom **domain** — the neighbourhood the nucleus dominates — and not
+the minibrot. The body is Vepstas' `1/|b·l²|`, `b = 1 + Σ 1/l_k`. On the anchor
+`1/|l|` is **9.75e-6** and the body is **6.478e-12**: the bare square over a `|b|`
+of 14.7, and 6.478e-12 is the number this README has recorded since the kernel
+landed. That relation is also the prompt's own arithmetic — a minibrot found in a
+view at 1e-n sits near 1e-2n — and a tile framed on the domain would put the
+minibrot in it at a millionth of the frame. `tests/nuclei.rs`' anchor case is the
+pin: solved from a quarter of an atom away, it must come back to the committed
+centre and to 6.478e-12, neither of which this code produced.
+
+#### ⚠ A tile's cap is not the width's to give, and this is what makes it expensive
+
+**The most consequential measurement here.** At a tile of a period-94,776
+minibrot the width policy gives about 150,000 iterations, which is **one and a
+half periods**, and the tile is **100% unresolved — a flat black rectangle, drawn
+slowly**. `what_a_preview_tile_needs`:
+
+| periods | cap | escaped | starved |
+|--:|--:|--:|--:|
+| 1.5 (the width policy) | 150,478 | 0.0% | 100% |
+| 2× policy | 300,956 | 0.0% | 100% |
+| 4 | 379,104 | 0.0% | 100% |
+| **8** | **758,208** | **74.4%** | 25.6% |
+| 16 | 1,000,000 | 85.4% | 14.5% |
+| 32 | 1,000,000 | 85.4% | 14.5% |
+
+A point near a period-`p` minibrot needs many periods before anything about it
+resolves. A tile is the one frame on this site that *knows* its own period — it is
+centred on a nucleus just solved — so `TILE_PERIODS` is 8 and `tile_cap` is that
+or the width policy, whichever is larger. Everywhere else the cap is the frame's
+to ask for (§8) precisely because nothing knows what the frame contains.
+
+**The cost is then `samples × 8p`, and `p` at these depths is of the order of the
+cap itself.** That is a finding and not a tuning, and it is what the tab's list
+had to be shaped around.
+
+#### What a search costs, on the eight frames
+
+`what_the_nucleus_search_finds_and_what_it_costs`, native, one idle box. Detection
+and solves are single-threaded here and go over the pool on the page; tiles are
+timed at 80×45 and scaled to 316×178, wasm's 1.05× and the pool's 4.7×.
+
+| frame | settled cap | detect | domains | s/solve | kept | link-reachable |
+|---|--:|--:|--:|--:|--:|--:|
+| tangle 1e-22 | 187,200 | 1.77 s | 17 | 0.33 s | 6 | **6 of 6** |
+| tangle 1e-28 | 235,036 | 2.16 s | 37 | 0.53 s | 6 | **6 of 6** |
+| tangle 1e-40 | 330,708 | 3.13 s | 18 | 1.09 s | 6 | 0 of 6 |
+| pinch 1e-28 | 235,036 | 2.12 s | 16 | 0.52 s | 6 | 2 of 6 |
+| tangle 1e-54 | 442,324 | 4.24 s | 29 | 1.96 s | 6 | 0 of 6 |
+| body 1e-22 | 748,800 | 7.75 s | 135 | 0.91 s | 6 | **6 of 6** |
+| body 1e-28 | 940,144 | 9.23 s | 47 | 2.28 s | 6 | **6 of 6** |
+| anchor 2e-11 | 48,551 | 0.62 s | 36 | 0.05 s | 6 | **6 of 6** |
+
+**Two walls, and they land in the same place.** A `dv` centre is capped at 64
+characters, so a tile below about 1e-54 cannot be spelled; and 8 periods of a
+nucleus past 125,000 is over the million-iteration ceiling, so its tile cannot be
+resolved either. The `tangle 1e-40` and `tangle 1e-54` tiles come back **100%
+interior at the ceiling** — black, and not fixable under it. Both walls sit at a
+view of roughly 1e-30, which is where this feature stops having anything to offer.
+
+#### The nucleus reference buys nothing on a tile
+
+The question §2 left for a later prompt — 20.5 rebases a sample at 1e-28 against
+the view centre, none at all against the wrapped nucleus — is answered here, and
+the answer is **no gain**:
+
+| frame | period | view-centre reference | nucleus reference | gain | rebases |
+|---|--:|--:|--:|--:|--:|
+| tangle 1e-22 | 94,776 | 14.03 s | 14.39 s | 0.97× | 15.1 / 12.2 |
+| tangle 1e-28 | 100,617 | 16.74 s | 16.09 s | 1.04× | 13.9 / 10.9 |
+| pinch 1e-28 | 107,349 | 18.03 s | 17.40 s | 1.04× | 13.2 / 10.6 |
+| tangle 1e-40 | 238,557 | 22.98 s | 21.92 s | 1.05× | 2.1 / 0.0 |
+| tangle 1e-54 | 205,425 | 23.68 s | 21.93 s | 1.08× | 2.0 / 0.0 |
+| body 1e-22 | 244,068 | 21.86 s | 20.81 s | 1.05× | 1.7 / 0.0 |
+| body 1e-28 | 354,750 | 22.57 s | 22.20 s | 1.02× | 1.0 / 0.0 |
+| **anchor 2e-11** | **2,838** | **0.45 s** | **0.42 s** | **1.05×** | 15.2 / 13.1 |
+
+**Because a tile is already centred on its nucleus, the view centre *is* the
+reference.** §2's 20.5 rebases were measured on a frame nudged a quarter-frame off
+the nucleus; there is no such offset here, and naming the period only changes
+whether the orbit *wraps* or is walked to the cap. What that buys is the orbit's
+size — one period instead of the whole cap, 45 KB against 777 KB at the anchor —
+and not its speed. **Whether it pays on an ordinary frame, whose centre is not a
+nucleus, is a different question and is still open.**
+
 ## Running it
 
 ```text
-cargo test  --release                                  # 45 unit tests and five
+cargo test  --release                                  # 60 unit tests and five
                                                        #   cheap pins, under a second
 cargo test  --release --test oracle -- --ignored --nocapture   # the ladders, ~30 s
 cargo test  --release --test probe  -- --ignored --nocapture   # the three-way probes
-cargo test  --release --test frames -- --ignored --nocapture   # the cap sweep and
-                                                       #   the policy, ~100 s
+cargo test  --release --test frames -- --ignored --nocapture   # the cap sweep, the
+                                                       #   policy, and the nucleus
+                                                       #   search, ~12 min
 cargo test  --release --test descend -- --ignored --nocapture  # the frame finder, ~12 min
 cargo build --release --target wasm32-unknown-unknown          # perturb.wasm
 node scratch/perturb_validate/bench.mjs                        # the wasm price
@@ -801,7 +942,7 @@ its own branch rather than a stage of the explorer's bake.
 | `crate` | `explorer/perturb-wasm` |
 | `dependencies` | `[]`, and it is written down because it is the design |
 | `rustc` | the compiler, with its commit and date |
-| `raw_bytes` / `gzip_bytes` | **115,339 raw, 53,886 gzipped** |
+| `raw_bytes` / `gzip_bytes` | **147,547 raw, 65,370 gzipped** |
 
 Two fields of `engine.manifest.json` are **absent** rather than empty:
 `engine_version`, because this crate does not link the engine, and
@@ -816,7 +957,7 @@ crate: `explorer_shade_pool_ckpt136` banded the shade.)
 
 **What a visitor downloads for it: nothing, unless they open the Deep tab.** The
 module and the tab's five modules are fetched on that tab's first open and never
-before. Against `engine.wasm`'s 228,670 gzipped, the 52,784 here is 23% more —
+before. Against `engine.wasm`'s 228,670 gzipped, the 65,370 here is 29% more —
 paid only by a reader who asked for a renderer for everything below 1e-10.
 
 `core::fmt` is still most of the size and is still not chased: `plan` formats a

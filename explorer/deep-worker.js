@@ -38,6 +38,16 @@ function release() {
   orbit = null;
 }
 
+/** Read back what a report-returning export left: four bytes of little-endian length, then
+ *  the UTF-8, and the whole buffer handed back. Every export in `perturb.wasm` that answers
+ *  with a sentence rather than with lanes returns this shape. */
+function take(out) {
+  const size = new DataView(wasm.memory.buffer).getUint32(out, true);
+  const body = decoder.decode(new Uint8Array(wasm.memory.buffer, out + 4, size));
+  wasm.dealloc(out, size + 4);
+  return JSON.parse(body);
+}
+
 self.onmessage = (event) => {
   const message = event.data;
 
@@ -80,10 +90,47 @@ self.onmessage = (event) => {
       rowEnd,
     );
     wasm.dealloc(specPointer, specLength);
-    const size = new DataView(wasm.memory.buffer).getUint32(out, true);
-    const body = decoder.decode(new Uint8Array(wasm.memory.buffer, out + 4, size));
-    wasm.dealloc(out, size + 4);
-    self.postMessage({ kind: "probe", job, counts: JSON.parse(body) });
+    self.postMessage({ kind: "probe", job, counts: take(out) });
+    return;
+  }
+
+  // **The atom-domain walk, cut the same way.** It names the nuclei whose domains these
+  // probe rows fall in, which is the cheap half of finding a minibrot: no interior
+  // shortcut and no high precision, one walk of the frame's own cells against the orbit
+  // already here.
+  if (message.kind === "seeds") {
+    const { job, spec, cols, rows, rowStart, rowEnd } = message;
+    if (orbit === null) {
+      self.postMessage({ kind: "seeds", job, found: { ok: false, why: "no reference orbit" } });
+      return;
+    }
+    const [specPointer, specLength] = put(spec);
+    const out = wasm.seed_band(
+      specPointer,
+      specLength,
+      orbit.pointer,
+      orbit.length,
+      cols,
+      rows,
+      rowStart,
+      rowEnd,
+    );
+    wasm.dealloc(specPointer, specLength);
+    self.postMessage({ kind: "seeds", job, found: take(out) });
+    return;
+  }
+
+  // **One Newton step, and it reads no orbit at all.** A solve is the expensive half and
+  // it is its own high-precision iteration from `z = 0`, so any worker can take any step
+  // of any seed — which is what lets a dozen solves go over the pool at once instead of
+  // down one thread. One step a call is the cancel granularity: a wasm call cannot be
+  // interrupted, and a step at a period of a hundred thousand is a tenth of a second.
+  if (message.kind === "newton") {
+    const { job, request } = message;
+    const [pointer, length] = put(request);
+    const out = wasm.newton_step(pointer, length);
+    wasm.dealloc(pointer, length);
+    self.postMessage({ kind: "newton", job, step: take(out) });
     return;
   }
 

@@ -80,6 +80,12 @@ const CAP_KEY = "n";
  *  that named more would be asking for a frame that never finishes. */
 export const CAP_LIMIT = 1_000_000;
 
+/** The shallow contract's own cap on a coordinate's length, re-exported rather than
+ *  restated — a URL is one thing however deep the picture is, and a caller that needs to
+ *  know whether a place it has just computed can be spelled should ask this contract
+ *  rather than carry a 64 of its own. */
+export { COORDINATE_LIMIT };
+
 /** The fewest. Below this there is no picture, only the disc. */
 export const CAP_FLOOR = 50;
 

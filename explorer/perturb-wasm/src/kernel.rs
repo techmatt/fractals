@@ -111,6 +111,34 @@ impl Outcome {
     }
 }
 
+/// What one sample's orbit says about the nucleus it is nearest.
+///
+/// **The atom domain, which is the cheap half of finding a minibrot.** The index
+/// at which a sample's `|z|` is smallest is the period of the hyperbolic
+/// component whose *atom domain* the sample lies in — the neighbourhood over
+/// which that component's nucleus dominates the orbit — so a coarse grid of
+/// these partitions a view into one region per nucleus, and hands
+/// [`crate::nuclei`] a period and a starting point per region. Newton does the
+/// expensive half.
+///
+/// **Rebasing does not disturb it.** A rebase replaces `δ` with the iterate and
+/// restarts `m`, which leaves the reconstructed `z = Z[m] + δ` exactly where it
+/// was, so the minimum is taken over the same sequence a plain loop would walk.
+#[derive(Clone, Copy, Debug)]
+pub struct Domain {
+    /// The iteration index of the smallest `|z|` the sample reached, counting
+    /// from one. Zero only where the sample took no step at all.
+    pub period: u32,
+    /// `|z|²` there — how near this sample passed to that nucleus, and so which
+    /// sample of a region is the best seed for a solve.
+    pub minimum: f64,
+    /// The sample left the bailout disc before the cap. Its domain still means
+    /// something; the sample is simply outside the set.
+    pub escaped: bool,
+    /// Iterations taken, which is what a cost study counts.
+    pub iterations: u32,
+}
+
 /// The reference orbit plus the policy a frame reads it under.
 pub struct Kernel<'a> {
     pub reference: &'a Reference,
@@ -345,6 +373,106 @@ impl<'a> Kernel<'a> {
                 zi = points[0][1];
                 m = 0;
                 rebases += 1;
+            }
+        }
+    }
+
+    /// The atom domain one sample falls in: where its `|z|` was smallest, and
+    /// when.
+    ///
+    /// **A second loop rather than a flag on the first, and that is deliberate.**
+    /// Everything above this line is the picture, and the picture's loop has been
+    /// measured into its present shape twice — the orbit's layout is worth 2.5×
+    /// and [`Kernel::sample_with`]'s `inline(never)` a further 63%, neither of
+    /// which anybody predicted. A third const parameter would be free *if* the
+    /// optimizer agreed, and this file's history is that it does not reliably
+    /// agree. The duplication is forty lines and it buys the guarantee that
+    /// nothing a nucleus search wants can slow a frame down.
+    ///
+    /// **No interior switch here, on purpose.** The switch stops a sample as soon
+    /// as it is *proven* bounded, which is a place the running minimum may not
+    /// have reached yet, and a domain read off a truncated orbit would name the
+    /// wrong period. So this walks to the escape or to the cap. It is affordable
+    /// because it is asked of a few thousand cells rather than of a frame —
+    /// `crate::nuclei` and the page both probe on the cap policy's own grid.
+    #[inline(never)]
+    pub fn domain_with<const JULIA: bool>(&self, a_re: f64, a_im: f64) -> Domain {
+        let points = &self.reference.points[..];
+        let periodic = self.reference.periodic;
+        let maxiter = self.maxiter;
+        let length = points.len();
+        let last = length - 1;
+        let bailout_sq = BAILOUT * BAILOUT;
+        let (dc_re, dc_im) = if JULIA { (0.0, 0.0) } else { (a_re, a_im) };
+
+        let mut delta_re = if JULIA { a_re } else { 0.0f64 };
+        let mut delta_im = if JULIA { a_im } else { 0.0f64 };
+        let start = if JULIA { self.entry.min(last) } else { 0 };
+        let mut zr = points[start][0];
+        let mut zi = points[start][1];
+        let mut m = start;
+        let mut n = 0u32;
+
+        let mut minimum = f64::INFINITY;
+        let mut period = 0u32;
+
+        loop {
+            let ar = zr + zr + delta_re;
+            let ai = zi + zi + delta_im;
+            let mut next_re = ar * delta_re - ai * delta_im;
+            let mut next_im = ar * delta_im + ai * delta_re;
+            if !JULIA {
+                next_re += dc_re;
+                next_im += dc_im;
+            }
+            delta_re = next_re;
+            delta_im = next_im;
+
+            m += 1;
+            n += 1;
+            if periodic && m >= length {
+                m = 0;
+            }
+
+            let point = points[m];
+            zr = point[0];
+            zi = point[1];
+            let z_re = zr + delta_re;
+            let z_im = zi + delta_im;
+            let z_norm_sq = z_re * z_re + z_im * z_im;
+
+            // The whole of what this loop is for. Strictly less, so the *first*
+            // index of a repeated minimum wins — a periodic orbit comes back to
+            // the same place and the period is the first return, not the last.
+            if z_norm_sq < minimum {
+                minimum = z_norm_sq;
+                period = n;
+            }
+
+            if z_norm_sq > bailout_sq {
+                return Domain {
+                    period,
+                    minimum,
+                    escaped: true,
+                    iterations: n,
+                };
+            }
+            if n >= maxiter {
+                return Domain {
+                    period,
+                    minimum,
+                    escaped: false,
+                    iterations: n,
+                };
+            }
+
+            let delta_norm_sq = delta_re * delta_re + delta_im * delta_im;
+            if z_norm_sq < delta_norm_sq || (!periodic && m >= last) {
+                delta_re = z_re;
+                delta_im = z_im;
+                zr = points[0][0];
+                zi = points[0][1];
+                m = 0;
             }
         }
     }

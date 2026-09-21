@@ -68,6 +68,55 @@ const RECUT_OVER = 1.5;
 const PROBE_COLS = 64;
 const PROBE_ROWS = 36;
 
+/** The atom-domain grid the nucleus search walks, which is the probe's own — the same
+ *  cells of the same frame, for the same cost reason. `perturb-wasm`'s `nuclei::GRID_COLS`
+ *  and `GRID_ROWS` are the crate's defaults and its harness measures at them. */
+const GRID_COLS = 64;
+const GRID_ROWS = 36;
+
+/** Newton steps one seed gets. The crate's `nuclei::MAX_STEPS`, against an expectation of
+ *  three or four: the correction is formed in `f64`, so a step is worth sixteen digits
+ *  past the size of the step before it and a solve converges quadratically. */
+const NEWTON_STEPS = 8;
+
+/** `2^k` where an `f64` still holds it, for a size that arrived as a logarithm because
+ *  `|l|` at these depths runs past what an exponent carries. Zero underneath that, which
+ *  is a minibrot no link could reach anyway. */
+function sizeOf(log2) {
+  if (!Number.isFinite(log2) || log2 < -1060) return 0;
+  return 2 ** log2;
+}
+
+/** How many fraction digits a centre needs to place a pixel of a frame this wide: the
+ *  width's own decade and eight guard digits, which is `tests/descend.rs`'s rule for the
+ *  committed deep frames and puts the truncation well under a pixel. Held under
+ *  `deep-fx`'s own ceiling, past which a coordinate is refused outright. */
+function digitsFor(width) {
+  const decade = width > 0 && Number.isFinite(width) ? Math.ceil(-Math.log10(width)) : 0;
+  return Math.min(fx.MAX_SCALE, Math.max(0, decade) + 8);
+}
+
+/** A plain decimal's fraction, truncated toward zero. The text is always `to_decimal`'s —
+ *  sign, digits, point, digits, never an exponent — so this is a substring and not a
+ *  re-spelling, which is what keeps it exact down to the digit it stops at. */
+function trim(text, digits) {
+  const point = text.indexOf(".");
+  if (point < 0) return text;
+  return text.slice(0, point + 1 + digits);
+}
+
+/** Whether two solves landed on one minibrot — asked of **where they stopped and not of
+ *  what they were asked for**, because a harmonic of a period lands on that period's own
+ *  nucleus. `step` is one sample of the frame: two centres closer than that are one dot on
+ *  the screen, and a harmonic is at distance zero. */
+function near(a, b, step) {
+  const apart = Math.max(
+    Math.abs(fx.difference(a.x.dec, b.x.dec)),
+    Math.abs(fx.difference(a.y.dec, b.y.dec)),
+  );
+  return apart <= step;
+}
+
 /** The viewport the shade spec names, so that `engine.wasm` has one it can resolve.
  *
  *  Left empty, which the module reads as the family's own home view — the most obviously
@@ -112,7 +161,12 @@ export function shadeSpecOf(view, colormap, width, height, { supersample = 1, le
  *  The centre crosses as **text** and nothing else will do: the module's own `Spec::parse`
  *  refuses a coordinate written as a JSON number by name, because a number has already
  *  lost the digits both this file and that one exist for. */
-export function deepSpecOf(view, width, height, { supersample = 1, reference = null } = {}) {
+export function deepSpecOf(
+  view,
+  width,
+  height,
+  { supersample = 1, reference = null, period = null } = {},
+) {
   const spec = {
     schema: 1,
     center_re: view.x.text,
@@ -130,6 +184,12 @@ export function deepSpecOf(view, width, height, { supersample = 1, reference = n
     spec.reference_re = reference.x;
     spec.reference_im = reference.y;
   }
+  // **A named period makes the reference periodic**, which is the whole payoff of having
+  // solved a nucleus: the orbit is stored for one period and the index wraps instead of
+  // rebasing. It rides beside the reference rather than inside it because the kernel takes
+  // it that way, and a tile centred on its own nucleus names no reference at all — the
+  // centre already is one.
+  if (period !== null && period > 0) spec.period = period;
   return spec;
 }
 
@@ -247,6 +307,25 @@ export class DeepRenderer {
    *  at: the one number that says what the reference orbit will cost. */
   limbs(width, sampleWidth) {
     return this.planner.limbs_for_width(width, sampleWidth);
+  }
+
+  /** How wide a preview tile of a minibrot this size is — six body widths, the crate's
+   *  `nuclei::TILE_BODIES`. */
+  tileWidth(size) {
+    return this.planner.tile_width(size);
+  }
+
+  /**
+   * The cap a preview tile of a period-`p` nucleus is drawn at.
+   *
+   * **Asked and never guessed**, and it is emphatically not the width policy: a tile needs
+   * eight periods of its own nucleus before a minibrot's neighbourhood resolves at all, and
+   * the width policy at a tile's width gives about one and a half. `nuclei::TILE_PERIODS`
+   * in the crate is where that is measured; a page that used the width's answer would draw
+   * a flat black rectangle, slowly.
+   */
+  tileCap(period, width) {
+    return this.planner.tile_cap(period, width);
   }
 
   /** The share of a frame that may still be the cap's fault before the cap is raised.
@@ -371,6 +450,206 @@ export class DeepRenderer {
     });
   }
 
+  /**
+   * The minibrots in and around this view, largest first.
+   *
+   * **Three phases, and only the third streams.** The domain walk goes over the pool in
+   * bands like a probe; the solves go over the pool too, one seed to a worker, because a
+   * Newton step reads no orbit and so any worker can take any step of any seed. Only when
+   * every solve is in can the list be *ranked*, which is what the reader is promised —
+   * largest first — so the tiles are drawn after that, one at a time, and `onFound` is
+   * what lets the caller put each one up as it lands.
+   *
+   * Drawing is serial and has to be: the pool holds one reference orbit between all its
+   * workers, and every tile wants a different one. That is also why the view's own orbit
+   * is gone afterwards and the next Render recomputes it, which is twenty milliseconds.
+   *
+   * Resolves with `null` where a newer generation started, as everything here does.
+   */
+  async nuclei(view, width, height, { supersample = 1, tileSamples = 316, budget = 12, want = 6 } = {}) {
+    this.cancel();
+    const generation = this.generation;
+    const reference = await this.#reference(view, width, height, supersample);
+    if (generation !== this.generation) return null;
+    if (reference === null) {
+      throw new Error("the kernel could not compute a reference orbit for this view");
+    }
+    const spec = JSON.stringify(deepSpecOf(view, width, height, { supersample, reference }));
+    const seeds = await this.#seeds(spec, generation);
+    if (seeds === null || generation !== this.generation) return null;
+
+    // Widest domain first: the cells a domain takes on the grid are a free measure of how
+    // much of the frame its nucleus dominates, and a domain's scale is its body's square
+    // root — so this is the cheap proxy for "largest", spent before any solve is.
+    seeds.sort((a, b) => b.cells - a.cells || a.minimum - b.minimum);
+    // **Twelve solves for six entries**, which is `tests/frames.rs`'s own budget: the
+    // harmonics and the one body that contains the whole view are only found by solving
+    // them, so a budget equal to `want` returns fewer than `want`. Twelve is two rounds
+    // over an eight-worker pool, and a solve is 0.05 s at 2e-11 and 2 s at 1e-54.
+    const chosen = seeds.slice(0, budget);
+    const limbs = this.planner.nucleus_limbs(view.w.value, tileSamples);
+
+    const lanes = this.workers.map((worker, index) => {
+      const mine = chosen.filter((_, at) => at % this.workers.length === index);
+      return this.#solveEach(worker, mine, view, limbs, generation);
+    });
+    const solved = (await Promise.all(lanes)).flat();
+    if (generation !== this.generation) return null;
+
+    // **Lowest period first, then one nucleus per place** — `perturb-wasm`'s `nuclei`
+    // module keeps the same two rules in the same order, and its own tests are where they
+    // are argued. A period-`p` nucleus satisfies `z_kp(c) = 0` for every multiple, so the
+    // walk reports harmonics and Newton takes each of them to the *same point* with a
+    // collapsed size; keeping the lowest period at each place is what makes the size real.
+    // And a minibrot larger than the view is not in the view, it contains it.
+    const step = view.w.value / (width * supersample);
+    const distinct = [];
+    for (const nucleus of solved.sort((a, b) => a.period - b.period)) {
+      if (distinct.some((held) => near(held, nucleus, step))) continue;
+      if (!(nucleus.size > 0) || nucleus.size >= view.w.value) continue;
+      distinct.push(nucleus);
+    }
+    return distinct.sort((a, b) => b.sizeLog2 - a.sizeLog2).slice(0, want);
+  }
+
+  /** The domain walk over the pool, its rows cut between the workers and its seeds merged
+   *  by period: cells add, and the smallest approach keeps its cell. */
+  #seeds(spec, generation) {
+    const workers = this.workers.length;
+    if (workers === 0) return Promise.resolve(null);
+    const ranges = [];
+    for (let index = 0; index < workers; index++) {
+      const start = Math.floor((index * GRID_ROWS) / workers);
+      const end = Math.floor(((index + 1) * GRID_ROWS) / workers);
+      if (end > start) ranges.push([start, end]);
+    }
+    return new Promise((resolve, reject) => {
+      const merged = new Map();
+      let waiting = ranges.length;
+      let failed = false;
+      ranges.forEach(([rowStart, rowEnd], index) => {
+        const worker = this.workers[index];
+        const previous = worker.onmessage;
+        worker.onmessage = (event) => {
+          if (event.data.kind !== "seeds") return;
+          worker.onmessage = previous;
+          if (failed) return;
+          const found = event.data.found;
+          if (!found?.ok) {
+            failed = true;
+            reject(new Error(found?.why ?? "the kernel refused to walk this view"));
+            return;
+          }
+          for (const seed of found.seeds) {
+            const held = merged.get(seed.period);
+            if (held === undefined) merged.set(seed.period, { ...seed });
+            else {
+              held.cells += seed.cells;
+              if (seed.minimum < held.minimum) {
+                held.minimum = seed.minimum;
+                held.from_re = seed.from_re;
+                held.from_im = seed.from_im;
+              }
+            }
+          }
+          waiting -= 1;
+          if (waiting === 0) {
+            resolve(generation === this.generation ? [...merged.values()] : null);
+          }
+        };
+        worker.postMessage({
+          kind: "seeds",
+          job: generation,
+          spec,
+          cols: GRID_COLS,
+          rows: GRID_ROWS,
+          rowStart,
+          rowEnd,
+        });
+      });
+    });
+  }
+
+  /** Every seed in this lane, solved on this worker, in turn. */
+  async #solveEach(worker, mine, view, limbs, generation) {
+    const solved = [];
+    for (const seed of mine) {
+      if (generation !== this.generation) return solved;
+      const nucleus = await this.#solve(worker, seed, view, limbs, generation);
+      if (nucleus !== null) solved.push(nucleus);
+    }
+    return solved;
+  }
+
+  /**
+   * Newton from one seed until it stops moving.
+   *
+   * **The centre is exact on the way in and on the way out.** The seed's offset is a
+   * fraction of the view's width and so an `f64`, which becomes an exact decimal through
+   * `fromNumber` and is added to the centre in `deep-fx`'s own arithmetic; the module
+   * hands back every digit of what it stored, and that text goes straight back in as the
+   * next step's input. Nothing is narrowed between steps, which is the only reason a
+   * solve converges past 1e-38 at all.
+   */
+  async #solve(worker, seed, view, limbs, generation) {
+    let re = fx.text(fx.add(view.x.dec, fx.fromNumber(seed.from_re) ?? fx.ZERO));
+    let im = fx.text(fx.add(view.y.dec, fx.fromNumber(seed.from_im) ?? fx.ZERO));
+    // The body is the view's width squared, near enough, and this is eight digits below
+    // it. Newton stalls at its own `f64` floor well above this; the stall is the real end.
+    const tolerance = view.w.value * view.w.value * 1e-8;
+    let last = Infinity;
+    for (let step = 1; step <= NEWTON_STEPS; step++) {
+      if (generation !== this.generation) return null;
+      const answer = await this.#ask(worker, {
+        kind: "newton",
+        job: generation,
+        request: JSON.stringify({ c_re: re, c_im: im, period: seed.period, limbs }),
+      });
+      if (answer === null || !answer.ok || answer.escaped) return null;
+      re = answer.c_re;
+      im = answer.c_im;
+      const done = answer.moved <= tolerance || !(answer.moved < last);
+      last = answer.moved;
+      if (done || step === NEWTON_STEPS) {
+        // **Trimmed here and nowhere earlier.** The module hands back every digit of what
+        // it stored — `64(limbs-1)`, about two hundred — because that text goes straight
+        // back in as the next step's input and a truncation between steps would be
+        // precision thrown away once a step. But `deep-fx` caps a coordinate at
+        // `MAX_SCALE` digits and refuses anything longer, so the *answer* has to come down
+        // to what the picture needs: the tile's own decade and eight guard digits, which
+        // puts the truncation far under one of its pixels. Not doing this was worth
+        // finding: `fx.parse` returned null on every solve and the list came back empty.
+        const digits = digitsFor(sizeOf(answer.size_log2) * this.planner.tile_width(1));
+        const dec = { x: fx.parse(trim(re, digits)), y: fx.parse(trim(im, digits)) };
+        if (dec.x === null || dec.y === null) return null;
+        return {
+          period: seed.period,
+          x: { text: fx.text(dec.x), dec: dec.x },
+          y: { text: fx.text(dec.y), dec: dec.y },
+          sizeLog2: answer.size_log2,
+          windowLog2: answer.window_log2,
+          size: sizeOf(answer.size_log2),
+          steps: step,
+          residual: last,
+        };
+      }
+    }
+    return null;
+  }
+
+  /** One round trip to one worker, with its handler put back afterwards. */
+  #ask(worker, message) {
+    return new Promise((resolve) => {
+      const previous = worker.onmessage;
+      worker.onmessage = (event) => {
+        if (event.data.kind !== message.kind) return;
+        worker.onmessage = previous;
+        resolve(event.data.step ?? null);
+      };
+      worker.postMessage(message);
+    });
+  }
+
   cancel() {
     this.generation += 1;
     this.queue = [];
@@ -405,11 +684,16 @@ export class DeepRenderer {
    * the middle of the frame stays inside the old frame, so a descent pays for one orbit
    * rather than one per rung.
    */
-  #reaches(view, limbs, aspect) {
+  #reaches(view, limbs, aspect, period) {
     const held = this.orbit;
     if (held === null) return false;
     if (held.limbs !== limbs) return false;
     if (held.maxiter < view.maxiter) return false;
+    // **A periodic orbit is a different object, not a shorter one.** It is stored for one
+    // period and the kernel's index wraps into it; a frame that wanted the full walk would
+    // be handed something that says the reference returns to the origin when it does not.
+    // So the period is part of the orbit's identity and never a detail of it.
+    if ((held.period ?? null) !== (period ?? null)) return false;
     // **A Julia frame's orbit does not depend on its frame at all.** It is the
     // critical orbit of the parameter, so the reach test is only "the same
     // parameter, computed deeply enough and far enough" — and a pan or a zoom
@@ -434,15 +718,16 @@ export class DeepRenderer {
    * held one will not do. Resolves with the reference the frame's spec should name, or
    * `null` where the kernel refused to produce one.
    */
-  async #reference(view, width, height, supersample) {
+  async #reference(view, width, height, supersample, period = null) {
     const limbs = this.limbs(view.w.value, width * supersample);
-    if (this.#reaches(view, limbs, height / width)) {
+    if (this.#reaches(view, limbs, height / width, period)) {
       return { x: this.orbit.x.text, y: this.orbit.y.text, kept: true };
     }
 
-    // The reference is the view's own centre: the tab has no nucleus solver, so the best
-    // point available is the middle of what is being drawn.
-    const spec = deepSpecOf(view, width, height, { supersample });
+    // The reference is the view's own centre. For an ordinary frame that is the best point
+    // available; for a preview tile it is the nucleus the search solved, and the centre
+    // *is* the nucleus — which is why a tile names a period and no reference.
+    const spec = deepSpecOf(view, width, height, { supersample, period });
     const [pointer, length] = this.#put(JSON.stringify(spec));
     const out = this.planner.reference_orbit(pointer, length);
     this.planner.dealloc(pointer, length);
@@ -462,6 +747,8 @@ export class DeepRenderer {
       julia: view.julia ? { x: view.julia.x.text, y: view.julia.y.text } : null,
       limbs,
       maxiter: view.maxiter,
+      // `null` for the ordinary walk; a period where this orbit wraps.
+      period: period ?? null,
       points: count,
       bytes: packed.byteLength,
     };
@@ -490,7 +777,7 @@ export class DeepRenderer {
    * viewer's renderer does and for the same reason: a promise nobody settles holds its
    * whole `await` chain alive.
    */
-  async field(view, width, height, { supersample = 1, onProgress, onOrbit } = {}) {
+  async field(view, width, height, { supersample = 1, period = null, onProgress, onOrbit } = {}) {
     this.cancel();
     const generation = this.generation;
 
@@ -498,15 +785,22 @@ export class DeepRenderer {
     // a Julia view too far from both its anchors for the width it is asking for —
     // should cost a sentence rather than a reference orbit, and the refusal is
     // the module's own words either way.
-    const refusal = this.plan(deepSpecOf(view, width, height, { supersample }));
+    const refusal = this.plan(deepSpecOf(view, width, height, { supersample, period }));
     if (!refusal.ok) throw new Error(refusal.why);
 
-    const reference = await this.#reference(view, width, height, supersample);
+    const reference = await this.#reference(view, width, height, supersample, period);
     if (generation !== this.generation) return null;
     if (reference === null) throw new Error("the kernel could not compute a reference orbit for this view");
     onOrbit?.({ ...this.orbit, kept: reference.kept });
 
-    const spec = deepSpecOf(view, width, height, { supersample, reference });
+    // A tile centred on its own nucleus names the period and **not** the reference: the
+    // centre already is the reference, and naming it as well would put the same point in
+    // the spec twice.
+    const spec = deepSpecOf(view, width, height, {
+      supersample,
+      period,
+      reference: period === null ? reference : null,
+    });
     const shape = this.plan(spec);
     if (!shape.ok) throw new Error(shape.why);
 

@@ -184,6 +184,58 @@ impl Fx {
         if neg { -v } else { v }
     }
 
+    /// The exact decimal, truncated toward zero at `places` fraction digits.
+    ///
+    /// **This is how a coordinate computed here becomes a coordinate a link can
+    /// carry**, and until `deep_nearby_minibrots_ckpt138` there was no way out at
+    /// all: [`Fx::parse`] read a centre in and [`Fx::to_f64`] was the only way
+    /// back, which keeps two limbs and so throws away every digit that says where
+    /// a deep view is. A nucleus solved at 1e-44 that could only leave as a double
+    /// would be a tile nobody could open.
+    ///
+    /// **Exact at the full length.** A fraction of `64(n-1)` bits is a decimal of
+    /// exactly `64(n-1)` digits — `2^-k` is `5^k/10^k` — so `to_decimal(64 * (n -
+    /// 1))` loses nothing and `Fx::parse` reads it back as the same number. Below
+    /// that it truncates toward zero, the direction [`Fx::mul`] truncates in, so a
+    /// caller spending guard digits knows the place it names is inside the place
+    /// it computed.
+    ///
+    /// **No `u128` and no division**, which are this file's own rules. The
+    /// fraction is multiplied by ten a digit at a time through `u32` halves, and
+    /// the carry out of the top fraction limb *is* the next digit — at most nine,
+    /// because ten times a number below one is below ten.
+    pub fn to_decimal(&self, places: usize) -> String {
+        let (neg, m) = self.abs();
+        let n = m.n;
+        let mut out = String::with_capacity(places + 24);
+        if neg {
+            out.push('-');
+        }
+        // The integer limb is the integer part: after `abs` it is non-negative,
+        // and nothing an `i64` cannot hold gets in through `parse` or `from_f64`.
+        out.push_str(&m.w[n - 1].to_string());
+        if places == 0 {
+            return out;
+        }
+        out.push('.');
+
+        let mut frac = [0u64; MAX_LIMBS];
+        frac[..n - 1].copy_from_slice(&m.w[..n - 1]);
+        for _ in 0..places {
+            let mut carry = 0u64;
+            for limb in frac.iter_mut().take(n - 1) {
+                // Ten times a limb, through halves. Every term fits: the carry in
+                // is at most nine, so `(2^32 - 1) * 10 + 9` is under `2^36`.
+                let low = (*limb & 0xffff_ffff) * 10 + carry;
+                let high = (*limb >> 32) * 10 + (low >> 32);
+                *limb = (low & 0xffff_ffff) | (high << 32);
+                carry = high >> 32;
+            }
+            out.push((b'0' + carry as u8) as char);
+        }
+        out
+    }
+
     /// An `f64` placed exactly, truncated toward zero at the last fraction bit.
     ///
     /// This is how a *geometry* offset — which is `f64`, and correctly so, being
@@ -305,9 +357,14 @@ impl Fx {
 }
 
 /// `2^k`, without `powi`'s loop and without libm.
-fn pow2(k: i32) -> f64 {
-    // Sub-normal territory is unreachable here — `k` is a multiple of 64 between
-    // −960 and 0 — but the halving keeps the function total.
+///
+/// Public since `deep_nearby_minibrots_ckpt138`, which carries a nucleus's
+/// derivative as a mantissa and a power-of-two exponent — the interior switch's
+/// representation — and needs the exponent spent when the two are divided.
+pub fn pow2(k: i32) -> f64 {
+    // `k` is a multiple of 64. Within this file it is between −960 and 0 and
+    // sub-normal territory is unreachable; `crate::nuclei` reaches further in
+    // both directions, and the halving below is what keeps the function total.
     if k >= -1022 {
         f64::from_bits(((k + 1023) as u64) << 52)
     } else {
@@ -404,6 +461,89 @@ mod tests {
         assert!((moved.sub(&centre).to_f64() - 4e-14).abs() < 1e-28);
         assert!(Fx::from_f64(f64::NAN, 4).is_none());
         assert!(Fx::from_f64(1e30, 4).is_none());
+    }
+
+    /// **The way out, held to being the inverse of the way in.** At the full
+    /// length a fixed-point fraction *is* a terminating decimal, so this is an
+    /// exact round trip rather than a close one.
+    #[test]
+    fn a_decimal_comes_back_out_exactly_at_the_full_length() {
+        for text in [
+            "0",
+            "1.5",
+            "-2.25",
+            "-0.74501772828532335842941892835857434",
+            "0.14993443275456819177805709088257971",
+        ] {
+            let value = Fx::parse(text, 4).unwrap();
+            // 64 fraction bits a limb is 64 decimal digits a limb, exactly.
+            let full = value.to_decimal(64 * 3);
+            let back = Fx::parse(&full, 4).unwrap();
+            assert!(
+                back.sub(&value).to_f64() == 0.0,
+                "{text} went out as {full} and came back different"
+            );
+        }
+    }
+
+    /// Truncation is toward zero on both signs, which is what a caller spending
+    /// guard digits relies on: the place named is inside the place computed.
+    #[test]
+    fn to_decimal_truncates_toward_zero_and_never_rounds_away() {
+        let positive = Fx::parse("0.19999999999999999999", 4).unwrap();
+        assert_eq!(positive.to_decimal(1), "0.1");
+        let negative = Fx::parse("-0.19999999999999999999", 4).unwrap();
+        assert_eq!(negative.to_decimal(1), "-0.1");
+        assert_eq!(Fx::parse("-2.75", 4).unwrap().to_decimal(0), "-2");
+        assert_eq!(Fx::parse("1.5", 4).unwrap().to_decimal(4), "1.5000");
+    }
+
+    /// A place below the `f64` floor survives the round trip, which is the whole
+    /// reason this exists — and the double cannot tell it from a frame four
+    /// decades up, which is the reason it had to.
+    ///
+    /// **It is a round trip and not a string comparison, because a decimal is
+    /// not generally a binary fraction.** `tests/descend.rs` builds a centre out
+    /// of terms like `(2·col − 63)·5⁷·10^−(7+p)`, which carries a `5^−p` and so
+    /// is not dyadic: `parse` lands just inside it and the digits that come back
+    /// are the digits of what is *stored*. Nothing is lost by that — the gap is
+    /// below the last limb — but the assertion has to be made against the value.
+    #[test]
+    fn a_place_below_the_f64_floor_survives_the_round_trip() {
+        let deep = "-0.7450177282901986192987792989188510315333046875";
+        let value = Fx::parse(deep, 6).unwrap();
+        let back = Fx::parse(&value.to_decimal(64 * 5), 6).unwrap();
+        assert!(back.sub(&value).to_f64() == 0.0);
+        // Forty-six digits is enough to place a pixel of a 1e-40 frame, and what
+        // comes out at that length is within an ulp of the centre that went in.
+        let trimmed = Fx::parse(&value.to_decimal(46), 6).unwrap();
+        assert!(trimmed.sub(&value).to_f64().abs() < 1e-45);
+        // And the double cannot tell this place from a frame seventeen digits up.
+        assert_eq!(
+            value.to_f64(),
+            Fx::parse("-0.74501772829019861929877929891", 6)
+                .unwrap()
+                .to_f64()
+        );
+    }
+
+    /// An `f64` **is** a binary fraction, so its exact decimal is finite and
+    /// this is the one case where the string can be asserted outright. A famous
+    /// one, so that a reader can check it against something other than this
+    /// file: the double nearest a tenth, all fifty-five digits of it.
+    #[test]
+    fn the_exact_decimal_of_a_double_comes_out_whole() {
+        let tenth = Fx::from_f64(0.1, 6).unwrap();
+        assert_eq!(
+            tenth.to_decimal(55),
+            "0.1000000000000000055511151231257827021181583404541015625"
+        );
+        // One digit short of the end is the same number with its tail cut off,
+        // never a rounded last place.
+        assert_eq!(
+            tenth.to_decimal(54),
+            "0.100000000000000005551115123125782702118158340454101562"
+        );
     }
 
     #[test]

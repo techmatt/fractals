@@ -885,6 +885,61 @@ The rule, its threshold and the thirteen frames it was measured on are
   says plainly that some of what is painted as set is exterior this cap cannot reach. There
   is no control for it and no retry: the sentence is the answer.
 
+### Nearby minibrots *(deep_nearby_minibrots_ckpt138, 2026-09-20)*
+
+One button, Mandelbrot only. It searches the current view for the minibrots in and around
+it and fills an **ephemeral list** under the Frame block: nothing is stored, nothing
+reaches Saved, and no entry has a link contract of its own — an entry's target is an
+ordinary `dv` frame, which is why clicking one is a navigation like any other and the way
+back returns from it. The next search clears the list, and so does any gesture.
+
+**Three phases, and only the last one streams.** The atom-domain walk goes over the pool in
+bands the way the cap policy's probe does; the Newton solves go over the pool too, one seed
+to a worker, because a Newton step reads no reference orbit and so any worker can take any
+step of any seed. Only once every solve is in can the list be *ranked* — largest first is
+what the reader is promised — so the tiles are drawn after that, one at a time. Drawing is
+serial and has to be: the pool holds one reference orbit between all its workers and every
+tile wants a different one. That is also why the view's own orbit is gone afterwards and
+the next Render recomputes it, which is twenty milliseconds.
+
+`perturb-wasm/README.md` §9 is the arithmetic and the measurements. Three things about it
+shape what this tab can offer, and the third is the reason the list looks the way it does.
+
+- **The size that ranks and frames is the minibrot's body**, which is the *square* of the
+  atom domain `1/|A|` over an `O(1)` correction — on the audit's anchor, 9.75e-6 against a
+  body of 6.478e-12. A tile framed on the domain would put its minibrot in it at a
+  millionth of the frame.
+- **A `dv` centre is 64 characters**, and a minibrot found in a view at 1e-n sits near
+  1e-2n, so below about a 1e-30 view the entries are places this site can find and cannot
+  spell a link to. They are **listed anyway, greyed, and the footer counts them** — the
+  link contract does not move for this, and the honest thing is to say what is there.
+- ⚠ **A tile's cap is eight periods of its own nucleus, and that is expensive.** At the
+  *width's* cap a deep minibrot's tile is 100% unresolved — a flat black rectangle — because
+  the width policy at a tile's width gives about one and a half periods of it. Eight
+  resolves it, and the periods at these depths run to six figures, so a tile at 1e-22 is
+  about **fifty seconds** where the anchor's at 2e-11 is **one**.
+
+So a tile is drawn on its own only while it is estimated under five seconds, which is
+`AUTO_PREVIEW_MS`'s ruling applied to a second place: nothing expensive starts unasked. An
+entry over the budget is still a full entry — it names its minibrot's period and body, says
+what a preview would cost, and **goes to the frame when clicked**, which is what the list is
+for. The picture is the preview, not the point. In practice tiles draw from about 2e-11
+down to the low 1e-14s and the deeper frames give a list without pictures.
+
+| view | nuclei found | link-reachable | biggest tile |
+|---|--:|--:|--:|
+| anchor 2e-11 | 36 domains, 6 kept | 6 of 6 | period 2,838 · **1 s** |
+| tangle 1e-22 | 17 domains, 6 kept | 6 of 6 | period 94,776 · 50 s |
+| tangle 1e-28 | 37 domains, 6 kept | 6 of 6 | period 100,617 · 56 s |
+| pinch 1e-28 | 16 domains, 6 kept | 2 of 6 | period 107,349 · 61 s |
+| tangle 1e-40 | 18 domains, 6 kept | **0 of 6** | past the ceiling: 100% interior |
+| tangle 1e-54 | 29 domains, 6 kept | **0 of 6** | past the ceiling: 100% interior |
+
+**Both walls land in the same place.** Eight periods of a nucleus past 125,000 is over the
+million-iteration ceiling, so those tiles cannot resolve either — and that is the same view
+depth, about 1e-30, at which a centre stops fitting in a link. Below it this feature finds
+minibrots it can neither draw nor address, and says so rather than pretending.
+
 ### Getting in and out
 
 - **Clicking the tab** carries the viewer's frame over when it is on Mandelbrot or Julia at
@@ -1000,7 +1055,7 @@ one — read off its own `about 12 s left` progress line rather than timed — a
 | the audit's anchor at 2e-11, cap 48,551, its fine pass at 4× | **field 62.7 s**, shade 180 ms |
 | the same, its quarter pass alone | field 1.22 s |
 | a palette change on the anchor's kept field | **recolored in 126 ms** |
-| `perturb.wasm` | **115,339 bytes raw, 53,886 gzipped** (2026-09-20) |
+| `perturb.wasm` | **147,547 bytes raw, 65,370 gzipped** (2026-09-20) |
 | choosing the cap, at the anchor and at `tangle 1e-22` | **0.08% and 0.16%** of the fine pass |
 | a deep download, 640×360 at 4×, the anchor | **31.2 s**, against the row's own estimate of 35 s |
 | the same at 3840×2160 at 4× | **~24 min**, the row's estimate; 16× is refused on memory |
@@ -1027,8 +1082,17 @@ explorer/?dv=2&cx=-0.74501772828532335842941892835857434&cy=0.149934432754568191
 
 ### What is not here
 
-"Find the minibrot here" and nucleus references in the UI — out of scope by the prompt
-that built this, and not blocked by anything above.
+**Nucleus references in the main Render** — the tab still draws every frame against its
+own centre. *Nearby minibrots* below solves nuclei and draws its tiles against them, and
+measured the difference: on a tile the two are the same picture in the same time, because
+a tile is already centred on its nucleus and so the view centre *is* the reference. What
+naming the period buys there is the orbit's size and not its speed. Whether it pays on an
+ordinary frame, where the centre is not a nucleus, is a separate question this has not
+answered.
+
+Stopping a search early at the 2-fold and 4-fold symmetry stages, and anything about
+*Nearby minibrots* that persists: no entry reaches Saved, none has a link contract of its
+own, and the list is gone on the next search or the next gesture.
 
 **BLA was built, priced and taken back out, and §6 of the crate README is why.** The skip
 table bought 50× or more on the ladder it was first measured on — but every frame there

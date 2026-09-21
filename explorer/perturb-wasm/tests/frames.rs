@@ -23,8 +23,10 @@
 //! being at the cap its row claims.
 
 use perturb::kernel::Kernel;
+use perturb::nuclei;
 use perturb::policy;
 use perturb::{Anchor, Spec, cap};
+use std::time::Instant;
 
 /// A tile small enough that a sweep of all seven at eight times the cap is
 /// twenty seconds rather than minutes, and large enough that a share means
@@ -563,5 +565,279 @@ fn the_bar_and_the_share_sit_on_a_plateau() {
             }
         }
         println!();
+    }
+}
+
+// ------------------------------------------------- the nuclei in and around a frame
+
+/// The tile a preview is drawn at: the staged gallery's own 316 px, at 16:9 and
+/// one sample a pixel.
+const TILE_PREVIEW: (u32, u32) = (316, 178);
+
+/// What a tile is actually *timed* at here, and what that is scaled by to reach
+/// [`TILE_PREVIEW`].
+///
+/// **Timed small on purpose.** A deep tile at the real size is minutes, and
+/// forty of them twice over is an afternoon; the cost is linear in the samples
+/// and the per-frame overhead is one reference orbit of a few milliseconds, so a
+/// small tile measured and multiplied says the same thing for a fortieth of the
+/// wait. Every tile figure below is marked as scaled.
+const TILE_TIMED: (u32, u32) = (80, 45);
+const TILE_SCALE: f64 =
+    (TILE_PREVIEW.0 * TILE_PREVIEW.1) as f64 / (TILE_TIMED.0 * TILE_TIMED.1) as f64;
+
+/// The pool's effective parallelism on this machine, as `explorer/README.md`
+/// measures it — what turns a native second into a reader's second.
+const POOL: f64 = 4.7;
+
+/// Wasm's own overhead over native on this loop, from the crate README §4.
+const WASM: f64 = 1.05;
+
+/// `explorer/permalink.js`'s `COORDINATE_LIMIT`, which the deep contract shares.
+const COORDINATE_LIMIT: usize = 64;
+
+/// The frames the nucleus search is measured on: the seven, plus the shallow
+/// deep frame the prompt asks for, which is the anchor the whole tab is priced
+/// on.
+fn search_frames() -> Vec<(&'static str, &'static str, &'static str, f64, bool)> {
+    DEEP_FRAMES
+        .iter()
+        .map(|frame| (frame.0, frame.1, frame.2, frame.3, false))
+        .chain(
+            CONTROL_FRAMES
+                .iter()
+                .copied()
+                .filter(|f| f.0 == "anchor 2e-11"),
+        )
+        .collect()
+}
+
+/// The digits a centre needs to place a pixel of a frame this wide: the width's
+/// own decade, plus the eight guard digits `tests/descend.rs` spends, which put
+/// the truncation well under a pixel.
+fn digits_for(width: f64) -> usize {
+    (-width.log10()).ceil().max(0.0) as usize + 8
+}
+
+/// Whether a `dv` link can carry this frame — the question the prompt asks to be
+/// answered per entry rather than argued in general.
+fn spellable(c_re: &perturb::fx::Fx, c_im: &perturb::fx::Fx, width: f64) -> bool {
+    let digits = digits_for(width);
+    c_re.to_decimal(digits).len() <= COORDINATE_LIMIT
+        && c_im.to_decimal(digits).len() <= COORDINATE_LIMIT
+}
+
+/// The tile spec for one nucleus: centred on it, framed at [`nuclei::TILE_BODIES`] of
+/// its body, and — where `periodic` — drawn against **its own orbit**, wrapped
+/// at its period, which is the reference the prompt asks to be priced.
+fn tile_spec(nucleus: &nuclei::Nucleus, periodic: bool) -> Spec {
+    let width = nucleus.size() * nuclei::TILE_BODIES;
+    let digits = digits_for(width);
+    Spec {
+        center_re: nucleus.c_re.to_decimal(digits),
+        center_im: nucleus.c_im.to_decimal(digits),
+        width,
+        resolution: [TILE_TIMED.0, TILE_TIMED.1],
+        supersample: 1,
+        // **Not the width policy.** See `nuclei::TILE_PERIODS`: at the width
+        // policy's cap a deep tile is a flat black rectangle.
+        maxiter: Some(nuclei::tile_cap(nucleus.period, width)),
+        reference: None,
+        period: periodic.then_some(nucleus.period),
+        julia: None,
+        anchor: Anchor::Parameter,
+        interior: true,
+    }
+}
+
+/// Draw a tile and give back what it cost and what was in it.
+fn draw(spec: &Spec) -> (f64, f64, f64) {
+    let started = Instant::now();
+    let orbit = spec.reference_orbit().unwrap();
+    let kernel = Kernel::new(&orbit, spec.maxiter(), spec.interior).at_entry(spec.entry());
+    let offset = spec.centre_offset().unwrap();
+    let (mut interior, mut rebases, mut samples) = (0u64, 0u64, 0u64);
+    for row in 0..spec.sample_height() {
+        for col in 0..spec.sample_width() {
+            let (re, im) = spec.dc(offset, col, row);
+            let outcome = kernel.sample_with::<false>(re, im);
+            samples += 1;
+            rebases += outcome.rebases as u64;
+            if outcome.smooth.is_nan() {
+                interior += 1;
+            }
+        }
+    }
+    (
+        started.elapsed().as_secs_f64(),
+        100.0 * interior as f64 / samples as f64,
+        rebases as f64 / samples as f64,
+    )
+}
+
+/// **What the nucleus search finds on each frame, and what each half of it
+/// costs.**
+///
+/// The three halves are priced apart because they scale differently and only one
+/// of them is a surprise: detection is one walk of the probe grid at the frame's
+/// own settled cap, a solve is a few Newton steps at the nucleus's period, and a
+/// tile is an ordinary small render. The last column is the question a later
+/// prompt needs answered — what naming the nucleus as the reference is worth,
+/// which §2 of the crate README measured as 20.5 rebases a sample going to zero.
+#[test]
+#[ignore = "minutes: the whole search on eight frames, with every tile drawn twice"]
+fn what_the_nucleus_search_finds_and_what_it_costs() {
+    println!("\n| frame | settled cap | detect s | domains | solved | s/solve | kept | reachable |");
+    println!("|---|--:|--:|--:|--:|--:|--:|--:|");
+    let mut entries: Vec<(String, nuclei::Nucleus, f64)> = Vec::new();
+
+    for (label, re, im, width, julia) in search_frames() {
+        let base = canvas_spec(re, im, width, julia, None);
+        let settled = policy::settle(&base, policy::PROBE_COLS, policy::PROBE_ROWS).unwrap();
+        let spec = canvas_spec(re, im, width, julia, Some(settled.maxiter));
+
+        let orbit = spec.reference_orbit().unwrap();
+        let started = Instant::now();
+        let found = nuclei::seeds(&spec, &orbit, nuclei::GRID_COLS, nuclei::GRID_ROWS);
+        let detect = started.elapsed().as_secs_f64();
+
+        let started = Instant::now();
+        let kept = nuclei::search(&spec, nuclei::GRID_COLS, nuclei::GRID_ROWS, 12, 6).unwrap();
+        let solving = started.elapsed().as_secs_f64() - detect;
+        let solved = found.len().min(12);
+
+        let reachable = kept
+            .iter()
+            .filter(|n| spellable(&n.c_re, &n.c_im, n.size() * nuclei::TILE_BODIES))
+            .count();
+        println!(
+            "| {label} | {} | {detect:.2} | {} | {solved} | {:.2} | {} | {reachable} of {} |",
+            settled.maxiter,
+            found.len(),
+            solving / solved.max(1) as f64,
+            kept.len(),
+            kept.len(),
+        );
+        for nucleus in kept {
+            entries.push((label.to_string(), nucleus, width));
+        }
+    }
+
+    println!("\n| frame | period | body | tile width | digits | steps | residual | link |");
+    println!("|---|--:|--:|--:|--:|--:|--:|:--|");
+    for (label, nucleus, _) in &entries {
+        let width = nucleus.size() * nuclei::TILE_BODIES;
+        let digits = digits_for(width);
+        let spelling = nucleus.c_re.to_decimal(digits);
+        println!(
+            "| {label} | {} | {:.3e} | {width:.3e} | {} | {} | {:.1e} | {} |",
+            nucleus.period,
+            nucleus.size(),
+            spelling.len(),
+            nucleus.steps,
+            nucleus.residual,
+            if spellable(&nucleus.c_re, &nucleus.c_im, width) {
+                "yes"
+            } else {
+                "**past 64 characters**"
+            },
+        );
+    }
+
+    println!(
+        "\n**Tiles.** Timed at {}x{} and scaled by {TILE_SCALE:.0}x to {}x{}, then by wasm's \
+         {WASM:.2}x over native and the pool's {POOL:.1}x — so the last column is what a \
+         reader waits for one tile.",
+        TILE_TIMED.0, TILE_TIMED.1, TILE_PREVIEW.0, TILE_PREVIEW.1,
+    );
+    println!("\n| frame | period | tile cap | interior | view-centre ref | nucleus ref | gain | rebases | reader waits |");
+    println!("|---|--:|--:|--:|--:|--:|--:|--:|--:|");
+    let mut timed: Vec<String> = Vec::new();
+    for (label, nucleus, _) in &entries {
+        // The largest of each frame only: the tile table is the expensive one, and the
+        // biggest nucleus is both the worst case and the one a reader sees first.
+        if timed.contains(label) {
+            continue;
+        }
+        timed.push(label.clone());
+        let width = nucleus.size() * nuclei::TILE_BODIES;
+        let (plain, interior, before) = draw(&tile_spec(nucleus, false));
+        let (wrapped, _, after) = draw(&tile_spec(nucleus, true));
+        println!(
+            "| {label} | {} | {} | {interior:.0}% | {plain:.2} s | {wrapped:.2} s | **{:.2}x** | {before:.1} / {after:.1} | **{:.0} s** |",
+            nucleus.period,
+            nuclei::tile_cap(nucleus.period, width),
+            plain / wrapped,
+            wrapped * TILE_SCALE * WASM / POOL,
+        );
+    }
+}
+
+/// **What cap a preview tile of a minibrot needs**, which the width policy cannot
+/// answer.
+///
+/// The first run of [`what_the_nucleus_search_finds_and_what_it_costs`] drew a
+/// period-94,776 tile that was **100% interior and took 48 seconds** — a black
+/// rectangle, slowly. The cause is not the framing: at the tile's own width the
+/// policy gives about 148,000 iterations, which is **one and a half periods** of
+/// the thing being drawn, and a point near a period-`p` minibrot needs many
+/// periods before anything about it resolves.
+///
+/// So the tile's cap has to know the period, which — uniquely — it does, because
+/// the tile is centred on a nucleus the search has just solved. This walks the
+/// candidate rules on a frame's own nuclei and is what the rule in
+/// `nuclei::TILE_PERIODS` is chosen from.
+#[test]
+#[ignore = "~2 min: three nuclei, seven caps each, on a small tile"]
+fn what_a_preview_tile_needs() {
+    const PROBE_TILE: (u32, u32) = (80, 45);
+    let frame = &DEEP_FRAMES[0];
+    let base = canvas_spec(frame.1, frame.2, frame.3, false, None);
+    let settled = policy::settle(&base, policy::PROBE_COLS, policy::PROBE_ROWS).unwrap();
+    let spec = canvas_spec(frame.1, frame.2, frame.3, false, Some(settled.maxiter));
+    let kept = nuclei::search(&spec, nuclei::GRID_COLS, nuclei::GRID_ROWS, 12, 3).unwrap();
+
+    println!("\n| period | rule | cap | escaped | proven | starved | mean iters | s (80x45) |");
+    println!("|--:|---|--:|--:|--:|--:|--:|--:|");
+    for nucleus in &kept {
+        let width = nucleus.size() * nuclei::TILE_BODIES;
+        let digits = digits_for(width);
+        let policy_cap = cap::for_width(width);
+        let rules: Vec<(&str, u32)> = vec![
+            ("width policy", policy_cap),
+            ("2x policy", 2 * policy_cap),
+            ("4 periods", 4 * nucleus.period),
+            ("8 periods", 8 * nucleus.period),
+            ("16 periods", 16 * nucleus.period),
+            ("32 periods", 32 * nucleus.period),
+        ];
+        for (name, wanted) in rules {
+            let maxiter = wanted.min(cap::CEILING as u32);
+            let tile = Spec {
+                center_re: nucleus.c_re.to_decimal(digits),
+                center_im: nucleus.c_im.to_decimal(digits),
+                width,
+                resolution: [PROBE_TILE.0, PROBE_TILE.1],
+                supersample: 1,
+                maxiter: Some(maxiter),
+                reference: None,
+                period: Some(nucleus.period),
+                julia: None,
+                anchor: Anchor::Parameter,
+                interior: true,
+            };
+            let started = Instant::now();
+            let run = walk(&tile);
+            println!(
+                "| {} | {name} | {maxiter} | {:.1}% | {:.1}% | {:.1}% | {:.0} | {:.2} |",
+                nucleus.period,
+                run.share(run.escaped),
+                run.share(run.detected),
+                run.share(run.capped),
+                run.mean_iterations(),
+                started.elapsed().as_secs_f64(),
+            );
+        }
+        println!("|  |  |  |  |  |  |  |  |");
     }
 }

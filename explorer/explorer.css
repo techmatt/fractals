@@ -1480,3 +1480,60 @@ canvas.palette-final {
    filled, which says what it is rather than showing a broken image. */
 .saved-tile.is-deep { background: var(--well-pending); }
 .saved-tile.is-deep img { visibility: hidden; }
+
+/* ------------------------------------------------------- nearby minibrots, in the Deep tab
+
+   An ephemeral list: nothing here is stored, nothing reaches Saved, and the whole thing is
+   cleared by the next search and by any change of location. Two to a row rather than the
+   gallery's three, because an entry carries a line of text under its picture and a 316px
+   tile at a third of this panel would be smaller than the text beside it. */
+.minibrots {
+  padding: 0.2rem var(--gutter) 0.4rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(45%, 1fr));
+  gap: 0.4rem;
+  /* The gallery's ruling, for the gallery's reason: an auto row asks a block holding one
+     replaced element for a minimum height and is told zero. */
+  grid-auto-rows: max-content;
+  align-items: start;
+}
+
+.minibrot {
+  appearance: none;
+  padding: 0;
+  border: 1px solid transparent;
+  background: none;
+  color: var(--well-ink-dim);
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+.minibrot:hover { border-color: var(--well-ink-dim); color: var(--well-ink); }
+.minibrot:focus-visible { outline: 2px solid var(--well-link); outline-offset: -2px; }
+
+/* The well a tile lands in, which is also what says why one has not. It holds the tile's
+   own 16:9 from the start so the list does not reflow as pictures arrive — a row of
+   entries that jumped every time a forty-second render landed would be unusable. */
+.minibrot-tile {
+  aspect-ratio: 16 / 9;
+  background: var(--well-pending);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 0.4rem;
+  text-align: center;
+  font-size: 0.7rem;
+  line-height: 1.25;
+  overflow: hidden;
+}
+.minibrot-tile canvas { display: block; width: 100%; height: auto; }
+
+.minibrot-said { font-size: 0.7rem; font-variant-numeric: tabular-nums; }
+
+/* An entry whose centre is past what a link can spell. It is still listed — the search
+   found it and saying so is the honest thing — but there is nowhere to send a reader. */
+.minibrot:disabled { cursor: default; opacity: 0.55; }
+.minibrot:disabled:hover { border-color: transparent; color: var(--well-ink-dim); }
