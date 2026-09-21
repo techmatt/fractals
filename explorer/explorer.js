@@ -1113,6 +1113,20 @@ async function drawPass() {
     panel?.describe();
   }
 
+  // **Whether this pass has written a progress line**, which is what the catch below
+  // needs to know. A pass that fails having written one has to take it back: the line
+  // would otherwise go on saying the picture is being iterated under a stopped dot and a
+  // sentence saying it cannot be — which is what a width just above the `f64` floor did,
+  // where the *preview* is the pass the module refuses and `1e-15` and below are refused
+  // by the plan at the top of this function, which clears the line already. A pass that
+  // has written none must leave it alone: a recipe refused on a recolour never reaches a
+  // progress line, and the line it finds there describes the picture still on the screen.
+  let progressing = false;
+  const progress = (text) => {
+    progressing = true;
+    stat(text);
+  };
+
   try {
     // Inside the try, because a recipe the engine refuses — a rank transfer under the
     // modulate, which spends its base by rank already — throws from `shade` rather than
@@ -1150,14 +1164,14 @@ async function drawPass() {
       if (cachedPreview !== undefined) {
         stretch(renderer.shade(cachedPreview, view).image);
       } else {
-        stat(`iterating at ${previewGrid.width}×${previewGrid.height}…`);
+        progress(`iterating at ${previewGrid.width}×${previewGrid.height}…`);
         const preview = await renderer.field(view, previewGrid.width, previewGrid.height);
         if (preview === null || pass !== drawing) return;
         renderer.remember(previewKey, preview);
         stretch(renderer.shade(preview, view).image);
       }
 
-      stat(`iterating at ${size} on ${renderer.workerCount} workers…`);
+      progress(`iterating at ${size} on ${renderer.workerCount} workers…`);
       const full = await renderer.field(view, grid.width, grid.height);
       if (full === null || pass !== drawing) return;
       renderer.remember(fullKey, full);
@@ -1181,12 +1195,12 @@ async function drawPass() {
     let field = renderer.cached(finalKey);
     const recolor = field !== undefined;
     if (!recolor) {
-      stat(`${size} · iterating at ${FINAL_SUPERSAMPLE ** 2}× on ${renderer.workerCount} workers…`);
+      progress(`${size} · iterating at ${FINAL_SUPERSAMPLE ** 2}× on ${renderer.workerCount} workers…`);
       field = await renderer.field(view, grid.width, grid.height, { supersample: FINAL_SUPERSAMPLE });
       if (field === null || pass !== drawing) return;
       renderer.remember(finalKey, field);
     } else if (!shape.direct) {
-      stat(`${size} · coloring at ${FINAL_SUPERSAMPLE ** 2}×…`);
+      progress(`${size} · coloring at ${FINAL_SUPERSAMPLE ** 2}×…`);
     }
 
     // A direct trap arrived painted and reduced, so there is nothing to colour. Anything
@@ -1264,6 +1278,7 @@ async function drawPass() {
     // asked for, so a reader can see what to change; the address bar keeps naming the
     // picture that is still on the screen, because a refused recipe is not a view.
     say(String(error.message ?? error));
+    if (progressing) stat("");
     // The line above is a sentence for a reader; the stack is for whoever has to find it.
     console.error("draw failed", { state: renderState.dataset.state, view }, error);
     if (pass === drawing) showState("stopped");
