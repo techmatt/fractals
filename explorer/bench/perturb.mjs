@@ -70,13 +70,31 @@ export async function load(url = new URL("../perturb.wasm", import.meta.url)) {
     return band(spec, orbit, 0, spec.resolution[1]);
   };
 
+  /** One band of the cap policy's probe: counts, not lanes. The same call
+   *  `deep-worker.js` makes, with the orbit for the cap being tried. */
+  const probe = (spec, orbit, cols, rows, rowStart, rowEnd) => {
+    const [pointer, length] = put(JSON.stringify(spec));
+    const at = wasm.alloc(orbit.length);
+    new Uint8Array(wasm.memory.buffer, at, orbit.length).set(orbit);
+    const out = wasm.probe_band(pointer, length, at, orbit.length, cols, rows, rowStart, rowEnd);
+    wasm.dealloc(pointer, length);
+    wasm.dealloc(at, orbit.length);
+    const size = new DataView(wasm.memory.buffer).getUint32(out, true);
+    const text = decoder.decode(new Uint8Array(wasm.memory.buffer, out + 4, size));
+    wasm.dealloc(out, size + 4);
+    return JSON.parse(text);
+  };
+
   return {
     wasm,
     plan,
     reference,
     band,
     frame,
+    probe,
     maxiter: (width) => wasm.maxiter_for_width(width),
     limbs: (width, samples) => wasm.limbs_for_width(width, samples),
+    faultShare: () => wasm.fault_share(),
+    nextCap: (maxiter) => wasm.next_cap(maxiter),
   };
 }

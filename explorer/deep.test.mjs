@@ -437,3 +437,108 @@ test("the tab's own spec builder produces what the module reads", { skip }, () =
   assert.equal(narrowed.ok, false);
   assert.match(narrowed.why, /has to be a string/);
 });
+
+// ------------------------------------------------------- the cap the frame asks for
+//
+// **The fourth claim, and it fails the same way the other three do** — by drawing a
+// plausible picture *(deep_cap_policy_ckpt138)*. Below about 1e-22 the width policy's cap
+// lands inside the frame's own escape-count distribution, so a sixth to a third of a busy
+// frame runs out of iterations and is painted as interior when it was exterior all along,
+// and nothing on the page looks wrong. `perturb-wasm/src/policy.rs` is the rule and its
+// README carries the measurement over thirteen frames; what is held here is the seam the
+// page drives it through — that the probe's bands sum to the frame, that the module's own
+// threshold is what decides, and that the two frames the rule has to separate are
+// separated by the committed bytes rather than by a native run.
+
+/** `tangle 1e-22` — one of the seven frames of `perturb-wasm/tests/frames.rs`, and a frame
+ *  the width's cap paints wrong. */
+const TANGLE = {
+  center_re: "-0.745017728290198619298817365858",
+  center_im: "0.149934432756897045833502403382",
+  width: 1e-22,
+};
+
+/** A probe grid small enough that a suite can afford four of them, and large enough that a
+ *  tenth of it is a share rather than a sample or two. The page's own is 64 × 36. */
+const PROBE = [32, 18];
+
+/** The whole probe, walked as the pool walks it: cut into row ranges and summed. */
+function probeFrame(spec, bands = 4) {
+  const orbit = perturb.reference(spec);
+  assert.ok(orbit !== null, "reference_orbit refused");
+  const [cols, rows] = PROBE;
+  const total = { samples: 0, escaped: 0, proven: 0, starved: 0, fault: 0, iterations: 0 };
+  for (let index = 0; index < bands; index++) {
+    const start = Math.floor((index * rows) / bands);
+    const end = Math.floor(((index + 1) * rows) / bands);
+    if (end <= start) continue;
+    const counts = perturb.probe(spec, orbit, cols, rows, start, end);
+    assert.ok(counts.ok, counts.why);
+    assert.equal(counts.maxiter, spec.maxiter);
+    for (const key of Object.keys(total)) total[key] += counts[key];
+  }
+  return total;
+}
+
+test("a probe's bands sum to the frame, however it is cut", { skip }, () => {
+  const spec = { ...TANGLE, schema: 1, resolution: PROBE, maxiter: perturb.maxiter(1e-22) };
+  const whole = probeFrame(spec, 1);
+  assert.equal(whole.samples, PROBE[0] * PROBE[1]);
+  assert.equal(whole.escaped + whole.proven + whole.starved, whole.samples);
+  // The cap's fault is a part of what starved, never a fourth kind.
+  assert.ok(whole.fault <= whole.starved);
+  // Cut eight ways it is the same frame, which is what lets the page spread it over the
+  // pool: a band is a range of the probe's rows and says nothing about what is in them.
+  assert.deepEqual(probeFrame(spec, 8), whole);
+});
+
+test("the two frames the cap policy has to separate are separated by the module", { skip }, () => {
+  const bar = perturb.faultShare();
+  assert.ok(bar > 0 && bar < 1, `a share, not ${bar}`);
+
+  // **The frame the cap gets wrong.** At the width's own cap a sixth to a third of it is
+  // still escaping when the count runs out, and the module says so.
+  const policy = perturb.maxiter(1e-22);
+  const starved = probeFrame({ ...TANGLE, schema: 1, resolution: PROBE, maxiter: policy });
+  assert.equal(starved.proven, 0, "nothing at this depth is proven interior");
+  assert.ok(
+    starved.fault / starved.samples > bar,
+    `tangle 1e-22 at ${policy} is ${starved.fault}/${starved.samples} the cap's fault`,
+  );
+
+  // Doubling resolves it, which is the rule's own next step.
+  const next = perturb.nextCap(policy);
+  assert.equal(next, 2 * policy);
+  const resolved = probeFrame({ ...TANGLE, schema: 1, resolution: PROBE, maxiter: next });
+  assert.ok(
+    resolved.fault / resolved.samples <= bar,
+    `tangle 1e-22 at ${next} is ${resolved.fault}/${resolved.samples} the cap's fault`,
+  );
+  // And it resolved by *escaping*, not by being proven interior — the whole point.
+  assert.ok(resolved.escaped > starved.escaped, "a deeper cap let more of the frame out");
+
+  // **The frame the cap gets right, and the reason the rule reads a derivative.** More of
+  // the anchor dies at its cap unproven than of the tangle — it is a minibrot body whose
+  // period of 2,838 fits seventeen times into the cap, so the interior switch has no room
+  // to fire — and almost none of that is the cap's fault, because `|dz|` is collapsing
+  // rather than exploding. A rule that read the unresolved share would escalate this
+  // frame to the ceiling and multiply its wait by twenty for nothing.
+  const anchorCap = perturb.maxiter(2e-11);
+  const anchor = probeFrame({ ...ANCHOR, schema: 1, resolution: PROBE, maxiter: anchorCap });
+  assert.ok(
+    anchor.starved / anchor.samples > starved.starved / starved.samples,
+    "more of the anchor dies unproven than of the tangle",
+  );
+  assert.ok(
+    anchor.fault / anchor.samples <= bar,
+    `the anchor at ${anchorCap} is ${anchor.fault}/${anchor.samples} the cap's fault`,
+  );
+});
+
+test("the escalation cannot run away past the kernel's ceiling", { skip }, () => {
+  const ceiling = perturb.plan({ ...ANCHOR, schema: 1, resolution: [16, 9] }).ceiling;
+  assert.equal(ceiling, 1_000_000);
+  assert.equal(perturb.nextCap(ceiling), ceiling, "a cap at the ceiling does not move");
+  assert.equal(perturb.nextCap(600_000), ceiling, "and one under it doubles into it");
+  assert.equal(perturb.nextCap(93_600), 187_200);
+});

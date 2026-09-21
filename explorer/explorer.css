@@ -1326,12 +1326,21 @@ canvas.palette-final {
    it would draw, and the iteration cap — because the viewer beside it is the picture and
    a deep picture is the one thing on this page worth the whole column.
 
-   What is NOT here is a second Palette section. A deep field is a smooth field and the
-   engine colours it unchanged, so the Palette group under the canvas serves both and the
-   only sections that go away are the ones that would be lying: Download, which this tab
-   does not offer; Mode and the family, which have one value each down here. */
-.viewer.is-deep .control-group:not(.palette-group),
+   What is NOT here is a second Palette section, and since deep_cap_policy_ckpt138 not a
+   second Download row either. A deep field is a smooth field and the engine colours it
+   unchanged, so the Palette group under the canvas serves both; and the Download row draws
+   whichever view owns the canvas, so it serves both too. The only sections that go away are
+   the ones that would be lying: Mode and the family, which have one value each down here. */
+.viewer.is-deep .control-group:not(.palette-group):not(.download-group),
 .viewer.is-deep #details {
+  display: none;
+}
+
+/* What goes with the shallow view is what is about the shallow view. Save, because the
+   Deep panel carries its own; and the view buttons, every one of which names a frame this
+   kernel does not have — a seat, the whole Mandelbrot set, a Julia set at the pointer. */
+.viewer.is-deep #download > .save-view,
+.viewer.is-deep #download > .view-toggles {
   display: none;
 }
 

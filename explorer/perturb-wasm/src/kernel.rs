@@ -83,6 +83,32 @@ pub struct Outcome {
     /// orbit. The archive's only glitch test, kept as a diagnostic and never as a
     /// branch in the picture — rebasing covers it.
     pub degenerate: bool,
+    /// `|dz|²` where the sample stopped, as the switch's own two numbers: a
+    /// mantissa in `[1, 2^64)` and a power-of-two exponent.
+    ///
+    /// **The switch compares these; this hands them out**, which is the whole of
+    /// the difference. `detected_interior` says *proven* and nothing about a
+    /// sample that is merely on its way there, and the cap policy
+    /// ([`crate::policy`]) needs the second thing: a sample the cap gave up on
+    /// with `|dz|` collapsing is one the picture already paints correctly, and
+    /// one with `|dz|` enormous is exterior the cap stopped short of. Nothing in
+    /// the picture reads either number.
+    ///
+    /// **Meaningless where [`Kernel::interior`] is off**, because the product is
+    /// only maintained under the switch: `(1.0, 0)` then, and it says nothing.
+    pub dz_mantissa: f64,
+    pub dz_exponent: i32,
+}
+
+impl Outcome {
+    /// `log₂|dz|²` where the sample stopped, saturating at `-inf` on a sample
+    /// that passed exactly through the origin.
+    ///
+    /// Computed here rather than in the loop: the loop returns the pair it
+    /// already holds, and a logarithm no picture reads has no business in it.
+    pub fn dz_log2(&self) -> f64 {
+        self.dz_exponent as f64 + self.dz_mantissa.log2()
+    }
 }
 
 /// The reference orbit plus the policy a frame reads it under.
@@ -272,6 +298,8 @@ impl<'a> Kernel<'a> {
                     rebases,
                     detected_interior: false,
                     degenerate,
+                    dz_mantissa: derivative,
+                    dz_exponent: exponent,
                 };
             }
 
@@ -285,7 +313,7 @@ impl<'a> Kernel<'a> {
                         if derivative == 0.0 {
                             // `z` passed exactly through the origin: this is the
                             // nucleus itself, and it is interior.
-                            return interior_outcome(n, rebases, true, degenerate);
+                            return interior_outcome(n, rebases, true, degenerate, 0.0, exponent);
                         }
                         derivative *= TWO64;
                         exponent -= 64;
@@ -296,12 +324,12 @@ impl<'a> Kernel<'a> {
                 // of iterations of an interior sample, so the `f64` compare
                 // behind it costs nothing on the frames that do not use it.
                 if exponent <= floor + 64 && derivative < pow2_at_most(floor - exponent) {
-                    return interior_outcome(n, rebases, true, degenerate);
+                    return interior_outcome(n, rebases, true, degenerate, derivative, exponent);
                 }
             }
 
             if n >= maxiter {
-                return interior_outcome(n, rebases, false, degenerate);
+                return interior_outcome(n, rebases, false, degenerate, derivative, exponent);
             }
 
             let delta_norm_sq = delta_re * delta_re + delta_im * delta_im;
@@ -336,13 +364,22 @@ fn pow2_at_most(k: i32) -> f64 {
     }
 }
 
-fn interior_outcome(n: u32, rebases: u32, detected: bool, degenerate: bool) -> Outcome {
+fn interior_outcome(
+    n: u32,
+    rebases: u32,
+    detected: bool,
+    degenerate: bool,
+    dz_mantissa: f64,
+    dz_exponent: i32,
+) -> Outcome {
     Outcome {
         smooth: f64::NAN,
         iterations: n,
         rebases,
         detected_interior: detected,
         degenerate,
+        dz_mantissa,
+        dz_exponent,
     }
 }
 

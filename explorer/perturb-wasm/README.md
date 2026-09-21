@@ -33,14 +33,17 @@ pins the one formula that had to come from next door.
 src/fx.rs          fixed-point reals, n × u64 limbs, written for wasm32
 src/reference.rs   one high-precision orbit per frame, projected to f64
 src/kernel.rs      the per-sample f64 delta loop, with rebasing
+src/policy.rs      the cap a frame asks for: what died at a cap, and whether
+                   raising it would change the picture
 src/json.rs        a reader for one flat JSON object
-src/lib.rs         the spec, the cap policy, and the exports
+src/lib.rs         the spec, the width's cap, and the exports
 smooth-cases.json  400 of the engine's own samples, as the pin
 tests/oracle.rs    the kernel against a brute-force oracle (ignored by default)
 tests/probe.rs     three-way probes; not proofs, and they say so
 tests/descend.rs   the frame finder: deep frames with structure, and the exact
                    decimal walk that gets to them (ignored by default)
-tests/frames.rs    the seven it settled on, as cases, with their links
+tests/frames.rs    the seven it settled on, as cases, with their links — and
+                   the six controls a cap policy has to leave alone
 ```
 
 ## The design, in one page
@@ -94,7 +97,15 @@ tests/frames.rs    the seven it settled on, as cases, with their links
 - **A named period makes the reference periodic.** The orbit is stored for one
   period and the index wraps instead of rebasing: 45 KB instead of 777 KB at the
   anchor, and — measured below — no rebasing at all.
-- **The cap policy is the engine's shape without the engine's ceiling.**
+- **The cap a frame draws at is the frame's own, and §8 is the rule.** The
+  width's answer is where the walk *starts*: below about 1e-22 it lands inside the
+  frame's own escape-count distribution and a sixth to a third of a busy frame is
+  painted as set when it was exterior the count never reached. So a frame is
+  probed at that cap, and the cap doubles while samples are still dying with
+  `|dz|` past the escape radius. It moves five of the seven deep frames by one
+  doubling and repaints a sixth to a third of each; it moves none of the six
+  controls at all.
+- **The width's own cap is the engine's shape without the engine's ceiling.**
   `maxiter::for_width` saturates at 67,000 by a width of about 4.7e-16, which
   would flatten every perturbation-depth view to one cap. The shape is restated
   here and only `CEILING` moves, to a provisional 1,000,000. Touching
@@ -597,8 +608,8 @@ interior, they were exterior the cap stopped a few thousand short. The `body` pa
 is the same fault four times over — at the policy cap they are a **flat interior
 fill**, over escape counts that run from about 100,000 to 400,000. The policy's cap
 lands inside the frame's own escape-count distribution, and what a reader sees is
-the shortfall painted as set. **Moving the policy is a prompt of its own**, and
-these seven frames are what it should be argued on.
+the shortfall painted as set. **The policy moved, and §8 is where** — these seven
+frames and six controls beside them are what it was argued on.
 
 **Not one sample of any of the seven is *proven* interior.** The switch needs
 `|dz|²` under `2⁻⁶⁴`, which takes many periods of whatever component a sample is
@@ -637,6 +648,124 @@ ships on, at −64, and on the frames a reader actually opens it costs 9% to 12%
 width rule was the thing this section set out to write, and the table is the
 reason there is not one.
 
+### 8. The cap a frame asks for *(deep_cap_policy_ckpt138, 2026-09-20)*
+
+§6's open problem, closed. **The cap is no longer the width's answer alone: a frame
+is asked what it needs, and the answer is the frame's.** `src/policy.rs` is the
+rule, `tests/frames.rs` is the evidence, and the page drives it a rung at a time
+through `probe_band`.
+
+**A width rule was never available**, and §7 had already said why about the
+interior switch: `anchor 1e-22` is 100% *proven* interior at the policy cap and
+`tangle 1e-22` is 29% cap-starved at the same width and the same cap. What a frame
+needs depends on what it contains. So the policy is **self-escalation** — start at
+the width's cap, look at what died there, double while the frame is still dying for
+want of iterations, stop at the ceiling.
+
+#### The three ways a sample ends `NaN`, and the one that is a fault
+
+The hard half is not the escalation, it is knowing when to stop. **The share of a
+frame that dies unproven says nothing on its own.** It is 100% on `body 1e-22` at
+both the policy cap and twice it, where the frame is exterior the cap has not
+reached; and it is 38% on `anchor 2e-11`, where the frame is the minibrot's own
+body — interior the switch cannot prove, because the period is 2,838 and only
+seventeen of them fit inside the cap. One number, opposite pictures, and a rule
+that read it would multiply the anchor's wait by twenty for nothing.
+
+What separates them is **`|dz|` where the sample stopped**. `Outcome` now hands out
+the switch's own mantissa and exponent rather than only comparing them — two field
+stores at a sample's exit, nothing added to the loop — and
+`Outcome::dz_log2` is what the policy reads. So a `NaN` sample is one of:
+
+- **proven interior** — the switch fired, `|dz|²` fell under `2^-64`. A deeper cap
+  confirms it and changes nothing.
+- **on its way there** — no proof, but `|dz|` is small and collapsing. Black is
+  already the right colour.
+- **the cap's fault** — `|dz|` has grown past the escape radius. The map is
+  expanding hard here, nothing is settling into anything, and the only reason the
+  sample is black is that the loop ran out.
+
+`FAULT_EXPONENT` is that bar: **`log₂|dz|² > 16`, which is `|dz|² > 65,536`, the
+escape radius.** Measured at the policy cap, 32×18, over the frames that have to be
+told apart — and it is two orders of magnitude of daylight:
+
+| frame | unproven at the policy cap | `log₂\|dz\|²` of those: min / median / max |
+|---|--:|--:|
+| tangle 1e-22 | 29.3% | 87 / 123 / 157 |
+| tangle 1e-28 | 21.0% | 128 / 175 / 211 |
+| tangle 1e-40 | 22.7% | 225 / 261 / 364 |
+| pinch 1e-28 | 16.5% | 141 / 179 / 233 |
+| tangle 1e-54 | 27.4% | 317 / 356 / 404 |
+| body 1e-22 | 100% | 27 / 27 / 27 |
+| body 1e-28 | 100% | 25 / 25 / 25 |
+| **anchor 2e-11** | **37.8%** | **−59 / −3 / 162** |
+
+The `body` pair is the reason the bar is 16 and not 32: at the policy cap their
+whole frame sits at 27, which is above the escape radius and below `2^32`. The
+anchor is the reason it is not 0.
+
+#### Where it settles, and what it costs
+
+`FAULT_SHARE` is **a tenth**: the smallest share that has to escalate is
+`pinch 1e-28` at 17% and the largest that must not is the anchor at 5%.
+`where_the_policy_settles`, on the 1136×636 canvas at the fine pass's supersample,
+probing 64×36 of that grid — so these are the numbers the page takes:
+
+| frame | policy cap | settled | × | the cap's fault, rung by rung | mean iterations | repainted | deciding |
+|---|--:|--:|--:|:--|--:|--:|--:|
+| tangle 1e-22 | 93,600 | **187,200** | 2× | 29.4% → 0.2% | 89,230 → 92,524 | **29.2%** | 0.16% |
+| tangle 1e-28 | 117,518 | **235,036** | 2× | 19.7% → 0.3% | 109,808 → 112,855 | **19.5%** | 0.16% |
+| tangle 1e-40 | 165,354 | **330,708** | 2× | 24.8% → 0.0% | 159,892 → 162,529 | **24.8%** | 0.16% |
+| pinch 1e-28 | 117,518 | **235,036** | 2× | 17.2% → 0.1% | 108,488 → 110,471 | **17.1%** | 0.16% |
+| tangle 1e-54 | 221,162 | **442,324** | 2× | 28.1% → 0.0% | 215,594 → 219,587 | **28.0%** | 0.16% |
+| body 1e-22 | 93,600 | **748,800** | 8× | 100% → 100% → 44.1% → 2.2% | 93,600 → 398,834 | **97.8%** | 0.21% |
+| body 1e-28 | 117,518 | **940,144** | 8× | 100% → 100% → 20.9% → 0.1% | 117,518 → 470,687 | **99.9%** | 0.22% |
+| anchor 2e-11 | 48,551 | 48,551 | 1× | 5.3% | 32,383 | 0.0% | 0.08% |
+| anchor 1e-22 | 93,600 | 93,600 | 1× | 0.0% | 2,838 | 0.0% | 0.08% |
+| misiurewicz 1e-22 | 93,600 | 93,600 | 1× | 0.0% | 68 | 0.0% | 0.08% |
+| home 3 | 4,000 | 4,000 | 1× | 0.0% | 107 | 0.0% | 0.08% |
+| seahorse 1e-6 | 29,819 | 29,819 | 1× | 0.0% | 169 | 0.0% | 0.08% |
+| julia anchor 2e-9 | 40,578 | 40,578 | 1× | 1.9% | 12,677 | 0.0% | 0.08% |
+
+**`repainted` is the whole point**: the share of the frame that was painted as set
+at the width's cap and escapes at the settled one. A sixth to a third of each
+tangle, effectively the whole of each `body` — they were flat black fills over
+escape counts running to 400,000 — and **nothing at all on any of the six
+controls**, which is the other half of the requirement and was the harder half to
+meet.
+
+**Five of the seven settle at twice the cap for 2% to 3.7% more mean iterations**,
+which is §6's own finding turned into a policy. The `body` pair costs four times
+the work, and that is what it costs to draw a frame the old cap could not see into
+at all.
+
+**Deciding costs 0.08% to 0.22% of the fine pass it decides for**, because the
+probe is 2,304 of the frame's own sample cells — about a thousandth of one pass —
+at the frame's own limb count, through the frame's own geometry. So the
+supersampled pass runs **once**, at the settled cap. Nothing about the decision is
+an approximation of the thing decided; only the number of samples is smaller.
+
+#### The bar and the share are on a plateau
+
+`the_bar_and_the_share_sit_on_a_plateau` walks every rung of all thirteen frames
+and reads it twenty-five ways: five bars from 8 to 24, five shares from 5% to 15%.
+**Twenty-two of the twenty-five give the same thirteen answers.** The three that
+differ are all share = 5%, at bars 8, 12 and 16, and all move one frame —
+`anchor 2e-11` — by one doubling. Neither number is quoted to a second digit
+because neither deserves one.
+
+#### What is not decided here
+
+**A pinned cap is drawn as pinned.** Escalation is the *policy*, so it runs where
+the width's answer is in force and nowhere else: a cap a reader typed, and a cap a
+link carries, are drawn exactly as asked. That distinction already existed on the
+page as `pinnedCap` and needed no new control.
+
+**And a frame can run out of ceiling.** The walk stops at `cap::CEILING`, a
+million, and `Settled::at_ceiling` says the frame is still the cap's fault there.
+None of the thirteen reaches it. What a page does with that is a sentence, not a
+retry.
+
 ## Running it
 
 ```text
@@ -644,7 +773,8 @@ cargo test  --release                                  # 45 unit tests and five
                                                        #   cheap pins, under a second
 cargo test  --release --test oracle -- --ignored --nocapture   # the ladders, ~30 s
 cargo test  --release --test probe  -- --ignored --nocapture   # the three-way probes
-cargo test  --release --test frames -- --ignored --nocapture   # the cap sweep, ~20 s
+cargo test  --release --test frames -- --ignored --nocapture   # the cap sweep and
+                                                       #   the policy, ~100 s
 cargo test  --release --test descend -- --ignored --nocapture  # the frame finder, ~12 min
 cargo build --release --target wasm32-unknown-unknown          # perturb.wasm
 node scratch/perturb_validate/bench.mjs                        # the wasm price
@@ -671,7 +801,7 @@ its own branch rather than a stage of the explorer's bake.
 | `crate` | `explorer/perturb-wasm` |
 | `dependencies` | `[]`, and it is written down because it is the design |
 | `rustc` | the compiler, with its commit and date |
-| `raw_bytes` / `gzip_bytes` | **112,675 raw, 52,784 gzipped** |
+| `raw_bytes` / `gzip_bytes` | **115,339 raw, 53,886 gzipped** |
 
 Two fields of `engine.manifest.json` are **absent** rather than empty:
 `engine_version`, because this crate does not link the engine, and

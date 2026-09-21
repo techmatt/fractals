@@ -50,6 +50,24 @@ const OPENING_BAND_ROWS = 2;
 /** How far over target a band may be predicted to run before the queue is re-cut. */
 const RECUT_OVER = 1.5;
 
+/**
+ * The cap policy's probe grid: how many of the frame's own sample cells one rung of the
+ * escalation looks at.
+ *
+ * **The page names it rather than the module**, because how finely to probe is a cost and
+ * the pool is what pays it; `perturb-wasm`'s `policy::PROBE_COLS` and `PROBE_ROWS` are the
+ * same two numbers as the crate's own default, and its harness measures at them. 2,304
+ * samples is about a thousandth of one pass of a deep frame, and measured over the
+ * thirteen frames of `tests/frames.rs` the whole escalation costs 0.08% to 0.22% of the
+ * fine pass it decides the cap for.
+ *
+ * The rows are cut across the pool exactly as a band's are: one worker walking the whole
+ * probe of the deepest frame at eight times the policy cap is about seven seconds nobody
+ * can cancel, and over eight workers it is under a second.
+ */
+const PROBE_COLS = 64;
+const PROBE_ROWS = 36;
+
 /** The viewport the shade spec names, so that `engine.wasm` has one it can resolve.
  *
  *  Left empty, which the module reads as the family's own home view — the most obviously
@@ -229,6 +247,128 @@ export class DeepRenderer {
    *  at: the one number that says what the reference orbit will cost. */
   limbs(width, sampleWidth) {
     return this.planner.limbs_for_width(width, sampleWidth);
+  }
+
+  /** The share of a frame that may still be the cap's fault before the cap is raised.
+   *  The kernel's `policy::FAULT_SHARE`, asked rather than restated. */
+  get faultShare() {
+    return this.planner.fault_share();
+  }
+
+  /**
+   * **The cap this frame asks for**, walked a rung at a time.
+   *
+   * Opens at the view's own cap — the width policy's, since a reader who has pinned one
+   * never reaches here — renders [`PROBE_COLS`] × [`PROBE_ROWS`] of the frame's own sample
+   * cells at it, and doubles while more than `faultShare` of those cells died at the cap
+   * with `|dz|` grown past the escape radius. The crate's `policy` module is where the
+   * three kinds of cap-death are set out and why only that one is a fault; what is here is
+   * the loop and the pool.
+   *
+   * Resolves with `{ maxiter, from, steps, atCeiling, fault, rungs, iterations, elapsed }`,
+   * or `null` where a newer generation started while it ran.
+   *
+   * **The probe is a subset of the frame, not a smaller picture of it**: the cells, the
+   * limb count, the geometry and the reference orbit are the frame's own, so the fine pass
+   * runs once, at the cap this settled on, and nothing about the decision is an
+   * approximation of the thing being decided.
+   */
+  async settle(view, width, height, { supersample = 1, onRung } = {}) {
+    this.cancel();
+    const generation = this.generation;
+    const started = performance.now();
+    const from = view.maxiter;
+    let at = view;
+    let iterations = 0;
+    const rungs = [];
+
+    for (;;) {
+      const reference = await this.#reference(at, width, height, supersample);
+      if (generation !== this.generation) return null;
+      if (reference === null) {
+        throw new Error("the kernel could not compute a reference orbit for this view");
+      }
+      const spec = deepSpecOf(at, width, height, { supersample, reference });
+      const counts = await this.#probe(JSON.stringify(spec), generation);
+      if (counts === null || generation !== this.generation) return null;
+      iterations += counts.iterations;
+      rungs.push(counts);
+      onRung?.(counts, rungs.length);
+
+      const fault = counts.samples > 0 ? counts.fault / counts.samples : 0;
+      const next = this.planner.next_cap(at.maxiter);
+      // Resolved, or there is nowhere left to go: `next_cap` saturates at the kernel's
+      // ceiling and hands back the cap it was given, which is what ends the walk.
+      if (fault <= this.faultShare || next === at.maxiter) {
+        return {
+          maxiter: at.maxiter,
+          from,
+          steps: rungs.length - 1,
+          atCeiling: fault > this.faultShare,
+          fault,
+          rungs,
+          iterations,
+          elapsed: performance.now() - started,
+        };
+      }
+      at = { ...at, maxiter: next };
+    }
+  }
+
+  /** One rung's counts, over the pool. The probe's rows are cut between the workers and
+   *  the counts summed; a band that comes back refused is the rung's error. */
+  #probe(spec, generation) {
+    const workers = this.workers.length;
+    if (workers === 0) return Promise.resolve(null);
+    const ranges = [];
+    for (let index = 0; index < workers; index++) {
+      const start = Math.floor((index * PROBE_ROWS) / workers);
+      const end = Math.floor(((index + 1) * PROBE_ROWS) / workers);
+      if (end > start) ranges.push([start, end]);
+    }
+    return new Promise((resolve, reject) => {
+      const total = {
+        maxiter: 0,
+        samples: 0,
+        escaped: 0,
+        proven: 0,
+        starved: 0,
+        fault: 0,
+        iterations: 0,
+      };
+      let waiting = ranges.length;
+      let failed = false;
+      ranges.forEach(([rowStart, rowEnd], index) => {
+        const worker = this.workers[index];
+        const previous = worker.onmessage;
+        worker.onmessage = (event) => {
+          if (event.data.kind !== "probe") return;
+          worker.onmessage = previous;
+          if (failed) return;
+          const counts = event.data.counts;
+          if (!counts?.ok) {
+            failed = true;
+            reject(new Error(counts?.why ?? "the kernel refused to probe this view"));
+            return;
+          }
+          for (const key of ["samples", "escaped", "proven", "starved", "fault", "iterations"]) {
+            total[key] += counts[key];
+          }
+          total.maxiter = Math.max(total.maxiter, counts.maxiter);
+          waiting -= 1;
+          if (waiting === 0) resolve(generation === this.generation ? total : null);
+        };
+        worker.postMessage({
+          kind: "probe",
+          job: generation,
+          spec,
+          cols: PROBE_COLS,
+          rows: PROBE_ROWS,
+          rowStart,
+          rowEnd,
+        });
+      });
+    });
   }
 
   cancel() {

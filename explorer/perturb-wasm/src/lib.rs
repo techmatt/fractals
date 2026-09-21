@@ -43,6 +43,7 @@ use crate::reference::Reference;
 pub mod fx;
 pub mod json;
 pub mod kernel;
+pub mod policy;
 pub mod reference;
 
 /// The record's own version, in the same spirit as every JSONL record in this
@@ -657,6 +658,84 @@ pub extern "C" fn maxiter_for_width(width: f64) -> u32 {
 #[unsafe(no_mangle)]
 pub extern "C" fn limbs_for_width(width: f64, sample_width: u32) -> u32 {
     reference::limbs_for(width, sample_width) as u32
+}
+
+// -------------------------------------------------------------- the cap the frame asks for
+
+/// One band of one rung of the cap policy: what died at this spec's cap, and how.
+///
+/// **A band, for a band's reason.** The probe is a few thousand of the frame's
+/// own sample cells at whatever cap is being tried, and on the frames that want
+/// four rungs the deepest of them is seconds; cut into row ranges it is spread
+/// over the same pool a field is and a reader can cancel between rungs. See
+/// [`policy`] for what the three kinds of cap-death are and why only one of them
+/// is the cap's fault.
+///
+/// The orbit is **borrowed, not taken**, exactly as [`compute_band`] borrows it,
+/// and it is the orbit for *this rung's* cap. `cols` and `rows` are the probe
+/// grid — the page names its own, since how finely to probe is a cost the pool
+/// pays; zero takes [`policy::PROBE_COLS`] and [`policy::PROBE_ROWS`].
+///
+/// Returns the same length-prefixed JSON [`plan`] does.
+#[unsafe(no_mangle)]
+#[allow(clippy::too_many_arguments)]
+pub extern "C" fn probe_band(
+    spec_ptr: *const u8,
+    spec_len: usize,
+    orbit_ptr: *const u8,
+    orbit_len: usize,
+    cols: u32,
+    rows: u32,
+    row_start: u32,
+    row_end: u32,
+) -> *mut u8 {
+    let read = text(spec_ptr, spec_len)
+        .ok_or_else(|| "the spec is not UTF-8".to_string())
+        .and_then(|text| Spec::parse(&text))
+        .and_then(|spec| {
+            if orbit_ptr.is_null() {
+                return Err("no reference orbit".to_string());
+            }
+            let bytes = unsafe { std::slice::from_raw_parts(orbit_ptr, orbit_len) };
+            let orbit = unpack_reference(bytes).ok_or("the reference orbit is malformed")?;
+            let cols = if cols == 0 { policy::PROBE_COLS } else { cols };
+            let rows = if rows == 0 { policy::PROBE_ROWS } else { rows };
+            Ok(policy::probe_rows(
+                &spec, &orbit, cols, rows, row_start, row_end,
+            ))
+        });
+    let report = match read {
+        Ok(counts) => format!(
+            concat!(
+                r#"{{"ok":true,"maxiter":{},"samples":{},"escaped":{},"proven":{},"#,
+                r#""starved":{},"fault":{},"iterations":{}}}"#
+            ),
+            counts.maxiter,
+            counts.samples,
+            counts.escaped,
+            counts.proven,
+            counts.starved,
+            counts.fault,
+            counts.iterations,
+        ),
+        Err(why) => format!(r#"{{"ok":false,"why":{}}}"#, json::quote(&why)),
+    };
+    release_text(&report)
+}
+
+/// The share of a frame that may still be the cap's fault before the cap is
+/// raised. [`policy::FAULT_SHARE`], so that the threshold is written once and
+/// the page compares against it rather than restating it.
+#[unsafe(no_mangle)]
+pub extern "C" fn fault_share() -> f64 {
+    policy::FAULT_SHARE
+}
+
+/// The next cap to try after one that did not resolve the frame, saturating at
+/// [`cap::CEILING`]. [`policy::next_cap`].
+#[unsafe(no_mangle)]
+pub extern "C" fn next_cap(maxiter: u32) -> u32 {
+    policy::next_cap(maxiter)
 }
 
 // ------------------------------------------------------------------ the buffers

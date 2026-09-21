@@ -23,6 +23,7 @@
 //! being at the cap its row claims.
 
 use perturb::kernel::Kernel;
+use perturb::policy;
 use perturb::{Anchor, Spec, cap};
 
 /// A tile small enough that a sweep of all seven at eight times the cap is
@@ -296,4 +297,271 @@ fn the_policy_cap_at_the_widths_these_frames_sit_at() {
     assert_eq!(cap::for_width(1e-28), 117_518);
     assert_eq!(cap::for_width(1e-40), 165_354);
     assert_eq!(cap::for_width(1e-54), 221_162);
+}
+
+// ---------------------------------------------------------------- the cap policy
+
+/// The audit's anchor: a period-2838 minibrot nucleus in the seahorse valley,
+/// atom size 6.478e-12. `tests/oracle.rs`'s own constants, and the frame the
+/// whole tab is priced on.
+const ANCHOR_RE: &str = "-0.74501772828532335842941892835857434";
+const ANCHOR_IM: &str = "0.14993443275456819177805709088257971";
+
+/// **The frames a cap policy has to leave alone**, which are as much of the case
+/// as the seven above.
+///
+/// Each is `(label, centre re, centre im, width, julia)`. A rule that resolves
+/// the deep frames by escalating everything has solved nothing: these six are
+/// what it must walk past at the width's own cap, and they are the reason the
+/// stopping rule reads a derivative rather than a share.
+///
+/// - **anchor 2e-11** is the hard one, and the whole reason
+///   [`policy::FAULT_EXPONENT`] is not zero: 38% of it dies at the cap unproven,
+///   and almost all of that is the minibrot's own body, whose period of 2,838
+///   fits seventeen times into the cap and leaves the switch no room to fire.
+/// - **anchor 1e-22** is inside that body — 100% *proven* interior, nothing
+///   starved, and it settles before a second orbit is computed.
+/// - **misiurewicz 1e-22** is `c = i`, where escape counts are two digits at any
+///   depth: a deep frame that is genuinely finished at the policy cap.
+/// - **home 3** and **seahorse 1e-6** are ordinary shallow views, which no deep
+///   policy has any business moving.
+/// - **julia anchor 2e-9** is the tab's other committed link, so the rule is
+///   asked about both of the sets this kernel draws.
+pub const CONTROL_FRAMES: &[(&str, &str, &str, f64, bool)] = &[
+    ("anchor 2e-11", ANCHOR_RE, ANCHOR_IM, 2e-11, false),
+    ("anchor 1e-22", ANCHOR_RE, ANCHOR_IM, 1e-22, false),
+    ("misiurewicz 1e-22", "0", "1", 1e-22, false),
+    ("home 3", "0", "0", 3.0, false),
+    ("seahorse 1e-6", "-0.745017", "0.149934", 1e-6, false),
+    ("julia anchor 2e-9", ANCHOR_RE, ANCHOR_IM, 2e-9, true),
+];
+
+/// The canvas `explorer/README.md` prices the tab on, and the supersample its
+/// last pass ends at.
+///
+/// The policy's probe is a subset of **this** grid rather than a tile of its
+/// own, so every number below is a number the page would take.
+const CANVAS: (u32, u32) = (1136, 636);
+const FINE_SUPERSAMPLE: u32 = 2;
+
+/// Lanes in the fine pass, which is four fifths of a Render's wait.
+const FINE_LANES: f64 =
+    (CANVAS.0 * FINE_SUPERSAMPLE) as f64 * (CANVAS.1 * FINE_SUPERSAMPLE) as f64;
+
+/// The seven and the six as one list of `(label, re, im, width, julia)`.
+fn every_frame() -> Vec<(&'static str, &'static str, &'static str, f64, bool)> {
+    DEEP_FRAMES
+        .iter()
+        .map(|frame| (frame.0, frame.1, frame.2, frame.3, false))
+        .chain(CONTROL_FRAMES.iter().copied())
+        .collect()
+}
+
+/// A frame as the Deep tab asks for it: the tab's canvas, the fine pass's
+/// supersample, and no nucleus — the tab has no solver, so the reference is the
+/// view's own centre.
+fn canvas_spec(
+    re: &str,
+    im: &str,
+    width: f64,
+    julia: bool,
+    maxiter: Option<u32>,
+) -> Spec {
+    Spec {
+        center_re: re.to_string(),
+        center_im: im.to_string(),
+        width,
+        resolution: [CANVAS.0, CANVAS.1],
+        supersample: FINE_SUPERSAMPLE,
+        maxiter,
+        reference: None,
+        period: None,
+        julia: julia.then(|| (re.to_string(), im.to_string())),
+        anchor: Anchor::Parameter,
+        interior: true,
+    }
+}
+
+/// One walk of the policy's own probe cells at one cap.
+struct Probed {
+    escaped: usize,
+    proven: usize,
+    starved: usize,
+    /// `log₂|dz|²` of each starved sample.
+    logs: Vec<f64>,
+    samples: usize,
+    iterations: u64,
+}
+
+impl Probed {
+    fn mean_iterations(&self) -> f64 {
+        self.iterations as f64 / self.samples as f64
+    }
+    /// The share of the whole probe past a bar — the stopping rule's number.
+    fn fault(&self, bar: f64) -> f64 {
+        self.logs.iter().filter(|value| **value > bar).count() as f64 / self.samples as f64
+    }
+}
+
+fn probe_at(spec: &Spec, maxiter: u32) -> Probed {
+    let spec = Spec {
+        maxiter: Some(maxiter),
+        ..spec.clone()
+    };
+    let orbit = spec.reference_orbit().unwrap();
+    let kernel = Kernel::new(&orbit, spec.maxiter(), spec.interior).at_entry(spec.entry());
+    let offset = spec.centre_offset().unwrap();
+    let julia = spec.julia.is_some();
+    let (width, height) = (spec.sample_width(), spec.sample_height());
+    let mut run = Probed {
+        escaped: 0,
+        proven: 0,
+        starved: 0,
+        logs: Vec::new(),
+        samples: (policy::PROBE_COLS * policy::PROBE_ROWS) as usize,
+        iterations: 0,
+    };
+    for j in 0..policy::PROBE_ROWS {
+        let row = ((j as u64 * 2 + 1) * height as u64 / (policy::PROBE_ROWS as u64 * 2)) as u32;
+        for i in 0..policy::PROBE_COLS {
+            let col = ((i as u64 * 2 + 1) * width as u64 / (policy::PROBE_COLS as u64 * 2)) as u32;
+            let (re, im) = spec.dc(offset, col, row);
+            let outcome = if julia {
+                kernel.sample_with::<true>(re, im)
+            } else {
+                kernel.sample_with::<false>(re, im)
+            };
+            run.iterations += outcome.iterations as u64;
+            if !outcome.smooth.is_nan() {
+                run.escaped += 1;
+            } else if outcome.detected_interior {
+                run.proven += 1;
+            } else {
+                run.starved += 1;
+                run.logs.push(outcome.dz_log2());
+            }
+        }
+    }
+    run
+}
+
+/// **Where the policy settles, and what it costs**, on the seven deep frames and
+/// the six controls.
+///
+/// This is the table the crate README's cap-policy section carries. `decision`
+/// is the whole escalation's sample-iterations against the fine pass's at the
+/// settled cap — what asking the question costs against drawing the answer.
+#[test]
+#[ignore = "~80 s: thirteen frames, each walked to the cap it settles on"]
+fn where_the_policy_settles() {
+    println!(
+        "\n| frame | policy cap | settled | × | the cap's fault, rung by rung | mean iterations | decision |"
+    );
+    println!("|---|--:|--:|--:|:--|--:|--:|");
+    for (label, re, im, width, julia) in every_frame() {
+        let spec = canvas_spec(re, im, width, julia, None);
+        let policy_cap = cap::for_width(width);
+        let settled = policy::settle(&spec, policy::PROBE_COLS, policy::PROBE_ROWS).unwrap();
+        assert_eq!(
+            settled.rungs[0].maxiter, policy_cap,
+            "{label}: the walk opens at the width's own cap"
+        );
+        assert!(!settled.at_ceiling, "{label}: settled by running out of ceiling");
+        let rungs = settled
+            .rungs
+            .iter()
+            .map(|rung| format!("{:.1}%", 100.0 * rung.fault_share()))
+            .collect::<Vec<_>>()
+            .join(" → ");
+        let at_policy = probe_at(&spec, policy_cap);
+        let at_settled = probe_at(&spec, settled.maxiter);
+        let render = at_settled.mean_iterations() * FINE_LANES;
+        println!(
+            "| {} | {} | **{}** | {}× | {} | {:.0} → {:.0} | {:.2}% |",
+            label,
+            policy_cap,
+            settled.maxiter,
+            settled.maxiter / policy_cap.max(1),
+            rungs,
+            at_policy.mean_iterations(),
+            at_settled.mean_iterations(),
+            100.0 * settled.iterations as f64 / render,
+        );
+    }
+}
+
+/// **What the settled cap changes about the picture**, which is the point of the
+/// whole exercise: the share of each frame that was painted interior at the
+/// policy cap and escapes at the settled one.
+#[test]
+#[ignore = "~80 s: two walks of thirteen frames"]
+fn what_the_settled_cap_repaints() {
+    println!("\n| frame | escaped | proven interior | unresolved | repainted |");
+    println!("|---|--:|--:|--:|--:|");
+    for (label, re, im, width, julia) in every_frame() {
+        let spec = canvas_spec(re, im, width, julia, None);
+        let policy_cap = cap::for_width(width);
+        let settled = policy::settle(&spec, policy::PROBE_COLS, policy::PROBE_ROWS).unwrap();
+        let before = probe_at(&spec, policy_cap);
+        let after = probe_at(&spec, settled.maxiter);
+        let share = |count: usize| 100.0 * count as f64 / before.samples as f64;
+        println!(
+            "| {} | {:.1}% → {:.1}% | {:.1}% → {:.1}% | {:.1}% → {:.1}% | **{:.1}%** |",
+            label,
+            share(before.escaped),
+            share(after.escaped),
+            share(before.proven),
+            share(after.proven),
+            share(before.starved),
+            share(after.starved),
+            share(after.escaped.saturating_sub(before.escaped)),
+        );
+    }
+}
+
+/// **The sweep that chose the bar and the share**, and the reason neither is
+/// quoted to a second digit: over five bars and five shares, thirteen frames
+/// settle on almost exactly the same caps.
+#[test]
+#[ignore = "~100 s: thirteen frames at every rung, for twenty-five rules at once"]
+fn the_bar_and_the_share_sit_on_a_plateau() {
+    const BARS: &[f64] = &[8.0, 12.0, 16.0, 20.0, 24.0];
+    const SHARES: &[f64] = &[0.05, 0.08, 0.10, 0.12, 0.15];
+    const MOST_RUNGS: usize = 6;
+    let ceiling = cap::CEILING as u32;
+    print!("\n| frame |");
+    for bar in BARS {
+        for share in SHARES {
+            print!(" {}/{:.0}% |", bar, share * 100.0);
+        }
+    }
+    println!();
+    for (label, re, im, width, julia) in every_frame() {
+        let policy_cap = cap::for_width(width);
+        let spec = canvas_spec(re, im, width, julia, None);
+        // Every rung's fault share at every bar, walked once and read
+        // twenty-five ways.
+        let mut table: Vec<(u32, Vec<f64>)> = Vec::new();
+        let mut maxiter = policy_cap;
+        loop {
+            let probed = probe_at(&spec, maxiter);
+            table.push((maxiter, BARS.iter().map(|bar| probed.fault(*bar)).collect()));
+            if maxiter >= ceiling || table.len() >= MOST_RUNGS {
+                break;
+            }
+            maxiter = maxiter.saturating_mul(2).min(ceiling);
+        }
+        print!("| {} |", label);
+        for (index, _) in BARS.iter().enumerate() {
+            for share in SHARES {
+                let settled = table
+                    .iter()
+                    .find(|(_, faults)| faults[index] <= *share)
+                    .unwrap_or(table.last().unwrap())
+                    .0;
+                print!(" {}× |", settled / policy_cap.max(1));
+            }
+        }
+        println!();
+    }
 }

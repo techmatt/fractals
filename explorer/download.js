@@ -308,10 +308,17 @@ export async function encode(image, format, query = null) {
  * finished picture, what the pass that drew it cost, somewhere to say things, and the
  * lock that stops the view moving under a render that is drawing it.
  *
- * `queryOf` is the link the saved file carries, and it is the **shallow** contract's even
- * while the Deep tab is on the screen, because this row draws `currentView()` and that is
- * the picture it draws. Asking the page for "the current link" would give the deep one and
- * put it on a shallow picture.
+ * `queryOf` is the link the saved file carries, and it is the **shallow** contract's,
+ * because that is the contract of the view `currentView()` returns. Asking the page for
+ * "the current link" would give the deep one and put it on a shallow picture.
+ *
+ * **`deep` is the other view this row can be about** *(deep_cap_policy_ckpt138)*. While
+ * the Deep tab owns the canvas every one of the five things above has a different answer —
+ * the view, the link, the plan, what a pass of it measured, and who draws it — so they
+ * come from the tab rather than from here, and the row switches wholesale rather than
+ * translating a deep view into a shallow one. Before this the row drew and stamped
+ * `currentView()` whatever was on the screen, which meant a reader downloading from the
+ * Deep tab got a correctly-labelled picture of somewhere else.
  */
 export function install(context) {
   const {
@@ -325,7 +332,13 @@ export function install(context) {
     finalSupersample,
     say,
     setBusy,
+    deep = null,
   } = context;
+
+  /** Whether this row is about the Deep tab's picture rather than the viewer's. */
+  function onDeep() {
+    return deep !== null && deep.owns();
+  }
 
   const sizePicker = document.getElementById("download-size");
   const custom = document.getElementById("download-custom");
@@ -408,10 +421,13 @@ export function install(context) {
     return { width: size.width, height: size.height };
   }
 
-  /** The finished picture on the screen, where it is exactly what is being asked for. */
+  /** The finished picture on the screen, where it is exactly what is being asked for.
+   *
+   *  The Deep tab's fine pass ends at the same `finalSupersample` the viewer's does, so
+   *  *As shown* at 4× is the picture already up on either side of the floor. */
   function ready() {
     if (sizePicker.value !== SHOWN || supersample !== finalSupersample) return null;
-    return shownImage();
+    return onDeep() ? deep.shown() : shownImage();
   }
 
   /** A refusal, in two words beside the button and a whole sentence behind them. */
@@ -452,14 +468,44 @@ export function install(context) {
     // The module's own answer, at the size actually being asked for. Worth asking here
     // and not only at the press, because a supersample samples a grid `ss` times finer: a
     // deep view the canvas still resolves in `f64` can be one this download does not.
-    const view = currentView();
-    const shape = renderer.plan(specOf(view, width, height, { colormap: false, supersample }));
-    if (!shape.ok) {
+    const shape = onDeep()
+      ? deep.plan(width, height, supersample)
+      : renderer.plan(specOf(currentView(), width, height, { colormap: false, supersample }));
+    if (shape !== null && !shape.ok) {
       refuse("too deep", shape.why);
       return;
     }
-    enable(true);
     const samples = width * height * supersample * supersample;
+    if (onDeep()) {
+      // **There is no prior for a deep frame and there is not going to be one.** The
+      // `COST` table below is one machine, one day and one shallow view; a deep frame's
+      // cost swings over four orders of magnitude with the width, the cap and how much of
+      // it is interior, which is exactly why the tab's own progress line predicts from the
+      // bands it has finished and from nothing else. So the row says it has nothing to say
+      // until a pass of this frame has been drawn — the quarter pass is enough — rather
+      // than offering a number that would be wrong by a factor of a thousand.
+      const known = deep.measured();
+      if (known === null) {
+        refuse(
+          "not priced",
+          "A deep frame's cost cannot be guessed from its size: it swings over four orders " +
+            "of magnitude with the width, the iteration cap and how much of the frame is " +
+            "interior. Press Render in the Deep tab, and this is estimated from what the " +
+            "pass took.",
+        );
+        return;
+      }
+      enable(true);
+      estimateLine.textContent = saidShort(scaled(known, samples));
+      estimateLine.title =
+        "Estimated from how long this frame took to draw here, and it is the only honest " +
+        "estimate there is at this depth. The picture is drawn at the cap the frame " +
+        "settles on and carries its own deep link. A different shape shows more or less " +
+        "of the picture above and below, rather than cropping it.";
+      return;
+    }
+    enable(true);
+    const view = currentView();
     const seconds =
       scaled(measured(), samples) ?? estimate(view.mode, samples, renderer.workerCount);
     estimateLine.textContent = saidShort(seconds);
@@ -497,24 +543,97 @@ export function install(context) {
     describe();
   }
 
+  /** The three names a file is spelled from, for whichever view this row is about.
+   *
+   *  A deep view carries no family and no mode, because down there each has one value:
+   *  `z² + c` at degree 2, in `smooth`. So they are named rather than read, and a deep
+   *  download lands under the same `family_mode_palette_size` a shallow one does. */
+  function naming() {
+    if (!onDeep()) return currentView();
+    const view = deep.view();
+    return {
+      family: view.julia === null ? "mandelbrot" : "julia",
+      mode: "smooth",
+      palette: view.palette,
+    };
+  }
+
+  /**
+   * **The Deep tab's own download**, which is the tab's render at the row's size.
+   *
+   * The tab draws it — same pool, same spec, same cap policy — so there is one deep
+   * renderer and not two, and the picture comes back with the link it is of. Progress runs
+   * through both bars: this one, and the tab's own line, which is also where Cancel is.
+   */
+  async function downloadDeep(go, width, height) {
+    const { format } = go;
+    running = { cancelled: false, stop: null, go };
+    const mine = running;
+    go.button.classList.add("is-running");
+    go.button.title = "Rendering. Press to cancel.";
+    lock(true, go);
+    progress(0);
+    setBusy(true);
+    const started = performance.now();
+    // The shade's share of the wait, from the last pass of this frame — the same split the
+    // shallow path makes, off the same two halves.
+    const known = deep.measured();
+    const samples = width * height * supersample * supersample;
+    const whole = scaled(known, samples);
+    const shadeShare =
+      known && whole > 0 ? Math.min(0.5, (known.shade * samples) / known.samples / whole) : 0;
+
+    try {
+      const picture = await deep.picture(width, height, {
+        supersample,
+        holder: mine,
+        onProgress: (done) => {
+          if (!mine.cancelled) progress(done * (1 - shadeShare));
+        },
+      });
+      if (picture === null || mine.cancelled) {
+        say("Download cancelled.");
+        finish();
+        return;
+      }
+      progress(1);
+      const name = fileNameOf(picture.name, width, height, format.extension);
+      await save(picture.image, name, format, picture.query);
+      const spent = (performance.now() - started) / 1000;
+      say(`Saved ${name} in ${spent.toFixed(1)} s.`);
+      finish();
+    } catch (error) {
+      say(String(error.message ?? error));
+      finish();
+    }
+  }
+
   async function download(go) {
     const { format } = go;
-    const view = currentView();
+    const deepRow = onDeep();
+    const view = deepRow ? deep.view() : currentView();
     // Read once, with the view: the row is locked from here until the file is handed over,
-    // so this is the link of the picture that is about to be drawn.
-    const query = queryOf();
+    // so this is the link of the picture that is about to be drawn. **The deep path reads
+    // its link later**, from the render itself, because the cap the frame settles on is
+    // part of what a deep link says and it is not known until the frame has been probed.
+    const query = deepRow ? null : queryOf();
     const { width, height } = wanted();
     const samples = width * height * supersample * supersample;
 
     const drawn = ready();
     if (drawn !== null) {
-      const name = fileNameOf(view, drawn.width, drawn.height, format.extension);
+      const name = fileNameOf(naming(), drawn.width, drawn.height, format.extension);
       try {
-        await save(drawn, name, format, query);
+        await save(drawn, name, format, query ?? deep.query());
         say(`Saved ${name}.`);
       } catch (error) {
         say(String(error.message ?? error));
       }
+      return;
+    }
+
+    if (deepRow) {
+      await downloadDeep(go, width, height);
       return;
     }
 
@@ -604,7 +723,10 @@ export function install(context) {
       // finish for, and it is holding a couple of gigabytes while it runs.
       if (running.go !== go) return;
       running.cancelled = true;
-      renderer.cancel();
+      // Whichever renderer is drawing it. The Deep tab's `stop` is the same one its own
+      // Cancel presses, so the two ways out of a deep download are one way out.
+      if (onDeep()) deep.cancel();
+      else renderer.cancel();
       running.stop?.();
     });
   }

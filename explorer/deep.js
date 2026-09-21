@@ -116,6 +116,22 @@ export function mount(host) {
   const fields = new Map();
   /** How long the last quarter pass took, which is what auto-preview reads. */
   let quarterMs = null;
+  /**
+   * What the last stage cost, and which frame it was a stage of: `{ frame, samples, field,
+   * shade }`, in seconds.
+   *
+   * **The Download row's estimate is scaled from it**, the way the shallow row's is scaled
+   * from the viewer's own pass, and for a stronger version of the same reason: a deep
+   * frame's cost swings over four orders of magnitude with the width, the cap and how much
+   * of it is interior, so there is no table to fall back on and a pass of *this* frame is
+   * the only honest predictor there is. `frame` is the view's own key, so a measurement
+   * stops answering the moment the frame or its cap moves.
+   */
+  let measure = null;
+  /** The fine pass's picture, once it has landed — what a download at the canvas's own size
+   *  saves instead of drawing it again. Cleared by every pass, because a picture of the
+   *  view before is not this one. */
+  let finished = null;
   /** The pass in flight: its generation and what it is doing. */
   let pass = 0;
   let running = null;
@@ -243,6 +259,12 @@ export function mount(host) {
 
   async function pool() {
     if (renderer !== null) return renderer;
+    // **`??=` remembers the promise, and a rejected one has to be forgotten.** Memoizing
+    // the start is what makes two callers arriving together share one fetch and one
+    // compile; memoizing a *failure* makes a fetch that 404'd once the answer for the rest
+    // of the session, so every later Render fails the same way without ever retrying. The
+    // catch is attached before the assignment, so what is remembered is the promise that
+    // clears itself.
     starting ??= (async () => {
       host.stat("starting the deep renderer…");
       renderer = await DeepRenderer.start(
@@ -250,7 +272,10 @@ export function mount(host) {
         host.shading(),
       );
       return renderer;
-    })();
+    })().catch((error) => {
+      starting = null;
+      throw error;
+    });
     return starting;
   }
 
@@ -279,11 +304,11 @@ export function mount(host) {
   async function render(upto, { auto = false } = {}) {
     const generation = ++pass;
     const grid = host.grid();
-    const target = view;
     // **Before the await, not after it.** The pool takes a moment to start on the first
     // render of a session — a fetch, a compile and a worker apiece — and a Render button
     // that stayed pressable through it would start a second pass on a second press.
     running = { upto, auto, stage: "preview", started: performance.now() };
+    finished = null;
     syncControls();
     host.showState("rendering");
     host.say("");
@@ -303,6 +328,13 @@ export function mount(host) {
       // same exit.
       const deep = await pool();
       if (generation !== pass) return;
+
+      let target = view;
+      if (upto === "full" && !pinnedCap) {
+        const chosen = await settleCap(deep, target, grid, generation);
+        if (generation !== pass) return;
+        if (chosen !== null && chosen.maxiter !== target.maxiter) target = chosen.frame;
+      }
 
       for (const stage of wanted) {
         running.stage = stage.name;
@@ -341,6 +373,17 @@ export function mount(host) {
         }
         drawn = target;
         keep(shaded.image, target);
+        // What this stage cost, for the Download row's estimate. A cached field's
+        // `elapsed` is the cost it was measured at, which is still the cost of that
+        // geometry at that cap; what makes a measurement stale is the frame moving, and
+        // the key is what says so.
+        measure = {
+          frame: deepLink.fieldKey(target, 1, 1),
+          samples: stage.width * stage.height * stage.supersample * stage.supersample,
+          field: field.elapsed / 1000,
+          shade: shaded.elapsed / 1000,
+        };
+        if (stage.name === "fine") finished = shaded.image;
         paint();
         host.settle();
         said(stage, field, shaded, cached);
@@ -356,6 +399,148 @@ export function mount(host) {
         syncControls();
       }
     }
+  }
+
+  /**
+   * **Choose the cap this frame resolves at, before anything is drawn at it.**
+   *
+   * The problem it exists for is `perturb-wasm/README.md`'s: below about 1e-22 the width
+   * policy's cap lands *inside* the frame's own escape-count distribution, so a sixth to a
+   * third of a busy frame runs out of iterations and is painted as interior when it was
+   * exterior all along. Nothing on the page looks wrong. The rule is the kernel's — start
+   * at the width's cap, look at what died there and whether its derivative was collapsing
+   * or exploding, and double while the frame is still dying for want of iterations — and
+   * what is here is when it is asked and what it says.
+   *
+   * **Only for a Render, and only when the reader has not chosen a cap.** An auto-preview
+   * is the cheap look and pays for nothing; a pinned cap is a choice and escalation is a
+   * policy, so a typed cap and a cap a link carries are drawn exactly as they are asked
+   * for. That distinction is `pinnedCap`, which already existed for the zoom.
+   *
+   * The probe is a few thousand of the frame's own sample cells, so the three passes below
+   * run **once**, at the settled cap — measured at 0.08% to 0.22% of the fine pass.
+   */
+  async function settleCap(deep, from, grid, generation) {
+    running.stage = "settling";
+    els.progress.style.removeProperty("--done");
+    els.progress.textContent = "choosing an iteration cap…";
+    host.stat(`choosing an iteration cap · from ${from.maxiter.toLocaleString("en-US")}`);
+    const chosen = await deep.settle(from, grid.width, grid.height, {
+      supersample: FINAL_SUPERSAMPLE,
+      onRung: (counts) => {
+        if (generation !== pass) return;
+        els.progress.textContent = `choosing an iteration cap · ${counts.maxiter.toLocaleString("en-US")}`;
+      },
+    });
+    if (chosen === null || generation !== pass) return null;
+
+    // **`view === from` is the whole guard, and object identity is what says it.** A
+    // gesture during a committed render moves `view` without cancelling the pass — that is
+    // the tab's own design, and every mutation replaces the object — so adopting the
+    // settled cap into a view the reader has since moved would put this frame's answer on
+    // a different frame.
+    const frame = { ...from, maxiter: chosen.maxiter };
+    if (chosen.maxiter !== from.maxiter && view === from) {
+      view = frame;
+      host.settle();
+    }
+    say_settled(chosen);
+    syncControls();
+    return { ...chosen, frame };
+  }
+
+  /**
+   * **The deep picture at a download's size** *(deep_cap_policy_ckpt138)*.
+   *
+   * Until this existed the Download row, while the Deep tab held the canvas, drew and
+   * stamped the *shallow* view — a correctly-labelled picture of somewhere else. It is the
+   * same render the canvas gets and there deliberately is not a second one: the same pool,
+   * the same spec, the same cap policy, with two numbers changed, which is the ruling
+   * `download.js` opens with and is as true on this side of the floor as on the other.
+   *
+   * It takes the pass, so the tab's own Cancel stops it and its progress goes through the
+   * tab's own line as well as the button's bar. Hands back the picture, the link that
+   * picture is of — **written after the cap has settled**, because the cap is part of what
+   * a deep link says — and the three names a file is spelled from.
+   */
+  async function picture(width, height, { supersample = 1, onProgress, holder = {} } = {}) {
+    const generation = ++pass;
+    running = { upto: "download", auto: false, stage: "download", started: performance.now() };
+    finished = null;
+    syncControls();
+    host.showState("rendering");
+    try {
+      const deep = await pool();
+      if (generation !== pass) return null;
+
+      let target = view;
+      if (!pinnedCap) {
+        const chosen = await settleCap(deep, target, { width, height }, generation);
+        if (generation !== pass) return null;
+        if (chosen !== null && chosen.maxiter !== target.maxiter) target = chosen.frame;
+      }
+
+      running.stage = "fine";
+      const field = await deep.field(target, width, height, {
+        supersample,
+        onProgress: (done, elapsed) => {
+          if (generation !== pass) return;
+          report({ name: "fine", width, height, supersample }, done, elapsed);
+          onProgress?.(done, elapsed);
+        },
+      });
+      if (field === null || generation !== pass) return null;
+      // The caller's holder becomes the tab's, so that the tab's own Cancel stops the
+      // colouring as well as the field — a download-sized shade is seconds holding a
+      // couple of gigabytes, and two ways out that stop different halves is one way out
+      // too few.
+      colouring = holder;
+      const shaded = await deep.shade(field, target, colouring, { derive: host.deriving() });
+      if (shaded === null || generation !== pass) return null;
+      // A view the reader made measures its own curve on the frame being saved, exactly as
+      // the shallow download does — so the link on the file is the link that redraws it.
+      const drawnAs = host.deriving() ? { ...target, level: shaded.level } : target;
+      host.showState("final");
+      return {
+        image: shaded.image,
+        query: deepLink.emit(drawnAs),
+        name: {
+          family: drawnAs.julia === null ? "mandelbrot" : "julia",
+          mode: "smooth",
+          palette: drawnAs.palette,
+        },
+      };
+    } finally {
+      if (generation === pass) {
+        running = null;
+        syncControls();
+      }
+    }
+  }
+
+  /** What the tab says about the cap it chose: nothing where the width's own answer drew
+   *  the frame, and a plain sentence where it did not. */
+  function say_settled(chosen) {
+    const count = (value) => value.toLocaleString("en-US");
+    if (chosen.atCeiling) {
+      host.say(
+        `At ${count(chosen.maxiter)} iterations — the most this renderer will run — ` +
+          `${Math.round(chosen.fault * 100)}% of this frame is still escaping when the count ` +
+          "runs out, so some of what is painted as set below is exterior this cap cannot " +
+          "reach. Zoom out, or narrow the frame.",
+      );
+      return;
+    }
+    if (chosen.maxiter === chosen.from) return;
+    // The rungs carry counts, because they are summed over the pool's bands; the share is
+    // taken here, once, against the samples that were actually walked.
+    const opening = chosen.rungs[0];
+    const was = Math.round((100 * opening.fault) / Math.max(1, opening.samples));
+    host.say(
+      `Raised the cap to ${count(chosen.maxiter)}: at ${count(chosen.from)}, the width's own ` +
+        `answer, ${was}% of this frame was still escaping when the count ran out and would ` +
+        "have been painted as set.",
+    );
   }
 
   /**
@@ -835,6 +1020,28 @@ export function mount(host) {
     /** Whether the tab owns the viewer — whether the picture on screen is the deep one. */
     owns: () => shown && owns,
     link: () => deepLink.emit(view),
+
+    // ----------------------------------------------------------- what Download borrows
+    //
+    // The row under the canvas draws whichever view owns it, and while this tab does the
+    // four things it needs are the four below: what the kernel makes of this frame at a
+    // download's size, what a pass of it measured, the picture already on the screen, and
+    // the render itself.
+
+    /** The kernel's answer for this frame at a size that is not the canvas's. Worth asking
+     *  per size: a supersample samples a grid `ss` times finer, so a frame the canvas still
+     *  resolves can be one a download does not. `null` before the module is up, which is
+     *  what `refused` says too. */
+    plan: (width, height, supersample = 1) =>
+      renderer === null
+        ? null
+        : renderer.plan(deepSpecOf(view, width, height, { supersample })),
+    /** What a pass of *this* frame cost, or `null` where the last one was of another. */
+    measured: () =>
+      measure !== null && measure.frame === deepLink.fieldKey(view, 1, 1) ? measure : null,
+    /** The finished picture at the canvas's own size, once the fine pass has landed. */
+    shown: () => finished,
+    picture,
 
     show() {
       shown = true;

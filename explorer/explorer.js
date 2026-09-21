@@ -2342,8 +2342,10 @@ function showPanel(asked) {
   // walk whose showing changes what the canvas is a picture of: a deep frame is drawn by a
   // different kernel and cannot be a view of the shallow one. So the viewer is handed over
   // when the tab is shown and the shallow view is drawn again when it is left, and while it
-  // is held the sections that mean nothing down here — Download, Mode, the family and the
-  // constants — are off the page. Palette stays, because a deep field is a smooth field.
+  // is held the sections that mean nothing down here — Mode, the family and the constants —
+  // are off the page. Palette stays, because a deep field is a smooth field; and Download
+  // stays, because since `deep_cap_policy_ckpt138` the row draws whichever view owns the
+  // canvas rather than always the shallow one.
   document.querySelector(".viewer").classList.toggle("is-deep", showing === "deep");
   if (showing === "deep") {
     startDeep().then(() => {
@@ -3786,6 +3788,20 @@ async function main() {
     finalSupersample: FINAL_SUPERSAMPLE,
     say,
     setBusy,
+    // **The other view this row can be about** *(deep_cap_policy_ckpt138)*. Every member is
+    // asked through `deep` rather than captured, because the tab is mounted lazily and may
+    // not exist when this is installed; `owns` answering false is what keeps the row the
+    // viewer's until it does.
+    deep: {
+      owns: () => deepOwns(),
+      view: () => deep.view(),
+      query: () => deep.link(),
+      plan: (width, height, supersample) => deep.plan(width, height, supersample),
+      measured: () => deep.measured(),
+      shown: () => deep.shown(),
+      picture: (width, height, options) => deep.picture(width, height, options),
+      cancel: () => deep.stop(),
+    },
   });
   panel.describe();
 

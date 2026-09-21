@@ -846,14 +846,44 @@ the most expensive thing on the page, and keeping one view back would double the
 save a re-iterate the reader presses a button for anyway. A recolour walks back from the
 finished stage to the cheapest one that is here.
 
-### Iterations
+### Iterations, and the cap a frame asks for *(deep_cap_policy_ckpt138, 2026-09-20)*
 
-The cap opens at the kernel's own policy for the width — the engine's shape with the
+The cap opens at the kernel's own answer for the width — the engine's shape with the
 engine's ceiling lifted to a million, so 48,551 at 2e-11 and 117,518 at 1e-28 where
 `maxiter::for_width` would flatten both to 67,000. **Halve** and **Double** move it, and a
 reader who has moved it has pinned it: a zoom then leaves it alone until *From the width*
 gives it back. **The cap in force is part of the view**, which is why the deep link always
 carries it.
+
+**But the width's answer is where a Render starts rather than what it draws at.** Below
+about 1e-22 that cap lands *inside* the frame's own escape-count distribution: a sixth to a
+third of a busy frame runs out of iterations and is painted as interior when it was exterior
+all along, and nothing on the page looks wrong. So a Render **probes the frame first** —
+2,304 of its own sample cells, cut across the pool like a band — and doubles the cap while
+samples are still dying at it with `|dz|` grown past the escape radius, under the same
+1,000,000 ceiling.
+
+The rule, its threshold and the thirteen frames it was measured on are
+`perturb-wasm/README.md` §8; what is here is what the tab does with it.
+
+- **Deciding costs 0.08% to 0.22% of the fine pass**, so the supersampled pass runs once,
+  at the settled cap. The probe is a subset of the frame — its cells, its limbs, its
+  geometry, its orbit — and not a smaller picture of it.
+- **The progress line says so** while it runs, naming the cap it is trying, and the cap box
+  and the address bar both move to the settled value before anything is drawn. The cap
+  travels in the link, so a reopened link redraws the same picture without re-deciding.
+- **A pinned cap is drawn as pinned.** Escalation is the *policy*, so it runs where the
+  width's answer is in force and nowhere else: a cap a reader typed, and a cap a link
+  carries, are drawn exactly as asked. That distinction already existed as the zoom's, and
+  no control was added for it.
+- **Where the cap moved, the page says why** — *Raised the cap to 187,200: at 93,600, the
+  width's own answer, 30% of this frame was still escaping when the count ran out and would
+  have been painted as set.* Where the width's answer already drew the frame it says
+  nothing, which is the honest thing and is what every shallow view and six of the thirteen
+  measured frames get.
+- **And a frame can run out of ceiling.** At 1,000,000 still unresolved, the status line
+  says plainly that some of what is painted as set is exterior this cap cannot reach. There
+  is no control for it and no retry: the sentence is the answer.
 
 ### Getting in and out
 
@@ -970,7 +1000,10 @@ one — read off its own `about 12 s left` progress line rather than timed — a
 | the audit's anchor at 2e-11, cap 48,551, its fine pass at 4× | **field 62.7 s**, shade 180 ms |
 | the same, its quarter pass alone | field 1.22 s |
 | a palette change on the anchor's kept field | **recolored in 126 ms** |
-| `perturb.wasm` | **112,675 bytes raw, 52,784 gzipped** (2026-09-20) |
+| `perturb.wasm` | **115,339 bytes raw, 53,886 gzipped** (2026-09-20) |
+| choosing the cap, at the anchor and at `tangle 1e-22` | **0.08% and 0.16%** of the fine pass |
+| a deep download, 640×360 at 4×, the anchor | **31.2 s**, against the row's own estimate of 35 s |
+| the same at 3840×2160 at 4× | **~24 min**, the row's estimate; 16× is refused on memory |
 
 So the tab is about four hundred times the wait of a shallow frame and a recolour of it is
 a shade, which is the whole reason the field is kept. The anchor's quarter pass at 1.22 s is
@@ -994,19 +1027,8 @@ explorer/?dv=2&cx=-0.74501772828532335842941892835857434&cy=0.149934432754568191
 
 ### What is not here
 
-Full-size download from the Deep tab, and "find the minibrot here" and nucleus references
-in the UI — both out of scope by the prompt that built this, and neither blocked by
-anything above.
-
-⚠ **The Download row is not deep-aware, and that is the first thing a deep download has to
-fix.** While the Deep tab owns the canvas the row still draws `currentView()` — the shallow
-view — and stamps the shallow link on it: `download.js` reads the view and `queryOf()` once
-at the press, and both are the shallow contract's by construction *(the module's own header
-says so, and says why: asking the page for "the current link" would put the deep link on a
-shallow picture, which is worse)*. So a reader who downloads from the Deep tab gets a
-correctly-stamped picture of somewhere else. Making the row deep-aware is a view reader, a
-link reader, a renderer and a cost estimate that all switch with the tab, and `deep.js`'s
-staged passes are not the shallow renderer's `plan`/`render` shape.
+"Find the minibrot here" and nucleus references in the UI — out of scope by the prompt
+that built this, and not blocked by anything above.
 
 **BLA was built, priced and taken back out, and §6 of the crate README is why.** The skip
 table bought 50× or more on the ladder it was first measured on — but every frame there
@@ -1017,13 +1039,12 @@ tolerance, including the tightest one the approximation admits**. It cost 9,423 
 stay, in `perturb-wasm/tests/frames.rs` with their `dv` links, because they are the only
 deep frames this project has that are not one flat colour.
 
-⚠ And those frames found something about this tab that is not about the skip at all: **at
-these depths the cap policy paints exterior as interior.** A sixth to a third of each frame
-is unresolved at the cap the tab would use, and at twice that cap every one of them is
-fully escaping for about 2% more work; in the slow regions it takes four times the cap, and
-below that the frame is a flat interior fill over escape counts running to 400,000. The cap
-lands inside the frame's own escape-count distribution and a reader sees the shortfall
-painted as set. Moving the policy is a prompt of its own.
+And those frames found something about this tab that is not about the skip at all: at
+these depths the width's cap painted exterior as interior. **That is fixed** — *Iterations,
+and the cap a frame asks for* above, and `perturb-wasm/README.md` §8 — and the frames are
+what it was argued on. A sixth to a third of each of the five tangle and pinch frames is
+repainted by the settled cap, and effectively the whole of each `body` frame, which were
+flat interior fills over escape counts running to 400,000.
 
 And on the Julia side: **no Julia view anchored anywhere but `z = 0` and `z = c`.** A frame
 far from both at depth is refused rather than drawn, which is the honest answer and not a
@@ -1042,7 +1063,9 @@ deep-fx.js         exact decimal coordinates, BigInt fixed point
 deep-link.js       the deep link contract — parse, emit, canonicalize, describe
 deep-fx.test.mjs   12 tests: the arithmetic is exact where a double is not
 deep-link.test.mjs 27 tests: the contract, and the shallow one held to not moving
-deep.test.mjs      13 tests: where the two modules meet, against both committed ones
+deep.test.mjs      16 tests: where the two modules meet, against both committed ones —
+                   and the cap policy's seam, which fails the same way the rest of
+                   this file does, by drawing a plausible picture
 bench/julia.mjs    what a Julia frame costs against the Mandelbrot frame at the same c
 perturb.wasm       generated: the perturbation kernel, compiled
 perturb.manifest.json  generated: what perturb.wasm was built from
@@ -1793,6 +1816,32 @@ the wasm side takes the nine of its own that the native side has no use for. Re-
 **Shape is not resolution.** A link carries an aspect and never a pixel count, and the
 plane *width* is what a view is, so downloading at a different shape keeps that width and
 shows more or less height rather than cropping. The estimate's tooltip says so.
+
+**And the row draws whichever view owns the canvas** *(deep_cap_policy_ckpt138)*. Until this
+landed the Deep tab hid the row, and the code behind it drew and stamped the *shallow*
+`currentView()` whatever was on the screen — a correctly-labelled picture of somewhere else.
+The row is on the page in the Deep tab now, and while that tab owns the canvas five things
+come from it rather than from here: the view, the link, the plan, what a pass of the frame
+measured, and who draws it. Save and the view buttons go, because the Deep panel carries its
+own Save and every one of the view buttons names a frame this kernel does not have.
+
+Three things are different about a deep download, and each of them is the depth rather than
+the row:
+
+- **The cap is the frame's**, settled by the probe above before the picture is drawn, so the
+  `dv` query stamped into the file is read *after* the render rather than at the press — a
+  deep link carries its cap, and the cap is not known until the frame has been asked.
+- **There is no prior to fall back on.** The `COST` table is one machine on one day at one
+  shallow view, and a deep frame's cost swings over four orders of magnitude with the width,
+  the cap and how much of it is interior. So the row says *not priced* until a pass of this
+  frame has been drawn — the quarter pass a link opens with is enough — rather than offering
+  a number that would be wrong by a factor of a thousand. Measured: at 640×360 at 4× on the
+  anchor the row said ~35 s and the file took 31.2 s.
+- **Full size is a wait, and it is offered rather than hidden.** 3840×2160 at 4× on the
+  anchor is about 24 minutes by the row's own estimate, with the tab's progress line and
+  Cancel running the whole way and the download button's own bar beside it; 16× is refused
+  by the sample ceiling, as it is on the shallow side. Nothing is downscaled to make it
+  quicker, and the shallow view is never substituted.
 
 **One row, first, and always open.** Download is the studio's first section: two buttons,
 leftmost — *Download PNG* and *Download JPG* — then a size (*As shown*, three wallpaper

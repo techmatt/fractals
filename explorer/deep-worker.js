@@ -18,6 +18,7 @@
 
 let wasm = null;
 const encoder = new TextEncoder();
+const decoder = new TextDecoder();
 
 /** The orbit this instance is holding: where it is in the heap, and how long. Freed when
  *  another arrives, because a wasm heap never gives memory back and two orbits of a deep
@@ -53,6 +54,36 @@ self.onmessage = (event) => {
     new Uint8Array(wasm.memory.buffer, pointer, bytes.length).set(bytes);
     orbit = { pointer, length: bytes.length };
     self.postMessage({ kind: "orbited", stamp: message.stamp });
+    return;
+  }
+
+  // **The cap policy's probe, cut the way a band is.** A rung of the escalation is a few
+  // thousand of the frame's own sample cells at the cap being tried, and on the frames that
+  // want four rungs the deepest is seconds — so it is spread over the same pool for the same
+  // reason a field is, and the orbit it reads is this rung's, already here. The module
+  // answers with counts rather than lanes: nothing about a probe is a picture.
+  if (message.kind === "probe") {
+    const { job, spec, cols, rows, rowStart, rowEnd } = message;
+    if (orbit === null) {
+      self.postMessage({ kind: "probe", job, counts: { ok: false, why: "no reference orbit" } });
+      return;
+    }
+    const [specPointer, specLength] = put(spec);
+    const out = wasm.probe_band(
+      specPointer,
+      specLength,
+      orbit.pointer,
+      orbit.length,
+      cols,
+      rows,
+      rowStart,
+      rowEnd,
+    );
+    wasm.dealloc(specPointer, specLength);
+    const size = new DataView(wasm.memory.buffer).getUint32(out, true);
+    const body = decoder.decode(new Uint8Array(wasm.memory.buffer, out + 4, size));
+    wasm.dealloc(out, size + 4);
+    self.postMessage({ kind: "probe", job, counts: JSON.parse(body) });
     return;
   }
 
