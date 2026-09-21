@@ -39,6 +39,25 @@ test("a coordinate past MAX_SCALE is refused rather than truncated", () => {
   assert.equal(fx.scaleOf(fx.parse(fits)), fx.MAX_SCALE);
 });
 
+/**
+ * **The two refusals are not the same refusal**, and the bug that says why is worth the
+ * test: `perturb.wasm` answers a solve with two hundred digits on purpose, the page fed
+ * that back in here, and a `null` that meant "longer than I carry" was read as "this seed
+ * did not converge" — an empty list and a clean console.
+ */
+test("a refusal says which of the two it is", () => {
+  assert.equal(fx.refusal("0.5"), null, "a decimal is not refused at all");
+  assert.equal(fx.refusal("2e-11"), null);
+  for (const bad of ["", " ", "abc", "1.2.3", "1e", "--1", "0x10", "1,5", null, undefined]) {
+    assert.equal(fx.refusal(bad), fx.NOT_A_NUMBER, `${bad} is not a number`);
+  }
+  // A perfectly good decimal, too long for this module — which is a different thing to
+  // tell a reader, and the only one of the two that is the page's own mistake.
+  assert.equal(fx.refusal(`0.${"1".repeat(fx.MAX_SCALE + 1)}`), fx.TOO_LONG);
+  assert.equal(fx.refusal(`0.${"1".repeat(fx.MAX_SCALE)}`), null);
+  assert.notEqual(fx.NOT_A_NUMBER, fx.TOO_LONG);
+});
+
 test("addition is exact where a double is not", () => {
   // Thirty-five digits of centre plus a step twenty-four decades below it. In `f64` the
   // step vanishes entirely; here every digit of both survives.

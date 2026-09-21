@@ -25,12 +25,20 @@ const decoder = new TextDecoder();
  *  frame are four megabytes that nothing would ever read again. */
 let orbit = null;
 
-/** Write a string into the module's heap, and hand back what frees it. */
-function put(text) {
+/** Write a string into the module's heap, call an export with it, and free it.
+ *
+ *  Every message kind below sends a spec or a request in and takes something back,
+ *  and the put / call / dealloc shape was written out four times. It is written
+ *  here, so that the kinds differ by what they ask and not by how they ask it. */
+function withText(text, call) {
   const raw = encoder.encode(text);
   const pointer = wasm.alloc(raw.length);
   new Uint8Array(wasm.memory.buffer, pointer, raw.length).set(raw);
-  return [pointer, raw.length];
+  try {
+    return call(pointer, raw.length);
+  } finally {
+    wasm.dealloc(pointer, raw.length);
+  }
 }
 
 function release() {
@@ -67,56 +75,30 @@ self.onmessage = (event) => {
     return;
   }
 
-  // **The cap policy's probe, cut the way a band is.** A rung of the escalation is a few
-  // thousand of the frame's own sample cells at the cap being tried, and on the frames that
-  // want four rungs the deepest is seconds — so it is spread over the same pool for the same
-  // reason a field is, and the orbit it reads is this rung's, already here. The module
-  // answers with counts rather than lanes: nothing about a probe is a picture.
-  if (message.kind === "probe") {
-    const { job, spec, cols, rows, rowStart, rowEnd } = message;
+  // **The two walks of the frame's own cells, cut the way a band is.**
+  //
+  // A cap-policy rung is a few thousand sample cells at the cap being tried, and on the
+  // frames that want four rungs the deepest is seconds; the atom-domain walk is the cheap
+  // half of finding a minibrot, no interior shortcut and no high precision. Both are
+  // spread over the same pool for the same reason a field is, both read the orbit already
+  // here, and both answer with counts rather than lanes — nothing about either is a
+  // picture. They are one branch because the only things that differ are the export and
+  // the name the answer travels under.
+  const WALKS = {
+    probe: { call: "probe_band", field: "counts" },
+    seeds: { call: "seed_band", field: "found" },
+  };
+  if (WALKS[message.kind] !== undefined) {
+    const { call, field } = WALKS[message.kind];
+    const { kind, job, spec, cols, rows, rowStart, rowEnd } = message;
     if (orbit === null) {
-      self.postMessage({ kind: "probe", job, counts: { ok: false, why: "no reference orbit" } });
+      self.postMessage({ kind, job, [field]: { ok: false, why: "no reference orbit" } });
       return;
     }
-    const [specPointer, specLength] = put(spec);
-    const out = wasm.probe_band(
-      specPointer,
-      specLength,
-      orbit.pointer,
-      orbit.length,
-      cols,
-      rows,
-      rowStart,
-      rowEnd,
+    const answer = withText(spec, (pointer, length) =>
+      take(wasm[call](pointer, length, orbit.pointer, orbit.length, cols, rows, rowStart, rowEnd)),
     );
-    wasm.dealloc(specPointer, specLength);
-    self.postMessage({ kind: "probe", job, counts: take(out) });
-    return;
-  }
-
-  // **The atom-domain walk, cut the same way.** It names the nuclei whose domains these
-  // probe rows fall in, which is the cheap half of finding a minibrot: no interior
-  // shortcut and no high precision, one walk of the frame's own cells against the orbit
-  // already here.
-  if (message.kind === "seeds") {
-    const { job, spec, cols, rows, rowStart, rowEnd } = message;
-    if (orbit === null) {
-      self.postMessage({ kind: "seeds", job, found: { ok: false, why: "no reference orbit" } });
-      return;
-    }
-    const [specPointer, specLength] = put(spec);
-    const out = wasm.seed_band(
-      specPointer,
-      specLength,
-      orbit.pointer,
-      orbit.length,
-      cols,
-      rows,
-      rowStart,
-      rowEnd,
-    );
-    wasm.dealloc(specPointer, specLength);
-    self.postMessage({ kind: "seeds", job, found: take(out) });
+    self.postMessage({ kind, job, [field]: answer });
     return;
   }
 
@@ -127,10 +109,8 @@ self.onmessage = (event) => {
   // interrupted, and a step at a period of a hundred thousand is a tenth of a second.
   if (message.kind === "newton") {
     const { job, request } = message;
-    const [pointer, length] = put(request);
-    const out = wasm.newton_step(pointer, length);
-    wasm.dealloc(pointer, length);
-    self.postMessage({ kind: "newton", job, step: take(out) });
+    const step = withText(request, (pointer, length) => take(wasm.newton_step(pointer, length)));
+    self.postMessage({ kind: "newton", job, step });
     return;
   }
 
@@ -144,18 +124,11 @@ self.onmessage = (event) => {
       return;
     }
     const started = performance.now();
-    const [specPointer, specLength] = put(spec);
     // The orbit is **borrowed** here and not taken: it stays in this heap for the next
     // band of the same frame.
-    const pointer = wasm.compute_band(
-      specPointer,
-      specLength,
-      orbit.pointer,
-      orbit.length,
-      rowStart,
-      rowEnd,
+    const pointer = withText(spec, (specPointer, specLength) =>
+      wasm.compute_band(specPointer, specLength, orbit.pointer, orbit.length, rowStart, rowEnd),
     );
-    wasm.dealloc(specPointer, specLength);
 
     if (pointer === 0) {
       self.postMessage({ kind: "band", job, rowStart, rowEnd, refused: true });

@@ -63,14 +63,46 @@ export function make(units, scale) {
 /** Zero. */
 export const ZERO = make(0n, 0);
 
+/** Why [`parse`] refused, where it did. */
+export const NOT_A_NUMBER = "not a number";
+export const TOO_LONG = "longer than this module carries";
+
 /**
  * A decimal string as an exact decimal, or `null` where it is not one.
  *
  * Accepts what the permalink's coordinate reader accepts — a sign, digits, a point, and
  * an exponent — so a string that parses as a shallow coordinate parses here too, and
  * means the same number to the last digit rather than to the last double.
+ *
+ * **Two different things are refused here and [`refusal`] is how a caller tells them
+ * apart.** A string that is not a decimal is somebody's input; a decimal past
+ * [`MAX_SCALE`] is this module's own ceiling, and a caller that meets one has usually
+ * handed over a number it was supposed to trim. That distinction cost an hour once:
+ * `perturb.wasm` answers a Newton solve with the full ~190 digits of what it stored, by
+ * design, and until `deep_nearby_minibrots_ckpt138` the page fed that straight back in
+ * here — every solve came back `null`, every nucleus was dropped as unconverged, and the
+ * list said "No minibrot was found in this view" with a clean console.
  */
 export function parse(text) {
+  return read(text);
+}
+
+/**
+ * `null` where the text parses, and which of the two refusals it is otherwise.
+ *
+ * Separate from [`parse`] rather than a second return value, because every caller that
+ * only wants the number should keep reading like one — and the caller that has to tell a
+ * reader something is the exception.
+ */
+export function refusal(text) {
+  if (typeof text !== "string") return NOT_A_NUMBER;
+  const trimmed = text.trim();
+  if (trimmed === "" || !DIGITS.test(trimmed)) return NOT_A_NUMBER;
+  return read(text) === null ? TOO_LONG : null;
+}
+
+/** The reading itself, which both of the above are a view of. */
+function read(text) {
   if (typeof text !== "string") return null;
   const trimmed = text.trim();
   if (trimmed === "" || !DIGITS.test(trimmed)) return null;

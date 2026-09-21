@@ -26,7 +26,7 @@ import { existsSync } from "node:fs";
 
 import { load as loadEngine, RAMP } from "./bench/engine.mjs";
 import { load as loadPerturb } from "./bench/perturb.mjs";
-import { shadeSpecOf, deepSpecOf } from "./deep-render.js";
+import { shadeSpecOf, deepSpecOf, orbitKey } from "./deep-render.js";
 import * as deep from "./deep-link.js";
 
 const MODULE = new URL("./perturb.wasm", import.meta.url);
@@ -541,4 +541,34 @@ test("the escalation cannot run away past the kernel's ceiling", { skip }, () =>
   assert.equal(perturb.nextCap(ceiling), ceiling, "a cap at the ceiling does not move");
   assert.equal(perturb.nextCap(600_000), ceiling, "and one under it doubles into it");
   assert.equal(perturb.nextCap(93_600), 187_200);
+});
+
+/**
+ * **What makes a held reference orbit the wrong one**, which is the other half of the
+ * pool's one-orbit-a-frame rule and has no other pin.
+ *
+ * `#reaches` compares this key and then a distance. The key is the part that has to match
+ * exactly, and the failure it exists to stop is silent: an orbit of the wrong set, the
+ * wrong depth or the wrong period draws a plausible picture of somewhere else.
+ */
+test("an orbit's identity is the set, the depth and the period", () => {
+  const at = (x, y) => ({ text: x, dec: y ?? x });
+  const mandelbrot = { x: at(ANCHOR.center_re), y: at(ANCHOR.center_im), julia: null };
+  const julia = { ...mandelbrot, julia: { x: at("0"), y: at("1") } };
+
+  // Where it is is not in it: a pan is still the same orbit, and the reach test is what
+  // decides whether it reaches.
+  assert.equal(
+    orbitKey(mandelbrot, 3),
+    orbitKey({ ...mandelbrot, x: at("-0.7"), y: at("0.1") }, 3),
+  );
+
+  // Every one of the three does change it.
+  assert.notEqual(orbitKey(mandelbrot, 3), orbitKey(mandelbrot, 4));
+  assert.notEqual(orbitKey(mandelbrot, 3), orbitKey(mandelbrot, 3, 2838));
+  assert.notEqual(orbitKey(mandelbrot, 3), orbitKey(julia, 3));
+  // Including which `c` a Julia orbit is of, at the same depth.
+  assert.notEqual(orbitKey(julia, 3), orbitKey({ ...julia, julia: { x: at("0"), y: at("0.9") } }, 3));
+  // And two periods are two orbits, not a long one and a short one.
+  assert.notEqual(orbitKey(mandelbrot, 3, 2838), orbitKey(mandelbrot, 3, 94776));
 });

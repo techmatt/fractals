@@ -218,6 +218,32 @@ export function anchorOf(view) {
   return toOrigin < toParameter ? "origin" : "parameter";
 }
 
+/**
+ * What makes one reference orbit a different object from another, as a string.
+ *
+ * Not "where it is" — that is the reach test, and it is a distance rather than a
+ * comparison. This is the part of an orbit that has to **match**, and every piece of it
+ * is a way a held orbit would be silently wrong for a frame rather than merely unhelpful:
+ *
+ * - **the limb count**, because the points were computed to that many and a deeper view
+ *   wants precision they do not carry;
+ * - **the period**, because a periodic orbit is stored for one period and the kernel's
+ *   index wraps into it — hand one to a frame that wanted the full walk and it says the
+ *   reference returns to the origin when it does not;
+ * - **which set, and at what parameter.** A Julia orbit and a Mandelbrot orbit are never
+ *   swapped for each other even at the same point, because a view entered at `Z₁` is
+ *   handed an orbit one step longer.
+ *
+ * One string rather than a field-by-field compare because the compare was the thing that
+ * had to be remembered: `julia` was wanted when the Julia case landed and `period` when a
+ * nucleus could be the reference, and each was a line somebody had to think to add. The
+ * same move `deepLink.fieldKey` already makes for a field.
+ */
+export function orbitKey(view, limbs, period = null) {
+  const set = view.julia ? `j:${view.julia.x.text},${view.julia.y.text}` : "m";
+  return `${set}|${limbs}|${period ?? "-"}`;
+}
+
 /** One pool worker, instantiated and ready. */
 function spawn(module) {
   return new Promise((resolve) => {
@@ -277,25 +303,38 @@ export class DeepRenderer {
     return this.workers.length;
   }
 
-  /** Write a string into the planner's heap, and hand back what frees it. */
-  #put(text) {
+  /** Write a string into the planner's heap, call an export with it, and free it.
+   *
+   *  The same shape `deep-worker.js` uses on its own instance, for the same reason: a
+   *  spec goes in, something comes back, and the allocation is nobody's business
+   *  afterwards. */
+  #with(text, call) {
     const raw = new TextEncoder().encode(text);
     const pointer = this.planner.alloc(raw.length);
     new Uint8Array(this.planner.memory.buffer, pointer, raw.length).set(raw);
-    return [pointer, raw.length];
+    try {
+      return call(pointer, raw.length);
+    } finally {
+      this.planner.dealloc(pointer, raw.length);
+    }
   }
 
-  /** What this spec implies, or why it cannot be drawn: the kernel's own answer. */
-  plan(spec) {
-    const [pointer, length] = this.#put(JSON.stringify(spec));
-    const out = this.planner.plan(pointer, length);
-    this.planner.dealloc(pointer, length);
+  /** Read back what a report-returning export left: four bytes of little-endian length,
+   *  then the UTF-8, and the whole buffer freed. */
+  #take(out) {
     const size = new DataView(this.planner.memory.buffer).getUint32(out, true);
     const body = new TextDecoder().decode(
       new Uint8Array(this.planner.memory.buffer, out + 4, size),
     );
     this.planner.dealloc(out, size + 4);
     return JSON.parse(body);
+  }
+
+  /** What this spec implies, or why it cannot be drawn: the kernel's own answer. */
+  plan(spec) {
+    return this.#with(JSON.stringify(spec), (pointer, length) =>
+      this.#take(this.planner.plan(pointer, length)),
+    );
   }
 
   /** The kernel's cap policy — the engine's shape, with the engine's ceiling lifted. */
@@ -396,58 +435,33 @@ export class DeepRenderer {
 
   /** One rung's counts, over the pool. The probe's rows are cut between the workers and
    *  the counts summed; a band that comes back refused is the rung's error. */
-  #probe(spec, generation) {
-    const workers = this.workers.length;
-    if (workers === 0) return Promise.resolve(null);
-    const ranges = [];
-    for (let index = 0; index < workers; index++) {
-      const start = Math.floor((index * PROBE_ROWS) / workers);
-      const end = Math.floor(((index + 1) * PROBE_ROWS) / workers);
-      if (end > start) ranges.push([start, end]);
+  async #probe(spec, generation) {
+    const shares = await this.#shares(
+      "probe",
+      "counts",
+      "the kernel refused to probe this view",
+      spec,
+      PROBE_COLS,
+      PROBE_ROWS,
+      generation,
+    );
+    if (shares === null) return null;
+    const total = {
+      maxiter: 0,
+      samples: 0,
+      escaped: 0,
+      proven: 0,
+      starved: 0,
+      fault: 0,
+      iterations: 0,
+    };
+    for (const counts of shares) {
+      for (const key of ["samples", "escaped", "proven", "starved", "fault", "iterations"]) {
+        total[key] += counts[key];
+      }
+      total.maxiter = Math.max(total.maxiter, counts.maxiter);
     }
-    return new Promise((resolve, reject) => {
-      const total = {
-        maxiter: 0,
-        samples: 0,
-        escaped: 0,
-        proven: 0,
-        starved: 0,
-        fault: 0,
-        iterations: 0,
-      };
-      let waiting = ranges.length;
-      let failed = false;
-      ranges.forEach(([rowStart, rowEnd], index) => {
-        const worker = this.workers[index];
-        const previous = worker.onmessage;
-        worker.onmessage = (event) => {
-          if (event.data.kind !== "probe") return;
-          worker.onmessage = previous;
-          if (failed) return;
-          const counts = event.data.counts;
-          if (!counts?.ok) {
-            failed = true;
-            reject(new Error(counts?.why ?? "the kernel refused to probe this view"));
-            return;
-          }
-          for (const key of ["samples", "escaped", "proven", "starved", "fault", "iterations"]) {
-            total[key] += counts[key];
-          }
-          total.maxiter = Math.max(total.maxiter, counts.maxiter);
-          waiting -= 1;
-          if (waiting === 0) resolve(generation === this.generation ? total : null);
-        };
-        worker.postMessage({
-          kind: "probe",
-          job: generation,
-          spec,
-          cols: PROBE_COLS,
-          rows: PROBE_ROWS,
-          rowStart,
-          rowEnd,
-        });
-      });
-    });
+    return total;
   }
 
   /**
@@ -514,60 +528,33 @@ export class DeepRenderer {
 
   /** The domain walk over the pool, its rows cut between the workers and its seeds merged
    *  by period: cells add, and the smallest approach keeps its cell. */
-  #seeds(spec, generation) {
-    const workers = this.workers.length;
-    if (workers === 0) return Promise.resolve(null);
-    const ranges = [];
-    for (let index = 0; index < workers; index++) {
-      const start = Math.floor((index * GRID_ROWS) / workers);
-      const end = Math.floor(((index + 1) * GRID_ROWS) / workers);
-      if (end > start) ranges.push([start, end]);
+  async #seeds(spec, generation) {
+    const shares = await this.#shares(
+      "seeds",
+      "found",
+      "the kernel refused to walk this view",
+      spec,
+      GRID_COLS,
+      GRID_ROWS,
+      generation,
+    );
+    if (shares === null) return null;
+    const merged = new Map();
+    for (const found of shares) {
+      for (const seed of found.seeds) {
+        const held = merged.get(seed.period);
+        if (held === undefined) merged.set(seed.period, { ...seed });
+        else {
+          held.cells += seed.cells;
+          if (seed.minimum < held.minimum) {
+            held.minimum = seed.minimum;
+            held.from_re = seed.from_re;
+            held.from_im = seed.from_im;
+          }
+        }
+      }
     }
-    return new Promise((resolve, reject) => {
-      const merged = new Map();
-      let waiting = ranges.length;
-      let failed = false;
-      ranges.forEach(([rowStart, rowEnd], index) => {
-        const worker = this.workers[index];
-        const previous = worker.onmessage;
-        worker.onmessage = (event) => {
-          if (event.data.kind !== "seeds") return;
-          worker.onmessage = previous;
-          if (failed) return;
-          const found = event.data.found;
-          if (!found?.ok) {
-            failed = true;
-            reject(new Error(found?.why ?? "the kernel refused to walk this view"));
-            return;
-          }
-          for (const seed of found.seeds) {
-            const held = merged.get(seed.period);
-            if (held === undefined) merged.set(seed.period, { ...seed });
-            else {
-              held.cells += seed.cells;
-              if (seed.minimum < held.minimum) {
-                held.minimum = seed.minimum;
-                held.from_re = seed.from_re;
-                held.from_im = seed.from_im;
-              }
-            }
-          }
-          waiting -= 1;
-          if (waiting === 0) {
-            resolve(generation === this.generation ? [...merged.values()] : null);
-          }
-        };
-        worker.postMessage({
-          kind: "seeds",
-          job: generation,
-          spec,
-          cols: GRID_COLS,
-          rows: GRID_ROWS,
-          rowStart,
-          rowEnd,
-        });
-      });
-    });
+    return [...merged.values()];
   }
 
   /** Every seed in this lane, solved on this worker, in turn. */
@@ -620,7 +607,23 @@ export class DeepRenderer {
         // puts the truncation far under one of its pixels. Not doing this was worth
         // finding: `fx.parse` returned null on every solve and the list came back empty.
         const digits = digitsFor(sizeOf(answer.size_log2) * this.planner.tile_width(1));
-        const dec = { x: fx.parse(trim(re, digits)), y: fx.parse(trim(im, digits)) };
+        const trimmed = { x: trim(re, digits), y: trim(im, digits) };
+        // **The two refusals are not the same refusal, and only one of them is this
+        // seed's fault.** A coordinate that is not a decimal at all means the module
+        // answered with something unreadable — drop the seed, the way an unconverged one
+        // is dropped. A coordinate that is merely *longer than `deep-fx` carries* means
+        // the trim above did not do its job, which is this page's own mistake and is
+        // exactly the bug that made every solve come back empty with a clean console.
+        // That one is said out loud rather than counted as a seed that did not converge.
+        for (const [axis, text] of Object.entries(trimmed)) {
+          if (fx.refusal(text) === fx.TOO_LONG) {
+            throw new Error(
+              `the solver's ${axis} is ${text.length} digits, past what a coordinate carries` +
+                " — the trim to the tile's own decade did not happen",
+            );
+          }
+        }
+        const dec = { x: fx.parse(trimmed.x), y: fx.parse(trimmed.y) };
         if (dec.x === null || dec.y === null) return null;
         return {
           period: seed.period,
@@ -637,17 +640,60 @@ export class DeepRenderer {
     return null;
   }
 
-  /** One round trip to one worker, with its handler put back afterwards. */
-  #ask(worker, message) {
+  /** One round trip to one worker, with its handler put back afterwards.
+   *
+   *  `field` is the member of the reply that is the answer — `step` for a Newton step,
+   *  `counts` for a probe band, `found` for a walk of the domains. */
+  #ask(worker, message, field = "step") {
     return new Promise((resolve) => {
       const previous = worker.onmessage;
       worker.onmessage = (event) => {
         if (event.data.kind !== message.kind) return;
         worker.onmessage = previous;
-        resolve(event.data.step ?? null);
+        resolve(event.data[field] ?? null);
       };
       worker.postMessage(message);
     });
+  }
+
+  /**
+   * Cut `rows` of the frame's own grid across the pool and ask every worker for its
+   * share, as one message each.
+   *
+   * **What a band of a probe and a band of the domain walk have in common**, which is
+   * everything except the tally: the same cut, the same one-message round trip, the same
+   * refusal. Resolves with one answer per worker, or `null` where the pool is empty or a
+   * newer generation has started; throws the kernel's own sentence where a share was
+   * refused.
+   *
+   * ⚠ **A refusal surfaces after the last share lands, not on the first.** The two
+   * hand-written versions this replaced rejected the moment a bad one arrived, with the
+   * others still running; nothing a reader sees turns on it, since the sentence is the
+   * same and the frame is abandoned either way, but it is a difference and not a
+   * simplification.
+   */
+  async #shares(kind, field, refusal, spec, cols, rows, generation) {
+    const workers = this.workers.length;
+    if (workers === 0) return null;
+    const ranges = [];
+    for (let index = 0; index < workers; index++) {
+      const start = Math.floor((index * rows) / workers);
+      const end = Math.floor(((index + 1) * rows) / workers);
+      if (end > start) ranges.push([start, end]);
+    }
+    const answers = await Promise.all(
+      ranges.map(([rowStart, rowEnd], index) =>
+        this.#ask(
+          this.workers[index],
+          { kind, job: generation, spec, cols, rows, rowStart, rowEnd },
+          field,
+        ),
+      ),
+    );
+    for (const answer of answers) {
+      if (!answer?.ok) throw new Error(answer?.why ?? refusal);
+    }
+    return generation === this.generation ? answers : null;
   }
 
   cancel() {
@@ -672,8 +718,10 @@ export class DeepRenderer {
    * Whether the orbit the workers hold can still draw this frame.
    *
    * Three things have to hold, and each of them is a way the orbit would be wrong rather
-   * than merely unhelpful. **The limb count**, because the orbit's points were computed to
-   * that many limbs and a deeper view wants more precision than they carry. **The cap**,
+   * than merely unhelpful. **Its identity**, which is [`orbitKey`] — the limb count,
+   * because the orbit's points were computed to that many and a deeper view wants more
+   * precision than they carry; the period, because a periodic orbit is a different object
+   * rather than a shorter one; and which set it is the orbit of. **The cap**,
    * because an orbit run to fewer iterations than the frame asks for would have the kernel
    * rebasing its way through the difference. And **the reach**: the reference has to be
    * inside the frame being drawn, which is the conservative reading of "still within its
@@ -687,23 +735,17 @@ export class DeepRenderer {
   #reaches(view, limbs, aspect, period) {
     const held = this.orbit;
     if (held === null) return false;
-    if (held.limbs !== limbs) return false;
+    // **Everything about the orbit that is its identity is one string**, which is what
+    // keeps this test honest as the kind grows: a new field of a reference — `julia` when
+    // the Julia case landed, `period` when a nucleus could be one — is a field of the key
+    // rather than a line somebody has to remember to add here.
+    if (held.key !== orbitKey(view, limbs, period)) return false;
     if (held.maxiter < view.maxiter) return false;
-    // **A periodic orbit is a different object, not a shorter one.** It is stored for one
-    // period and the kernel's index wraps into it; a frame that wanted the full walk would
-    // be handed something that says the reference returns to the origin when it does not.
-    // So the period is part of the orbit's identity and never a detail of it.
-    if ((held.period ?? null) !== (period ?? null)) return false;
     // **A Julia frame's orbit does not depend on its frame at all.** It is the
     // critical orbit of the parameter, so the reach test is only "the same
     // parameter, computed deeply enough and far enough" — and a pan or a zoom
-    // inside a Julia view never recomputes one. The two kinds are never swapped
-    // for each other even at the same point, because a view entered at `Z₁` is
-    // handed an orbit one step longer.
-    if ((held.julia !== null) !== (view.julia !== null)) return false;
-    if (view.julia !== null) {
-      return held.julia.x === view.julia.x.text && held.julia.y === view.julia.y.text;
-    }
+    // inside a Julia view never recomputes one.
+    if (view.julia !== null) return true;
     // In decimal, and it has to be: two deep coordinates agree in every digit a double
     // holds, so `Number(a) - Number(b)` is exactly zero and would say the reference is at
     // the centre wherever it actually is.
@@ -728,9 +770,9 @@ export class DeepRenderer {
     // available; for a preview tile it is the nucleus the search solved, and the centre
     // *is* the nucleus — which is why a tile names a period and no reference.
     const spec = deepSpecOf(view, width, height, { supersample, period });
-    const [pointer, length] = this.#put(JSON.stringify(spec));
-    const out = this.planner.reference_orbit(pointer, length);
-    this.planner.dealloc(pointer, length);
+    const out = this.#with(JSON.stringify(spec), (pointer, length) =>
+      this.planner.reference_orbit(pointer, length),
+    );
     if (out === 0) return null;
     const count = new DataView(this.planner.memory.buffer).getUint32(out, true);
     const bytes = REFERENCE_HEADER + 16 * count;
@@ -741,9 +783,14 @@ export class DeepRenderer {
     this.orbit = {
       x: view.x,
       y: view.y,
-      // The parameter this orbit is the critical orbit of, as text — what the
-      // reach test compares. `null` on the Mandelbrot side, where the orbit is
-      // of the frame's own reference point.
+      // What this orbit *is* — the set, the parameter, the limbs, the period — as the one
+      // string `#reaches` compares. Where it is stays `x` and `y`, because that is a
+      // distance and not a comparison.
+      key: orbitKey(view, limbs, period),
+      // The parameter this orbit is the critical orbit of, as text. `null` on the
+      // Mandelbrot side, where the orbit is of the frame's own reference point. In the
+      // key as well as here: the whole record goes to `onOrbit`, which is what the page
+      // says an orbit is, and that stays a description rather than becoming a compare.
       julia: view.julia ? { x: view.julia.x.text, y: view.julia.y.text } : null,
       limbs,
       maxiter: view.maxiter,
