@@ -49,9 +49,24 @@ const PROBE = { width: 64, height: 36, maxiter: 256, wide: 1e-3 };
 /** The screen's node field (`screen::NODE_WIDTH`, and 16:9). */
 const NODE = { width: 384, height: 216 };
 
-/** Where a picture is judged: candidate geometry. The descent draws at one sample a pixel,
- *  because it judges dozens of pictures a walk; mining draws at the pipeline's two. */
-const JUDGED = { width: 640, height: 360 };
+/**
+ * Where a picture is judged: candidate geometry. The descent draws at one sample a pixel,
+ * because it judges dozens of pictures a walk; mining draws at the pipeline's two.
+ *
+ * **It is the screen's own frame now** *(pre_closeout_ckpt138, 2026-09-20)*. It was
+ * 640x360, and the gate reads 384x224 — so 2.7x the samples were drawn for the viewer
+ * alone, in the largest part of a rung. The viewer gets the same picture upscaled, and
+ * `paintWalk` was already drawing these layers to whatever the canvas is.
+ *
+ * **384x216 and not the gate's own 384x224**, which is the one liberty this takes with the
+ * instruction. The walk's geometry is 16:9 from `boxOf` down — a cell, its quarters, the
+ * node frame the screen passed it on — and 384x224 is 12:7, so it would judge a taller
+ * slice of the plane than the frame that was screened. What it buys instead is worth the
+ * most of it: the gate stretches to 384 wide, so at this width the horizontal resample is
+ * the identity and only the vertical is a stretch, where before both were. Same samples
+ * saved, same plane, and the picture the gate reads is nearer its input than it has been.
+ */
+const JUDGED = { width: 384, height: 216 };
 const DESCENT_SUPERSAMPLE = 1;
 const MINING_SUPERSAMPLE = 2;
 
@@ -170,6 +185,28 @@ const MOST_REFUSED_ROOTS = 16;
 const MINE_STEPS = 1;
 const TWIN_STEPS = 4;
 
+/** How many candidate roots go through the screen at once. A cell has four quarters and
+ *  the screeners are two, so four is the whole of a cell and never more than a cell: the
+ *  batch is a level's own list rather than a window over the search. */
+const ROOT_BATCH = 4;
+
+/**
+ * The twin's own steps, on top of the walk's budget rather than out of it
+ * *(pre_closeout_ckpt138, 2026-09-20)*.
+ *
+ * One budget shared by both legs meant the plane leg spent it first, and the twin was
+ * reached on about a third of walks — 8 of 8 before the budget existed, 2 and 3 of 8 after
+ * *(walk_faster_ckpt138)*. Splitting the budget in half would keep every twin and halve the
+ * plane descent, which is what the patience rule exists to prevent; a reserve keeps the
+ * plane leg exactly as long as it is and lets a walk with a twin run a little longer, which
+ * is the trade this was given.
+ *
+ * Five: the four a twin is worth starting on at all, and one rung of room past it. Since
+ * five is over `TWIN_STEPS`, the gate below can no longer refuse a twin for want of budget
+ * — every plane that has one and every walk with the box ticked reaches it.
+ */
+const TWIN_RESERVE = 5;
+
 /** During a walk the viewer is framed wider than the cell it is weighing, so that the
  *  quarters and their labels sit inside the picture: the cell takes this share of the
  *  viewport's width, or of its height where the canvas is wider than 16:9. A quarter's
@@ -233,8 +270,11 @@ class Screeners {
     this.pending = new Map();
     this.next = 0;
     this.idle = [];
+    /** Every worker, not just the idle ones: `stop()` has to reach the busy one too. */
+    this.all = [];
     for (let index = 0; index < count; index++) {
       const worker = new Worker(new URL("./worker.js", import.meta.url), { type: "module" });
+      this.all.push(worker);
       worker.onmessage = (event) => {
         if (event.data.kind === "ready") {
           this.idle.push(worker);
@@ -257,6 +297,17 @@ class Screeners {
       const { id, spec, occupancy } = this.waiting.shift();
       worker.postMessage({ kind: "screen", id, spec, occupancy });
     }
+  }
+
+  /** Give the workers back. A screen still waiting resolves with nothing rather than
+   *  hanging its caller, which matters because the caller is a walk loop. */
+  stop() {
+    for (const worker of this.all) worker.terminate();
+    this.all = [];
+    this.idle = [];
+    this.waiting.length = 0;
+    for (const resolve of this.pending.values()) resolve(null);
+    this.pending.clear();
   }
 
   /** The screen's report on one spec. */
@@ -1475,13 +1526,55 @@ export function mount(host) {
         stack.push({ cell: next, open: null });
         continue;
       }
-      const frame = jittered(next);
-      const verdict = await screened(viewAt(family, frame));
-      if (verdict.passed) {
-        row.outcome = "reached";
-        return { family, frame };
+      // **The bottom rung's candidates go through the screen together**
+      // *(pre_closeout_ckpt138, 2026-09-20)*. A cell's straddling quarters are all at one
+      // rung, so at the bottom they are all candidate roots and the loop used to take them
+      // one at a time while the second screener sat idle — 7.4 s at the median and 28 s at
+      // p90 on multibrot6, every second of it out of the reader's sight.
+      //
+      // **The same candidates in the same order of preference**, which is what stops this
+      // being a different search: the batch is `level.open` in the order it was already
+      // going to be read, every one of them is jittered in that order so the random draws
+      // land where they landed, and the verdicts are then walked in that order. The first
+      // to pass is the one the serial loop would have returned, and the refusals counted
+      // before it are the refusals it would have counted. What changes is only that some
+      // frames behind the winner were screened as well, and a screen decides nothing but
+      // its own frame.
+      const batch = [next];
+      while (batch.length < ROOT_BATCH && level.open.length > 0) batch.push(level.open.shift());
+      const frames = batch.map(jittered);
+      // **Dispatched together, resolved in order.** `Promise.all` here made the common case
+      // worse: most descents reach the bottom and pass on the *first* candidate, and waiting
+      // the batch out paid four screens where the serial loop paid one. Measured over eight
+      // pinned walks that left `root_ms` median unmoved and its p90 worse. Awaiting them one
+      // at a time keeps the overlap — they are all in flight from the line above — and
+      // returns the moment the first passes. The screens still going finish into nothing and
+      // hand their workers back.
+      //
+      // Each settles to a tagged result rather than being awaited raw, because a screen
+      // that throws before its turn comes would otherwise be an unhandled rejection: the
+      // whole batch is in flight and only one of them is being waited on.
+      const pending = frames.map((frame) =>
+        screened(viewAt(family, frame)).then(
+          (verdict) => ({ verdict }),
+          (error) => ({ error }),
+        ),
+      );
+      let spent = false;
+      for (let index = 0; index < pending.length; index++) {
+        const got = await pending[index];
+        if (got.error !== undefined) throw got.error;
+        const verdict = got.verdict;
+        if (verdict.passed) {
+          row.outcome = "reached";
+          return { family, frame: frames[index] };
+        }
+        if (++row.refused >= MOST_REFUSED_ROOTS) {
+          spent = true;
+          break;
+        }
       }
-      if (++row.refused >= MOST_REFUSED_ROOTS) break;
+      if (spent) break;
     }
     row.outcome = "gave out";
     return null;
@@ -1901,8 +1994,12 @@ export function mount(host) {
         const last = !(index === 0 && twin);
         phase = "root";
         mined = false;
-        // A twin is only worth starting on where it can afford its home frame, a rung or
-        // two and a place; below that the walk goes somewhere else instead.
+        // The twin's reserve is added when its leg starts, so a plane leg that ran to the
+        // end of the budget cannot spend it. A twin is still only worth starting on where
+        // it can afford its home frame, a rung or two and a place — the reserve is over
+        // that bar by one, so this refuses nothing today and stays as the statement of
+        // what a twin costs.
+        if (index > 0) budget.left += TWIN_RESERVE;
         if (index > 0 && budget.left < TWIN_STEPS) break;
         // One place is one strip: the twin's cards follow its parent's, after a divider.
         if (index > 0) strip.divider("Julia twin");
@@ -2002,6 +2099,16 @@ export function mount(host) {
       if (!hiddenGoing) return;
       hiddenGoing = false;
       if (state === "paused" || state === "idle") toggle();
+    },
+    /** The document is going away: the walk's own two pools go with it. Nothing else
+     *  calls this — a walk that is merely paused keeps its workers, because the reader
+     *  is expected back. */
+    stop() {
+      pause("The page is closing.");
+      renderer?.stop();
+      screeners?.stop();
+      renderer = null;
+      screeners = null;
     },
   };
 }
