@@ -10,6 +10,35 @@ panel of pictures somebody can open — a thousand seated wallpapers, or the atl
 place the search kept — and on the right the viewer that draws whichever one is picked.
 Same URL, same keys, and every link written before it still opens the same picture.
 
+## What each section answers
+
+This file is the design record for the whole page and it is long. One file on purpose —
+the cross-references between these sections are dense, and splitting it would turn
+*grep the README* into *grep eight of them and hope* — so what it wants is a way in.
+Each line is a `##` below, and the question it is the answer to.
+
+| section | the question it answers |
+|---|---|
+| **What is here** | which file does what, and what a reader downloads |
+| **The studio** | how the left panel and the viewer share one page and one URL |
+| **The Julia preview under the pointer** | what the hover preview costs and why it never blocks |
+| **The walk** | how a frame is walked to a gallery of its neighbours, and what a step is |
+| **Deep** | the tab below the `f64` floor: the second module, the pool, the cap, the minibrots |
+| **Inflection — paged** | what that trial was, and why the tab is out of the working set |
+| **Saved** | what the Saved tab stores, and what it promises when storage refuses |
+| **The way back** | what one entry of undo is, and what collapses into one |
+| **Every colormap, and where they live** | how a thousand palettes are baked, blobbed and picked |
+| **It does not open from `file://`** | why the page has to be served, and what breaks when it is not |
+| **The engine, compiled** | how `engine.wasm` is built, what is in it, and what it costs |
+| **One spec, and the three exports** | the boundary between the page and the engine module |
+| **The download** | what Download and Download all write, and what a picture carries |
+| **Measured** | every price this page has been held to: frames, bands, pools, tabs |
+| **A mode's parameters, from the view** | which parameters are derived rather than asked for |
+| **The permalink contract, version 3** | what a link may say, what it refuses, and why a URL is permanent |
+| **The link registry** | how a figure's link is derived, and what a refusal is called |
+| **Rebuilding** | the commands, and which of them need the sibling checkout |
+| **Next** | what is deliberately not here yet |
+
 **Eleven families, seventeen modes, `f64`.** The parameter planes `mandelbrot` and
 `multibrot3`–`multibrot6`, the dynamical planes `julia`–`julia6` and `phoenix`, the
 modes `modes.jsonl` offers with the parameters the engine's catalog settles for each,

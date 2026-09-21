@@ -100,6 +100,39 @@ const WARNED = "explorer.deep-warned";
  * a sentence under the canvas.
  */
 export function mount(host) {
+  // **The state this closure is, and the four rules that hold it together.** Everything
+  // below is a function over these locals, and none of the rules is enforced by anything
+  // — which is why they are written here rather than left to be learnt from the call
+  // sites, as they were until `deep_refactor_ckpt138`.
+  //
+  // 1. **`view` is where the reader is; `drawn` is what the picture on the canvas is of.**
+  //    They are equal when nothing is pending. A gesture moves `view` and never `drawn`,
+  //    which is what `pending()` reads, and `stale` — the last picture, as a canvas, with
+  //    the view it was of — is what `paint()` slides under the pending frame. So the tab
+  //    always shows a real picture of somewhere, honestly labelled, and never a blank.
+  // 2. **`moved()` is the only way to change the frame.** Not because assigning `view` is
+  //    guarded, but because `moved()` is what repaints, clears the minibrot list, reaches
+  //    `host.settle()` — the address bar and the way back — and arms the settle timer that
+  //    may start a quarter pass. A gesture that sets `view` and returns leaves the URL
+  //    lying about the page. `swap()` is the same move for a change of *set*, and ends by
+  //    calling it.
+  // 3. **`pass` is the generation, and every async continuation re-checks it.** A pass
+  //    bumps it on the way in and `stop()` bumps it to cancel; a band or a shade that
+  //    lands under an old one is dropped on the floor. `running` is the pass in flight and
+  //    is what the Render button reads, so it is set *before* the first `await` and
+  //    cleared on every exit — the one that was missed made the button read *Cancel* for
+  //    the rest of the session.
+  // 4. **`owns` is whether the viewer's canvas is this tab's**, and `shown` whether the
+  //    tab is the one on screen. Nothing may draw unless it owns the canvas; the tab keeps
+  //    its `view` either way, which is what lets a reader leave and come back to the frame
+  //    they left.
+  //
+  // The rest is cache and bookkeeping: `fields` is up to `CACHE_LIMIT` fields by
+  // `deepLink.fieldKey` for a recolour, `finished` the fine pass's own picture for a
+  // download, `measure` what the last pass of *this* frame cost (and `null` the moment the
+  // frame or its cap moves), `quarterMs` what the auto-preview decides on, `colouring` the
+  // shade in flight, `pinnedCap` whether the reader set the cap by hand, and `cameFrom`
+  // the Mandelbrot frame *Julia at this c* was pressed on.
   const els = host.elements;
   const context = host.context;
 
