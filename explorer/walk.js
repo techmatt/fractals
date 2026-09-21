@@ -9,9 +9,9 @@
 // drawn from the root band, goes through the screen. That frame is the walk's root, a
 // genuine piece of the boundary. From the root the walk goes on rung by rung with the
 // viewer following, and here the judge's opinion of each quarter's smooth picture chooses
-// which one to go into, until its score has peaked. At the best frame it saw, if that clears
-// the bar, a handful of rendering recipes are tried and the best are kept as tiles. Then
-// the next walk starts.
+// which one to go into, until its score has peaked or the walk has run out of steps. At the
+// best frame it saw, if that clears the bar, the field is drawn once and tried in sixteen
+// colourings, and the best are kept as tiles. Then the next walk starts.
 //
 // **What it does not claim to be.** It is not the pipeline. The sampler is exhaustive and
 // this is greedy; the pipeline judges JPEG-decoded pictures and this judges the canvas; the
@@ -70,40 +70,53 @@ const TILE = { width: 316, height: 178 };
  *  Julia twin, which is the only thing that sets it apart here. */
 const PLANES = ["mandelbrot", "multibrot3", "multibrot4", "multibrot5", "multibrot6", "phoenix"];
 
-/** The thirteen modes the pipeline accepts (`mode_policy.accepted()`). The config lists
- *  them in the viewer's Mode select order, which the host hands over as `modeOrder`, so
- *  the two lists cannot drift; this set only says which of those the walk may draw. */
-const MINED_MODES = new Set([
-  "smooth",
-  "tia",
-  "stripe",
-  "curvature",
-  "smooth_mean_angle",
-  "smooth_angle_min",
-  "smooth_stripe",
-  "smooth_curvature",
-  "direct_trap_screen",
-  "direct_trap_multiply",
-  "direct_trap_lines",
-  "threads",
-  "itinerary",
-]);
+/**
+ * The modes the walk may draw, and it is **the walk's own roster rather than the
+ * pipeline's** *(walk_faster_ckpt138)*.
+ *
+ * It used to be the thirteen the pipeline accepts (`mode_policy.accepted()`), eight of them
+ * ticked, and a place was painted once in every ticked one. Measured over twelve walks that
+ * cost **18.0 s at a place**, a quarter of a walk, and most of it went to modes nobody was
+ * watching by then: a picture in `stripe` was 4.08 s and in `smooth_stripe` 2.91 against
+ * `smooth`'s 1.05, with the two angle modes at 2.2 and a derive pass on top. The tab is a
+ * demonstration of how the galleries were made, not the way anybody gets a good picture, so
+ * it buys its variety where variety is nearly free — sixteen colourings of one field — and
+ * keeps only the modes whose picture is cheap.
+ *
+ * The config lists these in the viewer's Mode select order, which the host hands over as
+ * `modeOrder`, so the two cannot drift; a mode struck from here is a mode the walk never
+ * draws and never offers a box for. **Every one of them can be recoloured**, which is what
+ * keeps a direct trap out however cheap it reads: a trap's band arrives painted, so
+ * `shade` hands the pixels back and a burst of sixteen would be sixteen of one picture.
+ */
+const MINED_MODES = new Set(["smooth", "tia", "threads"]);
 
-/** How many modes at the foot of that order start unticked *(walk_modes_order_ckpt131)*:
- *  the three direct traps and the two curvature modes, the gallery's least seated. */
-const UNTICKED_TAIL = 5;
+/**
+ * Of those, the ones that cost several times the cheapest and are drawn a few times a walk
+ * rather than at every place *(walk_faster_ckpt138)*. `threads` is the one this was written
+ * for: reliably pretty, and 1.44x `smooth` measured at mined widths where the per-mode table
+ * reads it at 4.5x a home view — affordable occasionally and not at every place. A place
+ * takes one only where the place before it did not, so they are never consecutive.
+ */
+const DEAR_MODES = new Set(["threads"]);
+
+/** How many colourings one rendered field is tried in *(walk_faster_ckpt138)*. A recolour
+ *  re-reads the field the engine already computed and costs a tenth of a second where the
+ *  field costs seconds, so this is where a place's search goes now. */
+const RECOLOURS = 16;
 
 /** What a new tab's config opens at: the pipeline's draw, where the page can make it. A
- *  place is painted once in each ticked mode *(walk_view_ckpt132)*, which is eight at the
- *  default ticks, where hunt and mine's `PER_LOCATION` draws three; the pipeline keeps every
- *  one and lets the solve choose, and a tab that did would fill with pictures nobody would
- *  pick, so it keeps the best. The modes are set in `mount`, where their order is known. */
+ *  place is painted in `RECOLOURS` colourings of one field, and a dearer mode besides where
+ *  the place before it took none *(walk_faster_ckpt138)*; the pipeline keeps every picture
+ *  it draws and lets the solve choose, and a tab that did would fill with pictures nobody
+ *  would pick, so it keeps the best. The modes are set in `mount`, where their order is
+ *  known, and every one of the roster starts ticked. */
 const DEFAULTS = {
   planes: new Set(PLANES),
   julia: true,
   widest: 1e-3,
   narrowest: 1e-4,
-  rungs: 20,
+  steps: 14,
   patience: 0.2,
   keep: 1,
   bar: 0.5,
@@ -134,6 +147,29 @@ const patienceOf = (best) => (best < PATIENT_ABOVE ? 2 : 3);
 const MOST_BACKS = 64;
 const MOST_REFUSED_ROOTS = 16;
 
+/**
+ * **What a step is, and how many of them a walk gets** *(walk_faster_ckpt138)*.
+ *
+ * A step is a card in the walk strip — the frame the walk stands in, each rung under it,
+ * the twin's home frame, and the place being painted, however many colourings that place is
+ * tried in. The sixteen sit inside the one step on purpose: on screen they are one place
+ * being looked at several ways, and the strip is a filmstrip of *frames*.
+ *
+ * The count is a **cap and not a target**, and it is walk-wide: the plane's leg and the
+ * Julia twin's spend one budget, which is what stops a walk from being twice as long for
+ * having found a twin worth walking. Peak, the resolution floor and a dead end all still
+ * end a leg earlier. It used to be `rungs`, 20, **per leg** — so a walk could show forty
+ * rungs and paint two places, and measured, it did: a median of 15 steps and a worst of 19,
+ * at 217 s.
+ *
+ * `MINE_STEPS` is what a descent leaves behind so that the place it found can be painted at
+ * all — a walk that spent its whole budget descending and then drew nothing would be
+ * shorter and worse. `TWIN_STEPS` is the least a twin is worth starting on: its home frame,
+ * a rung or two, and a place.
+ */
+const MINE_STEPS = 1;
+const TWIN_STEPS = 4;
+
 /** During a walk the viewer is framed wider than the cell it is weighing, so that the
  *  quarters and their labels sit inside the picture: the cell takes this share of the
  *  viewport's width, or of its height where the canvas is wider than 16:9. A quarter's
@@ -144,6 +180,12 @@ const CELL_SHARE = 0.65;
  *  next one replaces it *(walk_console_ckpt131)*. The walk keeps computing through it; only
  *  the repaint waits. */
 const DWELL_MS = 400;
+
+/** And how long one colouring of the burst is held *(walk_faster_ckpt138)*. A recolour is
+ *  about a tenth of a second, so sixteen at `DWELL_MS` would leave the viewer six seconds
+ *  behind the strip it is meant to be showing; at this the flip through them keeps up with
+ *  the work and reads as one place being tried several ways. */
+const BURST_DWELL_MS = 150;
 
 /**
  * The four quarters, in the order a card's chips read them, each with the color it is always
@@ -180,7 +222,7 @@ const REFUSALS = {
 };
 
 /** Why a descent stopped, as the sentence on the last card it made. */
-const ENDS = { peak: "past the peak", floor: "as deep as it can draw", cap: "rung cap", "dead end": "dead end" };
+const ENDS = { peak: "past the peak", floor: "as deep as it can draw", cap: "step cap", "dead end": "dead end" };
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -245,7 +287,7 @@ export function mount(host) {
   const config = {
     ...DEFAULTS,
     planes: new Set(DEFAULTS.planes),
-    modes: new Set(modeOrder.slice(0, -UNTICKED_TAIL)),
+    modes: new Set(modeOrder),
     families: new Set(HUES),
   };
   let state = "idle"; // idle | loading | running | paused
@@ -268,6 +310,10 @@ export function mount(host) {
   const found = [];
   /** One row per walk, for whoever is measuring the tab: where it went and what it saw. */
   const walks = [];
+  /** How many places have been painted since one of them took a dear mode, so that two
+   *  running never do *(walk_faster_ckpt138)*. It opens at one, so the first place of a
+   *  visit may take one. */
+  let sinceDear = 1;
   /** What the walk last put on the viewer: the frame it stands in and the cells over it, so
    *  a pause can put the frame back at its own framing and a resume can widen it again.
    *  `null` while a recipe is up, which is already framed as itself. */
@@ -577,11 +623,11 @@ export function mount(host) {
   // ----------------------------------------------------------------- the candidates
 
   /**
-   * The lower strip of the walk view *(walk_view_ckpt132)*: a place's candidates, one per
-   * ticked mode, each a small tile with its mode and the render judge's `P≥4`, filling in as
-   * they are drawn. The ones kept are outlined. Ranked on the fine head, the tiles are in
-   * its order, best first; otherwise they stay in the order they were drawn, which is the
-   * Mode select's.
+   * The lower strip of the walk view *(walk_view_ckpt132)*: a place's candidates, each a
+   * small tile with its map and the render judge's `P≥4`, filling in as they are drawn. The
+   * ones kept are outlined. Ranked on the fine head, the tiles are in its order, best first;
+   * otherwise they stay in the order they were drawn — the field first, its colourings
+   * after it, and a dear picture last *(walk_faster_ckpt138)*.
    *
    * They outlast the decision on purpose. A place's candidates stay up through the start of
    * the next walk and go at the end of its first descent, so they can still be compared
@@ -616,7 +662,12 @@ export function mount(host) {
         if (kept.has(one)) tile.classList.add("is-kept");
         tile.title = `${one.mode} in ${shownName(one.palette)}`;
         const caption = document.createElement("figcaption");
-        caption.append(span("walk-candidate-mode", one.mode), span("walk-candidate-score", `P≥4 ${score(one.p4)}`));
+        // **The map's name and not the mode's** *(walk_faster_ckpt138)*. A place is one
+        // field in one mode tried in sixteen colourings now, so the mode is the same word
+        // under every tile and the map is what tells two of them apart; a dear picture is
+        // the one tile whose mode differs, and it says so.
+        const name = DEAR_MODES.has(one.mode) ? `${one.mode} · ${shownName(one.palette)}` : shownName(one.palette);
+        caption.append(span("walk-candidate-name", name), span("walk-candidate-score", `P≥4 ${score(one.p4)}`));
         tile.append(one.canvas, caption);
         return tile;
       });
@@ -671,6 +722,13 @@ export function mount(host) {
           tried.push({ ...kept, canvas: thumbnail(image) });
         }
         reach(render());
+      },
+      /** `count` candidates that will never be attempted, so their waiting tiles go
+       *  *(walk_faster_ckpt138)*: a field that could not be drawn has no colourings, and a
+       *  direct trap's picture has no second one. */
+      none(count) {
+        expected -= count;
+        render();
       },
       /** The fine head or the kept count changed: the order and the outlines follow. */
       refresh() {
@@ -789,7 +847,10 @@ export function mount(host) {
       "Also walk the Julia set whose c is the best place the descent found: from its home view, by the same rung rule.",
     );
 
-    const modes = group("Modes", "A place that clears the bar is painted once in each of these.");
+    const modes = group(
+      "Modes",
+      "A place that clears the bar is painted in one of these and then recolored; a dear one is drawn at some places and not others.",
+    );
     for (const mode of modeOrder) {
       checkbox(modes, mode, config.modes.has(mode), (on) => {
         if (on) config.modes.add(mode);
@@ -831,7 +892,7 @@ export function mount(host) {
 
     const depth = group(
       "Depth",
-      "The root's width is drawn log-uniformly between the first two; the descent below it stops where the judge peaks, or at the cap.",
+      "The root's width is drawn log-uniformly between the first two; the descent below it stops where the judge peaks, or at the step cap.",
     );
     number(depth, "widest", config.widest, { min: 1e-6, max: 1, step: "any" }, (v) => {
       config.widest = v;
@@ -841,13 +902,13 @@ export function mount(host) {
     });
     number(
       depth,
-      "rungs below the root, at most",
-      config.rungs,
-      { min: 0, max: 40, step: 1 },
+      "steps, at most",
+      config.steps,
+      { min: 4, max: 40, step: 1 },
       (v) => {
-        config.rungs = v;
+        config.steps = v;
       },
-      "Each rung halves the width. Twenty take a root at 0.001 to about 1e-9.",
+      "A step is a card in the walk: the frame it stands in, each rung under it, and the place it paints. A walk stops at this many whether or not the descent has peaked, and the Julia twin spends the same count. Each rung halves the width.",
     );
     number(
       depth,
@@ -861,7 +922,7 @@ export function mount(host) {
     );
 
     const mining = group("At a place");
-    number(mining, "kept", config.keep, { min: 1, max: 13, step: 1 }, (v) => {
+    number(mining, "kept", config.keep, { min: 1, max: RECOLOURS, step: 1 }, (v) => {
       config.keep = v;
       candidates.refresh();
     });
@@ -893,6 +954,15 @@ export function mount(host) {
    *  they could not load here. Throws an `AbortError` where the download was stopped. */
   async function begin() {
     if (renderer === null) {
+      // **Both pools were widened and both were put back** *(walk_faster_ckpt138)*. A rung
+      // is four screens and then four pictures, and on twelve cores six of them sit idle
+      // through it, so the pool going to `min(6, cores/2)` and the screeners to four looked
+      // free. Measured over eight walks a side on one plane it bought **1.08x on a judged
+      // picture and 1.16x on a screen**, both inside this machine's own drift and both with
+      // their p10 and p90 unmoved — a frame at this size is not waiting on a worker. What a
+      // rung costs is the arithmetic, and the honest place to spend an idle core is not
+      // here. So this is what it was, and the cost of the other way — a detached walk
+      // competing harder with the reader's own renderer — is not paid for nothing.
       const cores = navigator.hardwareConcurrency || 8;
       renderer = await Renderer.over(host.module, Math.max(1, Math.min(4, Math.floor(cores / 3))));
       if (typeof renderer.shader.screen !== "function") {
@@ -1156,8 +1226,13 @@ export function mount(host) {
     return { passed: report.passed, fate: report.fate, reading: failed?.reading ?? null };
   }
 
-  /** A picture of `view` at candidate geometry, as `ImageData`, and the view it was drawn
-   *  at — which carries the texture weight or trap opacity this page derived for it. */
+  /**
+   * A picture of `view` at candidate geometry, as `ImageData`; the view it was drawn at —
+   * which carries the texture weight or trap opacity this page derived for it; and **the
+   * field it was coloured from**, so that a caller who wants the same place in another
+   * colour can have it without the engine iterating anything again *(walk_faster_ckpt138)*.
+   * A caller that drops the returned object drops the field with it.
+   */
   async function picture(view, supersample) {
     const derived = link.DERIVED[view.mode];
     let drawn = view;
@@ -1183,7 +1258,7 @@ export function mount(host) {
     started = performance.now();
     const image = renderer.shade(field, drawn).image;
     timed("shade", started);
-    return { image, view: drawn };
+    return { image, view: drawn, field };
   }
 
   /** The gate's `{ p2, p3, p4 }` on a picture, or a coin where there is no judge. */
@@ -1258,6 +1333,7 @@ export function mount(host) {
    */
   async function weigh(family, parent, { rung, constants = null, layers, alone = false, card }) {
     await going();
+    const begun = performance.now();
     const shares = await straddles(family, parent, { maxiter: null, constants });
     if (shares === null) return [];
     // All four quarters are set out, every rung *(walk_view_ckpt132)*: one the walk skips is
@@ -1326,6 +1402,10 @@ export function mount(host) {
     walks.at(-1)?.rungs.push({
       family,
       rung,
+      // What the rung cost, for whoever is measuring the tab: the probe, the screens and
+      // every picture judged, which is the step a reader watches. The dwell is not in it —
+      // a hold is queued on the repaint chain and the walk computes through it.
+      ms: Math.round(performance.now() - begun),
       w: parent.w / 2,
       straddling: straddlers.length,
       alone: judgedAlone,
@@ -1411,8 +1491,9 @@ export function mount(host) {
    * Stage two: from a root, keep descending by the same rung rule — the root's frame split
    * into quarters, the straddling ones screened and judged, the best one gone into — until
    * the judge has peaked (`patienceOf`, once the best has cleared the patience floor), `f64`
-   * stops resolving the mining grid, or the rung cap. Returns the best frame seen, which is
-   * where the place is mined, with why the descent stopped and how many rungs it went down.
+   * stops resolving the mining grid, or the walk's step budget runs down to what the place
+   * it found needs to be painted. Returns the best frame seen, which is where the place is
+   * mined, with why the descent stopped and how many rungs it went down.
    *
    * This is the part the viewer follows, rung by rung, on the pictures it judges: `rootImage`
    * is the root's, and each rung's parent is shown over the one before it, dimmed.
@@ -1421,7 +1502,7 @@ export function mount(host) {
    * its Julia set is dust. From then on it is descended on the judge alone (`weigh`'s
    * `alone`).
    */
-  async function deepen(family, root, { read: rootRead, card: rootCard }, constants = null) {
+  async function deepen(family, root, { read: rootRead, card: rootCard }, constants, budget) {
     let best = { frame: root, read: rootRead, rung: 0, card: rootCard };
     strip.best(rootCard);
     let frame = root;
@@ -1441,13 +1522,21 @@ export function mount(host) {
         strip.best(card);
       }
     };
-    for (let rung = 1; rung <= config.rungs; rung++) {
+    for (let rung = 1; ; rung++) {
+      // The walk's own budget, spent a card at a time and shared with the twin leg, with
+      // `MINE_STEPS` held back so the place this found can still be painted
+      // *(walk_faster_ckpt138)*.
+      if (budget.left <= MINE_STEPS) {
+        stop = "cap";
+        break;
+      }
       const grid = { width: JUDGED.width * MINING_SUPERSAMPLE, height: JUDGED.height * MINING_SUPERSAMPLE };
       if (!renderer.resolves(frame.x, frame.y, frame.w / 2, grid.width, grid.height)) {
         stop = "floor";
         break;
       }
       cardOf();
+      budget.left -= 1;
       const parent = frame;
       const twinHome = constants !== null && rung === 1;
       const ranked = await weigh(family, parent, { rung, constants, layers, alone: alone || twinHome, card });
@@ -1545,18 +1634,38 @@ export function mount(host) {
     return { read: await gated(drawn.image), image: drawn.image };
   }
 
-  /** Try recipes at a place that cleared the bar, and keep the best as tiles. `where` is
-   *  the place as the candidates' rule names it. */
+  /**
+   * Paint a place that cleared the bar, and keep the best as tiles. `where` is the place as
+   * the candidates' rule names it.
+   *
+   * **One field, sixteen colourings** *(walk_faster_ckpt138)*. A place used to be drawn once
+   * in each ticked mode — eight fields at candidate geometry, and 103 s of a 217 s walk.
+   * What a reader is being shown here is a search, and a search wants many pictures rather
+   * than expensive ones. So the field is computed once, in one of the roster's cheap modes,
+   * and then recoloured `RECOLOURS` times through maps drawn from the checked families: a
+   * recolour re-reads the field the engine already has — `Renderer.shade` on this thread, a
+   * tenth of a second — so the fifteen after the first cost less between them than any one
+   * of the modes that left.
+   *
+   * **And one dearer picture at some places**, a mode out of `DEAR_MODES` drawn in full,
+   * where the place before this one did not take one.
+   *
+   * Every candidate is gated and ranked together and `config.keep` are kept, exactly as
+   * before: what changed is what a place is painted in, not how the best of it is chosen.
+   */
   async function mine(place, where) {
-    // One recipe a ticked mode *(walk_view_ckpt132)*, in the Mode select's order, each with
-    // its own palette and phase: eight at the default ticks, so a place is seen once in each
-    // way the walk may paint it, where three draws over modes × palettes saw three.
-    const modes = modeOrder.filter((mode) => config.modes.has(mode));
-    if (modes.length === 0) {
+    const ticked = modeOrder.filter((mode) => config.modes.has(mode));
+    if (ticked.length === 0) {
       progress("No modes are ticked, so a place has nothing to be painted in.");
       return;
     }
-    candidates.begin(modes.length, where);
+    // The field's own mode is one of the cheap ones — or whatever is ticked, where a reader
+    // has unticked every cheap one and left a dear one standing.
+    const plain = ticked.filter((mode) => !DEAR_MODES.has(mode));
+    const base = pick(plain.length > 0 ? plain : ticked);
+    const rich = ticked.filter((mode) => DEAR_MODES.has(mode));
+    const dear = rich.length > 0 && sinceDear > 0 && !DEAR_MODES.has(base) ? pick(rich) : null;
+    candidates.begin(RECOLOURS + (dear === null ? 0 : 1), where);
     // A pause mid-download stops it, and the walk asks again when it is started again.
     while (config.fine && scorer !== null && scorer.fineSession === null && !fineless) {
       const { signal, shown, done } = downloading("the fine judge");
@@ -1577,48 +1686,114 @@ export function mount(host) {
     }
     const maps = roster();
     const tried = [];
-    for (const mode of modes) {
-      await going();
-      const palette = pick(maps);
-      const base = viewAt(place.family, place.frame, { mode, palette, constants: place.constants });
+
+    /** A recipe at this place: the map's own fold, and the pipeline's uniform phase. */
+    function recipe(mode, palette) {
+      const seed = viewAt(place.family, place.frame, { mode, palette, constants: place.constants });
       // The pipeline's shade is the identity with the fold read off the map: a sequential
       // map is mirrored and a cyclic one is not. Phase is its `--phase-draw`, uniform, and a
       // direct trap keeps phase 0 because phase does nothing there.
       const direct = mode.startsWith("direct_trap_");
-      const view = {
-        ...base,
+      return {
+        ...seed,
         params: handParams(mode),
         shade: {
-          ...base.shade,
+          ...seed.shade,
           mirror: !palettes.get(palette).cyclic,
           phase: direct ? 0 : Number(Math.random().toFixed(3)),
         },
       };
-      const drawn = await picture(view, MINING_SUPERSAMPLE);
-      if (drawn === null) {
-        candidates.add(null);
-        continue;
-      }
-      // The recipe as the walk drew it, at its own framing, held long enough to be seen.
+    }
+
+    /** One drawn picture offered as a candidate: shown, gated, ranked and recorded. */
+    async function offer(view, image, kind, ms, dwell) {
+      // The picture as the walk drew it, at its own framing, held long enough to be seen.
       display(
-        { view: drawn.view, frame: place.frame, layers: [{ frame: place.frame, image: drawn.image }], cells: [], widened: false },
-        DWELL_MS,
+        { view, frame: place.frame, layers: [{ frame: place.frame, image }], cells: [], widened: false },
+        dwell,
       );
-      const read = await gated(drawn.image);
+      const read = await gated(image);
       let fine = null;
       if (config.fine && scorer?.fineSession) {
         const started = performance.now();
-        fine = await scorer.fine(drawn.image);
+        fine = await scorer.fine(image);
         timed("fine", started);
       }
       const rank = fine ?? read.p4;
-      candidates.add({ mode, palette, p4: read.p4, fine, rank, image: drawn.image });
-      tried.push({ view: drawn.view, image: drawn.image, read, fine, rank });
-      (walks.at(-1).recipes ??= []).push({ family: place.family, w: place.frame.w, mode, palette, p4: read.p4, fine });
+      candidates.add({ mode: view.mode, palette: view.palette, p4: read.p4, fine, rank, image });
+      tried.push({ view, image, read, fine, rank });
+      // `ms` is the whole candidate — the field where it drew one, the colouring and the
+      // gate — and `kind` says which of the three it was, because the roster and the burst
+      // are chosen from those three numbers rather than from one average over them.
+      (walks.at(-1).recipes ??= []).push({
+        family: place.family,
+        w: place.frame.w,
+        mode: view.mode,
+        palette: view.palette,
+        kind,
+        ms,
+        p4: read.p4,
+        fine,
+      });
     }
+
+    await going();
+    let begun = performance.now();
+    const drawn = await picture(recipe(base, pick(maps)), MINING_SUPERSAMPLE);
+    if (drawn === null) {
+      candidates.none(RECOLOURS);
+    } else {
+      await offer(drawn.view, drawn.image, "field", Math.round(performance.now() - begun), BURST_DWELL_MS);
+      // **A direct trap has no field to recolour**: its band arrives painted, so `shade`
+      // hands the pixels straight back and a burst would be sixteen of one picture. The
+      // roster keeps one out for that reason, and a reader who puts one back gets the one.
+      const again = drawn.field !== null && !drawn.field.shape.direct;
+      if (!again) candidates.none(RECOLOURS - 1);
+      for (let index = 1; again && index < RECOLOURS; index++) {
+        await going();
+        begun = performance.now();
+        const palette = pick(maps);
+        const view = {
+          ...drawn.view,
+          palette,
+          shade: {
+            ...drawn.view.shade,
+            mirror: !palettes.get(palette).cyclic,
+            phase: Number(Math.random().toFixed(3)),
+          },
+        };
+        const started = performance.now();
+        const image = renderer.shade(drawn.field, view).image;
+        timed("shade", started);
+        await offer(view, image, "recolour", Math.round(performance.now() - begun), BURST_DWELL_MS);
+      }
+    }
+    if (dear !== null) {
+      await going();
+      begun = performance.now();
+      const painted = await picture(recipe(dear, pick(maps)), MINING_SUPERSAMPLE);
+      if (painted === null) candidates.add(null);
+      else await offer(painted.view, painted.image, "dear", Math.round(performance.now() - begun), DWELL_MS);
+    }
+    sinceDear = dear === null ? sinceDear + 1 : 0;
     tried.sort((x, y) => y.rank - x.rank);
     const kept = tried.slice(0, config.keep);
     for (const one of kept) await keep(one);
+    // A place ends on the picture it kept rather than on whichever colouring happened to be
+    // drawn last *(walk_faster_ckpt138)*, and that is the frame the next walk's root search
+    // runs behind.
+    if (kept.length > 0) {
+      display(
+        {
+          view: kept[0].view,
+          frame: place.frame,
+          layers: [{ frame: place.frame, image: kept[0].image }],
+          cells: [],
+          widened: false,
+        },
+        DWELL_MS,
+      );
+    }
   }
 
   /**
@@ -1717,17 +1892,24 @@ export function mount(host) {
       const twin = config.julia && juliaOf[family] !== undefined;
       /** Whether the strip ends on a place that was mined; one that does not lingers. */
       let mined = false;
+      /** The steps this walk has left, spent by both legs *(walk_faster_ckpt138)*. */
+      const budget = { left: config.steps };
+      row.steps = config.steps;
       for (let index = 0; index < legs.length; index++) {
         const one = legs[index];
         const leg = performance.now();
         const last = !(index === 0 && twin);
         phase = "root";
         mined = false;
+        // A twin is only worth starting on where it can afford its home frame, a rung or
+        // two and a place; below that the walk goes somewhere else instead.
+        if (index > 0 && budget.left < TWIN_STEPS) break;
         // One place is one strip: the twin's cards follow its parent's, after a divider.
         if (index > 0) strip.divider("Julia twin");
         await going();
         const judged = await judgePlace(one);
         if (judged === null) continue;
+        budget.left -= 1;
         const layers = [{ frame: one.frame, image: judged.image }];
         judged.card = strip.frame(planeName(one.family), one.frame, judged.read.p3, layers, index === 0 ? "root" : "home view");
         display({
@@ -1738,7 +1920,7 @@ export function mount(host) {
           widened: true,
         });
         phase = "deep";
-        const best = await deepen(one.family, one.frame, judged, one.constants);
+        const best = await deepen(one.family, one.frame, judged, one.constants, budget);
         const over = best.read.p3 >= config.bar;
         // The peak card is outlined and says the verdict; where it is also the last card,
         // the verdict follows why the descent stopped.
@@ -1765,6 +1947,7 @@ export function mount(host) {
         });
         if (!over) continue;
         phase = "mine";
+        budget.left -= 1;
         const mining = performance.now();
         const where = `${index === 0 ? planeName(family) : `Julia twin of ${planeName(family)}`} at ${width(best.frame.w)}`;
         await mine(place, where);

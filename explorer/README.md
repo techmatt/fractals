@@ -360,11 +360,13 @@ it away everywhere. Measured over all thirteen modes the select offers, a frame 
 78-193 ms end to end, the 90 ms settle included; none was demoted by measurement.
 
 **It yields to the main picture and never competes with it.** Its own small pool, a third
-of the cores and never more than three — the walk's and the Saved tab's are half, because
-those run while a reader is watching them and this one runs while a reader is watching
-something else. Pointer moves coalesce to the latest and draw once the pointer has been
-still for 90 ms, and nothing is started at all while the viewer's own pass is in flight:
-the settle re-arms instead. Measured, a `tia` pass is 104, 114, 113 ms with the pointer
+of the cores and never more than three — the walk's and the Saved tab's are a third capped
+at four, because those run while a reader is watching them and this one runs while a reader
+is watching something else. This said the other two were *half* the cores
+*(walk_faster_ckpt138)*, which the code has never said; it is the reading that was wrong
+rather than the rule. Pointer moves coalesce to the latest and draw once the
+pointer has been still for 90 ms, and nothing is started at all while the viewer's own pass
+is in flight: the settle re-arms instead. Measured, a `tia` pass is 104, 114, 113 ms with the pointer
 sweeping the canvas for the whole of it against 105, 104 ms with the pointer still.
 
 **The gesture is a plain click, and only while the card is up.** That is what keeps it from
@@ -438,8 +440,10 @@ walk runs and whether the viewer follows it are two states, `state` and `attache
    it shows the 640×360 picture the walk judged of the frame it stands in, with the picture
    before it dimmed around it and black beyond, and never refines it (`showWalk`; the
    render-state dot reads Stopped). A rung's finished state, with its last label and the
-   chosen box, is held 400 ms (`DWELL_MS`) while the walk carries on computing, and each
-   mined recipe is shown as it was drawn and held the same. A pause, a reader's move or an
+   chosen box, is held 400 ms (`DWELL_MS`) while the walk carries on computing. Each
+   colouring of a mined place is shown as it was drawn and held 150 ms (`BURST_DWELL_MS`),
+   because sixteen of them at the rung's hold would leave the viewer six seconds behind the
+   strip; the picture the place keeps is held the full 400. A pause, a reader's move or an
    opened tile hands the viewer back to its own renderer at full quality.
 7. Every judged picture is the smooth mode at 640×360, one sample, `twilight_shifted`, scored
    by the render judge's P≥3. The root is judged once before stage two starts.
@@ -453,7 +457,16 @@ walk runs and whether the viewer follows it are two states, `state` and `attache
      the best is under 0.5, and for three once it is over. Below the floor there is no
      peak, and the descent goes on to one of the three below *(walk_tune_ckpt131)*;
    - the **floor**: `f64` would no longer resolve the mining grid (`resolution_ulps`);
-   - the **cap**, 20 rungs below the root by default;
+   - the **step cap** *(walk_faster_ckpt138)*: the walk's budget is down to what the place
+     it has found needs to be painted. **A step is a card in the strip** — the frame the
+     walk stands in, each rung under it, the twin's home frame, and the place being painted,
+     however many colourings that place is tried in — and **a walk gets fourteen of them,
+     both legs together** (*steps, at most*, under Depth). It was 20 rungs **per leg**, and
+     a walk could therefore show forty: measured, one did — 40 rungs, 42 steps, 166 s, and
+     it painted nothing at either end of it. Over a dozen walks the old rule ran to a median
+     of 14 steps and a p90 of 21. The budget holds back one step for the mining, because a
+     walk that descended until it ran out and then drew nothing would be shorter and worse,
+     and a Julia twin is not started at all below four (`TWIN_STEPS`);
    - a **dead end**: no quarter straddles or survives the screen.
 
    The old rule stopped at two rungs under the best whatever the best was. At low scores
@@ -470,28 +483,41 @@ walk runs and whether the viewer follows it are two states, `state` and `attache
    one. The twin gets a stage two of its own from its home frame. If that frame still has
    no straddling quarter, the twin is descended **on the judge alone**: all four quarters
    are weighed, and only the screen refuses one. Phoenix has no
-   twin.
-10. A place over the bar is mined:
-   - **One recipe per ticked mode** *(walk_view_ckpt132)*, in the Mode select's order: eight
-     at the default ticks. Each gets a palette drawn uniformly from the checked colour
-     families together *(walk_palette_families_ckpt135)*, the identity shade with
-     `mirror` read off the map's cyclicity, and a uniform phase (0 under a direct trap). It
-     used to be three draws over modes × palettes (hunt and mine's `PER_LOCATION`), which
-     showed a place three ways out of the thirteen it could be painted.
-   - Each is drawn at 640×360×2, the pipeline's candidate geometry. A texture weight or trap
-     opacity is derived exactly as the viewer derives one.
-   - Each is scored by the gate's P≥4, and the best are kept as tiles (one by default,
-     *kept* in the config). The fine head ranks instead where the config ticks it.
-   - **A place costs about 16 s on an idle machine** (walk_view_ckpt132, 2026-09-18): eight
-     mining renders at about 2 s each. With a render leg running next door the same place
-     took about two minutes.
+   twin, and a twin with fewer than four steps left in the walk's budget is not started at
+   all *(walk_faster_ckpt138)*.
+10. A place over the bar is mined, and **it is one field tried in sixteen colourings**
+   *(walk_faster_ckpt138)*:
+   - **The field once**, in one of the roster's cheap modes drawn at random, at 640×360×2 —
+     the pipeline's candidate geometry. A texture weight or trap opacity is derived exactly
+     as the viewer derives one.
+   - **Then fifteen recolours of that same field** (`RECOLOURS` is sixteen counting the
+     first), each through a map drawn uniformly from the checked colour families together
+     *(walk_palette_families_ckpt135)*, with the identity shade, `mirror` read off the map's
+     cyclicity and a uniform phase. A recolour is `Renderer.shade` over a field the engine
+     has already computed — a tenth of a second against seconds for the field — so the
+     fifteen together cost less than any one of the modes that left the roster.
+   - **And one dearer picture at some places**: a mode out of `DEAR_MODES` (`threads`),
+     drawn in full, where the place before this one did not take one, so two never run
+     together.
+   - Each candidate is scored by the gate's P≥4 and they are ranked together, and the best
+     are kept as tiles (one by default, *kept* in the config). The fine head ranks instead
+     where the config ticks it.
 
-The config's defaults are the pipeline's draw where the page can make one. The thirteen modes
-the pipeline accepts are listed in the Mode select's own order, handed over by the viewer so
-the two cannot drift, and the last five in it (the three direct traps, `curvature`,
-`smooth_curvature`) start unticked. **Palettes is the twelve colour families**, all ticked
-*(walk_palette_families_ckpt135)*; it used to be a two-way choice between the 232 maps
-Random palette draws from and all 1,021, which asked a reader to pick a size when the
+   It used to be **one recipe per ticked mode** *(walk_view_ckpt132)*, eight at the default
+   ticks, each its own field — and before that three draws over modes × palettes (hunt and
+   mine's `PER_LOCATION`). The trade is deliberate and it is the tab's own: this is a
+   demonstration of how the galleries were made rather than the way anybody gets a good
+   picture, so it buys its variety where variety is nearly free. What a place costs either
+   way is under *What a walk costs* in §Measured.
+
+The config's defaults are the pipeline's draw where the page can make one. **Modes is the
+walk's own roster and not the pipeline's** *(walk_faster_ckpt138)* — `smooth`, `tia` and
+`threads`, all ticked, in the Mode select's own order, handed over by the viewer so the two
+cannot drift. It was the thirteen the pipeline accepts with the last five unticked, and what
+it is now is the measured answer to "which of those is cheap enough to draw while somebody
+watches": see *What a walk costs* under §Measured. **Palettes is the twelve colour
+families**, all ticked *(walk_palette_families_ckpt135)*; it used to be a two-way choice
+between the 232 maps Random palette draws from and all 1,021, which asked a reader to pick a size when the
 thing they would want to pick is a colour. None ticked draws from all of them.
 
 **The walk view** *(walk_view_ckpt132)* replaces the viewer's controls while a walk is running
@@ -549,9 +575,13 @@ console (`walk_console_ckpt131`) and a corner widget over the controls (`walk_tu
 The few things that are not steps of a walk, such as a stopped download, a judge that would
 not load, or nothing ticked, go on the status line beside Start.
 
-**The candidates** are the lower strip: one small tile per recipe at a place, with its mode
-and P≥4, filling in as they are drawn, and the place they are of (plane and width) on the
-row's rule, so the row still says whose it is once the strip above has moved on. The kept
+**The candidates** are the lower strip: one small tile per picture drawn at a place, with
+**the map's display name** and P≥4, filling in as they are drawn, and the place they are of
+(plane and width) on the row's rule, so the row still says whose it is once the strip above
+has moved on. The name under a tile is the map rather than the mode *(walk_faster_ckpt138)*
+because a place is one field tried in sixteen colourings now, so the mode is the same word
+under every tile and the map is what tells two of them apart; the one dear picture is the
+tile whose mode differs, and it says the mode as well. The kept
 ones are outlined in the found ink. They stay in drawing order, except that with the fine head
 ticked they are sorted by it and re-outlined.
 **They outlast the decision.** A place's candidates stay up past the kept tile and through
@@ -578,6 +608,15 @@ be compared while the next root is being found. A Julia twin's mining replaces i
 job at a time and cancels the last, so sharing it would mean the walk cancelling the
 reader's picture, and every pan cancelling the walk. The screen runs on two workers of its
 own, because the battery iterates on whichever thread calls it.
+
+**Both pools were widened and both were put back** *(walk_faster_ckpt138)*. On twelve cores
+six sit idle through a rung, so a pool of `min(6, cores/2)` and four screeners looked free —
+and measured over eight walks a side on one plane they bought **1.08x on a judged picture
+and 1.16x on a screen**, inside this machine's drift, with the p10 and p90 of both unmoved.
+A 640×360 frame is not waiting on a worker: it is 230,400 samples cut into bands with a
+floor of eight rows, and the per-band message is already a large share of it. What a rung
+costs is the arithmetic. So the pools are what they were, and the cost of the other way — a
+detached walk competing harder with the reader's own renderer — is not paid for nothing.
 
 **The screen is the engine's.** `engine-wasm`'s `screen` export is
 `screen::Battery::screen` at its defaults, run on the 384×216 node frame at the policy cap
@@ -2049,7 +2088,21 @@ node explorer/bench/page.mjs edits                  # palette, phase, level, mod
 node explorer/bench/page.mjs cancel                 # what a new view waits for the old one
 node explorer/bench/page.mjs load                   # cold open: bytes, compile, first picture
 LADDER=interior,trap REPEAT=2 node explorer/bench/page.mjs ladder   # narrowed, repeated
+WALKS=30 node explorer/bench/walk.mjs walks         # a Walk tab run, step by step
+WALKS=6 node explorer/bench/walk.mjs shots          # the same, photographing each end frame
 ```
+
+**`walk.mjs` is the third kind, and it is the only one that measures a program rather than a
+picture** *(walk_faster_ckpt138)*. A walk is a root search, a descent and a place painted
+several ways, and `Math.random` is everywhere in it with no seed — so a walk is not
+repeatable, a pair of them says nothing, and the question "is this too long, and which part
+of it is" only exists over dozens. It presses Start, waits for a given number of walks to
+finish, and reads `__walk` whole: steps per walk, milliseconds per rung and per painted
+candidate, and every step's time bucketed by kind and by stage. **A judgeless run is not a
+reading of this tab** — without the untracked judges the walk picks at random among what the
+screen passes, which is a different program — so it checks that gate timings were taken and
+says so when they were not. A run that gives up on a wedged walk still records the ones
+before it.
 
 Two seams into the page and both are read-only. `#render-state`'s `data-state` and
 `#stats`'s text are what a reader sees, so a `MutationObserver` on the pair is a timeline of
@@ -2368,6 +2421,103 @@ the nine channel sets the explorer's own modes actually reach, is a hand-written
 of the table again, which is the thing the change is for. **A tenth of the raw growth is
 what a reader downloads**: the transfer is gzipped, and 14 KB on 164 is the honest figure
 to compare against 8.4 seconds off `stripe`.
+
+### What a walk costs *(walk_faster_ckpt138, 2026-09-20)*
+
+`bench/walk.mjs`, the judges loaded, the machine otherwise idle, the tab's own defaults
+except where a run says it pinned the plane. **Every figure here is a median over whole
+walks**, because a walk is not repeatable: it picks its plane, its root and its quarters
+with `Math.random` and no seed.
+
+**Where a walk's time went, before.** Twelve walks, 983 s of wall time, summed by stage and
+divided by what runs concurrently: **the descent is 72% of a walk**, the painting 23%, the
+root search 5%. The prompt this was done for supposed the painting was the problem; it was
+a quarter of it.
+
+**One field tried in sixteen colourings.** Twelve walks a side over the default plane set:
+
+| | before | after |
+| --- | --- | --- |
+| seconds per walk | 85.8 s | **26.1 s** |
+| steps per walk, median / p90 | 14 / 21 | **12 / 13** |
+| a rung | 4 199 ms | 1 424 ms |
+| a place painted | 17 963 ms | **2 714 ms** |
+| one candidate | 1 339 ms | **96 ms** |
+
+⚠ **That threefold is not all the change, and the run says so.** A walk draws its plane
+uniformly and the families cost up to 47x apart, so twelve draws do not level them: the
+before run came up four phoenix, four multibrot6 and three multibrot5, and the after run
+seven multibrot3 and multibrot4. **Pinned to one plane and alternated** — after, before,
+after, eight walks each on multibrot6, the dearest of the six — it reads:
+
+| multibrot6 | after | before | after (shipped) |
+| --- | --- | --- | --- |
+| seconds per walk | 67.5 s | 86.1 s | 74.9 s |
+| mean | 60.0 s | 91.1 s | 70.5 s |
+| p90 | 84.9 s | 166.3 s | 138.1 s |
+| steps, p90 | 14 | **42** | 13 |
+
+The two after runs are 1.11x apart on identical mining code, which is this machine's drift
+and is the floor any claim here sits on. So **the honest figure on the dearest plane is
+about 1.2x on the median and 1.2x on the worst**, and the threefold above is the default
+set's plane mix as much as it is the code. What the cap does unambiguously is the **p90 of
+42 steps**: one before walk ran 40 rungs over its two legs, took 166 s and painted nothing
+at either end.
+
+**The roster, measured where the walk paints rather than at a home view.** One recipe is a
+field, its colouring and its gate, median over 13 draws each, at the widths the descent
+actually reached:
+
+| mode | a picture | x `smooth` | and at the home view |
+| --- | --- | --- | --- |
+| `smooth` | 1 046 ms | 1.00 | 1.00 |
+| `tia` | 1 148 ms | 1.10 | 4.36 |
+| `threads` | 1 502 ms | 1.44 | 4.52 |
+| `smooth_angle_min` | 2 214 ms | 2.12 | 6.78 |
+| `smooth_mean_angle` | 2 233 ms | 2.13 | 6.85 |
+| `itinerary` | 2 820 ms | 2.70 | 1.19 |
+| `smooth_stripe` | 2 912 ms | 2.78 | 12.26 |
+| `stripe` | 4 076 ms | 3.90 | 11.94 |
+
+**The last column is why this was measured and not looked up.** The per-mode table above is
+mandelbrot at its home view and it does not order these the same way: `itinerary` is the
+fourth cheapest thing on the page there and is 2.70x here, dearer than `threads`, which the
+home view reads as four times `smooth`. A mined frame runs most of its samples to a much
+higher cap, which compresses what a per-iteration difference is worth and leaves the
+mode's fixed work standing. There is a clean gap between 1.44x and 2.12x, and the roster is
+that gap.
+
+**What a candidate costs now**, after: a field **643 ms** on the default set and 3 905 ms on
+multibrot6, a recolour **94–96 ms** wherever it is taken, and the dear `threads` render
+2 476 ms. Fifteen recolours of one field cost less than one extra field, which is the whole
+of the change at a place.
+
+**And the pictures are not worse, by the only reading this page has.** Over the two
+default-set runs the kept picture's gate `P≥4` has a median of **0.184 before and 0.194
+after**, best 0.833 against 0.917 — sixteen colourings of one field find as good a picture
+as eight separate modes did. Thirteen kept places against seven is a thin sample and this
+is not a claim that it never costs anything.
+
+**The cap costs no depth.** The plane leg's best frame has a median width of 1.85e-5 before
+and 1.48e-5 after, and 7 of 10 descents still end on a peak rather than on the cap — the
+budget binds on the tail, which is what it is for. What it does change is the **Julia
+twin**: both legs spend one budget and the plane leg spends it first, so a twin was walked
+on 8 of 8 walks before and on 2 and 3 of 8 after. Splitting the budget in half would keep
+every twin and halve the plane descent, which is the thing the patience rule was added to
+fix, so it is not split.
+
+**What is left, and it is the descent.** A rung is one probe, four 384×216 screens and up to
+four 640×360 judged pictures, and on multibrot6 a single rung reaches 11.8 s at p90. Two
+things are visible from here and neither is taken:
+
+- **the judged picture is drawn at 640×360 and the judge reads 384×224**, so 2.7x the
+  samples the gate uses are drawn for the viewer's sake alone. Drawing it smaller is a
+  straight halving of the largest part of a rung, and it is a visible change to what a
+  reader watches, which makes it Matt's call rather than a measurement's;
+- **the root search screens one candidate root at a time** while both screeners idle —
+  7.4 s median and 28 s at p90 on multibrot6, all of it out of the reader's sight.
+  Screening them in parallel changes which root the search settles on, so it is its own
+  prompt.
 
 ### The shade over the pool *(explorer_shade_pool_ckpt136, 2026-09-20)*
 

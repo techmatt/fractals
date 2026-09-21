@@ -846,7 +846,7 @@ summary.section-head:focus-visible { outline: 2px solid var(--well-link); outlin
   font-size: 0.7rem;
   color: var(--well-ink-dim);
 }
-.walk-candidate-mode { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.walk-candidate-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .walk-candidate-score { flex: none; color: var(--well-ink); font-variant-numeric: tabular-nums; }
 .walk-candidate.is-kept { outline: 2px solid #ffd166; }
 .walk-candidate.is-waiting { aspect-ratio: 16 / 9; background: rgb(255 255 255 / 0.04); }
