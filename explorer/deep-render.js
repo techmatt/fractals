@@ -58,7 +58,7 @@ const RECUT_OVER = 1.5;
  * the pool is what pays it; `perturb-wasm`'s `policy::PROBE_COLS` and `PROBE_ROWS` are the
  * same two numbers as the crate's own default, and its harness measures at them. 2,304
  * samples is about a thousandth of one pass of a deep frame, and measured over the
- * thirteen frames of `tests/frames.rs` the whole escalation costs 0.08% to 0.22% of the
+ * thirteen frames of `perturb-wasm/tests/common` the whole escalation costs 0.08% to 0.22% of the
  * fine pass it decides the cap for.
  *
  * The rows are cut across the pool exactly as a band's are: one worker walking the whole
@@ -482,7 +482,7 @@ export class DeepRenderer {
     // much of the frame its nucleus dominates, and a domain's scale is its body's square
     // root — so this is the cheap proxy for "largest", spent before any solve is.
     seeds.sort((a, b) => b.cells - a.cells || a.minimum - b.minimum);
-    // **Twelve solves for six entries**, which is `tests/frames.rs`'s own budget: the
+    // **Twelve solves for six entries**, which is `tests/measure.rs`'s own budget: the
     // harmonics and the one body that contains the whole view are only found by solving
     // them, so a budget equal to `want` returns fewer than `want`. Twelve is two rounds
     // over an eight-worker pool, and a solve is 0.05 s at 2e-11 and 2 s at 1e-54.

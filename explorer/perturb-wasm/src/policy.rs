@@ -293,7 +293,13 @@ pub fn settle(spec: &Spec, cols: u32, rows: u32) -> Result<Settled, String> {
 /// The `index`-th of `count` cells spread evenly across `span`, taken at the
 /// middle of its share — so a probe of one column is the middle of the frame
 /// rather than its left edge.
-fn spread(index: u32, count: u32, span: u32) -> u32 {
+///
+/// Public so that a harness walking the same cells reads this rule rather than
+/// keeping a second copy of it *(deep_refactor_ckpt138)*: `tests/common`'s
+/// `walk_cells` is written to match [`probe_rows`], and a spread that agreed
+/// with it today and drifted tomorrow is exactly the failure that would make a
+/// measurement and the shipped probe quietly different pictures.
+pub fn spread(index: u32, count: u32, span: u32) -> u32 {
     let numerator = index as u64 * 2 + 1;
     ((numerator * span as u64) / (count as u64 * 2)).min(span as u64 - 1) as u32
 }

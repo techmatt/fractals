@@ -44,8 +44,14 @@ tests/oracle.rs    the kernel against a brute-force oracle (ignored by default)
 tests/probe.rs     three-way probes; not proofs, and they say so
 tests/descend.rs   the frame finder: deep frames with structure, and the exact
                    decimal walk that gets to them (ignored by default)
-tests/frames.rs    the seven it settled on, as cases, with their links — and
-                   the six controls a cap policy has to leave alone
+tests/common/      the seven it settled on, as cases, with their links — and
+                   the six controls a cap policy has to leave alone; plus the
+                   one walk of a sample grid the harnesses share, written to
+                   match policy::probe_rows
+tests/frames.rs    the two cheap pins on that record: still spellable, still at
+                   the cap it claims
+tests/measure.rs   what the frames cost and where the rules settle — every
+                   table §8 and §9 carry (ignored by default)
 ```
 
 ## The design, in one page
@@ -500,7 +506,7 @@ atom is inside its body and 100% interior** — the deepest frame either ladder
 carries with exterior in it is `julia 2e-10` — so the depth at which the skip paid
 and the depth at which its accuracy had been checked did not overlap. The second round closed that
 gap the only way it could be closed — by going and finding deep frames that have
-something in them. They are the seven in `tests/frames.rs`, and on them the 59× is
+something in them. They are the seven in `tests/common`, and on them the 59× is
 **between a 21% loss and 2.6×**:
 
 | frame | plain wait | ε = 2⁻⁵³ | 1e-12 | 1e-9 | counts moved @1e-12 | @2⁻⁵³ | mask moved @2⁻⁵³ |
@@ -593,7 +599,7 @@ is 63 characters at that width and `COORDINATE_LIMIT` is 64.
 ⚠ **And they found something that is not about the skip at all: at these depths
 the policy cap paints exterior as interior.** This is the open problem the section
 leaves behind, and it is the most consequential thing in it.
-`tests/frames.rs`'s `what_a_deeper_cap_resolves` is the evidence, at 32×18, each
+`tests/measure.rs`'s `what_a_deeper_cap_resolves` is the evidence, at 32×18, each
 rung a multiple of the width's own **policy** cap:
 
 | frame | at the policy cap | 2× | 4× | 8× |
@@ -657,7 +663,7 @@ reason there is not one.
 
 §6's open problem, closed. **The cap is no longer the width's answer alone: a frame
 is asked what it needs, and the answer is the frame's.** `src/policy.rs` is the
-rule, `tests/frames.rs` is the evidence, and the page drives it a rung at a time
+rule, `tests/measure.rs` is the evidence, and the page drives it a rung at a time
 through `probe_band`.
 
 **A width rule was never available**, and §7 had already said why about the
@@ -916,7 +922,7 @@ cargo test  --release                                  # 60 unit tests and five
                                                        #   cheap pins, under a second
 cargo test  --release --test oracle -- --ignored --nocapture   # the ladders, ~30 s
 cargo test  --release --test probe  -- --ignored --nocapture   # the three-way probes
-cargo test  --release --test frames -- --ignored --nocapture   # the cap sweep, the
+cargo test  --release --test measure -- --ignored --nocapture  # the cap sweep, the
                                                        #   policy, and the nucleus
                                                        #   search, ~12 min
 cargo test  --release --test descend -- --ignored --nocapture  # the frame finder, ~12 min

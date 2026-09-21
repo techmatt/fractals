@@ -843,7 +843,7 @@ export function mount(host) {
 
   /** Seconds a tile of this many samples at this cap is expected to take, from the crate's
    *  own ns a sample-iteration, wasm's 5% over native, and the pool. The mean is 0.85 of
-   *  the cap on the tiles `tests/frames.rs` measured, which is what a frame mostly inside
+   *  the cap on the tiles `tests/measure.rs` measured, which is what a frame mostly inside
    *  a minibrot's body looks like. */
   function tileSeconds(cap) {
     const lanes = TILE.width * TILE.height;

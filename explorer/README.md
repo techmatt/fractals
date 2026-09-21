@@ -1139,7 +1139,7 @@ deep enough for it to pay on was 100% interior, and on seven deep frames that ha
 something in them it is **between a 21% loss and 2.6×** and **moves the picture at every
 tolerance, including the tightest one the approximation admits**. It cost 9,423 bytes of
 `perturb.wasm` for a path no page could reach, and those bytes are back. The seven frames
-stay, in `perturb-wasm/tests/frames.rs` with their `dv` links, because they are the only
+stay, in `perturb-wasm/tests/common` with their `dv` links, because they are the only
 deep frames this project has that are not one flat colour.
 
 And those frames found something about this tab that is not about the skip at all: at

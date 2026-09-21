@@ -19,7 +19,8 @@
 //! it is here rather than in `src/` because nothing the wasm module does needs
 //! it and a `src/` edit is a rebake.
 
-use perturb::kernel::Kernel;
+mod common;
+
 use perturb::{Anchor, Spec};
 use std::cmp::Ordering;
 
@@ -249,26 +250,20 @@ fn spec_at(re: &str, im: &str, width: f64, maxiter: Option<u32>, switch: bool) -
 /// above is the whole point of the walk and the switch is what makes it.
 fn render(spec: &Spec) -> Tile {
     let orbit = spec.reference_orbit().unwrap();
-    let kernel = Kernel::new(&orbit, spec.maxiter(), spec.interior).at_entry(spec.entry());
-    let offset = spec.centre_offset().unwrap();
     let count = (spec.resolution[0] * spec.resolution[1]) as usize;
     let mut class = Vec::with_capacity(count);
     let mut iterations = Vec::with_capacity(count);
     let at = std::time::Instant::now();
-    for row in 0..spec.resolution[1] {
-        for col in 0..spec.resolution[0] {
-            let (re, im) = spec.dc(offset, col, row);
-            let outcome = kernel.sample_with::<false>(re, im);
-            class.push(if !outcome.smooth.is_nan() {
-                Class::Escaped
-            } else if outcome.detected_interior {
-                Class::Interior
-            } else {
-                Class::Capped
-            });
-            iterations.push(outcome.iterations);
-        }
-    }
+    common::walk_frame(spec, &orbit, |outcome| {
+        class.push(if !outcome.smooth.is_nan() {
+            Class::Escaped
+        } else if outcome.detected_interior {
+            Class::Interior
+        } else {
+            Class::Capped
+        });
+        iterations.push(outcome.iterations);
+    });
     Tile {
         class,
         iterations,

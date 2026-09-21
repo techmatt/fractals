@@ -450,7 +450,7 @@ test("the tab's own spec builder produces what the module reads", { skip }, () =
 // threshold is what decides, and that the two frames the rule has to separate are
 // separated by the committed bytes rather than by a native run.
 
-/** `tangle 1e-22` — one of the seven frames of `perturb-wasm/tests/frames.rs`, and a frame
+/** `tangle 1e-22` — one of the seven frames of `perturb-wasm/tests/common`, and a frame
  *  the width's cap paints wrong. */
 const TANGLE = {
   center_re: "-0.745017728290198619298817365858",
