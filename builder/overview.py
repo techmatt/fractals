@@ -21,22 +21,12 @@ it is held to what the record says it was.
 
 from __future__ import annotations
 
-from pathlib import Path
-
-from . import images, picks, renders, sheets
+from . import figures as figures_module
+from . import links, picks, renders, sheets
 from . import palettes as palette_library
-from .paths import FIGURE_IMAGES_DIR
-from .sheets import PAD, canvas, tile_label
-from .theme import (
-    MARK_INK,
-    SECTION_INK,
-    SEMIBOLD,
-    WELL_INK,
-    WELL_INK_DIM,
-    WELL_PANEL,
-    WELL_RULE,
-    font,
-)
+from .locations import Made, Split, panel_path
+from .sheets import PAD, canvas
+from .theme import MARK_INK
 
 FIGURE = "overview-pipeline"
 
@@ -63,37 +53,55 @@ SHADES = (
 #: than a figure that quietly redraws.
 FOLDED = (True, False, False, False)
 
+#: What the sheet was composed at, and so what one panel of a band is across. The
+#: lettering metrics the sheet needed — the title's size, the leading, the boxes and the
+#: gutter the arrow was drawn in — are the stylesheet's now and are gone from here.
 SHEET = 1344
-TITLE = 25
-LINE = 16
-HEAD = TITLE + 6 + 2 * LINE
-BLOCK = 32
-BLOCK_WIDTH = 310
-BLOCK_GAP = 12
 STRIP = 16
-GUTTER = 30
 
 #: The three parts, in the shape the Overview page frames the project in.
+#: What each stage is called, what it does, the boxes down its right-hand side, and which
+#: of those is a judge. The sentence used to be two hard-broken lines, because it was
+#: drawn into a sheet; as the page's own text it is one sentence that wraps, and the
+#: em-dash the second one carried — invisible to the site's sweep while it was pixels —
+#: is a colon.
 STAGES = (
     (
         "1 · Find good locations",
-        ("A guided walk descends through a family,", "keeping the frames worth drawing."),
+        "A guided walk descends through a family, keeping the frames worth drawing.",
         ("structural gates", "location judge"),
         (1,),
     ),
     (
         "2 · Render them beautifully",
-        ("One frame is drawn many ways — several", "modes, and a neighborhood of palettes."),
+        "One frame is drawn many ways: several modes, and a neighborhood of palettes.",
         ("the mode roster · 32 palettes a location", "render judge"),
         (1,),
     ),
     (
         "3 · Gallery curation",
-        ("A gallery is chosen out of the pool those", "attempts fill: quality first, then range."),
+        "A gallery is chosen out of the pool those attempts fill: quality first, then range.",
         ("one seat to a location · no near-duplicates", "color balance · every mode"),
         (),
     ),
 )
+
+
+def band_of(stage, columns: int) -> dict:
+    """One stage as the band its panels open.
+
+    `columns` is that band's own, because the three are not the same width: three
+    locations, then four colorings, then three wallpapers. `arrow` is the hand-off, on
+    every band but the first.
+    """
+    title, note, blocks, judges = stage
+    return {
+        "title": title,
+        "note": note,
+        "blocks": [{"text": text, "judge": index in judges} for index, text in enumerate(blocks)],
+        "columns": columns,
+        "arrow": stage is not STAGES[0],
+    }
 
 
 class OverviewError(RuntimeError):
@@ -135,68 +143,6 @@ def _check_folds() -> None:
         )
 
 
-def _coloring(cache, followed, name: str, catalog, *, kept: bool):
-    """One coloring of the followed frame, autolevelled the way the attempt was.
-
-    The middle band is four colorize attempts on one frame, and an attempt does not stop at
-    the render: the operator measures its tone and, where it falls outside the band, pushes
-    a curve through the map's stops and draws again. The caption says the tones are
-    balanced, so the panels have to be.
-
-    The kept map replays the run's **own** stamp rather than a curve measured here, which
-    is what makes this panel the same picture as the one in stage three. For the other
-    three there is no run and no stamp — these colorings exist only in this figure — so the
-    operator measures them here, which is it acting rather than a second reading of
-    something it already did.
-    """
-    row = picks.wallpaper_row(followed)
-    row["colormap"] = name
-    row["recipe"] = dict(row["recipe"], mirror=_mirror(name))
-    spec = renders.wallpaper_spec(row, resolution=(1280, 720), supersample=3, catalog=catalog)
-    base = cache.produce(f"pipe-shade-{_slug(name)}", "render", spec).path
-    if kept:
-        levelling = picks.run_stamp(followed)
-        if levelling.way != picks.REPLAYED:
-            return base
-        directory = picks.levelled_colormap(followed, levelling.stamp)
-    else:
-        measured = renders.measured_stops(name, base)
-        if measured is None:
-            return base
-        directory = renders.colormap_directory(
-            name,
-            measured["kind"],
-            measured["stops"],
-            renders.spec_key("levelled", {"colormap": name, "curve": measured["curve"]}),
-        )
-    return cache.produce(
-        f"pipe-shade-{_slug(name)}-levelled", "render", dict(spec, colormap_dir=str(directory))
-    ).path
-
-
-def _heading(draw, y: int, stage) -> None:
-    """One stage's band: its name and what it does, and the pieces it is made of."""
-    title, lines, blocks, judges = stage
-    draw.text((PAD, y), title, fill=WELL_INK, font=font(TITLE, SEMIBOLD))
-    for index, line in enumerate(lines):
-        draw.text((PAD, y + TITLE + 6 + index * LINE), line, fill=SECTION_INK, font=font(15))
-    left = SHEET - PAD - len(blocks) * BLOCK_WIDTH - (len(blocks) - 1) * BLOCK_GAP
-    top = y + (HEAD - BLOCK) // 2
-    for index, text in enumerate(blocks):
-        x = left + index * (BLOCK_WIDTH + BLOCK_GAP)
-        judge = index in judges
-        ink = MARK_INK[0] if judge else WELL_INK_DIM
-        edge = MARK_INK[0] if judge else WELL_RULE
-        draw.rectangle(
-            [x, top, x + BLOCK_WIDTH - 1, top + BLOCK - 1], fill=WELL_PANEL, outline=edge
-        )
-        face = font(15)
-        _, above, _, below = draw.textbbox((0, 0), text, font=face)
-        sheets.centred(
-            draw, x, top + (BLOCK - (below - above)) // 2 - above, BLOCK_WIDTH, text, face, ink
-        )
-
-
 def _family_words(family: dict) -> str:
     """A family spelled the way every provenance line on this site spells one."""
     kind = family.get("kind")
@@ -209,15 +155,85 @@ def _family_words(family: dict) -> str:
     return named
 
 
-def _arrow(draw, y: float) -> None:
-    """The step from one stage to the next, pointing down the sheet."""
-    x = SHEET / 2
-    draw.line([x, y - 8, x, y], fill=WELL_INK_DIM, width=4)
-    draw.polygon([(x, y + 9), (x - 8, y + 1), (x + 8, y + 1)], fill=WELL_INK_DIM)
+LEVEL_OPERATOR = "band_autolevel/v1"
 
 
-def pipeline(destination: Path) -> tuple[tuple[int, int], list[str]]:
-    """Three stages down the sheet, one location followed through all of them."""
+def _coloured(cache, followed, name: str, catalog, *, kept: bool):
+    """One coloring of the followed frame, and the tone curve its link has to carry.
+
+    `_coloring` beside this draws the picture; this is the same answer with the curve
+    kept rather than thrown away, because a link that says nothing about tone draws the
+    render underneath and the whole middle band is autolevelled. The kept map replays the
+    run's own stamp, which is what makes that panel the same picture as the one in stage
+    three; the other three exist only in this figure and the operator measures them here.
+    """
+    row = picks.wallpaper_row(followed)
+    row["colormap"] = name
+    row["recipe"] = dict(row["recipe"], mirror=_mirror(name))
+    spec = renders.wallpaper_spec(row, resolution=(1280, 720), supersample=3, catalog=catalog)
+    base = cache.produce(f"pipe-shade-{_slug(name)}", "render", spec).path
+    if kept:
+        levelling = picks.run_stamp(followed)
+        if levelling.way != picks.REPLAYED:
+            return base, None, row
+        level, _why = links.panel_level(followed)
+        directory = picks.levelled_colormap(followed, levelling.stamp)
+    else:
+        measured = renders.measured_stops(name, base)
+        if measured is None:
+            return base, None, row
+        curve = measured["curve"]
+        level = {
+            "operator": LEVEL_OPERATOR,
+            "black_pt": float(curve["black_pt"]),
+            "white_pt": float(curve["white_pt"]),
+            "exponent": float(curve["exponent"]),
+            "out_ends": [float(curve["out_ends"][0]), float(curve["out_ends"][1])],
+        }
+        directory = renders.colormap_directory(
+            name,
+            measured["kind"],
+            measured["stops"],
+            renders.spec_key("levelled", {"colormap": name, "curve": curve}),
+        )
+    drawn = cache.produce(
+        f"pipe-shade-{_slug(name)}-levelled", "render", dict(spec, colormap_dir=str(directory))
+    ).path
+    return drawn, level, row
+
+
+def _shade_spec(row: dict, name: str, level) -> dict:
+    """One middle-band panel's record: the followed frame through one map, tone and all."""
+    spec = {
+        "family": row["family"],
+        "viewport": row["viewport"],
+        "mode": row["mode"],
+        "mode_params": row.get("mode_params") or {},
+        "curve": row.get("curve", "linear"),
+        "colormap": name,
+        "palette": row.get("recipe") or {},
+        "maxiter": (row.get("render") or {}).get("maxiter"),
+    }
+    if level is not None:
+        spec["level"] = level
+    return spec
+
+
+def pipeline() -> Split:
+    """Three stages down the figure, one location followed through all of them.
+
+    **Ten pictures rather than one** *(figure_split_all_ckpt140, 2026-09-22)*. The stage
+    headings, the boxes down their right-hand side and the arrows between them are the
+    page's own elements now; what stays in the pixels is the pictures and the gradient
+    strip under each of the middle band's four, which is the map that panel spends. Each
+    band keeps its own number across — three, four, three — which one grid cannot do and
+    a band each can.
+
+    The middle band's links carry the tone curve the panel was drawn through. Three of
+    those four colorings exist only in this figure, so the curve is the one this
+    repository measured for them; the fourth replays the run's own stamp, which is what
+    makes it the same picture as the first panel of stage three.
+    """
     from PIL import Image
 
     _check_folds()
@@ -235,78 +251,74 @@ def pipeline(destination: Path) -> tuple[tuple[int, int], list[str]]:
 
     wide, tall = _panel_size(FOUND)
     narrow, short = _panel_size(len(SHADES))
-    label_band = sheets.caption_band(short, SHEET, 1)
 
-    bands = [
-        HEAD + 8 + tall,
-        HEAD + 8 + short + 4 + STRIP + label_band,
-        HEAD + 8 + tall,
-    ]
-    height = PAD + sum(bands) + 2 * GUTTER + PAD
-    sheet, draw = canvas(SHEET, height)
+    made: list[Made] = []
+    for index, pick in enumerate(found):
+        # The locations as the walk found them: the neutral map, so what a reader is
+        # being shown is the geometry rather than anybody's colour choice.
+        spec = {
+            "family": pick.recipe["family"],
+            "viewport": pick.recipe["viewport"],
+            "mode": "smooth",
+        }
+        drawn = cache.render(f"pipe-found-{pick.alias}", spec, (wide, tall))
+        tile, _ = canvas(wide, tall)
+        with Image.open(drawn.path) as opened:
+            tile.paste(opened.convert("RGB"), (0, 0))
+        made.append(
+            Made(
+                sheets.save(tile, panel_path(FIGURE, len(made) + 1)),
+                alt="A location the walk found, drawn in one neutral palette.",
+                spec=dict(spec, colormap=renders.COLORMAP),
+                band=band_of(STAGES[0], FOUND) if index == 0 else None,
+            )
+        )
 
-    y = PAD
-    for stage, band in zip(STAGES, bands, strict=True):
-        _heading(draw, y, stage)
-        top = y + HEAD + 8
+    for index, name in enumerate(SHADES):
+        kept = index == 0
+        picture, level, row = _coloured(cache, followed, name, catalog, kept=kept)
+        tile, _ = canvas(narrow, short + 4 + STRIP)
+        with Image.open(picture) as opened:
+            tile.paste(opened.convert("RGB").resize((narrow, short), Image.LANCZOS), (0, 0))
+        sheets.paste(
+            tile, palette_library.strip(name, narrow, STRIP), (0, short + 4), (narrow, STRIP)
+        )
+        # No palette names on this row *(Matt, 2026-09-02)*. What the row is showing is
+        # that a colorize tries many maps and one is kept; a reader cannot do anything
+        # with `cet_linear_wyor_100_45_c55` under a picture, and four such names turn a
+        # band of colour into a band of text. The gradient under each panel is the map,
+        # said in the only language that matters here, and the names stay in the
+        # provenance.
+        made.append(
+            Made(
+                sheets.save(tile, panel_path(FIGURE, len(made) + 1)),
+                alt=(
+                    "The followed location colored through one palette, with that "
+                    "palette's gradient under it."
+                ),
+                label="the pick" if kept else None,
+                spec=_shade_spec(row, name, level),
+                ink="#{:02X}{:02X}{:02X}".format(*MARK_INK[0]) if kept else None,
+                band=band_of(STAGES[1], len(SHADES)) if index == 0 else None,
+            )
+        )
 
-        if stage is STAGES[0]:
-            # The locations as the walk found them: the neutral map, so what a reader is
-            # being shown is the geometry rather than anybody's colour choice.
-            for index, pick in enumerate(found):
-                x = PAD + index * (wide + PAD)
-                spec = {
-                    "family": pick.recipe["family"],
-                    "viewport": pick.recipe["viewport"],
-                    "mode": "smooth",
-                }
-                drawn = cache.render(f"pipe-found-{pick.alias}", spec, (wide, tall))
-                with Image.open(drawn.path) as opened:
-                    sheet.paste(opened.convert("RGB"), (x, top))
-        elif stage is STAGES[1]:
-            for index, name in enumerate(SHADES):
-                x = PAD + index * (narrow + PAD)
-                kept = index == 0
-                drawn = _coloring(cache, followed, name, catalog, kept=kept)
-                with Image.open(drawn) as opened:
-                    sheet.paste(
-                        opened.convert("RGB").resize((narrow, short), Image.LANCZOS), (x, top)
-                    )
-                sheets.paste(
-                    sheet,
-                    palette_library.strip(name, narrow, STRIP),
-                    (x, top + short + 4),
-                    (narrow, STRIP),
-                )
-                # No palette names on this row *(Matt, 2026-09-02)*. What the row is
-                # showing is that a colorize tries many maps and one is kept; a reader
-                # cannot do anything with `cet_linear_wyor_100_45_c55` under a picture, and
-                # four such names turn a band of colour into a band of text. The gradient
-                # under each panel is the map, said in the only language that matters here,
-                # and the names stay in the provenance.
-                if kept:
-                    tile_label(
-                        draw,
-                        (x, top),
-                        (narrow, short + 4 + STRIP),
-                        ["the pick"],
-                        SHEET,
-                        lead=WELL_INK,
-                    )
-                    sheets.framed(draw, (x, top), (narrow, short), MARK_INK[0], width=3)
-        else:
-            for index, pick in enumerate(chosen):
-                x = PAD + index * (wide + PAD)
-                picture = picks.panel(pick, f"pipe-chosen-{pick.alias}", catalog)
-                sheet.paste(sheets.fitted(picture, (wide, tall)), (x, top))
+    for index, pick in enumerate(chosen):
+        tile, _ = canvas(wide, tall)
+        tile.paste(
+            sheets.fitted(picks.panel(pick, f"pipe-chosen-{pick.alias}", catalog), (wide, tall)),
+            (0, 0),
+        )
+        made.append(
+            Made(
+                sheets.save(tile, panel_path(FIGURE, len(made) + 1)),
+                alt="A finished wallpaper the gallery solve chose.",
+                seat=pick.identifier,
+                band=band_of(STAGES[2], CHOSEN) if index == 0 else None,
+            )
+        )
 
-        y += band
-        if stage is not STAGES[-1]:
-            _arrow(draw, y + GUTTER / 2)
-            y += GUTTER
-
-    provenance = _provenance(found, chosen, (wide, tall), (narrow, short))
-    return images.land(sheet, destination), provenance
+    return Split(made, _provenance(found, chosen, (wide, tall), (narrow, short)), FOUND)
 
 
 def _provenance(found, chosen, big, small) -> list[str]:
@@ -393,14 +405,23 @@ def _provenance(found, chosen, big, small) -> list[str]:
     return lines
 
 
-#: Figure id to the file it writes and the maker that writes it. The file is the id plus
-#: `images.FIGURE_SUFFIX`, so the format is named once for the whole repository.
-SHEETS = {"overview-pipeline": (f"overview-pipeline{images.FIGURE_SUFFIX}", pipeline)}
+#: Figure id to the maker that draws it. The one figure here is **split** since
+#: `figure_split_all_ckpt140`, so what the maker returns is a list of pictures and the
+#: bands they stand in, and the file names are `images.FIGURE_SUFFIX`'s at landing.
+SHEETS = {FIGURE: pipeline}
 
 
-def draw(identifier: str) -> tuple[Path, int, int, list[str]]:
-    """Draw one figure into the figures directory; return where it went and its size."""
-    file, maker = SHEETS[identifier]
-    destination = FIGURE_IMAGES_DIR / file
-    (width, height), provenance = maker(destination)
-    return destination, width, height, provenance
+def recipe(identifier: str) -> dict:
+    """The registry recipe: the maker, and the six gallery seats the row already names."""
+    if identifier not in SHEETS:
+        raise OverviewError(f"{identifier} is not drawn by builder.overview")
+    args = {}
+    figure = figures_module.load_all().get(identifier)
+    if figure is not None and figure.recipe is not None and "picks" in figure.recipe.args:
+        args["picks"] = figure.recipe.args["picks"]
+    return {"maker": f"{__name__}:{SHEETS[identifier].__name__}", "args": args}
+
+
+def draw(identifier: str) -> Split:
+    """Draw the figure's panels into `artifacts/figures/`; `--place` encodes and lands."""
+    return SHEETS[identifier]()

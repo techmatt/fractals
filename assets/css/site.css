@@ -65,6 +65,13 @@
      into a sheet composed at half again the width it ships at, so this is what that came
      to on the page. */
   --figure-mark: 3px;
+  /* The air between one band of a staged figure and the next, against --figure-gap
+     inside a band: a sheet drew a clear hand-off there and three grids run together
+     without one. */
+  --figure-band-gap: 1.25rem;
+  /* What marks a judge in a stage's boxes. The same ink a mark on a picture uses — the
+     first of `builder/theme.py`'s four — because a reader meets it as one colour. */
+  --figure-judge: #ffc43d;
 }
 
 *, *::before, *::after { box-sizing: border-box; }
@@ -448,7 +455,7 @@ a:hover { color: var(--ink); }
    about 130, and a floor that suits one turns the other into a different picture, which
    is what a single 13rem floor did to the four-across roster. `min(100%, …)` is what
    stops the last column overflowing a phone. */
-.figure-panels {
+.figure-panels, .figure-stage {
   display: grid;
   gap: var(--figure-gap);
   --figure-panel: calc(
@@ -459,6 +466,63 @@ a:hover { color: var(--ink); }
   grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--figure-panel)), 1fr));
 }
 .figure-panel { min-width: 0; }
+
+/* A figure in **bands**: several grids down one figure, with a heading over each and a
+   hand-off between them. That is the shape the staged sheets had, and it is the only way
+   a stage three panels across can sit above one four across — a grid has one column count
+   and a sheet had none, so each band is its own grid and the outer one is a single
+   column. The gap between bands is larger than the gap inside one: the sheets drew a
+   clear hand-off there, and without it three grids read as one. */
+.figure-staged { grid-template-columns: 1fr; gap: var(--figure-band-gap); }
+/* A band's heading: what the band is, then what it does, then the boxes that say what
+   it is made of. One flex row that wraps, with the boxes pushed to the far end — the
+   sheets drew them down the right-hand side, and `margin-left: auto` is what keeps them
+   there without pinning the two halves apart when a band has none. */
+.figure-band {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.15rem 0.75rem;
+  margin: 0.15rem 0 0.1rem;
+}
+.figure-band-title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--panel-ink, var(--well-ink));
+}
+.figure-band-note {
+  margin: 0;
+  max-width: var(--measure);
+  font-size: 0.875rem;
+  line-height: 1.45;
+  color: var(--well-ink-dim);
+}
+
+/* The boxes a stage sheet drew down its right-hand side: the pieces that stage is made
+   of. A judge is marked in the same ink every mark on this site uses, because a judge is
+   the thing the article keeps pointing at. */
+.figure-blocks { margin: 0 0 0 auto; display: flex; flex-wrap: wrap; gap: 0.35rem; }
+.figure-block {
+  padding: 0.2rem 0.6rem;
+  border: 1px solid var(--well-rule);
+  background: var(--well-pending);
+  font-size: 0.8125rem;
+  color: var(--well-ink-dim);
+}
+.figure-block-judge { border-color: var(--figure-judge); color: var(--figure-judge); }
+
+/* The step from one band to the next. `aria-hidden`, because the band titles already
+   say the order and a screen reader gains nothing from *down arrow* between them. */
+.figure-arrow {
+  margin: 0;
+  text-align: center;
+  font-size: 1.25rem;
+  line-height: 1;
+  color: var(--well-ink-dim);
+}
 
 /* A panel that is not one cell of the grid but the whole row: the parameter plane over
    the four Julia sets it draws, a stage heading over the pictures it names. `1 / -1`
@@ -489,7 +553,10 @@ a:hover { color: var(--ink); }
   text-wrap: balance;
 }
 .figure-label .figure-note { color: var(--well-ink-dim); }
-.figure-label .figure-note::before { content: " · "; }
+/* The separator is a space, the dot, then a no-break space: a label that wraps breaks
+   *before* the dot and carries it onto the next line with the words it introduces, where
+   a plain " · " leaves the dot dangling at the end of the line above. */
+.figure-label .figure-note::before { content: " · "; }
 
 /* The caption sits under the left edge of the picture, at a size a step above the site's
    other small print: it is the second thing a reader looks at, after the figure itself,

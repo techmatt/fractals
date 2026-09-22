@@ -44,7 +44,6 @@ from . import theme as theme_module
 from .paths import SITE_ROOT
 from .theme import (
     SECTION_INK,
-    SEMIBOLD,
     WELL_INK,
     WELL_INK_DIM,
     WELL_PANEL,
@@ -363,7 +362,7 @@ class Made:
     path: Path
     alt: str
     label: str | None = None
-    note: str | None = None
+    note: str | list[str] | None = None
     spec: dict | None = None
     #: The tentative-gallery seat this panel is, `<stamp>|<recipe key>`, where it is one.
     seat: str | None = None
@@ -372,6 +371,9 @@ class Made:
     #: The colour of the mark on another panel that this one answers to, as `#rrggbb`.
     #: The maker used to draw a frame of it into the tile; the page draws it now.
     ink: str | None = None
+    #: A band opens at this panel: `{title, note, blocks, columns, arrow}`. What a staged
+    #: sheet drew as a heading, a sentence, a row of boxes and an arrow down the middle.
+    band: dict | None = None
 
 
 @dataclass(frozen=True)
@@ -446,24 +448,16 @@ CHILD_INKS = (
     ("pink", (240, 122, 197)),
 )
 
-#: Room left under the bottom row for the mark that opens the picture in the explorer.
-#:
-#: That mark is CSS's — a rounded square in the picture's own bottom-right corner — and a
-#: sheet whose last label runs the full width of its tile has the mark land on the label's
-#: last word. Every other figure on this page ends in a label short enough to sit clear of
-#: it; this one's does not, and moving the mark is a stylesheet change that would move it
-#: on forty pictures. So the sheet leaves the corner empty instead. Sized against the
-#: figure at the reading column's own width, where the mark is about 34 CSS pixels tall on
-#: a sheet drawn at 1316 and shown at about 840.
-MARK_CLEARANCE = 60
-
 #: A focus no child was aimed at. Still marked — the figure's claim is that the blurring
 #: keeps several and the proposal rule spends only some of them — and marked quietly, so
 #: that the coloured rings stay the ones a label can point at.
 SPARE_FOCUS = (236, 236, 236)
 
 
-def foci_proposals() -> Drawn:
+FOCI_COLUMNS = 4
+
+
+def foci_proposals() -> Split:
     """The parent frame with its kept foci marked, and the four children it proposed.
 
     Two blocks and one line of lettering. The figure used to carry a table of focus
@@ -472,7 +466,16 @@ def foci_proposals() -> Drawn:
     looks first. What the reader needs is the join between a box in the parent and a
     picture at the foot, so each proposal has a colour of its own, the focus it was
     aimed at is ringed in that colour, and the one label says the colour out loud.
+
+    **Five pictures rather than one** *(figure_split_all_ckpt140, 2026-09-22)*. The
+    parent runs the whole width and the four children sit under it, which is the
+    arrangement the sheet had. The rings and the boxes stay drawn into the parent, because
+    each marks a place in that frame; the coloured frame round a child does not, being the
+    page's own outline in the same ink, and the label under it is words. With the label
+    out of the pixels the clearance the sheet had to leave for the explorer's mark goes
+    too: the mark sits on the picture and the words sit under it.
     """
+    identifier = "locations-foci-proposals"
     rows = ledger()
     parent = nodes(rows)[FOCI_NODE]
     foci = next(
@@ -483,16 +486,8 @@ def foci_proposals() -> Drawn:
     aimed = _aimed_at(kept, proposed)
 
     big = (SHEET_WIDTH - 2 * sheets.PAD, round((SHEET_WIDTH - 2 * sheets.PAD) * 9 / 16))
-    small = panels(4)
+    small = panels(FOCI_COLUMNS)
     parent_render = panel("foci-parent", parent, big)
-    child_renders = [
-        (child, panel(f"foci-child-{index}", child, small)) for index, child in enumerate(proposed)
-    ]
-
-    top = sheets.PAD
-    kids_top = top + big[1] + sheets.PAD
-    height = kids_top + small[1] + band(small[1], 1) + sheets.PAD + MARK_CLEARANCE
-    sheet, draw = sheets.canvas(SHEET_WIDTH, height)
 
     box = (0, 0, big[0], big[1])
     marked, over = _overlay(big)
@@ -508,20 +503,37 @@ def foci_proposals() -> Drawn:
         x = (focus["x"] + 0.5) / NODE_TILE[0] * big[0]
         y = (focus["y"] + 0.5) / NODE_TILE[1] * big[1]
         _ring(over, x, y, colour)
-    _paste_marked(sheet, sheets.fitted(parent_render, big), marked, (sheets.PAD, top))
-
-    for index, (child, render) in enumerate(child_renders):
-        x = sheets.PAD + index * (small[0] + sheets.PAD)
-        sheet.paste(sheets.fitted(render, small), (x, kids_top))
-        draw.rectangle(
-            [x, kids_top, x + small[0] - 1, kids_top + small[1] - 1],
-            outline=CHILD_INKS[index][1],
-            width=3,
+    plane, _ = sheets.canvas(*big)
+    _paste_marked(plane, sheets.fitted(parent_render, big), marked, (0, 0))
+    made = [
+        Made(
+            sheets.save(plane, panel_path(identifier, 1)),
+            alt=(
+                "One frame of the walk, with the foci the blurring kept ringed on it and "
+                "the four frames its children were proposed at outlined in four colors."
+            ),
+            label="the frame the walk is standing in",
+            spec=neutral_spec(parent),
+            wide=True,
         )
-        under(draw, (x, kids_top), small, [_child_label(index, child, aimed)])
+    ]
+    for index, child in enumerate(proposed):
+        render = panel(f"foci-child-{index}", child, small)
+        made.append(
+            Made(
+                sheets.save(sheets.fitted(render, small), panel_path(identifier, index + 2)),
+                alt=f"The frame proposed as child {index + 1}, drawn in one neutral palette.",
+                label=_child_label(index, child, aimed),
+                spec=neutral_spec(child),
+                ink=_ink_text(CHILD_INKS[index][1]),
+            )
+        )
+    return Split(made, _foci_provenance(parent, foci, proposed, aimed, big, small), FOCI_COLUMNS)
 
-    destination = sheets.save(sheet, sheet_path("locations-foci-proposals"))
-    return Drawn(destination, _foci_provenance(parent, foci, proposed, aimed, big, small))
+
+def _ink_text(colour: tuple[int, int, int]) -> str:
+    """One of this module's mark inks as the page spells a colour. See `figures.Panel`."""
+    return "#{:02X}{:02X}{:02X}".format(*colour)
 
 
 def _aimed_at(kept: list[dict], proposed: list[dict]) -> dict[int, int]:
@@ -884,8 +896,19 @@ CHAIN_TIP = 4691
 CHAIN_ROOT_LABEL = ("correction_page", 285)
 
 
-def descent_chain() -> Drawn:
-    """Every frame of one seeded descent, root to admitted find, in order."""
+CHAIN_COLUMNS = 3
+
+
+def descent_chain() -> Split:
+    """Every frame of one seeded descent, root to admitted find, in order.
+
+    **Six pictures rather than one** *(figure_split_all_ckpt140, 2026-09-22)*. A descent
+    is a sequence and the grid keeps it in order at any width; what the sheet drew above
+    and below each tile — which step it is, what kind of step it was, the width it
+    reached — is the page's text now, and every rung is a way into the explorer at the
+    frame that rung stood on.
+    """
+    identifier = "locations-descent-chain"
     forest = Forest(ledger())
     chain = forest.chain(CHAIN_TIP)
     if chain is None:
@@ -901,22 +924,24 @@ def descent_chain() -> Drawn:
     wanted = [_chain_location(root, entry) for entry in chain]
     judged = renders.scores(wanted)
 
-    size = panels(3)
-    columns = 3
-    rows_down = (len(chain) + columns - 1) // columns
-    cell = 26 + size[1] + band(size[1], 3)
-    height = sheets.PAD + rows_down * (cell + sheets.PAD) + sheets.PAD
-    sheet, draw = sheets.canvas(SHEET_WIDTH, height)
+    size = panels(CHAIN_COLUMNS)
+    made = []
     for index, entry in enumerate(chain):
-        row, column = divmod(index, columns)
-        x = sheets.PAD + column * (size[0] + sheets.PAD)
-        y = sheets.PAD + row * (cell + sheets.PAD)
-        heading(draw, x, y, f"{index + 1} of {len(chain)}{sheets.MIDDOT}{_rung(entry)}", size=15)
-        picture = cache().render(f"chain-{index}", _chain_location(root, entry), size)
-        sheet.paste(sheets.fitted(picture.path, size), (x, y + 26))
-        under(draw, (x, y + 26), size, _chain_lines(entry, rated))
-    destination = sheets.save(sheet, sheet_path("locations-descent-chain"))
-    return Drawn(destination, _chain_provenance(root, chain, judged, rated, size))
+        where = _chain_location(root, entry)
+        picture = cache().render(f"chain-{index}", where, size)
+        made.append(
+            Made(
+                sheets.save(sheets.fitted(picture.path, size), panel_path(identifier, index + 1)),
+                alt=(
+                    f"Step {index + 1} of {len(chain)} of one descent: a "
+                    f"{_family_name(where['family'])} frame drawn in one neutral palette."
+                ),
+                label=f"{index + 1} of {len(chain)}",
+                note=[_rung(entry), *_chain_lines(entry, rated)],
+                spec=neutral_spec(where),
+            )
+        )
+    return Split(made, _chain_provenance(root, chain, judged, rated, size), CHAIN_COLUMNS)
 
 
 def _chain_location(root: dict, entry: dict) -> dict:
@@ -1054,11 +1079,14 @@ RATED = {
 }
 
 #: What each rung of the scale is for, in the labeler's own terms.
+#: What each rung means, in the words the figure shows. Two of them spelled that with an
+#: em-dash, which the site's sweep never saw because it was drawn into the sheet; as the
+#: page's own text they take the colon every other line of this table already uses.
 RUNGS = {
-    1: "junk — too empty, too plain, or too formless to use",
+    1: "junk: too empty, too plain, or too formless to use",
     2: "something is happening, but it does not hold the frame",
     3: "a keeper: worth rendering properly and coloring",
-    4: "exceptional — wallpaper material as it stands",
+    4: "exceptional: wallpaper material as it stands",
 }
 
 #: The site's rating palette, from `theme.py`. Not restated here: the page that teaches
@@ -1184,13 +1212,11 @@ def _spectrum_provenance(picks: list[dict], size: tuple[int, int]) -> list[str]:
     return lines
 
 
-#: How tall the numeral that names a row is, and how much room its band needs.
-RUNG_NUMERAL = 34
-RUNG_BAND = 46
+RATING_COLUMNS = 3
 
 
-def rating_examples() -> Drawn:
-    """The four-point scale by example, one row per rung, three locations each.
+def rating_examples() -> Split:
+    """The four-point scale by example, one band per rung, three locations each.
 
     Four buckets and nothing else. The figure used to print a family, a frame width and
     a labelling date under every panel, which is a provenance record standing where a
@@ -1199,38 +1225,46 @@ def rating_examples() -> Drawn:
     loud: a numeral in the rung's own colour, the band it sits in, and a border in the
     same colour around every panel that earned it. Where each panel came from is in the
     registry's provenance, which is where a frame belongs.
+
+    **Twelve pictures in four bands** *(figure_split_all_ckpt140, 2026-09-22)*. The rung
+    and the sentence that says what earns it are the band's heading now, and the border
+    round each panel is the page's own outline in the rung's ink. The band structure is
+    what the figure is, so it stays: four headings, three pictures each, at any width.
     """
+    identifier = "locations-rating-examples"
     order = sorted(RATED)
     picks = {score: [label_row(*pick) for pick in RATED[score]] for score in order}
-    size = panels(3)
-    cell = RUNG_BAND + size[1]
-    height = sheets.PAD + len(order) * (cell + sheets.PAD) + sheets.PAD
-    sheet, draw = sheets.canvas(SHEET_WIDTH, height)
-    for row_index, score in enumerate(order):
-        y = sheets.PAD + row_index * (cell + sheets.PAD)
-        _rung_band(draw, y, score)
+    size = panels(RATING_COLUMNS)
+    made = []
+    for score in order:
+        ink = _ink_text(RUNG_INK[score])
         for column, row in enumerate(picks[score]):
-            x = sheets.PAD + column * (size[0] + sheets.PAD)
             picture = cache().render(f"rated-{score}-{column}", location(row), size)
-            sheet.paste(sheets.fitted(picture.path, size), (x, y + RUNG_BAND))
-            draw.rectangle(
-                [x, y + RUNG_BAND, x + size[0] - 1, y + RUNG_BAND + size[1] - 1],
-                outline=RUNG_INK[score],
-                width=2,
+            made.append(
+                Made(
+                    sheets.save(
+                        sheets.fitted(picture.path, size), panel_path(identifier, len(made) + 1)
+                    ),
+                    alt=(
+                        f"A {_family_name(row['family'])} frame a person rated {score}, "
+                        "drawn in one neutral palette."
+                    ),
+                    spec=neutral_spec(row),
+                    ink=ink,
+                    band=(
+                        {"title": str(score), "note": RUNGS[score], "columns": RATING_COLUMNS}
+                        if column == 0
+                        else None
+                    ),
+                )
             )
-    destination = sheets.save(sheet, sheet_path("locations-rating-examples"))
     flat = [pick for score in order for pick in RATED[score]]
     rows = [row for score in order for row in picks[score]]
-    return Drawn(destination, _store_provenance("by rating, 1 to 4", flat, rows, size, True))
-
-
-def _rung_band(draw, y: int, score: int) -> None:
-    """The numeral that names a rung, and the sentence that says what earns it."""
-    face = font(RUNG_NUMERAL, SEMIBOLD)
-    draw.text((sheets.PAD, y), str(score), fill=RUNG_INK[score], font=face)
-    x = sheets.PAD + round(text_width(draw, str(score), face)) + 14
-    draw.line([x - 7, y + 6, x - 7, y + RUNG_NUMERAL + 2], fill=RUNG_INK[score], width=2)
-    draw.text((x, y + 10), RUNGS[score], fill=WELL_INK, font=font(17))
+    return Split(
+        made,
+        _store_provenance("by rating, 1 to 4", flat, rows, size, True),
+        RATING_COLUMNS,
+    )
 
 
 def _store_provenance(order: str, picks, rows, size, with_score: bool) -> list[str]:
@@ -1277,38 +1311,40 @@ FATES = {
 }
 
 
-def random_samples() -> Drawn:
+def random_samples() -> Split:
     """Twelve frames drawn uniformly over the home view and kept only by the gates.
 
     The draw's tally — how many frames it took, which gate refused how many, what the
     pass rate came to — used to stand across the top of the sheet. It is provenance and
     the caption's, not the picture's: what a reader is here to see is twelve frames that
     got through, and a line of counts above them is a record where the eye goes first.
+
+    **Twelve pictures rather than one** *(figure_split_all_ckpt140, 2026-09-22)*. The
+    width under each is the page's text now, and each frame is a way into the explorer —
+    which is the point of the figure, a reader being able to go and see that a frame
+    taken at random is usually nothing much.
     """
+    identifier = "locations-random-samples"
     draws, kept = renders.boundary_draw(seed=BOUNDARY_SEED, keep=BOUNDARY_KEEP)
     run = next(row for row in draws if row["kind"] == "run")
     summary = next(row for row in draws if row["kind"] == "summary")
 
     size = panels(BOUNDARY_COLUMNS)
-    rows_down = (len(kept) + BOUNDARY_COLUMNS - 1) // BOUNDARY_COLUMNS
-    cell = size[1] + band(size[1], 1)
-    height = sheets.PAD + rows_down * (cell + sheets.PAD) + sheets.PAD
-    sheet, draw = sheets.canvas(SHEET_WIDTH, height)
+    made = []
     for index, row in enumerate(kept):
-        column, down = index % BOUNDARY_COLUMNS, index // BOUNDARY_COLUMNS
-        x = sheets.PAD + column * (size[0] + sheets.PAD)
-        y = sheets.PAD + down * (cell + sheets.PAD)
         picture = cache().render(f"boundary-{BOUNDARY_SEED}-{index}", location(row), size)
-        sheet.paste(sheets.fitted(picture.path, size), (x, y))
-        under(
-            draw,
-            (x, y),
-            size,
-            [f"width {sheets.width_text(row['viewport']['width'])}"],
-            lead=WELL_INK_DIM,
+        made.append(
+            Made(
+                sheets.save(sheets.fitted(picture.path, size), panel_path(identifier, index + 1)),
+                alt=(
+                    f"A {_family_name(row['family'])} frame taken at random on the "
+                    "boundary, drawn in one neutral palette."
+                ),
+                label=f"width {sheets.width_text(row['viewport']['width'])}",
+                spec=neutral_spec(row),
+            )
         )
-    destination = sheets.save(sheet, sheet_path("locations-random-samples"))
-    return Drawn(destination, _boundary_provenance(run, summary, kept, size))
+    return Split(made, _boundary_provenance(run, summary, kept, size), BOUNDARY_COLUMNS)
 
 
 def _boundary_provenance(run, summary, kept, size) -> list[str]:

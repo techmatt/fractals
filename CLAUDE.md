@@ -185,6 +185,18 @@ keeps the mechanics. **Every apply round ends by distilling that round's general
   its own; `builder/README.md` has the mechanics. **The arrangement and the pixels do not
   change**: a panel is exactly the tile the sheet pasted, which is a thing to measure
   against the lossless composite in `artifacts/` rather than to assert.
+
+  **All twenty of the split verdicts are done** *(figure_split_all_ckpt140, 2026-09-22)*,
+  and the forty-two keeps stay composites. What a maker still draws into the pixels is
+  what the page cannot know where to put — a mark at a point of the plane, a box round the
+  region the next frame shows, a gradient strip that is the map a panel spends. Everything
+  else is elements: a label, a band's heading and its chips, the arrow between two bands,
+  and the coloured frame that ties a panel to a mark on another one. **One sheet could not
+  keep its pixels and was allowed to improve them**: `escape-families` composed three
+  640-wide tiles in a row and landed the sheet at 1344, and a downscale of a sheet puts no
+  tile on a pixel boundary — resampling one alone to the 437 it shipped at reads mean
+  absolute difference up to 7.5 of 255 — so its panels land at the 640 they were composed
+  at, which is byte for byte the tile that was pasted.
 - **A split figure's panels are linked from their record, never from the prose.** The
   `colormap` rule above is what pays for a sheet being one link at its representative
   panel, and it means every other panel's map is written in a way the link scanner does not

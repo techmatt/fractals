@@ -42,6 +42,11 @@ from .paths import FIGURE_IMAGES_DIR, FIGURE_REGISTRY, SITE_ROOT, carrier_path, 
 
 INDENT = " " * 6
 
+#: The hand-off a staged figure draws between one band and the next. It was a drawn
+#: triangle on a sheet and is a glyph now, hidden from a screen reader: the band titles
+#: already say the order, and *down arrow* read aloud between them says nothing.
+ARROW = "↓"
+
 #: How a `provenance` line names the frame its panel was drawn on.
 #:
 #: Provenance is prose, deliberately — it has to survive the script that wrote it — but
@@ -258,18 +263,25 @@ class Panel:
     and both are the page's now, one custom property wide. A colour is the figure's own
     datum and not a site metric, which is why it travels on the row and the rule that
     spends it is `site.css`'s.
+
+    `band` opens a **stage**: a title, what that stage does, the chips a sheet drew as
+    boxes, and how many panels across it runs. The staged figures on this site are
+    several grids down one sheet with a hand-off drawn between them, and a band is that
+    said in elements — which is also the only way a stage three across can sit above one
+    four across, since a grid has one column count and a sheet had none.
     """
 
     file: str
     width: int
     height: int
     alt: str
-    label: str | None = None
-    note: str | None = None
+    label: str | list[str] | None = None
+    note: str | list[str] | None = None
     spec: dict | None = None
     seat: str | None = None
     wide: bool = False
     ink: str | None = None
+    band: dict | None = None
 
     @property
     def path(self):
@@ -551,10 +563,25 @@ def _panels(figure: Figure, opened: dict[str, str]) -> str:
     the grid stacks on its own as the column narrows, which is the thing a composited
     sheet could never do: a sheet of six scaled to a phone is six pictures at a sixth of
     the size a phone can show one at.
+
+    **A figure in bands is sections of that**, which is the shape the staged sheets have:
+    a stage's title and what it does, then the pictures that stage makes, then the
+    hand-off to the next one. A band may be a different number across from its
+    neighbours — the pipeline's three stages are three, four and three — so the grid is
+    the section's and the figure's `columns` is what a band that names none inherits.
     """
     lazy = "" if leads_its_page(figure) else ' loading="lazy"'
-    lines = [f'{INDENT}  <div class="figure-panels" style="--figure-across: {figure.columns}">']
+    staged = any(panel.band for panel in figure.panels)
+    outer = "figure-panels figure-staged" if staged else "figure-panels"
+    lines = [f'{INDENT}  <div class="{outer}" style="--figure-across: {figure.columns}">']
+    depth = 4 if staged else 2
+    open_stage = False
     for index, panel in enumerate(figure.panels, start=1):
+        if panel.band:
+            if open_stage:
+                lines.append(f"{INDENT}    </div>")
+            lines.extend(_band(panel.band, figure.columns))
+            open_stage = True
         picture = (
             f'<img src="{attribute(figure.panel_src(panel))}" width="{panel.width}" '
             f'height="{panel.height}" alt="{attribute(panel.alt)}"{lazy}>'
@@ -565,14 +592,57 @@ def _panels(figure: Figure, opened: dict[str, str]) -> str:
         if panel.ink:
             classes.append("figure-panel-marked")
         ink = f' style="--panel-ink: {attribute(panel.ink)}"' if panel.ink else ""
-        lines.append(f'{INDENT}    <div class="{" ".join(classes)}"{ink}>')
-        lines.append(f"{INDENT}      {_linked(picture, opened.get(panel_id(figure.id, index)))}")
+        pad = INDENT + " " * depth
+        lines.append(f'{pad}<div class="{" ".join(classes)}"{ink}>')
+        lines.append(f"{pad}  {_linked(picture, opened.get(panel_id(figure.id, index)))}")
         if panel.label:
-            note = f'<span class="figure-note">{text(panel.note)}</span>' if panel.note else ""
-            lines.append(f'{INDENT}      <p class="figure-label">{text(panel.label)}{note}</p>')
+            lines.append(f'{pad}  <p class="figure-label">{_label(panel)}</p>')
+        lines.append(f"{pad}</div>")
+    if open_stage:
         lines.append(f"{INDENT}    </div>")
     lines.append(f"{INDENT}  </div>")
     return "\n".join(lines)
+
+
+def _label(panel: Panel) -> str:
+    """A panel's words: its own name, then whatever quieter pieces travel with it.
+
+    `note` is one string or several. Several is what a sheet drew as a stack of lines
+    under a tile — the step a descent took, the width it reached — and they stay one
+    line here with the separator CSS's, because a label that wraps is a label and a label
+    in four hard-broken lines is a table.
+    """
+    notes = (
+        panel.note if isinstance(panel.note, list | tuple) else ([panel.note] if panel.note else [])
+    )
+    quiet = "".join(f'<span class="figure-note">{text(one)}</span>' for one in notes)
+    return f"{text(panel.label)}{quiet}"
+
+
+def _band(band: dict, default_columns: int | None) -> list[str]:
+    """One band's hand-off, heading and the section its panels stand in."""
+    lines = []
+    if band.get("arrow"):
+        lines.append(f'{INDENT}    <p class="figure-arrow" aria-hidden="true">{ARROW}</p>')
+    across = band.get("columns") or default_columns
+    # A `div` and deliberately not a `section`: the contents rail reads a page's prose as
+    # everything between `<section class="prose">` and the first `</section>` after it, so
+    # a band that closed a section here would take seven of this page's eight rail entries
+    # with it. Found by `check`, which is what that check is for.
+    lines.append(f'{INDENT}    <div class="figure-stage" style="--figure-across: {across}">')
+    lines.append(f'{INDENT}      <header class="figure-band">')
+    lines.append(f'{INDENT}        <p class="figure-band-title">{text(band["title"])}</p>')
+    if band.get("note"):
+        lines.append(f'{INDENT}        <p class="figure-band-note">{text(band["note"])}</p>')
+    if band.get("blocks"):
+        chips = "".join(
+            f'<span class="figure-block{" figure-block-judge" if block.get("judge") else ""}">'
+            f"{text(block['text'])}</span>"
+            for block in band["blocks"]
+        )
+        lines.append(f'{INDENT}        <p class="figure-blocks">{chips}</p>')
+    lines.append(f"{INDENT}      </header>")
+    return lines
 
 
 def load_all() -> dict[str, Figure]:
@@ -671,8 +741,14 @@ PANEL_FIELDS = (
     "seat",
     "wide",
     "ink",
+    "band",
 )
 PANEL_REQUIRED = ("file", "width", "height", "alt")
+
+#: What a band may say. `title` is required; `note` is the sentence under it, `blocks`
+#: the chips beside it, `columns` how many panels that band runs across, and `arrow` the
+#: hand-off from the band before.
+BAND_FIELDS = ("title", "note", "blocks", "columns", "arrow")
 
 
 def _panel_rows(row: records.Record) -> tuple[Panel, ...]:
@@ -698,10 +774,18 @@ def _panel_rows(row: records.Record) -> tuple[Panel, ...]:
                 f"{row.where}: a panel names {', '.join(PANEL_REQUIRED)} — "
                 f"this one is missing {', '.join(missing)}"
             )
-        for name in ("file", "alt", "label", "note", "seat"):
+        for name in ("file", "alt", "label", "seat"):
             value = entry.get(name)
             if value is not None and (not isinstance(value, str) or not value.strip()):
                 raise records.RecordError(f"{row.where}: a panel's {name} is a non-empty string")
+        note = entry.get("note")
+        if note is not None:
+            written = note if isinstance(note, list) else [note]
+            if not written or not all(isinstance(one, str) and one.strip() for one in written):
+                raise records.RecordError(
+                    f"{row.where}: a panel's note is a non-empty string, or a list of them"
+                )
+        _band_fields(row, entry.get("band"))
         for name in ("width", "height"):
             value = entry[name]
             if not isinstance(value, int) or isinstance(value, bool) or value <= 0:
@@ -731,6 +815,29 @@ def _panel_rows(row: records.Record) -> tuple[Panel, ...]:
         held["wide"] = bool(held["wide"])
         found.append(Panel(**held))
     return tuple(found)
+
+
+def _band_fields(row: records.Record, band) -> None:
+    """A band says what it is, and nothing this does not know how to draw."""
+    if band is None:
+        return
+    if not isinstance(band, dict):
+        raise records.RecordError(f"{row.where}: a panel's band is an object")
+    unknown = set(band) - set(BAND_FIELDS)
+    if unknown:
+        raise records.RecordError(
+            f"{row.where}: a band is {', '.join(BAND_FIELDS)}, not {', '.join(sorted(unknown))}"
+        )
+    if not isinstance(band.get("title"), str) or not band["title"].strip():
+        raise records.RecordError(f"{row.where}: a band names itself in a non-empty title")
+    across = band.get("columns")
+    if across is not None and (
+        not isinstance(across, int) or isinstance(across, bool) or across < 1
+    ):
+        raise records.RecordError(f"{row.where}: a band's columns is a positive integer")
+    for block in band.get("blocks") or []:
+        if not isinstance(block, dict) or not isinstance(block.get("text"), str):
+            raise records.RecordError(f"{row.where}: a band's block is an object with text")
 
 
 def _caption_link(row: records.Record) -> tuple[str, str] | None:

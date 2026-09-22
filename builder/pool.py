@@ -59,9 +59,13 @@ from .locations import (
     HIGHLY_RATED,
     SHEET_WIDTH,
     Drawn,
+    Made,
+    Split,
     band,
+    neutral_spec,
     node_rows,
     panel,
+    panel_path,
     panels,
     release_record,
     sheet_path,
@@ -736,10 +740,29 @@ def mine_agreement(pairs) -> tuple[float, float]:
     return max(readings), sum(readings) / len(readings)
 
 
-def visit_steps() -> Drawn:
-    """`wallpapers-mine` — one location, everything one mine drew there, and what it kept."""
+#: What a panel the pool still holds is outlined in. The sheet drew it; the page draws it
+#: now, in the same ink, as `figures.Panel`'s `ink`.
+MINE_KEPT_INK = "#{:02X}{:02X}{:02X}".format(*WELL_INK)
+
+
+def visit_steps() -> Split:
+    """`wallpapers-mine` — one location, everything one mine drew there, and what it kept.
+
+    **Twenty pictures rather than one** *(figure_split_all_ckpt140, 2026-09-22)*. Five
+    bands, one a rendering mode, four palettes across each — the shape the sheet had, and
+    now a shape that reflows. Every attempt is a link at its own recipe, which is what the
+    figure is for: the claim is that a mine draws a place many ways and keeps a few, and a
+    reader can go and stand in any of the twenty.
+
+    Two pieces of lettering the sheet carried are gone rather than moved. Its title said
+    *one visit to one location, five modes, four palettes each*, which is the caption's
+    first sentence; and the line under it said the outline is what the pool holds and the
+    order is the run's own rank, which the caption's last sentence and each band's own
+    note say. A figure that says a thing twice is a figure a reader reads twice.
+    """
     from .picks import mode_words
 
+    identifier = "wallpapers-mine"
     run, location = MINE
     rows = visit_rows(run, location)
     scores = visit_scores(run, [row["key"] for row in rows])
@@ -783,66 +806,77 @@ def visit_steps() -> Drawn:
         [(redrawn[key], stored[key]) for key in sorted(stored) if stored[key].is_file()]
     )
 
-    head = 22
-    cell = tile[1] + 3 + TILE_STRIP_HEIGHT
-    row_height = head + cell + band(tile[1]) + sheets.PAD
-    height = sheets.PAD + head + len(order) * row_height + 26 + sheets.PAD
-    sheet, draw = sheets.canvas(SHEET_WIDTH, height)
-
-    y = sheets.PAD
-    heading(
-        draw,
-        sheets.PAD,
-        y,
-        "One visit to one location — five modes, four palettes each, drawn in full every time",
-    )
-    y += head
-
+    made = []
     for mode in order:
         drawn = by_mode[mode]
         survivors = sum(1 for row in drawn if row["key"] in kept)
-        heading(
-            draw,
-            sheets.PAD,
-            y,
-            f"{mode_words(mode)} — {len(drawn)} palettes, best first · "
-            f"{survivors} still in the pool",
-        )
-        top = y + head
         for index, row in enumerate(drawn):
-            x = sheets.PAD + index * (tile[0] + sheets.PAD)
-            sheets.paste(sheet, pictures[row["key"]], (x, top), tile)
+            # The tile the sheet pasted: the picture, then the map it spends, exactly as
+            # wide and exactly as far below it.
+            cell, _ = sheets.canvas(tile[0], tile[1] + 3 + TILE_STRIP_HEIGHT)
+            sheets.paste(cell, pictures[row["key"]], (0, 0), tile)
             sheets.paste(
-                sheet,
+                cell,
                 strip(row["colormap"], tile[0], TILE_STRIP_HEIGHT),
-                (x, top + tile[1] + 3),
+                (0, tile[1] + 3),
                 (tile[0], TILE_STRIP_HEIGHT),
             )
             score = scores[row["key"]]
-            sheets.tile_label(
-                draw,
-                (x, top + cell - tile[1]),
-                tile,
-                [f"P(≥4) {score['p_ge4']:.4f} · rank {score['rank_score']:.4f}"],
-                SHEET_WIDTH,
+            made.append(
+                Made(
+                    sheets.save(cell, panel_path(identifier, len(made) + 1)),
+                    alt=(
+                        f"One attempt of the mine at this location, drawn in "
+                        f"{mode_words(mode)}, with its palette's gradient under it."
+                    ),
+                    label=f"P(≥4) {score['p_ge4']:.4f}",
+                    note=f"rank {score['rank_score']:.4f}",
+                    spec=mine_link_spec(row),
+                    ink=MINE_KEPT_INK if row["key"] in kept else None,
+                    band=(
+                        {
+                            "title": mode_words(mode),
+                            "note": (
+                                f"{len(drawn)} palettes, best first · {survivors} still in the pool"
+                            ),
+                            "columns": MINE_COLUMNS,
+                        }
+                        if index == 0
+                        else None
+                    ),
+                )
             )
-            if row["key"] in kept:
-                _outline(draw, (x, top, x + tile[0] - 1, top + tile[1] - 1))
-        y += row_height
 
-    sheets.provenance_line(
-        draw,
-        sheets.PAD,
-        y,
-        "the outline is what the pool holds today, and the tiles are ordered by the rank this "
-        "run recorded — the ranking retention was applied against is the one that stands now",
-    )
+    provenance = mine_provenance(
+        run, location, rows, shown, order, by_mode, scores, kept, stored, tile
+    ) + [
+        mine_measurement(worst, mean),
+        "The outline on a panel is what the candidate ledger holds today, and the panels "
+        "of a band are in the order of the fitted rank this run recorded — which is the "
+        "ranking retention was applied against, and the one that stands now.",
+    ]
+    return Split(made, provenance, MINE_COLUMNS)
 
-    return Drawn(
-        sheets.save(sheet, sheet_path("wallpapers-mine")),
-        mine_provenance(run, location, rows, shown, order, by_mode, scores, kept, stored, tile)
-        + [mine_measurement(worst, mean)],
-    )
+
+def mine_link_spec(row: dict) -> dict:
+    """One attempt as a panel record: the run's own recipe, in the fields a link reads.
+
+    `mine_spec` beside this is the same recipe said to the **engine**, which wants a
+    coloring written out in full and a geometry. A link wants the mode by its name and
+    carries no geometry at all, so the two are one recipe read twice rather than two
+    recipes.
+    """
+    recipe = row["recipe"]
+    return {
+        "family": recipe["family"],
+        "viewport": recipe["viewport"],
+        "mode": recipe["mode"],
+        "mode_params": recipe.get("mode_params") or {},
+        "curve": recipe["curve"],
+        "colormap": recipe["colormap"],
+        "palette": recipe["palette"],
+        "maxiter": recipe["maxiter"],
+    }
 
 
 def _settings(rows) -> set[str]:
@@ -1107,7 +1141,7 @@ def _bands_marked(marked: str) -> int:
     return wanted.index(marked)
 
 
-def three_bands() -> Drawn:
+def three_bands() -> Split:
     """`wallpapers-three-bands` — the three parts, each made of the pictures it makes.
 
     It replaces a diagram of boxes and lettering. The claim the caption makes has not
@@ -1115,6 +1149,13 @@ def three_bands() -> Drawn:
     *the search keeps places worth looking at* in a way a box reading "admitted locations"
     cannot, and the middle band's four wallpapers at one of them say what mining is for
     without a word.
+
+    **Twenty-nine pictures rather than one** *(figure_split_all_ckpt140, 2026-09-22)*, in
+    the three bands the sheet drew, each still its own number across — eight, five and
+    four — which is what the figure's shape says: it narrows in count and widens in size
+    the way the pipeline does. The titles and the hand-off arrows are the page's now, and
+    the yellow frame that follows the marked location from the first band into the second
+    is the page's own outline in the same ink.
     """
     args = _bands_args()
     marked_at = _bands_marked(str(args["marked"]))
@@ -1138,71 +1179,100 @@ def three_bands() -> Drawn:
             f"and its row names {len(seated)}"
         )
     catalog = renders.mode_catalog()
+    mark = "#{:02X}{:02X}{:02X}".format(*BANDS_MARK)
 
     small = panels(BANDS_ADMITTED_COLUMNS)
     middle = panels(BANDS_MINED_COLUMNS)
     large = panels(BANDS_SEATED_COLUMNS)
-    labels = band(middle[1], BANDS_LABEL_LINES)
-    title_size = sheets.label_size(middle[1], SHEET_WIDTH) + BANDS_TITLE_STEP
-    title_high = title_size + BANDS_TITLE_AIR
 
-    # Every band is a title, then its pictures; between two bands is the hand-off, and
-    # the arrow is centred in it. Laid out down a running `y` rather than from three
-    # origins, because a title's height is the one number that moves when the wording does.
-    rows_down = len(admitted) // BANDS_ADMITTED_COLUMNS
-    admitted_at = sheets.PAD + title_high
-    admitted_high = rows_down * small[1] + (rows_down - 1) * sheets.PAD
-    mined_at = admitted_at + admitted_high + BANDS_HAND_OFF + title_high
-    seated_at = mined_at + middle[1] + labels + BANDS_HAND_OFF + title_high
-    seated_high = BANDS_SEATED_ROWS * large[1] + (BANDS_SEATED_ROWS - 1) * sheets.PAD
-    sheet, draw = sheets.canvas(SHEET_WIDTH, seated_at + seated_high + sheets.PAD)
-
-    heading(draw, sheets.PAD, sheets.PAD, BANDS_TITLES[0], size=title_size)
+    made: list[Made] = []
     for index, row in enumerate(admitted):
-        column, line = index % BANDS_ADMITTED_COLUMNS, index // BANDS_ADMITTED_COLUMNS
-        origin = (
-            sheets.PAD + column * (small[0] + sheets.PAD),
-            admitted_at + line * (small[1] + sheets.PAD),
+        made.append(
+            Made(
+                sheets.save(
+                    sheets.fitted(panel(f"bands-admitted-{index + 1}", row, small), small),
+                    panel_path(BANDS_ID, len(made) + 1),
+                ),
+                alt="One location the search admitted, drawn in one neutral palette.",
+                spec=neutral_spec(row),
+                ink=mark if index == marked_at else None,
+                band=(
+                    {
+                        "title": BANDS_TITLES[0],
+                        "columns": BANDS_ADMITTED_COLUMNS,
+                    }
+                    if index == 0
+                    else None
+                ),
+            )
         )
-        sheet.paste(sheets.fitted(panel(f"bands-admitted-{index + 1}", row, small), small), origin)
-        if index == marked_at:
-            sheets.framed(draw, origin, small, BANDS_MARK)
 
     pairs = [BANDS_MODE_WORDS, BANDS_MODE_WORDS, *_bands_color_words(mined[2:])]
-    heading(draw, sheets.PAD, mined_at - title_high, BANDS_TITLES[1], size=title_size)
     for index in range(BANDS_MINED_COLUMNS):
-        origin = (sheets.PAD + index * (middle[0] + sheets.PAD), mined_at)
         if index == 0:
-            picture = panel("bands-marked", admitted[marked_at], middle)
-            words = list(BANDS_MARKED_WORDS)
-        else:
-            pick = mined[index - 1]
-            picture = picks_module.panel(pick, f"bands-mined-{index}", catalog)
-            words = [pairs[index - 1], picks_module.mode_words(pick.mode)]
-        sheet.paste(sheets.fitted(picture, middle), origin)
-        if index == 0:
-            sheets.framed(draw, origin, middle, BANDS_MARK)
-        under(draw, origin, middle, words)
-
-    heading(draw, sheets.PAD, seated_at - title_high, BANDS_TITLES[2], size=title_size)
-    for index, pick in enumerate(seated):
-        column, line = index % BANDS_SEATED_COLUMNS, index // BANDS_SEATED_COLUMNS
-        origin = (
-            sheets.PAD + column * (large[0] + sheets.PAD),
-            seated_at + line * (large[1] + sheets.PAD),
+            row = admitted[marked_at]
+            picture = panel("bands-marked", row, middle)
+            made.append(
+                Made(
+                    sheets.save(
+                        sheets.fitted(picture, middle), panel_path(BANDS_ID, len(made) + 1)
+                    ),
+                    alt="The marked location again, larger and still in the neutral palette.",
+                    label=BANDS_MARKED_WORDS[0],
+                    note=BANDS_MARKED_WORDS[1],
+                    spec=neutral_spec(row),
+                    ink=mark,
+                    band={
+                        "title": BANDS_TITLES[1],
+                        "columns": BANDS_MINED_COLUMNS,
+                        "arrow": True,
+                    },
+                )
+            )
+            continue
+        pick = mined[index - 1]
+        made.append(
+            Made(
+                sheets.save(
+                    sheets.fitted(
+                        picks_module.panel(pick, f"bands-mined-{index}", catalog), middle
+                    ),
+                    panel_path(BANDS_ID, len(made) + 1),
+                ),
+                alt=f"A wallpaper mined at the marked location, in {pick.mode}.",
+                label=pairs[index - 1],
+                note=picks_module.mode_words(pick.mode),
+                spec=mine_link_spec({"recipe": pick.recipe}),
+            )
         )
-        picture = picks_module.panel(pick, f"bands-seated-{index + 1}", catalog)
-        sheet.paste(sheets.fitted(picture, large), origin)
 
-    centre = SHEET_WIDTH // 2
-    for top in (mined_at, seated_at):
-        gap = top - title_high - BANDS_HAND_OFF
-        sheets.elbow_arrow(draw, [(centre, gap + 11), (centre, gap + BANDS_HAND_OFF - 11)])
+    for index, pick in enumerate(seated):
+        made.append(
+            Made(
+                sheets.save(
+                    sheets.fitted(
+                        picks_module.panel(pick, f"bands-seated-{index + 1}", catalog), large
+                    ),
+                    panel_path(BANDS_ID, len(made) + 1),
+                ),
+                alt=f"A finished wallpaper from the galleries, in the {pick.mode} rendering.",
+                seat=pick.identifier,
+                band=(
+                    {
+                        "title": BANDS_TITLES[2],
+                        "columns": BANDS_SEATED_COLUMNS,
+                        "arrow": True,
+                    }
+                    if index == 0
+                    else None
+                ),
+            )
+        )
 
-    destination = sheets.save(sheet, sheet_path(BANDS_ID))
-    return Drawn(
-        destination,
+    return Split(
+        made,
         _bands_provenance(admitted, marked_at, mined, seated, (small, middle, large)),
+        BANDS_ADMITTED_COLUMNS,
     )
 
 
@@ -1345,7 +1415,7 @@ def recipe(identifier: str) -> dict:
     return {"maker": f"{__name__}:{MAKERS[identifier].__name__}", "args": args}
 
 
-def draw(identifier: str) -> Drawn:
+def draw(identifier: str) -> Drawn | Split:
     if identifier not in MAKERS:
         raise records.RecordError(f"{identifier} is not drawn by builder.pool")
     return MAKERS[identifier]()

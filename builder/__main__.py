@@ -413,7 +413,15 @@ def _parser() -> argparse.ArgumentParser:
     )
 
     framed = commands.add_parser("overview", help="draw a figure of the Overview page")
-    framed.add_argument("id", choices=sorted(overview.SHEETS), help="the figure's id")
+    framed.add_argument(
+        "id", nargs="*", choices=[[], *sorted(overview.SHEETS)], help="the figure's id"
+    )
+    framed.add_argument(
+        "--place", action="store_true", help="land each panel and fill its registry row"
+    )
+    framed.add_argument(
+        "--replace", action="store_true", help="land a redraw of a figure already on the page"
+    )
 
     mapped = commands.add_parser("atlas", help="report the atlas record, or draw its figure")
     mapped.add_argument(
@@ -880,6 +888,15 @@ def _do_pool(options: argparse.Namespace) -> int:
     """Draw section 8's figures, and optionally land each one where it belongs."""
     for identifier in options.id or sorted(pool_module.MAKERS):
         drawn = pool_module.draw(identifier)
+        if isinstance(drawn, locations_module.Split):
+            _land_split(
+                identifier,
+                drawn,
+                pool_module,
+                replace=options.replace,
+                landing=bool(options.place or options.replace),
+            )
+            continue
         print(f"wrote {drawn.path.relative_to(SITE_ROOT).as_posix()}")
         if not (options.place or options.replace):
             continue
@@ -965,6 +982,8 @@ def _land_split(identifier: str, drawn, maker, *, replace: bool, landing: bool) 
             row["wide"] = True
         if panel.ink:
             row["ink"] = panel.ink
+        if panel.band:
+            row["band"] = panel.band
         rows.append(row)
     placed = figures.place(
         identifier,
@@ -1147,13 +1166,16 @@ def _do_fundamentals(options: argparse.Namespace) -> int:
     return 0
 
 
-def _do_overview(identifier: str) -> int:
-    destination, width, height, provenance = overview.draw(identifier)
-    relative = destination.relative_to(SITE_ROOT).as_posix()
-    size = destination.stat().st_size
-    print(f'wrote {relative}  "width": {width}, "height": {height}  ({size / 1024:.0f} KB)')
-    for line in provenance:
-        print(f"  {line}")
+def _do_overview(options: argparse.Namespace) -> int:
+    """Draw the Overview page's figure, and optionally land it. Split, so panel by panel."""
+    for identifier in options.id or sorted(overview.SHEETS):
+        _land_split(
+            identifier,
+            overview.draw(identifier),
+            overview,
+            replace=options.replace,
+            landing=bool(options.place or options.replace),
+        )
     return 0
 
 
@@ -1371,7 +1393,7 @@ def main(argv: list[str] | None = None) -> int:
         if options.command == "fundamentals":
             return _do_fundamentals(options)
         if options.command == "overview":
-            return _do_overview(options.id)
+            return _do_overview(options)
         if options.command == "prose":
             return _do_prose(options)
         if options.command == "review":

@@ -312,6 +312,18 @@ block by its `data-figure` and swaps in what the row derives. It writes nothing 
 cannot land a figure or change a row — and it is what `check` used to tell a person to do
 by hand.
 
+**A figure in bands is sections of that grid** *(figure_split_all_ckpt140)*. The staged
+sheets — the pipeline overview, the three bands, the rating scale, a mine's five modes —
+are several grids down one sheet with a heading over each and a hand-off drawn between
+them. A panel carries a `band` and opens one: `title`, the `note` that says what the stage
+does, the `blocks` a sheet drew as boxes down its right-hand side (a `judge` block is
+marked in the site's own mark ink), `columns` for how many panels that band runs across,
+and `arrow` for the hand-off from the band before. Each band is its own grid, which is the
+only way a stage three across can sit above one four across — a grid has one column count
+and a sheet had none. The element is a `div` and not a `section`: `check`'s `contents`
+reads a page's prose as everything up to the first `</section>`, and a band that closed one
+took seven of a page's eight rail entries with it for exactly one commit.
+
 **The grid's arrangement is the composite's, and that is a stylesheet rule.** The markup
 passes one thing in, `--figure-across`, which is a count; `site.css` works the floor out
 from `--wide`, `--figure-gap` and `--figure-panel-fit`, so at the article's width the

@@ -27,6 +27,10 @@ RAIL_END = "<!-- contents-rail:end -->"
 
 DONE = '<span class="done" role="img" aria-label="written">✓</span>'
 
+#: A page's prose: everything between the opening tag and the **first** `</section>`
+#: after it. Nothing inside a prose block may open a `section` of its own, or this stops
+#: there and the page loses every heading past that point — which a split figure's bands
+#: did for one commit, and `check`'s `contents` caught.
 _PROSE = re.compile(r'(<section class="prose">)(.*?)(</section>)', re.S)
 _TITLE = re.compile(r"<h1[^>]*>(.*?)</h1>", re.S)
 _HEADING = re.compile(r"<h2(?P<attrs>[^>]*)>(?P<title>.*?)</h2>", re.S)
