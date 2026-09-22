@@ -77,16 +77,37 @@ const DEFAULT_PANEL = "gallery";
 const PANEL_AT = ":";
 
 /** Each Julia family's parameter plane: where its `c` is a point. Julia here goes one way
- *  along this and Back the other. Phoenix is on neither side, because no family here is
- *  the plane its `c` is drawn from. */
+ *  along this and Back the other. Phoenix joined it with its plane
+ *  *(phoenix_tab_ckpt140)*: a point of `phoenix_plane` is a `phoenix` set at that `c` and
+ *  the plane's own `p`. */
 const PARENT_PLANE = {
   julia: "mandelbrot",
   julia3: "multibrot3",
   julia4: "multibrot4",
   julia5: "multibrot5",
   julia6: "multibrot6",
+  phoenix: "phoenix_plane",
 };
 const JULIA_OF = Object.fromEntries(Object.entries(PARENT_PLANE).map(([julia, plane]) => [plane, julia]));
+
+/** What a plane carries across to its sets besides the `c` that is its point, by plane:
+ *  the Phoenix plane's `p` is the `p` of every set it holds. The Mandelbrot-type planes
+ *  carry nothing, so their entry is absent. */
+const PLANE_KEEPS = { phoenix_plane: ["px", "py"] };
+
+/** The constants a set has by its plane's definition rather than by anything the reader
+ *  chose, by set: the Phoenix plane opens every orbit at z₋₁ = 0, so a Phoenix set is a
+ *  point of it only at that `z₋₁`. */
+const JULIA_FIXED = { phoenix: { zx: "0", zy: "0" } };
+
+/** Whether this set is a point of its parent plane, so that Back has somewhere to go. Every
+ *  Julia set is; a Phoenix set is where its `z₋₁` is the origin, and one drawn from
+ *  another `z₋₁` is a set no plane on this page holds. */
+function onItsPlane(someView) {
+  if (!(someView.family in PARENT_PLANE)) return false;
+  const fixed = JULIA_FIXED[someView.family] ?? {};
+  return Object.entries(fixed).every(([key, text]) => someView.constants[key].value === Number(text));
+}
 
 /**
  * The words a button names a plane with: `Mandelbrot`, `Multibrot 6`, `Phoenix`, and
@@ -102,6 +123,10 @@ const JULIA_OF = Object.fromEntries(Object.entries(PARENT_PLANE).map(([julia, pl
  * the palettes make: shown by a display name, addressed by its own.
  */
 function planeName(family) {
+  // The Phoenix pair is named by what each is: the set by the recurrence's own name, and
+  // the plane its sets are points of as that name's plane.
+  if (family === "phoenix") return "Phoenix";
+  if (family === "phoenix_plane") return "Phoenix plane";
   if (family in PARENT_PLANE) return "Julia";
   const parts = /^([a-z]+)(\d*)$/.exec(family);
   if (parts === null) return family;
@@ -2405,6 +2430,9 @@ function changed() {
   // the whole of its plane, so they are resynced by every move and not only by the routes
   // that rebuild the strips around one.
   syncToggles();
+  // The Phoenix plane is drawn in the viewer's palette, so a recolour reaches it; a move of
+  // the viewer's frame does not, and the tab tells the two apart itself.
+  phoenixTab?.recolor();
 }
 
 /**
@@ -2535,6 +2563,10 @@ let atlasFrame = null;
  * from an older address still opens the atlas tab, and the plane comes from the view.
  */
 function planeOf(family) {
+  // The atlas's Phoenix partition is the Phoenix *set* the search walked, and it has no
+  // partition for the plane those sets are points of. So both Phoenix families open it:
+  // the set by name, and the plane as the nearest thing the atlas holds.
+  if (family === "phoenix" || family === "phoenix_plane") return "phoenix";
   return PARENT_PLANE[family] ?? family;
 }
 
@@ -2593,6 +2625,16 @@ function showPanel(asked) {
   }
   if (showing === "saved") startSaved();
   else savedPanel?.hide();
+
+  // The Phoenix tab draws only while it is seen: its pool is its own, and a plane redrawn
+  // behind another panel is work nobody asked for.
+  if (showing === "phoenix") {
+    startPhoenix().then((tab) => {
+      if (showing === "phoenix") tab?.show();
+    });
+  } else {
+    phoenixTab?.hide();
+  }
 
   // **The Deep tab takes the viewer, and gives it back.** It is the one panel besides the
   // walk whose showing changes what the canvas is a picture of: a deep frame is drawn by a
@@ -2906,6 +2948,82 @@ async function startWalk() {
     console.warn("the walk could not be started", error);
     document.getElementById("walk-note").textContent = "The walk could not be loaded.";
   }
+}
+
+// ------------------------------------------------------------------ the phoenix tab
+//
+// The Phoenix plane, drawn live in the panel, and a click into its sets on the viewer
+// *(phoenix_tab_ckpt140)*. `phoenix.js` owns the panel; what it borrows from here is the
+// one place a set's view is built, `juliaViewOf`, and the hold that Back reads, so that a
+// click from the tab and `j` on the viewer are the same gesture arriving by two doors.
+
+/** The mounted Phoenix tab, once it has been opened. */
+let phoenixTab = null;
+/** The mount, as a promise, so a second opening waits on the first. */
+let phoenixStarted = null;
+
+/** The Phoenix plane at a frame and a `p`, as a view: the viewer's mode and recipe, so
+ *  that the set a point of it opens carries them the way Julia here does. */
+function phoenixPlaneView({ x, y, w, p }) {
+  return carried({
+    ...link.fresh("phoenix_plane", view.mode, contract),
+    constants: { px: link.coordinateOf(p), py: link.coordinateOf(0) },
+    x: link.coordinateOf(x),
+    y: link.coordinateOf(y),
+    w: link.coordinateOf(w),
+  });
+}
+
+/** Open the Phoenix set at `c` of the tab's plane on the viewer, holding the plane for
+ *  Back: the same hold Julia here writes, naming the tab so Back opens it again. */
+function phoenixOpen(cx, cy, plane) {
+  if (locked()) return;
+  const parent = link.emit(plane, contract);
+  view = juliaViewOf(link.coordinateOf(cx), link.coordinateOf(cy), plane);
+  holdParent({ julia: "phoenix", constants: constantTexts(view), parent, panel: "phoenix" });
+  changed();
+  rebuild();
+  draw();
+}
+
+function startPhoenix() {
+  phoenixStarted ??= mountPhoenix();
+  return phoenixStarted;
+}
+
+async function mountPhoenix() {
+  const at = (id) => document.getElementById(id);
+  try {
+    const { mount } = await import("./phoenix.js");
+    phoenixTab = mount({
+      module: renderer.module,
+      canvas: at("phoenix-canvas"),
+      plane: at("phoenix-plane"),
+      slider: at("phoenix-p"),
+      box: at("phoenix-p-value"),
+      previewToggle: at("phoenix-preview-on"),
+      card: at("phoenix-preview"),
+      note: at("phoenix-note"),
+      wholeButton: at("phoenix-whole"),
+      home: () => {
+        const home = homeOf("phoenix_plane");
+        return { x: home.x.value, y: home.y.value, w: home.w.value };
+      },
+      defaultP: () => seedConstants("phoenix_plane").px.value,
+      look: () => ({ palette: view.palette, shade: view.shade }),
+      planeView: phoenixPlaneView,
+      setOf: (cx, cy, plane) => juliaViewOf(link.coordinateOf(cx), link.coordinateOf(cy), plane),
+      open: phoenixOpen,
+      say,
+    });
+  } catch (error) {
+    phoenixStarted = null;
+    console.error(error);
+    const note = at("phoenix-note");
+    note.textContent = "The Phoenix tab could not be loaded.";
+    note.hidden = false;
+  }
+  return phoenixTab;
 }
 
 // ------------------------------------------------------------------- the deep tab
@@ -3693,12 +3811,13 @@ function atHome() {
  * the tuned-parameter note already makes, a gallery tile being a seat and an atlas mark or
  * a pasted address being a link. The Julia button goes one way on a parameter plane and
  * the other inside a Julia set, and every Julia set has the way back, a copied link's
- * included, because its `c` always names a point of a plane. Phoenix has neither: no
- * family here is the plane its `c` is drawn from, so the button is absent rather than
- * present and saying so.
+ * included, because its `c` always names a point of a plane. A Phoenix set has it where
+ * its `z₋₁` is the origin, which is where the Phoenix plane holds it; one drawn from
+ * another `z₋₁` is a point of no plane here, so the button is absent rather than present
+ * and saying so.
  */
 function syncToggles() {
-  const onJulia = view.family in PARENT_PLANE;
+  const onJulia = onItsPlane(view);
 
   const opened = anchor === null ? "none" : anchor.opts.key ? "seat" : "link";
   seatButton.textContent = opened === "link" ? "Reset to link" : "Reset to seat";
@@ -3715,10 +3834,12 @@ function syncToggles() {
   if (onJulia) {
     const parent = planeName(PARENT_PLANE[view.family]);
     juliaButton.textContent = `Back to ${parent} ${KEYS.julia}`;
-    juliaButton.title = `Framed on the c this Julia set is drawn at, with c marked.`;
-  } else {
-    juliaButton.textContent = `Julia here ${KEYS.julia}`;
-    juliaButton.title = TOGGLE_TIPS.julia;
+    juliaButton.title = `Framed on the c this ${planeName(view.family)} set is drawn at, with c marked.`;
+  } else if (hasJulia) {
+    // The set a point of this plane opens, by its own name: Julia here, or Phoenix here.
+    const set = planeName(JULIA_OF[view.family]);
+    juliaButton.textContent = `${set} here ${KEYS.julia}`;
+    juliaButton.title = TOGGLE_TIPS.julia.replace("the Julia set", `the ${set} set`);
   }
   juliaButton.disabled = busy || !hasJulia;
 
@@ -3761,7 +3882,7 @@ function wholePlane() {
 function toggleJulia({ atCursor = false } = {}) {
   if (locked()) return;
   if (view.family in PARENT_PLANE) {
-    juliaBack();
+    if (onItsPlane(view)) juliaBack();
   } else if (view.family in JULIA_OF) {
     const at = atCursor ? cursorC() : null;
     if (at === null) juliaHere();
@@ -3798,11 +3919,23 @@ function cursorC() {
  * picture entering gives. `cx` and `cy` arrive as coordinates rather than as numbers, so
  * the centre's own decimal strings survive the way they always have.
  */
-function juliaViewOf(cx, cy) {
-  return carried({
-    ...link.fresh(JULIA_OF[view.family], view.mode, contract),
-    constants: { cx, cy },
-  });
+function juliaViewOf(cx, cy, plane = view) {
+  const julia = JULIA_OF[plane.family];
+  const constants = { ...link.fresh(julia, view.mode, contract).constants, cx, cy };
+  // What the plane carries into its sets — the Phoenix plane's `p` — and what the plane's
+  // definition fixes, the Phoenix set's `z₋₁ = 0`.
+  for (const key of PLANE_KEEPS[plane.family] ?? []) constants[key] = plane.constants[key];
+  for (const [key, text] of Object.entries(JULIA_FIXED[julia] ?? {})) {
+    constants[key] = link.coordinateOf(Number(text));
+  }
+  return carried({ ...link.fresh(julia, view.mode, contract), constants });
+}
+
+/** A set's constants as the strings a link carries, which is what a held parent is
+ *  matched on: the same `c` at another `p` is another Phoenix set, and not the one the
+ *  held plane view opened. */
+function constantTexts(someView) {
+  return Object.fromEntries(Object.entries(someView.constants).map(([key, value]) => [key, value.text]));
 }
 
 /** Enter the Julia set at a `c` of this plane, holding the view being left for Back. */
@@ -3810,7 +3943,7 @@ function juliaTo(cx, cy) {
   const julia = JULIA_OF[view.family];
   const parent = link.emit(view, contract);
   view = juliaViewOf(cx, cy);
-  holdParent({ julia, cx: view.constants.cx.text, cy: view.constants.cy.text, parent });
+  holdParent({ julia, constants: constantTexts(view), parent });
   changed();
   rebuild();
   draw();
@@ -3853,10 +3986,16 @@ const BACK_WIDTH = 0.05;
  * returns to the view it left; anywhere else — a copied link, a seat, a `c` typed in
  * Details — it lands on the parent plane at `c`, framed `BACK_WIDTH` across. Either way
  * the mode, palette and recipe in force now come along, as they did on the way in.
+ *
+ * The plane takes back what it gave: a Phoenix set lands on the Phoenix plane at its own
+ * `p`. Where the Phoenix tab opened the set, Back opens that tab again as well, so the
+ * reader is where they clicked with the plane as they left it *(phoenix_tab_ckpt140)*.
  */
 function juliaBack() {
   const plane = PARENT_PLANE[view.family];
   const held = heldParent();
+  const planeConstants = { ...link.fresh(plane, view.mode, contract).constants };
+  for (const key of PLANE_KEEPS[plane] ?? []) planeConstants[key] = view.constants[key];
   // Where this Julia set's `c` is a point of the plane being returned to, marked over the
   // picture that lands so the reader sees the place they came from. It is the centre of
   // the view Julia here left, and of the fallback frame as well, but a reader who has
@@ -3867,12 +4006,16 @@ function juliaBack() {
     y: view.constants.cy,
     w: link.coordinateOf(BACK_WIDTH),
   };
-  if (
+  const texts = constantTexts(view);
+  // A hold written before the Phoenix plane joined carries `cx` and `cy` loose rather than
+  // a `constants` object, and is the same match on the only two constants a Julia set had.
+  const heldTexts = held?.constants ?? (held === null ? null : { cx: held.cx, cy: held.cy });
+  const fromHere =
     held !== null &&
     held.julia === view.family &&
-    held.cx === view.constants.cx.text &&
-    held.cy === view.constants.cy.text
-  ) {
+    Object.keys(texts).length === Object.keys(heldTexts).length &&
+    Object.entries(texts).every(([key, text]) => heldTexts[key] === text);
+  if (fromHere) {
     try {
       const parent = link.parse(`?${held.parent}`, contract);
       if (parent.family === plane) geometry = parent;
@@ -3882,6 +4025,7 @@ function juliaBack() {
   }
   view = carried({
     ...link.fresh(plane, view.mode, contract),
+    constants: planeConstants,
     x: geometry.x,
     y: geometry.y,
     w: geometry.w,
@@ -3891,6 +4035,7 @@ function juliaBack() {
   rebuild();
   flashMark(at);
   draw();
+  if (fromHere && held.panel && held.panel !== showing) showPanel(held.panel);
 }
 
 /**
@@ -4163,6 +4308,7 @@ function giveBack() {
     () => walk?.stop(),
     () => savedPanel?.stop(),
     () => juliaCard?.stop(),
+    () => phoenixTab?.stop(),
     () => renderer?.stop(),
   ];
   for (const ask of asked) {

@@ -1686,3 +1686,34 @@ canvas.palette-final {
    found it and saying so is the honest thing — but there is nowhere to send a reader. */
 .minibrot:disabled { cursor: default; opacity: 0.55; }
 .minibrot:disabled:hover { border-color: transparent; color: var(--well-ink-dim); }
+
+/* ------------------------------------------------------------------- the Phoenix tab */
+
+/* The plane is the panel's picture, so it takes the panel's width and a 16:9 share of it,
+   and the controls under it are the viewer's own bar. The first note sits at the top of
+   the panel, where there is no rule above it to draw. */
+.phoenix-says { border-top: none; }
+.phoenix-plane {
+  flex: none;
+  position: relative;
+  margin: 0 var(--gutter);
+  border: 1px solid var(--well-rule);
+  background: var(--well);
+}
+.phoenix-canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 16 / 9;
+  cursor: crosshair;
+  touch-action: none;
+}
+.phoenix-canvas.is-dragging { cursor: grabbing; }
+.bar.phoenix-p { padding: 0.5rem var(--gutter); }
+.bar.phoenix-p input.slider { flex: 1 1 6rem; width: auto; }
+.bar.phoenix-p .phoenix-preview-on { margin-left: auto; }
+
+/* The card sits over a plane a panel wide rather than over the stage, so it is sized to the
+   plane: a picture half as wide as it, in the corner away from the pointer. */
+.phoenix-preview .julia-preview-picture { width: 45cqi; min-width: 8rem; }
+.phoenix-plane { container-type: inline-size; }

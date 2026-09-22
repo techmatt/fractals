@@ -81,6 +81,9 @@ const MOST_DECIMALS = 15;
 export function mount(host) {
   const { module, card, picture, readout, fallen, off, toggle } = host;
   const { viewFor, deriving, quiet, live, say } = host;
+  // A second card may be mounted beside the first — the Phoenix tab's, over its plane
+  // *(phoenix_tab_ckpt140)* — and each keeps its own flag under its own name.
+  const { storageKey = KEY, name = "Julia preview" } = host;
   const paint = picture.getContext("2d", { alpha: false });
   picture.width = WIDTH;
   picture.height = HEIGHT;
@@ -107,7 +110,7 @@ export function mount(host) {
 
   function stored() {
     try {
-      return window.sessionStorage.getItem(KEY) === "on";
+      return window.sessionStorage.getItem(storageKey) === "on";
     } catch {
       // A browser that stores nothing still has the box; it just forgets it on a reload.
       return false;
@@ -116,7 +119,7 @@ export function mount(host) {
 
   function store(value) {
     try {
-      window.sessionStorage.setItem(KEY, value ? "on" : "off");
+      window.sessionStorage.setItem(storageKey, value ? "on" : "off");
     } catch {
       // As above.
     }
@@ -129,7 +132,7 @@ export function mount(host) {
     store(value);
     if (!value) {
       hide();
-      if (said) say("Julia preview off.");
+      if (said) say(`${name} off.`);
     }
   }
 

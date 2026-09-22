@@ -133,6 +133,12 @@ export const READS = [1, 2, 3];
  * degree-3 one, and the same rule gives the dynamical plane `julia` through
  * `julia6`. That is the engine's own view of it too — a `Family::Multibrot` at
  * degree 2 *is* the Mandelbrot set — spelled the way a reader would say it.
+ *
+ * `phoenix_plane` is the Phoenix recurrence over its parameter plane: `c` is the point
+ * and the orbit opens at z₀ = z₋₁ = 0, so each point of it is a `phoenix` at that `c`
+ * and the plane's own `p` *(phoenix_tab_ckpt140)*. The engine calls it `phoenix_m`, the
+ * Mandelbrot-type Phoenix; a link says what it is rather than which kind it is, and
+ * `render.js` renames it the way it renames `multibrot3`.
  */
 export const FAMILIES = [
   "mandelbrot",
@@ -146,6 +152,7 @@ export const FAMILIES = [
   "julia5",
   "julia6",
   "phoenix",
+  "phoenix_plane",
 ];
 
 /**
@@ -190,6 +197,10 @@ export const CONSTANTS = {
   julia5: ["cx", "cy"],
   julia6: ["cx", "cy"],
   phoenix: ["cx", "cy", "px", "py", "zx", "zy"],
+  // `c` is the pixel and z₋₁ is the origin by the plane's definition, so `p` is the one
+  // constant left. It is a pair like the Julia set's own `p`, and the page's control
+  // writes `py=0`: the engine takes a complex `p` for free, and a link can say one.
+  phoenix_plane: ["px", "py"],
 };
 
 /** Every constant key the contract spells, in emit order. */

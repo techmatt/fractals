@@ -48,6 +48,8 @@
                 aria-controls="panel-walk" aria-selected="false">Walk</button>
         <button type="button" class="tab" role="tab" id="tab-deep" data-panel="deep"
                 aria-controls="panel-deep" aria-selected="false">Deep</button>
+        <button type="button" class="tab" role="tab" id="tab-phoenix" data-panel="phoenix"
+                aria-controls="panel-phoenix" aria-selected="false">Phoenix</button>
         <button type="button" class="tab" role="tab" id="tab-saved" data-panel="saved"
                 aria-controls="panel-saved" aria-selected="false">Saved</button>
       </div>
@@ -153,6 +155,36 @@
       the frame; Render and Auto-render are under the picture. The writeup explains how deep
       frames are rendered:
       <a href="../article/escape-time-fractals.html#locations">Escape-time fractals</a>.</p>
+    </div>
+
+    <!-- The Phoenix tab (phoenix_tab_ckpt140): the Phoenix plane drawn live, its `p` under
+         it, and a click into the set at that point. `phoenix.js` owns all of it. -->
+    <div class="tabpanel" id="panel-phoenix" role="tabpanel" aria-labelledby="tab-phoenix" hidden>
+      <p class="side-note phoenix-says">Each point c of this plane is a Phoenix set,
+      z ↦ z² + c + p·z₋₁ at this p. Click a point to draw its set. The classic Phoenix,
+      c = 0.5667 at p = −0.5, is marked; it sits just outside the plane's set.</p>
+      <div class="phoenix-plane" id="phoenix-plane">
+        <canvas class="phoenix-canvas" id="phoenix-canvas" aria-label="The Phoenix plane"></canvas>
+        <div class="julia-preview phoenix-preview is-right" id="phoenix-preview" hidden
+             aria-hidden="true">
+          <canvas class="julia-preview-picture" id="phoenix-preview-picture" width="320"
+                  height="180"></canvas>
+          <p class="julia-preview-said"><span id="phoenix-preview-c"></span><span
+                class="julia-preview-fell" id="phoenix-preview-fell" hidden>smooth</span></p>
+          <button type="button" class="julia-preview-off" id="phoenix-preview-off"
+                  tabindex="-1" aria-label="Turn the preview off">×</button>
+        </div>
+      </div>
+      <div class="bar phoenix-p" role="group" aria-label="The plane's p">
+        <label for="phoenix-p">p</label>
+        <input type="range" id="phoenix-p" class="slider" min="-1" max="1" step="0.001">
+        <input type="number" id="phoenix-p-value" class="param" min="-1" max="1" step="0.001"
+               aria-label="p">
+        <button type="button" id="phoenix-whole" title="Keeps p.">Whole plane</button>
+        <label class="phoenix-preview-on" for="phoenix-preview-on">Preview</label>
+        <input type="checkbox" id="phoenix-preview-on" class="flag">
+      </div>
+      <p class="side-note" id="phoenix-note" hidden></p>
     </div>
 
     <div class="tabpanel" id="panel-saved" role="tabpanel" aria-labelledby="tab-saved" hidden>

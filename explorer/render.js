@@ -274,6 +274,10 @@ export function familySpecOf(family, constants) {
         p: [constants.px.text, constants.py.text],
         z_prev: [constants.zx.text, constants.zy.text],
       };
+    case "phoenix_plane":
+      // The engine's `phoenix_m`: the same recurrence with `c` the pixel and the
+      // orbit opened at z₀ = z₋₁ = 0, so `p` is all it is told.
+      return { kind: "phoenix_m", p: [constants.px.text, constants.py.text] };
     default:
       throw new Error(`no engine family for ${family}`);
   }

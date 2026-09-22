@@ -67,6 +67,10 @@ export const CONSTANTS = {
     "py": "0",
     "zx": "0",
     "zy": "0"
+  },
+  "phoenix_plane": {
+    "px": "-0.5",
+    "py": "0"
   }
 };
 

@@ -166,7 +166,14 @@ CONSTANT_FAMILIES = {
     "julia5": "julia",
     "julia6": "julia",
     "phoenix": "phoenix",
+    "phoenix_plane": "phoenix",
 }
+
+#: The families that take only some of their anchor's constants. The Phoenix plane is the
+#: plane the classic Phoenix is a point of: its `c` is the pixel and its `z₋₁` the origin
+#: by definition, so the one constant it keeps from that row is `p` — which makes the
+#: plane open at the classic set's own `p` rather than at a number typed here.
+CONSTANT_SUBSET = {"phoenix_plane": ("px", "py")}
 
 #: The wallpaper project's colormap directory, relative to its checkout root. Recorded
 #: in the provenance stamp, so a reader can go and look at what was baked.
@@ -288,6 +295,14 @@ ENGINE_CHANGES = [
     "the engine's 217 tests are unmoved with it. This is a signature added rather than a "
     "visibility widened, which the carve-out in CLAUDE.md allows where the prompt was sent "
     "to make the seam; explorer_shade_pool_ckpt136 was.",
+    "family::Family::PhoenixM, family::PHOENIX_PLANE and spec::FamilySpec::PhoenixM are "
+    "new: the Phoenix recurrence over its parameter plane, spec kind `phoenix_m`, for the "
+    "Phoenix tab; phoenix_tab_ckpt140 was sent for the seam. It is not render-only, "
+    "because the explorer opens only a family with a home view, so the engine's own doors "
+    "accept it too, and nothing in the pipeline's Python names it. Family::step and "
+    "derivative_step are #[inline(always)], because the new arm tipped the inliner and "
+    "doubled the Mandelbrot anchor's time. 54 pipeline renders byte-identical before and "
+    "after, engine tests 217 unmoved plus four new.",
 ]
 
 _RUSTC_VERSION = re.compile(r"^rustc (\S+ \([0-9a-f]+ \d{4}-\d{2}-\d{2}\))")
@@ -1208,6 +1223,8 @@ def anchor_constants() -> dict[str, dict[str, str]]:
             # slice, which is `FamilySpec::Phoenix`'s own `origin` default over there.
             z_prev = found.get("z_prev", ["0", "0"])
             held |= {"zx": z_prev[0], "zy": z_prev[1]}
+        if family in CONSTANT_SUBSET:
+            held = {key: held[key] for key in CONSTANT_SUBSET[family]}
         constants[family] = held
     return constants
 

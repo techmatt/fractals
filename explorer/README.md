@@ -136,6 +136,7 @@ deep-render.js        its pool, its one reference orbit a frame, and its shade s
 deep-worker.js        one worker: one perturb instance, one held orbit, one band
 deep-fx.js            exact decimal coordinates, BigInt fixed point
 deep-link.js          the deep link contract, its own beside the shallow one
+phoenix.js            the Phoenix tab: the Phoenix plane drawn live, and a click into its sets
 paged-inflection/     PAGED: the Inflection tab, out of the working set — see below
 undo.js               the way back: the pictures shown, and the cursor into them
 saved.js              the Saved list: one localStorage value of links, and the save mark
@@ -147,7 +148,7 @@ resize.mjs            PIL's bicubic resize, ported byte for byte: what a judge r
 judges/               UNTRACKED: the two ONNX judges and the runtime, `builder walk`
 permalink.js          the link contract — parse, validate, canonicalize
 params.js             a mode parameter's control: its word, its slider's travel, the mapping
-permalink.test.mjs    53 tests, `node --test explorer/permalink.test.mjs`
+permalink.test.mjs    54 tests, `node --test explorer/permalink.test.mjs`
 bands.test.mjs        3 tests: the pool cuts the frame, never what is in it
 level.test.mjs        7 tests: the module's tone measurement, and a derived curve replays
 derive.test.mjs       6 tests: a derived weight replays, a derived opacity lands where it says
@@ -312,6 +313,16 @@ on every Julia set and not only one this tab opened: where this tab did, the par
 held in `sessionStorage` and Back returns to it, and anywhere else — a copied link, a seat —
 it lands on the parent plane at `c`, **0.05 across** (`BACK_WIDTH`). Either way `c` is
 **marked on landing** for a moment and then fades.
+
+**Phoenix has the same pair since `phoenix_tab_ckpt140`.** On `phoenix_plane` the button is
+`Phoenix here (j)` and opens the `phoenix` set at `c` and **the plane's own `p`**; inside that
+set it is `Back to Phoenix plane (j)`, which lands on the plane at the set's `p`. The plane
+opens every orbit at z₋₁ = 0, so a Phoenix set is a point of it only where its `zx`/`zy` are
+the origin: a set drawn from another `z₋₁`, which is most of the Phoenix work next door, is a
+point of no plane here and has no Back button. Where the Phoenix tab opened the set, the held
+parent also names the tab, and Back opens it again with the plane as it was left. A hold is
+now matched on every constant the set carries rather than on `cx` and `cy` alone, since the
+same `c` at another `p` is another set; a hold written before that still matches the old way.
 
 ⚠ **That width used to be the plane's home width**, about three across
 *(Matt, explorer_ui_text_ckpt139, 2026-09-21)*, so a Julia set copied out of the gallery
@@ -1807,6 +1818,45 @@ branch rather than a stage of the bake. The manifest has no `engine_version` and
 engine and has never needed a change in it, and an empty `engine_changes` would read as a
 list somebody forgot to fill in.
 
+## Phoenix *(phoenix_tab_ckpt140, 2026-09-22)*
+
+Matt's ruling: the Mandelbrot-type Phoenix, `p` fixed and `c` over the plane, is the
+parameter plane of the Julia-type Phoenix sets, and the classic Ushiki set is one point of
+it. The tab after Deep is the guided way in; `phoenix_plane` is also a family in Details'
+list, where `j` and Back work on it exactly as on Mandelbrot (see the view toggles above).
+
+- **The left pane is the plane, drawn live.** `phoenix.js` draws `phoenix_plane` in `smooth`
+  through the viewer's palette, on a small pool of its own (`Renderer.over`), so it never
+  cancels the picture on the right. The atlas's plate could not be reused: it is a picture
+  rendered once next door, and this one has to redraw whenever `p` moves. Wheel zooms about
+  the pointer and a drag pans, sliding the last picture under the hand until the new one
+  lands; **Whole plane** goes back to the measured home and keeps `p`. It redraws when the
+  viewer's palette or recipe moves and not when the viewer's frame does, and draws nothing
+  while the tab is hidden. The frame and `p` are this browser tab's session
+  (`explorer.phoenix-plane`), and the preview's flag has its own key beside the viewer's.
+- **The Atlas opens its Phoenix partition for both Phoenix families.** That partition is the
+  Phoenix *set* the search walked; the atlas has none for the plane.
+- **`p` is a slider and a number box under it**: real, −1 to 1, step 0.001, opening at the
+  classic −0.5 out of the anchor. Moving it redraws the plane. A link may carry a complex
+  `p`; the control writes `py=0`.
+- **A click opens that point's Phoenix set on the viewer**, at `c` under the click and the
+  current `p`, in whatever mode, palette and recipe the viewer has. The address bar follows,
+  the button row reads `Back to Phoenix plane (j)`, and Back lands the viewer on the plane at
+  the tab's frame and opens the tab again with the plane where it was.
+- **Preview**, off by default and remembered for the tab's session, shows the hovered point's
+  set in the hover card. It is `julia-preview.js` mounted a second time over this canvas,
+  so it is the picture a click would give at one sample a pixel. Where the card is up a
+  click opens the `c` it is showing rather than a fresh projection, the viewer card's rule.
+- **The classic is marked** while `p` is −0.5, at c = 0.5667 + 0i. That pair (0.5667, −0.5)
+  is `(c, p)` and not a point of the plane, which is why the mark is at (0.5667, 0) and
+  goes away when `p` moves.
+
+**The plane's home row is measured** like every other: at p = −0.5 its filled set spans
+re [−1.93, 0.5425], im ±0.66625, framed at (−0.69, 0) w 2.8. It is the one set in the
+engine's table that is wide rather than tall. And it stops at 0.5425, short of 0.5667: **the
+classic Ushiki instance is a point just outside the plane's filled set**, its z₀ = 0 orbit
+escaping, so the tab's sentence says where it sits and does not say it is inside.
+
 ## Inflection — **paged** *(inflection_tab_ckpt136, 2026-09-20; paged out by Matt's ruling, inflection_page_out_ckpt136, 2026-09-20)*
 
 A fifth tab sculpted a degree-2 Julia set by **inflection** — Julia morphing — under its
@@ -2166,7 +2216,7 @@ Committed beside the module, `engine.manifest.json` records what it was built fr
 | `rustc` | the compiler, with its commit and date |
 | `wallpapers_commit` | the sibling checkout's `HEAD` at bake time |
 | `engine_changes` | every change this consumer has needed in the engine, one line each |
-| `raw_bytes` / `gzip_bytes` | 763,343 raw, **228,670 gzipped** |
+| `raw_bytes` / `gzip_bytes` | 785,424 raw, **231,149 gzipped** |
 
 `engine_changes` is typed, in `builder/explorer.py`, and is the condition CLAUDE.md puts
 on a website prompt touching the sibling engine at all: a zero-behaviour change is allowed
@@ -2259,6 +2309,27 @@ because a committed artifact nobody can rebuild from the sibling checkout is a d
 wrote its own escape loop out per family and per channel set, and the `inline(always)` is
 what that table is buying, so the engine depends on the attribute for its own reasons and
 this crate now reaches the specialization through the engine rather than beside it.
+
+- **`Family::PhoenixM`, `PHOENIX_PLANE` and `FamilySpec::PhoenixM` are new**
+  *(phoenix_tab_ckpt140, 2026-09-22; wallpapers `756c241`)*: the Phoenix recurrence over
+  its parameter plane, spec kind `phoenix_m`, `p` defaulting to the classic −0.5. A new
+  signature, which the carve-out allows because the prompt was sent for the seam. Its home
+  row is measured by the ignored test that reproduces the five multibrot rows to the bit:
+  re [−1.93, 0.5425], im ±0.66625, framed at (−0.69, 0) w 2.8. It is not render-only,
+  because this page opens only a family with a home view, so the engine's own doors take it
+  too; nothing in the pipeline's Python names it. Zero behaviour, measured: **54 pipeline
+  renders byte-identical** before and after (the three anchors in five modes, every integer
+  family, the classic Phoenix in five modes, a fractional degree, 24 seats of a final139
+  recipe file), **30 fields of this module identical** before and after over five families
+  and six modes, and `phoenix_m` at p = 0 **is the Mandelbrot field** on six modes. Engine
+  tests 217 unmoved, four added.
+- **`Family::step` and `derivative_step` are `#[inline(always)]`**, and the reason is a
+  measurement rather than a precaution. The Phoenix plane's arm made `step`'s `match` one arm
+  bigger and the inliner stopped inlining it into the specialized loops, so each iteration
+  became a call and a runtime match: **the Mandelbrot anchor at 1600×900 × 4 went from 6.5 s
+  to 13.4 s with every pixel byte-identical**, which is the shape of regression a byte check
+  cannot see. Forced, it is 6.4 s, and the classic Phoenix went from 0.67 s to 0.49 s, so it
+  was paying the same call before. Inlining is inside the carve-out.
 
 Two things about the port are unchanged and still worth knowing:
 
@@ -3089,7 +3160,9 @@ several samples at once, which is a different loop in the engine. The build flag
 taken; `node explorer/bench/modes.mjs <other.wasm>` is how it was read and how it can be
 read again.
 
-**The module** is 763,343 bytes raw and 228,670 gzipped (2026-09-20), against draft 1's
+**The module** is 785,424 bytes raw and 231,149 gzipped (2026-09-22; it was 763,343 and
+228,670 on 2026-09-20, and the Phoenix plane's twelve specialized loops are the difference),
+against draft 1's
 190,240 and 70,639. **The pooled shade cost 45,366 of that raw and 14,842 gzipped** —
 `shade_stats`, `shade_band` and `curve_stops`, and a colouring path that takes a row range
 rather than a frame — which is what a reader pays for a finishing shade that is three or
@@ -3641,6 +3714,24 @@ could have saved has changed picture. But the answer a v1 link gets for `f=julia
 longer "not yet" — it is a picture — and this module re-emits it as `v=2`. Saying that in
 the version is cheaper than leaving a reader to find it out.
 
+### The Phoenix plane, and why it is not a 4 *(phoenix_tab_ckpt140, 2026-09-22)*
+
+`f=phoenix_plane` carries **`px` and `py` and nothing else**: `c` is the pixel and z₋₁ is the
+origin by the plane's definition, so `p` is the one constant left, a pair like every other
+and always emitted. Its default is the classic Phoenix's own `p`, −0.5, baked out of the same
+anchor row (`CONSTANT_SUBSET` in `builder/explorer.py`), so no number is typed for it here.
+
+That is a new family and a key with a default, which the v2 note above calls a widening: a
+link written before the plane existed parses exactly as it did and draws exactly what it drew,
+a bare `f=phoenix` included, so **`v` stays 3**. `pa`/`pb`/`pp` were asked for and are not
+keys: the Phoenix set already spelled `c` and `p` as `cx cy px py`, and a second spelling of
+one number is how two contracts drift.
+
+**The link says `phoenix_plane` and the engine says `phoenix_m`.** The naming rule refuses
+shorthand in anything a reader meets, and `_m` (the Mandelbrot-type Phoenix) is shorthand in
+a URL that is permanent. `render.js` renames it on the way to the module, the way it already
+turns `multibrot3` into `{kind: "multibrot", degree: 3}`.
+
 ### The keys, in emit order
 
 ```
@@ -3653,8 +3744,9 @@ v · f · cx · cy · px · py · zx · zy · m · the mode's parameters · x ·
 - **`f`** — the family. A name is the whole recurrence **including its exponent**, because
   one picture gets one name: `mandelbrot`, `multibrot3` through `multibrot6` on the
   parameter plane, `julia`, `julia3` through `julia6` and `phoenix` on the dynamical
-  one. That is the engine's own view of it — a `Family::Multibrot` at degree 2 *is* the
-  Mandelbrot set — spelled the way a reader would say it. `fractional_multibrot` is named
+  one, and `phoenix_plane`, the Phoenix recurrence's own parameter plane. That is the
+  engine's own view of it — a `Family::Multibrot` at degree 2 *is* the Mandelbrot set —
+  spelled the way a reader would say it. `fractional_multibrot` is named
   and refused: it is a real family the article draws, but a non-integer degree needs a
   branch cut and the engine gives it no home view, so there is nowhere to open it at.
 - **`cx`, `cy`, `px`, `py`, `zx`, `zy`** — the family's own constants, as decimal

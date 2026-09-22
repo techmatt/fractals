@@ -79,6 +79,7 @@ const HOMES = {
   julia5: ["0", "0", "3"],
   julia6: ["0", "0", "3"],
   phoenix: ["0.04", "0", "5"],
+  phoenix_plane: ["-0.69", "0", "2.8"],
 };
 
 const written = (text) => ({ text, value: Number(text) });
@@ -211,7 +212,8 @@ test("every family draws, and its constants are emitted whether or not anybody c
     assert.equal(emit(view, CONTEXT), expected, family);
     // Which is the point of always emitting them: the constants survive a rebake of
     // the anchors, so a saved link keeps drawing the set it was saved on.
-    if (carried) assert.match(emit(view, CONTEXT), /(^|&)cx=/, family);
+    const first = Object.keys(constantsOf(family))[0];
+    if (carried) assert.match(emit(view, CONTEXT), new RegExp(`(^|&)${first}=`), family);
   }
 });
 
@@ -273,6 +275,42 @@ test("z₋₁ is a phoenix constant, and a link written before it existed still 
 
   assert.throws(() => parse(`v=${VERSION}&zx=0.3`, CONTEXT), /mandelbrot has none/);
   assert.throws(() => parse(`v=${VERSION}&f=julia&zy=0.3`, CONTEXT), /julia has cx and cy/);
+});
+
+test("the Phoenix plane carries p and nothing else, and widened v3 rather than bumping it", () => {
+  // A new family and a key with a default are a widening under the contract's own rule,
+  // so no link written before the plane existed means anything else and `v` stays 3.
+  assert.equal(VERSION, 3);
+  assert.deepEqual(FAMILY_CONSTANTS.phoenix_plane, ["px", "py"]);
+
+  // Its `p` is the classic set's, read off the same anchor, and always emitted.
+  const bare = parse(`v=${VERSION}&f=phoenix_plane`, CONTEXT);
+  assert.equal(bare.constants.px.text, CONSTANTS.phoenix.px);
+  assert.equal(bare.constants.py.text, CONSTANTS.phoenix.py);
+  assert.equal(emit(bare, CONTEXT), `v=${VERSION}&f=phoenix_plane&px=-0.5&py=0&${HOUSE}`);
+
+  // Any other p round-trips as it was spelled.
+  const moved = `v=${VERSION}&f=phoenix_plane&px=-0.731&py=0.05&x=-0.4&y=0.2&w=0.3&${HOUSE}`;
+  assert.equal(canonicalize(moved, CONTEXT), moved);
+
+  // Half of p is half an identity, as it is on the set.
+  assert.throws(
+    () => parse(`v=${VERSION}&f=phoenix_plane&px=-0.4`, CONTEXT),
+    /px and py .*names px and not py/s,
+  );
+  // `c` is the pixel and `z₋₁` the origin by the plane's definition, so neither is a key.
+  assert.throws(() => parse(`v=${VERSION}&f=phoenix_plane&cx=0.3&cy=0`, CONTEXT), /phoenix_plane has px and py/);
+  assert.throws(() => parse(`v=${VERSION}&f=phoenix_plane&zx=0&zy=0`, CONTEXT), /phoenix_plane has px and py/);
+
+  // And a bare Phoenix set is still the classic one it always was.
+  const classic = parse(`v=${VERSION}&f=phoenix`, CONTEXT);
+  assert.deepEqual(
+    Object.fromEntries(Object.entries(classic.constants).map(([key, held]) => [key, held.text])),
+    CONSTANTS.phoenix,
+  );
+
+  // The engine is told the plane by its own name.
+  assert.deepEqual(familySpecOf("phoenix_plane", bare.constants), { kind: "phoenix_m", p: ["-0.5", "0"] });
 });
 
 test("half an identity is refused, and the sentence names the half that is missing", () => {
