@@ -431,7 +431,10 @@ class Figure:
 def page_name(path) -> str:
     """How a registry row spells this page — the inverse of `paths.carrier_path`."""
     relative = Path(path).resolve().relative_to(SITE_ROOT)
-    return relative.name if relative.parent.name == "article" else relative.as_posix()
+    if relative.parent.name == "article":
+        return relative.name
+    # A page at the root has no slash to say it is not a section, so it is given one.
+    return relative.as_posix() if len(relative.parts) > 1 else f"./{relative.name}"
 
 
 def markup(figure: Figure, opened: dict[str, str] | None = None) -> str:
@@ -456,15 +459,17 @@ def markup(figure: Figure, opened: dict[str, str] | None = None) -> str:
         classes.append("figure-pending")
     if figure.split:
         classes.append("figure-split")
-    return "\n".join(
-        [
-            f'{INDENT}<figure class="{" ".join(classes)}" data-figure="{attribute(figure.id)}">',
-            _panels(figure, links_by_id) if figure.split else _well(figure, links_by_id),
+    lines = [
+        f'{INDENT}<figure class="{" ".join(classes)}" data-figure="{attribute(figure.id)}">',
+        _panels(figure, links_by_id) if figure.split else _well(figure, links_by_id),
+    ]
+    if figure.caption or figure.caption_link is not None:
+        lines.append(
             f"{INDENT}  <figcaption>{_mark(figure)}{text(figure.caption)}"
-            f"{_caption_anchor(figure)}</figcaption>",
-            f"{INDENT}</figure>",
-        ]
-    )
+            f"{_caption_anchor(figure)}</figcaption>"
+        )
+    lines.append(f"{INDENT}</figure>")
+    return "\n".join(lines)
 
 
 def panel_id(identifier: str, index: int) -> str:
@@ -710,7 +715,7 @@ def _figure(row: records.Record, identifier: str) -> Figure:
         page=row.text("page"),
         status=status,
         alt=row.text("alt"),
-        caption=row.text("caption"),
+        caption=_caption(row, status, note),
         file=file,
         width=width,
         height=height,
@@ -727,6 +732,23 @@ def _figure(row: records.Record, identifier: str) -> Figure:
         panels=panels,
         columns=columns,
     )
+
+
+def _caption(row: records.Record, status: str, note: str | None) -> str:
+    """A row's caption, or nothing where the picture is the whole of what it says.
+
+    **A caption is optional** *(index_top_picture_ckpt141)*. Every figure in the article
+    has one, and the row that has none is the front page's picture, which is there to be
+    looked at before anything is explained. Absent rather than empty: the registry refuses
+    an empty string everywhere, and a figure with no caption carries no `<figcaption>` at
+    all. A draft cannot be one, because the caption is where its mark sits.
+    """
+    caption = row.optional_text("caption")
+    if caption is None and status == DRAFT:
+        raise records.RecordError(
+            f"{row.where}: a draft figure has a caption — it is where the Draft mark goes"
+        )
+    return caption or ""
 
 
 #: What one panel of a split figure may say, and which of it it must.

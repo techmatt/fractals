@@ -30,6 +30,7 @@ from . import (
     diagrams,
     families,
     figures,
+    front,
     fundamentals,
     images,
     links,
@@ -409,6 +410,17 @@ def _parser() -> argparse.ArgumentParser:
         "--place", action="store_true", help="land the figure and fill its registry row"
     )
     grounded.add_argument(
+        "--replace", action="store_true", help="land a redraw of a figure already on the page"
+    )
+
+    fronted = commands.add_parser("front", help="draw the front page's picture")
+    fronted.add_argument(
+        "id", nargs="*", choices=[[], *sorted(front.SHEETS)], help="the figure's id"
+    )
+    fronted.add_argument(
+        "--place", action="store_true", help="land the picture and fill its registry row"
+    )
+    fronted.add_argument(
         "--replace", action="store_true", help="land a redraw of a figure already on the page"
     )
 
@@ -1174,6 +1186,19 @@ def _do_overview(options: argparse.Namespace) -> int:
     return 0
 
 
+def _do_front(options: argparse.Namespace) -> int:
+    """Draw the front page's picture, and optionally land it. One panel with a spec."""
+    for identifier in options.id or sorted(front.SHEETS):
+        _land_split(
+            identifier,
+            front.draw(identifier),
+            front,
+            replace=options.replace,
+            landing=bool(options.place or options.replace),
+        )
+    return 0
+
+
 def _do_prose(options: argparse.Namespace) -> int:
     """Hold each placed page to its approved master, word for word."""
     masters = prose_module.load_all()
@@ -1386,6 +1411,8 @@ def main(argv: list[str] | None = None) -> int:
             return _do_families(options)
         if options.command == "fundamentals":
             return _do_fundamentals(options)
+        if options.command == "front":
+            return _do_front(options)
         if options.command == "overview":
             return _do_overview(options)
         if options.command == "prose":

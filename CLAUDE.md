@@ -209,7 +209,9 @@ keeps the mechanics. **Every apply round ends by distilling that round's general
   `modes-`, `locations-`, `judges-`, `palette-`, `wallpapers-` — so a slug says where it
   lives before anything looks it up. One prefix to a page and one page to a prefix, with
   the single carve-out that a page hanging off a section shares that section's prefix:
-  `palette-generator-batch` sits on `palettes/make-your-own.html`. The three unwritten
+  `palette-generator-batch` sits on `palettes/make-your-own.html`. The front page's one
+  picture is `index-hero`, on a row whose page is spelled `./index.html` — the slash a
+  bare name at the root lacks — and it is the one figure with no caption. The three unwritten
   sections have no figures and so no prefix yet. The prose never uses that slug: a
   reference from the text is **positional** (*the figure below*), because this site
   numbers no figures and anchors none.
