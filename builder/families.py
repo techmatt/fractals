@@ -29,10 +29,11 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from . import images, picks, renders, sheets
-from .paths import FIGURE_IMAGES_DIR
-from .sheets import MIDDOT, MINUS, PAD, canvas, caption_band, complex_text, tile_label
-from .theme import MARK_INK, WELL_INK_DIM
+from . import figures as figures_module
+from . import picks, renders, sheets
+from .locations import Made, Split, panel_path
+from .sheets import MIDDOT, MINUS, PAD, canvas, complex_text
+from .theme import MARK_INK
 
 
 class FamilyError(RuntimeError):
@@ -42,6 +43,15 @@ class FamilyError(RuntimeError):
 #: The neutral map every panel on this page is drawn in.
 COLORMAP = renders.COLORMAP
 SUPERSAMPLE = 3
+
+#: `.gitattributes` normalizes this repository to LF, so anything that writes a file
+#: spells the line ending rather than taking the platform's.
+LF = "\n"
+
+#: What a family row's name puts between the family and the formula it runs. Drawn into
+#: the sheet it was invisible to the em-dash sweep; as page text the two halves are a
+#: label and its note, and the separator is the stylesheet's.
+NAME_SPLIT = " — "
 
 
 def _panel(name: str, spec: dict, size: tuple[int, int], *, supersample: int = SUPERSAMPLE) -> Path:
@@ -64,16 +74,54 @@ def _paste(sheet, path: Path, origin: tuple[int, int]) -> None:
         sheet.paste(picture.convert("RGB"), origin)
 
 
-def _land(sheet, destination: Path, *, max_width: int | None = None) -> tuple[int, int]:
-    """The composed sheet onto disk, exactly as `python -m builder import` would land it.
+def ink_text(colour: tuple[int, int, int]) -> str:
+    """One of the mark inks as the page spells a colour. See `figures.Panel.ink`."""
+    return "#{:02X}{:02X}{:02X}".format(*colour)
 
-    `images.land` and not a second set of options typed here: a sheet composed from PNG
-    panels is downscaled once if it is composed wider than it ships, and encoded once, by
-    the code `import` uses. That is what lets a maker move into this package without
-    rewriting the bytes of a picture that did not change — and it is the test that the
-    move was faithful.
+
+#: The constants the engine draws a bare `phoenix` at, read off its own render echo
+#: rather than assumed: `c = 0.5667 + 0.0i`, `p = -0.5 + 0.0i`, `z_prev = 0`. A maker may
+#: leave them out and get this picture; a **link** may not, because the contract has no
+#: default to fall back on and an absent constant is zero to it — which is a different
+#: Phoenix set and a plausible-looking one. So a record spells them.
+PHOENIX_DEFAULT = {
+    "kind": "phoenix",
+    "c": ["0.5667", "0.0"],
+    "p": ["-0.5", "0.0"],
+    "z_prev": ["0.0", "0.0"],
+}
+
+#: The families whose identity is a set of complex constants, so that a record of one
+#: which names none is a record of the origin and not of the picture.
+CONSTANT_FAMILIES = ("julia", "phoenix")
+
+
+def home_spec(family: dict, colormap: str = COLORMAP, **extra) -> dict:
+    """A whole-set panel's record: the family, the frame the engine puts it in, the map.
+
+    The frame is asked for rather than left out. A link carries a place, and *home* is a
+    place the contract can leave unsaid only once it knows what home is — so the record a
+    panel lands with says where the picture actually was, and the contract drops the
+    coordinates again if they turn out to be the family's own.
+
+    A family whose identity is its constants has to spell them. The engine fills a bare
+    `phoenix` in with the classic constants and the link derivation cannot: an absent
+    constant is the origin to it, and the origin is a different Phoenix set that draws a
+    perfectly plausible picture. Caught here rather than looked at later, because the
+    symptom is a link that works.
     """
-    return images.land(sheet, destination, max_width=max_width)
+    if family.get("kind") in CONSTANT_FAMILIES and not family.get("c"):
+        raise FamilyError(
+            f"a {family['kind']} panel's record has to name its constants — the engine "
+            "fills them in and a link cannot. See PHOENIX_DEFAULT."
+        )
+    return {
+        "family": family,
+        "viewport": renders.home_view(family)["viewport"],
+        "mode": "smooth",
+        "colormap": colormap,
+        **extra,
+    }
 
 
 # --------------------------------------------------------------------------- zoom strip
@@ -85,51 +133,61 @@ ZOOM_FRAMES = 9
 ZOOM_PANEL = (432, 243)
 
 
-def zoom_strip(destination: Path) -> tuple[int, int]:
-    """Nine frames into one location, each four times narrower than the last."""
-    panels = []
+ZOOM_COLUMNS = 3
+
+
+def zoom_strip() -> Split:
+    """Nine frames into one location, each four times narrower than the last.
+
+    **Nine pictures rather than one** *(figure_split_all_ckpt140, 2026-09-22)*. Each
+    frame is a place, and the whole point of the strip is that a reader could keep going
+    — so every panel is a way in at exactly the frame it shows. The box stays drawn into
+    the picture, because it marks a region of the plane and nothing in HTML knows where
+    that is; the link opens the frame without it, which is the settled rule for a panel
+    with an annotation on top of it.
+    """
+    identifier = "escape-zoom-strip"
+    specs = []
     for index in range(ZOOM_FRAMES):
         width = ZOOM_HOME / ZOOM_STEP**index
-        panels.append(
+        specs.append(
             (
-                _panel(
-                    f"zoom4_{index}",
-                    {
-                        "family": {"kind": "mandelbrot"},
-                        "viewport": {
-                            "center_re": ZOOM_CENTRE[0],
-                            "center_im": ZOOM_CENTRE[1],
-                            "width": repr(width),
-                        },
-                        "mode": "smooth",
+                {
+                    "family": {"kind": "mandelbrot"},
+                    "viewport": {
+                        "center_re": ZOOM_CENTRE[0],
+                        "center_im": ZOOM_CENTRE[1],
+                        "width": repr(width),
                     },
-                    ZOOM_PANEL,
-                ),
+                    "mode": "smooth",
+                },
                 ZOOM_STEP**index,
                 width,
             )
         )
 
-    columns, rows = 3, 3
     panel_width, panel_height = ZOOM_PANEL
-    width = PAD + columns * (panel_width + PAD)
-    caption = caption_band(panel_height, width, 2)
-    sheet, draw = canvas(width, PAD + rows * (panel_height + caption + PAD))
-    for index, (path, magnification, step_width) in enumerate(panels):
-        row, column = divmod(index, columns)
-        x = PAD + column * (panel_width + PAD)
-        y = PAD + row * (panel_height + caption + PAD)
-        _paste(sheet, path, (x, y))
-        if index + 1 < len(panels):
-            sheets.marked_box(draw, x, y, panel_width, panel_height, ZOOM_STEP)
-        tile_label(
-            draw,
-            (x, y),
-            ZOOM_PANEL,
-            [f"×{magnification:,}", f"frame width {sheets.width_text(step_width)}"],
-            width,
+    sheet, draw = canvas(PAD + ZOOM_COLUMNS * (panel_width + PAD), PAD + panel_height + PAD)
+    made = []
+    for index, (spec, magnification, step_width) in enumerate(specs, start=1):
+        # The box is drawn onto a canvas of one tile, at the origin the strip used, so
+        # the pixels are the strip's exactly and nothing has to be cut back out of a grid.
+        _paste(sheet, _panel(f"zoom4_{index - 1}", spec, ZOOM_PANEL), (PAD, PAD))
+        if index < len(specs):
+            sheets.marked_box(draw, PAD, PAD, panel_width, panel_height, ZOOM_STEP)
+        made.append(
+            Made(
+                sheets.save(
+                    sheet.crop((PAD, PAD, PAD + panel_width, PAD + panel_height)),
+                    panel_path(identifier, index),
+                ),
+                alt=(f"The Mandelbrot set at one location, {magnification:,} times magnified."),
+                label=f"×{magnification:,}",
+                note=f"frame width {sheets.width_text(step_width)}",
+                spec=dict(spec, colormap=COLORMAP),
+            )
         )
-    return _land(sheet, destination)
+    return Split(made, [], ZOOM_COLUMNS)
 
 
 # ---------------------------------------------------------------------------- julia map
@@ -161,30 +219,29 @@ JULIA_MAP_LABEL = (
 )
 
 
-def julia_map(destination: Path) -> tuple[int, int]:
-    """The Mandelbrot plane as an atlas of Julia planes, four marked and drawn below."""
+JULIA_COLUMNS = 4
+
+
+def julia_map() -> Split:
+    """The Mandelbrot plane as an atlas of Julia planes, four marked and drawn below.
+
+    **Five pictures rather than one** *(figure_split_all_ckpt140, 2026-09-22)*. The plane
+    runs the whole width of the grid and the four Julia sets sit under it, which is the
+    arrangement the sheet had. What moves off the pixels is the lettering and the coloured
+    frame round each Julia tile: the frame is the page's own outline now, in the same ink
+    as the ring on the plane above, and the label under it is words. The rings stay drawn,
+    because a ring marks a point of the plane and the page has no idea where that is.
+    """
+    identifier = "escape-julia-map"
+    panel_width, panel_height = JULIA_PANEL
+    made = []
+
     plane = _panel(
         "jmap_plane", {"family": {"kind": "mandelbrot"}, "mode": "smooth"}, JULIA_MAP_PANEL
     )
-    juliae = [
-        _panel(
-            f"jmap_julia_{index}",
-            {"family": {"kind": "julia", "degree": 2, "c": list(pair)}, "mode": "smooth"},
-            JULIA_PANEL,
-        )
-        for index, (pair, _) in enumerate(JULIA_MARKS)
-    ]
-
-    panel_width, panel_height = JULIA_PANEL
-    width = PAD + 4 * (panel_width + PAD)
-    plane_x = (width - JULIA_MAP_PANEL[0]) // 2
-    plane_caption = caption_band(JULIA_MAP_PANEL[1], width, 1)
-    julia_caption = caption_band(panel_height, width, 1)
-    height = PAD + JULIA_MAP_PANEL[1] + plane_caption + PAD + panel_height + julia_caption + PAD
-    sheet, draw = canvas(width, height)
-    _paste(sheet, plane, (plane_x, PAD))
-
-    box = (plane_x, PAD, plane_x + JULIA_MAP_PANEL[0], PAD + JULIA_MAP_PANEL[1])
+    tile, draw = canvas(*JULIA_MAP_PANEL)
+    _paste(tile, plane, (0, 0))
+    box = (0, 0, JULIA_MAP_PANEL[0], JULIA_MAP_PANEL[1])
     centre_re, centre_im, plane_width = MANDELBROT_HOME
     sheets.plane_axes(
         draw,
@@ -199,16 +256,34 @@ def julia_map(destination: Path) -> tuple[int, int]:
             tuple(float(part) for part in pair), box, (centre_re, centre_im), plane_width
         )
         sheets.ring(draw, x, y, MARK_INK[index])
+    made.append(
+        Made(
+            sheets.save(tile, panel_path(identifier, 1)),
+            alt=(
+                "The whole Mandelbrot set, with the real and imaginary axes marked and "
+                "four values of c ringed in four colors."
+            ),
+            label=JULIA_MAP_LABEL,
+            spec=home_spec({"kind": "mandelbrot"}),
+            wide=True,
+        )
+    )
 
-    tile_label(draw, (plane_x, PAD), JULIA_MAP_PANEL, [JULIA_MAP_LABEL], width)
-
-    top = PAD + JULIA_MAP_PANEL[1] + plane_caption + PAD
-    for index, (path, (_, note)) in enumerate(zip(juliae, JULIA_MARKS, strict=True)):
-        x = PAD + index * (panel_width + PAD)
-        _paste(sheet, path, (x, top))
-        sheets.framed(draw, (x, top), JULIA_PANEL, MARK_INK[index])
-        tile_label(draw, (x, top), JULIA_PANEL, [note], width, lead=MARK_INK[index])
-    return _land(sheet, destination)
+    for index, (pair, note) in enumerate(JULIA_MARKS):
+        family = {"kind": "julia", "degree": 2, "c": list(pair)}
+        path = _panel(f"jmap_julia_{index}", {"family": family, "mode": "smooth"}, JULIA_PANEL)
+        cell, _ = canvas(panel_width, panel_height)
+        _paste(cell, path, (0, 0))
+        made.append(
+            Made(
+                sheets.save(cell, panel_path(identifier, index + 2)),
+                alt=f"The Julia set for c = {pair[0]} + {pair[1]}i, a value {note}.",
+                label=note,
+                spec=home_spec(family),
+                ink=ink_text(MARK_INK[index]),
+            )
+        )
+    return Split(made, [], JULIA_COLUMNS)
 
 
 # --------------------------------------------------------------------- multibrot degrees
@@ -222,18 +297,32 @@ DEGREES = (
 )
 
 
-def multibrot_degrees(destination: Path) -> tuple[int, int]:
-    """The first four integer degrees, each whole in its own frame."""
-    panel_width, panel_height = MULTIBROT_PANEL
-    width = PAD + 4 * (panel_width + PAD)
-    caption = caption_band(panel_height, width, 2)
-    sheet, draw = canvas(width, PAD + panel_height + caption + PAD)
-    for column, (degree, family, note) in enumerate(DEGREES):
-        whole = _panel(f"deg_{degree}_whole", {"family": family, "mode": "smooth"}, MULTIBROT_PANEL)
-        x = PAD + column * (panel_width + PAD)
-        _paste(sheet, whole, (x, PAD))
-        tile_label(draw, (x, PAD), MULTIBROT_PANEL, [f"d = {degree}", note], width)
-    return _land(sheet, destination)
+MULTIBROT_COLUMNS = 4
+
+
+def multibrot_degrees() -> Split:
+    """The first four integer degrees, each whole in its own frame.
+
+    **Four pictures rather than one** *(figure_split_all_ckpt140, 2026-09-22)*. A degree
+    row *is* the explorer's family picker, said in pictures, so each panel is a link at
+    that family's own home view: the reader can go and do the same thing with the control.
+    """
+    identifier = "escape-multibrot-degrees"
+    made = []
+    for index, (degree, family, note) in enumerate(DEGREES, start=1):
+        path = _panel(f"deg_{degree}_whole", {"family": family, "mode": "smooth"}, MULTIBROT_PANEL)
+        cell, _ = canvas(*MULTIBROT_PANEL)
+        _paste(cell, path, (0, 0))
+        made.append(
+            Made(
+                sheets.save(cell, panel_path(identifier, index)),
+                alt=f"The whole set of z to the power {degree} plus c, drawn in one palette.",
+                label=f"d = {degree}",
+                note=note,
+                spec=home_spec(family),
+            )
+        )
+    return Split(made, [], MULTIBROT_COLUMNS)
 
 
 # ------------------------------------------------------------------------------ phoenix
@@ -281,45 +370,68 @@ PHOENIX_PICKS = (
 PHOENIX_INDICES = (1, 4, 6, 7, 8)
 
 
-def phoenix(destination: Path) -> tuple[int, int]:
-    """The Ushiki constants and five other parameter choices, two across."""
+PHOENIX_COLUMNS = 2
+
+#: The classic constants, spelled the way the sheet lettered them under its first tile.
+PHOENIX_CLASSIC_NOTE = f"c = 0.5667 + 0.0000i{MIDDOT}p = {MINUS}0.5000 + 0.0000i"
+
+
+def phoenix() -> Split:
+    """The Ushiki constants and five other parameter choices, two across.
+
+    **Six pictures rather than one** *(figure_split_all_ckpt140, 2026-09-22)*. Every one
+    of these is a family in its own right — a Phoenix set is three complex constants, and
+    the figure's claim is that changing them changes everything — so each panel opens the
+    explorer with those constants already in its fields.
+    """
+    identifier = "escape-phoenix"
+    # The render is asked for the way it always was — a bare family, which the engine
+    # fills in — and the record says what that came to, which is what a link needs.
     entries = [
         (
-            _panel(
-                "ph_classic_big", {"family": {"kind": "phoenix"}, "mode": "smooth"}, PHOENIX_PANEL
-            ),
-            [
-                "the classic Ushiki constants",
-                f"c = 0.5667 + 0.0000i{MIDDOT}p = {MINUS}0.5000 + 0.0000i",
-            ],
+            "ph_classic_big",
+            {"kind": "phoenix"},
+            None,
+            "the classic Ushiki constants",
+            PHOENIX_CLASSIC_NOTE,
         )
     ]
+    frame = {"center_re": "0.0", "center_im": "0.0", "width": PHOENIX_FRAME}
     for index, family in zip(PHOENIX_INDICES, PHOENIX_PICKS, strict=True):
-        path = _panel(
-            f"ph_pick_{index}",
-            {
-                "family": family,
-                "viewport": {"center_re": "0.0", "center_im": "0.0", "width": PHOENIX_FRAME},
-                "mode": "smooth",
-            },
-            PHOENIX_PANEL,
+        note = (
+            f"z₋₁ = {complex_text(family['z_prev'])}"
+            if any(float(part) for part in family["z_prev"])
+            else None
         )
-        lines = [f"c = {complex_text(family['c'])}{MIDDOT}p = {complex_text(family['p'])}"]
-        if any(float(part) for part in family["z_prev"]):
-            lines.append(f"z₋₁ = {complex_text(family['z_prev'])}")
-        entries.append((path, lines))
+        label = f"c = {complex_text(family['c'])}{MIDDOT}p = {complex_text(family['p'])}"
+        entries.append((f"ph_pick_{index}", family, frame, label, note))
 
-    panel_width, panel_height = PHOENIX_PANEL
-    width = PAD + 2 * (panel_width + PAD)
-    caption = caption_band(panel_height, width, 2)
-    sheet, draw = canvas(width, PAD + 3 * (panel_height + caption + PAD))
-    for index, (path, lines) in enumerate(entries):
-        row, column = divmod(index, 2)
-        x = PAD + column * (panel_width + PAD)
-        y = PAD + row * (panel_height + caption + PAD)
-        _paste(sheet, path, (x, y))
-        tile_label(draw, (x, y), PHOENIX_PANEL, lines, width)
-    return _land(sheet, destination)
+    made = []
+    for index, (name, family, viewport, label, note) in enumerate(entries, start=1):
+        spec = {"family": family, "mode": "smooth"}
+        if viewport is not None:
+            spec["viewport"] = viewport
+        path = _panel(name, spec, PHOENIX_PANEL)
+        cell, _ = canvas(*PHOENIX_PANEL)
+        _paste(cell, path, (0, 0))
+        made.append(
+            Made(
+                sheets.save(cell, panel_path(identifier, index)),
+                alt=(
+                    "The Phoenix set at the classic Ushiki constants."
+                    if viewport is None
+                    else "A Phoenix set at one choice of its three constants."
+                ),
+                label=label,
+                note=note,
+                spec=(
+                    home_spec(PHOENIX_DEFAULT, COLORMAP)
+                    if viewport is None
+                    else dict(spec, colormap=COLORMAP)
+                ),
+            )
+        )
+    return Split(made, [], PHOENIX_COLUMNS)
 
 
 # -------------------------------------------------------------------- fractional degrees
@@ -361,25 +473,40 @@ def formula(degree: str) -> str:
     return f"z{raised} + c"
 
 
-def fractional_degrees(destination: Path) -> tuple[int, int]:
-    """Five fractional-degree planes and the seam close-up, three across."""
-    panels = [
-        (
-            _panel(
-                f"frac_{index}_d{degree}",
-                {
-                    "family": {"kind": "fractional_multibrot", "degree": degree},
-                    "viewport": {"center_re": re, "center_im": im, "width": width},
-                    "mode": "smooth",
-                },
-                FRACTIONAL_PANEL,
-            ),
-            formula(degree) + tail,
+FRACTIONAL_COLUMNS = 3
+
+
+def fractional_degrees() -> Split:
+    """Five fractional-degree planes and the seam close-up, three across.
+
+    **Six pictures rather than one, and none of them a link**
+    *(figure_split_all_ckpt140, 2026-09-22)*. The engine gives a non-integer degree no
+    home view, so the explorer has nowhere to open one at, and the contract refuses it by
+    name. The panels are still worth splitting: the formula under each is a line of type
+    rather than a raster of one, and the grid reflows. Nothing on the page says why these
+    six carry no mark — an absence is not something a caption explains.
+    """
+    identifier = "escape-fractional-degrees"
+    made = []
+    for index, (degree, re, im, width, tail) in enumerate(FRACTIONAL, start=1):
+        spec = {
+            "family": {"kind": "fractional_multibrot", "degree": degree},
+            "viewport": {"center_re": re, "center_im": im, "width": width},
+            "mode": "smooth",
+        }
+        path = _panel(f"frac_{index - 1}_d{degree}", spec, FRACTIONAL_PANEL)
+        cell, _ = canvas(*FRACTIONAL_PANEL)
+        _paste(cell, path, (0, 0))
+        made.append(
+            Made(
+                sheets.save(cell, panel_path(identifier, index)),
+                alt=f"The plane of z to the power {degree} plus c.",
+                label=formula(degree),
+                note=tail.lstrip(", ") or None,
+                spec=dict(spec, colormap=COLORMAP),
+            )
         )
-        for index, (degree, re, im, width, tail) in enumerate(FRACTIONAL)
-    ]
-    sheet, _ = sheets.panel_grid(panels, 3, panel=FRACTIONAL_PANEL)
-    return _land(sheet, destination)
+    return Split(made, [], FRACTIONAL_COLUMNS)
 
 
 # ------------------------------------------------------------------------ family planes
@@ -391,6 +518,17 @@ FAMILIES_COLUMNS = 3
 #: What this sheet ships at. It is composed at 1968 across, three 640-wide panels
 #: and their gutters, and lands at the width the other sheets of this page are
 #: composed at, so the figures of one page are one size on the reader's screen.
+#: kept as the record of what the composite did, and no longer used: split, each panel
+#: lands at the 640 it was composed at.
+#:
+#: **A sheet composed wider than it ships has no tile a split can cut out.** This one put
+#: three 640-wide tiles in a row, composed at 1968, and landed the whole thing at 1344, so
+#: its tiles sat at 437 and 438 across and at fractional origins — a downscale of a sheet
+#: puts no tile on a pixel boundary. Resampling one tile on its own to 437 and comparing
+#: it with the composite's own crop reads mean absolute difference 0.7 to 7.5 of 255, which
+#: is a visibly different picture and not an edge effect. So the panels land at the size
+#: the sheet composed them at, which is byte for byte the tile that was pasted, and the
+#: figure is one lossy compromise better than it was rather than different.
 FAMILIES_WIDTH = 1344
 
 #: The two marks, and the colours a row's two Julia panels are bordered and labelled in.
@@ -504,7 +642,8 @@ def _render_line(family: dict, viewport: dict, colormap: str) -> str:
 #: The sheet's own line, the part of its provenance that is about the composition rather
 #: than about any one panel.
 FAMILIES_PROVENANCE = (
-    "builder.families:family_planes — fifteen panels at 640x360, three to a row: a "
+    "builder.families:family_planes — fifteen panels at 640x360, three to a row and "
+    "landed one file a panel, this figure being split rather than composited: a "
     "family's whole-set view with two marked points on it, then a finished wallpaper of "
     "the Julia set each mark produces. The four whole-set views are the engine's own "
     "derived home views, rendered at supersample 3, mode smooth, in the map named on each "
@@ -523,124 +662,192 @@ FAMILIES_PROVENANCE = (
 )
 
 
-def family_planes(destination: Path) -> tuple[tuple[int, int], list[str]]:
+def family_planes() -> Split:
     """The parameter and dynamical planes the project draws, and the provenance it earns.
 
     The one maker here that returns its own provenance, because its eight Julia panels are
     gallery seats: what drew them is the ledger's recipe rather than anything written in
     this file, so those lines have to be read off the picks at draw time.
+
+    **Fifteen pictures rather than one** *(figure_split_all_ckpt140, 2026-09-22)*, and
+    the mixed sheet the panel-level record was built for: four parameter planes and a
+    Phoenix plane this repository rendered, eight gallery seats, and two label-store rows,
+    each linked from whatever kind of record it actually is. The marks on a plane stay
+    drawn — a mark is a point of the plane and the page cannot know where that is — and
+    the coloured frame round a Julia panel does not, because a frame is the page's own
+    outline and the ink is one custom property. Its label was `Mandelbrot — z² + c`, an
+    em-dash the site's sweep never saw because it was pixels; as text it is the name and
+    the formula, with the separator CSS's.
     """
+    identifier = FAMILIES_FIGURE
     cache = renders.Cache()
-    wanted = picks.picks_of(FAMILIES_FIGURE)
+    wanted = picks.picks_of(identifier)
     if len(wanted) != 2 * len(FAMILY_ROWS):
         raise FamilyError(
-            f"{FAMILIES_FIGURE} wants {2 * len(FAMILY_ROWS)} picks and its row names {len(wanted)}"
+            f"{identifier} wants {2 * len(FAMILY_ROWS)} picks and its row names {len(wanted)}"
         )
     resolved = picks.resolve(wanted)
     catalog = renders.mode_catalog()
 
-    panels: list[tuple[Path, list[str]]] = []
-    marks: dict[int, list[tuple]] = {}
+    made: list[Made] = []
     provenance = [FAMILIES_PROVENANCE, picks.autolevel_line(resolved)]
+    panel_width, panel_height = FAMILIES_PANEL
+
+    def plane(name: str, family: dict, home: dict, colormap: str, marks, label, note, alt):
+        """One whole-set panel, with its marks drawn on it, as its own picture."""
+        drawn = _teaser_panel(cache, name, family, home, colormap)
+        tile, draw = canvas(panel_width, panel_height)
+        _paste(tile, drawn.path, (0, 0))
+        for constant, ink in marks:
+            _mark(
+                draw,
+                sheets.plane_point(
+                    constant,
+                    (0, 0, panel_width, panel_height),
+                    (float(home["center_re"]), float(home["center_im"])),
+                    float(home["width"]),
+                ),
+                ink,
+            )
+        made.append(
+            Made(
+                sheets.save(tile, panel_path(identifier, len(made) + 1)),
+                alt=alt,
+                label=label,
+                note=note,
+                spec={
+                    "family": family,
+                    "viewport": home,
+                    "mode": "smooth",
+                    "colormap": colormap,
+                },
+            )
+        )
 
     for index, row in enumerate(FAMILY_ROWS):
         home = renders.home_view(row["family"])["viewport"]
-        at = len(panels)
-        drawn = _teaser_panel(cache, "teaser-plane", row["family"], home, row["colormap"])
-        panels.append((drawn.path, [row["name"]]))
+        pair = resolved[2 * index : 2 * index + 2]
+        marks = [
+            ([float(part) for part in pick.recipe["family"]["c"]], ink)
+            for (_mark_name, ink), pick in zip(MARKS, pair, strict=True)
+        ]
+        name, formula_text = row["name"].split(NAME_SPLIT)
+        plane(
+            "teaser-plane",
+            row["family"],
+            home,
+            row["colormap"],
+            marks,
+            name,
+            formula_text,
+            f"The whole {name} set, with two values of c marked on it.",
+        )
         provenance.append(_render_line(row["family"], home, row["colormap"]))
-        placed = []
-        for (mark, ink), pick in zip(MARKS, resolved[2 * index : 2 * index + 2], strict=True):
-            constant = [float(part) for part in pick.recipe["family"]["c"]]
-            placed.append((constant, ink))
+        for (mark, ink), pick in zip(MARKS, pair, strict=True):
             # 1280x720 is the panel's own aspect, so the grid's resize is a scale and never
             # a squash; nothing here has to crop.
             picture, levelling = picks.panel_or_seat(pick, f"teaser-seat-{pick.alias}", catalog)
-            panels.append((picture, [f"a Julia set at the {mark} mark"]))
+            tile, _ = canvas(panel_width, panel_height)
+            sheets.paste(tile, picture, (0, 0), FAMILIES_PANEL)
+            made.append(
+                Made(
+                    sheets.save(tile, panel_path(identifier, len(made) + 1)),
+                    alt=f"A finished wallpaper of the Julia set at the {mark} mark.",
+                    label=f"a Julia set at the {mark} mark",
+                    seat=pick.identifier,
+                    ink=ink_text(ink),
+                )
+            )
             provenance.append(picks.frame_line(pick, representative=False))
             if levelling.way == picks.UNRECOVERABLE:
                 provenance.append(picks.unrecoverable_line(pick, levelling))
-        marks[at] = [
-            (
-                constant,
-                ink,
-                (float(home["center_re"]), float(home["center_im"])),
-                float(home["width"]),
-            )
-            for constant, ink in placed
-        ]
 
     home = renders.home_view(PHOENIX_CLASSIC)["viewport"]
-    drawn = _teaser_panel(cache, "teaser-plane", PHOENIX_CLASSIC, home, PHOENIX_ROW["colormap"])
-    panels.append((drawn.path, [PHOENIX_ROW["name"]]))
+    name, constants = PHOENIX_ROW["name"].split(NAME_SPLIT)
+    plane(
+        "teaser-plane",
+        PHOENIX_CLASSIC,
+        home,
+        PHOENIX_ROW["colormap"],
+        [],
+        name,
+        constants,
+        "The whole Phoenix set at the classic Ushiki constants.",
+    )
     provenance.append(_render_line(PHOENIX_CLASSIC, home, PHOENIX_ROW["colormap"]))
     names = ("elsewhere in the (c, p) plane", "and elsewhere again")
     for mark, (address, colormap) in zip(names, PHOENIX_ROW["details"], strict=True):
         rated = _label_row(*address)
         drawn = _teaser_panel(cache, "teaser-phoenix", rated["family"], rated["viewport"], colormap)
-        panels.append((drawn.path, [mark]))
+        tile, _ = canvas(panel_width, panel_height)
+        _paste(tile, drawn.path, (0, 0))
+        made.append(
+            Made(
+                sheets.save(tile, panel_path(identifier, len(made) + 1)),
+                alt="A Phoenix set at another choice of its constants.",
+                label=mark,
+                spec={
+                    "family": rated["family"],
+                    "viewport": rated["viewport"],
+                    "mode": "smooth",
+                    "colormap": colormap,
+                },
+            )
+        )
         provenance.append(
             _render_line(rated["family"], rated["viewport"], colormap)
             + f" — the location recorded at data/labels/rows/{address[0]}.jsonl line "
             f"{address[1]}, scored 4 by hand"
         )
 
-    borders = {}
-    for index, (_path, lines) in enumerate(panels):
-        if lines[0].startswith("a Julia set at the "):
-            borders[index] = dict(MARKS)[lines[0].rsplit(" ", 2)[-2]]
-
-    def after(draw, index, x, y, panel_width, panel_height):
-        for constant, ink, centre, width in marks.get(index, []):
-            at = sheets.plane_point(
-                constant, (x, y, x + panel_width, y + panel_height), centre, width
-            )
-            _mark(draw, at, ink)
-        if index in borders:
-            draw.rectangle(
-                [x, y, x + panel_width - 1, y + panel_height - 1],
-                outline=borders[index],
-                width=4,
-            )
-
-    # A Julia panel's label is written in its own mark colour rather than the well's dim
-    # ink, so a reader who cannot tell cyan from rose still has the words.
-    composed, _ = sheets.panel_grid(
-        panels,
-        FAMILIES_COLUMNS,
-        lead=WELL_INK_DIM,
-        inks={index: (colour,) for index, colour in borders.items()},
-        after=after,
-    )
-    return _land(composed, destination, max_width=FAMILIES_WIDTH), provenance
+    return Split(made, provenance, FAMILIES_COLUMNS)
 
 
-#: Figure id to the file it writes and the maker that writes it. The file is the id plus
-#: the one suffix a lossy figure lands at, so the format is `images`'s to say and not a
-#: thing each of these tables spells.
+#: Figure id to the maker that draws it. Every sheet on this page is **split** since
+#: `figure_split_all_ckpt140` — six figures, forty panels — so what a maker returns is a
+#: list of pictures and the arrangement they stand in, and the file names are
+#: `images.FIGURE_SUFFIX`'s to spell at landing rather than each table's.
 SHEETS = {
-    identifier: (f"{identifier}{images.FIGURE_SUFFIX}", maker)
-    for identifier, maker in (
-        ("escape-families", family_planes),
-        ("escape-fractional-degrees", fractional_degrees),
-        ("escape-julia-map", julia_map),
-        ("escape-multibrot-degrees", multibrot_degrees),
-        ("escape-phoenix", phoenix),
-        ("escape-zoom-strip", zoom_strip),
-    )
+    "escape-families": family_planes,
+    "escape-fractional-degrees": fractional_degrees,
+    "escape-julia-map": julia_map,
+    "escape-multibrot-degrees": multibrot_degrees,
+    "escape-phoenix": phoenix,
+    "escape-zoom-strip": zoom_strip,
 }
 
 
-def draw(identifier: str) -> tuple[Path, int, int, list[str]]:
-    """Draw one sheet into the figures directory.
+def recipe(identifier: str) -> dict:
+    """The registry recipe for a sheet here: the maker, and whatever picks the row names.
 
-    Returns where it went, the size to record in `figures.jsonl`, and any provenance
-    the maker had to read at draw time rather than carry in its own source.
+    `escape-families` is the one sheet with arguments — the eight gallery seats its Julia
+    panels are — and they stay the row's, the way every other picks-driven figure's do.
+    A landing that rewrote them from here would be a second list of the same thing.
     """
-    file, maker = SHEETS[identifier]
-    destination = FIGURE_IMAGES_DIR / file
-    answer = maker(destination)
-    # `family_planes` returns the provenance its picks earn as well as the size, because
-    # what drew its Julia panels is a ledger recipe rather than anything written here.
-    (width, height), provenance = answer if isinstance(answer[0], tuple) else (answer, [])
-    return destination, width, height, provenance
+    if identifier not in SHEETS:
+        raise records_error(identifier)
+    args = {}
+    figure = figures_module.load_all().get(identifier)
+    if figure is not None and figure.recipe is not None and "picks" in figure.recipe.args:
+        args["picks"] = figure.recipe.args["picks"]
+    return {"maker": f"{__name__}:{SHEETS[identifier].__name__}", "args": args}
+
+
+def records_error(identifier: str) -> Exception:
+    return FamilyError(f"{identifier} is not drawn by builder.families")
+
+
+def draw(identifier: str) -> Split:
+    """Draw one sheet's panels into `artifacts/figures/`, and write its provenance beside.
+
+    Nothing lands in the site's asset directory here: a maker composes losslessly under
+    the ignored artifacts tree and `--place` is what encodes, exactly as the `locations`
+    and `picks` makers already worked. It is also what gives this page a lossless copy of
+    every panel to measure a redraw against.
+    """
+    drawn = SHEETS[identifier]()
+    if drawn.provenance:
+        notes = panel_path(identifier, 1).with_name(f"{identifier}.provenance.txt")
+        body = LF.join(drawn.provenance) + LF
+        notes.write_text(body, encoding="utf-8", newline=LF)
+    return drawn

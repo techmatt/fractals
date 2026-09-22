@@ -365,6 +365,13 @@ class Made:
     label: str | None = None
     note: str | None = None
     spec: dict | None = None
+    #: The tentative-gallery seat this panel is, `<stamp>|<recipe key>`, where it is one.
+    seat: str | None = None
+    #: Runs the whole width of the grid rather than one cell of it.
+    wide: bool = False
+    #: The colour of the mark on another panel that this one answers to, as `#rrggbb`.
+    #: The maker used to draw a frame of it into the tile; the page draws it now.
+    ink: str | None = None
 
 
 @dataclass(frozen=True)

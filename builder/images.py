@@ -158,9 +158,21 @@ def land(image, destination: Path, *, max_width: int = WEB_RES_MAX_WIDTH) -> tup
     composed at the width they ship at and this changes nothing for them. Nothing is ever
     enlarged.
     """
-    working = _resize(image, max_width)
+    working = web_res(image, max_width)
     _save(working, destination)
     return working.size
+
+
+def web_res(image, max_width: int = WEB_RES_MAX_WIDTH):
+    """A composed sheet at the size it ships at, still in hand.
+
+    `land` without the encode. A **split** figure composed wider than it ships needs
+    this: the sheet is brought down to its landing width once, exactly as `land` would,
+    and the panels are then cut out of it — so a panel is literally the pixels the
+    composite shipped rather than the same tile resampled on its own, which is a
+    different answer at every edge. See `sheets.cut`.
+    """
+    return _resize(image, max_width)
 
 
 def _resize(image, width: int):

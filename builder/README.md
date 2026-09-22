@@ -272,21 +272,37 @@ carries the first map onto all of them. A maker returns `locations.Split` instea
 `images.import_web_res` a composited figure goes through, so a picture that did not change
 comes out the same bytes. `overview-gallery-hook` is the first of these.
 
-**Where the link comes from, in two ways** *(figure_split_all_ckpt140, 2026-09-22)*. A
-panel whose picture is a gallery seat is linked from that seat's ledger recipe, which is
-the record. Most of this article's sheets are not seats: their panels are engine renders
-at frames frozen into the maker, in a neutral map, at a mode the figure is *about*, and
-nothing next door is a record of them. Such a maker hands each `Made` a `spec` — the
-engine render spec its picture came out of, with the mode **named** rather than a coloring
-written out in full, because a link names a mode — and it lands on the panel's row. The
-view comes off it through the same `links._view` a citation of the wallpapers side goes
-through, so the same refusals apply: a fractional degree, a mode the explorer does not
-offer, a curve that is not the catalog's, a map the picker does not carry, a fold on a
-cyclic map, a frame past `f64`, and a cap the depth policy would not choose are each a
-labelled panel with no link. A row is one or the other — every panel a seat, or every
-panel a spec. Where a maker letters or marks the tile, the spec is the **un-annotated**
-picture's, because a way into the explorer is a way into the place and not into the
-drawing over it.
+**A panel says which record it is, and there are two kinds**
+*(figure_split_all_ckpt140, 2026-09-22)*. `seat` is a tentative-gallery seat,
+`<stamp>|<recipe key>`, linked from that seat's ledger recipe whole and carrying the tone
+curve the run that drew it recorded. `spec` is the engine render spec the maker drew with,
+for the far commoner panel that is no seat at all: the frames on the Escape-time fractals
+page are frozen into the maker, drawn in a neutral map, at a mode the figure is *about*,
+and nothing next door is a record of them. A spec names its mode rather than writing a
+coloring out in full, because a link names a mode, and the view comes off it through the
+same `links._view` a citation of the wallpapers side goes through — so a fractional
+degree, a mode the explorer does not offer, a curve that is not the catalog's, a map the
+picker does not carry, a fold on a cyclic map, a frame past `f64` and a cap the depth
+policy would not choose are each a labelled panel with no link.
+
+**Per panel and not per row**, because the sheets that need this most are mixed:
+`escape-families` is four parameter planes and a Phoenix plane this repository rendered,
+eight gallery seats and two label-store rows, and a rule making the row pick one kind
+would leave one of them unlinkable. Fourteen of its fifteen link; the fifteenth is a seat
+whose run recorded that the tone operator acted and not the curve it acted with.
+
+Either way the record describes the **un-annotated** picture wherever the maker letters or
+marks the tile, because a way into the explorer is a way into the place and not into the
+drawing over it. What a maker still draws into the pixels is what the page cannot know
+where to put: a mark at a point of the plane, a box round the region the next frame shows.
+What moves out is everything else — `wide` for a panel that runs the whole row, and `ink`
+for the colour that ties a panel to a mark on another one, which was a four-pixel frame
+drawn into the tile and is an outline and a label colour now.
+
+**A family whose identity is its constants must spell them.** The engine fills a bare
+`phoenix` in with the classic Ushiki constants; the link derivation cannot, because an
+absent constant is the origin to it — a different Phoenix set that draws a perfectly
+plausible picture. `families.home_spec` refuses one rather than leaving it to be noticed.
 
 **A split figure lands in two passes, and `figure <id> --heal` is the second.**
 `figures.place` heals the page with the link as it stood *before* the redraw, so a figure

@@ -61,6 +61,10 @@
      down, and a floor derived to the pixel would be one border or one scrollbar from
      landing on the wrong side. */
   --figure-panel-fit: 0.9;
+  /* How thick the coloured frame round a marked panel is. The maker drew four pixels
+     into a sheet composed at half again the width it ships at, so this is what that came
+     to on the page. */
+  --figure-mark: 3px;
 }
 
 *, *::before, *::after { box-sizing: border-box; }
@@ -455,6 +459,22 @@ a:hover { color: var(--ink); }
   grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--figure-panel)), 1fr));
 }
 .figure-panel { min-width: 0; }
+
+/* A panel that is not one cell of the grid but the whole row: the parameter plane over
+   the four Julia sets it draws, a stage heading over the pictures it names. `1 / -1`
+   rather than a span, so it stays the full row through every reflow. */
+.figure-panel-wide { grid-column: 1 / -1; }
+
+/* A panel that answers to a mark drawn on another panel. The maker used to draw a frame
+   of the mark's colour into the tile and letter the label in it; both are here now, and
+   the colour arrives on the panel as `--panel-ink`, which is the figure's own datum. An
+   outline drawn inward rather than a border, so the picture keeps the size the grid gave
+   it and the mat's rhythm is unbroken. */
+.figure-panel-marked img {
+  outline: var(--figure-mark) solid var(--panel-ink);
+  outline-offset: calc(-1 * var(--figure-mark));
+}
+.figure-panel-marked .figure-label { color: var(--panel-ink); }
 
 /* The label under a panel is a label and not a caption, so it centres — the same rule
    the short name under a gradient strip keeps. `note` is the quieter half the drawn

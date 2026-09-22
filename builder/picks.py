@@ -900,6 +900,12 @@ def seat_panels(
     pasted, so the pixels are the composite's to the byte; what changes is that each one
     lands as a file rather than at an origin, and that the label the sheet drew into it
     is handed back as words for the page to set.
+
+    Each panel also carries the seat it is, which is what its link is derived from. The
+    row's `picks` is still the maker's own list and still the place a re-pick is made;
+    what the panel records is which of them this picture came out of, so that a figure
+    mixing seats with renders of its own — the family sheets do — is a row a link
+    derivation can read panel by panel.
     """
     size = panels(columns)
     catalog = renders.mode_catalog()
@@ -915,6 +921,7 @@ def seat_panels(
                 alt=panel_alt(pick),
                 label=label(pick) if label else None,
                 note=note(pick) if note else None,
+                seat=pick.identifier,
             )
         )
     return made, size

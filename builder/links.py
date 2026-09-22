@@ -282,8 +282,8 @@ def _refused(identifier: str, reason: str, why: str, source: str | None = None) 
 
 #: What a split figure's row has to say before a panel of it can be linked at all.
 PANEL_RECORD = (
-    "a split figure's panels are one gallery seat each, drawn at the seat's own recipe, "
-    "and this row does not say so in its recipe and sources"
+    "a panel says which record it is — a gallery seat the row claims was drawn at its "
+    "own recipe, or the engine spec its maker drew it with — and this one says neither"
 )
 
 
@@ -301,80 +301,87 @@ def _panel_links(
     says `palette` — means the remaining panels' maps are written in a way nothing here
     reads. Scanning a sheet panel by panel does not fail: it quietly carries the
     representative's map onto every panel after it, which is a link that opens the right
-    place in the wrong colour. Measured on this figure before it was split, and it is the
-    reason panels are linked from the ledger recipe their seat stands on, whole, the way a
-    staged gallery's tiles already are.
+    place in the wrong colour. Measured on the first figure to be split, and it is the
+    reason a panel is linked from a record rather than from a sentence about it.
 
-    So a panel is only linkable where the row *claims* the seat's own recipe drew it —
-    `sources` says `own_recipe`, which `check`'s `seats` holds to the gallery's pixels. A
-    figure whose maker changed the recipe to make its point is refused here rather than
-    approximated, which is the same rule the rest of this module keeps.
+    A panel says which record it is, and there are two kinds. **A seat** —
+    `<stamp>|<recipe key>` — is linked from that seat's ledger recipe whole, the way a
+    staged gallery's tiles are, and carries the tone curve the run that drew it recorded.
+    **A spec** is the engine render spec the maker drew with: most of this article's
+    sheets are not seats at all, their panels being renders at frames frozen into the
+    maker, in a neutral map, at a mode the figure is *about*, and nothing next door is a
+    record of them. A spec goes down the same `_view` a citation of the wallpapers side
+    does, so the same refusals apply — a fractional degree, a mode the explorer does not
+    offer, a curve the catalog does not give that mode, a map the picker does not carry,
+    a fold on a cyclic map, a frame past what `f64` resolves, and a cap the depth policy
+    would not choose are each a labelled panel with no link rather than a link to
+    something else.
 
-    **Or the maker says what it drew, panel by panel.** Most of this article's sheets are
-    not seats at all: their panels are engine renders at frames frozen into the maker, in
-    a neutral map, at a mode the figure is *about*. Nothing on the wallpapers side is a
-    record of those, and the prose that describes them is the prose this module refuses
-    to read panel by panel. So such a maker hands back each panel's own render spec, it
-    lands on the panel's registry row, and the view comes off it through exactly the
-    derivation a cited record goes through — same family names, same refusals, same cap
-    check. A row is one or the other: every panel a seat, or every panel a spec.
+    **Per panel and not per row**, because the sheets that need this most are mixed: a
+    family's parameter plane is a render this repository asked for and the two Julia sets
+    beside it are gallery seats, and a rule that made a row choose one kind would leave
+    one of those two unlinkable. A seat is only linked where the row *claims* the seat's
+    own recipe drew it — `sources` says `own_recipe`, which `check`'s `seats` holds to
+    the gallery's own pixels — and a maker that changed the recipe to make its point says
+    so by handing back what it actually drew instead.
     """
     from . import picks
 
     identifiers = [figures.panel_id(figure.id, index) for index in range(1, len(figure.panels) + 1)]
-    if all(panel.spec is not None for panel in figure.panels):
-        return _spec_links(figure, identifiers, views, palettes, curves)
-    keys = _seat_keys(figure)
-    if keys is None or len(keys) != len(figure.panels):
-        return [
-            _refused(identifier, "incomplete_provenance", PANEL_RECORD)
-            for identifier in identifiers
-        ]
+    claimed = _claimed_seats(figure)
+    wanted = sorted({panel.seat for panel in figure.panels if panel.seat and panel.seat in claimed})
     try:
-        resolved = picks.resolve(keys)
+        resolved = dict(zip(wanted, picks.resolve(wanted), strict=True)) if wanted else {}
     except picks.PickError as error:
         return [
             _refused(identifier, "incomplete_provenance", f"the seat does not resolve: {error}")
             for identifier in identifiers
         ]
-    found = []
-    for identifier, pick in zip(identifiers, resolved, strict=True):
-        level, why = _panel_level(pick, picks)
-        if why is not None:
-            found.append(_refused(identifier, "incomplete_provenance", why, pick.identifier))
-            continue
-        views[identifier] = ledger_view(pick.recipe, level=level)
-        found.append(Link(identifier, None, None, None, f"seat {pick.identifier}"))
-    return found
 
-
-def _spec_links(
-    figure: figures.Figure,
-    identifiers: list[str],
-    views: dict[str, dict],
-    palettes: dict[str, bool],
-    curves: dict[str, str],
-) -> list[Link]:
-    """One link per panel of a figure whose maker reported what it drew.
-
-    The spec is a record — fields, not prose — so it goes down the same path a citation
-    of the wallpaper project's own stores takes, and every refusal that path makes is
-    made here too. That is the point of routing it through `_view` rather than through
-    `ledger_view`: the fractional degrees the engine gives no home view, a mode the
-    explorer does not offer, a map the picker does not carry, a fold on a cyclic map, a
-    frame past what `f64` resolves, and a cap the depth policy would not choose are each
-    a labelled panel with no link rather than a link to something else.
-    """
     found = []
     for identifier, panel in zip(identifiers, figure.panels, strict=True):
+        if panel.seat:
+            if panel.seat not in resolved:
+                found.append(_refused(identifier, "incomplete_provenance", PANEL_RECORD))
+                continue
+            pick = resolved[panel.seat]
+            level, why = _panel_level(pick, picks)
+            if why is not None:
+                found.append(_refused(identifier, "incomplete_provenance", why, pick.identifier))
+                continue
+            views[identifier] = ledger_view(pick.recipe, level=level)
+            found.append(Link(identifier, None, None, None, f"seat {pick.identifier}"))
+            continue
+        if panel.spec is None:
+            found.append(_refused(identifier, "incomplete_provenance", PANEL_RECORD))
+            continue
         answer = _view(identifier, {}, spec_record(panel.spec), "spec", palettes, curves)
         if isinstance(answer, Link):
             found.append(answer)
             continue
         view, source = answer
+        if panel.spec.get("level") is not None:
+            view["level"] = panel.spec["level"]
         views[identifier] = view
         found.append(Link(identifier, None, None, None, source))
     return found
+
+
+def _claimed_seats(figure: figures.Figure) -> set[str]:
+    """The seats this row says were drawn at their own recipe, and so may be linked."""
+    return {
+        key
+        for source in figure.sources
+        if source.kind == figures.GALLERY_SEAT and source.drawn == figures.OWN_RECIPE
+        for key in source.keys
+    }
+
+
+def panel_level(pick) -> tuple[dict | None, str | None]:
+    """The tone curve one seat's link carries, for a maker writing a panel's record."""
+    from . import picks
+
+    return _panel_level(pick, picks)
 
 
 def spec_record(spec: dict) -> dict:
@@ -397,27 +404,6 @@ def spec_record(spec: dict) -> dict:
         "recipe": spec.get("palette") or {},
         "cap": spec.get("maxiter"),
     }
-
-
-def _seat_keys(figure: figures.Figure) -> list[str] | None:
-    """The seat this figure's maker draws each panel from, in panel order, or nothing.
-
-    The recipe's `picks` is the maker's own list — the thing it iterates — and `sources`
-    is the claim about how those seats are drawn. Both, because the first says which
-    record and the second says whether the record is the picture.
-    """
-    if figure.recipe is None:
-        return None
-    keys = figure.recipe.args.get("picks")
-    if not isinstance(keys, list) or not keys or not all(isinstance(key, str) for key in keys):
-        return None
-    seats = [source for source in figure.sources if source.kind == figures.GALLERY_SEAT]
-    if not seats or any(source.drawn != figures.OWN_RECIPE for source in seats):
-        return None
-    claimed = {key for source in seats for key in source.keys}
-    if not set(keys) <= claimed:
-        return None
-    return keys
 
 
 def _panel_level(pick, picks) -> tuple[dict | None, str | None]:
@@ -624,6 +610,9 @@ def _figure_view(
     looked at first, and the preamble supplies a frame only where no panel does, which
     is what a one-frame figure's record looks like.
     """
+    said = _not_rendered(figure)
+    if said is not None:
+        return _refused(f"figure:{figure.id}", "drawn", said)
     modes = set(curves)
     scanned = [scan(line, roster, modes) for line in figure.provenance]
     cited = [_cited(line) for line in figure.provenance]
@@ -634,11 +623,6 @@ def _figure_view(
     ]
     chosen = next((index for index in framed if index > 0), framed[0] if framed else None)
     if chosen is None:
-        if any(
-            "drawn, not rendered" in line.lower() or "no render:" in line.lower()
-            for line in figure.provenance
-        ):
-            return _refused(f"figure:{figure.id}", "drawn", REASONS["drawn"])
         return _refused(
             f"figure:{figure.id}",
             "incomplete_provenance",
@@ -649,6 +633,38 @@ def _figure_view(
         merged.update(fields)
     merged.update(scanned[chosen])
     return _view(f"figure:{figure.id}", merged, cited[chosen], f"panel {chosen}", palettes, curves)
+
+
+#: What a provenance line says when the picture did not come out of the engine's
+#: renderer. Read rather than planted: each of these is a phrase a row already writes.
+#:
+#: **Asked before a frame is looked for, not after** *(figure_split_all_ckpt140,
+#: 2026-09-22)*. It used to be the fallback when no panel named a frame, which caught the
+#: charts and the gradient strips — they name none — and missed the one figure that says
+#: it is not a render *and* spells a frame anyway. `render-percentile-stretch` paints two
+#: pictures from a dumped field, because the engine's coloring stage always stretches
+#: against the frame's own percentiles and the whole-range panel **cannot be asked for**;
+#: its record says exactly that, and it carried a link to a picture the explorer would
+#: draw the other way. A row that says the engine did not draw this is believed.
+NOT_RENDERED = {
+    "drawn, not rendered": REASONS["drawn"],
+    "no render:": REASONS["drawn"],
+    "cannot be asked for": (
+        "the record says this picture cannot be asked of the engine — it is painted from "
+        "a dumped field, past the stage whose behaviour the figure is about — so there is "
+        "no view to reopen it at"
+    ),
+}
+
+
+def _not_rendered(figure: figures.Figure) -> str | None:
+    """The line saying no engine render stands behind this picture, where there is one."""
+    for line in figure.provenance:
+        lowered = line.lower()
+        for phrase, why in NOT_RENDERED.items():
+            if phrase in lowered:
+                return why
+    return None
 
 
 def _cited(line: str) -> dict | None:

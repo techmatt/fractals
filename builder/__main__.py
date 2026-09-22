@@ -389,12 +389,28 @@ def _parser() -> argparse.ArgumentParser:
     sheeted = commands.add_parser(
         "families", help="draw a sheet of renders on the Escape-time fractals page"
     )
-    sheeted.add_argument("id", choices=sorted(families.SHEETS), help="the sheet's figure id")
+    sheeted.add_argument(
+        "id", nargs="*", choices=[[], *sorted(families.SHEETS)], help="the sheet's figure id"
+    )
+    sheeted.add_argument(
+        "--place", action="store_true", help="land each panel and fill its registry row"
+    )
+    sheeted.add_argument(
+        "--replace", action="store_true", help="land a redraw of a figure already on the page"
+    )
 
     grounded = commands.add_parser(
         "fundamentals", help="draw a figure of the Rendering fundamentals page"
     )
-    grounded.add_argument("id", choices=sorted(fundamentals.SHEETS), help="the figure's id")
+    grounded.add_argument(
+        "id", nargs="*", choices=[[], *sorted(fundamentals.SHEETS)], help="the figure's id"
+    )
+    grounded.add_argument(
+        "--place", action="store_true", help="land the figure and fill its registry row"
+    )
+    grounded.add_argument(
+        "--replace", action="store_true", help="land a redraw of a figure already on the page"
+    )
 
     framed = commands.add_parser("overview", help="draw a figure of the Overview page")
     framed.add_argument("id", choices=sorted(overview.SHEETS), help="the figure's id")
@@ -943,6 +959,12 @@ def _land_split(identifier: str, drawn, maker, *, replace: bool, landing: bool) 
             row["note"] = panel.note
         if panel.spec is not None:
             row["spec"] = panel.spec
+        if panel.seat:
+            row["seat"] = panel.seat
+        if panel.wide:
+            row["wide"] = True
+        if panel.ink:
+            row["ink"] = panel.ink
         rows.append(row)
     placed = figures.place(
         identifier,
@@ -1080,23 +1102,48 @@ def _do_diagram(identifier: str) -> int:
     return 0
 
 
-def _do_families(identifier: str) -> int:
-    destination, width, height, provenance = families.draw(identifier)
-    relative = destination.relative_to(SITE_ROOT).as_posix()
-    size = destination.stat().st_size
-    print(f'wrote {relative}  "width": {width}, "height": {height}  ({size / 1024:.0f} KB)')
-    for line in provenance:
-        print(f"  {line}")
+def _do_families(options: argparse.Namespace) -> int:
+    """Draw the Escape-time fractals page's sheets, and optionally land them.
+
+    Every one of them is split, so every one goes through `_land_split` — the same two
+    steps `locations` and `picks` take, and the same flags, because a rig driven
+    differently from the one beside it is a rig somebody drives wrong once.
+    """
+    for identifier in options.id or sorted(families.SHEETS):
+        _land_split(
+            identifier,
+            families.draw(identifier),
+            families,
+            replace=options.replace,
+            landing=bool(options.place or options.replace),
+        )
     return 0
 
 
-def _do_fundamentals(identifier: str) -> int:
-    destination, width, height, provenance = fundamentals.draw(identifier)
-    relative = destination.relative_to(SITE_ROOT).as_posix()
-    size = destination.stat().st_size
-    print(f'wrote {relative}  "width": {width}, "height": {height}  ({size / 1024:.0f} KB)')
-    for line in provenance:
-        print(f"  {line}")
+def _do_fundamentals(options: argparse.Namespace) -> int:
+    """Draw the Rendering fundamentals page's figures, and optionally land them."""
+    for identifier in options.id or sorted(fundamentals.SHEETS):
+        drawn = fundamentals.draw(identifier)
+        landing = bool(options.place or options.replace)
+        if isinstance(drawn, locations_module.Split):
+            _land_split(identifier, drawn, fundamentals, replace=options.replace, landing=landing)
+            continue
+        print(f"wrote {drawn.path.relative_to(SITE_ROOT).as_posix()}")
+        if not landing:
+            continue
+        destination = FIGURE_IMAGES_DIR / f"{identifier}{images.FIGURE_SUFFIX}"
+        width, height = images.import_web_res(drawn.path, destination)
+        placed = figures.place(
+            identifier,
+            destination.name,
+            width,
+            height,
+            provenance=list(drawn.provenance),
+            recipe=fundamentals.recipe(identifier),
+            replace=options.replace,
+        )
+        size = destination.stat().st_size / 1024
+        print(f"  {destination.name}  {width}x{height}  ({size:.0f} KB) — {placed.page}")
     return 0
 
 
@@ -1320,9 +1367,9 @@ def main(argv: list[str] | None = None) -> int:
         if options.command == "diagram":
             return _do_diagram(options.id)
         if options.command == "families":
-            return _do_families(options.id)
+            return _do_families(options)
         if options.command == "fundamentals":
-            return _do_fundamentals(options.id)
+            return _do_fundamentals(options)
         if options.command == "overview":
             return _do_overview(options.id)
         if options.command == "prose":

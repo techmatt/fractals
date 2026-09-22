@@ -239,12 +239,25 @@ class Panel:
     which is what a drawn label spelled with a dash between them. The separator is CSS's
     here, so the words a reader meets carry no punctuation this site would not write.
 
-    `spec` is the engine render spec this panel's picture came out of — the record a
-    maker that draws its own panels reports so that the link opens *this* picture and not
-    a neighbour's. It is the **un-annotated** picture's spec wherever the maker letters or
-    marks the tile, because the way into the explorer is a way into the place rather than
-    into the drawing on top of it. A panel whose picture is a gallery seat carries none:
-    the seat's own ledger recipe is the record there, and `builder/links.py` resolves it.
+    A panel says which **record** it is, and that is what its link is derived from. `seat`
+    is a tentative-gallery seat, `<stamp>|<recipe key>`, and the ledger recipe behind it is
+    the whole answer. `spec` is the engine render spec the maker drew with, for the far
+    commoner panel that is no seat at all — a frame frozen into a maker, in a neutral map,
+    at the mode the figure is about. One or the other, per panel and not per figure,
+    because the sheets that need this most are mixed: a family's parameter plane is a
+    render this repository asked for and the two Julia sets beside it are seats. Either
+    way it describes the **un-annotated** picture wherever the maker letters or marks the
+    tile, because the way into the explorer is a way into the place rather than into the
+    drawing on top of it.
+
+    Two panels of this article are not one cell of the grid. `wide` is a panel that runs
+    the whole row — a plane with the four Julia sets it draws underneath it, a stage
+    heading over the pictures it names — and it reflows with the grid rather than pinning
+    a column count. `ink` is the colour that ties a panel to a mark drawn on another
+    panel: the maker used to draw a frame of it into the tile and letter the label in it,
+    and both are the page's now, one custom property wide. A colour is the figure's own
+    datum and not a site metric, which is why it travels on the row and the rule that
+    spends it is `site.css`'s.
     """
 
     file: str
@@ -254,6 +267,9 @@ class Panel:
     label: str | None = None
     note: str | None = None
     spec: dict | None = None
+    seat: str | None = None
+    wide: bool = False
+    ink: str | None = None
 
     @property
     def path(self):
@@ -543,7 +559,13 @@ def _panels(figure: Figure, opened: dict[str, str]) -> str:
             f'<img src="{attribute(figure.panel_src(panel))}" width="{panel.width}" '
             f'height="{panel.height}" alt="{attribute(panel.alt)}"{lazy}>'
         )
-        lines.append(f'{INDENT}    <div class="figure-panel">')
+        classes = ["figure-panel"]
+        if panel.wide:
+            classes.append("figure-panel-wide")
+        if panel.ink:
+            classes.append("figure-panel-marked")
+        ink = f' style="--panel-ink: {attribute(panel.ink)}"' if panel.ink else ""
+        lines.append(f'{INDENT}    <div class="{" ".join(classes)}"{ink}>')
         lines.append(f"{INDENT}      {_linked(picture, opened.get(panel_id(figure.id, index)))}")
         if panel.label:
             note = f'<span class="figure-note">{text(panel.note)}</span>' if panel.note else ""
@@ -638,7 +660,18 @@ def _figure(row: records.Record, identifier: str) -> Figure:
 
 
 #: What one panel of a split figure may say, and which of it it must.
-PANEL_FIELDS = ("file", "width", "height", "alt", "label", "note", "spec")
+PANEL_FIELDS = (
+    "file",
+    "width",
+    "height",
+    "alt",
+    "label",
+    "note",
+    "spec",
+    "seat",
+    "wide",
+    "ink",
+)
 PANEL_REQUIRED = ("file", "width", "height", "alt")
 
 
@@ -665,7 +698,7 @@ def _panel_rows(row: records.Record) -> tuple[Panel, ...]:
                 f"{row.where}: a panel names {', '.join(PANEL_REQUIRED)} — "
                 f"this one is missing {', '.join(missing)}"
             )
-        for name in ("file", "alt", "label", "note"):
+        for name in ("file", "alt", "label", "note", "seat"):
             value = entry.get(name)
             if value is not None and (not isinstance(value, str) or not value.strip()):
                 raise records.RecordError(f"{row.where}: a panel's {name} is a non-empty string")
@@ -678,6 +711,14 @@ def _panel_rows(row: records.Record) -> tuple[Panel, ...]:
                 f"{row.where}: a panel's note is the quiet half of its label, and this one "
                 "has no label to be the quiet half of"
             )
+        if entry.get("wide") not in (None, True, False):
+            raise records.RecordError(f"{row.where}: a panel's wide is true or absent")
+        ink = entry.get("ink")
+        if ink is not None and not re.fullmatch(r"#[0-9a-fA-F]{6}", str(ink)):
+            raise records.RecordError(
+                f"{row.where}: a panel's ink is the colour a mark on another panel was "
+                "drawn in, as #rrggbb"
+            )
         spec = entry.get("spec")
         if spec is not None and (
             not isinstance(spec, dict) or not isinstance(spec.get("viewport"), dict)
@@ -686,7 +727,9 @@ def _panel_rows(row: records.Record) -> tuple[Panel, ...]:
                 f"{row.where}: a panel's spec is the engine render spec its picture came "
                 "out of, and an engine render spec names a viewport"
             )
-        found.append(Panel(**{name: entry.get(name) for name in PANEL_FIELDS}))
+        held = {name: entry.get(name) for name in PANEL_FIELDS}
+        held["wide"] = bool(held["wide"])
+        found.append(Panel(**held))
     return tuple(found)
 
 

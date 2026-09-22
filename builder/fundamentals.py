@@ -29,7 +29,7 @@ from pathlib import Path
 
 from . import images, renders, sheets
 from . import palettes as palette_module
-from .paths import FIGURE_IMAGES_DIR
+from .locations import Drawn, Made, Split, panel_path, sheet_path
 from .theme import WELL, WELL_INK_DIM
 
 PANEL = (640, 360)
@@ -432,15 +432,36 @@ CYCLIC_PROVENANCE = (
 )
 
 
-def cyclic_repeats(destination: Path) -> tuple[tuple[int, int], list[str]]:
-    """One location and one cyclic palette, swept once, twice, three and four times."""
-    panels, provenance = [], [CYCLIC_PROVENANCE]
-    for k in (1, 2, 3, 4):
-        drawn = _panel(
-            f"rf2-cyc-{k}",
-            dict(JULIA, mode="smooth", colormap=CYCLIC_MAP, palette={"cycles": float(k)}),
+CYCLIC_SWEEPS = (1, 2, 3, 4)
+CYCLIC_COLUMNS = 2
+
+
+def cyclic_repeats() -> Split:
+    """One location and one cyclic palette, swept once, twice, three and four times.
+
+    **Four pictures rather than one** *(figure_split_all_ckpt140, 2026-09-22)*. `cycles`
+    is a key the permalink contract carries, so each sweep is a link of its own and a
+    reader can reach for the control the figure is about. The gradient strip under each
+    picture stays in the pixels: it is the map as that panel spends it, drawn by the
+    palette CLI next door, and it is part of the panel rather than a label on it.
+    """
+    identifier = "render-cyclic-repeats"
+    provenance = [CYCLIC_PROVENANCE]
+    made = []
+    for index, k in enumerate(CYCLIC_SWEEPS, start=1):
+        spec = dict(JULIA, mode="smooth", colormap=CYCLIC_MAP, palette={"cycles": float(k)})
+        drawn = _panel(f"rf2-cyc-{k}", spec)
+        made.append(
+            Made(
+                sheets.save(_open_rgb(_over_strip(drawn, k)), panel_path(identifier, index)),
+                alt=(
+                    f"One Julia set drawn through a cyclic palette swept {k} "
+                    f"time{'s' if k > 1 else ''}, with that sweep's gradient under it."
+                ),
+                label=f"k = {k}",
+                spec=spec,
+            )
         )
-        panels.append((_over_strip(drawn, k), f"k = {k}"))
         view = JULIA["viewport"]
         c = JULIA["family"]["c"]
         provenance.append(
@@ -449,8 +470,14 @@ def cyclic_repeats(destination: Path) -> tuple[tuple[int, int], list[str]]:
             f"640x360, supersample 3, mode smooth, colormap {CYCLIC_MAP}, palette cycles "
             f"{float(k)}, maxiter auto (the depth policy)"
         )
-    composed, _ = sheets.panel_grid(panels, 2, lead=WELL_INK_DIM)
-    return images.land(composed, destination), provenance
+    return Split(made, provenance, CYCLIC_COLUMNS)
+
+
+def _open_rgb(path: Path):
+    from PIL import Image
+
+    with Image.open(path) as picture:
+        return picture.convert("RGB")
 
 
 def percentile_stretch(destination: Path) -> tuple[tuple[int, int], list[str]]:
@@ -490,24 +517,41 @@ def percentile_stretch(destination: Path) -> tuple[tuple[int, int], list[str]]:
     return _two_up(panels, destination), provenance
 
 
-#: Figure id to the file it writes and the maker that writes it. The file is the id plus
-#: `images.FIGURE_SUFFIX`, so the format is named once for the whole repository.
+#: Figure id to the maker that draws it.
 SHEETS = {
-    identifier: (f"{identifier}{images.FIGURE_SUFFIX}", maker)
-    for identifier, maker in (
-        ("render-cyclic-repeats", cyclic_repeats),
-        ("render-discrete-and-smooth", discrete_and_smooth),
-        ("render-field-anatomy", field_anatomy),
-        ("render-maxiter", maxiter),
-        ("render-percentile-stretch", percentile_stretch),
-        ("render-supersample", supersample),
-    )
+    "render-cyclic-repeats": cyclic_repeats,
+    "render-discrete-and-smooth": discrete_and_smooth,
+    "render-field-anatomy": field_anatomy,
+    "render-maxiter": maxiter,
+    "render-percentile-stretch": percentile_stretch,
+    "render-supersample": supersample,
 }
 
+#: The figures of this page that are **split** — panels rather than one composited sheet.
+#: The other five are before-and-after pairs and a three-across comparison of one field:
+#: the juxtaposition is the claim in every one of them, which is the case the split rule
+#: names as the one to leave composited.
+SPLIT = frozenset({"render-cyclic-repeats"})
 
-def draw(identifier: str) -> tuple[Path, int, int, list[str]]:
-    """Draw one figure into the figures directory; return where it went and its size."""
-    file, maker = SHEETS[identifier]
-    destination = FIGURE_IMAGES_DIR / file
-    (width, height), provenance = maker(destination)
-    return destination, width, height, provenance
+
+def recipe(identifier: str) -> dict:
+    """The registry recipe for a figure here: the maker, and no arguments."""
+    if identifier not in SHEETS:
+        raise renders.EngineError(f"{identifier} is not drawn by builder.fundamentals")
+    return {"maker": f"{__name__}:{SHEETS[identifier].__name__}", "args": {}}
+
+
+def draw(identifier: str) -> Drawn | Split:
+    """Draw one figure into `artifacts/figures/`; `--place` is what encodes and lands it.
+
+    A composited figure here still writes one lossless sheet, which is what a split of it
+    would later be measured against; a split one writes a file per panel. Nothing lands in
+    the site's asset directory from a draw, the way `locations` and `picks` already work.
+    """
+    maker = SHEETS[identifier]
+    if identifier in SPLIT:
+        return maker()
+    destination = sheet_path(identifier)
+    answer = maker(destination)
+    provenance = answer[1] if isinstance(answer[0], tuple) else []
+    return Drawn(destination, list(provenance))

@@ -325,6 +325,47 @@ def panel_grid(
     return sheet, draw
 
 
+def cut(sheet, boxes, *, max_width: int | None = None):
+    """A composed sheet brought to its landing width once, then cut into its tiles.
+
+    What a **split** figure is made of where its maker composes a sheet. The alternative
+    — land each tile on its own — is only the same picture when the sheet ships at the
+    width it was composed at: a sheet composed at 1968 and shipped at 1344 has every tile
+    resampled as part of one image, and resampling a tile by itself answers differently
+    along all four edges. Cutting the landed sheet up cannot: the panel *is* the pixels
+    the composite had, byte for byte, which is what the split rule promises and what the
+    measurement against `artifacts/figures/<id>.png` then shows.
+
+    `boxes` are in the composed sheet's own coordinates, `(left, top, right, bottom)`.
+    """
+    from . import images
+
+    landed = images.web_res(sheet, max_width or images.WEB_RES_MAX_WIDTH)
+    scale = landed.width / sheet.width
+    tiles = []
+    for left, top, right, bottom in boxes:
+        tiles.append(
+            landed.crop(
+                (
+                    round(left * scale),
+                    round(top * scale),
+                    round(right * scale),
+                    round(bottom * scale),
+                )
+            )
+        )
+    return tiles
+
+
+def grid_boxes(count: int, panel: tuple[int, int], columns: int, caption: int):
+    """Where each panel of a `panel_grid` lands, as boxes `cut` can take."""
+    boxes = []
+    for index in range(count):
+        x, y = panel_origin(index, panel, columns, caption)
+        boxes.append((x, y, x + panel[0], y + panel[1]))
+    return boxes
+
+
 # ------------------------------------------------------------------------ the two marks
 
 
