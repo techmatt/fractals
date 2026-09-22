@@ -572,3 +572,172 @@ test("an orbit's identity is the set, the depth and the period", () => {
   // And two periods are two orbits, not a long one and a short one.
   assert.notEqual(orbitKey(mandelbrot, 3, 2838), orbitKey(mandelbrot, 3, 94776));
 });
+
+// ------------------------------------------------------------ degrees three to six
+//
+// *(deep_degrees_ckpt140)* The kernel draws `z^d + c` for `d` from two to six, and the page
+// hands it the degree in the spec. What can fail silently here is the same three things as
+// above, one level up: a degree the spec never carries (a degree-5 view drawn as the
+// Mandelbrot set, looking entirely plausible), a colouring that turns out to read the
+// placeholder family after all, and an orbit held across a degree change.
+
+/** A degree-3 frame both kernels resolve, over the main component's boundary.
+ *
+ *  **Not narrower**, and the reason is the boundary rather than either kernel: a 2e-3 frame
+ *  about the golden-mean point is a Siegel-like stretch where escape counts run to the
+ *  thousands and neutral dynamics amplify the last bit of anything, and there the two
+ *  kernels disagree about the mask on 89 of 5,184 samples, all within a few hundred of the
+ *  cap. At 0.05 it is one; over the whole set it is none. */
+const CUBIC = { center_re: "0.38", center_im: "0.62", width: 0.05 };
+
+/** The engine's own field for a shallow spec, as the deep test above reads it. */
+function engineField(family, frame, width, height, cap) {
+  const spec = {
+    schema: 1,
+    family,
+    viewport: { center_re: frame.center_re, center_im: frame.center_im, width: String(frame.width) },
+    resolution: [width, height],
+    mode: "smooth",
+    maxiter: cap,
+    colormap: RAMP,
+  };
+  const shape = engine.plan(spec);
+  assert.ok(shape.ok, shape.why);
+  return new Float64Array(engine.band(spec, shape, 0, height).buffer);
+}
+
+/** Mask disagreements and the median relative difference of two fields. */
+function compare(ours, theirs) {
+  let masks = 0;
+  const relative = [];
+  for (let at = 0; at < ours.length; at++) {
+    if (Number.isNaN(ours[at]) !== Number.isNaN(theirs[at])) masks += 1;
+    else if (!Number.isNaN(theirs[at])) {
+      relative.push(Math.abs(ours[at] - theirs[at]) / Math.max(1, Math.abs(theirs[at])));
+    }
+  }
+  relative.sort((a, b) => a - b);
+  return { masks, escaping: relative.length, median: relative[relative.length >> 1] };
+}
+
+test("a degree-3 deep field is the engine's own multibrot3 render of the same frame", { skip }, () => {
+  const [width, height, cap] = [96, 54, 3000];
+  const theirs = engineField({ kind: "multibrot", degree: 3 }, CUBIC, width, height, cap);
+  const ours = new Float64Array(
+    perturb.frame({ ...CUBIC, schema: 1, resolution: [width, height], maxiter: cap, degree: 3 }).buffer,
+  );
+  const same = compare(ours, theirs);
+  assert.ok(same.masks <= 2, `${same.masks} samples disagree about the interior`);
+  assert.ok(same.escaping > width * height * 0.2, `only ${same.escaping} escaping samples`);
+  assert.ok(same.median < 1e-6, `median relative difference ${same.median.toExponential(2)}`);
+  // **The control is the failure this section exists for**: the same frame drawn with no
+  // degree in the spec is the Mandelbrot set there, and it must not pass.
+  const quadratic = new Float64Array(
+    perturb.frame({ ...CUBIC, schema: 1, resolution: [width, height], maxiter: cap }).buffer,
+  );
+  const wrong = compare(quadratic, theirs);
+  assert.ok(wrong.masks > 100, `a degree-2 field matched multibrot3 on ${wrong.masks} masks, so this is blind`);
+});
+
+test("a degree-4 deep julia field is the engine's julia render at degree 4", { skip }, () => {
+  const [width, height, cap] = [96, 54, 3000];
+  const c = ["0.2", "0.1"];
+  const frame = { center_re: c[0], center_im: c[1], width: 2.5 };
+  const theirs = engineField({ kind: "julia", degree: 4, c }, frame, width, height, cap);
+  const ours = new Float64Array(
+    perturb.frame({
+      ...frame,
+      schema: 1,
+      resolution: [width, height],
+      maxiter: cap,
+      julia_re: c[0],
+      julia_im: c[1],
+      degree: 4,
+    }).buffer,
+  );
+  const same = compare(ours, theirs);
+  assert.ok(same.masks <= 2, `${same.masks} samples disagree about the interior`);
+  assert.ok(same.escaping > width * height * 0.2, `only ${same.escaping} escaping samples`);
+  assert.ok(same.median < 1e-6, `median relative difference ${same.median.toExponential(2)}`);
+});
+
+test("shade_level cannot see the placeholder family either", { skip }, () => {
+  // The whole degree-5 set, so the lanes are a picture with a stretch in it.
+  const whole = { center_re: "0", center_im: "0", width: 3 };
+  const lanes = perturb.frame({ ...whole, schema: 1, resolution: [64, 36], maxiter: 3000, degree: 5 });
+  const view = {
+    palette: "ramp",
+    shade: {
+      gamma: 1,
+      cycles: 1,
+      phase: 0,
+      reverse: false,
+      mirror: false,
+      transfer: { kind: "value" },
+      rolloff: { kind: "none" },
+    },
+    level: null,
+  };
+  const placeholder = shadeSpecOf(view, RAMP, 64, 36);
+  assert.deepEqual(placeholder.family, { kind: "mandelbrot" });
+  const a = engine.shade(placeholder, new Uint8Array(lanes));
+  // The family the field really is, and one it is not, both f64-resolvable at their homes.
+  for (const family of [
+    { kind: "multibrot", degree: 5 },
+    { kind: "julia", degree: 3, c: ["0.2", "0.1"] },
+  ]) {
+    const b = engine.shade({ ...placeholder, family }, new Uint8Array(lanes));
+    assert.deepEqual(a, b, `the colouring read the family ${JSON.stringify(family)}`);
+  }
+  // And through `shade_level`, which is what the tab actually calls.
+  const levelled = engine.shadeLevel(placeholder, new Uint8Array(lanes), 0);
+  const other = engine.shadeLevel({ ...placeholder, family: { kind: "multibrot", degree: 5 } }, new Uint8Array(lanes), 0);
+  assert.deepEqual(levelled.image, other.image);
+  assert.ok(new Set(a).size > 8, "the shade came back flat, so this proved nothing");
+});
+
+test("the tab's spec carries the degree, and the kernel reads it back", { skip }, () => {
+  const context = {
+    palettes: new Map([["ramp", { cyclic: false }]]),
+    defaultPalette: "ramp",
+    deepHome: () => ({ x: "0", y: "0", w: "3" }),
+    deepCap: (width) => perturb.maxiter(width),
+  };
+  const view = deep.parse(
+    `?dv=3&f=multibrot3&x=${CUBIC.center_re}&y=${CUBIC.center_im}&w=1e-20&n=48551&p=ramp`,
+    context,
+  );
+  const spec = deepSpecOf(view, 48, 27);
+  assert.equal(spec.degree, 3);
+  const planned = perturb.plan(spec);
+  assert.ok(planned.ok, planned.why);
+  assert.equal(planned.degree, 3);
+  // A degree-2 view's spec is the spec it always was: no member at all.
+  const quadratic = deepSpecOf({ ...view, degree: 2 }, 48, 27);
+  assert.equal("degree" in quadratic, false);
+  assert.equal(perturb.plan(quadratic).degree, 2);
+  // And the held orbit of one degree is never the orbit of another.
+  assert.notEqual(orbitKey(view, 4), orbitKey({ ...view, degree: 2 }, 4));
+});
+
+test("a julia frame at z = 0 is planned at d times the view's bits", { skip }, () => {
+  // The count the page keys its held orbit on is the one `plan` names, and at the origin
+  // anchor it is not the width's: the first step raises the pixel offset to the degree.
+  const at = (degree) => ({
+    schema: 1,
+    julia_re: "0.2",
+    julia_im: "0.1",
+    center_re: "0",
+    center_im: "0",
+    width: 1e-12,
+    resolution: [96, 54],
+    anchor: "origin",
+    degree,
+  });
+  const view = perturb.plan({ ...at(2), anchor: "parameter", center_re: "0.2", center_im: "0.1" });
+  const two = perturb.plan(at(2));
+  const five = perturb.plan(at(5));
+  assert.ok(two.ok && five.ok, `${two.why ?? ""} ${five.why ?? ""}`);
+  assert.ok(two.limbs > view.limbs, `origin ${two.limbs} against parameter ${view.limbs}`);
+  assert.ok(five.limbs > two.limbs, `degree 5 at ${five.limbs} against degree 2 at ${two.limbs}`);
+});

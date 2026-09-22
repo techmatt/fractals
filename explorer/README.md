@@ -1179,10 +1179,15 @@ The fourth tab draws `z² + c` **below the `f64` floor**, through `perturb.wasm`
 `engine.wasm`. It is a deliberate, rare, slower mode and everything about its shape follows
 from that.
 
-**What it draws:** degree 2 in `smooth`, on both of the planes that recurrence has — the
-Mandelbrot set, and the Julia set of any `c`. No mode picker and no family picker: there is
-one mode down here, and the two sets are one recurrence read two ways rather than two
-families, which is what *Julia at this c* below is about. Palette, the seven shade keys and
+**What it draws:** `z^d + c` for integer degrees two to six in `smooth`, on both of the
+planes each degree has — the Mandelbrot or Multibrot set, and the Julia set of any `c`
+*(degrees three to six since deep_degrees_ckpt140, 2026-09-22)*. No mode picker and no
+family picker: there is one mode down here, the degree comes in with the view a reader
+carries over or the link they open, and the two sets of a degree are one recurrence read two
+ways rather than two families, which is what *Julia at this c* below is about. Fractional
+degrees and Phoenix are not drawn: `audit_deep_families_ckpt140` found perturbation fails on
+exactly the branch-cut seam the fractional family exists to show, and Phoenix needs a second
+delta lane. The tab's side note says which families it draws. Palette, the seven shade keys and
 Autolevel work exactly as they do everywhere else, because a deep field **is** a smooth
 field: one `f64` a sample with `NaN` for the interior, in the layout `compute_band`
 produces, so `shade_level` colours it without being told which kernel drew it.
@@ -1361,7 +1366,8 @@ be flat. That wall is far out — an offset of 0.76 still leaves 375 numbers to 
 its keep.
 
 **Same view at z = 0** is the other button, and **it widens the frame to the square root of
-its width**. `z ↦ z² + c` maps the disc of radius `r` about 0 onto the disc of radius `r²`
+its width** — the `d`-th root of its half-width at degree `d`, `2·(w/2)^{1/d}`, because
+`z^d` maps the disc of radius `r` onto radius `r^d`, `d` to one. `z ↦ z² + c` maps the disc of radius `r` about 0 onto the disc of radius `r²`
 about `c`, two to one, so the structure at `z = c` at 2e-9 is the structure at `z = 0` at
 6e-5 — the same picture, with exact two-fold symmetry, in a frame four decades wider. The
 first version of this button kept the width and drew a black rectangle, which is what sent
@@ -1411,7 +1417,7 @@ rows is certainly too fine and costs a few messages to find that out — the fir
 report replaces the guess with a measurement and everything still queued is re-cut. Erring
 fine is the cheap direction.
 
-### Shading, through `engine.wasm`, on a placeholder viewport
+### Shading, through `engine.wasm`, on a placeholder viewport — and a placeholder family
 
 The shade spec names the Mandelbrot **home** view, because `engine.wasm` refuses any spec
 whose viewport `f64` cannot resolve and a deep viewport is exactly one of those. What makes
@@ -1426,6 +1432,11 @@ entirely — and asserts the two pictures are **byte for byte the same**. There 
 it the real way" to compare against, so two viewports over one buffer is the comparison
 available, and a colouring that read either of them would fail it. So no viewport-free
 shade entry was added to `engine-wasm` and the module was not rebuilt.
+
+**The family is a placeholder in the same way** *(deep_degrees_ckpt140)*: the shade spec says
+`mandelbrot` whatever degree drew the lanes, and `deep.test.mjs` shades one degree-5 buffer
+under that, under `multibrot` at degree 5 and under a degree-3 Julia family, and holds the
+three pictures to being byte for byte the same, through `shade` and through `shade_level`.
 
 **A deep lane is not narrowed through `f32`**, where the engine narrows every inexact lane
 on the way out. At this depth that rounding is visible — the `f32` step at a smooth count of
@@ -1559,11 +1570,13 @@ minibrots it can neither draw nor address, and says so rather than pretending.
 
 ### Getting in and out
 
-- **Clicking the tab** carries the viewer's frame over when it is on Mandelbrot or Julia at
-  degree 2 — its coordinates are already exact decimal text, so nothing is lost crossing
-  the floor, and a shallow Julia view brings its parameter with it. Anywhere else the tab
-  opens at the last deep view it had, or at the Mandelbrot home, and says that deep is
-  `z² + c` and nothing else.
+- **Clicking the tab** carries the viewer's frame over when it is on one of the ten
+  families the kernel draws — `mandelbrot`, `multibrot3` to `multibrot6`, `julia`, `julia3`
+  to `julia6` — with its degree; its coordinates are already exact decimal text, so nothing
+  is lost crossing the floor, and a shallow Julia view brings its parameter with it.
+  Anywhere else the tab opens at the last deep view it had, or at the Mandelbrot home, and
+  says which families deep draws. *Back to the explorer* goes the other way under the
+  family's shallow name, so a degree-5 Julia view comes back as `f=julia5`.
 - **At the ordinary explorer's zoom stop**, unchanged, on either of the two sets this
   kernel draws, the refusal now ends with an offer: *Open this frame in Deep*, the view
   carried. It is the one place on this
@@ -1583,10 +1596,10 @@ minibrots it can neither draw nor address, and says so rather than pretending.
   because the frame is too deep but because the picture next door would be a different set
   wearing this one's name.
 
-### Deep links are their own contract, version 2
+### Deep links are their own contract, version 3
 
 ```
-dv · cx · cy · x · y · w · n · a · p · the shade keys · level
+dv · f · cx · cy · x · y · w · n · a · p · the shade keys · level
 ```
 
 **`dv` is the marker and it is what dispatches.** A query carrying it is read by
@@ -1635,16 +1648,24 @@ and a URL's escaping rule, neither of which has anything to do with how deep the
   the shallow contract, because they say which set the centre and width are talking about.
   A Julia link that names no frame opens at `z = c` rather than at the Mandelbrot home,
   which is a place that means nothing on the dynamical plane.
-- **Why this is a version 2 and not a widening.** `cx` and `cy` have a default, so every v1
+- **Why v2 was a version and not a widening.** `cx` and `cy` have a default, so every v1
   link still parses and still means exactly what it meant — the test a widening passes, and
-  `deep-link.test.mjs` holds a v1 link to canonicalizing into its v2 spelling with every
-  digit of the place, the width, the cap and the palette unmoved. What bumps it is that the
-  answer to *what does this tab draw* is no longer one recurrence: a link can now say which
-  of two sets it is a picture of, and that is worth saying in the version rather than
-  leaving a reader to infer it from a key. Every string this page writes says `dv=2`.
-- **No `f` and no `m`.** There is one mode down here, and the two sets are told apart by
-  the parameter rather than by a family name — spelling `f` would be putting the engine's
-  roster in front of a kernel that has two members of it.
+  `deep-link.test.mjs` holds a v1 link to canonicalizing with every digit of the place, the
+  width, the cap and the palette unmoved. What bumped it is that the answer to *what does
+  this tab draw* was no longer one recurrence.
+- **`f` is v3, and it is the degree** *(deep_degrees_ckpt140)*. It names the family by the
+  shallow contract's own spelling — `multibrot3` to `multibrot6`, `julia3` to `julia6` —
+  because one name for one thing is what lets a view cross between the tabs without a
+  table of translations. **Absent is `mandelbrot`, or `julia` where `cx` is present**, so
+  every v1 and v2 link parses to exactly the picture it always named, and `f` is **written
+  only where the degree is not two**: a degree-2 link moves by its version number and
+  nothing else, and a link that spells the default is accepted and settles without it. A
+  link that contradicts itself is refused rather than read one way — a `julia3` with no
+  `c`, a `multibrot4` with one — and so is a family the kernel does not draw. A v1 or v2
+  link carrying `f` is refused as a key those versions never had. Every string this page
+  writes says `dv=3`. ⚠ The prompt that asked for this called it v4 with v1–v3 reading; the
+  contract was at v2, so the number it took is 3.
+- **No `m`.** There is one mode down here.
 - The place, the width, the cap and the palette are emitted unconditionally; the shade keys
   are omitted at the engine's defaults. `panel` rides as a UI key and is never emitted.
 - **Loading a deep link** opens the tab on that view and draws it the way any other frame
@@ -1653,7 +1674,7 @@ and a URL's escaping rule, neither of which has anything to do with how deep the
   which is what would make a link cost minutes to follow. The pass is committed rather than
   automatic — a link is a press — so Cancel is there for it.
 
-`deep-link.test.mjs` is 27 tests and `deep-fx.test.mjs` is 12, on Node's own runner with
+`deep-link.test.mjs` is 35 tests and `deep-fx.test.mjs` is 12, on Node's own runner with
 nothing installed; three of them hold the shallow contract to not having moved, including
 that a deep Julia link is refused by it at both doors — `cx` and `cy` are keys that reader
 knows, which is exactly why the marker has to be what dispatches.
@@ -1661,7 +1682,10 @@ knows, which is exactly why the marker has to be what dispatches.
 ### Saved takes deep entries
 
 A deep Julia entry is labelled *Julia at c = …* rather than by its width alone, because two
-Julia views of different sets at one frame are otherwise the same line of text.
+Julia views of different sets at one frame are otherwise the same line of text — and an entry
+above degree two leads with *degree d*, for the same reason. The tile's title names the plane
+by the page's own `planeName`; it said *The Mandelbrot set* for every deep entry, Julia ones
+included, until deep_degrees_ckpt140.
 
 `Saved.canonical` dispatches on the marker, so a deep link is canonicalized by the deep
 contract and **its centre and its parameter are never truncated** — putting it through the shallow reader,
@@ -2673,7 +2697,7 @@ should open on whatever origin the reader has — so the file carries
 `fractal-explorer v=3&f=…` and the page it is dropped on supplies the rest. *Which*
 contract it belongs to is already in the query, because a deep link leads with `dv` in a
 file exactly as it does in a URL. There is **no version of its own** either: the query
-carries `v=3` or `dv=2`, so a payload this page cannot read is refused by the contract in
+carries `v=3` or `dv=3`, so a payload this page cannot read is refused by the contract in
 the contract's own words, which is a better sentence than a second version number could
 produce. The tag is what the JPEG side needs — a comment segment is free text with no
 keyword — and is how a reader tells our comment from somebody else's.

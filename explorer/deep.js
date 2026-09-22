@@ -34,11 +34,13 @@
 // allowed in is the *size* of a step, which is a fraction of a width that is itself a
 // double.
 //
-// What this tab is: smooth, `z² + c`, degree 2. No mode picker, because there is one mode
-// down here, and no family picker, because the two sets this kernel draws are two ways of
-// reading one recurrence rather than two families — **Julia at this c** holds the `c` the
-// view is centred on and lets `z` vary instead, which is the same orbit seen from the
-// other side and the same reference orbit to draw it from. Palette, the shade recipe and
+// What this tab is: smooth, `z^d + c` for integer degrees two to six *(deep_degrees_ckpt140)*.
+// No mode picker, because there is one mode down here, and no family picker: the degree
+// comes in with the view the reader carried over or the link they opened, and the two sets
+// of each degree are two ways of reading one recurrence rather than two families —
+// **Julia at this c** holds the `c` the view is centred on and lets `z` vary instead, which
+// is the same orbit seen from the other side and the same reference orbit to draw it from,
+// and it keeps the degree. Palette, the shade recipe and
 // Autolevel work exactly as they do everywhere else, because a deep field is a smooth
 // field and `engine.wasm` colours it without being told which kernel drew it.
 
@@ -124,6 +126,17 @@ const PAN_STEP = 0.1;
 
 /** The factor the iteration buttons move the cap by. */
 const CAP_STEP = 2;
+
+/**
+ * The degrees *Nearby minibrots* is offered at.
+ *
+ * **A set, and a measured one** *(deep_degrees_ckpt140)*: a degree is in it only where the
+ * crate's body-size estimate landed against a pin measured independently of it —
+ * `perturb-wasm/README.md` §10 has the table. Where it did not, a list would rank and
+ * frame minibrots by a size nobody had checked, and the button is absent rather than
+ * wrong.
+ */
+const MINIBROT_DEGREES = new Set([2]);
 
 /** Where the cost warning records that it has been shown. Per session, so a reader who
  *  comes back tomorrow is told again and one who is exploring is not told twice. */
@@ -616,7 +629,7 @@ export function mount(host) {
         image: shaded.image,
         query: deepLink.emit(drawnAs),
         name: {
-          family: drawnAs.julia === null ? "mandelbrot" : "julia",
+          family: deepLink.familyOf(drawnAs),
           mode: "smooth",
           palette: drawnAs.palette,
         },
@@ -951,7 +964,7 @@ export function mount(host) {
   }
 
   /**
-   * The same structure, at the critical point, where it is exactly two-fold
+   * The same structure, at the critical point, where it is exactly `d`-fold
    * symmetric.
    *
    * **The frame widens to the square root of itself, and it has to.** `z ↦ z² + c`
@@ -960,7 +973,9 @@ export function mount(host) {
    * width of 6e-5, and a button that kept the width would land a reader deep inside
    * the basin of the attracting cycle, where every sample is interior and the
    * picture is black. Measured, on the audit's own `c`: it drew a black frame, which
-   * is what sent this through the arithmetic.
+   * is what sent this through the arithmetic. At degree `d` the disc of radius `r`
+   * maps onto radius `r^d`, `d` to one, so the half-width is the `d`-th root of the
+   * half-width: `2·(w/2)^{1/d}`, which at two is the `√(2w)` it always was.
    *
    * The cap is deliberately **not** re-derived from the new width. The two frames are
    * the same picture and their escape counts differ by exactly one step — the step
@@ -970,7 +985,8 @@ export function mount(host) {
    */
   function toOrigin() {
     if (view.julia === null) return;
-    const root = Math.sqrt(2 * view.w.value);
+    const degree = view.degree ?? 2;
+    const root = degree === 2 ? Math.sqrt(2 * view.w.value) : 2 * (view.w.value / 2) ** (1 / degree);
     if (!(root > 0) || !Number.isFinite(root)) return;
     view = {
       ...view,
@@ -1075,6 +1091,7 @@ export function mount(host) {
    */
   async function findMinibrots() {
     if (view.julia !== null || running !== null) return;
+    if (!MINIBROT_DEGREES.has(view.degree ?? 2)) return;
     const generation = ++pass;
     const grid = host.grid();
     const target = view;
@@ -1343,8 +1360,10 @@ export function mount(host) {
       julia && cameFrom !== null ? "Back to the frame this Julia set was opened from." : "";
     els.origin.hidden = !julia;
     // **Mandelbrot only.** There are no minibrots on a dynamical plane: a Julia set has no
-    // parameter-space nuclei in it, so the button is not disabled there, it is absent.
-    els.minibrots.hidden = julia;
+    // parameter-space nuclei in it, so the button is not disabled there, it is absent. The
+    // same at a degree whose size estimate did not land against a measured pin — see
+    // `MINIBROT_DEGREES`.
+    els.minibrots.hidden = julia || !MINIBROT_DEGREES.has(view.degree ?? 2);
     els.minibrots.disabled = committed || busy;
     els.minibrots.textContent = running?.upto === "minibrots" ? "Looking…" : "Nearby minibrots";
     els.origin.disabled = committed || (julia && fx.isZero(view.x.dec) && fx.isZero(view.y.dec));
@@ -1417,10 +1436,10 @@ export function mount(host) {
   /**
    * Come into the tab.
    *
-   * `from` is the viewer's own view where it is on Mandelbrot degree 2, and the frame is
-   * carried over: its coordinates are already exact decimal text, so nothing is lost
-   * crossing the floor. Anywhere else the tab opens at the last deep view it had, or at
-   * the Mandelbrot home, and says that deep is Mandelbrot only.
+   * `from` is the viewer's own view where it is on one of the families this kernel draws,
+   * and the frame is carried over: its coordinates are already exact decimal text, so
+   * nothing is lost crossing the floor. Anywhere else the tab opens at the last deep view
+   * it had, or at the Mandelbrot home, and says which families deep draws.
    */
   function enter(from) {
     warn();
@@ -1441,7 +1460,7 @@ export function mount(host) {
       }
     } else if (drawn === null && stale === null) {
       host.say(
-        "Deep draws z² + c and nothing else: the Mandelbrot set, and the Julia set of any c on it.",
+        "Deep draws degrees 2 to 6 and nothing else: the Mandelbrot and Multibrot sets, and the Julia set of any c on them.",
       );
     }
     owns = true;
@@ -1459,8 +1478,10 @@ export function mount(host) {
     // *Back to the explorer* makes in the other direction. The constants are
     // already decimal text on that side, so nothing is lost crossing the floor —
     // and a `c` that came from a double stays exactly the `c` that double spells.
+    const family = deepLink.FAMILIES.get(from.family);
+    if (family === undefined) return null;
     let julia = null;
-    if (from.family === "julia") {
+    if (family.julia) {
       const re = fx.parse(from.constants.cx.text);
       const im = fx.parse(from.constants.cy.text);
       if (re === null || im === null) return null;
@@ -1468,6 +1489,7 @@ export function mount(host) {
     }
     return {
       version: deepLink.VERSION,
+      degree: family.degree,
       julia,
       x: deepLink.coordinateOf(x),
       y: deepLink.coordinateOf(y),
@@ -1523,6 +1545,9 @@ export function mount(host) {
   return {
     /** The view the tab is standing on, for the colour controls and for a link. */
     view: () => view,
+    /** The family this view is, by the shallow contract's name — what a download is named
+     *  from, so the row that names it need not load the deep contract to ask. */
+    family: () => deepLink.familyOf(view),
     /** Whether the tab owns the viewer — whether the picture on screen is the deep one. */
     owns: () => shown && owns,
     link: () => deepLink.emit(view),

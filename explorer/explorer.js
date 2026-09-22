@@ -2923,10 +2923,25 @@ function deepOwns() {
 }
 
 /** The frame the viewer would carry into the Deep tab, or `null` where it has none to
- *  carry: deep draws `z² + c` at degree 2 — the Mandelbrot set and its Julia sets — and a
- *  view of anything else is a view of a plane this kernel has no recurrence for. */
+ *  carry: deep draws `z^d + c` for integer degrees two to six — the Mandelbrot and
+ *  Multibrot sets and their Julia sets — and a view of anything else is a view of a plane
+ *  this kernel has no recurrence for. The list is the one `perturb.wasm` draws, spelled as
+ *  the shallow contract's family names. */
+const DEEP_FAMILIES = new Set([
+  "mandelbrot",
+  "multibrot3",
+  "multibrot4",
+  "multibrot5",
+  "multibrot6",
+  "julia",
+  "julia3",
+  "julia4",
+  "julia5",
+  "julia6",
+]);
+
 function carryable() {
-  return view.family === "mandelbrot" || view.family === "julia" ? view : null;
+  return DEEP_FAMILIES.has(view.family) ? view : null;
 }
 
 /**
@@ -2957,7 +2972,9 @@ function leaveDeep(from) {
     );
     return;
   }
-  const family = from.julia ? "julia" : "mandelbrot";
+  // The family by the shallow contract's name, degree and plane both — which is why the
+  // two contracts share their family names in the first place.
+  const family = deepRules.familyOf(from);
   view = {
     ...link.fresh(family, "smooth", contract),
     x: { text: from.x.text, value: Number(from.x.text) },
@@ -4225,8 +4242,8 @@ async function main() {
   deepContext = {
     palettes: PALETTES,
     defaultPalette: DEFAULT_PALETTE,
-    deepHome: () => {
-      const home = homeOf("mandelbrot");
+    deepHome: (family = "mandelbrot") => {
+      const home = homeOf(family);
       return { x: home.x.text, y: home.y.text, w: home.w.text };
     },
     deepCap: (width) => renderer.maxiter(width),

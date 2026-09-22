@@ -3,7 +3,7 @@
 // **Why a second contract rather than a wider first one.** A deep view is not a shallow
 // view with more digits. Its centre is a decimal that no double can hold, its iteration
 // cap is a number the reader chose rather than the depth policy's answer, and it names no
-// family and no mode because there is only one of each down here. Widening
+// mode because there is only one down here. Widening
 // `permalink.js` to carry those would have moved three of its own rulings at once: that
 // `x` is echoed as written and read as a double, that the cap is emphatically not a key,
 // and that `f` and `m` say what is being drawn. Every shallow link ever written is held
@@ -24,7 +24,7 @@
 // readers of one thing drift apart.
 //
 // ```
-// dv · cx · cy · x · y · w · n · a · p · the shade keys · level
+// dv · f · cx · cy · x · y · w · n · a · p · the shade keys · level
 // ```
 //
 // Nothing here touches the DOM or the module, so `deep-link.test.mjs` runs it under
@@ -51,7 +51,16 @@ import * as fx from "./deep-fx.js";
  *  half that should not be in a cold open. */
 export const MARKER = DEEP_MARKER;
 
-/** The contract version this module emits. Two, and it reads both.
+/** The contract version this module emits. Three, and it reads all three.
+ *
+ *  **Version 3 is the degree** *(deep_degrees_ckpt140)*. `f` names the family in the
+ *  shallow contract's own spelling — `multibrot3` through `multibrot6` and `julia3`
+ *  through `julia6` — and it has a default, which is what makes this a version and not
+ *  a break: absent is `mandelbrot`, or `julia` where `cx` is present, so every v1 and
+ *  v2 link parses to exactly the picture it always named. It is written only where the
+ *  degree is not two, so a degree-2 link moves by its version number and nothing else.
+ *  A v1 or v2 link that carries `f` is refused as a key those versions do not know,
+ *  because no page that wrote one ever wrote it.
  *
  *  **Version 2 is the Julia case**, and it is a version rather than a widening
  *  for the shallow contract's own reason. `cx` and `cy` have a default — absent
@@ -60,10 +69,42 @@ export const MARKER = DEEP_MARKER;
  *  answer to "what does this tab draw" is no longer one recurrence: a link can
  *  now say which of two sets it is a picture of, and that is worth saying in the
  *  version rather than leaving a reader to find out from a key. */
-export const VERSION = 2;
+export const VERSION = 3;
 
 /** The versions this module reads. */
-export const READS = [1, 2];
+export const READS = [1, 2, 3];
+
+/**
+ * The families a deep view can be, by the shallow contract's name for each: the degree,
+ * and whether it is the dynamical plane.
+ *
+ * **The shallow names, and not new ones**, for the reason `cx` and `cy` are the shallow
+ * spelling: one name for one thing is what lets a view cross between the two tabs without
+ * a table of translations to drift. Integer degrees two to six and nothing else, which
+ * is what `perturb.wasm` draws — `fractional_multibrot` is render-only even shallow, and
+ * `audit_deep_families_ckpt140` found perturbation fails on exactly the seam that family
+ * exists to show.
+ */
+export const FAMILIES = new Map([
+  ["mandelbrot", { degree: 2, julia: false }],
+  ["multibrot3", { degree: 3, julia: false }],
+  ["multibrot4", { degree: 4, julia: false }],
+  ["multibrot5", { degree: 5, julia: false }],
+  ["multibrot6", { degree: 6, julia: false }],
+  ["julia", { degree: 2, julia: true }],
+  ["julia3", { degree: 3, julia: true }],
+  ["julia4", { degree: 4, julia: true }],
+  ["julia5", { degree: 5, julia: true }],
+  ["julia6", { degree: 6, julia: true }],
+]);
+
+/** The family a deep view is, by the shallow name — what `f` would say, what a download
+ *  is named from, and what Saved labels it as. */
+export function familyOf(view) {
+  const degree = view.degree ?? 2;
+  if (view.julia) return degree === 2 ? "julia" : `julia${degree}`;
+  return degree === 2 ? "mandelbrot" : `multibrot${degree}`;
+}
 
 /** The key carrying the iteration cap.
  *
@@ -99,6 +140,7 @@ const ASPECT_LIMIT = 10000;
 /** Every key this contract spells, so an unknown one is told apart from a misspelled one. */
 const KNOWN = new Set([
   MARKER,
+  "f",
   "cx",
   "cy",
   "x",
@@ -142,12 +184,18 @@ export function parse(search, context) {
   }
 
   for (const key of seen) {
+    // `f` arrived with v3, so an older link that spells it spells a key its own version
+    // never had.
+    if (key === "f" && Number(version) < 3) {
+      throw new PermalinkError(`the link carries a key the Deep tab does not know: ${key}.`);
+    }
     if (KNOWN.has(key) || UI_KEYS.has(key)) continue;
     throw new PermalinkError(`the link carries a key the Deep tab does not know: ${key}.`);
   }
 
   const julia = juliaOf(params);
-  const home = context.deepHome();
+  const degree = degreeOf(params.get("f"), julia);
+  const home = context.deepHome(degree === 2 ? "mandelbrot" : `multibrot${degree}`);
   // **A Julia link that names no frame opens at `z = c`**, and not at the
   // Mandelbrot home: the home is where the *parameter* plane starts, and on the
   // dynamical plane it means nothing. `z = c` is where the picture is.
@@ -183,7 +231,33 @@ export function parse(search, context) {
   const levelText = params.get(LEVEL_KEY.key);
   const level = levelText === null ? LEVEL_KEY.fallback : LEVEL_KEY.read(levelText);
 
-  return { version: VERSION, julia, x, y, w, maxiter, aspect, palette, shade, level };
+  return { version: VERSION, degree, julia, x, y, w, maxiter, aspect, palette, shade, level };
+}
+
+/**
+ * The degree `f` names, held to the set the parameter says this is.
+ *
+ * `f` and `cx` both say which plane the link is of, so a link can contradict itself, and
+ * one that does is refused rather than read one way: a `julia3` with no `c` has no set to
+ * draw, and a `multibrot3` with one names a Julia parameter on the parameter plane.
+ */
+function degreeOf(name, julia) {
+  if (name === null) return 2;
+  const family = FAMILIES.get(name);
+  if (family === undefined) {
+    throw new PermalinkError(
+      `f is the family, and the Deep tab draws ${[...FAMILIES.keys()].join(", ")}; the link says ${name}.`,
+    );
+  }
+  if (family.julia && julia === null) {
+    throw new PermalinkError(`${name} is a Julia set, so the link has to say which one with cx and cy.`);
+  }
+  if (!family.julia && julia !== null) {
+    throw new PermalinkError(
+      `${name} is a parameter plane, and cx and cy name a Julia set: say f=julia${family.degree === 2 ? "" : family.degree}, or leave the parameter out.`,
+    );
+  }
+  return family.degree;
 }
 
 /**
@@ -215,6 +289,7 @@ export function fresh(context) {
   const w = width(home.w);
   return {
     version: VERSION,
+    degree: 2,
     julia: null,
     x: coordinate(home.x, "x"),
     y: coordinate(home.y, "y"),
@@ -247,9 +322,11 @@ export function fresh(context) {
  */
 export function emit(view) {
   const parts = [`${MARKER}=${VERSION}`];
-  // **The parameter comes before the frame**, the way `f` does in the shallow
-  // contract: it says which set is being drawn, and the centre and width are a
-  // statement about where in that set to look.
+  // **The family and the parameter come before the frame**, the way `f` does in the
+  // shallow contract: they say which set is being drawn, and the centre and width are
+  // a statement about where in that set to look. `f` only where the degree is not two,
+  // since there its default already says it.
+  if ((view.degree ?? 2) !== 2) parts.push(`f=${familyOf(view)}`);
   if (view.julia) {
     parts.push(`cx=${encode(view.julia.x.text)}`);
     parts.push(`cy=${encode(view.julia.y.text)}`);
@@ -287,15 +364,18 @@ export function canonicalize(search, context) {
  */
 export function describe(search, context) {
   const view = parse(search, context);
+  // The degree leads where it is not two, because two pictures at one place and one
+  // width are otherwise the same line of text.
+  const degree = view.degree === 2 ? "" : `degree ${view.degree} · `;
   return {
     deep: true,
     mode: "smooth",
-    family: view.julia === null ? "mandelbrot" : "julia",
+    family: familyOf(view),
     palette: view.palette,
     said:
       view.julia === null
-        ? `width ${view.w.text}`
-        : `Julia at c = ${view.julia.x.text} ${sign(view.julia.y.text)}i · width ${view.w.text}`,
+        ? `${degree}width ${view.w.text}`
+        : `${degree}Julia at c = ${view.julia.x.text} ${sign(view.julia.y.text)}i · width ${view.w.text}`,
     view,
   };
 }
@@ -308,7 +388,7 @@ function sign(text) {
 /**
  * The part of a deep view that decides the arithmetic: what a kept field is keyed on.
  *
- * The set, the centre, the width, the cap and the grid. Not the palette and not one of
+ * The set and its degree, the centre, the width, the cap and the grid. Not the palette and not one of
  * the seven, because a deep field is `smooth` — one scalar per sample — and nothing on
  * the colour side can move a sample. That is what makes a recolour of a frame that took a
  * minute cost a shade.
@@ -319,7 +399,10 @@ function sign(text) {
  * pictures.
  */
 export function fieldKey(view, pixelWidth, pixelHeight, supersample = 1) {
-  const set = view.julia === null ? "m" : `j${view.julia.x.text},${view.julia.y.text}`;
+  // And so is the degree, for the same reason: *Julia at this c* and a degree change
+  // both keep the centre, the width and the cap.
+  const plane = view.julia === null ? "m" : `j${view.julia.x.text},${view.julia.y.text}`;
+  const set = `${plane}^${view.degree ?? 2}`;
   return `${set}|${view.x.text}|${view.y.text}|${view.w.text}|${view.maxiter}|${pixelWidth}x${pixelHeight}x${supersample}`;
 }
 

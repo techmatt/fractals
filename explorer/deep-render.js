@@ -1,7 +1,7 @@
 // The deep renderer: `perturb.wasm` over a pool, and `engine.wasm` to colour what it drew.
 //
 // **Two modules, and they meet at a buffer of `f64` lanes.** `perturb.wasm` computes the
-// smooth field of the degree-2 Mandelbrot set below the `f64` floor and knows nothing
+// smooth field of `z^d + c` for degrees two to six below the `f64` floor and knows nothing
 // about colour; `engine.wasm` colours a smooth field and knows nothing about where it came
 // from. What crosses between them is exactly what `engine.wasm`'s own `compute_band`
 // produces for `smooth` — one lane, little-endian `f64`, `NaN` for the interior — so the
@@ -137,6 +137,9 @@ const SHADE_VIEWPORT = {};
 export function shadeSpecOf(view, colormap, width, height, { supersample = 1, level = true } = {}) {
   const spec = {
     schema: 1,
+    // **A placeholder too, and for the viewport's reason** *(deep_degrees_ckpt140)*: the
+    // colouring reads the buffer and not the family, so a degree-5 field is shaded under
+    // the Mandelbrot name. `deep.test.mjs` holds that to the committed module.
     family: { kind: "mandelbrot" },
     viewport: SHADE_VIEWPORT,
     resolution: [width, height],
@@ -176,6 +179,9 @@ export function deepSpecOf(
     maxiter: view.maxiter,
   };
   if (supersample > 1) spec.supersample = supersample;
+  // The degree, where it is not two: the kernel's default is two, so a degree-2 spec is
+  // byte for byte the spec it was before the member existed.
+  if ((view.degree ?? 2) !== 2) spec.degree = view.degree;
   if (view.julia !== null && view.julia !== undefined) {
     spec.julia_re = view.julia.x.text;
     spec.julia_im = view.julia.y.text;
@@ -233,6 +239,8 @@ export function anchorOf(view) {
  * - **which set, and at what parameter.** A Julia orbit and a Mandelbrot orbit are never
  *   swapped for each other even at the same point, because a view entered at `Z₁` is
  *   handed an orbit one step longer.
+ * - **the degree**, because the orbit of `z³ + c` at a point is not the orbit of `z² + c`
+ *   there, and a degree change keeps the centre, the width and the cap.
  *
  * One string rather than a field-by-field compare because the compare was the thing that
  * had to be remembered: `julia` was wanted when the Julia case landed and `period` when a
@@ -240,7 +248,8 @@ export function anchorOf(view) {
  * same move `deepLink.fieldKey` already makes for a field.
  */
 export function orbitKey(view, limbs, period = null) {
-  const set = view.julia ? `j:${view.julia.x.text},${view.julia.y.text}` : "m";
+  const plane = view.julia ? `j:${view.julia.x.text},${view.julia.y.text}` : "m";
+  const set = `${plane}^${view.degree ?? 2}`;
   return `${set}|${limbs}|${period ?? "-"}`;
 }
 
@@ -501,7 +510,8 @@ export class DeepRenderer {
     // them, so a budget equal to `want` returns fewer than `want`. Twelve is two rounds
     // over an eight-worker pool, and a solve is 0.05 s at 2e-11 and 2 s at 1e-54.
     const chosen = seeds.slice(0, budget);
-    const limbs = this.planner.nucleus_limbs(view.w.value, tileSamples);
+    const degree = view.degree ?? 2;
+    const limbs = this.planner.nucleus_limbs(view.w.value, tileSamples, degree);
 
     const lanes = this.workers.map((worker, index) => {
       const mine = chosen.filter((_, at) => at % this.workers.length === index);
@@ -581,16 +591,19 @@ export class DeepRenderer {
   async #solve(worker, seed, view, limbs, generation) {
     let re = fx.text(fx.add(view.x.dec, fx.fromNumber(seed.from_re) ?? fx.ZERO));
     let im = fx.text(fx.add(view.y.dec, fx.fromNumber(seed.from_im) ?? fx.ZERO));
-    // The body is the view's width squared, near enough, and this is eight digits below
-    // it. Newton stalls at its own `f64` floor well above this; the stall is the real end.
-    const tolerance = view.w.value * view.w.value * 1e-8;
+    // The body is the view's width squared, near enough — to the power `d/(d−1)` at degree
+    // `d`, `nuclei::body_power` — and this is eight digits below it. Newton stalls at its
+    // own `f64` floor well above this; the stall is the real end.
+    const degree = view.degree ?? 2;
+    const power = degree === 2 ? 2 : degree / (degree - 1);
+    const tolerance = view.w.value ** power * 1e-8;
     let last = Infinity;
     for (let step = 1; step <= NEWTON_STEPS; step++) {
       if (generation !== this.generation) return null;
       const answer = await this.#ask(worker, {
         kind: "newton",
         job: generation,
-        request: JSON.stringify({ c_re: re, c_im: im, period: seed.period, limbs }),
+        request: JSON.stringify({ c_re: re, c_im: im, period: seed.period, limbs, degree }),
       });
       if (answer === null || !answer.ok || answer.escaped) return null;
       re = answer.c_re;

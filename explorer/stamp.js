@@ -12,7 +12,7 @@
 // address — and *which* contract is already in it, because a deep link leads with `dv`
 // exactly as it does in a URL.
 //
-// **And no version of its own.** The query carries `v=3` or `dv=2`, so a payload this page
+// **And no version of its own.** The query carries `v=3` or `dv=3`, so a payload this page
 // cannot read is refused by the contract with the contract's own sentence, which is a
 // better sentence than anything a second version number could produce. What is in front of
 // the query is a tag rather than a version: it is how a reader recognizes its own files,

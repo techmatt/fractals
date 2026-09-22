@@ -1,7 +1,8 @@
-# perturb — `z² + c` below the `f64` floor
+# perturb — `z^d + c` below the `f64` floor
 
 A Rust crate that renders the smooth field of the degree-2 Mandelbrot set — and,
-since `deep_julia_at_c_ckpt136`, of the Julia set of any `c` — by **perturbation
+since `deep_julia_at_c_ckpt136`, of the Julia set of any `c`, and since
+`deep_degrees_ckpt140` of both at every integer degree to six — by **perturbation
 with rebasing**, and builds to a wasm module of its own. It has no UI, no page and
 no link contract: those are `explorer/README.md`'s, written against what this
 exports.
@@ -129,12 +130,13 @@ tests/measure.rs   what the frames cost and where the rules settle — every
 
 ### What it does not do
 
-Degree 2, `smooth`, and nothing else. It draws the two sets `z² + c` has — the
-parameter plane and the dynamical one — because they are one recurrence read two
-ways and one reference orbit to draw either from, and **not** because it is
-growing into a wider engine. No other degree, no other family, no other mode. It
-is one kernel, which is the shape `explorer/README.md` always said a deep renderer
-would have to take.
+`z^d + c` at integer degrees two to six, `smooth`, and nothing else *(degrees three to six
+since `deep_degrees_ckpt140`; §10)*. It draws the two sets each degree has — the parameter
+plane and the dynamical one — because they are one recurrence read two ways and one
+reference orbit to draw either from, and **not** because it is growing into a wider engine.
+No fractional degree, no other family, no other mode. It is one kernel with the degree as a
+const parameter, which is the shape `explorer/README.md` always said a deep renderer would
+have to take.
 
 ## What the engine needed
 

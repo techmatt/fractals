@@ -549,14 +549,15 @@ export function install(context) {
 
   /** The three names a file is spelled from, for whichever view this row is about.
    *
-   *  A deep view carries no family and no mode, because down there each has one value:
-   *  `z² + c` at degree 2, in `smooth`. So they are named rather than read, and a deep
-   *  download lands under the same `family_mode_palette_size` a shallow one does. */
+   *  A deep view carries no mode, because down there it has one value, `smooth`, and its
+   *  family is the deep contract's to name from the degree and the plane. So they are
+   *  named rather than read, and a deep download lands under the same
+   *  `family_mode_palette_size` a shallow one does — `multibrot3_smooth_…` at degree three. */
   function naming() {
     if (!onDeep()) return currentView();
     const view = deep.view();
     return {
-      family: view.julia === null ? "mandelbrot" : "julia",
+      family: deep.family(),
       mode: "smooth",
       palette: view.palette,
     };

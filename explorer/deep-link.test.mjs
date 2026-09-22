@@ -38,12 +38,12 @@ test("the anchor parses to the place it names, digit for digit", () => {
   assert.equal(view.palette, "inferno");
 });
 
-test("parse then emit is a fixed point, and a v1 link settles into its v2 spelling", () => {
+test("parse then emit is a fixed point, and a v1 link settles into its v3 spelling", () => {
   const once = deep.canonicalize(`?${ANCHOR}`, context);
   // The version is the only thing that moves. Every digit of the place, the
   // width, the cap and the palette comes back as it went in, which is what it
-  // means for v2 to have added a key rather than changed one.
-  assert.equal(once, ANCHOR.replace("dv=1", "dv=2"));
+  // means for v2 and v3 to have added a key rather than changed one.
+  assert.equal(once, ANCHOR.replace("dv=1", "dv=3"));
   assert.equal(deep.canonicalize(`?${once}`, context), once);
 });
 
@@ -80,8 +80,8 @@ test("a key given twice is refused", () => {
 });
 
 test("a version this page does not speak is refused", () => {
-  assert.throws(() => deep.parse("?dv=3&p=inferno", context), /deep contract v2/);
-  assert.throws(() => deep.parse("?dv=x&p=inferno", context), /deep contract v2/);
+  assert.throws(() => deep.parse("?dv=4&p=inferno", context), /deep contract v3/);
+  assert.throws(() => deep.parse("?dv=x&p=inferno", context), /deep contract v3/);
 });
 
 test("the colour keys are the shallow contract's, in their existing spellings", () => {
@@ -94,7 +94,7 @@ test("the colour keys are the shallow contract's, in their existing spellings", 
   assert.equal(view.shade.reverse, true);
   assert.deepEqual(view.shade.transfer, { kind: "edge", weight: 0.5 });
   // And they come back spelled the way the shallow contract spells them.
-  assert.equal(deep.emit(view), query.replace("dv=1", "dv=2"));
+  assert.equal(deep.emit(view), query.replace("dv=1", "dv=3"));
 });
 
 test("a tone curve rides along under its own name", () => {
@@ -179,7 +179,7 @@ test("the UI key rides on a deep link as it rides on a shallow one", () => {
   const view = deep.parse(`?${ANCHOR}&panel=deep`, context);
   assert.equal(view.palette, "inferno");
   // And is never emitted: the canonical string of a view is the picture alone.
-  assert.equal(deep.emit(view), ANCHOR.replace("dv=1", "dv=2"));
+  assert.equal(deep.emit(view), ANCHOR.replace("dv=1", "dv=3"));
 });
 
 test("a fresh view is the home frame and carries a cap", () => {
@@ -187,7 +187,8 @@ test("a fresh view is the home frame and carries a cap", () => {
   assert.equal(view.x.text, "-0.5");
   assert.equal(view.w.value, 3);
   assert.equal(view.maxiter, 4000);
-  assert.equal(deep.emit(view), "dv=2&x=-0.5&y=0&w=3&n=4000&p=twilight_shifted");
+  assert.equal(deep.emit(view), "dv=3&x=-0.5&y=0&w=3&n=4000&p=twilight_shifted");
+  assert.equal(view.degree, 2);
 });
 
 test("a field key moves with the arithmetic and not with the colour", () => {
@@ -222,7 +223,7 @@ test("a julia link carries its parameter to the last digit", () => {
   // The digits are the whole point: this `c` is not a double, and a round trip
   // through one would name a different set.
   assert.notEqual(String(Number(view.julia.x.text)), view.julia.x.text);
-  assert.equal(deep.canonicalize(`?${JULIA}`, context), JULIA);
+  assert.equal(deep.canonicalize(`?${JULIA}`, context), JULIA.replace("dv=2", "dv=3"));
 });
 
 test("a link with no parameter is the mandelbrot set, which is every v1 link", () => {
@@ -312,4 +313,79 @@ test("the shallow and deep contracts both refuse iv and q", () => {
   assert.throws(() => link.parse("?v=3&q=0.1,0.2", shallow), /does not know: q/);
   assert.throws(() => deep.parse(`?${ANCHOR}&iv=1`, context), /iv/);
   assert.throws(() => deep.parse(`?${ANCHOR}&q=0.1,0.2`, context), /q/);
+});
+
+// ------------------------------------------------------------ the degree (v3)
+
+/** A degree-3 frame: the tangle route's 1e-22 rung is not needed for a contract test,
+ *  only a place, a width and a cap. */
+const CUBIC = "dv=3&f=multibrot3&x=0.3818029588214199545907&y=0.6232633974651050655314&w=1e-20&n=48551&p=inferno";
+
+test("f names the degree in the shallow contract's spelling, and settles to itself", () => {
+  const view = deep.parse(`?${CUBIC}`, context);
+  assert.equal(view.degree, 3);
+  assert.equal(view.julia, null);
+  assert.equal(deep.familyOf(view), "multibrot3");
+  assert.equal(deep.canonicalize(`?${CUBIC}`, context), CUBIC);
+  // Every name `f` can take is a shallow family, spelled the shallow way.
+  for (const name of deep.FAMILIES.keys()) assert.ok(link.FAMILIES.includes(name), name);
+});
+
+test("a julia family carries its degree and its parameter, in that order", () => {
+  const query =
+    "dv=3&f=julia5&cx=0.2&cy=0.1&x=0.2&y=0.1&w=1e-12&n=48551&p=inferno";
+  const view = deep.parse(`?${query}`, context);
+  assert.equal(view.degree, 5);
+  assert.equal(view.julia.x.text, "0.2");
+  assert.equal(deep.familyOf(view), "julia5");
+  assert.equal(deep.emit(view), query);
+});
+
+test("absent f is degree two on either plane, so a degree-2 link names no family", () => {
+  assert.equal(deep.parse(`?${ANCHOR}`, context).degree, 2);
+  assert.equal(deep.parse(`?${JULIA}`, context).degree, 2);
+  // And spelling the default is accepted and dropped, since it says nothing.
+  const spelled = deep.canonicalize(`?${ANCHOR.replace("dv=1", "dv=3&f=mandelbrot")}`, context);
+  assert.equal(spelled, ANCHOR.replace("dv=1", "dv=3"));
+  const julia = deep.canonicalize(`?${JULIA.replace("dv=2", "dv=3&f=julia")}`, context);
+  assert.equal(julia, JULIA.replace("dv=2", "dv=3"));
+});
+
+test("a family that contradicts the parameter is refused, and so is one it cannot draw", () => {
+  assert.throws(() => deep.parse("?dv=3&f=julia3&p=inferno", context), /cx and cy/);
+  assert.throws(
+    () => deep.parse("?dv=3&f=multibrot4&cx=0.2&cy=0.1&p=inferno", context),
+    /parameter plane.*f=julia4/,
+  );
+  assert.throws(() => deep.parse("?dv=3&f=fractional_multibrot&p=inferno", context), /f is the family/);
+  assert.throws(() => deep.parse("?dv=3&f=multibrot7&p=inferno", context), /f is the family/);
+  assert.throws(() => deep.parse("?dv=3&f=burning_ship&p=inferno", context), /f is the family/);
+  // And an older version never knew the key at all.
+  assert.throws(() => deep.parse("?dv=2&f=multibrot3&p=inferno", context), /does not know: f/);
+});
+
+test("the degree is part of what a field is, and part of what Saved says", () => {
+  const cubic = deep.parse(`?${CUBIC}`, context);
+  const quadratic = { ...cubic, degree: 2 };
+  assert.notEqual(deep.fieldKey(cubic, 320, 180), deep.fieldKey(quadratic, 320, 180));
+  const said = deep.describe(CUBIC, context);
+  assert.equal(said.family, "multibrot3");
+  assert.match(said.said, /^degree 3 · width 1e-20$/);
+  const julia = deep.describe("dv=3&f=julia4&cx=0.2&cy=0.1&w=1e-12&n=48551&p=inferno", context);
+  assert.equal(julia.family, "julia4");
+  assert.match(julia.said, /^degree 4 · Julia at c = 0\.2 \+ 0\.1i/);
+});
+
+test("a degree-d link with no frame opens at its own family's home", () => {
+  const asked = [];
+  const homes = {
+    ...context,
+    deepHome: (family) => {
+      asked.push(family);
+      return family === "multibrot3" ? { x: "0", y: "0", w: "3.2" } : context.deepHome();
+    },
+  };
+  const view = deep.parse("?dv=3&f=multibrot3&p=inferno", homes);
+  assert.equal(view.w.value, 3.2);
+  assert.deepEqual(asked, ["multibrot3"]);
 });
