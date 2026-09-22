@@ -255,6 +255,20 @@ measured size back into the row, and replaces the pending well on the page with 
 the filled row derives. Nothing about the size is typed, so nothing about it can be typed
 wrong.
 
+**A figure may be panels rather than one picture** *(figure_split_overview_ckpt140,
+2026-09-22)*. A row that carries `panels` and `columns` names no `file`, `width` or
+`height` of its own: each panel is its own raster with its own `alt`, and its own `label`
+and `note` where the composite used to letter the tile. The block such a row derives is a
+grid — `columns` across at the article's width, reflowing on its own as the column narrows
+— and each panel is a link into the explorer at *its* view, registered as
+`figure:<id>#<n>`. `builder/links.py` derives those from the ledger recipe each panel's
+seat stands on rather than from the row's prose, because a sheet's provenance names one
+map with the word `colormap` and the rest with `palette`, and a scanner run panel by panel
+carries the first map onto all of them. A maker returns `locations.Split` instead of
+`locations.Drawn` and the landing encodes each panel through the same
+`images.import_web_res` a composited figure goes through, so a picture that did not change
+comes out the same bytes. `overview-gallery-hook` is the first of these.
+
 Four fields travel with every row beyond its words. `page` names the article page that
 carries it — a row on no page is a failing check, where before it was silence. `provenance`
 is one line per panel in prose, saying what would have to be re-rendered to draw that panel

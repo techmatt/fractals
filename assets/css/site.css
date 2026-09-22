@@ -49,6 +49,13 @@
   --wide: 54rem;
   --page: calc(var(--rail) + var(--rail-gap) + var(--wide));
   --gutter: 1.5rem;
+
+  /* A split figure's grid. The gap is what the pad between tiles came to once a
+     composited sheet was scaled to the column, so a figure that was one raster and is
+     now several sits the same way it always did. The floor is where a wallpaper stops
+     being a wallpaper and becomes a swatch: under it the grid drops a column. */
+  --figure-gap: 0.5rem;
+  --figure-panel-min: 13rem;
 }
 
 *, *::before, *::after { box-sizing: border-box; }
@@ -412,6 +419,37 @@ a:hover { color: var(--ink); }
 }
 .figure img { display: block; width: 100%; height: auto; }
 
+/* A split figure: one picture per panel instead of several composited into one raster,
+   so each opens in the explorer at its own view and each label is text rather than
+   pixels. The arrangement is the composite's — `data-columns` across at the article's
+   width — and it reflows on its own as the column narrows, which is the thing a sheet
+   could never do: six tiles of one image on a phone are six pictures at a sixth of the
+   size the phone could have shown one at. `auto-fit` over a floor rather than a media
+   query, because the floor is what a wallpaper stops reading at and the breakpoint is
+   the rail's business. */
+.figure-panels {
+  display: grid;
+  gap: var(--figure-gap);
+  grid-template-columns: repeat(auto-fit, minmax(var(--figure-panel-min), 1fr));
+}
+.figure-panels[data-columns="2"] { grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr)); }
+.figure-panel { min-width: 0; }
+
+/* The label under a panel is a label and not a caption, so it centres — the same rule
+   the short name under a gradient strip keeps. `note` is the quieter half the drawn
+   label spelled with a dash between the two; the separator is this rule's, which is how
+   the words a reader meets carry no punctuation the article would not write. */
+.figure-label {
+  margin: 0.4rem 0 0.1rem;
+  font-size: 0.8125rem;
+  line-height: 1.4;
+  color: var(--well-ink);
+  text-align: center;
+  text-wrap: balance;
+}
+.figure-label .figure-note { color: var(--well-ink-dim); }
+.figure-label .figure-note::before { content: " · "; }
+
 /* The caption sits under the left edge of the picture, at a size a step above the site's
    other small print: it is the second thing a reader looks at, after the figure itself,
    and it used to be set at the footer's size. It is held to the reading measure however
@@ -455,6 +493,16 @@ a:hover { color: var(--ink); }
   border-color: var(--well-link);
   background: rgba(22, 23, 28, 0.92);
   color: var(--well-link);
+}
+/* A panel is a third of the width a whole figure is, and the mark is a door rather than
+   a feature: it steps down with the picture so that six of them stay quiet. */
+.figure-split .figure-open-mark {
+  right: 0.35rem;
+  bottom: 0.35rem;
+  width: 1.35rem;
+  height: 1.35rem;
+  font-size: 0.8125rem;
+  line-height: 1.25rem;
 }
 
 /* A figure registered before its picture exists. Prose gets written before pictures get

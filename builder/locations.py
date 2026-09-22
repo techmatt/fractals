@@ -339,9 +339,41 @@ class Drawn:
     provenance: list[str]
 
 
+@dataclass(frozen=True)
+class Made:
+    """One panel of a **split** figure as its maker leaves it: a picture and its words.
+
+    The picture is lossless and lands in `artifacts/`, exactly as a composed sheet does,
+    so that the one encoder a figure goes through on its way into the site is still the
+    only one — see `images.import_web_res`. What a maker adds is the two things a
+    composite used to draw into the pixels: the label under the tile, and the sentence a
+    screen reader gets instead of the picture.
+    """
+
+    path: Path
+    alt: str
+    label: str | None = None
+    note: str | None = None
+
+
+@dataclass(frozen=True)
+class Split:
+    """A figure drawn as independent panels, and the lines that say how it was made."""
+
+    panels: list[Made]
+    provenance: list[str]
+    columns: int
+
+
 def sheet_path(identifier: str) -> Path:
     SHEETS_DIR.mkdir(parents=True, exist_ok=True)
     return SHEETS_DIR / f"{identifier}.png"
+
+
+def panel_path(identifier: str, index: int) -> Path:
+    """Where one panel of a split figure is composed, before it is encoded into the site."""
+    SHEETS_DIR.mkdir(parents=True, exist_ok=True)
+    return SHEETS_DIR / f"{identifier}-{index}.png"
 
 
 def frame_box(inner: dict, outer: dict, box: tuple[int, int, int, int]) -> tuple[float, ...]:

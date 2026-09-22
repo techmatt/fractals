@@ -640,7 +640,7 @@ def _do_figure(identifier: str) -> int:
         print(f"no figure {identifier!r} — known: {known}", file=sys.stderr)
         return 1
     opened = links.opened(figure.page_path)
-    print(figures.markup(figure, opened.get(f"figure:{identifier}")))
+    print(figures.markup(figure, opened))
     return 0
 
 
@@ -673,7 +673,13 @@ def _do_figures(options: argparse.Namespace) -> int:
     for page, found in grouped.items():
         print(f"{page}  ({len(found)})")
         for figure in found:
-            size = f"{figure.width}x{figure.height}" if not figure.pending else "—"
+            if figure.pending:
+                size = "—"
+            elif figure.split:
+                one = figure.panels[0]
+                size = f"{len(figure.panels)}x {one.width}x{one.height}"
+            else:
+                size = f"{figure.width}x{figure.height}"
             recipe = figure.recipe.maker if figure.recipe else "no recipe"
             keys = sum(len(source.keys) for source in figure.sources)
             kinds = "+".join(source.kind for source in figure.sources)
@@ -862,6 +868,15 @@ def _do_picks(options: argparse.Namespace) -> int:
     """
     for identifier in options.id or sorted(picks_module.MAKERS):
         drawn = picks_module.draw(identifier)
+        if isinstance(drawn, picks_module.Split):
+            _land_split(
+                identifier,
+                drawn,
+                picks_module,
+                replace=options.replace,
+                landing=bool(options.place or options.replace),
+            )
+            continue
         print(f"wrote {drawn.path.relative_to(SITE_ROOT).as_posix()}")
         if not (options.place or options.replace):
             continue
@@ -880,6 +895,47 @@ def _do_picks(options: argparse.Namespace) -> int:
         size = destination.stat().st_size / 1024
         print(f"  {destination.name}  {width}x{height}  ({size:.0f} KB) — {placed.page}")
     return 0
+
+
+def _land_split(identifier: str, drawn, maker, *, replace: bool, landing: bool) -> None:
+    """Land a figure drawn as panels: one encode each, then one row carrying all of them.
+
+    The same two steps a composited figure takes and the same one encoder, run once per
+    panel — `import_web_res` is what makes a picture that did not change come out the same
+    bytes, and a maker that wrote its own WebP would be a second encoder on the site.
+    """
+    for panel in drawn.panels:
+        print(f"wrote {panel.path.relative_to(SITE_ROOT).as_posix()}")
+    if not landing:
+        return
+    rows = []
+    for index, panel in enumerate(drawn.panels, start=1):
+        destination = FIGURE_IMAGES_DIR / f"{identifier}-{index}{images.FIGURE_SUFFIX}"
+        width, height = images.import_web_res(panel.path, destination)
+        row = {"file": destination.name, "width": width, "height": height, "alt": panel.alt}
+        if panel.label:
+            row["label"] = panel.label
+        if panel.note:
+            row["note"] = panel.note
+        rows.append(row)
+    placed = figures.place(
+        identifier,
+        None,
+        None,
+        None,
+        provenance=list(drawn.provenance),
+        recipe=maker.recipe(identifier),
+        sources=maker.sources(identifier),
+        panels=rows,
+        columns=drawn.columns,
+        replace=replace,
+    )
+    total = sum((FIGURE_IMAGES_DIR / row["file"]).stat().st_size for row in rows) / 1024
+    one = rows[0]
+    print(
+        f"  {len(rows)} panels  {one['width']}x{one['height']}  "
+        f"({total:.0f} KB together) — {placed.page}"
+    )
 
 
 def _do_growth(options: argparse.Namespace) -> int:

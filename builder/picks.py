@@ -110,7 +110,7 @@ from pathlib import Path
 
 from . import figures as figures_module
 from . import records, renders, sheets
-from .locations import SHEET_WIDTH, Drawn, panels, sheet_path
+from .locations import SHEET_WIDTH, Drawn, Made, Split, panel_path, panels, sheet_path
 
 #: Where a recorded tentative gallery lives under the wallpaper project's tree, and what
 #: the seats file inside a stamp is called.
@@ -745,6 +745,19 @@ def family_with_formula(family: dict) -> str:
     return f"{family_name(family)} — {family_formula(family)}"
 
 
+def panel_alt(pick: Pick) -> str:
+    """What a reader's screen reader says about one panel of a split figure.
+
+    Derived by rule and never written, the way a gallery tile's is — two facts, both on
+    the record: the rendering that drew the picture and the family it is of. Six written
+    sentences would be six chances to say something the record does not, and the label
+    under the panel is the page's own text now, so this is what is left to say.
+    """
+    return (
+        f"A wallpaper drawn in {mode_words(pick.mode)}, in the {family_name(pick.family)} family."
+    )
+
+
 def mode_words(mode: str) -> str:
     """What a tile calls a rendering mode, or a refusal naming the mode with no wording."""
     if mode not in MODE_WORDS:
@@ -761,14 +774,6 @@ def mode_words(mode: str) -> str:
 #: How many panels across the hook runs, and how many rows it fills.
 HOOK_COLUMNS = 3
 HOOK_ROWS = 2
-
-#: How many lines a tile label under the hook carries: the family and the iteration it
-#: runs, and nothing else *(Matt, 2026-09-06)*. It used to name the rendering underneath,
-#: and the caption already says which row is smooth and which is not — a mode name under
-#: every tile of the article's opening figure spends a reader's first look on vocabulary
-#: the page has not taught yet. The formula went on in the same round, the way
-#: `escape-families` carries one, so the opening picture says what a family *is*.
-HOOK_LABEL_LINES = 1
 
 #: The Rendering modes roster, in the engine catalog's own order — the order the page's
 #: own scoreboard reads in, and the order the sheet draws. Spelled here rather than read
@@ -871,11 +876,18 @@ def picks_of(identifier: str) -> list[str]:
     return list(wanted)
 
 
-def gallery_hook() -> Drawn:
+def gallery_hook() -> Split:
     """The article's opening figure: six wallpapers the search found, three across, two down.
 
     Nothing about which six is this module's choice — they are the IDs on the registry
     row, in the order they are written there, filling left to right and then down.
+
+    **Six pictures rather than one** *(figure_split_overview_ckpt140, 2026-09-22)*. It was
+    a composited sheet with its labels drawn into the pixels, and that spent five sixths
+    of what the figure is worth: one way into the explorer for six wallpapers, a label no
+    reader could select and no screen reader could say, and a grid that could only ever
+    scale down whole. The arrangement is the same and so are the pixels — each panel is
+    exactly the tile the sheet pasted, one `images.import_web_res` away from the site.
     """
     identifier = "overview-gallery-hook"
     wanted = picks_of(identifier)
@@ -886,21 +898,26 @@ def gallery_hook() -> Drawn:
     resolved = resolve(wanted)
     catalog = renders.mode_catalog()
     size = panels(HOOK_COLUMNS)
-    caption = sheets.caption_band(size[1], SHEET_WIDTH, HOOK_LABEL_LINES)
-    sheet, draw = sheets.canvas(*sheets.grid_size(size, HOOK_COLUMNS, HOOK_ROWS, caption))
-    for index, pick in enumerate(resolved):
-        picture = panel(pick, f"hook-{index + 1}-{pick.alias}", catalog)
-        origin = sheets.panel_origin(index, size, HOOK_COLUMNS, caption)
-        sheet.paste(sheets.fitted(picture, size), origin)
-        sheets.tile_label(
-            draw,
-            origin,
-            size,
-            [family_with_formula(pick.family)],
-            sheet.width,
+    made = []
+    for index, pick in enumerate(resolved, start=1):
+        picture = panel(pick, f"hook-{index}-{pick.alias}", catalog)
+        destination = sheets.save(
+            sheets.fitted(picture, size), panel_path(identifier, index), quiet=True
         )
-    destination = sheets.save(sheet, sheet_path(identifier))
-    return Drawn(destination, provenance(resolved, size))
+        # The label a tile carried drawn into it, in two pieces. The words are Matt's
+        # ruling of 2026-09-06 and are unchanged: the family and the iteration it runs,
+        # and not the rendering underneath, because the caption already says which row is
+        # smooth and a mode name under every tile of the article's opening figure spends a
+        # reader's first look on vocabulary the page has not taught yet.
+        made.append(
+            Made(
+                destination,
+                alt=panel_alt(pick),
+                label=family_name(pick.family),
+                note=family_formula(pick.family),
+            )
+        )
+    return Split(made, provenance(resolved, size, composed=False), HOOK_COLUMNS)
 
 
 def modes_gallery() -> Drawn:
@@ -1632,21 +1649,31 @@ def provenance(
     *,
     columns: int = HOOK_COLUMNS,
     chosen: tuple[str, ...] = (),
+    composed: bool = True,
 ) -> list[str]:
     """The registry lines for a sheet of picks: the composition, then one line per panel.
 
     `chosen` is where a figure says how its seats were arrived at, which is the one thing
     the resolution above cannot say for itself — the hook's six are Matt's, and the modes
     roster's thirteen are a seeded random draw.
+
+    `composed` is false for a **split** figure, whose panels are separate files rather
+    than tiles of one sheet. The record says which, because a redraw of one is not a
+    redraw of the other: the pixels are identical and the number of pictures is not.
     """
     stamped = sorted({pick.stamp for pick in picks})
+    landed = (
+        "in the sheet"
+        if composed
+        else "and landed one file a panel, this figure being split rather than composited"
+    )
     lines = [
         f"builder.picks — every panel is a seat of a recorded tentative gallery, named on "
         f"this row by its own `<stamp>{PICK_SEPARATOR}<recipe key>` and resolved from "
         f"artifacts/curation/tentative/<stamp>/{SEATS_NAME} for the seat and the candidate "
         f"ledger for the recipe. Rendered fresh through the engine at {PANEL_RENDER[0]}x"
         f"{PANEL_RENDER[1]}, supersample {PANEL_SUPERSAMPLE}, then fitted to "
-        f"{size[0]}x{size[1]} in the sheet; the stored 640x360 thumbnail a seat points at "
+        f"{size[0]}x{size[1]} {landed}; the stored 640x360 thumbnail a seat points at "
         f"is the picture the judges were shown and is not a source here. Nothing about the "
         f"coloring is this figure's choice: mode, mode settings, curve, map, the whole "
         f"palette pass and the cap all come off the ledger's recipe. Stamp"

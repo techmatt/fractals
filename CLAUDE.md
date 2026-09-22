@@ -173,6 +173,26 @@ keeps the mechanics. **Every apply round ends by distilling that round's general
   necessary — each of which fails or fires on its own. Where a figure pass leaves
   something genuinely undecided, the row carries the collision and says it is not yet
   judged, which is a state a check reads rather than a task somebody has to remember.
+- **A figure is split into panels unless the composite is the point** *(Matt, 2026-09-22)*.
+  A figure that is several rasters composited into one picture, with its labels drawn into
+  the pixels, spends most of what it is worth: one way into the explorer for however many
+  wallpapers, a label no reader can select and no screen reader can say, and a grid that
+  can only ever scale down whole. So the default is aggressive — one `<img>` per panel,
+  each a link at its own view, every drawn label HTML text — and what stays composited is
+  the figure whose meaning is the **juxtaposition itself** (a before-and-after pair, a grid
+  whose two axes are the claim) or whose panel count makes individual links silly (a
+  sixty-four-tile contact sheet). A split row carries `panels` and `columns` and no file of
+  its own; `builder/README.md` has the mechanics. **The arrangement and the pixels do not
+  change**: a panel is exactly the tile the sheet pasted, which is a thing to measure
+  against the lossless composite in `artifacts/` rather than to assert.
+- **A split figure's panels are linked from their record, never from the prose.** The
+  `colormap` rule above is what pays for a sheet being one link at its representative
+  panel, and it means every other panel's map is written in a way the link scanner does not
+  read — run panel by panel it silently carries the representative's map onto all of them,
+  which is a link that opens the right place in the wrong colour. So a panel is linkable
+  only where the row *claims* the seat's own recipe drew it, and the link comes from that
+  recipe whole. A maker that changed the recipe to make its point, or that draws at a map
+  of its own, needs its own per-panel view before its figure can be split.
 - **A figure's id opens with its page's prefix** — `overview-`, `escape-`, `render-`,
   `modes-`, `locations-`, `judges-`, `palette-`, `wallpapers-` — so a slug says where it
   lives before anything looks it up. One prefix to a page and one page to a prefix, with

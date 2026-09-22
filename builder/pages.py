@@ -24,7 +24,19 @@ GENERATED_NOTICE = (
 )
 
 SITE_TITLE = "Making Fractal Wallpapers"
+
+#: The pipeline's code — the project this article is about. Named wherever the article
+#: talks about how the pictures were made, and in the footer.
 CODE_REPO = "https://github.com/techmatt/fractal-wallpapers"
+
+#: This site's own code *(figure_split_overview_ckpt140, 2026-09-22)*. The bar's `GitHub`
+#: used to point next door, which is the one link on the page a reader cannot guess wrong:
+#: a bar link named after the site is the site, and somebody who wanted to see how a page
+#: they were reading is built landed in a renderer instead. The pipeline is still one click
+#: away — the contents rail carries it, the footer carries it, and the article names it
+#: wherever it talks about the code that drew the pictures.
+SITE_REPO = "https://github.com/techmatt/fractal-website"
+
 AUTHOR_SITE = "https://techmatt.github.io/"
 
 FOOTER = f"""<footer>
@@ -42,8 +54,9 @@ def gallery_page_path(gallery: Gallery):
 
 
 def topbar(home: str, galleries_index: str) -> str:
-    """The site bar every page carries: back to the front page, out to the code and
-    to the author's homepage — this site is one project of several living under it.
+    """The site bar every page carries: back to the front page, out to this site's own
+    source and to the author's homepage — this site is one project of several living
+    under it.
 
     Both hrefs are passed in already relative to the page that will hold them — the
     bar is the same line everywhere, and only its depth differs.
@@ -54,7 +67,7 @@ def topbar(home: str, galleries_index: str) -> str:
             '  <div class="topbar-inner">',
             f'    <a class="topbar-site" href="{attribute(home)}">{text(SITE_TITLE)}</a>',
             '    <span class="topbar-links"><a href="'
-            f'{attribute(galleries_index)}">Galleries</a><a href="{CODE_REPO}">GitHub</a>'
+            f'{attribute(galleries_index)}">Galleries</a><a href="{SITE_REPO}">GitHub</a>'
             f'<a href="{AUTHOR_SITE}">Matt Fisher</a></span>',
             "  </div>",
             "</nav>",

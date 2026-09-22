@@ -154,6 +154,12 @@ LF = "\n"
 #: What separates a maker's module from the function inside it, in a recipe.
 MAKER_SEPARATOR = ":"
 
+#: What separates a split figure's id from the panel's number, wherever one picture of a
+#: figure has to be addressed on its own — the link registry is the only place so far. A
+#: figure id is a slug and carries none of these, so a panel address cannot collide with
+#: a figure's.
+PANEL_SEPARATOR = "#"
+
 #: The package whose makers `check` can actually resolve. A maker outside it — a rig
 #: under `scratch/`, which is where a figure is usually composed — is recorded and not
 #: resolved, because untracked code is exactly what the registry cannot vouch for.
@@ -219,6 +225,34 @@ class Fact:
 
 
 @dataclass(frozen=True)
+class Panel:
+    """One picture of a **split** figure: its own raster, its own words, its own link.
+
+    A figure used to be one file always, because a sheet of six wallpapers was six
+    rasters composited into one picture with its labels drawn into the pixels. That costs
+    a reader everything the panels are worth separately: the explorer can only be opened
+    at one of the six, a label cannot be selected or read aloud, and nothing scales the
+    grid down on a narrow screen. A split figure is the same arrangement made of real
+    elements — one `<img>` per panel, each its own link, every label HTML text.
+
+    `label` is the panel's own name and `note` a quieter second piece on the same line,
+    which is what a drawn label spelled with a dash between them. The separator is CSS's
+    here, so the words a reader meets carry no punctuation this site would not write.
+    """
+
+    file: str
+    width: int
+    height: int
+    alt: str
+    label: str | None = None
+    note: str | None = None
+
+    @property
+    def path(self):
+        return FIGURE_IMAGES_DIR / self.file
+
+
+@dataclass(frozen=True)
 class Figure:
     """One registered figure and the words that travel with it; the asset is optional."""
 
@@ -240,6 +274,13 @@ class Figure:
     reuse_reason: str | None
     note: str | None
     caption_link: tuple[str, str] | None
+    panels: tuple[Panel, ...] = ()
+    columns: int | None = None
+
+    @property
+    def split(self) -> bool:
+        """Whether this figure is panels rather than one composited picture."""
+        return bool(self.panels)
 
     @property
     def draft(self) -> bool:
@@ -302,7 +343,7 @@ class Figure:
     @property
     def pending(self) -> bool:
         """True while the picture is planned but not yet made."""
-        return self.file is None
+        return self.file is None and not self.panels
 
     @property
     def held(self) -> bool:
@@ -330,6 +371,26 @@ class Figure:
         """The figure's src as an article page must spell it: relative, never rooted."""
         return relative_href(self.page_path, self.path)
 
+    def panel_src(self, panel: Panel) -> str:
+        """One panel's src, spelled the same way and from the same page."""
+        return relative_href(self.page_path, panel.path)
+
+    @property
+    def rasters(self) -> tuple[tuple[str, object, int, int], ...]:
+        """Every file this figure ships, as name, path and the size the row claims.
+
+        One entry for a composited figure and one per panel for a split one, so a caller
+        that only wants to know whether the pictures are there and are the size the
+        registry says does not have to know which shape it is holding.
+        """
+        if self.split:
+            return tuple(
+                (panel.file, panel.path, panel.width, panel.height) for panel in self.panels
+            )
+        if self.pending:
+            return ()
+        return ((self.file, self.path, self.width, self.height),)
+
 
 def page_name(path) -> str:
     """How a registry row spells this page — the inverse of `paths.carrier_path`."""
@@ -337,12 +398,14 @@ def page_name(path) -> str:
     return relative.name if relative.parent.name == "article" else relative.as_posix()
 
 
-def markup(figure: Figure, opened: str | None = None) -> str:
+def markup(figure: Figure, opened: dict[str, str] | None = None) -> str:
     """The canonical figure block: what an article page must contain, exactly.
 
-    `opened` is the explorer link this figure reopens at, where the link registry holds
-    one — see `builder/links.py`. A figure the explorer cannot reproduce carries no
-    link at all rather than one that lands somewhere near it.
+    `opened` is every explorer link one page carries, keyed the way `builder/links.py`
+    keys them — `figure:<id>` for a composited figure and `figure:<id>#<n>` for a panel
+    of a split one. A picture the explorer cannot reproduce carries no link at all rather
+    than one that lands somewhere near it, so a missing key is a picture without an
+    anchor and never an error.
 
     **The caption is the caption and nothing else** *(Matt, 2026-08-21)*. It used to end
     with two more sentences that were not about the picture: a credit saying the engine
@@ -351,18 +414,26 @@ def markup(figure: Figure, opened: str | None = None) -> str:
     the corner of the picture, so what is left under a figure is what a reader is looking
     at.
     """
+    links_by_id = opened or {}
     classes = ["figure"]
     if figure.pending:
         classes.append("figure-pending")
+    if figure.split:
+        classes.append("figure-split")
     return "\n".join(
         [
             f'{INDENT}<figure class="{" ".join(classes)}" data-figure="{attribute(figure.id)}">',
-            _well(figure, opened),
+            _panels(figure, links_by_id) if figure.split else _well(figure, links_by_id),
             f"{INDENT}  <figcaption>{_mark(figure)}{text(figure.caption)}"
             f"{_caption_anchor(figure)}</figcaption>",
             f"{INDENT}</figure>",
         ]
     )
+
+
+def panel_id(identifier: str, index: int) -> str:
+    """How the link registry addresses one panel of a split figure. One-based."""
+    return f"figure:{identifier}{PANEL_SEPARATOR}{index}"
 
 
 def _caption_anchor(figure: Figure) -> str:
@@ -417,7 +488,7 @@ def leads_its_page(figure: Figure) -> bool:
     return first is None or first.group(1) == figure.id
 
 
-def _well(figure: Figure, opened: str | None = None) -> str:
+def _well(figure: Figure, opened: dict[str, str]) -> str:
     """What sits in the figure's well: the picture, or a note saying what will.
 
     A picture the explorer can draw again *is* the link. The mark in its corner is the
@@ -434,14 +505,44 @@ def _well(figure: Figure, opened: str | None = None) -> str:
         f'<img src="{attribute(figure.src)}" width="{figure.width}" '
         f'height="{figure.height}" alt="{attribute(figure.alt)}"{lazy}>'
     )
+    return f"{INDENT}  {_linked(picture, opened.get(f'figure:{figure.id}'))}"
+
+
+def _linked(picture: str, opened: str | None) -> str:
+    """One picture, wrapped in the way into the explorer where there is one."""
     if not opened:
-        return f"{INDENT}  {picture}"
+        return picture
     mark = f'<span class="figure-open-mark" aria-hidden="true">{OPEN_MARK}</span>'
     return (
-        f'{INDENT}  <a class="figure-open" href="{attribute(opened)}" '
+        f'<a class="figure-open" href="{attribute(opened)}" '
         f'title="{attribute(OPEN_TEXT)}" aria-label="{attribute(OPEN_TEXT)}">'
         f"{picture}{mark}</a>"
     )
+
+
+def _panels(figure: Figure, opened: dict[str, str]) -> str:
+    """A split figure's grid: one picture, one link and one label per panel.
+
+    The arrangement is the composite's — `columns` across at the article's width — and
+    the grid stacks on its own as the column narrows, which is the thing a composited
+    sheet could never do: a sheet of six scaled to a phone is six pictures at a sixth of
+    the size a phone can show one at.
+    """
+    lazy = "" if leads_its_page(figure) else ' loading="lazy"'
+    lines = [f'{INDENT}  <div class="figure-panels" data-columns="{figure.columns}">']
+    for index, panel in enumerate(figure.panels, start=1):
+        picture = (
+            f'<img src="{attribute(figure.panel_src(panel))}" width="{panel.width}" '
+            f'height="{panel.height}" alt="{attribute(panel.alt)}"{lazy}>'
+        )
+        lines.append(f'{INDENT}    <div class="figure-panel">')
+        lines.append(f"{INDENT}      {_linked(picture, opened.get(panel_id(figure.id, index)))}")
+        if panel.label:
+            note = f'<span class="figure-note">{text(panel.note)}</span>' if panel.note else ""
+            lines.append(f'{INDENT}      <p class="figure-label">{text(panel.label)}{note}</p>')
+        lines.append(f"{INDENT}    </div>")
+    lines.append(f"{INDENT}  </div>")
+    return "\n".join(lines)
 
 
 def load_all() -> dict[str, Figure]:
@@ -467,11 +568,24 @@ def _figure(row: records.Record, identifier: str) -> Figure:
         )
     made = status in MADE
     asset = (row.optional_text("file"), row.optional_count("width"), row.optional_count("height"))
-    if not made and any(field is not None for field in asset):
+    panels = _panel_rows(row)
+    columns = row.optional_count("columns")
+    if not made and (any(field is not None for field in asset) or panels):
         raise records.RecordError(
             f"{row.where}: a {status} figure names no file or size — the asset does not exist yet"
         )
-    if made and any(field is None for field in asset):
+    if panels and any(field is not None for field in asset):
+        raise records.RecordError(
+            f"{row.where}: a split figure is its panels — it names no file, width or height "
+            "of its own"
+        )
+    if panels and columns is None:
+        raise records.RecordError(
+            f"{row.where}: a split figure says how many panels stand across, in columns"
+        )
+    if columns is not None and not panels:
+        raise records.RecordError(f"{row.where}: columns is the width of a grid, and there is none")
+    if made and not panels and any(field is None for field in asset):
         raise records.RecordError(f"{row.where}: a {status} figure needs file, width and height")
     held_reason = row.optional_text("held_reason")
     if status == HELD and held_reason is None:
@@ -510,7 +624,54 @@ def _figure(row: records.Record, identifier: str) -> Figure:
         reuse_reason=row.optional_text("reuse_reason"),
         note=note,
         caption_link=_caption_link(row),
+        panels=panels,
+        columns=columns,
     )
+
+
+#: What one panel of a split figure may say, and which of it it must.
+PANEL_FIELDS = ("file", "width", "height", "alt", "label", "note")
+PANEL_REQUIRED = ("file", "width", "height", "alt")
+
+
+def _panel_rows(row: records.Record) -> tuple[Panel, ...]:
+    """A row's `panels`, held to each one being a real picture with its own words."""
+    stated = row.fields.get("panels")
+    if stated is None:
+        return ()
+    if not isinstance(stated, list) or not stated:
+        raise records.RecordError(f"{row.where}: panels must be a non-empty list when present")
+    found = []
+    for entry in stated:
+        if not isinstance(entry, dict):
+            raise records.RecordError(f"{row.where}: every panels entry is an object")
+        unknown = set(entry) - set(PANEL_FIELDS)
+        if unknown:
+            raise records.RecordError(
+                f"{row.where}: a panel is {', '.join(PANEL_FIELDS)}, "
+                f"not {', '.join(sorted(unknown))}"
+            )
+        missing = [name for name in PANEL_REQUIRED if entry.get(name) is None]
+        if missing:
+            raise records.RecordError(
+                f"{row.where}: a panel names {', '.join(PANEL_REQUIRED)} — "
+                f"this one is missing {', '.join(missing)}"
+            )
+        for name in ("file", "alt", "label", "note"):
+            value = entry.get(name)
+            if value is not None and (not isinstance(value, str) or not value.strip()):
+                raise records.RecordError(f"{row.where}: a panel's {name} is a non-empty string")
+        for name in ("width", "height"):
+            value = entry[name]
+            if not isinstance(value, int) or isinstance(value, bool) or value <= 0:
+                raise records.RecordError(f"{row.where}: a panel's {name} is a positive integer")
+        if entry.get("note") and not entry.get("label"):
+            raise records.RecordError(
+                f"{row.where}: a panel's note is the quiet half of its label, and this one "
+                "has no label to be the quiet half of"
+            )
+        found.append(Panel(**{name: entry.get(name) for name in PANEL_FIELDS}))
+    return tuple(found)
 
 
 def _caption_link(row: records.Record) -> tuple[str, str] | None:
@@ -674,6 +835,8 @@ KEY_ORDER = (
     "file",
     "width",
     "height",
+    "columns",
+    "panels",
     "alt",
     "caption",
     "caption_link",
@@ -687,13 +850,15 @@ KEY_ORDER = (
 
 def place(
     identifier: str,
-    file: str,
-    width: int,
-    height: int,
+    file: str | None,
+    width: int | None,
+    height: int | None,
     *,
     provenance: list[str] | None = None,
     recipe: dict | None = None,
     sources: list[dict] | None = None,
+    panels: list[dict] | None = None,
+    columns: int | None = None,
     replace: bool = False,
     status: str = PLACED,
 ) -> Figure:
@@ -714,6 +879,11 @@ def place(
     `sources` is for a maker whose panels **are** record keys: `builder.picks` names its
     picks on the row and draws exactly those, so the row's sources are rewritten with the
     picture rather than left saying what the last set of panels came from.
+
+    `panels` and `columns` land a **split** figure — one raster per panel rather than one
+    composited sheet — and then `file`, `width` and `height` are all `None`, because the
+    figure has no picture of its own. Landing a split over a composited row takes the old
+    row's file, width and height off it, so the registry cannot claim both shapes at once.
 
     Everything that can refuse refuses *before* anything is written: a made row with no
     provenance is a row `load_all` will not read back, and writing one would leave the
@@ -762,9 +932,20 @@ def place(
             f"{identifier} would land as a draft and its row carries no note — a draft "
             "says what re-bakes it before its mark goes onto a page"
         )
+    if (panels is None) == (file is None):
+        raise records.RecordError(
+            f"{identifier}: a landing is either one file and its size or a list of panels"
+        )
     row["status"] = status
     row.pop("held_reason", None)
-    row["file"], row["width"], row["height"] = file, width, height
+    if panels is None:
+        row.pop("panels", None)
+        row.pop("columns", None)
+        row["file"], row["width"], row["height"] = file, width, height
+    else:
+        for key in ("file", "width", "height"):
+            row.pop(key, None)
+        row["panels"], row["columns"] = list(panels), columns
     if provenance:
         row["provenance"] = list(provenance)
     if recipe:
@@ -796,8 +977,8 @@ def landing_block(figure: Figure) -> str:
     return markup(figure, _opened(figure))
 
 
-def _opened(figure: Figure) -> str | None:
-    """The explorer link this figure's block carries, where the link registry has one.
+def _opened(figure: Figure) -> dict[str, str]:
+    """The explorer links this figure's block carries, as the link registry keys them.
 
     Derived rather than assumed: a picture the explorer can draw again *is* the link, so
     the block on the page has an anchor around it and the block a redraw has to find and
@@ -805,7 +986,7 @@ def _opened(figure: Figure) -> str | None:
     """
     from . import links
 
-    return links.opened(figure.page_path).get(f"figure:{figure.id}")
+    return links.opened(figure.page_path)
 
 
 def _heal(figure: Figure, was: str) -> None:

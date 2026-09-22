@@ -175,12 +175,21 @@ def picture_ids() -> list[str]:
     the site has planned, and a row saying so is what stops it being forgotten. A **held**
     figure is not: it is registered and deliberately not on a page, so there is no picture
     for a link to sit in the corner of and nothing for a reader to open.
+
+    **A split figure is its panels and not itself.** Six pictures a reader can open one
+    at a time are six rows here; a row for the figure as a whole would be a link nothing
+    on the page could carry.
     """
-    found = [
-        f"figure:{identifier}"
-        for identifier, figure in figures.load_all().items()
-        if figure.on_page
-    ]
+    found = []
+    for identifier, figure in figures.load_all().items():
+        if not figure.on_page:
+            continue
+        if figure.split:
+            found.extend(
+                figures.panel_id(identifier, index) for index in range(1, len(figure.panels) + 1)
+            )
+        else:
+            found.append(f"figure:{identifier}")
     for gallery in galleries.load_all():
         found.extend(f"gallery:{gallery.slug}/{image.file}" for image in gallery.images)
     return found
@@ -207,6 +216,9 @@ def derive() -> list[Link]:
             continue
         if figure.pending:
             wanted.append(_refused(key, "incomplete_provenance", "the picture is not made yet"))
+            continue
+        if figure.split:
+            wanted.extend(_panel_links(figure, views))
             continue
         found = _figure_view(figure, roster, palettes, curves)
         if isinstance(found, Link):
@@ -264,6 +276,112 @@ def _settled(link: Link, emitted: dict[str, dict], views: dict[str, dict]) -> Li
 
 def _refused(identifier: str, reason: str, why: str, source: str | None = None) -> Link:
     return Link(identifier, None, reason, why, source)
+
+
+# --------------------------------------------------------------- a split figure's panels
+
+#: What a split figure's row has to say before a panel of it can be linked at all.
+PANEL_RECORD = (
+    "a split figure's panels are one gallery seat each, drawn at the seat's own recipe, "
+    "and this row does not say so in its recipe and sources"
+)
+
+
+def _panel_links(figure: figures.Figure, views: dict[str, dict]) -> list[Link]:
+    """One link per panel of a split figure, each derived from the record that panel is.
+
+    **Not from the prose, and that is the whole of the design.** A composited sheet is one
+    link at its representative panel, and the convention that pays for it — exactly one
+    line of a row puts the word `colormap` in front of a map's name, and every other line
+    says `palette` — means the remaining panels' maps are written in a way nothing here
+    reads. Scanning a sheet panel by panel does not fail: it quietly carries the
+    representative's map onto every panel after it, which is a link that opens the right
+    place in the wrong colour. Measured on this figure before it was split, and it is the
+    reason panels are linked from the ledger recipe their seat stands on, whole, the way a
+    staged gallery's tiles already are.
+
+    So a panel is only linkable where the row *claims* the seat's own recipe drew it —
+    `sources` says `own_recipe`, which `check`'s `seats` holds to the gallery's pixels. A
+    figure whose maker changed the recipe to make its point is refused here rather than
+    approximated, which is the same rule the rest of this module keeps.
+    """
+    from . import picks
+
+    identifiers = [figures.panel_id(figure.id, index) for index in range(1, len(figure.panels) + 1)]
+    keys = _seat_keys(figure)
+    if keys is None or len(keys) != len(figure.panels):
+        return [
+            _refused(identifier, "incomplete_provenance", PANEL_RECORD)
+            for identifier in identifiers
+        ]
+    try:
+        resolved = picks.resolve(keys)
+    except picks.PickError as error:
+        return [
+            _refused(identifier, "incomplete_provenance", f"the seat does not resolve: {error}")
+            for identifier in identifiers
+        ]
+    found = []
+    for identifier, pick in zip(identifiers, resolved, strict=True):
+        level, why = _panel_level(pick, picks)
+        if why is not None:
+            found.append(_refused(identifier, "incomplete_provenance", why, pick.identifier))
+            continue
+        views[identifier] = ledger_view(pick.recipe, level=level)
+        found.append(Link(identifier, None, None, None, f"seat {pick.identifier}"))
+    return found
+
+
+def _seat_keys(figure: figures.Figure) -> list[str] | None:
+    """The seat this figure's maker draws each panel from, in panel order, or nothing.
+
+    The recipe's `picks` is the maker's own list — the thing it iterates — and `sources`
+    is the claim about how those seats are drawn. Both, because the first says which
+    record and the second says whether the record is the picture.
+    """
+    if figure.recipe is None:
+        return None
+    keys = figure.recipe.args.get("picks")
+    if not isinstance(keys, list) or not keys or not all(isinstance(key, str) for key in keys):
+        return None
+    seats = [source for source in figure.sources if source.kind == figures.GALLERY_SEAT]
+    if not seats or any(source.drawn != figures.OWN_RECIPE for source in seats):
+        return None
+    claimed = {key for source in seats for key in source.keys}
+    if not set(keys) <= claimed:
+        return None
+    return keys
+
+
+def _panel_level(pick, picks) -> tuple[dict | None, str | None]:
+    """The tone curve one panel's link carries, or why the panel cannot carry a link.
+
+    The operator measures a picture's tone and, where it sits outside the band, draws it
+    again through a curve pushed into the map's stops. A link that says nothing about tone
+    draws the render underneath, which for a seat the operator acted on is a visibly
+    different picture — so the curve is carried or the panel is refused, never dropped.
+
+    A second reading of the stamp `builder/seats.py` reads for a gallery tile. The shapes
+    agree because both read `band_autolevel/v1`'s own record; what differs is the way in,
+    which is one run record a panel here against a batch of a thousand there.
+    """
+    levelling = picks.run_stamp(pick)
+    if levelling.way == picks.UNTOUCHED:
+        return None, None
+    stamp = levelling.stamp or {}
+    curve = stamp.get("curve") or {}
+    if levelling.way != picks.REPLAYED or not curve.get("applies") or curve.get("identity"):
+        return None, (
+            f"the tone operator acted on this seat and {levelling.where} did not record "
+            "the curve it acted with, so no link draws the picture the panel shows"
+        )
+    return {
+        "operator": str(stamp["operator"]),
+        "black_pt": float(curve["black_pt"]),
+        "white_pt": float(curve["white_pt"]),
+        "exponent": float(curve["exponent"]),
+        "out_ends": [float(curve["out_ends"][0]), float(curve["out_ends"][1])],
+    }, None
 
 
 def emit(views: dict[str, dict]) -> dict[str, dict]:

@@ -302,7 +302,7 @@ def check_figures() -> list[str]:
             figure = registry.get(identifier)
             if figure is None:
                 problems.append(f"{where}: figure {identifier!r} is not in the registry")
-            elif figures.markup(figure, opened.get(f"figure:{identifier}")) not in html:
+            elif figures.markup(figure, opened) not in html:
                 problems.append(
                     f"{where}: figure {identifier!r} does not match the registry — "
                     f"`python -m builder figure {identifier}`"
@@ -314,15 +314,16 @@ def check_figures() -> list[str]:
         if figure.pending:
             continue
         problems.extend(_figure_facts(figure))
-        if not figure.path.is_file():
-            problems.append(f"figures.jsonl: {figure.id} names a missing {figure.file}")
-        elif images.available():
-            actual = images.dimensions(figure.path)
-            if actual != (figure.width, figure.height):
-                problems.append(
-                    f"figures.jsonl: {figure.id} says {figure.width}x{figure.height}, "
-                    f"{figure.file} is {actual[0]}x{actual[1]}"
-                )
+        for name, path, width, height in figure.rasters:
+            if not path.is_file():
+                problems.append(f"figures.jsonl: {figure.id} names a missing {name}")
+            elif images.available():
+                actual = images.dimensions(path)
+                if actual != (width, height):
+                    problems.append(
+                        f"figures.jsonl: {figure.id} says {width}x{height}, "
+                        f"{name} is {actual[0]}x{actual[1]}"
+                    )
     problems.extend(recipes.problems())
     if figures.stores_available():
         problems.extend(figures.unresolved(registry))
