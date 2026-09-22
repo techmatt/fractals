@@ -689,7 +689,6 @@ summary.section-head:focus-visible { outline: 2px solid var(--well-link); outlin
   text-transform: uppercase;
   color: var(--well-link);
 }
-.walk-hint { flex-basis: 100%; margin: 0; color: var(--well-ink-dim); font-size: 0.75rem; }
 .walk-check { white-space: nowrap; color: var(--well-ink-dim); }
 /* A family's radio wears the wheel's own dot, the same mark the gallery panel's hue chips
    wear. `.hue` above is the dot and is not restated here; the map count that used to

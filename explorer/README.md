@@ -208,8 +208,8 @@ footer under the tiles reading *1000 wallpapers in the general gallery*, which w
 option's own text — *General gallery · 1000* — said three times over two rows of a panel
 that is meant to be pictures. The footer now says `k of N` and only while a chip is
 narrowing the grid, which is the one thing the dropdown cannot say; unfiltered, there is no
-footer at all. The Mode select's roster and the
-trap-mode defaults stay the general gallery's. Mode chips add up; a hue family chip is one at a time, and pressing
+footer at all. The Render mode select's roster and the
+trap-mode defaults stay the general gallery's. Render mode chips add up; a hue family chip is one at a time, and pressing
 it again clears it. **The hue row is the wheel's twelve and nothing else**
 *(2026-09-19)*: it used to open on *unfiled 4*, the seats the dominance rule found
 dominant in no family, and a chip named after a threshold is no answer to a reader
@@ -672,7 +672,7 @@ is the pan.
 one sentence above Walk config, and the first thing in the panel:
 
 > This visualizes a guided walk through escape-time fractals. It is mostly a demonstration
-> of how the process works: the shipped galleries are what came out of running it
+> of how the process works: the shipped galleries are the best results after running it
 > continuously for many weeks. For more, read [Finding good locations].
 
 Matt's wording, placed verbatim but for one word: he wrote *orbital fractals*, and the site
@@ -801,7 +801,7 @@ walk runs and whether the viewer follows it are two states, `state` and `attache
      together.
    - **And a finish** *(Matt, walk_tab_ckpt140)*: `FINISH_MODES` — three — further pictures,
      each in a mode of its own and so each its own field, drawn at random out of everything
-     the Modes group offers and never a mode this place has already been drawn in. See
+     the Render modes group offers and never a mode this place has already been drawn in. See
      *A slower finish* below.
    - Each candidate is scored by the gate's P≥4 and they are ranked together, and the best
      are kept as tiles (one, frozen — `KEEP`). The fine head does not rank them: it is off
@@ -835,9 +835,9 @@ can now reach any of it; editing that one line is what brings it back. It was le
 than cut because the ruling was to freeze the behaviour, and cutting it reaches well past
 this tab.
 
-The config's defaults are the pipeline's draw where the page can make one. **Modes is the
-walk's own roster and not the pipeline's** *(walk_faster_ckpt138)* — `smooth`, `tia` and
-`threads`, in the Mode select's own order, handed over by the viewer so the two cannot
+The config's defaults are the pipeline's draw where the page can make one. **Render modes is
+the walk's own roster and not the pipeline's** *(walk_faster_ckpt138)* — `smooth`, `tia` and
+`threads`, in the Render mode select's own order, handed over by the viewer so the two cannot
 drift. It was the thirteen the pipeline accepts with the last five unticked, and what it is
 now is the measured answer to "which of those is cheap enough to draw while somebody
 watches": see *What a walk costs* under §Measured.
@@ -846,8 +846,8 @@ watches": see *What a walk costs* under §Measured.
 2026-09-22)*, which is a widening of what a reader may *pick* and not of what Default
 paints. The three above are still the burst's roster and Default is still the default.
 
-- The list is `explorer/modes.jsonl`'s **seventeen**, in the Mode select's order,
-  `explorer.js`'s `everyMode()`. The Mode select itself lists fewer — the modes the
+- The list is `explorer/modes.jsonl`'s **seventeen**, in the Render mode select's order,
+  `explorer.js`'s `everyMode()`. The Render mode select itself lists fewer — the modes the
   published gallery record seats — because it is a way into a gallery; the Walk tab is not,
   it draws pictures nobody has seated, so `gaussian_int`, `trap_circle`,
   `smooth_trap_circle` and `direct_trap_ring` are on offer here and not there.
@@ -875,7 +875,7 @@ addendum 2, 2026-09-21)*. This tab demonstrates how the galleries were made, and
 demonstration is a few radio buttons rather than two checklists of fifteen boxes between
 them.
 
-- **Modes** — *Default*, the roster plus the finish; *Fast modes only*, `FAST_MODES`, which
+- **Render modes** — *Default*, the roster plus the finish; *Fast modes only*, `FAST_MODES`, which
   is `smooth` and `tia` and takes no finish; then each of the seventeen on its own, which
   paints every place in that mode and takes no finish either. Fast is
   taken from the mined-width table under §Measured and not from the per-mode one, because
@@ -997,7 +997,7 @@ different field, a different quantity read off the same orbit, so three of them 
 pictures of the place rather than three dresses on one.
 
 - **Three modes** (`FINISH_MODES`), each its own field, drawn at random out of everything
-  the Modes group offers and never a mode this place has already been drawn in. They are
+  the Render modes group offers and never a mode this place has already been drawn in. They are
   settled before the burst starts, so the row of waiting tiles is the whole of what the
   place will be tried in rather than growing under the reader.
 - **At every place, and it was written for the last one only.** The leg loop knows which leg

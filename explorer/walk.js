@@ -1088,24 +1088,18 @@ export function mount(host) {
     }
   }
 
-  function group(title, hint = "") {
+  function group(title) {
     const section = document.createElement("fieldset");
     section.className = "walk-group";
     const legend = document.createElement("legend");
     legend.textContent = title;
     section.append(legend);
-    if (hint) {
-      const note = document.createElement("p");
-      note.className = "walk-hint";
-      note.textContent = hint;
-      section.append(note);
-    }
     host.fields.append(section);
     return section;
   }
 
   function buildConfig() {
-    const planes = group("Planes", "A walk picks one of these at random.");
+    const planes = group("Planes");
     for (const family of PLANES) {
       checkbox(planes, planeName(family), config.planes.has(family), (on) => {
         if (on) config.planes.add(family);
@@ -1126,11 +1120,7 @@ export function mount(host) {
     // *(Matt, walk_tab_ckpt140)* — `WALK_REFUSES` is where one that could not run would be
     // named, and it is empty. Default stays the default and still means the cheap roster
     // plus the finish; a named mode paints every place in that mode.
-    const modes = group(
-      "Modes",
-      "A place that clears the bar is painted in one of these. Default is the cheap roster, " +
-        "and three more modes to finish a place on.",
-    );
+    const modes = group("Render modes");
     radios(
       modes,
       "walk-modes",
@@ -1145,11 +1135,7 @@ export function mount(host) {
       },
     );
 
-    const maps = group(
-      "Palettes",
-      "A family's maps are the ones that have made that colour often; what a walk finds is " +
-        "not filtered by it.",
-    );
+    const maps = group("Palettes");
     radios(
       maps,
       "walk-palettes",
