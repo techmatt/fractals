@@ -50,12 +50,17 @@
   --page: calc(var(--rail) + var(--rail-gap) + var(--wide));
   --gutter: 1.5rem;
 
-  /* A split figure's grid. The gap is what the pad between tiles came to once a
-     composited sheet was scaled to the column, so a figure that was one raster and is
-     now several sits the same way it always did. The floor is where a wallpaper stops
-     being a wallpaper and becomes a swatch: under it the grid drops a column. */
+  /* A split figure's grid, and the well it sits in. The gap is what the pad between
+     tiles came to once a composited sheet was scaled to the column, so a figure that was
+     one raster and is now several sits the same way it always did. */
   --figure-gap: 0.5rem;
-  --figure-panel-min: 13rem;
+  --figure-pad: 0.75rem;
+  /* How much of its full-width self a panel keeps before the grid drops a column.
+     A tenth, which is slack rather than a threshold: the floor wants to sit just under
+     one panel's share of the figure and comfortably over a share of the next arrangement
+     down, and a floor derived to the pixel would be one border or one scrollbar from
+     landing on the wrong side. */
+  --figure-panel-fit: 0.9;
 }
 
 *, *::before, *::after { box-sizing: border-box; }
@@ -413,7 +418,7 @@ a:hover { color: var(--ink); }
    gallery tiles use — a render is a render wherever it appears. */
 .figure {
   margin: 1.5em 0 1.75em;
-  padding: 0.75rem;
+  padding: var(--figure-pad);
   background: var(--well);
   border: 1px solid var(--well-rule);
 }
@@ -421,18 +426,34 @@ a:hover { color: var(--ink); }
 
 /* A split figure: one picture per panel instead of several composited into one raster,
    so each opens in the explorer at its own view and each label is text rather than
-   pixels. The arrangement is the composite's — `data-columns` across at the article's
-   width — and it reflows on its own as the column narrows, which is the thing a sheet
-   could never do: six tiles of one image on a phone are six pictures at a sixth of the
-   size the phone could have shown one at. `auto-fit` over a floor rather than a media
-   query, because the floor is what a wallpaper stops reading at and the breakpoint is
-   the rail's business. */
+   pixels. The arrangement is the composite's at the article's width, and it reflows on
+   its own as the column narrows — the thing a sheet could never do: six tiles of one
+   image on a phone are six pictures at a sixth of the size the phone could have shown
+   one at. `auto-fit` over a floor rather than a media query, because the breakpoint is
+   the rail's business.
+
+   The floor is what one panel is worth at the article's own figure width — the size the
+   sheet this figure replaced showed that tile at — less the slack above.
+   `--figure-across` is the only thing the markup passes in, a count and never a metric,
+   and every length in the sum is this file's. It is a **fixed** length rather than a
+   share of the container, and that is the whole trick: at the article's width the floor
+   sits just under one panel's share, so the grid lands on exactly the arrangement the
+   composite had; as the column narrows the floor stays put and a column is dropped
+   rather than every panel shrinking. One floor for every figure cannot do this — a
+   figure drawn four across showed its tiles at about 200px and one drawn six across at
+   about 130, and a floor that suits one turns the other into a different picture, which
+   is what a single 13rem floor did to the four-across roster. `min(100%, …)` is what
+   stops the last column overflowing a phone. */
 .figure-panels {
   display: grid;
   gap: var(--figure-gap);
-  grid-template-columns: repeat(auto-fit, minmax(var(--figure-panel-min), 1fr));
+  --figure-panel: calc(
+    var(--figure-panel-fit)
+    * (var(--wide) - (var(--figure-across) - 1) * var(--figure-gap))
+    / var(--figure-across)
+  );
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--figure-panel)), 1fr));
 }
-.figure-panels[data-columns="2"] { grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr)); }
 .figure-panel { min-width: 0; }
 
 /* The label under a panel is a label and not a caption, so it centres — the same rule

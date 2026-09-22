@@ -348,12 +348,23 @@ class Made:
     only one — see `images.import_web_res`. What a maker adds is the two things a
     composite used to draw into the pixels: the label under the tile, and the sentence a
     screen reader gets instead of the picture.
+
+    `spec` is the third, and it is the one a maker that overrides its seats has to say.
+    A panel drawn from a gallery seat at that seat's own recipe needs none — the ledger
+    recipe *is* the record, and `builder/links.py` resolves it from the row's `picks`. A
+    maker that draws at a neutral map, or at a mode of its own, or from constants frozen
+    into its own source, is the only thing that knows what it actually drew: it hands
+    back the engine render spec, that lands on the panel's registry row, and the link is
+    derived from it the same way a cited record's is. The spec is the picture **without**
+    whatever the maker letters or marks on top of it, because a way into the explorer is
+    a way into the place and not into the drawing over it.
     """
 
     path: Path
     alt: str
     label: str | None = None
     note: str | None = None
+    spec: dict | None = None
 
 
 @dataclass(frozen=True)
@@ -1049,10 +1060,6 @@ RUNGS = {
 RUNG_INK = theme_module.RATING_INK
 
 
-#: How big the step numeral on a panel is, and how far in from its corner it sits.
-STEP_NUMERAL = 22
-STEP_INSET = 10
-
 #: What a spectrum panel is rendered at before it is fitted into its cell. Three times
 #: the cell's width and three samples per pixel per axis: a wallpaper's fine texture is
 #: most of what makes it read as busy, and a render made at cell size never has it to
@@ -1061,8 +1068,21 @@ SPECTRUM_RENDER = (1280, 720)
 SPECTRUM_SUPERSAMPLE = 3
 
 
-def style_spectrum() -> Drawn:
-    """Six rated wallpapers in order of how full the frame is, with no verdict attached."""
+SPECTRUM_COLUMNS = 3
+
+
+def style_spectrum() -> Split:
+    """Six rated wallpapers in order of how full the frame is, with no verdict attached.
+
+    **Six pictures rather than one** *(figure_split_all_ckpt140, 2026-09-22)*. The step
+    numeral used to be stroked into the corner of each tile, which is the one piece of
+    lettering on this page a reader might want to read at a size the picture does not
+    choose; it is the panel's label now. Each panel is also a way into the explorer at
+    that wallpaper's own recipe — the figure's whole claim is that these six are one
+    scale, and the scale is easier to believe when a reader can go and stand in any of
+    them.
+    """
+    identifier = "locations-style-spectrum"
     catalog = renders.mode_catalog()
     picks = [renders.finished_row(*pick) for pick in SPECTRUM]
     wrong = [row for row in picks if row["score"] != SPECTRUM_SCORE]
@@ -1075,37 +1095,51 @@ def style_spectrum() -> Drawn:
                 for row in wrong
             )
         )
-    size = panels(3)
-    sheet, draw = sheets.canvas(*sheets.grid_size(size, 3, 2, caption=0))
-    for index, row in enumerate(picks):
+    size = panels(SPECTRUM_COLUMNS)
+    made = []
+    for index, row in enumerate(picks, start=1):
         spec = renders.wallpaper_spec(
             row,
             resolution=SPECTRUM_RENDER,
             supersample=SPECTRUM_SUPERSAMPLE,
             catalog=catalog,
         )
-        picture = cache().produce(f"spectrum-{index + 1}", "render", spec)
-        x, y = sheets.panel_origin(index, size, 3, caption=0)
-        sheet.paste(sheets.fitted(picture.path, size), (x, y))
-        _step_numeral(draw, x + STEP_INSET, y + STEP_INSET, index + 1)
-    destination = sheets.save(sheet, sheet_path("locations-style-spectrum"))
-    return Drawn(destination, _spectrum_provenance(picks, size))
+        picture = cache().produce(f"spectrum-{index}", "render", spec)
+        made.append(
+            Made(
+                sheets.save(sheets.fitted(picture.path, size), panel_path(identifier, index)),
+                alt=(
+                    f"A finished {_family_name(row['family'])} wallpaper, step {index} of "
+                    f"{len(picks)} from the most open frame to the busiest."
+                ),
+                label=str(index),
+                spec=row_spec(row),
+            )
+        )
+    return Split(made, _spectrum_provenance(picks, size), SPECTRUM_COLUMNS)
 
 
-def _step_numeral(draw, x: int, y: int, step: int) -> None:
-    """Which step of the axis a panel is, outlined so any picture underneath carries it.
+def row_spec(row: dict) -> dict:
+    """What one finished-render row's panel is, in the fields a link is derived from.
 
-    A drop shadow is not enough here: the thing under the numeral is a wallpaper and can be
-    white, so the glyph is stroked all the way round rather than offset once.
+    A finished-render row already carries everything: the family, the frame, the mode and
+    its settings, the curve the mode reads its field through, the map and the whole
+    palette pass, and the cap. What it does not carry is a *spelling* — the engine is
+    handed a `coloring` written out in full by `renders.wallpaper_spec`, and a link cannot
+    be derived from one of those, because a link names a mode. So this is the same picture
+    said the other way: the mode by its name, which is the form `builder/links.py` reads
+    and the form the article's own vocabulary uses.
     """
-    draw.text(
-        (x, y),
-        str(step),
-        fill=WELL_INK,
-        font=font(STEP_NUMERAL, SEMIBOLD),
-        stroke_width=3,
-        stroke_fill=(0, 0, 0),
-    )
+    return {
+        "family": row["family"],
+        "viewport": row["viewport"],
+        "mode": row["mode"],
+        "mode_params": row.get("mode_params") or {},
+        "curve": row.get("curve", "linear"),
+        "colormap": row["colormap"],
+        "palette": row.get("recipe") or {},
+        "maxiter": row["render"]["maxiter"],
+    }
 
 
 def _spectrum_provenance(picks: list[dict], size: tuple[int, int]) -> list[str]:
@@ -1608,8 +1642,14 @@ def node_rows(name: str, wanted) -> dict[int, dict]:
     return found
 
 
-def highly_rated() -> Drawn:
-    """Sixteen of the stage's own keepers, four across, with nothing written on them."""
+def highly_rated() -> Split:
+    """Sixteen of the stage's own keepers, four across, with nothing written on them.
+
+    **Sixteen pictures rather than one** *(figure_split_all_ckpt140, 2026-09-22)*. There
+    was never any lettering here to lift into HTML; what the split buys is sixteen ways
+    into the explorer. The figure's claim is that this is what the admitted pool looks
+    like, and a reader testing that claim wants to move around inside one of them.
+    """
     by_ledger: dict[str, list[int]] = {}
     for name, node_id in HIGHLY_RATED:
         by_ledger.setdefault(name, []).append(node_id)
@@ -1630,15 +1670,36 @@ def highly_rated() -> Drawn:
             "record no longer calls exceptional"
         )
 
+    identifier = "locations-highly-rated"
     size = panels(RATED_COLUMNS)
-    rows_down = len(picks) // RATED_COLUMNS
-    sheet, _draw = sheets.canvas(*sheets.grid_size(size, RATED_COLUMNS, rows_down, caption=0))
-    for index, row in enumerate(picks):
-        x, y = sheets.panel_origin(index, size, RATED_COLUMNS, caption=0)
-        picture = cache().render(f"rated-4-{index + 1}", location(row), size)
-        sheet.paste(sheets.fitted(picture.path, size), (x, y))
-    destination = sheets.save(sheet, sheet_path("locations-highly-rated"))
-    return Drawn(destination, _highly_rated_provenance(picks, size, verdict))
+    made = []
+    for index, row in enumerate(picks, start=1):
+        picture = cache().render(f"rated-4-{index}", location(row), size)
+        made.append(
+            Made(
+                sheets.save(sheets.fitted(picture.path, size), panel_path(identifier, index)),
+                alt=(
+                    f"A {_family_name(row['family'])} location the search admitted, drawn "
+                    "in one neutral palette."
+                ),
+                spec=neutral_spec(row),
+            )
+        )
+    return Split(made, _highly_rated_provenance(picks, size, verdict), RATED_COLUMNS)
+
+
+def neutral_spec(row: dict) -> dict:
+    """What a panel drawn by `panel`/`Cache.render` is, in the fields a link reads.
+
+    Every figure on this page that shows a *place* rather than a wallpaper draws it the
+    same way: the family and the frame off the record, smooth, and the neutral map. Two
+    of those three the maker leaves to a default — `Cache.render` fills the map in and the
+    engine picks the mode — and a default is exactly what a link cannot carry, so they are
+    written out here. Both are the engine's own answer rather than an assumption: a render
+    echo for one of these panels reports `"mode": "smooth"`, and the map is the one
+    `Cache.render` puts in.
+    """
+    return {**location(row), "mode": "smooth", "colormap": renders.COLORMAP}
 
 
 def _highly_rated_provenance(picks: list[dict], size, verdict: dict) -> list[str]:
@@ -2063,10 +2124,18 @@ def recipe(identifier: str) -> dict:
     return {"maker": f"{__name__}:{MAKERS[identifier].__name__}", "args": {}}
 
 
-def draw(identifier: str) -> Drawn:
-    """Draw one figure, and write its provenance beside the sheet."""
+def draw(identifier: str) -> Drawn | Split:
+    """Draw one figure, and write its provenance beside the sheet.
+
+    A split figure has no sheet to write beside, so its note goes under the figure's own
+    name — the panels are `<id>-1.png`, `<id>-2.png` and so on, and `<id>.provenance.txt`
+    is where a reader of that directory would look for what they are.
+    """
     drawn = MAKERS[identifier]()
-    notes = drawn.path.with_suffix(".provenance.txt")
+    if isinstance(drawn, Split):
+        notes = SHEETS_DIR / f"{identifier}.provenance.txt"
+    else:
+        notes = drawn.path.with_suffix(".provenance.txt")
     with notes.open("w", encoding="utf-8", newline="\n") as handle:
         handle.write("\n".join(drawn.provenance) + "\n")
     return drawn

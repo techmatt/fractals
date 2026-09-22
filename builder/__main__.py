@@ -154,7 +154,12 @@ def _parser() -> argparse.ArgumentParser:
     )
 
     figure = commands.add_parser("figure", help="print a figure's markup block")
-    figure.add_argument("id", help="the figure id, as registered in figures.jsonl")
+    figure.add_argument("id", nargs="+", help="the figure id, as registered in figures.jsonl")
+    figure.add_argument(
+        "--heal",
+        action="store_true",
+        help="write the block onto its page in place of the one there, rather than print it",
+    )
 
     stored = commands.add_parser(
         "recipes", help="what the site's own figure recipe store holds, or fill what is missing"
@@ -632,15 +637,25 @@ def _do_links(options: argparse.Namespace) -> int:
     return 0
 
 
-def _do_figure(identifier: str) -> int:
+def _do_figure(options: argparse.Namespace) -> int:
+    """Print a figure's block, or write it onto its page over the one there.
+
+    `--heal` is the second pass a redraw needs when the *links* moved rather than the
+    picture: `figures.place` heals with the link as it stood before, so a figure that
+    became panels lands with the composite's single href and has to be printed again.
+    """
     registry = figures.load_all()
-    figure = registry.get(identifier)
-    if figure is None:
-        known = ", ".join(sorted(registry)) or "none registered"
-        print(f"no figure {identifier!r} — known: {known}", file=sys.stderr)
-        return 1
-    opened = links.opened(figure.page_path)
-    print(figures.markup(figure, opened))
+    for identifier in options.id:
+        figure = registry.get(identifier)
+        if figure is None:
+            known = ", ".join(sorted(registry)) or "none registered"
+            print(f"no figure {identifier!r} — known: {known}", file=sys.stderr)
+            return 1
+        if not options.heal:
+            print(figures.markup(figure, links.opened(figure.page_path)))
+            continue
+        moved = figures.reprint(figure)
+        print(f"{figure.page}: {identifier} {'rewritten' if moved else 'already current'}")
     return 0
 
 
@@ -747,6 +762,15 @@ def _do_locations(options: argparse.Namespace) -> int:
     wanted = options.id or sorted(locations_module.MAKERS)
     for identifier in wanted:
         drawn = locations_module.draw(identifier)
+        if isinstance(drawn, locations_module.Split):
+            _land_split(
+                identifier,
+                drawn,
+                locations_module,
+                replace=options.replace,
+                landing=bool(options.place or options.replace),
+            )
+            continue
         relative = drawn.path.relative_to(SITE_ROOT).as_posix()
         print(f"wrote {relative}")
         # `--replace` is a landing, so it means `--place` too. Asking for both is a flag
@@ -917,6 +941,8 @@ def _land_split(identifier: str, drawn, maker, *, replace: bool, landing: bool) 
             row["label"] = panel.label
         if panel.note:
             row["note"] = panel.note
+        if panel.spec is not None:
+            row["spec"] = panel.spec
         rows.append(row)
     placed = figures.place(
         identifier,
@@ -925,7 +951,10 @@ def _land_split(identifier: str, drawn, maker, *, replace: bool, landing: bool) 
         None,
         provenance=list(drawn.provenance),
         recipe=maker.recipe(identifier),
-        sources=maker.sources(identifier),
+        # A maker whose panels **are** record keys rewrites its sources with the picture;
+        # one whose panels are its own renders has none to rewrite and says so by not
+        # having the function at all, which leaves the row's sources where they were.
+        sources=maker.sources(identifier) if hasattr(maker, "sources") else None,
         panels=rows,
         columns=drawn.columns,
         replace=replace,
@@ -1267,7 +1296,7 @@ def main(argv: list[str] | None = None) -> int:
         if options.command == "links":
             return _do_links(options)
         if options.command == "figure":
-            return _do_figure(options.id)
+            return _do_figure(options)
         if options.command == "figures":
             return _do_figures(options)
         if options.command == "recipes":

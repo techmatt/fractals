@@ -185,10 +185,21 @@ RECIPE_AGREEMENT = "mean absolute difference 3.0-5.5 of 255, codec floor 1.4-2.8
 #: *does* rather than what the engine calls it. A mode with no wording here is refused
 #: rather than labelled with its own spelling: a reader meeting `smooth_angle_min` on the
 #: front page has met the vocabulary before the article teaches any of it.
+#:
+#: **This is wider than the site's roster, and `exp_smoothing` is why** *(2026-09-22)*. A
+#: mode retired from the article on 2026-09-04 came out of this table with the roster, and
+#: `gallery-output` — a random draw over a whole curation pass's seating, four of whose
+#: twenty-four seats that pass drew in it — could not be redrawn from that day on: a
+#: figure's `provenance` names the mode of every panel, `frame_line` reads this table for
+#: the wording, and there was none. The retirement commit's own argument is the fix: a
+#: record of how a picture still on the site was made must be able to spell what drew it.
+#: So a wording lives here for as long as a figure stands on the mode, and which modes the
+#: article *offers* is `MODES_ROSTER` and `explorer/modes.jsonl`, neither of which is this.
 MODE_WORDS = {
     "smooth": "smooth",
     "tia": "triangle-inequality average",
     "stripe": "stripe average",
+    "exp_smoothing": "exponential smoothing",
     "curvature": "curvature",
     "smooth_curvature": "curvature over smooth",
     "smooth_stripe": "stripe over smooth",
@@ -796,21 +807,20 @@ MODES_ROSTER = (
     "itinerary",
 )
 
-#: The roster's shape: thirteen panels in sixteen cells, four across. Five across left
-#: each panel too small to read a rendering mode off, which is the only thing this figure
-#: asks a reader to do — the page's whole argument is that these thirteen pictures differ
-#: in a way you can see. Four across buys a third more width per panel and costs one more
-#: row. The three cells left over are well and nothing else; one of them was a panel until
-#: the roster lost a mode to a niche ruling *(2026-09-04)*, and one used to carry a legend
-#: saying what the caption says a few lines below the picture, which is the same paragraph
-#: twice *(Matt, 2026-09-02, taking the last of these off the page)*.
+#: The roster's shape: thirteen panels, four across. Five across left each panel too
+#: small to read a rendering mode off, which is the only thing this figure asks a reader
+#: to do — the page's whole argument is that these thirteen pictures differ in a way you
+#: can see. Four across buys a third more width per panel and costs one more row. The
+#: three cells a sheet left over were well and nothing else; one of them was a panel
+#: until the roster lost a mode to a niche ruling *(2026-09-04)*, and one used to carry a
+#: legend saying what the caption says a few lines below the picture, which is the same
+#: paragraph twice *(Matt, 2026-09-02, taking the last of these off the page)*. Split,
+#: the last row is simply short and there are no leftover cells at all.
+#:
+#: A panel is labelled with the engine's own name for the mode, which is the name this
+#: page teaches and the name its scoreboard lists; not `MODE_WORDS`, which is for the
+#: front page, where a reader meets a rendering before the vocabulary exists.
 MODES_COLUMNS = 4
-MODES_ROWS = 4
-
-#: How a panel of the roster is labelled: the engine's own name for the mode, which is
-#: the name this page teaches and the name its scoreboard lists. Not `MODE_WORDS` — that
-#: is for the front page, which meets a rendering before the vocabulary exists.
-MODES_LABEL_LINES = 1
 
 #: How the thirteen seats were arrived at, which is the one thing the resolution cannot
 #: say for itself. Written down because a random draw is only a record if the draw is.
@@ -838,12 +848,10 @@ MODES_DRAW = (
 #: The grid the gallery figure ships: twenty-four seats, six across. A pass seats
 #: hundreds and a figure shows a sample of them, which the caption says out loud — the
 #: claim being made is about the collection's spread and not its size.
+#: A panel is labelled with the fractal family it was found in, which is the axis the
+#: pass constrains nothing on and the page says so.
 OUTPUT_COLUMNS = 6
 OUTPUT_ROWS = 4
-
-#: How a tile of that grid is labelled: the fractal family it was found in, which is the
-#: axis the pass constrains nothing on and the page says so.
-OUTPUT_LABEL_LINES = 1
 
 #: How the twenty-four were arrived at, which the resolution cannot say for itself.
 OUTPUT_DRAW = (
@@ -876,6 +884,42 @@ def picks_of(identifier: str) -> list[str]:
     return list(wanted)
 
 
+def seat_panels(
+    identifier: str,
+    resolved: list[Pick],
+    columns: int,
+    name: str,
+    *,
+    label=None,
+    note=None,
+) -> tuple[list[Made], tuple[int, int]]:
+    """Every seat of a figure as a panel of its own, at the size the composite pasted.
+
+    The one place a split figure of this module turns picks into pictures. A tile is the
+    same `panels(columns)` cell the sheet laid out and the same `fitted` crop the sheet
+    pasted, so the pixels are the composite's to the byte; what changes is that each one
+    lands as a file rather than at an origin, and that the label the sheet drew into it
+    is handed back as words for the page to set.
+    """
+    size = panels(columns)
+    catalog = renders.mode_catalog()
+    made = []
+    for index, pick in enumerate(resolved, start=1):
+        picture = panel(pick, f"{name}-{index}-{pick.alias}", catalog)
+        destination = sheets.save(
+            sheets.fitted(picture, size), panel_path(identifier, index), quiet=True
+        )
+        made.append(
+            Made(
+                destination,
+                alt=panel_alt(pick),
+                label=label(pick) if label else None,
+                note=note(pick) if note else None,
+            )
+        )
+    return made, size
+
+
 def gallery_hook() -> Split:
     """The article's opening figure: six wallpapers the search found, three across, two down.
 
@@ -896,31 +940,23 @@ def gallery_hook() -> Split:
             f"{identifier} is {HOOK_COLUMNS}x{HOOK_ROWS} and its row names {len(wanted)} pick(s)"
         )
     resolved = resolve(wanted)
-    catalog = renders.mode_catalog()
-    size = panels(HOOK_COLUMNS)
-    made = []
-    for index, pick in enumerate(resolved, start=1):
-        picture = panel(pick, f"hook-{index}-{pick.alias}", catalog)
-        destination = sheets.save(
-            sheets.fitted(picture, size), panel_path(identifier, index), quiet=True
-        )
-        # The label a tile carried drawn into it, in two pieces. The words are Matt's
-        # ruling of 2026-09-06 and are unchanged: the family and the iteration it runs,
-        # and not the rendering underneath, because the caption already says which row is
-        # smooth and a mode name under every tile of the article's opening figure spends a
-        # reader's first look on vocabulary the page has not taught yet.
-        made.append(
-            Made(
-                destination,
-                alt=panel_alt(pick),
-                label=family_name(pick.family),
-                note=family_formula(pick.family),
-            )
-        )
+    # The label a tile carried drawn into it, in two pieces. The words are Matt's ruling
+    # of 2026-09-06 and are unchanged: the family and the iteration it runs, and not the
+    # rendering underneath, because the caption already says which row is smooth and a
+    # mode name under every tile of the article's opening figure spends a reader's first
+    # look on vocabulary the page has not taught yet.
+    made, size = seat_panels(
+        identifier,
+        resolved,
+        HOOK_COLUMNS,
+        "hook",
+        label=lambda pick: family_name(pick.family),
+        note=lambda pick: family_formula(pick.family),
+    )
     return Split(made, provenance(resolved, size, composed=False), HOOK_COLUMNS)
 
 
-def modes_gallery() -> Drawn:
+def modes_gallery() -> Split:
     """The Rendering modes roster: one gallery seat per mode, in the catalog's own order.
 
     Which seat is not this module's choice any more than the hook's six are — the IDs are
@@ -928,6 +964,13 @@ def modes_gallery() -> Drawn:
     `MODES_ROSTER` and in its order, so a row that has drifted out of the order the page's
     scoreboard reads in is a refusal rather than a sheet whose labels run out of step with
     the table above it.
+
+    **Thirteen pictures rather than one** *(figure_split_all_ckpt140, 2026-09-22)*. A
+    roster is the split rule's plainest case: the figure is not a comparison between its
+    tiles, it is thirteen separate claims that this mode looks like this, and a reader
+    who wants to see one of them properly wants the explorer at that seat. The mode name
+    under a tile is now the page's own text, which is also the only way it can be the
+    same string the scoreboard above it lists rather than a picture of that string.
     """
     identifier = "modes-gallery"
     wanted = picks_of(identifier)
@@ -938,28 +981,27 @@ def modes_gallery() -> Drawn:
             f"{identifier} is one seat per mode in the engine catalog's order — "
             f"{', '.join(MODES_ROSTER)} — and its row names {', '.join(drawn) or 'none'}"
         )
-    catalog = renders.mode_catalog()
-    size = panels(MODES_COLUMNS)
-    caption = sheets.caption_band(size[1], SHEET_WIDTH, MODES_LABEL_LINES)
-    sheet, draw = sheets.canvas(*sheets.grid_size(size, MODES_COLUMNS, MODES_ROWS, caption))
-    for index, pick in enumerate(resolved):
-        picture = panel(pick, f"modes-{index + 1}-{pick.alias}", catalog)
-        origin = sheets.panel_origin(index, size, MODES_COLUMNS, caption)
-        sheet.paste(sheets.fitted(picture, size), origin)
-        sheets.tile_label(draw, origin, size, pick.mode, sheet.width)
-    destination = sheets.save(sheet, sheet_path(identifier))
-    return Drawn(
-        destination,
-        provenance(resolved, size, columns=MODES_COLUMNS, chosen=MODES_DRAW),
+    made, size = seat_panels(
+        identifier, resolved, MODES_COLUMNS, "modes", label=lambda pick: pick.mode
+    )
+    return Split(
+        made,
+        provenance(resolved, size, columns=MODES_COLUMNS, chosen=MODES_DRAW, composed=False),
+        MODES_COLUMNS,
     )
 
 
-def gallery_output() -> Drawn:
+def gallery_output() -> Split:
     """`gallery-output` — a sample of what one curation pass ships, labelled by family.
 
     The same shape as the roster above and a different claim: the roster is one seat a
     mode and says so, this is a draw over the whole seating and says that. Which seats
     is not this module's choice — they are the IDs on the registry row.
+
+    **Twenty-four pictures rather than one** *(figure_split_all_ckpt140, 2026-09-22)*.
+    The claim a sampler makes is about the spread, and a reader tests a claim about a
+    spread by going and looking at the things in it: twenty-four seats are twenty-four
+    ways into the explorer here, where they were one.
     """
     identifier = "gallery-output"
     wanted = picks_of(identifier)
@@ -969,19 +1011,17 @@ def gallery_output() -> Drawn:
             f"{len(wanted)} pick(s)"
         )
     resolved = resolve(wanted)
-    catalog = renders.mode_catalog()
-    size = panels(OUTPUT_COLUMNS)
-    caption = sheets.caption_band(size[1], SHEET_WIDTH, OUTPUT_LABEL_LINES)
-    sheet, draw = sheets.canvas(*sheets.grid_size(size, OUTPUT_COLUMNS, OUTPUT_ROWS, caption))
-    for index, pick in enumerate(resolved):
-        picture = panel(pick, f"output-{index + 1}-{pick.alias}", catalog)
-        origin = sheets.panel_origin(index, size, OUTPUT_COLUMNS, caption)
-        sheet.paste(sheets.fitted(picture, size), origin)
-        sheets.tile_label(draw, origin, size, family_name(pick.family), sheet.width)
-    destination = sheets.save(sheet, sheet_path(identifier))
-    return Drawn(
-        destination,
-        provenance(resolved, size, columns=OUTPUT_COLUMNS, chosen=OUTPUT_DRAW),
+    made, size = seat_panels(
+        identifier,
+        resolved,
+        OUTPUT_COLUMNS,
+        "output",
+        label=lambda pick: family_name(pick.family),
+    )
+    return Split(
+        made,
+        provenance(resolved, size, columns=OUTPUT_COLUMNS, chosen=OUTPUT_DRAW, composed=False),
+        OUTPUT_COLUMNS,
     )
 
 
@@ -1004,8 +1044,14 @@ MINIBROT_DRAW = (
 )
 
 
-def minibrot_examples() -> Drawn:
-    """Three finished wallpapers with a minibrot's body plainly in frame."""
+def minibrot_examples() -> Split:
+    """Three finished wallpapers with a minibrot's body plainly in frame.
+
+    Split and still unlettered *(figure_split_all_ckpt140, 2026-09-22)*: there was
+    nothing drawn over these pictures to lift into HTML, and what the split buys is the
+    three ways into the explorer. A reader told that the small dark shape is a copy of
+    the whole set can now go and zoom into one.
+    """
     identifier = "locations-minibrot-examples"
     wanted = picks_of(identifier)
     if len(wanted) != MINIBROT_COLUMNS:
@@ -1013,19 +1059,11 @@ def minibrot_examples() -> Drawn:
             f"{identifier} is a row of {MINIBROT_COLUMNS} and its row names {len(wanted)} pick(s)"
         )
     resolved = resolve(wanted)
-    catalog = renders.mode_catalog()
-    size = panels(MINIBROT_COLUMNS)
-    sheet, _draw = sheets.canvas(*sheets.grid_size(size, MINIBROT_COLUMNS, 1, caption=0))
-    for index, pick in enumerate(resolved):
-        picture = panel(pick, f"minibrot-{index + 1}-{pick.alias}", catalog)
-        sheet.paste(
-            sheets.fitted(picture, size),
-            sheets.panel_origin(index, size, MINIBROT_COLUMNS, caption=0),
-        )
-    destination = sheets.save(sheet, sheet_path(identifier))
-    return Drawn(
-        destination,
-        provenance(resolved, size, columns=MINIBROT_COLUMNS, chosen=MINIBROT_DRAW),
+    made, size = seat_panels(identifier, resolved, MINIBROT_COLUMNS, "minibrot")
+    return Split(
+        made,
+        provenance(resolved, size, columns=MINIBROT_COLUMNS, chosen=MINIBROT_DRAW, composed=False),
+        MINIBROT_COLUMNS,
     )
 
 

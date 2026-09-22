@@ -218,7 +218,7 @@ def derive() -> list[Link]:
             wanted.append(_refused(key, "incomplete_provenance", "the picture is not made yet"))
             continue
         if figure.split:
-            wanted.extend(_panel_links(figure, views))
+            wanted.extend(_panel_links(figure, views, palettes, curves))
             continue
         found = _figure_view(figure, roster, palettes, curves)
         if isinstance(found, Link):
@@ -287,7 +287,12 @@ PANEL_RECORD = (
 )
 
 
-def _panel_links(figure: figures.Figure, views: dict[str, dict]) -> list[Link]:
+def _panel_links(
+    figure: figures.Figure,
+    views: dict[str, dict],
+    palettes: dict[str, bool],
+    curves: dict[str, str],
+) -> list[Link]:
     """One link per panel of a split figure, each derived from the record that panel is.
 
     **Not from the prose, and that is the whole of the design.** A composited sheet is one
@@ -304,10 +309,21 @@ def _panel_links(figure: figures.Figure, views: dict[str, dict]) -> list[Link]:
     `sources` says `own_recipe`, which `check`'s `seats` holds to the gallery's pixels. A
     figure whose maker changed the recipe to make its point is refused here rather than
     approximated, which is the same rule the rest of this module keeps.
+
+    **Or the maker says what it drew, panel by panel.** Most of this article's sheets are
+    not seats at all: their panels are engine renders at frames frozen into the maker, in
+    a neutral map, at a mode the figure is *about*. Nothing on the wallpapers side is a
+    record of those, and the prose that describes them is the prose this module refuses
+    to read panel by panel. So such a maker hands back each panel's own render spec, it
+    lands on the panel's registry row, and the view comes off it through exactly the
+    derivation a cited record goes through — same family names, same refusals, same cap
+    check. A row is one or the other: every panel a seat, or every panel a spec.
     """
     from . import picks
 
     identifiers = [figures.panel_id(figure.id, index) for index in range(1, len(figure.panels) + 1)]
+    if all(panel.spec is not None for panel in figure.panels):
+        return _spec_links(figure, identifiers, views, palettes, curves)
     keys = _seat_keys(figure)
     if keys is None or len(keys) != len(figure.panels):
         return [
@@ -330,6 +346,57 @@ def _panel_links(figure: figures.Figure, views: dict[str, dict]) -> list[Link]:
         views[identifier] = ledger_view(pick.recipe, level=level)
         found.append(Link(identifier, None, None, None, f"seat {pick.identifier}"))
     return found
+
+
+def _spec_links(
+    figure: figures.Figure,
+    identifiers: list[str],
+    views: dict[str, dict],
+    palettes: dict[str, bool],
+    curves: dict[str, str],
+) -> list[Link]:
+    """One link per panel of a figure whose maker reported what it drew.
+
+    The spec is a record — fields, not prose — so it goes down the same path a citation
+    of the wallpaper project's own stores takes, and every refusal that path makes is
+    made here too. That is the point of routing it through `_view` rather than through
+    `ledger_view`: the fractional degrees the engine gives no home view, a mode the
+    explorer does not offer, a map the picker does not carry, a fold on a cyclic map, a
+    frame past what `f64` resolves, and a cap the depth policy would not choose are each
+    a labelled panel with no link rather than a link to something else.
+    """
+    found = []
+    for identifier, panel in zip(identifiers, figure.panels, strict=True):
+        answer = _view(identifier, {}, spec_record(panel.spec), "spec", palettes, curves)
+        if isinstance(answer, Link):
+            found.append(answer)
+            continue
+        view, source = answer
+        views[identifier] = view
+        found.append(Link(identifier, None, None, None, source))
+    return found
+
+
+def spec_record(spec: dict) -> dict:
+    """An engine render spec in the shape `_view` reads a cited record in.
+
+    The two are nearly the same thing already — the engine's own spec is what a finished
+    render row keeps — so this is a rename and two defaults rather than a translation.
+    The map defaults to the neutral one every un-coloured sheet on this site is drawn in,
+    because a maker that names none drew in it.
+    """
+    from . import renders
+
+    return {
+        "family": spec["family"],
+        "viewport": spec["viewport"],
+        "mode": spec.get("mode", "smooth"),
+        "mode_params": spec.get("mode_params") or {},
+        "curve": spec.get("curve", "linear"),
+        "colormap": spec.get("colormap", renders.COLORMAP),
+        "recipe": spec.get("palette") or {},
+        "cap": spec.get("maxiter"),
+    }
 
 
 def _seat_keys(figure: figures.Figure) -> list[str] | None:

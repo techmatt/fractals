@@ -238,6 +238,13 @@ class Panel:
     `label` is the panel's own name and `note` a quieter second piece on the same line,
     which is what a drawn label spelled with a dash between them. The separator is CSS's
     here, so the words a reader meets carry no punctuation this site would not write.
+
+    `spec` is the engine render spec this panel's picture came out of — the record a
+    maker that draws its own panels reports so that the link opens *this* picture and not
+    a neighbour's. It is the **un-annotated** picture's spec wherever the maker letters or
+    marks the tile, because the way into the explorer is a way into the place rather than
+    into the drawing on top of it. A panel whose picture is a gallery seat carries none:
+    the seat's own ledger recipe is the record there, and `builder/links.py` resolves it.
     """
 
     file: str
@@ -246,6 +253,7 @@ class Panel:
     alt: str
     label: str | None = None
     note: str | None = None
+    spec: dict | None = None
 
     @property
     def path(self):
@@ -529,7 +537,7 @@ def _panels(figure: Figure, opened: dict[str, str]) -> str:
     the size a phone can show one at.
     """
     lazy = "" if leads_its_page(figure) else ' loading="lazy"'
-    lines = [f'{INDENT}  <div class="figure-panels" data-columns="{figure.columns}">']
+    lines = [f'{INDENT}  <div class="figure-panels" style="--figure-across: {figure.columns}">']
     for index, panel in enumerate(figure.panels, start=1):
         picture = (
             f'<img src="{attribute(figure.panel_src(panel))}" width="{panel.width}" '
@@ -630,7 +638,7 @@ def _figure(row: records.Record, identifier: str) -> Figure:
 
 
 #: What one panel of a split figure may say, and which of it it must.
-PANEL_FIELDS = ("file", "width", "height", "alt", "label", "note")
+PANEL_FIELDS = ("file", "width", "height", "alt", "label", "note", "spec")
 PANEL_REQUIRED = ("file", "width", "height", "alt")
 
 
@@ -669,6 +677,14 @@ def _panel_rows(row: records.Record) -> tuple[Panel, ...]:
             raise records.RecordError(
                 f"{row.where}: a panel's note is the quiet half of its label, and this one "
                 "has no label to be the quiet half of"
+            )
+        spec = entry.get("spec")
+        if spec is not None and (
+            not isinstance(spec, dict) or not isinstance(spec.get("viewport"), dict)
+        ):
+            raise records.RecordError(
+                f"{row.where}: a panel's spec is the engine render spec its picture came "
+                "out of, and an engine render spec names a viewport"
             )
         found.append(Panel(**{name: entry.get(name) for name in PANEL_FIELDS}))
     return tuple(found)
@@ -1013,6 +1029,47 @@ def _heal(figure: Figure, was: str) -> None:
     healed = html.replace(was, landing_block(figure), 1)
     with page.open("w", encoding="utf-8", newline=LF) as handle:
         handle.write(healed)
+
+
+#: Where a page's copy of a figure's block begins, so that a block whose *links* moved can
+#: be found without knowing what it used to say.
+BLOCK_START = '{indent}<figure class="'
+BLOCK_END = f"{INDENT}</figure>"
+
+
+def reprint(figure: Figure) -> bool:
+    """Rewrite the block a page carries for one figure, from the registry, in place.
+
+    The second pass `builder/README.md` lists under *still hand-done*. `place` heals with
+    the link as it stood **before** the redraw, so a figure whose links moved — every
+    split figure, whose one link becomes one per panel — lands on the page with the old
+    hrefs and needs the block printing again. That was a copy and paste, which is a step
+    somebody forgets and `check` then names on the next run; twenty figures of it is
+    twenty chances. This finds the block by its `data-figure`, which is the one part of it
+    that does not move, and swaps in what the row derives. It writes nothing else: it
+    cannot land a figure, cannot change a row, and a page already carrying the right block
+    comes back untouched.
+    """
+    page = figure.page_path
+    with page.open(encoding="utf-8", newline="") as handle:
+        html = handle.read()
+    marker = f'data-figure="{attribute(figure.id)}"'
+    at = html.find(marker)
+    if at < 0:
+        raise records.RecordError(f"{page.name} carries no block for {figure.id}")
+    start = html.rfind(BLOCK_START.format(indent=INDENT), 0, at)
+    end = html.find(BLOCK_END, at)
+    if start < 0 or end < 0:
+        raise records.RecordError(
+            f"{page.name}: {figure.id}'s block is not a whole <figure> element"
+        )
+    was = html[start : end + len(BLOCK_END)]
+    block = landing_block(figure)
+    if was == block:
+        return False
+    with page.open("w", encoding="utf-8", newline=LF) as handle:
+        handle.write(html[:start] + block + html[end + len(BLOCK_END) :])
+    return True
 
 
 def by_page(registry: dict[str, Figure]) -> dict[str, list[Figure]]:

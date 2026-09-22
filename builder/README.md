@@ -242,8 +242,11 @@ point at which somebody can still act on it. **`draft`** is made and on its page
 it says what re-bakes it in `note`, which is also what its caption's small `Draft` mark
 points at — and the note is required rather than encouraged: a draft row without one is a
 failing check, and `--place` refuses to land a draft that has nothing to say about its own
-shelf life. `pipeline-growth` is the only draft on the site, and `python -m builder growth`
-re-bakes it from the curation growth instrument's own stamped record next door. Every page on this site is a draft and none of them says so; this status is
+shelf life. Two rows are drafts today: `pipeline-growth`, which `python -m builder growth`
+re-bakes from the curation growth instrument's own stamped record next door, and
+`atlas-places`, which `python -m builder atlas --figure atlas-places` redraws when the
+unpublished records its counts are read off are solved again. `check` prints one note per
+draft, which is the list rather than this sentence. Every page on this site is a draft and none of them says so; this status is
 the narrower claim, that a reader who copied a number off this picture would be copying
 something with a shelf life. Prose gets written before pictures get made, and a
 page that says what is coming beats a broken image or a silent gap; `figures` lists what
@@ -268,6 +271,38 @@ carries the first map onto all of them. A maker returns `locations.Split` instea
 `locations.Drawn` and the landing encodes each panel through the same
 `images.import_web_res` a composited figure goes through, so a picture that did not change
 comes out the same bytes. `overview-gallery-hook` is the first of these.
+
+**Where the link comes from, in two ways** *(figure_split_all_ckpt140, 2026-09-22)*. A
+panel whose picture is a gallery seat is linked from that seat's ledger recipe, which is
+the record. Most of this article's sheets are not seats: their panels are engine renders
+at frames frozen into the maker, in a neutral map, at a mode the figure is *about*, and
+nothing next door is a record of them. Such a maker hands each `Made` a `spec` — the
+engine render spec its picture came out of, with the mode **named** rather than a coloring
+written out in full, because a link names a mode — and it lands on the panel's row. The
+view comes off it through the same `links._view` a citation of the wallpapers side goes
+through, so the same refusals apply: a fractional degree, a mode the explorer does not
+offer, a curve that is not the catalog's, a map the picker does not carry, a fold on a
+cyclic map, a frame past `f64`, and a cap the depth policy would not choose are each a
+labelled panel with no link. A row is one or the other — every panel a seat, or every
+panel a spec. Where a maker letters or marks the tile, the spec is the **un-annotated**
+picture's, because a way into the explorer is a way into the place and not into the
+drawing over it.
+
+**A split figure lands in two passes, and `figure <id> --heal` is the second.**
+`figures.place` heals the page with the link as it stood *before* the redraw, so a figure
+that became panels lands carrying the composite's single href. The order is
+`<maker> --replace`, then `links --write`, then `figure <id> --heal`, which finds the
+block by its `data-figure` and swaps in what the row derives. It writes nothing else — it
+cannot land a figure or change a row — and it is what `check` used to tell a person to do
+by hand.
+
+**The grid's arrangement is the composite's, and that is a stylesheet rule.** The markup
+passes one thing in, `--figure-across`, which is a count; `site.css` works the floor out
+from `--wide`, `--figure-gap` and `--figure-panel-fit`, so at the article's width the
+grid lands on exactly the arrangement the sheet had and drops a column as the column
+narrows. A single floor for every figure cannot do that: a four-across roster showed its
+tiles at about 200 px and a six-across sampler at about 130, and the one 13rem floor the
+first split shipped with quietly rendered the thirteen-mode roster three across.
 
 Four fields travel with every row beyond its words. `page` names the article page that
 carries it — a row on no page is a failing check, where before it was silence. `provenance`
@@ -658,6 +693,9 @@ Each of these is a step a person has to remember, and each has been forgotten on
 - **After a re-pick the order is `picks --replace`, then `links --write`, then re-heal.**
   `figures.place` heals the block using the link as it stood *before* the redraw, so a
   figure whose representative panel changed lands with the old href and needs a second pass.
+  The second pass is `python -m builder figure <id>… --heal` since
+  `figure_split_all_ckpt140` — it used to be a copy and paste out of `figure <id>`, which
+  is the step `check` names and somebody forgets.
 - **Provenance spells the palette pass in words, not JSON.** `links.py` scans the prose for
   `mirror true` and a `palette gamma …` clause, and the JSON form reads to it as *no fold
   and every default* — which derives a link to the unmirrored picture, silently.
