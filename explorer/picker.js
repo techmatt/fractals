@@ -2,12 +2,12 @@
 //
 // The explorer used to offer a single `<select>` of 77 curated names. It now carries
 // every one of the library's maps — a link built from a gallery seat has to be able to
-// name the map that seat was drawn in, and the published record alone seats 451 distinct
+// name the map that seat was drawn in, and the general record alone seats 444 distinct
 // maps — and a thousand names in one menu is not a picker, it is a list. So the maps are
 // laid out the three ways somebody actually looks for one:
 //
 //   * **Popular** — 24 of the most seated maps, `seats` being how many wallpapers of the
-//     published record were drawn in each, curated for range: `popular.json` lists them,
+//     record `palettes.jsonl` names were drawn in each, curated for range: `popular.json` lists them,
 //     and `builder/picker.py` is the rule that wrote it — a map too like one already on
 //     the list is passed over, and no hue family holds more than three. Where a reader
 //     who does not know what they want should start, so it should not be four of one

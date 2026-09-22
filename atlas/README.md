@@ -41,10 +41,11 @@ multibrot3.jsonl  multibrot4.jsonl  multibrot5.jsonl  multibrot6.jsonl  phoenix.
 colours, which sit on the frame itself so that a page which does not know about them gets
 them. The explorer's studio mounts one in a panel with an `onPick`, which takes a click
 instead of the link and leaves the slots as buttons so that they are still reachable from
-the keyboard. It is the only caller. The options the retired page spent are still the
-frame's — `keep`, which stores a clicked mark, and the bare host it handed a size it had
-worked out itself — and the studio passes `keep: false` by name rather than by omission, so
-what is unspent is unspent out loud.
+the keyboard. It is the only caller. **`keep` is gone with the page that spent it**
+*(leftovers_rebake_ckpt140, 2026-09-21)*: it stored a clicked mark, nothing has read it
+since the standalone page retired, and an option one caller passes `false` by name is an
+option. What the retired page still leaves behind is the bare host it handed a size it had
+worked out itself, which the frame goes on accepting.
 
 Everything the frame fetches — the record, the thumbnails, `explorer/engine.wasm` — is
 resolved against `options.base`, which defaults to the module's own directory. A page in

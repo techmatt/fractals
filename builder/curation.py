@@ -79,6 +79,18 @@ from .theme import (
 #: are what has to move with it. That is a publishing-time act and was deliberately not
 #: taken here: the prompt re-based the data and left the prose alone. The figures' own
 #: registry rows still cite the old stamp, which is the provenance and is correct.
+#:
+#: ⚠ **And `gallery_pool` does not draw off this record at all** *(leftovers_rebake_ckpt140,
+#: 2026-09-21)*. Every `final139_*` pass folds its near-duplicates under `fold: pool`, where
+#: the older passes deleted them, so `preselection` writes `places_kept`/`places_folded`
+#: where this module reads `places_refused`, and `population`'s three counts are one number:
+#: an absorbed place's rows stay in the pool, so candidates, clearing and
+#: after_the_preselection are all 19,197 over 8,940 places and the funnel is flat. The
+#: narrowing is still on the record — `fine_bar.offered` and `kept` for the judge's bar,
+#: `clusters_after_the_preselection` for the collapse — and re-deriving the three bars from
+#: those is a maker change rather than a rerun. It waits for the same publishing-time act
+#: the prose does, because a funnel of places is not the funnel of candidates the page
+#: describes.
 STAMP = "20260922T012627Z"
 
 #: The solve leg whose record answers for that stamp. Held to it by `_agreeing` rather

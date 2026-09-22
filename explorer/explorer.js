@@ -2844,10 +2844,9 @@ async function startAtlas() {
         const family = atlasFrame.record.partitions.find((one) => one.partition === name)?.family;
         if (family === undefined || !openFamily(family)) syncPlane();
       },
-      // Nothing is stored here — no ring on a mark, no Escape to press — but the slots
-      // hold the last place they were shown, because a slot that empties when the pointer
-      // leaves the mark is a picture nobody can click.
-      keep: false,
+      // Nothing is stored — no ring on a mark, no Escape to press — but the slots hold the
+      // last place they were shown, because a slot that empties when the pointer leaves the
+      // mark is a picture nobody can click.
       linger: true,
       // Each slot carries a save mark, pointed at whatever the slot is showing.
       slotMark: () => {

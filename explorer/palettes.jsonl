@@ -1,127 +1,1023 @@
-{"schema": 1, "kind": "method", "source": "data/palettes/*.json", "baked": "2026-08-25", "wallpapers_commit": "d9a423fd35e953618002804d7fc9db090dd34623", "rule": "the maps the explorer carries, and which of them the picker offers. The 77 curated maps the picker lists are the set as it stood on 2026-08-23 and are frozen there: the wallpaper project's library took a drop of two hundred authored maps afterwards, and a bake that read `every curated map` out of that library would have grown the picker to 277 entries without anybody deciding to. Baked alongside them and not offered are the further maps one of this site's own published pictures was drawn in — a set with no fixed size, because it grows every time a figure lands in a map the roster did not carry, and a count written down here would be one more thing to keep in step, which a permalink may name and the picker does not list — a picture the article publishes has to be openable here. Nothing is ever removed: a name that has been in a link is a name that has to keep resolving. This record is what `python -m builder explorer` bakes from, and `builder check`'s bake check holds the committed module to it."}
-{"schema": 1, "kind": "palette", "name": "795548-3840x2160-desktop-4k-fractal-background", "offered": false}
-{"schema": 1, "kind": "palette", "name": "Amber Highlands", "offered": false}
-{"schema": 1, "kind": "palette", "name": "Amethyst Veil", "offered": false}
-{"schema": 1, "kind": "palette", "name": "Blues", "offered": true}
-{"schema": 1, "kind": "palette", "name": "BrBG", "offered": true}
-{"schema": 1, "kind": "palette", "name": "CMRmap", "offered": true}
-{"schema": 1, "kind": "palette", "name": "Cobalt & Coal", "offered": false}
-{"schema": 1, "kind": "palette", "name": "Deep Rose Vault", "offered": false}
-{"schema": 1, "kind": "palette", "name": "Ember Against Steel", "offered": false}
-{"schema": 1, "kind": "palette", "name": "Ember Gradient", "offered": false}
-{"schema": 1, "kind": "palette", "name": "Ember Rising", "offered": false}
-{"schema": 1, "kind": "palette", "name": "Foam & Olive", "offered": false}
-{"schema": 1, "kind": "palette", "name": "Forge Sweep", "offered": false}
-{"schema": 1, "kind": "palette", "name": "Forge to White", "offered": false}
-{"schema": 1, "kind": "palette", "name": "GnBu", "offered": true}
-{"schema": 1, "kind": "palette", "name": "Gold Field, Blood Spark", "offered": false}
-{"schema": 1, "kind": "palette", "name": "Ice Spire", "offered": false}
-{"schema": 1, "kind": "palette", "name": "Ice Walk", "offered": false}
-{"schema": 1, "kind": "palette", "name": "Indigo Nocturne", "offered": false}
-{"schema": 1, "kind": "palette", "name": "Oranges", "offered": false}
-{"schema": 1, "kind": "palette", "name": "Orchid Procession", "offered": false}
-{"schema": 1, "kind": "palette", "name": "PuOr", "offered": true}
-{"schema": 1, "kind": "palette", "name": "RdBu", "offered": true}
-{"schema": 1, "kind": "palette", "name": "RdGy", "offered": true}
-{"schema": 1, "kind": "palette", "name": "RdPu", "offered": true}
-{"schema": 1, "kind": "palette", "name": "RdYlBu", "offered": true}
-{"schema": 1, "kind": "palette", "name": "Reef Triad", "offered": false}
-{"schema": 1, "kind": "palette", "name": "Rose Quartz Vault", "offered": false}
-{"schema": 1, "kind": "palette", "name": "Rust to Plum", "offered": false}
-{"schema": 1, "kind": "palette", "name": "Sage Ascending", "offered": false}
-{"schema": 1, "kind": "palette", "name": "Spectral", "offered": true}
-{"schema": 1, "kind": "palette", "name": "Teal Against Coral", "offered": false}
-{"schema": 1, "kind": "palette", "name": "Verdigris Flare", "offered": false}
-{"schema": 1, "kind": "palette", "name": "YlGnBu", "offered": true}
-{"schema": 1, "kind": "palette", "name": "YlOrBr", "offered": true}
-{"schema": 1, "kind": "palette", "name": "YlOrRd", "offered": true}
-{"schema": 1, "kind": "palette", "name": "afmhot", "offered": true}
-{"schema": 1, "kind": "palette", "name": "along-the-starry-way-25", "offered": false}
-{"schema": 1, "kind": "palette", "name": "amazing-25", "offered": false}
-{"schema": 1, "kind": "palette", "name": "berlin", "offered": true}
-{"schema": 1, "kind": "palette", "name": "blue_orange", "offered": true}
-{"schema": 1, "kind": "palette", "name": "blueroot", "offered": false}
-{"schema": 1, "kind": "palette", "name": "bwr", "offered": true}
-{"schema": 1, "kind": "palette", "name": "cet_cyclic_mybm_20_100_c48_s25", "offered": true}
-{"schema": 1, "kind": "palette", "name": "cet_cyclic_protanopic_deuteranopic_bwyk_16_96_c31", "offered": true}
-{"schema": 1, "kind": "palette", "name": "cet_cyclic_protanopic_deuteranopic_wywb_55_96_c33", "offered": true}
-{"schema": 1, "kind": "palette", "name": "cet_cyclic_rygcbmr_50_90_c64_s25", "offered": true}
-{"schema": 1, "kind": "palette", "name": "cet_cyclic_wrkbw_10_90_c43", "offered": true}
-{"schema": 1, "kind": "palette", "name": "cet_cyclic_wrkbw_10_90_c43_s25", "offered": true}
-{"schema": 1, "kind": "palette", "name": "cet_cyclic_wrwbw_40_90_c42", "offered": true}
-{"schema": 1, "kind": "palette", "name": "cet_diverging_bwr_40_95_c42", "offered": true}
-{"schema": 1, "kind": "palette", "name": "cet_linear_bgyw_15_100_c68", "offered": true}
-{"schema": 1, "kind": "palette", "name": "cet_linear_bmw_5_95_c86", "offered": true}
-{"schema": 1, "kind": "palette", "name": "cet_linear_bmy_10_95_c71", "offered": true}
-{"schema": 1, "kind": "palette", "name": "cet_linear_bmy_10_95_c78", "offered": true}
-{"schema": 1, "kind": "palette", "name": "cet_linear_kry_0_97_c73", "offered": true}
-{"schema": 1, "kind": "palette", "name": "cet_linear_kry_5_95_c72", "offered": true}
-{"schema": 1, "kind": "palette", "name": "cet_linear_kry_5_98_c75", "offered": true}
-{"schema": 1, "kind": "palette", "name": "cet_linear_kryw_0_100_c71", "offered": true}
-{"schema": 1, "kind": "palette", "name": "cet_linear_kryw_5_100_c64", "offered": true}
-{"schema": 1, "kind": "palette", "name": "cet_linear_kryw_5_100_c67", "offered": true}
-{"schema": 1, "kind": "palette", "name": "cet_linear_protanopic_deuteranopic_kbjyw_5_95_c25", "offered": true}
-{"schema": 1, "kind": "palette", "name": "cet_linear_protanopic_deuteranopic_kbw_5_95_c34", "offered": true}
-{"schema": 1, "kind": "palette", "name": "cet_linear_protanopic_deuteranopic_kbw_5_98_c40", "offered": true}
-{"schema": 1, "kind": "palette", "name": "cet_linear_tritanopic_krjcw_5_98_c46", "offered": true}
-{"schema": 1, "kind": "palette", "name": "cet_linear_tritanopic_krw_5_95_c46", "offered": true}
-{"schema": 1, "kind": "palette", "name": "cet_linear_wcmr_100_45_c42", "offered": false}
-{"schema": 1, "kind": "palette", "name": "chaidai", "offered": false}
-{"schema": 1, "kind": "palette", "name": "cividis", "offered": true}
-{"schema": 1, "kind": "palette", "name": "cmr.amber", "offered": true}
-{"schema": 1, "kind": "palette", "name": "cmr.amethyst", "offered": false}
-{"schema": 1, "kind": "palette", "name": "cmr.copper", "offered": true}
-{"schema": 1, "kind": "palette", "name": "cmr.ember", "offered": true}
-{"schema": 1, "kind": "palette", "name": "cmr.emergency_s", "offered": true}
-{"schema": 1, "kind": "palette", "name": "cmr.fall", "offered": true}
-{"schema": 1, "kind": "palette", "name": "cmr.fusion", "offered": true}
-{"schema": 1, "kind": "palette", "name": "cmr.jungle", "offered": true}
-{"schema": 1, "kind": "palette", "name": "cmr.lilac", "offered": true}
-{"schema": 1, "kind": "palette", "name": "cmr.ocean", "offered": true}
-{"schema": 1, "kind": "palette", "name": "cmr.pride", "offered": true}
-{"schema": 1, "kind": "palette", "name": "cmr.prinsenvlag", "offered": true}
-{"schema": 1, "kind": "palette", "name": "cmr.rainforest", "offered": true}
-{"schema": 1, "kind": "palette", "name": "cmr.redshift", "offered": true}
-{"schema": 1, "kind": "palette", "name": "cmr.savanna", "offered": true}
-{"schema": 1, "kind": "palette", "name": "cmr.seasons", "offered": true}
-{"schema": 1, "kind": "palette", "name": "cmr.seasons_s", "offered": true}
-{"schema": 1, "kind": "palette", "name": "cmr.sunburst", "offered": true}
-{"schema": 1, "kind": "palette", "name": "cmr.swamp", "offered": true}
-{"schema": 1, "kind": "palette", "name": "cmr.torch", "offered": true}
-{"schema": 1, "kind": "palette", "name": "cmr.toxic", "offered": true}
-{"schema": 1, "kind": "palette", "name": "cmr.viola", "offered": true}
-{"schema": 1, "kind": "palette", "name": "cmr.voltage", "offered": true}
-{"schema": 1, "kind": "palette", "name": "cmr.waterlily", "offered": true}
-{"schema": 1, "kind": "palette", "name": "cmr.wildfire", "offered": true}
-{"schema": 1, "kind": "palette", "name": "commons_Mandelbrot_3_B_C3_B4ng_Xoay", "offered": false}
-{"schema": 1, "kind": "palette", "name": "consequences-25", "offered": false}
-{"schema": 1, "kind": "palette", "name": "coolwarm", "offered": true}
-{"schema": 1, "kind": "palette", "name": "curlv", "offered": false}
-{"schema": 1, "kind": "palette", "name": "debutalis", "offered": false}
-{"schema": 1, "kind": "palette", "name": "dessert-union-25", "offered": false}
-{"schema": 1, "kind": "palette", "name": "fractal_stripes_bends_lines_116839_2560x1600", "offered": false}
-{"schema": 1, "kind": "palette", "name": "gist_earth", "offered": false}
-{"schema": 1, "kind": "palette", "name": "gist_heat", "offered": true}
-{"schema": 1, "kind": "palette", "name": "gist_stern", "offered": true}
-{"schema": 1, "kind": "palette", "name": "inferno", "offered": true}
-{"schema": 1, "kind": "palette", "name": "magma", "offered": true}
-{"schema": 1, "kind": "palette", "name": "managua", "offered": true}
-{"schema": 1, "kind": "palette", "name": "morning-at-misty-vale-25", "offered": false}
-{"schema": 1, "kind": "palette", "name": "nova-25", "offered": false}
-{"schema": 1, "kind": "palette", "name": "pink", "offered": false}
-{"schema": 1, "kind": "palette", "name": "plasma", "offered": true}
-{"schema": 1, "kind": "palette", "name": "red-octavo-25", "offered": false}
-{"schema": 1, "kind": "palette", "name": "seismic", "offered": true}
-{"schema": 1, "kind": "palette", "name": "sparks", "offered": false}
-{"schema": 1, "kind": "palette", "name": "the_light_fantastic", "offered": false}
-{"schema": 1, "kind": "palette", "name": "torque-25", "offered": false}
-{"schema": 1, "kind": "palette", "name": "turbo", "offered": true}
-{"schema": 1, "kind": "palette", "name": "twilight", "offered": true}
-{"schema": 1, "kind": "palette", "name": "twilight_shifted", "offered": true}
-{"schema": 1, "kind": "palette", "name": "viridis", "offered": true}
-{"schema": 1, "kind": "palette", "name": "wallhaven_wallhaven-2ex5zg", "offered": false}
-{"schema": 1, "kind": "palette", "name": "wallhaven_wallhaven-398e39", "offered": false}
-{"schema": 1, "kind": "palette", "name": "wallhaven_wallhaven-47xzoe", "offered": false}
-{"schema": 1, "kind": "palette", "name": "wallhaven_wallhaven-kwg7v6", "offered": false}
-{"schema": 1, "kind": "palette", "name": "wallhaven_wallhaven-nm6938", "offered": false}
-{"schema": 1, "kind": "palette", "name": "wheelance", "offered": false}
+{"schema": 1, "kind": "method", "source": "data/palettes/*.json", "baked": "2026-09-21", "wallpapers_commit": "e1f287ec391563e3d293991c1b41fccccac57eca", "rule": "every map the library holds, and which of them the picker offers. The roster is the whole library because a link built from a gallery seat's recipe has to be able to name the map that seat was drawn in \u2014 444 distinct maps are seated in the record named below alone \u2014 and the gradients ride in `palettes.bin` beside the index rather than in it. What the picker LISTS is the narrower thing and is still frozen: the 77 curated maps as they stood on 2026-08-23, unchanged by this widening. The distinction used to be derived from the library's own `source` lines, and a drop of two hundred authored maps next door would have taken the picker to 277 entries without anybody deciding to, which is why `offered` is a field here and not a question asked over there. Nothing is ever removed: a name that has been in a link is a name that has to keep resolving. This record is what `python -m builder explorer` bakes from, and `builder check`'s bake check holds the committed module and blob to it.", "release": "20260922T012627Z", "ledger_rows": 566920, "readings": "`family` is the hue family a map most often PRODUCES: the modal leading entry of `colour.families` over the candidate-ledger rows drawn in it whose fine-head p_ge4 clears solve.DEFAULT_FINE_BAR (0.030242), ties by name, absent where the map has no such row. `seats` is how many seats of the release named above were drawn in it, counted off that record's own recipes. Both are frozen here rather than derived at bake time, because the ledger is written to while a bake runs and a picker's metadata that moved on its own is the failure this record exists for. `python -m builder explorer --roster` is what rewrites them.", "random": "`random` is whether a Random palette press may land on a map. It is the list the wallpaper project states in `data/palettes/palettes_for_random_choice.csv` \u2014 every colormap that seated more than one wallpaper in the published record \u2014 imported by `python -m builder explorer --random` and frozen here like every other field. It is not derived: that file's own README says it is a reading of one record rather than a standing rule, and the threshold it was filtered at is that project's to move. The page narrows one button by it and nothing else \u2014 every map the roster carries is still selectable by hand, and still resolves in a link.", "random_read": "2026-09-17", "families": "`families` is every hue family the Walk tab offers a map under: the families the map gives at least 0.05 of its candidate-ledger pictures to, read off the wallpaper project's `data/palettes/palette_family_shares.csv` by `python -m builder explorer --families` and frozen here like every other field. That table states counts and no threshold \u2014 it is the measurement \u2014 and the bar is this repository's, because how wide one of this page's controls reaches is a decision about the control. It conditions the DRAW and filters nothing: a walk narrowed to a family paints in maps that make that colour often, and a picture it finds need not be of it. A map with no ledger pictures at all \u2014 one the library holds and the candidate pool does not \u2014 has no family here, and is still selectable by hand and still resolves in a link.", "families_read": "2026-09-19"}
+{"schema": 1, "kind": "palette", "name": "02591_vermilionlakes_2560x1600", "offered": false, "random": false, "seats": 0, "family": "yellow", "families": ["orange", "yellow"]}
+{"schema": 1, "kind": "palette", "name": "02595_oiawindmills_2560x1600", "offered": false, "random": false, "seats": 0, "family": "blue", "families": ["azure", "blue", "purple"]}
+{"schema": 1, "kind": "palette", "name": "02596_lakehawea_2560x1600", "offered": false, "random": true, "seats": 3, "family": "yellow", "families": ["yellow", "lime"]}
+{"schema": 1, "kind": "palette", "name": "02598_asgardrealmofthegods_2560x1600", "offered": false, "random": true, "seats": 5, "family": "orange", "families": ["orange", "yellow", "blue"]}
+{"schema": 1, "kind": "palette", "name": "02604_platform_2560x1600", "offered": false, "random": false, "seats": 0, "family": "teal", "families": ["teal", "purple", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "02605_journeytoheaven_2560x1600", "offered": false, "random": false, "seats": 0, "family": "blue", "families": ["rose", "red", "blue", "purple", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "103420", "offered": false, "random": false, "seats": 0, "family": "red", "families": ["red", "orange", "yellow"]}
+{"schema": 1, "kind": "palette", "name": "2pi1Zz6", "offered": false, "random": false, "seats": 0, "family": "purple", "families": ["teal", "cyan", "blue", "purple", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "72kcy - Imgur", "offered": false, "random": false, "seats": 0, "families": ["red", "orange"]}
+{"schema": 1, "kind": "palette", "name": "795548-3840x2160-desktop-4k-fractal-background", "offered": false, "random": true, "seats": 2, "family": "cyan", "families": ["teal", "cyan"]}
+{"schema": 1, "kind": "palette", "name": "795549-3840x2160-desktop-4k-fractal-background", "offered": false, "random": true, "seats": 0, "family": "orange", "families": ["orange", "yellow"]}
+{"schema": 1, "kind": "palette", "name": "795565-3840x2160-desktop-4k-fractal-wallpaper-image", "offered": false, "random": true, "seats": 2, "family": "red", "families": ["rose", "red", "blue", "purple", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "Abyss to Foam", "offered": false, "random": false, "seats": 0, "family": "cyan", "families": ["green", "teal", "cyan", "azure"]}
+{"schema": 1, "kind": "palette", "name": "Amber Highlands", "offered": false, "random": false, "seats": 0, "family": "orange", "families": ["orange", "yellow"]}
+{"schema": 1, "kind": "palette", "name": "Amber Signal", "offered": false, "random": true, "seats": 6, "family": "yellow", "families": ["orange", "yellow"]}
+{"schema": 1, "kind": "palette", "name": "Amber Through Teal and Lime", "offered": false, "random": false, "seats": 1, "family": "yellow", "families": ["orange", "lime", "green", "teal"]}
+{"schema": 1, "kind": "palette", "name": "Amethyst Veil", "offered": false, "random": true, "seats": 5, "family": "magenta", "families": ["purple", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "Arcade Black", "offered": false, "random": false, "seats": 0, "family": "rose", "families": ["rose", "yellow", "azure", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "Ash Ember Arc", "offered": false, "random": false, "seats": 0, "family": "orange", "families": ["orange", "yellow"]}
+{"schema": 1, "kind": "palette", "name": "Ash Gold", "offered": false, "random": false, "seats": 0, "family": "yellow", "families": ["yellow"]}
+{"schema": 1, "kind": "palette", "name": "Ash Rose Vault", "offered": false, "random": true, "seats": 5, "family": "rose", "families": ["rose", "red", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "Ashen Orchid", "offered": false, "random": false, "seats": 1, "family": "magenta", "families": ["cyan", "azure", "purple", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "Aster Bloom", "offered": false, "random": false, "seats": 0, "family": "teal", "families": ["green", "teal", "cyan", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "Aurora Curtain", "offered": false, "random": false, "seats": 1, "family": "azure", "families": ["green", "teal", "cyan", "azure", "blue"]}
+{"schema": 1, "kind": "palette", "name": "Aurora Undertow", "offered": false, "random": false, "seats": 0, "family": "green", "families": ["green", "teal", "azure"]}
+{"schema": 1, "kind": "palette", "name": "Azure & Coal", "offered": false, "random": false, "seats": 0, "family": "red", "families": ["red", "orange", "azure", "blue"]}
+{"schema": 1, "kind": "palette", "name": "Azure Monolith", "offered": false, "random": false, "seats": 0, "family": "azure", "families": ["orange", "azure", "blue"]}
+{"schema": 1, "kind": "palette", "name": "Azure, Gold, Oxblood", "offered": false, "random": false, "seats": 1, "family": "yellow", "families": ["red", "orange", "yellow", "azure", "blue"]}
+{"schema": 1, "kind": "palette", "name": "Bauhaus Primary", "offered": false, "random": true, "seats": 4, "family": "red", "families": ["rose", "red", "yellow", "blue"]}
+{"schema": 1, "kind": "palette", "name": "Bauhaus Workshop", "offered": false, "random": false, "seats": 1, "family": "red", "families": ["red", "orange", "yellow", "blue"]}
+{"schema": 1, "kind": "palette", "name": "Black Iris", "offered": false, "random": true, "seats": 1, "family": "magenta", "families": ["lime", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "Black Lacquer, Teal Seal", "offered": false, "random": false, "seats": 1, "family": "teal", "families": ["teal", "cyan", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "Bleached Bronze", "offered": false, "random": false, "seats": 0, "family": "yellow", "families": ["yellow", "lime"]}
+{"schema": 1, "kind": "palette", "name": "Blossom Triad", "offered": false, "random": true, "seats": 4, "family": "rose", "families": ["rose", "purple", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "Blue Held, Amber Struck", "offered": false, "random": false, "seats": 0, "family": "orange", "families": ["orange", "azure", "blue"]}
+{"schema": 1, "kind": "palette", "name": "Blues", "offered": true, "random": false, "seats": 0, "family": "azure", "families": ["azure"]}
+{"schema": 1, "kind": "palette", "name": "Blush Room, Wine Dark", "offered": false, "random": false, "seats": 0, "family": "red", "families": ["rose", "red", "blue"]}
+{"schema": 1, "kind": "palette", "name": "Blush Vault", "offered": false, "random": false, "seats": 2, "family": "rose", "families": ["rose"]}
+{"schema": 1, "kind": "palette", "name": "Blush and Bracken", "offered": false, "random": false, "seats": 0, "family": "red", "families": ["red", "lime"]}
+{"schema": 1, "kind": "palette", "name": "Boho Cloth", "offered": false, "random": false, "seats": 0, "family": "orange", "families": ["red", "orange", "lime"]}
+{"schema": 1, "kind": "palette", "name": "Boho Dust", "offered": false, "random": false, "seats": 0, "family": "orange", "families": ["orange", "yellow", "lime"]}
+{"schema": 1, "kind": "palette", "name": "Bone & Bruise", "offered": false, "random": true, "seats": 3, "family": "magenta", "families": ["magenta"]}
+{"schema": 1, "kind": "palette", "name": "Bone & Deep Petrol", "offered": false, "random": false, "seats": 0, "families": ["orange", "green", "teal"]}
+{"schema": 1, "kind": "palette", "name": "Bone Orchard Rose", "offered": false, "random": true, "seats": 3, "family": "rose", "families": ["rose", "red"]}
+{"schema": 1, "kind": "palette", "name": "Bone Vault", "offered": false, "random": false, "seats": 0, "family": "blue", "families": ["rose", "red", "azure", "blue"]}
+{"schema": 1, "kind": "palette", "name": "Bone and Blush", "offered": false, "random": true, "seats": 2, "family": "rose", "families": ["rose", "red"]}
+{"schema": 1, "kind": "palette", "name": "Bone and Deep Green", "offered": false, "random": true, "seats": 2, "family": "green", "families": ["lime", "green"]}
+{"schema": 1, "kind": "palette", "name": "Bone and Moss", "offered": false, "random": true, "seats": 2, "family": "yellow", "families": ["yellow", "lime"]}
+{"schema": 1, "kind": "palette", "name": "Bone and Verdigris", "offered": false, "random": true, "seats": 2, "family": "cyan", "families": ["yellow", "lime", "cyan"]}
+{"schema": 1, "kind": "palette", "name": "Boulevard Gold", "offered": false, "random": false, "seats": 0, "family": "blue", "families": ["orange", "yellow", "blue", "purple"]}
+{"schema": 1, "kind": "palette", "name": "BrBG", "offered": true, "random": true, "seats": 2, "family": "teal", "families": ["orange", "yellow", "lime", "teal"]}
+{"schema": 1, "kind": "palette", "name": "Bracken and Bone", "offered": false, "random": false, "seats": 1, "family": "lime", "families": ["orange", "yellow", "lime"]}
+{"schema": 1, "kind": "palette", "name": "Bramble at Dusk", "offered": false, "random": false, "seats": 1, "family": "green", "families": ["rose", "green"]}
+{"schema": 1, "kind": "palette", "name": "Brass Tide", "offered": false, "random": true, "seats": 1, "family": "cyan", "families": ["yellow", "teal", "cyan"]}
+{"schema": 1, "kind": "palette", "name": "Bronze Fern", "offered": false, "random": false, "seats": 0, "family": "yellow", "families": ["yellow", "lime", "green", "teal"]}
+{"schema": 1, "kind": "palette", "name": "Bruised Velvet", "offered": false, "random": true, "seats": 2, "family": "magenta", "families": ["blue", "purple", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "BuGn", "offered": false, "random": true, "seats": 6, "family": "green", "families": ["green", "teal"]}
+{"schema": 1, "kind": "palette", "name": "BuPu", "offered": false, "random": true, "seats": 2, "family": "magenta", "families": ["blue", "purple", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "Burgundy & Coal", "offered": false, "random": false, "seats": 0, "family": "red", "families": ["rose", "red"]}
+{"schema": 1, "kind": "palette", "name": "Buried Fire", "offered": false, "random": true, "seats": 2, "family": "red", "families": ["red", "orange"]}
+{"schema": 1, "kind": "palette", "name": "Burnished Deep", "offered": false, "random": false, "seats": 0, "family": "orange", "families": ["orange", "blue"]}
+{"schema": 1, "kind": "palette", "name": "Burnt Boulevard", "offered": false, "random": true, "seats": 2, "family": "red", "families": ["red", "orange", "yellow"]}
+{"schema": 1, "kind": "palette", "name": "Butter Fathom", "offered": false, "random": false, "seats": 0, "family": "azure", "families": ["yellow", "azure", "blue"]}
+{"schema": 1, "kind": "palette", "name": "Butter Storm", "offered": false, "random": false, "seats": 4, "family": "azure", "families": ["yellow", "azure"]}
+{"schema": 1, "kind": "palette", "name": "CMRmap", "offered": true, "random": false, "seats": 0, "family": "yellow", "families": ["red", "orange", "yellow", "blue", "purple", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "Candle & Wine", "offered": false, "random": false, "seats": 1, "family": "rose", "families": ["rose", "red", "orange", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "Candle Ramp", "offered": false, "random": false, "seats": 1, "family": "red", "families": ["red"]}
+{"schema": 1, "kind": "palette", "name": "Cellar & Yew", "offered": false, "random": false, "seats": 0, "family": "green", "families": ["rose", "red", "green"]}
+{"schema": 1, "kind": "palette", "name": "Chalcedony", "offered": false, "random": true, "seats": 7, "family": "blue", "families": ["blue", "purple", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "Chart & Compass", "offered": false, "random": false, "seats": 1, "family": "cyan", "families": ["yellow", "teal", "cyan", "azure", "blue"]}
+{"schema": 1, "kind": "palette", "name": "Chartreuse Eclipse", "offered": false, "random": true, "seats": 1, "family": "purple", "families": ["lime", "purple"]}
+{"schema": 1, "kind": "palette", "name": "Chartreuse Furnace", "offered": false, "random": false, "seats": 3, "family": "green", "families": ["yellow", "lime", "green"]}
+{"schema": 1, "kind": "palette", "name": "Chartreuse Nocturne", "offered": false, "random": false, "seats": 1, "family": "lime", "families": ["lime", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "Chartreuse Vault", "offered": false, "random": false, "seats": 1, "family": "green", "families": ["lime", "green", "teal"]}
+{"schema": 1, "kind": "palette", "name": "Chrome Violet Hour", "offered": false, "random": false, "seats": 0, "family": "magenta", "families": ["cyan", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "Cinnabar Cathedral", "offered": false, "random": false, "seats": 0, "family": "teal", "families": ["rose", "teal", "cyan"]}
+{"schema": 1, "kind": "palette", "name": "Cirrus & Ember", "offered": false, "random": false, "seats": 0, "family": "azure", "families": ["orange", "azure", "blue"]}
+{"schema": 1, "kind": "palette", "name": "Claret Ember", "offered": false, "random": false, "seats": 0, "family": "red", "families": ["rose", "red", "orange"]}
+{"schema": 1, "kind": "palette", "name": "Coal & Coal-Fire", "offered": false, "random": true, "seats": 2, "family": "azure", "families": ["red", "azure", "blue", "purple"]}
+{"schema": 1, "kind": "palette", "name": "Coal & Malachite", "offered": false, "random": false, "seats": 3, "family": "green", "families": ["rose", "green", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "Coal Amber", "offered": false, "random": false, "seats": 3, "family": "yellow", "families": ["orange", "yellow"]}
+{"schema": 1, "kind": "palette", "name": "Coal Rose", "offered": false, "random": false, "seats": 1, "family": "rose", "families": ["rose", "blue", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "Coalglow", "offered": false, "random": false, "seats": 0, "family": "orange", "families": ["red", "orange", "yellow"]}
+{"schema": 1, "kind": "palette", "name": "Cobalt & Celadon", "offered": false, "random": false, "seats": 0, "family": "azure", "families": ["green", "teal", "cyan", "azure", "blue"]}
+{"schema": 1, "kind": "palette", "name": "Cobalt & Coal", "offered": false, "random": true, "seats": 1, "family": "blue", "families": ["red", "orange", "azure", "blue"]}
+{"schema": 1, "kind": "palette", "name": "Cobalt Against Gold", "offered": false, "random": false, "seats": 0, "family": "blue", "families": ["yellow", "blue"]}
+{"schema": 1, "kind": "palette", "name": "Cobalt Detonation", "offered": false, "random": false, "seats": 1, "family": "orange", "families": ["red", "orange", "blue"]}
+{"schema": 1, "kind": "palette", "name": "Cobalt Furnace Ultra", "offered": false, "random": false, "seats": 1, "family": "blue", "families": ["red", "orange", "azure", "blue"]}
+{"schema": 1, "kind": "palette", "name": "Cobalt Meets Blush", "offered": false, "random": true, "seats": 2, "family": "blue", "families": ["rose", "azure", "blue", "purple", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "Cobalt Meets Rust", "offered": false, "random": true, "seats": 3, "family": "red", "families": ["red", "azure", "blue", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "Cobalt Monody", "offered": false, "random": false, "seats": 0, "family": "azure", "families": ["red", "azure", "blue"]}
+{"schema": 1, "kind": "palette", "name": "Cobalt Orchid", "offered": false, "random": true, "seats": 5, "family": "blue", "families": ["blue", "purple", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "Cobalt Without Daylight", "offered": false, "random": true, "seats": 4, "family": "orange", "families": ["red", "orange", "blue"]}
+{"schema": 1, "kind": "palette", "name": "Cobalt, Crimson, Gold", "offered": false, "random": false, "seats": 0, "family": "red", "families": ["red", "orange", "yellow", "blue"]}
+{"schema": 1, "kind": "palette", "name": "Cobalt-Rust Double Flare", "offered": false, "random": false, "seats": 0, "family": "blue", "families": ["red", "orange", "azure", "blue"]}
+{"schema": 1, "kind": "palette", "name": "Cochineal & Cream", "offered": false, "random": false, "seats": 0, "family": "red", "families": ["red"]}
+{"schema": 1, "kind": "palette", "name": "Cold Fern Ramp", "offered": false, "random": false, "seats": 1, "family": "teal", "families": ["green", "teal", "cyan"]}
+{"schema": 1, "kind": "palette", "name": "Cold Forge", "offered": false, "random": false, "seats": 1, "family": "cyan", "families": ["red", "cyan"]}
+{"schema": 1, "kind": "palette", "name": "Cold Iron Ascent", "offered": false, "random": false, "seats": 0, "family": "azure", "families": ["azure"]}
+{"schema": 1, "kind": "palette", "name": "Cold Sweep", "offered": false, "random": false, "seats": 0, "family": "azure", "families": ["cyan", "azure"]}
+{"schema": 1, "kind": "palette", "name": "Coldhearth", "offered": false, "random": false, "seats": 0, "family": "azure", "families": ["red", "orange", "azure", "blue"]}
+{"schema": 1, "kind": "palette", "name": "Copper Bloom, Teal Fleck", "offered": false, "random": true, "seats": 3, "family": "orange", "families": ["orange", "teal"]}
+{"schema": 1, "kind": "palette", "name": "Copper Fathom", "offered": false, "random": false, "seats": 0, "family": "orange", "families": ["orange", "blue", "purple"]}
+{"schema": 1, "kind": "palette", "name": "Copper Meets Tide", "offered": false, "random": false, "seats": 0, "family": "orange", "families": ["red", "orange", "teal", "cyan"]}
+{"schema": 1, "kind": "palette", "name": "Copper Reef", "offered": false, "random": false, "seats": 0, "family": "teal", "families": ["orange", "green", "teal"]}
+{"schema": 1, "kind": "palette", "name": "Copper Tide", "offered": false, "random": false, "seats": 1, "family": "red", "families": ["red", "orange", "azure"]}
+{"schema": 1, "kind": "palette", "name": "Copper Verdigris", "offered": false, "random": false, "seats": 0, "family": "orange", "families": ["orange", "yellow", "lime", "green"]}
+{"schema": 1, "kind": "palette", "name": "Copper Vespers", "offered": false, "random": false, "seats": 0, "families": ["red", "orange", "yellow"]}
+{"schema": 1, "kind": "palette", "name": "Copper on Slate", "offered": false, "random": false, "seats": 0, "family": "orange", "families": ["red", "orange", "teal", "cyan"]}
+{"schema": 1, "kind": "palette", "name": "Copper on Verdigris", "offered": false, "random": false, "seats": 0, "family": "teal", "families": ["orange", "green", "teal"]}
+{"schema": 1, "kind": "palette", "name": "Copper, Sage & Petrol", "offered": false, "random": false, "seats": 0, "family": "orange", "families": ["orange", "yellow", "lime", "green", "teal"]}
+{"schema": 1, "kind": "palette", "name": "Coral Nocturne", "offered": false, "random": false, "seats": 0, "family": "red", "families": ["rose", "red"]}
+{"schema": 1, "kind": "palette", "name": "Coral Signal", "offered": false, "random": false, "seats": 1, "family": "red", "families": ["red", "teal", "cyan"]}
+{"schema": 1, "kind": "palette", "name": "Coral Tideline", "offered": false, "random": true, "seats": 4, "family": "orange", "families": ["red", "orange"]}
+{"schema": 1, "kind": "palette", "name": "Coral in the Trench", "offered": false, "random": true, "seats": 4, "family": "red", "families": ["red", "orange", "teal", "cyan"]}
+{"schema": 1, "kind": "palette", "name": "Counter Chrome", "offered": false, "random": false, "seats": 0, "family": "rose", "families": ["rose", "green", "teal"]}
+{"schema": 1, "kind": "palette", "name": "Court of Thorns", "offered": false, "random": false, "seats": 0, "family": "rose", "families": ["rose", "yellow", "purple", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "Crimson Ice Duet", "offered": false, "random": false, "seats": 1, "family": "rose", "families": ["rose", "azure", "blue", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "Cyan & Ember", "offered": false, "random": false, "seats": 0, "family": "red", "families": ["red", "cyan", "azure"]}
+{"schema": 1, "kind": "palette", "name": "Cyan Coal, One Coral", "offered": false, "random": false, "seats": 0, "family": "cyan", "families": ["red", "cyan"]}
+{"schema": 1, "kind": "palette", "name": "Cyan Tide", "offered": false, "random": false, "seats": 1, "family": "cyan", "families": ["cyan"]}
+{"schema": 1, "kind": "palette", "name": "Cyan Vault", "offered": false, "random": false, "seats": 0, "family": "cyan", "families": ["cyan", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "Cyan, Magenta, Amber", "offered": false, "random": false, "seats": 0, "family": "cyan", "families": ["orange", "cyan", "azure", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "Cyanotype Furnace", "offered": false, "random": false, "seats": 0, "family": "cyan", "families": ["orange", "cyan"]}
+{"schema": 1, "kind": "palette", "name": "Damson and Ore", "offered": false, "random": false, "seats": 0, "family": "magenta", "families": ["magenta"]}
+{"schema": 1, "kind": "palette", "name": "Deco Lacquer", "offered": false, "random": false, "seats": 0, "family": "yellow", "families": ["yellow", "green"]}
+{"schema": 1, "kind": "palette", "name": "Deco Malachite", "offered": false, "random": false, "seats": 1, "family": "green", "families": ["yellow", "green", "teal"]}
+{"schema": 1, "kind": "palette", "name": "Deep Azure & Coral", "offered": false, "random": false, "seats": 0, "family": "azure", "families": ["orange", "lime", "azure"]}
+{"schema": 1, "kind": "palette", "name": "Deep Cold Run", "offered": false, "random": false, "seats": 0, "family": "azure", "families": ["cyan", "azure"]}
+{"schema": 1, "kind": "palette", "name": "Deep Current", "offered": false, "random": false, "seats": 0, "family": "teal", "families": ["teal", "cyan"]}
+{"schema": 1, "kind": "palette", "name": "Deep Iris Rise", "offered": false, "random": false, "seats": 1, "family": "purple", "families": ["purple", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "Deep Rose Vault", "offered": false, "random": true, "seats": 4, "family": "magenta", "families": ["rose", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "Deep Verdigris Sweep", "offered": false, "random": false, "seats": 0, "family": "cyan", "families": ["teal", "cyan"]}
+{"schema": 1, "kind": "palette", "name": "Deep Wood, One Ember", "offered": false, "random": false, "seats": 0, "family": "green", "families": ["orange", "green"]}
+{"schema": 1, "kind": "palette", "name": "Delft Deep", "offered": false, "random": false, "seats": 1, "family": "blue", "families": ["azure", "blue"]}
+{"schema": 1, "kind": "palette", "name": "Dove & Apricot", "offered": false, "random": false, "seats": 0, "family": "azure", "families": ["orange", "azure", "blue"]}
+{"schema": 1, "kind": "palette", "name": "Drape & Shadow", "offered": false, "random": true, "seats": 2, "family": "red", "families": ["rose", "red", "blue"]}
+{"schema": 1, "kind": "palette", "name": "Ember Against Steel", "offered": false, "random": false, "seats": 1, "family": "red", "families": ["rose", "red", "azure", "blue"]}
+{"schema": 1, "kind": "palette", "name": "Ember Gate", "offered": false, "random": false, "seats": 1, "family": "teal", "families": ["orange", "teal", "cyan"]}
+{"schema": 1, "kind": "palette", "name": "Ember Gilt", "offered": false, "random": false, "seats": 0, "family": "yellow", "families": ["orange", "yellow"]}
+{"schema": 1, "kind": "palette", "name": "Ember Gradient", "offered": false, "random": false, "seats": 1, "family": "orange", "families": ["red", "orange", "yellow"]}
+{"schema": 1, "kind": "palette", "name": "Ember Over Tidewater", "offered": false, "random": false, "seats": 0, "family": "orange", "families": ["orange", "cyan"]}
+{"schema": 1, "kind": "palette", "name": "Ember Rising", "offered": false, "random": false, "seats": 0, "family": "red", "families": ["red", "orange", "yellow"]}
+{"schema": 1, "kind": "palette", "name": "Ember Rose Ramp", "offered": false, "random": true, "seats": 5, "family": "rose", "families": ["rose"]}
+{"schema": 1, "kind": "palette", "name": "Ember Standard", "offered": false, "random": false, "seats": 0, "family": "blue", "families": ["yellow", "blue", "purple"]}
+{"schema": 1, "kind": "palette", "name": "Ember Terracotta", "offered": false, "random": true, "seats": 2, "family": "red", "families": ["red", "orange"]}
+{"schema": 1, "kind": "palette", "name": "Ember Triad", "offered": false, "random": false, "seats": 0, "family": "magenta", "families": ["rose", "orange", "green", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "Ember Undertow", "offered": false, "random": false, "seats": 0, "family": "orange", "families": ["red", "orange", "azure", "blue"]}
+{"schema": 1, "kind": "palette", "name": "Ember in Green Ash", "offered": false, "random": false, "seats": 0, "family": "red", "families": ["red", "lime", "green"]}
+{"schema": 1, "kind": "palette", "name": "Ember in Orchid Ash", "offered": false, "random": false, "seats": 0, "family": "magenta", "families": ["magenta"]}
+{"schema": 1, "kind": "palette", "name": "Ember in Smoke", "offered": false, "random": false, "seats": 0, "family": "red", "families": ["red", "orange"]}
+{"schema": 1, "kind": "palette", "name": "Ember to Lime", "offered": false, "random": false, "seats": 0, "family": "orange", "families": ["orange", "yellow", "lime"]}
+{"schema": 1, "kind": "palette", "name": "Emerald Furnace", "offered": false, "random": true, "seats": 2, "family": "green", "families": ["green"]}
+{"schema": 1, "kind": "palette", "name": "Emerald Ingot", "offered": false, "random": true, "seats": 8, "family": "green", "families": ["yellow", "lime", "green"]}
+{"schema": 1, "kind": "palette", "name": "Ensign", "offered": false, "random": false, "seats": 0, "family": "red", "families": ["rose", "red", "blue", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "Faded Gilt", "offered": false, "random": false, "seats": 0, "family": "orange", "families": ["orange", "yellow"]}
+{"schema": 1, "kind": "palette", "name": "Faded Salon", "offered": false, "random": false, "seats": 0, "family": "red", "families": ["rose", "red", "orange", "blue"]}
+{"schema": 1, "kind": "palette", "name": "Fanned Coals", "offered": false, "random": false, "seats": 0, "family": "orange", "families": ["red", "orange"]}
+{"schema": 1, "kind": "palette", "name": "Fathom Ice", "offered": false, "random": false, "seats": 0, "family": "azure", "families": ["cyan", "azure"]}
+{"schema": 1, "kind": "palette", "name": "Fen Fire", "offered": false, "random": false, "seats": 0, "family": "yellow", "families": ["red", "orange", "yellow", "teal"]}
+{"schema": 1, "kind": "palette", "name": "Fern Drift", "offered": false, "random": false, "seats": 1, "family": "lime", "families": ["lime", "green", "teal", "cyan"]}
+{"schema": 1, "kind": "palette", "name": "Fern Ladder", "offered": false, "random": false, "seats": 0, "family": "green", "families": ["lime", "green"]}
+{"schema": 1, "kind": "palette", "name": "Field at Dusk", "offered": false, "random": false, "seats": 0, "family": "lime", "families": ["yellow", "lime", "purple"]}
+{"schema": 1, "kind": "palette", "name": "Fire, One Cobalt Chip", "offered": false, "random": false, "seats": 0, "family": "red", "families": ["red", "orange", "blue"]}
+{"schema": 1, "kind": "palette", "name": "Foam & Olive", "offered": false, "random": true, "seats": 2, "family": "green", "families": ["lime", "green", "teal"]}
+{"schema": 1, "kind": "palette", "name": "Foam Over Indigo", "offered": false, "random": false, "seats": 1, "family": "blue", "families": ["red", "azure", "blue"]}
+{"schema": 1, "kind": "palette", "name": "Forest Bloom", "offered": false, "random": false, "seats": 0, "family": "green", "families": ["green"]}
+{"schema": 1, "kind": "palette", "name": "Forest Kiln", "offered": false, "random": false, "seats": 0, "family": "green", "families": ["green"]}
+{"schema": 1, "kind": "palette", "name": "Forest to Foam", "offered": false, "random": false, "seats": 0, "family": "green", "families": ["green", "teal"]}
+{"schema": 1, "kind": "palette", "name": "Forge Ascent", "offered": false, "random": false, "seats": 1, "family": "yellow", "families": ["orange", "yellow"]}
+{"schema": 1, "kind": "palette", "name": "Forge Sweep", "offered": false, "random": false, "seats": 2, "family": "red", "families": ["red", "orange", "yellow"]}
+{"schema": 1, "kind": "palette", "name": "Forge and Frost", "offered": false, "random": false, "seats": 0, "family": "red", "families": ["red", "orange", "teal", "cyan"]}
+{"schema": 1, "kind": "palette", "name": "Forge to White", "offered": false, "random": false, "seats": 0, "family": "red", "families": ["red", "orange", "yellow"]}
+{"schema": 1, "kind": "palette", "name": "Formica Neon", "offered": false, "random": false, "seats": 1, "family": "rose", "families": ["rose", "red", "green", "teal"]}
+{"schema": 1, "kind": "palette", "name": "Foxglove & Iron", "offered": false, "random": false, "seats": 0, "family": "rose", "families": ["rose", "red", "green", "teal"]}
+{"schema": 1, "kind": "palette", "name": "Frost & Cinder", "offered": false, "random": false, "seats": 0, "family": "red", "families": ["red", "orange", "azure", "blue"]}
+{"schema": 1, "kind": "palette", "name": "Frost Orchid", "offered": false, "random": true, "seats": 6, "family": "magenta", "families": ["purple", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "Fuchsia & Acid", "offered": false, "random": false, "seats": 0, "family": "magenta", "families": ["rose", "lime", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "Fuchsia & Coal", "offered": false, "random": false, "seats": 0, "family": "magenta", "families": ["rose", "orange", "yellow", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "Fuchsia Beacon", "offered": false, "random": false, "seats": 0, "family": "magenta", "families": ["azure", "blue", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "Fuchsia Cliffside", "offered": false, "random": false, "seats": 1, "family": "magenta", "families": ["teal", "cyan", "purple", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "Fuchsia Ironworks", "offered": false, "random": false, "seats": 0, "family": "blue", "families": ["rose", "yellow", "azure", "blue", "purple", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "Furnace Rose", "offered": false, "random": true, "seats": 6, "family": "rose", "families": ["rose", "red", "orange"]}
+{"schema": 1, "kind": "palette", "name": "Garnet Tide", "offered": false, "random": false, "seats": 0, "family": "rose", "families": ["rose", "green"]}
+{"schema": 1, "kind": "palette", "name": "Gilded Moss", "offered": false, "random": false, "seats": 0, "family": "yellow", "families": ["yellow", "lime", "green", "teal"]}
+{"schema": 1, "kind": "palette", "name": "Gilt Triad", "offered": false, "random": false, "seats": 1, "family": "red", "families": ["red", "orange", "yellow", "blue"]}
+{"schema": 1, "kind": "palette", "name": "Gilt and Rose", "offered": false, "random": false, "seats": 0, "family": "rose", "families": ["rose", "red", "orange", "yellow"]}
+{"schema": 1, "kind": "palette", "name": "Glacier Ascent", "offered": false, "random": false, "seats": 0, "family": "blue", "families": ["azure", "blue"]}
+{"schema": 1, "kind": "palette", "name": "Glacier Drift", "offered": false, "random": true, "seats": 3, "family": "cyan", "families": ["cyan", "azure"]}
+{"schema": 1, "kind": "palette", "name": "Glacier Meridian", "offered": false, "random": false, "seats": 1, "family": "cyan", "families": ["cyan"]}
+{"schema": 1, "kind": "palette", "name": "GnBu", "offered": true, "random": false, "seats": 0, "family": "azure", "families": ["green", "teal", "cyan", "azure"]}
+{"schema": 1, "kind": "palette", "name": "Gold Cliff Sage", "offered": false, "random": true, "seats": 1, "family": "yellow", "families": ["yellow", "lime", "green"]}
+{"schema": 1, "kind": "palette", "name": "Gold Field, Blood Spark", "offered": false, "random": false, "seats": 1, "family": "orange", "families": ["orange", "yellow"]}
+{"schema": 1, "kind": "palette", "name": "Gold Leaf on Lacquer", "offered": false, "random": false, "seats": 0, "family": "yellow", "families": ["yellow"]}
+{"schema": 1, "kind": "palette", "name": "Gold Leaf, Deep Water", "offered": false, "random": false, "seats": 0, "family": "yellow", "families": ["orange", "yellow", "blue"]}
+{"schema": 1, "kind": "palette", "name": "Green Against Oxblood", "offered": false, "random": false, "seats": 0, "family": "green", "families": ["red", "orange", "lime", "green"]}
+{"schema": 1, "kind": "palette", "name": "Green Fire, Black Ash", "offered": false, "random": false, "seats": 0, "family": "red", "families": ["red", "lime", "green"]}
+{"schema": 1, "kind": "palette", "name": "Green Flag, Blue Water", "offered": false, "random": false, "seats": 0, "family": "green", "families": ["green", "teal", "azure", "blue"]}
+{"schema": 1, "kind": "palette", "name": "Green Hour", "offered": false, "random": false, "seats": 0, "family": "yellow", "families": ["orange", "yellow", "lime", "green"]}
+{"schema": 1, "kind": "palette", "name": "Green Triad Dusk", "offered": false, "random": false, "seats": 0, "family": "red", "families": ["red", "orange", "yellow", "lime", "green", "cyan"]}
+{"schema": 1, "kind": "palette", "name": "Green Vault", "offered": false, "random": false, "seats": 1, "family": "green", "families": ["yellow", "green"]}
+{"schema": 1, "kind": "palette", "name": "Green Water Drift", "offered": false, "random": true, "seats": 2, "family": "cyan", "families": ["green", "teal", "cyan", "azure"]}
+{"schema": 1, "kind": "palette", "name": "Green Water, Blue Deep", "offered": false, "random": true, "seats": 2, "family": "blue", "families": ["teal", "cyan", "azure", "blue"]}
+{"schema": 1, "kind": "palette", "name": "Green and Magenta", "offered": false, "random": false, "seats": 0, "family": "rose", "families": ["rose", "green", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "Green, Cobalt, Amber", "offered": false, "random": false, "seats": 0, "family": "green", "families": ["green", "teal", "cyan", "azure", "blue"]}
+{"schema": 1, "kind": "palette", "name": "Green, Gold, Magenta", "offered": false, "random": false, "seats": 0, "family": "green", "families": ["rose", "yellow", "green", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "Green, Violet, Bone", "offered": false, "random": true, "seats": 2, "family": "purple", "families": ["green", "purple"]}
+{"schema": 1, "kind": "palette", "name": "Greens", "offered": false, "random": false, "seats": 1, "family": "green", "families": ["green"]}
+{"schema": 1, "kind": "palette", "name": "Harbour Sand", "offered": false, "random": false, "seats": 1, "family": "blue", "families": ["yellow", "teal", "cyan", "azure", "blue"]}
+{"schema": 1, "kind": "palette", "name": "Harbour Spark", "offered": false, "random": false, "seats": 0, "family": "azure", "families": ["cyan", "azure"]}
+{"schema": 1, "kind": "palette", "name": "Harvest Wallpaper", "offered": false, "random": false, "seats": 1, "family": "orange", "families": ["red", "orange", "yellow"]}
+{"schema": 1, "kind": "palette", "name": "High Cyan, Low Gold", "offered": false, "random": true, "seats": 3, "family": "cyan", "families": ["teal", "cyan"]}
+{"schema": 1, "kind": "palette", "name": "High Gold", "offered": false, "random": false, "seats": 1, "family": "yellow", "families": ["yellow", "purple"]}
+{"schema": 1, "kind": "palette", "name": "Hollow Lantern", "offered": false, "random": false, "seats": 1, "family": "orange", "families": ["red", "orange"]}
+{"schema": 1, "kind": "palette", "name": "Ice Sage Ramp", "offered": false, "random": false, "seats": 1, "family": "azure", "families": ["teal", "cyan", "azure"]}
+{"schema": 1, "kind": "palette", "name": "Ice Shaft", "offered": false, "random": true, "seats": 4, "family": "teal", "families": ["teal"]}
+{"schema": 1, "kind": "palette", "name": "Ice Spire", "offered": false, "random": false, "seats": 1, "family": "blue", "families": ["azure", "blue"]}
+{"schema": 1, "kind": "palette", "name": "Ice Verdant Ramp", "offered": false, "random": false, "seats": 0, "family": "cyan", "families": ["teal", "cyan", "azure"]}
+{"schema": 1, "kind": "palette", "name": "Ice Walk", "offered": false, "random": false, "seats": 0, "family": "azure", "families": ["azure", "blue"]}
+{"schema": 1, "kind": "palette", "name": "Ice with an Ember", "offered": false, "random": false, "seats": 1, "family": "azure", "families": ["red", "orange", "azure", "blue"]}
+{"schema": 1, "kind": "palette", "name": "Ice-to-Ember Cliff", "offered": false, "random": false, "seats": 3, "family": "azure", "families": ["red", "orange", "azure", "blue"]}
+{"schema": 1, "kind": "palette", "name": "Indigo & Old Gold", "offered": false, "random": false, "seats": 0, "family": "blue", "families": ["yellow", "blue", "purple"]}
+{"schema": 1, "kind": "palette", "name": "Indigo Descent", "offered": false, "random": false, "seats": 0, "family": "purple", "families": ["blue", "purple"]}
+{"schema": 1, "kind": "palette", "name": "Indigo Kindling", "offered": false, "random": true, "seats": 4, "family": "blue", "families": ["blue", "purple", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "Indigo Marquee", "offered": false, "random": false, "seats": 0, "family": "blue", "families": ["orange", "yellow", "blue", "purple"]}
+{"schema": 1, "kind": "palette", "name": "Indigo Nocturne", "offered": false, "random": true, "seats": 4, "family": "purple", "families": ["blue", "purple"]}
+{"schema": 1, "kind": "palette", "name": "Indigo Rungs", "offered": false, "random": true, "seats": 0, "family": "blue", "families": ["azure", "blue"]}
+{"schema": 1, "kind": "palette", "name": "Indigo Teal Crests", "offered": false, "random": true, "seats": 1, "family": "cyan", "families": ["green", "teal", "cyan"]}
+{"schema": 1, "kind": "palette", "name": "Indigo Tideline", "offered": false, "random": true, "seats": 1, "family": "teal", "families": ["teal", "cyan", "azure"]}
+{"schema": 1, "kind": "palette", "name": "Indigo Walk to Lime", "offered": false, "random": false, "seats": 0, "family": "azure", "families": ["green", "teal", "cyan", "azure"]}
+{"schema": 1, "kind": "palette", "name": "Indigo, Cyan, Teal, Foam", "offered": false, "random": false, "seats": 0, "family": "azure", "families": ["green", "teal", "cyan", "azure", "blue"]}
+{"schema": 1, "kind": "palette", "name": "Ink & Fuchsia Flare", "offered": false, "random": true, "seats": 3, "family": "blue", "families": ["rose", "blue", "purple", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "Inkfall", "offered": false, "random": false, "seats": 1, "family": "blue", "families": ["blue", "purple", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "Iris Ascension", "offered": false, "random": false, "seats": 2, "family": "purple", "families": ["purple"]}
+{"schema": 1, "kind": "palette", "name": "Ivory Gilt", "offered": false, "random": false, "seats": 2, "family": "green", "families": ["yellow", "green", "teal"]}
+{"schema": 1, "kind": "palette", "name": "Jade in Amethyst Light", "offered": false, "random": false, "seats": 0, "family": "purple", "families": ["green", "teal", "purple", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "Jqmsl", "offered": false, "random": false, "seats": 0, "family": "yellow", "families": ["orange", "yellow"]}
+{"schema": 1, "kind": "palette", "name": "Jungle Canopy", "offered": false, "random": false, "seats": 2, "family": "green", "families": ["lime", "green"]}
+{"schema": 1, "kind": "palette", "name": "Jungle Floor", "offered": false, "random": false, "seats": 3, "family": "green", "families": ["lime", "green", "teal"]}
+{"schema": 1, "kind": "palette", "name": "Khaki Cathedral", "offered": false, "random": false, "seats": 0, "family": "magenta", "families": ["rose", "red", "orange", "yellow", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "Kiln Triad", "offered": false, "random": false, "seats": 0, "family": "red", "families": ["red", "orange", "yellow", "lime"]}
+{"schema": 1, "kind": "palette", "name": "Lacquer & Bone", "offered": false, "random": false, "seats": 0, "family": "red", "families": ["rose", "red"]}
+{"schema": 1, "kind": "palette", "name": "Ladder to Ice", "offered": false, "random": false, "seats": 0, "family": "blue", "families": ["azure", "blue"]}
+{"schema": 1, "kind": "palette", "name": "Lagoon Neon", "offered": false, "random": false, "seats": 0, "family": "rose", "families": ["rose", "lime", "green", "teal", "cyan"]}
+{"schema": 1, "kind": "palette", "name": "Lantern Rose", "offered": false, "random": false, "seats": 2, "family": "rose", "families": ["rose"]}
+{"schema": 1, "kind": "palette", "name": "Lantern in the Deep", "offered": false, "random": false, "seats": 1, "family": "orange", "families": ["red", "orange", "azure", "blue"]}
+{"schema": 1, "kind": "palette", "name": "Lavender Bleach", "offered": false, "random": false, "seats": 0, "family": "purple", "families": ["orange", "yellow", "purple"]}
+{"schema": 1, "kind": "palette", "name": "Lichen and Ink", "offered": false, "random": false, "seats": 0, "family": "blue", "families": ["lime", "blue"]}
+{"schema": 1, "kind": "palette", "name": "Lilac Drift, Plum Trough", "offered": false, "random": true, "seats": 1, "family": "magenta", "families": ["rose", "red", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "Lilac Vellum", "offered": false, "random": true, "seats": 2, "family": "magenta", "families": ["purple", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "Lime Ash Ember", "offered": false, "random": false, "seats": 0, "family": "lime", "families": ["orange", "lime"]}
+{"schema": 1, "kind": "palette", "name": "Lime and Cobalt", "offered": false, "random": false, "seats": 0, "family": "blue", "families": ["lime", "green", "azure", "blue"]}
+{"schema": 1, "kind": "palette", "name": "Lime on Black Glass", "offered": false, "random": false, "seats": 0, "family": "lime", "families": ["lime", "purple"]}
+{"schema": 1, "kind": "palette", "name": "Lime, Cobalt, Oxblood", "offered": false, "random": false, "seats": 0, "family": "red", "families": ["red", "lime", "blue"]}
+{"schema": 1, "kind": "palette", "name": "Lime, Sage & Teal Dusk", "offered": false, "random": false, "seats": 0, "families": ["yellow", "lime", "green", "teal", "purple"]}
+{"schema": 1, "kind": "palette", "name": "Lime, Steel, Rose", "offered": false, "random": false, "seats": 0, "family": "rose", "families": ["rose", "yellow", "lime"]}
+{"schema": 1, "kind": "palette", "name": "Long Autumn", "offered": false, "random": true, "seats": 2, "family": "orange", "families": ["red", "orange", "yellow"]}
+{"schema": 1, "kind": "palette", "name": "Madder Lantern", "offered": false, "random": false, "seats": 0, "family": "rose", "families": ["rose", "red", "orange", "yellow"]}
+{"schema": 1, "kind": "palette", "name": "Malachite & Rose", "offered": false, "random": false, "seats": 0, "family": "rose", "families": ["rose", "lime", "green"]}
+{"schema": 1, "kind": "palette", "name": "Malachite and Rose", "offered": false, "random": false, "seats": 0, "family": "lime", "families": ["rose", "lime", "green"]}
+{"schema": 1, "kind": "palette", "name": "Marsh Lantern", "offered": false, "random": false, "seats": 0, "family": "red", "families": ["red", "teal", "cyan", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "Mauve Hollow", "offered": false, "random": false, "seats": 1, "family": "magenta", "families": ["rose", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "Memphis Blackboard", "offered": false, "random": false, "seats": 1, "family": "yellow", "families": ["rose", "yellow", "cyan"]}
+{"schema": 1, "kind": "palette", "name": "Memphis Chalkline", "offered": false, "random": false, "seats": 0, "family": "rose", "families": ["rose", "orange", "yellow", "cyan"]}
+{"schema": 1, "kind": "palette", "name": "Mesa Noon", "offered": false, "random": true, "seats": 3, "family": "teal", "families": ["red", "orange", "teal"]}
+{"schema": 1, "kind": "palette", "name": "Mesa Shadow", "offered": false, "random": false, "seats": 2, "family": "red", "families": ["red", "orange", "teal"]}
+{"schema": 1, "kind": "palette", "name": "Midnight Regalia", "offered": false, "random": false, "seats": 1, "family": "blue", "families": ["yellow", "azure", "blue"]}
+{"schema": 1, "kind": "palette", "name": "Mineral Verdigris & Copper", "offered": false, "random": false, "seats": 2, "family": "teal", "families": ["orange", "teal", "cyan"]}
+{"schema": 1, "kind": "palette", "name": "Mint & Wine Air", "offered": false, "random": false, "seats": 1, "family": "rose", "families": ["rose", "green", "teal"]}
+{"schema": 1, "kind": "palette", "name": "Mint Field, Teal Well", "offered": false, "random": true, "seats": 4, "family": "teal", "families": ["green", "teal"]}
+{"schema": 1, "kind": "palette", "name": "Mist Field, Ink Well", "offered": false, "random": false, "seats": 0, "family": "teal", "families": ["green", "teal"]}
+{"schema": 1, "kind": "palette", "name": "Moss & Rust", "offered": false, "random": false, "seats": 1, "family": "green", "families": ["orange", "lime", "green"]}
+{"schema": 1, "kind": "palette", "name": "Moss Under Snow", "offered": false, "random": false, "seats": 0, "families": ["green", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "Moss and Ore", "offered": false, "random": false, "seats": 1, "family": "green", "families": ["yellow", "green", "teal"]}
+{"schema": 1, "kind": "palette", "name": "Moss, Clay & Gold", "offered": false, "random": false, "seats": 0, "family": "orange", "families": ["orange", "yellow", "lime"]}
+{"schema": 1, "kind": "palette", "name": "Mustard Field", "offered": false, "random": false, "seats": 0, "family": "yellow", "families": ["orange", "yellow", "lime"]}
+{"schema": 1, "kind": "palette", "name": "Muted Triune", "offered": false, "random": false, "seats": 0, "family": "magenta", "families": ["yellow", "teal", "cyan", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "MyFractal01", "offered": false, "random": false, "seats": 1, "family": "orange", "families": ["red", "orange", "yellow"]}
+{"schema": 1, "kind": "palette", "name": "MyFractal03", "offered": false, "random": false, "seats": 0, "family": "blue", "families": ["cyan", "azure", "blue"]}
+{"schema": 1, "kind": "palette", "name": "MyFractal04", "offered": false, "random": false, "seats": 0, "family": "red", "families": ["red", "orange"]}
+{"schema": 1, "kind": "palette", "name": "Navy to Foam", "offered": false, "random": true, "seats": 4, "family": "cyan", "families": ["green", "teal", "cyan"]}
+{"schema": 1, "kind": "palette", "name": "Nebula Flare", "offered": false, "random": false, "seats": 0, "family": "purple", "families": ["purple", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "Nebula Veil", "offered": false, "random": true, "seats": 4, "family": "purple", "families": ["purple", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "Neon Bramble", "offered": false, "random": false, "seats": 0, "family": "rose", "families": ["rose", "red", "green"]}
+{"schema": 1, "kind": "palette", "name": "Neon Causeway", "offered": false, "random": false, "seats": 0, "family": "purple", "families": ["rose", "red", "orange", "purple", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "Neon Grid", "offered": false, "random": false, "seats": 0, "family": "magenta", "families": ["cyan", "azure", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "Neon Pop Flash", "offered": false, "random": false, "seats": 1, "family": "blue", "families": ["rose", "yellow", "azure", "blue", "purple"]}
+{"schema": 1, "kind": "palette", "name": "Nightbloom Signal", "offered": false, "random": true, "seats": 3, "family": "magenta", "families": ["blue", "purple", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "Nightfall Azure", "offered": false, "random": false, "seats": 0, "family": "azure", "families": ["cyan", "azure", "blue"]}
+{"schema": 1, "kind": "palette", "name": "Nightfall Spectrum", "offered": false, "random": false, "seats": 0, "family": "magenta", "families": ["blue", "purple", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "Nineties Arcade", "offered": false, "random": false, "seats": 1, "family": "red", "families": ["red", "orange", "teal", "purple"]}
+{"schema": 1, "kind": "palette", "name": "Nineties Dusk", "offered": false, "random": false, "seats": 1, "family": "red", "families": ["red", "orange", "teal", "cyan", "purple"]}
+{"schema": 1, "kind": "palette", "name": "Ochre Against Steel", "offered": false, "random": false, "seats": 0, "family": "azure", "families": ["orange", "cyan", "azure"]}
+{"schema": 1, "kind": "palette", "name": "Ochre Loam", "offered": false, "random": false, "seats": 1, "family": "orange", "families": ["orange", "yellow", "lime"]}
+{"schema": 1, "kind": "palette", "name": "Olive Ash", "offered": false, "random": false, "seats": 0, "family": "lime", "families": ["red", "yellow", "lime"]}
+{"schema": 1, "kind": "palette", "name": "Olive Cellar", "offered": false, "random": false, "seats": 0, "family": "yellow", "families": ["orange", "yellow", "lime"]}
+{"schema": 1, "kind": "palette", "name": "Olive Ember Ramp", "offered": false, "random": false, "seats": 0, "family": "orange", "families": ["orange", "yellow", "lime"]}
+{"schema": 1, "kind": "palette", "name": "Olive Field, Violet Spark", "offered": false, "random": false, "seats": 0, "families": ["lime", "purple"]}
+{"schema": 1, "kind": "palette", "name": "Olive Turn", "offered": false, "random": false, "seats": 0, "family": "orange", "families": ["red", "orange", "yellow", "lime"]}
+{"schema": 1, "kind": "palette", "name": "Olive, Ash-Blue & Rose", "offered": false, "random": false, "seats": 0, "family": "azure", "families": ["rose", "lime", "azure", "blue", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "Olive, Blood, Cobalt", "offered": false, "random": false, "seats": 0, "family": "red", "families": ["red", "orange", "yellow", "lime", "azure", "blue"]}
+{"schema": 1, "kind": "palette", "name": "Olive, Green, Ochre", "offered": false, "random": false, "seats": 0, "family": "green", "families": ["yellow", "lime", "green"]}
+{"schema": 1, "kind": "palette", "name": "Olive, Lime, Foam", "offered": false, "random": false, "seats": 0, "family": "lime", "families": ["lime", "green", "teal"]}
+{"schema": 1, "kind": "palette", "name": "One Coal Alight", "offered": false, "random": false, "seats": 0, "family": "red", "families": ["red", "orange"]}
+{"schema": 1, "kind": "palette", "name": "Opal & Ink", "offered": false, "random": true, "seats": 2, "family": "purple", "families": ["azure", "blue", "purple"]}
+{"schema": 1, "kind": "palette", "name": "Opal Drift", "offered": false, "random": false, "seats": 0, "family": "azure", "families": ["azure", "blue", "purple"]}
+{"schema": 1, "kind": "palette", "name": "Opal Field, Sapphire Spark", "offered": false, "random": false, "seats": 1, "family": "orange", "families": ["orange", "azure", "blue"]}
+{"schema": 1, "kind": "palette", "name": "OrRd", "offered": false, "random": true, "seats": 3, "family": "red", "families": ["red", "orange"]}
+{"schema": 1, "kind": "palette", "name": "Oranges", "offered": false, "random": true, "seats": 4, "family": "red", "families": ["red", "orange"]}
+{"schema": 1, "kind": "palette", "name": "Orchid & Goldshadow", "offered": false, "random": false, "seats": 0, "family": "magenta", "families": ["rose", "red", "orange", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "Orchid Deep", "offered": false, "random": false, "seats": 1, "family": "magenta", "families": ["cyan", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "Orchid Furnace", "offered": false, "random": true, "seats": 5, "family": "magenta", "families": ["magenta"]}
+{"schema": 1, "kind": "palette", "name": "Orchid Procession", "offered": false, "random": false, "seats": 0, "family": "purple", "families": ["blue", "purple", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "Orchid Triad", "offered": false, "random": false, "seats": 0, "family": "magenta", "families": ["rose", "yellow", "blue", "purple", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "Orchid Triad Ember", "offered": false, "random": false, "seats": 0, "family": "blue", "families": ["rose", "yellow", "blue", "purple", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "Oxblood & Petrol Seam", "offered": false, "random": false, "seats": 0, "family": "red", "families": ["red", "teal", "cyan"]}
+{"schema": 1, "kind": "palette", "name": "Oxblood Procession", "offered": false, "random": false, "seats": 1, "family": "rose", "families": ["rose"]}
+{"schema": 1, "kind": "palette", "name": "Oxblood Standard", "offered": false, "random": false, "seats": 1, "family": "red", "families": ["red", "orange", "yellow"]}
+{"schema": 1, "kind": "palette", "name": "Oxblood Thicket", "offered": false, "random": false, "seats": 1, "family": "green", "families": ["red", "green"]}
+{"schema": 1, "kind": "palette", "name": "Oxblood, Amber, Teal", "offered": false, "random": false, "seats": 2, "family": "orange", "families": ["red", "orange", "teal"]}
+{"schema": 1, "kind": "palette", "name": "Oxblood, Cyan, Cream", "offered": false, "random": false, "seats": 1, "family": "cyan", "families": ["red", "cyan"]}
+{"schema": 1, "kind": "palette", "name": "Oxblood, Ochre, Petrol", "offered": false, "random": false, "seats": 0, "family": "yellow", "families": ["red", "orange", "yellow", "teal"]}
+{"schema": 1, "kind": "palette", "name": "Oxblood, One Cold Spark", "offered": false, "random": false, "seats": 0, "family": "red", "families": ["rose", "red", "blue"]}
+{"schema": 1, "kind": "palette", "name": "Oxide & Copper Edge", "offered": false, "random": false, "seats": 1, "family": "teal", "families": ["orange", "green", "teal"]}
+{"schema": 1, "kind": "palette", "name": "Oxide and Ember", "offered": false, "random": false, "seats": 0, "family": "orange", "families": ["red", "orange", "yellow", "lime"]}
+{"schema": 1, "kind": "palette", "name": "PRGn", "offered": false, "random": true, "seats": 2, "family": "magenta", "families": ["green", "purple", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "Pale Aurora", "offered": false, "random": false, "seats": 1, "family": "teal", "families": ["orange", "teal", "cyan"]}
+{"schema": 1, "kind": "palette", "name": "Pale Ember Over Teal", "offered": false, "random": true, "seats": 5, "family": "orange", "families": ["orange", "teal"]}
+{"schema": 1, "kind": "palette", "name": "Pale Fire Rose", "offered": false, "random": true, "seats": 10, "family": "rose", "families": ["rose", "azure", "blue", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "Pale Harbor", "offered": false, "random": true, "seats": 1, "family": "azure", "families": ["orange", "cyan", "azure", "blue"]}
+{"schema": 1, "kind": "palette", "name": "Pale Moss Field", "offered": false, "random": true, "seats": 5, "family": "green", "families": ["lime", "green", "teal"]}
+{"schema": 1, "kind": "palette", "name": "Pale Orchid, Deep Well", "offered": false, "random": false, "seats": 0, "family": "purple", "families": ["lime", "purple"]}
+{"schema": 1, "kind": "palette", "name": "Pale Reed Hollow", "offered": false, "random": false, "seats": 0, "family": "green", "families": ["lime", "green"]}
+{"schema": 1, "kind": "palette", "name": "Pale Reef, Three Lights", "offered": false, "random": false, "seats": 1, "family": "azure", "families": ["red", "orange", "cyan", "azure"]}
+{"schema": 1, "kind": "palette", "name": "Pale Reliquary", "offered": false, "random": false, "seats": 1, "family": "yellow", "families": ["orange", "yellow", "blue"]}
+{"schema": 1, "kind": "palette", "name": "Pale Triad", "offered": false, "random": true, "seats": 2, "family": "cyan", "families": ["yellow", "teal", "cyan", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "Pale Verdigris, Copper Heart", "offered": false, "random": false, "seats": 0, "family": "teal", "families": ["teal"]}
+{"schema": 1, "kind": "palette", "name": "Patina Brass", "offered": false, "random": false, "seats": 0, "family": "yellow", "families": ["yellow", "lime", "teal", "cyan"]}
+{"schema": 1, "kind": "palette", "name": "Peacock Nocturne", "offered": false, "random": false, "seats": 0, "family": "yellow", "families": ["yellow", "cyan"]}
+{"schema": 1, "kind": "palette", "name": "Peacock Regalia", "offered": false, "random": false, "seats": 2, "family": "cyan", "families": ["yellow", "cyan", "purple"]}
+{"schema": 1, "kind": "palette", "name": "Peat & Rose Smoke", "offered": false, "random": false, "seats": 0, "family": "rose", "families": ["rose", "red", "orange"]}
+{"schema": 1, "kind": "palette", "name": "Periwinkle Room", "offered": false, "random": false, "seats": 1, "family": "blue", "families": ["azure", "blue", "purple"]}
+{"schema": 1, "kind": "palette", "name": "Petal Drift", "offered": false, "random": false, "seats": 1, "family": "rose", "families": ["rose", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "Petal Dusk", "offered": false, "random": true, "seats": 3, "family": "rose", "families": ["rose", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "Petrol & Amber", "offered": false, "random": false, "seats": 3, "family": "teal", "families": ["orange", "yellow", "teal", "cyan"]}
+{"schema": 1, "kind": "palette", "name": "Petrol & Coal", "offered": false, "random": true, "seats": 2, "family": "red", "families": ["red", "cyan"]}
+{"schema": 1, "kind": "palette", "name": "Petrol & Coral", "offered": false, "random": false, "seats": 0, "family": "red", "families": ["red", "orange", "teal", "cyan"]}
+{"schema": 1, "kind": "palette", "name": "Petrol & Flame", "offered": false, "random": false, "seats": 0, "family": "cyan", "families": ["orange", "yellow", "teal", "cyan"]}
+{"schema": 1, "kind": "palette", "name": "Petrol Bloom", "offered": false, "random": true, "seats": 3, "family": "cyan", "families": ["orange", "teal", "cyan"]}
+{"schema": 1, "kind": "palette", "name": "Petrol Boundary", "offered": false, "random": false, "seats": 1, "family": "cyan", "families": ["orange", "yellow", "teal", "cyan"]}
+{"schema": 1, "kind": "palette", "name": "Petrol Dawn", "offered": false, "random": false, "seats": 0, "family": "teal", "families": ["orange", "teal", "cyan"]}
+{"schema": 1, "kind": "palette", "name": "Petrol Depths", "offered": false, "random": false, "seats": 0, "family": "cyan", "families": ["teal", "cyan"]}
+{"schema": 1, "kind": "palette", "name": "Petrol Depths, Ember Spark", "offered": false, "random": false, "seats": 0, "family": "cyan", "families": ["orange", "teal", "cyan"]}
+{"schema": 1, "kind": "palette", "name": "Petrol Monolith", "offered": false, "random": false, "seats": 1, "family": "teal", "families": ["teal", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "Petrol Noon", "offered": false, "random": true, "seats": 7, "family": "yellow", "families": ["yellow", "teal", "cyan"]}
+{"schema": 1, "kind": "palette", "name": "Petrol to Powder", "offered": false, "random": false, "seats": 0, "family": "cyan", "families": ["cyan", "azure"]}
+{"schema": 1, "kind": "palette", "name": "Petrol, One Coral", "offered": false, "random": false, "seats": 0, "family": "teal", "families": ["orange", "teal"]}
+{"schema": 1, "kind": "palette", "name": "Pewter Bloom", "offered": false, "random": false, "seats": 0, "family": "blue", "families": ["azure", "blue"]}
+{"schema": 1, "kind": "palette", "name": "Phosphor Deep", "offered": false, "random": false, "seats": 1, "family": "green", "families": ["green"]}
+{"schema": 1, "kind": "palette", "name": "PiYG", "offered": false, "random": true, "seats": 2, "family": "rose", "families": ["rose", "lime", "green"]}
+{"schema": 1, "kind": "palette", "name": "Pine and Frost", "offered": false, "random": true, "seats": 2, "family": "green", "families": ["green", "teal"]}
+{"schema": 1, "kind": "palette", "name": "Plum Anvil", "offered": false, "random": true, "seats": 1, "family": "rose", "families": ["rose", "azure", "blue"]}
+{"schema": 1, "kind": "palette", "name": "Plum Cut with Gold", "offered": false, "random": false, "seats": 1, "family": "magenta", "families": ["rose", "yellow", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "Plum Gilding", "offered": false, "random": false, "seats": 0, "family": "yellow", "families": ["red", "orange", "yellow", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "Plum Reliquary", "offered": false, "random": false, "seats": 0, "family": "magenta", "families": ["rose", "yellow", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "Plum Walk", "offered": false, "random": false, "seats": 0, "family": "rose", "families": ["rose", "red", "purple", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "Plum in Ash", "offered": false, "random": false, "seats": 1, "family": "magenta", "families": ["lime", "purple", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "Plum, Cobalt, Acid", "offered": false, "random": false, "seats": 0, "families": ["lime", "blue", "purple", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "Plum, Gold & Moss", "offered": false, "random": false, "seats": 1, "family": "magenta", "families": ["rose", "orange", "yellow", "lime", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "Porcelain Azure", "offered": false, "random": true, "seats": 2, "family": "azure", "families": ["azure", "blue"]}
+{"schema": 1, "kind": "palette", "name": "Porcelain Field", "offered": false, "random": true, "seats": 4, "family": "blue", "families": ["azure", "blue"]}
+{"schema": 1, "kind": "palette", "name": "Prism Veil", "offered": false, "random": false, "seats": 0, "family": "purple", "families": ["orange", "green", "purple"]}
+{"schema": 1, "kind": "palette", "name": "Prism on Ice", "offered": false, "random": true, "seats": 1, "family": "purple", "families": ["yellow", "teal", "cyan", "blue", "purple"]}
+{"schema": 1, "kind": "palette", "name": "PuBu", "offered": false, "random": false, "seats": 0, "family": "azure", "families": ["azure", "blue"]}
+{"schema": 1, "kind": "palette", "name": "PuBuGn", "offered": false, "random": true, "seats": 1, "family": "cyan", "families": ["teal", "cyan", "azure", "blue"]}
+{"schema": 1, "kind": "palette", "name": "PuOr", "offered": true, "random": false, "seats": 1, "family": "orange", "families": ["red", "orange", "purple"]}
+{"schema": 1, "kind": "palette", "name": "PuRd", "offered": false, "random": true, "seats": 5, "family": "rose", "families": ["rose", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "Pumpkin Cellar", "offered": false, "random": false, "seats": 2, "family": "red", "families": ["red", "orange"]}
+{"schema": 1, "kind": "palette", "name": "Purples", "offered": false, "random": true, "seats": 2, "family": "purple", "families": ["blue", "purple"]}
+{"schema": 1, "kind": "palette", "name": "RdBu", "offered": true, "random": true, "seats": 1, "family": "red", "families": ["rose", "red", "azure"]}
+{"schema": 1, "kind": "palette", "name": "RdGy", "offered": true, "random": false, "seats": 1, "family": "red", "families": ["red"]}
+{"schema": 1, "kind": "palette", "name": "RdPu", "offered": true, "random": true, "seats": 8, "family": "rose", "families": ["rose", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "RdYlBu", "offered": true, "random": false, "seats": 1, "family": "red", "families": ["red", "orange", "azure", "blue"]}
+{"schema": 1, "kind": "palette", "name": "RdYlGn", "offered": false, "random": false, "seats": 0, "family": "red", "families": ["red", "orange", "yellow", "lime", "green"]}
+{"schema": 1, "kind": "palette", "name": "Reds", "offered": false, "random": false, "seats": 2, "family": "red", "families": ["red"]}
+{"schema": 1, "kind": "palette", "name": "Reed Walk", "offered": false, "random": false, "seats": 0, "family": "lime", "families": ["yellow", "lime", "green"]}
+{"schema": 1, "kind": "palette", "name": "Reef Triad", "offered": false, "random": false, "seats": 0, "family": "teal", "families": ["red", "orange", "teal"]}
+{"schema": 1, "kind": "palette", "name": "Reef Without Sun", "offered": false, "random": false, "seats": 0, "family": "teal", "families": ["red", "teal", "cyan"]}
+{"schema": 1, "kind": "palette", "name": "Reef at Midnight", "offered": false, "random": false, "seats": 0, "family": "rose", "families": ["rose", "lime", "green", "teal", "cyan"]}
+{"schema": 1, "kind": "palette", "name": "Regalia & Sulphur", "offered": false, "random": false, "seats": 1, "family": "yellow", "families": ["orange", "yellow", "purple"]}
+{"schema": 1, "kind": "palette", "name": "Regatta Ice", "offered": false, "random": true, "seats": 6, "family": "blue", "families": ["rose", "red", "blue"]}
+{"schema": 1, "kind": "palette", "name": "Reliquary", "offered": false, "random": false, "seats": 0, "family": "teal", "families": ["rose", "red", "green", "teal", "blue"]}
+{"schema": 1, "kind": "palette", "name": "Reliquary Vespers", "offered": false, "random": false, "seats": 0, "family": "blue", "families": ["rose", "red", "teal", "azure", "blue"]}
+{"schema": 1, "kind": "palette", "name": "Rose Above", "offered": false, "random": true, "seats": 2, "family": "purple", "families": ["blue", "purple", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "Rose Against Cobalt", "offered": false, "random": true, "seats": 7, "family": "rose", "families": ["rose", "azure"]}
+{"schema": 1, "kind": "palette", "name": "Rose Against Steel", "offered": false, "random": false, "seats": 0, "family": "blue", "families": ["azure", "blue", "purple"]}
+{"schema": 1, "kind": "palette", "name": "Rose Eclipse", "offered": false, "random": false, "seats": 0, "family": "rose", "families": ["rose", "red", "orange", "yellow"]}
+{"schema": 1, "kind": "palette", "name": "Rose Field, Sapphire Cut", "offered": false, "random": false, "seats": 0, "family": "rose", "families": ["rose", "blue", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "Rose Furnace", "offered": false, "random": true, "seats": 5, "family": "magenta", "families": ["rose", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "Rose Hour Spark", "offered": false, "random": false, "seats": 1, "family": "blue", "families": ["azure", "blue", "purple", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "Rose Quartz Deep", "offered": false, "random": true, "seats": 2, "family": "rose", "families": ["rose"]}
+{"schema": 1, "kind": "palette", "name": "Rose Quartz Meadow", "offered": false, "random": false, "seats": 0, "family": "red", "families": ["red", "orange", "lime", "green"]}
+{"schema": 1, "kind": "palette", "name": "Rose Quartz Ramp", "offered": false, "random": true, "seats": 3, "family": "rose", "families": ["rose", "red"]}
+{"schema": 1, "kind": "palette", "name": "Rose Quartz Vault", "offered": false, "random": false, "seats": 1, "family": "magenta", "families": ["magenta"]}
+{"schema": 1, "kind": "palette", "name": "Rose Reactor", "offered": false, "random": false, "seats": 0, "family": "rose", "families": ["rose", "azure", "blue", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "Rose Slate Khaki", "offered": false, "random": false, "seats": 0, "families": ["rose", "yellow", "azure", "blue", "purple", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "Rose Smoke", "offered": false, "random": false, "seats": 0, "family": "rose", "families": ["rose", "red"]}
+{"schema": 1, "kind": "palette", "name": "Rose Triad", "offered": false, "random": false, "seats": 0, "family": "blue", "families": ["rose", "orange", "azure", "blue", "purple", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "Rose Under Ice", "offered": false, "random": false, "seats": 0, "family": "azure", "families": ["azure", "blue"]}
+{"schema": 1, "kind": "palette", "name": "Rose and Verdigris", "offered": false, "random": false, "seats": 0, "family": "rose", "families": ["rose", "red", "green", "teal"]}
+{"schema": 1, "kind": "palette", "name": "Rose in Ash", "offered": false, "random": true, "seats": 2, "family": "rose", "families": ["rose"]}
+{"schema": 1, "kind": "palette", "name": "Rust & Rainlight", "offered": false, "random": false, "seats": 0, "family": "blue", "families": ["red", "orange", "azure", "blue"]}
+{"schema": 1, "kind": "palette", "name": "Rust Against Petrol", "offered": false, "random": false, "seats": 0, "family": "orange", "families": ["orange", "teal", "cyan"]}
+{"schema": 1, "kind": "palette", "name": "Rust Kiln", "offered": false, "random": true, "seats": 3, "family": "orange", "families": ["orange", "yellow"]}
+{"schema": 1, "kind": "palette", "name": "Rust Lagoon", "offered": false, "random": true, "seats": 0, "family": "cyan", "families": ["orange", "cyan"]}
+{"schema": 1, "kind": "palette", "name": "Rust in the Slate Vault", "offered": false, "random": false, "seats": 0, "family": "red", "families": ["red", "azure", "blue"]}
+{"schema": 1, "kind": "palette", "name": "Rust to Olive", "offered": false, "random": false, "seats": 0, "family": "orange", "families": ["red", "orange", "yellow"]}
+{"schema": 1, "kind": "palette", "name": "Rust to Plum", "offered": false, "random": false, "seats": 0, "family": "orange", "families": ["rose", "red", "orange"]}
+{"schema": 1, "kind": "palette", "name": "Sage & Signal", "offered": false, "random": false, "seats": 0, "family": "green", "families": ["green", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "Sage Ascendant", "offered": false, "random": false, "seats": 1, "family": "cyan", "families": ["green", "teal", "cyan"]}
+{"schema": 1, "kind": "palette", "name": "Sage Ascending", "offered": false, "random": false, "seats": 0, "family": "green", "families": ["green"]}
+{"schema": 1, "kind": "palette", "name": "Sage Ember", "offered": false, "random": false, "seats": 0, "families": ["red", "lime"]}
+{"schema": 1, "kind": "palette", "name": "Sage Ladder", "offered": false, "random": false, "seats": 0, "family": "green", "families": ["lime", "green"]}
+{"schema": 1, "kind": "palette", "name": "Sage Over Oxblood", "offered": false, "random": false, "seats": 0, "family": "red", "families": ["red", "lime", "green"]}
+{"schema": 1, "kind": "palette", "name": "Sapphire & Coal", "offered": false, "random": false, "seats": 1, "family": "rose", "families": ["rose", "blue", "purple", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "Sapphire & Dusk Rose", "offered": false, "random": false, "seats": 0, "family": "magenta", "families": ["rose", "azure", "blue", "purple", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "Sapphire Against Rose", "offered": false, "random": true, "seats": 5, "family": "magenta", "families": ["rose", "azure", "blue", "purple", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "Sapphire Bloom", "offered": false, "random": false, "seats": 0, "family": "rose", "families": ["rose", "azure", "blue", "purple", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "Sapphire in Blush", "offered": false, "random": true, "seats": 2, "family": "blue", "families": ["rose", "blue", "purple", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "Sea Glass Dawn", "offered": false, "random": true, "seats": 4, "family": "teal", "families": ["green", "teal", "cyan"]}
+{"schema": 1, "kind": "palette", "name": "Sea Glass Drift", "offered": false, "random": false, "seats": 2, "family": "green", "families": ["green", "teal"]}
+{"schema": 1, "kind": "palette", "name": "Sea Glass Vault", "offered": false, "random": false, "seats": 0, "family": "yellow", "families": ["rose", "yellow", "lime", "green", "teal", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "Sea-Glass & Ash", "offered": false, "random": false, "seats": 0, "family": "teal", "families": ["red", "teal", "cyan"]}
+{"schema": 1, "kind": "palette", "name": "Seafoam Dusk", "offered": false, "random": false, "seats": 0, "family": "teal", "families": ["teal", "cyan"]}
+{"schema": 1, "kind": "palette", "name": "Sherbet Flare", "offered": false, "random": false, "seats": 1, "family": "red", "families": ["rose", "red"]}
+{"schema": 1, "kind": "palette", "name": "Shoal, One Coral", "offered": false, "random": false, "seats": 0, "family": "teal", "families": ["red", "teal", "cyan"]}
+{"schema": 1, "kind": "palette", "name": "Signal & Sulphur", "offered": false, "random": false, "seats": 0, "family": "azure", "families": ["yellow", "cyan", "azure"]}
+{"schema": 1, "kind": "palette", "name": "Signal Triad", "offered": false, "random": false, "seats": 1, "family": "yellow", "families": ["orange", "yellow", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "Siren, Lights Out", "offered": false, "random": false, "seats": 0, "family": "rose", "families": ["rose", "cyan", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "Sixties Cellar", "offered": false, "random": false, "seats": 0, "family": "orange", "families": ["orange", "yellow", "lime"]}
+{"schema": 1, "kind": "palette", "name": "Sixties Poster", "offered": false, "random": false, "seats": 1, "family": "red", "families": ["red", "orange", "yellow", "lime"]}
+{"schema": 1, "kind": "palette", "name": "Slate & Wine", "offered": false, "random": false, "seats": 0, "family": "magenta", "families": ["rose", "blue", "purple", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "Slate Ascension", "offered": false, "random": true, "seats": 2, "family": "azure", "families": ["cyan", "azure", "blue"]}
+{"schema": 1, "kind": "palette", "name": "Slate Ladder", "offered": false, "random": false, "seats": 0, "family": "blue", "families": ["azure", "blue"]}
+{"schema": 1, "kind": "palette", "name": "Slate and Dusty Rose", "offered": false, "random": false, "seats": 1, "family": "rose", "families": ["rose", "red", "teal", "cyan"]}
+{"schema": 1, "kind": "palette", "name": "Slow Combustion", "offered": false, "random": false, "seats": 1, "family": "red", "families": ["red", "orange", "yellow"]}
+{"schema": 1, "kind": "palette", "name": "Smoke & Madder", "offered": false, "random": false, "seats": 1, "family": "orange", "families": ["orange", "yellow", "azure"]}
+{"schema": 1, "kind": "palette", "name": "Sorbet Cellar", "offered": false, "random": true, "seats": 0, "family": "purple", "families": ["orange", "teal", "purple"]}
+{"schema": 1, "kind": "palette", "name": "Sorbet Vault", "offered": false, "random": true, "seats": 2, "family": "teal", "families": ["orange", "green", "teal", "purple"]}
+{"schema": 1, "kind": "palette", "name": "Sorrel Triad", "offered": false, "random": false, "seats": 0, "family": "lime", "families": ["rose", "lime", "azure", "blue", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "Spectral", "offered": true, "random": false, "seats": 0, "family": "red", "families": ["rose", "red", "orange", "yellow", "lime", "green"]}
+{"schema": 1, "kind": "palette", "name": "Spice Procession", "offered": false, "random": false, "seats": 0, "family": "red", "families": ["red", "orange"]}
+{"schema": 1, "kind": "palette", "name": "Split Lime", "offered": false, "random": false, "seats": 3, "family": "lime", "families": ["lime", "azure", "blue"]}
+{"schema": 1, "kind": "palette", "name": "Steel & Coals", "offered": false, "random": false, "seats": 0, "family": "cyan", "families": ["red", "orange", "teal", "cyan"]}
+{"schema": 1, "kind": "palette", "name": "Steel & Ember", "offered": false, "random": false, "seats": 1, "family": "azure", "families": ["azure", "blue"]}
+{"schema": 1, "kind": "palette", "name": "Steel and Straw", "offered": false, "random": false, "seats": 0, "family": "azure", "families": ["yellow", "azure"]}
+{"schema": 1, "kind": "palette", "name": "Straw and Teal", "offered": false, "random": false, "seats": 0, "family": "yellow", "families": ["yellow"]}
+{"schema": 1, "kind": "palette", "name": "Struck Flint", "offered": false, "random": false, "seats": 0, "family": "orange", "families": ["red", "orange", "teal", "cyan"]}
+{"schema": 1, "kind": "palette", "name": "Sulphur & Plum", "offered": false, "random": false, "seats": 1, "family": "blue", "families": ["yellow", "azure", "blue", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "Sulphur in the Vault", "offered": false, "random": false, "seats": 0, "family": "purple", "families": ["yellow", "purple"]}
+{"schema": 1, "kind": "palette", "name": "Tarnished Amber", "offered": false, "random": false, "seats": 0, "family": "yellow", "families": ["orange", "yellow", "lime"]}
+{"schema": 1, "kind": "palette", "name": "Teal & Coral Tide", "offered": false, "random": false, "seats": 0, "family": "red", "families": ["red", "teal", "cyan"]}
+{"schema": 1, "kind": "palette", "name": "Teal Against Coral", "offered": false, "random": false, "seats": 1, "family": "red", "families": ["red", "orange", "teal", "cyan"]}
+{"schema": 1, "kind": "palette", "name": "Teal Against Rust", "offered": false, "random": false, "seats": 0, "family": "orange", "families": ["orange", "teal"]}
+{"schema": 1, "kind": "palette", "name": "Teal Amber Orchid", "offered": false, "random": false, "seats": 1, "family": "teal", "families": ["rose", "orange", "teal", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "Teal Ash", "offered": false, "random": false, "seats": 1, "family": "teal", "families": ["orange", "teal"]}
+{"schema": 1, "kind": "palette", "name": "Teal Depths, Coral Spark", "offered": false, "random": true, "seats": 2, "family": "teal", "families": ["red", "teal"]}
+{"schema": 1, "kind": "palette", "name": "Teal Ember Cliff", "offered": false, "random": false, "seats": 1, "family": "teal", "families": ["orange", "teal", "cyan"]}
+{"schema": 1, "kind": "palette", "name": "Teal Family, Amber Spark", "offered": false, "random": false, "seats": 0, "family": "teal", "families": ["orange", "teal"]}
+{"schema": 1, "kind": "palette", "name": "Teal Flare, Amber Fall", "offered": false, "random": false, "seats": 1, "family": "teal", "families": ["orange", "teal", "cyan"]}
+{"schema": 1, "kind": "palette", "name": "Teal, Magenta, Gold", "offered": false, "random": false, "seats": 0, "family": "yellow", "families": ["yellow", "teal", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "Terminal Flare", "offered": false, "random": true, "seats": 4, "family": "green", "families": ["green"]}
+{"schema": 1, "kind": "palette", "name": "Three Candles", "offered": false, "random": false, "seats": 1, "family": "yellow", "families": ["red", "orange", "yellow", "blue"]}
+{"schema": 1, "kind": "palette", "name": "Three Coals", "offered": false, "random": true, "seats": 1, "family": "orange", "families": ["red", "orange", "yellow", "azure", "blue"]}
+{"schema": 1, "kind": "palette", "name": "Three Coals in Ash", "offered": false, "random": false, "seats": 0, "family": "teal", "families": ["red", "orange", "teal", "cyan", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "Three Fires", "offered": false, "random": false, "seats": 1, "family": "azure", "families": ["red", "orange", "yellow", "azure", "blue", "purple"]}
+{"schema": 1, "kind": "palette", "name": "Three Hues, Kept Apart", "offered": false, "random": false, "seats": 1, "family": "magenta", "families": ["rose", "yellow", "teal", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "Three Jewels", "offered": false, "random": true, "seats": 2, "family": "blue", "families": ["azure", "blue", "purple", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "Three Jewels, Pale Room", "offered": false, "random": false, "seats": 0, "family": "yellow", "families": ["red", "orange", "yellow"]}
+{"schema": 1, "kind": "palette", "name": "Three Minerals on Coal", "offered": false, "random": false, "seats": 0, "family": "yellow", "families": ["red", "orange", "yellow", "teal", "cyan"]}
+{"schema": 1, "kind": "palette", "name": "Three-Jewel Bloom", "offered": false, "random": false, "seats": 1, "family": "magenta", "families": ["rose", "yellow", "teal", "cyan", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "Three-Metal", "offered": false, "random": false, "seats": 1, "family": "teal", "families": ["orange", "teal", "azure"]}
+{"schema": 1, "kind": "palette", "name": "Three-Point Fire-Ice", "offered": false, "random": false, "seats": 0, "family": "orange", "families": ["orange", "cyan", "azure"]}
+{"schema": 1, "kind": "palette", "name": "Tidepool", "offered": false, "random": false, "seats": 0, "family": "cyan", "families": ["teal", "cyan", "azure"]}
+{"schema": 1, "kind": "palette", "name": "Tidewater, No Sky", "offered": false, "random": false, "seats": 0, "family": "orange", "families": ["orange", "cyan"]}
+{"schema": 1, "kind": "palette", "name": "Tidewater, Two Crests", "offered": false, "random": true, "seats": 1, "family": "teal", "families": ["red", "teal", "cyan"]}
+{"schema": 1, "kind": "palette", "name": "Tobacco Bloom", "offered": false, "random": false, "seats": 0, "family": "orange", "families": ["rose", "red", "orange", "azure", "blue"]}
+{"schema": 1, "kind": "palette", "name": "Tourmaline Rose", "offered": false, "random": false, "seats": 0, "family": "rose", "families": ["rose", "teal"]}
+{"schema": 1, "kind": "palette", "name": "Triad Nocturne", "offered": false, "random": false, "seats": 0, "family": "blue", "families": ["azure", "blue", "purple", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "Triad Patina", "offered": false, "random": false, "seats": 0, "family": "magenta", "families": ["rose", "red", "orange", "teal", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "Trinity of Ash", "offered": false, "random": false, "seats": 0, "family": "magenta", "families": ["rose", "yellow", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "Turkish Grind", "offered": false, "random": false, "seats": 0, "family": "orange", "families": ["orange"]}
+{"schema": 1, "kind": "palette", "name": "Twilight Bridge", "offered": false, "random": false, "seats": 0, "family": "yellow", "families": ["orange", "yellow", "purple", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "Twilight Procession", "offered": false, "random": true, "seats": 2, "family": "magenta", "families": ["blue", "purple", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "Twilight Triad", "offered": false, "random": false, "seats": 0, "family": "magenta", "families": ["rose", "yellow", "purple", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "Twin Mineral Peaks", "offered": false, "random": false, "seats": 0, "family": "red", "families": ["red", "orange", "teal", "cyan"]}
+{"schema": 1, "kind": "palette", "name": "Twin Sapphires", "offered": false, "random": false, "seats": 0, "family": "blue", "families": ["azure", "blue", "purple", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "Twin Sconces", "offered": false, "random": false, "seats": 1, "family": "red", "families": ["rose", "red", "blue"]}
+{"schema": 1, "kind": "palette", "name": "Two Golds", "offered": false, "random": false, "seats": 0, "family": "yellow", "families": ["yellow"]}
+{"schema": 1, "kind": "palette", "name": "Ultraviolet Siren", "offered": false, "random": false, "seats": 3, "family": "cyan", "families": ["rose", "cyan", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "Umber & Ember", "offered": false, "random": true, "seats": 1, "family": "orange", "families": ["orange", "yellow"]}
+{"schema": 1, "kind": "palette", "name": "Umber Ground", "offered": false, "random": false, "seats": 0, "family": "orange", "families": ["red", "orange"]}
+{"schema": 1, "kind": "palette", "name": "Umber Procession", "offered": false, "random": true, "seats": 1, "family": "orange", "families": ["orange"]}
+{"schema": 1, "kind": "palette", "name": "Umber Rise", "offered": false, "random": false, "seats": 0, "families": ["orange", "yellow"]}
+{"schema": 1, "kind": "palette", "name": "Varnish and Bone", "offered": false, "random": false, "seats": 1, "family": "orange", "families": ["red", "orange"]}
+{"schema": 1, "kind": "palette", "name": "Verdant Ascent", "offered": false, "random": true, "seats": 2, "family": "green", "families": ["green"]}
+{"schema": 1, "kind": "palette", "name": "Verdant Mist", "offered": false, "random": true, "seats": 2, "family": "rose", "families": ["rose", "green", "teal"]}
+{"schema": 1, "kind": "palette", "name": "Verdant Triad", "offered": false, "random": false, "seats": 0, "family": "lime", "families": ["orange", "yellow", "lime", "green", "purple"]}
+{"schema": 1, "kind": "palette", "name": "Verdigris & Coal", "offered": false, "random": false, "seats": 1, "family": "magenta", "families": ["teal", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "Verdigris & Copper", "offered": false, "random": false, "seats": 0, "family": "orange", "families": ["orange", "teal"]}
+{"schema": 1, "kind": "palette", "name": "Verdigris & Fuchsia", "offered": false, "random": true, "seats": 2, "family": "magenta", "families": ["teal", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "Verdigris & One Spark", "offered": false, "random": false, "seats": 0, "family": "teal", "families": ["orange", "teal"]}
+{"schema": 1, "kind": "palette", "name": "Verdigris Coal", "offered": false, "random": true, "seats": 1, "family": "orange", "families": ["orange", "lime", "green"]}
+{"schema": 1, "kind": "palette", "name": "Verdigris Flare", "offered": false, "random": false, "seats": 0, "family": "teal", "families": ["orange", "teal"]}
+{"schema": 1, "kind": "palette", "name": "Verdigris Furnace", "offered": false, "random": false, "seats": 0, "family": "orange", "families": ["orange", "cyan", "azure"]}
+{"schema": 1, "kind": "palette", "name": "Verdigris Hollow", "offered": false, "random": false, "seats": 1, "family": "cyan", "families": ["teal", "cyan", "azure"]}
+{"schema": 1, "kind": "palette", "name": "Verdigris Khaki", "offered": false, "random": false, "seats": 0, "family": "cyan", "families": ["yellow", "lime", "teal", "cyan"]}
+{"schema": 1, "kind": "palette", "name": "Verdigris Walk", "offered": false, "random": false, "seats": 0, "family": "yellow", "families": ["yellow", "lime", "green", "teal"]}
+{"schema": 1, "kind": "palette", "name": "Verdigris to Lime, One Rose", "offered": false, "random": false, "seats": 0, "families": ["lime", "green", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "Vermilion Chapel", "offered": false, "random": false, "seats": 0, "family": "green", "families": ["red", "orange", "green"]}
+{"schema": 1, "kind": "palette", "name": "Vice Nightfall", "offered": false, "random": false, "seats": 1, "family": "purple", "families": ["rose", "red", "orange", "purple", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "Violet Ascension", "offered": false, "random": true, "seats": 1, "family": "purple", "families": ["blue", "purple", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "Violet Cellar", "offered": false, "random": false, "seats": 0, "family": "yellow", "families": ["yellow", "blue", "purple"]}
+{"schema": 1, "kind": "palette", "name": "Violet Kindled", "offered": false, "random": false, "seats": 0, "family": "purple", "families": ["rose", "purple", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "Violet, Cyan, Ochre", "offered": false, "random": false, "seats": 0, "family": "teal", "families": ["yellow", "teal", "cyan", "purple"]}
+{"schema": 1, "kind": "palette", "name": "Warm Core in the Deep", "offered": false, "random": false, "seats": 0, "family": "azure", "families": ["azure", "blue"]}
+{"schema": 1, "kind": "palette", "name": "Widow's Gold", "offered": false, "random": false, "seats": 0, "family": "magenta", "families": ["yellow", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "Wine & Ember", "offered": false, "random": false, "seats": 0, "family": "rose", "families": ["rose", "red", "purple", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "Wine & Slate Candle", "offered": false, "random": false, "seats": 0, "family": "rose", "families": ["rose", "blue", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "Wine Step", "offered": false, "random": false, "seats": 1, "family": "red", "families": ["rose", "red", "blue"]}
+{"schema": 1, "kind": "palette", "name": "Wisteria Nightfall", "offered": false, "random": false, "seats": 2, "family": "magenta", "families": ["purple", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "Y2K Bubblegum", "offered": false, "random": true, "seats": 1, "family": "rose", "families": ["rose", "azure", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "Y2K Chrome", "offered": false, "random": false, "seats": 0, "family": "azure", "families": ["rose", "azure", "blue"]}
+{"schema": 1, "kind": "palette", "name": "Yew Without Moon", "offered": false, "random": false, "seats": 0, "family": "green", "families": ["red", "green"]}
+{"schema": 1, "kind": "palette", "name": "YlGn", "offered": false, "random": true, "seats": 4, "family": "green", "families": ["lime", "green"]}
+{"schema": 1, "kind": "palette", "name": "YlGnBu", "offered": true, "random": true, "seats": 3, "family": "azure", "families": ["green", "teal", "cyan", "azure", "blue"]}
+{"schema": 1, "kind": "palette", "name": "YlOrBr", "offered": true, "random": true, "seats": 4, "family": "orange", "families": ["red", "orange", "yellow"]}
+{"schema": 1, "kind": "palette", "name": "YlOrRd", "offered": true, "random": true, "seats": 3, "family": "red", "families": ["red", "orange", "yellow"]}
+{"schema": 1, "kind": "palette", "name": "abstract-3d-wallpapers", "offered": false, "random": true, "seats": 6, "family": "green", "families": ["green"]}
+{"schema": 1, "kind": "palette", "name": "abstract-wallpaper-backgrounds-hd", "offered": false, "random": true, "seats": 5, "family": "azure", "families": ["orange", "yellow", "azure"]}
+{"schema": 1, "kind": "palette", "name": "adrift-concept-art-14463-1920x1200", "offered": false, "random": false, "seats": 0, "family": "orange", "families": ["orange", "yellow", "azure"]}
+{"schema": 1, "kind": "palette", "name": "afmhot", "offered": true, "random": true, "seats": 2, "family": "red", "families": ["red", "orange", "yellow"]}
+{"schema": 1, "kind": "palette", "name": "agates-25", "offered": false, "random": false, "seats": 0, "family": "yellow", "families": ["red", "orange", "yellow", "lime"]}
+{"schema": 1, "kind": "palette", "name": "ahli", "offered": false, "random": false, "seats": 1, "family": "green", "families": ["lime", "green", "teal", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "along-the-starry-way-25", "offered": false, "random": true, "seats": 5, "family": "blue", "families": ["blue", "purple"]}
+{"schema": 1, "kind": "palette", "name": "amarettoboso", "offered": false, "random": false, "seats": 0, "family": "purple", "families": ["rose", "red", "orange", "purple", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "amazing-25", "offered": false, "random": true, "seats": 4, "family": "orange", "families": ["orange", "yellow"]}
+{"schema": 1, "kind": "palette", "name": "anathema-25", "offered": false, "random": false, "seats": 0, "family": "red", "families": ["rose", "red"]}
+{"schema": 1, "kind": "palette", "name": "anodize-25", "offered": false, "random": false, "seats": 0, "families": ["cyan", "azure"]}
+{"schema": 1, "kind": "palette", "name": "antiques-and-aqua-25", "offered": false, "random": false, "seats": 0, "family": "teal", "families": ["red", "teal"]}
+{"schema": 1, "kind": "palette", "name": "ariel-25", "offered": false, "random": false, "seats": 0, "family": "blue", "families": ["azure", "blue"]}
+{"schema": 1, "kind": "palette", "name": "at-the-beach-hd-wallpaper-1920x1200", "offered": false, "random": false, "seats": 2, "family": "orange", "families": ["red", "orange", "yellow"]}
+{"schema": 1, "kind": "palette", "name": "atlas_grey", "offered": false, "random": false, "seats": 0}
+{"schema": 1, "kind": "palette", "name": "autumn", "offered": false, "random": false, "seats": 0, "family": "yellow", "families": ["red", "orange", "yellow"]}
+{"schema": 1, "kind": "palette", "name": "azarn", "offered": false, "random": false, "seats": 1, "family": "rose", "families": ["rose", "red", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "benediction-25", "offered": false, "random": false, "seats": 0, "family": "orange", "families": ["red", "orange", "yellow", "blue"]}
+{"schema": 1, "kind": "palette", "name": "berlin", "offered": true, "random": false, "seats": 1, "family": "red", "families": ["red", "azure", "blue"]}
+{"schema": 1, "kind": "palette", "name": "birds-of-paradise-25", "offered": false, "random": false, "seats": 1, "family": "purple", "families": ["red", "orange", "blue", "purple", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "black-widow-25", "offered": false, "random": false, "seats": 0, "family": "yellow", "families": ["yellow", "lime"]}
+{"schema": 1, "kind": "palette", "name": "blacklight-25", "offered": false, "random": true, "seats": 2, "family": "purple", "families": ["rose", "purple", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "blinan", "offered": false, "random": false, "seats": 0, "family": "yellow", "families": ["orange", "yellow"]}
+{"schema": 1, "kind": "palette", "name": "blue_orange", "offered": true, "random": false, "seats": 0}
+{"schema": 1, "kind": "palette", "name": "bluebird-25", "offered": false, "random": false, "seats": 0, "family": "azure", "families": ["cyan", "azure"]}
+{"schema": 1, "kind": "palette", "name": "blueroot", "offered": false, "random": false, "seats": 0, "family": "magenta", "families": ["rose", "purple", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "bone", "offered": false, "random": false, "seats": 0, "family": "blue", "families": ["cyan", "azure", "blue", "purple"]}
+{"schema": 1, "kind": "palette", "name": "brisbee", "offered": false, "random": false, "seats": 0, "family": "blue", "families": ["orange", "yellow", "lime", "blue"]}
+{"schema": 1, "kind": "palette", "name": "bwr", "offered": true, "random": false, "seats": 1, "family": "blue", "families": ["rose", "red", "blue", "purple", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "calypsos-domain-25", "offered": false, "random": false, "seats": 0, "families": ["green", "teal", "blue"]}
+{"schema": 1, "kind": "palette", "name": "carried-away-25", "offered": false, "random": true, "seats": 2, "family": "blue", "families": ["blue", "purple"]}
+{"schema": 1, "kind": "palette", "name": "celestial-domain-25", "offered": false, "random": true, "seats": 2, "family": "teal", "families": ["teal", "cyan"]}
+{"schema": 1, "kind": "palette", "name": "cet_cyclic_bgrmb_35_70_c75", "offered": false, "random": false, "seats": 0, "families": ["rose", "red", "green", "blue", "purple", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "cet_cyclic_mrybm_35_75_c68", "offered": false, "random": false, "seats": 0, "family": "blue", "families": ["rose", "red", "orange", "yellow", "blue", "purple", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "cet_cyclic_mrybm_35_75_c68_s25", "offered": false, "random": false, "seats": 0, "families": ["rose", "red", "orange", "yellow", "blue", "purple", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "cet_cyclic_mybm_20_100_c48", "offered": false, "random": false, "seats": 0, "families": ["lime", "green", "azure", "blue"]}
+{"schema": 1, "kind": "palette", "name": "cet_cyclic_mybm_20_100_c48_s25", "offered": true, "random": false, "seats": 0, "families": ["lime", "green", "teal", "azure", "blue", "purple", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "cet_cyclic_mygbm_30_95_c78", "offered": false, "random": false, "seats": 0, "families": ["yellow", "lime", "green", "blue", "purple", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "cet_cyclic_mygbm_30_95_c78_s25", "offered": false, "random": false, "seats": 0, "families": ["lime", "green", "blue", "purple", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "cet_cyclic_mygbm_50_90_c46", "offered": false, "random": false, "seats": 0, "families": ["orange", "yellow", "lime", "green", "teal", "cyan", "azure"]}
+{"schema": 1, "kind": "palette", "name": "cet_cyclic_mygbm_50_90_c46_s25", "offered": false, "random": false, "seats": 0, "families": ["yellow", "lime", "green", "teal", "cyan", "azure", "blue", "purple", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "cet_cyclic_protanopic_deuteranopic_bwyk_16_96_c31", "offered": true, "random": false, "seats": 0, "family": "yellow", "families": ["yellow", "blue"]}
+{"schema": 1, "kind": "palette", "name": "cet_cyclic_protanopic_deuteranopic_wywb_55_96_c33", "offered": true, "random": false, "seats": 0, "family": "yellow", "families": ["yellow", "blue"]}
+{"schema": 1, "kind": "palette", "name": "cet_cyclic_rygcbmr_50_90_c64", "offered": false, "random": false, "seats": 0, "families": ["red", "orange", "yellow", "lime", "green", "azure", "blue"]}
+{"schema": 1, "kind": "palette", "name": "cet_cyclic_rygcbmr_50_90_c64_s25", "offered": true, "random": false, "seats": 0, "families": ["red", "orange", "lime", "green", "azure", "blue", "purple"]}
+{"schema": 1, "kind": "palette", "name": "cet_cyclic_tritanopic_cwrk_40_100_c20", "offered": false, "random": false, "seats": 0, "family": "red", "families": ["red", "cyan"]}
+{"schema": 1, "kind": "palette", "name": "cet_cyclic_tritanopic_wrwc_70_100_c20", "offered": false, "random": false, "seats": 1, "family": "red", "families": ["red", "cyan"]}
+{"schema": 1, "kind": "palette", "name": "cet_cyclic_wrkbw_10_90_c43", "offered": true, "random": false, "seats": 0, "family": "red", "families": ["rose", "red", "blue"]}
+{"schema": 1, "kind": "palette", "name": "cet_cyclic_wrkbw_10_90_c43_s25", "offered": true, "random": false, "seats": 0, "family": "red", "families": ["red", "blue", "purple", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "cet_cyclic_wrwbw_40_90_c42", "offered": true, "random": false, "seats": 0, "family": "red", "families": ["red", "blue"]}
+{"schema": 1, "kind": "palette", "name": "cet_cyclic_wrwbw_40_90_c42_s25", "offered": false, "random": false, "seats": 0, "family": "red", "families": ["rose", "red", "blue", "purple", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "cet_cyclic_ymcgy_60_90_c67", "offered": false, "random": false, "seats": 0, "families": ["yellow", "lime", "green", "teal", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "cet_cyclic_ymcgy_60_90_c67_s25", "offered": false, "random": false, "seats": 0, "families": ["yellow", "lime", "green", "teal", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "cet_diverging_bkr_55_10_c35", "offered": false, "random": false, "seats": 0, "family": "red", "families": ["red", "blue", "purple", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "cet_diverging_bky_60_10_c30", "offered": false, "random": false, "seats": 0, "family": "yellow", "families": ["yellow", "azure", "blue"]}
+{"schema": 1, "kind": "palette", "name": "cet_diverging_bwg_20_95_c41", "offered": false, "random": false, "seats": 1, "family": "green", "families": ["green", "teal", "cyan", "azure", "blue"]}
+{"schema": 1, "kind": "palette", "name": "cet_diverging_bwr_20_95_c54", "offered": false, "random": true, "seats": 2, "family": "red", "families": ["red", "blue", "purple", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "cet_diverging_bwr_40_95_c42", "offered": true, "random": false, "seats": 0, "family": "blue", "families": ["rose", "red", "blue", "purple", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "cet_diverging_bwr_55_98_c37", "offered": false, "random": false, "seats": 1, "family": "blue", "families": ["red", "blue", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "cet_diverging_gkr_60_10_c40", "offered": false, "random": false, "seats": 0, "family": "red", "families": ["red", "orange", "yellow", "lime", "green"]}
+{"schema": 1, "kind": "palette", "name": "cet_diverging_gwr_55_95_c38", "offered": false, "random": false, "seats": 0, "family": "red", "families": ["red", "orange", "lime", "green"]}
+{"schema": 1, "kind": "palette", "name": "cet_diverging_linear_bjr_30_55_c53", "offered": false, "random": false, "seats": 0, "family": "rose", "families": ["rose", "red", "blue", "purple", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "cet_diverging_linear_bjy_30_90_c45", "offered": false, "random": false, "seats": 0, "family": "purple", "families": ["yellow", "blue", "purple"]}
+{"schema": 1, "kind": "palette", "name": "cet_diverging_linear_protanopic_deuteranopic_bjy_57_89_c34", "offered": false, "random": false, "seats": 0, "family": "yellow", "families": ["yellow", "blue"]}
+{"schema": 1, "kind": "palette", "name": "cet_diverging_protanopic_deuteranopic_bwy_60_95_c32", "offered": false, "random": false, "seats": 0, "family": "blue", "families": ["yellow", "blue"]}
+{"schema": 1, "kind": "palette", "name": "cet_diverging_rainbow_bgymr_45_85_c67", "offered": false, "random": false, "seats": 0, "family": "red", "families": ["rose", "red", "orange", "yellow", "lime"]}
+{"schema": 1, "kind": "palette", "name": "cet_diverging_tritanopic_cwr_75_98_c20", "offered": false, "random": false, "seats": 0, "family": "red", "families": ["red", "cyan", "azure"]}
+{"schema": 1, "kind": "palette", "name": "cet_linear_bgy_10_95_c74", "offered": false, "random": false, "seats": 0, "families": ["lime", "green", "blue"]}
+{"schema": 1, "kind": "palette", "name": "cet_linear_bgyw_15_100_c67", "offered": false, "random": false, "seats": 0, "families": ["lime", "green", "blue"]}
+{"schema": 1, "kind": "palette", "name": "cet_linear_bgyw_15_100_c68", "offered": true, "random": false, "seats": 0, "families": ["lime", "blue"]}
+{"schema": 1, "kind": "palette", "name": "cet_linear_bgyw_20_98_c66", "offered": false, "random": false, "seats": 0, "families": ["lime", "green", "blue"]}
+{"schema": 1, "kind": "palette", "name": "cet_linear_blue_95_50_c20", "offered": false, "random": false, "seats": 0, "family": "blue", "families": ["azure", "blue"]}
+{"schema": 1, "kind": "palette", "name": "cet_linear_bmw_5_95_c86", "offered": true, "random": false, "seats": 1, "family": "blue", "families": ["blue", "purple", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "cet_linear_bmw_5_95_c89", "offered": false, "random": false, "seats": 0, "family": "blue", "families": ["blue", "purple", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "cet_linear_bmy_10_95_c71", "offered": true, "random": false, "seats": 0, "family": "magenta", "families": ["rose", "red", "orange", "yellow", "blue", "purple", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "cet_linear_bmy_10_95_c78", "offered": true, "random": false, "seats": 1, "family": "red", "families": ["rose", "red", "orange", "yellow", "blue", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "cet_linear_gow_60_85_c27", "offered": false, "random": false, "seats": 0, "families": ["yellow", "lime"]}
+{"schema": 1, "kind": "palette", "name": "cet_linear_gow_65_90_c35", "offered": false, "random": false, "seats": 0, "families": ["yellow", "lime"]}
+{"schema": 1, "kind": "palette", "name": "cet_linear_kbc_5_95_c73", "offered": false, "random": false, "seats": 1, "family": "blue", "families": ["cyan", "azure", "blue"]}
+{"schema": 1, "kind": "palette", "name": "cet_linear_kbgoy_20_95_c57", "offered": false, "random": false, "seats": 0, "families": ["yellow", "lime", "blue"]}
+{"schema": 1, "kind": "palette", "name": "cet_linear_kbgyw_10_98_c63", "offered": false, "random": false, "seats": 0, "families": ["lime", "green", "blue"]}
+{"schema": 1, "kind": "palette", "name": "cet_linear_kbgyw_5_98_c62", "offered": false, "random": false, "seats": 0, "family": "lime", "families": ["lime", "green", "blue"]}
+{"schema": 1, "kind": "palette", "name": "cet_linear_kgy_5_95_c69", "offered": false, "random": false, "seats": 0, "family": "green", "families": ["lime", "green"]}
+{"schema": 1, "kind": "palette", "name": "cet_linear_kry_0_97_c73", "offered": true, "random": false, "seats": 0, "family": "orange", "families": ["red", "orange", "yellow"]}
+{"schema": 1, "kind": "palette", "name": "cet_linear_kry_5_95_c72", "offered": true, "random": false, "seats": 0, "family": "red", "families": ["red", "orange", "yellow"]}
+{"schema": 1, "kind": "palette", "name": "cet_linear_kry_5_98_c75", "offered": true, "random": false, "seats": 0, "family": "red", "families": ["red", "orange", "yellow"]}
+{"schema": 1, "kind": "palette", "name": "cet_linear_kryw_0_100_c71", "offered": true, "random": false, "seats": 0, "families": ["red", "orange", "yellow"]}
+{"schema": 1, "kind": "palette", "name": "cet_linear_kryw_5_100_c64", "offered": true, "random": false, "seats": 2, "family": "red", "families": ["red", "orange", "yellow"]}
+{"schema": 1, "kind": "palette", "name": "cet_linear_kryw_5_100_c67", "offered": true, "random": false, "seats": 0, "family": "red", "families": ["red", "orange", "yellow"]}
+{"schema": 1, "kind": "palette", "name": "cet_linear_protanopic_deuteranopic_kbjyw_5_95_c25", "offered": true, "random": false, "seats": 0, "family": "azure", "families": ["yellow", "azure", "blue"]}
+{"schema": 1, "kind": "palette", "name": "cet_linear_protanopic_deuteranopic_kbw_5_95_c34", "offered": true, "random": true, "seats": 2, "family": "blue", "families": ["azure", "blue"]}
+{"schema": 1, "kind": "palette", "name": "cet_linear_protanopic_deuteranopic_kbw_5_98_c40", "offered": true, "random": false, "seats": 0, "family": "azure", "families": ["yellow", "azure", "blue"]}
+{"schema": 1, "kind": "palette", "name": "cet_linear_protanopic_deuteranopic_kyw_5_95_c49", "offered": false, "random": true, "seats": 2, "family": "yellow", "families": ["yellow"]}
+{"schema": 1, "kind": "palette", "name": "cet_linear_tritanopic_kcw_5_95_c22", "offered": false, "random": true, "seats": 1, "family": "cyan", "families": ["cyan"]}
+{"schema": 1, "kind": "palette", "name": "cet_linear_tritanopic_krjcw_5_95_c24", "offered": false, "random": false, "seats": 0, "family": "cyan", "families": ["red", "cyan", "azure"]}
+{"schema": 1, "kind": "palette", "name": "cet_linear_tritanopic_krjcw_5_98_c46", "offered": true, "random": false, "seats": 0, "family": "red", "families": ["rose", "red", "cyan"]}
+{"schema": 1, "kind": "palette", "name": "cet_linear_tritanopic_krw_5_95_c46", "offered": true, "random": true, "seats": 1, "family": "red", "families": ["red"]}
+{"schema": 1, "kind": "palette", "name": "cet_linear_wcmr_100_45_c42", "offered": false, "random": false, "seats": 0, "family": "rose", "families": ["rose", "blue", "purple", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "cet_linear_worb_100_25_c53", "offered": false, "random": false, "seats": 0, "family": "rose", "families": ["rose", "red", "orange", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "cet_linear_wyor_100_45_c55", "offered": false, "random": true, "seats": 2, "family": "orange", "families": ["red", "orange", "yellow"]}
+{"schema": 1, "kind": "palette", "name": "cet_rainbow_bgyr_10_90_c83", "offered": false, "random": false, "seats": 0, "families": ["red", "orange", "yellow", "lime", "blue"]}
+{"schema": 1, "kind": "palette", "name": "cet_rainbow_bgyr_35_85_c72", "offered": false, "random": false, "seats": 0, "families": ["orange", "yellow", "lime", "blue"]}
+{"schema": 1, "kind": "palette", "name": "cet_rainbow_bgyr_35_85_c73", "offered": false, "random": false, "seats": 0, "families": ["orange", "yellow", "lime"]}
+{"schema": 1, "kind": "palette", "name": "cet_rainbow_bgyrm_35_85_c69", "offered": false, "random": false, "seats": 0, "families": ["red", "orange", "yellow", "lime", "blue"]}
+{"schema": 1, "kind": "palette", "name": "cet_rainbow_bgyrm_35_85_c71", "offered": false, "random": false, "seats": 0, "families": ["red", "orange", "yellow", "lime"]}
+{"schema": 1, "kind": "palette", "name": "chaidai", "offered": false, "random": false, "seats": 0, "family": "purple", "families": ["rose", "purple", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "chalk-drawing-25", "offered": false, "random": false, "seats": 0, "family": "azure", "families": ["azure", "blue"]}
+{"schema": 1, "kind": "palette", "name": "chiaris-25", "offered": false, "random": true, "seats": 1, "family": "yellow", "families": ["yellow"]}
+{"schema": 1, "kind": "palette", "name": "chronoscope-25", "offered": false, "random": false, "seats": 2, "family": "orange", "families": ["red", "orange", "yellow"]}
+{"schema": 1, "kind": "palette", "name": "circulation", "offered": false, "random": false, "seats": 0, "families": ["rose", "red", "cyan"]}
+{"schema": 1, "kind": "palette", "name": "citadel", "offered": false, "random": true, "seats": 2, "family": "red", "families": ["red", "orange"]}
+{"schema": 1, "kind": "palette", "name": "city_of_lights", "offered": false, "random": true, "seats": 3, "family": "orange", "families": ["orange", "yellow"]}
+{"schema": 1, "kind": "palette", "name": "cividis", "offered": true, "random": false, "seats": 0, "family": "blue", "families": ["yellow", "azure", "blue"]}
+{"schema": 1, "kind": "palette", "name": "cmr.amber", "offered": true, "random": false, "seats": 0, "family": "orange", "families": ["red", "orange", "yellow"]}
+{"schema": 1, "kind": "palette", "name": "cmr.amethyst", "offered": false, "random": false, "seats": 1, "family": "purple", "families": ["blue", "purple"]}
+{"schema": 1, "kind": "palette", "name": "cmr.apple", "offered": false, "random": false, "seats": 0, "family": "red", "families": ["red", "orange", "yellow", "lime", "green"]}
+{"schema": 1, "kind": "palette", "name": "cmr.arctic", "offered": false, "random": true, "seats": 3, "family": "azure", "families": ["azure", "blue"]}
+{"schema": 1, "kind": "palette", "name": "cmr.bubblegum", "offered": false, "random": false, "seats": 1, "family": "purple", "families": ["rose", "blue", "purple", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "cmr.chroma", "offered": false, "random": false, "seats": 0, "family": "red", "families": ["lime", "green", "purple", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "cmr.copper", "offered": true, "random": false, "seats": 1, "family": "rose", "families": ["rose", "red", "orange", "cyan", "azure"]}
+{"schema": 1, "kind": "palette", "name": "cmr.copper_s", "offered": false, "random": true, "seats": 2, "family": "orange", "families": ["rose", "red", "orange", "yellow", "cyan", "azure", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "cmr.cosmic", "offered": false, "random": false, "seats": 0, "family": "azure", "families": ["cyan", "azure", "blue", "purple"]}
+{"schema": 1, "kind": "palette", "name": "cmr.dusk", "offered": false, "random": false, "seats": 1, "family": "red", "families": ["red", "orange"]}
+{"schema": 1, "kind": "palette", "name": "cmr.eclipse", "offered": false, "random": true, "seats": 2, "family": "yellow", "families": ["yellow", "lime", "cyan", "azure"]}
+{"schema": 1, "kind": "palette", "name": "cmr.ember", "offered": true, "random": false, "seats": 0, "family": "rose", "families": ["rose", "red", "orange", "yellow"]}
+{"schema": 1, "kind": "palette", "name": "cmr.emerald", "offered": false, "random": false, "seats": 0, "family": "green", "families": ["green", "teal"]}
+{"schema": 1, "kind": "palette", "name": "cmr.emergency", "offered": false, "random": true, "seats": 3, "family": "purple", "families": ["rose", "red", "azure", "blue", "purple", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "cmr.emergency_s", "offered": true, "random": true, "seats": 3, "family": "purple", "families": ["rose", "red", "blue", "purple", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "cmr.fall", "offered": true, "random": true, "seats": 3, "family": "yellow", "families": ["rose", "red", "orange", "yellow"]}
+{"schema": 1, "kind": "palette", "name": "cmr.flamingo", "offered": false, "random": false, "seats": 1, "family": "rose", "families": ["rose", "red", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "cmr.freeze", "offered": false, "random": false, "seats": 1, "family": "blue", "families": ["cyan", "azure", "blue"]}
+{"schema": 1, "kind": "palette", "name": "cmr.fusion", "offered": true, "random": false, "seats": 1, "family": "red", "families": ["rose", "red", "orange", "azure", "blue", "purple"]}
+{"schema": 1, "kind": "palette", "name": "cmr.gem", "offered": false, "random": false, "seats": 0, "family": "purple", "families": ["azure", "blue", "purple", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "cmr.ghostlight", "offered": false, "random": false, "seats": 0, "family": "lime", "families": ["lime", "purple", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "cmr.gothic", "offered": false, "random": true, "seats": 9, "family": "purple", "families": ["purple", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "cmr.guppy", "offered": false, "random": false, "seats": 1, "family": "magenta", "families": ["rose", "red", "azure", "blue", "purple", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "cmr.holly", "offered": false, "random": true, "seats": 4, "family": "rose", "families": ["rose", "red", "lime", "green"]}
+{"schema": 1, "kind": "palette", "name": "cmr.horizon", "offered": false, "random": false, "seats": 0, "family": "blue", "families": ["teal", "cyan", "azure", "blue", "purple"]}
+{"schema": 1, "kind": "palette", "name": "cmr.iceburn", "offered": false, "random": true, "seats": 5, "family": "orange", "families": ["orange", "yellow", "azure", "blue"]}
+{"schema": 1, "kind": "palette", "name": "cmr.infinity", "offered": false, "random": false, "seats": 0, "families": ["red", "yellow", "teal", "blue", "purple"]}
+{"schema": 1, "kind": "palette", "name": "cmr.infinity_s", "offered": false, "random": false, "seats": 0, "families": ["rose", "red", "orange", "yellow", "lime", "azure", "blue", "purple", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "cmr.jungle", "offered": true, "random": true, "seats": 3, "family": "green", "families": ["lime", "green"]}
+{"schema": 1, "kind": "palette", "name": "cmr.lavender", "offered": false, "random": false, "seats": 0, "families": ["green", "teal", "blue", "purple"]}
+{"schema": 1, "kind": "palette", "name": "cmr.lilac", "offered": true, "random": false, "seats": 0, "family": "blue", "families": ["lime", "blue", "purple"]}
+{"schema": 1, "kind": "palette", "name": "cmr.neon", "offered": false, "random": false, "seats": 0, "families": ["rose", "green", "teal", "cyan", "blue", "purple", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "cmr.nuclear", "offered": false, "random": false, "seats": 0, "family": "green", "families": ["green"]}
+{"schema": 1, "kind": "palette", "name": "cmr.ocean", "offered": true, "random": true, "seats": 6, "family": "cyan", "families": ["teal", "cyan", "azure", "blue"]}
+{"schema": 1, "kind": "palette", "name": "cmr.pepper", "offered": false, "random": false, "seats": 0, "families": ["red", "orange", "yellow", "lime"]}
+{"schema": 1, "kind": "palette", "name": "cmr.pride", "offered": true, "random": false, "seats": 1, "family": "orange", "families": ["rose", "red", "orange", "yellow", "lime", "azure", "blue"]}
+{"schema": 1, "kind": "palette", "name": "cmr.prinsenvlag", "offered": true, "random": false, "seats": 0, "family": "orange", "families": ["red", "orange", "yellow", "azure", "blue"]}
+{"schema": 1, "kind": "palette", "name": "cmr.rainforest", "offered": true, "random": false, "seats": 0, "family": "lime", "families": ["yellow", "lime", "green", "blue", "purple"]}
+{"schema": 1, "kind": "palette", "name": "cmr.redshift", "offered": true, "random": true, "seats": 3, "family": "rose", "families": ["rose", "azure", "blue", "purple", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "cmr.sapphire", "offered": false, "random": false, "seats": 0, "family": "blue", "families": ["cyan", "azure", "blue"]}
+{"schema": 1, "kind": "palette", "name": "cmr.savanna", "offered": true, "random": true, "seats": 6, "family": "yellow", "families": ["orange", "yellow", "lime"]}
+{"schema": 1, "kind": "palette", "name": "cmr.seasons", "offered": true, "random": true, "seats": 3, "family": "green", "families": ["rose", "orange", "yellow", "lime", "green", "teal", "azure", "blue"]}
+{"schema": 1, "kind": "palette", "name": "cmr.seasons_s", "offered": true, "random": false, "seats": 1, "family": "rose", "families": ["rose", "red", "orange", "yellow", "green", "teal", "cyan"]}
+{"schema": 1, "kind": "palette", "name": "cmr.seaweed", "offered": false, "random": false, "seats": 0, "family": "green", "families": ["green", "teal", "cyan", "azure"]}
+{"schema": 1, "kind": "palette", "name": "cmr.sepia", "offered": false, "random": true, "seats": 2, "family": "rose", "families": ["rose", "red", "orange", "yellow", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "cmr.sunburst", "offered": true, "random": true, "seats": 2, "family": "red", "families": ["rose", "red", "orange"]}
+{"schema": 1, "kind": "palette", "name": "cmr.swamp", "offered": true, "random": true, "seats": 6, "family": "green", "families": ["green", "teal"]}
+{"schema": 1, "kind": "palette", "name": "cmr.torch", "offered": true, "random": true, "seats": 5, "family": "red", "families": ["rose", "red", "orange", "blue", "purple", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "cmr.toxic", "offered": true, "random": false, "seats": 0, "family": "green", "families": ["lime", "green", "teal", "blue"]}
+{"schema": 1, "kind": "palette", "name": "cmr.tree", "offered": false, "random": false, "seats": 0, "family": "yellow", "families": ["yellow", "lime", "green"]}
+{"schema": 1, "kind": "palette", "name": "cmr.tropical", "offered": false, "random": false, "seats": 0, "family": "red", "families": ["rose", "red", "yellow", "lime", "green", "teal", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "cmr.viola", "offered": true, "random": true, "seats": 2, "family": "magenta", "families": ["rose", "azure", "blue", "purple", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "cmr.voltage", "offered": true, "random": true, "seats": 7, "family": "purple", "families": ["blue", "purple", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "cmr.waterlily", "offered": true, "random": true, "seats": 3, "family": "green", "families": ["lime", "green", "teal", "cyan", "azure", "blue", "purple"]}
+{"schema": 1, "kind": "palette", "name": "cmr.watermelon", "offered": false, "random": false, "seats": 1, "family": "green", "families": ["rose", "lime", "green"]}
+{"schema": 1, "kind": "palette", "name": "cmr.wildfire", "offered": true, "random": true, "seats": 3, "family": "teal", "families": ["red", "orange", "yellow", "green", "teal"]}
+{"schema": 1, "kind": "palette", "name": "colourwheel-25", "offered": false, "random": false, "seats": 0, "family": "yellow", "families": ["rose", "orange", "yellow", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "commons_2125_Mandelbulb_3D", "offered": false, "random": false, "seats": 0, "family": "azure", "families": ["azure"]}
+{"schema": 1, "kind": "palette", "name": "commons_Chaos_Clock_-_The_Steampunk_Spell-Shaper", "offered": false, "random": false, "seats": 0, "families": ["lime", "green"]}
+{"schema": 1, "kind": "palette", "name": "commons_Js17eta", "offered": false, "random": false, "seats": 0, "families": ["orange", "yellow", "lime", "azure", "blue"]}
+{"schema": 1, "kind": "palette", "name": "commons_Julia-Menge_-0.8_0.156i", "offered": false, "random": false, "seats": 0, "family": "cyan", "families": ["cyan", "azure"]}
+{"schema": 1, "kind": "palette", "name": "commons_Julia-Menge_83372617338", "offered": false, "random": false, "seats": 0, "families": ["lime", "green", "purple"]}
+{"schema": 1, "kind": "palette", "name": "commons_Julia_Fractal_rendered_in_Paint.NET", "offered": false, "random": false, "seats": 0, "family": "red", "families": ["red", "orange", "yellow"]}
+{"schema": 1, "kind": "palette", "name": "commons_Julia_set_spiral", "offered": false, "random": false, "seats": 0, "families": ["red", "yellow", "lime", "green", "blue", "purple"]}
+{"schema": 1, "kind": "palette", "name": "commons_Kalles_Fraktaler_adventurous-forest_00024_1.17e222", "offered": false, "random": false, "seats": 2, "family": "blue", "families": ["rose", "blue", "purple"]}
+{"schema": 1, "kind": "palette", "name": "commons_Mandelbrot_3_B_C3_B4ng_Xoay", "offered": false, "random": true, "seats": 2, "family": "blue", "families": ["blue", "purple"]}
+{"schema": 1, "kind": "palette", "name": "commons_Mandelbrot_3_D_C6_B0_C6_A1ng_X_E1_BB_89_C_E1_BB_95_Sinh", "offered": false, "random": false, "seats": 0, "family": "red", "families": ["rose", "red", "orange", "yellow", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "commons_Mandelbrot_3_Xo_C3_A1y_B_C3_A1nh_Ng_E1_BB_8Dt", "offered": false, "random": false, "seats": 0, "family": "yellow", "families": ["orange", "yellow"]}
+{"schema": 1, "kind": "palette", "name": "commons_Mandelbrot_3__E1_BB_94_Chu_E1_BB_93n_Chu_E1_BB_93n__C4_90_E1_BB_99t_Bi_E1_BA_BFn", "offered": false, "random": false, "seats": 0, "family": "magenta", "families": ["rose", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "commons_Mandelbrot_4_B_C3_B4ng_Ho_C3_A0ng_D_C3_A3", "offered": false, "random": false, "seats": 1, "family": "magenta", "families": ["rose", "purple", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "commons_Mandelbrot_4_H_E1_BB_93__E1_BB_90c", "offered": false, "random": false, "seats": 0, "family": "yellow", "families": ["orange", "yellow"]}
+{"schema": 1, "kind": "palette", "name": "commons_Mandelbrot_5_B_C3_B4ng_Ng_C5_A9_Gi_C3_A1c", "offered": false, "random": false, "seats": 1, "family": "magenta", "families": ["rose", "red", "orange", "purple", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "commons_Mandelbrot_5_Ba__E1_BB_90c", "offered": false, "random": false, "seats": 0, "families": ["lime", "green", "purple"]}
+{"schema": 1, "kind": "palette", "name": "commons_Mandelbrot_5__E1_BB_90c_D_C3_A3y_B_C3_B4ng", "offered": false, "random": true, "seats": 3, "family": "blue", "families": ["azure", "blue", "purple"]}
+{"schema": 1, "kind": "palette", "name": "commons_Mandelbrot_6_Hai_Ng_C3_A2n_H_C3_A0", "offered": false, "random": false, "seats": 0, "families": ["red", "green", "azure", "blue", "purple"]}
+{"schema": 1, "kind": "palette", "name": "commons_Mandelbrot_6_Ph_C3_A1o_B_C3_B4ng", "offered": false, "random": false, "seats": 0, "family": "magenta", "families": ["rose", "red", "orange", "yellow", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "commons_Mandelbrot_6_R_E1_BB_ABng_Nhi_E1_BB_87t__C4_90_E1_BB_9Bi", "offered": false, "random": false, "seats": 0, "families": ["green", "teal", "cyan"]}
+{"schema": 1, "kind": "palette", "name": "commons_Mandelbrot_6__C4_90_E1_BA_A7u_R_E1_BB_93ng", "offered": false, "random": false, "seats": 0, "families": ["rose", "red", "orange", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "commons_Mandelbrot_B_C3_A1nh_Ng_E1_BB_8Dt", "offered": false, "random": false, "seats": 0, "family": "orange", "families": ["orange", "yellow"]}
+{"schema": 1, "kind": "palette", "name": "commons_Mandelbrot_B_C3_B4ng_Tuy_E1_BA_BFt", "offered": false, "random": false, "seats": 1, "family": "purple", "families": ["purple"]}
+{"schema": 1, "kind": "palette", "name": "commons_Mandelbrot_C_C3_A2y_Trong_R_E1_BB_ABng_2", "offered": false, "random": false, "seats": 0, "families": ["rose", "lime", "green"]}
+{"schema": 1, "kind": "palette", "name": "commons_Mandelbrot_Hai__E1_BB_90c_M_E1_BB_8Bn", "offered": false, "random": false, "seats": 0, "family": "rose", "families": ["rose", "red"]}
+{"schema": 1, "kind": "palette", "name": "commons_Mandelbrot_M_E1_BB_8Dc_Rau", "offered": false, "random": false, "seats": 0, "family": "rose", "families": ["rose", "red", "orange", "purple", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "commons_Mandelbrot_M_E1_BB_99t__C4_90_C3_A0n__E1_BB_90c", "offered": false, "random": false, "seats": 0, "family": "green", "families": ["lime", "green"]}
+{"schema": 1, "kind": "palette", "name": "commons_Mandelbrot_V_C3_A0nh__C4_90_C3_A0i__E1_BB_90c_M_E1_BB_8Bn", "offered": false, "random": false, "seats": 0, "family": "green", "families": ["lime", "green", "purple", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "commons_Mandelbrot_set-35-k_3D10-filter01", "offered": false, "random": true, "seats": 1, "family": "orange", "families": ["red", "orange", "yellow"]}
+{"schema": 1, "kind": "palette", "name": "commons_Ms-0557-0645", "offered": false, "random": false, "seats": 0, "family": "red", "families": ["red", "orange", "yellow"]}
+{"schema": 1, "kind": "palette", "name": "commons_Spiralarm_Julia-Menge_-0_2C5R_0I_01072019_16K", "offered": false, "random": false, "seats": 0, "family": "magenta", "families": ["rose", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "congruity-25", "offered": false, "random": true, "seats": 1, "family": "orange", "families": ["red", "orange", "yellow"]}
+{"schema": 1, "kind": "palette", "name": "consequences-25", "offered": false, "random": true, "seats": 4, "family": "red", "families": ["red", "orange", "yellow"]}
+{"schema": 1, "kind": "palette", "name": "contra-25", "offered": false, "random": false, "seats": 0, "family": "red", "families": ["red", "orange", "yellow"]}
+{"schema": 1, "kind": "palette", "name": "coolwarm", "offered": true, "random": false, "seats": 0, "family": "red", "families": ["red", "blue", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "copper", "offered": false, "random": true, "seats": 2, "family": "orange", "families": ["red", "orange"]}
+{"schema": 1, "kind": "palette", "name": "corkscrew-25", "offered": false, "random": false, "seats": 2, "family": "cyan", "families": ["cyan", "azure"]}
+{"schema": 1, "kind": "palette", "name": "corporeal-25", "offered": false, "random": false, "seats": 0, "family": "azure", "families": ["azure"]}
+{"schema": 1, "kind": "palette", "name": "cosmic-forces-25", "offered": false, "random": false, "seats": 1, "family": "blue", "families": ["blue", "purple"]}
+{"schema": 1, "kind": "palette", "name": "creeping-frost-25", "offered": false, "random": false, "seats": 1, "family": "azure", "families": ["azure", "blue"]}
+{"schema": 1, "kind": "palette", "name": "crisis-25", "offered": false, "random": false, "seats": 0, "family": "orange", "families": ["red", "orange", "azure"]}
+{"schema": 1, "kind": "palette", "name": "crystal-flood-25", "offered": false, "random": false, "seats": 1, "family": "yellow", "families": ["orange", "yellow"]}
+{"schema": 1, "kind": "palette", "name": "cubehelix", "offered": false, "random": false, "seats": 0, "family": "magenta", "families": ["green", "purple", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "curlv", "offered": false, "random": false, "seats": 4, "family": "magenta", "families": ["rose", "red", "orange", "purple", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "deadly-nightshade-25", "offered": false, "random": false, "seats": 0, "family": "blue", "families": ["blue"]}
+{"schema": 1, "kind": "palette", "name": "death-cd-25", "offered": false, "random": false, "seats": 0, "families": ["azure", "blue"]}
+{"schema": 1, "kind": "palette", "name": "debutalis", "offered": false, "random": false, "seats": 0, "family": "yellow", "families": ["red", "orange", "yellow"]}
+{"schema": 1, "kind": "palette", "name": "deepsea-life-25", "offered": false, "random": false, "seats": 1, "family": "blue", "families": ["blue", "purple"]}
+{"schema": 1, "kind": "palette", "name": "delphic-oracle-25", "offered": false, "random": false, "seats": 0, "family": "red", "families": ["rose", "red"]}
+{"schema": 1, "kind": "palette", "name": "desert-nights-25", "offered": false, "random": false, "seats": 1, "family": "yellow", "families": ["orange", "yellow"]}
+{"schema": 1, "kind": "palette", "name": "desire-framed-25", "offered": false, "random": true, "seats": 2, "family": "orange", "families": ["red", "orange"]}
+{"schema": 1, "kind": "palette", "name": "dessert-union-25", "offered": false, "random": true, "seats": 2, "family": "orange", "families": ["red", "orange", "yellow"]}
+{"schema": 1, "kind": "palette", "name": "dimensionality-25", "offered": false, "random": true, "seats": 3, "family": "green", "families": ["lime", "green", "teal"]}
+{"schema": 1, "kind": "palette", "name": "dinlappi", "offered": false, "random": true, "seats": 1, "family": "magenta", "families": ["rose", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "dolphin-dance-25", "offered": false, "random": true, "seats": 1, "family": "azure", "families": ["cyan", "azure", "blue"]}
+{"schema": 1, "kind": "palette", "name": "doublevision", "offered": false, "random": false, "seats": 0, "family": "azure", "families": ["azure", "purple", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "dreamcatcher-25", "offered": false, "random": false, "seats": 0, "families": ["lime", "green", "teal", "cyan", "azure"]}
+{"schema": 1, "kind": "palette", "name": "duckol", "offered": false, "random": false, "seats": 0, "family": "yellow", "families": ["yellow", "cyan", "purple", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "dynamo-25", "offered": false, "random": false, "seats": 1, "family": "green", "families": ["lime", "green", "teal"]}
+{"schema": 1, "kind": "palette", "name": "eagles-25", "offered": false, "random": false, "seats": 1, "family": "orange", "families": ["orange", "yellow"]}
+{"schema": 1, "kind": "palette", "name": "early-may-25", "offered": false, "random": true, "seats": 0, "family": "teal", "families": ["yellow", "lime", "green", "teal"]}
+{"schema": 1, "kind": "palette", "name": "edge-25", "offered": false, "random": false, "seats": 0, "family": "yellow", "families": ["orange", "yellow"]}
+{"schema": 1, "kind": "palette", "name": "eirene-25", "offered": false, "random": false, "seats": 0, "family": "blue", "families": ["yellow", "azure", "blue"]}
+{"schema": 1, "kind": "palette", "name": "embrace-25", "offered": false, "random": false, "seats": 1, "family": "green", "families": ["lime", "green"]}
+{"schema": 1, "kind": "palette", "name": "emergence", "offered": false, "random": false, "seats": 0, "family": "rose", "families": ["rose", "blue", "purple", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "ephemera-25", "offered": false, "random": false, "seats": 0, "family": "teal", "families": ["teal", "cyan"]}
+{"schema": 1, "kind": "palette", "name": "etheric-frontier-25", "offered": false, "random": false, "seats": 0, "family": "magenta", "families": ["rose", "red", "orange", "cyan", "purple", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "evening-radiance-25", "offered": false, "random": false, "seats": 0, "family": "purple", "families": ["purple"]}
+{"schema": 1, "kind": "palette", "name": "exile-25", "offered": false, "random": true, "seats": 5, "family": "teal", "families": ["teal", "cyan", "azure"]}
+{"schema": 1, "kind": "palette", "name": "fairys-hollow-25", "offered": false, "random": false, "seats": 0, "families": ["lime", "blue", "purple"]}
+{"schema": 1, "kind": "palette", "name": "fantasy-25", "offered": false, "random": true, "seats": 2, "family": "magenta", "families": ["rose", "red", "orange", "purple", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "fiery-descent-25", "offered": false, "random": false, "seats": 6, "family": "azure", "families": ["cyan", "azure", "blue", "purple", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "flamed-25", "offered": false, "random": false, "seats": 0, "family": "yellow", "families": ["orange", "yellow"]}
+{"schema": 1, "kind": "palette", "name": "flaming-wings-25", "offered": false, "random": true, "seats": 1, "family": "red", "families": ["red", "orange", "yellow"]}
+{"schema": 1, "kind": "palette", "name": "flit-25", "offered": false, "random": false, "seats": 0, "family": "lime", "families": ["lime", "green"]}
+{"schema": 1, "kind": "palette", "name": "flow-25", "offered": false, "random": false, "seats": 0, "family": "magenta", "families": ["rose", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "flyline", "offered": false, "random": false, "seats": 1, "family": "magenta", "families": ["lime", "purple", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "forestal", "offered": false, "random": false, "seats": 0, "families": ["orange", "yellow"]}
+{"schema": 1, "kind": "palette", "name": "forgery-25", "offered": false, "random": true, "seats": 2, "family": "orange", "families": ["red", "orange", "yellow"]}
+{"schema": 1, "kind": "palette", "name": "fractal_abstraction_lines_130499_2560x1600", "offered": false, "random": true, "seats": 8, "family": "blue", "families": ["blue", "purple"]}
+{"schema": 1, "kind": "palette", "name": "fractal_flowers_abstract_104352_2560x1600", "offered": false, "random": true, "seats": 8, "family": "azure", "families": ["orange", "yellow", "cyan", "azure"]}
+{"schema": 1, "kind": "palette", "name": "fractal_shine_stripes_130177_2560x1600", "offered": false, "random": false, "seats": 1, "family": "teal", "families": ["lime", "green", "teal", "cyan"]}
+{"schema": 1, "kind": "palette", "name": "fractal_stripes_bends_lines_116839_2560x1600", "offered": false, "random": true, "seats": 2, "family": "orange", "families": ["red", "orange"]}
+{"schema": 1, "kind": "palette", "name": "fractalscape-25", "offered": false, "random": true, "seats": 3, "family": "teal", "families": ["green", "teal", "cyan", "azure"]}
+{"schema": 1, "kind": "palette", "name": "freedor", "offered": false, "random": true, "seats": 1, "family": "green", "families": ["green", "teal"]}
+{"schema": 1, "kind": "palette", "name": "fury-of-the-waves-25", "offered": false, "random": false, "seats": 0, "family": "red", "families": ["red", "orange"]}
+{"schema": 1, "kind": "palette", "name": "garcya.us_fantasy_wallpaper074", "offered": false, "random": false, "seats": 0, "families": ["yellow", "lime"]}
+{"schema": 1, "kind": "palette", "name": "gedoo", "offered": false, "random": false, "seats": 0, "family": "rose", "families": ["rose", "red", "yellow", "lime"]}
+{"schema": 1, "kind": "palette", "name": "gemini-25", "offered": false, "random": true, "seats": 5, "family": "orange", "families": ["red", "orange"]}
+{"schema": 1, "kind": "palette", "name": "gist_earth", "offered": false, "random": false, "seats": 0, "family": "blue", "families": ["yellow", "lime", "green", "azure", "blue"]}
+{"schema": 1, "kind": "palette", "name": "gist_heat", "offered": true, "random": true, "seats": 1, "family": "red", "families": ["red", "orange"]}
+{"schema": 1, "kind": "palette", "name": "gist_rainbow", "offered": false, "random": false, "seats": 0, "families": ["red", "lime", "green", "blue", "purple"]}
+{"schema": 1, "kind": "palette", "name": "gist_stern", "offered": true, "random": false, "seats": 0, "family": "blue", "families": ["rose", "red", "yellow", "lime", "blue", "purple"]}
+{"schema": 1, "kind": "palette", "name": "glassworks-25", "offered": false, "random": false, "seats": 0, "family": "orange", "families": ["red", "orange", "yellow", "lime", "green"]}
+{"schema": 1, "kind": "palette", "name": "glory-25", "offered": false, "random": false, "seats": 0, "family": "red", "families": ["red", "azure", "blue"]}
+{"schema": 1, "kind": "palette", "name": "glowdon", "offered": false, "random": true, "seats": 3, "family": "lime", "families": ["red", "orange", "yellow", "lime", "azure", "blue"]}
+{"schema": 1, "kind": "palette", "name": "gnuplot", "offered": false, "random": false, "seats": 0, "families": ["rose", "red", "orange", "yellow", "purple", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "gnuplot2", "offered": false, "random": false, "seats": 0, "family": "blue", "families": ["rose", "yellow", "blue", "purple", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "golden-egg-closeup-25", "offered": false, "random": false, "seats": 0, "families": ["yellow", "azure"]}
+{"schema": 1, "kind": "palette", "name": "gossamer-25", "offered": false, "random": true, "seats": 1, "family": "blue", "families": ["azure", "blue"]}
+{"schema": 1, "kind": "palette", "name": "grace-25", "offered": false, "random": false, "seats": 0, "family": "red", "families": ["red", "azure"]}
+{"schema": 1, "kind": "palette", "name": "green-dragon-25", "offered": false, "random": true, "seats": 3, "family": "yellow", "families": ["orange", "yellow"]}
+{"schema": 1, "kind": "palette", "name": "green-spine-25", "offered": false, "random": false, "seats": 1, "family": "green", "families": ["lime", "green"]}
+{"schema": 1, "kind": "palette", "name": "gurundin", "offered": false, "random": false, "seats": 2, "family": "yellow", "families": ["orange", "yellow"]}
+{"schema": 1, "kind": "palette", "name": "happy-hours-25", "offered": false, "random": true, "seats": 3, "family": "red", "families": ["red", "orange"]}
+{"schema": 1, "kind": "palette", "name": "harbinger-25", "offered": false, "random": false, "seats": 0, "family": "yellow", "families": ["red", "orange", "yellow"]}
+{"schema": 1, "kind": "palette", "name": "hawthorn-25", "offered": false, "random": false, "seats": 0, "family": "teal", "families": ["teal", "cyan", "purple", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "hazy-summer-garden-25", "offered": false, "random": false, "seats": 0, "family": "yellow", "families": ["yellow"]}
+{"schema": 1, "kind": "palette", "name": "heather-and-sage-25", "offered": false, "random": false, "seats": 1, "family": "purple", "families": ["teal", "cyan", "azure", "blue", "purple"]}
+{"schema": 1, "kind": "palette", "name": "hellid-25", "offered": false, "random": false, "seats": 0, "family": "orange", "families": ["red", "orange", "yellow", "lime"]}
+{"schema": 1, "kind": "palette", "name": "helping-hands-25", "offered": false, "random": true, "seats": 1, "family": "orange", "families": ["orange", "yellow"]}
+{"schema": 1, "kind": "palette", "name": "hemispheres-25", "offered": false, "random": false, "seats": 0, "family": "teal", "families": ["yellow", "lime", "green", "teal"]}
+{"schema": 1, "kind": "palette", "name": "hoarfrost-25", "offered": false, "random": true, "seats": 3, "family": "yellow", "families": ["yellow"]}
+{"schema": 1, "kind": "palette", "name": "holey-trinity-25", "offered": false, "random": false, "seats": 0, "family": "rose", "families": ["rose", "cyan", "azure", "blue"]}
+{"schema": 1, "kind": "palette", "name": "hollow-worlds-25", "offered": false, "random": false, "seats": 0, "family": "orange", "families": ["orange", "yellow"]}
+{"schema": 1, "kind": "palette", "name": "hot", "offered": false, "random": false, "seats": 0, "family": "red", "families": ["red", "orange", "yellow"]}
+{"schema": 1, "kind": "palette", "name": "house-of-ivory-25", "offered": false, "random": true, "seats": 4, "family": "teal", "families": ["yellow", "teal", "cyan"]}
+{"schema": 1, "kind": "palette", "name": "hsv", "offered": false, "random": false, "seats": 0, "family": "blue", "families": ["red", "lime", "green", "blue", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "hyperborean-25", "offered": false, "random": false, "seats": 1, "family": "blue", "families": ["blue"]}
+{"schema": 1, "kind": "palette", "name": "illusion-25", "offered": false, "random": false, "seats": 0, "family": "blue", "families": ["teal", "cyan", "azure", "blue"]}
+{"schema": 1, "kind": "palette", "name": "incursion-25", "offered": false, "random": false, "seats": 0, "family": "azure", "families": ["yellow", "cyan", "azure", "blue"]}
+{"schema": 1, "kind": "palette", "name": "inferno", "offered": true, "random": false, "seats": 1, "family": "magenta", "families": ["rose", "red", "orange", "yellow", "purple", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "infinity-25", "offered": false, "random": false, "seats": 0, "family": "green", "families": ["lime", "green", "teal"]}
+{"schema": 1, "kind": "palette", "name": "intermission-25", "offered": false, "random": true, "seats": 3, "family": "rose", "families": ["rose", "red", "orange"]}
+{"schema": 1, "kind": "palette", "name": "jadanti", "offered": false, "random": true, "seats": 3, "family": "red", "families": ["rose", "red"]}
+{"schema": 1, "kind": "palette", "name": "jade-serpent-25", "offered": false, "random": false, "seats": 0, "family": "purple", "families": ["purple"]}
+{"schema": 1, "kind": "palette", "name": "jet", "offered": false, "random": false, "seats": 0, "family": "red", "families": ["red", "orange", "yellow", "lime", "blue"]}
+{"schema": 1, "kind": "palette", "name": "jiradin", "offered": false, "random": false, "seats": 0, "family": "rose", "families": ["rose", "red", "lime"]}
+{"schema": 1, "kind": "palette", "name": "kirin-25", "offered": false, "random": false, "seats": 0, "family": "blue", "families": ["azure", "blue"]}
+{"schema": 1, "kind": "palette", "name": "krinshinda", "offered": false, "random": false, "seats": 0, "family": "orange", "families": ["orange", "yellow", "blue"]}
+{"schema": 1, "kind": "palette", "name": "kyoto-lanterns-25", "offered": false, "random": false, "seats": 1, "family": "orange", "families": ["red", "orange"]}
+{"schema": 1, "kind": "palette", "name": "labani", "offered": false, "random": false, "seats": 0, "family": "rose", "families": ["rose", "green", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "lambent-25", "offered": false, "random": false, "seats": 0, "family": "red", "families": ["rose", "red", "cyan", "azure"]}
+{"schema": 1, "kind": "palette", "name": "lander", "offered": false, "random": false, "seats": 0, "family": "yellow", "families": ["orange", "yellow"]}
+{"schema": 1, "kind": "palette", "name": "let-there-be-light-25", "offered": false, "random": false, "seats": 1, "family": "purple", "families": ["purple"]}
+{"schema": 1, "kind": "palette", "name": "lethe-25", "offered": false, "random": false, "seats": 0, "families": ["rose", "red", "purple", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "ley-lines-25", "offered": false, "random": true, "seats": 2, "family": "blue", "families": ["orange", "cyan", "azure", "blue"]}
+{"schema": 1, "kind": "palette", "name": "liquid-fire-25", "offered": false, "random": false, "seats": 0, "family": "red", "families": ["red", "orange", "yellow", "blue"]}
+{"schema": 1, "kind": "palette", "name": "locomotion-25", "offered": false, "random": false, "seats": 0, "family": "purple", "families": ["azure", "blue", "purple", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "mSL22 - Imgur", "offered": false, "random": false, "seats": 1, "family": "green", "families": ["lime", "green", "blue"]}
+{"schema": 1, "kind": "palette", "name": "magic-mushroom-25", "offered": false, "random": false, "seats": 0, "families": ["rose", "azure", "blue", "purple", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "magma", "offered": true, "random": false, "seats": 0, "family": "magenta", "families": ["rose", "red", "orange", "purple", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "magnificat-25", "offered": false, "random": true, "seats": 2, "family": "yellow", "families": ["orange", "yellow", "cyan"]}
+{"schema": 1, "kind": "palette", "name": "malign-25", "offered": false, "random": true, "seats": 2, "family": "red", "families": ["rose", "red"]}
+{"schema": 1, "kind": "palette", "name": "managua", "offered": true, "random": false, "seats": 0, "family": "orange", "families": ["red", "orange", "azure", "blue"]}
+{"schema": 1, "kind": "palette", "name": "mean-25", "offered": false, "random": true, "seats": 1, "family": "cyan", "families": ["cyan", "azure"]}
+{"schema": 1, "kind": "palette", "name": "meditation-25", "offered": false, "random": false, "seats": 2, "family": "azure", "families": ["cyan", "azure", "blue"]}
+{"schema": 1, "kind": "palette", "name": "meloni", "offered": false, "random": false, "seats": 1, "family": "yellow", "families": ["rose", "red", "orange", "yellow", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "metal-emblem-25", "offered": false, "random": false, "seats": 1, "family": "yellow", "families": ["rose", "red", "orange", "yellow"]}
+{"schema": 1, "kind": "palette", "name": "metamorph-25", "offered": false, "random": false, "seats": 0, "family": "purple", "families": ["red", "orange", "yellow", "blue", "purple"]}
+{"schema": 1, "kind": "palette", "name": "molten-25", "offered": false, "random": false, "seats": 0, "family": "orange", "families": ["red", "orange", "yellow"]}
+{"schema": 1, "kind": "palette", "name": "moon-over-mandelbrot-25", "offered": false, "random": false, "seats": 1, "family": "blue", "families": ["blue", "purple", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "morning-at-misty-vale-25", "offered": false, "random": false, "seats": 0, "family": "green", "families": ["green", "teal"]}
+{"schema": 1, "kind": "palette", "name": "mossy-25", "offered": false, "random": false, "seats": 0, "families": ["lime"]}
+{"schema": 1, "kind": "palette", "name": "muswirla", "offered": false, "random": true, "seats": 2, "family": "orange", "families": ["orange", "cyan", "azure"]}
+{"schema": 1, "kind": "palette", "name": "necromancer-25", "offered": false, "random": false, "seats": 3, "family": "red", "families": ["red", "orange"]}
+{"schema": 1, "kind": "palette", "name": "neptunes-garden-25", "offered": false, "random": false, "seats": 0, "family": "teal", "families": ["teal", "cyan"]}
+{"schema": 1, "kind": "palette", "name": "neuron-25", "offered": false, "random": false, "seats": 0, "family": "red", "families": ["red", "orange", "yellow"]}
+{"schema": 1, "kind": "palette", "name": "nightingale-25", "offered": false, "random": false, "seats": 0, "family": "red", "families": ["rose", "red", "orange", "blue"]}
+{"schema": 1, "kind": "palette", "name": "nipy_spectral", "offered": false, "random": false, "seats": 0, "families": ["red", "yellow", "lime", "green", "blue"]}
+{"schema": 1, "kind": "palette", "name": "no-mans-land-25", "offered": false, "random": true, "seats": 2, "family": "orange", "families": ["red", "orange", "yellow"]}
+{"schema": 1, "kind": "palette", "name": "not-yet-lost-25", "offered": false, "random": false, "seats": 1, "family": "purple", "families": ["blue", "purple"]}
+{"schema": 1, "kind": "palette", "name": "nova-25", "offered": false, "random": true, "seats": 1, "family": "red", "families": ["red", "orange", "yellow"]}
+{"schema": 1, "kind": "palette", "name": "ocean", "offered": false, "random": true, "seats": 2, "family": "azure", "families": ["green", "cyan", "azure"]}
+{"schema": 1, "kind": "palette", "name": "of-strange-design-25", "offered": false, "random": true, "seats": 6, "family": "green", "families": ["green", "teal"]}
+{"schema": 1, "kind": "palette", "name": "pacific-shore-25", "offered": false, "random": false, "seats": 0, "family": "blue", "families": ["yellow", "azure", "blue"]}
+{"schema": 1, "kind": "palette", "name": "paezing", "offered": false, "random": true, "seats": 4, "family": "azure", "families": ["azure", "blue", "purple", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "pageantry-25", "offered": false, "random": false, "seats": 1, "family": "orange", "families": ["orange", "yellow", "teal"]}
+{"schema": 1, "kind": "palette", "name": "painted-day-25", "offered": false, "random": false, "seats": 1, "family": "teal", "families": ["teal", "cyan", "azure"]}
+{"schema": 1, "kind": "palette", "name": "pebbles-shore-light-25", "offered": false, "random": false, "seats": 0, "family": "orange", "families": ["red", "orange"]}
+{"schema": 1, "kind": "palette", "name": "peekaboo-25", "offered": false, "random": false, "seats": 0, "family": "cyan", "families": ["cyan", "azure"]}
+{"schema": 1, "kind": "palette", "name": "phylum-25", "offered": false, "random": false, "seats": 0, "family": "green", "families": ["green"]}
+{"schema": 1, "kind": "palette", "name": "pilgrim", "offered": false, "random": true, "seats": 3, "family": "orange", "families": ["orange", "yellow"]}
+{"schema": 1, "kind": "palette", "name": "pink", "offered": false, "random": false, "seats": 2, "family": "red", "families": ["red", "orange", "yellow"]}
+{"schema": 1, "kind": "palette", "name": "plasma", "offered": true, "random": false, "seats": 0, "families": ["rose", "red", "orange", "yellow", "purple", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "plummet-25", "offered": false, "random": false, "seats": 0, "family": "lime", "families": ["yellow", "lime", "green", "teal", "cyan"]}
+{"schema": 1, "kind": "palette", "name": "polished-25", "offered": false, "random": true, "seats": 3, "family": "green", "families": ["lime", "green"]}
+{"schema": 1, "kind": "palette", "name": "portal-of-fire-25", "offered": false, "random": false, "seats": 1, "family": "red", "families": ["red", "orange"]}
+{"schema": 1, "kind": "palette", "name": "quiet-waiting-25", "offered": false, "random": false, "seats": 2, "family": "yellow", "families": ["yellow", "lime", "green"]}
+{"schema": 1, "kind": "palette", "name": "radian", "offered": false, "random": false, "seats": 0, "family": "purple", "families": ["blue", "purple", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "ragnetic_field", "offered": false, "random": false, "seats": 0, "family": "orange", "families": ["red", "orange"]}
+{"schema": 1, "kind": "palette", "name": "rainbow", "offered": false, "random": false, "seats": 0, "family": "red", "families": ["red", "orange", "green", "azure", "blue", "purple"]}
+{"schema": 1, "kind": "palette", "name": "rainbow-country-25", "offered": false, "random": false, "seats": 0, "family": "lime", "families": ["orange", "yellow", "lime"]}
+{"schema": 1, "kind": "palette", "name": "ransom-25", "offered": false, "random": false, "seats": 1, "family": "orange", "families": ["orange", "yellow"]}
+{"schema": 1, "kind": "palette", "name": "re-entry-25", "offered": false, "random": false, "seats": 2, "family": "orange", "families": ["red", "orange", "purple"]}
+{"schema": 1, "kind": "palette", "name": "red-octavo-25", "offered": false, "random": false, "seats": 0, "family": "red", "families": ["red", "orange", "yellow"]}
+{"schema": 1, "kind": "palette", "name": "reelati", "offered": false, "random": false, "seats": 2, "family": "lime", "families": ["lime", "green", "azure", "blue"]}
+{"schema": 1, "kind": "palette", "name": "rideon", "offered": false, "random": false, "seats": 1, "family": "purple", "families": ["rose", "purple", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "riding-on-the-tide-25", "offered": false, "random": false, "seats": 0, "family": "blue", "families": ["red", "orange", "blue", "purple", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "rite-of-passage-25", "offered": false, "random": false, "seats": 0, "family": "orange", "families": ["red", "orange", "yellow"]}
+{"schema": 1, "kind": "palette", "name": "riven-25", "offered": false, "random": false, "seats": 0, "family": "yellow", "families": ["red", "orange", "yellow"]}
+{"schema": 1, "kind": "palette", "name": "river-of-light-25", "offered": false, "random": true, "seats": 20, "family": "teal", "families": ["orange", "yellow", "lime", "teal"]}
+{"schema": 1, "kind": "palette", "name": "rolling", "offered": false, "random": true, "seats": 6, "family": "lime", "families": ["lime", "green", "cyan", "azure"]}
+{"schema": 1, "kind": "palette", "name": "rondo", "offered": false, "random": false, "seats": 0, "family": "purple", "families": ["rose", "red", "orange", "yellow", "purple", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "rose-pillow-25", "offered": false, "random": false, "seats": 1, "family": "red", "families": ["rose", "red"]}
+{"schema": 1, "kind": "palette", "name": "roundabout", "offered": false, "random": false, "seats": 0, "family": "magenta", "families": ["rose", "red", "orange", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "sacred-grove-25", "offered": false, "random": false, "seats": 0, "family": "cyan", "families": ["cyan", "azure"]}
+{"schema": 1, "kind": "palette", "name": "sad-eyes-25", "offered": false, "random": true, "seats": 4, "family": "blue", "families": ["orange", "azure", "blue"]}
+{"schema": 1, "kind": "palette", "name": "sanctuary-25", "offered": false, "random": false, "seats": 0, "family": "blue", "families": ["blue"]}
+{"schema": 1, "kind": "palette", "name": "sapphire-dreams-25", "offered": false, "random": false, "seats": 0, "family": "azure", "families": ["cyan", "azure", "blue"]}
+{"schema": 1, "kind": "palette", "name": "satin-ends-25", "offered": false, "random": false, "seats": 0, "family": "blue", "families": ["azure", "blue", "purple", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "scarlet-admiral-25", "offered": false, "random": false, "seats": 0, "family": "orange", "families": ["red", "orange", "yellow"]}
+{"schema": 1, "kind": "palette", "name": "scattering-25", "offered": false, "random": true, "seats": 4, "family": "orange", "families": ["orange", "yellow"]}
+{"schema": 1, "kind": "palette", "name": "sci-fi-new-worlds-alien-fiction-selection-earth-space-planets-393423", "offered": false, "random": false, "seats": 0, "family": "lime", "families": ["yellow", "lime", "teal", "cyan"]}
+{"schema": 1, "kind": "palette", "name": "scifi-my-current-lol-1652484", "offered": false, "random": false, "seats": 0, "family": "cyan", "families": ["cyan", "azure"]}
+{"schema": 1, "kind": "palette", "name": "seaweed-25", "offered": false, "random": true, "seats": 1, "family": "teal", "families": ["green", "teal", "cyan"]}
+{"schema": 1, "kind": "palette", "name": "seismic", "offered": true, "random": false, "seats": 0, "family": "blue", "families": ["rose", "red", "blue", "purple", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "shadalu", "offered": false, "random": false, "seats": 0, "family": "orange", "families": ["red", "orange", "yellow"]}
+{"schema": 1, "kind": "palette", "name": "shaki", "offered": false, "random": false, "seats": 0, "families": ["red", "orange", "yellow", "lime", "purple"]}
+{"schema": 1, "kind": "palette", "name": "shartook", "offered": false, "random": false, "seats": 0, "family": "orange", "families": ["orange", "yellow"]}
+{"schema": 1, "kind": "palette", "name": "sholmes", "offered": false, "random": false, "seats": 0, "family": "purple", "families": ["rose", "red", "orange", "purple", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "silk-scarves-25", "offered": false, "random": false, "seats": 0, "family": "yellow", "families": ["orange", "yellow"]}
+{"schema": 1, "kind": "palette", "name": "singularity-25", "offered": false, "random": false, "seats": 0, "family": "cyan", "families": ["green", "teal", "cyan"]}
+{"schema": 1, "kind": "palette", "name": "skyroads-25", "offered": false, "random": true, "seats": 4, "family": "teal", "families": ["teal", "cyan"]}
+{"schema": 1, "kind": "palette", "name": "skyroads-blue-25", "offered": false, "random": true, "seats": 3, "family": "blue", "families": ["blue"]}
+{"schema": 1, "kind": "palette", "name": "skyward-25", "offered": false, "random": false, "seats": 0, "family": "yellow", "families": ["red", "orange", "yellow", "blue", "purple"]}
+{"schema": 1, "kind": "palette", "name": "sleeper-25", "offered": false, "random": false, "seats": 1, "family": "cyan", "families": ["teal", "cyan"]}
+{"schema": 1, "kind": "palette", "name": "smokey-green-25", "offered": false, "random": false, "seats": 0, "family": "green", "families": ["lime", "green"]}
+{"schema": 1, "kind": "palette", "name": "smooth-sailing-25", "offered": false, "random": false, "seats": 1, "family": "azure", "families": ["rose", "red", "azure", "blue"]}
+{"schema": 1, "kind": "palette", "name": "solipstic", "offered": false, "random": false, "seats": 0, "family": "orange", "families": ["orange", "yellow", "azure", "blue"]}
+{"schema": 1, "kind": "palette", "name": "sparks", "offered": false, "random": false, "seats": 2, "family": "purple", "families": ["rose", "red", "orange", "blue", "purple", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "sparx-25", "offered": false, "random": false, "seats": 0, "family": "lime", "families": ["lime"]}
+{"schema": 1, "kind": "palette", "name": "spirit-of-the-dream-25", "offered": false, "random": false, "seats": 0, "family": "red", "families": ["rose", "red", "azure", "blue"]}
+{"schema": 1, "kind": "palette", "name": "spring", "offered": false, "random": false, "seats": 0, "family": "rose", "families": ["rose", "red", "orange", "yellow", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "stained_glass", "offered": false, "random": false, "seats": 0, "family": "yellow", "families": ["orange", "yellow"]}
+{"schema": 1, "kind": "palette", "name": "standard-25", "offered": false, "random": false, "seats": 0, "family": "purple", "families": ["rose", "red", "orange", "blue", "purple", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "strange-creature-25", "offered": false, "random": false, "seats": 1, "family": "red", "families": ["red", "orange"]}
+{"schema": 1, "kind": "palette", "name": "summer", "offered": false, "random": false, "seats": 0, "families": ["lime", "green"]}
+{"schema": 1, "kind": "palette", "name": "summer-dusk-25", "offered": false, "random": false, "seats": 0, "family": "blue", "families": ["yellow", "lime", "teal", "cyan", "azure", "blue"]}
+{"schema": 1, "kind": "palette", "name": "sun-god-25", "offered": false, "random": true, "seats": 4, "family": "orange", "families": ["orange", "yellow"]}
+{"schema": 1, "kind": "palette", "name": "sun-kissed-25", "offered": false, "random": false, "seats": 2, "family": "red", "families": ["rose", "red", "yellow", "lime", "green"]}
+{"schema": 1, "kind": "palette", "name": "sunsets-wake-25", "offered": false, "random": false, "seats": 0, "family": "orange", "families": ["orange", "yellow"]}
+{"schema": 1, "kind": "palette", "name": "taladee", "offered": false, "random": false, "seats": 0, "family": "magenta", "families": ["rose", "red", "orange", "yellow", "purple", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "tapestry-25", "offered": false, "random": false, "seats": 0, "family": "yellow", "families": ["orange", "yellow", "lime"]}
+{"schema": 1, "kind": "palette", "name": "technology-25", "offered": false, "random": false, "seats": 0, "family": "yellow", "families": ["yellow", "lime"]}
+{"schema": 1, "kind": "palette", "name": "ten-leaf-clover-25", "offered": false, "random": false, "seats": 0, "family": "teal", "families": ["green", "teal", "cyan", "azure"]}
+{"schema": 1, "kind": "palette", "name": "terrain", "offered": false, "random": false, "seats": 0, "family": "yellow", "families": ["yellow", "lime", "green", "blue"]}
+{"schema": 1, "kind": "palette", "name": "tethered", "offered": false, "random": false, "seats": 1, "family": "lime", "families": ["red", "orange", "lime", "green"]}
+{"schema": 1, "kind": "palette", "name": "the-four-quarters-25", "offered": false, "random": false, "seats": 0, "family": "orange", "families": ["orange", "yellow", "lime", "green", "teal"]}
+{"schema": 1, "kind": "palette", "name": "the-outsiders-25", "offered": false, "random": false, "seats": 0, "family": "yellow", "families": ["orange", "yellow", "blue"]}
+{"schema": 1, "kind": "palette", "name": "the_light_fantastic", "offered": false, "random": true, "seats": 1, "family": "azure", "families": ["azure", "blue"]}
+{"schema": 1, "kind": "palette", "name": "tictac", "offered": false, "random": false, "seats": 0, "family": "azure", "families": ["teal", "cyan", "azure", "blue"]}
+{"schema": 1, "kind": "palette", "name": "to-the-bone-25", "offered": false, "random": false, "seats": 0, "family": "blue", "families": ["yellow", "teal", "cyan", "azure", "blue", "purple"]}
+{"schema": 1, "kind": "palette", "name": "torment-of-the-skies-25", "offered": false, "random": false, "seats": 0, "family": "blue", "families": ["azure", "blue"]}
+{"schema": 1, "kind": "palette", "name": "torque-25", "offered": false, "random": true, "seats": 10, "family": "red", "families": ["red", "orange", "cyan", "azure"]}
+{"schema": 1, "kind": "palette", "name": "touch", "offered": false, "random": false, "seats": 0, "family": "orange", "families": ["red", "orange"]}
+{"schema": 1, "kind": "palette", "name": "toxic-spire-25", "offered": false, "random": false, "seats": 2, "family": "green", "families": ["yellow", "lime", "green"]}
+{"schema": 1, "kind": "palette", "name": "trade-winds-25", "offered": false, "random": false, "seats": 0, "family": "orange", "families": ["red", "orange", "yellow"]}
+{"schema": 1, "kind": "palette", "name": "transcendence-25", "offered": false, "random": true, "seats": 3, "family": "blue", "families": ["cyan", "azure", "blue"]}
+{"schema": 1, "kind": "palette", "name": "tri-state", "offered": false, "random": false, "seats": 0, "family": "rose", "families": ["rose", "red", "orange", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "triangulate-25", "offered": false, "random": false, "seats": 1, "family": "orange", "families": ["red", "orange", "yellow", "azure"]}
+{"schema": 1, "kind": "palette", "name": "triglandal", "offered": false, "random": false, "seats": 1, "family": "rose", "families": ["rose", "yellow", "lime", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "turbo", "offered": true, "random": false, "seats": 0, "family": "teal", "families": ["red", "orange", "yellow", "lime", "green", "blue"]}
+{"schema": 1, "kind": "palette", "name": "twilight", "offered": true, "random": false, "seats": 1, "family": "purple", "families": ["rose", "red", "azure", "blue", "purple", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "twilight_shifted", "offered": true, "random": false, "seats": 0, "family": "rose", "families": ["rose", "red", "blue", "purple", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "under-a-brighter-sky-25", "offered": false, "random": false, "seats": 0, "family": "cyan", "families": ["cyan"]}
+{"schema": 1, "kind": "palette", "name": "unfolding-creation-25", "offered": false, "random": false, "seats": 0, "family": "lime", "families": ["yellow", "lime", "green"]}
+{"schema": 1, "kind": "palette", "name": "variations-on-a-floorplan-25", "offered": false, "random": false, "seats": 1, "family": "azure", "families": ["rose", "red", "azure", "blue", "purple", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "vibe-25", "offered": false, "random": false, "seats": 0, "family": "orange", "families": ["red", "orange", "azure"]}
+{"schema": 1, "kind": "palette", "name": "viridis", "offered": true, "random": false, "seats": 0, "family": "green", "families": ["lime", "green", "teal", "azure", "purple"]}
+{"schema": 1, "kind": "palette", "name": "visionary-spires-25", "offered": false, "random": true, "seats": 3, "family": "azure", "families": ["cyan", "azure"]}
+{"schema": 1, "kind": "palette", "name": "visions-25", "offered": false, "random": true, "seats": 6, "family": "purple", "families": ["purple"]}
+{"schema": 1, "kind": "palette", "name": "vitality-25", "offered": false, "random": false, "seats": 1, "family": "orange", "families": ["red", "orange", "yellow"]}
+{"schema": 1, "kind": "palette", "name": "wallhaven_wallhaven-0125mv", "offered": false, "random": false, "seats": 0, "family": "purple", "families": ["rose", "teal", "blue", "purple", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "wallhaven_wallhaven-0w8gpp", "offered": false, "random": true, "seats": 5, "family": "azure", "families": ["cyan", "azure"]}
+{"schema": 1, "kind": "palette", "name": "wallhaven_wallhaven-1jo7vv", "offered": false, "random": false, "seats": 0, "family": "red", "families": ["red"]}
+{"schema": 1, "kind": "palette", "name": "wallhaven_wallhaven-1joljg", "offered": false, "random": true, "seats": 10, "family": "red", "families": ["rose", "red"]}
+{"schema": 1, "kind": "palette", "name": "wallhaven_wallhaven-2ex5zg", "offered": false, "random": false, "seats": 0, "family": "blue", "families": ["blue", "purple"]}
+{"schema": 1, "kind": "palette", "name": "wallhaven_wallhaven-398e39", "offered": false, "random": true, "seats": 4, "family": "blue", "families": ["blue", "purple"]}
+{"schema": 1, "kind": "palette", "name": "wallhaven_wallhaven-39lg2d", "offered": false, "random": true, "seats": 3, "family": "cyan", "families": ["teal", "cyan"]}
+{"schema": 1, "kind": "palette", "name": "wallhaven_wallhaven-3z1jkd", "offered": false, "random": false, "seats": 0, "family": "rose", "families": ["rose", "purple", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "wallhaven_wallhaven-422xr6", "offered": false, "random": false, "seats": 0, "family": "blue", "families": ["red", "cyan", "azure", "blue"]}
+{"schema": 1, "kind": "palette", "name": "wallhaven_wallhaven-45pqz1", "offered": false, "random": false, "seats": 2, "family": "magenta", "families": ["rose", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "wallhaven_wallhaven-47xzoe", "offered": false, "random": true, "seats": 3, "family": "red", "families": ["rose", "red", "purple", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "wallhaven_wallhaven-4omjp5", "offered": false, "random": false, "seats": 0, "family": "azure", "families": ["cyan", "azure"]}
+{"schema": 1, "kind": "palette", "name": "wallhaven_wallhaven-4xy8el", "offered": false, "random": false, "seats": 0, "family": "blue", "families": ["azure", "blue"]}
+{"schema": 1, "kind": "palette", "name": "wallhaven_wallhaven-5dpzz5", "offered": false, "random": false, "seats": 1, "family": "purple", "families": ["cyan", "azure", "blue", "purple", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "wallhaven_wallhaven-6d3zz6", "offered": false, "random": true, "seats": 6, "family": "red", "families": ["rose", "red", "orange"]}
+{"schema": 1, "kind": "palette", "name": "wallhaven_wallhaven-8xz1mk", "offered": false, "random": true, "seats": 4, "family": "red", "families": ["red", "orange"]}
+{"schema": 1, "kind": "palette", "name": "wallhaven_wallhaven-95k3qx", "offered": false, "random": false, "seats": 0, "families": ["cyan", "azure", "blue"]}
+{"schema": 1, "kind": "palette", "name": "wallhaven_wallhaven-d67kpg", "offered": false, "random": false, "seats": 0, "family": "cyan", "families": ["teal", "cyan", "azure"]}
+{"schema": 1, "kind": "palette", "name": "wallhaven_wallhaven-d6yv9m", "offered": false, "random": false, "seats": 1, "family": "red", "families": ["red", "orange"]}
+{"schema": 1, "kind": "palette", "name": "wallhaven_wallhaven-dg6v93", "offered": false, "random": false, "seats": 0, "family": "blue", "families": ["blue", "purple", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "wallhaven_wallhaven-dped2l", "offered": false, "random": false, "seats": 0, "families": ["cyan", "azure"]}
+{"schema": 1, "kind": "palette", "name": "wallhaven_wallhaven-e7v1ll", "offered": false, "random": false, "seats": 0, "family": "rose", "families": ["rose", "blue", "purple", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "wallhaven_wallhaven-g8ev1l", "offered": false, "random": false, "seats": 1, "family": "blue", "families": ["blue", "purple"]}
+{"schema": 1, "kind": "palette", "name": "wallhaven_wallhaven-g8p1ol", "offered": false, "random": false, "seats": 0, "family": "cyan", "families": ["teal", "cyan", "azure"]}
+{"schema": 1, "kind": "palette", "name": "wallhaven_wallhaven-k97v5q", "offered": false, "random": true, "seats": 2, "family": "purple", "families": ["orange", "yellow", "blue", "purple"]}
+{"schema": 1, "kind": "palette", "name": "wallhaven_wallhaven-kwg7v6", "offered": false, "random": true, "seats": 2, "family": "red", "families": ["rose", "red"]}
+{"schema": 1, "kind": "palette", "name": "wallhaven_wallhaven-m9v5l9", "offered": false, "random": false, "seats": 0, "family": "cyan", "families": ["cyan", "azure"]}
+{"schema": 1, "kind": "palette", "name": "wallhaven_wallhaven-nm6938", "offered": false, "random": false, "seats": 0, "family": "cyan", "families": ["green", "teal", "cyan", "azure"]}
+{"schema": 1, "kind": "palette", "name": "wallhaven_wallhaven-nrl8ym", "offered": false, "random": false, "seats": 0, "family": "red", "families": ["red", "orange", "yellow"]}
+{"schema": 1, "kind": "palette", "name": "wallhaven_wallhaven-oxgk7p", "offered": false, "random": false, "seats": 0, "family": "red", "families": ["red", "orange"]}
+{"schema": 1, "kind": "palette", "name": "wallhaven_wallhaven-oxxve5", "offered": false, "random": true, "seats": 6, "family": "red", "families": ["red", "orange", "yellow"]}
+{"schema": 1, "kind": "palette", "name": "wallhaven_wallhaven-vg1rzm", "offered": false, "random": true, "seats": 2, "family": "purple", "families": ["blue", "purple"]}
+{"schema": 1, "kind": "palette", "name": "wallhaven_wallhaven-we6oqp", "offered": false, "random": false, "seats": 0, "family": "orange", "families": ["red", "orange"]}
+{"schema": 1, "kind": "palette", "name": "wallhaven_wallhaven-xl8gmd", "offered": false, "random": false, "seats": 0, "family": "red", "families": ["red", "orange"]}
+{"schema": 1, "kind": "palette", "name": "wallhaven_wallhaven-ym8rqk", "offered": false, "random": false, "seats": 1, "family": "blue", "families": ["cyan", "azure", "blue"]}
+{"schema": 1, "kind": "palette", "name": "wallhaven_wallhaven-yxlvkk", "offered": false, "random": false, "seats": 0, "family": "magenta", "families": ["rose", "purple", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "wallhaven_wallhaven-zxv17j", "offered": false, "random": true, "seats": 2, "family": "purple", "families": ["purple"]}
+{"schema": 1, "kind": "palette", "name": "wallpaper-supernova", "offered": false, "random": false, "seats": 0, "family": "red", "families": ["red", "teal", "cyan"]}
+{"schema": 1, "kind": "palette", "name": "waltzing-in-shadows-25", "offered": false, "random": false, "seats": 0, "family": "yellow", "families": ["yellow", "lime", "azure", "blue"]}
+{"schema": 1, "kind": "palette", "name": "warp-angels-25", "offered": false, "random": false, "seats": 0, "family": "blue", "families": ["blue", "purple"]}
+{"schema": 1, "kind": "palette", "name": "watercolours-in-the-rain-25", "offered": false, "random": true, "seats": 3, "family": "blue", "families": ["teal", "cyan", "azure", "blue"]}
+{"schema": 1, "kind": "palette", "name": "watersprite-25", "offered": false, "random": false, "seats": 1, "family": "blue", "families": ["azure", "blue"]}
+{"schema": 1, "kind": "palette", "name": "western-winds-25", "offered": false, "random": false, "seats": 0, "families": ["yellow", "azure", "blue"]}
+{"schema": 1, "kind": "palette", "name": "wheelance", "offered": false, "random": false, "seats": 0, "family": "yellow", "families": ["rose", "red", "orange", "yellow"]}
+{"schema": 1, "kind": "palette", "name": "whispers-on-golden-sand-25", "offered": false, "random": false, "seats": 0, "family": "blue", "families": ["orange", "azure", "blue"]}
+{"schema": 1, "kind": "palette", "name": "windy-peak-25", "offered": false, "random": false, "seats": 0, "family": "blue", "families": ["blue", "purple"]}
+{"schema": 1, "kind": "palette", "name": "winter", "offered": false, "random": false, "seats": 0, "families": ["green", "teal", "cyan", "azure", "blue"]}
+{"schema": 1, "kind": "palette", "name": "within-25", "offered": false, "random": false, "seats": 3, "family": "yellow", "families": ["yellow", "green", "teal", "cyan"]}
+{"schema": 1, "kind": "palette", "name": "xelan-25", "offered": false, "random": false, "seats": 1, "family": "yellow", "families": ["yellow", "lime", "green"]}
+{"schema": 1, "kind": "palette", "name": "xuahakin", "offered": false, "random": false, "seats": 0, "family": "yellow", "families": ["rose", "red", "yellow", "magenta"]}
+{"schema": 1, "kind": "palette", "name": "zhgiu1cypaac1", "offered": false, "random": false, "seats": 0, "family": "azure", "families": ["yellow", "cyan", "azure", "purple", "magenta"]}

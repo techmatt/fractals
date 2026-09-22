@@ -239,17 +239,14 @@ function contentBox(node) {
  *   `../explorer/engine.wasm` are resolved against. It defaults to this module's own
  *   directory, which is where all three are relative to, so a page anywhere in the tree
  *   that mounts a frame gets them right without saying anything.
- * - **`keep`** (default `false`) — whether a click on a mark stores it. Stored, the frame
- *   goes on showing that place when the pointer leaves; a second click on the same mark
- *   lets it go, and so does Escape. This was the standalone atlas page's behavior and the
- *   stored mark wears `is-stored`; no caller spends it since that page retired, and the
- *   studio passes `keep: false` by name rather than by omission.
  * - **`linger`** (default `false`) — whether the slots go on showing the last place the
  *   pointer was over. This is the studio's behavior and it exists so that the three slots
  *   can be clicked at all: hover alone empties them the moment the pointer leaves the
- *   mark, and a picture nobody can reach is not a picture anybody can pick. It is not
- *   `keep` in a second spelling — nothing is stored, no mark wears a ring, and there is
- *   nothing for Escape to let go of. The slots simply hold the last thing they were shown.
+ *   mark, and a picture nobody can reach is not a picture anybody can pick. Nothing is
+ *   stored by it — no mark wears a ring, and there is nothing to press Escape for. The
+ *   slots simply hold the last thing they were shown. The frame used to carry a `keep`
+ *   as well, which stored a clicked mark; it was the standalone atlas page's behavior and
+ *   it went out with that page *(leftovers_rebake_ckpt140, 2026-09-21)*.
  * - **`plane`** (default the first the record carries) — which plane the frame opens on,
  *   by the partition's own name. A name the record does not carry opens the first one
  *   rather than nothing: a plane is furniture, and furniture never withholds a picture.
@@ -272,15 +269,14 @@ function contentBox(node) {
  *
  * The handle is `{ record, refit, open, destroy }`: the record as `record.js` read it, a
  * `refit` that re-sizes the frame to its host and returns the `{ width, height }` it settled
- * on, an `open` that moves to a plane by name without reporting it, and a `destroy` that disconnects the observer, unhooks the key handler and takes the
- * frame back out of the host.
+ * on, an `open` that moves to a plane by name without reporting it, and a `destroy` that
+ * disconnects the observer and takes the frame back out of the host.
  *
  * `mount` adds the `frame-host` class to the host and takes it off again at `destroy`,
  * which is what centres the frame in the box; everything else about the host is its page's.
  */
 export async function mount(host, options = {}) {
   const base = options.base ?? new URL("./", import.meta.url);
-  const keep = options.keep ?? false;
   const linger = options.linger ?? false;
   const onPick = options.onPick;
   const navigates = onPick === undefined;
@@ -416,10 +412,9 @@ export async function mount(host, options = {}) {
     onPick({ dot, slot, query, palette });
   };
 
-  let stored = null;
   let hovering = null;
   const nodes = new Map();
-  const settle = () => show(hovering ?? stored);
+  const settle = () => show(hovering);
 
   if (!navigates) {
     for (const [name, { node }] of slots) {
@@ -455,12 +450,6 @@ export async function mount(host, options = {}) {
       node.addEventListener("mouseleave", leave);
       node.addEventListener("blur", leave);
       node.addEventListener("click", () => {
-        if (keep) {
-          if (stored !== null) nodes.get(stored).classList.remove("is-stored");
-          stored = stored === dot ? null : dot;
-          if (stored !== null) nodes.get(stored).classList.add("is-stored");
-          settle();
-        }
         // A mark is a place, and the one of its three pictures a place is worth opening at
         // is the wallpaper. The other two are what a picker would go to the slots for.
         if (!navigates) pick(dot, "gallery");
@@ -480,7 +469,6 @@ export async function mount(host, options = {}) {
   function openPlane(wanted) {
     if (wanted === partition) return;
     partition = wanted;
-    stored = null;
     hovering = null;
     nodes.clear();
     for (const mark of [...plate.querySelectorAll(".mark")]) mark.remove();
@@ -506,14 +494,6 @@ export async function mount(host, options = {}) {
         "the search has kept a place."
       : `The ${partition.title} plane in gray, with no marks on it yet.`;
   }
-
-  const letGo = (event) => {
-    if (event.key !== "Escape" || stored === null) return;
-    nodes.get(stored).classList.remove("is-stored");
-    stored = null;
-    settle();
-  };
-  if (keep) document.addEventListener("keydown", letGo);
 
   /**
    * The frame has one aspect ratio of its own — the plate's, plus the strip's share of it,
@@ -583,7 +563,6 @@ export async function mount(host, options = {}) {
 
   const destroy = () => {
     observer.disconnect();
-    if (keep) document.removeEventListener("keydown", letGo);
     planes.remove();
     frame.remove();
     host.classList.remove("frame-host");

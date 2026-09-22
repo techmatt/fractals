@@ -1065,16 +1065,17 @@ def refresh_roster(release: str) -> tuple[Path, int, int, int]:
     method["rule"] = (
         "every map the library holds, and which of them the picker offers. The roster is the "
         "whole library because a link built from a gallery seat's recipe has to be able to "
-        "name the map that seat was drawn in — 451 distinct maps are seated in the published "
-        "record alone — and the gradients ride in `palettes.bin` beside the index rather than "
-        "in it. What the picker LISTS is the narrower thing and is still frozen: the 77 "
-        "curated maps as they stood on 2026-08-23, unchanged by this widening. The distinction "
-        "used to be derived from the library's own `source` lines, and a drop of two hundred "
-        "authored maps next door would have taken the picker to 277 entries without anybody "
-        "deciding to, which is why `offered` is a field here and not a question asked over "
-        "there. Nothing is ever removed: a name that has been in a link is a name that has to "
-        "keep resolving. This record is what `python -m builder explorer` bakes from, and "
-        "`builder check`'s bake check holds the committed module and blob to it."
+        f"name the map that seat was drawn in — {len(seats)} distinct maps are seated in the "
+        "record named below alone — and the gradients ride in `palettes.bin` beside the index "
+        "rather than in it. What the picker LISTS is the narrower thing and is still frozen: "
+        "the 77 curated maps as they stood on 2026-08-23, unchanged by this widening. The "
+        "distinction used to be derived from the library's own `source` lines, and a drop of "
+        "two hundred authored maps next door would have taken the picker to 277 entries "
+        "without anybody deciding to, which is why `offered` is a field here and not a "
+        "question asked over there. Nothing is ever removed: a name that has been in a link is "
+        "a name that has to keep resolving. This record is what `python -m builder explorer` "
+        "bakes from, and `builder check`'s bake check holds the committed module and blob to "
+        "it."
     )
     method["release"] = release
     method["ledger_rows"] = ledger_rows

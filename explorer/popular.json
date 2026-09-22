@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "release": "20260914T171846Z",
+  "release": "20260922T012627Z",
   "rule": "`pinned` first, in its own order: Matt's picks, taken whatever the rule says. `dropped` is never taken. The rest are filled in rounds: round k walks the maps by seats in the release named here, ties by name, and takes a map whose hue family holds fewer than k places and which overlaps no map already taken by 0.7 or more — the share of the smaller map's carrier colour, pooled onto hue families, that the other carries too. Only `pinned` and `dropped` are edited by hand; `python -m builder explorer --popular` rewrites the rest. See builder/picker.py.",
   "overlap": 0.7,
   "pinned": [
@@ -38,35 +38,25 @@
     "Pale Fire Rose",
     "BuGn",
     "cmr.ocean",
-    "amazing-25",
+    "gemini-25",
     "cmr.gothic",
     "Furnace Rose",
+    "abstract-3d-wallpapers",
     "rolling",
-    "Orchid Furnace",
-    "skyroads-25",
-    "Pale Moss Field",
-    "Copper Bloom, Teal Fleck"
+    "Amethyst Veil",
+    "Ice Shaft",
+    "High Cyan, Low Gold"
   ],
   "skipped": [
-    {
-      "name": "Rose Against Cobalt",
-      "seats": 10,
-      "why": "overlaps Pale Fire Rose by 0.92"
-    },
-    {
-      "name": "RdPu",
-      "seats": 9,
-      "why": "overlaps Pale Fire Rose by 0.90"
-    },
     {
       "name": "Emerald Ingot",
       "seats": 8,
       "why": "Matt, 2026-09-16: one gold and green ramp too many beside Turquoise Gold; Gilded Moss takes its place"
     },
     {
-      "name": "Pale Ember Over Teal",
-      "seats": 7,
-      "why": "overlaps BuGn by 0.77"
+      "name": "RdPu",
+      "seats": 8,
+      "why": "overlaps Pale Fire Rose by 0.90"
     },
     {
       "name": "Petrol Noon",
@@ -74,39 +64,54 @@
       "why": "overlaps river-of-light-25 by 0.77"
     },
     {
-      "name": "Deep Rose Vault",
-      "seats": 6,
-      "why": "overlaps Pale Fire Rose by 0.83"
+      "name": "Rose Against Cobalt",
+      "seats": 7,
+      "why": "overlaps Pale Fire Rose by 0.92"
     },
     {
-      "name": "cmr.iceburn",
+      "name": "Amber Signal",
       "seats": 6,
-      "why": "overlaps torque-25 by 0.72"
+      "why": "overlaps river-of-light-25 by 0.88"
     },
     {
       "name": "Frost Orchid",
-      "seats": 5,
+      "seats": 6,
       "why": "overlaps cmr.gothic by 1.00"
     },
     {
-      "name": "02596_lakehawea_2560x1600",
-      "seats": 4,
-      "why": "overlaps glowdon by 1.00"
+      "name": "cmr.savanna",
+      "seats": 6,
+      "why": "overlaps glowdon by 0.84"
     },
     {
       "name": "02598_asgardrealmofthegods_2560x1600",
-      "seats": 4,
+      "seats": 5,
       "why": "overlaps wallhaven_wallhaven-6d3zz6 by 0.80"
+    },
+    {
+      "name": "Pale Ember Over Teal",
+      "seats": 5,
+      "why": "overlaps BuGn by 0.77"
+    },
+    {
+      "name": "cmr.iceburn",
+      "seats": 5,
+      "why": "overlaps torque-25 by 0.72"
+    },
+    {
+      "name": "exile-25",
+      "seats": 5,
+      "why": "overlaps BuGn by 0.77"
     },
     {
       "name": "Cobalt Without Daylight",
       "seats": 4,
-      "why": "overlaps amazing-25 by 0.84"
+      "why": "overlaps gemini-25 by 0.84"
     },
     {
       "name": "Coral Tideline",
       "seats": 4,
-      "why": "overlaps wallhaven_wallhaven-6d3zz6 by 0.77"
+      "why": "overlaps gemini-25 by 0.84"
     },
     {
       "name": "Navy to Foam",
@@ -114,29 +119,44 @@
       "why": "overlaps BuGn by 0.87"
     },
     {
-      "name": "cmr.savanna",
+      "name": "YlOrBr",
       "seats": 4,
-      "why": "overlaps glowdon by 0.84"
+      "why": "overlaps gemini-25 by 0.98"
     },
     {
-      "name": "dessert-union-25",
+      "name": "amazing-25",
       "seats": 4,
-      "why": "overlaps amazing-25 by 1.00"
+      "why": "overlaps gemini-25 by 0.93"
     },
     {
-      "name": "gemini-25",
+      "name": "scattering-25",
       "seats": 4,
-      "why": "overlaps amazing-25 by 0.93"
+      "why": "overlaps gemini-25 by 0.79"
     },
     {
-      "name": "Amber Signal",
+      "name": "sun-god-25",
+      "seats": 4,
+      "why": "overlaps gemini-25 by 0.79"
+    },
+    {
+      "name": "02596_lakehawea_2560x1600",
       "seats": 3,
-      "why": "overlaps river-of-light-25 by 0.88"
+      "why": "overlaps glowdon by 1.00"
     },
     {
-      "name": "Bone and Moss",
+      "name": "Coal Amber",
       "seats": 3,
-      "why": "overlaps glowdon by 0.98"
+      "why": "overlaps river-of-light-25 by 0.75"
+    },
+    {
+      "name": "Copper Bloom, Teal Fleck",
+      "seats": 3,
+      "why": "overlaps gemini-25 by 0.75"
+    },
+    {
+      "name": "Glacier Drift",
+      "seats": 3,
+      "why": "overlaps visionary-spires-25 by 1.00"
     }
   ]
 }

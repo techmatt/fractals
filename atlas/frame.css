@@ -263,13 +263,3 @@ button.slot { margin: 0; padding: 0; font: inherit; color: inherit; cursor: poin
   box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.95), 0 0 6px 2px rgba(0, 0, 0, 0.5);
 }
 .mark:focus-visible { outline: none; }
-
-.mark.is-stored::before {
-  box-shadow:
-    0 0 0 1px rgba(255, 255, 255, 0.95),
-    0 0 0 3px var(--well),
-    0 0 0 6px currentColor,
-    0 0 0 7px rgba(0, 0, 0, 0.6);
-}
-.mark-mandelbrot.is-stored { color: var(--place-mandelbrot); }
-.mark-julia.is-stored { color: var(--place-julia); }

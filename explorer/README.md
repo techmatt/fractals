@@ -2,7 +2,7 @@
 
 One page that runs the wallpaper project's own renderer in the browser: pan and zoom
 every family the wallpapers are drawn from, in every mode the pipeline ships, under any
-of the library's 1,021 palettes, and copy a link to whatever is on screen. Every figure
+of the library's 1,022 palettes, and copy a link to whatever is on screen. Every figure
 of the article that this page can draw again carries a link straight into it.
 
 **It is a studio, since `explorer_studio` (2026-09-15).** The page is the window: a left
@@ -155,7 +155,7 @@ stamp.test.mjs        12 tests: the link goes in, and the picture does not move
 deep-fx.test.mjs      12 tests: the Deep tab's arithmetic is exact where a double is not
 deep-link.test.mjs    29 tests: the deep contract, and the shallow one held to not moving
 deep.test.mjs         17 tests: where the two modules meet, against both committed ones
-palettes.jsonl        the roster palettes.js is baked from; 1,021 maps, 77 offered,
+palettes.jsonl        the roster palettes.js is baked from; 1,022 maps, 77 offered,
                       232 a random pick may draw
 modes.jsonl           the roster catalog.js is baked from: the 17 modes the picker offers
 palette-names.json    every map's display name and whether a person wrote it, by underlying name
@@ -625,7 +625,7 @@ them.
   already spends sparingly, so Fast is the roster with the dear one taken out.
 - **Palettes** — *All palettes*, then each of the twelve colour families
   *(walk_palette_families_ckpt135)*. **All means the 232 maps Random palette draws from,
-  never the 1,021** *(Matt)*: most of the library arrived by mechanical conversion, so a
+  never the 1,022** *(Matt)*: most of the library arrived by mechanical conversion, so a
   uniform draw over all of it mostly paints in a map nothing was ever made in. A family
   narrows that set rather than the library, which runs 26 maps (lime) to 78 (orange) and is
   plenty for sixteen recolours drawn with repetition — and it makes All the superset of
@@ -1513,9 +1513,9 @@ the page had a better reason to say.
 
 ## Every colormap, and where they live
 
-The page carries **1,021** maps, which is the whole tracked library, and it used to carry
+The page carries **1,022** maps, which is the whole tracked library, and it used to carry
 126. The reason is a gallery seat: a link built from a seat's recipe has to be able to
-name the map that seat was drawn in, and the published record alone seats **451 distinct
+name the map that seat was drawn in, and the general record alone seats **444 distinct
 maps**. The 126 were the curated set plus whatever this site's own figures happened to
 land in, which is a set that answers "can this figure be opened" and not "can any seat
 be".
@@ -1557,7 +1557,7 @@ rather than a bend nobody sees.
 **Two readings ride in the index that the library does not hold.** `family` is the hue
 family a map most often *produces* — the modal leading entry of `colour.families` over
 the candidate-ledger rows drawn in it whose fine-head `p_ge4` clears
-`solve.DEFAULT_FINE_BAR`, absent where it has no such row, **929 of 1,021 have one** —
+`solve.DEFAULT_FINE_BAR`, absent where it has no such row, **947 of 1,022 have one** —
 and `seats` is how many seats of the published record were drawn in it. Neither is a fact
 about the gradient and both are frozen in `palettes.jsonl` rather than derived at bake
 time, because the ledger is written to while a bake runs and a picker's metadata that
@@ -3169,10 +3169,10 @@ v · f · cx · cy · px · py · zx · zy · m · the mode's parameters · x ·
 - **`p`** — a palette **name**, which must be one the page carries. Names and never
   indices: a colormap added next year must not repaint a link saved this year. **The set
   a link may name is wider than the set the picker offers**: a link may name any of the
-  library's **1,021** maps and the picker lists **77** of them. It used to be the curated
+  library's **1,022** maps and the picker lists **77** of them. It used to be the curated
   set plus whatever this site's own figures landed in, which answered "can this figure be
-  opened" and not "can any gallery seat be" — and 451 distinct maps are seated in the
-  published record alone. A link arriving on an unoffered map draws it, and the picker
+  opened" and not "can any gallery seat be" — and 444 distinct maps are seated in the
+  general record alone. A link arriving on an unoffered map draws it, and the picker
   shows that map for as long as it is the one on the screen.
 - **The seven shade keys** are the engine's own `Palette` recipe, one key per real engine
   parameter, at the engine's defaults, handed to the module exactly as they are read
