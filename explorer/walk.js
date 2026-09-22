@@ -28,7 +28,7 @@
 //
 // **Nothing persists unless it is saved.** Found pictures are blob URLs in this page's
 // memory, and a reload forgets them. Each tile is a permalink, which is how one outlives
-// the page: its save mark, or Save all found, puts it on the Saved tab *(saved_tab_ckpt131)*.
+// the page: its save mark puts it on the Saved tab *(saved_tab_ckpt131)*.
 
 import * as link from "./permalink.js";
 import { SETTLED } from "./catalog.js";
@@ -160,16 +160,31 @@ const DEFAULTS = {
   julia: true,
   modes: MODES_DEFAULT,
   palettes: PALETTES_ALL,
-  widest: 1e-3,
-  narrowest: 1e-4,
-  steps: 14,
-  patience: 0.2,
-  keep: 1,
-  bar: 0.5,
-  // Recipes rank on the number the tile shows *(saved_tab_ckpt131_addendum1)*: the fine
-  // head is an opt-in, and nothing of it downloads until it is ticked.
-  fine: false,
 };
+
+/**
+ * **What the walk is tuned to, frozen** *(Matt, explorer_controls_ckpt140, 2026-09-22)*.
+ *
+ * These seven were the *Depth* and *At a place* rows of the config, and every one of them
+ * feeds what the walk does rather than what it shows — the width its root is drawn between,
+ * when a descent calls a peak, how many recipes a place keeps, what score it has to clear to
+ * be painted at all. The rows are gone, and each value is fixed at what its control opened
+ * at, so the walk behaves exactly as it did with nobody touching them, which is how it was
+ * nearly always run. They are constants and no longer `config`: what a reader can still
+ * choose is the four things above, and nothing writes these.
+ *
+ * `FINE` false is the one worth naming twice. Ticked, it ranked recipes on the gallery's
+ * fine head and downloaded 5.1 MB to do it; unticked, recipes rank on the P≥4 the tiles
+ * show *(saved_tab_ckpt131_addendum1)*. The loading path is still here and is now reachable
+ * only by editing this line — see `mine`.
+ */
+const WIDEST = 1e-3;
+const NARROWEST = 1e-4;
+const STEPS = 14;
+const PATIENCE = 0.2;
+const KEEP = 1;
+const BAR = 0.5;
+const FINE = false;
 
 /** Where a composite's texture weight opens when this page derives none for its mode: the
  *  explorer's own hand-switch default, `TEXTURE_DEFAULT`. */
@@ -722,8 +737,8 @@ export function mount(host) {
     }
 
     function render() {
-      const order = config.fine ? [...tried].sort((x, y) => y.rank - x.rank) : tried;
-      const kept = new Set([...tried].sort((x, y) => y.rank - x.rank).slice(0, config.keep));
+      const order = FINE ? [...tried].sort((x, y) => y.rank - x.rank) : tried;
+      const kept = new Set([...tried].sort((x, y) => y.rank - x.rank).slice(0, KEEP));
       const tiles = order.map((one) => {
         const tile = document.createElement("figure");
         tile.className = "walk-candidate";
@@ -795,10 +810,6 @@ export function mount(host) {
        *  direct trap's picture has no second one. */
       none(count) {
         expected -= count;
-        render();
-      },
-      /** The fine head or the kept count changed: the order and the outlines follow. */
-      refresh() {
         render();
       },
     };
@@ -900,27 +911,6 @@ export function mount(host) {
     return section;
   }
 
-  function number(parent, label, value, { min, max, step }, onChange, title = "") {
-    const box = document.createElement("label");
-    box.className = "walk-number";
-    if (title) box.title = title;
-    const input = document.createElement("input");
-    input.type = "number";
-    input.className = "param";
-    Object.assign(input, { min, max, step, value });
-    input.addEventListener("change", () => {
-      const read = Number(input.value);
-      if (Number.isFinite(read) && read >= min && read <= max) {
-        onChange(read);
-      } else {
-        input.value = String(value);
-      }
-    });
-    box.append(`${label} `, input);
-    parent.append(box);
-    return input;
-  }
-
   function buildConfig() {
     const planes = group("Planes", "A walk picks one of these at random.");
     for (const family of PLANES) {
@@ -986,62 +976,8 @@ export function mount(host) {
       },
     );
 
-    const depth = group(
-      "Depth",
-      "The root's width is drawn log-uniformly between the first two; the descent below it stops where the judge peaks, or at the step cap.",
-    );
-    number(depth, "widest", config.widest, { min: 1e-6, max: 1, step: "any" }, (v) => {
-      config.widest = v;
-    });
-    number(depth, "narrowest", config.narrowest, { min: 1e-9, max: 1, step: "any" }, (v) => {
-      config.narrowest = v;
-    });
-    number(
-      depth,
-      "steps, at most",
-      config.steps,
-      { min: 4, max: 40, step: 1 },
-      (v) => {
-        config.steps = v;
-      },
-      "A walk stops at this many steps whether or not the descent has peaked. Each rung halves the width.",
-    );
-    number(
-      depth,
-      "peak counts from P≥3",
-      config.patience,
-      { min: 0, max: 1, step: 0.01 },
-      (v) => {
-        config.patience = v;
-      },
-      "A descent can stop on a peak only once its best rung has scored this. Under it, the descent keeps going down.",
-    );
-
-    const mining = group("At a place");
-    number(mining, "kept", config.keep, { min: 1, max: RECOLOURS, step: 1 }, (v) => {
-      config.keep = v;
-      candidates.refresh();
-    });
-    number(
-      mining,
-      "bar, P≥3",
-      config.bar,
-      { min: 0, max: 1, step: 0.01 },
-      (v) => {
-        config.bar = v;
-      },
-      "The render judge's probability that a place's smooth picture is at least a 3. A place under it is not colored.",
-    );
-    checkbox(
-      mining,
-      "rank with the gallery's fine head",
-      config.fine,
-      (on) => {
-        config.fine = on;
-        candidates.refresh();
-      },
-      "Keep recipes by the fine head the gallery ranks on, rather than by the P≥4 the tiles show. Downloads 5.1 MB the next time a place is mined.",
-    );
+    // *Depth* and *At a place* were two more groups here until 2026-09-22. What they set is
+    // frozen at the top of this file — see `WIDEST` and the six beside it.
   }
 
   // ----------------------------------------------------------------- start and pause
@@ -1544,11 +1480,11 @@ export function mount(host) {
    */
   async function descend(family) {
     const box = boxOf(family);
-    const lo = Math.log(config.narrowest);
-    const hi = Math.log(config.widest);
+    const lo = Math.log(NARROWEST);
+    const hi = Math.log(WIDEST);
     const target = Math.exp(lo + Math.random() * (hi - lo));
-    const first = Math.max(1, Math.ceil(Math.log2(box.w / config.widest)));
-    const last = Math.max(first, Math.floor(Math.log2(box.w / config.narrowest)));
+    const first = Math.max(1, Math.ceil(Math.log2(box.w / WIDEST)));
+    const last = Math.max(first, Math.floor(Math.log2(box.w / NARROWEST)));
     const bottom = Math.min(last, Math.max(first, Math.round(Math.log2(box.w / target))));
 
     const row = { family, target, bottom, rungs: [], probes: 0, backs: 0, refused: 0, outcome: "descending" };
@@ -1694,7 +1630,7 @@ export function mount(host) {
       } else {
         behind += 1;
       }
-      if (best.read.p3 >= config.patience && behind >= patienceOf(best.read.p3)) {
+      if (best.read.p3 >= PATIENCE && behind >= patienceOf(best.read.p3)) {
         stop = "peak";
         break;
       }
@@ -1804,7 +1740,7 @@ export function mount(host) {
    * **And one dearer picture at some places**, a mode out of `DEAR_MODES` drawn in full,
    * where the place before this one did not take one.
    *
-   * Every candidate is gated and ranked together and `config.keep` are kept, exactly as
+   * Every candidate is gated and ranked together and `KEEP` are kept, exactly as
    * before: what changed is what a place is painted in, not how the best of it is chosen.
    */
   async function mine(place, where) {
@@ -1817,7 +1753,7 @@ export function mount(host) {
     const dear = rich.length > 0 && sinceDear > 0 && !DEAR_MODES.has(base) ? pick(rich) : null;
     candidates.begin(RECOLOURS + (dear === null ? 0 : 1), where);
     // A pause mid-download stops it, and the walk asks again when it is started again.
-    while (config.fine && scorer !== null && scorer.fineSession === null && !fineless) {
+    while (FINE && scorer !== null && scorer.fineSession === null && !fineless) {
       const { signal, shown, done } = downloading("the fine judge");
       try {
         await scorer.loadFine((what, got, of) => shown(got, of), signal);
@@ -1864,7 +1800,7 @@ export function mount(host) {
       );
       const read = await gated(image);
       let fine = null;
-      if (config.fine && scorer?.fineSession) {
+      if (FINE && scorer?.fineSession) {
         const started = performance.now();
         fine = await scorer.fine(image);
         timed("fine", started);
@@ -1927,7 +1863,7 @@ export function mount(host) {
     }
     sinceDear = dear === null ? sinceDear + 1 : 0;
     tried.sort((x, y) => y.rank - x.rank);
-    const kept = tried.slice(0, config.keep);
+    const kept = tried.slice(0, KEEP);
     for (const one of kept) await keep(one);
     // A place ends on the picture it kept rather than on whichever colouring happened to be
     // drawn last *(walk_faster_ckpt138)*, and that is the frame the next walk's root search
@@ -2000,14 +1936,14 @@ export function mount(host) {
       for (const other of host.found.querySelectorAll(".tile")) other.classList.toggle("is-open", other === tile);
       host.open(query, "this found picture");
     });
-    // The save mark beside it, and the head's Save all found once there is anything to
-    // save *(saved_tab_ckpt131)*. Found pictures last until the page closes; saved ones stay.
+    // The save mark beside it *(saved_tab_ckpt131)*: one tile at a time is the whole of how
+    // a found picture is kept now that *Save all found* is gone
+    // *(Matt, explorer_controls_ckpt140, 2026-09-22)*, and the tally that stood under the
+    // list went with it — the tiles are the count, and they are in front of the reader.
     const cell = document.createElement("div");
     cell.className = "tile-cell";
     cell.append(tile, host.mark(query));
-    host.saveAll.hidden = false;
     host.found.prepend(cell);
-    host.note.textContent = `${found.length} found. They last until the page is closed.`;
   }
 
   // ----------------------------------------------------------------- the loop
@@ -2043,8 +1979,8 @@ export function mount(host) {
       /** Whether the strip ends on a place that was mined; one that does not lingers. */
       let mined = false;
       /** The steps this walk has left, spent by both legs *(walk_faster_ckpt138)*. */
-      const budget = { left: config.steps };
-      row.steps = config.steps;
+      const budget = { left: STEPS };
+      row.steps = STEPS;
       for (let index = 0; index < legs.length; index++) {
         const one = legs[index];
         const leg = performance.now();
@@ -2075,7 +2011,7 @@ export function mount(host) {
         });
         phase = "deep";
         const best = await deepen(one.family, one.frame, judged, one.constants, budget);
-        const over = best.read.p3 >= config.bar;
+        const over = best.read.p3 >= BAR;
         // The peak card is outlined and says the verdict; where it is also the last card,
         // the verdict follows why the descent stopped.
         const peak = best.card ?? best.last;
@@ -2096,7 +2032,7 @@ export function mount(host) {
           stop: best.stop,
           alone: row.deep?.at(-1)?.alone ?? false,
           p3: read.p3,
-          mined: read.p3 >= config.bar,
+          mined: read.p3 >= BAR,
           deep_ms: Math.round(performance.now() - leg),
         });
         if (!over) continue;
@@ -2126,13 +2062,6 @@ export function mount(host) {
   let hiddenGoing = false;
 
   host.back.addEventListener("click", attach);
-  host.saveAll.addEventListener("click", () => {
-    const tally = host.keepAll(found.map(({ query }) => query));
-    const said = tally.added === 0
-      ? "Every found picture is already saved."
-      : `Saved ${tally.added} found ${tally.added === 1 ? "picture" : "pictures"}.`;
-    host.note.textContent = tally.full > 0 ? `${said} Saved is full, so ${tally.full} were left out.` : said;
-  });
 
   return {
     running: () => state === "running",

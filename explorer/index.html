@@ -75,6 +75,9 @@
     </div>
 
     <div class="tabpanel" id="panel-walk" role="tabpanel" aria-labelledby="tab-walk" hidden>
+      <p class="side-note walk-about">This visualizes a guided walk through escape-time
+      fractals. It is mostly a demonstration of how the process works: the shipped galleries
+      are what came out of running it continuously for many weeks.</p>
       <div class="walk-head">
         <details class="walk-config" id="walk-config">
           <summary class="section-head"><h2>Walk config</h2></summary>
@@ -88,10 +91,12 @@
       </div>
       <div class="section-head walk-found-head">
         <h2 id="head-walk-found">Found</h2>
-        <button type="button" class="head-action" id="walk-save-all" hidden>Save all found</button>
       </div>
       <div class="tiles walk-found" id="walk-found" role="group" aria-labelledby="head-walk-found"></div>
-      <p class="side-note" id="walk-note">Nothing found yet. Found pictures last until the page is closed.</p>
+      <!-- Written by nothing but the load-failure path in `explorer.js` now that the tally
+           line is gone: the count said what the tiles already show, and the sentence beside
+           it repeated a claim this tab no longer makes. -->
+      <p class="side-note" id="walk-note"></p>
     </div>
 
     <div class="tabpanel" id="panel-deep" role="tabpanel" aria-labelledby="tab-deep" hidden>
@@ -231,12 +236,13 @@
           <span class="estimate" id="download-estimate"></span>
           <span class="view-toggles" id="view-toggles" role="group" aria-label="View"
                 title="Ctrl+Z (Cmd+Z) steps back through the pictures this session has shown; Ctrl+Shift+Z or Ctrl+Y steps forward.">
-            <button type="button" id="view-seat" aria-keyshortcuts="S">Reset to seat (s)</button>
+            <button type="button" id="view-seat">Reset to seat</button>
             <button type="button" id="view-whole" aria-keyshortcuts="R">Whole Mandelbrot (r)</button>
             <button type="button" id="view-julia" aria-keyshortcuts="J">Julia here (j)</button>
-            <span class="view-random">
-              <button type="button" id="view-palette" aria-keyshortcuts="P">Random palette (p)</button>
-              <button type="button" id="view-phase" aria-keyshortcuts="Shift+P">Random phase (shift+p)</button>
+            <span class="group level" id="julia-preview-group">
+              <label for="julia-preview-on">Julia preview</label>
+              <input type="checkbox" id="julia-preview-on" class="flag"
+                     title="On a parameter plane, shows the Julia set under the pointer; a click there opens it.">
             </span>
           </span>
         </div>
@@ -254,6 +260,8 @@
         <div class="section-head">
           <h2>Palette: <span id="palette-shown"></span></h2>
           <button type="button" class="head-action" id="palette-reset">Reset palette</button>
+          <button type="button" class="head-action" id="view-palette" aria-keyshortcuts="P">Random palette (p)</button>
+          <button type="button" class="head-action" id="view-phase" aria-keyshortcuts="H">Random phase (h)</button>
         </div>
         <canvas class="palette-final" id="palette-strip" width="512" height="1" role="img"
                 aria-label="The palette as this view applies it, from the lowest value to the highest"></canvas>
@@ -262,11 +270,6 @@
             <label for="level-toggle">Autolevel</label>
             <input type="checkbox" id="level-toggle" class="flag"
                    title="Fits the palette's brightness and contrast to the picture.">
-          </span>
-          <span class="group level" id="julia-preview-group">
-            <label for="julia-preview-on">Julia preview</label>
-            <input type="checkbox" id="julia-preview-on" class="flag"
-                   title="On a parameter plane, shows the Julia set under the pointer; a click there opens it.">
           </span>
         </div>
         <p class="help" id="shade-note"></p>

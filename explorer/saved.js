@@ -203,7 +203,7 @@ export class Saved {
   }
 
   /**
-   * Add many links at once, as an import or *Save all found* does, and write once.
+   * Add many links at once, as an import does, and write once.
    * `entries` is `[{ link, added }]` in the order they should end up in, newest first; an
    * entry without a time is stamped now. Returns `{ added, already, refused, full }`.
    */

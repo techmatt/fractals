@@ -186,8 +186,11 @@ const shadeBar = document.getElementById("shade-bar");
 const shadeReset = document.getElementById("palette-reset");
 const shadeNote = document.getElementById("shade-note");
 const levelGroup = document.getElementById("level-group");
-const juliaPreviewGroup = document.getElementById("julia-preview-group");
 const levelToggle = document.getElementById("level-toggle");
+/** Named here and not only at the mount, because a download has to grey it: it used to be
+ *  swept with the shade bar it sat in, and beside Julia here there is no sweep over it
+ *  *(explorer_controls_ckpt140)*. */
+const juliaPreviewToggle = document.getElementById("julia-preview-on");
 const details = document.getElementById("details");
 const paletteStrip = document.getElementById("palette-strip");
 const paletteShown = document.getElementById("palette-shown");
@@ -422,7 +425,9 @@ function setBusy(on) {
   // A download is about to have every core it can get, and a hover is not what they are
   // for. `previewable` keeps it away until the download is done.
   if (on) juliaCard?.hide();
-  for (const control of [familyPicker, modePicker, levelToggle]) control.disabled = on;
+  for (const control of [familyPicker, modePicker, levelToggle, juliaPreviewToggle]) {
+    control.disabled = on;
+  }
   syncCopy();
   for (const strip of [constantStrip, coordinateStrip, paramStrip]) {
     for (const control of strip.querySelectorAll("input")) control.disabled = on;
@@ -1815,9 +1820,11 @@ function buildShade() {
     shadeWidgets.set(control.key, held);
     shadeBar.append(group);
   }
-  // Autolevel and the Julia preview are written in the page rather than built here, and
-  // close the row: both are settings a reader turns, and neither is a key a link carries.
-  shadeBar.append(chips, levelGroup, juliaPreviewGroup);
+  // Autolevel is written in the page rather than built here and closes the row: it is a
+  // setting a reader turns rather than a key a link carries. The Julia preview was the
+  // other one until it moved beside Julia here *(explorer_controls_ckpt140)*, which is
+  // where the thing it previews is.
+  shadeBar.append(chips, levelGroup);
 }
 
 /** The one action on the Palette header. It is disabled with nothing to put back, and its
@@ -2655,8 +2662,6 @@ async function startWalk() {
       showCells: (cells) => showOverlay(cells === null ? null : { family: view.family, cells }),
       open: (query, what) => openLink(query, { what }),
       mark: (query) => saving.mark(saved, canonicalOf(query)),
-      saveAll: document.getElementById("walk-save-all"),
-      keepAll: (queries) => saved.merge(queries.map((query) => ({ link: query }))),
       busy: () => busy,
       aspect: () => (grid.width > 0 ? grid.height / grid.width : 9 / 16),
     });
@@ -3254,8 +3259,10 @@ familyPicker.addEventListener("change", () => {
 
 // ------------------------------------------------------------------- the view toggles
 //
-// Five buttons at the right of the Download row, each with a key. They are the whole of
-// this row on purpose: anything further is a shortcut, not chrome.
+// Three buttons at the right of the Download row, and the Julia preview box beside the
+// one it previews. They are the whole of this row on purpose: anything further is a
+// shortcut, not chrome. The two random ones are the Palette header's now
+// *(explorer_controls_ckpt140)* — what they change is the palette, so they sit with it.
 //
 // **The labels carry the state** *(explorer_view_buttons_ckpt130, 2026-09-17)*. Where the
 // row used to say `Reset view` and `Back` — two words that mean nothing until you know
@@ -3277,12 +3284,16 @@ const randomPhaseButton = document.getElementById("view-phase");
  *
  * **A button with a shortcut says so in its own words**, rather than in a tooltip nobody
  * on a touchscreen can open and nobody else hovers long enough to find. The key is spelled
- * the way it is pressed — a bare lowercase letter, `shift+p` where Shift is held — and
- * `TOGGLE_KEYS` below is the table that actually binds them, so a key added there is a
- * label to add here. The two buttons whose words never change spell theirs in `index.html`;
- * the three that name a plane or a seat are built here and take theirs from this.
+ * the way it is pressed — a bare lowercase letter — and `TOGGLE_KEYS` below is the table
+ * that actually binds them, so a key added there is a label to add here. The buttons whose
+ * words never change spell theirs in `index.html`; the two that name a plane are built here
+ * and take theirs from this.
+ *
+ * **Reset to seat has no key** *(Matt, explorer_controls_ckpt140, 2026-09-22)*, so it is
+ * not in here and not in `TOGGLE_KEYS` either. It is the one of these a reader presses
+ * deliberately rather than repeatedly.
  */
-const KEYS = { seat: "(s)", whole: "(r)", julia: "(j)" };
+const KEYS = { whole: "(r)", julia: "(j)" };
 
 /** What each button says on hover, where its own words do not already say it. The key is
  *  in the label now, so no tip carries one. Random palette and Random phase have none:
@@ -3334,7 +3345,7 @@ function syncToggles() {
   const onJulia = view.family in PARENT_PLANE;
 
   const opened = anchor === null ? "none" : anchor.opts.key ? "seat" : "link";
-  seatButton.textContent = opened === "link" ? `Reset to link ${KEYS.seat}` : `Reset to seat ${KEYS.seat}`;
+  seatButton.textContent = opened === "link" ? "Reset to link" : "Reset to seat";
   seatButton.title = TOGGLE_TIPS[opened];
   seatButton.disabled = busy || anchor === null || pictureKey(view) === anchor.at;
 
@@ -3533,14 +3544,17 @@ for (const [event, on] of [["pointerenter", true], ["focus", true], ["pointerlea
   juliaButton.addEventListener(event, () => hoverJulia(on));
 }
 
-/** The five toggles' keys. A bare letter, or Shift and one; with Ctrl, Alt or Meta held a
- *  key is the browser's. Every one of them is on the face of its button — see `KEYS`. */
+/** The keyed toggles. A bare lowercase letter; with Ctrl, Alt or Meta held a key is the
+ *  browser's. Every one of them is on the face of its button — see `KEYS`.
+ *
+ *  **Random phase is `h`** *(Matt, explorer_controls_ckpt140, 2026-09-22)*, where it was
+ *  `shift+p`: this page had no other binding on `h`, so nothing was rebound to free it.
+ *  Every key here is now a bare letter, which is the whole of how they are spelled. */
 const TOGGLE_KEYS = {
-  s: resetToSeat,
   r: wholePlane,
   j: toggleJulia,
   p: randomPalette,
-  P: randomPhase,
+  h: randomPhase,
 };
 
 /** A new mode keeps the place and drops the parameters, because they belonged to
@@ -3947,7 +3961,7 @@ async function main() {
     readout: document.getElementById("julia-preview-c"),
     fallen: document.getElementById("julia-preview-fell"),
     off: document.getElementById("julia-preview-off"),
-    toggle: document.getElementById("julia-preview-on"),
+    toggle: juliaPreviewToggle,
     // The view entering would give, which is the whole point of the card.
     viewFor: (cx, cy) => juliaViewOf(link.coordinateOf(cx), link.coordinateOf(cy)),
     // The same two facts the download row asks for: whether this view measures its own

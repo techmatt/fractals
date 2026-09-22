@@ -226,19 +226,23 @@ beside a viewer that draws the place it stands for than beside a link that leave
 the folded Details: the render stat line, family, constants, `x`, `y`, `w`, all editable. Copy link is in the bar,
 because it is about the page rather than about a group.
 
-**Five view buttons close the Download row** *(explorer_view_buttons_ckpt130, 2026-09-17)*,
-at its right end, **each with its key on its own face** *(Matt, explorer_ui_text_ckpt139,
-2026-09-21)* — `Julia here (j)`, spelled the way it is pressed, because a tooltip is not
-something a reader on a touchscreen can open or a reader on a mouse hovers long enough to
-find. `KEYS` in `explorer.js` spells the three the page builds and `index.html` the two
-whose words never change; `TOGGLE_KEYS` is what binds them, so a key added there is a label
-to add. No tooltip carries a key now, and the two of them that only restated their button's
-own words are gone. **The labels carry the state** as well, so that the row says where the
-reader is standing — which is why this page has no status strip and no breadcrumb:
+**Three view buttons close the Download row** *(explorer_view_buttons_ckpt130, 2026-09-17;
+five until explorer_controls_ckpt140, 2026-09-22)*, at its right end, **each with its key on
+its own face** *(Matt, explorer_ui_text_ckpt139, 2026-09-21)* — `Julia here (j)`, spelled the
+way it is pressed, because a tooltip is not something a reader on a touchscreen can open or a
+reader on a mouse hovers long enough to find. `KEYS` in `explorer.js` spells the two the page
+builds and `index.html` the one whose words never change; `TOGGLE_KEYS` is what binds them, so
+a key added there is a label to add. No tooltip carries a key now, and the two of them that
+only restated their button's own words are gone. **The labels carry the state** as well, so
+that the row says where the reader is standing — which is why this page has no status strip
+and no breadcrumb:
 
-- **Reset to seat (s)** — the picture the viewer was opened at, put back exactly as opening
-  it did: frame, mode, palette and recipe, the tile marked again, and the sentence about
-  what its link could not carry back under the canvas. It says **Reset to link** where what
+- **Reset to seat** — **no key** *(Matt, explorer_controls_ckpt140)*, where it had `s`: it is
+  the one of these a reader presses deliberately rather than repeatedly, and a key on it is a
+  picture lost to a stray keystroke. It is in neither `KEYS` nor `TOGGLE_KEYS`. The picture
+  the viewer was opened at, put back exactly as opening it did: frame, mode, palette and
+  recipe, the tile marked again, and the sentence about what its link could not carry back
+  under the canvas. It says **Reset to link** where what
   was opened was an atlas mark or a pasted address rather than a gallery tile — the split
   the tuned-parameter note already makes — and a bare page opened at nothing, so its button
   is greyed and its tooltip says so. The anchor is the last thing that *arrived* and not the
@@ -254,10 +258,25 @@ reader is standing — which is why this page has no status strip and no breadcr
   drawn at the view's centre, so *here* is a point on the picture rather than a word on a
   button. **A click on the picture does the same at the pointer's own `c`** — see *The
   Julia preview under the pointer* — and the key is still the centre's, deliberately.
+
+And beside them, **the Julia preview checkbox** *(Matt, explorer_controls_ckpt140)*, which
+was on the Autolevel row until this prompt. It sits with `Julia here (j)` because that is the
+button it previews. Nothing about its behaviour moved — off by default, per-tab in
+`sessionStorage`, never in a link — but two things about its surroundings did: it is greyed
+during a download by being named in `setBusy` rather than by being swept with `#shade-bar`,
+and it is hidden in the Deep tab with the buttons it now sits among, which is right rather
+than incidental, because `previewable` is false while that tab owns the view.
+
+**Random palette and Random phase are the Palette header's** *(Matt,
+explorer_controls_ckpt140)*, beside `Reset palette`, where they had been at the end of this
+row. What they change is the palette, so they sit with it:
+
 - **Random palette (p)** — one of the **232** maps that seated more than one wallpaper in
   the published record, never the one on screen. The list is the wallpaper project's own
   and rides in the baked index as a flag per map; every other map is still a hand pick.
-- **Random phase (shift+p)** — to three decimals.
+- **Random phase (h)** — to three decimals. It was `shift+p` until
+  *explorer_controls_ckpt140*; this page had no other binding on `h`, so **nothing was
+  rebound** to free it, and every key the page takes is now a bare lowercase letter.
 
 Inside a Julia set the third button is **Back to ⟨parent plane⟩** — `Back to Mandelbrot` —
 on every Julia set and not only one this tab opened: where this tab did, the parent view is
@@ -485,6 +504,18 @@ is the pan.
 
 ## The walk *(walk_tab_ckpt131, 2026-09-18)*
 
+**The tab says what it is, at the top** *(Matt, explorer_controls_ckpt140, 2026-09-22)* —
+one sentence above Walk config, and the first thing in the panel:
+
+> This visualizes a guided walk through escape-time fractals. It is mostly a demonstration
+> of how the process works: the shipped galleries are what came out of running it
+> continuously for many weeks.
+
+Matt's wording, placed verbatim but for one word: he wrote *orbital fractals*, and the site
+teaches **escape-time fractals** — §Escape-time fractals is a ratified section and *orbital*
+appears nowhere on the site, so the naming rule takes the article's own term. *guided walk*
+and *galleries* are the site's words already.
+
 The third tab runs a simplified version of the mining pipeline, and the viewer shows it
 choosing. **It never starts on its own**: `panel=walk` in an address opens the tab, and only
 Start starts a walk. Hiding the tab pauses it, and so does Pause; nothing else does
@@ -543,17 +574,17 @@ walk runs and whether the viewer follows it are two states, `state` and `attache
    straddling ones are jittered, screened and judged, and the walk goes into the best. The
    probe runs at the width's own `maxiter_for_width`. It stops at the first of:
    - a **peak**, counted only once the best rung seen, root included, has cleared the
-     patience floor (P≥3 0.20 by default, *peak counts from P≥3* under Depth). After that
-     it is a peak when the score has stayed under that best for two rungs running while
-     the best is under 0.5, and for three once it is over. Below the floor there is no
+     patience floor (P≥3, frozen at 0.20 — `PATIENCE`). After that it is a peak when the
+     score has stayed under that best for two rungs running while the best is under 0.5,
+     and for three once it is over. Below the floor there is no
      peak, and the descent goes on to one of the three below *(walk_tune_ckpt131)*;
    - the **floor**: `f64` would no longer resolve the mining grid (`resolution_ulps`);
    - the **step cap** *(walk_faster_ckpt138)*: the walk's budget is down to what the place
      it has found needs to be painted. **A step is a card in the strip** — the frame the
      walk stands in, each rung under it, the twin's home frame, and the place being painted,
      however many colourings that place is tried in — and **a walk gets fourteen of them,
-     both legs together** (*steps, at most*, under Depth). It was 20 rungs **per leg**, and
-     a walk could therefore show forty: measured, one did — 40 rungs, 42 steps, 166 s, and
+     both legs together** (`STEPS`). It was 20 rungs **per leg**, and a walk could
+     therefore show forty: measured, one did — 40 rungs, 42 steps, 166 s, and
      it painted nothing at either end of it. Over a dozen walks the old rule ran to a median
      of 14 steps and a p90 of 21. The budget holds back one step for the mining, because a
      walk that descended until it ran out and then drew nothing would be shorter and worse,
@@ -594,8 +625,8 @@ walk runs and whether the viewer follows it are two states, `state` and `attache
      drawn in full, where the place before this one did not take one, so two never run
      together.
    - Each candidate is scored by the gate's P≥4 and they are ranked together, and the best
-     are kept as tiles (one by default, *kept* in the config). The fine head ranks instead
-     where the config ticks it.
+     are kept as tiles (one, frozen — `KEEP`). The fine head does not rank them: it is off
+     and no longer offered.
 
    It used to be **one recipe per ticked mode** *(walk_view_ckpt132)*, eight at the default
    ticks, each its own field — and before that three draws over modes × palettes (hunt and
@@ -603,6 +634,21 @@ walk runs and whether the viewer follows it are two states, `state` and `attache
    demonstration of how the galleries were made rather than the way anybody gets a good
    picture, so it buys its variety where variety is nearly free. What a place costs either
    way is under *What a walk costs* in §Measured.
+
+**The config is four choices, and the tuning is frozen** *(Matt, explorer_controls_ckpt140,
+2026-09-22)*. It was six groups; *Depth* and *At a place* are gone, and the seven numbers
+behind them are constants at the top of `walk.js` — `WIDEST` 1e-3, `NARROWEST` 1e-4, `STEPS`
+14, `PATIENCE` 0.20, `KEEP` 1, `BAR` 0.50, `FINE` false. Every one of them fed what the walk
+*does* rather than what it shows, so each is fixed at what its control opened at and the walk
+behaves exactly as it did with nobody touching them — which is how it was nearly always run.
+This tab demonstrates how the galleries were made; a demonstration does not ship seven spin
+boxes of tuning. What is left to choose is Planes, the Julia twin, Modes and Palettes.
+
+⚠ **`FINE` false makes one path unreachable.** `mine` still carries the fine-head download
+and `judges.js` still carries `loadFine`, `fineSession` and `fine`, and nothing on the page
+can now reach any of it; editing that one line is what brings it back. It was left in rather
+than cut because the ruling was to freeze the behaviour, and cutting it reaches well past
+this tab.
 
 The config's defaults are the pipeline's draw where the page can make one. **Modes is the
 walk's own roster and not the pipeline's** *(walk_faster_ckpt138)* — `smooth`, `tia` and
@@ -757,11 +803,13 @@ contract has no key for it and nothing a link opens sets it.
   displayed number and a ranking number that disagree make a kept tile read as a mistake:
   under the old default the walk could keep a picture badged lower than one it had just
   passed over.
-- **The fine head is an opt-in**: *rank with the gallery's fine head*, under *At a place*
-  in the config. Ticked, recipes rank on the fine head's P≥4, the solve's own key, while the
-  badge still shows the gate's. It downloads the next time a place is mined, and not before.
-  The member's reading lives far below 0.01 and only means something beside the
-  member-versus-mean caveat below, which is why it is never on the badge.
+- **The fine head was an opt-in and is now off**, `FINE` *(explorer_controls_ckpt140)*. The
+  tick — *rank with the gallery's fine head*, under *At a place* — went with the row it was
+  in. On, recipes ranked on the fine head's P≥4, the solve's own key, while the badge still
+  showed the gate's, and it downloaded the next time a place was mined and not before. The
+  member's reading lives far below 0.01 and only means something beside the
+  member-versus-mean caveat below, which is why it was never on the badge. The code below is
+  what it did; nothing on the page reaches it now.
 - **The fine head in use is one member, seed 0** *(walk_tab_ckpt131_addendum1)*. The
   pipeline's `p_fine` is the mean of three seeds, so the member's reading is not the solve's
   number. The fused three-seed graph is an opt-in, `--fused` below; it lands under the same
@@ -819,7 +867,11 @@ Until Matt says deploy, Pages serves a Walk tab that runs on the screen alone.
 **Nothing persists unless it is saved.** A found tile is a blob URL and a permalink that
 writes the weight or opacity in force. Clicking one opens it through `openLink` and detaches
 the viewer, and the walk carries on. A reload forgets them all, except the ones saved by
-their mark or by *Save all found* at the head of the list, which go to the Saved tab below.
+their mark, which go to the Saved tab below. **One tile at a time is the whole of it**
+*(Matt, explorer_controls_ckpt140)*: *Save all found* at the head of the list is gone, and so
+is the tally that stood under it — the tiles are the count, and they are in front of the
+reader. `#walk-note` survives as the slot `explorer.js` writes *The walk could not be loaded.*
+into, and is empty otherwise.
 
 ## Deep *(build_deep_tab_ckpt135, 2026-09-19; the Julia case deep_julia_at_c_ckpt136, 2026-09-20)*
 

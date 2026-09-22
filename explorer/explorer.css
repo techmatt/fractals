@@ -686,8 +686,7 @@ summary.section-head:focus-visible { outline: 2px solid var(--well-link); outlin
   color: var(--well-link);
 }
 .walk-hint { flex-basis: 100%; margin: 0; color: var(--well-ink-dim); font-size: 0.75rem; }
-.walk-check, .walk-number { white-space: nowrap; color: var(--well-ink-dim); }
-.walk-number input { width: 5.5rem; }
+.walk-check { white-space: nowrap; color: var(--well-ink-dim); }
 /* A family's radio wears the wheel's own dot, the same mark the gallery panel's hue chips
    wear. `.hue` above is the dot and is not restated here; the map count that used to
    follow it is gone (`explorer_ui_text_ckpt139` addendum 2). */
@@ -1038,10 +1037,14 @@ summary.section-head:focus-visible { outline: 2px solid var(--well-link); outlin
 }
 
 /* The view buttons: the right end of the Download row, which the estimate leaves room for
-   by taking what is between. Each one's shortcut is its tooltip. Where the row wraps they
-   wrap with it, as one group, and inside the group they wrap in their own order — so the
-   two random ones go to a second line first, and the three that say where the reader is
-   stay together as long as anything does. */
+   by taking what is between. Each one's key is on its own face. Where the row wraps they
+   wrap with it, as one group.
+
+   **Three buttons and a checkbox now** *(explorer_controls_ckpt140, 2026-09-22)*. The two
+   random ones left for the Palette header, and the Julia preview box came the other way to
+   sit beside Julia here, which is the button it previews. The box is the group's last item
+   so that it is what goes to a second line first: the three buttons say where the reader is
+   standing and are what should stay together. */
 .download .view-toggles {
   display: inline-flex;
   flex-wrap: wrap;
@@ -1054,10 +1057,16 @@ summary.section-head:focus-visible { outline: 2px solid var(--well-link); outlin
   min-width: 0;
   margin-left: auto;
 }
-/* The two random ones are a pair and go to a second line together: they are the two that
-   say nothing about where the reader is, so they are what gives first when the row cannot
-   hold five. */
-.download .view-random { display: inline-flex; gap: 0.25rem; flex: none; }
+/* The preview box among the buttons: a label and a checkbox rather than a button, so it
+   takes its own alignment and the label's dim ink. `.bar.shade` used to give it both. */
+.download .view-toggles .group.level {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  flex: none;
+  color: var(--well-ink-dim);
+  font-size: 0.75rem;
+}
 
 /* The button is the progress bar: `--done` fills it from the left while a render draws,
    and its label is how far along it is. A fixed minimum width, so a label going from
@@ -1362,7 +1371,10 @@ canvas.palette-final {
 
 /* What goes with the shallow view is what is about the shallow view. Save, because the
    Deep panel carries its own; and the view buttons, every one of which names a frame this
-   kernel does not have — a seat, the whole Mandelbrot set, a Julia set at the pointer. */
+   kernel does not have — a seat, the whole Mandelbrot set, a Julia set at the pointer. The
+   Julia preview box rides along with them now that it sits there, which is right rather
+   than incidental: `previewable` is false while the Deep tab owns the view, so down here it
+   is a control that can do nothing. */
 .viewer.is-deep #download > .save-view,
 .viewer.is-deep #download > .view-toggles {
   display: none;
