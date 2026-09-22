@@ -235,7 +235,8 @@ its own face** *(Matt, explorer_ui_text_ckpt139, 2026-09-21)* — `Julia here (j
 way it is pressed, because a tooltip is not something a reader on a touchscreen can open or a
 reader on a mouse hovers long enough to find. `KEYS` in `explorer.js` spells the two the page
 builds and `index.html` the one whose words never change; `TOGGLE_KEYS` is what binds them, so
-a key added there is a label to add. No tooltip carries a key now, and the two of them that
+a key added there is a label to add. No tooltip carries a key now — with the one exception
+Julia here became when its key stopped doing what its button does, below — and the two of them that
 only restated their button's own words are gone. **The labels carry the state** as well, so
 that the row says where the reader is standing — which is why this page has no status strip
 and no breadcrumb:
@@ -264,7 +265,28 @@ and no breadcrumb:
   recipe carried. While the button is under the pointer or holding the focus, a crosshair is
   drawn at the view's centre, so *here* is a point on the picture rather than a word on a
   button. **A click on the picture does the same at the pointer's own `c`** — see *The
-  Julia preview under the pointer* — and the key is still the centre's, deliberately.
+  Julia preview under the pointer*.
+
+  ⚠ **The key and the button differ, and this is the only pair on the page that does**
+  *(Matt, explorer_box_shortcuts_ckpt140, 2026-09-22)*. `j` **with the pointer on the
+  picture** opens the `c` under the pointer; the button, and `j` with the pointer anywhere
+  else, is the centre's as it always was. A reader with the mouse over a cusp has already
+  chosen the `c` they mean, and panning it to the middle first is exactly the work the
+  preview card exists to save — but that card is off by default, so the saving was reaching
+  nobody who had not already gone looking for it. The key needs no card: `cursorC` reads
+  `hoverAt`, which every `pointermove` on the canvas keeps whether the preview may show or
+  not. Where the card *is* up it is the card's own `c` rather than a fresh projection, since
+  the card settles 90 ms behind the pointer and the key opening a Julia set a pixel from the
+  one on the screen is the drift the card was built to close. Because the label cannot hold
+  the difference without saying two things at once, **this is the one tooltip on the row
+  that carries a key** — the rule everywhere else being that a key lives on its label.
+
+  ⚠ **`hoverAt` is canvas pixels and never a plane coordinate**, and the Deep tab is gated
+  out of the cursor path by name. `planeAt` is the *shallow* viewer's projection and the
+  Deep tab draws its own frame on the same canvas, so a stored plane coordinate, or an
+  ungated read down there, would open a Julia set at a `c` computed from geometry that is
+  not the one on the screen — a plausible picture rather than a refusal, which is the worst
+  shape a mistake takes on this page. In the Deep tab `j` does what it always did.
 
 And beside them, **the Julia preview checkbox** *(Matt, explorer_controls_ckpt140)*, which
 was on the Autolevel row until this prompt. It sits with `Julia here (j)` because that is the
@@ -445,6 +467,29 @@ to set the width, click again to zoom to it.** `Esc` or `b` again cancels, an ar
 half-drawn box either way, and the tool disarms after one zoom — a reader who wants another
 asks for another.
 
+**Or start one without the key: a right-click, or a shift-click, on the picture** *(Matt,
+explorer_box_shortcuts_ckpt140, 2026-09-22)*. `b` then a click is two presses to say one
+thing, and neither button was doing anything on this canvas. That press is the **centring**
+click and not a second way to arm the tool, so the box is half-drawn from where it lands and
+the next press takes it — and that next press is an **ordinary click**, no modifier wanted,
+because a gesture that needs a key held to finish is a gesture nobody finishes. Everything
+after the start is the same code: the width follows the pointer, `Esc` or `b` cancels, the
+`Box (b)` button lights the moment the box exists, and a finish inside `BOX_LEAST` cancels
+as it always did. Measured in headless Chrome, both starts: 3 across → 1.5 for a box half
+the canvas wide, and the button `aria-pressed` true at the start and false after.
+
+⚠ **The context menu is refused on the canvas, and the latch is not decoration.** Windows
+fires `contextmenu` on mouse-**up** — Chrome and Firefox both — so the right press that
+*finishes* a box has already set `box` back to `null` by the time the menu arrives, and a
+gate on `box !== null` alone would let the menu open over the picture the reader just asked
+for. `boxedMenu` is set wherever the tool consumes a right press and cleared where the menu
+is refused. The listener is on the canvas element and **never on the document**, so every
+panel, tab, link and text box on this page keeps the browser's own menu; measured, two
+refusals on the canvas across a start and a finish and one menu allowed through on the site
+bar. What does go is *Save image as* on the canvas, which is the one thing this costs — the
+Download row is the way a picture leaves this page, and it leaves at a wallpaper's size
+rather than at the canvas's.
+
 **Every other way into a view on this page is incremental**, and that is what this is for.
 A wheel notch, an arrow key and a drag each move a little and each start a render; getting
 to a piece of filigree the reader can already see took a dozen of them, and a dozen renders.
@@ -585,7 +630,10 @@ sweeping the canvas for the whole of it against 105, 104 ms with the pointer sti
 **The gesture is a plain click, and only while the card is up.** That is what keeps it from
 surprising anybody: the reader is clicking a picture the page already has in front of them,
 and a click anywhere the card is not — every Julia set, Phoenix, the Deep tab, a running
-walk, the preview switched off — still does what it always did, which is take the focus. It
+walk, the preview switched off — still does what it always did, which is take the focus.
+**`j` needs no card** *(Matt, explorer_box_shortcuts_ckpt140, 2026-09-22)* and is the same
+`c`: a key is a deliberate press in a way a click on a picture is not, so it does not owe
+the reader a picture first — see *Julia here (j)* above. It
 enters at the `c` the card drew rather than at the pointer's own place, because the picture
 is what was chosen. It goes through the same `juliaTo` the button does, so Back to
 Mandelbrot returns to the frame that was left and Ctrl+Z steps back out of it, both for
@@ -2532,7 +2580,17 @@ that wraps on a phone, and both said a word the heading over them already says. 
 keep `Download PNG` and `Download JPG` as their `aria-label`, so the accessible name did not
 shrink with the face; the arrow is a span of its own, which is what lets the percentage
 during a render replace the format's name without touching it — a render reads `↓ 45%`.
-The button's `min-width` came down from 6.5rem to 4.25rem with it. 16× is there to hold a download against the same picture
+The button's `min-width` came down from 6.5rem to 4.25rem with it.
+
+⚠ **And the glyph is drawn rather than typed** *(Matt, explorer_box_shortcuts_ckpt140,
+2026-09-22)*. It was the character `↓`, which every font on this page renders as a hairline
+a pixel wide at 0.8rem — a stroke beside a solid word, reading as a stray mark rather than
+as the button's verb. It is one filled path on a 24 box now, `currentColor` so the green
+stays the span's, in the same markup the Save bookmark already uses. Sized in `em` off the
+button's own font, so the glyph stands at about the text's **cap height** whatever the row's
+size does: 12.2 px of box at today's 0.8rem, 9 px of arrow inside it. The percentage
+replacement is untouched by any of it, because it only ever rewrote `.download-said` —
+measured mid-download, `↓ 25%` with the fill bar behind it and the arrow where it was. 16× is there to hold a download against the same picture
 at 4×, and the sample ceiling below is what bounds it: 2560x1440 fits, 3840x2160 is
 refused by name. The size, samples and estimate are the same for both; the pressed button is the
 progress bar and the way to cancel, and the other is held still until it finishes. On a

@@ -909,10 +909,24 @@ function paintMark() {
 // It paints like the mark and the walk's cells — onto the screen after every stage, never
 // into `frame` — which is also why the Deep tab gets it for nothing: `compose` is that
 // tab's one seam onto the canvas and it ends in `paintMark` like everything else.
+//
+// **A right-click or a shift-click starts one without the key** *(Matt,
+// explorer_box_shortcuts_ckpt140, 2026-09-22)*. `b` then a click is two presses to say one
+// thing, and neither button was doing anything on this canvas. The press lands where the
+// centre goes — it is the centring click, not a second way to arm the tool — so the box is
+// half-drawn from the moment it starts and the next plain click takes it.
 
 /** `null` when the tool is away; `{ cx, cy, half }` once armed, `half` being `null` until
  *  the centre is clicked and half the box's canvas width after. */
 let box = null;
+
+/** Whether a right-button press was taken by the box tool and its context menu is still
+ *  owed a refusal. **Windows fires `contextmenu` on mouse-*up*** — Chrome and Firefox both
+ *  — so the press that *finishes* a box has already set `box` back to `null` by the time
+ *  the menu arrives, and a gate on `box !== null` alone would let the menu through on the
+ *  one press most likely to be followed by another. Set wherever the tool consumes a right
+ *  press, cleared where the menu is refused. */
+let boxedMenu = false;
 
 /** How far the pointer must be from the centre before a box is taken, in canvas pixels. A
  *  second click on top of the first is a reader changing their mind, not a zoom to a few
@@ -3145,10 +3159,25 @@ canvas.addEventListener("pointerdown", (event) => {
   // rather than the release: a click that also started a drag would slide the picture out
   // from under a box being drawn on it. Neither `pointers` nor `drag` is touched while it
   // is armed, so nothing is left half-set when it is cancelled.
-  if (box !== null) {
+  //
+  // A right-click or a shift-click starts one where none is running. It is the *centring*
+  // click and not a second way to arm the tool, so the box is half-drawn from here and the
+  // next press — a plain one, no modifier wanted — takes it.
+  const starting = box === null && (event.button === 2 || event.shiftKey);
+  if (box !== null || starting) {
+    // Every right press the tool consumes owes its context menu a refusal, whichever of
+    // the three this is — see `boxedMenu`.
+    if (event.button === 2) boxedMenu = true;
     const at = canvasPoint(event);
-    if (box.half === null) {
+    if (starting || box.half === null) {
+      if (starting) {
+        // The shift half of the gesture would otherwise start a text selection, and both
+        // halves want the click the Julia card is waiting for.
+        event.preventDefault();
+        juliaCard?.hide();
+      }
       box = { cx: at.x, cy: at.y, half: 0 };
+      syncBox();
       repaintBox();
       say("Move away from the center to size the box, then click to zoom to it.");
       return;
@@ -3175,6 +3204,16 @@ canvas.addEventListener("pointerdown", (event) => {
     drag = null;
     pinch = { spread: spread(), width: view.w.value };
   }
+});
+
+/** The context menu, refused on the canvas and only where the right button was being used
+ *  to start, size or take a box. It is on the canvas element and never on the document, so
+ *  every panel, link and text box on this page keeps the browser's menu. A right press the
+ *  tool did not take — during a download, say — gets its menu as it always did. */
+canvas.addEventListener("contextmenu", (event) => {
+  if (box === null && !boxedMenu) return;
+  boxedMenu = false;
+  event.preventDefault();
 });
 
 canvas.addEventListener("pointermove", (event) => {
@@ -3308,6 +3347,18 @@ const HOVERS = window.matchMedia?.("(hover: hover) and (pointer: fine)")?.matche
  *  exact-zero was only ever safe because nothing was bound to it. */
 const CLICK_SLOP = 4;
 
+/** Where the pointer is on the canvas, in canvas pixels, or `null` when it is not over it
+ *  *(Matt, explorer_box_shortcuts_ckpt140, 2026-09-22)*.
+ *
+ *  **Canvas pixels and never a plane coordinate.** `j` reads this to open the Julia set at
+ *  the `c` under the pointer, and a view that moved under a pointer that did not — a wheel
+ *  notch, an arrow key, the way back — leaves a stored plane coordinate pointing at
+ *  somewhere the reader is no longer looking. The projection is applied at the press.
+ *
+ *  It is kept whether or not the Julia preview may show, because the key is not the card's
+ *  gesture: it works with the preview switched off, which is its default. */
+let hoverAt = null;
+
 /** Whether the preview may be showing at all: a parameter plane, drawn by the studio
  *  itself, with nothing in the middle of happening. */
 function previewable() {
@@ -3328,6 +3379,14 @@ function previewable() {
 /** The pointer is somewhere over the canvas: offer that place to the card, or take the
  *  card away where this is not a place it may show. */
 function hoverPreview(event) {
+  // Where the pointer is, first and before every gate below it: `j` takes its `c` from
+  // here, and none of the reasons the card may not show is a reason the key may not fire.
+  // A wheel event arrives here too and carries the same client coordinates.
+  if (event.pointerType === undefined || event.pointerType === "mouse") {
+    hoverAt = canvasPoint(event);
+  } else {
+    hoverAt = null;
+  }
   if (juliaCard === null) return;
   // **A press leaves the card exactly as it is.** A button going down fires a move of its
   // own first, and taking the card away on it would mean the release had nothing left to
@@ -3354,7 +3413,10 @@ function hoverPreview(event) {
 }
 
 canvas.addEventListener("pointermove", hoverPreview);
-canvas.addEventListener("pointerleave", () => juliaCard?.hide());
+canvas.addEventListener("pointerleave", () => {
+  hoverAt = null;
+  juliaCard?.hide();
+});
 
 // --------------------------------------------------------- a picture dropped back
 //
@@ -3568,12 +3630,18 @@ const KEYS = { whole: "(r)", julia: "(j)" };
 
 /** What each button says on hover, where its own words do not already say it. The key is
  *  in the label now, so no tip carries one. Random palette and Random phase have none:
- *  their words are the whole of what they do. */
+ *  their words are the whole of what they do.
+ *
+ *  **Julia here's tip is the one exception to "no tip carries a key"** *(Matt,
+ *  explorer_box_shortcuts_ckpt140, 2026-09-22)*: the key does something the button does
+ *  not, and the label cannot hold the difference without saying two things at once. */
 const TOGGLE_TIPS = {
   seat: "Back to the wallpaper this view was opened at: its frame, its mode and its palette.",
   link: "Back to the picture this link opened at: its frame, its mode and its palette.",
   none: "This page opened at the home view, so there is nothing else to go back to.",
-  julia: "Opens the Julia set whose c is the center of this view.",
+  julia:
+    "Opens the Julia set whose c is the center of this view. " +
+    "Pressing j with the pointer on the picture opens the one under it instead.",
 };
 
 /** The parent view Julia here left, as `{ julia, cx, cy, parent }` — the Julia family and
@@ -3662,14 +3730,46 @@ function wholePlane() {
   draw();
 }
 
-/** Julia here, or Back from it. */
-function toggleJulia() {
+/**
+ * Julia here, or Back from it.
+ *
+ * **`j` is the pointer's `c`; the button is the centre's** *(Matt,
+ * explorer_box_shortcuts_ckpt140, 2026-09-22)*. A reader with the mouse over a cusp has
+ * already chosen the `c` they mean, and making them pan it to the middle first is the
+ * work the preview card exists to save — but the card is off by default and the key was
+ * the centre's whatever was under the pointer. Pressing the key with the pointer off the
+ * canvas, and clicking the button, are unchanged: a click arrives here with a MouseEvent,
+ * which has no `atCursor` and so takes the default.
+ */
+function toggleJulia({ atCursor = false } = {}) {
   if (locked()) return;
   if (view.family in PARENT_PLANE) {
     juliaBack();
   } else if (view.family in JULIA_OF) {
-    juliaHere();
+    const at = atCursor ? cursorC() : null;
+    if (at === null) juliaHere();
+    else juliaTo(at.cx, at.cy);
   }
+}
+
+/**
+ * The `c` under the pointer, or `null` where there is no pointer on this picture to take
+ * one from — off the canvas, on a touchscreen, or in the Deep tab.
+ *
+ * ⚠ **The Deep gate is load-bearing.** `planeAt` is the *shallow* viewer's projection, and
+ * the Deep tab draws its own frame on the same canvas; without this the key would open a
+ * Julia set at a `c` computed from the wrong geometry, which is the failure that draws a
+ * plausible picture rather than raising. Down there `j` keeps doing what it always did.
+ *
+ * Where the preview card is up, its own `c` rather than a fresh projection: the card
+ * settles 90 ms behind the pointer, and the key opening a Julia set a pixel away from the
+ * one on the screen is exactly the drift the card was built to close.
+ */
+function cursorC() {
+  if (hoverAt === null || deepOwns()) return null;
+  const shown = juliaCard?.showing() ?? null;
+  const c = shown !== null ? { x: shown.cx, y: shown.cy } : planeAt(hoverAt.x, hoverAt.y);
+  return { cx: link.coordinateOf(c.x), cy: link.coordinateOf(c.y) };
 }
 
 /**
@@ -3804,7 +3904,7 @@ function randomPhase() {
 
 seatButton.addEventListener("click", resetToSeat);
 wholeButton.addEventListener("click", wholePlane);
-juliaButton.addEventListener("click", toggleJulia);
+juliaButton.addEventListener("click", () => toggleJulia());
 randomPaletteButton.addEventListener("click", randomPalette);
 randomPhaseButton.addEventListener("click", randomPhase);
 
@@ -3830,10 +3930,13 @@ for (const [event, on] of [["pointerenter", true], ["focus", true], ["pointerlea
  *  **The box tool is `b`** *(Matt, explorer_box_zoom_and_download_row_ckpt140,
  *  2026-09-22)*, and `b` was unbound: nothing was rebound to free it either. It is the one
  *  of these that arms rather than acts, so its button carries `aria-pressed` and `Esc`
- *  cancels it — see *the box tool*. */
+ *  cancels it — see *the box tool*.
+ *
+ *  **`j` is the one whose key and button differ**, and it is the table that says so: the
+ *  key asks for the `c` under the pointer and the button's own listener does not. */
 const TOGGLE_KEYS = {
   r: wholePlane,
-  j: toggleJulia,
+  j: () => toggleJulia({ atCursor: true }),
   p: randomPalette,
   h: randomPhase,
   b: toggleBox,

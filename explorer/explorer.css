@@ -1162,7 +1162,14 @@ summary.section-head:focus-visible { outline: 2px solid var(--well-link); outlin
    2026-09-22)*. Saying it twice on one row under a heading that already says it was most of
    what made these two the widest things in the bar; the arrow says the same in one glyph,
    and the button keeps `Download PNG` as its accessible name. The arrow is a span of its
-   own so that neither the percentage nor the restore after a render writes over it. */
+   own so that neither the percentage nor the restore after a render writes over it.
+
+   **And the glyph is drawn rather than typed** *(Matt, explorer_box_shortcuts_ckpt140,
+   2026-09-22)*. It was the character `↓`, which every font here renders as a hairline a
+   pixel wide at this size — a stroke, beside a solid word, reading as a stray mark rather
+   than as the button's verb. One filled path on a 24 box, `currentColor` so the green is
+   the span's, sized in `em` off the button's own font so the glyph stands at about the
+   text's cap height whatever the row's size does. Same markup the Save bookmark uses. */
 .bar button.download-go {
   flex: none;
   min-width: 4.25rem;
@@ -1188,9 +1195,13 @@ summary.section-head:focus-visible { outline: 2px solid var(--well-link); outlin
 }
 .bar button.download-go .download-arrow {
   color: var(--state-final);
-  font-size: 1.05em;
-  line-height: 1;
+  align-self: center;
+  display: block;
+  width: 0.95em;
+  height: 0.95em;
 }
+.bar button.download-go .download-arrow svg { display: block; width: 100%; height: 100%; }
+.bar button.download-go .download-arrow path { fill: currentColor; }
 
 /* The render stat line, first under Details. */
 .stats {
