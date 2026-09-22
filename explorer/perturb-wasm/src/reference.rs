@@ -175,6 +175,111 @@ pub fn orbit(c_re: &Fx, c_im: &Fx, maxiter: u32, period: Option<u32>) -> Referen
     }
 }
 
+/// The reference orbit of `Z' = Z^d + C` from `Z[0] = 0`, at any degree the
+/// kernel draws. Degree two is [`orbit`], untouched.
+///
+/// **The one thing the degree forces is an overflow guard, and it is the same
+/// silent wrap the bailout check exists for.** [`orbit`] checks the bailout on
+/// the `f64` projection *after* the step, which at degree two is safe: an iterate
+/// under `2^16` squares to `2^32`, inside the signed integer limb. At degree four
+/// the same step reaches `2^64` and wraps with no error at all. So once `|Z| ≥ 8`
+/// the orbit continues in `f64` — `8^6` is still far inside the limb — and that
+/// loses nothing, because an iterate that size is outside every set this draws and
+/// on its way out: what the kernel reads off it is `|z|` against the bailout and
+/// a smooth count, which want relative precision, and `f64` is relative precision.
+/// `audit_deep_families_ckpt140` held the same tail against a fixed-point oracle at
+/// every degree and it agreed to 7e-15.
+///
+/// `z^d` in fixed point is `d − 1` complex multiplies of the iterate by itself, four
+/// `Fx` multiplies each. That is 26 ms of orbit at degree two and 140 at six, native,
+/// against a frame of seconds.
+pub fn orbit_of(degree: u32, c_re: &Fx, c_im: &Fx, maxiter: u32, period: Option<u32>) -> Reference {
+    if degree == 2 {
+        return orbit(c_re, c_im, maxiter, period);
+    }
+    let n = c_re.n;
+    let limit = match period {
+        Some(p) => p.max(1),
+        None => maxiter,
+    };
+    let bailout_sq = BAILOUT * BAILOUT;
+    let c = [c_re.to_f64(), c_im.to_f64()];
+
+    let mut x = Fx::zero(n);
+    let mut y = Fx::zero(n);
+    // `Some` once the orbit has left for `f64`, and never `None` again.
+    let mut tail: Option<[f64; 2]> = None;
+    let mut points = Vec::with_capacity(limit as usize + 1);
+    points.push([0.0, 0.0]);
+
+    let mut escaped = false;
+    for _ in 0..limit {
+        let point = match tail {
+            Some(z) => {
+                let w = cpow_f64(z, degree);
+                [w[0] + c[0], w[1] + c[1]]
+            }
+            None => {
+                let (re, im) = cpow_fx(&x, &y, degree);
+                x = re.add(c_re);
+                y = im.add(c_im);
+                [x.to_f64(), y.to_f64()]
+            }
+        };
+        points.push(point);
+        let norm = point[0] * point[0] + point[1] * point[1];
+        if norm > bailout_sq {
+            escaped = true;
+            break;
+        }
+        if tail.is_some() || norm >= 64.0 {
+            tail = Some(point);
+        }
+    }
+
+    match period {
+        Some(_) if !escaped => {
+            let [last_re, last_im] = points.pop().unwrap();
+            Reference {
+                points,
+                escaped,
+                periodic: true,
+                period_residual: (last_re * last_re + last_im * last_im).sqrt(),
+                limbs: n,
+            }
+        }
+        _ => Reference {
+            points,
+            escaped,
+            periodic: false,
+            period_residual: f64::NAN,
+            limbs: n,
+        },
+    }
+}
+
+/// `(x + iy)^d` in fixed point, by repeated multiplication.
+pub fn cpow_fx(x: &Fx, y: &Fx, degree: u32) -> (Fx, Fx) {
+    let (mut re, mut im) = (*x, *y);
+    for _ in 1..degree {
+        let next_re = re.mul(x).sub(&im.mul(y));
+        let next_im = re.mul(y).add(&im.mul(x));
+        re = next_re;
+        im = next_im;
+    }
+    (re, im)
+}
+
+/// `z^d` in `f64`, by repeated multiplication — the orbit's tail, and the plain
+/// loop the tests hold the kernel to.
+pub fn cpow_f64(z: [f64; 2], degree: u32) -> [f64; 2] {
+    let mut w = z;
+    for _ in 1..degree {
+        w = [w[0] * z[0] - w[1] * z[1], w[0] * z[1] + w[1] * z[0]];
+    }
+    w
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -239,6 +344,29 @@ mod tests {
         assert!(reference.len() < 20, "len was {}", reference.len());
         let last = reference.points.last().unwrap()[0];
         assert!(last.is_finite() && last > BAILOUT);
+    }
+
+    /// Degree two is the quadratic orbit exactly, and every other degree stops at
+    /// the escape with a finite point rather than a wrapped limb.
+    #[test]
+    fn a_degree_d_orbit_escapes_rather_than_wrapping() {
+        let c = Fx::parse("1.5", 3).unwrap();
+        let zero = Fx::zero(3);
+        let two = orbit_of(2, &c, &zero, 1000, None);
+        let quadratic = orbit(&c, &zero, 1000, None);
+        assert_eq!(two.points, quadratic.points);
+        for degree in 3..=6 {
+            let reference = orbit_of(degree, &c, &zero, 10_000, None);
+            assert!(reference.escaped, "degree {degree} never escaped");
+            let [re, im] = *reference.points.last().unwrap();
+            assert!(re.is_finite() && im.is_finite());
+            assert!(re * re + im * im > BAILOUT * BAILOUT, "degree {degree}");
+            // `1.5 → 1.5^d + 1.5 → …`: real and positive all the way out.
+            assert!(reference.points.iter().all(|p| p[0] >= 0.0 && p[1] == 0.0));
+        }
+        // The origin is a fixed point at every degree.
+        let still = orbit_of(5, &zero, &zero, 50, None);
+        assert!(!still.escaped && still.points.iter().all(|p| *p == [0.0, 0.0]));
     }
 
     /// The period-3 nucleus, which the audit used as its accuracy case.

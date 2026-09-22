@@ -42,6 +42,7 @@ fn spec_of(frame: &Frame, maxiter: Option<u32>) -> Spec {
         julia: None,
         anchor: Anchor::Parameter,
         interior: true,
+        degree: 2,
     }
 }
 
@@ -381,6 +382,7 @@ fn tile_spec(nucleus: &nuclei::Nucleus, periodic: bool) -> Spec {
         julia: None,
         anchor: Anchor::Parameter,
         interior: true,
+        degree: 2,
     }
 }
 
@@ -558,6 +560,7 @@ fn what_a_preview_tile_needs() {
                 julia: None,
                 anchor: Anchor::Parameter,
                 interior: true,
+                degree: 2,
             };
             let started = Instant::now();
             let run = walk(&tile);

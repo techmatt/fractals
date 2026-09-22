@@ -979,6 +979,63 @@ size — one period instead of the whole cap, 45 KB against 777 KB at the anchor
 and not its speed. **Whether it pays on an ordinary frame, whose centre is not a
 nucleus, is a different question and is still open.**
 
+### 10. Degrees three to six *(deep_degrees_ckpt140, 2026-09-22)*
+
+`audit_deep_families_ckpt140` sized this and found nothing in the method that depends on
+the degree: the stored orbit from `Z₀ = 0` is the critical orbit of `z^d + c`, so
+Zhuoran's rebase, both Julia anchors and the Julia case as "the same loop with `dc` spent
+once" carry over unchanged. What changes is four lines, and `D` is a const generic on
+`Kernel::run` beside `JULIA`:
+
+- **the step** is `(Z + δ)^d − Z^d (+ dc)`, as the binomial in Horner form in `δ` — `2d − 3`
+  complex multiplies, the powers of `Z` formed per step from the point the loop holds.
+  Precomputing `C(d,k)·Z^{d−k}` per orbit point was slower at every degree the audit tried
+  (the orbit's memory traffic is §4's finding), so it is not done;
+- **the interior switch's slope** is `d²|z|^{2(d−1)}`;
+- **the smooth count's base** is `ln d`, the engine's own `degree.ln()`;
+- **the reference orbit** is `z^d` in fixed point, and continues in `f64` once `|Z| ≥ 8`.
+  The bailout is checked after the step, and at degree four an iterate under `2^16`
+  raised to the fourth power wraps the signed integer limb with no error — the silent
+  failure the bailout-first rule above exists for. `newton_step` has the same shape and
+  the same guard.
+
+At `d = 2` each of the four is the line that was there, chosen by a compare the
+compiler folds, so the degree-2 picture is the same arithmetic and not merely the same
+answer. `tests/oracle.rs`'s `degree_two_draws_the_bytes_it_drew_before_the_degree_was_a_parameter`
+pins it: `tangle 1e-28` at its settled 235,036, 32×18, hashed before and after, equal.
+
+**Measured** (all in `cargo test`, the ladders `--ignored`):
+
+| check | result |
+|---|---|
+| shallow, the whole set, 41×41 at width 3, `d = 3..6`, against the plain `f64` loop | ≤1 mask disagreement of 1,681, median relative error 0 |
+| the same for the Julia sets at `z = c` | ≤1 mask disagreement, median relative error 0 |
+| each degree's `M(2,1)` at 1e-16, 1e-28 and 1e-40, 16×9, against a fixed-point oracle at that degree | 144 of 144 escaping, 0 mask disagreements, median Δ ≤ 7.1e-15, worst ≤ 5.6e-8 |
+| the Julia set of that `c` at `z = c`, 1e-28 | 144 of 144, 0 disagreements, median Δ 7.1e-15 |
+| the origin anchor at `16·10^(−40/d)`, at `d×` the view's bits | 0 disagreements, median Δ ≤ 7.1e-15 |
+
+**What it costs**, native, a near-parabolic interior `c` so that every sample runs the
+whole cap of 117,518 (equal work across degrees), best of three, ns a sample-iteration:
+
+| d | reference orbit | Mandelbrot | Julia | × d = 2 |
+|--:|--:|--:|--:|--:|
+| 2 | 25 ms | 4.9 | 4.0 | 1.00 |
+| 3 | 53 ms | 9.6 | 8.7 | 1.96 |
+| 4 | 78 ms | 13.3 | 12.4 | 2.72 |
+| 5 | 110 ms | 18.3 | 17.1 | 3.73 |
+| 6 | 123 ms | 23.0 | 22.1 | 4.68 |
+
+⚠ **About 15% slower at `d ≥ 3` than the audit's own harness loop**, measured in one
+binary against one orbit (8.2 against 9.6 ns at `d = 3`). The arithmetic is the same;
+dropping the degenerate-sample diagnostic did not move it, and a runtime binomial did
+not either. Degree two did not slow down — 4.9 against the committed kernel's 4.94 — so
+it is the shipped path's codegen at the larger step and not a regression, and it is left
+as a number rather than chased.
+
+**The module grew by 30,597 bytes raw, 8,525 gzipped** (168,553 → 199,150 raw, 69,755 →
+78,280 gzipped): ten monomorphizations of the sample loop and ten of the domain walk,
+where there were two of each. The audit estimated 15–25 KB raw.
+
 ## Running it
 
 ```text
@@ -1018,7 +1075,7 @@ its own branch rather than a stage of the explorer's bake.
 | `crate` | `explorer/perturb-wasm` |
 | `dependencies` | `[]`, and it is written down because it is the design |
 | `rustc` | the compiler, with its commit and date |
-| `raw_bytes` / `gzip_bytes` | **168,553 raw, 69,755 gzipped** |
+| `raw_bytes` / `gzip_bytes` | **199,150 raw, 78,280 gzipped** |
 
 Two fields of `engine.manifest.json` are **absent** rather than empty:
 `engine_version`, because this crate does not link the engine, and

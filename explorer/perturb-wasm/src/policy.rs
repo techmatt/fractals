@@ -199,11 +199,7 @@ pub fn probe_rows(
         for i in 0..cols {
             let col = spread(i, cols, sample_width);
             let (re, im) = spec.dc(offset, col, row);
-            let outcome = if julia {
-                kernel.sample_with::<true>(re, im)
-            } else {
-                kernel.sample_with::<false>(re, im)
-            };
+            let outcome = kernel.sample_at(spec.degree, julia, re, im);
             counts.samples += 1;
             counts.iterations += outcome.iterations as u64;
             if !outcome.smooth.is_nan() {

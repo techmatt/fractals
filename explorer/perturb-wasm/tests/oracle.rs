@@ -13,10 +13,12 @@
 //! `--nocapture` is worth having: each test prints the per-rung table the
 //! crate's README quotes.
 
+mod common;
+
 use perturb::fx::Fx;
-use perturb::kernel::{Kernel, smooth_count};
+use perturb::kernel::{Kernel, smooth_count, smooth_count_at};
 use perturb::reference::{self, BAILOUT};
-use perturb::{Anchor, Spec, cap};
+use perturb::{Anchor, Spec, cap, compute_rows};
 
 /// The audit's anchor: a period-2838 minibrot nucleus in the seahorse valley,
 /// atom size 6.478e-12.
@@ -63,6 +65,47 @@ fn oracle(c_re: &Fx, c_im: &Fx, maxiter: u32) -> f64 {
     oracle_from(&Fx::zero(n), &Fx::zero(n), c_re, c_im, maxiter)
 }
 
+/// The same at any degree, and at degree two exactly [`oracle_from`].
+///
+/// **Past `|z| = 8` it continues in `f64`**, which is the reference orbit's own
+/// tail and for the same reason: at degree four an iterate under the bailout
+/// wraps the signed integer limb when it is raised to the fourth power. An
+/// iterate that size is outside every set these degrees draw and on its way out,
+/// and what is read off it is a smooth count, which wants relative precision.
+fn oracle_at(degree: u32, x0: &Fx, y0: &Fx, c_re: &Fx, c_im: &Fx, maxiter: u32) -> f64 {
+    if degree == 2 {
+        return oracle_from(x0, y0, c_re, c_im, maxiter);
+    }
+    let bailout_sq = BAILOUT * BAILOUT;
+    let c = [c_re.to_f64(), c_im.to_f64()];
+    let (mut x, mut y) = (*x0, *y0);
+    let mut step = 0u32;
+    while step < maxiter {
+        let (re, im) = reference::cpow_fx(&x, &y, degree);
+        x = re.add(c_re);
+        y = im.add(c_im);
+        step += 1;
+        let mut z = [x.to_f64(), y.to_f64()];
+        let magnitude_sq = z[0] * z[0] + z[1] * z[1];
+        if magnitude_sq > bailout_sq {
+            return smooth_count_at(step, magnitude_sq, degree);
+        }
+        if magnitude_sq >= 64.0 {
+            while step < maxiter {
+                let w = reference::cpow_f64(z, degree);
+                z = [w[0] + c[0], w[1] + c[1]];
+                step += 1;
+                let magnitude_sq = z[0] * z[0] + z[1] * z[1];
+                if magnitude_sq > bailout_sq {
+                    return smooth_count_at(step, magnitude_sq, degree);
+                }
+            }
+            return f64::NAN;
+        }
+    }
+    f64::NAN
+}
+
 /// The same, from a named `z₀` — which is what a Julia sample is: the parameter
 /// held and the *start* varying, where Mandelbrot holds the start at zero and
 /// varies the parameter.
@@ -105,6 +148,7 @@ fn spec_at(width: f64, periodic: bool, offset_frames: f64) -> Spec {
         julia: None,
         anchor: Anchor::Parameter,
         interior: false,
+        degree: 2,
     }
 }
 
@@ -133,6 +177,7 @@ fn julia_spec(c: (&str, &str), width: f64, anchor: Anchor) -> Spec {
         julia: Some((c.0.to_string(), c.1.to_string())),
         anchor,
         interior: false,
+        degree: 2,
     }
 }
 
@@ -149,6 +194,7 @@ fn misiurewicz_spec(width: f64) -> Spec {
         julia: None,
         anchor: Anchor::Parameter,
         interior: false,
+        degree: 2,
     }
 }
 
@@ -210,7 +256,7 @@ fn walk(spec: Spec) -> Rung {
     let maxiter = spec.maxiter();
     let limbs = spec.limbs();
     let orbit = spec.reference_orbit().unwrap();
-    let kernel = Kernel::new(&orbit, maxiter, false).at_entry(spec.entry());
+    let kernel = Kernel::new(&orbit, maxiter, spec.interior).at_entry(spec.entry());
     let offset = spec.centre_offset().unwrap();
 
     // **The oracle's own precision is its own business, and at the origin
@@ -257,10 +303,7 @@ fn walk(spec: Spec) -> Rung {
     for row in 0..spec.resolution[1] {
         for col in 0..spec.resolution[0] {
             let (dc_re, dc_im) = spec.dc(offset, col, row);
-            let outcome = match &julia {
-                Some(_) => kernel.sample_julia(dc_re, dc_im),
-                None => kernel.sample(dc_re, dc_im),
-            };
+            let outcome = kernel.sample_at(spec.degree, julia.is_some(), dc_re, dc_im);
             rebases_total += outcome.rebases as u64;
             rebases_max = rebases_max.max(outcome.rebases);
             samples += 1;
@@ -271,12 +314,13 @@ fn walk(spec: Spec) -> Rung {
             let (geometry_re, geometry_im) = spec.dc((0.0, 0.0), col, row);
             let c_re = centre_re.add(&Fx::from_f64(geometry_re, oracle_limbs).unwrap());
             let c_im = centre_im.add(&Fx::from_f64(geometry_im, oracle_limbs).unwrap());
+            let zero = Fx::zero(oracle_limbs);
             let truth = match &julia {
                 // The grid is `z₀`, iterated under the held parameter.
                 Some((param_re, param_im)) => {
-                    oracle_from(&c_re, &c_im, param_re, param_im, maxiter)
+                    oracle_at(spec.degree, &c_re, &c_im, param_re, param_im, maxiter)
                 }
-                None => oracle(&c_re, &c_im, maxiter),
+                None => oracle_at(spec.degree, &zero, &zero, &c_re, &c_im, maxiter),
             };
 
             if outcome.smooth.is_nan() != truth.is_nan() {
@@ -693,6 +737,198 @@ fn julia_assertions(rungs: &[Rung]) {
             rung.worst
         );
     }
+}
+
+// ------------------------------------------------------------------ degree d
+
+/// `M(2,1)` of `z^d + c` for each degree — preperiod two, period one, repelling —
+/// to 45 digits, from `scratch/audit_deep_families_ckpt140/misiurewicz.py`.
+///
+/// **The `c = i` ladder's reasons, at every degree.** A Misiurewicz point is on
+/// the boundary with structure at every scale about it, and its orbit is short
+/// and repelling, so a tile of any width is escaping samples with two- and
+/// three-digit counts and the oracle can afford every one of them. At degree two
+/// the point is `−2`, the tip of the needle; above it each is the generic
+/// upper-half-plane point of smallest `|c|`.
+const M21: &[(u32, &str, &str)] = &[
+    (
+        3,
+        "-0.340625019316606640194394244037830888977210103",
+        "1.27122987841870623913561299102106497672841433",
+    ),
+    (
+        4,
+        "-1.08421508149135118187966600826108320387999295",
+        "0.290514555507251444503813188624929073684246285",
+    ),
+    (
+        5,
+        "-0.887826199632931252074933435849640258600100571",
+        "0.544060594866340874808016663435373936434552876",
+    ),
+    (
+        6,
+        "-0.978147600733805637928566747869599532459737809",
+        "0.207911690817759337101742284405125166216584761",
+    ),
+];
+
+/// A degree-`d` frame centred on `c`: the parameter plane, or — with `julia` —
+/// the Julia set of that `c` at one of its anchors.
+fn degree_spec(degree: u32, c: (&str, &str), width: f64, julia: Option<Anchor>) -> Spec {
+    let spec = match julia {
+        Some(anchor) => julia_spec(c, width, anchor),
+        None => Spec {
+            center_re: c.0.to_string(),
+            center_im: c.1.to_string(),
+            ..misiurewicz_spec(width)
+        },
+    };
+    Spec {
+        degree,
+        interior: true,
+        ..spec
+    }
+}
+
+/// What every degree-`d` ladder is held to: the dendrite ladders' bar, because
+/// these frames have the same shape — all escaping, short counts, no chaos to
+/// excuse — and so no reason to be held to a median.
+fn degree_assertions(label: &str, rung: &Rung) {
+    assert!(
+        rung.compared as u32 == TILE.0 * TILE.1,
+        "{label}: only {} of {} escaped",
+        rung.compared,
+        TILE.0 * TILE.1
+    );
+    assert_eq!(rung.interior_disagreements, 0, "{label}");
+    assert!(
+        rung.median < 1e-12,
+        "{label}: median smooth error {:e}",
+        rung.median
+    );
+    assert!(
+        rung.worst < 1e-6,
+        "{label}: worst smooth error {:e}",
+        rung.worst
+    );
+}
+
+/// **The degree-`d` kernel against the fixed-point oracle, below the wall**
+/// *(deep_degrees_ckpt140)*: each degree's `M(2,1)` at 1e-16, 1e-28 and 1e-40, the
+/// interior switch on as the page runs it, and every sample iterated the long way
+/// at the same degree with no reference and no delta.
+#[test]
+#[ignore = "seconds"]
+fn the_degree_d_kernel_matches_the_oracle_at_each_degrees_misiurewicz_point() {
+    for &(degree, re, im) in M21 {
+        let rungs: Vec<Rung> = [1e-16, 1e-28, 1e-40]
+            .iter()
+            .map(|&width| walk(degree_spec(degree, (re, im), width, None)))
+            .collect();
+        report(&format!("degree {degree} at its M(2,1)"), &rungs);
+        for rung in &rungs {
+            degree_assertions(&format!("d={degree} {:e}", rung.width), rung);
+        }
+    }
+}
+
+/// **The Julia sets of those degrees, anchored at `z = c`**, at 1e-28: the same
+/// loop with `dc` spent once, which at degree two is what the dendrite ladder
+/// holds.
+#[test]
+#[ignore = "seconds"]
+fn the_degree_d_julia_kernel_matches_the_oracle_at_the_parameter() {
+    for &(degree, re, im) in M21 {
+        let rung = walk(degree_spec(
+            degree,
+            (re, im),
+            1e-28,
+            Some(Anchor::Parameter),
+        ));
+        report(
+            &format!("degree {degree} julia at its M(2,1), z = c"),
+            std::slice::from_ref(&rung),
+        );
+        degree_assertions(&format!("julia d={degree}"), &rung);
+    }
+}
+
+/// **And at `z = 0`, where the orbit has to hold `d` times the view's bits.**
+///
+/// At the view's own limbs `audit_deep_families_ckpt140` measured degrees three to
+/// six off by a median 0.27, 0.078, 0.014 and 0.0047 counts, and at degree three it
+/// starts as shallow as 1e-12. The widths are the audit's: `16·10^(−40/d)`, which
+/// puts the pixels at `z₁` about 1e-40 apart at every degree.
+#[test]
+#[ignore = "seconds"]
+fn the_degree_d_origin_anchor_holds_its_parameter_to_d_times_the_bits() {
+    for &(degree, re, im) in M21 {
+        let width = 16.0 * 10f64.powf(-40.0 / degree as f64);
+        let spec = Spec {
+            maxiter: Some(20_000),
+            interior: false,
+            ..degree_spec(degree, (re, im), width, Some(Anchor::Origin))
+        };
+        assert_eq!(
+            spec.limbs(),
+            reference::limbs_pow(width, TILE.0, degree),
+            "the origin anchor is sized for step^{degree}"
+        );
+        let rung = walk(spec);
+        report(
+            &format!("degree {degree} julia at its M(2,1), z = 0"),
+            std::slice::from_ref(&rung),
+        );
+        assert_eq!(rung.interior_disagreements, 0, "d={degree}");
+        assert!(
+            rung.compared > 100,
+            "d={degree}: only {} escaped",
+            rung.compared
+        );
+        assert!(
+            rung.median < 1e-12,
+            "d={degree}: median smooth error {:e}",
+            rung.median
+        );
+    }
+}
+
+/// **Degree two is not merely equal to what it was: it is the same bytes.**
+///
+/// `tangle 1e-28` at its settled cap of 235,036, a 32×18 tile of the frame's own
+/// grid, as the little-endian lanes [`compute_rows`] hands the page — hashed, and
+/// held to the hash the kernel produced *before* the degree was a parameter
+/// (`deep_degrees_ckpt140`, taken on the commit it was written against). The
+/// const generic folds the degree-2 step, derivative and smooth count back to the
+/// lines that were there, and this is what says the fold happened.
+#[test]
+fn degree_two_draws_the_bytes_it_drew_before_the_degree_was_a_parameter() {
+    let frame = &common::DEEP_FRAMES[1];
+    assert_eq!(frame.label, "tangle 1e-28");
+    let spec = Spec {
+        resolution: [32, 18],
+        supersample: 1,
+        ..common::canvas_spec(&frame.control(), Some(235_036))
+    };
+    let orbit = spec.reference_orbit().unwrap();
+    let lanes = compute_rows(&spec, &orbit, 0, 18);
+    assert_eq!(
+        fnv(&lanes),
+        0x40b5_033c_3743_57d4,
+        "the degree-2 lanes moved"
+    );
+}
+
+/// FNV-1a, 64-bit: a fingerprint, not a checksum anybody relies on for anything
+/// adversarial.
+fn fnv(bytes: &[u8]) -> u64 {
+    let mut hash: u64 = 0xcbf2_9ce4_8422_2325;
+    for &byte in bytes {
+        hash ^= byte as u64;
+        hash = hash.wrapping_mul(0x0100_0000_01b3);
+    }
+    hash
 }
 
 /// The round trip the ladder's own scaffolding leans on: a fixed-point value

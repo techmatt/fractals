@@ -243,6 +243,7 @@ fn spec_at(re: &str, im: &str, width: f64, maxiter: Option<u32>, switch: bool) -
         julia: None,
         anchor: Anchor::Parameter,
         interior: switch,
+        degree: 2,
     }
 }
 

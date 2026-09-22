@@ -121,6 +121,7 @@ fn where_the_interior_switch_should_fire() {
         julia: None,
         anchor: Anchor::Parameter,
         interior: true,
+        degree: 2,
     };
     let maxiter = spec.maxiter();
     let orbit = spec.reference_orbit().unwrap();
@@ -194,6 +195,7 @@ fn three_ways_on_the_committed_cases_view() {
         julia: None,
         anchor: Anchor::Parameter,
         interior: false,
+        degree: 2,
     };
     let maxiter = spec.maxiter();
     let limbs = 6;

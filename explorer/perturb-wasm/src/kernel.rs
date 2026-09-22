@@ -11,6 +11,12 @@
 //! z  = Z[m] + δ                     the actual iterate, and what escapes
 //! ```
 //!
+//! **At degree `d` the recurrence is `δ' = (Z + δ)^d − Z^d + dc`**
+//! *(deep_degrees_ckpt140)*, taken as the binomial in Horner form — see
+//! [`factor`]. Nothing else in this file knows the degree except the interior
+//! switch's slope and the smooth count's base, and at `d = 2` all three fold
+//! back to the lines above.
+//!
 //! **The Julia case is the same loop with `dc` spent once.** Holding `c` fixed
 //! and moving `z₀` instead, the delta of a pixel from a reference *point* obeys
 //! `δ' = (2·Z[m] + δ)·δ` with no `dc` term at all — the offset that was added
@@ -28,7 +34,8 @@
 //! is a valid reference for every point, being the orbit of the origin. The same
 //! move covers the reference running out. The archive's kernel does exactly this
 //! and carries no Pauldelbrot test, no secondary reference and no correction
-//! pass.
+//! pass. **It holds at every degree**, for the same reason: the stored orbit from
+//! `Z₀ = 0` is the critical orbit of `z^d + c`, a valid reference for any point.
 //!
 //! **And it stays exact in the Julia case, which is the reason there is no
 //! second reference in this file.** `δ := z` is only a rebase at all because
@@ -213,7 +220,7 @@ impl<'a> Kernel<'a> {
     /// two absolute coordinates — which at 1e-28 would be the difference of two
     /// numbers that are the same `f64`.
     pub fn sample(&self, dc_re: f64, dc_im: f64) -> Outcome {
-        self.run::<false>(dc_re, dc_im)
+        self.run::<2, false>(dc_re, dc_im)
     }
 
     /// One sample of a Julia frame, given its offset from the anchor point.
@@ -224,7 +231,7 @@ impl<'a> Kernel<'a> {
     /// counts steps and never the reference index, so entering at `Z₁` costs it
     /// nothing.
     pub fn sample_julia(&self, delta_re: f64, delta_im: f64) -> Outcome {
-        self.run::<true>(delta_re, delta_im)
+        self.run::<2, true>(delta_re, delta_im)
     }
 
     /// One sample with the fork named, so a caller that has already taken it —
@@ -240,11 +247,54 @@ impl<'a> Kernel<'a> {
     /// `inline(always)`, which is what the band fill used to call and is why the
     /// price was never visible before.
     #[inline(never)]
-    pub fn sample_with<const JULIA: bool>(&self, a_re: f64, a_im: f64) -> Outcome {
-        self.run::<JULIA>(a_re, a_im)
+    pub fn sample_with<const D: usize, const JULIA: bool>(&self, a_re: f64, a_im: f64) -> Outcome {
+        self.run::<D, JULIA>(a_re, a_im)
     }
 
-    /// The loop, once, for both.
+    /// One sample at a degree and a set named at run time, for a caller that walks
+    /// a few thousand cells rather than a frame — the cap policy's probe, a
+    /// harness. The match is once a sample and the loop behind each arm is the
+    /// monomorphized one, so this costs a branch a sample and nothing an
+    /// iteration; the band fill takes the fork once a band instead, through
+    /// [`crate::compute_rows`].
+    ///
+    /// Panics on a degree outside [`DEGREES`], which [`crate::Spec::parse`] has
+    /// already refused in a sentence.
+    pub fn sample_at(&self, degree: u32, julia: bool, a_re: f64, a_im: f64) -> Outcome {
+        match (degree, julia) {
+            (2, false) => self.sample_with::<2, false>(a_re, a_im),
+            (2, true) => self.sample_with::<2, true>(a_re, a_im),
+            (3, false) => self.sample_with::<3, false>(a_re, a_im),
+            (3, true) => self.sample_with::<3, true>(a_re, a_im),
+            (4, false) => self.sample_with::<4, false>(a_re, a_im),
+            (4, true) => self.sample_with::<4, true>(a_re, a_im),
+            (5, false) => self.sample_with::<5, false>(a_re, a_im),
+            (5, true) => self.sample_with::<5, true>(a_re, a_im),
+            (6, false) => self.sample_with::<6, false>(a_re, a_im),
+            (6, true) => self.sample_with::<6, true>(a_re, a_im),
+            _ => panic!("degree {degree} is not one this kernel draws"),
+        }
+    }
+
+    /// The atom domain at a degree and a set named at run time. See
+    /// [`Kernel::sample_at`].
+    pub fn domain_at(&self, degree: u32, julia: bool, a_re: f64, a_im: f64) -> Domain {
+        match (degree, julia) {
+            (2, false) => self.domain_with::<2, false>(a_re, a_im),
+            (2, true) => self.domain_with::<2, true>(a_re, a_im),
+            (3, false) => self.domain_with::<3, false>(a_re, a_im),
+            (3, true) => self.domain_with::<3, true>(a_re, a_im),
+            (4, false) => self.domain_with::<4, false>(a_re, a_im),
+            (4, true) => self.domain_with::<4, true>(a_re, a_im),
+            (5, false) => self.domain_with::<5, false>(a_re, a_im),
+            (5, true) => self.domain_with::<5, true>(a_re, a_im),
+            (6, false) => self.domain_with::<6, false>(a_re, a_im),
+            (6, true) => self.domain_with::<6, true>(a_re, a_im),
+            _ => panic!("degree {degree} is not one this kernel draws"),
+        }
+    }
+
+    /// The loop, once, for both sets and every degree.
     ///
     /// **`JULIA` is a const parameter and not a field, and the reason is
     /// arithmetic rather than taste**: `x + 0.0` is not `x` when `x` is `-0.0`,
@@ -252,8 +302,16 @@ impl<'a> Kernel<'a> {
     /// an iteration that no optimizer is allowed to remove. Monomorphized, each
     /// loop is exactly the loop it would have been written as by hand, and the
     /// Mandelbrot one is byte for byte the loop that was here before.
+    ///
+    /// **`D` is the degree, const for the same reason** *(deep_degrees_ckpt140)*:
+    /// the step is a different number of multiplies at every degree, and a degree
+    /// read from a field would be a loop over the binomial per iteration. At
+    /// `D = 2` the step, the derivative and the smooth count are the lines that
+    /// were here before, chosen by a compare the compiler folds away — so the
+    /// degree-2 picture is not merely equal to what it was but the same
+    /// arithmetic, and `tests/oracle.rs` pins its bytes on `tangle 1e-28`.
     #[inline(always)]
-    fn run<const JULIA: bool>(&self, a_re: f64, a_im: f64) -> Outcome {
+    fn run<const D: usize, const JULIA: bool>(&self, a_re: f64, a_im: f64) -> Outcome {
         // Everything the loop reads more than once, read once. A field access
         // through `&Reference` is a load the optimizer cannot always hoist past
         // the indexing below it, and this loop runs tens of thousands of times
@@ -293,8 +351,7 @@ impl<'a> Kernel<'a> {
             // was. It bought 1.0× to 2.6× on a frame with a picture in it and
             // moved that picture at every tolerance it fires at — §6 of the
             // crate README, which is the only thing to rebuild this from. ----
-            let ar = zr + zr + delta_re;
-            let ai = zi + zi + delta_im;
+            let (ar, ai) = factor::<D>(zr, zi, delta_re, delta_im);
             let mut next_re = ar * delta_re - ai * delta_im;
             let mut next_im = ar * delta_im + ai * delta_re;
             if !JULIA {
@@ -321,7 +378,7 @@ impl<'a> Kernel<'a> {
 
             if z_norm_sq > bailout_sq {
                 return Outcome {
-                    smooth: smooth_count(n, z_norm_sq),
+                    smooth: smooth_count_at(n, z_norm_sq, D as u32),
                     iterations: n,
                     rebases,
                     detected_interior: false,
@@ -332,7 +389,7 @@ impl<'a> Kernel<'a> {
             }
 
             if track_interior {
-                derivative *= 4.0 * z_norm_sq;
+                derivative *= slope_sq::<D>(z_norm_sq);
                 if derivative >= TWO64 {
                     derivative *= TWO64_INV;
                     exponent += 64;
@@ -396,7 +453,7 @@ impl<'a> Kernel<'a> {
     /// because it is asked of a few thousand cells rather than of a frame —
     /// `crate::nuclei` and the page both probe on the cap policy's own grid.
     #[inline(never)]
-    pub fn domain_with<const JULIA: bool>(&self, a_re: f64, a_im: f64) -> Domain {
+    pub fn domain_with<const D: usize, const JULIA: bool>(&self, a_re: f64, a_im: f64) -> Domain {
         let points = &self.reference.points[..];
         let periodic = self.reference.periodic;
         let maxiter = self.maxiter;
@@ -417,8 +474,7 @@ impl<'a> Kernel<'a> {
         let mut period = 0u32;
 
         loop {
-            let ar = zr + zr + delta_re;
-            let ai = zi + zi + delta_im;
+            let (ar, ai) = factor::<D>(zr, zi, delta_re, delta_im);
             let mut next_re = ar * delta_re - ai * delta_im;
             let mut next_im = ar * delta_im + ai * delta_re;
             if !JULIA {
@@ -478,6 +534,89 @@ impl<'a> Kernel<'a> {
     }
 }
 
+/// The degrees this kernel draws: `z^d + c` for `d` from two to six, which is every
+/// integer degree the shallow contract offers (`multibrot3..6`, `julia..julia6`).
+///
+/// **Integer degrees only, and that is `audit_deep_families_ckpt140`'s finding
+/// rather than a gap.** A fractional degree needs a branch cut, and perturbation
+/// fails exactly on the seam the fractional figure exists to show.
+pub const DEGREES: core::ops::RangeInclusive<u32> = 2..=6;
+
+/// `F` in `δ' = δ·F (+ dc)`: the delta step at degree `D`, less its last multiply.
+///
+/// `(Z + δ)^D − Z^D = δ · Σ_{k=1..D} C(D,k)·Z^{D−k}·δ^{k−1}`, and the sum is taken
+/// in **Horner form in `δ`** — `2D − 3` complex multiplies a step, the powers of
+/// `Z` formed here from the one point the loop already holds. Written this way
+/// because it has no cancellation: every term is a multiple of `δ`, so a small
+/// delta is carried to relative precision exactly as the quadratic step carries
+/// it.
+///
+/// **The powers are formed per step and never looked up**, which is measured
+/// rather than preferred: precomputing `C(D,k)·Z^{D−k}` for every orbit point
+/// was slower at every degree the audit tried — 12.1 against 5.3 ns an iteration
+/// at `D = 2`, 27.3 against 20.0 at `D = 6` — because the orbit's memory traffic is
+/// what §4 of the crate README found the loop spends its time on, and a table
+/// `D − 1` times the orbit's size is more of it.
+///
+/// At `D = 2` this is `2Z + δ`, spelled `Z + Z + δ` as it always was.
+#[inline(always)]
+fn factor<const D: usize>(zr: f64, zi: f64, dr: f64, di: f64) -> (f64, f64) {
+    if D == 2 {
+        return (zr + zr + dr, zi + zi + di);
+    }
+    let b = const { binomial(D) };
+    // `pw[j]` is `Z^j`, for the `j` the sum reaches: one to `D − 1`.
+    let mut pw = [[0.0f64; 2]; 6];
+    pw[1] = [zr, zi];
+    let mut j = 2;
+    while j < D {
+        let [a, c] = pw[j - 1];
+        pw[j] = [a * zr - c * zi, a * zi + c * zr];
+        j += 1;
+    }
+    // The `k = D` term is `δ^{D−1}` alone, so the innermost bracket is `δ + D·Z`.
+    let mut pr = dr + b[D - 1] * zr;
+    let mut pi = di + b[D - 1] * zi;
+    let mut k = D - 2;
+    while k >= 1 {
+        let (tr, ti) = (pr * dr - pi * di, pr * di + pi * dr);
+        pr = tr + b[k] * pw[D - k][0];
+        pi = ti + b[k] * pw[D - k][1];
+        k -= 1;
+    }
+    (pr, pi)
+}
+
+/// `C(d, k)` for `k = 0..=d`, as the `f64` the step multiplies by. Exact: the
+/// largest is `C(6, 3) = 20`.
+const fn binomial(d: usize) -> [f64; 7] {
+    let mut out = [0.0f64; 7];
+    let mut k = 0;
+    while k <= d {
+        let mut value = 1u64;
+        let mut i = 0;
+        while i < k {
+            value = value * (d - i) as u64 / (i + 1) as u64;
+            i += 1;
+        }
+        out[k] = value as f64;
+        k += 1;
+    }
+    out
+}
+
+/// `|f'(z)|²` at degree `D` — the factor the interior switch's `|dz|²` takes a
+/// step: `|D·z^{D−1}|² = D²·(|z|²)^{D−1}`, which at `D = 2` is the `4|z|²` it
+/// always was.
+#[inline(always)]
+fn slope_sq<const D: usize>(z_norm_sq: f64) -> f64 {
+    if D == 2 {
+        4.0 * z_norm_sq
+    } else {
+        (D * D) as f64 * z_norm_sq.powi(D as i32 - 1)
+    }
+}
+
 /// `2^k`, saturating at infinity above the exponent range and at zero below it.
 /// Neither end is reachable from the one call site; the saturation is there so
 /// the function is total.
@@ -524,10 +663,24 @@ fn interior_outcome(
 /// positive gives back the integer count rather than a `NaN`, because `NaN` in
 /// this field means *interior* and a poisoned exterior sample would paint black.
 pub fn smooth_count(n: u32, magnitude_sq: f64) -> f64 {
+    smooth_count_at(n, magnitude_sq, 2)
+}
+
+/// The same count at any degree: `log_d` is the base, because one step past the
+/// bailout multiplies `ln|z|` by `d`. The engine's own `smooth_count` takes the
+/// degree for exactly this reason and divides by `degree.ln()`; degree two keeps
+/// the `LN_2` constant it has always divided by here, which is what
+/// `smooth-cases.json` pins bit for bit.
+pub fn smooth_count_at(n: u32, magnitude_sq: f64, degree: u32) -> f64 {
     let log_z = 0.5 * magnitude_sq.ln();
     let overshoot = log_z / BAILOUT.ln();
     if overshoot.is_finite() && overshoot > 0.0 {
-        (n + 1) as f64 - overshoot.ln() / core::f64::consts::LN_2
+        let base = if degree == 2 {
+            core::f64::consts::LN_2
+        } else {
+            (degree as f64).ln()
+        };
+        (n + 1) as f64 - overshoot.ln() / base
     } else {
         (n + 1) as f64
     }
@@ -611,6 +764,168 @@ mod tests {
             equal as f64 / compared as f64 > 0.50,
             "only {equal} of {compared} were bit-equal"
         );
+    }
+
+    /// The plain loop at any degree: `z ↦ z^d + c` in `f64`, from `z₀`.
+    fn plain_at(degree: u32, z0: [f64; 2], c: [f64; 2], maxiter: u32) -> f64 {
+        let mut z = z0;
+        for n in 1..=maxiter {
+            let w = reference::cpow_f64(z, degree);
+            z = [w[0] + c[0], w[1] + c[1]];
+            let magnitude_sq = z[0] * z[0] + z[1] * z[1];
+            if magnitude_sq > BAILOUT * BAILOUT {
+                return smooth_count_at(n, magnitude_sq, degree);
+            }
+        }
+        f64::NAN
+    }
+
+    /// **The degree-`d` step, held to the plain loop where `f64` is still right**
+    /// *(deep_degrees_ckpt140)*: the whole Multibrot set of each degree, 41×41
+    /// across a width of three about a point just off the origin, so the grid
+    /// straddles the boundary everywhere and the reference is not the centre of
+    /// symmetry. `audit_deep_families_ckpt140` found no mask disagreement at three,
+    /// four and five and one sample of 1,681 at six — a point within an ulp of the
+    /// boundary, which is the plain loop's to be wrong about as often as ours.
+    #[test]
+    fn a_shallow_frame_matches_the_plain_f64_loop_at_every_degree() {
+        let maxiter = 2000;
+        let c0 = [0.05f64, 0.02f64];
+        for degree in 3..=6u32 {
+            let c_re = Fx::from_f64(c0[0], 3).unwrap();
+            let c_im = Fx::from_f64(c0[1], 3).unwrap();
+            let orbit = reference::orbit_of(degree, &c_re, &c_im, maxiter, None);
+            let kernel = Kernel::new(&orbit, maxiter, false);
+            let (mut masks, mut pairs, mut rebased) = (0, Vec::new(), 0);
+            for row in 0..41 {
+                for col in 0..41 {
+                    let dc_re = (col as f64 + 0.5 - 20.5) * 3.0 / 41.0;
+                    let dc_im = (20.5 - row as f64 - 0.5) * 3.0 / 41.0;
+                    let ours = kernel.sample_at(degree, false, dc_re, dc_im);
+                    let theirs =
+                        plain_at(degree, [0.0, 0.0], [c0[0] + dc_re, c0[1] + dc_im], maxiter);
+                    if ours.rebases > 0 {
+                        rebased += 1;
+                    }
+                    if ours.smooth.is_nan() != theirs.is_nan() {
+                        masks += 1;
+                    } else if !theirs.is_nan() {
+                        pairs.push((ours.smooth, theirs));
+                    }
+                }
+            }
+            let how = agreement(&pairs);
+            println!(
+                "degree {degree} against the plain loop: {masks} masks, {rebased} rebased, {how:?}"
+            );
+            assert!(
+                masks <= 1,
+                "degree {degree}: {masks} samples disagree about the interior"
+            );
+            assert!(
+                how.compared > 1000,
+                "degree {degree}: only {} escaped",
+                how.compared
+            );
+            assert!(
+                rebased > 1000,
+                "degree {degree}: rebasing was never exercised"
+            );
+            assert!(
+                how.median_relative < 1e-12,
+                "degree {degree}: median relative error {:e}",
+                how.median_relative
+            );
+            assert!(
+                how.within * 100 >= how.compared * 99,
+                "degree {degree}: only {} of {} within 1e-6",
+                how.within,
+                how.compared
+            );
+        }
+    }
+
+    /// And the Julia sets of those degrees, entered at `Z₁ = c`: the same claim
+    /// the degree-2 Julia test makes, at every degree.
+    #[test]
+    fn a_shallow_julia_frame_matches_the_plain_f64_loop_at_every_degree() {
+        let maxiter = 2000;
+        for degree in 3..=6u32 {
+            // Just inside each main component, so the Julia set is filled and the
+            // tile has both interior and boundary in it.
+            let c = [0.2f64, 0.1f64];
+            let c_re = Fx::from_f64(c[0], 3).unwrap();
+            let c_im = Fx::from_f64(c[1], 3).unwrap();
+            let orbit = reference::orbit_of(degree, &c_re, &c_im, maxiter + 1, None);
+            let kernel = Kernel::new(&orbit, maxiter, false).at_entry(1);
+            let (mut masks, mut pairs, mut inside) = (0, Vec::new(), 0);
+            for row in 0..41 {
+                for col in 0..41 {
+                    let dz_re = (col as f64 - 20.0) * 0.06;
+                    let dz_im = (row as f64 - 20.0) * 0.06;
+                    let ours = kernel.sample_at(degree, true, dz_re, dz_im).smooth;
+                    let theirs = plain_at(degree, [c[0] + dz_re, c[1] + dz_im], c, maxiter);
+                    if ours.is_nan() != theirs.is_nan() {
+                        masks += 1;
+                    } else if theirs.is_nan() {
+                        inside += 1;
+                    } else {
+                        pairs.push((ours, theirs));
+                    }
+                }
+            }
+            let how = agreement(&pairs);
+            println!(
+                "degree {degree} julia against the plain loop: {masks} masks, {inside} inside, {how:?}"
+            );
+            assert!(
+                masks <= 1,
+                "degree {degree}: {masks} samples disagree about the interior"
+            );
+            assert!(
+                inside > 100 && how.compared > 500,
+                "degree {degree}: {inside} in, {} out",
+                how.compared
+            );
+            assert!(
+                how.median_relative < 1e-12,
+                "degree {degree}: median relative error {:e}",
+                how.median_relative
+            );
+        }
+    }
+
+    /// The Horner step is the binomial, at every degree: `δ·F` against
+    /// `(Z + δ)^d − Z^d` taken the long way, at a size where the long way has no
+    /// cancellation to lose.
+    #[test]
+    fn the_horner_step_is_the_binomial_expansion() {
+        let z = [0.3f64, -0.7f64];
+        let delta = [0.11f64, 0.05f64];
+        macro_rules! at {
+            ($d:literal) => {{
+                let (fr, fi) = factor::<$d>(z[0], z[1], delta[0], delta[1]);
+                let ours = [fr * delta[0] - fi * delta[1], fr * delta[1] + fi * delta[0]];
+                let a = reference::cpow_f64([z[0] + delta[0], z[1] + delta[1]], $d);
+                let b = reference::cpow_f64(z, $d);
+                let theirs = [a[0] - b[0], a[1] - b[1]];
+                for axis in 0..2 {
+                    assert!(
+                        (ours[axis] - theirs[axis]).abs() < 1e-14,
+                        "degree {}: {:?} against {:?}",
+                        $d,
+                        ours,
+                        theirs
+                    );
+                }
+            }};
+        }
+        at!(2);
+        at!(3);
+        at!(4);
+        at!(5);
+        at!(6);
+        assert_eq!(binomial(6), [1.0, 6.0, 15.0, 20.0, 15.0, 6.0, 1.0]);
     }
 
     #[test]

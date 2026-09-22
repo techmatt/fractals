@@ -246,11 +246,7 @@ pub fn seeds_in_rows(
         for i in 0..cols {
             let col = spread(i, cols, sample_width);
             let (re, im) = spec.dc(offset, col, row);
-            let domain = if julia {
-                kernel.domain_with::<true>(re, im)
-            } else {
-                kernel.domain_with::<false>(re, im)
-            };
+            let domain = kernel.domain_at(spec.degree, julia, re, im);
             if domain.period == 0 || !domain.minimum.is_finite() {
                 continue;
             }
@@ -292,13 +288,27 @@ pub fn seeds_in_rows(
 
 // -------------------------------------------------------------- the expensive half
 
-/// One Newton step on `z_p(c) = 0`, from `c`.
+/// One Newton step on `z_p(c) = 0`, from `c`, for `z ↦ z^degree + c`.
 ///
 /// See the module header for why `d` and `A` are scaled `f64` and only `z` is
 /// fixed point.
-pub fn newton_step(c_re: &Fx, c_im: &Fx, period: u32) -> Step {
+///
+/// **At degree `D` the derivative is `D·z^{D−1}`** *(deep_degrees_ckpt140)*, in
+/// both of the products: `d ← D·z^{D−1}·d + 1` and `l ← l·D·z^{D−1}`. The power is
+/// formed from the `f64` projection of `z`, which is the module header's point
+/// about relative precision made once more — `z^{D−1}` wants sixteen digits of
+/// `z`, not two hundred. At degree two every line is the one that was here.
+///
+/// **And the escape guard is the reference orbit's**, for the reference orbit's
+/// reason: at degree four an iterate under the bailout raised to the fourth
+/// power wraps the signed integer limb, silently. Above degree two a step is
+/// abandoned as escaped once `|z| > 8`, which is outside every Multibrot set of
+/// these degrees — `|z| > 2^{1/(D−1)}` already escapes — so nothing that could
+/// be a nucleus is lost to it.
+pub fn newton_step(c_re: &Fx, c_im: &Fx, period: u32, degree: u32) -> Step {
     let n = c_re.n;
-    let bailout_sq = BAILOUT * BAILOUT;
+    let bailout_sq = if degree == 2 { BAILOUT * BAILOUT } else { 64.0 };
+    let slope = degree as f64;
 
     let mut z_re = Fx::zero(n);
     let mut z_im = Fx::zero(n);
@@ -325,12 +335,20 @@ pub fn newton_step(c_re: &Fx, c_im: &Fx, period: u32) -> Step {
             };
         }
 
-        // `d ← 2·z·d + 1`. The `+1` is added at the mantissa's own scale and
-        // vanishes once `|d|` is large, which is correct rather than lossy: it
-        // is below the last bit of the thing beside it.
+        // `z^{D−1}`, which at degree two is `z` itself.
+        let (sr, si) = if degree == 2 {
+            (zr, zi)
+        } else {
+            let [a, b] = reference::cpow_f64([zr, zi], degree - 1);
+            (a, b)
+        };
+
+        // `d ← 2·z·d + 1`, at degree two. The `+1` is added at the mantissa's own
+        // scale and vanishes once `|d|` is large, which is correct rather than
+        // lossy: it is below the last bit of the thing beside it.
         let one = pow2(-d_exp);
-        let mut next_re = 2.0 * (zr * d_re - zi * d_im) + one;
-        let mut next_im = 2.0 * (zr * d_im + zi * d_re);
+        let mut next_re = slope * (sr * d_re - si * d_im) + one;
+        let mut next_im = slope * (sr * d_im + si * d_re);
         let mut next_exp = d_exp;
         renormalize(&mut next_re, &mut next_im, &mut next_exp);
         d_re = next_re;
@@ -338,8 +356,8 @@ pub fn newton_step(c_re: &Fx, c_im: &Fx, period: u32) -> Step {
         d_exp = next_exp;
 
         if k >= 1 {
-            let mut product_re = 2.0 * (zr * l_re - zi * l_im);
-            let mut product_im = 2.0 * (zr * l_im + zi * l_re);
+            let mut product_re = slope * (sr * l_re - si * l_im);
+            let mut product_im = slope * (sr * l_im + si * l_re);
             let mut product_exp = l_exp;
             renormalize(&mut product_re, &mut product_im, &mut product_exp);
             l_re = product_re;
@@ -364,19 +382,26 @@ pub fn newton_step(c_re: &Fx, c_im: &Fx, period: u32) -> Step {
 
         // `z ← z² + c`, the only thing still in fixed point, and the only place
         // this loop spends a multiply worth counting.
-        let x2 = z_re.sqr();
-        let y2 = z_im.sqr();
-        let xy = z_re.mul(&z_im);
-        z_re = x2.sub(&y2).add(c_re);
-        z_im = xy.shl1().add(c_im);
+        if degree == 2 {
+            let x2 = z_re.sqr();
+            let y2 = z_im.sqr();
+            let xy = z_re.mul(&z_im);
+            z_re = x2.sub(&y2).add(c_re);
+            z_im = xy.shl1().add(c_im);
+        } else {
+            let (re, im) = reference::cpow_fx(&z_re, &z_im, degree);
+            z_re = re.add(c_re);
+            z_im = im.add(c_im);
+        }
     }
 
     // `Δc = z_p / d_p`, taken on the mantissas and scaled once at the end.
     let (zr, zi) = (z_re.to_f64(), z_im.to_f64());
     let norm = d_re * d_re + d_im * d_im;
     let window_log2 = l_exp as f64 + 0.5 * (l_re * l_re + l_im * l_im).log2();
-    // `size = 1/|b·l²|`, as a logarithm: `−log₂|b| − 2·log₂|l|`.
-    let size_log2 = -0.5 * (b_re * b_re + b_im * b_im).log2() - 2.0 * window_log2;
+    // `size = 1/|b·l²|`, as a logarithm: `−log₂|b| − 2·log₂|l|`. At degree `D`
+    // the power is `D/(D−1)` — see `body_power`.
+    let size_log2 = -0.5 * (b_re * b_re + b_im * b_im).log2() - body_power(degree) * window_log2;
     if !(norm > 0.0) || !norm.is_finite() {
         // A derivative of zero is `c` already at the nucleus — or a period that
         // was never a period. Either way there is no step to take.
@@ -416,18 +441,37 @@ pub fn newton_step(c_re: &Fx, c_im: &Fx, period: u32) -> Step {
     }
 }
 
+/// The power of the atom domain `1/|l|` the minibrot's body is: two at degree two,
+/// `D/(D−1)` at degree `D`.
+///
+/// **The renormalisation, which is where the number comes from.** Near a
+/// period-`p` nucleus the `p`-th iterate is `z ↦ λ·z^D + β·Δc` to first order,
+/// with `λ = l` the multiplier product and `β = b·l` the parameter derivative.
+/// Rescaling `z = s·w` with `λ·s^{D−1} = 1` makes it `w ↦ w^D + β·λ^{1/(D−1)}·Δc`,
+/// the whole Multibrot set again — so the copy is `1/|β·λ^{1/(D−1)}|` across,
+/// which is `1/|b·l^{D/(D−1)}|`. At `D = 2` that is Vepstas' `1/|b·l²|`. What it
+/// changes on the page: a view at 1e-n finds its minibrots near 1e-2n at degree
+/// two, and near 1e-(D/(D−1))n at degree `D` — 1e-1.5n at three, 1e-1.2n at six.
+pub fn body_power(degree: u32) -> f64 {
+    if degree == 2 {
+        2.0
+    } else {
+        degree as f64 / (degree as f64 - 1.0)
+    }
+}
+
 /// Newton from a starting `c`, until it stops moving.
 ///
 /// Stops on three things and says which by what it returns: the correction fell
 /// under `tolerance`, the correction stopped shrinking — Newton at its `f64`
 /// floor, which is the ordinary end — or [`MAX_STEPS`]. `None` where the orbit
 /// escaped, which means the seed's period was not a period of anything here.
-pub fn solve(c_re: &Fx, c_im: &Fx, period: u32, tolerance: f64) -> Option<Nucleus> {
+pub fn solve(c_re: &Fx, c_im: &Fx, period: u32, degree: u32, tolerance: f64) -> Option<Nucleus> {
     let (mut re, mut im) = (*c_re, *c_im);
     let mut last = f64::INFINITY;
     let (mut size_log2, mut window_log2) = (f64::NAN, f64::NAN);
     for step in 1..=MAX_STEPS {
-        let taken = newton_step(&re, &im, period);
+        let taken = newton_step(&re, &im, period, degree);
         if taken.escaped {
             return None;
         }
@@ -467,14 +511,24 @@ pub fn solve(c_re: &Fx, c_im: &Fx, period: u32, tolerance: f64) -> Option<Nucleu
 /// run out of fraction bits exactly where the answer starts: at 1e-22 the view
 /// wants four limbs and the nucleus wants five. The grid is the tile's, since
 /// the tile is what the answer has to place a pixel of.
-pub fn limbs_for_nucleus(width: f64, tile_samples: u32) -> usize {
-    let atom = width * width;
+pub fn limbs_for_nucleus(width: f64, tile_samples: u32, degree: u32) -> usize {
+    let atom = body_scale(width, degree);
     let wanted = if atom > 0.0 && atom.is_finite() {
         reference::limbs_for(atom, tile_samples)
     } else {
         reference::limbs_for(width, tile_samples)
     };
     wanted.max(reference::limbs_for(width, tile_samples) + 1)
+}
+
+/// Where the bodies a view of this width finds sit: `width²` at degree two, and
+/// `width^{D/(D−1)}` at degree `D`. See [`body_power`].
+pub fn body_scale(width: f64, degree: u32) -> f64 {
+    if degree == 2 {
+        width * width
+    } else {
+        width.powf(body_power(degree))
+    }
 }
 
 // ------------------------------------------------------------------- both halves
@@ -499,7 +553,7 @@ pub fn search(
     want: usize,
 ) -> Result<Vec<Nucleus>, String> {
     let orbit = spec.reference_orbit()?;
-    let limbs = limbs_for_nucleus(spec.width, spec.sample_width());
+    let limbs = limbs_for_nucleus(spec.width, spec.sample_width(), spec.degree);
     let centre_re = Fx::parse(&spec.center_re, limbs)
         .ok_or_else(|| format!("`{}` is not a decimal", spec.center_re))?;
     let centre_im = Fx::parse(&spec.center_im, limbs)
@@ -520,11 +574,12 @@ pub fn search(
         // The tolerance is the atom's own scale taken eight digits finer, and
         // the atom's scale is the view's width squared until a solve says
         // otherwise. Newton stalls well above it and the stall is the real stop.
-        let tolerance = spec.width * spec.width * 1e-8;
+        let tolerance = body_scale(spec.width, spec.degree) * 1e-8;
         let Some(nucleus) = solve(
             &centre_re.add(&from_re),
             &centre_im.add(&from_im),
             seed.period,
+            spec.degree,
             tolerance,
         ) else {
             continue;
@@ -646,7 +701,7 @@ mod tests {
         let from_re = truth_re.add(&Fx::from_f64(1.6e-12, limbs).unwrap());
         let from_im = truth_im.sub(&Fx::from_f64(1.1e-12, limbs).unwrap());
 
-        let nucleus = solve(&from_re, &from_im, 2838, 1e-30).expect("the anchor is in the set");
+        let nucleus = solve(&from_re, &from_im, 2838, 2, 1e-30).expect("the anchor is in the set");
         assert!(nucleus.steps <= 5, "took {} steps", nucleus.steps);
         // Back to the committed centre, far past what a double could have held.
         let apart = nucleus
@@ -685,8 +740,8 @@ mod tests {
             .unwrap()
             .sub(&Fx::from_f64(1.1e-12, limbs).unwrap());
 
-        let true_one = solve(&from_re, &from_im, 2838, 1e-30).unwrap();
-        let harmonic = solve(&from_re, &from_im, 5676, 1e-30).unwrap();
+        let true_one = solve(&from_re, &from_im, 2838, 2, 1e-30).unwrap();
+        let harmonic = solve(&from_re, &from_im, 5676, 2, 1e-30).unwrap();
 
         // The same point, to far more digits than a sample of any view of it.
         let apart = harmonic
@@ -713,17 +768,17 @@ mod tests {
         let re = Fx::parse("0.5", 4).unwrap();
         let im = Fx::parse("0.5", 4).unwrap();
         // `0.5 + 0.5i` is outside the set: the orbit escapes long before 2838.
-        assert!(solve(&re, &im, 2838, 1e-30).is_none());
+        assert!(solve(&re, &im, 2838, 2, 1e-30).is_none());
     }
 
     /// The limb count comes from the atom's scale, which is the view's squared,
     /// and is always at least one more than the view's own.
     #[test]
     fn a_nucleus_is_solved_deeper_than_the_view_it_was_found_in() {
-        assert!(limbs_for_nucleus(1e-22, 316) > reference::limbs_for(1e-22, 316));
-        assert!(limbs_for_nucleus(2e-11, 316) > reference::limbs_for(2e-11, 316));
+        assert!(limbs_for_nucleus(1e-22, 316, 2) > reference::limbs_for(1e-22, 316));
+        assert!(limbs_for_nucleus(2e-11, 316, 2) > reference::limbs_for(2e-11, 316));
         // A degenerate width falls back rather than producing nonsense.
-        assert!(limbs_for_nucleus(0.0, 316) >= 3);
+        assert!(limbs_for_nucleus(0.0, 316, 2) >= 3);
     }
 
     /// The period-1 nucleus of the whole set is the origin, which is the one
@@ -732,7 +787,7 @@ mod tests {
     fn the_cardioids_own_nucleus_is_the_origin() {
         let from_re = Fx::parse("0.04", 4).unwrap();
         let from_im = Fx::parse("-0.03", 4).unwrap();
-        let nucleus = solve(&from_re, &from_im, 1, 1e-30).unwrap();
+        let nucleus = solve(&from_re, &from_im, 1, 2, 1e-30).unwrap();
         assert!(nucleus.c_re.to_f64().abs() < 1e-30);
         assert!(nucleus.c_im.to_f64().abs() < 1e-30);
     }

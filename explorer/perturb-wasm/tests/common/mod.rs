@@ -275,6 +275,7 @@ pub fn canvas_spec(frame: &Control, maxiter: Option<u32>) -> Spec {
             .then(|| (frame.re.to_string(), frame.im.to_string())),
         anchor: Anchor::Parameter,
         interior: true,
+        degree: 2,
     }
 }
 
@@ -313,11 +314,7 @@ pub fn walk_cells(
         for i in 0..cols {
             let col = policy::spread(i, cols, sample_width);
             let (re, im) = spec.dc(offset, col, row);
-            each(if julia {
-                kernel.sample_with::<true>(re, im)
-            } else {
-                kernel.sample_with::<false>(re, im)
-            });
+            each(kernel.sample_at(spec.degree, julia, re, im));
         }
     }
 }

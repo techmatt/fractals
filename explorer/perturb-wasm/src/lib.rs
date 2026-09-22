@@ -30,10 +30,12 @@
 //!
 //! ## What this does not do
 //!
-//! Degree-2 Mandelbrot, `smooth`, and nothing else. No other family has a delta
-//! recurrence written here; no other mode's channels are reduced. It is not a
-//! wider engine, it is one kernel — which is the shape the explorer's own README
-//! already said a deep renderer would have to take.
+//! `z^d + c` at integer degrees two to six, on both of its planes — the Multibrot
+//! set of that degree and its Julia sets — in `smooth`, and nothing else. No
+//! other family has a delta recurrence written here; no other mode's channels are
+//! reduced. It is not a wider engine, it is one kernel with the degree as a const
+//! parameter — which is the shape the explorer's own README already said a deep
+//! renderer would have to take.
 
 use crate::fx::Fx;
 use crate::json::Value;
@@ -152,6 +154,12 @@ pub struct Spec {
     /// No meaning without [`Spec::julia`], and refused without it.
     pub anchor: Anchor,
     pub interior: bool,
+    /// The degree of `z ↦ z^d + c`, from two to six *(deep_degrees_ckpt140)*.
+    /// **Absent is two**, which is what every spec written before this member
+    /// existed is, and it is the one member that means the same thing on both
+    /// sides of the Mandelbrot/Julia fork: the Multibrot set of degree `d` and the
+    /// Julia sets of that same recurrence.
+    pub degree: u32,
 }
 
 /// The point a Julia view measures its offset from, which is always a point of
@@ -187,6 +195,7 @@ const KNOWN: &[&str] = &[
     "julia_im",
     "anchor",
     "interior",
+    "degree",
 ];
 
 impl Spec {
@@ -255,6 +264,21 @@ impl Spec {
             Some(_) => return Err("`anchor` is \"parameter\" or \"origin\"".to_string()),
         };
         let period = count_of("period");
+        let degree = match object.get("degree") {
+            None | Some(Value::Null) => 2,
+            Some(Value::Num(value))
+                if value.fract() == 0.0 && kernel::DEGREES.contains(&(*value as u32)) =>
+            {
+                *value as u32
+            }
+            Some(_) => {
+                return Err(format!(
+                    "`degree` is a whole number from {} to {}: this kernel draws z^d + c at                      integer degrees and no others",
+                    kernel::DEGREES.start(),
+                    kernel::DEGREES.end()
+                ));
+            }
+        };
 
         // Each of these three is a member that means something only on the other
         // side of the fork, and a spec that carries both is a spec whose author
@@ -296,6 +320,7 @@ impl Spec {
             julia,
             anchor,
             interior,
+            degree,
         })
     }
 
@@ -318,18 +343,18 @@ impl Spec {
     /// The limb count this frame's reference orbit is computed at.
     ///
     /// The view's own rule everywhere but one place: **a Julia frame anchored at
-    /// `z = 0` is sized for `step²`**, because its first step squares the pixel
-    /// offset and the orbit has to tell two of those apart. See
+    /// `z = 0` is sized for `step^d`**, because its first step raises the pixel
+    /// offset to the degree and the orbit has to tell two of those apart. See
     /// [`reference::limbs_pow`], which is where the measurement is.
     pub fn limbs(&self) -> usize {
         reference::limbs_pow(self.width, self.sample_width(), self.limb_power())
     }
 
-    /// The power of the sample step the reference has to resolve: two at the Julia
-    /// origin anchor, one everywhere else.
+    /// The power of the sample step the reference has to resolve: the degree at
+    /// the Julia origin anchor, where `z₁ = z₀^d + c`, and one everywhere else.
     fn limb_power(&self) -> u32 {
         match (&self.julia, self.anchor) {
-            (Some(_), Anchor::Origin) => 2,
+            (Some(_), Anchor::Origin) => self.degree,
             _ => 1,
         }
     }
@@ -360,7 +385,13 @@ impl Spec {
         // than one entered at `Z₀`, so it asks for one more point rather than
         // rebasing a step early.
         let steps = self.maxiter() + self.entry() as u32;
-        Ok(reference::orbit(&c_re, &c_im, steps, self.period))
+        Ok(reference::orbit_of(
+            self.degree,
+            &c_re,
+            &c_im,
+            steps,
+            self.period,
+        ))
     }
 
     /// The index of the stored orbit a sample's delta starts against.
@@ -477,17 +508,33 @@ pub fn compute_rows(spec: &Spec, orbit: &Reference, first: u32, last: u32) -> Ve
     let width = spec.sample_width();
     let mut bytes = Vec::with_capacity(((last - first) * width) as usize * 8);
     // The fork is taken once for the band rather than once for each of its
-    // samples: the two loops are the same text and different monomorphizations,
-    // which is what keeps the Mandelbrot loop exactly the loop it was.
-    if spec.julia.is_some() {
-        fill::<true>(spec, &kernel, offset, first, last, &mut bytes);
-    } else {
-        fill::<false>(spec, &kernel, offset, first, last, &mut bytes);
+    // samples: the loops are the same text and different monomorphizations, one
+    // per set and degree, which is what keeps the degree-2 Mandelbrot loop
+    // exactly the loop it was.
+    macro_rules! fill_at {
+        ($d:literal, $julia:literal) => {
+            fill::<$d, $julia>(spec, &kernel, offset, first, last, &mut bytes)
+        };
+    }
+    match (spec.degree, spec.julia.is_some()) {
+        (2, false) => fill_at!(2, false),
+        (2, true) => fill_at!(2, true),
+        (3, false) => fill_at!(3, false),
+        (3, true) => fill_at!(3, true),
+        (4, false) => fill_at!(4, false),
+        (4, true) => fill_at!(4, true),
+        (5, false) => fill_at!(5, false),
+        (5, true) => fill_at!(5, true),
+        (6, false) => fill_at!(6, false),
+        (6, true) => fill_at!(6, true),
+        // `Spec::parse` refuses any other degree in a sentence, and a `Spec` built
+        // by hand with one draws nothing rather than drawing the wrong set.
+        _ => {}
     }
     bytes
 }
 
-fn fill<const JULIA: bool>(
+fn fill<const D: usize, const JULIA: bool>(
     spec: &Spec,
     kernel: &Kernel,
     offset: (f64, f64),
@@ -499,7 +546,7 @@ fn fill<const JULIA: bool>(
     for row in first..last {
         for col in 0..width {
             let (re, im) = spec.dc(offset, col, row);
-            let outcome = kernel.sample_with::<JULIA>(re, im);
+            let outcome = kernel.sample_with::<D, JULIA>(re, im);
             bytes.extend_from_slice(&outcome.smooth.to_le_bytes());
         }
     }
@@ -599,7 +646,7 @@ pub extern "C" fn plan(spec_ptr: *const u8, spec_len: usize) -> *mut u8 {
             concat!(
                 r#"{{"ok":true,"maxiter":{},"limbs":{},"fraction_bits":{},"#,
                 r#""sample_width":{},"sample_height":{},"interior":{},"#,
-                r#""julia":{},"anchor":"{}","delta_ulps":{},"#,
+                r#""julia":{},"anchor":"{}","degree":{},"delta_ulps":{},"#,
                 r#""reference_bytes":{},"ceiling":{}}}"#
             ),
             spec.maxiter(),
@@ -613,6 +660,7 @@ pub extern "C" fn plan(spec_ptr: *const u8, spec_len: usize) -> *mut u8 {
                 Anchor::Parameter => "parameter",
                 Anchor::Origin => "origin",
             },
+            spec.degree,
             // `null` rather than `inf`, which is not JSON — and infinite is the
             // ordinary case, an offset of exactly zero.
             match json::finite(spec.delta_ulps()) {
@@ -756,7 +804,7 @@ pub extern "C" fn seed_band(
 /// "escaped":false}`.
 #[unsafe(no_mangle)]
 pub extern "C" fn newton_step(request_ptr: *const u8, request_len: usize) -> *mut u8 {
-    const KNOWN: &[&str] = &["c_re", "c_im", "period", "limbs"];
+    const KNOWN: &[&str] = &["c_re", "c_im", "period", "limbs", "degree"];
     let read = text(request_ptr, request_len)
         .ok_or_else(|| "the request is not UTF-8".to_string())
         .and_then(|text| {
@@ -779,13 +827,21 @@ pub extern "C" fn newton_step(request_ptr: *const u8, request_len: usize) -> *mu
             };
             let limbs = (count("limbs")? as usize).clamp(3, fx::MAX_LIMBS);
             let period = count("period")?;
+            // Absent is two, as it is in a spec.
+            let degree = match object.get("degree") {
+                None => 2,
+                Some(_) => match count("degree") {
+                    Ok(degree) if kernel::DEGREES.contains(&degree) => degree,
+                    _ => return Err("`degree` is a whole number from 2 to 6".to_string()),
+                },
+            };
             let re_text = coordinate("c_re")?;
             let im_text = coordinate("c_im")?;
             let c_re = Fx::parse(&re_text, limbs)
                 .ok_or_else(|| format!("`{re_text}` is not a decimal"))?;
             let c_im = Fx::parse(&im_text, limbs)
                 .ok_or_else(|| format!("`{im_text}` is not a decimal"))?;
-            Ok((nuclei::newton_step(&c_re, &c_im, period), limbs))
+            Ok((nuclei::newton_step(&c_re, &c_im, period, degree), limbs))
         });
     report(read.map(|(step, limbs)| {
         let digits = 64 * (limbs - 1);
@@ -807,8 +863,14 @@ pub extern "C" fn newton_step(request_ptr: *const u8, request_len: usize) -> *mu
 /// The limb count a nucleus found in a view of this width is solved at, so the
 /// page does not restate the rule. See [`nuclei::limbs_for_nucleus`].
 #[unsafe(no_mangle)]
-pub extern "C" fn nucleus_limbs(width: f64, tile_samples: u32) -> u32 {
-    nuclei::limbs_for_nucleus(width, tile_samples) as u32
+pub extern "C" fn nucleus_limbs(width: f64, tile_samples: u32, degree: u32) -> u32 {
+    // A caller that passes no degree passes zero, which is two.
+    let degree = if kernel::DEGREES.contains(&degree) {
+        degree
+    } else {
+        2
+    };
+    nuclei::limbs_for_nucleus(width, tile_samples, degree) as u32
 }
 
 /// The cap a preview tile of a period-`p` nucleus is drawn at.
@@ -1259,6 +1321,52 @@ mod tests {
         let report = plan_text(&past);
         assert!(report.contains(r#""ok":false"#), "{report}");
         assert!(report.contains("limbs"), "{report}");
+    }
+
+    /// **The degree is a member with a default**, so every spec written before it
+    /// existed is still degree two, and nothing outside two to six is drawn.
+    #[test]
+    fn the_degree_is_two_unless_the_spec_says_otherwise() {
+        assert_eq!(Spec::parse(ANCHOR).unwrap().degree, 2);
+        let with = |degree: &str| {
+            ANCHOR.replace(
+                r#""schema": 1"#,
+                &format!(r#""schema": 1, "degree": {degree}"#),
+            )
+        };
+        for degree in 2..=6 {
+            let spec = Spec::parse(&with(&degree.to_string())).unwrap();
+            assert_eq!(spec.degree, degree);
+            let report = plan_text(&with(&degree.to_string()));
+            assert!(
+                report.contains(&format!(r#""degree":{degree}"#)),
+                "{report}"
+            );
+        }
+        for bad in ["1", "7", "2.5", "\"3\"", "-3"] {
+            let why = Spec::parse(&with(bad)).unwrap_err();
+            assert!(why.contains("`degree`"), "{bad}: {why}");
+        }
+        // The origin anchor's orbit is sized for the step to the degree.
+        let origin = far_spec(1e-12).replace(
+            r#""schema": 1"#,
+            r#""schema": 1, "anchor": "origin", "degree": 5"#,
+        );
+        let spec = Spec::parse(&origin).unwrap();
+        assert_eq!(spec.limbs(), reference::limbs_pow(1e-12, 480, 5));
+        // And a degree-d reference is the orbit of `z^d + c`: the Julia orbit of a
+        // degree-3 frame at `c` is one point longer than the degree-3 Mandelbrot
+        // orbit there, and shares every point with it, as at degree two.
+        let three = ANCHOR.replace(r#""schema": 1"#, r#""schema": 1, "degree": 3"#);
+        let julia = julia_spec().replace(r#""schema": 1"#, r#""schema": 1, "degree": 3"#);
+        let m = Spec::parse(&three).unwrap().reference_orbit().unwrap();
+        let j = Spec::parse(&julia).unwrap().reference_orbit().unwrap();
+        assert_eq!(&j.points[..m.len()], &m.points[..]);
+        let quadratic = Spec::parse(ANCHOR).unwrap().reference_orbit().unwrap();
+        assert_ne!(
+            m.points[2], quadratic.points[2],
+            "degree 3 drew the quadratic orbit"
+        );
     }
 
     #[test]
