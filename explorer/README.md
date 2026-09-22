@@ -1494,7 +1494,8 @@ The rule, its threshold and the thirteen frames it was measured on are
 
 ### Nearby minibrots *(deep_nearby_minibrots_ckpt138, 2026-09-20)*
 
-One button, Mandelbrot only. It searches the current view for the minibrots in and around
+One button, on the parameter plane only, at every degree the tab draws *(degrees three to six since
+deep_degrees_ckpt140, each against a measured pin — `perturb-wasm/README.md` §10)*. It searches the current view for the minibrots in and around
 it and fills an **ephemeral list** under the Frame block: nothing is stored, nothing
 reaches Saved, and no entry has a link contract of its own — an entry's target is an
 ordinary `dv` frame, which is why clicking one is a navigation like any other and the way
@@ -1517,7 +1518,8 @@ shape what this tab can offer, and the third is the reason the list looks the wa
   body of 6.478e-12. A tile framed on the domain would put its minibrot in it at a
   millionth of the frame.
 - **A `dv` centre is 64 characters**, and a minibrot found in a view at 1e-n sits near
-  1e-2n, so below about a 1e-30 view the entries are places this site can find and cannot
+  1e-2n — near 1e-(d/(d−1))n at degree `d`, so 1e-1.5n at three and 1e-1.2n at six, which
+  puts the link wall deeper there — so below about a 1e-30 view the entries are places this site can find and cannot
   spell a link to. They are **listed anyway, greyed, and the footer counts them** — the
   link contract does not move for this, and the honest thing is to say what is there.
 - ⚠ **A tile's cap is eight periods of its own nucleus, and that is expensive.** At the

@@ -134,9 +134,11 @@ const CAP_STEP = 2;
  * crate's body-size estimate landed against a pin measured independently of it —
  * `perturb-wasm/README.md` §10 has the table. Where it did not, a list would rank and
  * frame minibrots by a size nobody had checked, and the button is absent rather than
- * wrong.
+ * wrong. **Every degree's did**, to within 0.4% of an area measurement, and a preview
+ * tile resolves at the same eight periods at every degree — so it is every degree, and
+ * the set is kept as the place a degree would be taken back out.
  */
-const MINIBROT_DEGREES = new Set([2]);
+const MINIBROT_DEGREES = new Set([2, 3, 4, 5, 6]);
 
 /** Where the cost warning records that it has been shown. Per session, so a reader who
  *  comes back tomorrow is told again and one who is exploring is not told twice. */

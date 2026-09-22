@@ -87,6 +87,11 @@ pub const TILE_BODIES: f64 = 6.0;
 /// the frame's to ask for ([`crate::policy`]) precisely because nothing knows
 /// what the frame contains.
 ///
+/// **The same eight at every degree** *(deep_degrees_ckpt140)*: re-measured on each
+/// higher degree's `tangle 1e-22`, eight periods resolves 73% to 94% of a tile and
+/// sixteen adds at most fifteen points more — at or past the knee everywhere. The crate
+/// README §10 has the table.
+///
 /// ⚠ **And this is what makes a deep tile expensive**, which is a finding rather
 /// than a tuning: the cost is `samples × 8p`, and `p` at the depths
 /// `tests/frames.rs` lives at is of the order of the cap itself. See the crate
@@ -779,6 +784,94 @@ mod tests {
         assert!(limbs_for_nucleus(2e-11, 316, 2) > reference::limbs_for(2e-11, 316));
         // A degenerate width falls back rather than producing nonsense.
         assert!(limbs_for_nucleus(0.0, 316, 2) >= 3);
+    }
+
+    /// **The island pins, one a degree** *(deep_degrees_ckpt140)*: the anchor's case at
+    /// degrees three to six, and — as there — neither number came from this code.
+    ///
+    /// Each body was measured by **area**, with nothing of the size formula in it: a
+    /// minibrot is the whole Multibrot set of its degree scaled by its size, so the
+    /// interior share of a tile around it, over the whole set's interior share on the
+    /// same grid at matched caps (`K` and `K·p`), is the size squared. That measure
+    /// reproduces the anchor's 6.478e-12 to 3% and every lower-period island of every
+    /// degree it was tried on to half a percent (crate README §10). The formula
+    /// `1/|b·l^{d/(d−1)}|` is held to it here at 1%, and the solve to landing on the
+    /// nucleus from a quarter of a body away.
+    #[test]
+    fn each_degrees_island_is_found_and_sized_against_a_measured_body() {
+        const PINS: &[(u32, u32, &str, &str, f64)] = &[
+            (
+                3,
+                12,
+                "-0.340625023896664202920126013425",
+                "1.271229851873307358570127896315",
+                3.4792e-12,
+            ),
+            (
+                4,
+                13,
+                "-1.084215082746655198570484569323",
+                "0.290514556108830899669391778917",
+                1.4068e-12,
+            ),
+            (
+                5,
+                13,
+                "-0.887826199618012593110848012131",
+                "0.544060594135647520437421634489",
+                3.4052e-12,
+            ),
+            (
+                6,
+                13,
+                "-0.978147600299778310338872737920",
+                "0.207911690569371132751240736148",
+                5.9105e-12,
+            ),
+        ];
+        let limbs = 5;
+        for &(degree, period, re, im, body) in PINS {
+            let truth_re = Fx::parse(re, limbs).unwrap();
+            let truth_im = Fx::parse(im, limbs).unwrap();
+            let from_re = truth_re.add(&Fx::from_f64(0.25 * body, limbs).unwrap());
+            let from_im = truth_im.sub(&Fx::from_f64(0.2 * body, limbs).unwrap());
+            let nucleus = solve(&from_re, &from_im, period, degree, 1e-40)
+                .unwrap_or_else(|| panic!("degree {degree}: no nucleus"));
+            assert!(
+                nucleus.steps <= 6,
+                "degree {degree}: took {} steps",
+                nucleus.steps
+            );
+            let apart = nucleus
+                .c_re
+                .sub(&truth_re)
+                .to_f64()
+                .abs()
+                .max(nucleus.c_im.sub(&truth_im).to_f64().abs());
+            // The stored centre has thirty digits, so that is where it can be held.
+            assert!(apart < 1e-29, "degree {degree}: landed {apart:e} away");
+            assert!(
+                (nucleus.size() / body - 1.0).abs() < 0.01,
+                "degree {degree}: body came out {:e}, measured {body:e}",
+                nucleus.size()
+            );
+            // And the body sits at the view's width to the power d/(d−1), not squared:
+            // the 1e-11 frame this was found from puts it near 1e-11·(d/(d−1)).
+            assert!(body_scale(1e-8, degree) > body_scale(1e-8, 2));
+        }
+    }
+
+    /// The body power is two at degree two and `d/(d−1)` above it.
+    #[test]
+    fn the_body_is_the_domain_to_the_power_d_over_d_minus_one() {
+        assert_eq!(body_power(2), 2.0);
+        assert_eq!(body_power(3), 1.5);
+        assert!((body_power(6) - 1.2).abs() < 1e-15);
+        assert!((body_scale(1e-11, 2) / 1e-22 - 1.0).abs() < 1e-12);
+        assert!((body_scale(1e-10, 3) / 1e-15 - 1.0).abs() < 1e-9);
+        // The limbs follow the body, so a degree-6 nucleus found in a 1e-40 view is
+        // solved at fewer limbs than a degree-2 one: its body is at 1e-48, not 1e-80.
+        assert!(limbs_for_nucleus(1e-40, 316, 6) < limbs_for_nucleus(1e-40, 316, 2));
     }
 
     /// The period-1 nucleus of the whole set is the origin, which is the one
