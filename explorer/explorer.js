@@ -4050,6 +4050,9 @@ function randomPhase() {
   setShade("phase", String(Number(Math.random().toFixed(3))));
 }
 
+// The box button arms the tool as `b` does *(walk_root_frame_and_box_armed_ckpt141)*: it wore
+// the key and the pressed state from the start, and nothing listened to it.
+boxButton.addEventListener("click", toggleBox);
 seatButton.addEventListener("click", resetToSeat);
 wholeButton.addEventListener("click", wholePlane);
 juliaButton.addEventListener("click", () => toggleJulia());

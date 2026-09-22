@@ -252,7 +252,8 @@ and no breadcrumb:
 - **Box (b)** — the box tool, which is a section of its own below. It leads the group
   because it is a tool and the three after it are destinations: they say where the reader is
   standing, and this one is how they get somewhere. It is the only button in the row that is
-  a state rather than an action, so it carries `aria-pressed` and lights while it is armed.
+  a state rather than an action, so it carries `aria-pressed` and glows green while it is
+  armed — see the box tool below.
 - **Reset to seat** — **no key** *(Matt, explorer_controls_ckpt140)*, where it had `s`: it is
   the one of these a reader presses deliberately rather than repeatedly, and a key on it is a
   picture lost to a stray keystroke. It is in neither `KEYS` nor `TOGGLE_KEYS`. The picture
@@ -484,6 +485,22 @@ UI key never decides what is drawn.
 to set the width, click again to zoom to it.** `Esc` or `b` again cancels, an armed or
 half-drawn box either way, and the tool disarms after one zoom — a reader who wants another
 asks for another.
+
+**Armed is a state the button shows** *(walk_root_frame_and_box_armed_ckpt141)*. Pressing
+`Box (b)` or `b` arms the tool: the next left click on the canvas is a box's centre. The
+button glows green — `--state-final`, the Download arrow's green, as border, word and a soft
+`box-shadow` halo — from the press until the box lands and the zoom is taken, or `b`, the
+button again, or `Esc` disarms it, and the canvas takes a crosshair for as long. **Two
+things made the press look like nothing, and both were real**: the button had no click
+listener at all — only `b` reached `toggleBox`, so a press on the button really did nothing —
+and the armed look was the link blue on border and word, which is exactly what `:hover`
+paints, so even `b` left a pointer resting on the button looking at no change. The listener
+is wired now, and the rule is spelled for `:hover` too so the glow holds under the pointer.
+Checked in headless Chrome with real mouse events: press arms (`aria-pressed` true, glow up
+under the pointer), a second press disarms, `Esc` and `b` each clear it, and a box drawn
+after arming zooms and clears it. A right- or
+shift-click centring press never needs arming and starts a box as it always did — the button
+glows from that press as well, since the box then exists.
 
 **Or start one without the key: a right-click, or a shift-click, on the picture** *(Matt,
 explorer_box_shortcuts_ckpt140, 2026-09-22)*. `b` then a click is two presses to say one
@@ -737,7 +754,17 @@ walk runs and whether the viewer follows it are two states, `state` and `attache
    goes through the engine's screen, which is the only screen stage one runs. A refused
    frame is dropped for the next straddling cell without a word; a plane that gives out
    (64 back-ups, or 16 refused roots) restarts somewhere else.
-5. The frame that passes is the *root*, and the viewer jumps to it.
+5. The frame that passes is the *root*. **The viewer first shows where it is**
+   *(walk_root_frame_and_box_armed_ckpt141)*: the plane's home frame, drawn as a rung is — the
+   384×216 smooth `twilight_shifted` picture, upscaled, never refined — with one box centred on
+   the root and labelled *root*, held 500 ms (`HOME_HOLD_MS`), and then the viewer jumps to
+   the root. The root is a thousandth of the plane or less, a sub-pixel dot on a frame about 3
+   wide, so its box is drawn at the larger of its true width and **6% of the home frame's
+   width** (`HOME_BOX_FLOOR`) — enough to find at a glance and to hold its label inside it at
+   the overlay's type size. It is a shown frame only: not judged, not a rung, and not a card;
+   the search's card says *root found* while it is up. The hold is a queued dwell, so the
+   root's own picture is computed through it. A Julia twin's leg already opens on its home
+   frame and is unchanged.
 6. During stage two the viewer is framed wider than the frame the walk stands in, so the
    frame takes 65% of the viewport's width and its quarters and their labels sit inside the
    picture; the frame's own outline is drawn faintly. Only the viewer is widened: every
@@ -957,8 +984,9 @@ no text log. A card has, top to bottom:
   draw*, *dead end*, *dead end · restart*.
 
 The card being worked on is lit, and the leg's best so far carries a *best* mark on the card.
-The root search is a words-only card, *Phoenix · searching for a root*, which becomes the
-root's card when the root lands, or says *no root got past the screen* when the plane gives
+The root search is a words-only card, *Phoenix · searching for a root*, which says *Phoenix ·
+root found* while the home frame is up with the root's box on it, becomes the root's card
+when the viewer jumps to the root, or says *no root got past the screen* when the plane gives
 out. A descent that ends on the rung cap or the arithmetic floor stands in a frame no card has
 shown, and that frame gets a card with no quarters. At the descent's end the best card is
 outlined, in the found ink when it cleared the bar and dashed when it did not, and its

@@ -317,6 +317,21 @@ const CELL_SHARE = 0.65;
  *  the repaint waits. */
 const DWELL_MS = 400;
 
+/**
+ * The walk's first picture *(walk_root_frame_and_box_armed_ckpt141)*: the plane's home frame,
+ * drawn the way a rung is, with one box where the root landed, held this long before the
+ * viewer jumps down to the root. Stage one is out of sight, and without this a reader's first
+ * frame is already a thousandth of the plane wide, with nothing to say where in it the walk
+ * went. It is shown and nothing else: not judged, not a rung, not a card.
+ */
+const HOME_HOLD_MS = 500;
+
+/** The root's box on the home frame is drawn at least this share of the frame's width. The
+ *  root itself is a thousandth of the plane or less — under a pixel — so its true box would
+ *  be invisible; this is wide enough to find at a glance and to carry its one-word label
+ *  inside it at the overlay's type size, which is about a fiftieth of the canvas's width. */
+const HOME_BOX_FLOOR = 0.06;
+
 /** And how long one colouring of the burst is held *(walk_faster_ckpt138)*. A recolour is
  *  about a tenth of a second, so sixteen at `DWELL_MS` would leave the viewer six seconds
  *  behind the strip it is meant to be showing; at this the flip through them keeps up with
@@ -767,6 +782,13 @@ export function mount(host) {
       /** The strip ends here without mining: the next walk leaves it up a while first. */
       linger() {
         lingerUntil = performance.now() + LINGER_MS;
+      },
+      /** The root is found and the home frame is up with its box: the search's card says
+       *  so until the root's own card takes its place. */
+      found(plane) {
+        const card = cards.at(-1);
+        card.said = `${plane} · root found`;
+        show(card);
       },
       /** The root search gave out: its card says so. */
       gaveOut(plane) {
@@ -1371,7 +1393,8 @@ export function mount(host) {
   function paint(entry) {
     const layers = entry.layers.map((layer) => ({ ...layer.frame, image: layer.image, dim: layer.dim ?? false }));
     if (!entry.widened) {
-      host.showWalk(entry.view, layers);
+      // Unframed, a picture carries boxes only where it names them — the home frame's root.
+      host.showWalk(entry.view, layers, entry.cells.length > 0 ? entry.cells : null);
       return;
     }
     const wide = { ...entry.view, w: link.coordinateOf(framedAround(entry.frame).w) };
@@ -1909,6 +1932,24 @@ export function mount(host) {
     return { family: julia, frame, constants };
   }
 
+  /**
+   * The walk's first picture: the plane's home frame, drawn as a rung is drawn — the same
+   * smooth `DESCENT_MAP` picture at the judged size, upscaled and never refined — with one
+   * box on the root, as a `display` entry. The box is centred on the root at the larger of
+   * its true width and `HOME_BOX_FLOOR` of the frame's. `null` where the picture could not
+   * be drawn, and the walk goes on without it.
+   */
+  async function homeOf(root) {
+    const home = contract.home(root.family);
+    const frame = { x: home.x.value, y: home.y.value, w: home.w.value, h: (home.w.value * 9) / 16 };
+    const view = viewAt(root.family, frame);
+    const drawn = await picture(view, DESCENT_SUPERSAMPLE);
+    if (drawn === null) return null;
+    const w = Math.max(root.frame.w, HOME_BOX_FLOOR * frame.w);
+    const box = { x: root.frame.x, y: root.frame.y, w, h: (w * 9) / 16, state: "chosen", label: "root" };
+    return { view, frame, layers: [{ frame, image: drawn.image }], cells: [box], widened: false };
+  }
+
   /** Judge a place's smooth picture: `{ read, image }`, the picture being what the viewer
    *  shows of the place. */
   async function judgePlace(place) {
@@ -2158,12 +2199,19 @@ export function mount(host) {
       steps.begin();
       strip.begin(planeName(family));
       const root = await descend(family);
+      // The home frame is drawn before the strip is waited on, so a lingering strip hides
+      // its cost as well as the search's.
+      const home = root === null ? null : await homeOf(root);
       // The search is out of sight, so it runs while a lingering strip is still being read.
       await strip.ready();
       if (root === null) {
         strip.gaveOut(planeName(family));
         strip.linger();
         continue;
+      }
+      if (home !== null) {
+        strip.found(planeName(family));
+        display(home, HOME_HOLD_MS);
       }
       const row = walks.at(-1);
       row.root_ms = Math.round(performance.now() - started);

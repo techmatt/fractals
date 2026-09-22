@@ -1136,10 +1136,18 @@ summary.section-head:focus-visible { outline: 2px solid var(--well-link); outlin
   margin-left: auto;
 }
 /* Box (b), armed: the one button in this row that is a state rather than an action, so it
-   is lit while it is waiting for the two clicks it takes. */
-.download .view-toggles button.is-armed {
-  border-color: var(--well-link);
-  color: var(--well-link);
+   is lit while it is waiting for the two clicks it takes.
+
+   **Green, and a glow rather than a tint** *(walk_root_frame_and_box_armed_ckpt141)*. It was
+   the link blue on the border and the word, which is exactly what `:hover` paints, so the
+   press that armed it left the pointer on a button that looked the same as before the
+   press. The green is `--state-final`, the one the Download arrow already spends, and the
+   `:hover` spelling keeps the glow up while the pointer is still resting on it. */
+.download .view-toggles button.is-armed,
+.download .view-toggles button.is-armed:hover {
+  border-color: var(--state-final);
+  color: var(--state-final);
+  box-shadow: 0 0 0 1px var(--state-final), 0 0 8px 1px color-mix(in srgb, var(--state-final) 60%, transparent);
 }
 
 /* The preview box among the buttons: a label and a checkbox rather than a button, so it
