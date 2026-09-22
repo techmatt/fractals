@@ -107,6 +107,30 @@ const PLANES = ["mandelbrot", "multibrot3", "multibrot4", "multibrot5", "multibr
 const MINED_MODES = new Set(["smooth", "tia", "threads"]);
 
 /**
+ * Of the roster, the ones whose recorded cost is near `smooth`'s
+ * *(explorer_ui_text_ckpt139 addendum 2)*.
+ *
+ * **From the mined-width table in `explorer/README.md` and not the per-mode one**, because
+ * the two do not order the modes the same way and only one of them was measured where this
+ * tab draws: at the widths a descent actually reaches, a picture is `smooth` 1 046 ms,
+ * `tia` 1.10x and `threads` 1.44x, against 1.00, 4.36 and 4.52 at a home view. The line
+ * is drawn under 1.25x, which is the gap between `tia` and `threads` — and `threads` is
+ * the mode `DEAR_MODES` already calls dear and already spends sparingly, so Fast is the
+ * roster with the dear one taken out and is what a reader picks to see more places in the
+ * same minute.
+ */
+const FAST_MODES = new Set(["smooth", "tia"]);
+
+/** The two mode choices that are a set rather than a mode. Anything else the Modes group
+ *  offers is a mode's own name, and picking it paints every place in that mode. */
+const MODES_DEFAULT = "default";
+const MODES_FAST = "fast";
+
+/** The palette choice that is not a colour family: every map the picker's own Random
+ *  palette button may land on. Never the whole library — see `roster`. */
+const PALETTES_ALL = "all";
+
+/**
  * Of those, the ones that cost several times the cheapest and are drawn a few times a walk
  * rather than at every place *(walk_faster_ckpt138)*. `threads` is the one this was written
  * for: reliably pretty, and 1.44x `smooth` measured at mined widths where the per-mode table
@@ -124,11 +148,18 @@ const RECOLOURS = 16;
  *  place is painted in `RECOLOURS` colourings of one field, and a dearer mode besides where
  *  the place before it took none *(walk_faster_ckpt138)*; the pipeline keeps every picture
  *  it draws and lets the solve choose, and a tab that did would fill with pictures nobody
- *  would pick, so it keeps the best. The modes are set in `mount`, where their order is
- *  known, and every one of the roster starts ticked. */
+ *  would pick, so it keeps the best.
+ *
+ *  **Modes and palettes are one choice each rather than a checklist**
+ *  *(Matt, explorer_ui_text_ckpt139 addendum 2)*: this tab demonstrates how the galleries
+ *  were made, and a demonstration is a few radio buttons. Neither was ever carried in a
+ *  link or kept in storage, so there is no old shape anywhere to migrate — the checkboxes
+ *  were the whole of it. */
 const DEFAULTS = {
   planes: new Set(PLANES),
   julia: true,
+  modes: MODES_DEFAULT,
+  palettes: PALETTES_ALL,
   widest: 1e-3,
   narrowest: 1e-4,
   steps: 14,
@@ -326,21 +357,7 @@ class Screeners {
 export function mount(host) {
   const { contract, palettes, shownName, planeName, juliaOf } = host;
   const modeOrder = host.modeOrder.filter((mode) => MINED_MODES.has(mode));
-  /** How many of the maps this page carries stand under each family, in wheel order.
-   *  Counted off the baked index's own `families`, which the roster record froze: a page
-   *  that read the colours itself would be deriving what the bake was written to fix. */
-  const filed = new Map(
-    HUES.map((hue) => [
-      hue,
-      [...palettes].filter(([, map]) => (map.families ?? []).includes(hue)).length,
-    ]),
-  );
-  const config = {
-    ...DEFAULTS,
-    planes: new Set(DEFAULTS.planes),
-    modes: new Set(modeOrder),
-    families: new Set(HUES),
-  };
+  const config = { ...DEFAULTS, planes: new Set(DEFAULTS.planes) };
   let state = "idle"; // idle | loading | running | paused
   /** Whether the viewer follows the walk *(walk_detach_ckpt131)*. It is the other half of
    *  what `state` used to mean alone: opening a found picture, or moving the view, hands the
@@ -728,7 +745,6 @@ export function mount(host) {
         tiles.push(waiting);
       }
       host.candidates.replaceChildren(...tiles);
-      host.candidatesNote.hidden = tiles.length > 0;
       host.candidatesPlace.textContent = tiles.length > 0 ? place : "";
       return tiles[order.indexOf(tried.at(-1))];
     }
@@ -843,6 +859,31 @@ export function mount(host) {
     return input;
   }
 
+  /**
+   * One choice out of several, as a row of radios sharing a name.
+   *
+   * `options` is `[{ value, label, decorate }]`; `decorate` is handed the label element,
+   * for the hue swatch. The group's own `name` has to be unique within the document, which
+   * it is because there are two of these and both are built once.
+   */
+  function radios(parent, name, options, chosen, onChange) {
+    for (const option of options) {
+      const box = document.createElement("label");
+      box.className = "walk-check";
+      const input = document.createElement("input");
+      input.type = "radio";
+      input.name = name;
+      input.value = option.value;
+      input.checked = option.value === chosen;
+      input.addEventListener("change", () => {
+        if (input.checked) onChange(option.value);
+      });
+      box.append(input, ` ${option.label}`);
+      option.decorate?.(box, input);
+      parent.append(box);
+    }
+  }
+
   function group(title, hint = "") {
     const section = document.createElement("fieldset");
     section.className = "walk-group";
@@ -898,48 +939,52 @@ export function mount(host) {
       "Also walk the Julia set whose c is the best place the descent found: from its home view, by the same rung rule.",
     );
 
-    const modes = group(
-      "Modes",
-      "A place that clears the bar is painted in one of these and then recolored; a dear one is drawn at some places and not others.",
+    const modes = group("Modes", "A place that clears the bar is painted in one of these.");
+    radios(
+      modes,
+      "walk-modes",
+      [
+        { value: MODES_DEFAULT, label: "Default" },
+        { value: MODES_FAST, label: "Fast modes only" },
+        ...modeOrder.map((mode) => ({ value: mode, label: mode })),
+      ],
+      config.modes,
+      (value) => {
+        config.modes = value;
+      },
     );
-    for (const mode of modeOrder) {
-      checkbox(modes, mode, config.modes.has(mode), (on) => {
-        if (on) config.modes.add(mode);
-        else config.modes.delete(mode);
-      });
-    }
 
     const maps = group(
       "Palettes",
-      "A recipe's map is drawn from the checked families together. A family's maps are the " +
-        "ones that have made that colour often; what a walk finds is not filtered by it.",
+      "A family's maps are the ones that have made that colour often; what a walk finds is " +
+        "not filtered by it.",
     );
-    for (const hue of HUES) {
-      const held = filed.get(hue) ?? 0;
-      const input = checkbox(
-        maps,
-        hue,
-        config.families.has(hue),
-        (on) => {
-          if (on) config.families.add(hue);
-          else config.families.delete(hue);
-        },
-        `${held} of this page's ${palettes.size} maps give at least a twentieth of their ` +
-          `mined pictures to ${hue}.`,
-      );
-      // The family's own swatch, between the box and its name, and the count after it: the
-      // same dot and the same tally the gallery panel's hue chips wear, from `hues.js`.
-      const label = input.parentElement;
-      const dot = document.createElement("span");
-      dot.className = "hue";
-      const color = colorOf(hue);
-      if (color !== null) dot.style.setProperty("--c", color);
-      label.insertBefore(dot, input.nextSibling);
-      const tally = document.createElement("span");
-      tally.className = "count";
-      tally.textContent = held;
-      label.append(tally);
-    }
+    radios(
+      maps,
+      "walk-palettes",
+      [
+        { value: PALETTES_ALL, label: "All palettes" },
+        ...HUES.map((hue) => ({
+          value: hue,
+          label: hue,
+          // The family's own swatch, between the button and its name: the same dot the
+          // gallery panel's hue chips wear, from `hues.js`. The tally that used to follow
+          // it is gone — nobody chose a family by how many maps were filed under it
+          // *(explorer_ui_text_ckpt139 addendum 2)*.
+          decorate: (label, input) => {
+            const dot = document.createElement("span");
+            dot.className = "hue";
+            const color = colorOf(hue);
+            if (color !== null) dot.style.setProperty("--c", color);
+            label.insertBefore(dot, input.nextSibling);
+          },
+        })),
+      ],
+      config.palettes,
+      (value) => {
+        config.palettes = value;
+      },
+    );
 
     const depth = group(
       "Depth",
@@ -959,7 +1004,7 @@ export function mount(host) {
       (v) => {
         config.steps = v;
       },
-      "A step is a card in the walk: the frame it stands in, each rung under it, and the place it paints. A walk stops at this many whether or not the descent has peaked, and the Julia twin spends the same count. Each rung halves the width.",
+      "A walk stops at this many steps whether or not the descent has peaked. Each rung halves the width.",
     );
     number(
       depth,
@@ -969,7 +1014,7 @@ export function mount(host) {
       (v) => {
         config.patience = v;
       },
-      "A descent can stop on a peak only once its best rung has scored this. Until then it keeps going down, to the cap or as deep as the arithmetic can draw. After that it stops once the score has stayed under the best for two rungs running, or three once the best is over 0.5.",
+      "A descent can stop on a peak only once its best rung has scored this. Under it, the descent keeps going down.",
     );
 
     const mining = group("At a place");
@@ -985,7 +1030,7 @@ export function mount(host) {
       (v) => {
         config.bar = v;
       },
-      "The render judge's probability that a place's smooth picture is at least a 3. A place under it is not colored. The pipeline's own release gate is P≥4 at 0.50 on a colored picture, and P≥3 at 0.50 is the bar it falls back on for a mode with too few places.",
+      "The render judge's probability that a place's smooth picture is at least a 3. A place under it is not colored.",
     );
     checkbox(
       mining,
@@ -995,7 +1040,7 @@ export function mount(host) {
         config.fine = on;
         candidates.refresh();
       },
-      "Choose which recipes to keep by the fine head the gallery's solve ranks on, rather than by the render judge's P≥4 the tiles show. It downloads (5.1 MB) the next time a place is mined, and a kept tile may then show a lower number than one passed over.",
+      "Keep recipes by the fine head the gallery ranks on, rather than by the P≥4 the tiles show. Downloads 5.1 MB the next time a place is mined.",
     );
   }
 
@@ -1688,24 +1733,40 @@ export function mount(host) {
   }
 
   /**
-   * The palettes a recipe may draw: the **union** of the checked families' maps.
+   * The palettes a recipe may draw.
    *
-   * A map stands under a family when it gave at least a twentieth of its mined pictures
-   * to it, which is a fact about what the map has made and not about its gradient — so a
-   * walk narrowed to teal paints in maps that make teal often, and what it finds is not
-   * held to being teal. Nothing here filters a result.
+   * **Out of the maps Random palette draws from, never the whole library**
+   * *(Matt, explorer_ui_text_ckpt139 addendum 2)*: the 232 the published record seated
+   * more than once, which `palettes.jsonl` freezes as `random` on each map. The library is
+   * about a thousand maps and most of them arrived by mechanical conversion, so a walk
+   * drawing uniformly over all of them mostly paints in a map nothing was ever made in —
+   * the same reason the picker's own button narrowed, and the same list.
    *
-   * **None checked draws from all of them**, rather than from nothing: a reader who
-   * unticks the last box has said nothing about what they want. And an index that files
-   * no map at all — an older module, or a bake on a checkout with no such table — draws
-   * from everything, which is what this did before the families existed.
+   * A colour family narrows that set further. A map stands under a family when it gave at
+   * least a twentieth of its mined pictures to it, which is a fact about what the map has
+   * made and not about its gradient — so a walk narrowed to teal paints in maps that make
+   * teal often, and what it finds is not held to being teal. Nothing here filters a result.
+   *
+   * **A narrowing that empties draws from everything it was narrowing**, rather than from
+   * nothing: an older module, or a bake on a checkout with neither table, is a page that
+   * would otherwise have no maps to paint with at all.
    */
   function roster() {
-    const wanted = config.families.size > 0 ? config.families : new Set(HUES);
-    const names = [...palettes]
-      .filter(([, map]) => (map.families ?? []).some((hue) => wanted.has(hue)))
+    const drawable = [...palettes].filter(([, map]) => map.random);
+    const good = drawable.length > 0 ? drawable : [...palettes];
+    if (config.palettes === PALETTES_ALL) return good.map(([name]) => name);
+    const named = good
+      .filter(([, map]) => (map.families ?? []).includes(config.palettes))
       .map(([name]) => name);
-    return names.length > 0 ? names : [...palettes.keys()];
+    return named.length > 0 ? named : good.map(([name]) => name);
+  }
+
+  /** The modes a place may be painted in: the roster, the fast half of it, or the one mode
+   *  the Modes group names. */
+  function modesFor(chosen) {
+    if (chosen === MODES_DEFAULT) return modeOrder;
+    if (chosen === MODES_FAST) return modeOrder.filter((mode) => FAST_MODES.has(mode));
+    return modeOrder.includes(chosen) ? [chosen] : modeOrder;
   }
 
   /** The Julia twin of a place: its centre as `c`, at the Julia family's home frame. */
@@ -1735,7 +1796,7 @@ export function mount(host) {
    * in each ticked mode — eight fields at candidate geometry, and 103 s of a 217 s walk.
    * What a reader is being shown here is a search, and a search wants many pictures rather
    * than expensive ones. So the field is computed once, in one of the roster's cheap modes,
-   * and then recoloured `RECOLOURS` times through maps drawn from the checked families: a
+   * and then recoloured `RECOLOURS` times through maps drawn from the chosen roster: a
    * recolour re-reads the field the engine already has — `Renderer.shade` on this thread, a
    * tenth of a second — so the fifteen after the first cost less between them than any one
    * of the modes that left.
@@ -1747,16 +1808,12 @@ export function mount(host) {
    * before: what changed is what a place is painted in, not how the best of it is chosen.
    */
   async function mine(place, where) {
-    const ticked = modeOrder.filter((mode) => config.modes.has(mode));
-    if (ticked.length === 0) {
-      progress("No modes are ticked, so a place has nothing to be painted in.");
-      return;
-    }
-    // The field's own mode is one of the cheap ones — or whatever is ticked, where a reader
-    // has unticked every cheap one and left a dear one standing.
-    const plain = ticked.filter((mode) => !DEAR_MODES.has(mode));
-    const base = pick(plain.length > 0 ? plain : ticked);
-    const rich = ticked.filter((mode) => DEAR_MODES.has(mode));
+    const chosen = modesFor(config.modes);
+    // The field's own mode is one of the cheap ones — or the dear one, where that is the
+    // single mode the reader asked every place to be painted in.
+    const plain = chosen.filter((mode) => !DEAR_MODES.has(mode));
+    const base = pick(plain.length > 0 ? plain : chosen);
+    const rich = chosen.filter((mode) => DEAR_MODES.has(mode));
     const dear = rich.length > 0 && sinceDear > 0 && !DEAR_MODES.has(base) ? pick(rich) : null;
     candidates.begin(RECOLOURS + (dear === null ? 0 : 1), where);
     // A pause mid-download stops it, and the walk asks again when it is started again.
@@ -1939,7 +1996,7 @@ export function mount(host) {
         host.open(query, "this found picture");
         return;
       }
-      detach("A found picture is open. The walk carries on; Back to the walk returns to it.");
+      detach("The walk carries on; Back to the walk returns to it.");
       for (const other of host.found.querySelectorAll(".tile")) other.classList.toggle("is-open", other === tile);
       host.open(query, "this found picture");
     });

@@ -223,38 +223,67 @@ the folded Details: the render stat line, family, constants, `x`, `y`, `w`, all 
 because it is about the page rather than about a group.
 
 **Five view buttons close the Download row** *(explorer_view_buttons_ckpt130, 2026-09-17)*,
-at its right end, each with a key its tooltip names, and **the labels carry the state** so
-that the row says where the reader is standing — which is why this page has no status strip
-and no breadcrumb:
+at its right end, **each with its key on its own face** *(Matt, explorer_ui_text_ckpt139,
+2026-09-21)* — `Julia here (j)`, spelled the way it is pressed, because a tooltip is not
+something a reader on a touchscreen can open or a reader on a mouse hovers long enough to
+find. `KEYS` in `explorer.js` spells the three the page builds and `index.html` the two
+whose words never change; `TOGGLE_KEYS` is what binds them, so a key added there is a label
+to add. No tooltip carries a key now, and the two of them that only restated their button's
+own words are gone. **The labels carry the state** as well, so that the row says where the
+reader is standing — which is why this page has no status strip and no breadcrumb:
 
-- **Reset to seat** (S) — the picture the viewer was opened at, put back exactly as opening
+- **Reset to seat (s)** — the picture the viewer was opened at, put back exactly as opening
   it did: frame, mode, palette and recipe, the tile marked again, and the sentence about
   what its link could not carry back under the canvas. It says **Reset to link** where what
   was opened was an atlas mark or a pasted address rather than a gallery tile — the split
   the tuned-parameter note already makes — and a bare page opened at nothing, so its button
   is greyed and its tooltip says so. The anchor is the last thing that *arrived* and not the
   last thing on screen, so it survives every move, Julia here included.
-- **Whole ⟨plane⟩** (R) — `Whole Mandelbrot`, `Whole Multibrot 6`, `Whole Julia` — the
+- **Whole ⟨plane⟩ (r)** — `Whole Mandelbrot`, `Whole Multibrot 6`, `Whole Julia` — the
   plane's home viewport with everything else kept. The name is `planeName`'s, a rule over
   the one shape a family name has rather than a table: the spelling is the atlas record's
   `slot_labels`, derived rather than read from it because the atlas mounts only when its
   panel is first opened and a button is named at load.
-- **Julia here** (J) — the view's centre taken as `c`, its own decimal strings so nothing is
+- **Julia here (j)** — the view's centre taken as `c`, its own decimal strings so nothing is
   lost, and that degree's Julia set opened at its home view with the mode, palette and
   recipe carried. While the button is under the pointer or holding the focus, a crosshair is
   drawn at the view's centre, so *here* is a point on the picture rather than a word on a
   button. **A click on the picture does the same at the pointer's own `c`** — see *The
   Julia preview under the pointer* — and the key is still the centre's, deliberately.
-- **Random palette** (P) — one of the **232** maps that seated more than one wallpaper in
+- **Random palette (p)** — one of the **232** maps that seated more than one wallpaper in
   the published record, never the one on screen. The list is the wallpaper project's own
   and rides in the baked index as a flag per map; every other map is still a hand pick.
-- **Random phase** (Shift+P) — to three decimals.
+- **Random phase (shift+p)** — to three decimals.
 
 Inside a Julia set the third button is **Back to ⟨parent plane⟩** — `Back to Mandelbrot` —
 on every Julia set and not only one this tab opened: where this tab did, the parent view is
 held in `sessionStorage` and Back returns to it, and anywhere else — a copied link, a seat —
-it lands on the parent plane at `c` at its home width. Either way `c` is **marked on
-landing** for a moment and then fades. The link carries only the Julia view. On Phoenix,
+it lands on the parent plane at `c`, **0.05 across** (`BACK_WIDTH`). Either way `c` is
+**marked on landing** for a moment and then fades.
+
+⚠ **That width used to be the plane's home width**, about three across
+*(Matt, explorer_ui_text_ckpt139, 2026-09-21)*, so a Julia set copied out of the gallery
+went back to a picture of the whole Mandelbrot set with a mark on it — which says where `c`
+is and shows nothing about it, when what the reader is asking is what the neighbourhood
+looks like, the neighbourhood being what the Julia set is a picture of. **0.05 is picked by
+eye over thirteen gallery Julia `c` values spread across the plane** — the period-2 disc,
+both big bulbs, the seahorse valley, the cluster the seating favours west of the cusp, and
+four out on the filaments — each drawn at 0.005, 0.01, 0.02, 0.05, 0.1, 0.22 and 0.5.
+Under 0.02 the frame empties out on a `c` that sits a little off the boundary: at 0.005
+three of the thirteen were a bare gradient with nothing in them. Above 0.1 a flat black
+bulb interior takes most of the frame on the three `c` values inside one. Every one of the
+thirteen shows boundary and filigree at 0.02, and 0.05 is that with a margin. It is a hand
+pick and not a derivation, which is why it is a constant, and it is one width for every
+parameter plane — the Multibrots and the Phoenix slice as well — because what makes it the
+right size is the scale the boundary has detail on, which those share. The sweep that drew
+the sheet is `scratch/julia_back_width.py`, which is untracked as a sweep is — what it found
+is this paragraph. Where it looks worst is the two seahorse-valley `c` values,
+where half the frame is flat interior either side of the valley, and a `c` a reader typed
+into Details that is nowhere near the boundary, where the frame is one colour — `Whole
+Mandelbrot (r)` is one key away, which is the other reason the keys are on the labels now.
+The Atlas panel's own neighbourhood plate is a committed thumbnail drawn at **0.22** and
+recorded as such in `atlas/*.jsonl`; it is not this constant and moving it is a re-render
+next door rather than a page change. The link carries only the Julia view. On Phoenix,
 which has no parameter plane here, the button is absent rather than present and saying so.
 
 **A button that would change nothing is greyed, never taken away**, because a row that
@@ -267,9 +296,10 @@ keys its entries the same way** — see *The way back*, which needs the same ide
 deep link as well, which is why the reduction reads a query rather than a view.
 
 These five keys are bare letters and never take Ctrl, Alt or Meta, and they work with focus
-on a button — the button just pressed, most often. **Ctrl/Cmd is now spelled here too**, by
-the two keys that have no button at all *(explorer_undo_redo_ckpt137)*, and those are the
-one thing on this row that is a shortcut rather than chrome. That is deliberate: the row is
+on a button — the button just pressed, most often. **Ctrl/Cmd is spelled on the row's own
+tooltip**, by the two keys that have no button at all *(explorer_undo_redo_ckpt137)*, and
+those are the one thing on this row that is a shortcut rather than chrome — which is also
+why they are the one pair whose key is not on a label. That is deliberate: the row is
 what a reader can see, and anything more on it would be clutter.
 
 **The mark is painted onto the screen and never into `frame`** — the crosshair and the
@@ -430,13 +460,20 @@ it. `hoverPreview` returns without touching the card while a press or a pinch is
 drag that actually moves the view takes the card away through `changed`, which every move
 already goes through.
 
-**Nothing else is added.** No link key, no panel, no second setting. One stored flag,
-`explorer.julia-preview` in `localStorage`, on unless it says otherwise, behind try/catch
-like everything else this page stores — a browser that stores nothing still gets the
-preview and just forgets the switch. Two places touch it and they are one switch: the
-card's own `×`, which is where a reader meets it, and a checkbox in the Details fold, which
-is where a reader who switched it off finds it again — the `×` says so under the canvas as
-it goes. The Download row's five buttons are untouched; that row is closed on purpose.
+**Nothing else is added.** No link key, no panel, no second setting. One flag,
+`explorer.julia-preview`, behind try/catch like everything else this page stores. Two
+places touch it and they are one switch: a checkbox beside Autolevel in the palette row,
+and the card's own `×`. The Download row's five buttons are untouched; that row is closed
+on purpose.
+
+**It is off unless the box is ticked, and the tick lasts the session**
+*(Matt, explorer_ui_text_ckpt139, 2026-09-21)*. It was on by default and remembered in
+`localStorage`. It is an option now — one a reader turns on when they want to aim a `c` by
+eye, rather than one that follows their pointer around whether or not they asked — so the
+default is off and the memory is `sessionStorage`: a visit that wanted it keeps it across a
+reload and a link, and a visit that did not is never handed it. The checkbox moved out of
+the Details fold and onto the shade row with it, because a setting nobody has switched on
+has to be somewhere a reader can see.
 
 **Desktop pointer only.** `(hover: hover) and (pointer: fine)`, and a `pointerType` of
 `mouse` on the event itself. A finger has no hover, and the tap that would stand in for one
@@ -544,7 +581,7 @@ walk runs and whether the viewer follows it are two states, `state` and `attache
      the pipeline's candidate geometry. A texture weight or trap opacity is derived exactly
      as the viewer derives one.
    - **Then fifteen recolours of that same field** (`RECOLOURS` is sixteen counting the
-     first), each through a map drawn uniformly from the checked colour families together
+     first), each through a map drawn uniformly from the chosen palette roster
      *(walk_palette_families_ckpt135)*, with the identity shade, `mirror` read off the map's
      cyclicity and a uniform phase. A recolour is `Renderer.shade` over a field the engine
      has already computed — a tenth of a second against seconds for the field — so the
@@ -565,13 +602,36 @@ walk runs and whether the viewer follows it are two states, `state` and `attache
 
 The config's defaults are the pipeline's draw where the page can make one. **Modes is the
 walk's own roster and not the pipeline's** *(walk_faster_ckpt138)* — `smooth`, `tia` and
-`threads`, all ticked, in the Mode select's own order, handed over by the viewer so the two
-cannot drift. It was the thirteen the pipeline accepts with the last five unticked, and what
-it is now is the measured answer to "which of those is cheap enough to draw while somebody
-watches": see *What a walk costs* under §Measured. **Palettes is the twelve colour
-families**, all ticked *(walk_palette_families_ckpt135)*; it used to be a two-way choice
-between the 232 maps Random palette draws from and all 1,021, which asked a reader to pick a size when the
-thing they would want to pick is a colour. None ticked draws from all of them.
+`threads`, in the Mode select's own order, handed over by the viewer so the two cannot
+drift. It was the thirteen the pipeline accepts with the last five unticked, and what it is
+now is the measured answer to "which of those is cheap enough to draw while somebody
+watches": see *What a walk costs* under §Measured.
+
+**Modes and palettes are one radio choice each** *(Matt, explorer_ui_text_ckpt139
+addendum 2, 2026-09-21)*. This tab demonstrates how the galleries were made, and a
+demonstration is a few radio buttons rather than two checklists of fifteen boxes between
+them.
+
+- **Modes** — *Default*, the roster; *Fast modes only*, `FAST_MODES`, which is `smooth` and
+  `tia`; then each roster mode on its own, which paints every place in that mode. Fast is
+  taken from the mined-width table under §Measured and not from the per-mode one, because
+  the two do not order the modes the same way and only one of them was measured where this
+  tab draws: a picture is `smooth` 1 046 ms, `tia` 1.10x and `threads` 1.44x at the widths a
+  descent reaches, against 1.00, 4.36 and 4.52 at a home view. The line is under 1.25x,
+  which is the gap between `tia` and `threads` — and `threads` is the mode `DEAR_MODES`
+  already spends sparingly, so Fast is the roster with the dear one taken out.
+- **Palettes** — *All palettes*, then each of the twelve colour families
+  *(walk_palette_families_ckpt135)*. **All means the 232 maps Random palette draws from,
+  never the 1,021** *(Matt)*: most of the library arrived by mechanical conversion, so a
+  uniform draw over all of it mostly paints in a map nothing was ever made in. A family
+  narrows that set rather than the library, which runs 26 maps (lime) to 78 (orange) and is
+  plenty for sixteen recolours drawn with repetition — and it makes All the superset of
+  every other choice, which it was not when a family was read off the whole library. The
+  per-family map counts are gone from the labels; nobody chose a family by them.
+
+Neither was ever carried in a link or kept in storage, so nothing had to be migrated: the
+checkboxes were the whole of the old shape, and `config.modes` and `config.palettes` are
+strings now.
 
 **The walk view** *(walk_view_ckpt132)* replaces the viewer's controls while a walk is running
 or paused and the viewer is the walk's. Download, Mode, Palette and Details are not on the
@@ -626,7 +686,7 @@ before the next walk clears it; that walk's root search runs meanwhile, out of s
 The strip replaced one-line rows (`walk_view_ckpt132`), which replaced both the panel's
 console (`walk_console_ckpt131`) and a corner widget over the controls (`walk_tune_ckpt131`).
 The few things that are not steps of a walk, such as a stopped download, a judge that would
-not load, or nothing ticked, go on the status line beside Start.
+not load, or no plane ticked, go on the status line beside Start.
 
 **The candidates** are the lower strip: one small tile per picture drawn at a place, with
 **the map's display name** and P≥4, filling in as they are drawn, and the place they are of
@@ -2912,9 +2972,23 @@ spells the number the picture was drawn at, and spells it short.
 | `tuning` | when | what the draw does |
 | --- | --- | --- |
 | `stored` | a link, seat or atlas mark carries the value; a mode switch back into the mode a seat sits in at this place | replays it |
-| `derived` | a v3 link without the key; a switch into a trap mode no seat here sits in; the first change a reader makes to a stored view | measures it every pass |
-| `default` | a switch into an angle mode no seat here sits in | keeps 0.5 through pans and zooms, until the mode changes |
-| `pinned` | the reader typed in the box | keeps it through pans and zooms, until the mode changes |
+| `derived` | a v3 link without the key; a switch into a trap mode no seat here sits in; a trap's opacity after the first change a reader makes to a stored view | measures it every pass |
+| `default` | a switch into an angle mode with no seat here and no texture held | keeps 0.5 |
+| `pinned` | the reader moved the slider or typed in the box; a mode switch into an angle mode carrying a held texture | keeps it |
+
+**A texture never becomes `derived` under the artist** *(Matt, explorer_ui_text_ckpt139,
+2026-09-21)*. A trap's opacity decides every pixel it paints and is measured per frame by
+design, so a stored opacity starts moving with the view at the first change, as it always
+has. A texture does not: loading a `smooth_mean_angle` wallpaper and zooming used to
+re-measure the weight off the new frame, which is the page picking a different texture than
+the one the artist is looking at. So a value that came from anywhere explicit — a seat, a
+link, the slider, the default a mode switch opens at — holds across every zoom, pan and
+mode change until the slider moves or a reset puts another one there. `explorer.js` keeps
+it in `heldWeight` as well as in `view.params`, because a mode change drops the parameters
+of the mode being left and this is the one that has to survive it; a seat at this very
+place in the mode being entered is more specific and still wins, and so does a link, which
+by leaving `weight` out can still ask for one to be taken from the view. Only a view that
+has never had a texture set derives one.
 
 **A hand switch opens a screened composite at 0.5** *(Matt,
 explorer_three_collections_texture_ckpt130, 2026-09-18)*: all five, the three angle modes
@@ -2929,12 +3003,18 @@ already and is left alone.
 
 A switch into a trap mode first seeds the value its seats were most often drawn at: 0.6 for
 multiply, read off the gallery record at load. The probe then replaces it, and the seed only
-survives where the probe found nothing. The line beside the boxes says which of the three
-is in force. A derived value lands in `view.params`, so the box shows it, Copy link writes
-it, and a download draws at it instead of measuring again. **A probe with no hits changes
-nothing**, and the status line says so: "Nothing in this view comes near enough to the trap
-to paint" where the finished frame is one colour, and "Too little of this view comes near
-the trap to measure" where a thin line the probe grid missed is still there.
+survives where the probe found nothing. A derived value lands in `view.params`, so the box
+shows it, Copy link writes it, and a download draws at it instead of measuring again.
+**A probe with no hits changes nothing**, and the status line says so: "Nothing in this view
+comes near enough to the trap to paint" where the finished frame is one colour, and "Too
+little of this view comes near the trap to measure" where a thin line the probe grid missed
+is still there.
+
+**There is no line beside the boxes any more** *(explorer_ui_text_ckpt139, 2026-09-21)*. Six
+sentences lived there, one per state — `Texture taken from this view.`, `Opacity as this
+wallpaper was made.` and the rest — and every one of them said where a number had come from
+rather than anything to do about it. The number is in the box, and `Copy view` still carries
+`params.source` for whoever is debugging a picture.
 
 A composite's `weight` is no longer part of its field's cache key (`fieldKey`), because it
 mixes two fields that are already computed. A probe is cached under `probeKey`, which is

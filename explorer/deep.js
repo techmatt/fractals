@@ -557,10 +557,9 @@ export function mount(host) {
     const count = (value) => value.toLocaleString("en-US");
     if (chosen.atCeiling) {
       host.say(
-        `At ${count(chosen.maxiter)} iterations — the most this renderer will run — ` +
-          `${Math.round(chosen.fault * 100)}% of this frame is still escaping when the count ` +
-          "runs out, so some of what is painted as set below is exterior this cap cannot " +
-          "reach. Zoom out, or narrow the frame.",
+        `${Math.round(chosen.fault * 100)}% of this frame is still escaping at ` +
+          `${count(chosen.maxiter)} iterations, the most this renderer will run, so some of ` +
+          "what is painted as set is not. Zoom out, or narrow the frame.",
       );
       return;
     }
@@ -570,9 +569,8 @@ export function mount(host) {
     const opening = chosen.rungs[0];
     const was = Math.round((100 * opening.fault) / Math.max(1, opening.samples));
     host.say(
-      `Raised the cap to ${count(chosen.maxiter)}: at ${count(chosen.from)}, the width's own ` +
-        `answer, ${was}% of this frame was still escaping when the count ran out and would ` +
-        "have been painted as set.",
+      `Raised the cap to ${count(chosen.maxiter)}: at ${count(chosen.from)}, ${was}% of this ` +
+        "frame was still escaping. It is slower for it.",
     );
   }
 
@@ -974,9 +972,7 @@ export function mount(host) {
       if (found.length === 0) {
         host.stat("");
         els.minibrotNote.hidden = false;
-        els.minibrotNote.textContent =
-          "No minibrot was found in this view. Either there is none here, or every one of " +
-          "them has a period past the cap the search could settle on.";
+        els.minibrotNote.textContent = "No minibrot was found in this view.";
         return;
       }
 
@@ -1129,11 +1125,8 @@ export function mount(host) {
     }
     els.julia.textContent = julia ? "Back to the Mandelbrot set" : "Julia at this c";
     els.julia.disabled = committed;
-    els.julia.title = julia
-      ? cameFrom !== null
-        ? "Back to the frame this Julia set was opened from."
-        : "Open the Mandelbrot set at this c, at the width you are looking at."
-      : "Draw the Julia set of this view's own center — the same c, with z varying instead.";
+    els.julia.title =
+      julia && cameFrom !== null ? "Back to the frame this Julia set was opened from." : "";
     els.origin.hidden = !julia;
     // **Mandelbrot only.** There are no minibrots on a dynamical plane: a Julia set has no
     // parameter-space nuclei in it, so the button is not disabled there, it is absent.
@@ -1151,8 +1144,8 @@ export function mount(host) {
     els.back.title = !carries
       ? "This Julia set's c has more digits than the ordinary explorer carries, so it cannot be taken back: rounding it would open a different Julia set."
       : host.resolves(view)
-        ? "Open this frame in the ordinary explorer, which can still draw it."
-        : "This frame is below what the ordinary explorer's arithmetic can resolve, so it cannot be carried back.";
+        ? ""
+        : "This frame is below what the ordinary explorer can resolve, so it cannot be carried back.";
     els.back.hidden = false;
 
     // What the tab says about itself, in one line: what Render would do, and whether the
@@ -1166,8 +1159,8 @@ export function mount(host) {
     } else if (pending()) {
       els.note.textContent =
         quarterMs !== null && quarterMs <= AUTO_PREVIEW_MS
-          ? "The picture is the last one drawn, boxed where this frame sits. A quick preview will follow on its own; Render draws it properly."
-          : "The picture is the last one drawn, boxed where this frame sits. Nothing will be drawn until you press Render.";
+          ? "The last picture drawn, boxed where this frame sits. A quick preview will follow on its own; Render draws it properly."
+          : "The last picture drawn, boxed where this frame sits. Render draws this frame.";
     } else {
       els.note.textContent = "";
     }
@@ -1191,11 +1184,8 @@ export function mount(host) {
       /* A private window. Saying it twice is better than not saying it. */
     }
     host.say(
-      "Below about 1e-13 the ordinary renderer has nothing left to draw with, so this tab " +
-        "uses a different kernel: one high-precision orbit per frame, and a perturbation " +
-        "of it per sample. It is several times slower than the explorer and gets slower " +
-        "as you go deeper — a frame can take minutes. Nothing here draws until you press " +
-        "Render.",
+      "This tab is several times slower than the explorer and gets slower as you go " +
+        "deeper — a frame can take minutes. Nothing here draws until you press Render.",
     );
   }
 

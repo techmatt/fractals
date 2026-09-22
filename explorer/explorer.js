@@ -113,14 +113,15 @@ function planeName(family) {
  *  link, which carries only the Julia view. */
 const HELD_PARENT = "explorer.julia-parent";
 
-/** The one plain sentence each shade control says on hover. */
+/** The one plain sentence a shade control says on hover, where there is one to say. A
+ *  control whose own word is the whole of it — Reverse — has no entry
+ *  *(explorer_ui_text_ckpt139)*. */
 const SHADE_TIPS = {
   gamma: "Above 1 gives more of the picture to the start of the palette, below 1 to its end.",
   cycles: "How many times the palette repeats across the picture.",
   phase: "Where in the palette the coloring starts.",
   transfer: "How the palette is spread over the picture: by value, by where detail changes, or evenly.",
   rolloff: "How the brightest colors are eased off.",
-  reverse: "Runs the palette backward.",
   mirror: "Plays the palette forward and then back, so it has no hard seam.",
 };
 
@@ -177,7 +178,6 @@ const modePicker = document.getElementById("mode");
 const constantStrip = document.getElementById("constants");
 const coordinateStrip = document.getElementById("coordinates");
 const paramStrip = document.getElementById("params");
-const paramNote = document.getElementById("param-note");
 const copyButton = document.getElementById("copy");
 const copyViewButton = document.getElementById("copy-view");
 const saveButton = document.getElementById("save-view");
@@ -186,6 +186,7 @@ const shadeBar = document.getElementById("shade-bar");
 const shadeReset = document.getElementById("palette-reset");
 const shadeNote = document.getElementById("shade-note");
 const levelGroup = document.getElementById("level-group");
+const juliaPreviewGroup = document.getElementById("julia-preview-group");
 const levelToggle = document.getElementById("level-toggle");
 const details = document.getElementById("details");
 const paletteStrip = document.getElementById("palette-strip");
@@ -286,20 +287,38 @@ let levelling = "stored";
  *  **`stored` replays what a view arrived with**, the same as a tone curve: a seat, an atlas
  *  mark or a link carries the number its picture was drawn at, and a mode switch back into
  *  the mode a seat sits in carries that seat's own. **`derived` takes it from the view**:
- *  a view that arrived without one, a switch into a trap mode no seat here sits in, and
- *  every view after the first change a reader makes to a stored one. The weight is
- *  measured on the one-sample field before it is coloured and the opacity on a probe
- *  before anything is painted, and either lands in `view.params`, which is what the box
- *  shows and Copy link writes. **`default` is `TEXTURE_DEFAULT`**, which a switch into an
- *  angle mode no seat here sits in opens at, and it holds like a pinned one. **`pinned` is
- *  a number the reader typed**, and it holds
- *  through pans and zooms until the mode changes. A link cannot say which of these
- *  wrote its number, so a reopened pinned value is `stored`, and moves at the first move
- *  like any other. */
+ *  a view that arrived without one, and a switch into a trap mode no seat here sits in.
+ *  The weight is measured on the one-sample field before it is coloured and the opacity on
+ *  a probe before anything is painted, and either lands in `view.params`, which is what the
+ *  box shows and Copy link writes. **`default` is `TEXTURE_DEFAULT`**, which a switch into
+ *  an angle mode with nothing else to say opens at. **`pinned` is a number the reader set**
+ *  on the slider or in the box.
+ *
+ *  **Only `derived` moves with the view**, and a texture never becomes it
+ *  *(explorer_ui_text_ckpt139)*. A trap's opacity decides every pixel it paints and is
+ *  measured per frame by design, so a stored opacity goes `derived` at the first change,
+ *  as it always has. A texture does not: see `heldWeight`. */
 let tuning = "stored";
 
-/** Where a `stored` value came from, for the line beside the box: `seat` or `link`. */
-let tunedFrom = "link";
+/**
+ * The texture that holds, or `null` while nothing has ever set one.
+ *
+ * **A texture never changes under the artist** *(Matt, explorer_ui_text_ckpt139)*. Loading
+ * a `smooth_mean_angle` wallpaper and then zooming used to re-measure the weight off the
+ * new frame — `changed` demoted a `stored` value to `derived`, which is right for a trap's
+ * opacity and wrong for this: the artist is looking at a texture they chose, or at the one
+ * the picture they opened was made with, and the picture moving is not a reason to pick a
+ * different one. So a value that came from anywhere explicit — a seat, a link, the slider,
+ * the default a mode switch opens at — holds across every zoom, pan and mode change until
+ * the slider moves or a reset puts another one there.
+ *
+ * It is held here as well as in `view.params` because a mode change drops the parameters
+ * of the mode being left, and the texture is the one that has to survive that. A seat at
+ * this very place in the mode being entered is more specific and still wins; so does a link
+ * being opened, which says what it carries and, by leaving the weight out, can ask for one
+ * to be taken from the view.
+ */
+let heldWeight = null;
 
 /** What the last probe said — `{ opacity, hit_share, load }` — or `null` where no probe
  *  ran for the view on the screen. */
@@ -374,7 +393,7 @@ let busy = false;
 let copyHeld = false;
 
 /** What the two copy buttons say on hover while they are held. */
-const COPY_HELD_TITLE = "Available when this view has finished measuring its picture.";
+const COPY_HELD_TITLE = "Available once this view has finished measuring.";
 const copyViewTitle = copyViewButton.title;
 
 function syncCopy() {
@@ -621,18 +640,15 @@ function zoomAbout(px, py, factor) {
   const anchor = planeAt(px, py);
   const width = view.w.value * factor;
   if (factor < 1 && !renderer.resolves(view.x.value, view.y.value, width, grid.width, grid.height)) {
-    const wall =
-      "This is as deep as this renderer can zoom here. It does its arithmetic in 64-bit " +
-      "floating point, which carries about 16 significant digits, and at this " +
-      "magnification the coordinates of neighboring pixels differ only in the last few " +
-      "of them. Any deeper and adjacent pixels would round to the same number, so there " +
-      "would be nothing left to draw. Going further needs higher-precision arithmetic, " +
-      "which this renderer does not have.";
+    // The sentence used to run to six, explaining `f64`'s sixteen digits and what happens
+    // when two neighbouring pixels round together. None of it changed what the reader
+    // could do about it, which is the one thing there is to say — the Deep tab, or stop
+    // *(explorer_ui_text_ckpt139)*.
+    const wall = "This is as deep as this renderer can zoom here.";
     // On the two sets `z² + c` draws, the page now has that arithmetic in a tab of its
     // own, and this frame is exactly what it opens at.
     if (carryable() !== null) {
-      offer(
-        `${wall} The Deep tab does, with a different kernel — slower, and this frame carries over.`,
+      offer(`${wall} The Deep tab goes further, and this frame carries over.`,
         "Open this frame in Deep",
         () => showPanel("deep"),
       );
@@ -1249,8 +1265,8 @@ async function drawPass() {
       // than guessing at a number.
       say(
         uniform(shaded.image)
-          ? "Nothing in this view comes near enough to the trap to paint, so no opacity can bring it out."
-          : `Too little of this view comes near the trap to measure, so opacity stays at ${shownParam(view.params.opacity ?? planOf(view).params?.opacity)}.`,
+          ? "Nothing in this view comes near enough to the trap to paint."
+          : "Too little of this view comes near the trap to measure; set the opacity by hand.",
       );
     }
     // Where the field came off the cache its `elapsed` is still the pass that iterated
@@ -1634,8 +1650,11 @@ function setParam(key, text, { moving = false } = {}) {
   view = { ...view, params: { ...view.params, [key]: value } };
   changed();
   // A number the reader set in the derived control is theirs, and a pan does not measure
-  // it away.
-  if (key === link.DERIVED[view.mode]) tuning = "pinned";
+  // it away. A texture goes on being theirs through a mode change as well — `heldWeight`.
+  if (key === link.DERIVED[view.mode]) {
+    tuning = "pinned";
+    if (key === "weight") heldWeight = value;
+  }
   syncParams();
   // A hand still on the slider coalesces — see `live`. A texture weight is the one mode
   // parameter that recolours rather than re-iterating, so it is the one that gets here
@@ -1651,8 +1670,14 @@ function shownParam(value) {
 }
 
 /**
- * The boxes' values and the line beside them, after a derivation moved a value or the
- * reader pinned one. A box somebody is typing in is left alone.
+ * The boxes' values, after a derivation moved one or the reader set one. A box somebody is
+ * typing in is left alone.
+ *
+ * **There is no line beside them any more** *(explorer_ui_text_ckpt139)*. Six sentences
+ * lived here, one per state — `Texture taken from this view.`, `Opacity as this wallpaper
+ * was made.` and the rest — and every one of them said where a number had come from rather
+ * than anything to do about it. The number is in the box; `Copy view` carries the
+ * provenance for whoever is debugging a picture.
  */
 function syncParams() {
   const settled = planOf(view).params ?? {};
@@ -1664,24 +1689,6 @@ function syncParams() {
     } else {
       input.value = shownParam(value);
     }
-  }
-  const key = link.DERIVED[view.mode];
-  if (key === undefined) {
-    paramNote.textContent = "";
-    return;
-  }
-  const what = key === "weight" ? "Texture" : "Opacity";
-  if (tuning === "pinned") {
-    paramNote.textContent = `${what} set by hand, and kept as the view moves.`;
-  } else if (tuning === "default") {
-    paramNote.textContent = `${what} at the explorer's default, and kept as the view moves.`;
-  } else if (tuning === "stored") {
-    paramNote.textContent =
-      tunedFrom === "seat" ? `${what} as this wallpaper was made.` : `${what} as this link carries it.`;
-  } else if (probed !== null && probed.opacity === null) {
-    paramNote.textContent = `${what} left as it was: nothing in this view to measure.`;
-  } else {
-    paramNote.textContent = `${what} taken from this view.`;
   }
 }
 
@@ -1720,7 +1727,7 @@ function buildShade() {
       chip.id = `shade-${control.key}`;
       chip.className = "chip";
       chip.textContent = control.label;
-      chip.title = SHADE_TIPS[control.key];
+      chip.title = SHADE_TIPS[control.key] ?? "";
       chip.setAttribute("aria-pressed", "false");
       chip.addEventListener("click", () =>
         setShade(control.key, chip.getAttribute("aria-pressed") === "true" ? "0" : "1"),
@@ -1733,7 +1740,7 @@ function buildShade() {
 
     const group = document.createElement("span");
     group.className = "group";
-    group.title = SHADE_TIPS[control.key];
+    group.title = SHADE_TIPS[control.key] ?? "";
     const label = document.createElement("label");
     label.textContent = control.label;
     label.htmlFor = `shade-${control.key}`;
@@ -1808,9 +1815,9 @@ function buildShade() {
     shadeWidgets.set(control.key, held);
     shadeBar.append(group);
   }
-  // Autolevel is written in the page rather than built here, and closes the row: it is a
-  // shade setting a reader turns, though not a key a link carries.
-  shadeBar.append(chips, levelGroup);
+  // Autolevel and the Julia preview are written in the page rather than built here, and
+  // close the row: both are settings a reader turns, and neither is a key a link carries.
+  shadeBar.append(chips, levelGroup, juliaPreviewGroup);
 }
 
 /** The one action on the Palette header. It is disabled with nothing to put back, and its
@@ -1889,7 +1896,7 @@ function syncShade() {
   flip.box.disabled = busy || same;
   flip.box.title = same
     ? `${shownName(subject.palette)} reads the same in both directions, so Reverse would not change it.`
-    : SHADE_TIPS.reverse;
+    : "";
 
   syncFinal();
 
@@ -1899,9 +1906,10 @@ function syncShade() {
   const labels = set.map((key) => shade.CONTROLS.find((control) => control.key === key).label);
   shadeReset.disabled = busy || set.length === 0;
   shadeReset.textContent = set.length === 0 ? "Reset palette" : `Reset palette (${set.length})`;
-  shadeReset.title = set.length === 0
-    ? "Every shade setting is at its default."
-    : `${sentenceList(labels)} ${set.length === 1 ? "differs" : "differ"} from the default.`;
+  shadeReset.title =
+    set.length === 0
+      ? ""
+      : `${sentenceList(labels)} ${set.length === 1 ? "differs" : "differ"} from the default.`;
 
   // Four of the seven are inert under a direct trap, and the engine says so where it
   // paints: those modes composite gradient samples as they iterate and never make a
@@ -1915,10 +1923,7 @@ function syncShade() {
   const inert = plan.levels === true
     ? "Gamma, Cycles, Phase and Transfer"
     : "Autolevel, Gamma, Cycles, Phase and Transfer";
-  shadeNote.textContent = plan.direct
-    ? `This mode paints as it draws, so ${inert} have no effect here. Reverse and Mirror ` +
-      "still apply, and each one redraws the picture."
-    : "";
+  shadeNote.textContent = plan.direct ? `${inert} have no effect in this mode.` : "";
 
   syncLevel();
 }
@@ -2110,11 +2115,7 @@ function openLink(query, opts = {}) {
     say(error.message);
     return false;
   }
-  interruptWalk(
-    stepping
-      ? "The view stepped back. The walk carries on; Back to the walk returns to it."
-      : "A picture was opened. The walk carries on; Back to the walk returns to it.",
-  );
+  interruptWalk("The walk carries on; Back to the walk returns to it.");
   view = wanted;
   seat = key;
   // What arrived is what Reset to seat puts back, options and all, so a reset re-enters
@@ -2122,7 +2123,6 @@ function openLink(query, opts = {}) {
   // the link could not carry back under the canvas.
   if (!stepping) anchor = { query, opts, at: pictureKey(view) };
   arrived();
-  if (key !== null) tunedFrom = "seat";
   tiles?.mark(key);
   if (opts.from !== "saved") savedPanel?.unmark();
   // The record's sentence names caps, curves and policies, which is Details' vocabulary;
@@ -2146,20 +2146,24 @@ function arrived() {
   // it to be taken from the view, which is what an absent one means since permalink v3.
   const key = link.DERIVED[view.mode];
   tuning = key !== undefined && view.params[key] === undefined ? "derived" : "stored";
-  tunedFrom = "link";
+  // And the texture it carries is the one that holds from here. A link that leaves the
+  // weight out is asking for one to be taken from the view, and takes the hold with it.
+  if (key === "weight") heldWeight = tuning === "stored" ? view.params.weight : null;
 }
 
 /** The reader changed the picture: the seat note goes, and the tone is measured from now
  *  on. Every control that moves the view comes through here and the Autolevel box does
  *  not — switching a curve off is looking at the same view. */
 function changed() {
-  interruptWalk("You moved the view. The walk carries on; Back to the walk returns to it.");
+  interruptWalk("The walk carries on; Back to the walk returns to it.");
   leaveSeat();
   // The plane moved under a pointer that may not have: whatever the card was showing is
   // a picture of somewhere else now. The next move over the canvas offers the new place.
   juliaCard?.hide();
   levelling = "derived";
-  if (tuning === "stored") tuning = "derived";
+  // A trap's opacity is measured per frame, so a stored one starts moving with the view
+  // here. A texture holds instead, wherever it came from — see `heldWeight`.
+  if (tuning === "stored" && link.DERIVED[view.mode] !== "weight") tuning = "derived";
   // Two of the buttons say whether this view is the one that was opened and whether it is
   // the whole of its plane, so they are resynced by every move and not only by the routes
   // that rebuild the strips around one.
@@ -2449,8 +2453,8 @@ function syncSave() {
   saveButton.title = copyHeld
     ? COPY_HELD_TITLE
     : on
-      ? "This view is on the Saved tab. Press to remove it."
-      : "Keep this view on the Saved tab, in this browser.";
+      ? "Press to remove it from Saved."
+      : "Keep this view on the Saved tab.";
 }
 
 function makeSaved() {
@@ -2475,7 +2479,7 @@ function makeSaved() {
   });
   saveButton.addEventListener("click", () => {
     const answer = saved.toggle(currentQuery());
-    if (answer === "added") say("Saved. It is on the Saved tab, in this browser.");
+    if (answer === "added") say("Saved. It is on the Saved tab.");
     else if (answer === "removed") say("Removed from Saved.");
     else if (answer === "full") say(`Saved is full at ${saving.MAX} pictures. Remove some to save more.`);
   });
@@ -2634,7 +2638,6 @@ async function startWalk() {
       controls: document.getElementById("controls"),
       strip: document.getElementById("walk-strip"),
       candidates: document.getElementById("walk-candidates"),
-      candidatesNote: document.getElementById("walk-candidates-note"),
       candidatesPlace: document.getElementById("walk-candidates-place"),
       walking: (on) => document.querySelector(".viewer").classList.toggle("is-walking", on),
       relayout,
@@ -2701,17 +2704,15 @@ function leaveDeep(from) {
   // is the one a reader could not possibly spot, so it is named separately.
   if (from.julia && !carriesParameter(from)) {
     say(
-      "This Julia set's c has more digits than the ordinary explorer's arithmetic carries, " +
-        "so it cannot be taken over: rounding it would open a different Julia set under " +
-        "this one's name. The Deep tab is the only place this c exists.",
+      "This Julia set's c has more digits than the ordinary explorer carries, so it cannot " +
+        "be taken over: rounding it would open a different Julia set.",
     );
     return;
   }
   if (!resolvesShallow(from)) {
     say(
-      "This frame is below what the ordinary explorer's arithmetic can resolve, so it " +
-        "cannot be carried back: every pixel of it would round to the same coordinate. " +
-        "Zoom out here first, and the button will take it over.",
+      "This frame is below what the ordinary explorer can resolve. Zoom out here first, " +
+        "and the button will take it over.",
     );
     return;
   }
@@ -2812,7 +2813,7 @@ async function mountDeep() {
       leave: leaveDeep,
       save: (query) => {
         const answer = saved.toggle(query);
-        if (answer === "added") say("Saved. It is on the Saved tab, in this browser.");
+        if (answer === "added") say("Saved. It is on the Saved tab.");
         else if (answer === "removed") say("Removed from Saved.");
         else if (answer === "full") say(`Saved is full at ${saving.MAX} pictures. Remove some to save more.`);
       },
@@ -3026,7 +3027,9 @@ canvas.addEventListener(
 //
 // On a parameter plane, the point under the pointer is a `c`. The card draws that `c`'s
 // Julia set — see `julia-preview.js` — and a click enters it. The page owns the gate and
-// the geometry; the module owns the card, the pool and the stored switch.
+// the geometry; the module owns the card, the pool and the switch. It is **off until the
+// box beside Autolevel is ticked** *(explorer_ui_text_ckpt139)*, and the tick lasts the
+// session rather than the browser.
 
 /** Whether this is a machine with a pointer that hovers. The preview is a mouse gesture
  *  and there is nothing here for touch: a finger has no hover, and the tap that would
@@ -3099,9 +3102,7 @@ canvas.addEventListener("pointerleave", () => juliaCard?.hide());
 // it can do when somebody does it, which is how the two keys of the way back work as well.
 
 /** What a dropped file with nothing of ours in it is told. */
-const NO_LINK =
-  "That picture carries no explorer link. A picture downloaded from this page does, " +
-  "written into the file when it was saved.";
+const NO_LINK = "That picture carries no explorer link. A picture downloaded from this page does.";
 
 /** Whether a drag is carrying files, which is the only kind this page takes. */
 function draggingFiles(event) {
@@ -3270,18 +3271,27 @@ const juliaButton = document.getElementById("view-julia");
 const randomPaletteButton = document.getElementById("view-palette");
 const randomPhaseButton = document.getElementById("view-phase");
 
-/** Each button's words and its key, which is what it says on hover. The two that name a
- *  plane are written where they are said, because the name is the view's. */
+/**
+ * Each button's key, as the label wears it *(explorer_ui_text_ckpt139)*.
+ *
+ * **A button with a shortcut says so in its own words**, rather than in a tooltip nobody
+ * on a touchscreen can open and nobody else hovers long enough to find. The key is spelled
+ * the way it is pressed — a bare lowercase letter, `shift+p` where Shift is held — and
+ * `TOGGLE_KEYS` below is the table that actually binds them, so a key added there is a
+ * label to add here. The two buttons whose words never change spell theirs in `index.html`;
+ * the three that name a plane or a seat are built here and take theirs from this.
+ */
+const KEYS = { seat: "(s)", whole: "(r)", julia: "(j)" };
+
+/** What each button says on hover, where its own words do not already say it. The key is
+ *  in the label now, so no tip carries one. Random palette and Random phase have none:
+ *  their words are the whole of what they do. */
 const TOGGLE_TIPS = {
-  seat: "Back to the wallpaper this view was opened at: its frame, its mode and its palette. (S)",
-  link: "Back to the picture this link opened at: its frame, its mode and its palette. (S)",
-  none: "This page opened at the home view, so there is nothing else to go back to. (S)",
-  julia: "Open the Julia set whose c is the center of this view. (J)",
-  palette: "A palette drawn at random from the picker, on the same view. (P)",
-  phase: "A random phase, with everything else kept. (Shift+P)",
+  seat: "Back to the wallpaper this view was opened at: its frame, its mode and its palette.",
+  link: "Back to the picture this link opened at: its frame, its mode and its palette.",
+  none: "This page opened at the home view, so there is nothing else to go back to.",
+  julia: "Opens the Julia set whose c is the center of this view.",
 };
-randomPaletteButton.title = TOGGLE_TIPS.palette;
-randomPhaseButton.title = TOGGLE_TIPS.phase;
 
 /** The parent view Julia here left, as `{ julia, cx, cy, parent }` — the Julia family and
  *  `c` it opened, and the parent's canonical query — or `null`. */
@@ -3323,23 +3333,23 @@ function syncToggles() {
   const onJulia = view.family in PARENT_PLANE;
 
   const opened = anchor === null ? "none" : anchor.opts.key ? "seat" : "link";
-  seatButton.textContent = opened === "link" ? "Reset to link" : "Reset to seat";
+  seatButton.textContent = opened === "link" ? `Reset to link ${KEYS.seat}` : `Reset to seat ${KEYS.seat}`;
   seatButton.title = TOGGLE_TIPS[opened];
   seatButton.disabled = busy || anchor === null || pictureKey(view) === anchor.at;
 
   const plane = planeName(view.family);
-  wholeButton.textContent = `Whole ${plane}`;
-  wholeButton.title = `The whole of ${plane}, keeping the mode and palette. (R)`;
+  wholeButton.textContent = `Whole ${plane} ${KEYS.whole}`;
+  wholeButton.title = "Keeps the mode and the palette.";
   wholeButton.disabled = busy || atHome();
 
   const hasJulia = onJulia || view.family in JULIA_OF;
   juliaButton.hidden = !hasJulia;
   if (onJulia) {
     const parent = planeName(PARENT_PLANE[view.family]);
-    juliaButton.textContent = `Back to ${parent}`;
-    juliaButton.title = `Back to ${parent}, framed on the c this Julia set is drawn at, with c marked. (J)`;
+    juliaButton.textContent = `Back to ${parent} ${KEYS.julia}`;
+    juliaButton.title = `Framed on the c this Julia set is drawn at, with c marked.`;
   } else {
-    juliaButton.textContent = "Julia here";
+    juliaButton.textContent = `Julia here ${KEYS.julia}`;
     juliaButton.title = TOGGLE_TIPS.julia;
   }
   juliaButton.disabled = busy || !hasJulia;
@@ -3408,9 +3418,35 @@ function juliaHere() {
 }
 
 /**
+ * How wide the parameter plane opens around `c`, where there is no view to go back to.
+ *
+ * **One fixed width, and it is not the whole set** *(Matt, explorer_ui_text_ckpt139)*. This
+ * used to be the plane's home width — about three across — so a Julia set copied out of the
+ * gallery went back to a picture of the whole Mandelbrot with a mark on it, which says
+ * where `c` is and shows nothing about it. What the artist is asking is what the
+ * neighbourhood looks like, because the neighbourhood is what the Julia set is a picture
+ * of.
+ *
+ * **0.05, picked by eye over thirteen gallery Julia `c` values spread across the plane** —
+ * the period-2 disc, both big bulbs, the seahorse valley, the cluster the seating favours
+ * west of the cusp, and four out on the filaments — drawn at 0.005, 0.01, 0.02, 0.05, 0.1,
+ * 0.22 and 0.5. Under 0.02 the frame empties out on a `c` that sits a little off the
+ * boundary: at 0.005 three of the thirteen were a bare gradient with nothing in them.
+ * Above 0.1 a flat black bulb interior takes most of the frame on the three `c` values
+ * inside one. Every one of the thirteen shows boundary and filigree at 0.02, and 0.05 is
+ * that with a margin; it is a hand pick and not a derivation, which is why it is a constant
+ * rather than a function of anything.
+ *
+ * It is one width for every parameter plane — the degree-3 to degree-6 Multibrots and the
+ * Phoenix slice as well — because what makes it the right size is the scale the boundary
+ * has detail on, which those share.
+ */
+const BACK_WIDTH = 0.05;
+
+/**
  * Back to the parameter plane. Where this tab opened the Julia set on the screen, it
  * returns to the view it left; anywhere else — a copied link, a seat, a `c` typed in
- * Details — it lands on the parent plane at `c`, at that plane's home width. Either way
+ * Details — it lands on the parent plane at `c`, framed `BACK_WIDTH` across. Either way
  * the mode, palette and recipe in force now come along, as they did on the way in.
  */
 function juliaBack() {
@@ -3421,7 +3457,11 @@ function juliaBack() {
   // the view Julia here left, and of the fallback frame as well, but a reader who has
   // panned the plane since keeps the mark on `c` rather than on the middle of the canvas.
   const at = { family: plane, x: view.constants.cx.value, y: view.constants.cy.value };
-  let geometry = { x: view.constants.cx, y: view.constants.cy, w: homeOf(plane).w };
+  let geometry = {
+    x: view.constants.cx,
+    y: view.constants.cy,
+    w: link.coordinateOf(BACK_WIDTH),
+  };
   if (
     held !== null &&
     held.julia === view.family &&
@@ -3493,7 +3533,7 @@ for (const [event, on] of [["pointerenter", true], ["focus", true], ["pointerlea
 }
 
 /** The five toggles' keys. A bare letter, or Shift and one; with Ctrl, Alt or Meta held a
- *  key is the browser's. */
+ *  key is the browser's. Every one of them is on the face of its button — see `KEYS`. */
 const TOGGLE_KEYS = {
   s: resetToSeat,
   r: wholePlane,
@@ -3503,24 +3543,26 @@ const TOGGLE_KEYS = {
 };
 
 /** A new mode keeps the place and drops the parameters, because they belonged to
- *  the mode that is being left. */
+ *  the mode that is being left. The texture is the one exception — see `heldWeight`. */
 modePicker.addEventListener("change", () => {
   const mode = modePicker.value;
   // Where a seat sits at this place in the mode being switched to, the switch is back to
   // that seat's picture, parameters and all; anywhere else a trap opens at what its seats
-  // were most often drawn at, and the draw takes the derived parameter from the view, and
-  // a screened composite opens at `TEXTURE_DEFAULT`.
+  // were most often drawn at, and the draw takes the derived parameter from the view.
   const seated = seatsByPlace.get(`${placeOf(view)}|${mode}`);
   const params = seated !== undefined ? { ...seated } : switchedParams(mode);
+  // An angle mode with no seat here opens at whatever texture is holding, and at
+  // `TEXTURE_DEFAULT` only where nothing ever set one.
+  const held = seated === undefined && link.DERIVED[mode] === "weight" && heldWeight !== null;
+  if (held) params.weight = heldWeight;
   view = { ...view, mode, params };
   // A mode that was only listed because the view arrived in it goes, now it is left.
   syncModes();
   changed();
-  // The texture default is held as the view moves, the way a number the reader typed is;
-  // a trap's opacity is still taken from the view.
   if (seated !== undefined) tuning = "stored";
-  else tuning = link.DERIVED[mode] === "weight" ? "default" : "derived";
-  tunedFrom = "seat";
+  else if (link.DERIVED[mode] !== "weight") tuning = "derived";
+  else tuning = held ? "pinned" : "default";
+  if (link.DERIVED[mode] === "weight") heldWeight = view.params.weight ?? heldWeight;
   buildParams();
   // What a download of this view would cost is per mode, so the line under the
   // control moves with the picker rather than at the moment somebody presses it.

@@ -20,9 +20,9 @@
 // nothing is started at all while the main pass is still running.
 //
 // **The card is the gesture's only state.** There is no link key, no panel and no second
-// setting — one stored flag, off or on, and the card itself is where a reader turns it
-// off. What the card shows is what a click enters at, which is why the click is refused
-// when the card is not up.
+// setting — one flag, off or on, switched by the box beside Autolevel and by the card's
+// own corner. What the card shows is what a click enters at, which is why the click is
+// refused when the card is not up.
 
 import { estimate } from "./download.js";
 import { DERIVED } from "./permalink.js";
@@ -53,8 +53,17 @@ const BUDGET_S = 0.25;
  *  changed it. */
 const FALLBACK = "smooth";
 
-/** The stored flag. On unless it says otherwise, so a reader who has never touched it
- *  gets the preview. */
+/**
+ * The flag, and where it is kept.
+ *
+ * **Off unless this tab has switched it on** *(explorer_ui_text_ckpt139)*. It was on by
+ * default and remembered in `localStorage`; it is an option now, and one a reader turns on
+ * when they want to aim a `c` by eye rather than one that follows their pointer around
+ * whether or not they asked. So the default is off, and the memory is the tab's own
+ * session rather than the browser's: a visit that wanted it keeps it across a reload and a
+ * link, and a visit that did not is never handed it. No link carries it — it is a way of
+ * working, not part of a picture.
+ */
 const KEY = "explorer.julia-preview";
 
 /** How far a value has to be from zero before the readout stops calling it zero. */
@@ -98,16 +107,16 @@ export function mount(host) {
 
   function stored() {
     try {
-      return window.localStorage.getItem(KEY) !== "off";
+      return window.sessionStorage.getItem(KEY) === "on";
     } catch {
-      // A browser that stores nothing still gets the preview; it just forgets the switch.
-      return true;
+      // A browser that stores nothing still has the box; it just forgets it on a reload.
+      return false;
     }
   }
 
   function store(value) {
     try {
-      window.localStorage.setItem(KEY, value ? "on" : "off");
+      window.sessionStorage.setItem(KEY, value ? "on" : "off");
     } catch {
       // As above.
     }
@@ -120,7 +129,7 @@ export function mount(host) {
     store(value);
     if (!value) {
       hide();
-      if (said) say("Julia preview off. Details has it, under the coordinates.");
+      if (said) say("Julia preview off.");
     }
   }
 
@@ -306,10 +315,7 @@ export function mount(host) {
   }
 
   off.addEventListener("click", () => set(false, true));
-  toggle.addEventListener("change", () => {
-    set(toggle.checked, false);
-    if (!toggle.checked) say("Julia preview off.");
-  });
+  toggle.addEventListener("change", () => set(toggle.checked, false));
 
   return {
     /** The pointer is over `{ cx, cy }` of the plane, `across` of the way across the

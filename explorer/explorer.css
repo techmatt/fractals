@@ -688,10 +688,10 @@ summary.section-head:focus-visible { outline: 2px solid var(--well-link); outlin
 .walk-hint { flex-basis: 100%; margin: 0; color: var(--well-ink-dim); font-size: 0.75rem; }
 .walk-check, .walk-number { white-space: nowrap; color: var(--well-ink-dim); }
 .walk-number input { width: 5.5rem; }
-/* A family's box wears the wheel's own dot and its map count, the same two marks the
-   gallery panel's hue chips wear. `.hue` above is the dot and is not restated here. */
+/* A family's radio wears the wheel's own dot, the same mark the gallery panel's hue chips
+   wear. `.hue` above is the dot and is not restated here; the map count that used to
+   follow it is gone (`explorer_ui_text_ckpt139` addendum 2). */
 .walk-check .hue { margin-left: 0.3rem; }
-.walk-check .count { font-variant-numeric: tabular-nums; opacity: 0.6; margin-left: 0.3rem; }
 
 .walk-go { display: flex; align-items: center; gap: 0.6rem; }
 .walk-start {
@@ -866,7 +866,6 @@ summary.section-head:focus-visible { outline: 2px solid var(--well-link); outlin
 .walk-candidate-score { flex: none; color: var(--well-ink); font-variant-numeric: tabular-nums; }
 .walk-candidate.is-kept { outline: 2px solid #ffd166; }
 .walk-candidate.is-waiting { aspect-ratio: 16 / 9; background: rgb(255 255 255 / 0.04); }
-.walk-candidates-note { margin: 0; font-size: 0.75rem; color: var(--well-ink-dim); }
 
 @media (max-width: 60rem) {
   .walk-view { --walk-card: 8rem; --walk-tile: 8rem; }
@@ -1157,8 +1156,6 @@ summary.section-head:focus-visible { outline: 2px solid var(--well-link); outlin
 .bar button:not(.chip):disabled:hover { border-color: var(--well-rule); color: var(--well-ink); }
 .bar .chip:disabled:hover { border-color: var(--well-rule); color: var(--well-ink-dim); }
 
-.help-inline { font-size: 0.72rem; color: var(--well-ink-dim); }
-.help-inline:empty { display: none; }
 
 .studio-bar button {
   font: inherit;

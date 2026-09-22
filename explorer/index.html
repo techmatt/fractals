@@ -51,8 +51,7 @@
         <button type="button" class="tab" role="tab" id="tab-saved" data-panel="saved"
                 aria-controls="panel-saved" aria-selected="false">Saved</button>
       </div>
-      <select id="gallery-collection" class="collection" aria-label="Collection"
-              title="Which gallery to show: the general one, or a collection seated for one color family or one mode."></select>
+      <select id="gallery-collection" class="collection" aria-label="Collection"></select>
     </div>
 
     <div class="tabpanel" id="panel-gallery" role="tabpanel" aria-labelledby="tab-gallery">
@@ -89,8 +88,7 @@
       </div>
       <div class="section-head walk-found-head">
         <h2 id="head-walk-found">Found</h2>
-        <button type="button" class="head-action" id="walk-save-all" hidden
-                title="Put every found picture on the Saved tab, where it stays after the page is closed.">Save all found</button>
+        <button type="button" class="head-action" id="walk-save-all" hidden>Save all found</button>
       </div>
       <div class="tiles walk-found" id="walk-found" role="group" aria-labelledby="head-walk-found"></div>
       <p class="side-note" id="walk-note">Nothing found yet. Found pictures last until the page is closed.</p>
@@ -99,8 +97,7 @@
     <div class="tabpanel" id="panel-deep" role="tabpanel" aria-labelledby="tab-deep" hidden>
       <div class="deep-head">
         <div class="deep-go">
-          <button type="button" class="deep-render" id="deep-render"
-                  title="Draw this frame: a quarter-resolution pass first, then the full one, then four samples a pixel. Press again to stop.">Render</button>
+          <button type="button" class="deep-render" id="deep-render">Render</button>
           <span class="deep-progress" id="deep-progress" role="status" aria-live="polite" hidden></span>
         </div>
         <p class="deep-note" id="deep-note" role="status"></p>
@@ -118,40 +115,35 @@
 
       <div class="section-head">
         <h2 id="head-deep-iterations">Iterations</h2>
-        <button type="button" class="head-action" id="deep-cap-policy"
-                title="Back to the cap this kernel's own depth policy gives a frame of this width.">From the width</button>
+        <button type="button" class="head-action" id="deep-cap-policy">From the width</button>
       </div>
       <div class="bar deep-iterations" role="group" aria-labelledby="head-deep-iterations">
-        <button type="button" id="deep-cap-down" title="Halve the cap: a faster, shallower picture.">Halve</button>
+        <button type="button" id="deep-cap-down" title="Faster, and shallower.">Halve</button>
         <input type="number" id="deep-cap" class="param" min="50" max="1000000" step="1"
                aria-label="Iteration cap">
-        <button type="button" id="deep-cap-up" title="Double the cap: a slower picture with more of the boundary in it.">Double</button>
+        <button type="button" id="deep-cap-up" title="Slower, with more of the boundary in it.">Double</button>
       </div>
 
       <div class="bar deep-actions">
-        <button type="button" id="deep-julia"
-                title="Draw the Julia set of this view's own center.">Julia at this c</button>
+        <button type="button" id="deep-julia">Julia at this c</button>
         <button type="button" id="deep-origin" hidden
-                title="The same structure at the critical point, where it is exactly two-fold symmetric. The frame widens to the square root of its width, because z² + c maps a disc about 0 onto a disc of its square about c.">Same view at z = 0</button>
+                title="The frame widens to the square root of its width.">Same view at z = 0</button>
       </div>
 
       <div class="bar deep-actions">
         <button type="button" id="deep-minibrots"
-                title="Find the minibrots in and around this view, largest first. Click one to go to it.">Nearby minibrots</button>
+                title="Largest first. Click one to go to it.">Nearby minibrots</button>
       </div>
       <div class="minibrots" id="deep-minibrot-list" hidden></div>
       <p class="side-note" id="deep-minibrot-note" hidden></p>
 
       <div class="bar deep-actions">
-        <button type="button" id="deep-save"
-                title="Keep this frame on the Saved tab, in this browser.">Save</button>
-        <button type="button" id="deep-back"
-                title="Open this frame in the ordinary explorer.">Back to the explorer</button>
+        <button type="button" id="deep-save">Save</button>
+        <button type="button" id="deep-back">Back to the explorer</button>
       </div>
 
-      <p class="side-note" id="deep-side-note">Smooth, degree 2 — the Mandelbrot set, and the
-      Julia set of any c on it. Drag and scroll to move the frame; nothing is drawn until you
-      press Render.</p>
+      <p class="side-note" id="deep-side-note">Smooth, degree 2 only. Drag and scroll to move
+      the frame; nothing is drawn until you press Render.</p>
     </div>
 
     <div class="tabpanel" id="panel-saved" role="tabpanel" aria-labelledby="tab-saved" hidden>
@@ -160,17 +152,15 @@
           <span class="saved-count" id="saved-count"></span>
           <span class="saved-actions">
             <select id="saved-format" aria-label="Format for Download all"
-                    title="The format Download all saves each picture as. JPG is several times smaller.">
+                    title="JPG is several times smaller.">
               <option value="jpg">JPG</option>
               <option value="png">PNG</option>
             </select>
             <button type="button" id="saved-download">Download all</button>
             <button type="button" id="saved-export"
-                    title="Download the list as a file this page can import again.">Export</button>
-            <button type="button" id="saved-copy"
-                    title="Copy every saved link, one to a line.">Copy links</button>
-            <button type="button" id="saved-import" aria-expanded="false" aria-controls="saved-import-box"
-                    title="Add links from a file this page exported, or pasted text.">Import</button>
+                    title="A file this page can import again.">Export</button>
+            <button type="button" id="saved-copy">Copy links</button>
+            <button type="button" id="saved-import" aria-expanded="false" aria-controls="saved-import-box">Import</button>
             <button type="button" id="saved-clear">Clear all</button>
           </span>
         </div>
@@ -185,7 +175,7 @@
         <p class="saved-progress" id="saved-progress" role="status" aria-live="polite"></p>
         <p class="saved-warning" id="saved-warning" role="alert"></p>
       </div>
-      <p class="saved-empty" id="saved-empty">Nothing saved yet. The bookmark on any picture, or Save beside the downloads, keeps it here. Saved pictures stay in this browser only, so export the list to keep it or move it.</p>
+      <p class="saved-empty" id="saved-empty">Nothing saved yet. The bookmark on any picture, or Save beside the downloads, keeps it here.</p>
       <div class="tiles saved-tiles" id="saved-tiles" role="group" aria-label="Saved pictures"></div>
       <p class="side-note" id="saved-note">Kept in this browser only. Safari may clear it after a week without a visit.</p>
     </div>
@@ -196,13 +186,13 @@
       <canvas id="canvas" tabindex="0" aria-label="The fractal at the current family, mode and view"></canvas>
       <!-- The Julia set of the point under the pointer, on a parameter plane. A hover
            affordance and nothing a reader can reach any other way, so it is out of the
-           accessibility tree: Julia here (J) is the button it previews. -->
+           accessibility tree: Julia here (j) is the button it previews. -->
       <div class="julia-preview is-right" id="julia-preview" hidden aria-hidden="true">
         <canvas class="julia-preview-picture" id="julia-preview-picture" width="320" height="180"></canvas>
         <p class="julia-preview-said"><span id="julia-preview-c"></span><span
               class="julia-preview-fell" id="julia-preview-fell" hidden>smooth</span></p>
         <button type="button" class="julia-preview-off" id="julia-preview-off" tabindex="-1"
-                title="Turn the Julia preview off. Details switches it back on.">×</button>
+                title="Turn the Julia preview off.">×</button>
       </div>
     </div>
 
@@ -231,12 +221,12 @@
           <span class="estimate" id="download-estimate"></span>
           <span class="view-toggles" id="view-toggles" role="group" aria-label="View"
                 title="Ctrl+Z (Cmd+Z) steps back through the pictures this session has shown; Ctrl+Shift+Z or Ctrl+Y steps forward.">
-            <button type="button" id="view-seat" aria-keyshortcuts="S">Reset to seat</button>
-            <button type="button" id="view-whole" aria-keyshortcuts="R">Whole Mandelbrot</button>
-            <button type="button" id="view-julia" aria-keyshortcuts="J">Julia here</button>
+            <button type="button" id="view-seat" aria-keyshortcuts="S">Reset to seat (s)</button>
+            <button type="button" id="view-whole" aria-keyshortcuts="R">Whole Mandelbrot (r)</button>
+            <button type="button" id="view-julia" aria-keyshortcuts="J">Julia here (j)</button>
             <span class="view-random">
-              <button type="button" id="view-palette" aria-keyshortcuts="P">Random palette</button>
-              <button type="button" id="view-phase" aria-keyshortcuts="Shift+P">Random phase</button>
+              <button type="button" id="view-palette" aria-keyshortcuts="P">Random palette (p)</button>
+              <button type="button" id="view-phase" aria-keyshortcuts="Shift+P">Random phase (shift+p)</button>
             </span>
           </span>
         </div>
@@ -245,10 +235,8 @@
       <section class="control-group">
         <div class="section-head"><h2 id="head-mode">Mode</h2></div>
         <div class="bar">
-          <select id="mode" aria-labelledby="head-mode"
-                  title="How each point is turned into a color: each mode reads the orbit differently."></select>
+          <select id="mode" aria-labelledby="head-mode"></select>
           <span class="group" id="params"></span>
-          <span class="help-inline" id="param-note"></span>
         </div>
       </section>
 
@@ -258,13 +246,17 @@
           <button type="button" class="head-action" id="palette-reset">Reset palette</button>
         </div>
         <canvas class="palette-final" id="palette-strip" width="512" height="1" role="img"
-                aria-label="The palette as this view applies it, from the lowest value to the highest"
-                title="The palette as this view applies it, with every shade setting included: the left end is where the lowest values land, the right end the highest."></canvas>
+                aria-label="The palette as this view applies it, from the lowest value to the highest"></canvas>
         <div class="bar shade" id="shade-bar">
           <span class="group level" id="level-group">
             <label for="level-toggle">Autolevel</label>
             <input type="checkbox" id="level-toggle" class="flag"
-                   title="Fits the palette's brightness and contrast to the picture: a gallery wallpaper replays the curve it was made with, and anywhere else the view is measured on its own.">
+                   title="Fits the palette's brightness and contrast to the picture.">
+          </span>
+          <span class="group level" id="julia-preview-group">
+            <label for="julia-preview-on">Julia preview</label>
+            <input type="checkbox" id="julia-preview-on" class="flag"
+                   title="On a parameter plane, shows the Julia set under the pointer; a click there opens it.">
           </span>
         </div>
         <p class="help" id="shade-note"></p>
@@ -293,13 +285,8 @@
         <p class="readout" id="differs"></p>
         <p class="provenance" id="provenance"></p>
         <div class="bar">
-          <span class="group">
-            <label for="julia-preview-on">Julia preview</label>
-            <input type="checkbox" id="julia-preview-on" class="flag"
-                   title="On a parameter plane, shows the Julia set of the point under the pointer, and a click there opens it. Remembered in this browser.">
-          </span>
           <button type="button" id="copy-view"
-                  title="Copies everything about this view as text: the recipe, the stat line and the link.">Copy view</button>
+                  title="Everything about this view as text, for pasting.">Copy view</button>
         </div>
       </details>
 
@@ -313,7 +300,6 @@
       <section class="walk-view-half">
         <div class="section-head"><h2 id="head-walk-candidates">Candidates</h2><span class="walk-candidates-place" id="walk-candidates-place"></span></div>
         <div class="walk-candidates" id="walk-candidates" role="group" aria-labelledby="head-walk-candidates"></div>
-        <p class="walk-candidates-note" id="walk-candidates-note">A place that clears the bar is painted once and then recolored, and the candidates come up here.</p>
       </section>
     </div>
   </section>

@@ -109,6 +109,14 @@ const MAX_PIXELS = 33_554_432;
 const MAX_SIDE = 8192;
 const MIN_SIDE = 16;
 
+/** The one thing the estimate line has to say that a reader would act on. Shape is not
+ *  resolution: a link carries an aspect and the plane width is what a view is, so a
+ *  different shape keeps that width and shows more or less height. Both branches said
+ *  this and each opened with a sentence about where its own number came from, which is
+ *  the estimate's business and not the reader's *(explorer_ui_text_ckpt139)*. */
+const SHAPE_TIP =
+  "A different shape shows more or less of the picture above and below, rather than cropping it.";
+
 /** What a mode costs, as the seconds measured over one 1280x720 frame on one thread —
  *  the `after` column of the per-mode table in `explorer/README.md`, typed. It is typed
  *  and so it goes stale silently: this table was last left behind by a re-measure that
@@ -488,20 +496,13 @@ export function install(context) {
       if (known === null) {
         refuse(
           "not priced",
-          "A deep frame's cost cannot be guessed from its size: it swings over four orders " +
-            "of magnitude with the width, the iteration cap and how much of the frame is " +
-            "interior. Press Render in the Deep tab, and this is estimated from what the " +
-            "pass took.",
+          "Press Render in the Deep tab, and this is estimated from what the pass took.",
         );
         return;
       }
       enable(true);
       estimateLine.textContent = saidShort(scaled(known, samples));
-      estimateLine.title =
-        "Estimated from how long this frame took to draw here, and it is the only honest " +
-        "estimate there is at this depth. The picture is drawn at the cap the frame " +
-        "settles on and carries its own deep link. A different shape shows more or less " +
-        "of the picture above and below, rather than cropping it.";
+      estimateLine.title = SHAPE_TIP;
       return;
     }
     enable(true);
@@ -509,11 +510,7 @@ export function install(context) {
     const seconds =
       scaled(measured(), samples) ?? estimate(view.mode, samples, renderer.workerCount);
     estimateLine.textContent = saidShort(seconds);
-    // Shape is not resolution: a link carries an aspect and the plane width is what a view
-    // is, so a different shape keeps that width and shows more or less height.
-    estimateLine.title =
-      "Estimated from how long this view took to draw here. A different shape shows more " +
-      "or less of the picture above and below, rather than cropping it.";
+    estimateLine.title = SHAPE_TIP;
   }
 
   /** The button is the bar: a fill across it, and how far it has got as its label. */

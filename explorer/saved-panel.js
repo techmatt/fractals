@@ -114,8 +114,8 @@ export function mount(host) {
       const said = describeView(view);
       label.textContent = said;
       tile.title = view.deep
-        ? `The Mandelbrot set at ${view.said}, in ${shownName(view.palette)} — below what ` +
-          "the ordinary renderer resolves. Opens in the Deep tab."
+        ? `The Mandelbrot set at ${view.said}, in ${shownName(view.palette)}. ` +
+          "Opens in the Deep tab."
         : `${view.mode} in ${shownName(view.palette)} on ${planeName(view.family)}`;
       image.alt = view.deep ? "" : tile.title;
       // **A deep picture is not drawn here.** There is no thumbnail of one without the
