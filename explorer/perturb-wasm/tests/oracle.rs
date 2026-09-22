@@ -59,12 +59,6 @@ const DEEP_RUNGS: &[f64] = &[1e-4, 1e-8, 1e-13, 1e-16, 1e-19, 1e-22, 1e-25, 1e-2
 /// Small, because the oracle is the expensive half.
 const TILE: (u32, u32) = (16, 9);
 
-/// One sample, iterated the long way.
-fn oracle(c_re: &Fx, c_im: &Fx, maxiter: u32) -> f64 {
-    let n = c_re.n;
-    oracle_from(&Fx::zero(n), &Fx::zero(n), c_re, c_im, maxiter)
-}
-
 /// The same at any degree, and at degree two exactly [`oracle_from`].
 ///
 /// **Past `|z| = 8` it continues in `f64`**, which is the reference orbit's own

@@ -42,7 +42,7 @@ fn spec_of(frame: &Frame, maxiter: Option<u32>) -> Spec {
         julia: None,
         anchor: Anchor::Parameter,
         interior: true,
-        degree: 2,
+        degree: frame.degree,
     }
 }
 
@@ -111,7 +111,7 @@ fn walk(spec: &Spec) -> Walk {
 fn what_a_deeper_cap_resolves() {
     println!("\n| frame | cap | escaped | proven interior | cap-starved | mean iterations |");
     println!("|---|--:|--:|--:|--:|--:|");
-    for frame in DEEP_FRAMES {
+    for frame in frames_at(measure_degree()) {
         for multiple in [1u32, 2, 4, 8] {
             let cap = multiple * cap::for_width(frame.width);
             let run = walk(&spec_of(frame, Some(cap)));
@@ -205,7 +205,7 @@ fn where_the_policy_settles() {
         "\n| frame | policy cap | settled | × | the cap's fault, rung by rung | mean iterations | decision |"
     );
     println!("|---|--:|--:|--:|:--|--:|--:|");
-    for frame in every_frame() {
+    for frame in every_frame_at(measure_degree()) {
         let (label, width) = (frame.label, frame.width);
         let spec = canvas_spec(&frame, None);
         let policy_cap = cap::for_width(width);
@@ -214,10 +214,15 @@ fn where_the_policy_settles() {
             settled.rungs[0].maxiter, policy_cap,
             "{label}: the walk opens at the width's own cap"
         );
-        assert!(
-            !settled.at_ceiling,
-            "{label}: settled by running out of ceiling"
-        );
+        // **A frame can run out of ceiling, and that is a row rather than a failure**
+        // *(deep_degrees_ckpt140)*: degree six's `body 1e-22` is still more than a tenth
+        // the cap's fault at a million, and the page says so in a sentence. The
+        // degree-2 frames never do, and the table marks the one that does.
+        let ceiling = if settled.at_ceiling {
+            " (at the ceiling)"
+        } else {
+            ""
+        };
         let rungs = settled
             .rungs
             .iter()
@@ -228,7 +233,7 @@ fn where_the_policy_settles() {
         let at_settled = probe_at(&spec, settled.maxiter);
         let render = at_settled.mean_iterations() * FINE_LANES;
         println!(
-            "| {} | {} | **{}** | {}× | {} | {:.0} → {:.0} | {:.2}% |",
+            "| {} | {} | **{}**{ceiling} | {}× | {} | {:.0} → {:.0} | {:.2}% |",
             label,
             policy_cap,
             settled.maxiter,
@@ -249,7 +254,7 @@ fn where_the_policy_settles() {
 fn what_the_settled_cap_repaints() {
     println!("\n| frame | escaped | proven interior | unresolved | repainted |");
     println!("|---|--:|--:|--:|--:|");
-    for frame in every_frame() {
+    for frame in every_frame_at(measure_degree()) {
         let (label, width) = (frame.label, frame.width);
         let spec = canvas_spec(&frame, None);
         let policy_cap = cap::for_width(width);
@@ -288,7 +293,7 @@ fn the_bar_and_the_share_sit_on_a_plateau() {
         }
     }
     println!();
-    for frame in every_frame() {
+    for frame in every_frame_at(measure_degree()) {
         let (label, width) = (frame.label, frame.width);
         let policy_cap = cap::for_width(width);
         let spec = canvas_spec(&frame, None);
@@ -526,13 +531,17 @@ fn what_the_nucleus_search_finds_and_what_it_costs() {
 #[ignore = "~2 min: three nuclei, seven caps each, on a small tile"]
 fn what_a_preview_tile_needs() {
     const PROBE_TILE: (u32, u32) = (80, 45);
-    let frame = DEEP_FRAMES[0].control();
+    // `tangle 1e-22` at the degree `MEASURE_DEGREE` names, two by default.
+    let degree = measure_degree();
+    let frame = frames_at(degree)[0].control();
+    assert_eq!(frame.label, "tangle 1e-22");
     let base = canvas_spec(&frame, None);
     let settled = policy::settle(&base, policy::PROBE_COLS, policy::PROBE_ROWS).unwrap();
     let spec = canvas_spec(&frame, Some(settled.maxiter));
     let kept = nuclei::search(&spec, nuclei::GRID_COLS, nuclei::GRID_ROWS, 12, 3).unwrap();
 
-    println!("\n| period | rule | cap | escaped | proven | starved | mean iters | s (80x45) |");
+    println!("\n### degree {degree}\n");
+    println!("| period | rule | cap | escaped | proven | starved | mean iters | s (80x45) |");
     println!("|--:|---|--:|--:|--:|--:|--:|--:|");
     for nucleus in &kept {
         let width = nucleus.size() * nuclei::TILE_BODIES;
@@ -560,7 +569,7 @@ fn what_a_preview_tile_needs() {
                 julia: None,
                 anchor: Anchor::Parameter,
                 interior: true,
-                degree: 2,
+                degree,
             };
             let started = Instant::now();
             let run = walk(&tile);
@@ -576,4 +585,88 @@ fn what_a_preview_tile_needs() {
         }
         println!("|  |  |  |  |  |  |  |  |");
     }
+}
+
+// ------------------------------------------------------------ the interior floor
+
+/// **The interior switch's floor, swept at one degree** *(deep_degrees_ckpt140)* —
+/// `MEASURE_DEGREE`, and §3's sweep at every other.
+///
+/// The frames are the ones with interior in them: at degree two the anchor at 2e-11
+/// and the two `body` frames; above it the degree's island pin at about three bodies,
+/// which is the anchor's framing, and that degree's two `body` frames. Each is walked
+/// once with the switch off and once at every floor, on the cap policy's 64×36, and a
+/// sample the switch paints interior that the plain run escapes from is the one
+/// thing that must never happen at the floor that ships.
+#[test]
+#[ignore = "minutes: three frames, eleven floors each"]
+fn the_interior_floor_at_a_degree() {
+    const FLOORS: &[i32] = &[-300, -160, -120, -100, -80, -64, -48, -32, -16, -8, -4];
+    let degree = measure_degree();
+    let mut frames: Vec<(Control, u32)> = Vec::new();
+    let island = controls_at(degree)
+        .into_iter()
+        .find(|c| c.label == "anchor 2e-11" || c.label == "island 3 bodies")
+        .unwrap();
+    frames.push((island, cap::for_width(island.width)));
+    for frame in frames_at(degree) {
+        if frame.label.starts_with("body") {
+            frames.push((frame.control(), frame.maxiter));
+        }
+    }
+    println!("\n### degree {degree}\n");
+    println!(
+        "| frame | cap | interior (off) | floor | caught | wrongly painted | iterations saved |"
+    );
+    println!("|---|--:|--:|--:|--:|--:|--:|");
+    // **Held at the shipped floor and reported at the others.** At degree six the
+    // island frame has one escaping sample the switch paints interior at −4, which is
+    // the whole reason the floor is not a free parameter to push toward zero.
+    let mut wrong_at_shipped = 0;
+    for (frame, maxiter) in frames {
+        let spec = Spec {
+            resolution: [policy::PROBE_COLS, policy::PROBE_ROWS],
+            supersample: 1,
+            ..canvas_spec(&frame, Some(maxiter))
+        };
+        let orbit = spec.reference_orbit().unwrap();
+        let offset = spec.centre_offset().unwrap();
+        let cells: Vec<(f64, f64)> = (0..spec.resolution[1])
+            .flat_map(|row| (0..spec.resolution[0]).map(move |col| (col, row)))
+            .map(|(col, row)| spec.dc(offset, col, row))
+            .collect();
+        let off_kernel = perturb::kernel::Kernel::new(&orbit, maxiter, false);
+        let off: Vec<_> = cells
+            .iter()
+            .map(|&(re, im)| off_kernel.sample_at(degree, frame.julia, re, im))
+            .collect();
+        let inside = off.iter().filter(|o| o.smooth.is_nan()).count();
+        let spent: u64 = off.iter().map(|o| o.iterations as u64).sum();
+        for &floor in FLOORS {
+            let on = perturb::kernel::Kernel::new(&orbit, maxiter, true).at_floor(floor);
+            let (mut caught, mut wrong, mut with) = (0, 0, 0u64);
+            for (at, &(re, im)) in cells.iter().enumerate() {
+                let o = on.sample_at(degree, frame.julia, re, im);
+                with += o.iterations as u64;
+                if o.detected_interior {
+                    caught += 1;
+                }
+                if o.smooth.is_nan() && !off[at].smooth.is_nan() {
+                    wrong += 1;
+                }
+            }
+            if floor == perturb::kernel::INTERIOR_EXPONENT {
+                wrong_at_shipped += wrong;
+            }
+            println!(
+                "| {} | {maxiter} | {inside} | {floor} | {caught} | {wrong} | {:.1}% |",
+                frame.label,
+                100.0 * (1.0 - with as f64 / spent as f64)
+            );
+        }
+    }
+    assert_eq!(
+        wrong_at_shipped, 0,
+        "at the shipped floor the switch painted an escaping sample interior"
+    );
 }

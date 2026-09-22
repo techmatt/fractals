@@ -1038,20 +1038,156 @@ as a number rather than chased.
 78,280 gzipped): ten monomorphizations of the sample loop and ten of the domain walk,
 where there were two of each. The audit estimated 15–25 KB raw.
 
+#### The constants, re-swept at each degree
+
+§3's interior floor and §8's cap policy were calibrated on degree-2 frames only, so each
+higher degree got frames of its own and the sweeps were run again on them.
+
+**The frames.** `tests/descend.rs`'s `descend_to_deep_frames_at_a_degree`, once a degree,
+from that degree's island pin at 1e-11 — the anchor's kind of start — down the tangle,
+pinch and body routes; `tests/common`'s `DEGREE_FRAMES` keeps the same seven kinds of
+frame `DEEP_FRAMES` keeps, and `frames.rs` holds all 35 to being spellable and at their
+claimed cap. The controls are the degree-2 set's counterparts: the island at about three
+bodies (the anchor at 2e-11), the island at 1e-22 (inside its body), the degree's `M(2,1)`
+at 1e-22, the whole set, and the Julia set of the island's `c` at 2e-9. The runs take
+`MEASURE_DEGREE` and `DESCEND_DEGREE`; the descents were 16 to 33 minutes a degree, run side by side.
+
+⚠ **The first descents started somewhere else and were thrown away.** From period-1,597
+nuclei at the main component's golden-mean boundary point, degree three's `tangle 1e-22`
+settled at eight times the width's cap and most rules ran it to the ceiling. That is a
+near-neutral, Siegel-like neighbourhood where orbits linger, and it said nothing about
+the degree — so the frames were found again from islands, where the tables below read
+against §8's row for row.
+
+**Where the cap policy settles**, as multiples of the width's cap:
+
+| frame | d = 2 (§8) | d = 3 | d = 4 | d = 5 | d = 6 |
+|---|--:|--:|--:|--:|--:|
+| tangle 1e-22 | 2× | 8× | 2× | 4× | 4× |
+| tangle 1e-28 | 2× | 4× | 2× | 4× | 4× |
+| tangle 1e-40 | 2× | 4× | 2× | 4× | 2× |
+| pinch 1e-28 | 2× | 2× | 4× | 4× | 2× |
+| tangle 1e-54 | 2× | 4× | 2× | 4× | 2× |
+| body 1e-22 | 8× | 10× (the ceiling, 4.5% left) | 8× | 10× (the ceiling, 6.2% left) | **the ceiling, 22.7% left** |
+| body 1e-28 | 8× | 8× | 8× | 8× | **the ceiling, 21.9% left** |
+| the five controls | 1× | 1× | 1× | 1× | 1× |
+
+Deciding costs 0.08% to 0.27% of the fine pass at every degree, as at two. The deep frames
+at degrees three and five want one more doubling than degree two's; that is what the probe
+is for, and nothing about it asks for a different rule.
+
+⚠ **At degree six both body frames run out of ceiling** — still 22.7% and 21.9% the cap's
+fault at a million — and the page says so in the sentence §8 wrote for it (*some of what is
+painted as set is not*). At three and five `body 1e-22` reaches the ceiling and resolves
+there, at 4.5% and 6.2%. `cap::CEILING` is still marked provisional, and this is the first
+evidence that it binds on a frame a reader can reach; it was not moved here.
+
+**The bar and the share** (`FAULT_EXPONENT` from 8 to 24, `FAULT_SHARE` from 5% to 15%),
+twenty-five rules a frame:
+
+- **d = 3**: the bar moves nothing on any frame. The share does, by one doubling, on four
+  of the seven deep frames — each crosses 10% somewhere between its last two rungs (9.0%,
+  9.3%, 5.5% …), so ≤8% and ≥10% settle a rung apart. Narrower than degree two's, and
+  still stepwise rather than drifting.
+- **d = 4**: flat, but for `pinch 1e-28` (4× below 12%, 2× from it) and `body 1e-28` (8×,
+  4× at 15%).
+- **d = 5**: flat, but for `tangle 1e-54` (4×, 2× from 12%) and `body 1e-22` (10×, 8× at 15%).
+- **d = 6**: flat in the share, and **the bar's plateau ends between 16 and 20**: at bars of
+  20 and 24 `body 1e-22` is not escalated at all (1×) where 8 to 16 take it to the ceiling.
+  Its starved exterior sits at `log₂|dz|²` just under 20 at this degree. `FAULT_EXPONENT = 16`
+  is inside the plateau, at its upper edge.
+
+The controls are 1× under every one of the twenty-five rules at every degree. **So the
+constants stay shared** — 16 and a tenth — and no degree reads the plateau differently
+enough to earn its own.
+
+**The interior floor** (§3's sweep, on the policy's 64×36 of the island at three bodies and
+the two body frames, OFF against ON at every floor from −300 to −4):
+
+| d | island: interior, caught at −64 | iterations saved at −64 | wrongly painted at −64 | anywhere in the sweep |
+|--:|--:|--:|--:|--:|
+| 2 (the anchor) | 896, 29 | 0.4% | 0 | 0 |
+| 3 | 724, 710 | 93.6% | 0 | 0 |
+| 4 | 865, 854 | 95.1% | 0 | 0 |
+| 5 | 892, 885 | 95.8% | 0 | 0 |
+| 6 | 975, 967 | 96.4% | 0 | **1, at −4** |
+
+On the body frames the switch never fires at any floor or degree: their interior is of
+periods the cap barely holds. The islands above two are low-period (12 and 13) minibrots,
+which is why the switch catches nearly all of them; the anchor's period is 2,838. **−64
+stays**, and ⚠ §3's closing remark that −4 "on this evidence is safe" does not survive
+degree six: one escaping sample of the island frame is painted interior there, and
+`measure.rs`'s sweep now asserts at the shipped floor and reports the others.
+
+**`TILE_PERIODS`**, re-measured on the three largest nuclei in each degree's `tangle 1e-22`
+(80×45, share escaped):
+
+| d | 4 periods | **8 periods** | 16 periods | 32 periods |
+|--:|--:|--:|--:|--:|
+| 2 (§9) | 0.0% | **74.4%** | 85.4% | 85.4% |
+| 3 | 29–32% | **73–74%** | 88% | 88% |
+| 4 | 73–79% | **88–94%** | 89–96% | 89–96% |
+| 5 | 50–51% | **77–80%** | 88% | 89% |
+| 6 | 69–76% | **87%** | 88–89% | 88–89% |
+
+Eight is at or past the knee at every degree, so it stays shared.
+
+#### Minibrots at degree `d`, and the pins that measure them
+
+**Newton is `d·z^{d−1}` and the body is `1/|b·l^{d/(d−1)}|`.** Near a period-`p` nucleus
+the `p`-th iterate is `z ↦ λ·z^d + β·Δc` to first order, and rescaling `z` so that `λ`
+goes makes it the whole Multibrot set again, scaled by `1/|β·λ^{1/(d−1)}|` — which is
+Vepstas' `1/|b·l²|` at degree two. What that moves on the page: a view at 1e-n finds its
+minibrots near 1e-(d/(d−1))n, so 1e-1.5n at degree three and 1e-1.2n at six, where it was
+1e-2n. `nuclei::body_power` and `body_scale` carry it; the solve's limbs and tolerance
+follow the body rather than the square of the view.
+
+**The size was pinned against a measurement that does not use it.** A minibrot is the
+whole set scaled by its size, so the interior share of a tile around one, over the whole
+set's interior share on the same grid, is the size squared — at matched caps, `K` for the
+set and `K·p` for the tile, because an escape count near a period-`p` copy is `p` times
+the count at the matching point of the set. 300×300 samples, 6 bodies across:
+
+| nucleus | period | formula | measured, K = 1,024 | ratio |
+|---|--:|--:|--:|--:|
+| degree 2, the anchor | 2,838 | 6.4775e-12 | 6.6706e-12 (K = 256) | 1.030 |
+| degree 2, off `−2` | 13 | 2.2229e-12 | 2.2185e-12 | 0.998 |
+| degree 3, off its `M(2,1)` | 12 | 3.4925e-12 | 3.4792e-12 | 0.996 |
+| degree 4 | 13 | 1.4074e-12 | 1.4068e-12 | 1.000 |
+| degree 5 | 13 | 3.4035e-12 | 3.4052e-12 | 1.001 |
+| degree 6 | 13 | 5.9077e-12 | 5.9105e-12 | 1.000 |
+
+Lower-period islands of each degree, at 1e-7 to 1e-10, landed the same way (0.997 to
+1.005). **Every degree's pin lands**, and `nuclei.rs`'s
+`each_degrees_island_is_found_and_sized_against_a_measured_body` holds the formula to the
+measured body at 1% and the solve to landing within 1e-29 from a quarter of a body away.
+
+⚠ **An island, and not a satellite.** The same measurement on period-1,597 nuclei at the
+main component's golden-mean boundary came out at 3.1 to 4 times the formula and did not
+converge with `K`. Those are almost certainly bulbs attached to the main component rather
+than copies of the set — their periods are Fibonacci numbers (610, 987, 1,597, …), which is
+what the bulbs nearest a golden-mean boundary point have — and the renormalisation says
+nothing about a bulb. The search cannot tell the two apart and
+neither could it at degree two; what the list offers there is framed on a size that is an
+island's, and a satellite's tile is framed too tight.
+
 ## Running it
 
 ```text
 cargo fmt   --check                                    # the formatting, held: the
                                                        #   crate is rustfmt-clean and
                                                        #   stays that way
-cargo test  --release                                  # 60 unit tests and five
-                                                       #   cheap pins, under a second
+cargo test  --release                                  # 70 unit tests and six
+                                                       #   cheap pins, about a second
 cargo test  --release --test oracle -- --ignored --nocapture   # the ladders, ~30 s
 cargo test  --release --test probe  -- --ignored --nocapture   # the three-way probes
 cargo test  --release --test measure -- --ignored --nocapture  # the cap sweep, the
                                                        #   policy, and the nucleus
                                                        #   search, ~12 min
 cargo test  --release --test descend -- --ignored --nocapture  # the frame finder, ~12 min
+# §10: every harness of measure.rs at another degree, and the finder there
+MEASURE_DEGREE=3 cargo test --release --test measure -- --ignored --nocapture
+DESCEND_DEGREE=3 cargo test --release --test descend -- --ignored --nocapture at_a_degree
 cargo build --release --target wasm32-unknown-unknown          # perturb.wasm
 node scratch/perturb_validate/bench.mjs                        # the wasm price
 ```

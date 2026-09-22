@@ -35,6 +35,9 @@ pub struct Frame {
     /// What multiple of `cap::for_width` that is, which
     /// `the_deep_frames_are_spellable_and_at_the_cap_they_claim` checks.
     pub multiple: u32,
+    /// The degree of `z^d + c` the frame is of — two for the seven below, and the
+    /// degree its descent was run at for [`DEGREE_FRAMES`].
+    pub degree: u32,
 }
 
 impl Frame {
@@ -48,6 +51,7 @@ impl Frame {
             im: self.im,
             width: self.width,
             julia: false,
+            degree: self.degree,
         }
     }
 }
@@ -77,6 +81,7 @@ pub const DEEP_FRAMES: &[Frame] = &[
         width: 1e-22,
         maxiter: 93_600,
         multiple: 1,
+        degree: 2,
     },
     Frame {
         label: "tangle 1e-28",
@@ -85,6 +90,7 @@ pub const DEEP_FRAMES: &[Frame] = &[
         width: 1e-28,
         maxiter: 117_518,
         multiple: 1,
+        degree: 2,
     },
     Frame {
         label: "tangle 1e-40",
@@ -93,6 +99,7 @@ pub const DEEP_FRAMES: &[Frame] = &[
         width: 1e-40,
         maxiter: 165_354,
         multiple: 1,
+        degree: 2,
     },
     Frame {
         label: "pinch 1e-28",
@@ -101,6 +108,7 @@ pub const DEEP_FRAMES: &[Frame] = &[
         width: 1e-28,
         maxiter: 117_518,
         multiple: 1,
+        degree: 2,
     },
     // **The deepest frame a link can spell.** Not the deepest the crate draws —
     // a rung costs about five seconds a tile here and the descent was still
@@ -114,6 +122,7 @@ pub const DEEP_FRAMES: &[Frame] = &[
         width: 1e-54,
         maxiter: 221_162,
         multiple: 1,
+        degree: 2,
     },
     Frame {
         label: "body 1e-22",
@@ -122,6 +131,7 @@ pub const DEEP_FRAMES: &[Frame] = &[
         width: 1e-22,
         maxiter: 374_400,
         multiple: 4,
+        degree: 2,
     },
     Frame {
         label: "body 1e-28",
@@ -130,6 +140,7 @@ pub const DEEP_FRAMES: &[Frame] = &[
         width: 1e-28,
         maxiter: 470_072,
         multiple: 4,
+        degree: 2,
     },
 ];
 
@@ -139,8 +150,15 @@ pub const DEEP_FRAMES: &[Frame] = &[
 /// a centre written twice is a centre that can disagree with itself, and the
 /// one in the row above is the one the numbers were taken at.
 pub fn link(frame: &Frame) -> String {
+    // Degree two as it was always written, `dv=2`, which the page still reads; a
+    // higher degree needs `f`, which is the deep contract's v3.
+    let head = if frame.degree == 2 {
+        "dv=2".to_string()
+    } else {
+        format!("dv=3&f=multibrot{}", frame.degree)
+    };
     format!(
-        "dv=2&x={}&y={}&w=1e-{}&n={}",
+        "{head}&x={}&y={}&w=1e-{}&n={}",
         frame.re,
         frame.im,
         decade(frame.width),
@@ -170,6 +188,8 @@ pub struct Control {
     /// Whether this is the Julia set at that point rather than the parameter
     /// plane around it.
     pub julia: bool,
+    /// The degree of `z^d + c`.
+    pub degree: u32,
 }
 
 impl Control {
@@ -181,6 +201,7 @@ impl Control {
             im,
             width,
             julia: false,
+            degree: 2,
         }
     }
 }
@@ -216,6 +237,7 @@ pub const CONTROL_FRAMES: &[Control] = &[
         im: ANCHOR_IM,
         width: 2e-9,
         julia: true,
+        degree: 2,
     },
 ];
 
@@ -232,13 +254,398 @@ pub const FINE_SUPERSAMPLE: u32 = 2;
 pub const FINE_LANES: f64 =
     (CANVAS.0 * FINE_SUPERSAMPLE) as f64 * (CANVAS.1 * FINE_SUPERSAMPLE) as f64;
 
+/// **The deep frames at degrees three to six** *(deep_degrees_ckpt140)*: the same
+/// seven kinds of frame as [`DEEP_FRAMES`], found the same way.
+///
+/// `tests/descend.rs`'s `descend_to_deep_frames_at_a_degree`, one run a degree,
+/// from that degree's island pin at 1e-11 (`DEGREE_STARTS` there, [`PINS`] here)
+/// and down the tangle, pinch and body routes. What is kept is what `DEEP_FRAMES` keeps at degree two — tangle 1e-22,
+/// 1e-28, 1e-40 and 1e-54, pinch 1e-28, and the two body frames at four times the
+/// policy cap — so a table at one degree reads against the table at another row
+/// for row. The cap policy's plateau and the interior floor are swept over these.
+pub const DEGREE_FRAMES: &[Frame] = &[
+    // DEGREE_FRAMES_BEGIN
+    Frame {
+        label: "tangle 1e-22",
+        re: "-0.340625023898760234171805700925",
+        im: "1.271229851872501068040291958815",
+        width: 1e-22,
+        maxiter: 93_600,
+        multiple: 1,
+        degree: 3,
+    },
+    Frame {
+        label: "tangle 1e-28",
+        re: "-0.3406250238987602341718262542609375",
+        im: "1.2712298518725010680403152453696875",
+        width: 1e-28,
+        maxiter: 117_518,
+        multiple: 1,
+        degree: 3,
+    },
+    Frame {
+        label: "tangle 1e-40",
+        re: "-0.3406250238987602341718262542321568083579609375",
+        im: "1.2712298518725010680403152454016209423447578125",
+        width: 1e-40,
+        maxiter: 165_354,
+        multiple: 1,
+        degree: 3,
+    },
+    Frame {
+        label: "pinch 1e-28",
+        re: "-0.3406250238980782571419349051984375",
+        im: "1.2712298518735892308443788026196875",
+        width: 1e-28,
+        maxiter: 117_518,
+        multiple: 1,
+        degree: 3,
+    },
+    Frame {
+        label: "tangle 1e-54",
+        re: "-0.340625023898760234171826254232156808357943993790096253515625",
+        im: "1.271229851872501068040315245401620942344765705390226025859375",
+        width: 1e-54,
+        maxiter: 221_162,
+        multiple: 1,
+        degree: 3,
+    },
+    Frame {
+        label: "body 1e-22",
+        re: "-0.340625023898767139691352575925",
+        im: "1.271229851872539678627838833815",
+        width: 1e-22,
+        maxiter: 374_400,
+        multiple: 4,
+        degree: 3,
+    },
+    Frame {
+        label: "body 1e-28",
+        re: "-0.3406250238987671396913635659015625",
+        im: "1.2712298518725396786278241732915625",
+        width: 1e-28,
+        maxiter: 470_072,
+        multiple: 4,
+        degree: 3,
+    },
+    Frame {
+        label: "tangle 1e-22",
+        re: "-1.084215082747245276018633006823",
+        im: "0.290514556109782469750415216417",
+        width: 1e-22,
+        maxiter: 93_600,
+        multiple: 1,
+        degree: 4,
+    },
+    Frame {
+        label: "tangle 1e-28",
+        re: "-1.0842150827472452760186477286433125",
+        im: "0.2905145561097824697503754932841875",
+        width: 1e-28,
+        maxiter: 117_518,
+        multiple: 1,
+        degree: 4,
+    },
+    Frame {
+        label: "tangle 1e-40",
+        re: "-1.0842150827472452760186477286446576742119140625",
+        im: "0.2905145561097824697503754932925986641428203125",
+        width: 1e-40,
+        maxiter: 165_354,
+        multiple: 1,
+        degree: 4,
+    },
+    Frame {
+        label: "pinch 1e-28",
+        re: "-1.0842150827473777523423712290964375",
+        im: "0.2905145561097111803715572745810625",
+        width: 1e-28,
+        maxiter: 117_518,
+        multiple: 1,
+        degree: 4,
+    },
+    Frame {
+        label: "tangle 1e-54",
+        re: "-1.084215082747245276018647728644657674211920644027785620859375",
+        im: "0.290514556109782469750375493292598664142807683482494413984375",
+        width: 1e-54,
+        maxiter: 221_162,
+        multiple: 1,
+        degree: 4,
+    },
+    Frame {
+        label: "body 1e-22",
+        re: "-1.084215082747245124011633006823",
+        im: "0.290514556109751933967383966417",
+        width: 1e-22,
+        maxiter: 374_400,
+        multiple: 4,
+        degree: 4,
+    },
+    Frame {
+        label: "body 1e-28",
+        re: "-1.0842150827472451240116581303933125",
+        im: "0.2905145561097519339673801825654375",
+        width: 1e-28,
+        maxiter: 470_072,
+        multiple: 4,
+        degree: 4,
+    },
+    Frame {
+        label: "tangle 1e-22",
+        re: "-0.887826199618715930869574574631",
+        im: "0.544060594138298891586804446989",
+        width: 1e-22,
+        maxiter: 93_600,
+        multiple: 1,
+        degree: 5,
+    },
+    Frame {
+        label: "tangle 1e-28",
+        re: "-0.8878261996187159308695538640606875",
+        im: "0.5440605941382988915868246804343125",
+        width: 1e-28,
+        maxiter: 117_518,
+        multiple: 1,
+        degree: 5,
+    },
+    Frame {
+        label: "tangle 1e-40",
+        re: "-0.8878261996187159308695538640917728500029921875",
+        im: "0.5440605941382988915868246804138956270278984375",
+        width: 1e-40,
+        maxiter: 165_354,
+        multiple: 1,
+        degree: 5,
+    },
+    Frame {
+        label: "pinch 1e-28",
+        re: "-0.8878261996185125802562794865606875",
+        im: "0.5440605941383281888832624905905625",
+        width: 1e-28,
+        maxiter: 117_518,
+        multiple: 1,
+        degree: 5,
+    },
+    Frame {
+        label: "tangle 1e-54",
+        re: "-0.887826199618715930869553864091772850002956453437043331796875",
+        im: "0.544060594138298891586824680413895627027934585266413727421875",
+        width: 1e-54,
+        maxiter: 221_162,
+        multiple: 1,
+        degree: 5,
+    },
+    Frame {
+        label: "body 1e-22",
+        re: "-0.887826199618712926642230824631",
+        im: "0.544060594138304480228726321989",
+        width: 1e-22,
+        maxiter: 374_400,
+        multiple: 4,
+        degree: 5,
+    },
+    Frame {
+        label: "body 1e-28",
+        re: "-0.8878261996187129266422396680919375",
+        im: "0.5440605941383044802287059596530625",
+        width: 1e-28,
+        maxiter: 470_072,
+        multiple: 4,
+        degree: 5,
+    },
+    Frame {
+        label: "tangle 1e-22",
+        re: "-0.97814760030409143375984930042",
+        im: "0.207911690569975076968217298648",
+        width: 1e-22,
+        maxiter: 93_600,
+        multiple: 1,
+        degree: 6,
+    },
+    Frame {
+        label: "tangle 1e-28",
+        re: "-0.9781476003040914337598312680996875",
+        im: "0.2079116905699750769682179078120625",
+        width: 1e-28,
+        maxiter: 117_518,
+        multiple: 1,
+        degree: 6,
+    },
+    Frame {
+        label: "tangle 1e-40",
+        re: "-0.9781476003040914337598312681419437890025390625",
+        im: "0.2079116905699750769682179077864814427233515625",
+        width: 1e-40,
+        maxiter: 165_354,
+        multiple: 1,
+        degree: 6,
+    },
+    Frame {
+        label: "pinch 1e-28",
+        re: "-0.9781476002959672129150508627403125",
+        im: "0.2079116905712067999932501301245625",
+        width: 1e-28,
+        maxiter: 117_518,
+        multiple: 1,
+        degree: 6,
+    },
+    Frame {
+        label: "tangle 1e-54",
+        re: "-0.978147600304091433759831268141943789002568595083169304921875",
+        im: "0.207911690569975076968217907786481442723335463836722352109375",
+        width: 1e-54,
+        maxiter: 221_162,
+        multiple: 1,
+        degree: 6,
+    },
+    Frame {
+        label: "body 1e-22",
+        re: "-0.97814760030409144112567742542",
+        im: "0.207911690569975189726904798648",
+        width: 1e-22,
+        maxiter: 374_400,
+        multiple: 4,
+        degree: 6,
+    },
+    Frame {
+        label: "body 1e-28",
+        re: "-0.9781476003040914411256336627403125",
+        im: "0.2079116905699751897269378488901875",
+        width: 1e-28,
+        maxiter: 470_072,
+        multiple: 4,
+        degree: 6,
+    },
+    // DEGREE_FRAMES_END
+];
+
+/// The frames at one degree: [`DEEP_FRAMES`] at two, and that degree's rows of
+/// [`DEGREE_FRAMES`] above it.
+pub fn frames_at(degree: u32) -> Vec<&'static Frame> {
+    if degree == 2 {
+        DEEP_FRAMES.iter().collect()
+    } else {
+        DEGREE_FRAMES
+            .iter()
+            .filter(|frame| frame.degree == degree)
+            .collect()
+    }
+}
+
+/// Each degree's `M(2,1)` Misiurewicz point, to 45 digits — the `c = i` control's
+/// counterpart: a deep boundary frame genuinely finished at the policy cap.
+pub const M21: &[(u32, &str, &str)] = &[
+    (
+        3,
+        "-0.340625019316606640194394244037830888977210103",
+        "1.27122987841870623913561299102106497672841433",
+    ),
+    (
+        4,
+        "-1.08421508149135118187966600826108320387999295",
+        "0.290514555507251444503813188624929073684246285",
+    ),
+    (
+        5,
+        "-0.887826199632931252074933435849640258600100571",
+        "0.544060594866340874808016663435373936434552876",
+    ),
+    (
+        6,
+        "-0.978147600733805637928566747869599532459737809",
+        "0.207911690817759337101742284405125166216584761",
+    ),
+];
+
+/// **Each degree's island pin** *(deep_degrees_ckpt140)*: a minibrot of about 1e-12
+/// found off that degree's `M(2,1)`, whose body `nuclei`'s size estimate was held
+/// to an area measured without it — `nuclei.rs`'s pin tests and the crate README
+/// §10. `(degree, period, re, im, body)`, the body being the measured one.
+pub const PINS: &[(u32, u32, &str, &str, f64)] = &[
+    (
+        3,
+        12,
+        "-0.340625023896664202920126013425",
+        "1.271229851873307358570127896315",
+        3.4792e-12,
+    ),
+    (
+        4,
+        13,
+        "-1.084215082746655198570484569323",
+        "0.290514556108830899669391778917",
+        1.4068e-12,
+    ),
+    (
+        5,
+        13,
+        "-0.887826199618012593110848012131",
+        "0.544060594135647520437421634489",
+        3.4052e-12,
+    ),
+    (
+        6,
+        13,
+        "-0.978147600299778310338872737920",
+        "0.207911690569371132751240736148",
+        5.9105e-12,
+    ),
+];
+
+/// The controls at a degree: [`CONTROL_FRAMES`] at two, and above it their
+/// counterparts — the island pin at about three bodies, as the anchor at 2e-11 is
+/// about three atoms; that island at 1e-22, inside its body; the degree's `M(2,1)`
+/// at 1e-22; the whole set; and the Julia set of the pin's `c` at 2e-9.
+pub fn controls_at(degree: u32) -> Vec<Control> {
+    if degree == 2 {
+        return CONTROL_FRAMES.to_vec();
+    }
+    let &(_, _, re, im, body) = PINS.iter().find(|pin| pin.0 == degree).expect("a pin");
+    let &(_, m_re, m_im) = M21.iter().find(|m| m.0 == degree).expect("an M(2,1)");
+    let at = |label: &'static str, re: &'static str, im: &'static str, width: f64, julia: bool| {
+        Control {
+            label,
+            re,
+            im,
+            width,
+            julia,
+            degree,
+        }
+    };
+    vec![
+        at("island 3 bodies", re, im, 3.0 * body, false),
+        at("island 1e-22", re, im, 1e-22, false),
+        at("misiurewicz 1e-22", m_re, m_im, 1e-22, false),
+        at("home 3", "0", "0", 3.0, false),
+        at("julia island 2e-9", re, im, 2e-9, true),
+    ]
+}
+
 /// The seven and the six as one list.
 pub fn every_frame() -> Vec<Control> {
-    DEEP_FRAMES
-        .iter()
+    every_frame_at(2)
+}
+
+/// The same at one degree.
+pub fn every_frame_at(degree: u32) -> Vec<Control> {
+    frames_at(degree)
+        .into_iter()
         .map(Frame::control)
-        .chain(CONTROL_FRAMES.iter().copied())
+        .chain(controls_at(degree))
         .collect()
+}
+
+/// The degree a measurement is asked at: `MEASURE_DEGREE`, or two.
+///
+/// An environment variable rather than a test per degree, so that the four can run
+/// side by side, each a few minutes to an hour, and the default run is the table
+/// the README has always carried.
+pub fn measure_degree() -> u32 {
+    std::env::var("MEASURE_DEGREE")
+        .ok()
+        .and_then(|text| text.parse().ok())
+        .unwrap_or(2)
 }
 
 /// The seven, and the one control the nucleus search is asked about: the
@@ -275,7 +682,7 @@ pub fn canvas_spec(frame: &Control, maxiter: Option<u32>) -> Spec {
             .then(|| (frame.re.to_string(), frame.im.to_string())),
         anchor: Anchor::Parameter,
         interior: true,
-        degree: 2,
+        degree: frame.degree,
     }
 }
 

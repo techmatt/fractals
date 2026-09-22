@@ -230,7 +230,14 @@ struct Tile {
     seconds: f64,
 }
 
-fn spec_at(re: &str, im: &str, width: f64, maxiter: Option<u32>, switch: bool) -> Spec {
+fn spec_at(
+    degree: u32,
+    re: &str,
+    im: &str,
+    width: f64,
+    maxiter: Option<u32>,
+    switch: bool,
+) -> Spec {
     Spec {
         center_re: re.to_string(),
         center_im: im.to_string(),
@@ -243,7 +250,7 @@ fn spec_at(re: &str, im: &str, width: f64, maxiter: Option<u32>, switch: bool) -
         julia: None,
         anchor: Anchor::Parameter,
         interior: switch,
-        degree: 2,
+        degree,
     }
 }
 
@@ -474,7 +481,7 @@ struct Rung {
 
 /// Descends from `(re, im)` at `10^−p` to `10^−deepest`, backtracking where a
 /// rung comes back one colour, and returns every rung it settled on.
-fn descend(route: Route, re: Dec, im: Dec, from: usize, deepest: usize) -> Vec<Rung> {
+fn descend(degree: u32, route: Route, re: Dec, im: Dec, from: usize, deepest: usize) -> Vec<Rung> {
     // One frame of the search: the rung, its candidates, and how many of them
     // have been tried.
     struct Level {
@@ -488,7 +495,14 @@ fn descend(route: Route, re: Dec, im: Dec, from: usize, deepest: usize) -> Vec<R
         // is looking for — a sample that is bounded rather than slow — is a
         // question the policy cap cannot answer at this depth.
         let cap = (route == Route::Body).then(|| PROBE * perturb::cap::for_width(width_of(p)));
-        let spec = spec_at(&re.text(SCALE), &im.text(SCALE), width_of(p), cap, true);
+        let spec = spec_at(
+            degree,
+            &re.text(SCALE),
+            &im.text(SCALE),
+            width_of(p),
+            cap,
+            true,
+        );
         let tile = render(&spec);
         let shape = shape(&tile);
         let rung = Rung {
@@ -568,10 +582,15 @@ fn descend(route: Route, re: Dec, im: Dec, from: usize, deepest: usize) -> Vec<R
 }
 
 /// The frame as the Deep tab would be asked for it.
-fn link(re: &Dec, im: &Dec, p: usize, cap: u32) -> String {
+fn link(degree: u32, re: &Dec, im: &Dec, p: usize, cap: u32) -> String {
     let keep = keep_for(p);
+    let family = if degree == 2 {
+        String::new()
+    } else {
+        format!("&f=multibrot{degree}")
+    };
     format!(
-        "explorer/?dv=2&x={}&y={}&w=1e-{p}&n={cap}&p=twilight_shifted&panel=deep",
+        "explorer/?dv=3{family}&x={}&y={}&w=1e-{p}&n={cap}&p=twilight_shifted&panel=deep",
         re.text(keep),
         im.text(keep)
     )
@@ -584,12 +603,74 @@ fn link(re: &Dec, im: &Dec, p: usize, cap: u32) -> String {
 #[test]
 #[ignore = "minutes: a coarse tile a rung, all the way down"]
 fn descend_to_deep_frames() {
-    let anchor_re = Dec::parse(ANCHOR_RE).unwrap();
-    let anchor_im = Dec::parse(ANCHOR_IM).unwrap();
     // 1e-11 rather than the anchor's own 2e-11: a power of ten is what the
     // recentring arithmetic is exact in, and the minibrot's 6.5e-12 atom still
     // sits well inside a frame this wide, so the boundary is on the tile.
-    let start = 11usize;
+    descend_every_route(2, ANCHOR_RE, ANCHOR_IM, 11);
+}
+
+/// Where the descent at each higher degree starts *(deep_degrees_ckpt140)*: the
+/// degree's island pin — a period-12 or -13 minibrot off its `M(2,1)`, 1.4e-12 to
+/// 5.9e-12 across, whose body `nuclei`'s size estimate was held to an independent
+/// area measurement (`tests/common`'s `PINS`). That is the anchor's kind of place at
+/// degree two: an island's boundary, where the descent follows the filaments down.
+///
+/// ⚠ **Not the first choice, and the first one is worth knowing about.** The descents
+/// were first run from period-1,597 nuclei at the main component's golden-mean
+/// boundary point. Those are satellites, not islands, and the frames under them are a
+/// near-neutral, Siegel-like stretch where orbits linger: degree three's `tangle
+/// 1e-22` there settled at eight times the policy cap and most rules ran it to the
+/// ceiling, against two at degree two — a fact about the neighbourhood rather than
+/// the degree, and a table that could not be read against degree two's.
+const DEGREE_STARTS: &[(u32, &str, &str)] = &[
+    (
+        3,
+        "-0.340625023896664202920126013425",
+        "1.271229851873307358570127896315",
+    ),
+    (
+        4,
+        "-1.084215082746655198570484569323",
+        "0.290514556108830899669391778917",
+    ),
+    (
+        5,
+        "-0.887826199618012593110848012131",
+        "0.544060594135647520437421634489",
+    ),
+    (
+        6,
+        "-0.978147600299778310338872737920",
+        "0.207911690569371132751240736148",
+    ),
+];
+
+/// **The same descent at one higher degree**, named by `DESCEND_DEGREE` so the
+/// four can run side by side:
+///
+/// ```text
+/// DESCEND_DEGREE=3 cargo test --release --test descend -- --ignored --nocapture at_a_degree
+/// ```
+///
+/// What it settled on is in `tests/common`'s `DEGREE_FRAMES`.
+#[test]
+#[ignore = "an hour at degree six: a coarse tile a rung, all the way down"]
+fn descend_to_deep_frames_at_a_degree() {
+    let degree: u32 = std::env::var("DESCEND_DEGREE")
+        .ok()
+        .and_then(|text| text.parse().ok())
+        .unwrap_or(3);
+    let &(_, re, im) = DEGREE_STARTS
+        .iter()
+        .find(|start| start.0 == degree)
+        .expect("DESCEND_DEGREE is one of 3, 4, 5 or 6");
+    // 1e-11, as at degree two: every pin's body is inside a frame this wide.
+    descend_every_route(degree, re, im, 11);
+}
+
+fn descend_every_route(degree: u32, start_re: &str, start_im: &str, start: usize) {
+    let anchor_re = Dec::parse(start_re).unwrap();
+    let anchor_im = Dec::parse(start_im).unwrap();
     let deepest = 54usize;
 
     for route in [Route::Tangle, Route::Pinch, Route::Body] {
@@ -602,7 +683,7 @@ fn descend_to_deep_frames() {
         // where a rung stops being seconds. The other two are bounded by what a
         // link can spell rather than by what the crate can draw.
         let floor = if route == Route::Body { 30 } else { deepest };
-        println!("\n## the {name} route, from 1e-{start} to 1e-{floor}\n");
+        println!("\n## degree {degree}, the {name} route, from 1e-{start} to 1e-{floor}\n");
         if route == Route::Body {
             println!(
                 "Every rung here is walked at {PROBE}× the policy cap, so its `cap-starved` \
@@ -610,7 +691,14 @@ fn descend_to_deep_frames() {
                  interior rather than anything the cap gave up on.\n"
             );
         }
-        let rungs = descend(route, anchor_re.clone(), anchor_im.clone(), start, floor);
+        let rungs = descend(
+            degree,
+            route,
+            anchor_re.clone(),
+            anchor_im.clone(),
+            start,
+            floor,
+        );
         println!("\n### what it settled on\n");
         println!("| rung | cap | escaped | interior | cap-starved | edges | spread | mean |");
         println!("|---|--:|--:|--:|--:|--:|--:|--:|");
@@ -637,7 +725,7 @@ fn descend_to_deep_frames() {
             // The trimmed centre is a different frame from the carried one, by
             // less than a thousandth of a pixel — and it is the one that gets
             // committed, so it is the one that gets measured.
-            let spec = spec_at(&re, &im, width_of(rung.p), None, true);
+            let spec = spec_at(degree, &re, &im, width_of(rung.p), None, true);
             let trimmed = shape(&render(&spec));
             println!(
                 "- **{name} 1e-{}**, cap {}, centre {} chars: escaped {:.1}% → {:.1}% trimmed, \
@@ -650,7 +738,7 @@ fn descend_to_deep_frames() {
                 100.0 * trimmed.capped,
                 100.0 * trimmed.edges,
             );
-            println!("  `{}`", link(&rung.re, &rung.im, rung.p, rung.cap));
+            println!("  `{}`", link(degree, &rung.re, &rung.im, rung.p, rung.cap));
             println!(
                 "  `(\"{name} 1e-{}\", \"{}\", \"{}\", 1e-{}, {})`,",
                 rung.p, re, im, rung.p, rung.cap
@@ -689,7 +777,7 @@ fn the_carried_decimal_adds_the_way_a_recentre_needs() {
     assert_eq!(down.text(SCALE), format!("-{}", across.text(SCALE)));
     // And it lands where the kernel puts that sample, to the last bit the
     // double carries.
-    let spec = spec_at(ANCHOR_RE, ANCHOR_IM, width_of(22), None, true);
+    let spec = spec_at(2, ANCHOR_RE, ANCHOR_IM, width_of(22), None, true);
     let (dc_re, dc_im) = spec.dc((0.0, 0.0), 63, 0);
     let walked: f64 = offset_of(63, 0, 22).0.text(SCALE).parse().unwrap();
     assert!((walked - dc_re).abs() < 1e-38, "{walked:e} vs {dc_re:e}");

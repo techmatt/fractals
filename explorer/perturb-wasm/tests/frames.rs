@@ -30,7 +30,7 @@
 
 mod common;
 
-use common::{DEEP_FRAMES, Frame, decade, link};
+use common::{DEEP_FRAMES, DEGREE_FRAMES, Frame, decade, link};
 use perturb::cap;
 
 /// **The frames are still frames a link can spell**, and still at the cap their
@@ -48,7 +48,15 @@ fn the_deep_frames_are_spellable_and_at_the_cap_they_claim() {
     /// shares rather than restating — a URL is one thing however deep it is.
     const COORDINATE_LIMIT: usize = 64;
     assert_eq!(DEEP_FRAMES.len(), 7, "the descent settled on seven");
-    for frame in DEEP_FRAMES {
+    // And seven at each higher degree, the same seven kinds.
+    for degree in 3..=6 {
+        let at = DEGREE_FRAMES
+            .iter()
+            .filter(|frame| frame.degree == degree)
+            .count();
+        assert_eq!(at, 7, "degree {degree} has {at} frames");
+    }
+    for frame in DEEP_FRAMES.iter().chain(DEGREE_FRAMES) {
         let Frame {
             label,
             re,
@@ -56,6 +64,7 @@ fn the_deep_frames_are_spellable_and_at_the_cap_they_claim() {
             width,
             maxiter,
             multiple,
+            degree,
         } = frame;
         assert_eq!(
             multiple * cap::for_width(*width),
@@ -87,6 +96,13 @@ fn the_deep_frames_are_spellable_and_at_the_cap_they_claim() {
         let query = link(frame);
         assert!(
             query.contains(&format!("&w=1e-{}&n={maxiter}", decade as i32)),
+            "{query}"
+        );
+        // A higher degree's link names its family, or the page would draw the
+        // Mandelbrot set there.
+        assert_eq!(
+            query.contains(&format!("f=multibrot{degree}")),
+            *degree != 2,
             "{query}"
         );
         assert!(query.contains(*re) && query.contains(*im), "{query}");
