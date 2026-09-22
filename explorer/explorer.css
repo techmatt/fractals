@@ -1343,11 +1343,22 @@ canvas.palette-final {
    second Download row either. A deep field is a smooth field and the engine colours it
    unchanged, so the Palette group under the canvas serves both; and the Download row draws
    whichever view owns the canvas, so it serves both too. The only sections that go away are
-   the ones that would be lying: Mode and the family, which have one value each down here. */
-.viewer.is-deep .control-group:not(.palette-group):not(.download-group),
+   the ones that would be lying: Mode and the family, which have one value each down here.
+
+   And since deep_ui_ckpt140 the panel is NOT where Render is: the Render group sits under
+   the canvas, first in the controls, because pressing it is watching the picture. It is the
+   one control group that appears only while this tab owns the canvas, which is why it is
+   hidden by default and shown rather than the other way about. */
+.viewer.is-deep .control-group:not(.palette-group):not(.download-group):not(.deep-group),
 .viewer.is-deep #details {
   display: none;
 }
+.deep-group { display: none; }
+.viewer.is-deep .deep-group { display: block; }
+
+/* The panel's first head sits where the render controls used to, so it takes the padding
+   the head above it had. */
+#panel-deep .section-head.deep-first { padding-top: var(--gutter); }
 
 /* What goes with the shallow view is what is about the shallow view. Save, because the
    Deep panel carries its own; and the view buttons, every one of which names a frame this
@@ -1365,19 +1376,19 @@ canvas.palette-final {
   padding: 0 var(--gutter);
 }
 
-.deep-head {
-  flex: none;
-  padding: var(--gutter) var(--gutter) 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
-}
-.deep-go { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; }
+/* Render, Auto-render, the samples and the progress line, on one row under the canvas.
+   The progress takes what the three controls leave, the way the Download row's estimate
+   does, so a stage name and a time left never push the button about. */
+.deep-go { gap: 0.4rem 0.9rem; }
+.deep-go .samples { display: inline-flex; gap: 0.25rem; flex: none; }
+.deep-go .deep-progress { flex: 1 1 12rem; min-width: 0; }
 
 /* Render is the one action this tab has, so it is drawn the way Start is on the Walk tab.
    Running, it is Cancel and carries its own progress as a fill, because a button that is
    also the bar is one thing to look at rather than two. */
-.deep-render {
+/* Spelled against `.bar` because the row is a `.bar` now: `.bar button:not(.chip)` is the
+   page's own outline button and would take the accent fill straight back off this one. */
+.bar button.deep-render {
   appearance: none;
   border: none;
   border-radius: 4px;
@@ -1388,10 +1399,13 @@ canvas.palette-final {
   font-weight: 600;
   padding: 0.3rem 1.1rem;
   cursor: pointer;
+  flex: none;
+  min-width: 6rem;
 }
-.deep-render:hover { background: var(--well-ink); }
-.deep-render:focus-visible { outline: 2px solid var(--well-link); outline-offset: 2px; }
-.deep-render.is-running { background: var(--well-ink-dim); }
+.bar button.deep-render:hover { background: var(--well-ink); color: var(--well); }
+.bar button.deep-render:focus-visible { outline: 2px solid var(--well-link); outline-offset: 2px; }
+.bar button.deep-render.is-running { background: var(--well-ink-dim); }
+.bar button.deep-render:disabled { opacity: 0.45; cursor: not-allowed; }
 
 .deep-progress {
   position: relative;
@@ -1414,7 +1428,7 @@ canvas.palette-final {
 }
 
 .deep-note {
-  margin: 0;
+  margin: 0.4rem 0 0;
   color: var(--well-ink-dim);
   font-size: 0.75rem;
   line-height: 1.5;

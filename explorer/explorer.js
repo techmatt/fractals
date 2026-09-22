@@ -2779,6 +2779,8 @@ async function mountDeep() {
     deep = mount({
       elements: {
         render: at("deep-render"),
+        auto: at("deep-auto"),
+        samples: at("deep-samples"),
         progress: at("deep-progress"),
         note: at("deep-note"),
         cap: at("deep-cap"),
@@ -3931,6 +3933,7 @@ async function main() {
       plan: (width, height, supersample) => deep.plan(width, height, supersample),
       measured: () => deep.measured(),
       shown: () => deep.shown(),
+      finalSupersample: () => deep.finalSupersample(),
       picture: (width, height, options) => deep.picture(width, height, options),
       cancel: () => deep.stop(),
     },

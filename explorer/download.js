@@ -431,10 +431,15 @@ export function install(context) {
 
   /** The finished picture on the screen, where it is exactly what is being asked for.
    *
-   *  The Deep tab's fine pass ends at the same `finalSupersample` the viewer's does, so
-   *  *As shown* at 4× is the picture already up on either side of the floor. */
+   *  **The two sides answer separately for how many samples that picture holds**
+   *  *(deep_ui_ckpt140)*. The viewer's last pass is always at `finalSupersample`; the Deep
+   *  tab's is one sample a pixel unless the reader asked for more, so it is asked rather
+   *  than assumed — otherwise *As shown* at 4× would hand back a 1× picture under a 4×
+   *  name. */
   function ready() {
-    if (sizePicker.value !== SHOWN || supersample !== finalSupersample) return null;
+    if (sizePicker.value !== SHOWN) return null;
+    const final = onDeep() ? deep.finalSupersample() : finalSupersample;
+    if (supersample !== final) return null;
     return onDeep() ? deep.shown() : shownImage();
   }
 

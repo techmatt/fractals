@@ -95,15 +95,7 @@
     </div>
 
     <div class="tabpanel" id="panel-deep" role="tabpanel" aria-labelledby="tab-deep" hidden>
-      <div class="deep-head">
-        <div class="deep-go">
-          <button type="button" class="deep-render" id="deep-render">Render</button>
-          <span class="deep-progress" id="deep-progress" role="status" aria-live="polite" hidden></span>
-        </div>
-        <p class="deep-note" id="deep-note" role="status"></p>
-      </div>
-
-      <div class="section-head"><h2 id="head-deep-frame">Frame</h2></div>
+      <div class="section-head deep-first"><h2 id="head-deep-frame">Frame</h2></div>
       <dl class="deep-frame" aria-labelledby="head-deep-frame">
         <dt id="deep-param-row" hidden>Julia c</dt>
         <dd id="deep-param-value" hidden><code class="deep-centre" id="deep-param"></code></dd>
@@ -143,7 +135,7 @@
       </div>
 
       <p class="side-note" id="deep-side-note">Smooth, degree 2 only. Drag and scroll to move
-      the frame; nothing is drawn until you press Render.</p>
+      the frame; Render and Auto-render are under the picture.</p>
     </div>
 
     <div class="tabpanel" id="panel-saved" role="tabpanel" aria-labelledby="tab-saved" hidden>
@@ -200,6 +192,24 @@
     <p class="opened" id="opened"></p>
 
     <div class="controls" id="controls">
+
+      <!-- The Deep tab's render controls, which belong with the picture rather than in the
+           panel that says where the frame is: pressing Render is watching the canvas.
+           Shown only while that tab owns the canvas. -->
+      <section class="control-group deep-group">
+        <div class="section-head"><h2 id="head-deep-render">Render</h2></div>
+        <div class="bar deep-go" role="group" aria-labelledby="head-deep-render">
+          <button type="button" class="deep-render" id="deep-render">Render</button>
+          <span class="group">
+            <label for="deep-auto">Auto-render</label>
+            <input type="checkbox" id="deep-auto" class="flag" checked
+                   title="Draws each frame you move to, at one sample a pixel, without pressing Render.">
+          </span>
+          <span class="samples" id="deep-samples" role="group" aria-label="Samples per pixel on screen"></span>
+          <span class="deep-progress" id="deep-progress" role="status" aria-live="polite" hidden></span>
+        </div>
+        <p class="deep-note" id="deep-note" role="status"></p>
+      </section>
 
       <section class="control-group download-group">
         <div class="section-head"><h2 id="head-download">Download</h2></div>

@@ -23,7 +23,7 @@ Each line is a `##` below, and the question it is the answer to.
 | **The studio** | how the left panel and the viewer share one page and one URL |
 | **The Julia preview under the pointer** | what the hover preview costs and why it never blocks |
 | **The walk** | how a frame is walked to a gallery of its neighbours, and what a step is |
-| **Deep** | the tab below the `f64` floor: the second module, the pool, the cap, the minibrots |
+| **Deep** | the tab below the `f64` floor: the second module, the pool, the cap, the minibrots, what draws itself |
 | **Inflection — paged** | what that trial was, and why the tab is out of the working set |
 | **Saved** | what the Saved tab stores, and what it promises when storage refuses |
 | **The way back** | what one entry of undo is, and what collapses into one |
@@ -55,7 +55,8 @@ does not carry* — and the page carries one now: `perturb.wasm`, a second modul
 second crate, fetched only when somebody opens the **Deep** tab. What the old line got
 right is that it is a different renderer and not a wider one, which is why it is a tab
 rather than a widening: degree-2 Mandelbrot, `smooth`, an exact decimal centre, a link
-contract of its own, and a Render button, because a deep frame costs a minute. The
+contract of its own, and a Render button under the picture, because a deep frame costs a
+minute and a supersampled one costs several. The
 eleven families and seventeen modes above are still `f64` and still stop where they
 stopped. The article's deep-zoom figures stay baked rasters.
 
@@ -864,33 +865,101 @@ the reader has gone and grows by decades rather than by gestures. The link's own
 binds first: a plain decimal at about 1e-45 reaches the shallow contract's 64-character
 `COORDINATE_LIMIT`, and past that the link says so rather than truncating.
 
-### Rendering is explicit
+### The render controls are under the picture *(deep_ui_ckpt140, 2026-09-21)*
 
-**A gesture never starts a full render.** It slides and scales the last picture as a stale
-bitmap — `preview(dx, dy, scale)`'s job, done through a `compose` callback so the tab can
-put a box over it — and draws the **pending frame** as an outline. While something is
-pending the canvas shows the pending frame widened to 65%, which is the walk's framing and
-the walk's reason: at that framing a box drawn inside the picture reads as a box rather
-than as the edge of the canvas. The stale picture is dimmed to 0.55, the walk's backdrop,
-because dim says *old* without hiding it.
+Render, Cancel, **Auto-render**, the samples and the progress line are a control group of
+their own in the right pane, first under the canvas and above Download, shown only while
+this tab owns the viewer. They were in the left panel until Matt used the tab and said
+otherwise, and the reason is what a reader is looking at: pressing Render is watching the
+picture, and the wait and the way to stop it belong where the eye already is. The panel
+keeps what is about the *frame* — Frame, Iterations, Julia at this c, Nearby minibrots,
+Save, Back to the explorer — and one line saying where Render went.
 
-**Render commits**, through the passes the explorer normally stages: a quarter-resolution
-field, then the full one at one sample a pixel, then the same grid at two samples each
-way. A progress line names the stage and the percentage, and **the time left comes from the
+### Rendering, and what starts on its own
+
+**A gesture never draws the frame it lands on by itself.** It slides and scales the last
+picture as a stale bitmap — `preview(dx, dy, scale)`'s job, done through a `compose`
+callback so the tab can put a box over it — and draws the **pending frame** as an outline.
+While something is pending the canvas shows the pending frame widened to 65%, which is the
+walk's framing and the walk's reason: at that framing a box drawn inside the picture reads
+as a box rather than as the edge of the canvas. The stale picture is dimmed to 0.55, the
+walk's backdrop, because dim says *old* without hiding it.
+
+**Then `autoRender` decides what follows.** Ticked, which is what entering the tab gives,
+a frame change that has settled for 350 ms **cancels whatever is in flight** and draws the
+new frame: the quarter-resolution field, then the full one at one sample a pixel, and no
+further. Every route into a new frame goes through it — a drag, a wheel notch, a cap
+change, *Julia at this c* and its way back, a *Nearby minibrots* pick, and a deep link
+opened from Saved or the address bar. Unticked, the tab is press-to-render, and the only
+thing that starts by itself is the quarter pass, and only **if the previous quarter pass
+came back under `AUTO_PREVIEW_MS`** — provisional at 1.5 s. Either way a supersampled
+finish is a press.
+
+The flag is the tab's own `sessionStorage`, the Julia preview's pattern and its reason: it
+is a way of working rather than part of a picture, so no link carries it and the browser
+does not keep it past the tab. The box is beside Render.
+
+**A progress line names the stage and the percentage, and the time left comes from the
 bands this pass has already finished** and from nothing else — a deep frame's cost swings
 over orders of magnitude with how much of it is interior, so the only honest predictor of
 the rest of this frame is the part already drawn.
 
-**Auto-preview is the one exception, and it is conditional on a measurement.** After a
-gesture settles for 350 ms, the quarter pass alone may start by itself **if the previous
-quarter pass came back under `AUTO_PREVIEW_MS`** — provisional at 1.5 s. Over that,
-nothing draws until Render. The full passes are always manual.
+**A pass that started on its own does not take the Render button.** It is a pass the reader
+did not ask for, so turning Render into Cancel while it runs would put the tab's one
+control out of reach at exactly the moment it is wanted. Cancel appears for a pass somebody
+commanded; pressing Render through one that started on its own upgrades it, and picks the
+quarter field straight back out of the cache if it had finished.
 
-**An auto-preview does not take the Render button.** It is a pass the reader did not ask
-for, so turning Render into Cancel while it runs would put the tab's one control out of
-reach at exactly the moment it is wanted. Cancel appears for a pass somebody commanded;
-pressing Render through an auto-preview upgrades it, and picks that quarter field straight
-back out of the cache if it had finished.
+**A download is the one thing a frame change does not cancel.** It is a file the reader
+asked for, of a frame captured when they asked. Nothing reaches that guard today — a
+download holds the viewer through `setBusy`, so a wheel is refused before it gets to the
+tab and every control that moves the frame is disabled while one runs — and it is there so
+that a control which opens that route later does not quietly become a way to lose one.
+
+### Why the fast preview looked as though it never came
+
+The staging was never the bug, and it was worth measuring before changing anything: a 1×
+pass **is** run first and **is** put on the canvas the moment it lands, each finer pass
+replacing it in place. Photographed on the committed `tangle 1e-22` frame, one wheel notch
+in, Render pressed — quarter pass up at **3.2 s**, full at **47.6 s**, four samples a pixel
+at **236.1 s**.
+
+What was wrong is that a gesture during a committed render moved `view` and cancelled
+nothing, and then `moved()` bailed out of starting anything on `running !== null`. So the
+pass ran on for minutes on the frame the reader had left, drawing itself dimmed inside the
+pending box, no pass of the new frame was started, and the tab said nothing about any of
+it. Reproduced: Render at 1e-22, a notch at 20.4 s, and the canvas held the abandoned
+frame for the remaining **~3.5 minutes** of `four samples a pixel`. After the fix, the same
+notch cancels the pass and the new frame's quarter picture is up **6.2 s** later.
+
+Two things came out of it besides the cancel. The tab now says, where auto-render is off
+and a committed pass is drawing a frame the reader has moved off, *This is still drawing
+the frame you left* — it named Cancel and not Render because through a committed pass
+Render **is** Cancel. And the `full resolution 100%` line no longer arrives followed by
+minutes of silence at the entry setting, because at one sample a pixel that is the end.
+
+### The finish is one sample a pixel until the reader asks for more
+
+The tab used to end every committed pass at `FINAL_SUPERSAMPLE` — two, four samples a
+pixel, the viewer's own number — and **nothing on the page chose it**. It was not carried
+in from the shallow explorer, which does not have a canvas-samples control at all, and not
+from the Download row's `1× / 4× / 16×`, which drives the file and never the screen: it was
+a module constant in `deep.js`, copied from `explorer.js`, spending four times a pass that
+is already seconds to minutes on every Render.
+
+So the tab opens at **one sample a pixel** and the finer finishes are a picker beside
+Render, `SUPERSAMPLES` imported from `download.js` rather than restated because the two
+rows sit one above the other and a reader reads `4×` as one thing. The choice holds while
+the reader stays on the tab and `enter` resets it, so nothing carries a sixteen-fold cost
+into a visit that did not ask for it. It is not in the `dv` link and never was — a link
+says what picture to draw, and how many samples to spend finding out is the reader's, at
+their machine's speed.
+
+Two things follow it. The cap policy's probe walks the grid of the pass's own finest stage
+rather than a fixed two, because the probe is a subset of the frame's *sample* cells. And
+the Download row asks the tab how many samples the picture on the canvas holds instead of
+assuming the tab ends where the viewer does — otherwise *As shown* at 4× would hand back a
+1× picture under a 4× name. Measured: at 1× the row says `ready`, at 4× it says `~75 s`.
 
 ### Julia at this c *(deep_julia_at_c_ckpt136, 2026-09-20)*
 
@@ -996,11 +1065,11 @@ on the way out. At this depth that rounding is visible — the `f32` step at a s
 
 ### The field is kept, so a recolour never re-iterates
 
-Three fields: the current view's three stages, keyed on the centre, the width, the cap and
+Three fields: the current view's stages, keyed on the centre, the width, the cap and
 the grid — never on the palette or the seven, because nothing on the colour side can move a
 sample. **The arithmetic of that:** at a 1136×636 canvas the quarter pass is 0.4 MB, the
-full pass 5.8 MB and the supersampled finish 23 MB, so the current view alone is about
-29 MB held. The viewer keeps six because its fields are cheap to recompute; here a field is
+full pass 5.8 MB and a finish at four samples a pixel 23 MB, so a view drawn to that finish
+is about 29 MB held; at the entry setting, where there is no third stage, it is 6.2 MB. The viewer keeps six because its fields are cheap to recompute; here a field is
 the most expensive thing on the page, and keeping one view back would double the memory to
 save a re-iterate the reader presses a button for anyway. A recolour walks back from the
 finished stage to the cheapest one that is here.
@@ -1133,7 +1202,12 @@ minibrots it can neither draw nor address, and says so rather than pretending.
   page that offers rather than states, and it is there because telling a reader who has
   zoomed until the arithmetic gave out that the thing is impossible would be a sentence that
   is no longer true.
-- **A cost warning shows once per session**, on the first entry, in `sessionStorage`.
+- **A cost warning shows once per session**, on the first entry, in `sessionStorage`. It
+  says what the tab costs and what Auto-render spends without being asked; it used to end
+  *Nothing here draws until you press Render*, and that sentence went with the checkbox.
+- **Entering resets the samples to one a pixel**, every time, and does **not** start a
+  render: coming into the tab is not a frame change, and a reader who has arrived should
+  see where they are before minutes are spent.
 - **Zooming back out is fine at any depth.** *Back to the explorer* carries the view where
   `f64` can still resolve it and says why not where it cannot — the module's own question,
   not a width written down here. A Julia view has a second way to fail it, and the refusal
@@ -1205,9 +1279,11 @@ and a URL's escaping rule, neither of which has anything to do with how deep the
   roster in front of a kernel that has two members of it.
 - The place, the width, the cap and the palette are emitted unconditionally; the shade keys
   are omitted at the engine's defaults. `panel` rides as a UI key and is never emitted.
-- **Loading a deep link** opens the tab on that view and runs the quarter pass and nothing
-  else. A link that started a full deep render on arrival would be a link that costs a
-  minute to follow.
+- **Loading a deep link** opens the tab on that view and draws it the way any other frame
+  change is drawn *(deep_ui_ckpt140)*: the quarter pass and then one sample a pixel where
+  auto-render is on, the quarter pass alone where it is off. Never the supersampled finish,
+  which is what would make a link cost minutes to follow. The pass is committed rather than
+  automatic — a link is a press — so Cancel is there for it.
 
 `deep-link.test.mjs` is 27 tests and `deep-fx.test.mjs` is 12, on Node's own runner with
 nothing installed; three of them hold the shallow contract to not having moved, including
@@ -1230,12 +1306,17 @@ opens the Deep tab on it.
 
 On this machine, 2026-09-19, a 1600×1000 window and a 908×512 canvas, driven over CDP:
 
-**Every row is one stage and not a Render.** `said` (`deep.js:386-399`) emits the stage's
-own `field.elapsed`, so the figure a reader sees when a frame settles is the *last* stage's
-— the fine pass at four samples a pixel, which is the one that dominates. A whole Render at
-the anchor is the three of them: 1.2 s for the quarter pass, something near 13 s for the full
-one — read off its own `about 12 s left` progress line rather than timed — and then the
-62.7 s below, so **about 77 s**, of which the fine pass is four fifths.
+**Every row is one stage and not a Render.** `said` emits the stage's own `field.elapsed`,
+so the figure a reader sees when a frame settles is the *last* stage's — the fine pass at
+four samples a pixel, which is the one that dominates. A whole Render at the anchor was the
+three of them: 1.2 s for the quarter pass, something near 13 s for the full one — read off
+its own `about 12 s left` progress line rather than timed — and then the 62.7 s below, so
+**about 77 s**, of which the fine pass is four fifths.
+
+⚠ **Since `deep_ui_ckpt140` that is the 4× row and not the default one.** The tab opens at
+one sample a pixel, so the Render a reader gets without touching the samples picker is the
+first two stages — about 14 s at the anchor rather than 77, and four fifths of the wait is
+the part that was never asked for.
 
 | | |
 |---|---|

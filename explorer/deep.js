@@ -2,12 +2,24 @@
 //
 // **It is a deliberate, rare, slower mode, and the whole design follows from that.** A
 // deep frame is seconds to minutes where a shallow one is a fraction of a second, so the
-// one thing this tab must never do is start one by accident. A gesture here does not
-// render: it slides the last picture as a stale bitmap and draws a box saying what would
-// be drawn, and a **Render** button is what commits it. The single exception is the
-// quarter-resolution pass, which may start by itself once the last one came back under
-// `AUTO_PREVIEW_MS` — a threshold measured on this machine and this view rather than
-// assumed.
+// one thing this tab must never do is start a *long* one by accident. A gesture here does
+// not draw the frame it lands on: it slides the last picture as a stale bitmap and draws a
+// box saying what would be drawn.
+//
+// **What follows a gesture on its own is the one-sample pass, and `autoRender` is the
+// switch** *(deep_ui_ckpt140, 2026-09-21)*. Ticked — which it is on entering — a settled
+// frame change cancels whatever is in flight and draws the new frame at the quarter pass
+// and then one sample a pixel; unticked, the tab is press-to-render and the only thing that
+// starts by itself is the quarter pass, and only once the last one came back under
+// `AUTO_PREVIEW_MS`, a threshold measured on this machine and this view rather than
+// assumed. **Render is what commits a supersampled finish**, whatever the box says, because
+// four samples a pixel of a deep frame is minutes.
+//
+// The bug that ruling is the fix for was never in the staging: a 1× pass *is* run first and
+// *is* put up the moment it lands. It was that a gesture during a committed render moved
+// `view` and cancelled nothing, so the pass ran on for minutes on the frame the reader had
+// left, `moved()`'s auto-preview bailed on `running !== null`, and what the canvas showed
+// the whole time was the previous frame's picture.
 //
 // **The ordinary explorer does not get slower, heavier or different for any of this.**
 // `perturb.wasm` and this module are fetched on the first open of the tab and never
@@ -33,10 +45,13 @@
 import * as fx from "./deep-fx.js";
 import * as deepLink from "./deep-link.js";
 import { DeepRenderer, deepSpecOf } from "./deep-render.js";
+import { SUPERSAMPLES } from "./download.js";
 
 /**
  * How long the last quarter-resolution pass may have taken for the next one to start on
- * its own, in milliseconds.
+ * its own, in milliseconds — **with auto-render off**, which is the only state this reaches
+ * now. Ticked, a frame change draws itself whatever the last pass cost, because it is the
+ * reader's standing instruction rather than the tab's guess.
  *
  * **Provisional, and it is a measurement of this view on this machine rather than a guess
  * about deep views in general.** The cost of a deep frame runs over four orders of
@@ -48,8 +63,9 @@ import { DeepRenderer, deepSpecOf } from "./deep-render.js";
  */
 const AUTO_PREVIEW_MS = 1500;
 
-/** How long after the last gesture the auto-preview considers starting. Long enough that a
- *  drag followed by a wheel notch is one settle rather than two. */
+/** How long after the last gesture the tab considers drawing what it landed on — an
+ *  auto-render when the box is ticked, the quarter pass alone when it is not. Long enough
+ *  that a drag followed by a wheel notch is one settle rather than two. */
 const SETTLE_MS = 350;
 
 /** Each axis of the quarter-resolution pass, as a fraction of the full one. The viewer's
@@ -57,8 +73,29 @@ const SETTLE_MS = 350;
  *  it sharpened. */
 const PREVIEW_DIVISOR = 4;
 
-/** Samples per pixel, each way, of the last pass. The viewer's `FINAL_SUPERSAMPLE`. */
-const FINAL_SUPERSAMPLE = 2;
+/**
+ * Samples per pixel, each way, the tab's last pass ends at **on entering**.
+ *
+ * **One, and that is the ruling** *(Matt, 2026-09-21)*. The viewer's own last pass is at
+ * two — four samples a pixel — and it is right there, where a whole frame is a fraction of
+ * a second. Down here the same finish is four times a pass that is already seconds to
+ * minutes, and it was being spent on every Render without anybody asking for it. So the tab
+ * opens at one sample a pixel and a finer finish is a choice, taken from `SUPERSAMPLES` —
+ * the Download row's own three, imported rather than restated, because the two rows sit
+ * beside each other and a reader reads `4×` as one thing.
+ *
+ * The choice holds while the reader stays on the tab and is reset by `enter`, so it is
+ * per-visit rather than per-session: it is the most expensive thing on the page and nothing
+ * should carry it silently into the next visit. It is **not** in the `dv` link and was
+ * never in one — a link says what picture to draw, and how many samples to spend finding
+ * out is the reader's, at their machine's speed.
+ */
+const ENTRY_SUPERSAMPLE = 1;
+
+/** Where the auto-render flag is remembered. The tab's own session, the Julia preview's
+ *  pattern and the Julia preview's reason: a way of working, not part of a picture, so no
+ *  link carries it and the browser does not keep it past the tab. */
+const AUTO_RENDER = "explorer.deep-auto-render";
 
 /**
  * How much of the viewport the pending frame takes while a gesture is being shown.
@@ -128,11 +165,12 @@ export function mount(host) {
   //    they left.
   //
   // The rest is cache and bookkeeping: `fields` is up to `CACHE_LIMIT` fields by
-  // `deepLink.fieldKey` for a recolour, `finished` the fine pass's own picture for a
+  // `deepLink.fieldKey` for a recolour, `finished` the last stage's own picture for a
   // download, `measure` what the last pass of *this* frame cost (and `null` the moment the
-  // frame or its cap moves), `quarterMs` what the auto-preview decides on, `colouring` the
-  // shade in flight, `pinnedCap` whether the reader set the cap by hand, and `cameFrom`
-  // the Mandelbrot frame *Julia at this c* was pressed on.
+  // frame or its cap moves), `quarterMs` what the quarter-pass exception reads, `colouring`
+  // the shade in flight, `pinnedCap` whether the reader set the cap by hand, `samples` how
+  // many a pixel the finish is drawn at, `autoRender` whether a frame change draws itself,
+  // and `cameFrom` the Mandelbrot frame *Julia at this c* was pressed on.
   const els = host.elements;
   const context = host.context;
 
@@ -147,7 +185,7 @@ export function mount(host) {
   let stale = null;
   /** Fields kept for a recolour, by `deepLink.fieldKey`. */
   const fields = new Map();
-  /** How long the last quarter pass took, which is what auto-preview reads. */
+  /** How long the last quarter pass took, which is what the quarter-pass exception reads. */
   let quarterMs = null;
   /**
    * What the last stage cost, and which frame it was a stage of: `{ frame, samples, field,
@@ -161,10 +199,13 @@ export function mount(host) {
    * stops answering the moment the frame or its cap moves.
    */
   let measure = null;
-  /** The fine pass's picture, once it has landed — what a download at the canvas's own size
-   *  saves instead of drawing it again. Cleared by every pass, because a picture of the
-   *  view before is not this one. */
+  /** The last pass's picture at the canvas's own size, once it has landed — what a download
+   *  at that size saves instead of drawing it again — and how many samples a pixel it was
+   *  drawn at, because the row may be asking for a different number now that the finish is
+   *  a choice. Cleared by every pass, because a picture of the view before is not this one.
+   */
   let finished = null;
+  let finishedSamples = 0;
   /** The pass in flight: its generation and what it is doing. */
   let pass = 0;
   let running = null;
@@ -174,6 +215,10 @@ export function mount(host) {
   let colouring = {};
   /** Whether the reader has set a cap of their own, which a zoom then leaves alone. */
   let pinnedCap = false;
+  /** Samples per pixel, each way, the last stage of a committed pass is drawn at. */
+  let samples = ENTRY_SUPERSAMPLE;
+  /** Whether a settled frame change draws itself. */
+  let autoRender = storedAuto();
   /**
    * The Mandelbrot view *Julia at this c* was pressed on, so the way back is the
    * frame it came from rather than a frame derived from where the reader has got to.
@@ -187,10 +232,11 @@ export function mount(host) {
   /**
    * How many fields are kept.
    *
-   * **Three, which is the current view's three stages and nothing else**, and the
+   * **Three, which is the current view's stages at their most and nothing else**, and the
    * arithmetic is why. A deep field is one `f64` a sample: at a 1136×636 canvas the
-   * quarter pass is 0.4 MB, the full pass 5.8 MB, and the supersampled finish 23 MB — so
-   * the current view alone is about 29 MB held. The viewer keeps six because its fields
+   * quarter pass is 0.4 MB, the full pass 5.8 MB, and a finish at four samples a pixel
+   * 23 MB — so a view drawn to that finish is about 29 MB held, and at the entry setting,
+   * where there is no third stage, 6.2 MB. The viewer keeps six because its fields
    * are the same size and its frames are cheap to recompute; here a field is the most
    * expensive thing on the page and the largest, and keeping one view back would double
    * the memory to save a re-iterate the reader has to press a button for anyway.
@@ -329,10 +375,15 @@ export function mount(host) {
   /**
    * Draw the view, through as many stages as `upto` asks for.
    *
-   * `"preview"` is the quarter-resolution pass alone, which is the only thing that ever
-   * starts by itself. `"full"` is what Render commits: the quarter pass first, so there is
-   * something to look at within a fraction of the wait, then one sample a pixel, then the
-   * same grid at two samples each way — the passes the explorer normally stages.
+   * Three values, coarsest first. `"preview"` is the quarter-resolution pass alone.
+   * `"screen"` adds one sample a pixel at the canvas's own size — **the two together are
+   * what auto-render starts**, because that is as much as a frame change is allowed to
+   * spend without being asked. `"fine"` adds the supersampled finish where the reader has
+   * chosen one, and is what Render commits.
+   *
+   * Every stage is put up the moment it lands and the next replaces it in place, which is
+   * what makes a four-minute frame watchable: the quarter pass is about a fiftieth of the
+   * finish, so there is something true on the canvas within a fraction of the wait.
    */
   async function render(upto, { auto = false } = {}) {
     const generation = ++pass;
@@ -342,6 +393,7 @@ export function mount(host) {
     // that stayed pressable through it would start a second pass on a second press.
     running = { upto, auto, stage: "preview", started: performance.now() };
     finished = null;
+    finishedSamples = 0;
     syncControls();
     host.showState("rendering");
     host.say("");
@@ -349,9 +401,14 @@ export function mount(host) {
     const stages = [
       { name: "preview", width: grid.width / PREVIEW_DIVISOR, height: grid.height / PREVIEW_DIVISOR, supersample: 1 },
       { name: "full", width: grid.width, height: grid.height, supersample: 1 },
-      { name: "fine", width: grid.width, height: grid.height, supersample: FINAL_SUPERSAMPLE },
     ];
+    // A finish at one sample a pixel is the `full` stage over again, so at the entry
+    // setting there is no third stage rather than a third stage that redraws the second.
+    if (upto === "fine" && samples > 1) {
+      stages.push({ name: "fine", width: grid.width, height: grid.height, supersample: samples });
+    }
     const wanted = upto === "preview" ? stages.slice(0, 1) : stages;
+    const last = wanted[wanted.length - 1];
 
     try {
       // **Inside the guard.** A pool that fails to start — a fetch that 404s, a module
@@ -363,8 +420,8 @@ export function mount(host) {
       if (generation !== pass) return;
 
       let target = view;
-      if (upto === "full" && !pinnedCap) {
-        const chosen = await settleCap(deep, target, grid, generation);
+      if (upto !== "preview" && !pinnedCap) {
+        const chosen = await settleCap(deep, target, grid, last.supersample, generation);
         if (generation !== pass) return;
         if (chosen !== null && chosen.maxiter !== target.maxiter) target = chosen.frame;
       }
@@ -416,7 +473,13 @@ export function mount(host) {
           field: field.elapsed / 1000,
           shade: shaded.elapsed / 1000,
         };
-        if (stage.name === "fine") finished = shaded.image;
+        // The picture a download at the canvas's own size can save instead of drawing it
+        // again: the pass's last stage, and only where that stage is the canvas's own size
+        // — a quarter-resolution preview is not a picture of this canvas.
+        if (stage === last && stage.name !== "preview") {
+          finished = shaded.image;
+          finishedSamples = stage.supersample;
+        }
         paint();
         host.settle();
         said(stage, field, shaded, cached);
@@ -445,21 +508,29 @@ export function mount(host) {
    * or exploding, and double while the frame is still dying for want of iterations — and
    * what is here is when it is asked and what it says.
    *
-   * **Only for a Render, and only when the reader has not chosen a cap.** An auto-preview
-   * is the cheap look and pays for nothing; a pinned cap is a choice and escalation is a
-   * policy, so a typed cap and a cap a link carries are drawn exactly as they are asked
-   * for. That distinction is `pinnedCap`, which already existed for the zoom.
+   * **For any pass that draws the frame, and only when the reader has not chosen a cap.**
+   * The quarter pass alone is the cheap look and pays for nothing; an auto-rendered pass is
+   * the picture the reader is now looking at, so it settles the cap like a pressed one —
+   * the escalation exists because the width's cap paints exterior as interior down here,
+   * and a picture drawn unasked is no less owed the truth. A pinned cap is a choice and
+   * escalation is a policy, so a typed cap and a cap a link carries are drawn exactly as
+   * they are asked for. That distinction is `pinnedCap`, which already existed for the
+   * zoom.
    *
-   * The probe is a few thousand of the frame's own sample cells, so the three passes below
-   * run **once**, at the settled cap — measured at 0.08% to 0.22% of the fine pass.
+   * The probe is a few thousand of the frame's own sample cells, so the passes below run
+   * **once**, at the settled cap — measured at 0.08% to 0.22% of the fine pass.
+   *
+   * `supersample` is the pass's own finest, and it is passed in rather than fixed: the
+   * probe is a subset of the frame's *sample* cells, so which cells those are follows the
+   * grid the pass will actually walk.
    */
-  async function settleCap(deep, from, grid, generation) {
+  async function settleCap(deep, from, grid, supersample, generation) {
     running.stage = "settling";
     els.progress.style.removeProperty("--done");
     els.progress.textContent = "choosing an iteration cap…";
     host.stat(`choosing an iteration cap · from ${from.maxiter.toLocaleString("en-US")}`);
     const chosen = await deep.settle(from, grid.width, grid.height, {
-      supersample: FINAL_SUPERSAMPLE,
+      supersample,
       onRung: (counts) => {
         if (generation !== pass) return;
         els.progress.textContent = `choosing an iteration cap · ${counts.maxiter.toLocaleString("en-US")}`;
@@ -500,6 +571,7 @@ export function mount(host) {
     const generation = ++pass;
     running = { upto: "download", auto: false, stage: "download", started: performance.now() };
     finished = null;
+    finishedSamples = 0;
     syncControls();
     host.showState("rendering");
     try {
@@ -508,7 +580,7 @@ export function mount(host) {
 
       let target = view;
       if (!pinnedCap) {
-        const chosen = await settleCap(deep, target, { width, height }, generation);
+        const chosen = await settleCap(deep, target, { width, height }, supersample, generation);
         if (generation !== pass) return null;
         if (chosen !== null && chosen.maxiter !== target.maxiter) target = chosen.frame;
       }
@@ -588,15 +660,21 @@ export function mount(host) {
     els.progress.style.setProperty("--done", `${percent}%`);
     const left = done > 0.02 ? (elapsed / done) * (1 - done) : null;
     const remaining = left === null ? "" : ` · about ${said_time(left / 1000)} left`;
-    els.progress.textContent = `${STAGE_SAID[stage.name]} ${percent}%${remaining}`;
+    els.progress.textContent = `${said_stage(stage)} ${percent}%${remaining}`;
     host.stat(`${stage.width}×${stage.height}${stage.supersample > 1 ? ` at ${stage.supersample ** 2}×` : ""} · ${percent}%`);
   }
 
-  const STAGE_SAID = {
-    preview: "quarter resolution",
-    full: "full resolution",
-    fine: "four samples a pixel",
-  };
+  /** What a stage is called while it runs. The supersampled finish names its own samples,
+   *  because how many there are is the reader's choice now and no longer four. */
+  function said_stage(stage) {
+    if (stage.name === "preview") return "quarter resolution";
+    if (stage.name === "full") return "full resolution";
+    const each = stage.supersample ** 2;
+    if (each === 1) return "one sample a pixel";
+    return `${SAMPLES_SAID[each] ?? each} samples a pixel`;
+  }
+
+  const SAMPLES_SAID = { 4: "four", 16: "sixteen" };
 
   function said_time(seconds) {
     if (seconds < 1) return "a second";
@@ -630,8 +708,10 @@ export function mount(host) {
   async function recolour() {
     const grid = host.grid();
     const deep = await pool();
+    // Finest first, and the finest is whatever this visit has chosen: a recolour walks back
+    // from the best field already kept to the cheapest one that is here.
     const stages = [
-      { width: grid.width, height: grid.height, supersample: FINAL_SUPERSAMPLE },
+      { width: grid.width, height: grid.height, supersample: samples },
       { width: grid.width, height: grid.height, supersample: 1 },
       { width: grid.width / PREVIEW_DIVISOR, height: grid.height / PREVIEW_DIVISOR, supersample: 1 },
     ];
@@ -662,19 +742,44 @@ export function mount(host) {
 
   // ----------------------------------------------------------------- the gestures
 
-  /** After a gesture: repaint, and consider the quarter pass. */
+  /**
+   * After a gesture: repaint, and consider drawing the frame the reader has landed on.
+   *
+   * **This is where the pass in flight is cancelled** *(deep_ui_ckpt140)*. It did not used
+   * to be, and that was the bug: a gesture during a committed render moved `view`, left the
+   * render drawing the frame the reader had left, and then bailed out here on
+   * `running !== null` — so for the rest of a pass that could be four minutes the canvas
+   * showed the previous frame and nothing was drawn of this one. With auto-render ticked a
+   * settled change takes the pass with it; untick it and the tab is press-to-render, with
+   * the old quarter-pass exception below and its old guard.
+   */
   function moved() {
     paint();
     clearMinibrots();
     host.settle();
     syncControls();
     clearTimeout(settleTimer);
-    if (running !== null) return;
+    if (!autoRender && running !== null) return;
     settleTimer = setTimeout(() => {
-      // **The only pass that ever starts by itself**, and only on the evidence of the last
-      // one. Nothing here can reach the full passes.
-      if (!shown || !owns || running !== null || !pending()) return;
+      if (!shown || !owns || !pending()) return;
       if (refused() !== null) return;
+      if (autoRender) {
+        // **A download is not a pass of the canvas and is not cancelled here.** It is a
+        // file the reader asked for, of a frame captured when they asked, and taking four
+        // minutes of it away because they nudged the wheel is a worse surprise than the one
+        // this exists to fix. ⚠ **Nothing reaches this line today**: a download holds the
+        // viewer through `setBusy`, so a wheel is refused before it gets here and every
+        // control that calls `moved()` is disabled while one runs. It is here so that a
+        // control which opens that route later does not quietly become a way to lose a
+        // download.
+        if (running !== null && running.upto === "download") return;
+        if (running !== null) stop();
+        render("screen", { auto: true });
+        return;
+      }
+      // **The only pass that ever starts by itself when auto-render is off**, and only on
+      // the evidence of the last one. Nothing here can reach the full passes.
+      if (running !== null) return;
       if (quarterMs === null || quarterMs > AUTO_PREVIEW_MS) {
         syncControls();
         return;
@@ -1091,20 +1196,75 @@ export function mount(host) {
     moved();
   }
 
+  // ------------------------------------------------------- auto-render, and the samples
+
+  function storedAuto() {
+    try {
+      // Ticked unless this tab has been told otherwise, so absent is on.
+      return window.sessionStorage.getItem(AUTO_RENDER) !== "off";
+    } catch {
+      // A browser that stores nothing still has the box; it forgets it on a reload.
+      return true;
+    }
+  }
+
+  function setAuto(value) {
+    autoRender = value;
+    els.auto.checked = value;
+    try {
+      window.sessionStorage.setItem(AUTO_RENDER, value ? "on" : "off");
+    } catch {
+      /* As above. */
+    }
+    syncControls();
+    // Ticking it over a frame the reader has already moved to draws that frame, rather
+    // than waiting for another gesture to prove they meant it. **Not where nothing has
+    // been drawn at all**: that is not a frame change, it is arriving, and arriving does
+    // not start minutes of work — the same rule `enter` keeps, and Render is right beside
+    // the box.
+    if (value && drawn !== null && pending()) moved();
+  }
+
+  /** The samples picker: the Download row's own three factors, labelled the way that row
+   *  labels them, because the two sit one above the other. */
+  const sampleChips = SUPERSAMPLES.map((factor) => {
+    const chip = document.createElement("button");
+    chip.type = "button";
+    chip.className = "chip";
+    chip.textContent = `${factor * factor}×`;
+    chip.title =
+      factor === 1
+        ? "One sample per pixel: the fastest a frame is drawn here."
+        : `${factor * factor} samples per pixel: smoother edges, and about ${factor * factor} times as long.`;
+    chip.addEventListener("click", () => {
+      if (samples === factor) return;
+      samples = factor;
+      syncControls();
+    });
+    els.samples.append(chip);
+    return { factor, chip };
+  });
+
   function syncControls() {
     const busy = running !== null;
     const why = busy ? null : refused();
-    // **An auto-preview does not take the button.** It is a pass the reader did not ask
-    // for, so turning Render into Cancel while it runs would put the one control this tab
-    // has out of reach at exactly the moment it is wanted: a reader who gestures and then
-    // wants the picture would press Render and stop a render instead. Cancel is for a pass
-    // somebody commanded; pressing Render through an auto-preview upgrades it.
+    // **A pass that started on its own does not take the button.** It is a pass the reader
+    // did not ask for, so turning Render into Cancel while it runs would put the one
+    // control this tab has out of reach at exactly the moment it is wanted: a reader who
+    // gestures and then wants the picture would press Render and stop a render instead.
+    // Cancel is for a pass somebody commanded; pressing Render through one that started on
+    // its own upgrades it to the finish.
     const committed = busy && !running.auto;
     els.render.textContent = committed ? "Cancel" : pending() || drawn === null ? "Render" : "Render again";
     els.render.classList.toggle("is-running", committed);
     els.render.disabled = why !== null;
     els.progress.hidden = !busy;
     if (!busy) els.progress.style.removeProperty("--done");
+    els.auto.checked = autoRender;
+    for (const { factor, chip } of sampleChips) {
+      chip.setAttribute("aria-pressed", String(factor === samples));
+      chip.disabled = committed;
+    }
     els.cap.value = String(view.maxiter);
     els.capUp.disabled = committed || view.maxiter >= deepLink.CAP_LIMIT;
     els.capDown.disabled = committed || view.maxiter <= deepLink.CAP_FLOOR;
@@ -1148,17 +1308,27 @@ export function mount(host) {
         : "This frame is below what the ordinary explorer can resolve, so it cannot be carried back.";
     els.back.hidden = false;
 
-    // What the tab says about itself, in one line: what Render would do, and whether the
-    // quarter pass will start on its own.
+    // What the tab says about itself, in one line: what Render would do, and what is
+    // drawing itself.
     if (why !== null) {
       els.note.textContent = why;
     } else if (busy) {
-      els.note.textContent = "";
+      // **The one thing a busy tab has to say**, and the reason it says it: a committed
+      // pass of a frame the reader has since left runs on for minutes showing the picture
+      // they moved off, and until this sentence existed the tab explained none of it. Only
+      // with auto-render off, because with it on the same state lasts the 350 ms before the
+      // settle timer takes the pass over — and it names Cancel rather than Render, because
+      // through a committed pass Render *is* Cancel.
+      els.note.textContent =
+        !autoRender && committed && pending()
+          ? "This is still drawing the frame you left. Cancel stops it; tick Auto-render and a new frame takes over on its own."
+          : "";
     } else if (drawn === null) {
       els.note.textContent = "Nothing has been drawn yet. Render draws this frame.";
     } else if (pending()) {
-      els.note.textContent =
-        quarterMs !== null && quarterMs <= AUTO_PREVIEW_MS
+      els.note.textContent = autoRender
+        ? "The last picture drawn, boxed where this frame sits. This frame follows on its own."
+        : quarterMs !== null && quarterMs <= AUTO_PREVIEW_MS
           ? "The last picture drawn, boxed where this frame sits. A quick preview will follow on its own; Render draws it properly."
           : "The last picture drawn, boxed where this frame sits. Render draws this frame.";
     } else {
@@ -1185,7 +1355,8 @@ export function mount(host) {
     }
     host.say(
       "This tab is several times slower than the explorer and gets slower as you go " +
-        "deeper — a frame can take minutes. Nothing here draws until you press Render.",
+        "deeper — a frame can take minutes. Auto-render draws each frame you move to at " +
+        "one sample a pixel; Render is what spends more than that.",
     );
   }
 
@@ -1199,6 +1370,11 @@ export function mount(host) {
    */
   function enter(from) {
     warn();
+    // **The samples reset on every entry, and the auto-render flag does not.** One is the
+    // most expensive setting on the page and is reset so that nothing carries a sixteen-fold
+    // cost into a visit that did not ask for it; the other is a way of working and is the
+    // tab's own session, like the Julia preview's box.
+    samples = ENTRY_SUPERSAMPLE;
     if (from !== null) {
       const carried = carry(from);
       if (carried !== null) {
@@ -1259,10 +1435,12 @@ export function mount(host) {
       host.showState("stopped");
       return;
     }
-    // Through an auto-preview: that pass is abandoned and the committed one starts, which
-    // picks its quarter field straight back out of the cache if it had finished.
-    render("full");
+    // Through a pass that started on its own: that one is abandoned and the committed one
+    // starts, which picks its quarter field straight back out of the cache if it finished.
+    render("fine");
   });
+
+  els.auto.addEventListener("change", () => setAuto(els.auto.checked));
 
   els.capUp.addEventListener("click", () => setCap(view.maxiter * CAP_STEP));
   els.capDown.addEventListener("click", () => setCap(view.maxiter / CAP_STEP));
@@ -1313,8 +1491,14 @@ export function mount(host) {
     /** What a pass of *this* frame cost, or `null` where the last one was of another. */
     measured: () =>
       measure !== null && measure.frame === deepLink.fieldKey(view, 1, 1) ? measure : null,
-    /** The finished picture at the canvas's own size, once the fine pass has landed. */
+    /** The finished picture at the canvas's own size, once the last stage has landed. */
     shown: () => finished,
+    /** How many samples a pixel, each way, that picture was drawn at — `0` where there is
+     *  none. **Asked rather than assumed** *(deep_ui_ckpt140)*: the Download row used to
+     *  take it that this tab ends where the viewer does, at two, and reuse the screen's
+     *  picture for a 4× download on the strength of it. The finish is the reader's choice
+     *  now, so a row asking for more samples than the canvas holds has to draw. */
+    finalSupersample: () => finishedSamples,
     picture,
 
     show() {
@@ -1337,8 +1521,12 @@ export function mount(host) {
     },
     enter,
 
-    /** Open a deep link. Nothing but the quarter pass runs unasked — and that only on the
-     *  usual evidence, so a link opened cold shows its frame and waits for Render. */
+    /** Open a deep link — a saved picture, the address bar, a step back.
+     *
+     *  **A link is a frame change the reader asked for**, so auto-render draws it the way it
+     *  draws any other, at one sample a pixel; untick the box and it is the quarter pass
+     *  alone, which is what this always did. Either way the pass is committed rather than
+     *  auto — a link is a press — so Cancel is there for it. */
     open(query) {
       view = deepLink.parse(`?${query}`, context);
       drawn = null;
@@ -1354,7 +1542,7 @@ export function mount(host) {
       host.stat("");
       host.say("");
       host.showState("stopped");
-      render("preview");
+      render(autoRender ? "screen" : "preview");
     },
 
     /** A colour control moved. The field is kept, so this never re-iterates. */
