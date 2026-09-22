@@ -32,12 +32,41 @@ pub const GUARD_BITS: f64 = 64.0;
 /// it is 166 bits and **4**. The clamp at the top is [`MAX_LIMBS`], which is past
 /// where `f64` can hold the width at all.
 pub fn limbs_for(width: f64, sample_width: u32) -> usize {
+    limbs_pow(width, sample_width, 1)
+}
+
+/// The limb count for a view whose neighbouring samples are told apart only at
+/// `step^power`, and not at `step`.
+///
+/// **This is the Julia origin anchor's rule** *(deep_degrees_ckpt140)*. At `z = 0`
+/// the first step is `z₁ = z₀^d + c`, so two pixels one step apart at `z₀` are
+/// `step^d` apart at `z₁`, and everything after that is iterated from `z₁`. The
+/// reference `c` and its orbit therefore have to hold `c` to the bits that
+/// separate `step^d`, which is `d` times the view's own — sized for `step` alone,
+/// the orbit's last bit is coarser than the difference between two pixels and the
+/// picture is of the truncation. `audit_deep_families_ckpt140` measured it on the
+/// shipped d=2 tab: a median error of **6.6 smooth counts at 1e-30 and 34 at
+/// 1e-36**, against 6e-14 with the bits this gives. `power = 1` is
+/// [`limbs_for`], which is every other view.
+///
+/// The clamp is [`MAX_LIMBS`], and [`limbs_pow_fits`] is the question of whether
+/// it bound, so a caller that must not draw at a clamped count can ask.
+pub fn limbs_pow(width: f64, sample_width: u32, power: u32) -> usize {
+    (fraction_limbs(width, sample_width, power) + 1).clamp(3, MAX_LIMBS)
+}
+
+/// Whether [`limbs_pow`] holds all the bits it was asked for, or was clamped.
+pub fn limbs_pow_fits(width: f64, sample_width: u32, power: u32) -> bool {
+    fraction_limbs(width, sample_width, power) < MAX_LIMBS
+}
+
+fn fraction_limbs(width: f64, sample_width: u32, power: u32) -> usize {
     if !(width > 0.0) || sample_width == 0 {
-        return 3;
+        return 2;
     }
-    let bits = (sample_width as f64 / width).log2().ceil().max(0.0) + GUARD_BITS;
-    let fraction = (bits / 64.0).ceil() as usize;
-    (fraction.max(1) + 1).clamp(3, MAX_LIMBS)
+    let bits =
+        power.max(1) as f64 * (sample_width as f64 / width).log2().ceil().max(0.0) + GUARD_BITS;
+    ((bits / 64.0).ceil() as usize).max(1)
 }
 
 /// One reference orbit, as the kernel reads it.
@@ -161,6 +190,24 @@ mod tests {
         assert_eq!(limbs_for(1e-28, 480), limbs_for(1e-28, 480));
         // Supersample enters only as more samples across, which is the grid.
         assert!(limbs_for(1e-40, 2560) >= limbs_for(1e-40, 480));
+    }
+
+    /// The origin anchor's rule is the view's rule with the sample bits multiplied,
+    /// and at a power of one it is the view's rule exactly.
+    #[test]
+    fn a_power_of_the_step_multiplies_the_bits_and_not_the_guard() {
+        for width in [3.0, 2e-11, 1e-28, 1e-40] {
+            assert_eq!(limbs_pow(width, 480, 1), limbs_for(width, 480));
+        }
+        // The audit's harness at 16 samples across: four limbs for the view at 1e-30,
+        // six for its square — 2 × 104 + 64 = 272 bits.
+        assert_eq!(limbs_for(1e-30, 16), 4);
+        assert_eq!(limbs_pow(1e-30, 16, 2), 6);
+        assert_eq!(limbs_pow(1e-40, 16, 2), 7);
+        // And the clamp is reported rather than silent.
+        assert!(limbs_pow_fits(1e-40, 2272, 2));
+        assert!(!limbs_pow_fits(1e-150, 2272, 2));
+        assert_eq!(limbs_pow(1e-150, 2272, 2), MAX_LIMBS);
     }
 
     #[test]

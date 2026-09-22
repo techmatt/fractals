@@ -223,8 +223,14 @@ fn walk(spec: Spec) -> Rung {
     // carries the delta in `f64`, which is *relative* precision and holds 4e-59
     // to sixteen digits. Doubling the limbs is the oracle catching up, and the
     // first run of this ladder without it is the reason the sentence is here.
+    //
+    // **And since `deep_degrees_ckpt140` the kernel's own orbit is sized that way
+    // too**, because it had the same problem and no oracle to hide behind: its `c`
+    // was held to the view's bits, which is short of what separates `step²`. So
+    // the oracle now takes one limb past what the spec asks for, which is past the
+    // squared step by construction.
     let oracle_limbs = if spec.julia.is_some() && spec.entry() == 0 {
-        (limbs * 2).min(perturb::fx::MAX_LIMBS)
+        (limbs + 1).min(perturb::fx::MAX_LIMBS)
     } else {
         limbs
     };
@@ -554,6 +560,59 @@ fn the_julia_kernel_matches_the_oracle_down_a_dendrite_ladder_at_the_origin() {
         .collect();
     report("julia at c = i, anchored at z = 0", &rungs);
     julia_assertions(&rungs);
+}
+
+/// `M(3,1)`, the Misiurewicz point of preperiod 3 and period 1 on the real axis,
+/// to 130 digits — **a boundary `c` that is not dyadic**, which is the whole reason
+/// it is here.
+///
+/// `c = i` is exactly representable, so its critical orbit is exact at *any* limb
+/// count and a ladder built on it cannot see a reference that was computed short
+/// of the bits it needed. This one has 130 digits that all matter, and its orbit
+/// stays on the dendrite for about 580 steps before the digits run out, which is
+/// long enough for a truncated `c` to show.
+const M31: (&str, &str) = (
+    "-1.543689012692076361570855971801747986525203297650983935240804037831168673927973866485157914576059125462120829226367060189278756463",
+    "0",
+);
+
+/// **The origin anchor, at a `c` the orbit cannot hold exactly** *(deep_degrees_ckpt140)*.
+///
+/// At `z = 0` a pixel's first step is its offset squared, so the reference has to
+/// separate `step²` and not `step`. Before this ladder existed the kernel sized the
+/// orbit for `step`, and `audit_deep_families_ckpt140` measured what that drew on
+/// the committed crate at this `c` and this tile: a median error of **6.6 smooth
+/// counts at 1e-30, 34 at 1e-36 and 11 at 1e-40**, against **6e-14** with the bits
+/// [`perturb::reference::limbs_pow`] now gives. The dendrite ladders above could
+/// not see it, because `c = i` is dyadic.
+#[test]
+#[ignore = "seconds"]
+fn the_origin_anchor_holds_a_non_dyadic_c_to_the_squared_step() {
+    let rungs: Vec<Rung> = [1e-20, 1e-30, 1e-36, 1e-40]
+        .iter()
+        .map(|&width| {
+            walk(Spec {
+                maxiter: Some(20_000),
+                ..julia_spec(M31, width, Anchor::Origin)
+            })
+        })
+        .collect();
+    report("julia at M(3,1), anchored at z = 0", &rungs);
+    for rung in &rungs {
+        assert!(
+            rung.compared > 100,
+            "{:e}: only {} escaping samples",
+            rung.width,
+            rung.compared
+        );
+        assert_eq!(rung.interior_disagreements, 0, "{:e}", rung.width);
+        assert!(
+            rung.median < 1e-9,
+            "{:e}: median smooth error {:e} — the orbit is short of the squared step",
+            rung.width,
+            rung.median
+        );
+    }
 }
 
 /// The Julia set of the audit's own deep `c`: a parameter of thirty-five digits,

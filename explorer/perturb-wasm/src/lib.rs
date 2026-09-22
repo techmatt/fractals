@@ -315,8 +315,30 @@ impl Spec {
         self.maxiter.unwrap_or_else(|| cap::for_width(self.width))
     }
 
+    /// The limb count this frame's reference orbit is computed at.
+    ///
+    /// The view's own rule everywhere but one place: **a Julia frame anchored at
+    /// `z = 0` is sized for `step²`**, because its first step squares the pixel
+    /// offset and the orbit has to tell two of those apart. See
+    /// [`reference::limbs_pow`], which is where the measurement is.
     pub fn limbs(&self) -> usize {
-        reference::limbs_for(self.width, self.sample_width())
+        reference::limbs_pow(self.width, self.sample_width(), self.limb_power())
+    }
+
+    /// The power of the sample step the reference has to resolve: two at the Julia
+    /// origin anchor, one everywhere else.
+    fn limb_power(&self) -> u32 {
+        match (&self.julia, self.anchor) {
+            (Some(_), Anchor::Origin) => 2,
+            _ => 1,
+        }
+    }
+
+    /// Whether [`Spec::limbs`] holds every bit the frame needs, rather than stopping
+    /// at [`fx::MAX_LIMBS`]. Only the origin anchor can reach the clamp at a width a
+    /// double still holds.
+    pub fn limbs_fit(&self) -> bool {
+        reference::limbs_pow_fits(self.width, self.sample_width(), self.limb_power())
     }
 
     /// The reference orbit this spec asks for.
@@ -547,7 +569,17 @@ pub extern "C" fn plan(spec_ptr: *const u8, spec_len: usize) -> *mut u8 {
     let read = text(spec_ptr, spec_len)
         .ok_or_else(|| "the spec is not UTF-8".to_string())
         .and_then(|text| Spec::parse(&text));
-    report(read.and_then(|spec| match spec.delta_ulps() {
+    report(read.and_then(|spec| if spec.limbs_fit() {
+        Ok(spec)
+    } else {
+        Err(format!(
+            "this frame is drawn from z = 0, where one pixel of it is told apart from the next \
+             only at its width to the power {}, and that needs more than the {} limbs this \
+             module computes a reference at. Zoom out, or move toward z = c.",
+            spec.limb_power(),
+            fx::MAX_LIMBS,
+        ))
+    }).and_then(|spec| match spec.delta_ulps() {
         ulps if ulps >= DELTA_ULPS => Ok(spec),
         ulps => Err(format!(
             "this frame is {} from the point its arithmetic is anchored at, and one pixel of it \
@@ -1206,6 +1238,27 @@ mod tests {
         let ours = julia.reference_orbit().unwrap();
         assert_eq!(ours.len(), theirs.len() + 1);
         assert_eq!(&ours.points[..theirs.len()], &theirs.points[..]);
+    }
+
+    /// **The origin anchor's orbit is sized for the square of the step**, and the
+    /// parameter anchor's is not — the one place a frame's limb count is not the
+    /// view's own.
+    #[test]
+    fn the_origin_anchor_is_computed_at_twice_the_bits() {
+        let deep = far_spec(1e-30).replace(r#""schema": 1"#, r#""schema": 1, "anchor": "origin""#);
+        let origin = Spec::parse(&deep).unwrap();
+        let parameter = Spec::parse(&far_spec(1e-30)).unwrap();
+        assert_eq!(parameter.limbs(), reference::limbs_for(1e-30, 480));
+        assert_eq!(origin.limbs(), reference::limbs_pow(1e-30, 480, 2));
+        assert!(origin.limbs() > parameter.limbs());
+        // The orbit is the one that carries them.
+        assert_eq!(origin.reference_orbit().unwrap().limbs, origin.limbs());
+        // And a frame so narrow that even sixteen limbs cannot hold its square is
+        // refused in a sentence rather than drawn at a clamped count.
+        let past = far_spec(1e-150).replace(r#""schema": 1"#, r#""schema": 1, "anchor": "origin""#);
+        let report = plan_text(&past);
+        assert!(report.contains(r#""ok":false"#), "{report}");
+        assert!(report.contains("limbs"), "{report}");
     }
 
     #[test]

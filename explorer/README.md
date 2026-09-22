@@ -1395,7 +1395,9 @@ the one that is there; a frame whose orbit is still good sends none.
 
 **It is kept while the new view is still within its reach**, and the test is conservative
 on purpose: the same limb count, a cap no larger, and the reference still inside the frame
-being drawn. Recomputing costs fifteen to twenty-five milliseconds against a frame of
+being drawn. The limb count is the one `plan` names for the frame, not the width's *(deep_degrees_ckpt140)*:
+a Julia frame at `z = 0` is computed at twice the view's bits, and an orbit keyed on the width's count
+would pass this test for a frame it is too shallow for. Recomputing costs fifteen to twenty-five milliseconds against a frame of
 seconds, so there is nothing to buy by being clever — and the gesture it does keep it for is
 the one that matters, a zoom in about a point near the middle, so a descent pays for one
 orbit rather than one a rung. At the anchor the orbit is **48,552 points at three limbs**,

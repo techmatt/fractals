@@ -761,7 +761,14 @@ export class DeepRenderer {
    * `null` where the kernel refused to produce one.
    */
   async #reference(view, width, height, supersample, period = null) {
-    const limbs = this.limbs(view.w.value, width * supersample);
+    // **The limbs are the spec's, asked of `plan`, and not the width's** *(deep_degrees_ckpt140)*.
+    // A Julia frame anchored at `z = 0` is computed at twice the view's bits, because its
+    // first step squares the pixel offset — so the width's own count would be the key of
+    // an orbit the kernel never computes for this frame, and a held orbit at the width's
+    // count would pass the identity test above while being short of the bits this frame
+    // needs. The kernel decides the count; this reads it.
+    const planned = this.plan(deepSpecOf(view, width, height, { supersample, period }));
+    const limbs = planned.ok ? planned.limbs : this.limbs(view.w.value, width * supersample);
     if (this.#reaches(view, limbs, height / width, period)) {
       return { x: this.orbit.x.text, y: this.orbit.y.text, kept: true };
     }

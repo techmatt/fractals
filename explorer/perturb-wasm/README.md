@@ -278,6 +278,32 @@ tile. The kernel carries that delta in `f64`, which is *relative* precision and
 holds it to sixteen digits. The oracle runs at twice the limbs at that anchor now,
 and the walk says so where it does it.
 
+⚠ **And the kernel's own orbit was short of the same bits, which the ladder could not
+see** *(found by `audit_deep_families_ckpt140`, fixed in `deep_degrees_ckpt140`,
+2026-09-22)*. The delta rides in `f64` and is fine; the *reference* is fixed point, and
+it held `c` to the view's bits when the pixels at `z₁` are `step²` apart. The `c = i`
+ladder is blind to it because `i` is dyadic — its orbit is exact at any limb count. So
+the origin anchor now computes its orbit at `reference::limbs_pow`'s count — twice the
+view's sample bits plus the 64 guard bits — and `tests/oracle.rs`'s
+`the_origin_anchor_holds_a_non_dyadic_c_to_the_squared_step` is the ladder that can see
+it: `M(3,1)` to 130 digits, a real boundary `c` whose orbit uses all of them, 16×9 at a
+cap of 20,000.
+
+| width | limbs before → after | median Δ before | median Δ after | interior disagreements |
+|---|--:|--:|--:|--:|
+| 1e-20 | 4 → 5 | 2.8e-14 | 2.8e-14 | 0 |
+| 1e-30 | 4 → 6 | **6.6** | 5.7e-14 | 0 |
+| 1e-36 | 4 → 6 | **34** | 5.7e-14 | 0 |
+| 1e-40 | 5 → 7 | **11** | 5.7e-14 | 0 |
+
+The "before" column is the audit's run of the committed kernel on the same tile. On the
+page's own grid of about 2,272 samples across, the limb rule puts the threshold near
+3e-26 — derived, not measured on the page. It costs a longer reference orbit and nothing
+per sample. The page's orbit key reads the count off `plan` rather than off
+`limbs_for_width`, since a held orbit at the width's count would otherwise pass the key
+test for a frame it is too shallow for; and where even sixteen limbs cannot hold the
+square — below about 3e-132 at `z = 0` on that grid — `plan` refuses the frame in a sentence.
+
 **The audit's own deep `c`, drawn as a Julia set at `z = c`** — the view the tab's
 button opens — is held to its median and not its worst sample, which is the anchor
 ladder's ruling and is here for the anchor ladder's reason:
@@ -992,7 +1018,7 @@ its own branch rather than a stage of the explorer's bake.
 | `crate` | `explorer/perturb-wasm` |
 | `dependencies` | `[]`, and it is written down because it is the design |
 | `rustc` | the compiler, with its commit and date |
-| `raw_bytes` / `gzip_bytes` | **167,361 raw, 69,376 gzipped** |
+| `raw_bytes` / `gzip_bytes` | **168,553 raw, 69,755 gzipped** |
 
 Two fields of `engine.manifest.json` are **absent** rather than empty:
 `engine_version`, because this crate does not link the engine, and
