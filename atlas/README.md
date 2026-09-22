@@ -5,25 +5,27 @@ a picture: rendered once, next door, and landed here. Every mark carries three m
 its neighborhood on the plane, the Julia set it stands for, and a wallpaper drawn at it —
 and each of those opens in the [explorer](../explorer/README.md) at the view it is.
 
-**It does not open from `file://`**, for the reasons `explorer/README.md` spells out.
-`python -m builder serve` puts this tree on localhost.
+**This directory is a frame and a record, not a page** *(website_webp_and_atlas_deprecate,
+2026-09-21)*. `atlas/index.html` was a page of its own — the same frame, full bleed under
+the site bar, with the kicker and intro below the fold — and the explorer's Atlas tab
+supersedes it: the tab mounts this frame beside a viewer that draws the place a mark stands
+for, which is what the standalone page sent a reader away to do. What is left at that
+address is a redirect into the tab, because a URL is the one permanent thing this site
+emits. The frame's own rules are unchanged and are stated below of the frame rather than of
+a page.
 
-**It is full bleed, it is one fixed frame, and there is no text in it.** Under the site bar
-the stage takes the whole window; the strip and the plate are sized once, in pixels, from
-the box that leaves, and the kicker, title and intro sit below the fold so that the first
-screen is the figure. Nothing in the frame changes height when a mark is hovered, because a
-caption that grew by a line moved the plate under the pointer, which moved the mark the
-pointer was on. What the captions said is a `title` on the slot: a tooltip is drawn over
-the page rather than in it, so it can say as much as it likes and cost the frame nothing.
-The three slot labels are the one piece of text the frame carries, and they sit *on* the
-pictures for the same reason.
+**It is one fixed frame, and there is no text in it.** The strip and the plate are sized
+once, in pixels, from the box its host gives. Nothing in the frame changes height when a
+mark is hovered, because a caption that grew by a line moved the plate under the pointer,
+which moved the mark the pointer was on. What the captions said is a `title` on the slot: a
+tooltip is drawn over the page rather than in it, so it can say as much as it likes and cost
+the frame nothing. The three slot labels are the one piece of text the frame carries, and
+they sit *on* the pictures for the same reason.
 
 ```
-index.html        the page
-atlas.css         the page's own stylesheet, on top of the site's
-atlas.js          the page: the notice, the error path, and the height the stage takes
+index.html        the redirect into the explorer's Atlas tab, for the old address
 frame.js          the frame: the marks, the three slots, and the one size it is
-frame.css         the frame's own stylesheet, loaded by both pages that mount one
+frame.css         the frame's own stylesheet, loaded by the page that mounts one
 links.js          a slot as a link — the one place a view is spelled, for two callers
 record.js         the record, fetched and read
 atlas.test.mjs    17 tests, `node --test atlas/atlas.test.mjs`
@@ -32,27 +34,30 @@ mandelbrot.jsonl  that plane's dots, and one file like it per plane:
 multibrot3.jsonl  multibrot4.jsonl  multibrot5.jsonl  multibrot6.jsonl  phoenix.jsonl
 ```
 
-## The frame is a piece, and two pages mount it
+## The frame is a piece, and a page mounts it
 
 `frame.js` builds the frame inside whatever element it is handed and hands back
 `{ record, refit, destroy, plane }`; `frame.css` is the frame's own rules, including the four
-colours, which sit on the frame itself so that a page which is not this one gets them.
-This page mounts one full bleed under the site bar with `{ keep: true }` — click a mark and
-the frame goes on showing that place — and the explorer's studio mounts the same frame in a
-panel with an `onPick`, which takes a click instead of the link and leaves the slots as
-buttons so that they are still reachable from the keyboard.
+colours, which sit on the frame itself so that a page which does not know about them gets
+them. The explorer's studio mounts one in a panel with an `onPick`, which takes a click
+instead of the link and leaves the slots as buttons so that they are still reachable from
+the keyboard. It is the only caller. The options the retired page spent are still the
+frame's — `keep`, which stores a clicked mark, and the bare host it handed a size it had
+worked out itself — and the studio passes `keep: false` by name rather than by omission, so
+what is unspent is unspent out loud.
 
 Everything the frame fetches — the record, the thumbnails, `explorer/engine.wasm` — is
 resolved against `options.base`, which defaults to the module's own directory. A page in
-`explorer/` and a page here both find them without either saying so, and the relative-link
-rule is kept by derivation rather than by a path written down twice.
+`explorer/` finds all three without saying so, and the relative-link rule is kept by
+derivation rather than by a path written down twice.
 
 The size is the other half of that split. The frame fits itself to its **host's content
-box**, watched with a `ResizeObserver`, and `atlas.js` keeps the page's own arithmetic: the
-stage takes the window's height, or the figure's, whichever is less, and the host inside it
-keeps the whole box the stage's padding leaves. The one-way flow is deliberate — a stage
-that shrank to its figure and a frame fitted to that stage would be each other's input, and
-a pixel of rounding would chase itself.
+box**, watched with a `ResizeObserver`, and the host's size is its page's own arithmetic.
+The one-way flow is deliberate — a host that shrank to its figure and a frame fitted to that
+host would be each other's input, and a pixel of rounding would chase itself.
+
+**It does not open from `file://`**, for the reasons `explorer/README.md` spells out.
+`python -m builder serve` puts this tree on localhost.
 
 ## Six planes, and what differs between them is words
 
@@ -74,7 +79,7 @@ So the partition row carries the words: `slot_labels`, what the two location slo
 (*Multibrot 3* and *Julia*; on Phoenix, *Phoenix* and *Close-up*), `slot_maps`, the map each
 of those two headers carries under its name (*z ↦ z³ + c*; on Phoenix its own recurrence),
 and `julia_place`, what a red mark is announced as (*A Julia place*; *A Phoenix place*). The
-gallery slot's label is the page's own and it has no map.
+gallery slot's label is the frame's own and it has no map.
 
 **A map is read from the engine and never typed.** `builder/atlas.py`'s `maps_of` renders
 one from the family spec the plate was drawn at, transcribing the recurrences from
@@ -102,24 +107,33 @@ a pinned general record and untracked Mandelbrot's slot pictures rather
 than re-committing them; the pictures are listed in `.git/info/exclude` and the record
 commits. The six plates stay tracked: a plate is drawn from the engine's home view and not
 from a record, so a rebuild leaves them as they are. Until the pictures are deployed, the
-served page shows the marks over empty slots. A clone has none of the files,
+served frame shows the marks over empty slots. A clone has none of the files,
 and `check` and `atlas.test.mjs` each report that as a named skip. One staged picture
 present means the ingest has run, and then the whole plane is held to its record.
+
+**A slot picture is WebP, and it is the one place on this site where 4:2:0 is accepted**
+*(website_webp_and_atlas_deprecate, 2026-09-21)*. All 1,464 of them were JPEG at 78 with no
+chroma subsampling, the figures rule's encoding, and came to 42.72 MB — the second largest
+thing this repository would ever deploy. At WebP 70 they are 27.47 MB, re-encoded from the
+maker's own thumbnails rather than from the shipped JPEGs, so no picture took a second lossy
+step. Lossy WebP is 4:2:0 always and that is the trade: a slot picture is a 400x225
+thumbnail in a strip of three, shown at no more than `MOST_UPSCALE` of its own pixels, and
+the plate under it is what a reader is reading. A plate is the picture somebody studies and
+stays JPEG 4:4:4 at 88.
 
 The strip and that line sit **outside** the fitted rectangle, and both change only when a
 reader moves to another plane — never under the pointer — so the frame is still the one
 fixed thing it has to be. `refit` takes their height off the box before it divides, and
-hands back `total` beside `height` so a page sizing a band leaves room for them; this page
-clipped its own plate for as long as that was one number.
+hands back `total` beside `height` so a page sizing a band leaves room for them; the
+retired page clipped its own plate for as long as that was one number.
 
-Which plane is open is the page's to keep. `options.plane` opens one by the partition's own
+Which plane is open is its page's to keep. `options.plane` opens one by the partition's own
 name, `options.onPlane` says when the reader clicks a chip — the one already open included —
 and the handle's `open(name)` moves the frame without saying so. The studio uses all three
 to hold the chips to its view *(explorer_controls_ckpt129)*: a chip clicked opens that
 plane's home view, and a view that lands on another plane moves the chip, a Julia set's
 being the parameter plane of its degree. So the plane is no longer a key of its own; an
-older `panel=atlas:phoenix` still opens the tab, and the view says which plane. This page
-keeps no address for it.
+older `panel=atlas:phoenix` still opens the tab, and the view says which plane.
 
 **Every plate is cropped to its own set, at one aspect.** The engine's `home-view` reports
 the extent it measured for each family; a plate is that rectangle widened to 9:8 with a
@@ -136,7 +150,7 @@ filled a little over half the panel; this one fills four fifths of it.
 
 ## The record is the deliverable
 
-The atlas record is the **contract between the wallpaper project's maker and this page**.
+The atlas record is the **contract between the wallpaper project's maker and this frame**.
 The maker writes it; `python -m builder atlas --ingest` turns it into what is committed;
 `builder/atlas.py` holds it to shape and is the authority on what it may say. What
 follows is why it says it that way.
@@ -177,7 +191,7 @@ by the candidate judge. That is what makes the third slot honest: the best row a
 qualifying place clears the bar by construction, so the Gallery picture is always a
 wallpaper somebody could seat rather than a location view standing in for one.
 
-**A dot is one place of one kind.** `plane` is `mandelbrot` or `julia`, and the page's
+**A dot is one place of one kind.** `plane` is `mandelbrot` or `julia`, and the frame's
 whole color language is that word: blue for a place on the parameter plane, red for a
 place on a dynamical one. There is no merging across the two — a place landing inside the
 absorption radius of a dot already drawn is dropped, whichever kind either of them is — so
@@ -202,18 +216,19 @@ leave a link falling back in silence. `atlas.test.mjs` derives the refusals from
 roster and holds the record to them in both directions.
 
 The second half of the same guard is that **one function builds every link**. `links.js`'s
-`opened` is called by the page and by the test, and by nothing else. There is no second
+`opened` is called by the frame and by the test, and by nothing else. There is no second
 spelling to drift.
 
 ## Why the engine is here, and what it is not doing
 
-The page draws no fractal. The plate is a picture and so is every thumbnail; there is no
-worker pool, no render loop, nothing baked into a canvas.
+The frame draws no fractal. The plate is a picture and so is every thumbnail; there is no
+worker pool, no render loop, nothing baked into a canvas. The viewer beside it in the studio
+is the explorer's, and knows nothing about the frame.
 
 What it does need is `plan`. `permalink.js` decides whether a canonical link spells `x`,
 `y` and `w` at all by comparing them against the family's home view, and home is the
 engine's answer rather than a table anybody may type — a table of home views written into
-this page would be a second author of the contract. So `explorer/engine.wasm` is
+this directory would be a second author of the contract. So `explorer/engine.wasm` is
 instantiated for that one export, which is exactly what `builder/emit.mjs` and
 `atlas.test.mjs` do on the other side of the boundary.
 
@@ -260,10 +275,10 @@ no input in anybody's scratch.
 
 `--ingest` is the second half of the maker and is committed for the reason the figure
 makers are: a record nobody can rebuild is a record nobody can correct. It re-encodes
-every thumbnail at the page's own quality and no chroma subsampling, sweeps
-`assets/images/atlas/` of anything no plane's record names, and writes the index and that
-plane's dot file. A slot picture is named `<partition>-<id>-<slot>.jpg`, because ids restart
-at nought on every plane and one directory holds them all. The maker still projects onto
+every thumbnail at the frame's own quality, sweeps `assets/images/atlas/` of anything no
+plane's record names, and writes the index and that plane's dot file. A slot picture is
+named `<partition>-<id>-<slot>.webp`, because ids restart at nought on every plane and one
+directory holds them all. The sweep reads both suffixes, which is what took the JPEGs out. The maker still projects onto
 its own 16:9 `base.jpg`; the ingest ignores that, keeps every committed plate, and projects
 each dot from its `place` onto its own plane's plate, so an ingest never undoes `--plates`.
 A plane made against another release, judge, bar, map or thumbnail size than the planes

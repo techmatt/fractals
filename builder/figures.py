@@ -813,6 +813,13 @@ def _heal(figure: Figure, was: str) -> None:
 
     The page is hand-written prose and stays that way; this replaces exactly the block
     the registry already owned, and fails loudly if the page is not carrying it.
+
+    **The new block is derived before the file is opened for writing.** `landing_block`
+    reads the page — `leads_its_page` is the page's question, not the registry's — and
+    `open("w")` truncates it, so deriving inside the `with` asked that question of an empty
+    file: every figure came back leading its page and every non-leading one lost its
+    `loading="lazy"` *(website_webp_and_atlas_deprecate, 2026-09-21, found by healing 54
+    blocks at once — `figures` and `landing` both went red on 44 of them)*.
     """
     page = figure.page_path
     with page.open(encoding="utf-8", newline="") as handle:
@@ -822,8 +829,9 @@ def _heal(figure: Figure, was: str) -> None:
             f"{page.name} is not carrying {figure.id}'s block — place the block "
             f"`python -m builder figure {figure.id}` by hand"
         )
+    healed = html.replace(was, landing_block(figure), 1)
     with page.open("w", encoding="utf-8", newline=LF) as handle:
-        handle.write(html.replace(was, landing_block(figure), 1))
+        handle.write(healed)
 
 
 def by_page(registry: dict[str, Figure]) -> dict[str, list[Figure]]:

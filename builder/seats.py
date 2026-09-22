@@ -23,8 +23,8 @@ chooses a key of that map; it never fetches anything.
 **The pictures are thumbnails and nothing else** *(explorer_gallery_collections_ckpt129)*.
 Clicking a tile opens the viewer, which draws the picture itself, so the full picture is
 one click away and a second, larger copy of it here would be a gigabyte nobody is shown. A
-row's `file` is a WebP at `TILE_SIZE`, encoded through `images.write_thumb` at the one
-quality `images` holds for that format, and it is the only size this gallery ships.
+row's `file` is a WebP at `TILE_SIZE`, encoded through `images.write_thumb` at
+`images.TILE_WEBP_QUALITY`, and it is the only size this gallery ships.
 
 ## The four reads, and where each answer comes from
 
@@ -827,7 +827,7 @@ def pictures(rows: list[dict]) -> int:
         source = renders.rehome(stored)
         if source is None or not source.is_file():
             raise SeatError(f"{row['key']}: {stored} is not on this machine")
-        images.write_thumb(source, tile, TILE_SIZE)
+        images.write_thumb(source, tile, TILE_SIZE, webp_quality=images.TILE_WEBP_QUALITY)
         written += 1
     return written
 

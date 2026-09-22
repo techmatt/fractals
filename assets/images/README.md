@@ -21,7 +21,7 @@ this repository.
 The two figures that are diagrams rather than renders — `escape-orbit-race.png`, an
 APNG, and `pipeline-overview.png` — are the exception: `python -m builder diagram <id>` draws
 them here from `builder/diagrams.py`, so there is no original anywhere.
-`overview-pipeline.jpg` is not one of them: it reads as a diagram and is a composed sheet
+`overview-pipeline.webp` is not one of them: it reads as a diagram and is a composed sheet
 with four real renders in it, drawn by a rig under ignored `scratch/`.
 
 **An animation is copied, never imported.** Pillow's one-image read keeps the first frame

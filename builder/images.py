@@ -9,13 +9,31 @@ bringing new material in and writing thumbnails.
 from pathlib import Path
 
 WEB_RES_MAX_WIDTH = 1600
+
+#: What a JPEG is written at, wherever one still is: a gallery's own pictures and their
+#: thumbnails. 4:4:4 goes with it, below, and both are what a figure was written at until
+#: figures became WebP.
 JPEG_QUALITY = 88
 
-#: The one WebP this repository writes is the explorer gallery panel's tile, at 316 px,
-#: where the full picture is a click away. Measured on fifty seats
-#: (explorer_gallery_collections_ckpt129): 10.4 KB and 26.7 dB here, against 9.8 KB and
-#: 25.0 dB for a 4:2:0 JPEG at 40 and 15.3 KB for the JPEG that matches it at 70.
-WEBP_QUALITY = 40
+#: **A figure is WebP at 88** *(website_webp_and_atlas_deprecate, 2026-09-21)*. It was JPEG
+#: at 88 with no chroma subsampling, and the figures rule rejected 4:2:0 by name because a
+#: fractal render is all saturated edge. Lossy WebP is 4:2:0 always, so the rule was put to
+#: the pictures rather than argued: the five figures whose chroma planes carry the most
+#: high-frequency energy were laid beside their WebP at 1:1, and at 4x on the worst pixel of
+#: the worst of them, and the smear the rule refuses is not there — WebP's chroma
+#: downsample is not JPEG's box filter. 54 figures went from 21.88 MB to 13.53 MB. The eight
+#: PNG figures are unchanged: a diagram and an animation are flat art and lossless already.
+FIGURE_WEBP_QUALITY = 88
+
+#: The explorer gallery panel's tile, at 316 px, where the full picture is a click away.
+#: Measured on fifty seats (explorer_gallery_collections_ckpt129): 10.4 KB and 26.7 dB here,
+#: against 9.8 KB and 25.0 dB for a 4:2:0 JPEG at 40 and 15.3 KB for the JPEG that matches
+#: it at 70. Far below a figure's, because a tile is a tile.
+TILE_WEBP_QUALITY = 40
+
+#: The suffix a lossy figure lands at. `--lossless` lands `.png` instead, for animation and
+#: flat drawn art, and the two are the only formats a figure is written in.
+FIGURE_SUFFIX = ".webp"
 
 _JPEG_SUFFIXES = frozenset({".jpg", ".jpeg"})
 
@@ -82,8 +100,14 @@ def mean_abs_difference(one: Path, other: Path) -> float:
     return float(difference.mean())
 
 
-def _save(image, destination: Path) -> None:
-    """Write an image in the format its suffix names, with fixed, deterministic options."""
+def _save(image, destination: Path, *, webp_quality: int = FIGURE_WEBP_QUALITY) -> None:
+    """Write an image in the format its suffix names, with fixed, deterministic options.
+
+    `webp_quality` is the one option a caller chooses, because the two WebP this repository
+    writes are a figure and a gallery tile and they are three quality steps apart. Every
+    other option is the format's own and is not passed in: a picture written twice by two
+    callers has to come out the same file.
+    """
     destination.parent.mkdir(parents=True, exist_ok=True)
     suffix = destination.suffix.lower()
     if suffix in _JPEG_SUFFIXES:
@@ -106,7 +130,7 @@ def _save(image, destination: Path) -> None:
     elif suffix == ".png":
         image.save(destination, format="PNG", optimize=True)
     elif suffix == ".webp":
-        image.convert("RGB").save(destination, format="WEBP", quality=WEBP_QUALITY, method=6)
+        image.convert("RGB").save(destination, format="WEBP", quality=webp_quality, method=6)
     else:
         raise ImageError(
             f"{destination.name}: write .jpg, .png or .webp, not {suffix or 'nothing'}"
@@ -168,13 +192,23 @@ def import_web_res(
         return working.size
 
 
-def write_thumb(source: Path, destination: Path, size: tuple[int, int]) -> None:
-    """Write one thumbnail at exactly the size the metadata says the page expects."""
+def write_thumb(
+    source: Path,
+    destination: Path,
+    size: tuple[int, int],
+    *,
+    webp_quality: int = FIGURE_WEBP_QUALITY,
+) -> None:
+    """Write one thumbnail at exactly the size the metadata says the page expects.
+
+    A gallery's thumbnail keeps its picture's own suffix, so the quality only bites where
+    that is `.webp` — the staged gallery's tiles, which pass `TILE_WEBP_QUALITY` by name.
+    """
     from PIL import Image
 
     with _open(source) as image:
         thumb = image.copy() if image.size == size else image.resize(size, Image.LANCZOS)
-        _save(thumb, destination)
+        _save(thumb, destination, webp_quality=webp_quality)
 
 
 def write_rgba(raw: bytes, size: tuple[int, int], destination: Path) -> None:

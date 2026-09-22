@@ -215,8 +215,11 @@ reading favours most — ten of 6,062 — and the chip is gone. Choosing a colle
 the collection, and the hue row is not even asking the same question either side of a color
 collection, so a chip carried across the switch narrows a shelf by a choice made somewhere
 else. A tile sets the viewer to that seat's whole recipe. *Atlas* is the
-same frame `atlas/index.html` shows, mounted in the panel through `atlas/frame.js`, with
-the marks clicking into the viewer rather than navigating.
+frame `atlas/frame.js` builds, mounted in the panel, with the marks clicking into the
+viewer rather than navigating. **It is the only page that shows one**
+*(website_webp_and_atlas_deprecate, 2026-09-21)*: `atlas/index.html` was a page of its own
+until this tab superseded it, and is a redirect here now, because a mark is worth more
+beside a viewer that draws the place it stands for than beside a link that leaves.
 
 **Right, the viewer**, and under it three sections — Download, Mode, Palette — then
 the folded Details: the render stat line, family, constants, `x`, `y`, `w`, all editable. Copy link is in the bar,

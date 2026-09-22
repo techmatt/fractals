@@ -174,13 +174,18 @@ is local and no clone has it, so this list is the tracked record of the set:
 | `assets/images/galleries/seated-candidates/*.webp`, one tile a seat | 6,067 files, 60.5 MB | `python -m builder seats` |
 | `explorer/palettes.bin`, every map's control points | 1.04 MB | `python -m builder explorer --palettes-only` |
 | `explorer/palettes-swatch.png`, to look at | 0.3 MB | the same |
-| every plane's atlas slot pictures, `assets/images/atlas/<plane>-*.jpg` | 1,464 files, 42.7 MB | `python -m builder atlas --ingest` |
+| every plane's atlas slot pictures, `assets/images/atlas/<plane>-*.webp` | 1,464 files, 27.5 MB | `python -m builder atlas --ingest` |
 | `explorer/judges/`, the ORT runtime, the gate and the fine head | 38.9 MB | `python -m builder walk` |
 
 **`palettes.bin` is not optional.** The tracked tree alone never draws a first frame: served
 without the blob, the explorer's first fetch is a 404 and the canvas stays empty. Until a
 deploy, a push to Pages shows the atlas marks over empty slots, a gallery panel without
 tiles and a Walk tab running on the screen alone.
+
+The slot pictures were JPEG at 78 with no chroma subsampling until
+`website_webp_and_atlas_deprecate` (2026-09-21) re-encoded all 1,464 as WebP at 70, from the
+maker's own thumbnails rather than from the shipped JPEGs. The `.jpg` patterns stay in
+`.git/info/exclude` so a tree still holding the old copies cannot stage them by accident.
 
 What stays tracked: every record (`gallery.jsonl` and the per-collection files, the atlas
 record), `palettes.js`, and the six atlas plates, because a plate is drawn from the
@@ -621,9 +626,11 @@ Three of the makers would rather stop than hand back a picture nobody would look
   constant at the top of the module and the boxes are sized from the sheet, so an overrun
   is an edit somebody made to the words — and lettering running out over the well is
   invisible in a diff and obvious in the picture, which is the wrong way round.
-- **`images.py` raises `ImageFile.MAXBLOCK`** before it writes. Pillow's default block is
-  too small for a scanline of a wide 4:4:4 JPEG, and the encoder fails at the sheet sizes
-  this site ships rather than at anything smaller anybody would have tried first.
+- **`images.py` raises `ImageFile.MAXBLOCK`** before it writes a JPEG. Pillow's default
+  block is too small for a scanline of a wide 4:4:4 JPEG, and the encoder fails at the sheet
+  sizes this site ships rather than at anything smaller anybody would have tried first. A
+  figure is WebP since `website_webp_and_atlas_deprecate` and that encoder has no such
+  block; the guard stays because a gallery's own pictures and their thumbnails are JPEG.
 
 ## Still hand-done, and shouldn't be
 

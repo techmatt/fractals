@@ -393,8 +393,9 @@ def _provenance(found, chosen, big, small) -> list[str]:
     return lines
 
 
-#: Figure id to the file it writes and the maker that writes it.
-SHEETS = {"overview-pipeline": ("overview-pipeline.jpg", pipeline)}
+#: Figure id to the file it writes and the maker that writes it. The file is the id plus
+#: `images.FIGURE_SUFFIX`, so the format is named once for the whole repository.
+SHEETS = {"overview-pipeline": (f"overview-pipeline{images.FIGURE_SUFFIX}", pipeline)}
 
 
 def draw(identifier: str) -> tuple[Path, int, int, list[str]]:

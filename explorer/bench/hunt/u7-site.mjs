@@ -2,8 +2,9 @@
 //
 // `builder check` already resolves every internal link statically, so this pass is only
 // for what a browser sees and a static check cannot: a console that says something, an
-// `<img>` whose bytes never arrived, a figure block that is on the page but blank, and
-// the two pages that run code — the gallery panel's filters and the atlas.
+// `<img>` whose bytes never arrived, and a figure block that is on the page but blank. The
+// one page that runs code is the explorer, and `atlas/` is a redirect into its Atlas tab
+// since `website_webp_and_atlas_deprecate`, so this pass does not load it.
 //
 // Stale counts, outdated figures and stale prose are not findings and are not looked for.
 //
@@ -22,7 +23,6 @@ const PAGES = [
   "",
   ...readdirSync(new URL("../../../article/", import.meta.url)).filter((f) => f.endsWith(".html")).map((f) => `article/${f}`),
   "galleries/",
-  "atlas/",
   "palettes/all-palettes.html",
   "palettes/make-your-own.html",
   "explorer/",

@@ -5,9 +5,9 @@
 // Two guards run through all of it, and they are the two things most likely to break
 // silently years from now.
 //
-// **One function builds every link.** `links.js`'s `opened` is called by the page and by
+// **One function builds every link.** `links.js`'s `opened` is called by the frame and by
 // this test, and by nothing else, so there is no second spelling to drift. A link that is
-// *nearly* the picture beside it is the one failure this page exists to refuse: the
+// *nearly* the picture beside it is the one failure the atlas exists to refuse: the
 // reader lands somewhere that does not match what they were just looking at and has no
 // way to know which half is wrong.
 //
@@ -102,7 +102,7 @@ const unlanded = (partition) =>
     Object.values(dot.slots).some((slot) => existsSync(fileURLToPath(new URL(slot.file, IMAGES)))),
   );
 
-/** The three pictures a dot carries, in the order `atlas.js` lays them out. */
+/** The three pictures a dot carries, in the order `frame.js` lays them out. */
 const SLOTS = ["mandelbrot", "julia", "gallery"];
 
 /** Which plane a family belongs to, which is what the gallery slot's border says. */
@@ -146,8 +146,8 @@ test("the canonical map is one the explorer actually bakes", () => {
 // --------------------------------------------------- the three slots, as the page reads them
 
 test("every dot carries the three pictures the page lays out, in that order", () => {
-  // `atlas.js` reads `dot.slots[name]` by name and has its own list of the three; a record
-  // that dropped one would leave an empty box on the page with nothing saying why, and one
+  // `frame.js` reads `dot.slots[name]` by name and has its own list of the three; a record
+  // that dropped one would leave an empty box in the frame with nothing saying why, and one
   // that renamed a slot would leave three.
   for (const partition of partitions) {
     for (const dot of partition.dots) {

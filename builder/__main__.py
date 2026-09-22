@@ -188,7 +188,7 @@ def _parser() -> argparse.ArgumentParser:
     listed.add_argument(
         "--lossless",
         action="store_true",
-        help="land as .png rather than .jpg — for animation and flat drawn art",
+        help="land as .png rather than .webp — for animation and flat drawn art",
     )
     listed.add_argument(
         "--provenance",
@@ -432,7 +432,7 @@ def _parser() -> argparse.ArgumentParser:
         "--quality",
         type=int,
         default=atlas_module.THUMB_QUALITY,
-        help=f"the JPEG quality --ingest re-encodes at (default {atlas_module.THUMB_QUALITY})",
+        help=f"the WebP quality --ingest re-encodes at (default {atlas_module.THUMB_QUALITY})",
     )
     mapped.add_argument(
         "--plates",
@@ -705,7 +705,7 @@ def _do_place(options: argparse.Namespace) -> int:
         known = ", ".join(sorted(registry)) or "none registered"
         print(f"no figure {identifier!r} — known: {known}", file=sys.stderr)
         return 1
-    suffix = ".png" if options.lossless else ".jpg"
+    suffix = ".png" if options.lossless else images.FIGURE_SUFFIX
     destination = FIGURE_IMAGES_DIR / f"{identifier}{suffix}"
     width, height = images.import_web_res(
         Path(source), destination, crop=options.crop, max_width=options.max_width
@@ -748,7 +748,8 @@ def _do_locations(options: argparse.Namespace) -> int:
         if not (options.place or options.replace):
             continue
         lossless = identifier in locations_module.LOSSLESS
-        destination = FIGURE_IMAGES_DIR / f"{identifier}{'.png' if lossless else '.jpg'}"
+        suffix = ".png" if lossless else images.FIGURE_SUFFIX
+        destination = FIGURE_IMAGES_DIR / f"{identifier}{suffix}"
         if identifier in locations_module.ANIMATED:
             # An animation is copied, never imported: Pillow's one-image read keeps the
             # first frame and silently drops the rest, and the sheet is already web-res.
@@ -782,7 +783,7 @@ def _do_judges(options: argparse.Namespace) -> int:
         print(f"wrote {drawn.path.relative_to(SITE_ROOT).as_posix()}")
         if not (options.place or options.replace):
             continue
-        destination = FIGURE_IMAGES_DIR / f"{identifier}.jpg"
+        destination = FIGURE_IMAGES_DIR / f"{identifier}{images.FIGURE_SUFFIX}"
         width, height = images.import_web_res(drawn.path, destination)
         placed = figures.place(
             identifier,
@@ -813,7 +814,7 @@ def _do_palettes(options: argparse.Namespace) -> int:
         print(f"wrote {drawn.path.relative_to(SITE_ROOT).as_posix()}")
         if not (options.place or options.replace):
             continue
-        destination = FIGURE_IMAGES_DIR / f"{identifier}.jpg"
+        destination = FIGURE_IMAGES_DIR / f"{identifier}{images.FIGURE_SUFFIX}"
         width, height = images.import_web_res(drawn.path, destination)
         placed = figures.place(
             identifier,
@@ -836,7 +837,7 @@ def _do_pool(options: argparse.Namespace) -> int:
         print(f"wrote {drawn.path.relative_to(SITE_ROOT).as_posix()}")
         if not (options.place or options.replace):
             continue
-        destination = FIGURE_IMAGES_DIR / f"{identifier}.jpg"
+        destination = FIGURE_IMAGES_DIR / f"{identifier}{images.FIGURE_SUFFIX}"
         width, height = images.import_web_res(drawn.path, destination)
         placed = figures.place(
             identifier,
@@ -864,7 +865,7 @@ def _do_picks(options: argparse.Namespace) -> int:
         print(f"wrote {drawn.path.relative_to(SITE_ROOT).as_posix()}")
         if not (options.place or options.replace):
             continue
-        destination = FIGURE_IMAGES_DIR / f"{identifier}.jpg"
+        destination = FIGURE_IMAGES_DIR / f"{identifier}{images.FIGURE_SUFFIX}"
         width, height = images.import_web_res(drawn.path, destination)
         placed = figures.place(
             identifier,
@@ -926,7 +927,8 @@ def _do_curation(options: argparse.Namespace) -> int:
         if not (options.place or options.replace):
             continue
         lossless = identifier in curation_module.CHARTS
-        destination = FIGURE_IMAGES_DIR / f"{identifier}{'.png' if lossless else '.jpg'}"
+        suffix = ".png" if lossless else images.FIGURE_SUFFIX
+        destination = FIGURE_IMAGES_DIR / f"{identifier}{suffix}"
         width, height = images.import_web_res(drawn.path, destination)
         placed = figures.place(
             identifier,

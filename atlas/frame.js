@@ -15,12 +15,14 @@
 // rather than in it, so it can say as much as it likes and nothing reflows. The three
 // labels are the one piece of text the frame carries, for the same reason.
 //
-// **Two pages mount one**, which is why the frame is here and not in `atlas.js`: the atlas
-// page shows it full bleed under the site bar, and the explorer's studio shows the same
-// frame in a panel beside its canvas. So the frame is measured against the host it is
-// mounted in rather than against the window, and every file it fetches — the record, the
-// thumbnails, the engine — is resolved against `options.base` rather than against whichever
-// document is carrying it. A page in `explorer/` and a page in `atlas/` both find them.
+// **The frame is a piece, mounted rather than a page.** It was written that way because
+// two pages mounted one — the standalone atlas page full bleed under the site bar, and the
+// explorer's studio in a panel beside its canvas — and since
+// `website_webp_and_atlas_deprecate` retired that page the studio is the only caller. What
+// the split bought is kept: the frame is measured against the host it is mounted in rather
+// than against the window, and every file it fetches — the record, the thumbnails, the
+// engine — is resolved against `options.base` rather than against whichever document is
+// carrying it, so a page anywhere in the tree finds them.
 //
 // The engine is here for one export. `permalink.js` decides whether a canonical link
 // spells `x`, `y` and `w` by comparing them against the family's home view, and home is
@@ -207,8 +209,8 @@ async function namer(base) {
 /**
  * The host's content box, which is the whole of what the frame is fitted to.
  *
- * Padding and border come off because the frame goes inside them: the atlas page hands a
- * bare box it has already sized from the viewport, and a panel may well have a rule and a
+ * Padding and border come off because the frame goes inside them: a full-bleed page hands
+ * a bare box it has already sized from the viewport, and a panel may well have a rule and a
  * little air. A host that is not being displayed measures zero, and a fit against zero is
  * refused above rather than written into the frame — a studio panel on another tab is
  * display:none, and a frame that resized itself to nothing while nobody was looking would
@@ -228,10 +230,10 @@ function contentBox(node) {
  * Build a frame inside `host`, and hand back the handle its page drives it with.
  *
  * ```js
- * const frame = await mount(host, { keep: true });
+ * const frame = await mount(host, { linger: true });
  * ```
  *
- * `options` says which of the two pages this is:
+ * `options` is how a page says which frame it wants:
  *
  * - **`base`** — a `URL` the record, the pictures under `../assets/images/atlas/` and
  *   `../explorer/engine.wasm` are resolved against. It defaults to this module's own
@@ -239,8 +241,9 @@ function contentBox(node) {
  *   that mounts a frame gets them right without saying anything.
  * - **`keep`** (default `false`) — whether a click on a mark stores it. Stored, the frame
  *   goes on showing that place when the pointer leaves; a second click on the same mark
- *   lets it go, and so does Escape. This is the atlas page's behavior, and the stored mark
- *   wears `is-stored`.
+ *   lets it go, and so does Escape. This was the standalone atlas page's behavior and the
+ *   stored mark wears `is-stored`; no caller spends it since that page retired, and the
+ *   studio passes `keep: false` by name rather than by omission.
  * - **`linger`** (default `false`) — whether the slots go on showing the last place the
  *   pointer was over. This is the studio's behavior and it exists so that the three slots
  *   can be clicked at all: hover alone empties them the moment the pointer leaves the
@@ -253,7 +256,8 @@ function contentBox(node) {
  * - **`onPlane`** (default absent) — called with a partition's name whenever the reader
  *   clicks a plane chip, the one already open included, so a page can follow it. The
  *   studio answers it by opening that plane's home view. The frame does not touch the
- *   address bar itself; two pages mount it and only one of them has an address to keep.
+ *   address bar itself: what a page does with the plane is the page's, which is why this is
+ *   a callback rather than a key the frame writes.
  * - **`onPick`** (default absent) — where a click goes instead of the explorer. Given one,
  *   a click on a mark calls `onPick({ dot, slot, query, palette })` for that mark's gallery
  *   slot and a click on a slot calls it for that slot, the frame navigates nowhere, and the
@@ -264,7 +268,7 @@ function contentBox(node) {
  *   slot, it returns `{ node, show(query) }`; the node sits beside the slot in a cell of its
  *   own, because the studio's slots are buttons and a button cannot hold another, and
  *   `show` is told the query the slot now opens, or `null` while the slot is empty. The
- *   studio's is the save mark; the atlas page passes none, and its strip is as it was.
+ *   studio's is the save mark, and a caller that passes none gets the strip as it was.
  *
  * The handle is `{ record, refit, open, destroy }`: the record as `record.js` read it, a
  * `refit` that re-sizes the frame to its host and returns the `{ width, height }` it settled
@@ -558,7 +562,7 @@ export async function mount(host, options = {}) {
     // box's: a border or two either side is what the difference is, and a page that sized a
     // band from the rendered box would be sizing it from a number the frame does not own.
     // `total` is that height plus the strip of planes, which is what a page sizing a band
-    // around the whole thing has to leave room for — the atlas page clipped
+    // around the whole thing has to leave room for — the retired atlas page clipped
     // its own plate for exactly as long as this was one number instead of two.
     const height = Math.ceil(width * ratio);
     fitted = { width, height, total: height + spare };

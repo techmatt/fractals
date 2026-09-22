@@ -1,9 +1,9 @@
 /* The atlas frame: the three slots, the plate, and the marks on it.
 
-   Both pages that mount a frame load this file — the atlas page, full bleed under the site
-   bar, and the explorer's studio, in a panel beside its canvas — so nothing here knows
-   which page it is on. What is the atlas *page's* — the full-bleed body, the stage, the
-   masthead and the reading column — is `atlas.css`, and the frame's own size is `frame.js`.
+   The explorer's studio mounts the frame in a panel beside its canvas, and this file is
+   loaded from there. It knows nothing about the page it is on, which is what let the
+   standalone atlas page mount the same frame full bleed until
+   `website_webp_and_atlas_deprecate` retired it; the frame's own size is `frame.js`.
 
    ## The four colours
 
@@ -15,18 +15,17 @@
    page and nowhere else — and `builder/atlas.py` carries the same two dot values for the
    figure section 11 shows, because Pillow cannot read CSS.
 
-   They sit on the frame itself rather than on the page's body, because the frame is what
-   spends them and the explorer's page does not carry the atlas body's class. `.place-colors`
-   is the same declaration for a page that spends them outside the frame as well: the atlas
-   page's intro names the two kinds in the two hues, and a hex written down twice is two
-   things to restyle.
+   They sit on the frame itself rather than on a page's body, because the frame is what
+   spends them and no page outside it does. `.place-colors` was the same declaration for a
+   page that spent them outside the frame — the retired atlas page's intro named the two
+   kinds in the two hues — and went with that page rather than staying as a selector
+   nothing matches.
 
    The soft borders are mixed toward the well's own rule colour rather than declared
    separately, so there is one hue per kind and the "soft" and "deeper" ends of it are
    derived from the same token. */
 
-.frame,
-.place-colors {
+.frame {
   --place-mandelbrot: #4d8df0;
   --place-julia: #f2584c;
   --edge-mandelbrot: #2f6bc4;
@@ -48,7 +47,7 @@
    `frame.js` puts `.frame-host` on whatever element it was handed and takes it off again
    at `destroy`: a frame is centred in its box without either page having to say so, and
    the box is the host's rather than the window's, which is the whole of the difference
-   between the atlas page's stage and the studio's panel. */
+   between the retired atlas page's stage and the studio's panel. */
 .frame-host {
   display: flex;
   flex-direction: column;

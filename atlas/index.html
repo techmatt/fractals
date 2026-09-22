@@ -5,59 +5,17 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="icon" href="data:,">
 <title>Atlas — Making Fractal Wallpapers</title>
-<meta name="description" content="Every place the fractal search has kept, marked on the parameter plane it came out of. Each mark carries its neighborhood, its Julia set, and a wallpaper drawn there, and each of those opens in the explorer.">
+<!-- The atlas was a page of its own until `website_webp_and_atlas_deprecate` (2026-09-21).
+     The explorer's Atlas tab mounts the same frame beside a viewer that draws the place a
+     mark stands for, which is what the standalone page sent a reader away to do. What is
+     left here is the redirect, because a URL is the one permanent thing this site emits. -->
+<meta http-equiv="refresh" content="0; url=../explorer/index.html?panel=atlas">
 <link rel="stylesheet" href="../assets/css/site.css">
-<link rel="stylesheet" href="frame.css">
-<link rel="stylesheet" href="atlas.css">
 </head>
-<body class="atlas-body">
-<nav class="topbar">
-  <div class="topbar-inner">
-    <a class="topbar-site" href="../index.html">Making Fractal Wallpapers</a>
-    <span class="topbar-links"><a href="../galleries/index.html">Galleries</a><a href="https://github.com/techmatt/fractal-wallpapers">GitHub</a><a href="https://techmatt.github.io/">Matt Fisher</a></span>
-  </div>
-</nav>
-
-<div class="stage" id="stage">
-
-  <div class="notice" id="notice">
-    <p>Reading the atlas…</p>
-    <p>If this message stays, the page is being opened straight off the filesystem. A browser
-    will not load a page's modules or its renderer over <code>file://</code>, so this page
-    needs to be served — <code>python -m builder serve</code> puts this tree on localhost —
-    or read at
-    <a href="https://techmatt.github.io/fractal-website/atlas/">techmatt.github.io</a>.</p>
-  </div>
-
-  <!-- The frame is built inside this box by frame.js, which the explorer's studio mounts
-       too; the page's own script sizes the box and hands the stage its height. -->
-  <div id="frame-host" hidden></div>
-
-</div>
-
-<div class="atlas-page">
-
-<header class="masthead">
-  <p class="kicker"><a href="../article/fractal-atlases.html">Fractal atlases</a></p>
-  <h1>Every place the search kept</h1>
-</header>
-
+<body>
 <main>
-  <p class="intro place-colors">One mark for every place the search has kept, on the
-  parameter plane it came out of. A place is on the plate because at least one render there
-  scored above the bar a gallery solve seats over, and nothing else puts a mark here.
-  <span class="key-mandelbrot">Blue</span> is a location on the parameter plane itself;
-  <span class="key-julia">red</span> is a Julia location, which is a value of <code>c</code>,
-  and <code>c</code> is a point of this same plane. Both halves of the search are drawn
-  together, and a mark is one of them or the other and never both. The same map exists for
-  the higher-degree multibrot planes and for the phoenix plane; pick a plane above. Hover a mark and the three frames
-  above the plane fill with its neighborhood on the plane, the Julia set it stands for, and a
-  wallpaper drawn at it; click to keep one, and Escape to let it go. Each of the three opens
-  in the <a href="../explorer/index.html">explorer</a> at the view it is, and says in its
-  tooltip what the link cannot carry.</p>
+  <p>The atlas is now a tab of the explorer.
+  <a href="../explorer/index.html?panel=atlas">Open the atlas in the fractal explorer</a>.</p>
 </main>
-</div>
-
-<script type="module" src="atlas.js"></script>
 </body>
 </html>

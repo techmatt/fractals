@@ -1,16 +1,18 @@
-"""The atlas record: what a dot on the atlas page is made of, and what holds it to shape.
+"""The atlas record: what a dot in the atlas frame is made of, and what holds it to shape.
 
-The atlas page draws one dot per place the search kept, over a pre-rendered plate of the
-plane those places sit in, and every picture a dot carries opens in the explorer at the
-view it stands for. The record below is the **contract between the wallpaper project's
-maker and this page**: the maker writes it, the page reads it, and neither composes a key
-the other did not put there.
+The atlas draws one dot per place the search kept, over a pre-rendered plate of the plane
+those places sit in, and every picture a dot carries opens in the explorer at the view it
+stands for. `atlas/frame.js` is the frame, and the explorer's Atlas tab is the one page
+that mounts it — it was a page of its own at `atlas/index.html` until
+`website_webp_and_atlas_deprecate` (2026-09-21) retired that for the tab. The record below
+is the **contract between the wallpaper project's maker and that frame**: the maker writes
+it, the frame reads it, and neither composes a key the other did not put there.
 
-That last rule is the whole point of the file. A page that worked out a location's
+That last rule is the whole point of the file. A frame that worked out a location's
 viewport from a position in a list — or an index into a pool derived from live data —
 would draw at a moving target, and a rerun next door would silently repoint every dot.
 So a slot carries **its own** viewport keys, spelled the way the permalink contract
-spells them, and the page hands them to `permalink.js` without arithmetic.
+spells them, and the frame hands them to `permalink.js` without arithmetic.
 
 ## The shape
 
@@ -29,9 +31,9 @@ spells them, and the page hands them to `permalink.js` without arithmetic.
   plate because a Julia place *is* a `c` and a `c` is a point of that plane; and the
   classic Phoenix slice, whose places are frames on the slice itself. A plane the search
   has not reached carries an empty dot file rather than none, so marks land later as rows
-  and no page changes. `python -m builder atlas --plates` draws all six plates, each
-  cropped to its set's own measured extent at one shared aspect, and re-projects the dots
-  from the plane coordinates they already carry.
+  and nothing that reads the record changes. `python -m builder atlas --plates` draws all
+  six plates, each cropped to its set's own measured extent at one shared aspect, and
+  re-projects the dots from the plane coordinates they already carry.
 
 A partition keeps its absorption radius twice: `radius_plane`, the distance on the plane
 the thinning ran at, and `radius_px`, that distance spelled in the pixels of the plate the
@@ -1162,13 +1164,19 @@ METHOD_SAYS = (
     "of them is, so a dot is one place of one kind."
 )
 
-#: The quality a slot picture is re-encoded at. The maker lands them at the engine's own
-#: quality and they are nearly twice as large as this page can afford to ship; 4:4:4 is not
-#: negotiable, because a fractal thumbnail is all saturated edge and chroma subsampling is
-#: visible on every one of them. 78 is what the whole set fits the page's budget at — a
-#: little under ten megabytes — and it is a number to re-derive rather than to keep, the
-#: day a release puts twice as many dots on the plate.
-THUMB_QUALITY = 78
+#: The quality a slot picture is re-encoded at, and **the format is WebP**
+#: *(website_webp_and_atlas_deprecate, 2026-09-21)*. The maker lands these at the engine's
+#: own quality and they are three times the size this page can afford to ship. They used to
+#: be JPEG at 78 with no chroma subsampling, because a fractal thumbnail is all saturated
+#: edge; at 400x225 across 1,464 of them that came to 42.7 MB, which is the largest thing
+#: this repository would ever have deployed after the seat tiles. Lossy WebP is 4:2:0
+#: always, so this trades the subsampling rule for a third of the bytes — 27.5 MB, measured
+#: on these pictures rather than argued, and the ingest prints it a plane at a time. A slot
+#: picture is a 400x225 thumbnail in a strip of three, and the plate under it is what a
+#: reader is reading; a plate is the picture somebody studies and it stays JPEG 4:4:4 at 88.
+#: It is a number to re-derive rather than to keep, the day a release puts twice as many
+#: dots on the plate.
+THUMB_QUALITY = 70
 
 
 def _shade_of(palette: object) -> dict:
@@ -1344,7 +1352,7 @@ def ingest(
             held = dot["slots"].get(name)
             if held is None:
                 raise AtlasError(f"dot {dot['id']} has no {name} picture")
-            file = f"{plane}-{dot['id']:04d}-{name}.jpg"
+            file = f"{plane}-{dot['id']:04d}-{name}.webp"
             _encode(here / held["picture"], IMAGE_DIR / file, quality)
             landed.add(file)
             slots[name] = _slot_row(name, held, file, drawn)
@@ -1399,7 +1407,16 @@ def ingest(
     _write_rows(ATLAS_INDEX, [method] + partitions)
     _write_rows(ATLAS_DIR / target["file"], rows)
 
-    swept = [path for path in sorted(IMAGE_DIR.glob("*.jpg")) if path.name not in landed]
+    # Both suffixes, because the sweep is what takes the old format out. A slot picture is
+    # WebP since `website_webp_and_atlas_deprecate` and every plate is still JPEG; the
+    # plates are in `landed`, so sweeping `.jpg` as well removes a slot picture the previous
+    # format left behind and touches nothing else.
+    swept = [
+        path
+        for suffix in (".jpg", ".webp")
+        for path in sorted(IMAGE_DIR.glob(f"*{suffix}"))
+        if path.name not in landed
+    ]
     for path in swept:
         path.unlink()
     ours = sum(
@@ -1407,7 +1424,7 @@ def ingest(
     )
     return [
         f"{plane}: atlas/{target['file']} {len(rows)} dots · {len(rows) * len(SLOTS)} slot "
-        f"pictures at {thumb_across}x{thumb_down} quality {quality}, {ours / 1e6:.2f} MB · "
+        f"pictures at {thumb_across}x{thumb_down} WebP quality {quality}, {ours / 1e6:.2f} MB · "
         f"{len(swept)} swept",
     ]
 
@@ -1502,19 +1519,17 @@ def _method_row(partitions: list[dict], *, made: str, shared: dict, thumb: dict)
 
 
 def _encode(source: Path, destination: Path, quality: int) -> None:
-    """One thumbnail, re-encoded at the page's own quality and no chroma subsampling."""
-    from PIL import Image, ImageFile
+    """One thumbnail, re-encoded at the page's own quality.
 
-    ImageFile.MAXBLOCK = max(ImageFile.MAXBLOCK, 4 * 1024 * 1024)
+    The source is the maker's own thumbnail next door, at the engine's quality, so this is
+    the one lossy step a slot picture takes however many times the format here changes.
+    `method=6` is the encoder's slowest search, which is affordable on a 400x225 picture
+    and is what makes the bytes a function of the input rather than of the hardware.
+    """
+    from PIL import Image
+
     with Image.open(source) as picture:
-        picture.convert("RGB").save(
-            destination,
-            format="JPEG",
-            quality=quality,
-            subsampling=0,
-            optimize=True,
-            progressive=False,
-        )
+        picture.convert("RGB").save(destination, format="WEBP", quality=quality, method=6)
 
 
 def _write_rows(path: Path, rows: list[dict]) -> None:

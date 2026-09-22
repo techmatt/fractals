@@ -615,14 +615,19 @@ def family_planes(destination: Path) -> tuple[tuple[int, int], list[str]]:
     return _land(composed, destination, max_width=FAMILIES_WIDTH), provenance
 
 
-#: Figure id to the file it writes and the maker that writes it.
+#: Figure id to the file it writes and the maker that writes it. The file is the id plus
+#: the one suffix a lossy figure lands at, so the format is `images`'s to say and not a
+#: thing each of these tables spells.
 SHEETS = {
-    "escape-families": ("escape-families.jpg", family_planes),
-    "escape-fractional-degrees": ("escape-fractional-degrees.jpg", fractional_degrees),
-    "escape-julia-map": ("escape-julia-map.jpg", julia_map),
-    "escape-multibrot-degrees": ("escape-multibrot-degrees.jpg", multibrot_degrees),
-    "escape-phoenix": ("escape-phoenix.jpg", phoenix),
-    "escape-zoom-strip": ("escape-zoom-strip.jpg", zoom_strip),
+    identifier: (f"{identifier}{images.FIGURE_SUFFIX}", maker)
+    for identifier, maker in (
+        ("escape-families", family_planes),
+        ("escape-fractional-degrees", fractional_degrees),
+        ("escape-julia-map", julia_map),
+        ("escape-multibrot-degrees", multibrot_degrees),
+        ("escape-phoenix", phoenix),
+        ("escape-zoom-strip", zoom_strip),
+    )
 }
 
 

@@ -70,12 +70,13 @@ was raise, and every check after it went unrun.
   document is not in this repository and cannot be: both halves of the project write to
   it. So the one thing a clone can be held to is that the file every prompt does read
   points at it, and a rename or a tidy-up that drops the pointer fails here.
-- **atlas** — the atlas record is the shape the atlas page reads: every dot carries its
-  own viewport keys as decimal strings, sits inside the plane its partition names and no
-  closer to its neighbours than the separation radius that partition claims, and every
-  pre-rendered thumbnail is on disk at the size its row gives. Whether a dot's *link*
-  parses is asked of the permalink contract itself, by `atlas/atlas.test.mjs`, for the
-  same reason the explorer's links are: the contract is written in JavaScript.
+- **atlas** — the atlas record is the shape the atlas frame reads, which the explorer's
+  Atlas tab is the one page to mount: every dot carries its own viewport keys as decimal
+  strings, sits inside the plane its partition names and no closer to its neighbours than
+  the separation radius that partition claims, and every pre-rendered thumbnail is on disk
+  at the size its row gives. Whether a dot's *link* parses is asked of the permalink
+  contract itself, by `atlas/atlas.test.mjs`, for the same reason the explorer's links are:
+  the contract is written in JavaScript.
 - **theme** — the well colours a drawn figure is made of are the stylesheet's own. They
   have to be transcribed, because Pillow cannot read CSS; this is what keeps a restyle
   from moving the well and leaving every diagram drawn against the old one.

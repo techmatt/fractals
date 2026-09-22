@@ -490,14 +490,18 @@ def percentile_stretch(destination: Path) -> tuple[tuple[int, int], list[str]]:
     return _two_up(panels, destination), provenance
 
 
-#: Figure id to the file it writes and the maker that writes it.
+#: Figure id to the file it writes and the maker that writes it. The file is the id plus
+#: `images.FIGURE_SUFFIX`, so the format is named once for the whole repository.
 SHEETS = {
-    "render-cyclic-repeats": ("render-cyclic-repeats.jpg", cyclic_repeats),
-    "render-discrete-and-smooth": ("render-discrete-and-smooth.jpg", discrete_and_smooth),
-    "render-field-anatomy": ("render-field-anatomy.jpg", field_anatomy),
-    "render-maxiter": ("render-maxiter.jpg", maxiter),
-    "render-percentile-stretch": ("render-percentile-stretch.jpg", percentile_stretch),
-    "render-supersample": ("render-supersample.jpg", supersample),
+    identifier: (f"{identifier}{images.FIGURE_SUFFIX}", maker)
+    for identifier, maker in (
+        ("render-cyclic-repeats", cyclic_repeats),
+        ("render-discrete-and-smooth", discrete_and_smooth),
+        ("render-field-anatomy", field_anatomy),
+        ("render-maxiter", maxiter),
+        ("render-percentile-stretch", percentile_stretch),
+        ("render-supersample", supersample),
+    )
 }
 
 
