@@ -106,19 +106,15 @@ const PLANES = ["mandelbrot", "multibrot3", "multibrot4", "multibrot5", "multibr
 const MINED_MODES = new Set(["smooth", "tia", "threads"]);
 
 /**
- * The modes the Modes group does not offer, and why, one line each
- * *(Matt, walk_tab_ckpt140, 2026-09-22)*.
- *
- * The ruling is that the group offers **every render mode the site has** — the seventeen of
- * `explorer/modes.jsonl`, which `explorer.js` hands over as `modeOrder` — on the premise
- * that the head scores a picture whatever mode drew it, which it does. This is where a mode
- * that turned out not to run would be named. **It is empty**: all seventeen were drawn
- * through this tab's own `picture()` at a mined Mandelbrot frame and on the pinned Phoenix
- * slice, and every one of them rendered a picture with structure in it and emitted a link
- * that parses back. The four the viewer's own Mode select can hide — `gaussian_int`,
- * `trap_circle`, `smooth_trap_circle`, `direct_trap_ring` — are hidden there because the
- * published gallery seats no wallpaper in them, which is a fact about the gallery and not
- * about the renderer, so the walk offers them.
+ * **The Render modes group offers the viewer's own list and nothing past it**
+ * *(Matt, pre_closeout_website_ckpt140, 2026-09-22)*: the thirteen the Render mode select
+ * lists, which are the modes the published gallery seats, handed over by `explorer.js` as
+ * `modeOrder`. It offered all seventeen of `explorer/modes.jsonl` for a day, on the premise
+ * that the head scores a picture whatever mode drew it — and all seventeen do draw here —
+ * but the four the select leaves out, `gaussian_int`, `trap_circle`, `smooth_trap_circle` and
+ * `direct_trap_ring`, were then a walk's way of finding wallpapers in a mode the viewer
+ * does not offer and the galleries hold none of. The default burst, *Fast* and the finish
+ * are all drawn from the thirteen.
  *
  * Two things are true of a direct trap here and neither is a refusal. It has no **burst**:
  * it composites from the gradient as it iterates, so a recolour of one is a re-render and
@@ -130,7 +126,6 @@ const MINED_MODES = new Set(["smooth", "tia", "threads"]);
  * ranking drops, and it is exactly what the viewer already draws for a reader who picks the
  * mode there.
  */
-const WALK_REFUSES = new Map();
 
 /**
  * Of the roster, the ones whose recorded cost is near `smooth`'s
@@ -224,7 +219,7 @@ const DEFAULTS = {
 /**
  * **What the walk is tuned to, frozen** *(Matt, explorer_controls_ckpt140, 2026-09-22)*.
  *
- * These seven were the *Depth* and *At a place* rows of the config, and every one of them
+ * These six were the *Depth* and *At a place* rows of the config, and every one of them
  * feeds what the walk does rather than what it shows — the width its root is drawn between,
  * when a descent calls a peak, how many recipes a place keeps, what score it has to clear to
  * be painted at all. The rows are gone, and each value is fixed at what its control opened
@@ -232,10 +227,10 @@ const DEFAULTS = {
  * nearly always run. They are constants and no longer `config`: what a reader can still
  * choose is the four things above, and nothing writes these.
  *
- * `FINE` false is the one worth naming twice. Ticked, it ranked recipes on the gallery's
- * fine head and downloaded 5.1 MB to do it; unticked, recipes rank on the P≥4 the tiles
- * show *(saved_tab_ckpt131_addendum1)*. The loading path is still here and is now reachable
- * only by editing this line — see `mine`.
+ * There was a seventh. The fine-head box froze at unticked, which left its
+ * download and its ranking reachable by nothing, and both were cut
+ * *(pre_closeout_website_ckpt140)*: recipes rank on the render judge's P≥4 the tiles show,
+ * which is what the pipeline's own walk scores with.
  */
 const WIDEST = 1e-3;
 const NARROWEST = 1e-4;
@@ -243,7 +238,6 @@ const STEPS = 14;
 const PATIENCE = 0.2;
 const KEEP = 1;
 const BAR = 0.5;
-const FINE = false;
 
 /** Where a composite's texture weight opens when this page derives none for its mode: the
  *  explorer's own hand-switch default, `TEXTURE_DEFAULT`. */
@@ -446,10 +440,9 @@ class Screeners {
 
 export function mount(host) {
   const { contract, palettes, shownName, planeName, juliaOf } = host;
-  /** Every mode this tab offers, in the viewer's Mode select order, minus anything
-   *  `WALK_REFUSES` names. The host hands the whole contract roster over, so the order here
-   *  and the order there cannot drift. */
-  const modeOrder = host.modeOrder.filter((mode) => !WALK_REFUSES.has(mode));
+  /** Every mode this tab offers: the viewer's Render mode select, in its order. The host
+   *  hands that list over rather than this tab keeping one, so the two cannot drift. */
+  const modeOrder = host.modeOrder;
   /** Of those, the ones the burst may be drawn in under *Default*. */
   const minedOrder = modeOrder.filter((mode) => MINED_MODES.has(mode));
   const config = { ...DEFAULTS, planes: new Set(DEFAULTS.planes) };
@@ -464,12 +457,11 @@ export function mount(host) {
   let screeners = null;
   let scorer = null; // a `Judges`, or `null` until loaded or where the runtime would not load
   let judgeless = false; // the runtime would not load here, so the walk goes without
-  let fineless = false; // the fine head would not load here, so the gate ranks alone
   /** The download in flight, as `{ controller, what, got }`, or `null`. */
   let download = null;
   let loop = null;
   let phase = "root"; // root | deep | mine: which stage a timing is filed under
-  const timings = { probe: [], screen: [], render: [], shade: [], gate: [], fine: [], walk: [] };
+  const timings = { probe: [], screen: [], render: [], shade: [], gate: [], walk: [] };
   const found = [];
   /** One row per walk, for whoever is measuring the tab: where it went and what it saw. */
   const walks = [];
@@ -858,8 +850,7 @@ export function mount(host) {
   /**
    * The lower strip of the walk view *(walk_view_ckpt132)*: a place's candidates, each a
    * small tile with its map and the render judge's `P≥4`, filling in as they are drawn. The
-   * ones kept are outlined. Ranked on the fine head, the tiles are in its order, best first;
-   * otherwise they stay in the order they were drawn — the field first, its colourings
+   * ones kept are outlined. They stay in the order they were drawn — the field first, its colourings
    * after it, and a dear picture last *(walk_faster_ckpt138)*.
    *
    * They outlast the decision on purpose. A place's candidates stay up through the start of
@@ -905,7 +896,7 @@ export function mount(host) {
     }
 
     function render() {
-      const order = FINE ? [...tried].sort((x, y) => y.rank - x.rank) : tried;
+      const order = tried;
       const kept = new Set([...tried].sort((x, y) => y.rank - x.rank).slice(0, KEEP));
       const tiles = order.map((one) => {
         const tile = document.createElement("figure");
@@ -1116,17 +1107,16 @@ export function mount(host) {
       "Also walk the Julia set whose c is the best place the descent found: from its home view, by the same rung rule.",
     );
 
-    // Every render mode the site has, and not the handful the burst is drawn in
-    // *(Matt, walk_tab_ckpt140)* — `WALK_REFUSES` is where one that could not run would be
-    // named, and it is empty. Default stays the default and still means the cheap roster
-    // plus the finish; a named mode paints every place in that mode.
+    // Every render mode the viewer's select lists, and not the handful the burst is drawn
+    // in *(Matt, pre_closeout_website_ckpt140)*. Default stays the default and still means
+    // the cheap roster plus the finish; a named mode paints every place in that mode.
     const modes = group("Render modes");
     radios(
       modes,
       "walk-modes",
       [
         { value: MODES_DEFAULT, label: "Default" },
-        { value: MODES_FAST, label: "Fast modes only" },
+        { value: MODES_FAST, label: "Fast render modes only" },
         ...modeOrder.map((mode) => ({ value: mode, label: mode })),
       ],
       config.modes,
@@ -1897,11 +1887,11 @@ export function mount(host) {
    * The finish's modes: `FINISH_MODES` of them, drawn at random out of everything this tab
    * offers, and never one the burst has already drawn at this place.
    *
-   * **A reader's narrowing narrows this too.** *Fast modes only* is the choice a reader makes
+   * **A reader's narrowing narrows this too.** *Fast render modes only* is the choice a reader makes
    * to see more places in the same minute, so it takes no finish at all; a single named mode
    * is a reader asking for that one mode, and a finish drawing two others would be the
-   * control not meaning what it says. Under *Default* the finish is where the other fourteen
-   * modes live, which is what makes offering all seventeen worth anything — a reader who
+   * control not meaning what it says. Under *Default* the finish is where the other ten
+   * modes live, which is what makes offering all thirteen worth anything — a reader who
    * never touches the config still meets them.
    */
   function finishModes(chosen, drawn) {
@@ -1965,24 +1955,6 @@ export function mount(host) {
     // is the whole of what this place will be tried in rather than growing under the reader.
     const finish = finishModes(config.modes, new Set([base, dear]));
     candidates.begin(RECOLOURS + (dear === null ? 0 : 1) + finish.length, where, base);
-    // A pause mid-download stops it, and the walk asks again when it is started again.
-    while (FINE && scorer !== null && scorer.fineSession === null && !fineless) {
-      const { signal, shown, done } = downloading("the fine judge");
-      try {
-        await scorer.loadFine((what, got, of) => shown(got, of), signal);
-        done();
-      } catch (error) {
-        done();
-        if (judges.stopped(error, signal)) {
-          await going();
-          continue;
-        }
-        console.warn("the fine judge could not be loaded", error);
-        progress("The fine judge could not load, so the render judge ranks recipes alone.");
-        fineless = true;
-        break;
-      }
-    }
     const maps = roster();
     const tried = [];
 
@@ -2012,15 +1984,9 @@ export function mount(host) {
         dwell,
       );
       const read = await gated(image);
-      let fine = null;
-      if (FINE && scorer?.fineSession) {
-        const started = performance.now();
-        fine = await scorer.fine(image);
-        timed("fine", started);
-      }
-      const rank = fine ?? read.p4;
-      candidates.add({ mode: view.mode, palette: view.palette, p4: read.p4, fine, rank, image });
-      tried.push({ view, image, read, fine, rank });
+      const rank = read.p4;
+      candidates.add({ mode: view.mode, palette: view.palette, p4: read.p4, rank, image });
+      tried.push({ view, image, read, rank });
       // `ms` is the whole candidate — the field where it drew one, the colouring and the
       // gate — and `kind` says which of the three it was, because the roster and the burst
       // are chosen from those three numbers rather than from one average over them.
@@ -2032,7 +1998,6 @@ export function mount(host) {
         kind,
         ms,
         p4: read.p4,
-        fine,
       });
     }
 
@@ -2111,11 +2076,8 @@ export function mount(host) {
    * *(Matt, walk_tab_ckpt140)* — see `quality` for why the notation went and the number
    * stayed.
    *
-   * **Shown and ranked on** *(saved_tab_ckpt131_addendum1)*. By default the recipes at a
-   * place are ranked on this same number, so the best badge is the one kept. The fine head,
-   * the pipeline's own ranking key, is the config's opt-in; with it ticked a kept picture
-   * can show a lower number than one the walk passed over, because one member's reading
-   * lives far below 0.01 and is not a number to put on a badge.
+   * **Shown and ranked on** *(saved_tab_ckpt131_addendum1)*. The recipes at a place are
+   * ranked on this same number, so the best badge is the one kept.
    */
   function rankText(one) {
     return quality(one.read.p4);

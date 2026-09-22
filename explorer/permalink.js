@@ -285,7 +285,7 @@ export const MODES = [
  * called de" would read as a bug in this page rather than as a choice.
  */
 export const NICHE_MODES = {
-  de: "the distance estimate is a niche mode: the engine renders it by name, and no " +
+  de: "the distance estimate is a niche render mode: the engine renders it by name, and no " +
     "production draw picks it, so this page does not offer it either",
 };
 
@@ -659,7 +659,7 @@ export function parse(search, context) {
     if (mode in NICHE_MODES) {
       throw new PermalinkError(`${mode} is not offered here: ${NICHE_MODES[mode]}.`);
     }
-    throw new PermalinkError(`there is no mode called ${mode}.`);
+    throw new PermalinkError(`there is no render mode called ${mode}.`);
   }
 
   const wanted = MODE_PARAMETERS[mode] ?? [];
@@ -673,7 +673,7 @@ export function parse(search, context) {
       throw new PermalinkError(`${key} is a constant of a family this link does not name — ${family} has ${CONSTANTS[family].length === 0 ? "none" : CONSTANTS[family].join(" and ")}.`);
     }
     if (PARAMETER_KEYS.has(key)) {
-      throw new PermalinkError(`the ${mode} mode has no ${key} parameter.`);
+      throw new PermalinkError(`the ${mode} render mode has no ${key} parameter.`);
     }
     throw new PermalinkError(`the link carries a key this page does not know: ${key}.`);
   }

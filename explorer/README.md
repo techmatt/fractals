@@ -143,7 +143,7 @@ saved.js              the Saved list: one localStorage value of links, and the s
 saved-panel.js        the Saved tab: tiles drawn from their links, import, export, Download all
 zip.js                a stored (uncompressed) zip writer, for Download all
 stamp.js              a picture's own link, written into the file and read back out
-judges.js             the two judges in onnxruntime-web, loaded on the first Start
+judges.js             the render judge in onnxruntime-web, loaded on the first Start
 resize.mjs            PIL's bicubic resize, ported byte for byte: what a judge reads
 judges/               UNTRACKED: the two ONNX judges and the runtime, `builder walk`
 permalink.js          the link contract — parse, validate, canonicalize
@@ -210,7 +210,14 @@ option's own text — *General gallery · 1000* — said three times over two ro
 that is meant to be pictures. The footer now says `k of N` and only while a chip is
 narrowing the grid, which is the one thing the dropdown cannot say; unfiltered, there is no
 footer at all. The Render mode select's roster and the
-trap-mode defaults stay the general gallery's. Render mode chips add up; a hue family chip is one at a time, and pressing
+trap-mode defaults stay the general gallery's.
+
+**Two general galleries** *(Matt, pre_closeout_website_ckpt140, 2026-09-22)*. *General
+gallery · 2000* is the `final140_general2000` solve, stamp `20260922T220551Z`, listed
+under *General gallery · 1000* and ungrouped with it; 1000 stays the default the panel
+opens on, and the Render mode select's roster and the trap defaults stay the 1000's. Both
+are `axis: "general"` in the header, which is what the label is read off, and the optgroups
+below them read *Color family* and *Render mode*. Render mode chips add up; a hue family chip is one at a time, and pressing
 it again clears it. **The hue row is the wheel's twelve and nothing else**
 *(2026-09-19)*: it used to open on *unfiled 4*, the seats the dominance rule found
 dominant in no family, and a chip named after a threshold is no answer to a reader
@@ -815,8 +822,9 @@ walk runs and whether the viewer follows it are two states, `state` and `attache
      the Render modes group offers and never a mode this place has already been drawn in. See
      *A slower finish* below.
    - Each candidate is scored by the gate's P≥4 and they are ranked together, and the best
-     are kept as tiles (one, frozen — `KEEP`). The fine head does not rank them: it is off
-     and no longer offered. **The badge reads `Quality 0.15`** *(Matt, walk_tab_ckpt140)*:
+     are kept as tiles (one, frozen — `KEEP`). **The walk scores with the render judge
+     alone, which is what the pipeline's own walk does**; the fine head is gone from the
+     tab and its weights from the site *(pre_closeout_website_ckpt140)*. **The badge reads `Quality 0.15`** *(Matt, walk_tab_ckpt140)*:
      Quality is `P(≥4)`, the render judge's probability that a person rates the picture 4 or
      5, unchanged in value and in meaning. `P≥4` is the pipeline's notation and this tab is
      read by somebody who has met neither the judge nor its scale, so the badge on a found
@@ -832,19 +840,20 @@ walk runs and whether the viewer follows it are two states, `state` and `attache
    way is under *What a walk costs* in §Measured.
 
 **The config is four choices, and the tuning is frozen** *(Matt, explorer_controls_ckpt140,
-2026-09-22)*. It was six groups; *Depth* and *At a place* are gone, and the seven numbers
+2026-09-22)*. It was six groups; *Depth* and *At a place* are gone, and the numbers
 behind them are constants at the top of `walk.js` — `WIDEST` 1e-3, `NARROWEST` 1e-4, `STEPS`
-14, `PATIENCE` 0.20, `KEEP` 1, `BAR` 0.50, `FINE` false. Every one of them fed what the walk
+14, `PATIENCE` 0.20, `KEEP` 1, `BAR` 0.50. Every one of them fed what the walk
 *does* rather than what it shows, so each is fixed at what its control opened at and the walk
 behaves exactly as it did with nobody touching them — which is how it was nearly always run.
 This tab demonstrates how the galleries were made; a demonstration does not ship seven spin
-boxes of tuning. What is left to choose is Planes, the Julia twin, Modes and Palettes.
+boxes of tuning. What is left to choose is Planes, the Julia twin, Render modes and Palettes.
 
-⚠ **`FINE` false makes one path unreachable.** `mine` still carries the fine-head download
-and `judges.js` still carries `loadFine`, `fineSession` and `fine`, and nothing on the page
-can now reach any of it; editing that one line is what brings it back. It was left in rather
-than cut because the ruling was to freeze the behaviour, and cutting it reaches well past
-this tab.
+**The fine head is cut, not frozen** *(Matt, pre_closeout_website_ckpt140, 2026-09-22)*. The
+seventh control was the fine-head tick, and freezing it at unticked left `mine`'s fine-head
+download and `judges.js`'s `loadFine`, `fineSession` and `fine` reachable by nothing. They
+are removed, and so are the weights: `python -m builder walk` places the runtime and the
+render judge only, `--fused` is gone, and a placement removes a `fine.onnx` an older one
+left behind. Nothing else on the page fetched it — `judges.js` was its only reader.
 
 The config's defaults are the pipeline's draw where the page can make one. **Render modes is
 the walk's own roster and not the pipeline's** *(walk_faster_ckpt138)* — `smooth`, `tia` and
@@ -853,23 +862,22 @@ drift. It was the thirteen the pipeline accepts with the last five unticked, and
 now is the measured answer to "which of those is cheap enough to draw while somebody
 watches": see *What a walk costs* under §Measured.
 
-**The group now offers every render mode the site has** *(Matt, walk_tab_ckpt140,
-2026-09-22)*, which is a widening of what a reader may *pick* and not of what Default
-paints. The three above are still the burst's roster and Default is still the default.
+**The group offers the viewer's own list: the thirteen in the Render mode select**
+*(Matt, pre_closeout_website_ckpt140, 2026-09-22)*. The three above are still the burst's
+roster and Default is still the default; the finish's three are drawn from the thirteen.
 
-- The list is `explorer/modes.jsonl`'s **seventeen**, in the Render mode select's order,
-  `explorer.js`'s `everyMode()`. The Render mode select itself lists fewer — the modes the
-  published gallery record seats — because it is a way into a gallery; the Walk tab is not,
-  it draws pictures nobody has seated, so `gaussian_int`, `trap_circle`,
-  `smooth_trap_circle` and `direct_trap_ring` are on offer here and not there.
-- **Nothing was left out, and that is measured rather than assumed.** The premise the
-  ruling gives is that the head scores a picture whatever mode drew it, which it does; the
-  question it leaves is whether every mode can be *drawn* down here. All seventeen were put
-  through this tab's own `picture()` — the derive pass, a field at 384×216×2, the shade — at
-  a mined Mandelbrot frame (6.5e-5) and on the pinned Phoenix slice, and every one of them
-  rendered a picture with real structure in it and emitted a link that parses back.
-  `walk.js`'s `WALK_REFUSES` is where a refusal would be named with its reason, and it is
-  empty.
+- The list is `explorer.js`'s `listedModes()` with no extra — the modes the published
+  gallery header names, in the select's order — so the tab and the select cannot drift.
+  From `walk_tab_ckpt140` until this ruling it was all seventeen of `explorer/modes.jsonl`,
+  on the premise that the head scores a picture whatever mode drew it; `gaussian_int`,
+  `trap_circle`, `smooth_trap_circle` and `direct_trap_ring` then came off, because a walk
+  finding wallpapers in a mode the viewer does not offer is a walk into a mode no gallery
+  holds. `WALK_REFUSES` and `everyMode()` went with them.
+- **All seventeen do draw here, and that stays measured.** Every one was put through this
+  tab's own `picture()` — the derive pass, a field at 384×216×2, the shade — at a mined
+  Mandelbrot frame (6.5e-5) and on the pinned Phoenix slice, and each rendered a picture
+  with real structure and emitted a link that parses back. The four are out by ruling, not
+  because they fail.
 - Two things are true of a **direct trap** here and neither is a refusal. It has no burst,
   which was true before: it composites from the gradient as it iterates, so a recolour of
   one is a re-render and `mine` draws it once instead of sixteen times — a reader who picks
@@ -886,8 +894,8 @@ addendum 2, 2026-09-21)*. This tab demonstrates how the galleries were made, and
 demonstration is a few radio buttons rather than two checklists of fifteen boxes between
 them.
 
-- **Render modes** — *Default*, the roster plus the finish; *Fast modes only*, `FAST_MODES`, which
-  is `smooth` and `tia` and takes no finish; then each of the seventeen on its own, which
+- **Render modes** — *Default*, the roster plus the finish; *Fast render modes only*, `FAST_MODES`, which
+  is `smooth` and `tia` and takes no finish; then each of the thirteen on its own, which
   paints every place in that mode and takes no finish either. Fast is
   taken from the mined-width table under §Measured and not from the per-mode one, because
   the two do not order the modes the same way and only one of them was measured where this
@@ -973,8 +981,7 @@ burst's says its mode as well** — the dear picture, and the finish's three
 *(walk_tab_ckpt140)*. It was a `DEAR_MODES` test until the finish arrived and made three more
 tiles a reader could not name; it is now simply whether the tile's mode is the one the burst
 was drawn in, which is the thing the reader is being shown either way. The kept
-ones are outlined in the found ink. They stay in drawing order, except that with the fine head
-ticked they are sorted by it and re-outlined.
+ones are outlined in the found ink. They stay in drawing order.
 **They outlast the decision.** A place's candidates stay up past the kept tile and through
 the start of the next walk, and clear when that walk's first descent ends, so they can still
 be compared while the next root is being found. A Julia twin's mining replaces its parent's.
@@ -1020,11 +1027,11 @@ pictures of the place rather than three dresses on one.
   and it never leaves the strip a reader is looking at without one.
 - **Each is held `DWELL_MS`**, the rung's own hold, rather than the burst's 150 ms: these
   are seconds apart rather than tenths and they are what the reader is meant to look at.
-- **A narrowing narrows this too.** *Fast modes only* is what a reader picks to see more
-  places in the same minute, so it takes no finish; a single named mode is a reader asking
-  for that mode, and a finish drawing two others would be the control not meaning what it
-  says. Under *Default* the finish is where the other fourteen modes live, which is what
-  makes offering all seventeen worth anything — a reader who never touches the config still
+- **A narrowing narrows this too.** *Fast render modes only* is what a reader picks to see
+  more places in the same minute, so it takes no finish; a single named mode is a reader
+  asking for that mode, and a finish drawing two others would be the control not meaning
+  what it says. Under *Default* the finish is where the other ten modes live, which is what
+  makes offering all thirteen worth anything — a reader who never touches the config still
   meets them.
 - A finish picture is a candidate like any other: gated, ranked with the rest on Quality,
   and eligible to be the one kept. Its recipe row is `kind: "finish"`, beside `field`,
@@ -1107,33 +1114,25 @@ contract has no key for it and nothing a link opens sets it.
 - Both are the judges lab's `fp16w` exports: fp16 weights and fp32 compute. The render
   judge (gate) reads `[P≥2, P≥3, P≥4]`.
 - **Recipes are ranked on the number they are shown with** *(saved_tab_ckpt131_addendum1)*.
-  By default that is the render judge's P≥4, which is what the found tile's badge and the
+  That is the render judge's P≥4, which is what the found tile's badge and the
   candidate tiles show — **as `Quality 0.15`** since *walk_tab_ckpt140*, the number and its
   meaning unchanged and the pipeline's notation gone. The badge's
   tooltip reads *how likely a person is to rate this 4 or 5*. It is the default because a
   displayed number and a ranking number that disagree make a kept tile read as a mistake:
   under the old default the walk could keep a picture badged lower than one it had just
   passed over.
-- **The fine head was an opt-in and is now off**, `FINE` *(explorer_controls_ckpt140)*. The
-  tick — *rank with the gallery's fine head*, under *At a place* — went with the row it was
-  in. On, recipes ranked on the fine head's P≥4, the solve's own key, while the badge still
-  showed the gate's, and it downloaded the next time a place was mined and not before. The
-  member's reading lives far below 0.01 and only means something beside the
-  member-versus-mean caveat below, which is why it was never on the badge. The code below is
-  what it did; nothing on the page reaches it now.
-- **The fine head in use is one member, seed 0** *(walk_tab_ckpt131_addendum1)*. The
-  pipeline's `p_fine` is the mean of three seeds, so the member's reading is not the solve's
-  number. The fused three-seed graph is an opt-in, `--fused` below; it lands under the same
-  name and answers in the same slot.
-- They run in `onnxruntime-web` 1.30's default bundle. Its WebGPU backend is JSEP, the
+- **The walk scores with the render judge, which is what the pipeline's walk does**
+  *(pre_closeout_website_ckpt140)*. The fine head — seed 0 of the solve's three, an opt-in
+  tick until `explorer_controls_ckpt140` froze it off — is cut from the code and no longer
+  shipped.
+- It runs in `onnxruntime-web` 1.30's default bundle. Its WebGPU backend is JSEP, the
   runtime the lab's fidelity table was taken on. It uses WebGPU where `navigator.gpu` hands
   back an adapter, and single-threaded WASM otherwise.
 - Every picture goes through `resize.mjs` to 384×224 and in as [0, 1]. Normalization is
   inside the graph.
-- The runtime and the gate download on the first Start. The fine head downloads only where
-  it is ticked, the first time a place is mined after. Opening the tab loads only its three modules, about 19 KB.
+- The runtime and the gate download on the first Start. Opening the tab loads only its three modules, about 19 KB.
 - **On the wire the runtime is 6.7 MB, not 28 MB.** Pages gzips everything but images, and
-  the runtime's wasm compresses about fourfold. The two models barely do (5.1 MB to 4.7 MB).
+  the runtime's wasm compresses about fourfold. The model barely does (5.1 MB to 4.7 MB).
 - **A download says what it is and stops when the walk does** *(explorer_slim_ckpt131)*.
   The status line under the button names the file and counts megabytes, and gives a total
   only where the response is not gzipped: a gzipped response's length is the compressed
@@ -1155,8 +1154,7 @@ contract has no key for it and nothing a link opens sets it.
 by
 
 ```
-python -m builder walk                      # from tools/judges-lab, seed 0
-python -m builder walk --fused              # the three-seed fine head instead
+python -m builder walk                      # from tools/judges-lab
 ```
 
 **The lab is `tools/judges-lab/`** *(walk_tune_ckpt131)*. Its export script, the frozen
@@ -1166,11 +1164,10 @@ weights, exports and samples sit beside them, untracked. Its README says how to 
 from nothing. It used to be a checkout of its own beside this one, `fractal-judges-lab`,
 which is gone.
 
-That copies about 39 MB:
+That copies about 34 MB:
 
-- `render.fp16w.onnx` (5.1 MB), and `fine.onnx`: seed 0's `fine.seed0.fp16w.onnx`
-  (5.1 MB), or with `--fused` the lab's `fine.fused.fp16w.onnx` (15.3 MB). All from the
-  lab's `models/`.
+- `render.fp16w.onnx` (5.1 MB), from the lab's `models/`. A `fine.onnx` an older placement
+  left is removed.
 - `ort.min.mjs` and the JSEP glue and binary (28.3 MB), from its `node_modules`.
 
 Until Matt says deploy, Pages serves a Walk tab that runs on the screen alone.
@@ -1350,6 +1347,11 @@ of `z² + c`**, centred at `z = c`, at the same width and the same cap. *Back to
 Mandelbrot set* returns to the frame it was pressed on. From there the Julia view pans,
 zooms and renders exactly as the tab already did.
 
+**`j` presses it, and it wears `(j)`** *(Matt, pre_closeout_website_ckpt140)*, in both of its
+states. While Deep owns the viewer the key goes to `deep.pressJulia()`, which clicks this
+button and does nothing where it is disabled; it used to fall through to the shallow
+viewer's Julia here, which flipped a view nobody could see.
+
 **Why this view is only possible here.** Near `z = c` the Julia set of a deep `c` looks
 like the Mandelbrot set near `c` at the same scale — so the filigree around a deep minibrot
 reappears, but filling the frame homogeneously with no minibrot in the middle. A shallow
@@ -1499,9 +1501,12 @@ The rule, its threshold and the thirteen frames it was measured on are
   have been painted as set.* Where the width's answer already drew the frame it says
   nothing, which is the honest thing and is what every shallow view and six of the thirteen
   measured frames get.
-- **And a frame can run out of ceiling.** At 1,000,000 still unresolved, the status line
-  says plainly that some of what is painted as set is exterior this cap cannot reach. There
-  is no control for it and no retry: the sentence is the answer.
+- **And a frame can run out of ceiling.** At `cap::CEILING` — 1,000,000 — with more than
+  `FAULT_SHARE` of the probe still undecided, the cap sentence has its own variant,
+  *At the ceiling (1,000,000): 14% of this frame is still undecided.*, in the raise's shape
+  *(Matt, pre_closeout_website_ckpt140)*. It replaced a longer sentence that ended by
+  telling the reader to zoom out. The limit itself is unchanged, there is no control for it
+  and no retry: the sentence is the answer.
 
 ### Nearby minibrots *(deep_nearby_minibrots_ckpt138, 2026-09-20)*
 

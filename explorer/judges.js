@@ -1,17 +1,14 @@
-// The pipeline's two judges, in the browser: the render judge (the gate) and one member of
-// the fine head, as the judges lab exported them.
+// The pipeline's render judge in the browser, as the judges lab exported it. It is the one
+// judge the Walk tab runs, which is what the pipeline's own walk scores with.
 //
-// **The fine head is seed 0 alone** *(walk_tab_ckpt131_addendum1)*. The pipeline's `p_fine`
-// is the mean of three seeds' `P≥4`; this page ranks on one member's, unaveraged, for a
-// third of the download. `python -m builder walk --fused` places the three-seed graph under
-// the same name instead, and it answers in the same slot, so nothing here changes with it.
+// **The fine head is gone** *(pre_closeout_website_ckpt140, 2026-09-22)*. It ranked
+// recipes only where a config box was ticked; the box went with the walk's frozen tuning,
+// which left its download and its session reachable by nothing, so both were cut and the
+// site no longer ships its weights.
 //
 // **Loaded on the Walk tab's first Start and never before.** The runtime's wasm is 28 MB
-// raw and 6.7 MB gzipped on the wire, and the gate and the fine head are 5.1 MB each, which
-// gzip barely touches (4.7 MB), so a reader who never presses Start downloads none of it.
-// The fine head waits longer still, and by default forever: it is an opt-in in the walk's
-// config *(saved_tab_ckpt131_addendum1)*, fetched the first time a place is mined with it
-// ticked, because recipes rank on the gate's `P≥4` unless it is.
+// raw and 6.7 MB gzipped on the wire, and the judge is 5.1 MB, which gzip barely touches
+// (4.7 MB), so a reader who never presses Start downloads none of it.
 //
 // **A download can be stopped, and what finished is kept** *(explorer_slim_ckpt131)*.
 // Every fetch here takes the walk's `AbortSignal`, so leaving the tab or pressing Pause
@@ -42,7 +39,6 @@ const BASE = new URL("./judges/", import.meta.url);
 const RUNTIME = new URL("ort/ort.min.mjs", BASE);
 const RUNTIME_WASM = new URL("ort/ort-wasm-simd-threaded.jsep.wasm", BASE);
 const GATE = new URL("render.fp16w.onnx", BASE);
-const FINE = new URL("fine.onnx", BASE);
 
 /**
  * Fetch a file, saying how much of it has arrived: `onProgress(received, total)`, where
@@ -134,15 +130,12 @@ export async function load(onProgress, signal) {
   return judges;
 }
 
-/** The two sessions, and the pixels-to-probabilities step both of them share. */
+/** The render judge's session, and the pixels-to-probabilities step it runs. */
 export class Judges {
   constructor(ort, backend) {
     this.ort = ort;
     this.backend = backend;
     this.gateSession = null;
-    this.fineSession = null;
-    this.fineLoading = null;
-    this.fineBytes = null;
   }
 
   /**
@@ -175,22 +168,6 @@ export class Judges {
     return this.ort.InferenceSession.create(bytes, { ...options, executionProviders: ["wasm"] });
   }
 
-  /** The fine head, fetched the first time it is asked for. A stopped or failed load is
-   *  forgotten, so the next ask starts again, keeping the bytes if they had all arrived. */
-  loadFine(onProgress, signal) {
-    this.fineLoading ??= (async () => {
-      this.fineBytes ??= await fetchBytes(FINE, (got, of) => onProgress?.("fine", got, of), signal);
-      const session = await this.session(this.fineBytes, signal);
-      this.fineBytes = null;
-      this.fineSession = session;
-      return session;
-    })().catch((error) => {
-      this.fineLoading = null;
-      throw error;
-    });
-    return this.fineLoading;
-  }
-
   /** `[P≥2, P≥3, P≥4]` for one picture, from a session whose output is `probs`. */
   async #read(session, image) {
     const rgb = resizeBicubic(image.data, image.width, image.height, 4, JUDGE_WIDTH, JUDGE_HEIGHT);
@@ -207,10 +184,5 @@ export class Judges {
   async gate(image) {
     const [p2, p3, p4] = await this.#read(this.gateSession, image);
     return { p2, p3, p4 };
-  }
-
-  /** The fine head on one `ImageData`: seed 0's own `P≥4`, with no averaging. */
-  async fine(image) {
-    return (await this.#read(this.fineSession, image))[2];
   }
 }

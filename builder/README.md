@@ -143,15 +143,17 @@ not a pass and not a failure. One picture present means the command has run, and
 whole gallery is held to its record exactly as a publishable one is — a half-landed
 directory is a real problem and reads as one.
 
-`seated-candidates` is the first, and `builder/seats.py` is what fills it: twenty tentative
-records, the general n=1000 solve and the nineteen collections solved beside it (twelve hue
-families and seven modes), as one union of 6,062 seats, each row saying which collections
-seat it and where *(site_rebase_ckpt132, 2026-09-19)*. None of the twenty is published. The
+`seated-candidates` is the first, and `builder/seats.py` is what fills it: twenty-one
+tentative records, the general n=1000 solve, the same solve at n=2000
+*(pre_closeout_website_ckpt140)*, and the nineteen collections solved beside them (twelve hue
+families and seven modes), as one union of 6,299 seats, each row saying which collections
+seat it and where *(site_rebase_ckpt132, 2026-09-19)*. None of them is published. The
 header's `published` is asked of the project next door's `tentative.PUBLISHED` rather than
-assumed. `COLLECTIONS` hand-lists the twenty as (name, stamp) pairs and `MODE_COLLECTIONS`
-says which are modes, so a re-solve is an edit to that table. A stamp is refused unless its
-solve was that collection's: `general_n1000_…` for the general one, `targets_<collection>_n…`
-for the rest, the convention `curation/targets.py` states next door. The union is written **split by collection** *(explorer_slim_ckpt131)*:
+assumed. `COLLECTIONS` hand-lists them as (name, stamp) pairs, `MODE_COLLECTIONS` says which
+are modes and `GENERAL_COLLECTIONS` which are the general gallery at a size, so a re-solve is
+an edit to that table. A stamp is refused unless its solve was that collection's:
+`final139_<collection>` for all but `general_2000`, whose solve `SOLVE_NAMES` spells whole as
+`final140_general2000`. The union is written **split by collection** *(explorer_slim_ckpt131)*:
 `gallery.jsonl` holds the header alone, and each collection's rows go to the file its
 header entry names (`general.jsonl`, `smooth-mean-angle.jsonl`, …), so a seat in three
 collections is a row in three files. `galleries.load` reads the union back from them, and
@@ -171,11 +173,11 @@ is local and no clone has it, so this list is the tracked record of the set:
 
 | what | size (2026-09-21) | written by |
 | --- | --- | --- |
-| `assets/images/galleries/seated-candidates/*.webp`, one tile a seat | 6,067 files, 60.5 MB | `python -m builder seats` |
+| `assets/images/galleries/seated-candidates/*.webp`, one tile a seat | 6,299 files, 62.8 MB (2026-09-22) | `python -m builder seats` |
 | `explorer/palettes.bin`, every map's control points | 1.04 MB | `python -m builder explorer --palettes-only` |
 | `explorer/palettes-swatch.png`, to look at | 0.3 MB | the same |
 | every plane's atlas slot pictures, `assets/images/atlas/<plane>-*.webp` | 1,464 files, 27.5 MB | `python -m builder atlas --ingest` |
-| `explorer/judges/`, the ORT runtime, the gate and the fine head | 38.9 MB | `python -m builder walk` |
+| `explorer/judges/`, the ORT runtime and the render judge (the fine head is no longer placed, pre_closeout_website_ckpt140) | 33.8 MB | `python -m builder walk` |
 
 **`palettes.bin` is not optional.** The tracked tree alone never draws a first frame: served
 without the blob, the explorer's first fetch is a 404 and the canvas stays empty. Until a

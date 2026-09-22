@@ -282,7 +282,9 @@ keeps the mechanics. **Every apply round ends by distilling that round's general
   published record plus the nineteen collections next door — twelve hue families and seven
   modes, whose sizes are that project's `curation/targets.py` — as one row per seat, with
   `collections` naming each collection that seats it and where in that collection's
-  presentation order it stands. A **Collection** dropdown chooses one; the chips filter
+  presentation order it stands — and, since pre_closeout_website_ckpt140, the same general
+  solve at n=2000, offered as *General gallery · 2000* beside the default 1000.
+  A **Collection** dropdown chooses one; the chips filter
   what it chose, which is why the collection is not a chip row. ⚠ **The nineteen are
   unpublished and Matt's word is that they are not final**, so `builder/seats.py`'s
   `COLLECTIONS` names a stamp per collection and refuses one whose solve was another

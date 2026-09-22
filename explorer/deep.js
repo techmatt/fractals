@@ -645,14 +645,17 @@ export function mount(host) {
   }
 
   /** What the tab says about the cap it chose: nothing where the width's own answer drew
-   *  the frame, and a plain sentence where it did not. */
+   *  the frame, and a plain sentence where it did not.
+   *
+   *  **The ceiling has its own sentence** *(Matt, pre_closeout_website_ckpt140)*: where the
+   *  walk reached `cap::CEILING` with more than `FAULT_SHARE` of the probe still undecided,
+   *  it says so in the same shape as the raise, and the limit itself is unchanged. */
   function say_settled(chosen) {
     const count = (value) => value.toLocaleString("en-US");
     if (chosen.atCeiling) {
       host.say(
-        `${Math.round(chosen.fault * 100)}% of this frame is still escaping at ` +
-          `${count(chosen.maxiter)} iterations, the most this renderer will run, so some of ` +
-          "what is painted as set is not. Zoom out, or narrow the frame.",
+        `At the ceiling (${count(chosen.maxiter)}): ${Math.round(chosen.fault * 100)}% of ` +
+          "this frame is still undecided.",
       );
       return;
     }
@@ -1356,7 +1359,7 @@ export function mount(host) {
       els.param.textContent = `${view.julia.x.text}\n${view.julia.y.text}`;
       els.param.title = `${view.julia.x.text} + ${view.julia.y.text}i`;
     }
-    els.julia.textContent = julia ? "Back to the Mandelbrot set" : "Julia at this c";
+    els.julia.textContent = julia ? "Back to the Mandelbrot set (j)" : "Julia at this c (j)";
     els.julia.disabled = committed;
     els.julia.title =
       julia && cameFrom !== null ? "Back to the frame this Julia set was opened from." : "";
@@ -1553,6 +1556,12 @@ export function mount(host) {
     /** Whether the tab owns the viewer — whether the picture on screen is the deep one. */
     owns: () => shown && owns,
     link: () => deepLink.emit(view),
+    /** `j` while this tab owns the viewer: the tab's own *Julia at this c*, or its way back,
+     *  exactly as a click on it — and nothing where the button is disabled
+     *  *(pre_closeout_website_ckpt140)*. */
+    pressJulia() {
+      if (!els.julia.disabled && !els.julia.hidden) els.julia.click();
+    },
 
     // ----------------------------------------------------------- what Download borrows
     //

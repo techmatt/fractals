@@ -1,29 +1,26 @@
-"""Placing the explorer's Walk tab assets: the two judges and the runtime that runs them.
+"""Placing the explorer's Walk tab assets: the render judge and the runtime that runs it.
 
-The Walk tab scores what it renders with the pipeline's own two judges, exported to ONNX
+The Walk tab scores what it renders with the pipeline's own render judge, exported to ONNX
 by the judges lab, `tools/judges-lab/` in this repository (its `lab/export.py`; its README
 says how to set it up). What the page loads is the
-**fp16w** export of each: fp16 weight storage, a cast to fp32 at load, and fp32 compute,
+**fp16w** export: fp16 weight storage, a cast to fp32 at load, and fp32 compute,
 which the lab measured at 3.6e-6 from PyTorch with no bar crossings on any backend. The
 fp16-compute export is not shipped because it is the one that moves decisions.
 
-**The fine head is one member, seed 0, by default** *(walk_tab_ckpt131_addendum1)*. The
-pipeline's `p_fine` is the mean of three seeds; where the walk's config ticks the fine head
-(it is an opt-in since saved_tab_ckpt131_addendum1), the page ranks on a single member's
-`P≥4`, at a third of the download (5.1 MB against 15.3 MB). The fused three-seed graph can still
-be placed with `--fused`. Either lands as `fine.onnx`, which is the one name the page
-fetches, and both graphs answer `probs[2]` — the member's own `P≥4`, or the fused graph's
-in-graph mean — so the page reads the same slot whichever is there.
+**The render judge alone** *(pre_closeout_website_ckpt140, 2026-09-22)*. The walk scores
+with the render judge, which is what the pipeline's own walk does; the fine head ranked
+recipes only where a config box was ticked, the box went with `explorer_controls_ckpt140`,
+and the 5.1 MB it downloaded is no longer placed. `RETIRED` removes it from a tree that
+still holds it.
 
-Nothing here is committed. The models are 5.1 MB each and barely compress, and the
+Nothing here is committed. The model is 5.1 MB and barely compresses, and the
 runtime's 28 MB of wasm is 6.7 MB gzipped on the wire, so they stay out of history the
 way the palette blob and the gallery tiles do:
 `.git/info/exclude` names `explorer/judges/`, and this command is what fills it. A tree
 without them still serves a Walk tab, which runs on the screen gates alone and says so in
 its console.
 
-    python -m builder walk                     # from tools/judges-lab, seed 0
-    python -m builder walk --fused             # the three-seed graph instead
+    python -m builder walk                     # from tools/judges-lab
 
 **The lab lives here** *(walk_tune_ckpt131)*. It began as a checkout of its own beside this
 one, which meant the Walk tab's judges could be rebuilt only on a machine that happened to
@@ -44,13 +41,6 @@ JUDGES_DIR = SITE_ROOT / "explorer" / "judges"
 #: The judges lab, in this repository.
 LAB = SITE_ROOT / "tools" / "judges-lab"
 
-#: The name the page fetches the fine head by, whichever graph is placed there.
-FINE_TARGET = "fine.onnx"
-
-#: The fine head's two sources in the lab: one member, or the three fused.
-FINE_MEMBER = "models/fine.seed0.fp16w.onnx"
-FINE_FUSED = "models/fine.fused.fp16w.onnx"
-
 #: Everything else that is copied, as (path in the lab, path under `JUDGES_DIR`). The
 #: runtime is onnxruntime-web's default bundle, whose WebGPU backend is JSEP and which
 #: carries the WASM backend too: the lab's fidelity table was taken on that JSEP binary.
@@ -70,17 +60,16 @@ ASSETS = (
 )
 
 #: Names an earlier placement used, removed so a tree never holds a head the page ignores.
-RETIRED = ("fine.fused.fp16w.onnx",)
+RETIRED = ("fine.fused.fp16w.onnx", "fine.onnx")
 
 
 class WalkError(Exception):
     """The lab checkout is missing something the Walk tab loads."""
 
 
-def place(lab: Path = LAB, fused: bool = False) -> list[tuple[Path, int]]:
+def place(lab: Path = LAB) -> list[tuple[Path, int]]:
     """Copy every asset out of the lab into `explorer/judges/`, and say what landed."""
-    assets = (*ASSETS, (FINE_FUSED if fused else FINE_MEMBER, FINE_TARGET))
-    missing = [source for source, _ in assets if not (lab / source).is_file()]
+    missing = [source for source, _ in ASSETS if not (lab / source).is_file()]
     if missing:
         raise WalkError(
             f"{lab.relative_to(SITE_ROOT).as_posix()} is missing {', '.join(missing)}: the "
@@ -88,7 +77,7 @@ def place(lab: Path = LAB, fused: bool = False) -> list[tuple[Path, int]]:
             "its README)"
         )
     landed = []
-    for source, target in assets:
+    for source, target in ASSETS:
         destination = JUDGES_DIR / target
         destination.parent.mkdir(parents=True, exist_ok=True)
         shutil.copyfile(lab / source, destination)

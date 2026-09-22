@@ -125,6 +125,13 @@ STAMP = "20260922T012627Z"
 #: The general collection's name, which is what `collections` keys it by.
 GENERAL = "general"
 
+#: The same solve at twice the size, offered beside it and never instead of it
+#: *(pre_closeout_website_ckpt140, 2026-09-22)*: `final140_general2000`, which is the one
+#: record here that is not of the `final139_` batch. The panel still opens on `GENERAL`, and
+#: the header's `modes` is still read off `GENERAL` alone, so a seat that only the larger
+#: solve found moves neither the Mode select nor a trap mode's default.
+GENERAL_2000 = "general_2000"
+
 #: Every collection the panel offers, in the order its dropdown lists them, and the stamp
 #: each one is read from.
 #:
@@ -144,6 +151,7 @@ GENERAL = "general"
 #: deleted, not a panel that quietly shrinks.
 COLLECTIONS: tuple[tuple[str, str], ...] = (
     (GENERAL, STAMP),
+    (GENERAL_2000, "20260922T220551Z"),
     ("rose", "20260922T012745Z"),
     ("red", "20260922T012906Z"),
     ("orange", "20260922T013025Z"),
@@ -174,6 +182,14 @@ COLLECTIONS: tuple[tuple[str, str], ...] = (
 #: and nothing else, so the check is an equality now and a seat count next door can move
 #: without this file hearing about it.
 SOLVE_STEM = "final139_"
+
+#: The collections whose solve came from another pass, spelled whole. The check is still an
+#: equality; this only says which name it is an equality with.
+SOLVE_NAMES = {GENERAL_2000: "final140_general2000"}
+
+#: Which collections are the general gallery at some size: they stand at the top of the
+#: dropdown, ungrouped, and read *General gallery · n*.
+GENERAL_COLLECTIONS = frozenset({GENERAL, GENERAL_2000})
 
 #: Which of those are a mode, so the header can say which axis each was cut on. The rest
 #: after the general one are hue families.
@@ -353,7 +369,7 @@ def _collection_stamp(name: str, stamp: str) -> str:
     if not path.is_file():
         raise SeatError(f"the {name} collection's record {stamp} is not there — {path}")
     solved = str(json.loads(path.read_text(encoding="utf-8"))["solve"]["name"])
-    if solved != f"{SOLVE_STEM}{name}":
+    if solved != SOLVE_NAMES.get(name, f"{SOLVE_STEM}{name}"):
         raise SeatError(f"{stamp} is the solve {solved!r}, not the {name} collection's")
     return stamp
 
@@ -684,7 +700,7 @@ def header(rows: list[dict]) -> dict:
             {
                 "name": name,
                 "axis": "general"
-                if name == GENERAL
+                if name in GENERAL_COLLECTIONS
                 else "mode"
                 if name in MODE_COLLECTIONS
                 else "family",

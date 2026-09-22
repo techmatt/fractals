@@ -133,7 +133,7 @@
       </div>
 
       <div class="bar deep-actions">
-        <button type="button" id="deep-julia">Julia at this c</button>
+        <button type="button" id="deep-julia" aria-keyshortcuts="J">Julia at this c (j)</button>
         <button type="button" id="deep-origin" hidden
                 title="The frame widens to the square root of its width.">Same view at z = 0</button>
       </div>
@@ -224,7 +224,7 @@
 
   <section class="viewer" aria-label="The view">
     <div class="stage" id="stage">
-      <canvas id="canvas" tabindex="0" aria-label="The fractal at the current family, mode and view"></canvas>
+      <canvas id="canvas" tabindex="0" aria-label="The fractal at the current family, render mode and view"></canvas>
       <!-- The Julia set of the point under the pointer, on a parameter plane. A hover
            affordance and nothing a reader can reach any other way, so it is out of the
            accessibility tree: Julia here (j) is the button it previews. -->

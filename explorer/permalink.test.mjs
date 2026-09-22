@@ -357,8 +357,8 @@ test("every constant this contract spells is half of a declared pair", () => {
 
 test("a mode's parameters are its own, and a mode with none refuses them all", () => {
   assert.deepEqual(parse(`v=${VERSION}&m=stripe&density=9`, CONTEXT).params, { density: 9 });
-  assert.throws(() => parse(`v=${VERSION}&density=9`, CONTEXT), /the smooth mode has no density/);
-  assert.throws(() => parse(`v=${VERSION}&m=stripe&weight=0.5`, CONTEXT), /stripe mode has no weight/);
+  assert.throws(() => parse(`v=${VERSION}&density=9`, CONTEXT), /the smooth render mode has no density/);
+  assert.throws(() => parse(`v=${VERSION}&m=stripe&weight=0.5`, CONTEXT), /stripe render mode has no weight/);
   assert.throws(() => parse(`v=${VERSION}&m=smooth_stripe&sigma=0.2`, CONTEXT), /has no sigma/);
   assert.throws(() => parse(`v=${VERSION}&m=stripe&density=0`, CONTEXT), /has to be positive/);
   assert.throws(() => parse(`v=${VERSION}&m=threads&weight=2`, CONTEXT), /between 0 and 1/);
@@ -453,8 +453,8 @@ test("an unknown key is refused", () => {
 test("a family or a mode this page does not draw says which kind of no it is", () => {
   assert.throws(() => parse(`v=${VERSION}&f=fractional_multibrot`, CONTEXT), /render-only/);
   assert.throws(() => parse(`v=${VERSION}&f=burningship`, CONTEXT), /no family called burningship/);
-  assert.throws(() => parse(`v=${VERSION}&m=de`, CONTEXT), /niche mode/);
-  assert.throws(() => parse(`v=${VERSION}&m=lighting`, CONTEXT), /no mode called lighting/);
+  assert.throws(() => parse(`v=${VERSION}&m=de`, CONTEXT), /niche render mode/);
+  assert.throws(() => parse(`v=${VERSION}&m=lighting`, CONTEXT), /no render mode called lighting/);
 });
 
 test("a coordinate is a decimal string, capped, and a width is positive", () => {

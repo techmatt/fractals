@@ -478,13 +478,8 @@ def _parser() -> argparse.ArgumentParser:
         help="rewrite gallery.jsonl alone; leave the tiles as they are",
     )
 
-    walked = commands.add_parser(
-        "walk", help="place the explorer Walk tab's judges and runtime (untracked)"
-    )
-    walked.add_argument(
-        "--fused",
-        action="store_true",
-        help="place the fused three-seed fine head (15.3 MB) instead of seed 0 alone (5.1 MB)",
+    commands.add_parser(
+        "walk", help="place the explorer Walk tab's render judge and runtime (untracked)"
     )
 
     served = commands.add_parser("serve", help="preview the committed tree over localhost")
@@ -1344,8 +1339,7 @@ def _widen_output() -> None:
 
 
 def _do_walk(options: argparse.Namespace) -> int:
-    landed = walk_module.place(fused=options.fused)
-    print(f"fine head: {'the fused three seeds' if options.fused else 'seed 0 alone'}")
+    landed = walk_module.place()
     for path, size in landed:
         print(f"placed {path.relative_to(SITE_ROOT).as_posix()}  {size:,} bytes")
     print(f"{sum(size for _, size in landed):,} bytes, untracked (.git/info/exclude)")

@@ -50,8 +50,12 @@ const DIRECTORY = `../assets/images/galleries/${SLUG}/`;
 /** The collection the panel opens on, which is the published gallery. */
 export const GENERAL = "general";
 
-/** What the dropdown groups each axis under. The general collection stands alone. */
-const AXIS_LABELS = { family: "Color family", mode: "Mode" };
+/** The axis the general gallery is cut on, at whatever size: it stands alone at the top of
+ *  the dropdown, ungrouped, and says its size rather than its name. */
+const GENERAL_AXIS = "general";
+
+/** What the dropdown groups each axis under. The general collections stand alone. */
+const AXIS_LABELS = { family: "Color family", mode: "Render mode" };
 
 /** The axis a collection cut on one hue family is named by, which is the one the hue chips
  *  change their question inside. */
@@ -499,7 +503,7 @@ export function install({
     wanted.hue.clear();
     cutOn = one?.axis === FAMILY_AXIS ? chosen : null;
     members = membersOf(seats, chosen);
-    chipsInto(modes, "mode", tally(members, "mode", firstMode), "no mode");
+    chipsInto(modes, "mode", tally(members, "mode", firstMode), "no render mode");
     if (hueHead) hueHead.textContent = cutOn === null ? HUE_HEADS.dominant : HUE_HEADS.contains;
     // Twelve families and no thirteenth chip *(2026-09-19)*. The row used to open on
     // *unfiled 4* — the seats the dominance rule found dominant in no family — and that
@@ -539,7 +543,7 @@ export function install({
       // are not colours and get none.
       if (one.axis === FAMILY_AXIS) option.append(hueDot(one.name));
       option.append(
-        one.name === GENERAL ? `General gallery · ${count}` : `${one.name} · ${count}`,
+        one.axis === GENERAL_AXIS ? `General gallery · ${count}` : `${one.name} · ${count}`,
       );
       const label = AXIS_LABELS[one.axis];
       if (label === undefined) {

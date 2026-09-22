@@ -2163,7 +2163,7 @@ function syncShade() {
   const inert = plan.levels === true
     ? "Gamma, Cycles, Phase and Transfer"
     : "Autolevel, Gamma, Cycles, Phase and Transfer";
-  shadeNote.textContent = plan.direct ? `${inert} have no effect in this mode.` : "";
+  shadeNote.textContent = plan.direct ? `${inert} have no effect in this render mode.` : "";
 
   syncLevel();
 }
@@ -2288,30 +2288,13 @@ function syncModes() {
 }
 
 /** What the Mode select lists, in its order, with `extra` listed too if it is a mode the
- *  contract knows; the Walk tab's config lists modes in this same order. */
+ *  contract knows. Called with no extra, it is the Walk tab's roster too. */
 function listedModes(extra = null) {
   const offered = offeredModes ?? link.MODES;
   const listed = link.MODES.filter((mode) => offered.includes(mode) || mode === extra);
   return [
     ...MODE_ORDER.filter((mode) => listed.includes(mode)),
     ...listed.filter((mode) => !MODE_ORDER.includes(mode)),
-  ];
-}
-
-/**
- * Every mode the site has, in the Mode select's order: `listedModes` without the gallery's
- * narrowing *(walk_tab_ckpt140)*.
- *
- * The Mode select lists the modes the published record seats, because it is a way into a
- * gallery. The Walk tab is not — it draws pictures nobody has seated yet, and the judge
- * scores a picture whatever mode drew it — so its Modes group offers the whole contract
- * roster, `explorer/modes.jsonl`'s seventeen, and `walk.js` keeps its own default within
- * them.
- */
-function everyMode() {
-  return [
-    ...MODE_ORDER.filter((mode) => link.MODES.includes(mode)),
-    ...link.MODES.filter((mode) => !MODE_ORDER.includes(mode)),
   ];
 }
 
@@ -2932,7 +2915,10 @@ async function startWalk() {
       contract,
       palettes: PALETTES,
       shownName,
-      modeOrder: everyMode(),
+      // The Render mode select's own list, and never the view's extra: the Walk tab offers
+      // what the viewer offers *(pre_closeout_website_ckpt140)*. The header is read before
+      // this runs, so it is the published gallery's thirteen.
+      modeOrder: listedModes(),
       planeName,
       juliaOf: JULIA_OF,
       follow: followWalk,
@@ -3771,8 +3757,8 @@ const KEYS = { whole: "(r)", julia: "(j)" };
  *  explorer_box_shortcuts_ckpt140, 2026-09-22)*: the key does something the button does
  *  not, and the label cannot hold the difference without saying two things at once. */
 const TOGGLE_TIPS = {
-  seat: "Back to the wallpaper this view was opened at: its frame, its mode and its palette.",
-  link: "Back to the picture this link opened at: its frame, its mode and its palette.",
+  seat: "Back to the wallpaper this view was opened at: its frame, its render mode and its palette.",
+  link: "Back to the picture this link opened at: its frame, its render mode and its palette.",
   none: "This page opened at the home view, so there is nothing else to go back to.",
   julia:
     "Opens the Julia set whose c is the center of this view. " +
@@ -3826,7 +3812,7 @@ function syncToggles() {
 
   const plane = planeName(view.family);
   wholeButton.textContent = `Whole ${plane} ${KEYS.whole}`;
-  wholeButton.title = "Keeps the mode and the palette.";
+  wholeButton.title = "Keeps the render mode and the palette.";
   wholeButton.disabled = busy || atHome();
 
   const hasJulia = onJulia || view.family in JULIA_OF;
@@ -4098,7 +4084,9 @@ for (const [event, on] of [["pointerenter", true], ["focus", true], ["pointerlea
  *  key asks for the `c` under the pointer and the button's own listener does not. */
 const TOGGLE_KEYS = {
   r: wholePlane,
-  j: () => toggleJulia({ atCursor: true }),
+  // In Deep, the tab's own button, which wears the key; the shallow view underneath is not
+  // on screen and a key that flipped it would change nothing a reader can see.
+  j: () => (deepOwns() ? deep.pressJulia() : toggleJulia({ atCursor: true })),
   p: randomPalette,
   h: randomPhase,
   b: toggleBox,
@@ -4444,7 +4432,7 @@ async function main() {
   }
 
   document.getElementById("provenance").textContent =
-    `${PROVENANCE.count} palettes and ${IDENTITIES.size} production modes, baked from ` +
+    `${PROVENANCE.count} palettes and ${IDENTITIES.size} production render modes, baked from ` +
     `fractal-wallpapers ${PROVENANCE.wallpapers_commit.slice(0, 12)} on ${PROVENANCE.baked}.`;
 
   clearNotice();
