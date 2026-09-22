@@ -12,7 +12,7 @@
    one large well, and it is spelled with the same six tokens a figure's well uses rather
    than with a second palette: `--well` is the ground, `--well-rule` the rules, and the
    two ink tokens carry every word on the page. Nothing here is a new colour, except the
-   three the render-state dot on the Download row says its state with: a status light is
+   three the render-state bar on the Download row says its state with: a status light is
    the one thing on the page whose colour is its meaning.
 
    It is forced rather than asked for. There is no `prefers-color-scheme` branch on this
@@ -35,7 +35,7 @@
      contents rail, which this page does not have, so the number is this page's own: below
      it a grid of wallpaper tiles and a canvas cannot both be worth looking at. */
   --studio-stack: 60rem;
-  /* The render-state dot: drawing the field, the one-sample picture up while the final
+  /* The render-state bar: drawing the field, the one-sample picture up while the final
      pass runs, and the final picture. Red, yellow, green, so the order is read off the
      colour alone. */
   --state-rendering: #e0605a;
@@ -967,6 +967,10 @@ summary.section-head:focus-visible { outline: 2px solid var(--well-link); outlin
   touch-action: none;
 }
 .stage > canvas:active { cursor: grabbing; }
+/* Armed, the canvas is a target rather than something to take hold of, and `:active` has
+   nothing to say about a tool that works in clicks. */
+.stage > canvas.is-boxing,
+.stage > canvas.is-boxing:active { cursor: crosshair; }
 
 /* The Julia preview under the pointer. It sits in a bottom corner of the stage — the one
    farthest from the pointer, which is what `is-right` switches — so it covers neither the
@@ -1066,18 +1070,36 @@ summary.section-head:focus-visible { outline: 2px solid var(--well-link); outlin
 .bar.download .times { color: var(--well-ink-dim); }
 .bar.download input.param { width: 4rem; }
 .download .samples { display: inline-flex; gap: 0.25rem; flex: none; }
-/* What the canvas is showing, as a dot before the estimate: the estimate reads "ready"
-   only once this is green, so the two are read together. Its word is its tooltip. */
+/* What the canvas is showing, as a bar before the estimate: the estimate reads "ready"
+   only once this is green, so the two are read together. Its word is its tooltip.
+
+   **It was a dot until this prompt** *(Matt, explorer_box_zoom_and_download_row_ckpt140,
+   2026-09-22)*. The colour said which of three stages the pass was in and nothing said how
+   far through one it was, so a slow frame and a stuck one looked the same for as long as
+   anybody was willing to wait. The bar fills instead, the reading keeps its colour, and
+   `--done` is the one thing that moves — written on this element, where the harnesses'
+   `data-state` also lives, which is safe because both observers filter on that attribute.
+
+   Full is the resting state, not the empty one: nothing rendering means the picture is
+   finished, so the bar sits full in the colour of the last reading. */
 .download .render-state {
   flex: none;
-  width: 0.6rem;
-  height: 0.6rem;
-  border-radius: 50%;
+  width: 2.2rem;
+  height: 0.35rem;
+  border-radius: 0.2rem;
+  overflow: hidden;
+  background: var(--well-rule);
+}
+.download .render-fill {
+  display: block;
+  height: 100%;
+  width: calc(var(--done, 1) * 100%);
+  border-radius: inherit;
   background: var(--state-rendering);
 }
-.download .render-state[data-state="sharpening"] { background: var(--state-sharpening); }
-.download .render-state[data-state="final"] { background: var(--state-final); }
-.download .render-state[data-state="stopped"] { background: var(--well-pending); }
+.download .render-state[data-state="sharpening"] .render-fill { background: var(--state-sharpening); }
+.download .render-state[data-state="final"] .render-fill { background: var(--state-final); }
+.download .render-state[data-state="stopped"] .render-fill { background: var(--well-pending); }
 .download .estimate {
   flex: 1 1 auto;
   min-width: 0;
@@ -1097,7 +1119,11 @@ summary.section-head:focus-visible { outline: 2px solid var(--well-link); outlin
    random ones left for the Palette header, and the Julia preview box came the other way to
    sit beside Julia here, which is the button it previews. The box is the group's last item
    so that it is what goes to a second line first: the three buttons say where the reader is
-   standing and are what should stay together. */
+   standing and are what should stay together.
+
+   **Box (b) leads the group** *(Matt, explorer_box_zoom_and_download_row_ckpt140,
+   2026-09-22)*. It is a tool and the three after it are destinations, so it does not belong
+   among them; first is also farthest from the checkbox that wraps. */
 .download .view-toggles {
   display: inline-flex;
   flex-wrap: wrap;
@@ -1110,6 +1136,13 @@ summary.section-head:focus-visible { outline: 2px solid var(--well-link); outlin
   min-width: 0;
   margin-left: auto;
 }
+/* Box (b), armed: the one button in this row that is a state rather than an action, so it
+   is lit while it is waiting for the two clicks it takes. */
+.download .view-toggles button.is-armed {
+  border-color: var(--well-link);
+  color: var(--well-link);
+}
+
 /* The preview box among the buttons: a label and a checkbox rather than a button, so it
    takes its own alignment and the label's dim ink. `.bar.shade` used to give it both. */
 .download .view-toggles .group.level {
@@ -1123,10 +1156,16 @@ summary.section-head:focus-visible { outline: 2px solid var(--well-link); outlin
 
 /* The button is the progress bar: `--done` fills it from the left while a render draws,
    and its label is how far along it is. A fixed minimum width, so a label going from
-   "Download" to "7%" does not pull the row about. */
+   "PNG" to "7%" does not pull the row about.
+
+   **The word "Download" is a green arrow** *(Matt, explorer_box_zoom_and_download_row_ckpt140,
+   2026-09-22)*. Saying it twice on one row under a heading that already says it was most of
+   what made these two the widest things in the bar; the arrow says the same in one glyph,
+   and the button keeps `Download PNG` as its accessible name. The arrow is a span of its
+   own so that neither the percentage nor the restore after a render writes over it. */
 .bar button.download-go {
   flex: none;
-  min-width: 6.5rem;
+  min-width: 4.25rem;
   position: relative;
   overflow: hidden;
   border-color: var(--well-ink-dim);
@@ -1142,7 +1181,15 @@ summary.section-head:focus-visible { outline: 2px solid var(--well-link); outlin
 }
 .bar button.download-go .download-label {
   position: relative;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.3em;
   font-variant-numeric: tabular-nums;
+}
+.bar button.download-go .download-arrow {
+  color: var(--state-final);
+  font-size: 1.05em;
+  line-height: 1;
 }
 
 /* The render stat line, first under Details. */

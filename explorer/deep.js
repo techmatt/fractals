@@ -409,6 +409,9 @@ export function mount(host) {
     }
     const wanted = upto === "preview" ? stages.slice(0, 1) : stages;
     const last = wanted[wanted.length - 1];
+    // What the Download row's bar is measured against: the stages this pass will actually
+    // draw, so a preview-only pass fills it and does not stop at a twentieth.
+    running.stages = wanted;
 
     try {
       // **Inside the guard.** A pool that fails to start — a fetch that 404s, a module
@@ -431,6 +434,9 @@ export function mount(host) {
         const key = deepLink.fieldKey(target, stage.width, stage.height, stage.supersample);
         let field = fields.get(key);
         const cached = field !== undefined;
+        // A stage off the cache iterated nothing, so the row's bar jumps its share rather
+        // than filling it.
+        if (cached) host.showProgress(spanOf(stage).from + spanOf(stage).width);
         if (!cached) {
           const started = performance.now();
           field = await deep.field(target, stage.width, stage.height, {
@@ -655,8 +661,26 @@ export function mount(host) {
    * interior, and the only honest predictor of the rest of *this* frame is the part of it
    * that has already been drawn.
    */
+  /**
+   * Where a stage of the running pass falls on the Download row's bar, by the samples each
+   * stage of it computes — the same rule `explorer.js`'s `STAGE_SPAN` states for the
+   * shallow pass, except that down here the stages are the pass's own: a preview-only
+   * render has one stage and fills the whole bar with it, and a finish at one sample a
+   * pixel is two rather than three.
+   */
+  function spanOf(stage) {
+    const stages = running?.stages ?? [stage];
+    const samples = stages.map((s) => s.width * s.height * s.supersample ** 2);
+    const whole = samples.reduce((sum, count) => sum + count, 0);
+    const index = Math.max(0, stages.indexOf(stage));
+    const before = samples.slice(0, index).reduce((sum, count) => sum + count, 0);
+    return { from: before / whole, width: samples[index] / whole };
+  }
+
   function report(stage, done, elapsed) {
     const percent = Math.round(done * 100);
+    const span = spanOf(stage);
+    host.showProgress(span.from + span.width * done);
     els.progress.style.setProperty("--done", `${percent}%`);
     const left = done > 0.02 ? (elapsed / done) * (1 - done) : null;
     const remaining = left === null ? "" : ` · about ${said_time(left / 1000)} left`;
@@ -804,18 +828,24 @@ export function mount(host) {
   }
 
   /**
-   * Zoom about a point of the canvas.
+   * Reframe about a point of the canvas: a new width, and a centre moved `pull` of the way
+   * from where it is to that point.
    *
    * The anchor is the centre plus an offset, and the new centre is the anchor plus the old
    * offset scaled — so what is added to the exact centre is `offset × (1 − scale)`, one
    * double, once. Written this way rather than as `anchor + (centre − anchor) × scale`
    * precisely because the second spelling forms the anchor as a coordinate, and a
    * coordinate formed in `f64` down here is the bug this tab exists to avoid.
+   *
+   * **`pull` is what a box tool needs and a wheel does not** *(Matt,
+   * explorer_box_zoom_and_download_row_ckpt140, 2026-09-22)*. A wheel notch holds the point
+   * under the pointer still, which is `1 − scale`; a box puts that point at the centre,
+   * which is `1`. The arithmetic is otherwise the same, and sharing it is the only reason
+   * a box in this tab is a dozen lines rather than its own exact-decimal route.
    */
-  function zoom(px, py, factor) {
+  function reframe(px, py, pull, widthOf) {
     const grid = host.grid();
     const on = display();
-    const scale = factor;
     // The point is taken on what the canvas is SHOWING, which is the widened frame while
     // something is pending — so the wheel zooms about what is under the pointer rather
     // than about where that pointer would be on a picture nobody is looking at.
@@ -823,10 +853,10 @@ export function mount(host) {
     const downOffset = (0.5 - py / grid.height) * planeHeight(on);
     const centreAcross = fx.difference(view.x.dec, on.x.dec);
     const centreDown = fx.difference(view.y.dec, on.y.dec);
-    const shiftAcross = fx.fromNumber((acrossOffset - centreAcross) * (1 - scale));
-    const shiftDown = fx.fromNumber((downOffset - centreDown) * (1 - scale));
+    const shiftAcross = fx.fromNumber((acrossOffset - centreAcross) * pull);
+    const shiftDown = fx.fromNumber((downOffset - centreDown) * pull);
     if (shiftAcross === null || shiftDown === null) return;
-    const width = view.w.value * scale;
+    const width = widthOf(on);
     if (!(width > 0) || !Number.isFinite(width)) return;
     view = {
       ...view,
@@ -836,6 +866,30 @@ export function mount(host) {
     };
     if (!pinnedCap) view = { ...view, maxiter: policyCap(width) };
     moved();
+  }
+
+  /** Zoom about a point of the canvas: the point under the pointer stays where it is, and
+   *  a notch is a notch — the width scales off the view's own, so notches held down while a
+   *  frame is pending compound on the frame being asked for rather than on the standin. */
+  function zoom(px, py, factor) {
+    reframe(px, py, 1 - factor, () => view.w.value * factor);
+  }
+
+  /**
+   * Zoom to a box: the point clicked becomes the centre, and `factor` is the box's share of
+   * the canvas width. One `moved()`, like every other gesture here.
+   *
+   * **Both halves come off the frame the canvas is showing**, and that is the whole
+   * difference from a wheel notch. A box is a rectangle the reader drew on a picture, so
+   * it means that piece of *that* picture — and while a deep frame is pending the picture
+   * is the stale one widened to `PENDING_FRAMING`. Taking the centre from the shown frame
+   * and the width from the view zoomed about the right place by 1/0.65 too much, which
+   * looked like a box that overshot rather than like a bug. Measured, not supposed: with
+   * the tab pending at 4.4 across, a box a third of the canvas wide landed at width
+   * 1.3228 where the picture said 2.0350.
+   */
+  function box(px, py, factor) {
+    reframe(px, py, 1, (on) => on.w.value * factor);
   }
 
   // ----------------------------------------------------------------- the two sets
@@ -1559,6 +1613,7 @@ export function mount(host) {
 
     pan,
     zoom,
+    box,
     /** An arrow key, as a share of the width. */
     nudge(across, down) {
       pan(-across * PAN_STEP * host.grid().width, down * PAN_STEP * host.grid().height);

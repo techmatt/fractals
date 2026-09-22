@@ -21,6 +21,8 @@ Each line is a `##` below, and the question it is the answer to.
 |---|---|
 | **What is here** | which file does what, and what a reader downloads |
 | **The studio** | how the left panel and the viewer share one page and one URL |
+| **The box tool** | how a frame is named in two clicks, and why it commits like a wheel notch |
+| **The render bar** | what the bar on the Download row is measuring, and where its stops fall |
 | **The Julia preview under the pointer** | what the hover preview costs and why it never blocks |
 | **The walk** | how a frame is walked to a gallery of its neighbours, and what a step is |
 | **Deep** | the tab below the `f64` floor: the second module, the pool, the cap, the minibrots, what draws itself |
@@ -226,8 +228,9 @@ beside a viewer that draws the place it stands for than beside a link that leave
 the folded Details: the render stat line, family, constants, `x`, `y`, `w`, all editable. Copy link is in the bar,
 because it is about the page rather than about a group.
 
-**Three view buttons close the Download row** *(explorer_view_buttons_ckpt130, 2026-09-17;
-five until explorer_controls_ckpt140, 2026-09-22)*, at its right end, **each with its key on
+**A tool and three view buttons close the Download row** *(explorer_view_buttons_ckpt130,
+2026-09-17; five until explorer_controls_ckpt140, 2026-09-22; `Box (b)` added by
+explorer_box_zoom_and_download_row_ckpt140, 2026-09-22)*, at its right end, **each with its key on
 its own face** *(Matt, explorer_ui_text_ckpt139, 2026-09-21)* — `Julia here (j)`, spelled the
 way it is pressed, because a tooltip is not something a reader on a touchscreen can open or a
 reader on a mouse hovers long enough to find. `KEYS` in `explorer.js` spells the two the page
@@ -237,6 +240,10 @@ only restated their button's own words are gone. **The labels carry the state** 
 that the row says where the reader is standing — which is why this page has no status strip
 and no breadcrumb:
 
+- **Box (b)** — the box tool, which is a section of its own below. It leads the group
+  because it is a tool and the three after it are destinations: they say where the reader is
+  standing, and this one is how they get somewhere. It is the only button in the row that is
+  a state rather than an action, so it carries `aria-pressed` and lights while it is armed.
 - **Reset to seat** — **no key** *(Matt, explorer_controls_ckpt140)*, where it had `s`: it is
   the one of these a reader presses deliberately rather than repeatedly, and a key on it is a
   picture lost to a stray keystroke. It is in neither `KEYS` nor `TOGGLE_KEYS`. The picture
@@ -318,7 +325,9 @@ when a pass finishes measuring. It is `keyOf` over the view's own query, and **t
 keys its entries the same way** — see *The way back*, which needs the same identity over a
 deep link as well, which is why the reduction reads a query rather than a view.
 
-These five keys are bare letters and never take Ctrl, Alt or Meta, and they work with focus
+**`r`, `j`, `p`, `h` and `b`** — `TOGGLE_KEYS`, and the whole of what this page binds
+besides the arrows, `+`/`-` and Ctrl+Z/Y. They are bare letters, never take Ctrl, Alt or
+Meta, and work with focus
 on a button — the button just pressed, most often. **Ctrl/Cmd is spelled on the row's own
 tooltip**, by the two keys that have no button at all *(explorer_undo_redo_ckpt137)*, and
 those are the one thing on this row that is a shortcut rather than chrome — which is also
@@ -397,9 +406,15 @@ the accent and a hairline running from it to the section's right edge; the rule 
 divider, so the sections carry no border of their own. The gallery panel's Mode and Color
 family use the same class. A section's one action sits on its rule: **Reset palette**
 on Palette's, which resets the shade keys (never the map itself) and is
-disabled with nothing to reset and carries the count of keys set in its label — the
-separate "N of 7 set" line is gone, and the button's title names the keys, including any
-that have no control.
+disabled with nothing to reset — the separate "N of 7 set" line is gone, and the button's
+title names the keys, including any that have no control.
+
+⚠ **It reads *Reset palette* and nothing else** *(Matt,
+explorer_box_zoom_and_download_row_ckpt140, 2026-09-22)*. It carried the count of keys set
+in parentheses — `Reset palette (2)` — and on this page a parenthesis is a hotkey, every
+other one being one. Nothing was lost by dropping it: the title already names the keys
+themselves, which says more than a count did, and a greyed button already says when there
+are none.
 
 **A picture gets into the viewer exactly one way, by being a link.** A gallery tile
 parses the permalink its record carries, an atlas mark parses the one its slot derived,
@@ -422,6 +437,107 @@ picture: `permalink.js` tolerates the key, reads nothing from it and never emits
 the canonical string of a view — what Copy link copies — is the picture alone. Two rules
 keep that from becoming a contract by the back door: a UI key never refuses a link, and a
 UI key never decides what is drawn.
+
+## The box tool *(Matt, explorer_box_zoom_and_download_row_ckpt140, 2026-09-22)*
+
+`b`, or `Box (b)` at the left of the Download row's toggles. **Click the center, move away
+to set the width, click again to zoom to it.** `Esc` or `b` again cancels, an armed or
+half-drawn box either way, and the tool disarms after one zoom — a reader who wants another
+asks for another.
+
+**Every other way into a view on this page is incremental**, and that is what this is for.
+A wheel notch, an arrow key and a drag each move a little and each start a render; getting
+to a piece of filigree the reader can already see took a dozen of them, and a dozen renders.
+A box is the frame named in one gesture.
+
+**Centred on the first click, not corner to corner.** The commoner idiom is a drag between
+two corners, and it is the wrong one here: what a reader wants is *that*, in the middle, and
+a corner-to-corner box makes them work out where the middle will end up. The box is drawn at
+the **viewer's own aspect** throughout — half the width follows the pointer, and the height
+is that width through the canvas's ratio — so the rectangle on the canvas is the frame that
+will be drawn rather than an approximation of it. A second click within `BOX_LEAST` (8
+canvas pixels) of the first is a reader changing their mind and cancels, because a box a few
+pixels across would land past the `f64` wall from most places on this page.
+
+**It commits by the route a wheel notch takes.** `zoomToBox` is `zoomAbout`'s own tail —
+`moveTo`, `reproject`, `draw`, and the one `changed()` inside `moveTo` — so the way back, the
+address bar, the seat note and the Julia preview all see an ordinary view change and know
+nothing about the tool that made it. `zoomAbout` itself cannot stand in for it: that one
+holds the anchor where it is on the canvas, and a box is centred on the point clicked. What
+the two do share is `tooDeep`, pulled out of `zoomAbout` for this — the `f64` refusal and
+the *Open this frame in Deep* offer are the whole of what this renderer has to say about
+going deeper, and a box that overshoots the wall gets the same sentence a wheel does.
+
+**A half-drawn box is cancelled by any other view change**, in `changed()`: the rectangle is
+over a picture of somewhere else the moment the view moves under it. An *armed* one survives,
+because nothing has been chosen yet. The tool's own zoom is not caught by that, since it
+disarms before it commits.
+
+**It paints like the mark and the walk's cells** — onto the screen after every stage, never
+into `frame`, through `paintBox` at the head of `paintMark`. Two strokes, a wide dark one
+under a narrow light one, for the mark's reason: either alone disappears against some picture
+on this page. The centre stays marked with a small square while the width is being set.
+
+**The Deep tab has it too, and pays about a dozen lines for it.** The painting is free —
+`compose` is that tab's one seam onto the canvas and it ends in `paintMark` like everything
+else — so what it cost is the commit. `deep.js`'s `zoom` became `reframe(px, py, pull,
+widthOf)` and gained a `box` beside it: a wheel notch moves the centre `1 − scale` of the way
+to the pointer, a box moves it all the way, and the exact-decimal arithmetic is the same in
+both. One `moved()`, like every other gesture there — composing `pan` and `zoom` would have
+written an intermediate frame to the address bar.
+
+⚠ **And in that tab the box reads off the frame the canvas is SHOWING, both halves.** While
+a deep frame is pending, the canvas holds the previous picture widened to `PENDING_FRAMING`
+(0.65) — so a box drawn on it means that piece of *that* picture, and its width has to scale
+from the shown frame's width and not from the view's. Taking the centre from one and the
+width from the other was the first version of this and it **overshot by 1/0.65**, which
+looks like a tool that zooms too far rather than like a bug. Measured: with the tab pending
+at 4.4 across and a box a third of the canvas wide, the box landed at width 1.3228 where the
+picture said 2.0350. A wheel notch keeps scaling off the view's own width, deliberately —
+a notch is a notch, and notches held down while a frame is pending should compound on the
+frame being asked for.
+
+**It is a mouse gesture.** The sizing is `pointermove` between two clicks, and a touchscreen
+sends no moves between taps — a second tap lands inside `BOX_LEAST` and cancels. That is the
+same line the Julia preview draws, and for the same reason; nothing on this page is only
+reachable through it.
+
+## The render bar *(Matt, explorer_box_zoom_and_download_row_ckpt140, 2026-09-22)*
+
+`#render-state`, on the Download row before the estimate. **It was a dot until this prompt**:
+the colour said which of three stages a pass was in — red drawing the field, yellow with the
+one-sample picture up, green finished — and nothing said how far through one it was, so a
+slow frame and a stuck one looked identical for as long as anybody was willing to wait. The
+reading keeps its colour and the bar fills.
+
+**Full is the resting state, not the empty one.** Nothing rendering means the picture is
+finished, so the bar sits full in the colour of the last reading; an empty bar would read as
+a render that never started. `showState` fills it at both ends a pass can have — `final` and
+`stopped` — and empties it on entering `rendering` from any other state, which also covers a
+drag's slid preview, honestly at nothing.
+
+**The stops are derived from the two constants, never typed.** A pass is three field stages:
+the preview at `PREVIEW_DIVISOR` coarser each way, the full pass at the screen, and the
+finish at `FINAL_SUPERSAMPLE` finer each way — 1/16, 1 and 4 of the screen's samples today,
+so the bar's stops fall at **1.2%** and **20.7%**. `STAGE_SPAN` computes them, so a change to
+either constant moves the bar with it. A stage served from the field cache **jumps** its
+share rather than filling it, which is the truth: nothing was iterated. A recolour of a
+cached final field sits at 20.7% and goes full at `final`.
+
+**The shade is not counted.** It is milliseconds against a field pass at a screen's size.
+`download.js` reserves a `shadeShare` at the end of its own bar because a *download's* shade
+is seconds to minutes; a screen's is not, and a bar that crawled the last few percent for it
+would be measuring the wrong thing.
+
+**The Deep tab drives the same bar**, through a `showProgress` on the host beside
+`showState`, called from that tab's own per-band `report`. Its stages are the pass's own
+rather than a fixed three — a preview-only render has one stage and fills the whole bar with
+it, a finish at one sample a pixel is two — so `spanOf` weights them by their own samples.
+The tab's own `#deep-progress` line, with its percentage and its time-left, is unchanged.
+
+⚠ **`data-state` stays on that element**, and the fill is a child. `bench/page.mjs` puts a
+`MutationObserver` on it and `bench/hunt/lib.mjs` reads it; the observer filters on
+`data-state` by name, so the per-band `--done` writes are invisible to it.
 
 ## The Julia preview under the pointer *(explorer_julia_hover_preview_ckpt137, 2026-09-20)*
 
@@ -564,7 +680,7 @@ walk runs and whether the viewer follows it are two states, `state` and `attache
    **While the walk runs, the viewer draws nothing of its own** *(walk_console_ckpt131)*:
    it shows the 384×216 picture the walk judged of the frame it stands in, upscaled, with the picture
    before it dimmed around it and black beyond, and never refines it (`showWalk`; the
-   render-state dot reads Stopped). A rung's finished state, with its last label and the
+   render-state bar reads Stopped). A rung's finished state, with its last label and the
    chosen box, is held 400 ms (`DWELL_MS`) while the walk carries on computing. Each
    colouring of a mined place is shown as it was drawn and held 150 ms (`BURST_DWELL_MS`),
    because sixteen of them at the rung's hold would leave the viewer six seconds behind the
@@ -2405,9 +2521,18 @@ the row:
   quicker, and the shallow view is never substituted.
 
 **One row, first, and always open.** Download is the studio's first section: two buttons,
-leftmost — *Download PNG* and *Download JPG* — then a size (*As shown*, three wallpaper
+leftmost — `↓ PNG` and `↓ JPG` — then a size (*Screen*, *As shown*, three wallpaper
 presets, or a custom width and height), a 1× / 4× / 16× samples toggle that opens at 4×,
-and an estimate of a few words. 16× is there to hold a download against the same picture
+and an estimate of a few words.
+
+⚠ **The word *Download* is a green arrow** *(Matt,
+explorer_box_zoom_and_download_row_ckpt140, 2026-09-22)*, and the size option that read
+*This screen (2560×1440)* reads *Screen (2560×1440)*. Both were the widest things in a row
+that wraps on a phone, and both said a word the heading over them already says. The buttons
+keep `Download PNG` and `Download JPG` as their `aria-label`, so the accessible name did not
+shrink with the face; the arrow is a span of its own, which is what lets the percentage
+during a render replace the format's name without touching it — a render reads `↓ 45%`.
+The button's `min-width` came down from 6.5rem to 4.25rem with it. 16× is there to hold a download against the same picture
 at 4×, and the sample ceiling below is what bounds it: 2560x1440 fits, 3840x2160 is
 refused by name. The size, samples and estimate are the same for both; the pressed button is the
 progress bar and the way to cancel, and the other is held still until it finishes. On a
@@ -2567,7 +2692,9 @@ before it.
 
 Two seams into the page and both are read-only. `#render-state`'s `data-state` and
 `#stats`'s text are what a reader sees, so a `MutationObserver` on the pair is a timeline of
-the stages with no instrumentation at all. What that cannot see is inside a worker, and
+the stages with no instrumentation at all. That element carries a `--done` as well now, and
+the seam is unmoved because the observer filters on `data-state` by name — see *the render
+bar*. What that cannot see is inside a worker, and
 `render.js` exports a `passes` ring buffer on `globalThis.__render` — every band's rows and
 milliseconds — which is the only way to tell a frame that is slow because the recurrence is
 expensive from one that is slow because eleven workers spent the tail waiting on the

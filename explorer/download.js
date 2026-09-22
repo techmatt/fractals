@@ -356,7 +356,9 @@ export function install(context) {
   const estimateLine = document.getElementById("download-estimate");
   const buttons = Object.entries(FORMATS).map(([key, format]) => {
     const button = document.getElementById(`download-${key}`);
-    const label = button.querySelector(".download-label");
+    // The arrow is the button's own and never rewritten: what a render's percentage
+    // replaces is the format's name beside it.
+    const label = button.querySelector(".download-said");
     return { format, button, label, title: button.title };
   });
 
@@ -364,7 +366,7 @@ export function install(context) {
   if (display !== null) {
     const screenOption = document.createElement("option");
     screenOption.value = SCREEN;
-    screenOption.textContent = `This screen (${display.width}×${display.height})`;
+    screenOption.textContent = `Screen (${display.width}×${display.height})`;
     sizePicker.append(screenOption);
   }
   const shownOption = document.createElement("option");
@@ -539,7 +541,7 @@ export function install(context) {
     go.button.classList.remove("is-running");
     go.button.style.removeProperty("--done");
     go.button.title = go.title;
-    go.label.textContent = `Download ${go.format.label}`;
+    go.label.textContent = go.format.label;
     lock(false, go);
     setBusy(false);
     describe();

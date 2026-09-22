@@ -195,6 +195,10 @@ const details = document.getElementById("details");
 const paletteStrip = document.getElementById("palette-strip");
 const paletteShown = document.getElementById("palette-shown");
 const renderState = document.getElementById("render-state");
+/** Named up here with the canvas rather than with the view buttons it sits among, because
+ *  the box tool's own code is up here too — the tool paints with the mark and the walk's
+ *  cells, and its button is the one piece of it that is furniture. */
+const boxButton = document.getElementById("view-box");
 
 let renderer = null;
 let contract = null;
@@ -477,7 +481,7 @@ function stat(text) {
   stats.textContent = text;
 }
 
-/** The one word each state of the render-state dot says, on hover and to a screen reader.
+/** The one word each state of the render-state bar says, on hover and to a screen reader.
  *
  *  `rendering` is the field being iterated, with at most a stretched preview up;
  *  `sharpening` is the one-sample picture up while the final pass runs; `final` is the
@@ -490,10 +494,57 @@ const RENDER_STATES = {
   stopped: "Stopped",
 };
 
+/**
+ * How far through the pass the bar stands, `0` to `1`.
+ *
+ * **The bar is full when nothing is running** *(Matt,
+ * explorer_box_zoom_and_download_row_ckpt140, 2026-09-22)*, in the colour of the last
+ * reading: a finished picture is a finished bar, and an empty one would read as a render
+ * that never started. So a pass empties it on the way in and `showState` fills it at both
+ * ends a pass can have.
+ */
+function showProgress(done) {
+  renderState.style.setProperty("--done", String(Math.max(0, Math.min(1, done))));
+}
+
 function showState(state) {
+  // Entering `rendering` from anywhere else is a pass beginning — including a drag's slid
+  // preview, which is honestly at nothing. `sharpening` keeps what the field stages put
+  // there, because the bar is one pass and not one stage.
+  if (state === "rendering" && renderState.dataset.state !== "rendering") showProgress(0);
+  if (state === "final" || state === "stopped") showProgress(1);
   renderState.dataset.state = state;
   renderState.title = RENDER_STATES[state];
   renderState.setAttribute("aria-label", RENDER_STATES[state]);
+}
+
+/**
+ * What share of a pass each of its three field stages is, by the samples it computes.
+ *
+ * The preview is a grid `PREVIEW_DIVISOR` coarser each way, the full pass is the screen,
+ * and the finish is `FINAL_SUPERSAMPLE` finer each way — so the three are `1/16`, `1` and
+ * `4` of the screen's samples on today's constants, and the bar's stops fall at 1.2% and
+ * 20.7%. Derived from the two constants rather than typed, so a change to either moves the
+ * bar with it. A stage served from the field cache jumps its share rather than filling it,
+ * which is the truth: nothing was iterated.
+ */
+const STAGE_SAMPLES = [1 / PREVIEW_DIVISOR ** 2, 1, FINAL_SUPERSAMPLE ** 2];
+const STAGE_SPAN = (() => {
+  const whole = STAGE_SAMPLES.reduce((sum, share) => sum + share, 0);
+  let at = 0;
+  return STAGE_SAMPLES.map((share) => {
+    const from = at;
+    at += share / whole;
+    return { from, width: share / whole };
+  });
+})();
+
+/** A stage's own `onProgress`, mapped onto the whole pass's bar. */
+function stageProgress(stage, pass) {
+  const { from, width } = STAGE_SPAN[stage];
+  return (done) => {
+    if (pass === drawing) showProgress(from + width * done);
+  };
 }
 
 /** A refusal: the picture is not drawn, and the reason is on the page.
@@ -634,6 +685,34 @@ function moveTo(x, y, w) {
   changed();
 }
 
+/**
+ * Whether this width is past the `f64` wall, having said so if it is.
+ *
+ * Its own function because two gestures reach it — a wheel or a key through `zoomAbout`,
+ * and the box tool through `zoomToBox` — and the offer it makes is the whole of what this
+ * renderer has to say about going deeper.
+ */
+function tooDeep(width) {
+  if (width >= view.w.value) return false;
+  if (renderer.resolves(view.x.value, view.y.value, width, grid.width, grid.height)) return false;
+  // The sentence used to run to six, explaining `f64`'s sixteen digits and what happens
+  // when two neighbouring pixels round together. None of it changed what the reader
+  // could do about it, which is the one thing there is to say — the Deep tab, or stop
+  // *(explorer_ui_text_ckpt139)*.
+  const wall = "This is as deep as this renderer can zoom here.";
+  // On the two sets `z² + c` draws, the page now has that arithmetic in a tab of its
+  // own, and this frame is exactly what it opens at.
+  if (carryable() !== null) {
+    offer(`${wall} The Deep tab goes further, and this frame carries over.`,
+      "Open this frame in Deep",
+      () => showPanel("deep"),
+    );
+  } else {
+    say(wall);
+  }
+  return true;
+}
+
 /** Zoom by `factor` about a point of the canvas, refusing to pass the `f64` wall. */
 function zoomAbout(px, py, factor) {
   // Down in the Deep tab a zoom is exact arithmetic on a decimal centre, and it draws
@@ -644,24 +723,7 @@ function zoomAbout(px, py, factor) {
   }
   const anchor = planeAt(px, py);
   const width = view.w.value * factor;
-  if (factor < 1 && !renderer.resolves(view.x.value, view.y.value, width, grid.width, grid.height)) {
-    // The sentence used to run to six, explaining `f64`'s sixteen digits and what happens
-    // when two neighbouring pixels round together. None of it changed what the reader
-    // could do about it, which is the one thing there is to say — the Deep tab, or stop
-    // *(explorer_ui_text_ckpt139)*.
-    const wall = "This is as deep as this renderer can zoom here.";
-    // On the two sets `z² + c` draws, the page now has that arithmetic in a tab of its
-    // own, and this frame is exactly what it opens at.
-    if (carryable() !== null) {
-      offer(`${wall} The Deep tab goes further, and this frame carries over.`,
-        "Open this frame in Deep",
-        () => showPanel("deep"),
-      );
-      return;
-    }
-    say(wall);
-    return;
-  }
+  if (tooDeep(width)) return;
   const scale = width / view.w.value;
   const before = view;
   moveTo(
@@ -669,6 +731,31 @@ function zoomAbout(px, py, factor) {
     anchor.y + (view.y.value - anchor.y) * scale,
     width,
   );
+  reproject(before);
+  draw();
+}
+
+/**
+ * Zoom to a box: a point of the canvas taken as the new centre, and a canvas width taken
+ * as the new plane width.
+ *
+ * **The same route a wheel notch takes**, deliberately — `moveTo`, `reproject`, `draw`, and
+ * the one `changed()` inside `moveTo` — so the way back, the address bar and the Julia
+ * preview see an ordinary view change and know nothing about the tool that made it.
+ * `zoomAbout` cannot stand in for it: that one holds the anchor where it is on the canvas,
+ * and a box is centred on the point the reader clicked.
+ */
+function zoomToBox(px, py, across) {
+  const factor = across / grid.width;
+  if (deepOwns()) {
+    deep.box(px, py, factor);
+    return;
+  }
+  const centre = planeAt(px, py);
+  const width = view.w.value * factor;
+  if (tooDeep(width)) return;
+  const before = view;
+  moveTo(centre.x, centre.y, width);
   reproject(before);
   draw();
 }
@@ -782,6 +869,7 @@ function canvasAt(x, y) {
  */
 function paintMark() {
   paintOverlay();
+  paintBox();
   if (mark === null || mark.family !== view.family) return;
   const at = canvasAt(mark.x, mark.y);
   const px = Math.round(at.px);
@@ -801,6 +889,94 @@ function paintMark() {
     screen.stroke();
   }
   screen.restore();
+}
+
+// ------------------------------------------------------------------------- the box tool
+//
+// **A frame chosen rather than arrived at** *(Matt,
+// explorer_box_zoom_and_download_row_ckpt140, 2026-09-22)*. Every other way into a view on
+// this page is incremental — a wheel notch, a key, a drag — and getting to a piece of
+// filigree the reader can already see took a dozen of them, each one a render. `b` arms the
+// tool, a click names the centre, moving away from it sets the width, and a second click
+// takes it.
+//
+// **Centred on the first click, not corner to corner.** A box dragged between two corners
+// is the commoner idiom and it is the wrong one here: what a reader wants is *that*, in the
+// middle, and a corner-to-corner box makes them work out where the middle will end up. The
+// box is drawn at the viewer's own aspect throughout, so the rectangle on the canvas is the
+// frame that will be drawn and not an approximation of it.
+//
+// It paints like the mark and the walk's cells — onto the screen after every stage, never
+// into `frame` — which is also why the Deep tab gets it for nothing: `compose` is that
+// tab's one seam onto the canvas and it ends in `paintMark` like everything else.
+
+/** `null` when the tool is away; `{ cx, cy, half }` once armed, `half` being `null` until
+ *  the centre is clicked and half the box's canvas width after. */
+let box = null;
+
+/** How far the pointer must be from the centre before a box is taken, in canvas pixels. A
+ *  second click on top of the first is a reader changing their mind, not a zoom to a few
+ *  pixels — which would land past the `f64` wall from most places on the page. */
+const BOX_LEAST = 8;
+
+function paintBox() {
+  if (box === null || box.half === null) return;
+  const unit = Math.max(1, Math.round(Math.min(grid.width, grid.height) / 360));
+  const half = box.half;
+  const down = (half * grid.height) / grid.width;
+  screen.save();
+  // Two strokes, wide dark under narrow light, for the mark's reason: either alone
+  // disappears against some picture on this page.
+  for (const [ink, width] of [["rgba(0, 0, 0, 0.55)", 3 * unit], ["#fff", unit]]) {
+    screen.strokeStyle = ink;
+    screen.lineWidth = width;
+    screen.strokeRect(box.cx - half, box.cy - down, half * 2, down * 2);
+  }
+  // The centre stays marked while the width is being set: it is the one thing about the
+  // box that is already decided, and the box grows symmetrically about it.
+  screen.fillStyle = "#fff";
+  screen.fillRect(box.cx - unit, box.cy - unit, unit * 2, unit * 2);
+  screen.restore();
+}
+
+/** Put the picture back up with whatever the box is now, without drawing anything. */
+function repaintBox() {
+  screen.drawImage(frame, 0, 0);
+  paintMark();
+}
+
+/** Arm the tool, or put it away. Armed, it takes the canvas's clicks until it is used or
+ *  cancelled; the Julia preview stays away while it is, since both want the same click. */
+function toggleBox() {
+  if (locked()) return;
+  if (box !== null) {
+    cancelBox();
+    return;
+  }
+  box = { cx: 0, cy: 0, half: null };
+  juliaCard?.hide();
+  syncBox();
+  say("Click the center of the box, then click again to set its width. Esc cancels.");
+}
+
+/** `quiet` where somebody else owns the line under the canvas — a view change that took the
+ *  box away has its own thing to say, and clearing it here would swallow it. */
+function cancelBox({ quiet = false } = {}) {
+  if (box === null) return;
+  const drawn = box.half !== null;
+  box = null;
+  syncBox();
+  if (drawn) repaintBox();
+  if (!quiet) say("");
+}
+
+/** The button's face and its pressed state. The canvas takes a crosshair while the tool is
+ *  armed, so the pointer says what a click will do. */
+function syncBox() {
+  const armed = box !== null;
+  boxButton.setAttribute("aria-pressed", String(armed));
+  boxButton.classList.toggle("is-armed", armed);
+  canvas.classList.toggle("is-boxing", armed);
 }
 
 // ------------------------------------------------------------------- the walk's overlay
@@ -1177,25 +1353,34 @@ async function drawPass() {
       present(shaded.image);
       return true;
     };
+    // Each field stage moves the bar over its own share of the pass, and a stage that came
+    // off the cache jumps its share instead of filling it — see `STAGE_SPAN`.
     const cachedFull = renderer.cached(fullKey);
     if (cachedFull !== undefined) {
+      showProgress(STAGE_SPAN[2].from);
       if (!(await shadeFull(cachedFull))) return;
     } else {
       const cachedPreview = renderer.cached(previewKey);
       if (cachedPreview !== undefined) {
+        showProgress(STAGE_SPAN[1].from);
         stretch(renderer.shade(cachedPreview, view).image);
       } else {
         progress(`iterating at ${previewGrid.width}×${previewGrid.height}…`);
-        const preview = await renderer.field(view, previewGrid.width, previewGrid.height);
+        const preview = await renderer.field(view, previewGrid.width, previewGrid.height, {
+          onProgress: stageProgress(0, pass),
+        });
         if (preview === null || pass !== drawing) return;
         renderer.remember(previewKey, preview);
         stretch(renderer.shade(preview, view).image);
       }
 
       progress(`iterating at ${size} on ${renderer.workerCount} workers…`);
-      const full = await renderer.field(view, grid.width, grid.height);
+      const full = await renderer.field(view, grid.width, grid.height, {
+        onProgress: stageProgress(1, pass),
+      });
       if (full === null || pass !== drawing) return;
       renderer.remember(fullKey, full);
+      showProgress(STAGE_SPAN[2].from);
       if (!(await shadeFull(full))) return;
     }
     settle();
@@ -1217,7 +1402,10 @@ async function drawPass() {
     const recolor = field !== undefined;
     if (!recolor) {
       progress(`${size} · iterating at ${FINAL_SUPERSAMPLE ** 2}× on ${renderer.workerCount} workers…`);
-      field = await renderer.field(view, grid.width, grid.height, { supersample: FINAL_SUPERSAMPLE });
+      field = await renderer.field(view, grid.width, grid.height, {
+        supersample: FINAL_SUPERSAMPLE,
+        onProgress: stageProgress(2, pass),
+      });
       if (field === null || pass !== drawing) return;
       renderer.remember(finalKey, field);
     } else if (!shape.direct) {
@@ -1907,12 +2095,18 @@ function syncShade() {
 
   syncFinal();
 
-  // The count names every key set, the ones with no control included: a link that set
-  // the rolloff is a recipe this button resets, and its title is where that is said.
+  // What this button would put back: every key set, the ones with no control included,
+  // since a link that set the rolloff is a recipe this button resets.
+  //
+  // **The button says `Reset palette` and nothing else** *(Matt,
+  // explorer_box_zoom_and_download_row_ckpt140, 2026-09-22)*. It carried the count in
+  // parentheses — `Reset palette (2)` — which on this page reads as a hotkey, every other
+  // parenthesis on it being one. Nothing is lost: the title below already names the keys
+  // themselves, which is more than a count ever said, and a greyed button already says
+  // when there are none.
   const set = shade.chosen(subject.shade);
   const labels = set.map((key) => shade.CONTROLS.find((control) => control.key === key).label);
   shadeReset.disabled = busy || set.length === 0;
-  shadeReset.textContent = set.length === 0 ? "Reset palette" : `Reset palette (${set.length})`;
   shadeReset.title =
     set.length === 0
       ? ""
@@ -2181,6 +2375,11 @@ function arrived() {
 function changed() {
   interruptWalk("The walk carries on; Back to the walk returns to it.");
   leaveSeat();
+  // A half-drawn box is a rectangle over a picture of somewhere else the moment the view
+  // moves under it, so any other route to a new view puts the tool away. An armed one
+  // survives: nothing has been chosen yet, and the reader is still going to want it. The
+  // tool's own zoom is not caught here — it disarms before it commits.
+  if (box !== null && box.half !== null) cancelBox({ quiet: true });
   // The plane moved under a pointer that may not have: whatever the card was showing is
   // a picture of somewhere else now. The next move over the canvas offers the new place.
   juliaCard?.hide();
@@ -2835,6 +3034,7 @@ async function mountDeep() {
       say,
       stat,
       showState,
+      showProgress,
       settle,
       // A deep view is always one the reader made, so the curve is measured whenever the
       // box is ticked. There is no stored half here: nothing arrives from a run.
@@ -2941,6 +3141,32 @@ function preview(dx, dy, scale = 1) {
 
 canvas.addEventListener("pointerdown", (event) => {
   if (locked()) return;
+  // **The box tool takes the press before the gestures do**, and takes it on the press
+  // rather than the release: a click that also started a drag would slide the picture out
+  // from under a box being drawn on it. Neither `pointers` nor `drag` is touched while it
+  // is armed, so nothing is left half-set when it is cancelled.
+  if (box !== null) {
+    const at = canvasPoint(event);
+    if (box.half === null) {
+      box = { cx: at.x, cy: at.y, half: 0 };
+      repaintBox();
+      say("Move away from the center to size the box, then click to zoom to it.");
+      return;
+    }
+    if (box.half < BOX_LEAST) {
+      cancelBox();
+      return;
+    }
+    const across = box.half * 2;
+    const { cx, cy } = box;
+    // Away before the zoom, so that one press is one box: the tool is for arriving
+    // somewhere, and a reader who wants another one asks for another one.
+    box = null;
+    syncBox();
+    say("");
+    zoomToBox(cx, cy, across);
+    return;
+  }
   canvas.setPointerCapture(event.pointerId);
   pointers.set(event.pointerId, canvasPoint(event));
   if (pointers.size === 1) {
@@ -2952,6 +3178,18 @@ canvas.addEventListener("pointerdown", (event) => {
 });
 
 canvas.addEventListener("pointermove", (event) => {
+  // Half a box follows the pointer. The width is the larger of the two distances taken at
+  // the viewer's aspect, so the rectangle reaches whichever way the reader moved and the
+  // box on the canvas is the frame that will be drawn.
+  if (box !== null && box.half !== null) {
+    const at = canvasPoint(event);
+    box.half = Math.max(
+      Math.abs(at.x - box.cx),
+      (Math.abs(at.y - box.cy) * grid.width) / grid.height,
+    );
+    repaintBox();
+    return;
+  }
   if (!pointers.has(event.pointerId)) return;
   pointers.set(event.pointerId, canvasPoint(event));
   if (pinch !== null && pointers.size === 2) {
@@ -3081,7 +3319,9 @@ function previewable() {
     !deepOwns() &&
     walkLayers === null &&
     drag === null &&
-    pinch === null
+    pinch === null &&
+    // Both want the same click, and the box tool asked for it first.
+    box === null
   );
 }
 
@@ -3213,6 +3453,14 @@ window.addEventListener("keydown", (event) => {
       stepTrail(back ? -1 : 1);
       return;
     }
+  }
+  // **Escape, and only while the tool is out.** Nothing else on this page takes it, and a
+  // key that does nothing most of the time is a key nobody trusts — so it is bound to the
+  // one thing there is to cancel, and passed straight through whenever there is not.
+  if (event.key === "Escape" && box !== null) {
+    event.preventDefault();
+    cancelBox();
+    return;
   }
   const toggle = TOGGLE_KEYS[event.key];
   if (toggle && !event.ctrlKey && !event.altKey && !event.metaKey && !event.repeat &&
@@ -3390,6 +3638,11 @@ function syncToggles() {
   juliaButton.disabled = busy || !hasJulia;
 
   for (const button of [randomPaletteButton, randomPhaseButton]) button.disabled = busy;
+
+  // The tool zooms the viewer, and the Deep tab's viewer is the same canvas — so it is
+  // live in both, and greyed only while a download owns the pool.
+  boxButton.disabled = busy;
+  if (busy) cancelBox({ quiet: true });
 }
 
 /** Back to the picture the viewer was opened at, exactly as opening it did: the seat's
@@ -3572,12 +3825,18 @@ for (const [event, on] of [["pointerenter", true], ["focus", true], ["pointerlea
  *
  *  **Random phase is `h`** *(Matt, explorer_controls_ckpt140, 2026-09-22)*, where it was
  *  `shift+p`: this page had no other binding on `h`, so nothing was rebound to free it.
- *  Every key here is now a bare letter, which is the whole of how they are spelled. */
+ *  Every key here is now a bare letter, which is the whole of how they are spelled.
+ *
+ *  **The box tool is `b`** *(Matt, explorer_box_zoom_and_download_row_ckpt140,
+ *  2026-09-22)*, and `b` was unbound: nothing was rebound to free it either. It is the one
+ *  of these that arms rather than acts, so its button carries `aria-pressed` and `Esc`
+ *  cancels it — see *the box tool*. */
 const TOGGLE_KEYS = {
   r: wholePlane,
   j: toggleJulia,
   p: randomPalette,
   h: randomPhase,
+  b: toggleBox,
 };
 
 /** A new mode keeps the place and drops the parameters, because they belonged to
