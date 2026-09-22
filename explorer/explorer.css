@@ -566,6 +566,10 @@ summary.section-head:focus-visible { outline: 2px solid var(--well-link); outlin
   color: var(--well-ink-dim);
 }
 .side-note:empty { display: none; }
+/* A side note's way back into the article *(walk_tab_ckpt140)*: the well's own link colour,
+   because `site.css`'s `a` is coloured for a white reading surface and these panels are
+   dark. The same reason `.notice a` carries it. */
+.side-note a { color: var(--well-link); }
 
 /* ----------------------------------------------------------------------- saved */
 
@@ -728,6 +732,55 @@ summary.section-head:focus-visible { outline: 2px solid var(--well-link); outlin
 .walk-back:hover { color: var(--well-ink); border-color: var(--well-ink); }
 .walk-back:focus-visible { outline: 2px solid var(--well-link); outline-offset: 2px; }
 .walk-back[hidden] { display: none; }
+
+/* The spinner beside Back to the walk (walk_tab_ckpt140): while the reader has the viewer
+   and the walk carries on behind it, this says the walk is still computing. It is one
+   element and one keyframe — an arc of a ring, turning — because a library for a spinner is
+   a library on a page that has none. It rides with Back to the walk, so it is on screen in
+   exactly the case it is about: the viewer is the reader's and nothing else on the page is
+   moving. Paused, the ring stops and dims; it is still shown, because a stopped indicator
+   beside a Start button is the state and an absent one is no information. */
+.walk-spinner {
+  flex: none;
+  width: 0.85rem;
+  height: 0.85rem;
+  border-radius: 50%;
+  border: 2px solid var(--well-rule);
+  border-top-color: var(--well-link);
+  animation: walk-spin 0.9s linear infinite;
+}
+.walk-spinner[hidden] { display: none; }
+.walk-spinner.is-paused { animation: none; border-top-color: var(--well-ink-dim); opacity: 0.6; }
+@keyframes walk-spin { to { transform: rotate(1turn); } }
+
+/* How far this walk is through its step budget (walk_tab_ckpt140). It is a count and not an
+   estimate: a step is a card in the strip, the budget is `STEPS` plus the twin's reserve
+   where the plane has a twin, and a walk that peaks early completes the bar rather than
+   abandoning it part-drawn. It sits under the buttons and stays on screen while the walk is
+   paused, so the reader can see where it stopped. */
+.walk-steps { display: flex; align-items: center; gap: 0.5rem; }
+.walk-steps[hidden] { display: none; }
+.walk-steps-bar {
+  flex: 1;
+  height: 0.3rem;
+  border-radius: 2px;
+  background: var(--well-rule);
+  overflow: hidden;
+}
+.walk-steps-fill {
+  display: block;
+  height: 100%;
+  width: 0;
+  background: var(--well-link);
+  transition: width 0.25s linear;
+}
+.walk-steps.is-paused .walk-steps-fill { background: var(--well-ink-dim); }
+.walk-steps-said {
+  flex: none;
+  color: var(--well-ink-dim);
+  font-size: 0.7rem;
+  font-variant-numeric: tabular-nums;
+}
 
 /* ------------------------------------------------------------------ the walk view */
 

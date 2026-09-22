@@ -2065,6 +2065,23 @@ function listedModes(extra = null) {
   ];
 }
 
+/**
+ * Every mode the site has, in the Mode select's order: `listedModes` without the gallery's
+ * narrowing *(walk_tab_ckpt140)*.
+ *
+ * The Mode select lists the modes the published record seats, because it is a way into a
+ * gallery. The Walk tab is not — it draws pictures nobody has seated yet, and the judge
+ * scores a picture whatever mode drew it — so its Modes group offers the whole contract
+ * roster, `explorer/modes.jsonl`'s seventeen, and `walk.js` keeps its own default within
+ * them.
+ */
+function everyMode() {
+  return [
+    ...MODE_ORDER.filter((mode) => link.MODES.includes(mode)),
+    ...link.MODES.filter((mode) => !MODE_ORDER.includes(mode)),
+  ];
+}
+
 /** Whatever the reader just chose, drawn — and the strips rebuilt around it. */
 function rebuild() {
   familyPicker.value = view.family;
@@ -2640,11 +2657,17 @@ async function startWalk() {
       fields: document.getElementById("walk-fields"),
       start: document.getElementById("walk-start"),
       back: document.getElementById("walk-back"),
+      spinner: document.getElementById("walk-spinner"),
+      steps: document.getElementById("walk-steps"),
+      stepsBar: document.getElementById("walk-steps-bar"),
+      stepsFill: document.getElementById("walk-steps-fill"),
+      stepsSaid: document.getElementById("walk-steps-said"),
       progress: document.getElementById("walk-progress"),
       view: document.getElementById("walk-view"),
       controls: document.getElementById("controls"),
       strip: document.getElementById("walk-strip"),
       candidates: document.getElementById("walk-candidates"),
+      candidatesHead: document.getElementById("head-walk-candidates"),
       candidatesPlace: document.getElementById("walk-candidates-place"),
       walking: (on) => document.querySelector(".viewer").classList.toggle("is-walking", on),
       relayout,
@@ -2654,7 +2677,7 @@ async function startWalk() {
       contract,
       palettes: PALETTES,
       shownName,
-      modeOrder: listedModes(),
+      modeOrder: everyMode(),
       planeName,
       juliaOf: JULIA_OF,
       follow: followWalk,

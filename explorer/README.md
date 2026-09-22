@@ -509,12 +509,21 @@ one sentence above Walk config, and the first thing in the panel:
 
 > This visualizes a guided walk through escape-time fractals. It is mostly a demonstration
 > of how the process works: the shipped galleries are what came out of running it
-> continuously for many weeks.
+> continuously for many weeks. For more, read [Finding good locations].
 
 Matt's wording, placed verbatim but for one word: he wrote *orbital fractals*, and the site
 teaches **escape-time fractals** — §Escape-time fractals is a ratified section and *orbital*
 appears nowhere on the site, so the naming rule takes the article's own term. *guided walk*
 and *galleries* are the site's words already.
+
+**The last sentence is the way back into the article** *(Matt, walk_tab_ckpt140,
+2026-09-22)*, and it goes to `article/finding-good-locations.html` because that section is
+where the walk is: its §Guided search names the thing this tab is a demonstration of — *its
+search is a guided walk* — and §The walk and §Where the walk stops are the pipeline's own
+version of what the strip shows. It is a relative href like every other, and the Deep tab
+carries the same shape (§Deep). These two are the only links out of the explorer into the
+article; the site bar's *Making Fractal Wallpapers* is the way to the front page and always
+was.
 
 The third tab runs a simplified version of the mining pipeline, and the viewer shows it
 choosing. **It never starts on its own**: `panel=walk` in an address opens the tab, and only
@@ -612,9 +621,11 @@ walk runs and whether the viewer follows it are two states, `state` and `attache
    all *(walk_faster_ckpt138)*.
 10. A place over the bar is mined, and **it is one field tried in sixteen colourings**
    *(walk_faster_ckpt138)*:
-   - **The field once**, in one of the roster's cheap modes drawn at random, at 640×360×2 —
-     the pipeline's candidate geometry. A texture weight or trap opacity is derived exactly
-     as the viewer derives one.
+   - **The field once**, in one of the roster's cheap modes drawn at random, at 384×216×2 —
+     candidate geometry at the mining supersample. (It was 640×360×2, the pipeline's own,
+     until *pre_closeout_ckpt138* took the judged picture down to the gate's width; this
+     line said 640 until *walk_tab_ckpt140* noticed.) A texture weight or trap opacity is
+     derived exactly as the viewer derives one.
    - **Then fifteen recolours of that same field** (`RECOLOURS` is sixteen counting the
      first), each through a map drawn uniformly from the chosen palette roster
      *(walk_palette_families_ckpt135)*, with the identity shade, `mirror` read off the map's
@@ -624,9 +635,19 @@ walk runs and whether the viewer follows it are two states, `state` and `attache
    - **And one dearer picture at some places**: a mode out of `DEAR_MODES` (`threads`),
      drawn in full, where the place before this one did not take one, so two never run
      together.
+   - **And a finish** *(Matt, walk_tab_ckpt140)*: `FINISH_MODES` — three — further pictures,
+     each in a mode of its own and so each its own field, drawn at random out of everything
+     the Modes group offers and never a mode this place has already been drawn in. See
+     *A slower finish* below.
    - Each candidate is scored by the gate's P≥4 and they are ranked together, and the best
      are kept as tiles (one, frozen — `KEEP`). The fine head does not rank them: it is off
-     and no longer offered.
+     and no longer offered. **The badge reads `Quality 0.15`** *(Matt, walk_tab_ckpt140)*:
+     Quality is `P(≥4)`, the render judge's probability that a person rates the picture 4 or
+     5, unchanged in value and in meaning. `P≥4` is the pipeline's notation and this tab is
+     read by somebody who has met neither the judge nor its scale, so the badge on a found
+     tile and on every candidate tile says the word instead. The strip's cards still say
+     `P≥3`, which is a different question — how good the *place* is rather than this picture
+     of it — and the peak rule's own number.
 
    It used to be **one recipe per ticked mode** *(walk_view_ckpt132)*, eight at the default
    ticks, each its own field — and before that three draws over modes × palettes (hunt and
@@ -657,13 +678,42 @@ drift. It was the thirteen the pipeline accepts with the last five unticked, and
 now is the measured answer to "which of those is cheap enough to draw while somebody
 watches": see *What a walk costs* under §Measured.
 
+**The group now offers every render mode the site has** *(Matt, walk_tab_ckpt140,
+2026-09-22)*, which is a widening of what a reader may *pick* and not of what Default
+paints. The three above are still the burst's roster and Default is still the default.
+
+- The list is `explorer/modes.jsonl`'s **seventeen**, in the Mode select's order,
+  `explorer.js`'s `everyMode()`. The Mode select itself lists fewer — the modes the
+  published gallery record seats — because it is a way into a gallery; the Walk tab is not,
+  it draws pictures nobody has seated, so `gaussian_int`, `trap_circle`,
+  `smooth_trap_circle` and `direct_trap_ring` are on offer here and not there.
+- **Nothing was left out, and that is measured rather than assumed.** The premise the
+  ruling gives is that the head scores a picture whatever mode drew it, which it does; the
+  question it leaves is whether every mode can be *drawn* down here. All seventeen were put
+  through this tab's own `picture()` — the derive pass, a field at 384×216×2, the shade — at
+  a mined Mandelbrot frame (6.5e-5) and on the pinned Phoenix slice, and every one of them
+  rendered a picture with real structure in it and emitted a link that parses back.
+  `walk.js`'s `WALK_REFUSES` is where a refusal would be named with its reason, and it is
+  empty.
+- Two things are true of a **direct trap** here and neither is a refusal. It has no burst,
+  which was true before: it composites from the gradient as it iterates, so a recolour of
+  one is a re-render and `mine` draws it once instead of sixteen times — a reader who picks
+  `direct_trap_lines` gets one picture at a place rather than sixteen, which costs colourings
+  and not the mode. And it **paints flat where the orbits never come near the trap**, the
+  case `DERIVED` exists for and one the derive pass does not always rescue: over four Phoenix
+  frames the four traps gave 428 distinct colours at the home view, 777 at 5e-3, and 4 at
+  3.2e-4, where `smooth` gave 915 at that same frame. That is a bad picture at a place — the
+  judge scores it near zero and the ranking drops it — and it is exactly what the viewer
+  already draws for a reader who picks the mode there.
+
 **Modes and palettes are one radio choice each** *(Matt, explorer_ui_text_ckpt139
 addendum 2, 2026-09-21)*. This tab demonstrates how the galleries were made, and a
 demonstration is a few radio buttons rather than two checklists of fifteen boxes between
 them.
 
-- **Modes** — *Default*, the roster; *Fast modes only*, `FAST_MODES`, which is `smooth` and
-  `tia`; then each roster mode on its own, which paints every place in that mode. Fast is
+- **Modes** — *Default*, the roster plus the finish; *Fast modes only*, `FAST_MODES`, which
+  is `smooth` and `tia` and takes no finish; then each of the seventeen on its own, which
+  paints every place in that mode and takes no finish either. Fast is
   taken from the mined-width table under §Measured and not from the per-mode one, because
   the two do not order the modes the same way and only one of them was measured where this
   tab draws: a picture is `smooth` 1 046 ms, `tia` 1.10x and `threads` 1.44x at the widths a
@@ -688,8 +738,8 @@ or paused and the viewer is the walk's. Download, Mode, Palette and Details are 
 page then. They come back when the reader takes the viewer (a pan, a control's key, an opened
 Found or Saved picture) or leaves the Walk tab for Gallery or Atlas. Back to the walk, Start
 or coming back to the tab puts the walk view back. It is two horizontal strips, *The walk*
-above *Candidates* *(walk_strip_ckpt132)*, each scrolling right when it overflows and kept on
-its newest item. Where the window is short the picture gives up height so both strips are in
+above *Current candidates* *(walk_strip_ckpt132; the rule's two words, walk_tab_ckpt140)*,
+each scrolling right when it overflows and kept on its newest item. Where the window is short the picture gives up height so both strips are in
 sight (`--walk-room` in `explorer.css`); stacked on a phone the page scrolls instead.
 
 **The quarters have fixed colors**, bound to position. They are the same on the picture and
@@ -739,17 +789,102 @@ The few things that are not steps of a walk, such as a stopped download, a judge
 not load, or no plane ticked, go on the status line beside Start.
 
 **The candidates** are the lower strip: one small tile per picture drawn at a place, with
-**the map's display name** and P≥4, filling in as they are drawn, and the place they are of
+**the map's display name** and Quality, filling in as they are drawn, and the place they are of
 (plane and width) on the row's rule, so the row still says whose it is once the strip above
 has moved on. The name under a tile is the map rather than the mode *(walk_faster_ckpt138)*
-because a place is one field tried in sixteen colourings now, so the mode is the same word
-under every tile and the map is what tells two of them apart; the one dear picture is the
-tile whose mode differs, and it says the mode as well. The kept
+because the burst is one field tried in sixteen colourings, so the mode is the same word
+under all sixteen and the map is what tells two of them apart. **A tile that is not the
+burst's says its mode as well** — the dear picture, and the finish's three
+*(walk_tab_ckpt140)*. It was a `DEAR_MODES` test until the finish arrived and made three more
+tiles a reader could not name; it is now simply whether the tile's mode is the one the burst
+was drawn in, which is the thing the reader is being shown either way. The kept
 ones are outlined in the found ink. They stay in drawing order, except that with the fine head
 ticked they are sorted by it and re-outlined.
 **They outlast the decision.** A place's candidates stay up past the kept tile and through
 the start of the next walk, and clear when that walk's first descent ends, so they can still
 be compared while the next root is being found. A Julia twin's mining replaces its parent's.
+
+**Which is why the rule over them says whose they are** *(Matt, walk_tab_ckpt140,
+2026-09-22)*. The heading reads **Current candidates** while the strip holds the walk in
+progress and **Previous candidates** once a new walk has begun and it still holds the
+finished one's. The flip is the moment a new walk begins — at the top of `forever`, before
+the root search rather than after it, because the search is out of sight and a rule that
+waited for it would call a finished walk's candidates current for however long the plane
+took to give a root up. It flips back the moment the new walk lands its first candidate,
+which is the first moment there is anything current to look at; between the two the strip is
+either the old walk's tiles or, once that walk's first descent has ended, the waiting row.
+
+### A slower finish *(Matt, walk_tab_ckpt140, 2026-09-22)*
+
+The label above made the complaint measurable: the strip was flipping to *Previous* while
+the reader was still looking at the candidates. There is nothing between a walk's last
+candidate and the next walk beginning — the kept picture is held 400 ms and the loop goes
+round — so the whole of the Current window is however long the place took to paint, and at
+16 colourings of one field that is a couple of seconds.
+
+**The fix is work and not a wait**, on the ruling's own terms: a dwell that held a finished
+strip up is the reader waiting on nothing, and what is wanted is more to look at while they
+look. So painting a place — the last step of its leg, and of the walk where that leg is the
+last — is made the dear one, and it is dear in the way that buys the most, which is Matt's
+own second ruling on it: *render modes that can't be done with simple
+recoloring*. A colouring re-reads a field the engine already has, which is why fifteen cost
+less than one more field and why they are all the same picture underneath; a mode is a
+different field, a different quantity read off the same orbit, so three of them are three
+pictures of the place rather than three dresses on one.
+
+- **Three modes** (`FINISH_MODES`), each its own field, drawn at random out of everything
+  the Modes group offers and never a mode this place has already been drawn in. They are
+  settled before the burst starts, so the row of waiting tiles is the whole of what the
+  place will be tried in rather than growing under the reader.
+- **At every place, and it was written for the last one only.** The leg loop knows which leg
+  is last, so the first cut fired the finish there — and drew none at all over three walks.
+  A walk paints one place or two and cannot know which will be its last: the plane leg's
+  place is not it when a twin follows, and the twin's leg mines only if its own descent
+  clears the bar, which is the minority of them. So every place takes one. It costs a second
+  finish on the walks where both legs mine, which is about one in ten over the default set,
+  and it never leaves the strip a reader is looking at without one.
+- **Each is held `DWELL_MS`**, the rung's own hold, rather than the burst's 150 ms: these
+  are seconds apart rather than tenths and they are what the reader is meant to look at.
+- **A narrowing narrows this too.** *Fast modes only* is what a reader picks to see more
+  places in the same minute, so it takes no finish; a single named mode is a reader asking
+  for that mode, and a finish drawing two others would be the control not meaning what it
+  says. Under *Default* the finish is where the other fourteen modes live, which is what
+  makes offering all seventeen worth anything — a reader who never touches the config still
+  meets them.
+- A finish picture is a candidate like any other: gated, ranked with the rest on Quality,
+  and eligible to be the one kept. Its recipe row is `kind: "finish"`, beside `field`,
+  `recolour` and `dear`.
+
+What it cost, and what the Current window became, is under *The finish, measured* in
+§Measured.
+
+### The walk's activity and its progress *(Matt, walk_tab_ckpt140 addendum 1, 2026-09-22)*
+
+Two indicators, both in the walk panel's head where Start is, and both about the same thing:
+the walk is a process and the page said very little about whether it was still going.
+
+- **A spinner beside Back to the walk.** `Back to the walk` is on the page exactly when the
+  reader has taken the viewer — a Found or candidate tile is open, or they panned — and the
+  walk is carrying on behind the picture they are looking at. Nothing else on the page moves
+  then, so a reader could not tell a running walk from a stopped one. The spinner rides with
+  that button, so it is on screen in exactly that case. It is one element and one keyframe,
+  an arc of a ring turning, `.walk-spinner` in `explorer.css`: no library, on a page that has
+  none. Paused, it stays put and stops, dimmed — a stopped indicator beside a Start button is
+  a state, and an absent one is no information.
+- **A step bar under the buttons**, on the page whether or not the viewer is the walk's.
+  **It is a count and not an estimate**: a step is a card in the strip, the walk already
+  spends steps out of a budget, and the bar is `spent` over that budget with the reading
+  beside it (*7 of 14 steps*). The budget is `STEPS`, frozen at 14, plus `TWIN_RESERVE` from
+  the moment a twin leg starts — the one place the total moves, and it moves up, so the bar
+  never runs backwards. A new walk resets it. **A walk that ends early completes it**: most
+  descents stop on a peak with steps still in hand, and a bar abandoned at two-thirds would
+  read as a walk that failed, where what the bar measures is the walk and not the budget. It
+  stays up while the walk is paused, dimmed, so a reader can see where it stopped.
+- **Neither honours a reduced-motion setting, because the site has none.** The ruling says
+  to respect one if the site already does; `prefers-reduced-motion` appears nowhere in this
+  repository, and adding the site's first one for a 0.85 rem spinner would be deciding a
+  site-wide convention inside a tab. It is written down here so that whoever adds the
+  convention knows this is one of the places that wants it.
 
 **Where it is not the pipeline, said once.**
 
@@ -797,8 +932,9 @@ contract has no key for it and nothing a link opens sets it.
 - Both are the judges lab's `fp16w` exports: fp16 weights and fp32 compute. The render
   judge (gate) reads `[P≥2, P≥3, P≥4]`.
 - **Recipes are ranked on the number they are shown with** *(saved_tab_ckpt131_addendum1)*.
-  By default that is the render judge's P≥4, which is what the found tile's badge, the
-  candidate tiles show, the same number the descent already speaks in. The badge's
+  By default that is the render judge's P≥4, which is what the found tile's badge and the
+  candidate tiles show — **as `Quality 0.15`** since *walk_tab_ckpt140*, the number and its
+  meaning unchanged and the pipeline's notation gone. The badge's
   tooltip reads *how likely a person is to rate this 4 or 5*. It is the default because a
   displayed number and a ranking number that disagree make a kept tile read as a mistake:
   under the old default the walk could keep a picture badged lower than one it had just
@@ -926,6 +1062,20 @@ otherwise, and the reason is what a reader is looking at: pressing Render is wat
 picture, and the wait and the way to stop it belong where the eye already is. The panel
 keeps what is about the *frame* — Frame, Iterations, Julia at this c, Nearby minibrots,
 Save, Back to the explorer — and one line saying where Render went.
+
+**And a sentence pointing back into the article** *(Matt, walk_tab_ckpt140 addendum 1,
+2026-09-22)*, on the end of that same line: *The writeup explains how deep frames are
+rendered: [Escape-time fractals].*
+
+⚠ **It is a stand-in, and it says so here so it gets retargeted.** The section that owns
+this material is §Deep zoom, which is one of the two unwritten sections —
+`article/deep-zoom.html` exists and holds the slug, but its body reads *Not written yet*, so
+pointing a sentence that promises an explanation at it would be a promise the page does not
+keep. The anchor in force is **`../article/escape-time-fractals.html#locations`**, which is
+the nearest written prose that owns any of it: §Locations is where the article states that
+ordinary double precision gives out at magnifications around ten trillion to one, and where
+it hands the rest to deep zoom. **When §Deep zoom is written, this href moves to
+`../article/deep-zoom.html`** and the sentence is left alone.
 
 ### Rendering, and what starts on its own
 
@@ -2919,6 +3069,57 @@ four judged pictures, and on multibrot6 a single rung reached 11.8 s at p90. The
   past the linger, and n=8 cannot resolve a tail. The first cut of this was worse than
   serial and the measurement is what said so — it used `Promise.all`, so a descent that
   passed on its first candidate paid for four screens where the old loop paid one.
+
+### The finish, measured *(walk_tab_ckpt140, 2026-09-22)*
+
+`bench/walk.mjs`, the judges loaded, the tab's own defaults over the default plane set,
+alternated after / before / after at twelve walks each. **Before is this tree with
+`FINISH_MODES` at 0**, which is the previous commit's behaviour exactly — widening the Modes
+roster changes nothing about what *Default* paints — so the A/B isolates the finish and
+nothing else. The two after runs are pooled below, because they are the same code. The label
+change carries the instrumentation: `candidates.stale()` answers with how long the strip said
+*Current* and the walk's own row keeps it, which is the reading the whole ruling exists to
+move; nothing on the page could report it before.
+
+**How long the candidates strip says *Current***, from a walk's first candidate landing to
+the next walk beginning:
+
+| | before (12 walks) | after (24 walks) |
+| --- | --- | --- |
+| median | 2 857 ms | **12 099 ms** |
+| every reading | 1 149 · 1 241 · 1 263 · 2 857 · 4 219 · 5 519 | 4 769 · 8 270 · 10 898 · **12 099** · 13 688 · 34 858 |
+
+**4.2x on the median, and five of the six after readings are above every before reading.**
+The sixth, 4 769, falls inside the before range, which is the honest shape of it rather than
+a clean separation. The n is small on both sides because it is one reading per walk that
+painted anything, and eight of twelve before and nine of twenty-four after cleared the bar.
+
+**What it costs where it is spent.** A finish picture is a full field in a mode of its own:
+
+| | before | after |
+| --- | --- | --- |
+| a place painted, median | 2 711 ms (n=8) | **6 232 ms** (n=9) |
+| one finish picture, median | — | **1 681 ms** (n=27) |
+| the finish's whole cost | — | **60.8 s** over 24 walks |
+| one recolour, median | 36 ms | 35 ms |
+
+So the finish is about **5 s at a place** and the burst is untouched. ⚠ Both mining
+distributions are long-tailed and the after one more so — 1 320 to 36 523 ms against 1 009 to
+5 187 — because a finish mode is drawn uniformly and `stripe` at a mined width is 3.9x
+`smooth`. A place that draws three dear modes at a dear frame is the tail, and 36 s is what
+that looks like.
+
+**Sixteen of the seventeen modes were drawn** across 27 finish pictures in 24 walks, which is
+the widening doing the thing it was widened for: a reader who never opens the config still
+meets nearly the whole roster.
+
+⚠ **There is no whole-walk claim here and the runs say so themselves.** Before came in at a
+36.1 s median and a 41.7 s mean; the two after runs, on identical code, came in at **26.1 s
+and 19.4 s** — faster than before, and **1.35x apart from each other**. A walk draws its plane
+uniformly and the families cost up to 47x apart, so twelve draws do not level them, and the
+runs differed in mix and in how many places cleared the bar. Against that, 60.8 s spread over
+24 walks is not resolvable. The per-unit numbers are the reading, and the Current window is
+where the ruling is.
 
 ### The shade over the pool *(explorer_shade_pool_ckpt136, 2026-09-20)*
 

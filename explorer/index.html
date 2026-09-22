@@ -77,7 +77,8 @@
     <div class="tabpanel" id="panel-walk" role="tabpanel" aria-labelledby="tab-walk" hidden>
       <p class="side-note walk-about">This visualizes a guided walk through escape-time
       fractals. It is mostly a demonstration of how the process works: the shipped galleries
-      are what came out of running it continuously for many weeks.</p>
+      are what came out of running it continuously for many weeks. For more, read
+      <a href="../article/finding-good-locations.html">Finding good locations</a>.</p>
       <div class="walk-head">
         <details class="walk-config" id="walk-config">
           <summary class="section-head"><h2>Walk config</h2></summary>
@@ -86,7 +87,15 @@
         <div class="walk-go">
           <button type="button" class="walk-start" id="walk-start">Start</button>
           <button type="button" class="walk-back" id="walk-back" hidden>Back to the walk</button>
+          <span class="walk-spinner" id="walk-spinner" hidden aria-hidden="true"></span>
           <span class="walk-progress" id="walk-progress" role="status"></span>
+        </div>
+        <div class="walk-steps" id="walk-steps" hidden>
+          <div class="walk-steps-bar" id="walk-steps-bar" role="progressbar"
+               aria-label="Steps this walk has taken" aria-valuemin="0" aria-valuemax="14"
+               aria-valuenow="0" aria-valuetext="not started"><span class="walk-steps-fill"
+               id="walk-steps-fill"></span></div>
+          <span class="walk-steps-said" id="walk-steps-said"></span>
         </div>
       </div>
       <div class="section-head walk-found-head">
@@ -140,7 +149,9 @@
       </div>
 
       <p class="side-note" id="deep-side-note">Smooth, degree 2 only. Drag and scroll to move
-      the frame; Render and Auto-render are under the picture.</p>
+      the frame; Render and Auto-render are under the picture. The writeup explains how deep
+      frames are rendered:
+      <a href="../article/escape-time-fractals.html#locations">Escape-time fractals</a>.</p>
     </div>
 
     <div class="tabpanel" id="panel-saved" role="tabpanel" aria-labelledby="tab-saved" hidden>
@@ -311,7 +322,7 @@
         <ol class="walk-strip" id="walk-strip" aria-labelledby="head-walk-strip"></ol>
       </section>
       <section class="walk-view-half">
-        <div class="section-head"><h2 id="head-walk-candidates">Candidates</h2><span class="walk-candidates-place" id="walk-candidates-place"></span></div>
+        <div class="section-head"><h2 id="head-walk-candidates">Current candidates</h2><span class="walk-candidates-place" id="walk-candidates-place"></span></div>
         <div class="walk-candidates" id="walk-candidates" role="group" aria-labelledby="head-walk-candidates"></div>
       </section>
     </div>

@@ -140,12 +140,10 @@ async function harvest() {
       found: walk.found.length,
       progress: document.getElementById('walk-progress').textContent,
       config: {
-        modes: [...walk.config.modes],
+        modes: walk.config.modes,
+        palettes: walk.config.palettes,
         planes: [...walk.config.planes],
-        rungs: walk.config.rungs,
         julia: walk.config.julia,
-        bar: walk.config.bar,
-        keep: walk.config.keep,
       },
       cores: navigator.hardwareConcurrency,
     };
@@ -223,6 +221,11 @@ function readback(got) {
     recipe_ms: stats(done.flatMap((row) => (row.recipes ?? []).map((one) => one.ms))),
     root_ms: stats(done.map((row) => row.root_ms).filter((ms) => ms !== undefined)),
     mine_ms: stats(done.flatMap((row) => (row.places ?? []).map((one) => one.mine_ms)).filter((ms) => ms !== undefined)),
+    // **How long the candidates strip said *Current*** *(walk_tab_ckpt140)*: from the walk's
+    // first candidate landing to the next walk beginning. It is the reading the slower
+    // finish exists to move, and the walk row carries it because only the page can see it.
+    // The last walk of a run has none — nothing began after it.
+    current_ms: stats(done.map((row) => row.current_ms).filter((ms) => ms !== undefined)),
     by_mode: modes,
     by_candidate: [...byCandidate].map(([kind, list]) => ({ kind, ...stats(list) })),
     by_kind: kinds,
@@ -245,6 +248,7 @@ function say(read) {
   line("ms per recipe", read.recipe_ms);
   line("ms per root search", read.root_ms);
   line("ms per place mined", read.mine_ms);
+  line("ms strip is Current", read.current_ms);
   console.log("\n  per mode, one recipe = field + shade + gate");
   for (const one of read.by_mode) {
     console.log(`    ${one.mode.padEnd(20)} n=${String(one.n).padStart(4)}  median ${String(one.median).padStart(7)} ms  total ${String(one.total_s).padStart(7)} s`);

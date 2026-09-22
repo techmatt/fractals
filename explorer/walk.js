@@ -86,8 +86,9 @@ const TILE = { width: 316, height: 178 };
 const PLANES = ["mandelbrot", "multibrot3", "multibrot4", "multibrot5", "multibrot6", "phoenix"];
 
 /**
- * The modes the walk may draw, and it is **the walk's own roster rather than the
- * pipeline's** *(walk_faster_ckpt138)*.
+ * The modes the burst is drawn in — **the walk's own roster rather than the pipeline's**
+ * *(walk_faster_ckpt138)*, and since *(walk_tab_ckpt140, 2026-09-22)* it is the *Default*
+ * choice rather than the whole of what the tab offers.
  *
  * It used to be the thirteen the pipeline accepts (`mode_policy.accepted()`), eight of them
  * ticked, and a place was painted once in every ticked one. Measured over twelve walks that
@@ -95,16 +96,41 @@ const PLANES = ["mandelbrot", "multibrot3", "multibrot4", "multibrot5", "multibr
  * watching by then: a picture in `stripe` was 4.08 s and in `smooth_stripe` 2.91 against
  * `smooth`'s 1.05, with the two angle modes at 2.2 and a derive pass on top. The tab is a
  * demonstration of how the galleries were made, not the way anybody gets a good picture, so
- * it buys its variety where variety is nearly free — sixteen colourings of one field — and
- * keeps only the modes whose picture is cheap.
+ * it buys its variety where variety is nearly free — sixteen colourings of one field.
  *
- * The config lists these in the viewer's Mode select order, which the host hands over as
- * `modeOrder`, so the two cannot drift; a mode struck from here is a mode the walk never
- * draws and never offers a box for. **Every one of them can be recoloured**, which is what
- * keeps a direct trap out however cheap it reads: a trap's band arrives painted, so
- * `shade` hands the pixels back and a burst of sixteen would be sixteen of one picture.
+ * **Every one of them can be recoloured**, which is what keeps a direct trap out however
+ * cheap it reads: a trap's band arrives painted, so `shade` hands the pixels back and a
+ * burst of sixteen would be sixteen of one picture. That is a fact about the *burst*, which
+ * is why the finish is free to draw one — it draws each of its modes once.
  */
 const MINED_MODES = new Set(["smooth", "tia", "threads"]);
+
+/**
+ * The modes the Modes group does not offer, and why, one line each
+ * *(Matt, walk_tab_ckpt140, 2026-09-22)*.
+ *
+ * The ruling is that the group offers **every render mode the site has** — the seventeen of
+ * `explorer/modes.jsonl`, which `explorer.js` hands over as `modeOrder` — on the premise
+ * that the head scores a picture whatever mode drew it, which it does. This is where a mode
+ * that turned out not to run would be named. **It is empty**: all seventeen were drawn
+ * through this tab's own `picture()` at a mined Mandelbrot frame and on the pinned Phoenix
+ * slice, and every one of them rendered a picture with structure in it and emitted a link
+ * that parses back. The four the viewer's own Mode select can hide — `gaussian_int`,
+ * `trap_circle`, `smooth_trap_circle`, `direct_trap_ring` — are hidden there because the
+ * published gallery seats no wallpaper in them, which is a fact about the gallery and not
+ * about the renderer, so the walk offers them.
+ *
+ * Two things are true of a direct trap here and neither is a refusal. It has no **burst**:
+ * it composites from the gradient as it iterates, so a recolour of one is a re-render and
+ * `mine` draws it once rather than sixteen times, which costs the reader colourings and not
+ * the mode. And it **paints flat at a place whose orbits never come near the trap** — the
+ * case `permalink.js`'s `DERIVED` exists for, and one the derive pass does not always
+ * rescue: measured, four Phoenix frames gave 428 colours at the home view, 777 at 5e-3 and
+ * 4 at 3.2e-4. That is a bad picture at a place, which the judge scores near zero and the
+ * ranking drops, and it is exactly what the viewer already draws for a reader who picks the
+ * mode there.
+ */
+const WALK_REFUSES = new Map();
 
 /**
  * Of the roster, the ones whose recorded cost is near `smooth`'s
@@ -143,6 +169,39 @@ const DEAR_MODES = new Set(["threads"]);
  *  re-reads the field the engine already computed and costs a tenth of a second where the
  *  field costs seconds, so this is where a place's search goes now. */
 const RECOLOURS = 16;
+
+/**
+ * **The finish** *(Matt, walk_tab_ckpt140, 2026-09-22)*: how many further modes the walk's
+ * **last** place is painted in, each one its own field.
+ *
+ * The complaint this answers is a timing one. *Current candidates* is the strip's label from
+ * the moment a walk's first candidate lands to the moment the next walk begins, and at the
+ * end of a walk there is nothing between the two: the last colouring is drawn, the kept
+ * picture is held 400 ms, and the strip flips to *Previous* while the reader is still
+ * looking at it. Nothing is spendable there but work, and a dwell is not work — a timer that
+ * holds a finished strip up is the reader waiting on nothing.
+ *
+ * So the walk's last step is made the dear one, and it is dear in the way that buys the most:
+ * **pictures a recolour cannot make**. A colouring re-reads a field the engine already has,
+ * which is why fifteen of them cost less than one more field and why they are all the same
+ * picture underneath. A mode is a different field — a different quantity read off the same
+ * orbit — so three of them are three pictures of the place rather than three dresses on one,
+ * and each costs seconds rather than a tenth of one. The reader gets both halves of that: a
+ * strip that fills for long enough to be read, and more of the place in it.
+ *
+ * Three: the modes are 1.4x to 3.9x `smooth` at mined widths (the roster table in
+ * `explorer/README.md`), so three is several seconds wherever it lands and a dozen at the
+ * worst.
+ *
+ * **At every place, and it was written for the last one only** *(measured, same round)*. A
+ * walk paints one place or two and cannot know which will be its last: the plane leg's place
+ * is not it when a twin follows, and the twin's leg mines only if its own descent clears the
+ * bar, which is the minority of them. Three walks of the first cut drew no finish at all for
+ * exactly that reason. So every place takes one, which costs a second finish on the walks
+ * where both legs mine — about one walk in ten over the default set, by the places-painted
+ * count in §Measured — and never leaves the strip a reader is looking at without one.
+ */
+const FINISH_MODES = 3;
 
 /** What a new tab's config opens at: the pipeline's draw, where the page can make it. A
  *  place is painted in `RECOLOURS` colourings of one field, and a dearer mode besides where
@@ -292,6 +351,22 @@ const QUARTERS = [
 const pick = (items) => items[Math.floor(Math.random() * items.length)];
 const shuffled = (items) => items.sort(() => Math.random() - 0.5);
 const score = (value) => value.toFixed(2);
+
+/**
+ * The badge under a picture the tab kept or is weighing *(Matt, walk_tab_ckpt140,
+ * 2026-09-22)*.
+ *
+ * It read `P≥4 0.15`. The number is unchanged and so is what it means — the render judge's
+ * probability that a person rates this picture 4 or 5 — but `P≥4` is the pipeline's notation
+ * and this tab is read by somebody who has met neither the judge nor its scale. **Quality**
+ * is a word, and a word next to a number between 0 and 1 says as much as the notation did to
+ * everyone who was not going to look it up. The two decimals stay, because a badge that
+ * rounded would sort tiles that look identically scored.
+ *
+ * A card in the strip above still says `P≥3`: that is the peak rule's own number and a
+ * different question — how good the *place* is, rather than how good this picture of it is.
+ */
+const quality = (value) => `Quality ${score(value)}`;
 const width = (value) => value.toExponential(1);
 const megabytes = (bytes) => (bytes / 1e6).toFixed(1);
 
@@ -371,7 +446,12 @@ class Screeners {
 
 export function mount(host) {
   const { contract, palettes, shownName, planeName, juliaOf } = host;
-  const modeOrder = host.modeOrder.filter((mode) => MINED_MODES.has(mode));
+  /** Every mode this tab offers, in the viewer's Mode select order, minus anything
+   *  `WALK_REFUSES` names. The host hands the whole contract roster over, so the order here
+   *  and the order there cannot drift. */
+  const modeOrder = host.modeOrder.filter((mode) => !WALK_REFUSES.has(mode));
+  /** Of those, the ones the burst may be drawn in under *Default*. */
+  const minedOrder = modeOrder.filter((mode) => MINED_MODES.has(mode));
   const config = { ...DEFAULTS, planes: new Set(DEFAULTS.planes) };
   let state = "idle"; // idle | loading | running | paused
   /** Whether the viewer follows the walk *(walk_detach_ckpt131)*. It is the other half of
@@ -412,6 +492,67 @@ export function mount(host) {
   }
 
   /**
+   * How far this walk is through its step budget *(Matt, walk_tab_ckpt140, 2026-09-22)*.
+   *
+   * **It is a count, not an estimate.** A step is a card in the strip — the frame the walk
+   * stands in, each rung under it, the twin's home frame, and the place being painted — and
+   * the walk already spends them out of a budget, so the bar is `spent` over that budget and
+   * there is nothing approximated in it. The budget is `STEPS`, plus `TWIN_RESERVE` from the
+   * moment a twin leg starts, which is the one place the total moves; it moves up, so the
+   * bar never runs backwards.
+   *
+   * **A walk that ends early completes it.** Most descents stop on a peak with steps still
+   * in hand, and a bar abandoned at two-thirds would read as a walk that failed. The walk is
+   * over, so the bar is full: what it measures is the walk, not the budget.
+   *
+   * It stays on screen while the walk is paused, dimmed, so a reader can see where it
+   * stopped, and it is on the page whether or not the viewer is the walk's.
+   */
+  const steps = (() => {
+    let total = STEPS;
+    let spent = 0;
+
+    function draw() {
+      const share = total > 0 ? Math.min(1, spent / total) : 0;
+      host.stepsFill.style.width = `${(share * 100).toFixed(1)}%`;
+      const said = `${spent} of ${total} steps`;
+      host.stepsSaid.textContent = said;
+      host.stepsBar.setAttribute("aria-valuemax", String(total));
+      host.stepsBar.setAttribute("aria-valuenow", String(spent));
+      host.stepsBar.setAttribute("aria-valuetext", said);
+    }
+
+    draw();
+    return {
+      /** A new walk: back to nothing, out of the plain budget. */
+      begin() {
+        total = STEPS;
+        spent = 0;
+        draw();
+      },
+      /** The twin's reserve, added when its leg starts, exactly as the budget adds it. */
+      widen(by) {
+        total += by;
+        draw();
+      },
+      /** One step spent. */
+      step() {
+        spent = Math.min(spent + 1, total);
+        draw();
+      },
+      /** The walk is over, however many steps it had left. */
+      done() {
+        spent = total;
+        draw();
+      },
+      showing(on, paused) {
+        host.steps.hidden = !on;
+        host.steps.classList.toggle("is-paused", paused);
+      },
+    };
+  })();
+
+  /**
    * Pause while a download is under way is the same button as Pause while walking, and stops
    * the download.
    *
@@ -422,8 +563,17 @@ export function mount(host) {
    * view back.
    */
   function syncButton() {
-    host.start.textContent = state === "running" || state === "loading" ? "Pause" : "Start";
+    const going = state === "running" || state === "loading";
+    host.start.textContent = going ? "Pause" : "Start";
     host.back.hidden = attached;
+    // **The spinner rides with Back to the walk** *(Matt, walk_tab_ckpt140)*: it is on screen
+    // in exactly the case it is about — the reader has taken the viewer and the walk is
+    // carrying on behind the picture they opened, with nothing else on the page moving to
+    // say so. Paused, it stays put and stops, because a stopped indicator beside a Start
+    // button is a state and an absent one is no information.
+    host.spinner.hidden = attached || state === "idle";
+    host.spinner.classList.toggle("is-paused", !going);
+    steps.showing(state !== "idle", state === "paused");
     const owns = attached && onTab && (state === "running" || state === "paused");
     const showing = !host.view.hidden;
     host.view.hidden = !owns;
@@ -715,12 +865,30 @@ export function mount(host) {
    * They outlast the decision on purpose. A place's candidates stay up through the start of
    * the next walk and go at the end of its first descent, so they can still be compared
    * while the next root is being found.
+   *
+   * **Which is why the rule over them says whose they are** *(Matt, walk_tab_ckpt140,
+   * 2026-09-22)*. The strip is *Current candidates* while it holds the walk in progress and
+   * *Previous candidates* once a new walk has begun and it still holds the finished one's.
+   * The flip is the moment a new walk begins — before the root search, not after it — and it
+   * flips back when the new walk lands its first candidate, which is the first moment there
+   * is anything current to look at. A strip that says neither was the state a reader had to
+   * infer from the strip above it having moved on.
    */
   const candidates = (() => {
     let tried = [];
     let expected = 0;
     let place = "";
+    /** The mode the burst was drawn in, so a tile that is not the burst's can say so. */
+    let base = null;
+    /** Whether what is up belongs to a walk that is over. */
+    let previous = false;
+    /** When the strip last became Current, so a run can be told how long it stayed. */
+    let since = null;
     const SMALL = { width: 240, height: 135 };
+
+    function rule() {
+      host.candidatesHead.textContent = previous ? "Previous candidates" : "Current candidates";
+    }
 
     function thumbnail(image) {
       const full = document.createElement("canvas");
@@ -745,12 +913,18 @@ export function mount(host) {
         if (kept.has(one)) tile.classList.add("is-kept");
         tile.title = `${one.mode} in ${shownName(one.palette)}`;
         const caption = document.createElement("figcaption");
-        // **The map's name and not the mode's** *(walk_faster_ckpt138)*. A place is one
-        // field in one mode tried in sixteen colourings now, so the mode is the same word
-        // under every tile and the map is what tells two of them apart; a dear picture is
-        // the one tile whose mode differs, and it says so.
-        const name = DEAR_MODES.has(one.mode) ? `${one.mode} · ${shownName(one.palette)}` : shownName(one.palette);
-        caption.append(span("walk-candidate-name", name), span("walk-candidate-score", `P≥4 ${score(one.p4)}`));
+        // **The map's name, and the mode's too where it is not the burst's**
+        // *(walk_faster_ckpt138; the rule generalized, walk_tab_ckpt140)*. The burst is one
+        // field in one mode tried in sixteen colourings, so under those tiles the mode is
+        // the same word every time and the map is what tells two of them apart. The tiles
+        // that are not the burst — the dear picture, and the finish's three — are there
+        // *because* their mode differs, so each says which. It was a `DEAR_MODES` test until
+        // the finish arrived and made three more tiles a reader could not name.
+        const name =
+          one.mode === base ? shownName(one.palette) : `${one.mode} · ${shownName(one.palette)}`;
+        const badge = span("walk-candidate-score", quality(one.p4));
+        badge.title = "How likely a person is to rate this 4 or 5.";
+        caption.append(span("walk-candidate-name", name), badge);
         tile.append(one.canvas, caption);
         return tile;
       });
@@ -787,23 +961,42 @@ export function mount(host) {
         render();
       },
       /** A place is being mined: the last place's tiles go, and `count` wait for theirs.
-       *  `where` names the place on the row's rule, which outlasts the strip above moving on. */
-      begin(count, where) {
+       *  `where` names the place on the row's rule, which outlasts the strip above moving on,
+       *  and `mode` is the burst's, which is the one a tile does not bother to name. */
+      begin(count, where, mode) {
         tried = [];
         expected = count;
         place = where;
+        base = mode;
         host.candidates.scrollLeft = 0;
         render();
       },
-      /** One candidate drawn, or `null` where its picture could not be. */
+      /** One candidate drawn, or `null` where its picture could not be. The first of a walk
+       *  is what makes the strip Current again. */
       add(one) {
         if (one === null) {
           expected -= 1;
         } else {
           const { image, ...kept } = one;
           tried.push({ ...kept, canvas: thumbnail(image) });
+          if (previous) {
+            previous = false;
+            since = performance.now();
+            rule();
+          }
         }
         reach(render());
+      },
+      /** A new walk has begun, so whatever is up is the last walk's. Answers with how long
+       *  the strip was Current, for whoever is measuring the tab, or `null` where it never
+       *  was. */
+      stale() {
+        if (previous) return null;
+        previous = true;
+        rule();
+        const was = since === null ? null : Math.round(performance.now() - since);
+        since = null;
+        return was;
       },
       /** `count` candidates that will never be attempted, so their waiting tiles go
        *  *(walk_faster_ckpt138)*: a field that could not be drawn has no colourings, and a
@@ -929,7 +1122,15 @@ export function mount(host) {
       "Also walk the Julia set whose c is the best place the descent found: from its home view, by the same rung rule.",
     );
 
-    const modes = group("Modes", "A place that clears the bar is painted in one of these.");
+    // Every render mode the site has, and not the handful the burst is drawn in
+    // *(Matt, walk_tab_ckpt140)* — `WALK_REFUSES` is where one that could not run would be
+    // named, and it is empty. Default stays the default and still means the cheap roster
+    // plus the finish; a named mode paints every place in that mode.
+    const modes = group(
+      "Modes",
+      "A place that clears the bar is painted in one of these. Default is the cheap roster, " +
+        "and three more modes to finish a place on.",
+    );
     radios(
       modes,
       "walk-modes",
@@ -1611,6 +1812,7 @@ export function mount(host) {
       }
       cardOf();
       budget.left -= 1;
+      steps.step();
       const parent = frame;
       const twinHome = constants !== null && rung === 1;
       const ranked = await weigh(family, parent, { rung, constants, layers, alone: alone || twinHome, card });
@@ -1697,12 +1899,29 @@ export function mount(host) {
     return named.length > 0 ? named : good.map(([name]) => name);
   }
 
-  /** The modes a place may be painted in: the roster, the fast half of it, or the one mode
-   *  the Modes group names. */
+  /** The modes a place's burst may be painted in: the mined roster, the fast half of it, or
+   *  the one mode the Modes group names. */
   function modesFor(chosen) {
-    if (chosen === MODES_DEFAULT) return modeOrder;
-    if (chosen === MODES_FAST) return modeOrder.filter((mode) => FAST_MODES.has(mode));
-    return modeOrder.includes(chosen) ? [chosen] : modeOrder;
+    if (chosen === MODES_DEFAULT) return minedOrder;
+    if (chosen === MODES_FAST) return minedOrder.filter((mode) => FAST_MODES.has(mode));
+    return modeOrder.includes(chosen) ? [chosen] : minedOrder;
+  }
+
+  /**
+   * The finish's modes: `FINISH_MODES` of them, drawn at random out of everything this tab
+   * offers, and never one the burst has already drawn at this place.
+   *
+   * **A reader's narrowing narrows this too.** *Fast modes only* is the choice a reader makes
+   * to see more places in the same minute, so it takes no finish at all; a single named mode
+   * is a reader asking for that one mode, and a finish drawing two others would be the
+   * control not meaning what it says. Under *Default* the finish is where the other fourteen
+   * modes live, which is what makes offering all seventeen worth anything — a reader who
+   * never touches the config still meets them.
+   */
+  function finishModes(chosen, drawn) {
+    if (chosen !== MODES_DEFAULT) return [];
+    const rest = modeOrder.filter((mode) => !drawn.has(mode));
+    return shuffled([...rest]).slice(0, FINISH_MODES);
   }
 
   /** The Julia twin of a place: its centre as `c`, at the Julia family's home frame. */
@@ -1740,6 +1959,11 @@ export function mount(host) {
    * **And one dearer picture at some places**, a mode out of `DEAR_MODES` drawn in full,
    * where the place before this one did not take one.
    *
+   * **And a finish** *(Matt, walk_tab_ckpt140)*: `FINISH_MODES` further pictures, each a
+   * mode of its own and so each its own field. Painting a place is the last step of its leg,
+   * and the last of those is the walk's own last step; see `FINISH_MODES` for why the cost
+   * of holding *Current candidates* on screen is spent there.
+   *
    * Every candidate is gated and ranked together and `KEEP` are kept, exactly as
    * before: what changed is what a place is painted in, not how the best of it is chosen.
    */
@@ -1751,7 +1975,10 @@ export function mount(host) {
     const base = pick(plain.length > 0 ? plain : chosen);
     const rich = chosen.filter((mode) => DEAR_MODES.has(mode));
     const dear = rich.length > 0 && sinceDear > 0 && !DEAR_MODES.has(base) ? pick(rich) : null;
-    candidates.begin(RECOLOURS + (dear === null ? 0 : 1), where);
+    // The finish's modes are settled before anything is drawn, so the row of waiting tiles
+    // is the whole of what this place will be tried in rather than growing under the reader.
+    const finish = finishModes(config.modes, new Set([base, dear]));
+    candidates.begin(RECOLOURS + (dear === null ? 0 : 1) + finish.length, where, base);
     // A pause mid-download stops it, and the walk asks again when it is started again.
     while (FINE && scorer !== null && scorer.fineSession === null && !fineless) {
       const { signal, shown, done } = downloading("the fine judge");
@@ -1861,6 +2088,17 @@ export function mount(host) {
       if (painted === null) candidates.add(null);
       else await offer(painted.view, painted.image, "dear", Math.round(performance.now() - begun), DWELL_MS);
     }
+    // **The finish**: one full field per mode, each held the rung's own dwell rather than
+    // the burst's, because these are seconds apart and not tenths and the reader is meant to
+    // look at them. A mode that cannot be drawn here drops its waiting tile and the rest go
+    // on, exactly as the dear picture does.
+    for (const mode of finish) {
+      await going();
+      begun = performance.now();
+      const painted = await picture(recipe(mode, pick(maps)), MINING_SUPERSAMPLE);
+      if (painted === null) candidates.add(null);
+      else await offer(painted.view, painted.image, "finish", Math.round(performance.now() - begun), DWELL_MS);
+    }
     sinceDear = dear === null ? sinceDear + 1 : 0;
     tried.sort((x, y) => y.rank - x.rank);
     const kept = tried.slice(0, KEEP);
@@ -1883,8 +2121,9 @@ export function mount(host) {
   }
 
   /**
-   * The number a kept picture is shown with: the render judge's `P≥4`, the number the
-   * descent already speaks in.
+   * The number a kept picture is shown with: the render judge's `P≥4`, badged as **Quality**
+   * *(Matt, walk_tab_ckpt140)* — see `quality` for why the notation went and the number
+   * stayed.
    *
    * **Shown and ranked on** *(saved_tab_ckpt131_addendum1)*. By default the recipes at a
    * place are ranked on this same number, so the best badge is the one kept. The fine head,
@@ -1893,7 +2132,7 @@ export function mount(host) {
    * lives far below 0.01 and is not a number to put on a badge.
    */
   function rankText(one) {
-    return `P≥4 ${score(one.read.p4)}`;
+    return quality(one.read.p4);
   }
 
   /** A found picture, as a tile at the top of the list. */
@@ -1960,6 +2199,15 @@ export function mount(host) {
       const started = performance.now();
       const family = pick(planes);
       phase = "root";
+      // **A new walk begins here**, which is the moment the strip below stops being this
+      // walk's *(Matt, walk_tab_ckpt140)* — before the root search and not after it, because
+      // the search is out of sight and a rule that waited for it would call a finished
+      // walk's candidates current for however long the plane took to give one up. How long
+      // they were current goes on the row of the walk they belonged to, for whoever is
+      // measuring the tab; nothing on the page reads it.
+      const wasCurrent = candidates.stale();
+      if (wasCurrent !== null && walks.length > 0) walks.at(-1).current_ms = wasCurrent;
+      steps.begin();
       strip.begin(planeName(family));
       const root = await descend(family);
       // The search is out of sight, so it runs while a lingering strip is still being read.
@@ -1992,7 +2240,10 @@ export function mount(host) {
         // it can afford its home frame, a rung or two and a place — the reserve is over
         // that bar by one, so this refuses nothing today and stays as the statement of
         // what a twin costs.
-        if (index > 0) budget.left += TWIN_RESERVE;
+        if (index > 0) {
+          budget.left += TWIN_RESERVE;
+          steps.widen(TWIN_RESERVE);
+        }
         if (index > 0 && budget.left < TWIN_STEPS) break;
         // One place is one strip: the twin's cards follow its parent's, after a divider.
         if (index > 0) strip.divider("Julia twin");
@@ -2000,6 +2251,7 @@ export function mount(host) {
         const judged = await judgePlace(one);
         if (judged === null) continue;
         budget.left -= 1;
+        steps.step();
         const layers = [{ frame: one.frame, image: judged.image }];
         judged.card = strip.frame(planeName(one.family), one.frame, judged.read.p3, layers, index === 0 ? "root" : "home view");
         display({
@@ -2038,6 +2290,7 @@ export function mount(host) {
         if (!over) continue;
         phase = "mine";
         budget.left -= 1;
+        steps.step();
         const mining = performance.now();
         const where = `${index === 0 ? planeName(family) : `Julia twin of ${planeName(family)}`} at ${width(best.frame.w)}`;
         await mine(place, where);
@@ -2046,6 +2299,9 @@ export function mount(host) {
       }
       if (!mined) strip.linger();
       phase = "root";
+      // The walk is over however many steps it had in hand, so the bar is full
+      // *(walk_tab_ckpt140)*.
+      steps.done();
       timed("walk", started);
       row.ms = Math.round(performance.now() - started);
     }
