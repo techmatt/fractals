@@ -169,12 +169,12 @@ mode's identity fixes, an iteration cap the depth policy answers differently.
 says deploy. They sit in the working tree untracked, named in `.git/info/exclude`. That file
 is local and no clone has it, so this list is the tracked record of the set:
 
-| what | size (2026-09-19) | written by |
+| what | size (2026-09-21) | written by |
 | --- | --- | --- |
-| `assets/images/galleries/seated-candidates/*.webp`, one tile a seat | 6,062 files, 60.4 MB | `python -m builder seats` |
+| `assets/images/galleries/seated-candidates/*.webp`, one tile a seat | 6,067 files, 60.5 MB | `python -m builder seats` |
 | `explorer/palettes.bin`, every map's control points | 1.04 MB | `python -m builder explorer --palettes-only` |
 | `explorer/palettes-swatch.png`, to look at | 0.3 MB | the same |
-| every plane's atlas slot pictures, `assets/images/atlas/<plane>-*.jpg` | 1,455 files, 42.1 MB | `python -m builder atlas --ingest` |
+| every plane's atlas slot pictures, `assets/images/atlas/<plane>-*.jpg` | 1,464 files, 42.7 MB | `python -m builder atlas --ingest` |
 | `explorer/judges/`, the ORT runtime, the gate and the fine head | 38.9 MB | `python -m builder walk` |
 
 **`palettes.bin` is not optional.** The tracked tree alone never draws a first frame: served
@@ -306,6 +306,20 @@ lookup that stops as soon as it has the keys asked for. Never `headroom.populati
 figure prompt has no business loading the pool a solve is solving over. `gallery_seat` is
 the source kind that addresses the result, and `fractal-wallpapers`' own
 `curate solve resolve` does exactly these two reads.
+
+**Both of those reads are now a fallback, and the site owns the answer**
+*(atlas_refresh_ckpt139, 2026-09-22)*. Closing mining next door deleted every saved solve
+but the twenty `final139_*`, and 96 of this site's figure panels named a seat of one of six
+recorded galleries that no longer exist. So `article/figure-recipes.jsonl` holds the seat
+row, the ledger recipe and the run that drew it for every pick a figure cites — 120 rows,
+180 kB — and `picks.resolve` reads it first, going next door only for a pick nobody has
+landed there yet. `python -m builder recipes` says what it holds and `--fill` lands what is
+missing; **it never rewrites a row that is there**, because for those 96 it is the only copy
+left. Three of them came out of a stamp that was never tracked next door and carry a recipe
+with no seat row, which the row's own `read` clause says. `check`'s `figures` holds every
+cited pick to being in the store, and a `gallery_seat` key the store answers for needs no
+record next door at all. **The stamp on a figure's registry row is provenance from here
+on.**
 
 **A pool candidate was never seated, and `picks.candidates` is the same path without the
 first read.** The pool is not only what a gallery kept: `wallpapers-three-bands`' middle

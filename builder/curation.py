@@ -69,11 +69,21 @@ from .theme import (
 #: `builder.pipeline`'s run is pinned: a page captioned *one pass* that quietly redrew
 #: itself off whichever pass was newest would be a different measurement under the same
 #: words.
-STAMP = "20260902T164622Z"
+#:
+#: ⚠ **The five charts on the page were drawn off `20260902T164622Z`, and that record is
+#: gone** *(atlas_refresh_ckpt139, 2026-09-22)*. Closing mining next door removed every
+#: saved solve but the twenty `final139_*`, so this points at `final139_general`, which is
+#: the semi-final general gallery and a different pass over a pool that has grown since.
+#: The pictures on `gallery-curation.html` and the prose around them still describe the
+#: 2026-09-02 pass — a redraw from here answers different numbers, and the page's sentences
+#: are what has to move with it. That is a publishing-time act and was deliberately not
+#: taken here: the prompt re-based the data and left the prose alone. The figures' own
+#: registry rows still cite the old stamp, which is the provenance and is correct.
+STAMP = "20260922T012627Z"
 
 #: The solve leg whose record answers for that stamp. Held to it by `_agreeing` rather
 #: than trusted, because this file is rolling and the stamp's directory is not.
-SOLVE = "tentative_n1000"
+SOLVE = "final139_general"
 
 #: Where the solve record's own numbers are addressed from, under the artifacts tree.
 SOLVE_RECORD = ("curation", "solve")

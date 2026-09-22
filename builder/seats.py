@@ -112,13 +112,15 @@ from .paths import GALLERY_IMAGES_DIR, GALLERY_METADATA_NAME, SITE_ROOT
 #: second solve writes a second stamp, and a staged gallery that re-pointed itself would
 #: replace a thousand committed rows without anybody deciding to.
 #:
-#: **Since `site_rebase_ckpt132` (2026-09-19) it is not a published record.** It is the
-#: `general_n1000` solve of the pinned batch — the first solves with the project's pinned
-#: seats seated first — and it is kept next door by `tentative.KEPT_UNPUBLISHED`, not by
-#: `PUBLISHED`, which still ends at `20260914T171846Z`. The header's `published` asks that
-#: tuple rather than assuming the general collection is the published one. The batch's
-#: `general_n2000` record is a comparison only and is not a collection here.
-STAMP = "20260919T171003Z"
+#: **Since `atlas_refresh_ckpt139` (2026-09-21) it is the `final139_general` solve**, and
+#: nothing next door is published at all: mining is closed, the twenty `final139_*` records
+#: of 2026-09-22 01:26–01:51Z are the only saved set there, and `tentative.PUBLISHED` is
+#: empty. So the header's `published` comes back empty, which is what that project now
+#: says, and every read here names a stamp because `tentative.latest()` refuses.
+#:
+#: It was `20260919T171003Z` from `site_rebase_ckpt132` until then, and the record before
+#: that was published. The batch this one belongs to records no n=2000 comparison.
+STAMP = "20260922T012627Z"
 
 #: The general collection's name, which is what `collections` keys it by.
 GENERAL = "general"
@@ -130,43 +132,48 @@ GENERAL = "general"
 #: order; then the three thin ones — `green`, `cyan`, `lime` — the families whose stock
 #: ran short at the old target; then the seven modes, the three smooth-family composites last.
 #:
-#: ⚠ **None of the twenty is published.** They are one batch, the pinned records of
-#: 2026-09-19 17:10-17:38Z (`site_rebase_ckpt132` repointed every line here): the general
-#: `general_n1000` solve and nineteen `targets_<collection>_n<seats>` solves at the sizes
-#: `curation/targets.py` sets, all with `data/curation/pins.json` seated first and all
-#: kept next door by `tentative.KEPT_UNPUBLISHED`. Matt's word on the collections is that
-#: they are not final, so a re-solve is a re-pointing of this table, and
+#: ⚠ **None of the twenty is published, and now nothing is.** They are the `final139_*`
+#: batch of 2026-09-22 01:26–01:51Z — mining closed, and these are the semi-final galleries
+#: (`atlas_refresh_ckpt139` repointed every line here from the pinned records of
+#: 2026-09-19, which have been deleted next door along with every other saved solve). All
+#: twenty carry `data/curation/pins.json` seated first. Matt's word on the collections is
+#: that they are not final, so a re-solve is a re-pointing of this table, and
 #: `_collection_stamp` refuses a stamp whose solve was not that collection's so a mistyped
 #: line cannot seat one family's pictures under another's name.
 #: A stamp that leaves the keep list next door is a `seats` run that refuses once it is
 #: deleted, not a panel that quietly shrinks.
 COLLECTIONS: tuple[tuple[str, str], ...] = (
     (GENERAL, STAMP),
-    ("rose", "20260919T171517Z"),
-    ("red", "20260919T171636Z"),
-    ("orange", "20260919T171754Z"),
-    ("yellow", "20260919T171915Z"),
-    ("teal", "20260919T172300Z"),
-    ("azure", "20260919T172535Z"),
-    ("blue", "20260919T172651Z"),
-    ("purple", "20260919T172806Z"),
-    ("magenta", "20260919T172927Z"),
-    ("green", "20260919T172144Z"),
-    ("cyan", "20260919T172420Z"),
-    ("lime", "20260919T172029Z"),
-    ("tia", "20260919T173059Z"),
-    ("smooth", "20260919T173230Z"),
-    ("stripe", "20260919T173402Z"),
-    ("threads", "20260919T173514Z"),
-    ("smooth_mean_angle", "20260919T173625Z"),
-    ("smooth_angle_min", "20260919T173732Z"),
-    ("smooth_stripe", "20260919T173838Z"),
+    ("rose", "20260922T012745Z"),
+    ("red", "20260922T012906Z"),
+    ("orange", "20260922T013025Z"),
+    ("yellow", "20260922T013149Z"),
+    ("teal", "20260922T013540Z"),
+    ("azure", "20260922T013816Z"),
+    ("blue", "20260922T013935Z"),
+    ("purple", "20260922T014052Z"),
+    ("magenta", "20260922T014213Z"),
+    ("green", "20260922T013423Z"),
+    ("cyan", "20260922T013657Z"),
+    ("lime", "20260922T013306Z"),
+    ("tia", "20260922T014347Z"),
+    ("smooth", "20260922T014520Z"),
+    ("stripe", "20260922T014655Z"),
+    ("threads", "20260922T014809Z"),
+    ("smooth_mean_angle", "20260922T014921Z"),
+    ("smooth_angle_min", "20260922T015029Z"),
+    ("smooth_stripe", "20260922T015138Z"),
 )
 
-#: What the general collection's solve is called by the pass that recorded it. The rest are
-#: `targets_<collection>_n<seats>`; this one is the batch's n=1000 general solve, and the
-#: `_n1000_` is what keeps its n=2000 comparison from being taken for it.
-GENERAL_SOLVE = "general_n1000_"
+#: What the pass that recorded these calls its solves: the stem, and then the collection's
+#: own name — `final139_general`, `final139_smooth_angle_min`.
+#:
+#: It used to be `general_n1000_` and `targets_<collection>_n<seats>`, and the shape as
+#: much as the name was load-bearing: the check below asked for a *prefix* so that the seat
+#: count could follow it. A record-keeping solve is named by its stem and its collection
+#: and nothing else, so the check is an equality now and a seat count next door can move
+#: without this file hearing about it.
+SOLVE_STEM = "final139_"
 
 #: Which of those are a mode, so the header can say which axis each was cut on. The rest
 #: after the general one are hue families.
@@ -339,16 +346,14 @@ def seat_rows(stamp: str = STAMP) -> list[dict]:
 def _collection_stamp(name: str, stamp: str) -> str:
     """The stamp, once its own manifest says the solve behind it was this collection's.
 
-    The general record's solve is called `GENERAL_SOLVE…` and every other stamp's
-    `targets_<collection>_n<seats>`, by the pass that recorded it, and a stamp whose solve
-    says another name is refused.
+    Every stamp's solve is `SOLVE_STEM` and the collection's own name, by the pass that
+    recorded it, and a stamp whose solve says anything else is refused.
     """
     path = renders.artifact("curation", "tentative", stamp, "manifest.json")
     if not path.is_file():
         raise SeatError(f"the {name} collection's record {stamp} is not there — {path}")
     solved = str(json.loads(path.read_text(encoding="utf-8"))["solve"]["name"])
-    wanted = GENERAL_SOLVE if name == GENERAL else f"targets_{name}_n"
-    if not solved.startswith(wanted):
+    if solved != f"{SOLVE_STEM}{name}":
         raise SeatError(f"{stamp} is the solve {solved!r}, not the {name} collection's")
     return stamp
 

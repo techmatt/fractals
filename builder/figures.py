@@ -967,18 +967,34 @@ def unresolved(registry: dict[str, Figure] | None = None) -> list[str]:
     is a picture somebody can still find; one that does not is a record that has quietly
     come loose from what it describes, which is the state this registry exists to end.
     """
+    from . import recipes
+
     stores = _Stores()
+    # **The site's own recipe store answers for a seat or a candidate before the stores
+    # next door do** *(atlas_refresh_ckpt139)*. Six of the recorded galleries this site's
+    # figures were picked off no longer exist there; what makes those keys resolve is that
+    # `article/figure-recipes.jsonl` holds the seat and the recipe, and that is the answer
+    # this check wants — a picture somebody can still redraw. A key the store does not
+    # hold is asked of the stores as before, and `check`'s `figures` separately holds every
+    # cited pick to *being* in the store.
+    held = set(recipes.load_all())
     problems = []
     for figure in (registry or load_all()).values():
         for source in figure.sources:
             for key in source.keys:
-                problem = _unresolved_key(stores, source.kind, key)
+                problem = _unresolved_key(stores, source.kind, key, held)
                 if problem:
                     problems.append(f"figures.jsonl: {figure.id} {problem}")
     return problems
 
 
-def _unresolved_key(stores: _Stores, kind: str, key: str) -> str | None:
+def _unresolved_key(stores: _Stores, kind: str, key: str, held: set[str]) -> str | None:
+    from . import recipes
+
+    if kind == GALLERY_SEAT and str(key) in held:
+        return None
+    if kind == CANDIDATE and f"{recipes.CANDIDATE_STAMP}{recipes.SEPARATOR}{key}" in held:
+        return None
     if kind == RUN_ROW:
         return _unresolved_run_row(stores, key)
     if kind == LOCATION:

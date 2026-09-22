@@ -156,6 +156,16 @@ def _parser() -> argparse.ArgumentParser:
     figure = commands.add_parser("figure", help="print a figure's markup block")
     figure.add_argument("id", help="the figure id, as registered in figures.jsonl")
 
+    stored = commands.add_parser(
+        "recipes", help="what the site's own figure recipe store holds, or fill what is missing"
+    )
+    stored.add_argument(
+        "--fill",
+        action="store_true",
+        help="land a row for every cited pick the store does not hold, read from the "
+        "stores next door. It never rewrites a row that is already there.",
+    )
+
     listed = commands.add_parser(
         "figures", help="list the figures still to make, or land a finished one"
     )
@@ -391,6 +401,25 @@ def _parser() -> argparse.ArgumentParser:
         help="compose that figure from the record and land it",
     )
     mapped.add_argument(
+        "--make",
+        action="store_true",
+        help="run the maker next door for every plane, at this page's own Julia plate "
+        "width, and leave the result for --ingest to read",
+    )
+    mapped.add_argument(
+        "--record",
+        default=None,
+        metavar="STAMP",
+        help="the recorded tentative gallery --make places the seats of "
+        "(default: the general collection's, builder/seats.py's STAMP)",
+    )
+    mapped.add_argument(
+        "--plane",
+        action="append",
+        metavar="NAME",
+        help="only this plane, repeatable (default: all six)",
+    )
+    mapped.add_argument(
         "--ingest",
         type=Path,
         nargs="?",
@@ -613,6 +642,18 @@ def _do_figure(identifier: str) -> int:
     opened = links.opened(figure.page_path)
     print(figures.markup(figure, opened.get(f"figure:{identifier}")))
     return 0
+
+
+def _do_recipes(options: argparse.Namespace) -> int:
+    """What the figure recipe store holds — or a fill of what a figure cites and it lacks."""
+    from . import recipes as recipes_module
+
+    for line in recipes_module.fill() if options.fill else recipes_module.summary():
+        print(line)
+    found = recipes_module.problems()
+    for problem in found:
+        print(f"  problem: {problem}")
+    return 1 if found else 0
 
 
 def _do_figures(options: argparse.Namespace) -> int:
@@ -1065,6 +1106,9 @@ def _do_review_read(page: str, *, full: bool) -> int:
 
 def _do_atlas(options: argparse.Namespace) -> int:
     """What the atlas record holds — or, with a flag, the figure it is drawn into."""
+    if options.make:
+        for line in atlas_module.make(options.record or seats_module.STAMP, options.plane):
+            print(line)
     if options.ingest:
         lines = (
             atlas_module.ingest_every(quality=options.quality)
@@ -1168,6 +1212,8 @@ def main(argv: list[str] | None = None) -> int:
             return _do_figure(options.id)
         if options.command == "figures":
             return _do_figures(options)
+        if options.command == "recipes":
+            return _do_recipes(options)
         if options.command == "locations":
             return _do_locations(options)
         if options.command == "judges":

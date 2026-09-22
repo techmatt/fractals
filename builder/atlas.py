@@ -1013,6 +1013,137 @@ MAKER_OUTPUT = ("artifacts", "atlas")
 MAKER_FILE = "dots.json"
 MAKER = "fractal-wallpapers curate atlas"
 
+#: The width a **Julia** dot's neighborhood plate is drawn at, on every parameter plane.
+#:
+#: **It is the explorer's `BACK_WIDTH`, and it is this repository's constant rather than
+#: the maker's** *(atlas_refresh_ckpt139, 2026-09-21)*. A Julia dot's first slot is a
+#: neighborhood of the `c` its set is drawn at, and the page a reader lands on from a Julia
+#: view is *Back to Mandelbrot*, which frames the parent plane 0.05 across — picked by eye
+#: over thirteen gallery `c` values and written down in `explorer/explorer.js`. The maker
+#: next door drew that plate at a twentieth of the plane's own home width instead, which is
+#: 0.22 on the Mandelbrot plane and a different number on each of the other four, so the
+#: atlas showed one frame and the link under it opened another.
+#:
+#: Transcribed here because Python cannot read JavaScript, the way `builder/theme.py`
+#: transcribes the well colors. A pinned plane keeps the maker's own width: Phoenix's first
+#: slot is a neighborhood of the slice a place is a frame on, and no *back* lands there.
+JULIA_PLATE_WIDTH = "0.05"
+
+#: The maker, driven from here so that the width above is applied where it belongs.
+#:
+#: `curate atlas` passes one neighborhood width to every place of a plane, and which places
+#: get a neighborhood plate at all is a fact about the *kind* of place — a parameter-plane
+#: place shows its own frame and a dynamical one shows its `c` — so the two are separable
+#: without the maker knowing anything about this page. The wrapper below narrows the width
+#: for a dynamical place and leaves everything else the maker's, then restates
+#: `plate_width` on the payload from the plates that were actually drawn and refuses a
+#: plane that came out with two of them.
+#:
+#: Read-only next door, per that repository's rule here: this runs its library, writes
+#: nothing but its own `artifacts/atlas/<plane>/`, and changes not one line of its code.
+MAKER_PROGRAM = """
+import json, sys
+
+from fractal_wallpapers.curation import atlas
+from fractal_wallpapers.curation.atlas import pictures as drawing
+from fractal_wallpapers.curation.atlas import slots
+from fractal_wallpapers.supply import partitions
+
+ask = json.load(sys.stdin)
+width = str(ask["julia_plate_width"])
+maker = slots.views_of
+
+
+def views_of(place, plane_family, julia_home, plate_width, canonical):
+    narrowed = width if partitions.is_dynamical(place.partition) else plate_width
+    return maker(place, plane_family, julia_home, narrowed, canonical)
+
+
+slots.views_of = views_of
+
+said = {}
+for plane in ask["planes"]:
+    summary = atlas.make(plane=plane, record=ask["record"])
+    out = atlas.default_out(plane) / atlas.DOTS_NAME
+    payload = json.loads(out.read_text(encoding="utf-8"))
+    plates = sorted(
+        {
+            str(dot["slots"]["mandelbrot"]["viewport"]["width"])
+            for dot in payload["dots"]
+            if str((dot["slots"].get("mandelbrot") or {}).get("what") or "").startswith(
+                "a neighborhood plate"
+            )
+        }
+    )
+    if len(plates) > 1:
+        raise SystemExit(f"{plane}: neighborhood plates at {plates}, and a plane records one")
+    if plates and payload["plate_width"] != plates[0]:
+        payload["plate_width"] = plates[0]
+        drawing.write_json(out, payload)
+    said[plane] = {
+        "dots": summary.get("dots"),
+        "thumbs": (summary.get("thumbs") or {}).get("made"),
+        "failed": (summary.get("thumbs") or {}).get("failed"),
+        "seconds": summary.get("seconds"),
+        "plate_width": payload["plate_width"],
+    }
+print("ATLAS-MADE " + json.dumps(said))
+"""
+
+
+def make(record: str, planes=None) -> list[str]:
+    """Run the maker next door for each plane, at this page's own Julia plate width.
+
+    The maker holds the candidate pool while it reads, so this never runs beside a solve,
+    a growth pass or the slow lane — the same rule that repository states for it.
+    """
+    import subprocess
+
+    from . import renders
+
+    wanted = list(planes or [name for name, *_ in PLANES_DRAWN])
+    unknown = [name for name in wanted if name not in {one for one, *_ in PLANES_DRAWN}]
+    if unknown:
+        raise AtlasError(f"{', '.join(unknown)}: not a plane this record carries")
+    # Streamed rather than captured: the maker prints a stamped line per stage and one per
+    # sixty thumbnails, and this leg is twenty minutes. A run whose progress only arrives
+    # at the end is a run nobody can tell from a hang.
+    ask = {"record": record, "planes": wanted, "julia_plate_width": JULIA_PLATE_WIDTH}
+    said, tail = [], []
+    with subprocess.Popen(
+        [str(renders.venv_python()), "-c", MAKER_PROGRAM],
+        stdin=subprocess.PIPE,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+        encoding="utf-8",
+        # The maker writes its own prose to the console, and a console that is not UTF-8
+        # hands back a byte no decoder here should die on.
+        errors="replace",
+        cwd=str(renders.wallpapers_root()),
+    ) as running:
+        running.stdin.write(json.dumps(ask))
+        running.stdin.close()
+        for line in running.stdout:
+            line = line.rstrip()
+            if line.startswith("ATLAS-MADE "):
+                said.append(line)
+                continue
+            tail = (tail + [line])[-40:]
+            print(f"  | {line}", flush=True)
+    if running.returncode != 0 or not said:
+        raise AtlasError(f"{MAKER} failed at {record}:\n" + "\n".join(tail))
+    answer = json.loads(said[-1][len("ATLAS-MADE ") :])
+    lines = [f"{MAKER} --record {record}, Julia plates {JULIA_PLATE_WIDTH} wide"]
+    for name in wanted:
+        held = answer[name]
+        lines.append(
+            f"  {name}: {held['dots']} dots · {held['thumbs']} thumbnails "
+            f"({held['failed']} failed) · plates {held['plate_width']} wide · {held['seconds']}s"
+        )
+    return lines
+
+
 #: What every plane of one atlas has to agree on, because the method row says it once.
 SHARED = (
     ("record", "record"),

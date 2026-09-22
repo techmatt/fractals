@@ -97,15 +97,28 @@ class Stores:
         self._candidates: dict[str, tuple[str, str] | None] = {}
 
     def gallery(self, stamp: str) -> dict:
+        """One recorded gallery's seats, this site's own copy of them read in first.
+
+        `article/figure-recipes.jsonl` carries the seat row of every pick a figure cites,
+        which is what keeps this answerable now that six of the records those picks were
+        made off have been removed next door. The record itself is still read for a stamp
+        the store does not hold — a pick nobody has landed here yet.
+        """
         if stamp not in self._gallery:
+            from . import recipes
+
+            held: dict[str, dict] = {
+                one.key: one.seat
+                for one in recipes.load_all().values()
+                if one.stamp == stamp and one.seat
+            }
             path = renders.artifact("curation", "tentative", stamp, "gallery.jsonl")
-            held: dict[str, dict] = {}
             if path.is_file():
                 with path.open(encoding="utf-8") as handle:
                     for raw in handle:
                         if raw.strip():
                             row = json.loads(raw)
-                            held[str(row["key"])] = row
+                            held.setdefault(str(row["key"]), row)
             self._gallery[stamp] = held
         return self._gallery[stamp]
 

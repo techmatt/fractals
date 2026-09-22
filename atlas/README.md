@@ -84,9 +84,21 @@ no entry at all and a header with its name alone, which is true where a guess wo
 absorption radius, the neighborhood width and the tally, because the maker thins every plane
 at twelve pixels of its own base and so at a different distance on each plane.
 
+**A Julia dot's neighborhood plate is `BACK_WIDTH`, and that is this repository's number**
+*(atlas_refresh_ckpt139, 2026-09-22)*. The first slot of a Julia mark is a neighborhood of
+the `c` its set is drawn at, and the place a reader lands on from a Julia view in the
+explorer is *Back to Mandelbrot*, which frames the parent plane **0.05** across. The maker
+drew that plate at a twentieth of the plane's own home width — 0.22 on the Mandelbrot plane,
+0.26, 0.22, 0.18 and 0.215 on the four Multibrots — so the atlas showed one frame and the
+link under it opened another. `builder/atlas.py`'s `JULIA_PLATE_WIDTH` is the explorer's
+constant transcribed, the way `builder/theme.py` transcribes the well colors, and
+`--make` narrows the width for a dynamical place on its way into the maker. **Phoenix keeps
+the maker's own 0.25**: its places are frames on the pinned slice, its first slot is a
+neighborhood of that slice, and there is no *back* that lands there.
+
 **Every plane's slot pictures are staged, not deployed.** `pictures` on the partition row is
 `staged` for all six since `site_rebase_ckpt132` (2026-09-19), which rebuilt every plane from
-the pinned general record `20260919T171003Z` and untracked Mandelbrot's slot pictures rather
+a pinned general record and untracked Mandelbrot's slot pictures rather
 than re-committing them; the pictures are listed in `.git/info/exclude` and the record
 commits. The six plates stay tracked: a plate is drawn from the engine's home view and not
 from a record, so a rebuild leaves them as they are. Until the pictures are deployed, the
@@ -208,9 +220,12 @@ instantiated for that one export, which is exactly what `builder/emit.mjs` and
 ## Where the record came from, and how to rebuild it
 
 `atlas.jsonl`'s method row names it: the record the seats were read out of, the live
-judge, and the fine bar the population was cut at. The record is not necessarily a
-published one: since `site_rebase_ckpt132` it is the pinned general record
-`20260919T171003Z`, which is the general collection of the staged gallery too. Its `tally`
+judge, and the fine bar the population was cut at. The record is not a published one and
+**nothing next door is published any more**: since `atlas_refresh_ckpt139` it is
+`20260922T012627Z`, the `final139_general` solve — mining is closed and the twenty
+`final139_*` records of 2026-09-22 are that project's only saved set — and it is the
+general collection of the staged gallery too, which is why `--make` takes its stamp from
+`builder/seats.py`'s `STAMP` when none is given. Its `tally`
 is the census the maker took, from places queued to dots drawn and seated, and each
 partition row's `dots` is that plane's share. The maker is
 `fractal-wallpapers curate atlas`, writing `artifacts/atlas/mandelbrot/` in that checkout,
@@ -221,10 +236,21 @@ fine score, and places them in one greedy pass. It writes one directory per plan
 
 ```
 python -m builder atlas                                  # what the record holds
+python -m builder atlas --make [--record STAMP]          # run the maker next door, all six planes
 python -m builder atlas --ingest [<maker>/dots.json]     # rewrite a plane, or all of them
 python -m builder atlas --plates                         # all six plates, dots re-projected
 python -m builder atlas --figure atlas-places            # the plate and its marks, for §11
 ```
+
+**`--make` is how the maker is run, and it exists so the Julia plate width has somewhere to
+live.** It drives that project's `curation.atlas.make` in that project's own interpreter —
+running its library, reading its stores, writing nothing but its own `artifacts/atlas/` —
+and wraps `slots.views_of` so that a dynamical place's neighborhood plate is
+`JULIA_PLATE_WIDTH` and everything else stays the maker's. Then it restates `plate_width` on
+the payload from the plates that were actually drawn, and refuses a plane that came out with
+two of them. It is twenty-odd minutes for six planes and it streams the maker's own progress
+rather than holding it. Nothing next door changes: that repository is read-only from here,
+and a width that is the explorer's own has no business being a constant over there.
 
 `--plates` is idempotent by construction: every number it writes comes from the engine's
 measurement of a family and from each dot's own `place.at`, and the absorption radius is

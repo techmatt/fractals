@@ -314,8 +314,26 @@ def resolve(identifiers) -> list[Pick]:
 
     Never a partial answer: a figure is six panels in an order Matt chose, and five of
     them with a hole is not a picture anybody wants landed on a page.
+
+    **The site's own recipe store answers first** *(atlas_refresh_ckpt139, 2026-09-22)*.
+    `article/figure-recipes.jsonl` holds the seat and the recipe for every pick a figure
+    cites, so the two reads below run only for a pick nobody has landed there yet — a
+    fresh one off a live record. That is the whole reason the six recorded galleries this
+    site's figures were picked off can be gone from the wallpaper project and every one of
+    those figures still redraw; `builder.recipes` says why it had to be.
     """
-    parts = [split(identifier) for identifier in identifiers]
+    from . import recipes
+
+    # Materialized first: callers hand this a generator, and the order asked for has to be
+    # walkable twice — once to split, once to answer.
+    asked = [str(identifier) for identifier in identifiers]
+    parts = [split(identifier) for identifier in asked]
+    stored = recipes.load_all()
+    parts = [pair for pair in parts if f"{pair[0]}{PICK_SEPARATOR}{pair[1]}" not in stored]
+    if not parts:
+        # Not merely a shortcut: `ledger_rows` with nothing to look for reads a quarter of
+        # a gigabyte to the end, because the pass it stops early on never matches a key.
+        return [_pick_for(identifier, stored, {}) for identifier in asked]
     by_stamp: dict[str, dict[str, dict]] = {}
     for stamp, _ in parts:
         if stamp not in by_stamp:
@@ -335,8 +353,8 @@ def resolve(identifiers) -> list[Pick]:
             f"{', '.join(unrecorded)}: seated in the gallery record and not in the candidate "
             "ledger, so nothing says which map or which cap drew it"
         )
-    return [
-        Pick(
+    fresh = {
+        f"{stamp}{PICK_SEPARATOR}{key}": Pick(
             identifier=f"{stamp}{PICK_SEPARATOR}{key}",
             stamp=stamp,
             key=key,
@@ -348,7 +366,23 @@ def resolve(identifiers) -> list[Pick]:
             },
         )
         for stamp, key in parts
-    ]
+    }
+    return [_pick_for(identifier, stored, fresh) for identifier in asked]
+
+
+def _pick_for(identifier: str, stored: dict, fresh: dict[str, Pick]) -> Pick:
+    """One pick out of the store where it holds it, and out of the fresh reads otherwise."""
+    held = stored.get(identifier)
+    if held is None:
+        return fresh[identifier]
+    return Pick(
+        identifier=identifier,
+        stamp=held.stamp,
+        key=held.key,
+        seat=dict(held.seat),
+        recipe=held.recipe,
+        source=dict(held.source),
+    )
 
 
 #: What a `Pick` built from a bare ledger row calls its stamp. A candidate is a row of
@@ -374,16 +408,20 @@ def candidates(keys) -> list[Pick]:
     figure that labels a picture by its dominant hue has to read that off the record
     rather than off the picture.
     """
+    from . import recipes
+
     wanted = [str(key).strip() for key in keys]
-    rows = ledger_rows(set(wanted))
-    unrecorded = [key for key in wanted if key not in rows]
+    stored = recipes.load_all()
+    unheld = [key for key in wanted if f"{CANDIDATE_STAMP}{PICK_SEPARATOR}{key}" not in stored]
+    rows = ledger_rows(set(unheld)) if unheld else {}
+    unrecorded = [key for key in unheld if key not in rows]
     if unrecorded:
         raise PickError(
             f"{', '.join(unrecorded)}: not a row of the candidate ledger, so nothing says "
             "which map or which cap drew it"
         )
-    return [
-        Pick(
+    fresh = {
+        f"{CANDIDATE_STAMP}{PICK_SEPARATOR}{key}": Pick(
             identifier=f"{CANDIDATE_STAMP}{PICK_SEPARATOR}{key}",
             stamp=CANDIDATE_STAMP,
             key=key,
@@ -395,8 +433,9 @@ def candidates(keys) -> list[Pick]:
                 **(rows[key].get("provenance") or {}),
             },
         )
-        for key in wanted
-    ]
+        for key in unheld
+    }
+    return [_pick_for(f"{CANDIDATE_STAMP}{PICK_SEPARATOR}{key}", stored, fresh) for key in wanted]
 
 
 # ----------------------------------------------------------------------- the tone curve

@@ -137,6 +137,7 @@ from . import (
     picker,
     picks,
     prose,
+    recipes,
     records,
     renders,
     sections,
@@ -321,6 +322,7 @@ def check_figures() -> list[str]:
                     f"figures.jsonl: {figure.id} says {figure.width}x{figure.height}, "
                     f"{figure.file} is {actual[0]}x{actual[1]}"
                 )
+    problems.extend(recipes.problems())
     if figures.stores_available():
         problems.extend(figures.unresolved(registry))
     return problems
