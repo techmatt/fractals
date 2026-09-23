@@ -968,3 +968,23 @@ test("the three scale keys ride a link only when set, and never bump v", () => {
   assert.equal(emit(back, CONTEXT), emit(parse(emit(back, CONTEXT), CONTEXT), CONTEXT));
   assert.match(emit(back, CONTEXT), /&scale=absolute&lambda=0&period=0\.25/);
 });
+
+test("under the absolute scale a tone curve is read, then dropped from the link", () => {
+  // Autolevel fits the picture to itself and absolute is the scale that is not fitted, so a
+  // link carrying both canonicalizes to the scale alone (palette_absolute_tidy_ckpt144).
+  const curve = "level=band_autolevel/v1:0.45,0.98,1.41,0.45,0.98";
+  const both = parse(`v=${VERSION}&p=viridis&scale=absolute&${curve}`, CONTEXT);
+  assert.equal(both.level, null);
+  assert.equal(emit(both, CONTEXT), `v=${VERSION}&p=viridis&scale=absolute`);
+  // Emit holds the rule on its own, for a view that was built rather than parsed.
+  const leveled = parse(`v=${VERSION}&p=viridis&${curve}`, CONTEXT);
+  const switched = { ...leveled, shade: { ...leveled.shade, scale: "absolute" } };
+  assert.doesNotMatch(emit(switched, CONTEXT), /level=/);
+  // Still read before it is dropped: a malformed curve is refused whatever the scale.
+  assert.throws(
+    () => parse(`v=${VERSION}&p=viridis&scale=absolute&level=band_autolevel/v1:0.1`, CONTEXT),
+    PermalinkError,
+  );
+  // Leveled keeps its curve exactly as before.
+  assert.ok(emit(leveled, CONTEXT).endsWith(curve));
+});

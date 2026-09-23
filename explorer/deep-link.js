@@ -40,6 +40,7 @@ import {
   defaultShade,
   encode,
   encodeCurve,
+  levelUnder,
   shortest,
 } from "./permalink.js";
 import * as fx from "./deep-fx.js";
@@ -239,7 +240,7 @@ export function parse(search, context) {
   }
 
   const levelText = params.get(LEVEL_KEY.key);
-  const level = levelText === null ? LEVEL_KEY.fallback : LEVEL_KEY.read(levelText);
+  const level = levelUnder(shade, levelText === null ? LEVEL_KEY.fallback : LEVEL_KEY.read(levelText));
 
   return { version: VERSION, degree, julia, x, y, w, maxiter, capFrom, aspect, palette, shade, level };
 }
@@ -355,7 +356,7 @@ export function emit(view) {
     if (spec.same(value, spec.fallback)) continue;
     parts.push(`${spec.key}=${encode(spec.write(value))}`);
   }
-  const level = view.level ?? LEVEL_KEY.fallback;
+  const level = levelUnder(view.shade, view.level ?? LEVEL_KEY.fallback);
   if (!LEVEL_KEY.same(level, LEVEL_KEY.fallback)) {
     parts.push(`${LEVEL_KEY.key}=${encodeCurve(LEVEL_KEY.write(level))}`);
   }

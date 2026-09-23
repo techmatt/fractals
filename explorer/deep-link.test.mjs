@@ -106,6 +106,14 @@ test("a tone curve rides along under its own name", () => {
   assert.ok(deep.emit(view).endsWith(curve), deep.emit(view));
 });
 
+test("under the absolute scale the deep contract drops the curve too", () => {
+  const curve = "level=band_autolevel/v1:0.45,0.98,1.41,0.45,0.98";
+  const view = deep.parse(`?dv=1&w=2e-11&n=48551&p=inferno&scale=absolute&${curve}`, context);
+  assert.equal(view.level, null);
+  assert.doesNotMatch(deep.emit(view), /level=/);
+  assert.match(deep.emit(view), /scale=absolute/);
+});
+
 test("a cyclic map is refused a fold, in the shallow contract's own words", () => {
   assert.throws(
     () => deep.parse("?dv=1&p=twilight_shifted&mirror=1", context),

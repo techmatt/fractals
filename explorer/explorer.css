@@ -1424,7 +1424,9 @@ canvas.palette-final {
    decides the mode's parameters. Absolute is meant to be impossible to miss — the colours
    stop fitting themselves to the frame, and a reader who did not notice the switch would
    read a flat or noisy picture as a broken one — so its pressed half is filled in its own
-   colour and the strip above takes the same colour as a frame while it is in force. */
+   colour and the strip above takes the same colour as a frame while it is in force. The
+   orange sentence that used to sit under the row is the Absolute half's title now *(Matt,
+   palette_absolute_tidy_ckpt144)*. */
 .scale-switch { display: inline-flex; gap: 0; }
 .bar .scale-switch button:not(.chip) {
   border-radius: 0;
@@ -1448,7 +1450,6 @@ canvas.palette-final {
 .palette-group[data-scale="absolute"] canvas.palette-final {
   border: 2px solid var(--scale-absolute);
 }
-.palette-group[data-scale="absolute"] #shade-note { color: var(--scale-absolute); }
 .palette-group .help { margin: 0 0 0.4rem; }
 
 /* A family tab strip, because the library is a thousand maps and a reader wants the one

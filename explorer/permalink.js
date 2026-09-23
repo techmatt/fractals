@@ -607,6 +607,21 @@ export const LEVEL_KEY = {
 };
 
 /**
+ * The curve a view carries under its scale: its own under `leveled`, and none under
+ * `absolute` *(Matt, palette_absolute_tidy_ckpt144)*.
+ *
+ * Autolevel re-fits the finished picture to itself, and the absolute scale is the one
+ * that is meant not to be fitted to the picture, so the two never meet. A link carrying
+ * both is read and then canonicalized: the curve is still parsed, so a malformed one is
+ * still refused, and then dropped, and `emit` never writes one under `absolute`. **No
+ * version for it**: `scale` arrived in palette_modes_ckpt143 and was never published, so
+ * no link anybody saved carries both. Both contracts call this, so they cannot disagree.
+ */
+export function levelUnder(shade, level) {
+  return shade.scale === "absolute" ? LEVEL_KEY.fallback : level;
+}
+
+/**
  * The keys the page carries and the picture ignores. See the note in the header.
  *
  * `panel` is which side the studio's left panel is showing. It is exported so the page
@@ -794,7 +809,7 @@ export function parse(search, context) {
   // in step. A link asking for a curve under a direct trap draws nothing and shows
   // the module's own sentence, which is how every other engine refusal arrives.
   const levelText = params.get(LEVEL_KEY.key);
-  const level = levelText === null ? LEVEL_KEY.fallback : LEVEL_KEY.read(levelText);
+  const level = levelUnder(shade, levelText === null ? LEVEL_KEY.fallback : LEVEL_KEY.read(levelText));
 
   return { version: VERSION, family, constants, mode, params: values, x, y, w, aspect, palette, shade, level };
 }
@@ -851,8 +866,8 @@ export function emit(view, context) {
   }
   // Last, because it is the last thing that happens to a colour — see the note at
   // the top. `view.level` is absent on a view built before this key existed, which
-  // is the same thing as the operator not having acted.
-  const level = view.level ?? LEVEL_KEY.fallback;
+  // is the same thing as the operator not having acted. None under `absolute`.
+  const level = levelUnder(view.shade, view.level ?? LEVEL_KEY.fallback);
   if (!LEVEL_KEY.same(level, LEVEL_KEY.fallback)) {
     parts.push(`${LEVEL_KEY.key}=${encodeCurve(LEVEL_KEY.write(level))}`);
   }

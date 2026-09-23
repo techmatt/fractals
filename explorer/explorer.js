@@ -160,8 +160,10 @@ const SHADE_TIPS = {
 /** The two halves of the scale switch, as their tooltips say them. */
 const SCALE_TIPS = {
   leveled: "Fits the palette to this picture: its darkest and brightest values set the ends.",
-  absolute:
-    "Lays the palette along the field's own values, one pass every period, so a value is the same color in every frame. Nothing is fitted to the picture.",
+  // The line that used to sit under the row in orange, moved here whole
+  // (Matt, palette_absolute_tidy_ckpt144): the switch's colour already says which scale is
+  // in force, and the sentence is what hovering the half that chose it explains.
+  absolute: "The palette repeats every Period of the field's value and is not fitted to this picture.",
 };
 
 /** The mode both mode lists open with, whatever the counts or the alphabet would say.
@@ -678,6 +680,7 @@ function tintedShape() {
  * cache is for — so the two sides differ in what follows the write and not in the write.
  */
 function tint(changes, { moved = true, moving = false } = {}) {
+  changes = levelledFor(changes, tinting());
   if (deep !== null && deep.owns()) {
     deep.tint(changes);
     syncShade();
@@ -689,6 +692,26 @@ function tint(changes, { moved = true, moving = false } = {}) {
   // `moving` is a hand still on the control — see `live`. Everything else draws at once.
   if (moving) live();
   else draw();
+}
+
+/**
+ * `changes` with the tone curve the scale it sets allows *(Matt, palette_absolute_tidy_
+ * ckpt144)*. Autolevel re-fits the finished picture to itself, and the absolute scale is the
+ * one that is not fitted to the picture, so a switch to it takes the curve away with it —
+ * the link contract drops one too (`levelUnder`). A switch back to leveled leaves Autolevel
+ * exactly as it was: the box kept its tick while it was hidden, and the draw measures the
+ * picture again, as it does after any other change to the recipe.
+ */
+function levelledFor(changes, subject) {
+  const scale = changes.shade?.scale;
+  if (scale !== "absolute" || subject.shade.scale === "absolute") return changes;
+  return { ...changes, level: null };
+}
+
+/** Whether the tone operator is wanted on `subject`: the box ticked, and not under the
+ *  absolute scale, which Autolevel never acts on. */
+function autolevels(subject) {
+  return levelOn && subject.shade.scale !== "absolute";
 }
 
 // ------------------------------------------------------------------- the geometry
@@ -1357,7 +1380,7 @@ async function drawPass() {
   // and an unticked box is the palette as it is. Otherwise the curve in force while the
   // earlier stages draw is the last one derived — a preview in last pass's tone rather
   // than a flash of the unlevelled picture — and the final stage measures its own.
-  const deriving = levelling === "derived" && levelOn && shape.levels;
+  const deriving = levelling === "derived" && autolevels(view) && shape.levels;
   if (levelling === "derived" && !deriving && view.level !== null) {
     view = { ...view, level: null };
     updateReadout();
@@ -2136,6 +2159,10 @@ function buildShade() {
     shadeWidgets.set(control.key, held);
     shadeBar.append(group);
   }
+  // **Phase comes first after the switch** *(Matt, palette_absolute_tidy_ckpt144)*: it is
+  // the one number both scales turn, so it keeps its place whichever is chosen and the
+  // scale's own controls follow it. The contract's order is `SHADE_KEYS`'s and is not this.
+  shadeWidgets.get("scale").group.after(shadeWidgets.get("phase").group);
   // Autolevel is written in the page rather than built here and closes the row: it is a
   // setting a reader turns rather than a key a link carries. The Julia preview was the
   // other one until it moved beside Julia here *(explorer_controls_ckpt140)*, which is
@@ -2258,16 +2285,10 @@ function syncShade() {
   const inert = plan.levels === true
     ? "Scale, Gamma, Cycles, Phase, Transfer and Lambda"
     : "Autolevel, Scale, Gamma, Cycles, Phase, Transfer and Lambda";
-  // Absolute says so in words as well as in the switch's colour: it is the one setting on
-  // this row under which a flat or a noisy picture is the setting working rather than
-  // something wrong, and a reader who missed the switch deserves the sentence.
-  const absolute = subject.shade.scale === "absolute";
+  // Absolute's sentence is the title on its half of the switch now *(Matt, palette_absolute_
+  // tidy_ckpt144)*; the switch's orange and the strip's frame are what say it is in force.
   paletteGroup.dataset.scale = subject.shade.scale;
-  shadeNote.textContent = plan.direct
-    ? `${inert} have no effect in this render mode.`
-    : absolute
-      ? "Absolute: the palette repeats every Period of the field's value and is not fitted to this picture."
-      : "";
+  shadeNote.textContent = plan.direct ? `${inert} have no effect in this render mode.` : "";
 
   syncLevel();
 }
@@ -2373,6 +2394,10 @@ function syncLevel() {
   const levels = plan.levels === true;
   levelToggle.checked = levels && levelOn;
   levelToggle.disabled = busy || !levels;
+  // **Not there at all under the absolute scale** *(Matt, palette_absolute_tidy_ckpt144)*:
+  // Autolevel fits the picture to itself, which is what that scale exists not to do. Hidden
+  // rather than disabled, as the row hides Gamma there, and its tick is kept for Leveled.
+  levelGroup.hidden = tinting().shade.scale === "absolute";
 }
 
 /**
@@ -3358,7 +3383,7 @@ async function mountDeep() {
       settle,
       // A deep view is always one the reader made, so the curve is measured whenever the
       // box is ticked. There is no stored half here: nothing arrives from a run.
-      deriving: () => levelOn,
+      deriving: () => autolevels(deep.view()),
       resolves: resolvesShallow,
       leave: leaveDeep,
       save: (query) => {
@@ -4671,7 +4696,7 @@ async function main() {
     // Whether a download measures its own tone. A derived view's curve is a measurement
     // of the frame on the screen, and a download is a different frame, so it derives
     // again on the picture it draws; a stored view replays its curve at any size.
-    deriving: () => levelling === "derived" && levelOn,
+    deriving: () => levelling === "derived" && autolevels(view),
     shownGrid: () => grid,
     shownImage: () => finished,
     measured,
@@ -4708,7 +4733,7 @@ async function main() {
     viewFor: (cx, cy) => juliaViewOf(link.coordinateOf(cx), link.coordinateOf(cy)),
     // The same two facts the download row asks for: whether this view measures its own
     // tone, and nothing about the size it is drawn at.
-    deriving: () => levelling === "derived" && levelOn,
+    deriving: () => levelling === "derived" && autolevels(view),
     // **It yields to the main picture.** Nothing is started while a pass is running, and
     // the settle re-arms instead — a preview that competed with the render it is standing
     // next to would be a preview that made the page feel slower to use.

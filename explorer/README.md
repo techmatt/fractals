@@ -165,7 +165,7 @@ resize.mjs            PIL's bicubic resize, ported byte for byte: what a judge r
 judges/               UNTRACKED: the two ONNX judges and the runtime, `builder walk`
 permalink.js          the link contract — parse, validate, canonicalize
 params.js             a mode parameter's control: its word, its slider's travel, the mapping
-permalink.test.mjs    55 tests, `node --test explorer/permalink.test.mjs`
+permalink.test.mjs    58 tests, `node --test explorer/permalink.test.mjs`
 screensaver.test.mjs  8 tests: the intervals, the samples, the overrun rule, the correction, the bag
 bands.test.mjs        3 tests: the pool cuts the frame, never what is in it
 level.test.mjs        7 tests: the module's tone measurement, and a derived curve replays
@@ -175,7 +175,7 @@ undo.test.mjs         8 tests: one action is one entry, a step back keeps what i
 zip.test.mjs          2 tests: CRC-32's check values, and an archive read back to its bytes
 stamp.test.mjs        12 tests: the link goes in, and the picture does not move
 deep-fx.test.mjs      12 tests: the Deep tab's arithmetic is exact where a double is not
-deep-link.test.mjs    38 tests: the deep contract, the shallow one held to not moving,
+deep-link.test.mjs    39 tests: the deep contract, the shallow one held to not moving,
                       and the gallery register held to the deep one
 deep.test.mjs         17 tests: where the two modules meet, against both committed ones
 palettes.jsonl        the roster palettes.js is baked from; 1,022 maps, 77 offered,
@@ -2255,7 +2255,7 @@ deep-fx.js         exact decimal coordinates, BigInt fixed point
 deep-link.js       the deep link contract — parse, emit, canonicalize, describe
 deep-gallery.js    the gallery under the tab's sentence, and deep-gallery.jsonl its register
 deep-fx.test.mjs   12 tests: the arithmetic is exact where a double is not
-deep-link.test.mjs 38 tests: the contract, the shallow one held to not moving, and the
+deep-link.test.mjs 39 tests: the contract, the shallow one held to not moving, and the
                    gallery register
 deep.test.mjs      17 tests: where the two modules meet, against both committed ones —
                    and the cap policy's seam, which fails the same way the rest of
@@ -4369,6 +4369,15 @@ field as it is, 0 its log), and `absolute` replaces the frame's own statistics w
 `frac(g/period + phase)`, so a value is one colour in every frame. The spelling is
 American, *leveled*, by the site's rule for anything a reader meets.
 
+**Under `scale=absolute` a link carries no `level`** *(palette_absolute_tidy_ckpt144)*.
+`parse` still reads the curve, so a malformed one is still refused, and then drops it;
+`emit` never writes one under `absolute`. So `scale=absolute&level=…` canonicalizes to
+`scale=absolute`, in both contracts through the one helper, `levelUnder` in
+`permalink.js`. **No version for it**: the rule changes what that pair draws, which would
+bump `v` for a published key, but `scale` arrived in palette_modes_ckpt143 and was never
+pushed, so no link anybody saved carries both. `permalink.test.mjs` and
+`deep-link.test.mjs` hold it.
+
 ### `level`, and a gallery seat's own colour
 
 **A seat is not drawn through the map its recipe names.** Every candidate the wallpaper
@@ -4659,14 +4668,26 @@ recipe** group. What is worth writing down is the shape rather than the widgets:
   and says which map and why rather than letting a reader write a link that will not open.
 - **Scale is a switch, and it swaps the row** *(palette_modes_ckpt143)*. *Leveled |
   Absolute* opens the shade row, two halves of one pill, the way the Render mode select
-  decides which of a mode's parameters are shown: under Leveled the row is Gamma, Cycles,
-  Phase, Transfer and Lambda; under Absolute it is Phase, Lambda and Period, and Gamma,
+  decides which of a mode's parameters are shown: under Leveled the row is Phase, Gamma,
+  Cycles, Transfer and Lambda; under Absolute it is Phase, Lambda and Period, and Gamma,
   Cycles and Transfer are hidden and kept, so switching back finds them as they were.
+  **Phase comes straight after the switch in both** *(Matt, palette_absolute_tidy_ckpt144)*,
+  because it is the one control the two scales share; the row's order is the page's, and
+  the link's stays `SHADE_KEYS`'.
   `shade.js` says which scale each key is shown under (`under`), and a key that names
   none is shown under both. **Absolute is made hard to miss**, because it is the one
   setting under which a flat or a noisy picture is the setting working: its pressed half
-  is filled in its own orange (`--scale-absolute`), the palette strip is framed in the
-  same colour, and the line under the row says the palette is not fitted to the picture.
+  is filled in its own orange (`--scale-absolute`) and the palette strip is framed in the
+  same colour. The orange line that sat under the row, *Absolute: the palette repeats every
+  Period of the field's value and is not fitted to this picture*, is the Absolute half's
+  title now (ckpt144); Leveled never had a line of its own.
+- **No Autolevel under Absolute** *(Matt, palette_absolute_tidy_ckpt144)*. Autolevel re-fits
+  the finished picture to itself, which is exactly what the absolute scale exists not to
+  do. So under Absolute the box is hidden (not disabled; its tick is kept), no curve is
+  derived (`autolevels` in `explorer.js` gates every `deriving` hook, the Deep tab's too),
+  and the switch to Absolute drops the view's curve (`levelledFor`). Back on Leveled the box
+  is as it was, and the draw measures the picture again, as after any other recipe change.
+  Leveled's Autolevel is unchanged.
   Lambda's slider runs 0 to 1 linearly; Period's runs in decades from 10⁻³ to 10⁵ and
   writes three figures. **Under Absolute the strip is one cycle of the map from the
   view's phase** — there is no frame's range for it to be a picture of, and one period
