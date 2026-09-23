@@ -33,7 +33,6 @@
     <li><a href="fractal-atlases.html">Fractal atlases</a></li>
     <li class="rail-current"><a href="deep-zoom.html" aria-current="page">Deep zoom</a> <span class="done" role="img" aria-label="written">✓</span>
       <ol class="rail-headings">
-        <li><a href="#where-double-precision-runs-out">Where double precision runs out</a></li>
         <li><a href="#what-depth-adds-to-a-picture">What depth adds to a picture</a></li>
         <li><a href="#satellite-copies-and-the-seahorse-valley">Satellite copies and the seahorse valley</a></li>
         <li><a href="#embedded-julia-sets">Embedded Julia sets</a></li>
@@ -58,72 +57,72 @@
 
 <main>
   <section class="prose">
-    <p>Every picture in this project's galleries is computed in
+    <p>Every picture in this project's main galleries is computed in
     <a href="https://en.wikipedia.org/wiki/Double-precision_floating-point_format">double-precision
-    floating point</a>, the 64-bit number format a processor does arithmetic in natively. A
-    double carries about 16 significant decimal digits, and the limit is relative: the gap
-    between neighboring representable numbers grows in proportion to the size of the numbers
-    themselves. A sample's coordinate is formed as the frame's center plus a small offset, so
-    what runs out is the ability to tell two neighboring samples apart <em>at the magnitude of
-    the center</em>. Past that point neighboring samples round to the same number, runs of
-    pixels compute the same orbit, and the picture shows the arithmetic rather than the set.
-    The engine refuses any frame whose samples sit closer together than a few units in the
-    last place. For a 1280-pixel-wide frame near the main body of the Mandelbrot set, that
-    means a width of roughly 6 × 10<sup>−13</sup> in the complex plane, a magnification of
-    about eight trillion. Deeper frames are drawn only in the explorer's
-    <a href="../explorer/index.html?dv=3&amp;x=-0.74937053247003823168823992075369&amp;y=0.041472667068168900034718746387049&amp;w=3.4869054402668363e-15&amp;p=glowdon&amp;scale=absolute&amp;lambda=0&amp;period=0.25">Deep
-    tab</a>, using the method described at the end of this page.</p>
+    floating point</a>, the 64-bit number format a processor does arithmetic in natively.
+    This is fast and efficient, but it breaks down when you zoom deeply enough into the
+    Mandelbrot set. Past a certain point, neighboring samples round to the same number and
+    whole groups of pixels compute the same orbit. The result is blocky discretization
+    artifacts that have nothing to do with the fractal, and they get worse the deeper you
+    go.</p>
 
-    <p>The video below descends from a view of the whole set to a frame about
-    3.5 × 10<sup>−15</sup> wide, some 160 times narrower than that limit, halving the width
-    every one and a half seconds.</p>
+      <figure class="figure-placeholder" data-placeholder="deep-f64-and-perturbation">
+        <p class="placeholder-well"><span class="pending-label">Figure placeholder</span>deep-f64-and-perturbation</p>
+        <figcaption>The same deep frame computed in double precision (left), where the picture breaks into flat blocks because neighboring pixels round to the same coordinate, and computed by perturbation (right).</figcaption>
+      </figure>
+
+    <p>It's possible, but expensive, to switch to higher-precision arithmetic:
+    <a href="https://en.wikipedia.org/wiki/Quadruple-precision_floating-point_format">128-bit
+    floats</a>, or arbitrary-precision libraries such as
+    <a href="https://crates.io/crates/rug">rug</a> in Rust or
+    <a href="https://mpmath.org/">mpmath</a> in Python. Fortunately, the deep-zoom community
+    has developed clever mathematics that looks much deeper into the Mandelbrot set far more
+    efficiently. I go over it briefly at the end of this page. Deeper frames also need a
+    slower, more deliberate way of browsing, which the
+    <a href="../explorer/index.html?panel=deep">Deep tab</a> of the fractal explorer
+    provides.</p>
+
+    <p>Here is a video of a deep descent, down to a frame about 3.5 × 10<sup>−15</sup> wide.
+    It was made with
+    <a href="https://github.com/techmatt/fractal-website/blob/main/builder/zoom.py"><code>builder/zoom.py</code></a>,
+    which computes a high-precision field once at each halving of the width and colors it
+    separately.</p>
 
       <figure class="figure-placeholder" data-placeholder="deep-zoom-video">
         <p class="placeholder-well"><span class="pending-label">Figure placeholder</span>deep-zoom-video</p>
-        <figcaption>A zoom from the whole Mandelbrot set into the seahorse valley. It passes a double spiral and a ring of two-, four- and eight-fold shapes, frames a small copy of the set, and then repeats the same sequence inside the copy's own seahorse valley. Near the end it passes the glowing core of a far smaller copy, too small at this width to show a body, and stops on the spirals just beyond it.</figcaption>
+        <figcaption>A zoom from the whole Mandelbrot set into the seahorse valley. It then descends into a minibrot and repeats the same sequence inside the minibrot's own seahorse valley.</figcaption>
       </figure>
 
-    <p>The video was made with
-    <a href="https://github.com/techmatt/fractal-website/blob/main/builder/zoom.py"><code>builder/zoom.py</code></a>.
-    It computes a high-precision field once at each halving of the width and colors it
-    separately, so one computation serves every coloring, and the frames between two
-    keyframes are resampled from them to save time.</p>
-
-    <p>Deep frames also want a different coloring. The percentile stretch from
-    <a href="rendering-fundamentals.html">rendering fundamentals</a> spreads the palette
-    evenly over each frame's own values. At this depth escape counts run into the tens of
-    thousands, and the stretch leaves most of the picture inside a few percent of the
-    palette. So the explorer also offers an absolute scale: the smooth count passes through
-    a logarithm or a power curve, and the palette then repeats at a fixed period. The figure
-    below shows the video's final frame under several such colorings.</p>
+    <p>Deep frames have wildly varying escape times, and getting a rendering that conveys
+    their full range of detail often takes more exploration and parameter tweaking. The
+    percentile stretch from <a href="rendering-fundamentals.html">rendering fundamentals</a>
+    spreads the palette evenly over each frame's own values. At this depth escape counts run
+    into the tens of thousands, and the stretch leaves most of the picture inside a few
+    percent of the palette. For deep frames an absolute scale generally works best: the
+    smooth count passes through a logarithm or a power curve, and the palette then repeats
+    at a fixed period. The figure below shows the video's final frame under several such
+    colorings.</p>
 
       <figure class="figure-placeholder" data-placeholder="deep-final-colorings">
         <p class="placeholder-well"><span class="pending-label">Figure placeholder</span>deep-final-colorings</p>
         <figcaption>The video's final frame under several colorings of the same field.</figcaption>
       </figure>
 
-    <h2 id="where-double-precision-runs-out">Where double precision runs out</h2>
-
-    <p>The figure below draws one deep frame twice at the same size. The first panel is the
-    ordinary engine, made to render past its refusal, and the second is the method described
-    at the end of this page. The limit also shapes what this project's location search can
-    find. One of the richest kinds of deep frame sits inside a small copy of the set, a
-    minibrot, surrounded by the copy's own filigree. Among the locations the search
-    produced, the share that sit inside such a copy climbs with depth, is highest near a
-    width of 10<sup>−10</sup>, and falls to nothing by 10<sup>−12</sup>. Depth is what
-    places a frame inside a copy, and double precision is what stops the search from
-    following it further down.</p>
-
-      <figure class="figure-placeholder" data-placeholder="deep-f64-and-perturbation">
-        <p class="placeholder-well"><span class="pending-label">Figure placeholder</span>deep-f64-and-perturbation</p>
-        <figcaption>The same frame computed in double precision and forced past the engine's limit (left), where the picture breaks into flat blocks many pixels wide and a few tall because neighboring pixels round to the same coordinate, and computed by perturbation (right).</figcaption>
-      </figure>
-
     <h2 id="what-depth-adds-to-a-picture">What depth adds to a picture</h2>
 
-    <p>Minibrots are everywhere along the boundary: every filament passes infinitely many of
-    them, at every scale. From outside, a copy looks like a small black body with the
-    familiar bulbs and hairs. A frame that zooms into the copy's neighborhood sees more than
+    <p>With some deliberate choices guiding the descent, deeper parts of the Mandelbrot set
+    and related fractals produce much richer detail and pattern in regions that look plain
+    and smooth at shallower depths. The figure below compares a shallow frame with a deep
+    frame inside it.</p>
+
+      <figure class="figure-placeholder" data-placeholder="deep-shallow-and-deep">
+        <p class="placeholder-well"><span class="pending-label">Figure placeholder</span>deep-shallow-and-deep</p>
+        <figcaption>A shallow frame (left) and a deep frame inside it (right): a region that is smooth at the shallow depth fills with detail further down.</figcaption>
+      </figure>
+
+    <p>Small copies of the set, minibrots, are everywhere along the boundary: every filament
+    passes infinitely many of them, at every scale. From outside, a copy looks like a small
+    black body with the familiar bulbs and hairs. A frame that zooms into the copy's neighborhood sees more than
     that. It finds the copy's own seahorse valleys and spirals laid over the structure it was
     already in, so a region that looked smooth from further out fills with filigree. The
     strip below follows one descent of this kind, five steps down a chain of components
@@ -140,8 +139,7 @@
     <p>The narrow gap between the main cardioid and the large disk to its left is the
     <i>seahorse valley</i>, named for the curled shapes that line it. Wikipedia's
     <a href="https://en.wikipedia.org/wiki/Mandelbrot_set#Image_gallery_of_a_zoom_sequence">zoom-sequence
-    gallery</a> walks down it and names what appears: double spirals on one side, seahorses
-    on the other, and at the heart of the pattern a small distorted copy of the set, which it
+    gallery</a> walks down it: double spirals on one side, seahorses on the other, and at the heart of the pattern a small distorted copy of the set, which it
     calls a satellite. Around a satellite the seahorse tails form rings, and the number of
     tails in each ring grows in powers of two. The video's path is a second instance of the
     same walk. It enters the valley, passes its double spiral, reaches a copy, and then
@@ -157,8 +155,10 @@
 
     <p>The repetition has a reason. Near a copy whose orbit has period p, taking p steps of
     the map at once behaves, to a good approximation, like a single step of a fresh
-    quadratic map. So the neighborhood of the copy reproduces the structure of the whole
-    set, slightly distorted. The same mechanism makes Julia sets appear inside the
+    <a href="https://en.wikipedia.org/wiki/Complex_quadratic_polynomial">quadratic map</a>.
+    So the neighborhood of the copy reproduces the structure of the whole set, slightly
+    distorted. The same mechanism makes
+    <a href="https://en.wikipedia.org/wiki/Julia_set">Julia sets</a> appear inside the
     Mandelbrot set. As the video approaches its copy it passes a two-fold shape, then a
     four-fold one, then an eight-fold one, each twice as symmetric as the last, before the
     copy's black body comes into view. These are embedded Julia sets. Wikipedia's gallery
@@ -167,7 +167,7 @@
     this zoom sits in its copy's seahorse valley but just outside the copy itself, so that
     parameter lies outside the set, and its Julia set is a cloud of disconnected dust. That
     is the shape the stages break into as the zoom closes in. The panel beside the strip
-    shows that <a href="https://en.wikipedia.org/wiki/Julia_set">Julia set</a> for
+    shows that Julia set for
     comparison, and the explorer's Julia preview shows the Julia set under the pointer for
     any parameter.</p>
 
@@ -241,12 +241,13 @@
     <h2 id="a-gallery-of-deep-frames">A gallery of deep frames</h2>
 
     <p>The Deep tab carries a small <a href="../explorer/index.html?panel=deep:gallery">gallery</a> of
-    frames found this way. The first set came from a rough search. It starts from places the
-    location search had already found inside a small copy of the set and descends from each
-    one: at every step it searches the view for the nuclei of smaller copies, takes the
-    largest that is clearly smaller than the last, and frames it. The views between one copy
-    and the next supply the <i>symmetry stages</i>, and zooming into the busiest parts of
-    those views supplies most of the spirals and seahorses. The Julia-plane frames map a
+    frames found this way. The first set came from a rough search. It starts in two places:
+    the video's own final frame, recentred on the small copies found near its end, and
+    places the location search had already found inside a small copy of the set. From each
+    it descends: at every step it searches the view for the nuclei of smaller copies, takes
+    the largest that is clearly smaller than the last, and frames it. The views between one
+    copy and the next supply the <i>symmetry stages</i>, and zooming into the busiest parts
+    of earlier frames supplies most of the spirals and seahorses. The Julia-plane frames map a
     familiar parameter into a deep copy, through the copy's own scale and rotation, and draw
     the Julia set there. A Claude Code session narrowed about 140 low-resolution previews to
     65, and I picked the gallery's first 31 from those by eye.</p>
