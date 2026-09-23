@@ -1093,9 +1093,8 @@ fault at a million — and the page says so: Details' stat line ends *at the cei
 undecided* on such a frame (`explorer/README.md`). At three and five `body 1e-22` reaches
 the ceiling and resolves there, at 4.5% and 6.2%. These are the first frames a reader can
 reach that the ceiling binds on, and **it stays at a million by Matt's ruling**: the limit
-is kept and the tab says where it binds, rather than being raised. (The doc comment on
-`cap::CEILING` in `src/lib.rs` still calls it provisional and says it binds on nothing; it
-is left, because any source edit here moves `perturb.wasm`'s bytes.)
+is kept and the tab says where it binds, rather than being raised. The doc comment on
+`cap::CEILING` in `src/lib.rs` says the same *(deep_small_fixes_ckpt142)*.
 
 **The bar and the share** (`FAULT_EXPONENT` from 8 to 24, `FAULT_SHARE` from 5% to 15%),
 twenty-five rules a frame:

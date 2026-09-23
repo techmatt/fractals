@@ -551,7 +551,7 @@ function showState(state) {
  * The preview is a grid `PREVIEW_DIVISOR` coarser each way, the full pass is the screen,
  * and the finish is `FINAL_SUPERSAMPLE` finer each way — so the three are `1/16`, `1` and
  * `4` of the screen's samples on today's constants, and the bar's stops fall at 1.2% and
- * 20.7%. Derived from the two constants rather than typed, so a change to either moves the
+ * 21.0%. Derived from the two constants rather than typed, so a change to either moves the
  * bar with it. A stage served from the field cache jumps its share rather than filling it,
  * which is the truth: nothing was iterated.
  */

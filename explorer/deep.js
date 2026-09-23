@@ -356,6 +356,41 @@ export function mount(host) {
   }
 
   /**
+   * `frame` in the colour of `from` — the three recolour-only settings a tint writes, and
+   * nothing a field is keyed on.
+   */
+  function inColour(frame, from = view) {
+    return { ...frame, palette: from.palette, shade: from.shade, level: from.level };
+  }
+
+  /** Whether `a` and `b` are one view but for their colour: everything the link says. */
+  function sameFrame(a, b) {
+    return deepLink.emit(inColour(a, b)) === deepLink.emit(b);
+  }
+
+  /**
+   * Shade a stage of the pass in the colour current when it lands *(deep_small_fixes_
+   * ckpt142)*. A pass captures its frame when it starts and a colour control moved during
+   * it only writes `view`, so a pass that shaded its captured frame landed in the palette
+   * the reader had already left. The frame is the pass's; the colour is read at the shade,
+   * and read again after it — a tint made while the shade was running shades once more,
+   * which is milliseconds against the field it saves.
+   */
+  async function shadeNow(deep, field, frame, generation) {
+    for (;;) {
+      const inked = inColour(frame);
+      const shaded = await deep.shade(
+        { ...field, values: field.values.slice() },
+        inked,
+        colouring,
+        { derive: host.deriving() },
+      );
+      if (shaded === null || generation !== pass) return null;
+      if (deepLink.emit(inColour(inked)) === deepLink.emit(inked)) return { shaded, frame: inked };
+    }
+  }
+
+  /**
    * Put the settled picture back as the view `to`, which is its frame: at once where the
    * colour is the one it was drawn in, and by a recolour of its held field where the reader
    * has turned the palette since — never by iterating. Stops whatever pass is in flight.
@@ -393,7 +428,7 @@ export function mount(host) {
    */
   function revert() {
     if (settled === null) return;
-    putBack({ ...settled.view, palette: view.palette, shade: view.shade, level: view.level });
+    putBack(inColour(settled.view));
   }
 
   /**
@@ -666,15 +701,13 @@ export function mount(host) {
         }
         enterStage("coloring", { live: false });
         activity(`${said_stage(stage)} · coloring`, span.from + span.width);
-        // A copy, because the shade takes the buffer and detaches it, and the one in the
-        // cache has to stay whole for the next recolour.
-        const shaded = await deep.shade(
-          { ...field, values: field.values.slice() },
-          target,
-          colouring,
-          { derive: host.deriving() },
-        );
-        if (shaded === null || generation !== pass) return;
+        // A copy each time, because the shade takes the buffer and detaches it, and the one
+        // in the cache has to stay whole for the next recolour. The stage lands in the colour
+        // current now rather than the one the pass started in, and so does every stage after.
+        const landed = await shadeNow(deep, field, target, generation);
+        if (landed === null) return;
+        const shaded = landed.shaded;
+        target = landed.frame;
         if (host.deriving()) {
           view = { ...view, level: shaded.level };
           if (drawn !== null) drawn = { ...drawn, level: shaded.level };
@@ -779,14 +812,16 @@ export function mount(host) {
     });
     if (chosen === null || generation !== pass) return null;
 
-    // **`view === from` is the whole guard, and object identity is what says it.** A
-    // gesture during a committed render moves `view` without cancelling the pass — that is
-    // the tab's own design, and every mutation replaces the object — so adopting the
-    // settled cap into a view the reader has since moved would put this frame's answer on
-    // a different frame.
+    // **The guard is that `view` is still `from` but for its colour.** A gesture during a
+    // committed render moves `view` without cancelling the pass — that is the tab's own
+    // design — so adopting the settled cap into a view the reader has since moved would put
+    // this frame's answer on a different frame. It was object identity until
+    // deep_small_fixes_ckpt142, and a palette turned mid-probe replaces the object too: the
+    // cap went unadopted and the address kept the width's answer under a picture drawn at
+    // another. A colour moves no frame, so it is kept and the cap is taken.
     const frame = { ...from, maxiter: chosen.maxiter, capFrom: "probe" };
-    if (view === from) {
-      view = frame;
+    if (sameFrame(view, from)) {
+      view = inColour(frame);
       host.settle();
     }
     settledAt = {
@@ -2068,7 +2103,8 @@ export function mount(host) {
       render(autoRender ? "screen" : "preview", { probe: false });
     },
 
-    /** A colour control moved. The field is kept, so this never re-iterates. */
+    /** A colour control moved. The field is kept, so this never re-iterates. A pass in
+     *  flight is left to run, and its next stage lands in this colour (`shadeNow`). */
     tint(changes) {
       view = { ...view, ...changes };
       if (drawn !== null) drawn = { ...drawn, ...changes };

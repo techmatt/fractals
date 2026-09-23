@@ -99,12 +99,14 @@ pub mod cap {
     pub const PER_OCTAVE: f64 = 0.30;
     /// The engine's `FLOOR`.
     pub const FLOOR: f64 = 200.0;
-    /// **This crate's own ceiling, and provisional.** The engine's is 67,000 and
-    /// exists to stop a raised base being re-clipped; this one exists to stop a
-    /// mistyped width from asking for a frame that never finishes. The formula
-    /// reaches it at a width of about 1e-227, which is past where `f64` holds a
-    /// width at all — so in practice it binds on nothing, and the number to watch
-    /// is the one the formula gives: 48,551 at 2e-11, 117,518 at 1e-28.
+    /// **This crate's own ceiling, and it stays at a million by Matt's ruling.**
+    /// The engine's is 67,000 and exists to stop a raised base being re-clipped;
+    /// this one bounds how far a frame may ask. The width formula alone reaches it
+    /// only at about 1e-227 — it gives 48,551 at 2e-11 and 117,518 at 1e-28 — but
+    /// the probe's doublings ([`policy::next_cap`]) do reach it, and it binds on
+    /// the degree-6 near-parabolic body frames, which are still a fifth the cap's
+    /// fault here. The limit is kept and the page says where it binds, rather than
+    /// being raised (`README.md` §10).
     pub const CEILING: f64 = 1_000_000.0;
 
     /// The iteration cap for a view of the given plane width.

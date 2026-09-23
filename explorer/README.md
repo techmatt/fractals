@@ -1750,6 +1750,14 @@ pass is 0.4 MB and the full pass 5.8 MB, so a view is 6.2 MB held. The viewer ke
 because its fields are cheap to recompute; here a field is the most expensive thing on the
 page. A recolour walks back from the full pass to the cheapest stage that is here.
 
+**A colour turned during a pass is the colour the pass lands in** *(deep_small_fixes_
+ckpt142)*. A pass captures its frame when it starts, and it used to shade that captured
+frame whole — so a palette changed mid-pass landed the stage in the palette the reader had
+left. Each stage now takes the palette, the seven and the level at its shade, and shades
+again if one moved while it ran. The same capture had the cap probe refuse its answer after
+a tint, because it asked whether `view` was still the object it started from; it asks
+whether it is the same frame but for its colour now.
+
 ### Iterations, and the cap a frame asks for *(deep_cap_policy_ckpt138, 2026-09-20)*
 
 The cap opens at the kernel's own answer for the width — the engine's shape with the
