@@ -867,9 +867,9 @@ and *galleries* are the site's words already.
 2026-09-22)*, and it goes to `article/finding-good-locations.html` because that section is
 where the walk is: its §Guided search names the thing this tab is a demonstration of — *its
 search is a guided walk* — and §The walk and §Where the walk stops are the pipeline's own
-version of what the strip shows. It is a relative href like every other, and it is the one
-link out of the explorer into the article — the Deep tab's sentence gains the second when
-§Deep zoom is written (§Deep); the site bar's *Making Fractal Wallpapers* is the way to the front page and always
+version of what the strip shows. It is a relative href like every other, and it is one of
+the two links out of the explorer into the article — the Deep tab's sentence carries the
+other, to §Deep zoom (§Deep); the site bar's *Making Fractal Wallpapers* is the way to the front page and always
 was.
 
 The third tab runs a simplified version of the mining pipeline, and the viewer shows it
@@ -1444,12 +1444,11 @@ italics and is the button's own label, checked against `index.html` and `deep.js
 `syncControls`. His draft spelled *coloured*; the page says *colored*, by the site's
 American-spelling rule.
 
-**It carries no link, and it gains one when §Deep zoom is written.** It used to end *The
-writeup explains how deep frames are rendered: [Escape-time fractals]*, pointing at
-`../article/escape-time-fractals.html#locations` as a stand-in, because
-`article/deep-zoom.html` holds the slug and its body reads *Not written yet*. The stand-in
-is gone rather than kept. ⚠ **When §Deep zoom is written, the sentence gains a link to
-`../article/deep-zoom.html`** — that is the one piece of this panel still owed.
+**It ends on the way into the article** *(PLACE_deep_zoom_v1_ckpt144, 2026-09-23)*: *For
+more, read [Deep zoom]*, to `../article/deep-zoom.html`, the Walk tab's own form. It used to
+end *The writeup explains how deep frames are rendered: [Escape-time fractals]*, pointing at
+`../article/escape-time-fractals.html#locations` as a stand-in while §Deep zoom was a stub,
+and then carried no link at all until the section was placed.
 
 ### Rendering, and what starts on its own
 

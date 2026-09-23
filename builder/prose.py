@@ -352,7 +352,8 @@ class _Reader(HTMLParser):
     def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
         if tag == "figure":
             self._depth += 1
-            identifier = dict(attrs).get("data-figure") or "unregistered"
+            given = dict(attrs)
+            identifier = given.get("data-figure") or given.get("data-placeholder") or "unregistered"
             self.blocks.append(Block(FIGURE, identifier))
             return
         if self._depth:

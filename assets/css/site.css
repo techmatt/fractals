@@ -427,7 +427,8 @@ a:hover { color: var(--ink); }
 /* A figure runs past the measure to the width of the column: a side-by-side comparison
    squeezed into a column of prose is not a comparison. The mat is the same dark well the
    gallery tiles use — a render is a render wherever it appears. */
-.figure {
+.figure,
+.figure-placeholder {
   margin: 1.5em 0 1.75em;
   padding: var(--figure-pad);
   background: var(--well);
@@ -565,7 +566,8 @@ a:hover { color: var(--ink); }
    back. **Ranged left whatever its length** *(Matt, 2026-08-22, replacing the rule that
    centred a caption until it passed about three hundred characters)*: a caption is prose
    and reads as prose, and the centring belongs to the short labels under a picture. */
-.figure figcaption {
+.figure figcaption,
+.figure-placeholder figcaption {
   margin: 0.7rem 0 0.1rem;
   max-width: var(--measure);
   font-size: 0.9375rem;
@@ -623,6 +625,24 @@ a:hover { color: var(--ink); }
   text-align: center;
   font-size: 0.9375rem;
   line-height: 1.5;
+  color: var(--well-ink-dim);
+}
+
+/* A slot held open before its figure is even registered: the slug its row will carry and
+   the draft caption, on a 16:9 well. Placed prose is reviewed on the site before a figure
+   round draws anything, and this is how that page shows where the figures go. It is not a
+   `.figure` on purpose, since `check` holds every `.figure` to a registry row and this has
+   none; a figure round replaces every `figure-placeholder` on the site. */
+.figure-placeholder .placeholder-well {
+  aspect-ratio: 16 / 9;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  border: 1px dashed var(--well-pending);
+  font-family: var(--mono);
+  font-size: 0.9375rem;
   color: var(--well-ink-dim);
 }
 

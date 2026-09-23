@@ -31,7 +31,15 @@
     <li><a href="gallery-curation.html">Gallery curation</a> <span class="done" role="img" aria-label="written">✓</span></li>
     <li><a href="full-pipeline.html">Full pipeline</a> <span class="done" role="img" aria-label="written">✓</span></li>
     <li><a href="fractal-atlases.html">Fractal atlases</a></li>
-    <li class="rail-current"><a href="deep-zoom.html" aria-current="page">Deep zoom</a></li>
+    <li class="rail-current"><a href="deep-zoom.html" aria-current="page">Deep zoom</a> <span class="done" role="img" aria-label="written">✓</span>
+      <ol class="rail-headings">
+        <li><a href="#where-double-precision-runs-out">Where double precision runs out</a></li>
+        <li><a href="#what-depth-adds-to-a-picture">What depth adds to a picture</a></li>
+        <li><a href="#satellite-copies-and-the-seahorse-valley">Satellite copies and the seahorse valley</a></li>
+        <li><a href="#embedded-julia-sets">Embedded Julia sets</a></li>
+        <li><a href="#how-a-deep-frame-is-computed">How a deep frame is computed</a></li>
+      </ol>
+    </li>
   </ol>
   <ul class="rail-links">
     <li><a href="../explorer/index.html">Fractal explorer</a></li>
@@ -48,15 +56,190 @@
 </header>
 
 <main>
-  <section class="intro">
-    <p>Zoom far enough and two neighboring samples round to the same number, and the arithmetic
-    an ordinary renderer runs in can no longer tell them apart. This section is about where that
-    wall actually sits, what it takes to work right up against it, and what a picture drawn near
-    it can and cannot be trusted to say.</p>
+  <section class="prose">
+    <p>Every picture in this project's galleries is computed in
+    <a href="https://en.wikipedia.org/wiki/Double-precision_floating-point_format">double-precision
+    floating point</a>, the 64-bit number format a processor does arithmetic in natively. A
+    double carries about 16 significant decimal digits, and the limit is relative: the gap
+    between neighboring representable numbers grows in proportion to the size of the numbers
+    themselves. A sample's coordinate is formed as the frame's center plus a small offset, so
+    what runs out is the ability to tell two neighboring samples apart <em>at the magnitude of
+    the center</em>. Past that point neighboring samples round to the same number, runs of
+    pixels compute the same orbit, and the picture shows the arithmetic rather than the set.
+    The engine refuses any frame whose samples sit closer together than a few units in the
+    last place. For a 1280-pixel-wide frame near the main body of the Mandelbrot set, that
+    means a width of roughly 6 × 10<sup>−13</sup> in the complex plane, a magnification of
+    about eight trillion. Deeper frames are drawn only in the explorer's
+    <a href="../explorer/index.html?dv=3&amp;x=-0.74937053247003823168823992075369&amp;y=0.041472667068168900034718746387049&amp;w=3.4869054402668363e-15&amp;p=glowdon&amp;scale=absolute&amp;lambda=0&amp;period=0.25">Deep
+    tab</a>, using the method described at the end of this page.</p>
 
-    <p><em>Not written yet.</em> This page holds the section's slug, which is a permanent
-    URL, and the figures the prose will be built around. The code it describes is in
-    <a href="https://github.com/techmatt/fractal-wallpapers">fractal-wallpapers</a>.</p>
+    <p>The video below descends from a view of the whole set to a frame about
+    3.5 × 10<sup>−15</sup> wide, some 160 times narrower than that limit, halving the width
+    every one and a half seconds.</p>
+
+      <figure class="figure-placeholder" data-placeholder="deep-zoom-video">
+        <p class="placeholder-well"><span class="pending-label">Figure placeholder</span>deep-zoom-video</p>
+        <figcaption>A zoom from the whole Mandelbrot set into the seahorse valley. It passes a double spiral and a ring of two-, four- and eight-fold shapes, frames a small copy of the set, and then repeats the same sequence inside the copy's own seahorse valley. Near the end it passes the glowing core of a far smaller copy, too small at this width to show a body, and stops on the spirals just beyond it.</figcaption>
+      </figure>
+
+    <p>The video was made with
+    <a href="https://github.com/techmatt/fractal-website/blob/main/builder/zoom.py"><code>builder/zoom.py</code></a>.
+    It computes a high-precision field once at each halving of the width and colors it
+    separately, so one computation serves every coloring, and the frames between two
+    keyframes are resampled from them to save time.</p>
+
+    <p>Deep frames also want a different coloring. The percentile stretch from
+    <a href="rendering-fundamentals.html">rendering fundamentals</a> spreads the palette
+    evenly over each frame's own values. At this depth escape counts run into the tens of
+    thousands, and the stretch leaves most of the picture inside a few percent of the
+    palette. So the explorer also offers an absolute scale: the smooth count passes through
+    a logarithm or a power curve, and the palette then repeats at a fixed period. The figure
+    below shows the video's final frame under several such colorings.</p>
+
+      <figure class="figure-placeholder" data-placeholder="deep-final-colorings">
+        <p class="placeholder-well"><span class="pending-label">Figure placeholder</span>deep-final-colorings</p>
+        <figcaption>The video's final frame under several colorings of the same field.</figcaption>
+      </figure>
+
+    <h2 id="where-double-precision-runs-out">Where double precision runs out</h2>
+
+    <p>The figure below draws one deep frame twice at the same size. The first panel is the
+    ordinary engine, made to render past its refusal, and the second is the method described
+    at the end of this page. The limit also shapes what this project's location search can
+    find. One of the richest kinds of deep frame sits inside a small copy of the set, a
+    minibrot, surrounded by the copy's own filigree. Among the locations the search
+    produced, the share that sit inside such a copy climbs with depth, is highest near a
+    width of 10<sup>−10</sup>, and falls to nothing by 10<sup>−12</sup>. Depth is what
+    places a frame inside a copy, and double precision is what stops the search from
+    following it further down.</p>
+
+      <figure class="figure-placeholder" data-placeholder="deep-f64-and-perturbation">
+        <p class="placeholder-well"><span class="pending-label">Figure placeholder</span>deep-f64-and-perturbation</p>
+        <figcaption>The same frame computed in double precision and forced past the engine's limit (left), where the picture breaks into flat blocks many pixels wide and a few tall because neighboring pixels round to the same coordinate, and computed by perturbation (right).</figcaption>
+      </figure>
+
+    <h2 id="what-depth-adds-to-a-picture">What depth adds to a picture</h2>
+
+    <p>Minibrots are everywhere along the boundary: every filament passes infinitely many of
+    them, at every scale. From outside, a copy looks like a small black body with the
+    familiar bulbs and hairs. A frame that zooms into the copy's neighborhood sees more than
+    that. It finds the copy's own seahorse valleys and spirals laid over the structure it was
+    already in, so a region that looked smooth from further out fills with filigree. The
+    strip below follows one descent of this kind, five steps down a chain of components
+    nested one inside the next. Each step frames the next component in the chain, and the
+    last frame is about a billionth of the complex plane wide.</p>
+
+      <figure class="figure-placeholder" data-placeholder="deep-descent-rungs">
+        <p class="placeholder-well"><span class="pending-label">Figure placeholder</span>deep-descent-rungs</p>
+        <figcaption>Five steps down one descent, each frame centered on the next component in a chain nested one inside the next. Filigree from each copy appears in regions that were smooth one step earlier.</figcaption>
+      </figure>
+
+    <h2 id="satellite-copies-and-the-seahorse-valley">Satellite copies and the seahorse valley</h2>
+
+    <p>The narrow gap between the main cardioid and the large disk to its left is the
+    <i>seahorse valley</i>, named for the curled shapes that line it. Wikipedia's
+    <a href="https://en.wikipedia.org/wiki/Mandelbrot_set#Image_gallery_of_a_zoom_sequence">zoom-sequence
+    gallery</a> walks down it and names what appears: double spirals on one side, seahorses
+    on the other, and at the heart of the pattern a small distorted copy of the set, which it
+    calls a satellite. Around a satellite the seahorse tails form rings, and the number of
+    tails in each ring grows in powers of two. The video's path is a second instance of the
+    same walk. It enters the valley, passes its double spiral, reaches a copy, and then
+    repeats the sequence inside that copy's own seahorse valley, several decades deeper. The
+    stills below are taken from that path.</p>
+
+      <figure class="figure-placeholder" data-placeholder="deep-seahorse-valley">
+        <p class="placeholder-well"><span class="pending-label">Figure placeholder</span>deep-seahorse-valley</p>
+        <figcaption>The seahorse valley along the video's path: the cleft, the double spiral on one side and the seahorses on the other.</figcaption>
+      </figure>
+
+    <h2 id="embedded-julia-sets">Embedded Julia sets</h2>
+
+    <p>The repetition has a reason. Near a copy whose orbit has period p, taking p steps of
+    the map at once behaves, to a good approximation, like a single step of a fresh
+    quadratic map. So the neighborhood of the copy reproduces the structure of the whole
+    set, slightly distorted. The same mechanism makes Julia sets appear inside the
+    Mandelbrot set. As the video approaches its copy it passes a two-fold shape, then a
+    four-fold one, then an eight-fold one, each twice as symmetric as the last, before the
+    copy's black body comes into view. These are embedded Julia sets. Wikipedia's gallery
+    states which Julia set they imitate: the one for the parameter that sits in the same
+    position relative to the whole set as the frame sits relative to the copy. The target of
+    this zoom sits in its copy's seahorse valley but just outside the copy itself, so that
+    parameter lies outside the set, and its Julia set is a cloud of disconnected dust. That
+    is the shape the stages break into as the zoom closes in. The panel beside the strip
+    shows that <a href="https://en.wikipedia.org/wiki/Julia_set">Julia set</a> for
+    comparison, and the explorer's Julia preview shows the Julia set under the pointer for
+    any parameter.</p>
+
+      <figure class="figure-placeholder" data-placeholder="deep-julia-stages">
+        <p class="placeholder-well"><span class="pending-label">Figure placeholder</span>deep-julia-stages</p>
+        <figcaption>Approaching a small copy of the set, the zoom passes shapes of two-, four- and eight-fold symmetry. At right, the Julia set for the parameter that sits where the frame sits relative to the copy.</figcaption>
+      </figure>
+
+    <h2 id="how-a-deep-frame-is-computed">How a deep frame is computed</h2>
+
+    <p>The Deep tab computes one orbit at high precision, the <i>reference orbit</i>, for the
+    center of the frame, using fixed-point arithmetic with as many bits as the frame's width
+    requires. Every pixel then iterates only its small offset from that orbit. Write a
+    pixel's orbit as z<sub>n</sub> = Z<sub>n</sub> + δ<sub>n</sub>, where Z<sub>n</sub> is
+    the reference orbit, and let Δc be the pixel's offset in parameter. For
+    z ↦ z<sup>2</sup> + c the offset then obeys</p>
+
+    <pre class="formula">δ<sub>n+1</sub> = (2Z<sub>n</sub> + δ<sub>n</sub>)δ<sub>n</sub> + Δc</pre>
+
+    <p>and the higher degrees follow from the binomial expansion in the same way. The
+    offsets are tiny, but a double keeps its relative precision at any magnitude, so δ fits
+    comfortably in an ordinary double even where the coordinates themselves do not. This is
+    <a href="https://mathr.co.uk/web/deep-zoom.html">perturbation</a>, and it is how every
+    modern deep-zoom renderer works.</p>
+
+    <p>The reference orbit is only a good anchor while a pixel's orbit stays near it. When
+    the full value Z<sub>n</sub> + δ<sub>n</sub> passes closer to zero than δ<sub>n</sub>
+    itself, the offset has become the larger quantity and precision starts to drain away.
+    The fix used here is <i>rebasing</i>, due to Zhuoran on fractalforums.org. At that step
+    the pixel takes its whole current value as a new offset and restarts from the beginning
+    of the same reference orbit. With rebasing, one reference orbit serves the entire frame.
+    The tab draws the multibrot families up to degree six, on both the parameter and
+    dynamical planes, in the smooth rendering. Its iteration cap follows the same depth rule
+    as the rest of the engine, up to a ceiling of a million, and a probe raises it when too
+    many samples reach it. In practice it works down to widths of about
+    10<sup>−30</sup> close to a minibrot, where the ceiling on iterations runs out first, and
+    to about 10<sup>−50</sup> elsewhere, where a coordinate outgrows the 64 characters its
+    link can carry. Renderers that also extend the exponent range of their offsets go
+    hundreds of decades deeper.</p>
+
+    <p>The tab runs on the CPU, in WebAssembly, across the browser's worker threads. On one
+    six-core desktop, the video's final frame takes about 15 seconds at 1280 by 720 with one
+    sample per pixel, averaging about fifteen thousand iterations a sample. On the same
+    machine, <a href="https://mathr.co.uk/web/fraktaler.html">Fraktaler 3</a>, a mature
+    open-source deep-zoom renderer, takes about 50 seconds on the CPU with its acceleration
+    on and about 100 without it. Compared like for like (CPU, doubles, plain perturbation),
+    the tab does about seven times as many iterations per second. The likely reason is
+    specialization rather than a better algorithm: Fraktaler 3 interprets general formulas
+    and tracks derivatives at every step, while this kernel runs one fixed update. The two
+    agree on more than 99.7% of pixels.</p>
+
+    <p>GPUs are clearly faster at this kind of independent per-pixel work. On the same
+    machine Fraktaler 3's GPU path draws the frame in under 3 seconds, in single precision.
+    Consumer GPUs are slow at doubles, and in double precision the same GPU roughly ties the
+    tab's CPU kernel, which is why the fast GPU renderers work in single precision with
+    extended-exponent tricks. This project kept rendering on the CPU for portability, and
+    used the GPU only to evaluate its neural networks.</p>
+
+    <p>Deep-zoom renderers usually add
+    <a href="https://mathr.co.uk/blog/2022-02-21_deep_zoom_theory_and_practice_again.html">bilinear
+    approximation</a>, which skips many iterations at once by applying a precomputed linear
+    map. The tab does not use it, and the reason is worth knowing for anyone building one.
+    On frames with visible structure, the kind a reader opens, it bought well under a factor
+    of three. At every tolerance tried it also moved escape counts, and on some frames it
+    moved the boundary of the interior, so the pictures stopped matching what the engine
+    draws. It paid off handsomely only on frames that were almost entirely interior.
+    Fraktaler 3 shows the same pattern on the video's final frame: its approximation buys a
+    factor of about 1.3 to 2 and moves a fifth of the pixels by more than one
+    iteration.</p>
+
+    <p>Every figure on this page links to its frame in the explorer, the deep ones in the
+    <a href="../explorer/index.html?dv=3&amp;x=-0.74937053247003823168823992075369&amp;y=0.041472667068168900034718746387049&amp;w=3.4869054402668363e-15&amp;p=glowdon&amp;scale=absolute&amp;lambda=0&amp;period=0.25">Deep
+    tab</a>, and the tab's links carry the frame and its coloring.</p>
   </section>
 
   <nav class="section-nav">
