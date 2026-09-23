@@ -266,12 +266,13 @@ export function mount(host) {
   }
 
   /** The marks over the plane: the classic's while the plane is at its `p`, and the chosen
-   *  starting point's while the plane is at that one's. The classic chosen is the classic
-   *  marked, and reads the same; any other chosen point is the same crosshair in a ring. */
+   *  starting point's while the plane is at that one's. A chosen point is the crosshair in a
+   *  ring, the classic's included; the classic unchosen is the bare crosshair. */
   function markPoints() {
-    if (p === CLASSIC.p && pi === 0) crosshair(CLASSIC.x, CLASSIC.y, false);
-    if (chosen === null || chosen.source === "classic") return;
-    if (chosen.p[0] !== p || chosen.p[1] !== pi) return;
+    const here = chosen !== null && chosen.p[0] === p && chosen.p[1] === pi;
+    const classicChosen = here && chosen.source === "classic";
+    if (p === CLASSIC.p && pi === 0) crosshair(CLASSIC.x, CLASSIC.y, classicChosen);
+    if (!here || classicChosen) return;
     crosshair(chosen.c[0], chosen.c[1], true);
   }
 

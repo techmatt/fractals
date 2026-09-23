@@ -2,7 +2,7 @@
  "schema": 2,
  "kind": "phoenix-points",
  "written_by": "python -m builder phoenix-points",
- "rule": "The classic first, then the Phoenix seats of the staged gallery whose link starts at z_-1 = 0, one per exact (p, c), grouped into neighbourhoods by single linkage at 0.35 in (Re p, Im p, Re c, Im c), each stood for by its seat whose link is its picture and then by highest p_ge4, and the rest taken farthest-first in p from every p already taken, 7 of them, shown by Re p. Each tile is the whole set at (p, c) at the Phoenix home view in the style below; plane is the frame boxing the filled set at that p with c inside it. builder/phoenix_points.py says why.",
+ "rule": "The classic first, then the Phoenix seats of the staged gallery whose link starts at z_-1 = 0, one per exact (p, c), grouped into neighbourhoods by single linkage at 0.35 in (Re p, Im p, Re c, Im c), each stood for by its seat whose link is its picture and then by highest p_ge4, and the rest taken farthest-first in p from every p already taken, 7 of them, shown by Re p. A point naming override has that field set by hand in builder/phoenix_points.py's OVERRIDES. Each tile is the whole set at (p, c) at the Phoenix home view in the style below; plane is the frame boxing the filled set at that p with c inside it. builder/phoenix_points.py says why.",
  "style": {
   "mode": "smooth",
   "palette": "twilight_shifted",
@@ -115,13 +115,16 @@
     0.0
    ],
    "c": [
-    0.0,
-    0.0
+    0.25004942312325246,
+    -3.553297739080142e-06
    ],
    "key": "cf373091816b3066",
    "p_ge4": 0.992023,
    "collections": [
     "teal"
+   ],
+   "override": [
+    "c"
    ],
    "file": "phoenix-points/cf373091816b3066.webp",
    "plane": {

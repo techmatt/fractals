@@ -201,7 +201,10 @@ needs the checkout. It is not part of `build` or `check`. The rule is in
 `builder/phoenix_points.py`'s docstring and on the record: seats that start at z₋₁ = 0,
 one per exact `(p, c)`, single-linkage neighbourhoods at 0.35 in `(Re p, Im p, Re c, Im c)`,
 the best seat standing for each, meaning a link that is its picture first and then the
-highest `p_ge4`, and seven taken farthest-first in `p` from the classic.
+highest `p_ge4`, and seven taken farthest-first in `p` from the classic. A point's `c` may be
+Matt's rather than its seat's: `OVERRIDES`, keyed by exact `p`, sets it after the choice and
+before the draw, and the row says `override` *(phoenix_points_fix2_ckpt141: at `p = 0` the
+seat's `c = 0` is a plain disc, and `c ≈ 0.25` replaces it)*.
 
 A seat is where a point was found and not what its tile shows. `builder/phoenix_points.mjs`
 draws each point through the committed `engine.wasm`: the **whole Phoenix set** at its

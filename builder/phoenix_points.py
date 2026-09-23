@@ -38,6 +38,10 @@ which is why the tab reads `p` as two numbers rather than one slider.
 
 The row shows them in reading order: the classic, then the rest by the real part of `p`.
 
+A point may then have its `c` moved by hand, in `OVERRIDES`, keyed by the `p` it stands on
+*(phoenix_points_fix2_ckpt141)*. The seat still names where the point was found; the `c` is
+Matt's, and the tile and plane frame are drawn at it.
+
 ## One style for the tab's left panel
 
 Everything the tab draws beside the viewer — the plane and every tile — is drawn in
@@ -80,6 +84,10 @@ COUNT = 7
 
 #: The classic Ushiki instance, as `phoenix.js` marks it.
 CLASSIC = {"p": [-0.5, 0.0], "c": [0.5667, 0.0]}
+
+#: Matt's `c` for a chosen point, keyed by its exact `p`. The seat at `p = 0` stands on
+#: `c = 0`, which is a plain disc.
+OVERRIDES = {(0.0, 0.0): {"c": [0.25004942312325246, -0.0000035532977390801417]}}
 
 #: The one style the tab's left panel is drawn in: the plane, live, and every tile. The
 #: palette is addressed by its own name; the picker shows it as Violet Rosewood. Shade keys
@@ -259,6 +267,11 @@ def write() -> list[str]:
     """Choose the points, draw their tiles and frames, write the record. Returns what it did."""
     chosen, tally = choose()
     points = [{"source": "classic", "name": "classic", **CLASSIC}] + [_entry(s) for s in chosen]
+    for point in points:
+        override = OVERRIDES.get(tuple(point["p"]))
+        if override is not None:
+            point.update(override)
+            point["override"] = sorted(override)
     drawn = _draw([{"name": p["name"], "p": p["p"], "c": p["c"]} for p in points])
 
     PICTURES.mkdir(exist_ok=True)
@@ -287,9 +300,11 @@ def write() -> list[str]:
             "at z_-1 = 0, one per exact (p, c), grouped into neighbourhoods by single linkage "
             f"at {RADIUS} in (Re p, Im p, Re c, Im c), each stood for by its seat whose link is "
             "its picture and then by highest p_ge4, and the rest taken farthest-first in p from "
-            f"every p already taken, {COUNT} of them, shown by Re p. Each tile is the whole set "
-            "at (p, c) at the Phoenix home view in the style below; plane is the frame boxing "
-            "the filled set at that p with c inside it. builder/phoenix_points.py says why."
+            f"every p already taken, {COUNT} of them, shown by Re p. A point naming override "
+            "has that field set by hand in builder/phoenix_points.py's OVERRIDES. Each tile is "
+            "the whole set at (p, c) at the Phoenix home view in the style below; plane is the "
+            "frame boxing the filled set at that p with c inside it. builder/phoenix_points.py "
+            "says why."
         ),
         "style": STYLE,
         "tile": TILE,
