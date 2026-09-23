@@ -17,9 +17,12 @@ nothing to install on a machine that has only the standard library — the same 
 the rest of this builder makes. Reading back needs even less: paragraphs, in order, as
 text.
 
-Formatting does not survive the round trip and is not asked to. Links, italics and code
-spans are flattened on the way out; the apply session re-applies each edit to the HTML,
-where that markup still is. What a review doc carries is words.
+Formatting does not survive the round trip and is not asked to. Italics and code spans
+are flattened on the way out; the apply session re-applies each edit to the HTML, where
+that markup still is. What a review doc carries is words. Links are the one exception,
+because a reviewer wants to follow them: each goes out live, resolved against the served
+site, and comes back as its words, so the text the round trip compares is the same text
+either way.
 """
 
 import difflib
@@ -31,9 +34,11 @@ import zipfile
 from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
+from urllib.parse import urljoin
 
 from . import figures as figures_module
 from . import prose
+from .pages import SITE_URL
 
 #: Every part of the package, and the one namespace inside the document.
 WORD = "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
@@ -55,8 +60,13 @@ SUBHEADING = "Heading2"
 NORMAL = "Normal"
 CODE = "Code"
 
+#: The one character style: a link's words, blue and underlined the way Docs draws one.
+LINK_STYLE = "Hyperlink"
+
 #: How a figure appears in the prose flow, and how a caption line is spelled.
 FIGURE_MARKER = "[figure: {id}]"
+PLACEHOLDER_MARKER = "[figure placeholder: {id}] Draft caption: {caption}"
+PLACEHOLDER_LINE = "{id}: a placeholder with no registry row; its draft caption is in the prose"
 CAPTION_LINE = "{id}: {caption}"
 PENDING_LINE = "{id} — text shown while the picture is pending: {alt}"
 STANDFIRST_LINE = "Standfirst: {text}"
@@ -68,9 +78,12 @@ CONVENTION = (
     "question, a comment. Every one of them is carried out, and a question is answered "
     "in the report that comes back.",
     "Leave the [figure: slug] markers alone — they only say where a picture sits. "
-    "Captions are at the end of this doc, one line per slug; edit them there.",
-    "Links, italics and code spans are flattened here. They are still on the page, and "
-    "they survive an edit that does not delete the words carrying them.",
+    "Captions are at the end of this doc, one line per slug; edit them there. A figure "
+    "still only a placeholder carries its draft caption on its own line in the prose; "
+    "edit that one where it stands.",
+    "Links are live and open the served site. Italics and code spans are flattened here. "
+    "All of it is still on the page, and survives an edit that does not delete the words "
+    "carrying it.",
     "A new factual claim — a number, a mechanism, a name — is verified against the code "
     "and the records before it lands, or it is flagged in the report and left out.",
 )
@@ -82,10 +95,15 @@ class ReviewError(Exception):
 
 @dataclass(frozen=True)
 class Paragraph:
-    """One paragraph of the doc: the style it carries and what it says."""
+    """One paragraph of the doc: the style it carries, what it says, and what it links.
+
+    `links` is each link's words as they read in `text`, in order, and the absolute URL
+    they open. A doc read back carries none: what comes back is words.
+    """
 
     style: str
     text: str
+    links: tuple[tuple[str, str], ...] = ()
 
 
 @dataclass(frozen=True)
@@ -151,37 +169,47 @@ def paragraphs_for(page: str, master: prose.Master | None) -> list[Paragraph]:
     standfirst = prose.standfirst_of(page_html)
     if standfirst:
         written.append(Paragraph(NORMAL, STANDFIRST_LINE.format(text=standfirst)))
-    written.extend(_prose_paragraphs(blocks))
-    written.extend(_caption_paragraphs(blocks))
+    registry = figures_module.load_all()
+    written.extend(_prose_paragraphs(page, blocks, registry))
+    written.extend(_caption_paragraphs(blocks, registry))
     return written
 
 
-def _prose_paragraphs(blocks: list[prose.Block]) -> list[Paragraph]:
+def _placeholder(block: prose.Block, registry: dict) -> bool:
+    """A figure the page holds a place for without a registry row: its caption is the page's."""
+    return block.kind == prose.FIGURE and block.text not in registry and bool(block.caption)
+
+
+def _prose_paragraphs(page: str, blocks: list[prose.Block], registry: dict) -> list[Paragraph]:
+    served = urljoin(SITE_URL, page if "/" in page else f"article/{page}")
     written = []
     for block in blocks:
+        links = tuple((words, urljoin(served, href)) for words, href in block.links)
         if block.kind == prose.HEADING:
-            written.append(Paragraph(SUBHEADING, block.text))
+            written.append(Paragraph(SUBHEADING, block.text, links))
+        elif _placeholder(block, registry):
+            line = PLACEHOLDER_MARKER.format(id=block.text, caption=block.caption)
+            written.append(Paragraph(NORMAL, line))
         elif block.kind == prose.FIGURE:
             written.append(Paragraph(NORMAL, FIGURE_MARKER.format(id=block.text)))
         elif block.kind == prose.BULLET:
-            written.append(Paragraph(NORMAL, f"• {block.text}"))
+            written.append(Paragraph(NORMAL, f"• {block.text}", links))
         elif block.kind == prose.ROW:
-            written.append(Paragraph(NORMAL, f"| {block.text} |"))
+            written.append(Paragraph(NORMAL, f"| {block.text} |", links))
         elif block.kind == prose.CODE:
-            written.append(Paragraph(CODE, block.text))
+            written.append(Paragraph(CODE, block.text, links))
         else:
-            written.append(Paragraph(NORMAL, block.text))
+            written.append(Paragraph(NORMAL, block.text, links))
     return written
 
 
-def _caption_paragraphs(blocks: list[prose.Block]) -> list[Paragraph]:
+def _caption_paragraphs(blocks: list[prose.Block], registry: dict) -> list[Paragraph]:
     """The captions of the figures this page carries, in the order the page carries them.
 
     Read off the registry, which is where a caption lives — the page's copy of it is
     derived, and editing the page instead of the row is the one way to change a caption
     that `check` will not let stand.
     """
-    registry = figures_module.load_all()
     written = [
         Paragraph(HEADING, "Captions"),
         Paragraph(
@@ -194,6 +222,9 @@ def _caption_paragraphs(blocks: list[prose.Block]) -> list[Paragraph]:
         if block.kind != prose.FIGURE:
             continue
         figure = registry.get(block.text)
+        if _placeholder(block, registry):
+            written.append(Paragraph(NORMAL, PLACEHOLDER_LINE.format(id=block.text)))
+            continue
         if figure is None:
             written.append(Paragraph(NORMAL, f"{block.text}: not in the figure registry"))
             continue
@@ -211,29 +242,88 @@ def _element(tag: str, **attributes: str) -> ElementTree.Element:
     return ElementTree.Element(f"{{{WORD}}}{tag}", named)
 
 
-def _paragraph_xml(paragraph: Paragraph) -> ElementTree.Element:
+def _run(words: str, *, linked: bool = False) -> ElementTree.Element:
+    run = _element("r")
+    if linked:
+        properties = _element("rPr")
+        properties.append(_element("rStyle", val=LINK_STYLE))
+        run.append(properties)
+    text = _element("t")
+    text.set("{http://www.w3.org/XML/1998/namespace}space", "preserve")
+    text.text = words
+    run.append(text)
+    return run
+
+
+def _paragraph_xml(paragraph: Paragraph, targets: list[str]) -> ElementTree.Element:
+    """One paragraph, its links as hyperlinks whose targets are appended to `targets`.
+
+    A link's words are found in the text in order, each after the last; words the text
+    does not carry at that point stay plain rather than linking the wrong span.
+    """
     node = _element("p")
     properties = _element("pPr")
     properties.append(_element("pStyle", val=paragraph.style))
     node.append(properties)
-    run = _element("r")
-    text = _element("t")
-    text.set("{http://www.w3.org/XML/1998/namespace}space", "preserve")
-    text.text = paragraph.text
-    run.append(text)
-    node.append(run)
+    cursor = 0
+    for words, url in paragraph.links:
+        start = paragraph.text.find(words, cursor)
+        if start < 0:
+            continue
+        if start > cursor:
+            node.append(_run(paragraph.text[cursor:start]))
+        targets.append(url)
+        link = ElementTree.Element(
+            f"{{{WORD}}}hyperlink", {f"{{{OFFICE_RELATIONSHIPS}}}id": _link_id(len(targets))}
+        )
+        link.append(_run(words, linked=True))
+        node.append(link)
+        cursor = start + len(words)
+    if cursor < len(paragraph.text) or not paragraph.text:
+        node.append(_run(paragraph.text[cursor:]))
     return node
 
 
-def document_xml(paragraphs: list[Paragraph]) -> bytes:
+def _link_id(number: int) -> str:
+    """Relationship ids for links start after the styles part's `rId1`."""
+    return f"rId{number + 1}"
+
+
+def document_xml(paragraphs: list[Paragraph]) -> tuple[bytes, list[str]]:
+    """The document part, and the URLs its hyperlinks name, in relationship-id order."""
     ElementTree.register_namespace("w", WORD)
+    ElementTree.register_namespace("r", OFFICE_RELATIONSHIPS)
+    targets: list[str] = []
     document = _element("document")
     body = _element("body")
     for paragraph in paragraphs:
-        body.append(_paragraph_xml(paragraph))
+        body.append(_paragraph_xml(paragraph, targets))
     body.append(_element("sectPr"))
     document.append(body)
-    return _serialized(document)
+    return _serialized(document), targets
+
+
+def relationships_xml(targets: list[str]) -> bytes:
+    """The document's relationships: its styles, then one external target per link."""
+    root = ElementTree.Element(f"{{{PACKAGE_RELATIONSHIPS}}}Relationships")
+    ElementTree.register_namespace("", PACKAGE_RELATIONSHIPS)
+    ElementTree.SubElement(
+        root,
+        f"{{{PACKAGE_RELATIONSHIPS}}}Relationship",
+        {"Id": "rId1", "Type": f"{OFFICE_RELATIONSHIPS}/styles", "Target": "styles.xml"},
+    )
+    for number, url in enumerate(targets, start=1):
+        ElementTree.SubElement(
+            root,
+            f"{{{PACKAGE_RELATIONSHIPS}}}Relationship",
+            {
+                "Id": _link_id(number),
+                "Type": f"{OFFICE_RELATIONSHIPS}/hyperlink",
+                "Target": url,
+                "TargetMode": "External",
+            },
+        )
+    return _serialized(root)
 
 
 def _serialized(root: ElementTree.Element) -> bytes:
@@ -271,6 +361,10 @@ STYLES = f"""<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
     <w:name w:val="Code"/><w:basedOn w:val="Normal"/>
     <w:rPr><w:rFonts w:ascii="Consolas" w:hAnsi="Consolas"/></w:rPr>
   </w:style>
+  <w:style w:type="character" w:styleId="{LINK_STYLE}">
+    <w:name w:val="Hyperlink"/>
+    <w:rPr><w:color w:val="1155CC"/><w:u w:val="single"/></w:rPr>
+  </w:style>
 </w:styles>
 """
 
@@ -290,21 +384,16 @@ ROOT_RELATIONSHIPS = f"""<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 </Relationships>
 """
 
-DOCUMENT_RELATIONSHIPS = f"""<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<Relationships xmlns="{PACKAGE_RELATIONSHIPS}">
-  <Relationship Id="rId1" Type="{OFFICE_RELATIONSHIPS}/styles" Target="styles.xml"/>
-</Relationships>
-"""
-
 
 def write_doc(path: Path, paragraphs: list[Paragraph]) -> None:
     """The whole package: four small XML parts and the document itself."""
+    document, targets = document_xml(paragraphs)
     parts = {
         "[Content_Types].xml": CONTENT_TYPES.encode("utf-8"),
         "_rels/.rels": ROOT_RELATIONSHIPS.encode("utf-8"),
-        "word/_rels/document.xml.rels": DOCUMENT_RELATIONSHIPS.encode("utf-8"),
+        "word/_rels/document.xml.rels": relationships_xml(targets),
         "word/styles.xml": STYLES.encode("utf-8"),
-        "word/document.xml": document_xml(paragraphs),
+        "word/document.xml": document,
     }
     path.parent.mkdir(parents=True, exist_ok=True)
     with zipfile.ZipFile(path, "w", zipfile.ZIP_DEFLATED) as package:

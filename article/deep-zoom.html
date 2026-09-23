@@ -38,6 +38,7 @@
         <li><a href="#satellite-copies-and-the-seahorse-valley">Satellite copies and the seahorse valley</a></li>
         <li><a href="#embedded-julia-sets">Embedded Julia sets</a></li>
         <li><a href="#how-a-deep-frame-is-computed">How a deep frame is computed</a></li>
+        <li><a href="#a-gallery-of-deep-frames">A gallery of deep frames</a></li>
       </ol>
     </li>
   </ol>
@@ -236,6 +237,27 @@
     Fraktaler 3 shows the same pattern on the video's final frame: its approximation buys a
     factor of about 1.3 to 2 and moves a fifth of the pixels by more than one
     iteration.</p>
+
+    <h2 id="a-gallery-of-deep-frames">A gallery of deep frames</h2>
+
+    <p>The Deep tab carries a small <a href="../explorer/index.html?panel=deep:gallery">gallery</a> of
+    frames found this way. The first set came from a rough search. It starts from places the
+    location search had already found inside a small copy of the set and descends from each
+    one: at every step it searches the view for the nuclei of smaller copies, takes the
+    largest that is clearly smaller than the last, and frames it. The views between one copy
+    and the next supply the <i>symmetry stages</i>, and zooming into the busiest parts of
+    those views supplies most of the spirals and seahorses. The Julia-plane frames map a
+    familiar parameter into a deep copy, through the copy's own scale and rotation, and draw
+    the Julia set there. A Claude Code session narrowed about 140 low-resolution previews to
+    65, and I picked the gallery's first 31 from those by eye.</p>
+
+    <p>The search is rough because searching here is expensive. A candidate for the wallpaper
+    pipeline is cheap to render and is screened by a trained judge. A deep frame takes tens
+    of seconds to minutes even at a modest size, and nothing judges it. A search that renders
+    broadly and filters afterward cannot afford that breadth at these depths, so a better
+    deep search would need to know more precisely where it is going before it spends a
+    render: which copies to descend into, and where around them the interesting structure
+    lies.</p>
 
     <p>Every figure on this page links to its frame in the explorer, the deep ones in the
     <a href="../explorer/index.html?dv=3&amp;x=-0.74937053247003823168823992075369&amp;y=0.041472667068168900034718746387049&amp;w=3.4869054402668363e-15&amp;p=glowdon&amp;scale=absolute&amp;lambda=0&amp;period=0.25">Deep

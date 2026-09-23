@@ -39,6 +39,10 @@ SITE_REPO = "https://github.com/techmatt/fractal-website"
 
 AUTHOR_SITE = "https://techmatt.github.io/"
 
+#: Where the committed tree is served. The site itself never spells it — every href is
+#: relative — and it exists for what leaves the site: a review doc's links resolve here.
+SITE_URL = "https://techmatt.github.io/fractal-website/"
+
 FOOTER = f"""<footer>
   <p><a href="{AUTHOR_SITE}">Matt Fisher</a>
   · <a href="{CODE_REPO}">fractal-wallpapers</a> · MIT</p>

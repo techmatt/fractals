@@ -49,10 +49,16 @@ What the doc contains, in order:
 - every figure caption on the page, one line per slug, read off the figure registry.
   A figure still pending also shows the text its well displays in the meantime.
 
+A figure the page holds only as a placeholder — a `data-placeholder` block with no
+registry row, which is how a freshly placed section's figures arrive — has no row to read
+a caption off. It stands in the prose as `[figure placeholder: slug] Draft caption: …`,
+its caption read off the page, and an edit to that line goes to the page's `<figcaption>`.
+
 Nothing else: no HTML, no editorial header, no rail, no scaffolding.
 
-Links, italics and code spans are flattened. They are still on the page, and they survive
-an edit that does not delete the words carrying them.
+Links are live, resolved against the served site, so a reviewer can follow them from the
+doc; reading back takes only their words. Italics and code spans are flattened. All of it
+is still on the page, and survives an edit that does not delete the words carrying it.
 
 If a doc is already waiting, the command refuses rather than overwriting it — it may
 carry marks nobody has applied yet. `--force` overwrites, and is for the case where Matt

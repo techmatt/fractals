@@ -24,7 +24,7 @@ reviewed with the other captions.
 
 import html as html_module
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from html.parser import HTMLParser
 from pathlib import Path
 
@@ -320,12 +320,19 @@ class Block:
 
     `kind` is what the piece is — a heading, a paragraph, a bullet, a line of code, a
     table row, or the marker standing where a figure sits. `text` is what it says with
-    every tag gone; links, italics and code spans are flattened, because a review doc
-    is read and marked up as text and the markup is re-applied on this side.
+    every tag gone; italics and code spans are flattened, because a review doc is read
+    and marked up as text and the markup is re-applied on this side.
+
+    `links` keeps the one piece of markup a reader of the doc wants to follow: each
+    link's words, as they read in `text`, and its href as the page spells it. A figure
+    block's `caption` is its `<figcaption>` as the page carries it, which is the only
+    copy a placeholder with no registry row has.
     """
 
     kind: str
     text: str
+    links: tuple[tuple[str, str], ...] = ()
+    caption: str = ""
 
 
 HEADING = "heading"
@@ -348,6 +355,10 @@ class _Reader(HTMLParser):
         self._parts: list[str] = []
         self._cells: list[str] | None = None
         self._depth = 0
+        self._links: list[tuple[str, str]] = []
+        self._href: str | None = None
+        self._anchor: list[str] = []
+        self._caption: list[str] | None = None
 
     def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
         if tag == "figure":
@@ -357,35 +368,53 @@ class _Reader(HTMLParser):
             self.blocks.append(Block(FIGURE, identifier))
             return
         if self._depth:
+            if tag == "figcaption":
+                self._caption = []
             return
-        if tag == "tr":
-            self._cells = []
+        if tag == "a" and self._kind is not None:
+            self._href, self._anchor = dict(attrs).get("href"), []
+        elif tag == "tr":
+            self._cells, self._links = [], []
         elif tag in ("td", "th"):
             self._kind, self._parts = ROW, []
         elif tag in self._BLOCKS:
-            self._kind, self._parts = self._BLOCKS[tag], []
+            self._kind, self._parts, self._links = self._BLOCKS[tag], [], []
 
     def handle_endtag(self, tag: str) -> None:
         if tag == "figure":
             self._depth = max(0, self._depth - 1)
             return
         if self._depth:
+            if tag == "figcaption" and self._caption is not None and self.blocks:
+                caption = " ".join("".join(self._caption).split())
+                self.blocks[-1] = replace(self.blocks[-1], caption=caption)
+                self._caption = None
             return
-        if tag in ("td", "th") and self._cells is not None:
+        if tag == "a" and self._href is not None:
+            anchor = " ".join("".join(self._anchor).split())
+            if anchor:
+                self._links.append((anchor, self._href))
+            self._href = None
+        elif tag in ("td", "th") and self._cells is not None:
             self._cells.append(self._text())
             self._kind = None
         elif tag == "tr" and self._cells is not None:
-            self.blocks.append(Block(ROW, " | ".join(self._cells)))
-            self._cells = None
+            self.blocks.append(Block(ROW, " | ".join(self._cells), tuple(self._links)))
+            self._cells, self._links = None, []
         elif tag in self._BLOCKS and self._kind == self._BLOCKS[tag]:
             text = self._text()
             if text:
-                self.blocks.append(Block(self._kind, text))
-            self._kind = None
+                self.blocks.append(Block(self._kind, text, tuple(self._links)))
+            self._kind, self._links = None, []
 
     def handle_data(self, data: str) -> None:
-        if self._kind is not None and not self._depth:
+        if self._depth:
+            if self._caption is not None:
+                self._caption.append(data)
+        elif self._kind is not None:
             self._parts.append(data)
+            if self._href is not None:
+                self._anchor.append(data)
 
     def _text(self) -> str:
         return " ".join("".join(self._parts).split())
