@@ -48,7 +48,7 @@
 import * as fx from "./deep-fx.js";
 import * as deepLink from "./deep-link.js";
 import { DeepRenderer, deepSpecOf } from "./deep-render.js";
-import { homeward, stopOf } from "./outermost.js";
+import { stopOf } from "./outermost.js";
 
 /**
  * How long the last quarter-resolution pass may have taken for the next one to start on
@@ -134,7 +134,7 @@ const PAN_STEP = 0.1;
 const CAP_STEP = 2;
 
 /**
- * The degrees *Nearby minibrots* is offered at.
+ * The degrees *Find minibrots* is offered at.
  *
  * **A set, and a measured one** *(deep_degrees_ckpt140)*: a degree is in it only where the
  * crate's body-size estimate landed against a pin measured independently of it —
@@ -1280,14 +1280,16 @@ export function mount(host) {
     if (!(width > 0) || !Number.isFinite(width)) return false;
     // **Out no further than the set's outermost frame** *(explorer_deep_polish_ckpt142)* —
     // the viewer's stop, `outermost.js`, on the same home the shallow view uses. Where it
-    // bites, the width is the stop's and the pull is re-taken for that width, so the point
-    // under the pointer still holds for as far as the zoom actually went.
+    // bites, the width is the stop's and the centre stays where it is
+    // *(explorer_shallow_deep_parity_ckpt144)*, so a zoom back in returns where this began.
     const stop = width > view.w.value ? outermost() : null;
+    let held = false;
     if (stop !== null) {
-      if (view.w.value > stop.w) return false;
+      if (view.w.value >= stop.w) return false;
+      held = width > stop.w;
       width = Math.min(width, stop.w);
     }
-    const pull = pullOf(width);
+    const pull = held ? 0 : pullOf(width);
     // The point is taken on what the canvas is SHOWING, which is the widened frame while
     // something is pending — so the wheel zooms about what is under the pointer rather
     // than about where that pointer would be on a picture nobody is looking at.
@@ -1298,22 +1300,8 @@ export function mount(host) {
     const shiftAcross = fx.fromNumber((acrossOffset - centreAcross) * pull);
     const shiftDown = fx.fromNumber((downOffset - centreDown) * pull);
     if (shiftAcross === null || shiftDown === null) return false;
-    let x = fx.add(view.x.dec, shiftAcross);
-    let y = fx.add(view.y.dec, shiftDown);
-    if (stop !== null) {
-      // Drawn home as the width nears the stop, and exactly home at it — the home's own
-      // decimal, not the centre plus a double that nearly reaches it.
-      const t = homeward(width, stop.w);
-      if (t >= 1) {
-        x = stop.xDec;
-        y = stop.yDec;
-      } else if (t > 0) {
-        const towardX = fx.fromNumber(fx.difference(stop.xDec, x) * t);
-        const towardY = fx.fromNumber(fx.difference(stop.yDec, y) * t);
-        if (towardX !== null) x = fx.add(x, towardX);
-        if (towardY !== null) y = fx.add(y, towardY);
-      }
-    }
+    const x = held ? view.x.dec : fx.add(view.x.dec, shiftAcross);
+    const y = held ? view.y.dec : fx.add(view.y.dec, shiftDown);
     const next = {
       ...view,
       x: deepLink.coordinateOf(x),
@@ -1388,6 +1376,36 @@ export function mount(host) {
     // The fields are NOT cleared: the cache is keyed on the set as well as the
     // frame, so the two views cannot be confused for one another, and a small
     // enough pair of frames survives the trip both ways.
+    moved();
+  }
+
+  /**
+   * Root (r): the set's home frame — the Mandelbrot or Multibrot set whole, or for a Julia
+   * view the whole plane — which is the viewer's Root and the frame a zoom out stops at
+   * the width of. The cap is the width's again unless the reader pinned one.
+   */
+  function rootOf(of) {
+    const home = context.deepHome(deepLink.familyOf(of));
+    const x = fx.parse(home.x);
+    const y = fx.parse(home.y);
+    if (x === null || y === null) return null;
+    return {
+      ...of,
+      x: deepLink.coordinateOf(x),
+      y: deepLink.coordinateOf(y),
+      w: deepLink.widthOf(Number(home.w)),
+    };
+  }
+
+  function atRoot() {
+    const root = rootOf(view);
+    return root === null || deepLink.fieldKey(root, 1, 1) === deepLink.fieldKey(view, 1, 1);
+  }
+
+  function toRoot() {
+    const root = rootOf(view);
+    if (root === null || atRoot()) return;
+    view = pinned() ? root : { ...root, maxiter: policyCap(root.w.value), capFrom: "width" };
     moved();
   }
 
@@ -1470,7 +1488,7 @@ export function mount(host) {
     return answer.ok ? null : answer.why;
   }
 
-  // ----------------------------------------------------------------- nearby minibrots
+  // ----------------------------------------------------------------- find minibrots
 
   /**
    * What the list is showing, or `null` when there is nothing to show.
@@ -1481,6 +1499,13 @@ export function mount(host) {
    * returns from it. The list is cleared by the next search and by any change of location.
    */
   let minibrots = null;
+
+  /**
+   * Which view the list is for: `"deep"`, or `"shallow"` when the viewer's own Find minibrots
+   * ran the search on its frame *(explorer_shallow_deep_parity_ckpt144)*. The list is one
+   * element under the grid in both views, so a list goes when the view it was found in does.
+   */
+  let minibrotSide = "deep";
 
   /**
    * How long a preview tile may be estimated to take before it is drawn on its own.
@@ -1517,11 +1542,12 @@ export function mount(host) {
   /** The view one entry opens: its own centre, framed at six body widths, at the cap the
    *  kernel says a tile of that period needs. The palette and the shade recipe come with
    *  the reader, because a preview a reader cannot recognise as theirs is a different
-   *  picture of the same place. */
-  function frameOf(nucleus) {
+   *  picture of the same place. `base` is the view searched, which is the tab's own unless
+   *  the viewer asked. */
+  function frameOf(nucleus, base = view) {
     const width = renderer.tileWidth(nucleus.size);
     return {
-      ...view,
+      ...base,
       x: nucleus.x,
       y: nucleus.y,
       w: deepLink.widthOf(width),
@@ -1533,9 +1559,17 @@ export function mount(host) {
     };
   }
 
+  /** The list and its note gone, whoever they were for. */
+  function dropList() {
+    clearMinibrots();
+    els.minibrotNote.hidden = true;
+    minibrotSide = "deep";
+  }
+
   function clearMinibrots() {
     if (minibrots === null) return;
     minibrots = null;
+    minibrotSide = "deep";
     els.minibrotList.replaceChildren();
     els.minibrotList.hidden = true;
     els.minibrotNote.hidden = true;
@@ -1548,20 +1582,35 @@ export function mount(host) {
    * Three phases: the atom-domain walk over the pool, the Newton solves over the pool, and
    * then the tiles one at a time — which is the order the ranking forces, since *largest
    * first* cannot be known until every solve is in.
+   *
+   * **The viewer's own Find minibrots is this search** *(explorer_shallow_deep_parity_ckpt144)*:
+   * `from` is its view, carried across the floor exactly as entering the tab carries it,
+   * and `pick` is where an entry goes when clicked — the viewer decides which of the two
+   * views can draw it. With neither, it is the tab's own search on the tab's own frame.
+   * Nothing about the tab's view moves either way, and the render bar and status the
+   * viewer shows are its own: this writes only the tab's hidden Render line.
    */
-  async function findMinibrots() {
-    if (view.julia !== null || running !== null) return;
-    if (!MINIBROT_DEGREES.has(view.degree ?? 2)) return;
+  async function findMinibrots({ from = null, pick = null } = {}) {
+    const target = from === null ? view : carry(from);
+    if (target === null || target.julia !== null || running !== null) return;
+    if (!MINIBROT_DEGREES.has(target.degree ?? 2)) return;
+    const side = from === null ? "deep" : "shallow";
     const generation = ++pass;
     const grid = host.grid();
-    const target = view;
     readLog();
-    running = { upto: "minibrots", auto: false, stage: "searching", started: performance.now(), done: 0 };
+    running = {
+      upto: "minibrots",
+      auto: false,
+      side,
+      stage: "searching",
+      started: performance.now(),
+      done: 0,
+    };
     enterStage("starting", { live: false });
     activity("starting the deep renderer…", 0);
     syncControls();
     host.say("");
-    clearMinibrots();
+    dropList();
 
     try {
       const deep = await pool();
@@ -1616,13 +1665,15 @@ export function mount(host) {
       if (found === null || generation !== pass) return;
 
       if (found.length === 0) {
+        minibrotSide = side;
         els.minibrotNote.hidden = false;
         els.minibrotNote.textContent = "No minibrot was found in this view.";
         return;
       }
 
       minibrots = found;
-      show(found);
+      minibrotSide = side;
+      show(found, target, pick);
       // **The unreachable ones are said rather than hidden.** A `dv` centre is capped at 64
       // characters, and a minibrot found in a view at 1e-n sits near 1e-2n — so below about
       // 1e-30 the best entries are places this site can find and cannot spell a link to.
@@ -1640,7 +1691,7 @@ export function mount(host) {
       for (const nucleus of reachable) {
         if (generation !== pass) return;
         tile += 1;
-        const frame = frameOf(nucleus);
+        const frame = frameOf(nucleus, target);
         if (tileSeconds(frame.maxiter) * 1000 > TILE_BUDGET_MS) continue;
         enterStage("tiles");
         activity(`drawing previews · ${tile} of ${reachable.length}`, (tile - 1) / reachable.length);
@@ -1664,9 +1715,11 @@ export function mount(host) {
       if (generation === pass) {
         running = null;
         watch();
-        host.showState(drawn === null ? "stopped" : "final");
+        // The viewer's bar is the viewer's picture, which a search for it never touched.
+        if (side === "deep") host.showState(drawn === null ? "stopped" : "final");
         syncControls();
       }
+      host.onSearch?.();
     }
   }
 
@@ -1679,8 +1732,9 @@ export function mount(host) {
     );
   }
 
-  /** The list, as entries with nothing drawn in them yet. */
-  function show(found) {
+  /** The list, as entries with nothing drawn in them yet, framed on `base` and sent to `pick`
+   *  when clicked — or to this tab, where nobody else asked. */
+  function show(found, base, pick) {
     els.minibrotList.replaceChildren();
     els.minibrotList.hidden = false;
     for (const nucleus of found) {
@@ -1692,7 +1746,7 @@ export function mount(host) {
 
       const well = document.createElement("div");
       well.className = "minibrot-tile";
-      const frame = frameOf(nucleus);
+      const frame = frameOf(nucleus, base);
       const seconds = tileSeconds(frame.maxiter);
       well.textContent = !reachable
         ? "past what a link can spell"
@@ -1712,7 +1766,7 @@ export function mount(host) {
       // **The frame this entry was built with**, and never one derived at click time: by
       // then `view` may have moved, and an entry that quietly re-aims is an entry that
       // sends a reader somewhere they were not shown.
-      if (reachable) entry.addEventListener("click", () => swap({ ...frame }));
+      if (reachable) entry.addEventListener("click", () => (pick ?? swap)({ ...frame }));
       nucleus.node = well;
       els.minibrotList.append(entry);
     }
@@ -1926,7 +1980,8 @@ export function mount(host) {
     // `MINIBROT_DEGREES`.
     els.minibrots.hidden = julia || !MINIBROT_DEGREES.has(view.degree ?? 2);
     els.minibrots.disabled = committed || busy;
-    els.minibrots.textContent = running?.upto === "minibrots" ? "Looking…" : "Nearby minibrots";
+    els.minibrots.textContent = running?.upto === "minibrots" ? "Looking…" : "Find minibrots";
+    els.root.disabled = committed || atRoot();
     els.origin.disabled = committed || (julia && fx.isZero(view.x.dec) && fx.isZero(view.y.dec));
     els.back.disabled = committed;
     // Two reasons it might not go, and the title names the one in force. A parameter
@@ -1968,7 +2023,7 @@ export function mount(host) {
     } else {
       els.note.textContent = "";
     }
-    host.onColour();
+    if (shown && owns) host.onColour();
   }
 
   // ----------------------------------------------------------------- getting in and out
@@ -2106,9 +2161,9 @@ export function mount(host) {
 
   els.julia.addEventListener("click", () => (view.julia === null ? toJulia() : toMandelbrot()));
   els.origin.addEventListener("click", toOrigin);
-  els.minibrots.addEventListener("click", findMinibrots);
+  els.minibrots.addEventListener("click", () => findMinibrots());
+  els.root.addEventListener("click", toRoot);
   els.back.addEventListener("click", () => host.leave(view));
-  els.save.addEventListener("click", () => host.save(deepLink.emit(view)));
 
   return {
     /** The view the tab is standing on, for the colour controls and for a link. */
@@ -2124,6 +2179,22 @@ export function mount(host) {
      *  *(pre_closeout_website_ckpt140)*. */
     pressJulia() {
       if (!els.julia.disabled && !els.julia.hidden) els.julia.click();
+    },
+    /** `r` while this tab owns the viewer: its own Root, as a click on it. */
+    pressRoot() {
+      if (!els.root.disabled) els.root.click();
+    },
+
+    // ------------------------------------------------ Find minibrots, for the viewer
+
+    /** Search the viewer's frame `from`, and send a clicked entry to `pick`. */
+    findFor: (from, pick) => findMinibrots({ from, pick }),
+    /** Which view a running search is for, or `null` where none is running. */
+    searching: () => (running?.upto === "minibrots" ? running.side : null),
+    /** The viewer moved: its search stops and its list goes. The tab's own are untouched. */
+    dropShallow() {
+      if (running?.side === "shallow") stop();
+      if (minibrotSide === "shallow") dropList();
     },
 
     // ----------------------------------------------------------- what Download borrows
@@ -2155,6 +2226,9 @@ export function mount(host) {
     picture,
 
     show() {
+      // A list the viewer found is about the viewer's frame, which is not on the screen now.
+      if (running?.side === "shallow") stop();
+      if (minibrotSide === "shallow") dropList();
       shown = true;
       owns = true;
       paint();
@@ -2164,13 +2238,16 @@ export function mount(host) {
       shown = false;
       owns = false;
       disarm();
-      stop();
+      // The viewer's own search runs on with the tab hidden, which is where it was started.
+      if (running?.side !== "shallow") stop();
+      if (minibrotSide === "deep") dropList();
     },
     /** The reader took the viewer for something else; the tab keeps its view. */
     detach() {
       owns = false;
       disarm();
-      stop();
+      if (running?.side !== "shallow") stop();
+      if (minibrotSide === "deep") dropList();
     },
     enter,
 

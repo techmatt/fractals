@@ -831,8 +831,8 @@ function zoomAbout(px, py, factor) {
 /**
  * A gesture's frame, held to the family's outermost one *(explorer_deep_polish_ckpt142)*:
  * a zoom in untouched, and a zoom out no wider than the stop `outermost.js` derives from
- * the family's home, with its centre drawn home as it nears it. `null` where the gesture
- * would change nothing — already at the stop, or opened wider than it by a link.
+ * the family's home, about the centre the view has where it reaches it. `null` where the
+ * gesture would change nothing — already at the stop, or opened wider than it by a link.
  */
 function outwardHeld(centre, width) {
   if (!(width > view.w.value)) return { ...centre, w: width };
@@ -843,10 +843,7 @@ function outwardHeld(centre, width) {
     // one `p`: neither is the extent of what a view of it shows. See `outermost.js`.
     view.family in PARENT_PLANE || view.family === "phoenix_plane",
   );
-  const held = heldOut(centre, width, view.w.value, stop);
-  if (held === null) return null;
-  const same = held.w === view.w.value && held.x === view.x.value && held.y === view.y.value;
-  return same ? null : held;
+  return heldOut({ ...centre, w: width }, { x: view.x.value, y: view.y.value, w: view.w.value }, stop);
 }
 
 /**
@@ -1685,6 +1682,11 @@ function currentQuery() {
  *  walk's alone. */
 function settle({ remember = true } = {}) {
   panel?.describe();
+  if (minibrotsAt !== null && !deepOwns() && frameOf(view) !== minibrotsAt) {
+    minibrotsAt = null;
+    deep?.dropShallow();
+    syncMinibrots();
+  }
   clearTimeout(settleTimer);
   settleTimer = setTimeout(() => {
     // Whichever contract the picture belongs to — see `currentQuery` — so the address
@@ -3374,10 +3376,10 @@ async function mountDeep() {
         julia: at("deep-julia"),
         origin: at("deep-origin"),
         minibrots: at("deep-minibrots"),
-        minibrotList: at("deep-minibrot-list"),
-        minibrotNote: at("deep-minibrot-note"),
+        minibrotList: at("minibrot-list"),
+        minibrotNote: at("minibrot-note"),
+        root: at("deep-root"),
         back: at("deep-back"),
-        save: at("deep-save"),
       },
       context: deepContext,
       grid: () => grid,
@@ -3391,12 +3393,7 @@ async function mountDeep() {
       deriving: () => autolevels(deep.view()),
       resolves: resolvesShallow,
       leave: leaveDeep,
-      save: (query) => {
-        const answer = saved.toggle(query);
-        if (answer === "added") say("Saved. It is on the Saved tab.");
-        else if (answer === "removed") say("Removed from Saved.");
-        else if (answer === "full") say(`Saved is full at ${saving.MAX} pictures. Remove some to save more.`);
-      },
+      onSearch: syncMinibrots,
       onColour: () => {
         palettes?.show(deep.view().palette);
         syncShade();
@@ -3940,7 +3937,9 @@ familyPicker.addEventListener("change", () => {
 
 // ------------------------------------------------------------------- the view toggles
 //
-// Three buttons at the right of the Download row, and the Julia preview box beside the
+// The Navigation cell *(explorer_shallow_deep_parity_ckpt144; the right end of the Download
+// row until then)*: Box, Root, the Julia button and Find minibrots in the Deep tab's order,
+// then Reset to seat and the Julia preview box beside the
 // one it previews. They are the whole of this row on purpose: anything further is a
 // shortcut, not chrome. The two random ones are the Palette header's now
 // *(explorer_controls_ckpt140)* — what they change is the palette, so they sit with it.
@@ -3955,6 +3954,7 @@ familyPicker.addEventListener("change", () => {
 // them under the pointer.
 
 const seatButton = document.getElementById("view-seat");
+const minibrotsButton = document.getElementById("view-minibrots");
 const wholeButton = document.getElementById("view-whole");
 const juliaButton = document.getElementById("view-julia");
 const randomPaletteButton = document.getElementById("view-palette");
@@ -4011,7 +4011,7 @@ function holdParent(held) {
   }
 }
 
-/** Whether the view is its plane's home frame, which is all Whole ⟨plane⟩ would set. */
+/** Whether the view is its plane's home frame, which is all Root would set. */
 function atHome() {
   const home = homeOf(view.family);
   return ["x", "y", "w"].every((key) => view[key].text === home[key].text);
@@ -4037,10 +4037,14 @@ function syncToggles() {
   seatButton.title = TOGGLE_TIPS[opened];
   seatButton.disabled = busy || anchor === null || pictureKey(view) === anchor.at;
 
+  // **Root, whatever the plane** *(Matt, explorer_shallow_deep_parity_ckpt144)*. It was
+  // *Whole Mandelbrot*, *Whole Julia*, *Whole Multibrot 6*: the plane is in the title now,
+  // so the face is one word in both views and the Deep tab's Root reads the same.
   const plane = planeName(view.family);
-  wholeButton.textContent = `Whole ${plane} ${KEYS.whole}`;
-  wholeButton.title = "Keeps the render mode and the palette.";
+  wholeButton.textContent = `Root ${KEYS.whole}`;
+  wholeButton.title = `The whole ${plane} plane. Keeps the render mode and the palette.`;
   wholeButton.disabled = busy || atHome();
+  syncMinibrots();
 
   const hasJulia = onJulia || view.family in JULIA_OF;
   juliaButton.hidden = !hasJulia;
@@ -4063,6 +4067,80 @@ function syncToggles() {
   boxButton.disabled = busy;
   deepBoxButton.disabled = busy;
   if (busy) cancelBox({ quiet: true });
+}
+
+// ------------------------------------------------------------------- Find minibrots
+//
+// **The Deep tab's search, run on this view's frame** *(Matt, explorer_shallow_deep_parity_ckpt144)*.
+// The nucleus search lives in `perturb.wasm`, which the page fetches the first time the
+// Deep tab is wanted — and pressing this is one of those times, so the first press here
+// costs what entering the tab costs. The list is the Deep tab's too, under the grid in
+// either view. What differs is where an entry goes: the viewer decides, by the same
+// question *Back to the explorer* asks, and a minibrot the ordinary renderer still
+// resolves opens here while one below the `f64` floor opens in the Deep tab.
+
+/** The families the search has a recurrence for and a measured body size at: the
+ *  parameter planes of the degrees `deep.js`'s `MINIBROT_DEGREES` names. A Julia set has
+ *  no minibrots, and the button is absent there as it is in the Deep tab. */
+const MINIBROT_FAMILIES = new Set(["mandelbrot", "multibrot3", "multibrot4", "multibrot5", "multibrot6"]);
+
+/** The frame the list on show was found at, by `frameOf`, or `null`. The list goes when
+ *  the view leaves it, as the Deep tab's does. */
+let minibrotsAt = null;
+/** Between the press and the Deep module being up, so the button says so at once. */
+let minibrotsStarting = false;
+
+function syncMinibrots() {
+  const searching = minibrotsStarting || deep?.searching() === "shallow";
+  minibrotsButton.hidden = !MINIBROT_FAMILIES.has(view.family);
+  minibrotsButton.disabled = busy || searching;
+  minibrotsButton.textContent = searching ? "Looking…" : "Find minibrots";
+}
+
+async function findMinibrots() {
+  if (locked() || deepOwns() || !MINIBROT_FAMILIES.has(view.family)) return;
+  const from = view;
+  minibrotsStarting = true;
+  syncMinibrots();
+  try {
+    await startDeep();
+  } finally {
+    minibrotsStarting = false;
+  }
+  // The view may have moved, or the Deep tab been opened, while the module came in.
+  if (deep === null || deepOwns() || view !== from) {
+    syncMinibrots();
+    return;
+  }
+  minibrotsAt = frameOf(from);
+  const running = deep.findFor(from, openMinibrot);
+  syncMinibrots();
+  await running;
+}
+
+/**
+ * One entry of the list, opened in whichever view can draw it: here where the ordinary
+ * renderer still resolves the frame, and in the Deep tab where it does not.
+ *
+ * **The frame is the Deep tab's**, six body widths across (`renderer.tileWidth` in
+ * `deep-render.js`), in both views, so a minibrot looks the same size whichever one opens
+ * it. Here it is drawn at the width's own cap like every shallow view; the cap the Deep
+ * tab would have used, its own period's, goes with it only down there.
+ */
+function openMinibrot(frame) {
+  if (locked()) return;
+  if (resolvesShallow(frame)) {
+    view = {
+      ...view,
+      x: { text: frame.x.text, value: Number(frame.x.text) },
+      y: { text: frame.y.text, value: Number(frame.y.text) },
+      w: { text: frame.w.text, value: frame.w.value },
+    };
+    changed();
+    draw();
+    return;
+  }
+  openAny(deepRules.emit(frame));
 }
 
 /** Back to the picture the viewer was opened at, exactly as opening it did: the seat's
@@ -4284,6 +4362,7 @@ boxButton.addEventListener("click", toggleBox);
 deepBoxButton.addEventListener("click", toggleBox);
 seatButton.addEventListener("click", resetToSeat);
 wholeButton.addEventListener("click", wholePlane);
+minibrotsButton.addEventListener("click", findMinibrots);
 juliaButton.addEventListener("click", () => toggleJulia());
 randomPaletteButton.addEventListener("click", randomPalette);
 randomPhaseButton.addEventListener("click", randomPhase);
@@ -4315,7 +4394,9 @@ for (const [event, on] of [["pointerenter", true], ["focus", true], ["pointerlea
  *  **`j` is the one whose key and button differ**, and it is the table that says so: the
  *  key asks for the `c` under the pointer and the button's own listener does not. */
 const TOGGLE_KEYS = {
-  r: wholePlane,
+  // In Deep, the tab's own Root: the viewer underneath is not on screen, and `r` used to
+  // move it there without a picture changing.
+  r: () => (deepOwns() ? deep.pressRoot() : wholePlane()),
   // In Deep, the tab's own button, which wears the key; the shallow view underneath is not
   // on screen and a key that flipped it would change nothing a reader can see.
   j: () => (deepOwns() ? deep.pressJulia() : toggleJulia({ atCursor: true })),

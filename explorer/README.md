@@ -255,7 +255,9 @@ beside a viewer that draws the place it stands for than beside a link that leave
 the folded Details: the render stat line, family, constants, `x`, `y`, `w`, all editable. Copy link is in the bar,
 because it is about the page rather than about a group.
 
-**A tool and three view buttons close the Download row** *(explorer_view_buttons_ckpt130,
+**A tool and three view buttons were the end of the Download row, and are the Navigation
+cell now** *(explorer_shallow_deep_parity_ckpt144, below under the Deep tab's grid;
+explorer_view_buttons_ckpt130,
 2026-09-17; five until explorer_controls_ckpt140, 2026-09-22; `Box (b)` added by
 explorer_box_zoom_and_download_row_ckpt140, 2026-09-22)*, at its right end, **each with its key on
 its own face** *(Matt, explorer_ui_text_ckpt139, 2026-09-21)* — `Julia here (j)`, spelled the
@@ -283,11 +285,15 @@ and no breadcrumb:
   the tuned-parameter note already makes — and a bare page opened at nothing, so its button
   is greyed and its tooltip says so. The anchor is the last thing that *arrived* and not the
   last thing on screen, so it survives every move, Julia here included.
-- **Whole ⟨plane⟩ (r)** — `Whole Mandelbrot`, `Whole Multibrot 6`, `Whole Julia` — the
-  plane's home viewport with everything else kept. The name is `planeName`'s, a rule over
+- **Root (r)** — the plane's home viewport with everything else kept. It was *Whole ⟨plane⟩*
+  (`Whole Mandelbrot`, `Whole Multibrot 6`, `Whole Julia`) until
+  explorer_shallow_deep_parity_ckpt144, which named it Root in both views; the plane's name
+  moved into its title, *The whole Mandelbrot plane*. That name is `planeName`'s, a rule over
   the one shape a family name has rather than a table: the spelling is the atlas record's
   `slot_labels`, derived rather than read from it because the atlas mounts only when its
-  panel is first opened and a button is named at load.
+  panel is first opened and a button is named at load. The Deep tab has its own Root (r),
+  the deep home by exact decimal, and `r` there is that button: until then it moved the
+  shallow view hidden underneath, and nothing on the screen changed.
 - **Julia here (j)** — the view's centre taken as `c`, its own decimal strings so nothing is
   lost, and that degree's Julia set opened at its home view with the mode, palette and
   recipe carried. While the button is under the pointer or holding the focus, a crosshair is
@@ -703,7 +709,7 @@ reachable through it.
 
 ## The zoom-out stop *(Matt, explorer_deep_polish_ckpt142, 2026-09-22)*
 
-**Zooming out stops at the family's outermost frame and settles onto it.** It used to run on
+**Zooming out stops at the family's outermost width.** It used to run on
 past the whole set until the set was a dot. `outermost.js` holds the rule, and every zoom
 route shares it: the viewer's `zoomAbout` (wheel, `+`/`-`, a pinch) and `zoomToBox`, the Deep
 tab's `reframe` (its wheel, keys and box), and the Phoenix tab's own wheel on its plane, which
@@ -723,13 +729,15 @@ one: its extent was measured at the anchor's `p`, and the tab moves `p` — the 
 boxes for its starting points run from 0.85 to 4.8 across — so it stops at 5.6. Mandelbrot
 and the Multibrots stop at their homes exactly, which already carry the margin.
 
-**The centre is drawn home as the width nears the stop.** Over the last `PULL_SPAN` (4×, ten
-wheel notches) the centre a gesture asked for is moved toward the home's by a share that
-rises with the logarithm of the width, and at the stop it **is** the home's — in the Deep
-tab, the home's own decimal rather than a centre plus a double that nearly reaches it. A
-wheel spun out from a detail at the edge of the set therefore ends on the whole set, centred,
-and the link comes out as the family's bare home. A frame at the stop that has been panned
-off it comes back on the next zoom out.
+**The stop is a width, and the centre stays where it is** *(Matt,
+explorer_shallow_deep_parity_ckpt144, 2026-09-23)*. A zoom out that would pass the stop lands
+at the stop's width about the centre the view already has, and one that would not is
+untouched. So a zoom out to the stop and a zoom back in return to where they began. This
+replaces ckpt142's pull, which drew the centre toward the home's over the last four widths
+before the stop and put it exactly there at it: a wheel spun out from a detail ended on the
+whole set, centred, and the way back in went somewhere else. The home itself is Root (r),
+which is a press rather than a side effect of a gesture. `heldOut` is the one rule, and the
+viewer, the Deep tab's `reframe` and the Phoenix plane's wheel all take it.
 
 **The limit is on gestures.** A link that opens wider than the stop opens as written; a zoom
 out there does nothing and a zoom in works. Measured on the served page: `?w=20` stayed at
@@ -738,7 +746,9 @@ picture it had scaled.
 
 ## The render bar *(Matt, explorer_box_zoom_and_download_row_ckpt140, 2026-09-22)*
 
-`#render-state`, on the Download row before the estimate. **It was a dot until this prompt**:
+`#render-state`, in the Render cell since explorer_shallow_deep_parity_ckpt144, where the
+Deep tab has its own bar; it sat on the Download row before the estimate until then, and is
+4rem wide now, the Deep bar's width. **It was a dot until this prompt**:
 the colour said which of three stages a pass was in — red drawing the field, yellow with the
 one-sample picture up, green finished — and nothing said how far through one it was, so a
 slow frame and a stuck one looked identical for as long as anybody was willing to wait. The
@@ -1463,15 +1473,32 @@ what Cancel will do is Cancel's title, and the spinner keeps its place while it 
 Box (b) is a second button on the shallow tool, kept pressed and greyed in step with the
 shallow one, and Save wears the shallow Save's bookmark.
 
+**And the shallow view has the same grid** *(Matt, explorer_shallow_deep_parity_ckpt144,
+2026-09-23)*. Its cells are **Render** (the render bar, where the Deep tab's is; this view
+has no button to press) and **Navigation** over **Render mode** (where Deep has Iterations)
+and **Download**. Each view's three cells are a group that is `display: contents` while it
+owns the canvas, so the grid rule is one rule for both. The left column is never narrower
+than 21rem, the Deep tab's own measured 20.8, so Navigation and Download start at the same
+x in both views (1020 at 1600 wide, 892 at 1280) instead of 185 px apart. Buttons both
+views have are in the same order: **Box (b), Root (r), the Julia button (j), Find
+minibrots**, and then what only one view has: Reset to seat and the Julia preview box in the
+shallow view, Same view at z = 0 and Back to the explorer in Deep. **Save left Navigation
+for the Download row**, and it is one button now: `#save-view` saves `currentQuery()`,
+which is already whichever contract owns the canvas, so the Deep tab's picture gets the
+pressed *Saved* face that deep_tab_controls_grid reported missing, and a second press
+removes it. `#deep-save` and `host.save` are gone. *Nearby minibrots* is **Find minibrots**
+in both views (next section).
+
 The left panel keeps the tab's one sentence and, since
 deep_gallery_build_ckpt144, the folded gallery under it (*The gallery*, below).
 
 **The sentence is Matt's** *(explorer_deep_polish_ckpt142, 2026-09-22)*: *Zoom far past
 where ordinary rendering breaks down, into the Mandelbrot set, its higher-degree cousins and
-their Julia sets. Deep frames take longer to draw and are colored smooth only.* Nearby
+their Julia sets. Deep frames take longer to draw and are colored smooth only.* Find
 minibrots *finds tiny copies of the set worth diving into.* The button's name is set in
 italics and is the button's own label, checked against `index.html` and `deep.js`'s
-`syncControls`. His draft spelled *coloured*; the page says *colored*, by the site's
+`syncControls`, which is why the sentence said *Nearby minibrots* until the button was
+renamed (explorer_shallow_deep_parity_ckpt144). His draft spelled *coloured*; the page says *colored*, by the site's
 American-spelling rule.
 
 **It ends on the way into the article** *(PLACE_deep_zoom_v1_ckpt144, 2026-09-23)*: *For
@@ -1494,7 +1521,7 @@ walk's backdrop, because dim says *old* without hiding it.
 a frame change that has settled for 350 ms **cancels whatever is in flight** and draws the
 new frame: the quarter-resolution field, then the full one at one sample a pixel, and no
 further. Every route into a new frame goes through it — a drag, a wheel notch, a cap
-change, *Julia at this c* and its way back, a *Nearby minibrots* pick, and a deep link
+change, *Julia at this c* and its way back, a *Find minibrots* pick, and a deep link
 opened from Saved or the address bar. Unticked, the tab is press-to-render, and the only
 thing that starts by itself is the quarter pass, and only **if the previous quarter pass
 came back under `AUTO_PREVIEW_MS`** — provisional at 1.5 s.
@@ -1719,7 +1746,7 @@ yet: starting, the cap probe, the reference orbit, the quarter pass, and an empt
 rest over a pending frame. **Yellow** (`sharpening`) is a picture of this frame up and a
 finer one coming: the full pass and its colouring. **Green** (`final`) is at rest with the
 picture up being the frame. Two states are not passes of the screen at all, and none of the
-three covers them honestly: a **download's file render** and a **Nearby minibrots search**.
+three covers them honestly: a **download's file render** and a **Find minibrots search**.
 Both read red, because what they make is not on the screen until they finish — the nearest
 of the three, and the choice is named here so it is not mistaken for a stage.
 
@@ -1937,7 +1964,24 @@ The rule, its threshold and the thirteen frames it was measured on are
   frame is that frame. The limit itself is unchanged, there is no control for it and no
   retry: the clause is the answer.
 
-### Nearby minibrots *(deep_nearby_minibrots_ckpt138, 2026-09-20)*
+### Find minibrots *(deep_nearby_minibrots_ckpt138, 2026-09-20; named Nearby minibrots until explorer_shallow_deep_parity_ckpt144)*
+
+**The shallow view has the button too** *(Matt, explorer_shallow_deep_parity_ckpt144)*, on
+the same planes (Mandelbrot and Multibrots 3–6, never a Julia set), and it is this search:
+`deep.findFor(view, openMinibrot)` carries the shallow frame across the floor exactly as
+entering the tab does, and runs the tab's `findMinibrots` on it without touching the tab's
+own view, bar or status. `perturb.wasm` is fetched on the first press, which is one of the
+doors into the Deep module like the tab itself. The list is one element under the grid in
+both views (`#minibrot-list`), goes when the view it was found in moves, and is dropped
+when the other view takes the canvas. **An entry opens in whichever view can draw it**:
+`resolvesShallow`, the question *Back to the explorer* asks, keeps a frame above the `f64`
+floor in the shallow view, and a frame below it opens in the Deep tab with the period's own
+cap. **The frame is the Deep tab's in both**, six body widths across (`tileWidth`), so a
+minibrot is the same size on the screen whichever view opens it; the shallow view draws it
+at the width's cap, as it draws everything. Measured on the served page at 1600 wide: from
+`-1.7686, 0.0017` at 0.004 the six found opened in the shallow view (the first at
+6.5e-4 across); from the deep anchor's centre at 1e-12, the smallest of six, 8.0e-14
+across, opened in the Deep tab at `n=181632`.
 
 One button, on the parameter plane only, at every degree the tab draws *(degrees three to six since
 deep_degrees_ckpt140, each against a measured pin — `perturb-wasm/README.md` §10)*. It searches the current view for the minibrots in and around
@@ -2228,7 +2272,7 @@ explorer/?dv=2&cx=-0.74501772828532335842941892835857434&cy=0.149934432754568191
 ### What is not here
 
 **Nucleus references in the main Render** — the tab still draws every frame against its
-own centre. *Nearby minibrots* below solves nuclei and draws its tiles against them, and
+own centre. *Find minibrots* below solves nuclei and draws its tiles against them, and
 measured the difference: on a tile the two are the same picture in the same time, because
 a tile is already centred on its nucleus and so the view centre *is* the reference. What
 naming the period buys there is the orbit's size and not its speed. Whether it pays on an
@@ -2236,7 +2280,7 @@ ordinary frame, where the centre is not a nucleus, is a separate question this h
 answered.
 
 Stopping a search early at the 2-fold and 4-fold symmetry stages, and anything about
-*Nearby minibrots* that persists: no entry reaches Saved, none has a link contract of its
+*Find minibrots* that persists: no entry reaches Saved, none has a link contract of its
 own, and the list is gone on the next search or the next gesture.
 
 **BLA was built, priced and taken back out, and §6 of the crate README is why.** The skip

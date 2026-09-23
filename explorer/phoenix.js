@@ -500,9 +500,9 @@ export function mount(host) {
       const under = planeAt(event.offsetX, event.offsetY);
       const kept = w / frame.w;
       const centre = { x: under.x + (frame.x - under.x) * kept, y: under.y + (frame.y - under.y) * kept };
-      // Out, no further than the plane's home, and drawn back onto it as it gets there —
-      // the viewer's own stop, `outermost.js`.
-      const to = factor > 1 ? heldOut(centre, w, frame.w, stopOf(home(), true)) : { ...centre, w };
+      // Out, no further than the plane's home, about the centre it has there — the viewer's
+      // own stop, `outermost.js`.
+      const to = factor > 1 ? heldOut({ ...centre, w }, frame, stopOf(home(), true)) : { ...centre, w };
       if (to === null || (to.w === frame.w && to.x === frame.x && to.y === frame.y)) return;
       frame = to;
       preview.hide();

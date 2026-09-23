@@ -1,4 +1,4 @@
-// How far out a gesture may zoom, and how the frame settles as it gets there
+// How far out a gesture may zoom
 // *(explorer_deep_polish_ckpt142)*.
 //
 // **The stop is the family's home view, which is the engine's.** `engine.wasm`'s `home` is
@@ -18,20 +18,14 @@
 // the constants it is drawn with stops at its home exactly, since that frame is the whole
 // set with its margin.
 //
+// **The stop is a width and not a place** *(explorer_shallow_deep_parity_ckpt144)*: a zoom
+// that reaches it keeps the centre the view has, so a zoom back in returns where it began.
+//
 // **The limit is on gestures and nothing else.** A link that opens wider than the stop opens
 // as it was written; from there a zoom out does nothing and a zoom in works as ever.
 
 /** How much wider than its home a family whose home is not its extent may be zoomed out to. */
 export const LOOSE_STOP = 2;
-
-/**
- * Over how many times the stop's width the centre is drawn home.
- *
- * Four is ten wheel notches: far enough out that the pull is a settling rather than a jump,
- * near enough that a reader zooming out from a detail at the edge of the set is not dragged
- * off it while they can still see it.
- */
-export const PULL_SPAN = 4;
 
 /** The frame a gesture may not zoom out past: `{ x, y, w }` as numbers, from a home whose
  *  coordinates are numbers. `loose` is whether that home is a starting frame rather than
@@ -41,32 +35,21 @@ export function stopOf(home, loose) {
 }
 
 /**
- * How far a frame of this width is drawn toward the stop's centre: `0` until the width is
- * within `PULL_SPAN` of the stop, `1` at the stop, and in between by the logarithm of the
- * width — which is what makes each wheel notch pull by the same share.
- */
-export function homeward(width, stop) {
-  if (!(width > 0) || !(stop > 0)) return 0;
-  const t = Math.log((width * PULL_SPAN) / stop) / Math.log(PULL_SPAN);
-  return Math.max(0, Math.min(1, t));
-}
-
-/**
- * A zoom out, held to the stop: the width the gesture asked for no wider than the stop, and
- * the centre it asked for drawn toward the stop's by `homeward`. Returns `null` where the
- * frame is already wider than the stop, so the gesture does nothing; a frame at the stop
- * that has been panned off it comes back to it.
+ * A zoom out, held to the stop *(Matt, explorer_shallow_deep_parity_ckpt144)*: the frame the
+ * gesture asked for where it is no wider than the stop, and otherwise **the stop's width
+ * about the centre the view already has**. Returns `null` where the view is already at the
+ * stop or wider, so the gesture does nothing.
+ *
+ * The centre used to be drawn home over the last four widths before the stop, and to be the
+ * home's at it. That made the stop a place rather than a width: a zoom out that reached it
+ * and a zoom back in landed somewhere else than where the reader had been. Now the only
+ * thing the stop changes is how wide the frame gets, so a zoom back in returns to where the
+ * zoom out began, and Root (r) is the way to the home itself.
  *
  * Only for a zoom *out*: a zoom in is never touched, however far out it starts.
  */
-export function heldOut(centre, width, from, stop) {
-  if (from > stop.w) return null;
-  const w = Math.min(width, stop.w);
-  const t = homeward(w, stop.w);
-  if (t >= 1) return { x: stop.x, y: stop.y, w };
-  return {
-    x: centre.x + (stop.x - centre.x) * t,
-    y: centre.y + (stop.y - centre.y) * t,
-    w,
-  };
+export function heldOut(asked, current, stop) {
+  if (current.w >= stop.w) return null;
+  if (asked.w <= stop.w) return asked;
+  return { x: current.x, y: current.y, w: stop.w };
 }

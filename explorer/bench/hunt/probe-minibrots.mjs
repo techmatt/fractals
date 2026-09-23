@@ -1,4 +1,4 @@
-// How many nuclei the Deep tab's Nearby minibrots lists, on the frames the crate's own
+// How many nuclei the Deep tab's Find minibrots lists, on the frames the crate's own
 // table measured. `perturb-wasm/README.md` §9 says 6 for `tangle 1e-22`; the tab listed 3,
 // because it searched at the view's cap and a `dv` link pins that at the policy's 93,600
 // while the largest nucleus there is period 94,776.
@@ -25,8 +25,8 @@ for (const [name, query, want] of FRAMES) {
   for (let i = 0; i < 600; i++) {
     await sleep(500);
     const said = await p.ev(`(() => {
-      const note = document.getElementById('deep-minibrot-note');
-      const list = document.getElementById('deep-minibrot-list');
+      const note = document.getElementById('minibrot-note');
+      const list = document.getElementById('minibrot-list');
       return {
         note: note && !note.hidden ? note.textContent.trim() : null,
         entries: list ? list.querySelectorAll('.minibrot').length : 0,

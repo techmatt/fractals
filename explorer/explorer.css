@@ -1124,15 +1124,12 @@ summary.section-head:focus-visible { outline: 2px solid var(--well-link); outlin
 /* --------------------------------------------------------------------- the controls */
 
 /* Only what one would turn. Each group is a heading and its own row of controls. The
-   download comes first, on one row, and then the groups are in the order a picture is
-   made in: the mode, then the colour it is spent on and how it is spent, then the place.
-   The place is last and folded, because a reader who wants to move moves the picture. */
+   grid of four comes first (its own rule is with the Deep tab's, below), and then the
+   colour the picture is spent on and how it is spent, then the place. The place is last
+   and folded, because a reader who wants to move moves the picture. */
 .controls {
   flex: 1 1 auto;
   padding: 0.5rem var(--gutter) 2rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.6rem;
 }
 
 /* Download is the first section and one row, always open: a button per format first, then
@@ -1147,8 +1144,9 @@ summary.section-head:focus-visible { outline: 2px solid var(--well-link); outlin
 .bar.download .times { color: var(--well-ink-dim); }
 .bar.download input.param { width: 4rem; }
 .download .samples { display: inline-flex; gap: 0.25rem; flex: none; }
-/* What the canvas is showing, as a bar before the estimate: the estimate reads "ready"
-   only once this is green, so the two are read together. Its word is its tooltip.
+/* What the canvas is showing, as a bar: the shallow view's Render cell, where the Deep tab
+   has its own *(explorer_shallow_deep_parity_ckpt144)*. It sat on the Download row before
+   the estimate until then. Its word is its tooltip, and it is as wide as the Deep tab's.
 
    **It was a dot until this prompt** *(Matt, explorer_box_zoom_and_download_row_ckpt140,
    2026-09-22)*. The colour said which of three stages the pass was in and nothing said how
@@ -1159,24 +1157,27 @@ summary.section-head:focus-visible { outline: 2px solid var(--well-link); outlin
 
    Full is the resting state, not the empty one: nothing rendering means the picture is
    finished, so the bar sits full in the colour of the last reading. */
-.download .render-state {
+.render-state {
   flex: none;
-  width: 2.2rem;
+  width: 4rem;
   height: 0.35rem;
   border-radius: 0.2rem;
   overflow: hidden;
   background: var(--well-rule);
 }
-.download .render-fill {
+.render-fill {
   display: block;
   height: 100%;
   width: calc(var(--done, 1) * 100%);
   border-radius: inherit;
   background: var(--state-rendering);
 }
-.download .render-state[data-state="sharpening"] .render-fill { background: var(--state-sharpening); }
-.download .render-state[data-state="final"] .render-fill { background: var(--state-final); }
-.download .render-state[data-state="stopped"] .render-fill { background: var(--well-pending); }
+.render-state[data-state="sharpening"] .render-fill { background: var(--state-sharpening); }
+.render-state[data-state="final"] .render-fill { background: var(--state-final); }
+.render-state[data-state="stopped"] .render-fill { background: var(--well-pending); }
+/* The shallow Render cell holds the bar and nothing else, so it keeps a button's height and
+   the heading beside it on the same line as Navigation's. */
+.shallow-go { min-height: 1.9rem; }
 .download .estimate {
   flex: 1 1 auto;
   min-width: 0;
@@ -1188,31 +1189,13 @@ summary.section-head:focus-visible { outline: 2px solid var(--well-link); outlin
   font-variant-numeric: tabular-nums;
 }
 
-/* The view buttons: the right end of the Download row, which the estimate leaves room for
-   by taking what is between. Each one's key is on its own face. Where the row wraps they
-   wrap with it, as one group.
-
-   **Three buttons and a checkbox now** *(explorer_controls_ckpt140, 2026-09-22)*. The two
-   random ones left for the Palette header, and the Julia preview box came the other way to
-   sit beside Julia here, which is the button it previews. The box is the group's last item
-   so that it is what goes to a second line first: the three buttons say where the reader is
-   standing and are what should stay together.
-
-   **Box (b) leads the group** *(Matt, explorer_box_zoom_and_download_row_ckpt140,
-   2026-09-22)*. It is a tool and the three after it are destinations, so it does not belong
-   among them; first is also farthest from the checkbox that wraps. */
-.download .view-toggles {
-  display: inline-flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  gap: 0.25rem;
-  /* Shrinkable, and `min-width: 0` so it may shrink below what its buttons measure: with
-     `flex: none` the group kept its max-content width, which meant the wrap above never
-     engaged and the row ran off the side of a phone instead. */
-  flex: 0 1 auto;
-  min-width: 0;
-  margin-left: auto;
-}
+/* The view buttons are the shallow view's Navigation cell *(explorer_shallow_deep_parity_ckpt144)*,
+   the Deep tab's row in look and in order: Box (b), Root (r), the Julia button (j) and
+   Find minibrots lead, and what only this view has follows. They were the right end of the
+   Download row until then. The Julia preview box is the last item, beside nothing it
+   previews any more but still the thing that goes to a second line first. */
+.bar.view-toggles { gap: 0.25rem; }
+.view-toggles button { white-space: nowrap; }
 /* Box (b), armed: the one button in this row that is a state rather than an action, so it
    is lit while it is waiting for the two clicks it takes.
 
@@ -1221,8 +1204,8 @@ summary.section-head:focus-visible { outline: 2px solid var(--well-link); outlin
    press that armed it left the pointer on a button that looked the same as before the
    press. The green is `--state-final`, the one the Download arrow already spends, and the
    `:hover` spelling keeps the glow up while the pointer is still resting on it. */
-.download .view-toggles button.is-armed,
-.download .view-toggles button.is-armed:hover,
+.view-toggles button.is-armed,
+.view-toggles button.is-armed:hover,
 .deep-group .deep-actions button.is-armed,
 .deep-group .deep-actions button.is-armed:hover {
   border-color: var(--state-final);
@@ -1232,7 +1215,7 @@ summary.section-head:focus-visible { outline: 2px solid var(--well-link); outlin
 
 /* The preview box among the buttons: a label and a checkbox rather than a button, so it
    takes its own alignment and the label's dim ink. `.bar.shade` used to give it both. */
-.download .view-toggles .group.level {
+.view-toggles .group.level {
   display: inline-flex;
   align-items: center;
   gap: 0.3rem;
@@ -1588,7 +1571,7 @@ canvas.palette-final {
    the canvas, first in the controls, because pressing it is watching the picture. It is the
    one control group that appears only while this tab owns the canvas, which is why it is
    hidden by default and shown rather than the other way about. */
-.viewer.is-deep .control-group:not(.palette-group):not(.download-group):not(.deep-group):not(.deep-details),
+.viewer.is-deep .control-group:not(.palette-group):not(.download-group):not(.deep-group):not(.deep-details):not(.minibrots-under),
 .viewer.is-deep #details {
   display: none;
 }
@@ -1606,60 +1589,49 @@ canvas.palette-final {
    `showPanel` rather than hidden here. */
 .viewer.is-deep #opened { display: none; }
 
-/* What goes with the shallow view is what is about the shallow view. Save, because the
-   Deep panel carries its own; and the view buttons, every one of which names a frame this
-   kernel does not have — a seat, the whole Mandelbrot set, a Julia set at the pointer. The
-   Julia preview box rides along with them now that it sits there, which is right rather
-   than incidental: `previewable` is false while the Deep tab owns the view, so down here it
-   is a control that can do nothing. */
-.viewer.is-deep #download > .save-view,
-.viewer.is-deep #download > .view-toggles {
-  display: none;
-}
-
-/* And the render bar, which on this tab is on the Render line beside Cancel
-   *(deep_tab_activity_and_layout_ckpt141)*: the Download row keeps its buttons, its size,
-   its samples and a price in plain text, and nothing on it is a bar or red. */
-.viewer.is-deep #download > .render-state {
-  display: none;
-}
-
-/* The line over the controls holds a whole line of text while it is empty, not the 1.2em
-   the shallow view gives it: the probe's *Raised the cap* lands there during a pass, and
-   the few pixels between the two moved the whole grid down and back. */
-.viewer.is-deep .status { min-height: 1lh; }
+/* The line over the controls holds a whole line of text while it is empty, not 1.2em: the
+   probe's *Raised the cap* lands there during a pass, and the few pixels between the two
+   moved the whole grid down and back. Both views, so the grid starts at one height in each. */
+.viewer .status { min-height: 1lh; }
 
 /* The control block is a two-by-two grid *(Matt, deep_tab_controls_grid_ckpt144)*: Render
-   and Navigation over Iterations and Download, each cell a heading and its row, the
-   shallow view's own section heading on all four. The Render group is `display: contents`,
-   so its three cells and the Download group are the grid's four items in document order,
-   and auto-placement lays them out. Everything else under the canvas runs the width of
-   both columns. The rows are the grid's, so a cell's heading lines up with the one beside
-   it.
+   and Navigation over Iterations and Download, each cell a heading and its row. **Both
+   views have it since explorer_shallow_deep_parity_ckpt144**, the shallow one with Render
+   mode where Deep has Iterations. Each view's three cells are in a group that is
+   `display: contents` while that view owns the canvas, so its cells and the Download group
+   are the grid's four items in document order, and auto-placement lays them out.
+   Everything else under the canvas runs the width of both columns. The rows are the
+   grid's, so a cell's heading lines up with the one beside it.
 
-   **The columns are not equal.** Render and Iterations are short rows of fixed things, and
+   **The columns are not equal.** The left cells are short rows of fixed things, and
    Navigation and Download are the long ones, so the left column is as wide as its content
    and the right takes the rest: at an even split the Download row put its estimate on a
-   line of its own at 1600 wide. The left column's content cannot change width with state,
-   because Render, Render again and Cancel share one button width (below). Where the viewer
+   line of its own at 1600 wide. The Deep tab's left column cannot change width with state,
+   because Render, Render again and Cancel share one button width (below). **And it is
+   never narrower than 21rem**, which is the Deep tab's own measured 20.8: the shallow
+   cells are narrower, and without the floor Navigation stood 185 px further left in one
+   view than in the other. With it the right column starts at one place in both. Where the viewer
    is narrower than 44rem there is no room for the two, and it is one column in document
-   order: Render, Navigation, Iterations, Download. */
-.viewer.is-deep { container-type: inline-size; }
-.viewer.is-deep .controls {
+   order: Render, Navigation, the cell under Render, Download. */
+.viewer { container-type: inline-size; }
+.controls {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   gap: 0.6rem 1.6rem;
   align-content: start;
 }
 @container (min-width: 44rem) {
-  .viewer.is-deep .controls { grid-template-columns: max-content minmax(0, 1fr); }
+  .controls { grid-template-columns: minmax(21rem, max-content) minmax(0, 1fr); }
 }
 .viewer.is-deep .deep-go .deep-render { min-width: 7.5rem; }
-.viewer.is-deep .controls > * { grid-column: 1 / -1; }
+.controls > * { grid-column: 1 / -1; }
+.shallow-group { display: contents; }
 .viewer.is-deep .deep-group:not(.deep-under) { display: contents; }
-.viewer.is-deep .deep-cell,
-.viewer.is-deep .controls > .download-group { grid-column: auto; min-width: 0; }
+.deep-cell,
+.shallow-cell,
+.controls > .download-group { grid-column: auto; min-width: 0; }
 .viewer.is-deep .deep-under:not(:has(> :not(:empty):not([hidden]))) { display: none; }
+.minibrots-under:not(:has(> :not(:empty):not([hidden]))) { display: none; }
 
 /* Render, Auto-render and the bar, on one row. What the pass is doing is the bar's hover
    title, and the live region a screen reader hears is clipped out of the layout: the
@@ -1775,7 +1747,8 @@ canvas.palette-final {
 .deep-group .deep-actions { gap: 0.25rem; }
 .deep-group .deep-actions button { white-space: nowrap; }
 .deep-under .deep-note { margin: 0; }
-.deep-group .side-note { border-top: none; padding: 0.4rem 0 0; }
+.deep-group .side-note,
+.minibrots-under .side-note { border-top: none; padding: 0.4rem 0 0; }
 .deep-iterations { gap: 0.4rem; }
 .deep-iterations input { width: 6.5rem; text-align: right; }
 
@@ -1802,7 +1775,7 @@ canvas.palette-final {
 .saved-tile.is-deep { background: var(--well-pending); }
 .saved-tile.is-deep img { visibility: hidden; }
 
-/* ------------------------------------------------------- nearby minibrots, in the Deep tab
+/* ------------------------------------------------------- Find minibrots, in either view
 
    An ephemeral list: nothing here is stored, nothing reaches Saved, and the whole thing is
    cleared by the next search and by any change of location. It sits under the picture,
@@ -1926,7 +1899,7 @@ canvas.palette-final {
 }
 .phoenix-canvas.is-dragging { cursor: grabbing; }
 
-/* The starting points: the Nearby-minibrots tile, three to a row, under the plane and its
+/* The starting points: the Find-minibrots tile, three to a row, under the plane and its
    `p`. The plane is the panel's picture and keeps its place at the top, so the panel does
    not scroll; the grid takes what height is left and scrolls inside it. Three across a side
    panel keeps them small, which is the point: these are ways in, and the plane is what gets

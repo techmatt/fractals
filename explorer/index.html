@@ -126,7 +126,7 @@
     <div class="tabpanel" id="panel-deep" role="tabpanel" aria-labelledby="tab-deep" hidden>
       <p class="side-note" id="deep-side-note">Zoom far past where ordinary rendering breaks
       down, into the Mandelbrot set, its higher-degree cousins and their Julia sets. Deep
-      frames take longer to draw and are colored smooth only. <i>Nearby minibrots</i> finds
+      frames take longer to draw and are colored smooth only. <i>Find minibrots</i> finds
       tiny copies of the set worth diving into. For more, read
       <a href="../article/deep-zoom.html">Deep zoom</a>.</p>
       <details class="deep-gallery" id="deep-gallery">
@@ -228,15 +228,14 @@
 
     <div class="controls" id="controls">
 
-      <!-- The Deep tab's controls, which belong with the picture rather than in the panel:
-           pressing Render is watching the canvas, and the left side changes which view is
-           up while this side works on the one that is. Shown only while that tab owns the
-           canvas. -->
-      <!-- Four cells in a two-by-two grid with Download (Matt, deep_tab_controls_grid_ckpt144):
-           Render | Navigation over Iterations | Download, and one column in that order where
-           the viewer is too narrow for two. The section is `display: contents` in the grid, so
-           its cells are the grid's items; the tab's note and the minibrots are in a second
-           section after Download, under the whole grid, where the tiles have the width. -->
+      <!-- **One grid under the picture, at two depths** (Matt, deep_tab_controls_grid_ckpt144,
+           and for the shallow view explorer_shallow_deep_parity_ckpt144): Render | Navigation
+           over Iterations-or-Render-mode | Download, and one column in that order where the
+           viewer is too narrow for two. Each view has its own three cells, in a section that
+           is `display: contents` while that view owns the canvas and gone while the other does,
+           so the cells and the shared Download group are the grid's four items in document
+           order. A button both views have sits at the same place in both: Box (b), Root (r),
+           the Julia button (j) and Find minibrots lead Navigation, in that order. -->
       <section class="control-group deep-group">
         <div class="deep-cell deep-cell-render">
           <div class="section-head"><h2 id="head-deep-render">Render</h2></div>
@@ -260,12 +259,12 @@
           <div class="section-head"><h2 id="head-deep-navigation">Navigation</h2></div>
           <div class="bar deep-actions" role="group" aria-labelledby="head-deep-navigation">
             <button type="button" id="deep-box" aria-keyshortcuts="B" aria-pressed="false">Box (b)</button>
+            <button type="button" id="deep-root" aria-keyshortcuts="R">Root (r)</button>
             <button type="button" id="deep-julia" aria-keyshortcuts="J">Julia at this c (j)</button>
+            <button type="button" id="deep-minibrots"
+                    title="Tiny copies of the set in and around this view, largest first. Click one to go to it.">Find minibrots</button>
             <button type="button" id="deep-origin" hidden
                     title="The frame widens to the square root of its width.">Same view at z = 0</button>
-            <button type="button" id="deep-minibrots"
-                    title="Largest first. Click one to go to it.">Nearby minibrots</button>
-            <button type="button" class="save-view" id="deep-save"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M6.5 3.5h11v17l-5.5-4.2-5.5 4.2z"/></svg><span class="save-label">Save</span></button>
             <button type="button" id="deep-back">Back to the explorer</button>
           </div>
         </div>
@@ -285,6 +284,48 @@
         </div>
       </section>
 
+      <!-- The shallow view's three cells. Render is the bar alone, because this view draws
+           whatever it is moved to and has no button to press; the bar is where the Deep
+           tab's is. Render mode is the cell under it, where Deep has Iterations: the one
+           choice about how the frame is drawn rather than where. -->
+      <section class="control-group shallow-group">
+        <div class="shallow-cell shallow-cell-render">
+          <div class="section-head"><h2 id="head-render">Render</h2></div>
+          <div class="bar shallow-go" role="group" aria-labelledby="head-render">
+            <!-- The bar the render fills as it goes. `data-state` stays on this element and
+                 spells its colour, because two bench harnesses read it from here. -->
+            <span class="render-state" id="render-state" role="status" data-state="rendering"
+                  title="Rendering" aria-label="Rendering"><span class="render-fill"></span></span>
+          </div>
+        </div>
+
+        <div class="shallow-cell shallow-cell-navigation">
+          <div class="section-head"><h2 id="head-navigation">Navigation</h2></div>
+          <div class="bar view-toggles" id="view-toggles" role="group" aria-labelledby="head-navigation"
+               title="Ctrl+Z (Cmd+Z) steps back through the pictures this session has shown; Ctrl+Shift+Z or Ctrl+Y steps forward.">
+            <button type="button" id="view-box" aria-keyshortcuts="B" aria-pressed="false">Box (b)</button>
+            <button type="button" id="view-whole" aria-keyshortcuts="R">Root (r)</button>
+            <button type="button" id="view-julia" aria-keyshortcuts="J">Julia here (j)</button>
+            <button type="button" id="view-minibrots" hidden
+                    title="Tiny copies of the set in and around this view, largest first. Click one to go to it.">Find minibrots</button>
+            <button type="button" id="view-seat">Reset to seat</button>
+            <span class="group level" id="julia-preview-group">
+              <label for="julia-preview-on">Julia preview</label>
+              <input type="checkbox" id="julia-preview-on" class="flag"
+                     title="On a parameter plane, shows the Julia set under the pointer; a click there opens it.">
+            </span>
+          </div>
+        </div>
+
+        <div class="shallow-cell shallow-cell-mode">
+          <div class="section-head"><h2 id="head-mode">Render mode</h2></div>
+          <div class="bar">
+            <select id="mode" aria-labelledby="head-mode"></select>
+            <span class="group" id="params"></span>
+          </div>
+        </div>
+      </section>
+
       <section class="control-group download-group">
         <div class="section-head"><h2 id="head-download">Download</h2></div>
         <div class="bar download" id="download" role="group" aria-labelledby="head-download">
@@ -298,6 +339,8 @@
                   class="download-arrow" aria-hidden="true"><svg viewBox="0 0 24 24" aria-hidden="true"
                   focusable="false"><path d="M9.5 3h5v9h4.7L12 20.8 4.8 12h4.7z"/></svg></span><span
                   class="download-said">JPG</span></span></button>
+          <!-- One Save for both views: it keeps whatever is on the canvas, by whichever
+               contract owns it, and wears Saved while that picture is already kept. -->
           <button type="button" class="save-view" id="save-view" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M6.5 3.5h11v17l-5.5-4.2-5.5 4.2z"/></svg><span class="save-label">Save</span></button>
           <select id="download-size" aria-label="Size"></select>
           <span class="group" id="download-custom" hidden>
@@ -306,40 +349,18 @@
             <input type="number" id="download-height" class="param" min="16" max="8192" step="16" aria-label="Height">
           </span>
           <span class="samples" id="download-samples" role="group" aria-label="Samples per pixel"></span>
-          <!-- The bar the render fills as it goes. `data-state` stays on this element and
-               spells its colour, because two bench harnesses read it from here. -->
-          <span class="render-state" id="render-state" role="status" data-state="rendering"
-                title="Rendering" aria-label="Rendering"><span class="render-fill"></span></span>
           <span class="estimate" id="download-estimate"></span>
-          <span class="view-toggles" id="view-toggles" role="group" aria-label="View"
-                title="Ctrl+Z (Cmd+Z) steps back through the pictures this session has shown; Ctrl+Shift+Z or Ctrl+Y steps forward.">
-            <button type="button" id="view-box" aria-keyshortcuts="B" aria-pressed="false">Box (b)</button>
-            <button type="button" id="view-seat">Reset to seat</button>
-            <button type="button" id="view-whole" aria-keyshortcuts="R">Whole Mandelbrot (r)</button>
-            <button type="button" id="view-julia" aria-keyshortcuts="J">Julia here (j)</button>
-            <span class="group level" id="julia-preview-group">
-              <label for="julia-preview-on">Julia preview</label>
-              <input type="checkbox" id="julia-preview-on" class="flag"
-                     title="On a parameter plane, shows the Julia set under the pointer; a click there opens it.">
-            </span>
-          </span>
         </div>
       </section>
 
-      <!-- Under the grid, the width of both columns: what the tab says about itself at rest,
-           and the minibrots Navigation opens. -->
+      <!-- Under the grid, the width of both columns: what the Deep tab says about itself at
+           rest, and the minibrots Find minibrots lists, in either view. -->
       <section class="control-group deep-group deep-under">
         <p class="deep-note" id="deep-note" role="status"></p>
-        <div class="minibrots" id="deep-minibrot-list" hidden></div>
-        <p class="side-note" id="deep-minibrot-note" hidden></p>
       </section>
-
-      <section class="control-group">
-        <div class="section-head"><h2 id="head-mode">Render mode</h2></div>
-        <div class="bar">
-          <select id="mode" aria-labelledby="head-mode"></select>
-          <span class="group" id="params"></span>
-        </div>
+      <section class="control-group minibrots-under">
+        <div class="minibrots" id="minibrot-list" hidden></div>
+        <p class="side-note" id="minibrot-note" hidden></p>
       </section>
 
       <section class="control-group palette-group">
