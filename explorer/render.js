@@ -1362,8 +1362,19 @@ export class ShadeWorker {
       if (event.data.kind === "ready") return;
       const job = this.flight;
       this.flight = null;
-      if (job !== null && !job.stopped) job.settle(event.data);
-      this.#pump();
+      // **A reader that throws rejects its job, and the queue moves on regardless**
+      // *(deep_stall_ckpt143)*. Uncaught here, a throw — an `ImageData` whose size the
+      // answer does not fill, a `JSON.parse` of a reply — left that job's promise pending
+      // for good and skipped the pump, so the jobs behind it waited for the next ask. A
+      // pending shade is a Deep pass stuck in its colouring stage, which is not a stage the
+      // watchdog counts.
+      try {
+        if (job !== null && !job.stopped) job.settle(event.data);
+      } catch (error) {
+        job.reject(error);
+      } finally {
+        this.#pump();
+      }
     };
     worker.onerror = (event) => {
       worker.terminate();

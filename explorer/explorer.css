@@ -1599,8 +1599,12 @@ canvas.palette-final {
 }
 
 /* The pass in progress, beside the button that stops it. The shallow row's bar, moved:
-   full at rest when the picture up is the frame, and one colour, because the words beside
-   it say which stage it is and a colour that also said so was a second thing to learn. */
+   full at rest when the picture up is the frame, and in the Download row's three readings
+   *(Matt, deep_stall_ckpt143)*. It was one colour, `--well-link`, and that blue said only
+   "the Deep tab's bar": the one bar on the page that read differently from the rest. Red
+   is nothing of the result up yet (the probe, the orbit, the quarter pass, a file, a
+   minibrot search); yellow is a picture of this frame up and a finer one coming (the full
+   pass); green is at rest on the frame. `deep.js` writes `data-state`. */
 .deep-bar {
   flex: none;
   width: 4rem;
@@ -1614,8 +1618,10 @@ canvas.palette-final {
   height: 100%;
   width: calc(var(--done, 0) * 100%);
   border-radius: inherit;
-  background: var(--well-link);
+  background: var(--state-rendering);
 }
+.deep-bar[data-state="sharpening"] .deep-bar-fill { background: var(--state-sharpening); }
+.deep-bar[data-state="final"] .deep-bar-fill { background: var(--state-final); }
 .deep-bar { --done: 0; }
 
 /* Up whenever a worker is doing something, which is what tells a reader that a line which

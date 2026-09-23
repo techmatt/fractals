@@ -383,9 +383,20 @@ export class DeepRenderer {
    * The worker must be free; every caller here waits for a reply before it asks the same
    * worker again, which is what one-at-a-time means, and a request sent to a busy worker
    * is a mistake of this file's and is thrown as one.
+   *
+   * **A request asked before a cancel is never sent after it** *(deep_stall_ckpt143)*. A
+   * cancel restarts a busy worker and `ready` is then a pending start, so everything asked
+   * of that worker waits on it — a cancelled pass's orbit feed as well as the new pass's.
+   * The one asked first resumed first, took the worker for a generation nobody wanted, and
+   * the new pass's request found it busy and threw this file's own mistake: the pass died
+   * as *the deep render failed*, measured over CDP on a zoom during a tangle 1e-22 pass. So
+   * the generation is read when a request is asked, and one the pool has moved past while
+   * it waited resolves `null`, which is what a cancelled request already means here.
    */
   async #send(slot, message, { onProgress, transfer = [] } = {}) {
+    const generation = this.generation;
     await slot.ready;
+    if (generation !== this.generation) return null;
     if (slot.busy !== null) throw new Error("a deep worker was asked two things at once");
     const id = ++this.requests;
     return new Promise((resolve) => {

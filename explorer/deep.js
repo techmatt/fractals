@@ -158,7 +158,7 @@ const WARNED = "explorer.deep-warned";
  * a sentence under the canvas.
  */
 export function mount(host) {
-  // **The state this closure is, and the four rules that hold it together.** Everything
+  // **The state this closure is, and the five rules that hold it together.** Everything
   // below is a function over these locals, and none of the rules is enforced by anything
   // — which is why they are written here rather than left to be learnt from the call
   // sites, as they were until `deep_refactor_ckpt138`.
@@ -179,20 +179,27 @@ export function mount(host) {
   //    lands under an old one is dropped on the floor. `running` is the pass in flight and
   //    is what the Render button reads, so it is set *before* the first `await` and
   //    cleared on every exit — the one that was missed made the button read *Cancel* for
-  //    the rest of the session.
+  //    the rest of the session. **Only a pass bumps it**, or `stop()`: a recolour keeps a
+  //    generation of its own, `tone`, because bumping `pass` without clearing `running`
+  //    strands the pass's `finally` and leaves `running` set for good.
   // 4. **`owns` is whether the viewer's canvas is this tab's**, and `shown` whether the
   //    tab is the one on screen. Nothing may draw unless it owns the canvas; the tab keeps
   //    its `view` either way, which is what lets a reader leave and come back to the frame
   //    they left.
+  // 5. **A colour change lands on the picture up, whatever is running**
+  //    *(deep_stall_ckpt143)*. `recolour` colours `drawn` from its own kept field; it is
+  //    never deferred to a pass and never keyed on `view`, which can be a frame nothing has
+  //    drawn. `explorer/bench/deep-stall.mjs` drives the sequences that broke this.
   //
   // The rest is cache and bookkeeping: `fields` is up to `CACHE_LIMIT` fields by
   // `deepLink.fieldKey` for a recolour, `finished` the last stage's own picture for a
   // download, `measure` what the last pass of *this* frame cost (and `null` the moment the
   // frame or its cap moves), `quarterMs` what the quarter-pass exception reads, `colouring`
-  // the shade in flight, `settledAt` what the probe last said about which frame,
-  // `autoRender` whether a frame change draws itself, and `cameFrom` the Mandelbrot frame
-  // *Julia at this c* was pressed on. Whether the reader pinned the cap is not a variable
-  // any more: it is `view.capFrom`, which travels with the view it is true of.
+  // the pass's shade in flight (`recolouring` a recolour's), `settledAt` what the probe
+  // last said about which frame, `autoRender` whether a frame change draws itself, and
+  // `cameFrom` the Mandelbrot frame *Julia at this c* was pressed on. Whether the reader
+  // pinned the cap is not a variable any more: it is `view.capFrom`, which travels with the
+  // view it is true of.
   const els = host.elements;
   const context = host.context;
 
@@ -244,10 +251,15 @@ export function mount(host) {
   /** The pass in flight: its generation and what it is doing. */
   let pass = 0;
   let running = null;
+  /** The settle timer `moved()` arms, and `0` when none is: what lets the note promise that
+   *  a pending frame follows on its own only when something is going to draw it. */
   let settleTimer = 0;
   let shown = false;
   let owns = false;
   let colouring = {};
+  /** A recolour's own generation and holder, apart from the pass's: see `recolour`. */
+  let tone = 0;
+  let recolouring = {};
   /** What the probe last settled, and of which frame: `{ frame, atCeiling, fault }`, for
    *  Details' *at the ceiling* clause. */
   let settledAt = null;
@@ -397,12 +409,12 @@ export function mount(host) {
    */
   function putBack(to) {
     stop();
-    clearTimeout(settleTimer);
+    disarm();
     const inked = { ...to, level: host.deriving() ? settled.view.level : to.level };
     if (deepLink.emit(inked) !== deepLink.emit(settled.view)) {
       view = to;
       remember(settled.key, settled.field);
-      recolour();
+      recolour(settled.view);
       clearMinibrots();
       syncControls();
       return;
@@ -566,6 +578,7 @@ export function mount(host) {
       : running.text ?? "";
     els.progress.classList.toggle("is-stalled", silent);
     els.bar.style.setProperty("--done", String(running.done ?? 0));
+    els.bar.dataset.state = running.sharpening ? "sharpening" : "rendering";
     els.spinner.hidden = !running.live;
   }
 
@@ -675,6 +688,9 @@ export function mount(host) {
         let field = fields.get(key);
         const cached = field !== undefined;
         const span = spanOf(stage);
+        // The bar's colour: a picture of this frame is up once the quarter pass has
+        // landed, so the full stage is the viewer's *sharpening* and not its *rendering*.
+        running.sharpening = stage.name === "full";
         enterStage(stage.name);
         // A stage off the cache iterated nothing, so the bar jumps its share rather than
         // filling it.
@@ -1030,56 +1046,105 @@ export function mount(host) {
   }
 
   /**
-   * Colour the best field already kept, at the best size it was kept at.
+   * Colour the picture on the canvas again, from its own kept field, in the view's colour.
    *
    * **This is what the cache is for.** A deep field costs seconds to minutes and a
    * palette costs a shade, so a recolour walks back from the full pass to the cheapest
    * one that is here and colours that. Nothing re-iterates.
+   *
+   * **It colours `of`, which is the picture up, and never asks what else is running**
+   * *(deep_stall_ckpt143)*. It used to colour `view`'s field, and a tint made while a pass
+   * ran was not a recolour at all: `tint` left it to the pass's next stage, which on a deep
+   * frame is the full field and minutes away. So the picture on screen ignored every phase,
+   * palette and cycles change for as long as the pass took, while the Render line kept
+   * counting — the tab looked alive and would not recolour. And `view` is not always a frame
+   * with a field: a Cancel after the probe had moved the cap, or any gesture with Auto-render
+   * off, left `view` pending, and a recolour of it found nothing and did nothing, every time,
+   * until somebody pressed Render. The picture up always has its field in the cache — it is
+   * the stage that was just drawn — so a colour change always lands on it; a pass in flight
+   * still lands its next stage in the colour current then (`shadeNow`).
+   *
+   * Its own generation, `tone`, and never `pass`: bumping `pass` from here cancelled whatever
+   * pass was running without clearing `running`, which is the one move rule 3 above says
+   * leaves the tab stuck. A recolour is dropped where a newer one was asked for, where the
+   * tab no longer owns the canvas, or where a pass's stage has replaced the picture it
+   * started from — that stage was shaded in the current colour already.
    */
-  async function recolour() {
+  async function recolour(of = drawn) {
+    if (of === null) return;
     const grid = host.grid();
-    const deep = await pool();
     const stages = [
       { width: grid.width, height: grid.height, supersample: 1 },
       { width: grid.width / PREVIEW_DIVISOR, height: grid.height / PREVIEW_DIVISOR, supersample: 1 },
     ];
-    for (const stage of stages) {
-      const key = deepLink.fieldKey(view, stage.width, stage.height, stage.supersample);
-      const field = fields.get(key);
-      if (field === undefined) continue;
-      const generation = ++pass;
-      const shaded = await deep.shade(
-        { ...field, values: field.values.slice() },
-        view,
-        colouring,
-        { derive: host.deriving() },
-      );
-      if (shaded === null || generation !== pass) return;
-      if (host.deriving()) {
-        view = { ...view, level: shaded.level };
-        drawn = { ...drawn, level: shaded.level };
-        host.onColour();
-      }
-      drawn = view;
-      keep(shaded.image, view);
-      // A recolour of the full field is that frame drawn to the end in its new colour: what
-      // a download at the canvas's size saves, and what Cancel and a step back return to.
-      if (stage.width === grid.width && stage.height === grid.height) {
-        finished = shaded.image;
-        finishedSamples = 1;
-        hold(view, shaded, key, field);
-      }
-      paint();
-      host.showState("final");
-      stat(`${stage.width}×${stage.height} · recolored in ${shaded.elapsed.toFixed(0)} ms · cap ${count(view.maxiter)}${ceilingSaid(view)}`);
-      host.settle();
-      // The frame is drawn now, so the button and the note say so.
-      syncControls();
+    const stage = stages.find(
+      (each) => fields.has(deepLink.fieldKey(of, each.width, each.height, each.supersample)),
+    );
+    if (stage === undefined) {
+      // The picture up is always a stage that was just kept, so this is a bug and not a
+      // state: said in the console, and in the log, rather than a colour that silently
+      // never arrives.
+      console.warn("deep recolour: no kept field for the picture on the canvas", deepLink.emit(of));
+      log("recolour found no field", { frame: deepLink.emit(of) });
       return;
     }
+    const key = deepLink.fieldKey(of, stage.width, stage.height, stage.supersample);
+    const field = fields.get(key);
+    const generation = ++tone;
+    const under = stale;
+    recolouring.stop?.();
+    recolouring = {};
+    let shaded;
+    try {
+      const deep = await pool();
+      shaded = await deep.shade(
+        { ...field, values: field.values.slice() },
+        inColour(of),
+        recolouring,
+        { derive: host.deriving() },
+      );
+    } catch (error) {
+      if (generation !== tone) return;
+      host.say(String(error.message ?? error));
+      console.error("the deep recolour failed", { view: deepLink.emit(view) }, error);
+      return;
+    }
+    if (shaded === null || generation !== tone || !owns || stale !== under) return;
+    let target = inColour(of);
+    if (host.deriving()) {
+      view = { ...view, level: shaded.level };
+      target = { ...target, level: shaded.level };
+      host.onColour();
+    }
+    drawn = target;
+    const current = !pending();
+    if (current) drawn = view;
+    keep(shaded.image, drawn);
+    // A recolour of the full field of the frame the reader is on is that frame drawn to the
+    // end in its new colour: what a download at the canvas's size saves, and what Cancel and
+    // a step back return to. Of a frame the reader has left, it is only the picture up.
+    if (current && stage.width === grid.width && stage.height === grid.height) {
+      finished = shaded.image;
+      finishedSamples = 1;
+      hold(drawn, shaded, key, field);
+    }
+    paint();
+    if (running === null) {
+      host.showState(current ? "final" : "stopped");
+      stat(`${stage.width}×${stage.height} · recolored in ${shaded.elapsed.toFixed(0)} ms · cap ${count(drawn.maxiter)}${ceilingSaid(drawn)}`);
+    }
+    host.settle();
+    // The frame is drawn now, so the button and the note say so.
+    syncControls();
   }
 
   // ----------------------------------------------------------------- the gestures
+
+  /** Take back a settle timer `moved()` armed. */
+  function disarm() {
+    clearTimeout(settleTimer);
+    settleTimer = 0;
+  }
 
   /**
    * After a gesture: repaint, and consider drawing the frame the reader has landed on.
@@ -1096,12 +1161,12 @@ export function mount(host) {
     paint();
     clearMinibrots();
     host.settle();
-    syncControls();
-    clearTimeout(settleTimer);
-    if (!autoRender && running !== null) return;
+    disarm();
+    if (!autoRender && running !== null) return syncControls();
     settleTimer = setTimeout(() => {
-      if (!shown || !owns || !pending()) return;
-      if (refused() !== null) return;
+      settleTimer = 0;
+      if (!shown || !owns || !pending()) return syncControls();
+      if (refused() !== null) return syncControls();
       if (autoRender) {
         // **A download is not a pass of the canvas and is not cancelled here.** It is a
         // file the reader asked for, of a frame captured when they asked, and taking four
@@ -1125,6 +1190,8 @@ export function mount(host) {
       }
       render("preview", { auto: true });
     }, SETTLE_MS);
+    // After the timer is armed, so the note can say a frame follows on its own.
+    syncControls();
   }
 
   /** Pan by a pixel offset. The step is a double and the centre is not: the offset is
@@ -1783,6 +1850,7 @@ export function mount(host) {
       // At rest the bar says whether the picture up is the frame: full when it is, empty
       // when nothing has been drawn or the reader has moved off it.
       els.bar.style.setProperty("--done", drawn !== null && !pending() ? "1" : "0");
+      els.bar.dataset.state = drawn !== null && !pending() ? "final" : "rendering";
     }
     els.auto.checked = autoRender;
     els.cap.value = String(view.maxiter);
@@ -1838,8 +1906,13 @@ export function mount(host) {
     } else if (drawn === null) {
       els.note.textContent = "Nothing has been drawn yet. Render draws this frame.";
     } else if (pending()) {
+      // *Follows on its own* only while the settle timer is armed *(deep_stall_ckpt143)*:
+      // a Cancel leaves a pending frame nothing is going to draw — after the probe has
+      // moved the cap, or after a gesture — and the note used to promise it anyway.
       els.note.textContent = autoRender
-        ? "The last picture drawn, boxed where this frame sits. This frame follows on its own."
+        ? settleTimer !== 0
+          ? "The last picture drawn, boxed where this frame sits. This frame follows on its own."
+          : "The last picture drawn, boxed where this frame sits. Render draws this frame."
         : quarterMs !== null && quarterMs <= AUTO_PREVIEW_MS
           ? "The last picture drawn, boxed where this frame sits. A quick preview will follow on its own; Render draws it properly."
           : "The last picture drawn, boxed where this frame sits. Render draws this frame.";
@@ -2041,13 +2114,13 @@ export function mount(host) {
     hide() {
       shown = false;
       owns = false;
-      clearTimeout(settleTimer);
+      disarm();
       stop();
     },
     /** The reader took the viewer for something else; the tab keeps its view. */
     detach() {
       owns = false;
-      clearTimeout(settleTimer);
+      disarm();
       stop();
     },
     enter,
@@ -2083,12 +2156,12 @@ export function mount(host) {
       const full = host.grid();
       if (fields.has(deepLink.fieldKey(next, full.width, full.height, 1))) {
         stop();
-        clearTimeout(settleTimer);
+        disarm();
         view = next;
         clearMinibrots();
         syncControls();
         host.settle();
-        recolour();
+        recolour(next);
         return;
       }
       view = next;
@@ -2103,13 +2176,13 @@ export function mount(host) {
       render(autoRender ? "screen" : "preview", { probe: false });
     },
 
-    /** A colour control moved. The field is kept, so this never re-iterates. A pass in
-     *  flight is left to run, and its next stage lands in this colour (`shadeNow`). */
+    /** A colour control moved. The field is kept, so this never re-iterates. The picture up
+     *  takes the colour now, whatever is running *(deep_stall_ckpt143)*; a pass in flight is
+     *  left to run, and its next stage lands in this colour too (`shadeNow`). */
     tint(changes) {
       view = { ...view, ...changes };
-      if (drawn !== null) drawn = { ...drawn, ...changes };
       host.settle();
-      if (drawn === null || running !== null) {
+      if (drawn === null) {
         syncControls();
         return;
       }

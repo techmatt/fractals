@@ -761,7 +761,8 @@ would be measuring the wrong thing.
 
 **The Deep tab does not drive this bar** *(deep_tab_activity_and_layout_ckpt141)*. It has
 its own, `#deep-bar`, on its Render line beside Cancel, and `#render-state` is hidden while
-the tab owns the canvas — see §Deep, *The Render line says what the tab is doing*.
+the tab owns the canvas — see §Deep, *The Render line says what the tab is doing*. It reads
+in this bar's three colours *(deep_stall_ckpt143)*, from a `data-state` of its own.
 
 ⚠ **`data-state` stays on that element**, and the fill is a child. `bench/page.mjs` puts a
 `MutationObserver` on it and `bench/hunt/lib.mjs` reads it; the observer filters on
@@ -1566,6 +1567,65 @@ Before, `finished` was only ever written by a pass, so — read from the code, n
 *As shown* after a Deep palette change handed back the picture in the palette before it,
 under the new palette's link.
 
+### A colour change lands on the picture up, whatever is running *(deep_stall_ckpt143)*
+
+**The symptom** (Matt): the tab regularly stopped recolouring — a phase nudge, a palette,
+cycles — while the gallery and the shallow explorer kept working. Two causes, both in
+`deep.js`, and neither a lost worker reply. A tint made while a pass ran **was not a
+recolour at all**: `tint` returned on `running !== null` and left the colour to the pass's
+next stage (`shadeNow`), which on a deep frame is the full field and minutes away, so the
+picture ignored every colour change while the Render line kept counting. And `recolour`
+coloured **`view`'s field**, which is not always a frame anything has drawn: a Cancel after
+the probe had moved the cap (the address already says `n=187200`, the only field is at
+93,600), or any gesture with Auto-render off, left `view` pending with no field, and every
+tint after that found nothing and did nothing until somebody pressed Render.
+
+**The fix is `deep.js`'s rule 5**: `recolour(of = drawn)` colours the picture on the canvas
+from its own kept field, in the view's colour, and `tint` calls it whatever is running. The
+picture up always has its field kept, because it is the stage that was just drawn; a pass in
+flight still lands its next stage in the colour current then. A recolour of a pending
+frame's picture repaints it dimmed inside the pending box and is not held as `settled` or
+`finished`, which are the frame the reader is on. The recolour keeps a generation of its
+own, `tone`: it used to bump `pass`, and a bump of `pass` that does not clear `running` is
+the one move that strands a pass's `finally` with `running` set for good. It is dropped
+where a newer recolour was asked for, where the tab no longer owns the canvas, or where a
+pass's stage has replaced the picture it started from — that stage was shaded in the current
+colour already. A recolour that finds no field for the picture up says so in the console
+and the log, because that is now a bug rather than a state.
+
+**The note stopped promising a frame nobody was drawing.** With Auto-render ticked, a
+pending frame read *This frame follows on its own* whether or not the settle timer was
+armed, and after a Cancel it is not. It says *Render draws this frame* there now.
+
+**One stall of the same shape was closed on the way**, found by reading, not reproduced:
+`ShadeWorker`'s reply handler (`render.js`) ran a job's reader unguarded, so a reader that
+threw — an `ImageData` the answer does not fill, a `JSON.parse` — left that job's promise
+pending for good and skipped the pump. A pending shade is a Deep pass stuck in *coloring*,
+the one stage the watchdog does not count. The throw now rejects the job and the queue moves
+on.
+
+**And one the harness caught, in the pool.** `DeepRenderer`'s `#send` awaited the worker's
+`ready` and only then checked that it was free. A cancel restarts a busy worker, so `ready`
+is a pending start and everything asked of that worker waits on it: a cancelled pass's orbit
+feed as well as the new pass's. The one asked first resumed first and took the worker for a
+generation nobody wanted, and the new pass's request found it busy and threw *a deep worker
+was asked two things at once*, so the pass died as *the deep render failed*. Seen once in a
+full run at the tangle frame, on a zoom during a pass. `#send` now reads the generation when
+a request is asked and resolves `null` for one the pool moved past while it waited, which
+is what a cancelled request already means to every caller.
+
+**Held by `bench/deep-stall.mjs`**, over CDP on the served page at `tangle 1e-22` (a 40 s
+full pass; a frame that draws in a second never leaves a pass running long enough to tint
+into, which is how this stayed hidden). Eleven sequences — tints singly and in bursts of
+phase, palette and cycles; during a Render, just after one lands, and during a pass that
+started on its own; Cancel, Ctrl+Z and zoom around them — each ending on one question:
+does a fresh phase change reach the canvas, with the tab idle, within seconds.
+`tintInPass`, `cancelAfterProbe` and `autoOffGesture` failed on the code before the fix
+(the first held the old colour for the whole 40 s pass, the other two for good); all eleven
+pass after it, at this frame and at a one-second one. A pass that dies with *the deep
+render failed* in the console also fails the run, because a scenario can pass around one: the
+recolour lands, on the picture from before.
+
 ### The screen is one sample a pixel, and samples are the Download row's *(Matt, deep_tab_activity_and_layout_ckpt141)*
 
 The tab used to end every committed pass at `FINAL_SUPERSAMPLE` — four samples a pixel,
@@ -1607,6 +1667,19 @@ dropped. A stale probe reply can no longer be read as a new rung, which the old 
 match allowed. **The reference orbit is computed in a worker**, never on the page's thread,
 where a cap of a million froze the page for as long as it took: the first worker computes it
 and keeps it, and the bytes it hands back feed the others lazily.
+
+**The bar reads red, yellow and green, as the Download row's does** *(Matt,
+deep_stall_ckpt143)*. It was one colour, `--well-link`, and that blue signalled nothing but
+*this is the Deep tab's bar*: whatever the stage, running or at rest, the fill was blue, so
+it was the one bar on the page whose colour could not be read. `deep.js` now writes
+`data-state` on `#deep-bar` by meaning. **Red** (`rendering`) is nothing of the result up
+yet: starting, the cap probe, the reference orbit, the quarter pass, and an empty bar at
+rest over a pending frame. **Yellow** (`sharpening`) is a picture of this frame up and a
+finer one coming: the full pass and its colouring. **Green** (`final`) is at rest with the
+picture up being the frame. Two states are not passes of the screen at all, and none of the
+three covers them honestly: a **download's file render** and a **Nearby minibrots search**.
+Both read red, because what they make is not on the screen until they finish — the nearest
+of the three, and the choice is named here so it is not mistaken for a stage.
 
 **Every stage reports, at most every 100 ms.** `perturb.wasm` has one import now,
 `env.progress(done, total)`, called every 4,096 iterations of a reference orbit and once a
@@ -2133,6 +2206,8 @@ deep.test.mjs      17 tests: where the two modules meet, against both committed 
                    and the cap policy's seam, which fails the same way the rest of
                    this file does, by drawing a plausible picture
 bench/julia.mjs    what a Julia frame costs against the Mandelbrot frame at the same c
+bench/deep-stall.mjs  a colour change reaches the canvas through every pass, cancel and
+                   undo sequence that once lost one — the one bench file that asserts
 perturb.wasm       generated: the perturbation kernel, compiled
 perturb.manifest.json  generated: what perturb.wasm was built from
 perturb-wasm/      the crate that produces it
