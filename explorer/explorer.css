@@ -243,6 +243,11 @@
   border-radius: 2px;
   padding: 0.1rem 0.4rem;
 }
+/* The select wears the well rather than being see-through, because its option list is the
+   operating system's and takes the select's colours: transparent over light ink put pale
+   text on the list's own white *(screensaver_polish_ckpt143)*. */
+.screensaver-controls select { background: var(--well); }
+.screensaver-controls option { color: var(--well-ink); background: var(--well); }
 .screensaver-controls button:disabled { opacity: 0.6; }
 .screensaver-note:empty { display: none; }
 

@@ -628,7 +628,7 @@ The second line is the fourteen JavaScript suites, on Node's own runner with not
 installed. `permalink.test.mjs` is the contract held to itself — a URL is the one
 permanent thing this site emits, and it is worth a test suite even though nothing else
 here has one. `screensaver.test.mjs` holds the screensaver's pure parts: the interval
-table, the ladder a seat is fitted down, the learned correction and the bag it draws from.
+table, the overrun rule, the learned correction and the bag it draws from.
 `bands.test.mjs` is the pool held to the committed wasm: a band is a range
 of output rows, so the pool decides where the frame is cut and never what is in it, and
 the sizes it cuts at are the reader's machine's. It draws the anchor a few times over and

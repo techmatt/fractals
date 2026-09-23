@@ -1,4 +1,4 @@
-// The screensaver's pure parts: the interval table, the fitting ladder, the correction and
+// The screensaver's pure parts: the interval table, the overrun rule, the correction and
 // the bag. The part that needs a page is driven by hand and measured in the README.
 
 import assert from "node:assert/strict";
@@ -11,10 +11,10 @@ import {
   DEFAULT_EVERY,
   EVERY,
   everyOf,
-  fit,
   fullscreenKey,
-  LADDER,
+  overrunLimit,
   sizeFor,
+  SUPERSAMPLE,
 } from "./screensaver.js";
 
 test("the intervals are the seven the picker offers, and the default is one of them", () => {
@@ -25,7 +25,7 @@ test("the intervals are the seven the picker offers, and the default is one of t
   assert.notEqual(everyOf(DEFAULT_EVERY), null);
   assert.equal(everyOf("45s"), null);
   assert.equal(budgetOf("1m"), 60);
-  // Fastest is a four-second floor and a four-second budget alike.
+  // Fastest is a four-second floor.
   assert.equal(everyOf("fastest").seconds, 4);
   assert.equal(budgetOf("fastest"), 4);
   // A value nobody offers is priced as the default, never as zero.
@@ -39,28 +39,18 @@ test("a picture is letterboxed at its own aspect", () => {
   assert.deepEqual(sizeFor({ across: 21, down: 9 }, 1000, 1000).width, 1000);
 });
 
-test("the ladder is four samples a pixel then one, both at the screen's size", () => {
-  assert.deepEqual(LADDER, [
-    { scale: 1, supersample: 2 },
-    { scale: 1, supersample: 1 },
-  ]);
+test("every interval draws at two samples a pixel each way", () => {
+  assert.equal(SUPERSAMPLE, 2);
 });
 
-test("a seat is fitted to the first step whose price is within the budget", () => {
-  // One second per million samples.
-  const price = (samples) => samples / 1e6;
-  const size = { width: 2000, height: 1000 };
-  // 8 M samples at 4x fits a 10 s budget.
-  assert.equal(fit({ ...size, budget: 10, price }).supersample, 2);
-  // 2 M at 1x fits 3 s where 8 M does not.
-  const one = fit({ ...size, budget: 3, price });
-  assert.deepEqual([one.scale, one.supersample], [1, 1]);
-  assert.deepEqual([one.width, one.height], [2000, 1000]);
-  // And under that the seat is skipped, with what one sample a pixel would have cost:
-  // never drawn coarser than the screen.
-  const skipped = fit({ ...size, budget: 1, price });
-  assert.equal(skipped.skip, true);
-  assert.equal(skipped.seconds, 2);
+test("a render is cancelled past twice its price, never inside twice the interval", () => {
+  // A seat priced over its interval is waited for, up to twice its price.
+  assert.equal(overrunLimit(20, 4), 40);
+  // A cheap seat has twice the interval.
+  assert.equal(overrunLimit(1.4, 4), 8);
+  assert.equal(overrunLimit(6.5, 60), 120);
+  // And never under a second.
+  assert.equal(overrunLimit(0.1, 0.2), 1);
 });
 
 test("the correction is a clamped median of measured over priced", () => {

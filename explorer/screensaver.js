@@ -9,12 +9,12 @@
 //
 // **A picture is shown when it is whole, and not before.** The next one renders while the
 // current one is up, and the cross-fade waits for both the interval and the render,
-// whichever is later. So the interval is a floor and not a promise, and fitting the render
-// to it is what keeps the two close: each seat is priced with the Download row's own
-// `COST` estimate at the screen's size, then stepped down — two samples a pixel each way,
-// then one — until it fits. **Never under one sample a pixel, and never under the screen's
-// size** *(Matt, 2026-09-22)*: a seat one sample cannot fit is skipped and the log says
-// why, and so is a render that runs past twice what it was priced at.
+// whichever is later. So the interval is a floor and not a promise. **Every picture is
+// drawn at the screen's size and two samples a pixel each way, whatever the interval**
+// *(Matt, screensaver_polish_ckpt143)*: one sample is visibly worse, so a seat that costs
+// more than its interval is shown late rather than coarse. Each seat is still priced with
+// the Download row's own `COST` estimate, for the log and for the one skip left: a render
+// that runs past twice its price, and past twice the interval, is cancelled.
 //
 // **The estimate learns.** `COST` is one machine at the mandelbrot home view, and a
 // gallery seat is usually deeper than that and iterates more per sample, so every picture
@@ -22,18 +22,17 @@
 // of that list scales every price after it. Without it, the overrun rule skipped exactly
 // the deep seats it was priced wrongest on.
 //
-// The pure parts — the interval table, the fitting ladder, the correction and the bag —
-// are exported and tested on their own; `install` is the part that needs a page.
+// The pure parts — the interval table, the correction and the bag — are exported and
+// tested on their own; `install` is the part that needs a page.
 
 /** How long the cross-fade from one picture to the next takes. */
 export const SCREENSAVER_FADE_MS = 500;
 
 /** The intervals offered, in the order the picker shows them, spelled as the link does.
  *
- *  *Fastest* is four seconds, as a floor and as a budget alike *(Matt, 2026-09-22)*: it
- *  advances as soon as the next picture is ready and four seconds have passed, and the
- *  next picture is fitted into four. It used to be no floor at all and a 2 s budget, which
- *  put most seats at half the screen's size. */
+ *  *Fastest* is a four-second floor *(Matt, 2026-09-22)*: it advances as soon as the next
+ *  picture is finished and four seconds have passed. It used to be no floor at all and a
+ *  2 s budget, which put most seats at half the screen's size. */
 export const EVERY = [
   { value: "fastest", label: "Fastest", seconds: 4 },
   { value: "10s", label: "10 s", seconds: 10 },
@@ -55,13 +54,9 @@ const OVERRUN_FLOOR_S = 1;
 /** How long the controls stay up after the pointer last moved. */
 const CONTROLS_FOR_MS = 2000;
 
-/** The steps a seat is fitted down, most expensive first. `scale` is of each side.
- *  It ends at the screen's size and one sample a pixel: a picture that cannot be drawn at
- *  that in the interval is skipped rather than shown coarser than the screen. */
-export const LADDER = [
-  { scale: 1, supersample: 2 },
-  { scale: 1, supersample: 1 },
-];
+/** Samples a pixel each way, at every interval. It used to be the top of a ladder that
+ *  stepped down to one to fit a seat into its interval. */
+export const SUPERSAMPLE = 2;
 
 /** Where the interval is remembered, and where the log is switched on. */
 const EVERY_KEY = "explorer.screensaver-every";
@@ -72,7 +67,7 @@ export function everyOf(value) {
   return EVERY.find((one) => one.value === value) ?? null;
 }
 
-/** The seconds a render is fitted into at this interval. */
+/** The interval's seconds, which is what the overrun rule allows a render at least twice of. */
 export function budgetOf(every) {
   return (everyOf(every) ?? everyOf(DEFAULT_EVERY)).seconds;
 }
@@ -108,20 +103,11 @@ export function sizeFor(aspect, width, height) {
 }
 
 /**
- * The first step of the ladder whose price fits the budget.
- *
- * `price(samples)` is seconds, already corrected. Returns the step with its size and
- * price, or `{ skip: true, seconds }` with what the last step would have cost.
+ * How long a render may run before it is cancelled and its seat skipped: twice its price,
+ * but never inside twice the interval, and never under a second.
  */
-export function fit({ width, height, budget, price }) {
-  let seconds = Infinity;
-  for (const step of LADDER) {
-    const w = Math.max(16, Math.round(width * step.scale));
-    const h = Math.max(16, Math.round(height * step.scale));
-    seconds = price(w * h * step.supersample * step.supersample);
-    if (seconds <= budget) return { ...step, width: w, height: h, seconds };
-  }
-  return { skip: true, seconds };
+export function overrunLimit(priced, interval) {
+  return Math.max(OVERRUN_FLOOR_S, OVERRUN * Math.max(priced, interval));
 }
 
 /**
@@ -321,11 +307,32 @@ export function install(host) {
   function showControls() {
     layer.classList.add("is-awake");
     clearTimeout(controlsTimer);
-    controlsTimer = setTimeout(() => {
-      // Not while the pointer is on them: a control that vanishes under the hand reaching
-      // for it is not one anybody can use.
-      if (!controls.matches(":hover, :focus-within")) layer.classList.remove("is-awake");
-    }, CONTROLS_FOR_MS);
+    controlsTimer = setTimeout(fadeControls, CONTROLS_FOR_MS);
+  }
+
+  /** Whether the interval's option list is open. The page gets no pointer events while
+   *  it is, so this is the one moment a still pointer is not a reader who has let go.
+   *  `:open` where the browser knows it, and the pointer on the select where it does not. */
+  function picking() {
+    try {
+      return everyPicker.matches(":open");
+    } catch {
+      return everyPicker.matches(":hover");
+    }
+  }
+
+  function fadeControls() {
+    if (picking()) {
+      controlsTimer = setTimeout(fadeControls, CONTROLS_FOR_MS);
+      return;
+    }
+    // **A still pointer fades the bar, wherever it is** *(screensaver_polish_ckpt143)*. The
+    // test used to be `:hover, :focus-within`, checked once: a clicked button keeps focus,
+    // so one click on *Full screen*, *Pause* or the interval held the bar up for the rest
+    // of the run. A hand reaching for a control is a moving one, and every move re-arms
+    // the timer. A faded bar gives its focus back: Space, F and Esc are the layer's keys.
+    if (controls.contains(document.activeElement)) document.activeElement.blur();
+    layer.classList.remove("is-awake");
   }
 
   /** Letterbox a canvas at its own aspect in the layer, in CSS pixels. */
@@ -386,7 +393,7 @@ export function install(host) {
   }
 
   /**
-   * Render one seat, fitted to the interval, or say why it was skipped.
+   * Render one seat at the screen's size and `SUPERSAMPLE`, or say why it was skipped.
    * Returns `{ seat, image }`, `{ skip }`, or `null` where the run ended under it.
    */
   async function render(seat, mine) {
@@ -404,20 +411,17 @@ export function install(host) {
     const prior = (samples) => estimate(view.mode, samples, workers) ?? estimate("smooth_stripe", samples, workers);
     const factor = correction.factor();
     const budget = budgetOf(every);
-    const step = fit({ ...size, budget, price: (samples) => prior(samples) * factor });
-    if (step.skip) {
-      return { skip: `~${step.seconds.toFixed(1)} s at one sample a pixel, over the ${budget} s budget` };
-    }
-    const priced = prior(step.width * step.height * step.supersample * step.supersample);
+    const priced = prior(size.width * size.height * SUPERSAMPLE * SUPERSAMPLE);
+    const corrected = priced * factor;
     holder = {};
     const mineHolder = holder;
     let overran = false;
-    // Never inside twice the budget, though: a render still within its interval has made
-    // nothing late, and at a minute the first measured run cut a seat priced at 6.5 s at 13.
-    // Past the interval is allowed too *(Matt, 2026-09-22)*: a seat that fitted at one
-    // sample a pixel and runs over is still worth waiting for, and under *Fastest* the
-    // interval alone cut seats priced at 1.4 s at exactly 4.
-    const limit = Math.max(OVERRUN_FLOOR_S, OVERRUN * Math.max(step.seconds, budget));
+    // Never inside twice the interval, though: a render still within it has made nothing
+    // late, and at a minute the first measured run cut a seat priced at 6.5 s at 13. Past
+    // the interval is allowed too *(Matt, 2026-09-22)*: a seat that runs over is still
+    // worth waiting for, and under *Fastest* the interval alone cut seats priced at 1.4 s
+    // at exactly 4.
+    const limit = overrunLimit(corrected, budget);
     const timer = setTimeout(() => {
       // A run ended since: the renderer here may already be the next entry's.
       if (mine !== run) return;
@@ -428,8 +432,8 @@ export function install(host) {
     const started = performance.now();
     let drawn = null;
     try {
-      drawn = await pictureOf(renderer, view, step.width, step.height, {
-        supersample: step.supersample,
+      drawn = await pictureOf(renderer, view, size.width, size.height, {
+        supersample: SUPERSAMPLE,
         holder: mineHolder,
       });
     } catch (error) {
@@ -443,17 +447,16 @@ export function install(host) {
     if (overran || drawn === null) {
       // An overrun still teaches the correction, at no less than the time it was given.
       correction.add(seconds, priced);
-      return { skip: `cancelled after ${seconds.toFixed(1)} s, priced at ${step.seconds.toFixed(1)} s` };
+      return { skip: `cancelled after ${seconds.toFixed(1)} s, priced at ${corrected.toFixed(1)} s` };
     }
     correction.add(seconds, priced);
     log("drawn", {
       key: seat.key,
       mode: view.mode,
-      size: `${step.width}x${step.height}`,
-      scale: step.scale,
-      samples: `${step.supersample * step.supersample}x`,
+      size: `${size.width}x${size.height}`,
+      samples: `${SUPERSAMPLE * SUPERSAMPLE}x`,
       prior: +priced.toFixed(2),
-      priced: +step.seconds.toFixed(2),
+      priced: +corrected.toFixed(2),
       took: +seconds.toFixed(2),
       factor: +factor.toFixed(2),
       budget,
@@ -589,6 +592,8 @@ export function install(host) {
   window.addEventListener("resize", onResize);
   layer.addEventListener("pointermove", showControls);
   layer.addEventListener("pointerdown", showControls);
+  // Tabbing into a faded bar brings it up, so a keyboard never focuses a control unseen.
+  controls.addEventListener("focusin", showControls);
   everyPicker.addEventListener("change", () => setEvery(everyPicker.value));
   pauseButton.addEventListener("click", () => setPaused(!paused));
   exitButton.addEventListener("click", exit);

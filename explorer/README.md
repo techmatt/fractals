@@ -163,7 +163,7 @@ judges/               UNTRACKED: the two ONNX judges and the runtime, `builder w
 permalink.js          the link contract — parse, validate, canonicalize
 params.js             a mode parameter's control: its word, its slider's travel, the mapping
 permalink.test.mjs    55 tests, `node --test explorer/permalink.test.mjs`
-screensaver.test.mjs  7 tests: the intervals, the fitting ladder, the correction, the bag
+screensaver.test.mjs  8 tests: the intervals, the samples, the overrun rule, the correction, the bag
 bands.test.mjs        3 tests: the pool cuts the frame, never what is in it
 level.test.mjs        7 tests: the module's tone measurement, and a derived curve replays
 derive.test.mjs       6 tests: a derived weight replays, a derived opacity lands where it says
@@ -507,7 +507,15 @@ picture here is the picture the tile opens, drawn at the screen's size.
 black, with the picture letterboxed at its own aspect. The studio and the bar go `inert`
 underneath, and nothing there moves, so the viewer keeps its size and does not redraw for
 the layer coming or going. Moving the pointer brings up a small bar for about two seconds:
-the interval, *Pause*, *Full screen*, *Exit (Esc)*. Space pauses and resumes.
+the interval, *Pause*, *Full screen*, *Exit (Esc)*. Space pauses and resumes. **A still
+pointer fades it wherever it rests** *(screensaver_polish_ckpt143)*, on the bar included,
+and a faded bar gives up its focus. The only exception is while the interval's option
+list is open (`:open`, or the pointer on the select where a browser lacks `:open`), because
+the page gets no pointer events then. The bar used to stay while it was `:hover` or
+`:focus-within`, checked once. A clicked button keeps focus, so one click on any control held
+the bar up for the rest of the run. Tabbing into a faded bar brings it back. The select and
+its options are drawn in the well's colors: transparent over light ink put pale text on the
+operating system's white option list. None of the options was ever `disabled`.
 
 **Full screen is a button** *(Matt, 2026-09-22)*: *Full screen (F11)* asks the browser's
 Fullscreen API for the layer, which a click is allowed to, and so does `F` inside the
@@ -530,16 +538,19 @@ cross-fade (`SCREENSAVER_FADE_MS`) starts when the interval has passed **and** t
 picture is finished, whichever is later. The next seat renders while the current one is up,
 and a partial pass is never shown.
 
-**Fitting a seat to the interval.** A seat is priced with the Download row's `estimate`,
-the `COST` table, at the screen's size in device pixels, multiplied by a correction. It is
-then stepped down until the price fits the interval: four samples a pixel, then one, both
-at the screen's size. **Never under one sample a pixel** *(Matt, 2026-09-22)*: a seat that
-does not fit at one is skipped rather than drawn smaller. Until then the ladder went on to
-half the size and a quarter, and *Fastest* was priced against 2 s with no floor, which is
-what put most seats at half size in the measurements below. A render that runs past twice its price is cancelled and the
-seat skipped, but never while it is inside twice the interval: at one minute, the first
-measured run cut a seat priced at 6.5 s at 13 s, and under a 4 s *Fastest* the interval
-alone cut seats priced at 1.4 s at exactly 4.
+**Every picture is drawn at two samples a pixel each way, at the screen's size, whatever the
+interval** *(Matt, screensaver_polish_ckpt143)*. One sample is visibly worse, so a seat that
+costs more than its interval is shown late rather than coarse, and *Fastest* still means
+"as soon as the next picture is finished". It just finishes later. Until then a seat was
+fitted to its interval, stepped from four samples to one, and skipped when one did not fit.
+Before that the ladder went on to half the size and a quarter, and *Fastest* was priced
+against 2 s with no floor, which is what put most seats at half size in the measurements
+below. A seat is still priced, with the Download row's `estimate` (the `COST` table) at the
+screen's size in device pixels, multiplied by a correction. The price now serves the log and
+the one skip left: a render that runs past twice its price is cancelled and the seat
+skipped, but never while it is inside twice the interval (`overrunLimit`). At one minute,
+the first measured run cut a seat priced at 6.5 s at 13 s, and under a 4 s *Fastest* the
+interval alone cut seats priced at 1.4 s at exactly 4.
 
 **The correction is learned** *(Matt, 2026-09-22)*. `COST` is one machine at the mandelbrot
 home view, and a seat is usually deeper and iterates more per sample. So each picture drawn
@@ -563,7 +574,7 @@ chip the collection has no row for is let go.
 
 **The log, off by default**, mirrors `explorer.deep-log`:
 `localStorage.setItem("explorer.screensaver-log", "1")`, read on each entry. One line per
-event, `[screensaver <time>] <event> {…}`: each `pick`, each `drawn` with its size, scale,
+event, `[screensaver <time>] <event> {…}`: each `pick`, each `drawn` with its size,
 samples, `prior`, corrected `priced`, `took`, the correction `factor` and the budget, and
 each `skip` with why.
 
@@ -578,7 +589,10 @@ each `skip` with why.
   overrunning twice its price, mostly deep seats costing three to four times their mode's
   typical price.
 - A quarter was never needed at this size. On a 4K display, stripe's corrected price is
-  about 28 s at one sample, so it fell to half at 10 s, and is skipped at 10 s now.
+  about 28 s at one sample, so it fell to half at 10 s. It was skipped at 10 s under the
+  one-sample floor, and is drawn late at four samples now.
+- Under **Fastest** at four samples *(screensaver_polish_ckpt143, 1584×891)*, tia seats
+  priced at 4.7–5.5 s took 3.7–7.6 s, and one seat priced at 8.3 s was cancelled at 16.6 s.
 
 ## The box tool *(Matt, explorer_box_zoom_and_download_row_ckpt140, 2026-09-22)*
 
