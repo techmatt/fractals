@@ -582,7 +582,7 @@ Three Windows cautions that have each cost a session already:
 
 ```
 python -m ruff check . && python -m ruff format --check . && python -m builder check
-node --test explorer/permalink.test.mjs explorer/bands.test.mjs explorer/level.test.mjs explorer/derive.test.mjs explorer/stops.test.mjs explorer/saved.test.mjs explorer/undo.test.mjs explorer/zip.test.mjs explorer/stamp.test.mjs explorer/deep-fx.test.mjs explorer/deep-link.test.mjs explorer/deep.test.mjs atlas/atlas.test.mjs
+node --test explorer/permalink.test.mjs explorer/bands.test.mjs explorer/level.test.mjs explorer/derive.test.mjs explorer/stops.test.mjs explorer/saved.test.mjs explorer/undo.test.mjs explorer/zip.test.mjs explorer/stamp.test.mjs explorer/deep-fx.test.mjs explorer/deep-link.test.mjs explorer/deep.test.mjs explorer/screensaver.test.mjs atlas/atlas.test.mjs
 (cd explorer/perturb-wasm && cargo fmt --check) && (cd explorer/engine-wasm && cargo fmt --check)
 ```
 
@@ -609,10 +609,12 @@ rebuilt byte for byte too, so the insensitivity is the region's and not the hunk
 **Neither answer generalizes**, which is why both are written down: a formatting commit in
 either crate rebuilds its module and compares, and reports whichever it got.
 
-The second line is the thirteen JavaScript suites, on Node's own runner with nothing
+The second line is the fourteen JavaScript suites, on Node's own runner with nothing
 installed. `permalink.test.mjs` is the contract held to itself — a URL is the one
 permanent thing this site emits, and it is worth a test suite even though nothing else
-here has one. `bands.test.mjs` is the pool held to the committed wasm: a band is a range
+here has one. `screensaver.test.mjs` holds the screensaver's pure parts: the interval
+table, the ladder a seat is fitted down, the learned correction and the bag it draws from.
+`bands.test.mjs` is the pool held to the committed wasm: a band is a range
 of output rows, so the pool decides where the frame is cut and never what is in it, and
 the sizes it cuts at are the reader's machine's. It draws the anchor a few times over and
 takes a few seconds. `atlas.test.mjs` holds the atlas record to the same contract, and

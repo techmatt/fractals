@@ -473,7 +473,7 @@ export function install({
    * shelf already narrowed by a choice made somewhere else. What the dropdown promises is
    * that collection, so that collection is what arrives.
    */
-  async function choose(name) {
+  async function choose(name, preset = null) {
     chosen = collections.some((one) => one.name === name) ? name : GENERAL;
     collection.value = chosen;
     const mine = ++asked;
@@ -503,14 +503,23 @@ export function install({
     wanted.hue.clear();
     cutOn = one?.axis === FAMILY_AXIS ? chosen : null;
     members = membersOf(seats, chosen);
-    chipsInto(modes, "mode", tally(members, "mode", firstMode), "no render mode");
-    if (hueHead) hueHead.textContent = cutOn === null ? HUE_HEADS.dominant : HUE_HEADS.contains;
+    const modeRow = tally(members, "mode", firstMode);
     // Twelve families and no thirteenth chip *(2026-09-19)*. The row used to open on
     // *unfiled 4* — the seats the dominance rule found dominant in no family — and that
     // chip was a threshold's name offered to a reader looking for a colour. The record
     // now gives every seat the family its own colour reading favours most, so the row is
     // the wheel and nothing else; `chipsInto` throws if a seat turns up without one.
     const row = cutOn === null ? tally(members, "hue") : presence(members, cutOn);
+    // A screensaver link names chips as well as a collection; a chip this collection has
+    // no row for is let go rather than kept, because it would show nothing at all.
+    if (preset !== null) {
+      const held = (counts) => new Set(counts.map(([value]) => value));
+      const modesHere = held(modeRow);
+      for (const value of preset.modes ?? []) if (modesHere.has(value)) wanted.mode.add(value);
+      if (preset.hue && held(row).has(preset.hue)) wanted.hue.add(preset.hue);
+    }
+    chipsInto(modes, "mode", modeRow, "no render mode");
+    if (hueHead) hueHead.textContent = cutOn === null ? HUE_HEADS.dominant : HUE_HEADS.contains;
     chipsInto(hues, "hue", row, null, true);
     fill();
   }
@@ -589,6 +598,20 @@ export function install({
       for (const tile of tiles.querySelectorAll(".tile")) {
         tile.classList.toggle("is-open", tile.dataset.key === open);
       }
+    },
+    /** What the panel is showing, as the screensaver takes it: the collection, the chips
+     *  pressed, and the seats they leave, in no order that matters. */
+    population() {
+      return {
+        collection: chosen,
+        modes: [...wanted.mode].filter((value) => value !== null),
+        hue: [...wanted.hue][0] ?? null,
+        seats: [...showing],
+      };
+    },
+    /** Show a collection with these chips pressed — what a screensaver link carries. */
+    apply({ collection: name = GENERAL, modes: pressed = [], hue = null } = {}) {
+      return choose(name, { modes: pressed, hue });
     },
     /** Say what went wrong where the panel is, rather than on the page. */
     refuse(message) {

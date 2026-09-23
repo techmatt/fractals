@@ -177,6 +177,74 @@
 .collection:focus-visible { outline: 2px solid var(--well-link); outline-offset: -2px; }
 .collection[hidden] { display: none; }
 
+/* The screensaver's one way in, beside what it shows *(gallery_screensaver_ckpt141)*. */
+.collection-action {
+  font: inherit;
+  font-size: 0.75rem;
+  color: var(--well-ink);
+  background: var(--well);
+  border: 1px solid var(--well-rule);
+  border-radius: 2px;
+  padding: 0.15rem 0.4rem;
+  cursor: pointer;
+}
+.collection-action:hover { border-color: var(--well-ink); }
+.collection-action:focus-visible { outline: 2px solid var(--well-link); outline-offset: -2px; }
+.collection-action[hidden] { display: none; }
+
+/* **The screensaver takes the whole page**, over the studio rather than instead of it, so
+   the viewer underneath keeps its size and nothing there redraws for the layer coming or
+   going. The pictures are letterboxed on black at their own aspect; `screensaver.js` sizes
+   them, and the one on top fades in over the other. */
+.screensaver {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  background: #000;
+  cursor: none;
+}
+.screensaver[hidden] { display: none; }
+.screensaver.is-awake { cursor: auto; }
+.screensaver-picture {
+  grid-area: 1 / 1;
+  opacity: 0; /* the fade's length is `SCREENSAVER_FADE_MS`, set from the script */
+}
+.screensaver-picture.is-up { opacity: 1; }
+.screensaver-controls {
+  position: absolute;
+  left: 50%;
+  bottom: 1.5rem;
+  transform: translateX(-50%);
+  z-index: 3;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.6rem;
+  font-family: var(--sans);
+  font-size: 0.8rem;
+  color: var(--well-ink);
+  background: var(--well);
+  border: 1px solid var(--well-rule);
+  border-radius: 3px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 200ms linear;
+}
+.screensaver.is-awake .screensaver-controls { opacity: 1; pointer-events: auto; }
+.screensaver-controls select,
+.screensaver-controls button {
+  font: inherit;
+  color: inherit;
+  background: transparent;
+  border: 1px solid var(--well-rule);
+  border-radius: 2px;
+  padding: 0.1rem 0.4rem;
+}
+.screensaver-note:empty { display: none; }
+
 /* **The dropdown draws itself here, so that a colour family's entry can wear its colour.**
    A native drop-down is the operating system's list and takes no markup inside an option,
    which left the one control that chooses a colour collection as the only place on the

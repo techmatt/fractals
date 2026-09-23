@@ -925,3 +925,11 @@ test("an unknown key that is not a UI key is still refused", () => {
   assert.throws(() => parse(`?v=${VERSION}&pnael=atlas`, CONTEXT), PermalinkError);
   assert.equal(UI_KEYS.has("pnael"), false);
 });
+
+test("the screensaver's keys are furniture too", () => {
+  // A screensaver link is the picture on screen plus where the next one comes from; the
+  // second half must never refuse the first or reach into it.
+  const query =
+    `?v=${VERSION}&m=smooth&panel=screensaver&every=30s&collection=blue&modes=tia,smooth&hue=red`;
+  assert.equal(canonicalize(query, CONTEXT), canonicalize(`?v=${VERSION}&m=smooth`, CONTEXT));
+});

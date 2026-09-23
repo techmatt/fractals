@@ -42,6 +42,7 @@ import * as picker from "./picker.js";
 import * as gallery from "./gallery.js";
 import * as saving from "./saved.js";
 import * as juliaPreview from "./julia-preview.js";
+import * as screensaver from "./screensaver.js";
 import { Trail } from "./undo.js";
 import {
   PREVIEW_DIVISOR,
@@ -2526,6 +2527,61 @@ function leaveSeat() {
   differs.textContent = "";
 }
 
+// ------------------------------------------------------------------- the screensaver
+//
+// The gallery's pictures one after another, full page *(gallery_screensaver_ckpt141)*.
+// `screensaver.js` owns the layer, the timing and a renderer of its own; what is here is
+// the page's side of it — what it is handed on the way in, the address bar while it runs,
+// and the viewer it gives back.
+
+let saver = null;
+
+/** The collection and chips the running screensaver was started from, for its address. */
+let saverFilters = null;
+
+/** The four keys a screensaver link adds to a picture's own, from `saverFilters`. */
+function saverFurniture(every) {
+  const parts = ["panel=screensaver", `every=${encodeURIComponent(every)}`];
+  const { collection, modes, hue } = saverFilters;
+  if (collection !== gallery.GENERAL) parts.push(`collection=${encodeURIComponent(collection)}`);
+  if (modes.length > 0) parts.push(`modes=${modes.map(encodeURIComponent).join(",")}`);
+  if (hue !== null) parts.push(`hue=${encodeURIComponent(hue)}`);
+  return parts.join("&");
+}
+
+/**
+ * Start the screensaver on whatever the Gallery tab is showing.
+ *
+ * `first` is a picture to open on, which is the one a screensaver link names; the button
+ * passes none and the first picture is drawn from the shelf like every other.
+ */
+function enterScreensaver({ every = null, first = null } = {}) {
+  if (saver === null || tiles === null || saver.active || locked()) return;
+  const population = tiles.population();
+  if (population.seats.length === 0 && first === null) {
+    say("The gallery shows nothing with these filters.");
+    return;
+  }
+  saverFilters = population;
+  juliaCard?.hide();
+  // The viewer's pass stops: the layer covers it, and the pool is the screensaver's now.
+  renderer.cancel();
+  studio.inert = true;
+  document.querySelector(".studio-bar").inert = true;
+  saver.enter(population.seats, { every, first });
+}
+
+/** The screensaver let go: the viewer comes back on the last picture it showed, as a
+ *  tile would open it, so that picture can be saved or downloaded. */
+function leaveScreensaver(seat) {
+  studio.inert = false;
+  document.querySelector(".studio-bar").inert = false;
+  showPanel("gallery");
+  resize();
+  const opts = seat?.key ? { gap: seat.gap, key: seat.key, what: "this wallpaper" } : {};
+  if (seat === null || !openLink(seat.link, opts)) draw();
+}
+
 // ------------------------------------------------------------------- the panels
 
 let showing = DEFAULT_PANEL;
@@ -2588,6 +2644,7 @@ function showPanel(asked) {
   // gallery panel, so it is the one control the panel has to hide itself: what it chooses
   // means nothing while the atlas is showing.
   document.getElementById("gallery-collection").hidden = showing !== "gallery";
+  document.getElementById("gallery-screensaver").hidden = showing !== "gallery";
   if (showing === "atlas") {
     startAtlas();
     syncPlane();
@@ -4265,7 +4322,9 @@ let resizing = 0;
 function relayout() {
   clearTimeout(resizing);
   resizing = setTimeout(() => {
-    if (busy) return;
+    // Nobody is looking at the viewer under the screensaver, and it catches up on the way
+    // out — see `leaveScreensaver`.
+    if (busy || saver?.active) return;
     if (!resize()) return;
     if (deepOwns()) deep.repaint();
     else if (walkLayers !== null) paintWalk();
@@ -4302,6 +4361,7 @@ function giveBack() {
     () => savedPanel?.stop(),
     () => juliaCard?.stop(),
     () => phoenixTab?.stop(),
+    () => saver?.stop(),
     () => renderer?.stop(),
   ];
   for (const ask of asked) {
@@ -4396,6 +4456,9 @@ async function main() {
   // the viewer opens at in that case is the Mandelbrot home — the Deep tab has the picture,
   // and the viewer behind it is what Back to the explorer comes out onto.
   const arriving = link.isDeep(window.location.search) ? window.location.search : null;
+  // A shallow link may ask for the screensaver, which starts once the gallery is up.
+  const asked = new URLSearchParams(window.location.search);
+  const saverAsked = arriving === null && asked.get("panel") === "screensaver";
   // **And a link the paged Inflection tab wrote is refused at that same door**, before the
   // shallow reader sees it — see `INFLECTION_PAGED`. It would be refused either way, by the
   // unknown-key sweep on `iv`, but a reader holding a picture's link is owed the reason
@@ -4532,10 +4595,12 @@ async function main() {
     deep?.open(saving.queryOf(arriving));
     showPanel("deep");
   } else {
-    showPanel(new URLSearchParams(window.location.search).get("panel") ?? DEFAULT_PANEL);
+    showPanel(asked.get("panel") ?? DEFAULT_PANEL);
     rebuild();
     resize();
-    draw();
+    // A screensaver link draws its picture in the screensaver, not first in the viewer
+    // underneath it as well; the viewer is drawn when the screensaver lets go of it.
+    if (!saverAsked) draw();
   }
 
   // The gallery is the last thing started and the only one allowed to fail quietly: its
@@ -4558,12 +4623,50 @@ async function main() {
     saveMark: (row) => saving.mark(saved, canonicalOf(row.link)),
     onSeats: indexSeats,
   });
-  tiles.start(record).catch((error) => {
-    // The reason goes to the console: it names a record file, and a reader can do
-    // nothing with that. `python -m builder seats` is what lands the record on a clone.
-    console.warn("the gallery record could not be read", error);
-    tiles.refuse("The gallery could not be loaded.");
+  saver = screensaver.install({
+    layer: document.getElementById("screensaver"),
+    canvases: [...document.querySelectorAll(".screensaver-picture")],
+    controls: document.getElementById("screensaver-controls"),
+    everyPicker: document.getElementById("screensaver-every"),
+    pauseButton: document.getElementById("screensaver-pause"),
+    exitButton: document.getElementById("screensaver-exit"),
+    note: document.getElementById("screensaver-note"),
+    // Its own pool over the module already compiled, the way the walk has one: a resize
+    // or a pass on the page underneath cancels by generation, and must not cancel this.
+    pool: () => Renderer.over(renderer.module, renderer.workerCount),
+    parse: (query) => link.parse(`?${query}`, contract),
+    estimate: download.estimate,
+    pictureOf: download.pictureOf,
+    address: (seat, every) => history.replaceState(null, "", `?${seat.link}&${saverFurniture(every)}`),
+    leave: leaveScreensaver,
   });
+  document
+    .getElementById("gallery-screensaver")
+    .addEventListener("click", () => enterScreensaver());
+  tiles
+    .start(record)
+    .then(async () => {
+      if (!saverAsked) return;
+      // The collection and chips the link names are put up on the panel first, so the
+      // screensaver draws from exactly what the Gallery tab then shows.
+      await tiles.apply({
+        collection: asked.get("collection") ?? gallery.GENERAL,
+        modes: (asked.get("modes") ?? "").split(",").filter(Boolean),
+        hue: asked.get("hue"),
+      });
+      // A link that names a picture opens on it; one that names only the panel does not.
+      const named = [...asked.keys()].some((key) => !link.UI_KEYS.has(key));
+      const first = named ? { key: null, gap: null, link: link.emit(view, contract) } : null;
+      enterScreensaver({ every: asked.get("every"), first });
+      if (!saver.active) draw();
+    })
+    .catch((error) => {
+      // The reason goes to the console: it names a record file, and a reader can do
+      // nothing with that. `python -m builder seats` is what lands the record on a clone.
+      console.warn("the gallery record could not be read", error);
+      tiles.refuse("The gallery could not be loaded.");
+      if (saverAsked) draw();
+    });
 }
 
 main().catch((error) => {

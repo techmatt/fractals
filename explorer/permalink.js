@@ -574,8 +574,14 @@ export const LEVEL_KEY = {
  * and the contract spell it once between them: a page that typed `"panel"` beside a
  * contract that had been renamed would go on working until the day somebody sent a
  * link, which is the worst moment to find out.
+ *
+ * The other four are the screensaver's *(gallery_screensaver_ckpt141)*, written only
+ * while `panel=screensaver`: `every` is its interval, and `collection`, `modes` and `hue`
+ * are the gallery's own dropdown and chips, which are what it draws its pictures from.
+ * They choose which picture comes *next*, never how the one named here is drawn, which
+ * is what keeps them furniture.
  */
-export const UI_KEYS = new Set(["panel"]);
+export const UI_KEYS = new Set(["panel", "every", "collection", "modes", "hue"]);
 
 /**
  * The key that marks a query as the Deep tab's rather than this contract's.

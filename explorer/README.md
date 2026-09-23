@@ -124,6 +124,7 @@ index.html            the page, and the inline script that answers for a module
 explorer.css          its own stylesheet, on top of the site's
 explorer.js           what a reader touches: drag, wheel, keys, pickers, copy link
 gallery.js            the left panel's grid: a staged gallery's record, filtered
+screensaver.js        the gallery's pictures one after another, full page, drawn live
 picker.js             the palette tab strip, and a gradient drawn per row
 shade.js              the recipe's controls, apart from the boxes they are drawn in
 julia-preview.js      the Julia set of the point under the pointer, and the click into it
@@ -148,7 +149,8 @@ resize.mjs            PIL's bicubic resize, ported byte for byte: what a judge r
 judges/               UNTRACKED: the two ONNX judges and the runtime, `builder walk`
 permalink.js          the link contract — parse, validate, canonicalize
 params.js             a mode parameter's control: its word, its slider's travel, the mapping
-permalink.test.mjs    54 tests, `node --test explorer/permalink.test.mjs`
+permalink.test.mjs    55 tests, `node --test explorer/permalink.test.mjs`
+screensaver.test.mjs  7 tests: the intervals, the fitting ladder, the correction, the bag
 bands.test.mjs        3 tests: the pool cuts the frame, never what is in it
 level.test.mjs        7 tests: the module's tone measurement, and a derived curve replays
 derive.test.mjs       6 tests: a derived weight replays, a derived opacity lands where it says
@@ -478,6 +480,75 @@ picture: `permalink.js` tolerates the key, reads nothing from it and never emits
 the canonical string of a view — what Copy link copies — is the picture alone. Two rules
 keep that from becoming a contract by the back door: a UI key never refuses a link, and a
 UI key never decides what is drawn.
+
+### The screensaver *(gallery_screensaver_ckpt141, 2026-09-22)*
+
+**One button in, Esc out.** *Screensaver* sits beside the Collection dropdown and shows
+what the Gallery tab is showing: that collection, narrowed by whichever mode and color
+family chips are pressed, taken once on the way in. Seats come at random without
+replacement until the shelf is exhausted, then it is shuffled again, and a new round never
+opens on the seat that closed the last one. Each seat is its tile's own link, parsed, so a
+picture here is the picture the tile opens, drawn at the screen's size.
+
+**The layer covers the studio rather than replacing it.** It is fixed over the whole page,
+black, with the picture letterboxed at its own aspect. The studio and the bar go `inert`
+underneath, and nothing there moves, so the viewer keeps its size and does not redraw for
+the layer coming or going. Moving the pointer brings up a small bar for about two seconds:
+the interval, *Pause*, *Exit (Esc)*. Space pauses and resumes. Esc hands the viewer back on
+the Gallery tab at the last seat shown, opened the way its tile opens it, *not exact* line
+included, so it can be saved or downloaded.
+
+**The interval** is *Fastest · 10 s · 30 s · 1 min · 5 min · 10 min · 30 min*, 30 s by
+default, and remembered in `explorer.screensaver-every`. It is a floor: the 500 ms
+cross-fade (`SCREENSAVER_FADE_MS`) starts when the interval has passed **and** the next
+picture is finished, whichever is later. The next seat renders while the current one is up,
+and a partial pass is never shown.
+
+**Fitting a seat to the interval.** A seat is priced with the Download row's `estimate`,
+the `COST` table, at the screen's size in device pixels, multiplied by a correction. It is
+then stepped down until the price fits the interval: four samples a pixel, one, half the
+size, a quarter. *Fastest* is priced against 2 s (`FASTEST_BUDGET_S`). A seat that does not
+fit at a quarter is skipped. A render that runs past twice its price is cancelled and the
+seat skipped, but never while it is still inside the interval: at one minute, the first
+measured run cut a seat priced at 6.5 s at 13 s.
+
+**The correction is learned** *(Matt, 2026-09-22)*. `COST` is one machine at the mandelbrot
+home view, and a seat is usually deeper and iterates more per sample. So each picture drawn
+adds its measured-over-priced ratio to a list of the last fifteen, and the median of that
+list, clamped to 0.5–4, scales every price after it. It is kept across entries for as long
+as the page is open. A whole shelf of skips in a row stops and asks for a longer interval,
+rather than spinning.
+
+**It renders on a pool of its own.** `Renderer.over` gives it a pool over the module the
+page already compiled, the way the walk has one, and it is stopped on the way out. The page
+cancels a pass by generation, and F11 is a resize, so a shared pool would have had the
+screensaver's picture cancelled by the redraw of a viewer nobody could see. The viewer's
+resize redraw is held while the layer is up, and the viewer redraws once, on the way out.
+
+**The address bar tracks the picture on screen**: its own link, then
+`panel=screensaver&every=…`, and `collection`, `modes` (comma-separated) and `hue` where
+they are not the default. All five are UI keys (see above). A reload, or a bookmarked
+link, opens the Gallery tab on that collection with those chips pressed, then starts the
+screensaver on the named picture. A link naming only the panel starts on a random seat. A
+chip the collection has no row for is let go.
+
+**The log, off by default**, mirrors `explorer.deep-log`:
+`localStorage.setItem("explorer.screensaver-log", "1")`, read on each entry. One line per
+event, `[screensaver <time>] <event> {…}`: each `pick`, each `drawn` with its size, scale,
+samples, `prior`, corrected `priced`, `took`, the correction `factor` and the budget, and
+each `skip` with why.
+
+**Measured** on a twelve-thread desktop, headless Chrome, a 1751×985 layer, the general gallery:
+
+- At **1 min**, every seat fit at four samples a pixel, most in 1–4 s, and the correction
+  settled near 0.5.
+- At **10 s**, smooth fit at 4×, and stripe, smooth_mean_angle and tia fell to one sample.
+  A stripe seat priced at 3.3 s took 5.9 s, and the correction rose to about 1.8.
+- Under **Fastest**, most seats fell to half size, and about one in six was cancelled for
+  overrunning twice its price, mostly deep seats costing three to four times their mode's
+  typical price.
+- A quarter was never needed at this size. On a 4K display, stripe's corrected price is
+  about 28 s at one sample, so it falls to half at 10 s.
 
 ## The box tool *(Matt, explorer_box_zoom_and_download_row_ckpt140, 2026-09-22)*
 

@@ -54,6 +54,8 @@
                 aria-controls="panel-saved" aria-selected="false">Saved</button>
       </div>
       <select id="gallery-collection" class="collection" aria-label="Collection"></select>
+      <button type="button" id="gallery-screensaver" class="collection-action"
+              title="Show this collection full screen, one picture after another">Screensaver</button>
     </div>
 
     <div class="tabpanel" id="panel-gallery" role="tabpanel" aria-labelledby="tab-gallery">
@@ -386,6 +388,17 @@
   </section>
 
 </main>
+
+<div class="screensaver" id="screensaver" hidden>
+  <canvas class="screensaver-picture" aria-hidden="true"></canvas>
+  <canvas class="screensaver-picture" aria-hidden="true"></canvas>
+  <div class="screensaver-controls" id="screensaver-controls">
+    <label>Every <select id="screensaver-every"></select></label>
+    <button type="button" id="screensaver-pause" aria-pressed="false">Pause</button>
+    <button type="button" id="screensaver-exit">Exit (Esc)</button>
+    <span class="screensaver-note" id="screensaver-note" role="status"></span>
+  </div>
+</div>
 
 <!-- **The one thing a module cannot say about itself.** `explorer.js` statically imports a
      dozen files, and a static import that fails takes the whole graph down before a line of

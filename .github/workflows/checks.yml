@@ -73,3 +73,5 @@ jobs:
         run: node --test explorer/deep-fx.test.mjs explorer/deep-link.test.mjs
       - name: where the two kernels meet, against both committed modules
         run: node --test explorer/deep.test.mjs
+      - name: the screensaver's intervals, fitting ladder, correction and bag
+        run: node --test explorer/screensaver.test.mjs
