@@ -435,7 +435,8 @@ say when it does not — and nothing about the allocator is left on the page.
 The atlas is the explorer's Atlas tab, built and shipped over the search's own record;
 `atlas/README.md` is its contract. It was a page of its own at `atlas/index.html` until
 `website_webp_and_atlas_deprecate` (2026-09-21) retired that page for the tab, which mounts
-the same frame beside a viewer; the old address redirects. Four facts from there are worth knowing before the section is drafted. The
+the same frame beside a viewer; the old address redirects, and the page's colour key now
+sits in a line above the tab's frame, linking back to this section. Four facts from there are worth knowing before the section is drafted. The
 record is **real as of 2026-09-21** — 113 marks on the Mandelbrot plane and 488 over the
 six, seats read out of the semi-final general record `20260922T012627Z`, where it used to
 be a fixture that told a maker the shape it owed. The

@@ -12,7 +12,11 @@ supersedes it: the tab mounts this frame beside a viewer that draws the place a 
 for, which is what the standalone page sent a reader away to do. What is left at that
 address is a redirect into the tab, because a URL is the one permanent thing this site
 emits. The frame's own rules are unchanged and are stated below of the frame rather than of
-a page.
+a page. **One thing the page said and the tab did not moved across**
+*(atlas_page_deprecate_and_wakelock_ckpt141)*: the intro's colour key, blue for a place on
+the parameter plane and red for one on a dynamical plane, with the way back to *Fractal
+atlases*. It is a line above the frame in the tab (`.place-key`), outside the fixed
+rectangle, so it costs the frame nothing it measures.
 
 **It is one fixed frame, and there is no text in it.** The strip and the plate are sized
 once, in pixels, from the box its host gives. Nothing in the frame changes height when a

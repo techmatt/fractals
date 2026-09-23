@@ -286,6 +286,38 @@ export function install(host) {
     asked?.catch?.((error) => log("fullscreen refused", { why: String(error?.message ?? error) }));
   }
 
+  /** The screen wake lock, held while the layer is up so the display does not sleep under a
+   *  screensaver. The browser drops it whenever the tab is hidden, so `visibilitychange`
+   *  asks again on the way back. Where the API is missing, or a request is refused, the
+   *  screensaver runs exactly as it did without one: there is nothing to say about it. */
+  let wakeLock = null;
+
+  async function holdAwake() {
+    if (!active || wakeLock !== null || document.visibilityState !== "visible") return;
+    if (!navigator.wakeLock?.request) return;
+    try {
+      const lock = await navigator.wakeLock.request("screen");
+      // The layer may have closed while the request was out.
+      if (!active) {
+        lock.release().catch(() => {});
+        return;
+      }
+      wakeLock = lock;
+      lock.addEventListener("release", () => {
+        if (wakeLock === lock) wakeLock = null;
+      });
+      log("wake lock held");
+    } catch (error) {
+      log("wake lock refused", { why: String(error?.message ?? error) });
+    }
+  }
+
+  function letSleep() {
+    const lock = wakeLock;
+    wakeLock = null;
+    lock?.release().catch(() => {});
+  }
+
   function showControls() {
     layer.classList.add("is-awake");
     clearTimeout(controlsTimer);
@@ -516,6 +548,7 @@ export function install(host) {
     layer.hidden = false;
     layer.classList.remove("is-awake");
     sayFullscreen();
+    holdAwake();
     log("enter", { seats: seats.length, every, factor: +correction.factor().toFixed(2) });
     try {
       renderer = await pool();
@@ -543,6 +576,7 @@ export function install(host) {
     renderer = null;
     holder = null;
     clearTimeout(controlsTimer);
+    letSleep();
     // The full screen this layer asked for ends with it; the browser's own (F11) is the
     // reader's, and is left alone.
     if (fillsScreen()) document.exitFullscreen().catch(() => {});
@@ -560,6 +594,7 @@ export function install(host) {
   exitButton.addEventListener("click", exit);
   fullscreenButton.addEventListener("click", toggleFullscreen);
   document.addEventListener("fullscreenchange", sayFullscreen);
+  document.addEventListener("visibilitychange", holdAwake);
 
   return {
     enter,
@@ -568,6 +603,7 @@ export function install(host) {
     stop() {
       active = false;
       run += 1;
+      letSleep();
       renderer?.stop();
       renderer = null;
     },

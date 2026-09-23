@@ -507,6 +507,11 @@ leaves the full screen it asked for, and never the reader's own F11. Esc hands t
 the Gallery tab at the last seat shown, opened the way its tile opens it, *not exact* line
 included, so it can be saved or downloaded.
 
+**The display stays awake while the layer is up** *(atlas_page_deprecate_and_wakelock_ckpt141)*:
+it holds a `screen` wake lock from entry to exit, asks again on `visibilitychange` because the
+browser drops the lock whenever the tab is hidden, and is silently absent where
+`navigator.wakeLock` is missing or refuses.
+
 **The interval** is *Fastest · 10 s · 30 s · 1 min · 5 min · 10 min · 30 min*, 30 s by
 default, *Fastest* being 4 s, and remembered in `explorer.screensaver-every`. It is a floor: the 500 ms
 cross-fade (`SCREENSAVER_FADE_MS`) starts when the interval has passed **and** the next

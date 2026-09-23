@@ -15,22 +15,26 @@
    page and nowhere else — and `builder/atlas.py` carries the same two dot values for the
    figure section 11 shows, because Pillow cannot read CSS.
 
-   They sit on the frame itself rather than on a page's body, because the frame is what
-   spends them and no page outside it does. `.place-colors` was the same declaration for a
-   page that spent them outside the frame — the retired atlas page's intro named the two
-   kinds in the two hues — and went with that page rather than staying as a selector
-   nothing matches.
+   They sit on the frame itself rather than on a page's body, and on the one line outside
+   it that spends them: `.place-key`, the Atlas tab's note naming the two kinds in the two
+   hues. That key was the retired atlas page's intro, and it moved into the tab rather than
+   going with the page *(atlas_page_deprecate_and_wakelock_ckpt141)*, because a reader who
+   cannot tell the blue marks from the red has lost half of what the plate says.
 
    The soft borders are mixed toward the well's own rule colour rather than declared
    separately, so there is one hue per kind and the "soft" and "deeper" ends of it are
    derived from the same token. */
 
-.frame {
+.frame,
+.place-key {
   --place-mandelbrot: #4d8df0;
   --place-julia: #f2584c;
   --edge-mandelbrot: #2f6bc4;
   --edge-julia: #c4372c;
 }
+
+.place-key .key-mandelbrot { color: var(--place-mandelbrot); font-weight: 600; }
+.place-key .key-julia { color: var(--place-julia); font-weight: 600; }
 
 /* ------------------------------------------------------------------------- the frame
 
