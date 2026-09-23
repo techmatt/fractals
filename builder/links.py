@@ -344,7 +344,25 @@ def _panel_links(
         ]
 
     found = []
+    held = _deep_recipes() if any(panel.deep for panel in figure.panels) else {}
     for identifier, panel in zip(identifiers, figure.panels, strict=True):
+        if panel.deep:
+            # **A deep panel's link is its recipe, and is read rather than derived**
+            # (deep_figures_ckpt145). The maker drew the picture from exactly this string,
+            # which the Deep contract canonicalized, so there is no second opinion to form;
+            # `deep-link.test.mjs` holds every such row to that contract.
+            recipe = held.get(panel.deep)
+            if recipe is None:
+                found.append(
+                    _refused(
+                        identifier,
+                        "incomplete_provenance",
+                        f"figure-recipes.jsonl holds no {panel.deep}",
+                    )
+                )
+                continue
+            found.append(Link(identifier, recipe["link"], None, None, f"deep {panel.deep}"))
+            continue
         if panel.seat:
             if panel.seat not in resolved:
                 found.append(_refused(identifier, "incomplete_provenance", PANEL_RECORD))
@@ -370,6 +388,17 @@ def _panel_links(
         views[identifier] = view
         found.append(Link(identifier, None, None, None, source))
     return found
+
+
+def _deep_recipes() -> dict[str, dict]:
+    """Every deep panel's recipe in the site's store, by the key a panel names it with."""
+    from . import recipes
+
+    return {
+        identifier: one.recipe
+        for identifier, one in recipes.load_all().items()
+        if one.kind == recipes.DEEP
+    }
 
 
 def _claimed_seats(figure: figures.Figure) -> set[str]:
@@ -1040,6 +1069,13 @@ def _shade(fields: dict, record: dict | None) -> dict:
         "mirror": False,
         "transfer": {"kind": "value"},
         "rolloff": {"kind": "none"},
+        # The palette modes (palette_modes_ckpt143). The contract reads all seven shade
+        # keys and three more, and a view that leaves these out is refused — which, until
+        # deep_figures_ckpt145, refused 222 links on a rerun of `links --write`. At these
+        # values each is omitted from the link, so no link written before them moves.
+        "scale": "leveled",
+        "lambda": 1.0,
+        "period": 1.0,
     }
     if record is not None:
         shade.update({key: value for key, value in record["recipe"].items() if key in shade})

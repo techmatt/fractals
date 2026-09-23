@@ -26,6 +26,7 @@ import {
   canonicalize,
   CONSTANTS as FAMILY_CONSTANTS,
   coordinateOf,
+  DEEP_MARKER,
   defaultShade,
   DERIVED,
   emit,
@@ -746,6 +747,9 @@ test("every link the site carries parses, and is the canonical spelling of its v
     assert.equal(row.kind, "link", row.id);
     assert.equal(row.link === undefined, row.no_link !== undefined, row.id);
     if (row.link === undefined) continue;
+    // A deep figure's link is the Deep contract's, dispatched on its own marker, and
+    // `deep-link.test.mjs` holds those rows to that contract.
+    if (row.link.startsWith(`${DEEP_MARKER}=`)) continue;
     linked++;
     const view = parse(row.link, CONTEXT);
     assert.equal(emit(view, CONTEXT), row.link, row.id);

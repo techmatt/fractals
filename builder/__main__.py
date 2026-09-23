@@ -41,6 +41,7 @@ from . import (
     renders,
 )
 from . import curation as curation_module
+from . import deep_figures as deep_figures_module
 from . import deep_gallery as deep_gallery_module
 from . import explorer as explorer_module
 from . import growth as growth_module
@@ -414,6 +415,20 @@ def _parser() -> argparse.ArgumentParser:
         "--place", action="store_true", help="land the figure and fill its registry row"
     )
     grounded.add_argument(
+        "--replace", action="store_true", help="land a redraw of a figure already on the page"
+    )
+
+    deeper = commands.add_parser("deep", help="draw a figure of the Deep zoom page")
+    deeper.add_argument(
+        "id",
+        nargs="*",
+        choices=[[], *sorted(deep_figures_module.FIGURES)],
+        help="the figure's id",
+    )
+    deeper.add_argument(
+        "--place", action="store_true", help="land the panels and fill the registry row"
+    )
+    deeper.add_argument(
         "--replace", action="store_true", help="land a redraw of a figure already on the page"
     )
 
@@ -1013,6 +1028,8 @@ def _land_split(identifier: str, drawn, maker, *, replace: bool, landing: bool) 
             row["ink"] = panel.ink
         if panel.band:
             row["band"] = panel.band
+        if panel.deep:
+            row["deep"] = panel.deep
         rows.append(row)
     placed = figures.place(
         identifier,
@@ -1204,6 +1221,23 @@ def _do_overview(options: argparse.Namespace) -> int:
             overview,
             replace=options.replace,
             landing=bool(options.place or options.replace),
+        )
+    return 0
+
+
+def _do_deep(options: argparse.Namespace) -> int:
+    """Draw the Deep zoom page's figures, and optionally land them.
+
+    Landing writes each deep panel's link into `article/figure-recipes.jsonl` before the
+    row is filled, because that store is where the panel's recipe — and so its link — lives.
+    """
+    landing = bool(options.place or options.replace)
+    for identifier in options.id or list(deep_figures_module.FIGURES):
+        drawn = deep_figures_module.draw(identifier)
+        if landing:
+            deep_figures_module.keep(identifier)
+        _land_split(
+            identifier, drawn, deep_figures_module, replace=options.replace, landing=landing
         )
     return 0
 
@@ -1460,6 +1494,8 @@ def main(argv: list[str] | None = None) -> int:
             return _do_fundamentals(options)
         if options.command == "front":
             return _do_front(options)
+        if options.command == "deep":
+            return _do_deep(options)
         if options.command == "overview":
             return _do_overview(options)
         if options.command == "prose":

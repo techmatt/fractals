@@ -32,6 +32,9 @@ python -m builder growth [ID ...] [--stamp S] [--place] [--replace]
                             instrument's latest stamped run next door
 python -m builder picks [ID ...] [--place] [--replace]
                             draw a figure whose panels are named by tentative-gallery ID
+python -m builder deep [ID ...] [--place] [--replace]
+                            draw the figures of the Deep zoom page through the Deep tab's
+                            own contract, kernel and shading
 python -m builder front [ID ...] [--place] [--replace]
                             draw the front page's picture, index-hero, one spec panel
 python -m builder pipeline [ID ...] [--run R] [--place] [--replace]
@@ -794,6 +797,49 @@ The video is 1920×1080 at 60 fps. A frame crops the smallest keyframe that cove
 area-filters it down, then blends the next keyframe in over the centre with a feathered
 edge, so nothing is ever enlarged. The encoder is `imageio-ffmpeg`'s bundled `ffmpeg`
 (`pip install imageio-ffmpeg`), writing H.264 in yuv420p.
+
+## The deep figures
+
+*(deep_figures_ckpt145.)* `python -m builder deep [ID ...] [--place] [--replace]` draws the
+figures of *Deep zoom*, and `builder/deep_figures.py`'s `FIGURES` is where each one's
+frames, colouring and grid are frozen. **A deep panel is a Deep-tab link and a grid, and
+nothing else.** Three steps, none of them new code:
+
+1. `deep_figures.mjs` reads the link through `explorer/deep-link.js`, settles the cap with
+   the tab's own probe (`zoom_fields.mjs`'s `settleSpec`) where the link names none, and
+   draws the field with `zoom_fields.mjs`'s `renderSpec` on the committed `perturb.wasm`.
+   That is the video's keyframe renderer, made importable: its command line only runs when
+   node is started on it.
+2. `deep_gallery_shade.mjs` colours the field exactly as the tab colours the link.
+3. The lossless panel lands in `artifacts/deep-figures/`, keyed on the link and grid it was
+   asked for, and `--place` encodes it through `images.import_web_res` like any split panel.
+
+**The link is the recipe, and it lives in `article/figure-recipes.jsonl`** as a `deep` row,
+stamp `deep`, key `<figure id>#<panel>`: the canonical `dv=3` link with its settled `n`,
+the resolution and the supersample. The panel's registry row names that key in `deep`, the
+way a seat panel names its seat, and `links.py` copies the link off the store rather than
+deriving one. The maker writes those rows when it lands a figure and replaces a figure's
+rows whole on a redraw. `recipes --fill` never touches them, because nothing next door can
+answer for one. `deep-link.test.mjs` holds every `dv` row of `explorer/links.jsonl` to the
+Deep contract and to pinning its cap, and `permalink.test.mjs` passes those rows over.
+
+**One panel is not a deep panel.** The left half of `deep-f64-and-perturbation` is the frame
+in plain doubles on purpose: an engine spec with `allow_unresolvable_in_f64` (the opt-in
+`fractal-engine` grew for this picture), drawn at its perturbation twin's settled cap and
+colouring so the two differ in arithmetic alone. It is a `spec` panel, and `links.py`
+refuses it as `deep`, which is true: the explorer refuses that frame.
+
+**Colouring is `scale=absolute` throughout**, the percentile stretch being what flattens a
+deep frame. The page's own Deep-tab link colours at `lambda=0&period=0.25`, and the figures
+whose counts run to tens rather than thousands use `period=0.5`, which bands less. One
+figure uses one colouring, so a colour is one escape count across a strip. Measured on the
+f64 figure at the widths f64 still resolves: the engine's colouring and the tab's shade of
+the perturbation field agree pixel for pixel by eye, so the pair is a fair comparison.
+
+Landing is the standard split landing plus one step. A new figure needs a `pending` row
+whose block is on the page, then `deep <id> --place`, then `links --write`, then
+`figure <id> --heal`, the order *Still hand-done* names. Five figures, 16 panels, 1.7 MB,
+91 s on this machine at 2×2 samples.
 
 ## The Deep tab's gallery
 

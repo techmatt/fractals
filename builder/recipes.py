@@ -46,6 +46,14 @@ fill run that re-derived them would answer *not found* and take them out.
 
 Three of the 96 came out of a stamp that was never tracked next door, so their seat row is
 gone for good; they carry the recipe, the run that drew them, and a `read` saying so.
+
+## Deep panels
+
+A third kind, `deep` *(deep_figures_ckpt145)*: one row per panel of a *Deep zoom* figure,
+keyed `<figure id>#<panel>` under the stamp `deep`, whose recipe is the canonical Deep-tab
+link the panel was drawn from, the grid and the supersample. Nothing next door stands behind
+one — the link is the whole of it — so these rows are written by `builder.deep_figures`
+when it lands a figure, rewritten when it redraws one, and never touched by `--fill`.
 """
 
 from __future__ import annotations
@@ -61,7 +69,7 @@ RECIPES = ARTICLE_DIR / "figure-recipes.jsonl"
 
 #: What a row's `kind` may say: a seat of a recorded tentative gallery, or a bare row of
 #: the candidate ledger that was never seated.
-SEAT, CANDIDATE = "seat", "candidate"
+SEAT, CANDIDATE, DEEP = "seat", "candidate", "deep"
 
 #: What a candidate row writes where a seat row writes its stamp. The same word
 #: `picks.CANDIDATE_STAMP` spells, and spelled out rather than left empty so a provenance
@@ -101,7 +109,7 @@ def load_all(path: Path | None = None) -> dict[str, Held]:
     held: dict[str, Held] = {}
     for row in records.read(path):
         kind = row.kind
-        if kind not in (SEAT, CANDIDATE):
+        if kind not in (SEAT, CANDIDATE, DEEP):
             raise RecipeError(f"{row.where}: {kind!r} is not a kind this store carries")
         recipe = row.optional_mapping("recipe")
         if recipe is None:
@@ -155,6 +163,9 @@ def cited(registry: dict | None = None) -> list[str]:
     registry = registry if registry is not None else figures.load_all()
     wanted: list[str] = []
     for figure in registry.values():
+        for panel in figure.panels:
+            if panel.deep and panel.deep not in wanted:
+                wanted.append(panel.deep)
         for source in figure.sources:
             for key in source.keys:
                 if source.kind == figures.GALLERY_SEAT:
@@ -180,7 +191,12 @@ def fill() -> list[str]:
 
     held = load_all()
     wanted = cited()
-    missing = [identifier for identifier in wanted if identifier not in held]
+    # A deep panel's row is its maker's to write; nothing next door can answer for one.
+    missing = [
+        identifier
+        for identifier in wanted
+        if identifier not in held and not identifier.startswith(f"{DEEP}{SEPARATOR}")
+    ]
     lines = [f"{RECIPES.name}: {len(held)} rows held, {len(wanted)} cited, {len(missing)} missing"]
     if not missing:
         return lines
@@ -233,7 +249,11 @@ def problems() -> list[str]:
     held = load_all()
     return [
         f"figure-recipes.jsonl: no row for {identifier}, which a figure cites — "
-        "`python -m builder recipes --fill`"
+        + (
+            "`python -m builder deep <figure> --replace`"
+            if identifier.startswith(f"{DEEP}{SEPARATOR}")
+            else "`python -m builder recipes --fill`"
+        )
         for identifier in cited()
         if identifier not in held
     ]
@@ -243,11 +263,12 @@ def summary() -> list[str]:
     """What the store holds, for the bare command."""
     held = load_all()
     seated = sum(1 for one in held.values() if one.kind == SEAT)
+    deep = sum(1 for one in held.values() if one.kind == DEEP)
     unseated = sum(1 for one in held.values() if one.kind == SEAT and not one.seat)
     stamps = sorted({one.stamp for one in held.values() if one.kind == SEAT})
     lines = [
         f"{RECIPES.name}: {len(held)} rows — {seated} seats over {len(stamps)} recorded "
-        f"galleries, {len(held) - seated} bare candidates",
+        f"galleries, {len(held) - seated - deep} bare candidates, {deep} deep panels",
     ]
     if unseated:
         lines.append(f"  {unseated} carry a recipe and no seat row: the record was never tracked")
@@ -255,3 +276,30 @@ def summary() -> list[str]:
         count = sum(1 for one in held.values() if one.stamp == stamp)
         lines.append(f"  {stamp}: {count}")
     return lines
+
+
+def keep_deep(rows: dict[str, dict]) -> None:
+    """Land or rewrite the deep rows one figure's panels stand on, keyed as the panels are.
+
+    Every other row keeps its place; a figure's deep rows are replaced whole, so a redraw
+    with fewer panels leaves none behind.
+    """
+    held = load_all()
+    figures_touched = {key.partition(SEPARATOR)[2].partition("#")[0] for key in rows}
+    kept = {
+        identifier: one
+        for identifier, one in held.items()
+        if not (one.kind == DEEP and one.key.partition("#")[0] in figures_touched)
+    }
+    for identifier, recipe in rows.items():
+        stamp, _, key = identifier.partition(SEPARATOR)
+        kept[identifier] = Held(
+            stamp=stamp,
+            key=key,
+            kind=DEEP,
+            recipe=recipe,
+            source={},
+            seat={},
+            read="drawn here by builder.deep_figures: the link is the whole recipe",
+        )
+    write_all(kept)

@@ -445,6 +445,22 @@ test("every gallery row is a canonical deep link that pins its cap", () => {
   }
 });
 
+test("every deep figure link the site carries is a canonical deep link that pins its cap", () => {
+  // `explorer/links.jsonl` holds the Deep zoom page's figures beside every shallow one
+  // (deep_figures_ckpt145). `permalink.test.mjs` passes a `dv` row over to here, so each
+  // is held to the contract that reads it and to opening at the cap its picture was drawn at.
+  const rows = readFileSync(new URL("./links.jsonl", import.meta.url), "utf8")
+    .split("\n")
+    .filter((line) => line.trim())
+    .map((line) => JSON.parse(line))
+    .filter((row) => row.link?.startsWith(`${deep.MARKER}=`));
+  assert.ok(rows.length > 0, "no figure carries a deep link");
+  for (const row of rows) {
+    assert.equal(deep.canonicalize(`?${row.link}`, roster), row.link, row.id);
+    assert.equal(deep.parse(`?${row.link}`, roster).capFrom, "reader", row.id);
+  }
+});
+
 test("a gallery row's tile is named as the builder names it, and subjects keep their order", () => {
   assert.equal(
     tileName(

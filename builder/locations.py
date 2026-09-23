@@ -374,6 +374,8 @@ class Made:
     #: A band opens at this panel: `{title, note, blocks, columns, arrow}`. What a staged
     #: sheet drew as a heading, a sentence, a row of boxes and an arrow down the middle.
     band: dict | None = None
+    #: A deep panel's key in `article/figure-recipes.jsonl` (`builder/deep_figures.py`).
+    deep: str | None = None
 
 
 @dataclass(frozen=True)

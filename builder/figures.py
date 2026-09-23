@@ -282,6 +282,10 @@ class Panel:
     wide: bool = False
     ink: str | None = None
     band: dict | None = None
+    #: A deep panel's key in `article/figure-recipes.jsonl`, `<figure id>#<panel>`: the
+    #: Deep-tab link it was drawn from and the grid, which is all a deep panel is. See
+    #: `builder/deep_figures.py`.
+    deep: str | None = None
 
     @property
     def path(self):
@@ -764,6 +768,7 @@ PANEL_FIELDS = (
     "wide",
     "ink",
     "band",
+    "deep",
 )
 PANEL_REQUIRED = ("file", "width", "height", "alt")
 
@@ -796,7 +801,7 @@ def _panel_rows(row: records.Record) -> tuple[Panel, ...]:
                 f"{row.where}: a panel names {', '.join(PANEL_REQUIRED)} — "
                 f"this one is missing {', '.join(missing)}"
             )
-        for name in ("file", "alt", "label", "seat"):
+        for name in ("file", "alt", "label", "seat", "deep"):
             value = entry.get(name)
             if value is not None and (not isinstance(value, str) or not value.strip()):
                 raise records.RecordError(f"{row.where}: a panel's {name} is a non-empty string")
@@ -832,6 +837,10 @@ def _panel_rows(row: records.Record) -> tuple[Panel, ...]:
             raise records.RecordError(
                 f"{row.where}: a panel's spec is the engine render spec its picture came "
                 "out of, and an engine render spec names a viewport"
+            )
+        if sum(entry.get(name) is not None for name in ("spec", "seat", "deep")) > 1:
+            raise records.RecordError(
+                f"{row.where}: a panel is one record — a spec, a seat or a deep recipe"
             )
         held = {name: entry.get(name) for name in PANEL_FIELDS}
         held["wide"] = bool(held["wide"])

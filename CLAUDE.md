@@ -213,13 +213,13 @@ keeps the mechanics. **Every apply round ends by distilling that round's general
   of its own, needs its own per-panel view before its figure can be split.
 - **A figure's id opens with its page's prefix** — `overview-`, `escape-`, `render-`,
   `modes-`, `locations-`, `judges-`, `palette-`, `wallpapers-`, `gallery-`, `pipeline-`,
-  `atlas-` — so a slug says where it
+  `atlas-`, `deep-` — so a slug says where it
   lives before anything looks it up. One prefix to a page and one page to a prefix, with
   the single carve-out that a page hanging off a section shares that section's prefix:
   `palette-generator-batch` sits on `palettes/make-your-own.html`. The front page's one
   picture is `index-hero`, on a row whose page is spelled `./index.html` — the slash a
-  bare name at the root lacks — and it is the one figure with no caption. `deep-zoom`, the
-  one section with neither prose nor figures, has no prefix yet. The prose never uses that slug: a
+  bare name at the root lacks — and it is the one figure with no caption. `deep-zoom`'s
+  prefix is `deep-`. The prose never uses that slug: a
   reference from the text is **positional** (*the figure below*), because this site
   numbers no figures and anchors none.
 - **Exactly one line of a figure's `provenance` puts the word `colormap` in front of a
@@ -348,7 +348,7 @@ keeps the mechanics. **Every apply round ends by distilling that round's general
   So a maker is a module in `builder/` with an entry in its own `SHEETS`, `MAKERS` or
   `DIAGRAMS` table and a subcommand that draws it by figure id — `families`,
   `fundamentals`, `overview`, `diagram`, `locations`, `judges`, `palettes`, `pool`,
-  `picks`, `curation`, `growth`, `pipeline`, `atlas`, `front`. `scratch/` stays what it is for: the probes, sweeps and contact
+  `picks`, `curation`, `growth`, `pipeline`, `atlas`, `front`, `deep`. `scratch/` stays what it is for: the probes, sweeps and contact
   sheets that *found* a choice. Once a choice is made, the program that acts on it is
   committed. **All 61 of them are, as of 2026-09-06**, and a row naming a path under
   `scratch/` is now a bug rather than a legacy.

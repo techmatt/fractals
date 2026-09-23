@@ -20,11 +20,14 @@
 import { Worker, isMainThread, parentPort, workerData } from "node:worker_threads";
 import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { cpus } from "node:os";
+import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { load } from "../explorer/bench/perturb.mjs";
 
 const RECORD = new URL("./data/deep-zoom-descent.keyframes.json", import.meta.url);
 const ROOT = new URL("../", import.meta.url);
+/** The file a band worker runs: this one, whoever imported it. */
+const WORKER = new URL(import.meta.url);
 
 /** Output rows a worker is handed at a time: small enough that twelve stay busy to the end. */
 const BAND_ROWS = 8;
@@ -70,7 +73,13 @@ function baseSpec(record, width) {
 /** The Deep tab's settle (`DeepRenderer.settle`), on one thread: open at the width policy's
  *  cap, probe the frame's own cells, double while the cap is at fault. */
 function settle(p, record, width) {
-  const base = baseSpec(record, width);
+  return settleSpec(p, baseSpec(record, width));
+}
+
+/** The same settle for any `perturb.wasm` spec without a cap — a keyframe's, or one
+ *  `deep-render.js`'s `deepSpecOf` built from a link (`builder/deep_figures.mjs`). */
+export function settleSpec(p, base) {
+  const width = base.width;
   let maxiter = p.maxiter(width);
   const rungs = [];
   for (;;) {
@@ -136,33 +145,10 @@ async function caps() {
 
 async function render(p, record, frame, threads) {
   const spec = { ...baseSpec(record, frame.width), maxiter: frame.maxiter };
-  const started = performance.now();
-  const orbit = p.reference(spec);
-  if (orbit === null) throw new Error(`no reference orbit for ${tag(frame.k)}`);
+  const { field, seconds } = await renderSpec(p, spec, threads, tag(frame.k));
+  const out = field;
   const [cols, rows] = record.keyframes.grid;
   const ss = record.keyframes.supersample;
-  const out = new Float64Array(cols * ss * rows * ss);
-  const bands = [];
-  for (let r = 0; r < rows; r += BAND_ROWS) bands.push([r, Math.min(rows, r + BAND_ROWS)]);
-  let next = 0;
-  let done = 0;
-  await new Promise((resolve, reject) => {
-    for (let i = 0; i < threads; i++) {
-      const worker = new Worker(new URL(import.meta.url), { workerData: { spec, orbit } });
-      const feed = () => {
-        if (next < bands.length) worker.postMessage(bands[next++]);
-        else worker.terminate();
-      };
-      worker.on("message", ({ start, lanes }) => {
-        out.set(new Float64Array(lanes.buffer, lanes.byteOffset, lanes.byteLength / 8), start * ss * cols * ss);
-        if (++done === bands.length) resolve();
-        feed();
-      });
-      worker.on("error", reject);
-      feed();
-    }
-  });
-  const seconds = (performance.now() - started) / 1000;
   let interior = 0;
   let sum = 0;
   let low = Infinity;
@@ -194,6 +180,40 @@ async function render(p, record, frame, threads) {
       threads,
     },
   };
+}
+
+/** One whole field for any `perturb.wasm` spec that names its cap: the reference orbit once,
+ *  then bands of output rows across `threads` workers. `f64` smooth counts, `NaN` for the
+ *  interior, row-major at the spec's sample grid. The keyframes above and every deep figure
+ *  (`builder/deep_figures.mjs`) are drawn by this and nothing else. */
+export async function renderSpec(p, spec, threads, name = "frame") {
+  const started = performance.now();
+  const orbit = p.reference(spec);
+  if (orbit === null) throw new Error(`no reference orbit for ${name}`);
+  const [cols, rows] = spec.resolution;
+  const ss = spec.supersample ?? 1;
+  const out = new Float64Array(cols * ss * rows * ss);
+  const bands = [];
+  for (let r = 0; r < rows; r += BAND_ROWS) bands.push([r, Math.min(rows, r + BAND_ROWS)]);
+  let next = 0;
+  let done = 0;
+  await new Promise((resolve, reject) => {
+    for (let i = 0; i < threads; i++) {
+      const worker = new Worker(WORKER, { workerData: { spec, orbit } });
+      const feed = () => {
+        if (next < bands.length) worker.postMessage(bands[next++]);
+        else worker.terminate();
+      };
+      worker.on("message", ({ start, lanes }) => {
+        out.set(new Float64Array(lanes.buffer, lanes.byteOffset, lanes.byteLength / 8), start * ss * cols * ss);
+        if (++done === bands.length) resolve();
+        feed();
+      });
+      worker.on("error", reject);
+      feed();
+    }
+  });
+  return { field: out, seconds: (performance.now() - started) / 1000 };
 }
 
 async function fields(only) {
@@ -288,18 +308,20 @@ function agree() {
   }
 }
 
-if (isMainThread) {
-  const args = process.argv.slice(2);
-  const at = args.indexOf("--only");
-  const only = at >= 0 ? args[at + 1].split(",").map(Number) : null;
-  if (args.includes("--caps")) await caps();
-  else if (args.includes("--agree")) agree();
-  else await fields(only);
-} else {
+// The command line runs only when this file is the one node was started on: a deep figure
+// imports `renderSpec` and `settleSpec` from here, and a worker is this file again.
+if (!isMainThread) {
   const p = await load();
   const { spec, orbit } = workerData;
   parentPort.on("message", ([start, end]) => {
     const lanes = p.band(spec, orbit, start, end);
     parentPort.postMessage({ start, lanes }, [lanes.buffer]);
   });
+} else if (process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1])) {
+  const args = process.argv.slice(2);
+  const at = args.indexOf("--only");
+  const only = at >= 0 ? args[at + 1].split(",").map(Number) : null;
+  if (args.includes("--caps")) await caps();
+  else if (args.includes("--agree")) agree();
+  else await fields(only);
 }
