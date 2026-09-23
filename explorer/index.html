@@ -265,15 +265,18 @@
         <div class="minibrots" id="deep-minibrot-list" hidden></div>
         <p class="side-note" id="deep-minibrot-note" hidden></p>
 
+        <!-- The arrows step the cap by 5,000 (Matt, deep_tab_undo_and_layout_ckpt144): the
+             step's base is `min`, so it is 0 and the arrows land on round thousands; a typed
+             cap is still read exactly, and the kernel's floor is `setCap`'s to hold. -->
         <div class="section-head deep-iterations-head">
           <h2 id="head-deep-iterations">Iterations</h2>
-          <button type="button" class="head-action" id="deep-cap-policy">From the width</button>
         </div>
         <div class="bar deep-iterations" role="group" aria-labelledby="head-deep-iterations">
           <button type="button" id="deep-cap-down" title="Faster, and shallower.">Halve</button>
-          <input type="number" id="deep-cap" class="param" min="50" max="1000000" step="1"
+          <input type="number" id="deep-cap" class="param" min="0" max="1000000" step="5000"
                  aria-label="Iteration cap">
           <button type="button" id="deep-cap-up" title="Slower, with more of the boundary in it.">Double</button>
+          <button type="button" id="deep-cap-policy">From the width</button>
         </div>
       </section>
 

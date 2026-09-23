@@ -1438,7 +1438,16 @@ Julia at this c, Nearby minibrots, Save and Back to the explorer are under the p
 in the Render group, in the order the shallow view keeps its rows: the Render line, then one
 row of view buttons, then Iterations, then Download. The minibrots list opens straight under
 the row that holds its button, where the column is wide enough for four across rather than
-two. Keys did not move. The left panel keeps the tab's one sentence and, since
+two. Keys did not move.
+
+**And the rows are tighter** *(Matt, deep_tab_undo_and_layout_ckpt144)*. *From the width*
+left the Iterations heading for the Iterations row, straight after Double; the cap box's
+arrows step by 5,000 (`step="5000"` on a base of `min="0"`, so they land on round
+thousands, while a typed cap is still taken exactly and `setCap` holds the floor); and the
+Download row drops its heading on this tab and sits directly under the Iterations row, one
+line shorter. The heading stays in the document as the row's accessible name.
+
+The left panel keeps the tab's one sentence and, since
 deep_gallery_build_ckpt144, the folded gallery under it (*The gallery*, below).
 
 **The sentence is Matt's** *(explorer_deep_polish_ckpt142, 2026-09-22)*: *Zoom far past
@@ -1494,11 +1503,10 @@ bands this pass has already finished** and from nothing else — a deep frame's 
 over orders of magnitude with how much of it is interior, so the only honest predictor of
 the rest of this frame is the part already drawn.
 
-**A pass that started on its own does not take the Render button.** It is a pass the reader
-did not ask for, so turning Render into Cancel while it runs would put the tab's one
-control out of reach at exactly the moment it is wanted. Cancel appears for a pass somebody
-commanded; pressing Render through one that started on its own upgrades it, and picks the
-quarter field straight back out of the cache if it had finished.
+**Anything running makes the Render button Cancel** *(Matt, deep_tab_undo_and_layout_ckpt144)*.
+It used not to for a pass that started on its own, so that pressing Render through one would
+upgrade it to the probed pass; ckpt142 took that back wherever a finished picture stood
+behind the pass, and this took back the rest — see *Cancel goes back*, below.
 
 **A download is the one thing a frame change does not cancel.** It is a file the reader
 asked for, of a frame captured when they asked. Nothing reaches that guard today — a
@@ -1530,30 +1538,36 @@ minutes of silence at the entry setting, because at one sample a pixel that is t
 
 ### Cancel goes back, and nothing drawn is drawn twice *(Matt, explorer_deep_polish_ckpt142, 2026-09-22)*
 
-**The tab holds the last frame drawn to the end** — `settled`: its view, its picture as a
-canvas and as the image a download saves, and its full-resolution field. `stale` could not
-do this: an auto pass puts its quarter picture there within a second of a stray gesture, and
-the picture that took minutes was gone. One frame, not a history, because a full field is
-5.8 MB at a 1136×636 canvas and the frame a stray gesture takes away is the one just left.
-A recolour of the full field updates it; a frame carried in from the viewer clears it.
+**The tab holds the last few frames drawn** — `held`, newest first, **four** entries
+*(a history since Matt's deep_tab_undo_and_layout_ckpt144; one frame, `settled`, before)*:
+each frame's view, its picture as a canvas, the image a download saves, and its field. A frame
+is held **as far as it was drawn** — its quarter picture if it was left after the quarter
+pass, its full one once it has finished — and is one entry, at its best stage; a quarter
+picture never replaces a full one of the same frame. `stale` could not do this: an auto pass
+puts its quarter picture there within a second of a stray gesture, and the picture that took
+minutes was gone. **The bound is memory**: a full entry is its field at 8 bytes a pixel plus
+the canvas and the image at 4 each, 11.6 MB at a 1136×636 canvas, so about 46 MB for four —
+the frame a stray gesture took away and the three before it. A recolour of the frame the
+reader is on updates its entry; a frame carried in from the viewer clears them all.
 
 **One button, and what Cancel does follows from who started the pass.** A pass that started
-on its own after a gesture, on a frame that is not the held one, turns Render into
-**Cancel**, and Cancel stops it **and** puts the held frame back, at once, with no pass — the
-note under the line says *Cancel goes back to the last finished picture, without drawing it
-again*, and the button's title says the same. A pass the reader commanded — Render, a link,
+on its own after a gesture, with another frame held, is stopped by Cancel **and** the newest
+held frame that is not the one the reader is on — the frame the gesture left — is put back,
+at once, with no pass; the note under the line says *Cancel goes back to the frame you left,
+without drawing it again*, and the button's title says the same. A pass the reader commanded — Render, a link,
 a step back — keeps today's Cancel, which stops it where it is: that frame was asked for.
 Two buttons were the alternative and were not taken: *Cancel* beside *Go back* is two words
 for what an artist reads as one intent, and the case that needs the revert is exactly the
 one where they did not ask for the pass. What was given up: Render pressed through an auto
 pass used to upgrade it to the probed pass mid-flight; with a held frame to go back to that
 press now reverts, and the probed pass is *Render again* once the auto pass lands. Without a
-held frame — the first picture of a session — the old behaviour is unchanged. Where the
+held frame the button was left as Render, and that is what Matt found with no Cancel on the
+page (ckpt144): it is Cancel now, and stops the pass where it is. Where the
 reader has turned the palette since the frame was held, the way back recolours its field in
 the new colour rather than bringing the old colour back.
 
 **The way back reuses the same pictures.** `open`, which a step back comes through, puts
-the held frame back instantly where the entry is that frame, recolours a full field still in
+a held frame back instantly where the entry is one of them, recolours a full field still in
 the cache where it is one of those, and only otherwise draws as a link does. The cache is no
 longer cleared by `open`: it is keyed on the set, the frame and the cap, so nothing in it can
 be taken for another picture. A link with no `n` is re-capped by the kernel before the
@@ -1565,6 +1579,13 @@ message; two stray wheel notches with Auto-render ticked turned the button to Ca
 Cancel put the frame back in **~120 ms** including the harness round trip; a second frame
 drawn to the end and a Ctrl+Z back to the first is a recolour, and Ctrl+Y forward again is
 too.
+
+Measured again with the history *(ckpt144, `scratch/deep_tab_undo_ckpt144/verify.mjs`, same
+frame)*: a notch during the first pass, before any frame had finished, showed Cancel; a
+stray notch and Cancel put the frame back in 79 ms with the canvas hash and the link the
+frame's own; two frames drawn to the end and Ctrl+Z twice put back each in turn, pixel for
+pixel, with the progress line never shown; and with Auto-render off, a notch and Ctrl+Z
+the same.
 
 A recolour now also records its picture as the one a download at the canvas's size saves.
 Before, `finished` was only ever written by a pass, so — read from the code, not reproduced —
@@ -1588,8 +1609,8 @@ tint after that found nothing and did nothing until somebody pressed Render.
 from its own kept field, in the view's colour, and `tint` calls it whatever is running. The
 picture up always has its field kept, because it is the stage that was just drawn; a pass in
 flight still lands its next stage in the colour current then. A recolour of a pending
-frame's picture repaints it dimmed inside the pending box and is not held as `settled` or
-`finished`, which are the frame the reader is on. The recolour keeps a generation of its
+frame's picture repaints it dimmed inside the pending box and is not held (`held`, then
+`settled`) or `finished`, which are the frame the reader is on. The recolour keeps a generation of its
 own, `tone`: it used to bump `pass`, and a bump of `pass` that does not clear `running` is
 the one move that strands a pass's `finally` with `running` set for good. It is dropped
 where a newer recolour was asked for, where the tab no longer owns the canvas, or where a

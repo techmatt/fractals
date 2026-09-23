@@ -1621,6 +1621,13 @@ canvas.palette-final {
   display: none;
 }
 
+/* And the row sits straight under Iterations, as one more row of the Render group
+   *(Matt, deep_tab_undo_and_layout_ckpt144)*: no heading of its own and the deep rows'
+   spacing, so the controls under the picture are a line shorter. The heading stays in the
+   document, because it is what names the row's group to a screen reader. */
+.viewer.is-deep .download-group > .section-head { display: none; }
+.viewer.is-deep .download-group { margin-top: calc(0.4rem - 0.6rem); }
+
 /* Render, Auto-render, the samples and the progress line, on one row under the canvas.
    The activity takes what the controls leave, the way the Download row's estimate does, so
    a stage name and a time left never push the button about. */

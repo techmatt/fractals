@@ -213,18 +213,27 @@ export function mount(host) {
   /** The last picture drawn, as a canvas, and the view it was of. */
   let stale = null;
   /**
-   * The last frame drawn to the end, held whole so that the way back to it costs nothing
-   * *(explorer_deep_polish_ckpt142)*: `{ view, canvas, image, key, field }` — its view, its
-   * picture as a canvas and as the image a download saves, and its full-resolution field by
-   * its cache key. `stale` is not enough for this: an auto pass puts its quarter picture
-   * there within a second of a stray gesture, and the picture that took minutes is gone.
+   * The last few frames drawn, held whole so that the way back to any of them costs nothing
+   * *(explorer_deep_polish_ckpt142; a history since deep_tab_undo_and_layout_ckpt144)*:
+   * `{ frame, view, canvas, image, key, field, full }`, newest first — the frame's key, its
+   * view, its picture as a canvas, the image a download saves (`null` for a quarter
+   * picture), its field by its cache key, and whether that field is the full pass. `stale`
+   * is not enough for this: an auto pass puts its quarter picture there within a second of a
+   * stray gesture, and the picture that took minutes is gone.
    *
    * It is what Cancel returns to when it cancels a pass the reader did not ask for, and
-   * what a step back onto that frame puts up. **One frame, not a history**: a full field is
-   * 5.8 MB at a 1136×636 canvas, and the frame the reader was last looking at is the one a
-   * stray gesture takes away.
+   * what a step back onto a held frame puts up. **A frame is held as far as it was drawn**
+   * *(Matt, ckpt144)*: a frame left after its quarter pass is its quarter picture, because
+   * "with its pixels" means whatever pixels it had, and one drawn to the end is its full
+   * one. A frame is one entry, at its best stage.
+   *
+   * **`HELD_LIMIT` entries**, and the bound is memory: a full entry is its field, 8 bytes a
+   * pixel, plus the canvas and the image, 4 each — 11.6 MB at a 1136×636 canvas and about
+   * 46 MB for four. Four is the frame a stray gesture took away and the three before it,
+   * which is as far back as a Ctrl+Z run goes before somebody would rather press Render.
    */
-  let settled = null;
+  let held = [];
+  const HELD_LIMIT = 4;
   /** Fields kept for a recolour, by `deepLink.fieldKey`. */
   const fields = new Map();
   /** How long the last quarter pass took, which is what the quarter-pass exception reads. */
@@ -353,18 +362,45 @@ export function mount(host) {
     stale = { canvas, view: of };
   }
 
-  /** Hold a full-resolution picture as `settled`, straight after `keep` has put it up. A
-   *  derived tone is the picture's own, so the view held carries the curve it was drawn
-   *  with. */
-  function hold(of, shaded, key, field) {
+  /**
+   * Hold the picture just put up, straight after `keep`, as its frame's entry in `held`. A
+   * derived tone is the picture's own, so the view held carries the curve it was drawn
+   * with. A quarter picture never replaces a full one of the same frame — a Render again
+   * lands its quarter pass first — it only brings that entry to the front.
+   */
+  function hold(of, shaded, key, field, full) {
+    const frame = deepLink.fieldKey(of, 1, 1);
+    const at = held.findIndex((entry) => entry.frame === frame);
+    const was = at < 0 ? null : held.splice(at, 1)[0];
+    if (was !== null && was.full && !full) {
+      held.unshift(was);
+      return;
+    }
     const level = host.deriving() ? shaded.level : of.level;
-    settled = { view: { ...of, level }, canvas: stale.canvas, image: shaded.image, key, field };
+    held.unshift({
+      frame,
+      view: { ...of, level },
+      canvas: stale.canvas,
+      image: full ? shaded.image : null,
+      key,
+      field,
+      full,
+    });
+    held.length = Math.min(held.length, HELD_LIMIT);
   }
 
-  /** Whether `of` is the frame `settled` holds: the place, the set and the cap, whatever
-   *  its colour. */
-  function isSettled(of) {
-    return settled !== null && deepLink.fieldKey(settled.view, 1, 1) === deepLink.fieldKey(of, 1, 1);
+  /** The entry `held` keeps for `of`'s frame — the place, the set and the cap, whatever its
+   *  colour — or `null`. */
+  function heldFor(of) {
+    const frame = deepLink.fieldKey(of, 1, 1);
+    return held.find((entry) => entry.frame === frame) ?? null;
+  }
+
+  /** What Cancel goes back to: the newest frame held that is not the one the reader is on,
+   *  which is the frame the gesture left. */
+  function leftBehind() {
+    const frame = deepLink.fieldKey(view, 1, 1);
+    return held.find((entry) => entry.frame !== frame) ?? null;
   }
 
   /**
@@ -403,44 +439,50 @@ export function mount(host) {
   }
 
   /**
-   * Put the settled picture back as the view `to`, which is its frame: at once where the
-   * colour is the one it was drawn in, and by a recolour of its held field where the reader
-   * has turned the palette since — never by iterating. Stops whatever pass is in flight.
+   * Put a held picture back as the view `to`, which is its frame: at once where the colour
+   * is the one it was drawn in, and by a recolour of its held field where the reader has
+   * turned the palette since — never by iterating. Stops whatever pass is in flight.
    */
-  function putBack(to) {
+  function putBack(to, entry) {
     stop();
     disarm();
-    const inked = { ...to, level: host.deriving() ? settled.view.level : to.level };
-    if (deepLink.emit(inked) !== deepLink.emit(settled.view)) {
+    // To the front: the frame put back is the one a later Cancel would leave.
+    held = [entry, ...held.filter((each) => each !== entry)];
+    const inked = { ...to, level: host.deriving() ? entry.view.level : to.level };
+    if (deepLink.emit(inked) !== deepLink.emit(entry.view)) {
       view = to;
-      remember(settled.key, settled.field);
-      recolour(settled.view);
+      remember(entry.key, entry.field);
+      recolour(entry.view);
       clearMinibrots();
       syncControls();
       return;
     }
-    view = to.capFrom === settled.view.capFrom ? settled.view : { ...settled.view, capFrom: to.capFrom };
+    view = to.capFrom === entry.view.capFrom ? entry.view : { ...entry.view, capFrom: to.capFrom };
     drawn = view;
-    stale = { canvas: settled.canvas, view };
-    finished = settled.image;
-    finishedSamples = 1;
+    stale = { canvas: entry.canvas, view };
+    // Only a full picture is one a download at the canvas's size can save.
+    finished = entry.image;
+    finishedSamples = entry.full ? 1 : 0;
+    remember(entry.key, entry.field);
     paint();
     clearMinibrots();
-    stat(`full pass ${settled.image.width}×${settled.image.height} · put back without drawing · cap ${count(view.maxiter)}${ceilingSaid(view)}`);
+    const which = entry.full ? "full pass" : "quarter pass";
+    stat(`${which} ${entry.canvas.width}×${entry.canvas.height} · put back without drawing · cap ${count(view.maxiter)}${ceilingSaid(view)}`);
     host.showState("final");
     host.settle();
     syncControls();
   }
 
   /**
-   * Cancel, for a pass the reader did not ask for: stop it, and go back to the last frame
-   * drawn to the end with that frame's picture *(Matt, explorer_deep_polish_ckpt142)*. A
-   * stray drag with Auto-render ticked starts a pass on its own and dims the picture that
-   * took minutes; this is the way back from it that costs nothing.
+   * Cancel, for a pass the reader did not ask for: stop it, and go back to the frame the
+   * gesture left, with the pixels it had *(Matt, explorer_deep_polish_ckpt142; any held
+   * frame since ckpt144)*. A stray drag with Auto-render ticked starts a pass on its own and
+   * dims the picture that took minutes; this is the way back from it that costs nothing.
    */
   function revert() {
-    if (settled === null) return;
-    putBack(inColour(settled.view));
+    const entry = leftBehind();
+    if (entry === null) return;
+    putBack(inColour(entry.view), entry);
   }
 
   /**
@@ -748,7 +790,7 @@ export function mount(host) {
           finished = shaded.image;
           finishedSamples = stage.supersample;
         }
-        if (stage.name === "full") hold(target, shaded, key, field);
+        hold(target, shaded, key, field, stage.name === "full");
         paint();
         host.settle();
         said(stage, field, shaded, cached, target);
@@ -1123,11 +1165,12 @@ export function mount(host) {
     // A recolour of the full field of the frame the reader is on is that frame drawn to the
     // end in its new colour: what a download at the canvas's size saves, and what Cancel and
     // a step back return to. Of a frame the reader has left, it is only the picture up.
-    if (current && stage.width === grid.width && stage.height === grid.height) {
+    const full = stage.width === grid.width && stage.height === grid.height;
+    if (current && full) {
       finished = shaded.image;
       finishedSamples = 1;
-      hold(drawn, shaded, key, field);
     }
+    if (current) hold(drawn, shaded, key, field, full);
     paint();
     if (running === null) {
       host.showState(current ? "final" : "stopped");
@@ -1791,31 +1834,38 @@ export function mount(host) {
     if (value && drawn !== null && pending()) moved();
   }
 
-  /** Whether Render is Cancel just now: a pass somebody commanded, or any pass the watchdog
-   *  has found silent. */
+  /**
+   * Whether Render is Cancel just now: **whenever anything is running** *(Matt,
+   * deep_tab_undo_and_layout_ckpt144)*.
+   *
+   * It used to be a pass somebody commanded, a pass the watchdog had found silent, or one
+   * with a finished picture to go back to — and an auto pass with none of those kept the
+   * button as *Render* or *Render again*, on the old reasoning that pressing Render through
+   * a pass nobody asked for should upgrade it to the probed one. That is the state Matt
+   * found with no Cancel on the page: the first frame after entering the tab, or a gesture
+   * before any pass had finished, drawing *full resolution 46% · about 15 s left* with a
+   * spinner and nothing to stop it with. The upgrade is *Render again* once the pass lands,
+   * which is where ckpt142 had already put it for every pass with a picture behind it.
+   */
   function cancellable() {
-    return running !== null && (!running.auto || running.stalled > 0 || revertible());
+    return running !== null;
   }
 
   /**
-   * Whether Cancel goes back as well as stopping: a pass that started on its own, of a frame
-   * that is not the one last drawn to the end, with that one held.
+   * Whether Cancel goes back as well as stopping: a pass that started on its own, with a
+   * picture of another frame held to go back to.
    *
    * **One button, and what it does follows from who started the pass**
    * *(explorer_deep_polish_ckpt142)*. A pass the reader commanded — Render, a link, a step
    * back — is a frame they asked for, and Cancel stops it where it is, as it always has. A
    * pass that started by itself after a gesture is one they may never have wanted, and the
    * picture it dimmed may have taken minutes: there Cancel is the way back to it, at once.
-   * Before this, such a pass left Render as Render, so that pressing it would upgrade the
-   * pass rather than stop it — the upgrade now waits for the pass to land, one press later
-   * as *Render again*, and the way back is under the pointer where it is wanted.
    */
   function revertible() {
     return (
       running !== null &&
       running.auto &&
-      settled !== null &&
-      !isSettled(view) &&
+      leftBehind() !== null &&
       running.upto !== "download" &&
       running.upto !== "minibrots"
     );
@@ -1824,22 +1874,15 @@ export function mount(host) {
   function syncControls() {
     const busy = running !== null;
     const why = busy ? null : refused();
-    // **A pass that started on its own does not take the button** — until the watchdog
-    // says it has gone quiet. It is a pass the reader did not ask for, so turning Render
-    // into Cancel while it runs would put the one control this tab has out of reach at
-    // exactly the moment it is wanted: a reader who gestures and then wants the picture
-    // would press Render and stop a render instead. Cancel is for a pass somebody
-    // commanded; pressing Render through one that started on its own upgrades it to the
-    // probed pass. **A silent pass is the exception** *(ckpt141)*: ten seconds with nothing
-    // from the pool, and the way out is offered on the button already there. **So is a pass
-    // with a finished picture behind it** *(explorer_deep_polish_ckpt142)*: there the button
-    // is Cancel from the start, and it goes back to that picture — see `revertible`.
+    // **Anything running makes the button Cancel** *(ckpt144)* — see `cancellable`, which
+    // says why the old exception for a pass that started on its own is gone. What Cancel
+    // does still depends on who started it: see `revertible`.
     const committed = busy && !running.auto;
     const cancel = cancellable();
     els.render.textContent = cancel ? "Cancel" : pending() || drawn === null ? "Render" : "Render again";
     els.render.classList.toggle("is-running", cancel);
     els.render.title =
-      cancel && revertible() ? "Stop, and go back to the last finished picture." : cancel ? "Stop this render." : "";
+      cancel && revertible() ? "Stop, and go back to the frame you left, as it was drawn." : cancel ? "Stop this render." : "";
     els.render.disabled = why !== null;
     els.progress.hidden = !busy;
     if (busy) {
@@ -1901,7 +1944,7 @@ export function mount(host) {
         !autoRender && committed && pending()
           ? "This is still drawing the frame you left. Cancel stops it; tick Auto-render and a new frame takes over on its own."
           : revertible()
-            ? "Cancel goes back to the last finished picture, without drawing it again."
+            ? "Cancel goes back to the frame you left, without drawing it again."
             : "";
     } else if (drawn === null) {
       els.note.textContent = "Nothing has been drawn yet. Render draws this frame.";
@@ -1963,7 +2006,7 @@ export function mount(host) {
         stale = null;
         // A frame carried in from the viewer is a fresh start, and Cancel going back to a
         // deep frame from before it would be going somewhere the reader has since left.
-        settled = null;
+        held = [];
         fields.clear();
         settledAt = null;
         cameFrom = null;
@@ -2027,9 +2070,9 @@ export function mount(host) {
       host.showState("stopped");
       return;
     }
-    // Through a pass that started on its own: that one is abandoned and the committed one
-    // starts, which picks its quarter field straight back out of the cache if it finished.
-    // A committed pass is the one that may probe the cap.
+    // Nothing is running here, since anything running makes this Cancel. A committed pass
+    // is the one that may probe the cap, and it picks a quarter field an auto pass left
+    // straight back out of the cache.
     render("screen");
   });
 
@@ -2149,8 +2192,9 @@ export function mount(host) {
       // the palette change it undoes was a recolour: so the undo is one too. The field
       // cache is kept across a link for the same reason — it is keyed on the set, the
       // frame and the cap, so nothing in it can be taken for another picture.
-      if (isSettled(next)) {
-        putBack(next);
+      const kept = heldFor(next);
+      if (kept !== null) {
+        putBack(next, kept);
         return;
       }
       const full = host.grid();
