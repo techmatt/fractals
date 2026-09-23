@@ -1005,6 +1005,9 @@ SHADE_DEFAULTS = {
     "mirror": False,
     "transfer": {"kind": "value"},
     "rolloff": {"kind": "none"},
+    "scale": "leveled",
+    "lambda": 1.0,
+    "period": 1.0,
 }
 
 #: Where `curate atlas --plane <partition>` writes, inside the wallpapers checkout: one

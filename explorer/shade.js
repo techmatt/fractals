@@ -57,15 +57,37 @@ import { SHADE_KEYS, defaultShade, shadeKey } from "./permalink.js";
  * **Cycles' slider runs 1 to 4 in whole steps**, the box's own step, because a whole
  * number of cycles is what a reader picks; the box still takes a typed value past 4, or
  * between two whole ones, and the slider parks at the nearest place it has.
+ *
+ * **Scale is the switch, and `under` is what it swaps** *(palette_modes_ckpt143)*. A key
+ * with `under` is shown only while the recipe's scale is one of those it names, the way
+ * the Render mode select swaps the mode's own parameters: gamma, cycles and transfer
+ * reshape the `[0, 1]` a leveled stretch produces, and absolute produces none, so under
+ * absolute they are hidden rather than shown doing nothing — and kept, so switching back
+ * finds them where they were. Period is absolute's alone. Lambda and phase are both
+ * scales'.
+ *
+ * **Lambda's slider is linear over its whole range**, 0 to 1, because that range is the
+ * contract's bound and both ends are the named cases: 1 the field as it is, 0 its log.
+ * **Period's is a decade slider** from 10⁻³ to 10⁵, three significant figures like gamma's:
+ * a period is a length along the compressed field, and which decade is right depends on
+ * the compression — a log field runs a few units across a frame, a linear deep one tens
+ * of thousands.
  */
 const PRESENTATION = {
-  gamma: { step: 0.05, slider: { min: -2, max: 2, step: 0.02, scale: "log" } },
-  cycles: { step: 1, slider: { min: 1, max: 4, step: 1, scale: "linear" } },
+  gamma: { step: 0.05, slider: { min: -2, max: 2, step: 0.02, scale: "log" }, under: ["leveled"] },
+  cycles: { step: 1, slider: { min: 1, max: 4, step: 1, scale: "linear" }, under: ["leveled"] },
   phase: { step: 0.005, slider: { min: 0, max: 1, scale: "wrap" } },
   reverse: {},
   mirror: {},
-  transfer: { step: 0.25, opening: { edge: "0.5" } },
+  transfer: { step: 0.25, opening: { edge: "0.5" }, under: ["leveled"] },
   rolloff: { step: 0.05, opening: { soft_knee: "0.35" }, offered: false },
+  scale: {},
+  lambda: { step: 0.05, slider: { min: 0, max: 1, step: 0.01, scale: "linear" } },
+  period: {
+    step: "any",
+    slider: { min: -3, max: 5, step: 0.01, scale: "decade" },
+    under: ["absolute"],
+  },
 };
 
 /**
@@ -87,8 +109,10 @@ export const CONTROLS = SHADE_KEYS.map((spec) => {
     step: shown.step,
     slider: shown.slider ?? null,
     offered: shown.offered ?? true,
+    under: shown.under ?? null,
+    choices: spec.control === "choice" ? Object.keys(spec.table) : null,
     kinds:
-      spec.table === undefined
+      spec.table === undefined || spec.control !== "tagged"
         ? null
         : Object.entries(spec.table).map(([kind, held]) => ({
             kind,
@@ -132,7 +156,8 @@ export function sliderAt(control, text) {
   const value = Number(text);
   const { min, max, scale } = control.slider;
   if (scale === "wrap") return ((value % 1) + 1) % 1;
-  const position = scale === "log" ? Math.log2(value) : value;
+  const position =
+    scale === "log" ? Math.log2(value) : scale === "decade" ? Math.log10(value) : value;
   return Math.min(max, Math.max(min, position));
 }
 
@@ -146,7 +171,14 @@ export function sliderAt(control, text) {
 export function sliderText(control, position) {
   const value = Number(position);
   if (control.slider.scale === "log") return String(Number((2 ** value).toPrecision(3)));
+  if (control.slider.scale === "decade") return String(Number((10 ** value).toPrecision(3)));
   return String(value);
+}
+
+/** Whether a key's control is shown under the scale this recipe is at. A key with no
+ *  `under` is shown under both; the others are shown under the scales they name. */
+export function shownUnder(control, shade) {
+  return control.under === null || control.under.includes(shade.scale);
 }
 
 /** Whether a key is at the engine's own default — what a link that omits it means. */

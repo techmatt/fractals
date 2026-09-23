@@ -1145,10 +1145,13 @@ export class Renderer {
       supersample: field.supersample,
       level: false,
     });
-    // The transfer is the only part of the recipe a statistic reads, so it is the only
-    // part of the recipe in the key.
+    // The transfer, the scale and the compression are the only parts of the recipe a
+    // statistic reads, so they are the only parts of the recipe in the key.
+    const read = spec.palette ?? {};
     const remembered =
-      key === null ? null : `${key}|${JSON.stringify(spec.palette?.transfer ?? null)}`;
+      key === null
+        ? null
+        : `${key}|${JSON.stringify([read.transfer ?? null, read.scale ?? null, read.lambda ?? null])}`;
     if (remembered !== null && this.measured.has(remembered)) {
       return this.measured.get(remembered);
     }
@@ -1498,14 +1501,24 @@ export class ShadeWorker {
  * the module a map without the blob. See `ramp` for why each fixed field is what it is.
  */
 export function rampSpecOf(view, colormap, samples, { direct = false, curved = false } = {}) {
-  const recipe = direct ? { ...view.shade, gamma: 1, cycles: 1, phase: 0 } : view.shade;
+  // **Under the absolute scale the strip is one cycle of the map**, from the view's phase:
+  // there is no frame's range for it to be a picture of, and one period of the field is
+  // exactly one pass through the gradient, so that pass is what it shows. Gamma and cycles
+  // do not act under absolute and are left out with it. The compression is left out under
+  // both scales, for the transfer's reason: it acts before the strip's 0 to 1.
+  const absolute = view.shade.scale === "absolute";
+  const recipe = direct
+    ? { ...view.shade, gamma: 1, cycles: 1, phase: 0 }
+    : absolute
+      ? { ...view.shade, gamma: 1, cycles: 1 }
+      : view.shade;
   const spec = {
     schema: 1,
     family: { kind: "mandelbrot" },
     viewport: {},
     resolution: [samples, 3],
     mode: "smooth",
-    palette: { ...recipe, transfer: { kind: "value" } },
+    palette: { ...recipe, transfer: { kind: "value" }, scale: "leveled", lambda: 1, period: 1 },
     colormap,
   };
   // `curved` says the map handed in has the curve on it already — the very stops the

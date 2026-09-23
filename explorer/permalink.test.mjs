@@ -525,6 +525,9 @@ const TYPED = {
   mirror: ["1"],
   transfer: ["rank", "edge:1.5"],
   rolloff: ["aces", "soft_knee:0.35"],
+  scale: ["absolute"],
+  lambda: ["0", "0.3"],
+  period: ["600", "0.25"],
 };
 
 test("every shade key has a control, and it opens at the engine's own default", () => {
@@ -602,6 +605,9 @@ test("a control out of range is refused in the contract's own words", () => {
   assert.throws(() => shade.withKey(view.shade, "transfer", "edge"), /needs its weight/);
   assert.throws(() => shade.withKey(view.shade, "rolloff", "soft_knee:1"), /below 1/);
   assert.throws(() => shade.withKey(view.shade, "gamma", ""), /gamma has to be a number/);
+  assert.throws(() => shade.withKey(view.shade, "scale", "relative"), /scale is one of leveled, absolute/);
+  assert.throws(() => shade.withKey(view.shade, "lambda", "1.5"), /lambda is between 0 and 1/);
+  assert.throws(() => shade.withKey(view.shade, "period", "0"), /period has to be positive/);
   assert.throws(() => shade.withKey(view.shade, "sweep", "1"), /no shade key called sweep/);
 });
 
@@ -932,4 +938,33 @@ test("the screensaver's keys are furniture too", () => {
   const query =
     `?v=${VERSION}&m=smooth&panel=screensaver&every=30s&collection=blue&modes=tia,smooth&hue=red`;
   assert.equal(canonicalize(query, CONTEXT), canonicalize(`?v=${VERSION}&m=smooth`, CONTEXT));
+});
+
+test("the scale switch swaps which shade controls are shown, and keeps what it hides", () => {
+  // Gamma, cycles and transfer reshape a leveled stretch and are hidden under absolute;
+  // period is absolute's alone; lambda and phase are both scales'. Hiding keeps the value.
+  const view = parse(`v=${VERSION}&p=viridis&gamma=1.5`, CONTEXT);
+  const absolute = shade.withKey(view.shade, "scale", "absolute");
+  const shown = (recipe) =>
+    shade.CONTROLS.filter((control) => control.offered && shade.shownUnder(control, recipe)).map(
+      (control) => control.key,
+    );
+  assert.deepEqual(shown(view.shade), ["gamma", "cycles", "phase", "reverse", "mirror", "transfer", "scale", "lambda"]);
+  assert.deepEqual(shown(absolute), ["phase", "reverse", "mirror", "scale", "lambda", "period"]);
+  assert.equal(absolute.gamma, 1.5);
+  // Period's slider is decades, written at three figures.
+  const period = shade.CONTROLS.find((control) => control.key === "period");
+  assert.equal(shade.sliderText(period, "2"), "100");
+  assert.equal(shade.sliderAt(period, "600"), Math.log10(600));
+  assert.equal(shade.sliderAt(period, "1e9"), 5);
+});
+
+test("the three scale keys ride a link only when set, and never bump v", () => {
+  const plain = parse(`v=${VERSION}&p=viridis`, CONTEXT);
+  assert.doesNotMatch(emit(plain, CONTEXT), /scale=|lambda=|period=/);
+  const text = `v=${VERSION}&p=viridis&scale=absolute&lambda=0&period=0.25`;
+  const back = parse(text, CONTEXT);
+  assert.deepEqual([back.shade.scale, back.shade.lambda, back.shade.period], ["absolute", 0, 0.25]);
+  assert.equal(emit(back, CONTEXT), emit(parse(emit(back, CONTEXT), CONTEXT), CONTEXT));
+  assert.match(emit(back, CONTEXT), /&scale=absolute&lambda=0&period=0\.25/);
 });

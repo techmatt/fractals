@@ -1049,7 +1049,10 @@ fn measure_stats(plan: &Plan, base: &Field, texture: &Texture) -> Option<Stats> 
         (Coloring::Composite { .. }, Texture::Narrow(_)) => true,
         _ => return None,
     };
-    let spend = coloring::Spend::measure(base, plan.palette.transfer);
+    // The recipe's own measure: the transfer over the field as the recipe compresses
+    // it, or nothing at all under the absolute scale — which is still a pooled shade,
+    // and the cheapest one there is.
+    let spend = coloring::Spend::of(base, &plan.palette);
     if matches!(spend, coloring::Spend::Rank(_)) {
         return None;
     }
@@ -1068,8 +1071,9 @@ fn measure_stats(plan: &Plan, base: &Field, texture: &Texture) -> Option<Stats> 
 /// "why": …}`. **This export takes the lanes buffer and frees it**, on every path
 /// including a refusal, exactly as [`shade`] does and for the same reason.
 ///
-/// The statistics depend on the field and on the recipe's `transfer` and on nothing
-/// else — not on the map, the gamma, the cycles, the phase or the curve — so a caller
+/// The statistics depend on the field and on the recipe's `transfer`, `scale` and
+/// `lambda` and on nothing else — not on the map, the gamma, the cycles, the phase, the
+/// period or the curve — so a caller
 /// that is recolouring a field it already measured may keep this answer and spend it
 /// again. That is what makes a palette edit a colouring and nothing more.
 #[unsafe(no_mangle)]

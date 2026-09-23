@@ -150,6 +150,16 @@ const SHADE_TIPS = {
   transfer: "How the palette is spread over the picture: by value, by where detail changes, or evenly.",
   rolloff: "How the brightest colors are eased off.",
   mirror: "Plays the palette forward and then back, so it has no hard seam.",
+  lambda:
+    "Compresses the field before anything else: 1 leaves it as it is, 0 takes its log, and between the two is a power.",
+  period: "How much of the compressed field one pass through the palette covers.",
+};
+
+/** The two halves of the scale switch, as their tooltips say them. */
+const SCALE_TIPS = {
+  leveled: "Fits the palette to this picture: its darkest and brightest values set the ends.",
+  absolute:
+    "Lays the palette along the field's own values, one pass every period, so a value is the same color in every frame. Nothing is fitted to the picture.",
 };
 
 /** The mode both mode lists open with, whatever the counts or the alphabet would say.
@@ -212,6 +222,7 @@ const notice = document.getElementById("notice");
 const shadeBar = document.getElementById("shade-bar");
 const shadeReset = document.getElementById("palette-reset");
 const shadeNote = document.getElementById("shade-note");
+const paletteGroup = shadeBar.closest(".palette-group");
 const levelGroup = document.getElementById("level-group");
 const levelToggle = document.getElementById("level-toggle");
 /** Named here and not only at the mount, because a download has to grey it: it used to be
@@ -2021,6 +2032,31 @@ function buildShade() {
       continue;
     }
 
+    if (control.control === "choice") {
+      // The scale switch, one button a choice, and first on the row: which of the
+      // controls after it are shown is its answer. See `.scale-switch` for its look.
+      const group = document.createElement("span");
+      group.className = "group scale-switch";
+      group.setAttribute("role", "radiogroup");
+      group.setAttribute("aria-label", control.label);
+      held.choices = new Map();
+      for (const choice of control.choices) {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.dataset.scale = choice;
+        button.setAttribute("role", "radio");
+        button.textContent = choice[0].toUpperCase() + choice.slice(1);
+        button.title = SCALE_TIPS[choice] ?? "";
+        button.addEventListener("click", () => setShade(control.key, choice));
+        group.append(button);
+        held.choices.set(choice, button);
+      }
+      held.group = group;
+      shadeWidgets.set(control.key, held);
+      shadeBar.prepend(group);
+      continue;
+    }
+
     const group = document.createElement("span");
     group.className = "group";
     group.title = SHADE_TIPS[control.key] ?? "";
@@ -2146,8 +2182,14 @@ function syncShade() {
     const held = shadeWidgets.get(control.key);
     if (held === undefined) continue;
     const text = shade.spelling(subject.shade, control.key);
+    if (held.group) held.group.hidden = !shade.shownUnder(control, subject.shade);
     if (control.control === "flag") {
       held.box.setAttribute("aria-pressed", String(text === "1"));
+    } else if (control.control === "choice") {
+      for (const [choice, button] of held.choices) {
+        button.setAttribute("aria-checked", String(choice === text));
+        button.disabled = busy;
+      }
     } else if (control.control === "number") {
       held.box.value = text;
       // The box keeps the number the link said; the slider sits where `shade.js` puts it.
@@ -2212,9 +2254,18 @@ function syncShade() {
   // box beside it says nothing now but disabled.
   const plan = tintedShape();
   const inert = plan.levels === true
-    ? "Gamma, Cycles, Phase and Transfer"
-    : "Autolevel, Gamma, Cycles, Phase and Transfer";
-  shadeNote.textContent = plan.direct ? `${inert} have no effect in this render mode.` : "";
+    ? "Scale, Gamma, Cycles, Phase, Transfer and Lambda"
+    : "Autolevel, Scale, Gamma, Cycles, Phase, Transfer and Lambda";
+  // Absolute says so in words as well as in the switch's colour: it is the one setting on
+  // this row under which a flat or a noisy picture is the setting working rather than
+  // something wrong, and a reader who missed the switch deserves the sentence.
+  const absolute = subject.shade.scale === "absolute";
+  paletteGroup.dataset.scale = subject.shade.scale;
+  shadeNote.textContent = plan.direct
+    ? `${inert} have no effect in this render mode.`
+    : absolute
+      ? "Absolute: the palette repeats every Period of the field's value and is not fitted to this picture."
+      : "";
 
   syncLevel();
 }

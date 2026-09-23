@@ -455,6 +455,18 @@ const ROLLOFFS = {
 };
 
 /**
+ * What a field value is measured against: the frame's own statistics, or nothing.
+ *
+ * A plain word rather than a tagged value, because neither kind takes a number — the
+ * absolute scale's own number is `period`, a key of its own, so that a link switching
+ * between the two keeps its period rather than losing it inside a tag.
+ */
+const SCALES = {
+  leveled: {},
+  absolute: {},
+};
+
+/**
  * The engine's palette recipe, key by key: what it is called in a link, what the
  * engine's own default is, and how a value is read and written.
  *
@@ -527,6 +539,33 @@ export const SHADE_KEYS = [
     write: writeTagged,
     fallback: { kind: "none" },
     same: sameTagged,
+  },
+  // The three below arrived after every other key and are omitted at their defaults like
+  // every other key, so no link written before them changed and `v` did not move.
+  {
+    key: "scale",
+    control: "choice",
+    table: SCALES,
+    read: (text) => choice(text, "scale", SCALES),
+    write: (value) => value,
+    fallback: "leveled",
+    same: (a, b) => a === b,
+  },
+  {
+    key: "lambda",
+    control: "number",
+    read: (text) => unit(text, "lambda"),
+    write: (value) => number(value),
+    fallback: 1,
+    same: (a, b) => a === b,
+  },
+  {
+    key: "period",
+    control: "number",
+    read: (text) => positive(text, "period"),
+    write: (value) => number(value),
+    fallback: 1,
+    same: (a, b) => a === b,
   },
 ];
 
@@ -976,6 +1015,22 @@ function positive(text, key) {
     throw new PermalinkError(`${key} has to be positive; the link says ${text}.`);
   }
   return value;
+}
+
+function unit(text, key) {
+  const value = finite(text, key);
+  if (!(value >= 0 && value <= 1)) {
+    throw new PermalinkError(`${key} is between 0 and 1; the link says ${text}.`);
+  }
+  return value;
+}
+
+/** One word out of a table of them, spelled exactly. */
+function choice(text, key, table) {
+  if (!Object.hasOwn(table, text)) {
+    throw new PermalinkError(`${key} is one of ${Object.keys(table).join(", ")}; the link says ${text}.`);
+  }
+  return text;
 }
 
 function flag(text, key) {

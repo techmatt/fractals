@@ -1,5 +1,5 @@
 {
-  "built": "2026-09-22",
+  "built": "2026-09-23",
   "crate": "explorer/engine-wasm",
   "engine_changes": [
     "coloring::composite, coloring::modulate and direct_trap::Painter::trace are pub: visibility only, no signature moved, engine tests unmoved.",
@@ -9,12 +9,13 @@
     "screen::Battery, its Default, Battery::screen and Screening were ALREADY pub, and are named here because the Walk tab's `screen` export leans on them: it runs the pipeline's own gate battery rather than a JavaScript copy of its rule. Nothing was changed next door for it.",
     "coloring::Spend is pub, with measure and position, and Stretch, Edges and Ranks carry Serialize/Deserialize: a frame's normalization has to cross to a worker so that a band of the shade can be coloured against the whole frame's distribution rather than its own. Zero behaviour; serde was already a dependency of that crate.",
     "coloring::shade_samples, composite_samples and modulate_samples are new and public: the second half of shade, composite and modulate, over a run of samples rather than over a Field. Each of the three is now its own measure followed by its own _samples over one band that is the whole field, so the pipeline's arithmetic is unmoved and the engine's 217 tests are unmoved with it. This is a signature added rather than a visibility widened, which the carve-out in CLAUDE.md allows where the prompt was sent to make the seam; explorer_shade_pool_ckpt136 was.",
-    "family::Family::PhoenixM, family::PHOENIX_PLANE and spec::FamilySpec::PhoenixM are new: the Phoenix recurrence over its parameter plane, spec kind `phoenix_m`, for the Phoenix tab; phoenix_tab_ckpt140 was sent for the seam. It is not render-only, because the explorer opens only a family with a home view, so the engine's own doors accept it too, and nothing in the pipeline's Python names it. Family::step and derivative_step are #[inline(always)], because the new arm tipped the inliner and doubled the Mandelbrot anchor's time. 54 pipeline renders byte-identical before and after, engine tests 217 unmoved plus four new."
+    "family::Family::PhoenixM, family::PHOENIX_PLANE and spec::FamilySpec::PhoenixM are new: the Phoenix recurrence over its parameter plane, spec kind `phoenix_m`, for the Phoenix tab; phoenix_tab_ckpt140 was sent for the seam. It is not render-only, because the explorer opens only a family with a home view, so the engine's own doors accept it too, and nothing in the pipeline's Python names it. Family::step and derivative_step are #[inline(always)], because the new arm tipped the inliner and doubled the Mandelbrot anchor's time. 54 pipeline renders byte-identical before and after, engine tests 217 unmoved plus four new.",
+    "coloring::Palette gains scale, lambda and period, with coloring::Scale, coloring::COMPRESSION_FLOOR, Spend::of, a Spend::Absolute variant and Palette's compresses, compress and place_absolute: a Box-Cox compression of the field before the stretch and an absolute scale, frac(g/period + phase), for the explorer's palette-mode switch; palette_modes_ckpt143 was sent for the seam and to change the Palette signature. Each new member is omitted from a serialized recipe at its default, so no recipe key, render key or cache name moves. 315 pipeline renders byte-identical before and after, 212 shades of this module identical, the three anchors timed within noise, engine tests 221 unmoved plus seven new."
   ],
   "engine_version": "0.1.0",
-  "gzip_bytes": 231149,
-  "raw_bytes": 785424,
+  "gzip_bytes": 233330,
+  "raw_bytes": 795814,
   "rustc": "1.96.0 (ac68faa20 2026-05-25)",
   "schema": 1,
-  "wallpapers_commit": "756c241ddbbe0f0c5641176e0f8b840b40dc2491"
+  "wallpapers_commit": "9a977778c8a0d21640eb14e5802fcb8c5933a73b"
 }

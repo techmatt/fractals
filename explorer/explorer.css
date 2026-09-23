@@ -41,6 +41,10 @@
   --state-rendering: #e0605a;
   --state-sharpening: #e8c84a;
   --state-final: #5cc47a;
+  /* The absolute palette scale: the switch's pressed half and the strip's frame while it
+     is in force. Its own colour, and none of the three above, so that it cannot be read as
+     a render state. */
+  --scale-absolute: #f0913f;
 
   margin: 0;
   padding: 0;
@@ -1414,6 +1418,37 @@ canvas.palette-final {
 }
 
 .bar.shade { gap: 0.3rem 0.9rem; margin-bottom: 0.4rem; }
+
+/* The scale switch: Leveled | Absolute, two halves of one pill. It opens the row because it
+   decides which of the controls after it are there at all, the way the Render mode select
+   decides the mode's parameters. Absolute is meant to be impossible to miss — the colours
+   stop fitting themselves to the frame, and a reader who did not notice the switch would
+   read a flat or noisy picture as a broken one — so its pressed half is filled in its own
+   colour and the strip above takes the same colour as a frame while it is in force. */
+.scale-switch { display: inline-flex; gap: 0; }
+.bar .scale-switch button:not(.chip) {
+  border-radius: 0;
+  margin: 0;
+}
+.bar .scale-switch button:not(.chip):first-child { border-radius: 999px 0 0 999px; }
+.bar .scale-switch button:not(.chip):last-child {
+  border-radius: 0 999px 999px 0;
+  border-left-width: 0;
+}
+.bar .scale-switch button[aria-checked="true"] {
+  color: var(--well);
+  background: var(--well-ink);
+  border-color: var(--well-ink);
+}
+.bar .scale-switch button[data-scale="absolute"][aria-checked="true"] {
+  background: var(--scale-absolute);
+  border-color: var(--scale-absolute);
+  font-weight: 600;
+}
+.palette-group[data-scale="absolute"] canvas.palette-final {
+  border: 2px solid var(--scale-absolute);
+}
+.palette-group[data-scale="absolute"] #shade-note { color: var(--scale-absolute); }
 .palette-group .help { margin: 0 0 0.4rem; }
 
 /* A family tab strip, because the library is a thousand maps and a reader wants the one

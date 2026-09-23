@@ -303,6 +303,15 @@ ENGINE_CHANGES = [
     "derivative_step are #[inline(always)], because the new arm tipped the inliner and "
     "doubled the Mandelbrot anchor's time. 54 pipeline renders byte-identical before and "
     "after, engine tests 217 unmoved plus four new.",
+    "coloring::Palette gains scale, lambda and period, with coloring::Scale, "
+    "coloring::COMPRESSION_FLOOR, Spend::of, a Spend::Absolute variant and Palette's "
+    "compresses, compress and place_absolute: a Box-Cox compression of the field before the "
+    "stretch and an absolute scale, frac(g/period + phase), for the explorer's palette-mode "
+    "switch; palette_modes_ckpt143 was sent for the seam and to change the Palette "
+    "signature. Each new member is omitted from a serialized recipe at its default, so no "
+    "recipe key, render key or cache name moves. 315 pipeline renders byte-identical before "
+    "and after, 212 shades of this module identical, the three anchors timed within noise, "
+    "engine tests 221 unmoved plus seven new.",
 ]
 
 _RUSTC_VERSION = re.compile(r"^rustc (\S+ \([0-9a-f]+ \d{4}-\d{2}-\d{2}\))")

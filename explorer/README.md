@@ -1371,7 +1371,7 @@ carries over or the link they open, and the two sets of a degree are one recurre
 ways rather than two families, which is what *Julia at this c* below is about. Fractional
 degrees and Phoenix are not drawn: `audit_deep_families_ckpt140` found perturbation fails on
 exactly the branch-cut seam the fractional family exists to show, and Phoenix needs a second
-delta lane. The tab's side note says which families it draws. Palette, the seven shade keys and
+delta lane. The tab's side note says which families it draws. Palette, the ten shade keys and
 Autolevel work exactly as they do everywhere else, because a deep field **is** a smooth
 field: one `f64` a sample with `NaN` for the interior, in the layout `compute_band`
 produces, so `shade_level` colours it without being told which kernel drew it.
@@ -1840,7 +1840,7 @@ page. A recolour walks back from the full pass to the cheapest stage that is her
 **A colour turned during a pass is the colour the pass lands in** *(deep_small_fixes_
 ckpt142)*. A pass captures its frame when it starts, and it used to shade that captured
 frame whole — so a palette changed mid-pass landed the stage in the palette the reader had
-left. Each stage now takes the palette, the seven and the level at its shade, and shades
+left. Each stage now takes the palette, the ten and the level at its shade, and shades
 again if one moved while it ran. The same capture had the cap probe refuse its answer after
 a tint, because it asked whether `view` was still the object it started from; it asks
 whether it is the same frame but for its colour now.
@@ -2026,7 +2026,7 @@ digits. Widening `permalink.js` would have moved three of its own rulings at onc
 is echoed as written and read as a double, that the cap is emphatically **not** a key, and
 that `f` and `m` say what is being drawn. Every shallow link ever written is held by those.
 
-What is shared is shared rather than copied: the seven shade keys, the `level` operator and
+What is shared is shared rather than copied: the ten shade keys, the `level` operator and
 the two encoders come from `permalink.js` by import. They are the engine's palette recipe
 and a URL's escaping rule, neither of which has anything to do with how deep the view is.
 
@@ -2861,7 +2861,7 @@ family, a degree, a constant, a mode, a mode parameter and a palette recipe have
 one spelling on this boundary, and adding a family to the engine is not adding an export.
 `FamilySpec`, `Palette` and `Colormap`'s kind are deserialized as the engine's own types,
 which is why a constant crosses as the decimal string it was written as, and why the
-permalink's seven shade keys are handed over as they stand — they *are* the engine's
+permalink's ten shade keys are handed over as they stand — they *are* the engine's
 palette recipe, and translating between two spellings of one thing is how they drift.
 
 **`plan` is asked first, and the page holds no second opinion.** It answers how many lanes
@@ -4279,7 +4279,7 @@ v · f · cx · cy · px · py · zx · zy · m · the mode's parameters · x ·
   opened" and not "can any gallery seat be" — and 444 distinct maps are seated in the
   general record alone. A link arriving on an unoffered map draws it, and the picker
   shows that map for as long as it is the one on the screen.
-- **The seven shade keys** are the engine's own `Palette` recipe, one key per real engine
+- **The ten shade keys** are the engine's own `Palette` recipe, one key per real engine
   parameter, at the engine's defaults, handed to the module exactly as they are read
   here. They were **link-only** for two drafts and are not any more — see *The controls
   for the recipe* below.
@@ -4293,10 +4293,26 @@ v · f · cx · cy · px · py · zx · zy · m · the mode's parameters · x ·
 | `mirror` | `0` | `0` or `1` |
 | `transfer` | `value` | `value` · `edge:<weight ≥ 0>` · `rank` |
 | `rolloff` | `none` | `none` · `soft_knee:<knee in [0, 1)>` · `reinhard` · `aces` |
+| `scale` | `leveled` | `leveled` · `absolute` |
+| `lambda` | `1` | number in `[0, 1]` |
+| `period` | `1` | positive number |
 
 `transfer` and `rolloff` are **tagged**: a kind, and its one parameter after a colon
 where it takes one. A kind that takes no parameter is refused if given one, and a kind
-that needs one is refused without it.
+that needs one is refused without it. `scale` is a plain word, because neither of its
+kinds takes a number: absolute's number is `period`, a key of its own, so switching
+scale keeps it.
+
+**The last three arrived later, and cost no version** *(palette_modes_ckpt143,
+2026-09-23)*. Each is omitted at its default, so no link written before them changed,
+and the deep contract takes them too because it imports this table. They are the
+engine's `Palette` members of the same names — `scale`, `lambda` and `period` rather
+than anything longer, because `transfer` was taken and the rest of the table is the
+engine's one-word spelling. What they do is in the engine's README, *The colouring
+stages*: `lambda` is a Box–Cox compression of the field before anything else (1 the
+field as it is, 0 its log), and `absolute` replaces the frame's own statistics with
+`frac(g/period + phase)`, so a value is one colour in every frame. The spelling is
+American, *leveled*, by the site's rule for anything a reader meets.
 
 ### `level`, and a gallery seat's own colour
 
@@ -4338,7 +4354,7 @@ it would be replaying a decision no run ever took. That test reads a coloring ki
 lives in the engine's mode catalog, and a fourth copy of that catalog in `permalink.js`
 is a fourth thing to keep in step.
 
-**It is not one of the seven shade keys and must not become one.** Those seven *are* the
+**It is not one of the ten shade keys and must not become one.** Those ten *are* the
 engine's `Palette` recipe and are handed to the module as a unit; `level` is a separate
 operator and crosses beside them, and the module curves the stops before it bakes them.
 It is on the **colour** side of the field cache for the same reason every shade key is:
@@ -4586,6 +4602,23 @@ recipe** group. What is worth writing down is the shape rather than the widgets:
 - **A cyclic map's fold is refused before it is asked for.** `mirror` on a map that
   closes on the colour it opens with is a refusal in `parse`, so the control is disabled
   and says which map and why rather than letting a reader write a link that will not open.
+- **Scale is a switch, and it swaps the row** *(palette_modes_ckpt143)*. *Leveled |
+  Absolute* opens the shade row, two halves of one pill, the way the Render mode select
+  decides which of a mode's parameters are shown: under Leveled the row is Gamma, Cycles,
+  Phase, Transfer and Lambda; under Absolute it is Phase, Lambda and Period, and Gamma,
+  Cycles and Transfer are hidden and kept, so switching back finds them as they were.
+  `shade.js` says which scale each key is shown under (`under`), and a key that names
+  none is shown under both. **Absolute is made hard to miss**, because it is the one
+  setting under which a flat or a noisy picture is the setting working: its pressed half
+  is filled in its own orange (`--scale-absolute`), the palette strip is framed in the
+  same colour, and the line under the row says the palette is not fitted to the picture.
+  Lambda's slider runs 0 to 1 linearly; Period's runs in decades from 10⁻³ to 10⁵ and
+  writes three figures. **Under Absolute the strip is one cycle of the map from the
+  view's phase** — there is no frame's range for it to be a picture of, and one period
+  of the field is one pass through the gradient. The compression is left out of the
+  strip under both scales, for the transfer's reason: it acts before the strip's 0 to 1.
+  All three are recolours in both tabs: the shallow tab's measured statistics are keyed
+  on `transfer`, `scale` and `lambda`, and the Deep tab re-shades its kept field.
 - **The count of what is set is the reset button's state.** Engine defaults is disabled
   at zero and reads *Engine defaults (3)* otherwise; there is no separate counter.
 - **Autolevel is disabled only where the operator has nothing to say** — a direct trap or
