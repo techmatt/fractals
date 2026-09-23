@@ -43,6 +43,12 @@ every byte of that lands in this repository's ignored `artifacts/`, never next d
 render cache defaults to `artifacts/renders/` and `FRACTAL_WEBSITE_RENDER_CACHE` moves it,
 which is the only knob involved.
 
+⚠ **That binary is the release build in the checkout next door, and nothing rebuilds it for
+you.** `renders.py` runs `engine/target/release/fractal-engine` as it finds it, so after any
+edit to the engine crate — the carve-out's included — rebuild it with `cargo build --release`
+before a maker draws. A stale binary does not look stale: it refuses a family it has never
+heard of, `phoenix_m` for one, which reads as a bug in the maker asking for it.
+
 **Read-only is not free of obligation, and `carriers.jsonl` is the standing example**
 *(2026-09-06)*. That repository dropped `fields` and `mean` from every carrier row to buy
 headroom under its 1 MiB history guard, and both are derived back at its own read — so
@@ -270,7 +276,7 @@ keeps the mechanics. **Every apply round ends by distilling that round's general
   baked module, and `permalink.js`'s typed `MODES` — and both ties are checked, `bake`
   holding the record to the module and `permalink.test.mjs` the module to the contract.
 
-  **The Mode select lists fewer than that** *(explorer_palettes, 2026-09-16)*: the modes
+  **The Render mode select lists fewer than that** *(explorer_palettes, 2026-09-16)*: the modes
   the **published** gallery record seats, read off the same committed record. That is a
   narrowing of what a control *lists* and not of what the page carries: the 17 are still
   baked, still parsed, and still drawn when a link names one, which puts that mode in the
@@ -292,7 +298,7 @@ keeps the mechanics. **Every apply round ends by distilling that round's general
   `COLLECTIONS` names a stamp per collection and refuses one whose solve was another
   collection's — a re-solve is a re-pointing of that table, and `seats` removes the tiles
   a repoint leaves unnamed. **The record is split by collection** *(explorer_slim_ckpt131)*:
-  `gallery.jsonl` is the header alone, carrying the Mode select's roster as `modes`, and
+  `gallery.jsonl` is the header alone, carrying the Render mode select's roster as `modes`, and
   each collection's rows are in the file its header entry names. The first frame waits on
   the header and never the rows, and the panel fetches a collection when it first shows
   it. **A staged gallery ships one
@@ -341,7 +347,7 @@ keeps the mechanics. **Every apply round ends by distilling that round's general
   So a maker is a module in `builder/` with an entry in its own `SHEETS`, `MAKERS` or
   `DIAGRAMS` table and a subcommand that draws it by figure id — `families`,
   `fundamentals`, `overview`, `diagram`, `locations`, `judges`, `palettes`, `pool`,
-  `picks`, `curation`. `scratch/` stays what it is for: the probes, sweeps and contact
+  `picks`, `curation`, `front`. `scratch/` stays what it is for: the probes, sweeps and contact
   sheets that *found* a choice. Once a choice is made, the program that acts on it is
   committed. **All 61 of them are, as of 2026-09-06**, and a row naming a path under
   `scratch/` is now a bug rather than a legacy.
@@ -489,6 +495,11 @@ front page's typed done-markers, and fails on any drift. That check is tamper-te
 renamed rail entry, a hand-edited heading id and a deleted done marker each produced
 exactly one problem and exit 1.
 
+**Two repositories are linked from every page, and each link says which.** The site bar's
+*GitHub* is this repository (`pages.SITE_REPO`), because a bar link named after the site is
+the site. The rail's code link, the footer and every mention of the code that drew a
+picture go to `techmatt/fractal-wallpapers` (`pages.CODE_REPO`).
+
 ## Figures and their assets
 
 The registry rule and the per-panel `provenance` requirement are locked conventions above.
@@ -598,7 +609,11 @@ was taken deliberately, in a commit of its own, and this line is what holds it.
 `#[track_caller]` line numbers, so a shifted line in `src/` is a shifted immediate — and the
 module is the same length and a different file. Measured, not supposed: the commit before
 the reformat rebuilt byte for byte, and the reformat alone did not. So a formatting commit
-in that crate owes a rebake like any other.
+in that crate owes a rebake like any other — and so does **every** source edit in
+`perturb-wasm`, a comment that moves a line included. `builder check`'s `bake` will not say
+so: it holds `palettes.js` and `catalog.js` and never rebuilds either module, so a
+`perturb.wasm` that no longer matches its crate is a green check. Rebuild with
+`python -m builder explorer --perturb` and name the new bytes in `perturb.manifest.json`.
 
 **`engine.wasm` did not move, and that is measured rather than assumed.** The same two
 crates on the same profile answered differently: `engine-wasm` reformatted and rebuilt to

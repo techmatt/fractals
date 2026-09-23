@@ -10,6 +10,16 @@ panel of pictures somebody can open — a thousand seated wallpapers, or the atl
 place the search kept — and on the right the viewer that draws whichever one is picked.
 Same URL, same keys, and every link written before it still opens the same picture.
 
+**It targets the desktop** *(Matt, 2026-09-19)*: where a choice is between a reader at a
+desk with a pointer and a large screen and one on a phone, it is made for the first.
+
+**A feature has to be a clear win** *(Matt, 2026-09-20)*. Complexity is a cost to the person
+using a tool, so a control, a panel or a mode joins the page only where what it gives
+plainly outweighs being one more thing on it. **And its text is for the artist** *(Matt,
+2026-09-21)*: a string on the page stays only if an artist would do something with it, and
+every button that has a key wears it. The page says *Render mode* wherever it names a mode
+*(Matt, 2026-09-22)*, because that is the article's term.
+
 ## What each section answers
 
 This file is the design record for the whole page and it is long. One file on purpose —
@@ -197,7 +207,7 @@ front page and at the bar's own size: `site.css` sets an `h1` at 1.75rem serif, 
 `.studio-title` takes all of that back, because a heading that broke the bar's single line
 to satisfy an outline would be the wrong trade.
 
-**Left, one of five things.** The third, fourth and fifth — *Walk*, *Deep* and
+**Left, one of six things.** The third to sixth — *Walk*, *Deep*, *Phoenix* and
 *Saved* — are sections of their own below. *Gallery* is the staged gallery `python -m builder seats`
 lands, one **collection** at a time — the general gallery, a collection per hue family,
 a collection per mode, chosen from a dropdown *(explorer_gallery_collections_ckpt129)* — as
@@ -237,7 +247,7 @@ viewer rather than navigating. **It is the only page that shows one**
 until this tab superseded it, and is a redirect here now, because a mark is worth more
 beside a viewer that draws the place it stands for than beside a link that leaves.
 
-**Right, the viewer**, and under it three sections — Download, Mode, Palette — then
+**Right, the viewer**, and under it three sections — Download, Render mode, Palette — then
 the folded Details: the render stat line, family, constants, `x`, `y`, `w`, all editable. Copy link is in the bar,
 because it is about the page rather than about a group.
 
@@ -725,10 +735,10 @@ drag's slid preview, honestly at nothing.
 **The stops are derived from the two constants, never typed.** A pass is three field stages:
 the preview at `PREVIEW_DIVISOR` coarser each way, the full pass at the screen, and the
 finish at `FINAL_SUPERSAMPLE` finer each way — 1/16, 1 and 4 of the screen's samples today,
-so the bar's stops fall at **1.2%** and **20.7%**. `STAGE_SPAN` computes them, so a change to
+so the bar's stops fall at **1.2%** and **21.0%**. `STAGE_SPAN` computes them, so a change to
 either constant moves the bar with it. A stage served from the field cache **jumps** its
 share rather than filling it, which is the truth: nothing was iterated. A recolour of a
-cached final field sits at 20.7% and goes full at `final`.
+cached final field sits at 21.0% and goes full at `final`.
 
 **The shade is not counted.** It is milliseconds against a field pass at a screen's size.
 `download.js` reserves a `shadeShare` at the end of its own bar because a *download's* shade
@@ -808,9 +818,8 @@ already goes through.
 
 **Nothing else is added.** No link key, no panel, no second setting. One flag,
 `explorer.julia-preview`, behind try/catch like everything else this page stores. Two
-places touch it and they are one switch: a checkbox beside Autolevel in the palette row,
-and the card's own `×`. The Download row's five buttons are untouched; that row is closed
-on purpose.
+places touch it and they are one switch: the *Julia preview* checkbox beside `Julia here
+(j)` on the Download row, and the card's own `×`.
 
 **It is off unless the box is ticked, and the tick lasts the session**
 *(Matt, explorer_ui_text_ckpt139, 2026-09-21)*. It was on by default and remembered in
@@ -818,8 +827,8 @@ on purpose.
 eye, rather than one that follows their pointer around whether or not they asked — so the
 default is off and the memory is `sessionStorage`: a visit that wanted it keeps it across a
 reload and a link, and a visit that did not is never handed it. The checkbox moved out of
-the Details fold and onto the shade row with it, because a setting nobody has switched on
-has to be somewhere a reader can see.
+the Details fold with it, and sits beside the button it previews, because a setting nobody
+has switched on has to be somewhere a reader can see.
 
 **Desktop pointer only.** `(hover: hover) and (pointer: fine)`, and a `pointerType` of
 `mouse` on the event itself. A finger has no hover, and the tap that would stand in for one
@@ -843,9 +852,9 @@ and *galleries* are the site's words already.
 2026-09-22)*, and it goes to `article/finding-good-locations.html` because that section is
 where the walk is: its §Guided search names the thing this tab is a demonstration of — *its
 search is a guided walk* — and §The walk and §Where the walk stops are the pipeline's own
-version of what the strip shows. It is a relative href like every other, and the Deep tab
-carries the same shape (§Deep). These two are the only links out of the explorer into the
-article; the site bar's *Making Fractal Wallpapers* is the way to the front page and always
+version of what the strip shows. It is a relative href like every other, and it is the one
+link out of the explorer into the article — the Deep tab's sentence gains the second when
+§Deep zoom is written (§Deep); the site bar's *Making Fractal Wallpapers* is the way to the front page and always
 was.
 
 The third tab runs a simplified version of the mining pipeline, and the viewer shows it
@@ -862,9 +871,9 @@ walk runs and whether the viewer follows it are two states, `state` and `attache
 
 1. It picks one of the ticked planes at random: the sampler's `SERVED` set, meaning
    Mandelbrot, Multibrot 3–6 and the pinned Phoenix slice.
-2. It draws a root width log-uniformly in the band, 1e-3 to 1e-4 by default
-   *(walk_view_ckpt131)*. The sampler's own band is 0.1 to 1e-3 (`WIDEST`/`NARROWEST`), and
-   typing it back into the config still works; the default sits deeper because the render
+2. It draws a root width log-uniformly between `WIDEST` 1e-3 and `NARROWEST` 1e-4, fixed
+   module constants *(walk_view_ckpt131)*. The sampler's own band is 0.1 to 1e-3; the walk
+   sits deeper because the render
    judge has nothing to say above about 1e-2, and a walk that showed every halving from
    the home box spent its first eleven rungs on pictures nobody was weighing.
 3. **Stage one** is quick and the viewer does not follow it: the strip's first card says
@@ -1456,7 +1465,8 @@ is short of enough and the walk runs to the ceiling. A drag was enough to start 
 link opened is drawn the same way, at the cap it names (pinned) or at the width's; Render is
 what asks whether the frame wants more.
 
-The flag is the tab's own `sessionStorage`, the Julia preview's pattern and its reason: it
+The flag is the tab's own `sessionStorage`, under `explorer.deep-auto-render` (absent reads
+as on, `off` as off), the Julia preview's pattern and its reason: it
 is a way of working rather than part of a picture, so no link carries it and the browser
 does not keep it past the tab. The box is beside Render.
 
@@ -1794,7 +1804,8 @@ The rule, its threshold and the thirteen frames it was measured on are
 
 One button, on the parameter plane only, at every degree the tab draws *(degrees three to six since
 deep_degrees_ckpt140, each against a measured pin — `perturb-wasm/README.md` §10)*. It searches the current view for the minibrots in and around
-it and fills an **ephemeral list** under the Frame block: nothing is stored, nothing
+it and fills an **ephemeral list** under the row that holds its button, in the Render group
+under the picture: nothing is stored, nothing
 reaches Saved, and no entry has a link contract of its own — an entry's target is an
 ordinary `dv` frame, which is why clicking one is a navigation like any other and the way
 back returns from it. The next search clears the list, and so does any gesture.
@@ -1893,9 +1904,9 @@ minibrots it can neither draw nor address, and says so rather than pretending.
 - **A cost warning shows once per session**, on the first entry, in `sessionStorage`. It
   says what the tab costs and what Auto-render spends without being asked; it used to end
   *Nothing here draws until you press Render*, and that sentence went with the checkbox.
-- **Entering resets the samples to one a pixel**, every time, and does **not** start a
-  render: coming into the tab is not a frame change, and a reader who has arrived should
-  see where they are before minutes are spent.
+- **Entering does not start a render**: coming into the tab is not a frame change, and a
+  reader who has arrived should see where they are before minutes are spent. The screen is
+  one sample a pixel whatever route came in (*The screen is one sample a pixel*, above).
 - **Zooming back out is fine at any depth.** *Back to the explorer* carries the view where
   `f64` can still resolve it and says why not where it cannot — the module's own question,
   not a width written down here. A Julia view has a second way to fail it, and the refusal
@@ -2616,14 +2627,14 @@ layout, so `shade_level` colours it unchanged.
 together** *(build_deep_tab_ckpt135, 2026-09-19)*, which is what settled the
 exports the module was waiting for a consumer to settle. See *Deep* above for the
 tab; `perturb-wasm/README.md` owns the design and the numbers: the limb rule, the
-rebasing, the cap policy, and the proof that where the two kernels disagree at
-depth it is this page's kernel that is wrong.
+rebasing, the cap policy, and the proof that where the two kernels disagree it
+is the plain `f64` loop that is wrong.
 
 That disagreement is worth reading before assuming the intro's scope line still
 holds. At width 2e-11 the two fields agree on **no sample at all** — median 61
-iterations apart, worst 34,250 — and against a 384-bit oracle the perturbation
-kernel is nearer the truth on 307 of 311 escaping samples and the plain `f64`
-loop on 4.
+iterations apart, worst 34,250. Which is wrong is settled on the pinned cases'
+0.02-wide view, where a 384-bit oracle can be run: the perturbation kernel is
+nearer the truth on 307 of 311 escaping samples and the plain `f64` loop on 4.
 
 ### What the engine needed
 
@@ -4502,6 +4513,11 @@ recipe** group. What is worth writing down is the shape rather than the widgets:
   what was meant would be worse than saying so. That includes the refusals that come from
   the module rather than from this file: a modulate under a rank transfer, a view past the
   `f64` wall, a mode parameter the engine will not take.
+- **A link with no `v` is refused**, unless every key it carries is a UI key, in which case
+  it is the home view. So a hand-typed `?f=julia&x=…` is a refusal and not a picture at the
+  defaults. A refusal hides the studio, so the canvas has no layout box and measures zero by
+  zero: a harness that reads the canvas size off such a page is reading a refusal, not a
+  layout bug.
 - **Defaults are omitted on emit**, so the canonical string carries what somebody actually
   chose — with two deliberate exceptions, and one deliberate non-exception:
   - **`p` and the family constants are always emitted.** Their defaults live outside

@@ -119,7 +119,7 @@ tests/measure.rs   what the frames cost and where the rules settle — every
 - **The width's own cap is the engine's shape without the engine's ceiling.**
   `maxiter::for_width` saturates at 67,000 by a width of about 4.7e-16, which
   would flatten every perturbation-depth view to one cap. The shape is restated
-  here and only `CEILING` moves, to a provisional 1,000,000. Touching
+  here and only `CEILING` moves, to 1,000,000. Touching
   `maxiter::for_width` itself was never an option: six callers read it and a
   wider ceiling there moves the cap of every shallow picture the project has.
 - **There is no skip table, and §6 is why.** Bivariate linear approximation was
@@ -138,7 +138,9 @@ plane and the dynamical one — because they are one recurrence read two ways an
 reference orbit to draw either from, and **not** because it is growing into a wider engine.
 No fractional degree, no other family, no other mode. It is one kernel with the degree as a
 const parameter, which is the shape `explorer/README.md` always said a deep renderer would
-have to take.
+have to take. Two families are closed rather than pending: a fractional degree, because
+`(Z+δ)^α − Z^α` fails exactly on the branch-cut seam that is that family's subject, and
+Phoenix, because its recurrence needs a second delta lane and a two-point reference.
 
 ## What the engine needed
 
@@ -182,7 +184,9 @@ below where it starts failing.
 
 **Which of the two is wrong is settled separately**, by the brute-force oracle,
 and the answer is unambiguous. On the 311 escaping samples of the pinned cases'
-view, run three ways — this kernel, the plain `f64` loop, and a 384-bit
+view (`smooth-cases.json`: the seahorse-valley point −0.7436438870371587 +
+0.1318259042053120i at width 0.02, cap 12,674, 20×20 — not the 2e-11 anchor, where no
+oracle is run), run three ways — this kernel, the plain `f64` loop, and a 384-bit
 fixed-point oracle — **the kernel is nearer the truth on 307 and the plain loop
 on 4**. On a shallow grid at `c = -0.5` where `f64` is still honest, 1,874 of
 2,776 escaping samples are bit-equal to the oracle and 2,770 are within 1e-6; the
@@ -527,12 +531,14 @@ because a view entered at `Z₁` has one step less of reference in front of it, 
 is recomputed rather than reused. Against a frame of seconds that is 1%, and it is
 the whole price of pressing the button.
 
-**`perturb.wasm` is 167,361 bytes raw and 69,376 gzipped** at level 9 — 112,675 /
-52,784 when this paragraph was first written, grown by the cap policy (§8), the
-nucleus search (§9), whose Newton solve, decimal writer and second walk of the
-loop are most of it, and the multiply's fifteen specializations above. Beside
-`engine.wasm`'s 763,343 / 228,670 that is 22% more to download, and it buys a
-renderer for everything below 1e-10, on both of the sets `z² + c` has. It is large for a dependency-free crate of
+**`perturb.wasm` is 199,293 bytes raw and 78,382 gzipped** at level 9
+(`perturb.manifest.json` carries both) — 112,675 / 52,784 when this paragraph was first
+written, grown by the cap policy (§8), the nucleus search (§9), whose Newton solve, decimal
+writer and second walk of the loop are most of it, the multiply's fifteen specializations
+above, and the degrees of §10, whose monomorphizations are about thirty kilobytes of it.
+Beside `engine.wasm`'s 785,424 / 231,149 that is 25% more raw and 34% more gzipped, and it
+buys a renderer for everything below 1e-10, on both of the sets `z^d + c` has at each degree
+from two to six. It is large for a dependency-free crate of
 1,500 lines, and the reason is `core::fmt`: `plan` formats a JSON report and every
 refusal is a sentence. That is an attribution from what the module contains rather
 than a measurement by subtraction, and if the tab wants the bytes back that is
@@ -1029,6 +1035,10 @@ whole cap of 117,518 (equal work across degrees), best of three, ns a sample-ite
 | 5 | 110 ms | 18.3 | 17.1 | 3.73 |
 | 6 | 123 ms | 23.0 | 22.1 | 4.68 |
 
+The cap a frame draws at has no term for the degree — `cap::for_width` reads the width and
+§8's probe reads the frame — so what a higher degree costs a reader is the per-iteration
+price above and nothing more; how many iterations a frame takes is the picture's.
+
 ⚠ **About 15% slower at `d ≥ 3` than the audit's own harness loop**, measured in one
 binary against one orbit (8.2 against 9.6 ns at `d = 3`). The arithmetic is the same;
 dropping the degenerate-sample diagnostic did not move it, and a runtime binomial did
@@ -1079,10 +1089,13 @@ at degrees three and five want one more doubling than degree two's; that is what
 is for, and nothing about it asks for a different rule.
 
 ⚠ **At degree six both body frames run out of ceiling** — still 22.7% and 21.9% the cap's
-fault at a million — and the page says so in the sentence §8 wrote for it (*some of what is
-painted as set is not*). At three and five `body 1e-22` reaches the ceiling and resolves
-there, at 4.5% and 6.2%. `cap::CEILING` is still marked provisional, and this is the first
-evidence that it binds on a frame a reader can reach; it was not moved here.
+fault at a million — and the page says so: Details' stat line ends *at the ceiling: x%
+undecided* on such a frame (`explorer/README.md`). At three and five `body 1e-22` reaches
+the ceiling and resolves there, at 4.5% and 6.2%. These are the first frames a reader can
+reach that the ceiling binds on, and **it stays at a million by Matt's ruling**: the limit
+is kept and the tab says where it binds, rather than being raised. (The doc comment on
+`cap::CEILING` in `src/lib.rs` still calls it provisional and says it binds on nothing; it
+is left, because any source edit here moves `perturb.wasm`'s bytes.)
 
 **The bar and the share** (`FAULT_EXPONENT` from 8 to 24, `FAULT_SHARE` from 5% to 15%),
 twenty-five rules a frame:
@@ -1225,7 +1238,7 @@ back byte for byte what the module before it produced, in 10.82 s against 10.83 
 | `crate` | `explorer/perturb-wasm` |
 | `dependencies` | `[]`, and it is written down because it is the design |
 | `rustc` | the compiler, with its commit and date |
-| `raw_bytes` / `gzip_bytes` | **199,150 raw, 78,280 gzipped** |
+| `raw_bytes` / `gzip_bytes` | **199,293 raw, 78,382 gzipped** |
 
 Two fields of `engine.manifest.json` are **absent** rather than empty:
 `engine_version`, because this crate does not link the engine, and
@@ -1240,7 +1253,7 @@ crate: `explorer_shade_pool_ckpt136` banded the shade.)
 
 **What a visitor downloads for it: nothing, unless they open the Deep tab.** The
 module and the tab's five modules are fetched on that tab's first open and never
-before. Against `engine.wasm`'s 228,670 gzipped, the 69,376 here is 30% more —
+before. Against `engine.wasm`'s 231,149 gzipped, the 78,382 here is 34% more —
 paid only by a reader who asked for a renderer for everything below 1e-10.
 
 `core::fmt` is still most of the size and is still not chased: `plan` formats a

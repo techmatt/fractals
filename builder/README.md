@@ -32,6 +32,8 @@ python -m builder growth [ID ...] [--stamp S] [--place] [--replace]
                             instrument's latest stamped run next door
 python -m builder picks [ID ...] [--place] [--replace]
                             draw a figure whose panels are named by tentative-gallery ID
+python -m builder front [ID ...] [--place] [--replace]
+                            draw the front page's picture, index-hero, one spec panel
 python -m builder pipeline [ID ...] [--run R] [--place] [--replace]
                             bake the Full pipeline charts read off a run's own
                             walk ledger next door
@@ -213,9 +215,10 @@ draws each point through the committed `engine.wasm`: the **whole Phoenix set** 
 tile's click: the filled set of `phoenix_m` at that `p`, found in a width-8 look and then a
 close one, boxed with `c`, padded 1.3 and set to 16:9. Both are drawn in `STYLE` in
 `phoenix_points.py` (`smooth`, `twilight_shifted` (shown as Violet Rosewood), gamma 0.38). It is the one place
-the tab's style is written, and the record carries it to `phoenix.js`. The native
-`fractal-engine` could not have drawn the frames: the binary next door predates
-`phoenix_m` and refuses it. Eight tiles, the classic's included, 16.6 KB. Rerun it when a
+the tab's style is written, and the record carries it to `phoenix.js`. The frames are
+measured through the committed wasm, the module that will draw them, rather than through
+the native `fractal-engine`, which knows `phoenix_m` only once it has been rebuilt after the
+engine edit that added it (`CLAUDE.md` has the caution). Eight tiles, the classic's included, 16.6 KB. Rerun it when a
 re-solve moves the seats or when the style changes; either lands as a diff in the record
 and in `explorer/phoenix-points/`.
 
@@ -261,6 +264,10 @@ figure *block*: `article/figures.jsonl` holds one row per figure, and
 `python -m builder figure <id>` prints the markup to paste. `check` re-derives that
 markup and asserts the page carries it verbatim, so a caption lives in one place and a
 page that has drifted is a failing check rather than something noticed later.
+
+`caption` is optional. A row without one derives a block with no `<figcaption>` at all —
+absent rather than empty — and the front page's `index-hero` is the one row like that. A
+`draft` row cannot be one, because its Draft mark sits in the caption.
 
 Every row says where it stands, in `status`. **`placed`** is made and on its page.
 **`pending`** is planned: the row names no file, width or height, and the block it derives
@@ -433,7 +440,9 @@ left. Three of them came out of a stamp that was never tracked next door and car
 with no seat row, which the row's own `read` clause says. `check`'s `figures` holds every
 cited pick to being in the store, and a `gallery_seat` key the store answers for needs no
 record next door at all. **The stamp on a figure's registry row is provenance from here
-on.**
+on.** The store carries seats and candidates and nothing else, and `recipes.load_all`
+refuses any other kind: a `spec` panel's recipe is the spec on its own row in
+`article/figures.jsonl`, and needs no second copy.
 
 **A pool candidate was never seated, and `picks.candidates` is the same path without the
 first read.** The pool is not only what a gallery kept: `wallpapers-three-bands`' middle
