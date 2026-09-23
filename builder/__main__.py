@@ -11,8 +11,8 @@ placed from, and `review` builds the doc a page is marked up in and reads it bac
 `explorer` bakes the explorer page's palettes, wasm module and manifest. `seats` lands a
 published tentative record next door as a staged gallery — a record and its pictures, with
 no page made from them. `import`,
-`prose`, `review`, `explorer`, `locations`, `judges`, `picks`, `seats`, `growth` and
-`pipeline` are the
+`prose`, `review`, `explorer`, `locations`, `judges`, `picks`, `seats`, `phoenix-points`,
+`growth` and `pipeline` are the
 commands that reach outside the repository — for a full-size original, for the approved
 prose, for the Drive-synced review folder, and for the engine, the records and the
 judges next door.
@@ -44,6 +44,7 @@ from . import growth as growth_module
 from . import judges as judges_module
 from . import locations as locations_module
 from . import palettes as palettes_module
+from . import phoenix_points as phoenix_points_module
 from . import picker as picker_module
 from . import picks as picks_module
 from . import pipeline as pipeline_module
@@ -488,6 +489,10 @@ def _parser() -> argparse.ArgumentParser:
         "--records-only",
         action="store_true",
         help="rewrite gallery.jsonl alone; leave the tiles as they are",
+    )
+
+    commands.add_parser(
+        "phoenix-points", help="choose the Phoenix tab's named points from the staged seats"
     )
 
     commands.add_parser(
@@ -1321,6 +1326,13 @@ def _do_seats(options: argparse.Namespace) -> int:
     return 0
 
 
+def _do_phoenix_points() -> int:
+    """Write `explorer/phoenix-points.json` and land its thumbnails beside it."""
+    for line in phoenix_points_module.write():
+        print(line)
+    return 0
+
+
 def _do_serve(options: argparse.Namespace) -> int:
     serve_module.serve(options.port)
     return 0
@@ -1423,6 +1435,8 @@ def main(argv: list[str] | None = None) -> int:
             return _do_atlas(options)
         if options.command == "seats":
             return _do_seats(options)
+        if options.command == "phoenix-points":
+            return _do_phoenix_points()
         if options.command == "serve":
             return _do_serve(options)
         if options.command == "walk":
@@ -1439,6 +1453,7 @@ def main(argv: list[str] | None = None) -> int:
         picks_module.PickError,
         picker_module.PickerError,
         seats_module.SeatError,
+        phoenix_points_module.PhoenixPointsError,
         links.LinkError,
         pool_module.PoolError,
         curation_module.CurationError,

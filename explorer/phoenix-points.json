@@ -1,0 +1,171 @@
+{
+ "schema": 1,
+ "kind": "phoenix-points",
+ "written_by": "python -m builder phoenix-points",
+ "rule": "The classic first, then the Phoenix seats of the staged gallery whose link starts at z_-1 = 0, one per exact (p, c), grouped into neighbourhoods by single linkage at 0.35 in (Re p, Im p, Re c, Im c), each stood for by its seat whose link is its picture and then by highest p_ge4, and the rest taken farthest-first in p from every p already taken, 7 of them, shown by Re p. builder/phoenix_points.py says why.",
+ "wallpapers_commit": "bcde439351b66c45a9f62a52019bf845b1892bb5",
+ "points": [
+  {
+   "source": "classic",
+   "p": [
+    -0.5,
+    0.0
+   ],
+   "c": [
+    0.5667,
+    0.0
+   ],
+   "link": null
+  },
+  {
+   "source": "seat",
+   "p": [
+    -0.5072384313692918,
+    0.444949191427974
+   ],
+   "c": [
+    -0.8543214931370023,
+    0.23107140580216767
+   ],
+   "key": "f1e916483de42ac0",
+   "mode": "smooth",
+   "palette": "Green Triad Dusk",
+   "p_ge4": 0.996787,
+   "collections": [
+    "lime"
+   ],
+   "file": "phoenix-points/f1e916483de42ac0.webp",
+   "link": "v=3&f=phoenix&cx=-0.8543214931370023&cy=0.23107140580216767&px=-0.5072384313692918&py=0.444949191427974&zx=0.0&zy=0.0&x=-0.15014274378336748&y=0.06844392004585614&w=1.7599398674554791&p=Green%20Triad%20Dusk",
+   "gap": "the tone operator's own stamp, which no record of depth/dc2 has a row for"
+  },
+  {
+   "source": "seat",
+   "p": [
+    -0.2440666959533996,
+    -0.7108918620308173
+   ],
+   "c": [
+    0.23053583532499533,
+    0.14928369481268455
+   ],
+   "key": "8aa0a3807b9333ee",
+   "mode": "smooth",
+   "palette": "fractal_flowers_abstract_104352_2560x1600",
+   "p_ge4": 0.999783,
+   "collections": [
+    "general",
+    "general_2000",
+    "smooth"
+   ],
+   "file": "phoenix-points/8aa0a3807b9333ee.webp",
+   "link": "v=3&f=phoenix&cx=0.23053583532499533&cy=0.14928369481268455&px=-0.2440666959533996&py=-0.7108918620308173&zx=0.0&zy=0.0&x=0.33039623018111075&y=-0.14152846107289188&w=0.19991889166821045&p=fractal_flowers_abstract_104352_2560x1600",
+   "gap": null
+  },
+  {
+   "source": "seat",
+   "p": [
+    -0.10845277332973771,
+    -0.28550637451160593
+   ],
+   "c": [
+    -0.8445080109773885,
+    -0.26918751420935344
+   ],
+   "key": "8f370e397703be83",
+   "mode": "stripe",
+   "palette": "Three Jewels",
+   "p_ge4": 0.996217,
+   "collections": [
+    "general_2000",
+    "stripe"
+   ],
+   "file": "phoenix-points/8f370e397703be83.webp",
+   "link": "v=3&f=phoenix&cx=-0.8445080109773885&cy=-0.26918751420935344&px=-0.10845277332973771&py=-0.28550637451160593&zx=0.0&zy=0.0&m=stripe&x=-0.05873019108311073&y=-0.1098393787906277&w=0.2223325603870721&p=Three%20Jewels&phase=0.504527",
+   "gap": null
+  },
+  {
+   "source": "seat",
+   "p": [
+    0.0,
+    0.0
+   ],
+   "c": [
+    0.0,
+    0.0
+   ],
+   "key": "cf373091816b3066",
+   "mode": "direct_trap_screen",
+   "palette": "fractal_shine_stripes_130177_2560x1600",
+   "p_ge4": 0.992023,
+   "collections": [
+    "teal"
+   ],
+   "file": "phoenix-points/cf373091816b3066.webp",
+   "link": "v=3&f=phoenix&cx=0&cy=0&px=0&py=0&zx=0&zy=0&m=direct_trap_screen&opacity=0.15&x=0.42389496345249794&y=0.7364621875092037&w=0.00187106069845643&p=fractal_shine_stripes_130177_2560x1600",
+   "gap": null
+  },
+  {
+   "source": "seat",
+   "p": [
+    0.2797706756932819,
+    -0.023686529501647142
+   ],
+   "c": [
+    0.43916147566415226,
+    0.41261591315399637
+   ],
+   "key": "c44270096b36757d",
+   "mode": "smooth_mean_angle",
+   "palette": "fantasy-25",
+   "p_ge4": 0.997995,
+   "collections": [
+    "magenta"
+   ],
+   "file": "phoenix-points/c44270096b36757d.webp",
+   "link": "v=3&f=phoenix&cx=0.43916147566415226&cy=0.41261591315399637&px=0.2797706756932819&py=-0.023686529501647142&zx=0.0&zy=0.0&m=smooth_mean_angle&weight=0.85&x=-0.3171789627239712&y=-0.4020208657332308&w=0.39341067705063654&p=fantasy-25&phase=0.140749",
+   "gap": null
+  },
+  {
+   "source": "seat",
+   "p": [
+    0.6279367208028207,
+    -0.5471025791871419
+   ],
+   "c": [
+    0.06042578618823925,
+    -0.2155886989220806
+   ],
+   "key": "1d42d4d86aead7c3",
+   "mode": "smooth",
+   "palette": "Rose Field, Sapphire Cut",
+   "p_ge4": 0.935355,
+   "collections": [
+    "rose"
+   ],
+   "file": "phoenix-points/1d42d4d86aead7c3.webp",
+   "link": "v=3&f=phoenix&cx=0.06042578618823925&cy=-0.2155886989220806&px=0.6279367208028207&py=-0.5471025791871419&zx=0.0&zy=0.0&x=-0.6241982336636133&y=0.1090781211465626&w=0.4255542049600504&p=Rose%20Field%2C%20Sapphire%20Cut&phase=0.879959&level=band_autolevel/v1:0,0.8229190069323638,0.8808641486786369,0,0.8629886965307019",
+   "gap": null
+  },
+  {
+   "source": "seat",
+   "p": [
+    0.8375476102242677,
+    0.4087796988016554
+   ],
+   "c": [
+    0.4507380371623594,
+    0.13346705902013667
+   ],
+   "key": "049a89bf5ef08c2f",
+   "mode": "smooth_mean_angle",
+   "palette": "hoarfrost-25",
+   "p_ge4": 0.992557,
+   "collections": [
+    "yellow"
+   ],
+   "file": "phoenix-points/049a89bf5ef08c2f.webp",
+   "link": "v=3&f=phoenix&cx=0.4507380371623594&cy=0.13346705902013667&px=0.8375476102242677&py=0.4087796988016554&zx=0.0&zy=0.0&m=smooth_mean_angle&weight=0.85&x=0.006128867032600854&y=0.8225859488340285&w=0.00017342094259689654&p=hoarfrost-25&phase=0.043348&level=band_autolevel/v1:0.3162801085747081,0.9458416553754185,0.9529936456122116,0.3008176686683185,0.9458416553754185",
+   "gap": null
+  }
+ ]
+}

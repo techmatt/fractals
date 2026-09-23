@@ -20,6 +20,13 @@
 //
 // The preview card is `julia-preview.js`, mounted a second time over this plane with its
 // own flag: the same machinery at one sample a pixel, off until the box says otherwise.
+//
+// **Starting points** *(phoenix_named_points_ckpt141)*. A row of tiles above the plane,
+// read from `phoenix-points.json`: the classic, and seven sets the curation passes seated,
+// which `python -m builder phoenix-points` chose for spread over `p`. A click moves `p` to
+// that point, marks it, and opens the set on the viewer as it was recorded. Most of those
+// `p` are complex, which is why `p` is two numbers here: the slider and the first box are
+// its real part, the second box its imaginary part.
 
 import * as juliaPreview from "./julia-preview.js";
 import { Renderer } from "./render.js";
@@ -55,6 +62,23 @@ const SETTLE_MS = 70;
  *  and past this a wider screen buys sharpness nobody aims with. */
 const MOST_WIDTH = 720;
 
+/** The starting points' record, beside this module. */
+const POINTS_URL = new URL("./phoenix-points.json", import.meta.url);
+
+/** A starting point's tile, the staged gallery's own size, which its seats' pictures are. */
+const TILE = { width: 316, height: 178 };
+
+/** A number as the tile's label spells it: three places, a real minus sign. */
+function spelled(value) {
+  return Number(value.toFixed(P_DECIMALS)).toString().replace("-", "−");
+}
+
+/** `p` as the tile's label spells it, dropping an imaginary part of zero. */
+function spelledP([re, im]) {
+  if (im === 0) return `p = ${spelled(re)}`;
+  return `p = ${spelled(re)} ${im < 0 ? "−" : "+"} ${spelled(Math.abs(im))}i`;
+}
+
 /**
  * Mount the tab.
  *
@@ -63,8 +87,9 @@ const MOST_WIDTH = 720;
  * set a point opens and to open it, and the page's status line.
  */
 export function mount(host) {
-  const { module, canvas, plane, slider, box, previewToggle, card, note, wholeButton } = host;
-  const { home, defaultP, look, setOf, open, planeView, say } = host;
+  const { module, canvas, plane, slider, box, boxIm, previewToggle, card, note, wholeButton } =
+    host;
+  const { home, defaultP, look, setOf, open, openSeat, points, planeView, say } = host;
   const paint = canvas.getContext("2d", { alpha: false });
 
   let renderer = null;
@@ -82,9 +107,19 @@ export function mount(host) {
    *  moved far enough to be a drag. */
   let drag = null;
 
+  /** The starting point the reader last chose, marked while the plane is at its `p`, and
+   *  let go by any other way of choosing a place. */
+  let chosen = null;
+  /** The classic's tile canvas, drawn here, and the look it was drawn in. */
+  let classicTile = null;
+  let classicLook = null;
+  let loadingPoints = null;
+
   const kept = restored();
   let frame = kept?.frame ?? { ...home() };
   let p = kept?.p ?? defaultP();
+  /** The imaginary part of `p`, zero unless a starting point or the second box moved it. */
+  let pi = Number.isFinite(kept?.pi) ? kept.pi : 0;
   syncP();
 
   const preview = juliaPreview.mount({
@@ -119,7 +154,7 @@ export function mount(host) {
 
   function keep() {
     try {
-      window.sessionStorage.setItem(KEY, JSON.stringify({ frame, p }));
+      window.sessionStorage.setItem(KEY, JSON.stringify({ frame, p, pi }));
     } catch {
       // A browser that stores nothing still has the plane; Back finds it at its home.
     }
@@ -129,7 +164,7 @@ export function mount(host) {
 
   /** The plane as a view the page can draw, emit or hold: this frame, this `p`. */
   function current() {
-    return planeView({ x: frame.x, y: frame.y, w: frame.w, p });
+    return planeView({ x: frame.x, y: frame.y, w: frame.w, p, pi });
   }
 
   function start() {
@@ -208,8 +243,9 @@ export function mount(host) {
       bitmap.getContext("2d").putImageData(shaded.image, 0, 0);
       last = { bitmap, frame: at };
       drawnLook = JSON.stringify(colour);
-      markClassic();
+      markPoints();
       note.hidden = true;
+      await drawClassicTile(r, colour);
     } catch (error) {
       note.textContent = `The plane could not be drawn: ${error.message}`;
       note.hidden = false;
@@ -219,11 +255,20 @@ export function mount(host) {
     }
   }
 
-  /** The classic set's point, as the viewer's crosshair is drawn: a dark stroke under a
-   *  light one, four arms with the point itself left clear. */
-  function markClassic() {
-    if (p !== CLASSIC.p) return;
-    const { px, py } = canvasAt(CLASSIC.x, CLASSIC.y);
+  /** The marks over the plane: the classic's while the plane is at its `p`, and the chosen
+   *  starting point's while the plane is at that one's. The classic chosen is the classic
+   *  marked, and reads the same; any other chosen point is the same crosshair in a ring. */
+  function markPoints() {
+    if (p === CLASSIC.p && pi === 0) crosshair(CLASSIC.x, CLASSIC.y, false);
+    if (chosen === null || chosen.source === "classic") return;
+    if (chosen.p[0] !== p || chosen.p[1] !== pi) return;
+    crosshair(chosen.c[0], chosen.c[1], true);
+  }
+
+  /** A point of the plane, as the viewer's crosshair is drawn: a dark stroke under a light
+   *  one, four arms with the point itself left clear, and a ring round it when `ringed`. */
+  function crosshair(cx, cy, ringed) {
+    const { px, py } = canvasAt(cx, cy);
     if (px < 0 || py < 0 || px > canvas.width || py > canvas.height) return;
     const arm = Math.max(6, Math.min(canvas.width, canvas.height) * 0.05);
     const clear = arm * 0.35;
@@ -240,8 +285,111 @@ export function mount(host) {
         paint.moveTo(x + dx * clear, y + dy * clear);
         paint.lineTo(x + dx * arm, y + dy * arm);
       }
+      if (ringed) {
+        paint.moveTo(x + arm * 1.25, y);
+        paint.arc(x, y, arm * 1.25, 0, 2 * Math.PI);
+      }
       paint.stroke();
     }
+  }
+
+  // ---------------------------------------------------------------- starting points
+
+  /** Fill the row out of the record, once. A record that will not load says so in the
+   *  tab's note and leaves the plane working. */
+  function loadPoints() {
+    loadingPoints ??= fetch(POINTS_URL)
+      .then((response) => {
+        if (!response.ok) throw new Error(`${response.status} ${response.statusText}`);
+        return response.json();
+      })
+      .then((record) => {
+        points.replaceChildren(...record.points.map(tileOf));
+        // The classic's tile is drawn after the plane, so a row that lands after the first
+        // draw asks for one more.
+        schedule();
+      })
+      .catch((error) => {
+        note.textContent = `The starting points could not be loaded: ${error.message}`;
+        note.hidden = false;
+      });
+    return loadingPoints;
+  }
+
+  /** One tile: its picture, its `p` under it, and a click that goes there. */
+  function tileOf(point) {
+    const entry = document.createElement("button");
+    entry.type = "button";
+    entry.className = "minibrot phoenix-point";
+    const well = document.createElement("div");
+    well.className = "minibrot-tile";
+    if (point.source === "classic") {
+      classicTile = document.createElement("canvas");
+      classicTile.width = TILE.width;
+      classicTile.height = TILE.height;
+      well.append(classicTile);
+      entry.title = "The classic Phoenix, drawn the way a click on the plane there draws it.";
+    } else {
+      const picture = document.createElement("img");
+      picture.src = new URL(point.file, POINTS_URL).href;
+      picture.width = TILE.width;
+      picture.height = TILE.height;
+      picture.alt = "";
+      picture.loading = "lazy";
+      well.append(picture);
+      entry.title = `A seated set, in ${point.mode}, opened as it was recorded.`;
+    }
+    entry.append(well);
+    const said = document.createElement("span");
+    said.className = "minibrot-said";
+    said.textContent = spelledP(point.p);
+    entry.append(said);
+    entry.setAttribute("aria-label", `${point.source === "classic" ? "The classic, " : ""}${said.textContent}`);
+    entry.addEventListener("click", () => go(point));
+    return entry;
+  }
+
+  /** Go to a starting point: `p` to its `p`, the plane over its `c`, the mark on it, and
+   *  its set open on the viewer. */
+  function go(point) {
+    chosen = point;
+    p = point.p[0];
+    pi = point.p[1];
+    syncP();
+    const [cx, cy] = point.c;
+    const height = (frame.w * 9) / 16;
+    const inside = Math.abs(cx - frame.x) < frame.w * 0.45 && Math.abs(cy - frame.y) < height * 0.45;
+    if (!inside) frame = { ...frame, x: cx, y: cy };
+    preview.hide();
+    schedule();
+    if (point.source === "classic") open(cx, cy, current());
+    else openSeat(point, current());
+  }
+
+  /** The classic's tile: its set at one sample a pixel in the plane's own mode and the
+   *  viewer's palette, which is what a click on the plane there opens a smaller copy of.
+   *  Drawn after the plane, on the plane's pool, and again only when the look moves. */
+  async function drawClassicTile(r, colour) {
+    if (classicTile === null) return;
+    const key = JSON.stringify(colour);
+    if (key === classicLook) return;
+    try {
+      await drawClassic(r, colour);
+      classicLook = key;
+    } catch (error) {
+      // The tile stays a well; the plane it was drawn after is fine.
+      console.error(error);
+    }
+  }
+
+  async function drawClassic(r, colour) {
+    const plane = planeView({ ...frame, p: CLASSIC.p, pi: 0 });
+    const view = { ...setOf(CLASSIC.x, CLASSIC.y, plane), ...colour, mode: "smooth", params: {} };
+    const field = await r.field({ ...view, level: null }, TILE.width, TILE.height);
+    if (field === null) return;
+    const shaded = await r.shadePooled(field, { ...view, level: null }, {});
+    if (shaded === null) return;
+    classicTile.getContext("2d").putImageData(shaded.image, 0, 0);
   }
 
   /** While a drag is under way, the last picture slid by the drag, so the plane moves
@@ -259,30 +407,38 @@ export function mount(host) {
 
   // ---------------------------------------------------------------------- the p control
 
+  /** The controls show `p` at three places. A starting point's `p` is held at the digits
+   *  its link carries, so the plane its Back lands on is the plane it was chosen from. */
   function syncP() {
     const text = p.toFixed(P_DECIMALS);
     slider.value = text;
     box.value = text;
+    boxIm.value = pi.toFixed(P_DECIMALS);
   }
 
-  function setP(value) {
+  /** The reader moved one part of `p` by hand: the other part stays as it is, the chosen
+   *  point is let go, and the plane redraws. */
+  function setP(value, imaginary) {
     if (!Number.isFinite(value)) {
       syncP();
       return;
     }
     const next = Number(Math.min(P_MOST, Math.max(P_LEAST, value)).toFixed(P_DECIMALS));
-    if (next === p) {
+    if (next === (imaginary ? pi : p)) {
       syncP();
       return;
     }
-    p = next;
+    if (imaginary) pi = next;
+    else p = next;
+    chosen = null;
     syncP();
     preview.hide();
     schedule();
   }
 
-  slider.addEventListener("input", () => setP(Number(slider.value)));
-  box.addEventListener("change", () => setP(Number(box.value)));
+  slider.addEventListener("input", () => setP(Number(slider.value), false));
+  box.addEventListener("change", () => setP(Number(box.value), false));
+  boxIm.addEventListener("change", () => setP(Number(boxIm.value), true));
 
   // ---------------------------------------------------------------------- the gestures
 
@@ -335,7 +491,19 @@ export function mount(host) {
       return { cx: at.x, cy: at.y };
     })();
     preview.hide();
+    if (chosen !== null) {
+      chosen = null;
+      remark();
+    }
     open(c.cx, c.cy, current());
+  }
+
+  /** The last picture again with the marks as they now stand, for a mark that went away
+   *  without the plane moving. */
+  function remark() {
+    if (last === null || drag !== null) return;
+    paint.drawImage(last.bitmap, 0, 0, canvas.width, canvas.height);
+    markPoints();
   }
 
   canvas.addEventListener("pointerup", (event) => release(event, false));
@@ -379,6 +547,7 @@ export function mount(host) {
     /** The tab is showing: draw the plane if it has not been drawn at this size. */
     show() {
       shown = true;
+      loadPoints();
       schedule();
     },
     /** The tab is hidden: nothing here draws while nobody can see it. */

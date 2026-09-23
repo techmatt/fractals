@@ -1811,6 +1811,28 @@ canvas.palette-final {
   touch-action: none;
 }
 .phoenix-canvas.is-dragging { cursor: grabbing; }
+
+/* The starting points: the Nearby-minibrots tile, a row of them. One row is the brief, and
+   eight tiles across a panel this wide would be too small to tell apart, so the row keeps
+   each tile at a size worth aiming at and scrolls sideways past what fits, the walk
+   strip's way. */
+.phoenix-points-head { flex: none; padding: 0 var(--gutter); }
+.phoenix-points {
+  overflow-y: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: var(--well-ink-dim) transparent;
+  flex: none;
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(7.5rem, 1fr);
+  gap: 0.4rem;
+  padding: 0.2rem var(--gutter) 0.6rem;
+  overflow-x: auto;
+  align-items: start;
+}
+.phoenix-point .minibrot-tile { padding: 0; }
+.phoenix-point .minibrot-tile img,
+.phoenix-point .minibrot-tile canvas { display: block; width: 100%; height: auto; }
 .bar.phoenix-p { padding: 0.5rem var(--gutter); }
 .bar.phoenix-p input.slider { flex: 1 1 6rem; width: auto; }
 .bar.phoenix-p .phoenix-preview-on { margin-left: auto; }

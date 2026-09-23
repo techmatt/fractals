@@ -3007,10 +3007,10 @@ let phoenixStarted = null;
 
 /** The Phoenix plane at a frame and a `p`, as a view: the viewer's mode and recipe, so
  *  that the set a point of it opens carries them the way Julia here does. */
-function phoenixPlaneView({ x, y, w, p }) {
+function phoenixPlaneView({ x, y, w, p, pi = 0 }) {
   return carried({
     ...link.fresh("phoenix_plane", view.mode, contract),
-    constants: { px: link.coordinateOf(p), py: link.coordinateOf(0) },
+    constants: { px: link.coordinateOf(p), py: link.coordinateOf(pi) },
     x: link.coordinateOf(x),
     y: link.coordinateOf(y),
     w: link.coordinateOf(w),
@@ -3029,6 +3029,17 @@ function phoenixOpen(cx, cy, plane) {
   draw();
 }
 
+/** Open a named point's seat on the viewer exactly as it was recorded, holding the plane
+ *  at that point's `p` for Back as a click on it would. The seat starts at z₋₁ = 0, which
+ *  is what makes it a point of the plane and Back a way there. */
+function phoenixOpenSeat(point, plane) {
+  if (locked()) return;
+  const parent = link.emit(plane, contract);
+  if (!openLink(point.link, { gap: point.gap, key: point.key, what: "this wallpaper" })) return;
+  holdParent({ julia: "phoenix", constants: constantTexts(view), parent, panel: "phoenix" });
+  syncToggles();
+}
+
 function startPhoenix() {
   phoenixStarted ??= mountPhoenix();
   return phoenixStarted;
@@ -3044,6 +3055,7 @@ async function mountPhoenix() {
       plane: at("phoenix-plane"),
       slider: at("phoenix-p"),
       box: at("phoenix-p-value"),
+      boxIm: at("phoenix-p-im"),
       previewToggle: at("phoenix-preview-on"),
       card: at("phoenix-preview"),
       note: at("phoenix-note"),
@@ -3057,6 +3069,8 @@ async function mountPhoenix() {
       planeView: phoenixPlaneView,
       setOf: (cx, cy, plane) => juliaViewOf(link.coordinateOf(cx), link.coordinateOf(cy), plane),
       open: phoenixOpen,
+      openSeat: phoenixOpenSeat,
+      points: at("phoenix-points"),
       say,
     });
   } catch (error) {

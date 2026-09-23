@@ -138,6 +138,7 @@ deep-worker.js        one worker: one perturb instance, one held orbit, one band
 deep-fx.js            exact decimal coordinates, BigInt fixed point
 deep-link.js          the deep link contract, its own beside the shallow one
 phoenix.js            the Phoenix tab: the Phoenix plane drawn live, and a click into its sets
+phoenix-points.json   the tab's starting points, `builder phoenix-points`; tiles in phoenix-points/
 paged-inflection/     PAGED: the Inflection tab, out of the working set — see below
 undo.js               the way back: the pictures shown, and the cursor into them
 saved.js              the Saved list: one localStorage value of links, and the save mark
@@ -2018,8 +2019,8 @@ list, where `j` and Back work on it exactly as on Mandelbrot (see the view toggl
 - **The Atlas opens its Phoenix partition for both Phoenix families.** That partition is the
   Phoenix *set* the search walked; the atlas has none for the plane.
 - **`p` is a slider and a number box under it**: real, −1 to 1, step 0.001, opening at the
-  classic −0.5 out of the anchor. Moving it redraws the plane. A link may carry a complex
-  `p`; the control writes `py=0`.
+  classic −0.5 out of the anchor. Moving it redraws the plane. The imaginary part has its
+  own box since `phoenix_named_points_ckpt141`; see below.
 - **A click opens that point's Phoenix set on the viewer**, at `c` under the click and the
   current `p`, in whatever mode, palette and recipe the viewer has. The address bar follows,
   the button row reads `Back to Phoenix plane (j)`, and Back lands the viewer on the plane at
@@ -2031,6 +2032,27 @@ list, where `j` and Back work on it exactly as on Mandelbrot (see the view toggl
 - **The classic is marked** while `p` is −0.5, at c = 0.5667 + 0i. That pair (0.5667, −0.5)
   is `(c, p)` and not a point of the plane, which is why the mark is at (0.5667, 0) and
   goes away when `p` moves.
+- **`p` is complex** *(phoenix_named_points_ckpt141)*. The slider and the first box are its
+  real part, and a second box, `+ i`, is its imaginary part. The plane always took a complex
+  `p` from a link, and the control used to write `py=0`. It is two numbers now because
+  nine of the eleven places the gallery seats on this plane have a complex `p`.
+- **Starting points** *(phoenix_named_points_ckpt141)*: a row of tiles under the sentence,
+  read from `phoenix-points.json`. It holds the classic first, then seven seats of the
+  staged gallery. `python -m builder phoenix-points` wrote it, and `builder/README.md` has
+  the rule. A click on a tile moves `p` to the tile's `p` at the digits its link carries,
+  centres the plane on its `c` if the point is off the frame, and marks the point. The
+  classic's mark is the classic mark; any other point gets the same crosshair in a ring.
+  The click then opens the set on the viewer: a seat through `openLink`, exactly as
+  recorded (mode, palette, phase, view, and `Reset to seat` back to it); the classic
+  through the same path a click on the plane takes, in the viewer's mode and palette.
+  Either way the plane is held for Back, as a click holds it. The mark clears when `p`
+  moves by hand or the plane is clicked. A pan or zoom keeps it. A seat's tile is its
+  gallery thumbnail, copied into `phoenix-points/` and committed, because the staged
+  gallery ships nothing until deploy. The classic's tile is drawn here after the plane, in
+  `smooth` and the viewer's palette, and is redrawn when that palette changes.
+- **Only a set that starts at z₋₁ = 0 can be a starting point.** Of the 404 Phoenix seats
+  in the staged gallery, 140 start there; the rest are points of no plane here, for the
+  reason given above.
 
 **The plane's home row is measured** like every other: at p = −0.5 its filled set spans
 re [−1.93, 0.5425], im ±0.66625, framed at (−0.69, 0) w 2.8. It is the one set in the
