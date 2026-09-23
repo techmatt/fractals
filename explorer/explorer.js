@@ -75,9 +75,10 @@ const DEFAULT_PANEL = "gallery";
 
 /** What separated a panel from the plane it was open at, in the UI key: `atlas:phoenix`.
  *  The plane follows the view now and is not written; an older address that says one
- *  still opens its panel. **`deep:gallery` is the one suffix still read**
- *  *(deep_gallery_build_ckpt144)*: it opens the Deep tab with its gallery unfolded, which
- *  is the form the article links with. Like the plane it is not written back. */
+ *  still opens its panel. `deep:gallery` is the form the article links the Deep tab's
+ *  gallery with, and it opened the tab with the gallery unfolded until the gallery stopped
+ *  folding *(explorer_nav_layout_ckpt145)*; it opens the tab now, which is where the gallery
+ *  always is. Like the plane it is not written back. */
 const PANEL_AT = ":";
 
 /** Each Julia family's parameter plane: where its `c` is a point. Julia here goes one way
@@ -2765,8 +2766,8 @@ const tabs = [...document.querySelectorAll(".tab")];
  */
 function showPanel(asked) {
   // An older address may say which plane, after a colon; the view says that now. The Deep
-  // tab's gallery is the one suffix read, and it unfolds the gallery.
-  const [name, at] = String(asked).split(PANEL_AT);
+  // tab's `deep:gallery` opens the tab like any other suffix, its gallery being always open.
+  const [name] = String(asked).split(PANEL_AT);
   const was = showing;
   showing = tabs.some((tab) => tab.dataset.panel === name) ? name : DEFAULT_PANEL;
   for (const tab of tabs) {
@@ -2826,7 +2827,6 @@ function showPanel(asked) {
   // said is the Deep tab's own. Coming out, whatever the Deep tab said goes, and the offer
   // comes back only on the frame it was made at.
   if (showing === "deep") {
-    if (at === "gallery") document.getElementById("deep-gallery").open = true;
     if (status.querySelector(".say-action") !== null) say("");
     startDeep().then(() => {
       if (showing !== "deep") return;
@@ -3403,7 +3403,6 @@ async function mountDeep() {
     // deep picture comes through.
     const gallery = await import("./deep-gallery.js");
     gallery.mount({
-      fold: at("deep-gallery"),
       grid: at("deep-gallery-grid"),
       note: at("deep-gallery-note"),
       context: deepContext,
@@ -4076,7 +4075,7 @@ function syncToggles() {
 // Deep tab is wanted — and pressing this is one of those times, so the first press here
 // costs what entering the tab costs. The list is the Deep tab's too, under the grid in
 // either view. What differs is where an entry goes: the viewer decides, by the same
-// question *Back to the explorer* asks, and a minibrot the ordinary renderer still
+// question *Shallow mode* asks, and a minibrot the ordinary renderer still
 // resolves opens here while one below the `f64` floor opens in the Deep tab.
 
 /** The families the search has a recurrence for and a measured body size at: the
@@ -4577,7 +4576,7 @@ function relayout() {
     // out — see `leaveScreensaver`.
     if (busy || saver?.active) return;
     if (!resize()) return;
-    if (deepOwns()) deep.repaint();
+    if (deepOwns()) deep.resized();
     else if (walkLayers !== null) paintWalk();
     else draw();
   }, 200);
@@ -4705,7 +4704,7 @@ async function main() {
   // **A deep link is read by the deep contract and never by the shallow one.** The marker
   // is what decides, at the door, before either reader sees a key it would refuse. What
   // the viewer opens at in that case is the Mandelbrot home — the Deep tab has the picture,
-  // and the viewer behind it is what Back to the explorer comes out onto.
+  // and the viewer behind it is what Shallow mode comes out onto.
   const arriving = link.isDeep(window.location.search) ? window.location.search : null;
   // A shallow link may ask for the screensaver, which starts once the gallery is up.
   const asked = new URLSearchParams(window.location.search);

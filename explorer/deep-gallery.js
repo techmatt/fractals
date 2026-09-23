@@ -8,10 +8,12 @@
 // below and `builder/deep_gallery.py`'s `fnv`: one rule for both sides, and nothing about
 // the tile is written into the register.
 //
-// **Folded until it is wanted.** The panel is a `<details>` that opens on a click or on
-// `panel=deep:gallery`, and nothing is fetched before it first opens: not the register,
-// and not a tile. A tile is a link and a click is the Deep tab's `open` of it, the door a
-// saved deep picture comes through, so the way back returns from it like any other.
+// **Always open, the way the Gallery tab is** *(Matt, explorer_nav_layout_ckpt145)*. It was
+// a `<details>` folded until a click, and the fold was one more thing between a reader and
+// the pictures. The register is fetched when the Deep tab is first mounted, which is when
+// it is first wanted, and a tile is a lazy `<img>`, so nothing is drawn off the wire while
+// the panel is hidden. A tile is a link and a click is the Deep tab's `open` of it, the door
+// a saved deep picture comes through, so the way back returns from it like any other.
 
 import { describe } from "./deep-link.js";
 
@@ -61,12 +63,12 @@ export function grouped(rows) {
 }
 
 /**
- * Mount the gallery in its fold.
+ * Mount the gallery, and fetch its register.
  *
  * `open(link)` is the page's door for a deep link; `context` is the deep contract's, which
  * a tile's label is described with.
  */
-export function mount({ fold, grid, note, context, open }) {
+export function mount({ grid, note, context, open }) {
   let loading = null;
 
   function load() {
@@ -119,10 +121,5 @@ export function mount({ fold, grid, note, context, open }) {
     return entry;
   }
 
-  // `panel=deep:gallery` unfolds it before this module may have loaded, so an open fold is
-  // read at mount as well as on the event.
-  fold.addEventListener("toggle", () => {
-    if (fold.open) load();
-  });
-  if (fold.open) load();
+  load();
 }

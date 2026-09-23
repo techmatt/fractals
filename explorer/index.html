@@ -121,19 +121,21 @@
     <!-- The Deep tab's panel says what the tab is, and holds its gallery: every control that
          acts on the deep view is under the picture, in the group beside Render
          (deep_caption_and_controls_right_ckpt141). The gallery (deep_gallery_build_ckpt144)
-         is deep frames a click opens, out of explorer/deep-gallery.jsonl, folded until it is
-         wanted; `panel=deep:gallery` opens the tab with it unfolded. -->
+         is deep frames a click opens, out of explorer/deep-gallery.jsonl, and always open,
+         the way the Gallery tab is (explorer_nav_layout_ckpt145); `panel=deep:gallery` still
+         opens the tab, because the article links it. -->
     <div class="tabpanel" id="panel-deep" role="tabpanel" aria-labelledby="tab-deep" hidden>
       <p class="side-note" id="deep-side-note">Zoom far past where ordinary rendering breaks
       down, into the Mandelbrot set, its higher-degree cousins and their Julia sets. Deep
       frames take longer to draw and are colored smooth only. <i>Find minibrots</i> finds
       tiny copies of the set worth diving into. For more, read
       <a href="../article/deep-zoom.html">Deep zoom</a>.</p>
-      <details class="deep-gallery" id="deep-gallery">
-        <summary class="section-head"><h2>Gallery</h2></summary>
-        <div class="deep-gallery-grid" id="deep-gallery-grid"></div>
+      <div class="deep-gallery" id="deep-gallery">
+        <div class="section-head"><h2 id="head-deep-gallery">Gallery</h2></div>
+        <div class="deep-gallery-grid" id="deep-gallery-grid" role="group"
+             aria-labelledby="head-deep-gallery"></div>
         <p class="side-note" id="deep-gallery-note" hidden></p>
-      </details>
+      </div>
     </div>
 
     <!-- The Phoenix tab (phoenix_tab_ckpt140): the Phoenix plane drawn live, its `p` under
@@ -234,8 +236,10 @@
            viewer is too narrow for two. Each view has its own three cells, in a section that
            is `display: contents` while that view owns the canvas and gone while the other does,
            so the cells and the shared Download group are the grid's four items in document
-           order. A button both views have sits at the same place in both: Box (b), Root (r),
-           the Julia button (j) and Find minibrots lead Navigation, in that order. -->
+           order. A button both views have sits at the same place in both: Box (b), Root (r)
+           and Find minibrots lead Navigation, in that order, and the Julia button (j) ends
+           it, so the shallow view's Julia preview sits directly after the button it previews
+           (explorer_nav_layout_ckpt145). -->
       <section class="control-group deep-group">
         <div class="deep-cell deep-cell-render">
           <div class="section-head"><h2 id="head-deep-render">Render</h2></div>
@@ -260,12 +264,12 @@
           <div class="bar deep-actions" role="group" aria-labelledby="head-deep-navigation">
             <button type="button" id="deep-box" aria-keyshortcuts="B" aria-pressed="false">Box (b)</button>
             <button type="button" id="deep-root" aria-keyshortcuts="R">Root (r)</button>
-            <button type="button" id="deep-julia" aria-keyshortcuts="J">Julia at this c (j)</button>
             <button type="button" id="deep-minibrots"
                     title="Tiny copies of the set in and around this view, largest first. Click one to go to it.">Find minibrots</button>
             <button type="button" id="deep-origin" hidden
                     title="The frame widens to the square root of its width.">Same view at z = 0</button>
-            <button type="button" id="deep-back">Back to the explorer</button>
+            <button type="button" id="deep-back">Shallow mode</button>
+            <button type="button" id="deep-julia" aria-keyshortcuts="J">Julia at this c (j)</button>
           </div>
         </div>
 
@@ -305,10 +309,10 @@
                title="Ctrl+Z (Cmd+Z) steps back through the pictures this session has shown; Ctrl+Shift+Z or Ctrl+Y steps forward.">
             <button type="button" id="view-box" aria-keyshortcuts="B" aria-pressed="false">Box (b)</button>
             <button type="button" id="view-whole" aria-keyshortcuts="R">Root (r)</button>
-            <button type="button" id="view-julia" aria-keyshortcuts="J">Julia here (j)</button>
             <button type="button" id="view-minibrots" hidden
                     title="Tiny copies of the set in and around this view, largest first. Click one to go to it.">Find minibrots</button>
             <button type="button" id="view-seat">Reset to seat</button>
+            <button type="button" id="view-julia" aria-keyshortcuts="J">Julia here (j)</button>
             <span class="group level" id="julia-preview-group">
               <label for="julia-preview-on">Julia preview</label>
               <input type="checkbox" id="julia-preview-on" class="flag"

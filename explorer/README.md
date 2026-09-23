@@ -1489,8 +1489,56 @@ pressed *Saved* face that deep_tab_controls_grid reported missing, and a second 
 removes it. `#deep-save` and `host.save` are gone. *Nearby minibrots* is **Find minibrots**
 in both views (next section).
 
+**And the grid holds still under both views** *(Matt, explorer_nav_layout_ckpt145,
+2026-09-23)*. Four changes, each made in both views wherever both have the control:
+
+- **A mode's parameters wrap inside the Render mode cell.** The left column is
+  `max-content`, and `threads` laid its two parameters (a label, a slider and a box each)
+  out on one line beside the select, which widened the column and squeezed Navigation and
+  Download. `.shallow-cell-mode` is `contain: inline-size` now, so it adds nothing to the
+  column's width, and `#params` is `display: contents`, so each parameter is an item of the
+  row and wraps. A parameter is about 300 px against the column's 336, so every parameter
+  gets a line of its own under the select. Measured with the page driven over CDP:
+  Navigation stays at x = 1026, 535 wide, under smooth, tia, stripe and threads at 1600,
+  and at x = 866, 295 wide, at 1200.
+- **The Julia button ends Navigation**, so the shallow view's Julia preview box sits
+  directly after the button it previews: Box (b), Root (r), Find minibrots, Reset to seat,
+  Julia here (j) in the shallow view; Box (b), Root (r), Find minibrots, Same view at
+  z = 0, Shallow mode, Julia at this c (j) in Deep.
+- ***Back to the explorer* is *Shallow mode*, and it fades where the frame cannot cross.**
+  The test is `host.resolves`, the viewer's own `resolvesShallow`, which asks the engine
+  module and also refuses a Julia `c` a double cannot hold, so the rule is spelled once. It
+  is faded by `aria-disabled` and never natively `disabled`, because a disabled button
+  gets no pointer events in Chromium and its title, which says why it is faded, would
+  never show. A press still lands and `leaveDeep` refuses in the line under the picture.
+  Whether a frame resolves depends on the grid, so a resize asks again (`deep.resized`).
+- **Nothing fades because a render is running.** In Deep, Julia, Root, Same view at z = 0,
+  Find minibrots and Back all faded for as long as a pass the reader started was running.
+  A press during a pass now stops it and acts (`interrupting` in `deep.js`). It stops the
+  pass rather than reverting it, even where Cancel would go back, because the press is
+  going somewhere else. The shallow view already worked this way: its buttons faded only
+  while a download ran. What still fades, and when:
+
+  | Button | Faded when |
+  |---|---|
+  | Box (b), both views | a download or Download all is running (`busy`) |
+  | Root (r), both views | already at the plane's root; a download |
+  | Reset to seat / link | nothing was opened, or the view is already the one opened; a download |
+  | Julia here (j) | a download (absent where the family has no Julia plane) |
+  | Find minibrots, both views | its own search is running (*Looking…*); a download (absent on a Julia plane) |
+  | Julia at this c / Back to the Mandelbrot set (j) | a download |
+  | Same view at z = 0 | already centred on 0; a download |
+  | Shallow mode | the frame is below `f64`, or its `c` is not exact in a double; a download |
+  | Halve, Double (Iterations) | a pass the reader started is running; the cap is at its limit or floor |
+  | Render | the frame is refused (`refused()`) |
+
+  A download is the one reason kept across the board: it is a file the reader asked for,
+  and it can be minutes of work that one press would throw away. The Iterations buttons
+  were left as they were, because the brief covers Navigation.
+
 The left panel keeps the tab's one sentence and, since
-deep_gallery_build_ckpt144, the folded gallery under it (*The gallery*, below).
+deep_gallery_build_ckpt144, the gallery under it (*The gallery*, below), always open since
+explorer_nav_layout_ckpt145.
 
 **The sentence is Matt's** *(explorer_deep_polish_ckpt142, 2026-09-22)*: *Zoom far past
 where ordinary rendering breaks down, into the Mandelbrot set, its higher-degree cousins and
@@ -1974,7 +2022,7 @@ own view, bar or status. `perturb.wasm` is fetched on the first press, which is 
 doors into the Deep module like the tab itself. The list is one element under the grid in
 both views (`#minibrot-list`), goes when the view it was found in moves, and is dropped
 when the other view takes the canvas. **An entry opens in whichever view can draw it**:
-`resolvesShallow`, the question *Back to the explorer* asks, keeps a frame above the `f64`
+`resolvesShallow`, the question *Shallow mode* asks, keeps a frame above the `f64`
 floor in the shallow view, and a frame below it opens in the Deep tab with the period's own
 cap. **The frame is the Deep tab's in both**, six body widths across (`tileWidth`), so a
 minibrot is the same size on the screen whichever view opens it; the shallow view draws it
@@ -2062,13 +2110,15 @@ minibrots it can neither draw nor address, and says so rather than pretending.
 
 ### The gallery *(deep_gallery_build_ckpt144, 2026-09-23)*
 
-A fold under the tab's sentence, **Gallery**, closed until a reader opens it: deep frames a
+**Gallery**, under the tab's sentence: deep frames a
 click opens, three tiles to a row under each subject's name, the Phoenix starting points'
 tile and the starting points' ruling of a grid that takes the panel's remaining height and
 scrolls inside it. It is the left panel's job by the studio's rule — choosing which view is
-up — and it is folded because the complexity bar asks what an open grid of thirty pictures
-costs a reader who came to zoom: nothing is fetched until the fold first opens, neither the
-register nor a tile.
+up. **It is always open, the way the Gallery tab is** *(Matt, explorer_nav_layout_ckpt145)*.
+It was a fold, closed until a click, on the argument that an open grid of thirty pictures
+costs a reader who came to zoom; the fold cost more than that. The register is fetched when
+the tab is first mounted, and a tile is a lazy `<img>`, so nothing is drawn off the wire
+while the panel is hidden.
 
 - **The register is `deep-gallery.jsonl`**: `{subject, link}` a row and nothing that can
   be read off the link. Rows group by subject in the order each subject first appears, so
@@ -2082,11 +2132,12 @@ register nor a tile.
 - **The tiles are baked, not drawn here**: `python -m builder deep-gallery thumbs`, one
   316×178 WebP a row in `deep-gallery/`, named by the 64-bit FNV-1a of the row's link —
   `tileName` here and `fnv` in the builder, held to one known value by the suite. They are
-  staged, untracked, until deploy; without them the fold shows empty wells that still open
-  their frames.
-- **`panel=deep:gallery` opens the tab with the fold open**, the form the article links
-  with: `../explorer/?panel=deep:gallery`. It is `PANEL_AT`'s one suffix still read, and
-  like the atlas's plane it is not written back into the address bar.
+  staged, untracked, until deploy; without them the gallery shows empty wells that still
+  open their frames.
+- **`panel=deep:gallery` opens the tab**, the form the article links with:
+  `../explorer/?panel=deep:gallery`. It used to unfold the gallery as well; with nothing to
+  unfold it reads like any other panel suffix, and like the atlas's plane it is not written
+  back into the address bar. It keeps resolving because a URL is permanent.
 
 ### Getting in and out
 
@@ -2095,7 +2146,7 @@ register nor a tile.
   to `julia6` — with its degree; its coordinates are already exact decimal text, so nothing
   is lost crossing the floor, and a shallow Julia view brings its parameter with it.
   Anywhere else the tab opens at the last deep view it had, or at the Mandelbrot home, and
-  says which families deep draws. *Back to the explorer* goes the other way under the
+  says which families deep draws. *Shallow mode* goes the other way under the
   family's shallow name, so a degree-5 Julia view comes back as `f=julia5`.
 - **At the ordinary explorer's zoom stop**, unchanged, on either of the two sets this
   kernel draws, the refusal now ends with an offer: *Open this frame in Deep*, the view
@@ -2106,7 +2157,7 @@ register nor a tile.
   *(deep_caption_and_controls_right_ckpt141)*: it used to stay under the picture after its
   own button had opened the tab. Entering Deep by any route (the button, the tab, a `dv=`
   link, a saved picture) clears it, and leaving puts it back only when the shallow view is
-  still the frame it was offered at, which the tab leaves it on and *Back to the explorer*
+  still the frame it was offered at, which the tab leaves it on and *Shallow mode*
   does not. Coming out also clears whatever the Deep tab last said, because the two share
   `#status`. The other shallow line under the picture, `#opened`, is hidden while Deep owns
   the viewer and returns on its own.
@@ -2116,7 +2167,7 @@ register nor a tile.
 - **Entering does not start a render**: coming into the tab is not a frame change, and a
   reader who has arrived should see where they are before minutes are spent. The screen is
   one sample a pixel whatever route came in (*The screen is one sample a pixel*, above).
-- **Zooming back out is fine at any depth.** *Back to the explorer* carries the view where
+- **Zooming back out is fine at any depth.** *Shallow mode* carries the view where
   `f64` can still resolve it and says why not where it cannot — the module's own question,
   not a width written down here. A Julia view has a second way to fail it, and the refusal
   names which one is in force: a `c` with more digits than a double carries cannot go, not

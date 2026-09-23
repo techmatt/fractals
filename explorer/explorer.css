@@ -1340,10 +1340,15 @@ summary.section-head:focus-visible { outline: 2px solid var(--well-link); outlin
 .bar button.save-view path { fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linejoin: round; }
 .bar button.save-view[aria-pressed="true"] { color: var(--well-link); border-color: var(--well-link); }
 .bar button.save-view[aria-pressed="true"] path { fill: currentColor; }
+/* `aria-disabled` is faded exactly as `disabled` is, for a button that has to keep its hover
+   title while it is unavailable — a natively disabled button takes no pointer events in
+   Chromium, so the title that says why never shows. Shallow mode is the one today. */
 .bar select:disabled,
 .bar input:disabled,
-.bar button:disabled { opacity: 0.45; cursor: not-allowed; }
-.bar button:not(.chip):disabled:hover { border-color: var(--well-rule); color: var(--well-ink); }
+.bar button:disabled,
+.bar button[aria-disabled="true"] { opacity: 0.45; cursor: not-allowed; }
+.bar button:not(.chip):disabled:hover,
+.bar button:not(.chip)[aria-disabled="true"]:hover { border-color: var(--well-rule); color: var(--well-ink); }
 .bar .chip:disabled:hover { border-color: var(--well-rule); color: var(--well-ink-dim); }
 
 
@@ -1633,6 +1638,15 @@ canvas.palette-final {
 .viewer.is-deep .deep-under:not(:has(> :not(:empty):not([hidden]))) { display: none; }
 .minibrots-under:not(:has(> :not(:empty):not([hidden]))) { display: none; }
 
+/* **A mode's parameters wrap, and never widen the column** *(Matt,
+   explorer_nav_layout_ckpt145)*. The column is `max-content`, and `threads` has two
+   parameters, a label, a slider and a box each: laid out on one line they made the left
+   column wide enough to squeeze Navigation and Download, so the right column moved with the
+   mode picked. Contained, the cell contributes nothing to the column's width and takes
+   whatever the column is; the parameters are items of the row, so they wrap inside it. */
+.shallow-cell-mode { contain: inline-size; }
+.shallow-cell-mode #params { display: contents; }
+
 /* Render, Auto-render and the bar, on one row. What the pass is doing is the bar's hover
    title, and the live region a screen reader hears is clipped out of the layout: the
    stage name and the time left used to take a line of their own while a pass ran, which
@@ -1835,12 +1849,12 @@ canvas.palette-final {
 
 /* ------------------------------------------------------------ the Deep tab's gallery
 
-   Folded under the tab's sentence until it is wanted *(deep_gallery_build_ckpt144)*. Open,
-   it takes the height the panel has left and scrolls inside it, the starting points'
-   ruling: three tiles to a row, each subject's name over its run of them. **The fold is
-   the scroller, not the grid**: a `<details>` does not hand flex sizing through to what it
-   holds, so a grid told to scroll grew to its full height and the panel clipped the last
-   rows. The summary stays put over the tiles as they scroll. */
+   Under the tab's sentence *(deep_gallery_build_ckpt144)*, and always open, the way the
+   Gallery tab is *(explorer_nav_layout_ckpt145)*: it was a `<details>` folded until a click.
+   It takes the height the panel has left and scrolls inside it, the starting points'
+   ruling: three tiles to a row, each subject's name over its run of them. **The panel is
+   the scroller, not the grid**, which is what it had to be while it was a `<details>` and
+   is kept: one scroller, and the heading stays put over the tiles as they scroll. */
 .deep-gallery {
   flex: 0 1 auto;
   min-height: 0;
@@ -1848,7 +1862,7 @@ canvas.palette-final {
   scrollbar-width: thin;
   scrollbar-color: var(--well-ink-dim) transparent;
 }
-.deep-gallery > summary.section-head {
+.deep-gallery > .section-head {
   position: sticky;
   top: 0;
   z-index: 1;

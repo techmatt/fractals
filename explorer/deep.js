@@ -1968,22 +1968,37 @@ export function mount(host) {
     els.capDown.disabled = committed || view.maxiter <= deepLink.CAP_FLOOR;
     syncDetails();
 
+    // **A navigation button fades only for a reason of its own** *(Matt,
+    // explorer_nav_layout_ckpt145)*. They all used to fade for as long as a pass the reader
+    // started ran, which read as "not now" about buttons that had nothing to wait for: a
+    // press during a pass cancels it and acts (`interrupting`, below), the way Cancel stops
+    // one. What is left is the button's own reason, and a download, which is a file the
+    // reader asked for and may be minutes of work that one press would throw away.
+    const downloading = running?.upto === "download";
     const julia = view.julia !== null;
     els.julia.textContent = julia ? "Back to the Mandelbrot set (j)" : "Julia at this c (j)";
-    els.julia.disabled = committed;
+    els.julia.disabled = downloading;
     els.julia.title =
       julia && cameFrom !== null ? "Back to the frame this Julia set was opened from." : "";
     els.origin.hidden = !julia;
     // **Mandelbrot only.** There are no minibrots on a dynamical plane: a Julia set has no
     // parameter-space nuclei in it, so the button is not disabled there, it is absent. The
     // same at a degree whose size estimate did not land against a measured pin — see
-    // `MINIBROT_DEGREES`.
+    // `MINIBROT_DEGREES`. While its own search runs it says so and waits.
     els.minibrots.hidden = julia || !MINIBROT_DEGREES.has(view.degree ?? 2);
-    els.minibrots.disabled = committed || busy;
+    els.minibrots.disabled = downloading || running?.upto === "minibrots";
     els.minibrots.textContent = running?.upto === "minibrots" ? "Looking…" : "Find minibrots";
-    els.root.disabled = committed || atRoot();
-    els.origin.disabled = committed || (julia && fx.isZero(view.x.dec) && fx.isZero(view.y.dec));
-    els.back.disabled = committed;
+    els.root.disabled = downloading || atRoot();
+    els.origin.disabled =
+      downloading || (julia && fx.isZero(view.x.dec) && fx.isZero(view.y.dec));
+    // **Shallow mode fades where the frame cannot cross**, by `host.resolves` — the viewer's
+    // own `resolvesShallow`, which asks the engine module and also refuses a Julia `c` a
+    // double cannot hold — and **is never natively disabled**: a disabled button takes no
+    // hover, and the title is the one place that says why it is faded. `aria-disabled`
+    // tells a screen reader the same, and a press still goes to `host.leave`, which refuses
+    // and says why in the line under the picture.
+    const crosses = host.resolves(view);
+    els.back.setAttribute("aria-disabled", String(downloading || !crosses));
     // Two reasons it might not go, and the title names the one in force. A parameter
     // that cannot cross is the more surprising of the two, because the frame would
     // draw perfectly well next door — as a different set.
@@ -1992,9 +2007,9 @@ export function mount(host) {
       (deepLink.exactInDouble(view.julia.x) && deepLink.exactInDouble(view.julia.y));
     els.back.title = !carries
       ? "This Julia set's c has more digits than the ordinary explorer carries, so it cannot be taken back: rounding it would open a different Julia set."
-      : host.resolves(view)
-        ? ""
-        : "This frame is below what the ordinary explorer can resolve, so it cannot be carried back.";
+      : crosses
+        ? "The ordinary explorer, at this frame."
+        : "This frame is too deep for the ordinary explorer to resolve. Zoom out here first.";
     els.back.hidden = false;
 
     // What the tab says about itself, in one line: what Render would do, and what is
@@ -2089,7 +2104,7 @@ export function mount(host) {
     const y = fx.parse(from.y.text);
     if (x === null || y === null) return null;
     // A shallow Julia view brings its parameter with it, which is the same trip
-    // *Back to the explorer* makes in the other direction. The constants are
+    // *Shallow mode* makes in the other direction. The constants are
     // already decimal text on that side, so nothing is lost crossing the floor —
     // and a `c` that came from a double stays exactly the `c` that double spells.
     const family = deepLink.FAMILIES.get(from.family);
@@ -2159,11 +2174,33 @@ export function mount(host) {
     }
   });
 
-  els.julia.addEventListener("click", () => (view.julia === null ? toJulia() : toMandelbrot()));
-  els.origin.addEventListener("click", toOrigin);
-  els.minibrots.addEventListener("click", () => findMinibrots());
-  els.root.addEventListener("click", toRoot);
-  els.back.addEventListener("click", () => host.leave(view));
+  /**
+   * A navigation button, pressed while a pass runs: the pass stops and the button acts
+   * *(Matt, explorer_nav_layout_ckpt145)*. Stopped and not reverted, even where Cancel would
+   * go back — the press is going somewhere else, and a picture restored on the way would
+   * be drawn over at once. A download is never taken this way, and the buttons it holds are
+   * faded while it runs.
+   */
+  function interrupting(act) {
+    return () => {
+      if (running?.upto === "download") return;
+      if (running !== null) stop();
+      act();
+    };
+  }
+
+  els.julia.addEventListener(
+    "click",
+    interrupting(() => (view.julia === null ? toJulia() : toMandelbrot())),
+  );
+  els.origin.addEventListener("click", interrupting(toOrigin));
+  els.minibrots.addEventListener("click", interrupting(() => findMinibrots()));
+  els.root.addEventListener("click", interrupting(toRoot));
+  // Faded is not disabled here (see `syncControls`), so a press on a frame that cannot
+  // cross still lands, and `host.leave` says why it will not go.
+  els.back.addEventListener("click", () => {
+    if (running?.upto !== "download") host.leave(view);
+  });
 
   return {
     /** The view the tab is standing on, for the colour controls and for a link. */
@@ -2326,6 +2363,12 @@ export function mount(host) {
     wheel: (px, py, out) => zoom(px, py, out ? WHEEL_ZOOM : 1 / WHEEL_ZOOM),
     key: (px, py, out) => zoom(px, py, out ? KEY_ZOOM : 1 / KEY_ZOOM),
     repaint: paint,
+    /** The canvas changed size: repainted, and the controls asked again, because whether
+     *  the frame still resolves in `f64` — Shallow mode's fade — is a question of the grid. */
+    resized() {
+      paint();
+      syncControls();
+    },
     stop,
     /** The document is going away: the deep pool goes with it.
      *
