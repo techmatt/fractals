@@ -12,8 +12,9 @@
 // whichever is later. So the interval is a floor and not a promise, and fitting the render
 // to it is what keeps the two close: each seat is priced with the Download row's own
 // `COST` estimate at the screen's size, then stepped down — two samples a pixel each way,
-// one, half the size, a quarter — until it fits. A seat a quarter cannot fit is skipped and
-// the log says why, and so is a render that runs past twice what it was priced at.
+// then one — until it fits. **Never under one sample a pixel, and never under the screen's
+// size** *(Matt, 2026-09-22)*: a seat one sample cannot fit is skipped and the log says
+// why, and so is a render that runs past twice what it was priced at.
 //
 // **The estimate learns.** `COST` is one machine at the mandelbrot home view, and a
 // gallery seat is usually deeper than that and iterates more per sample, so every picture
@@ -27,9 +28,14 @@
 /** How long the cross-fade from one picture to the next takes. */
 export const SCREENSAVER_FADE_MS = 500;
 
-/** The intervals offered, in the order the picker shows them, spelled as the link does. */
+/** The intervals offered, in the order the picker shows them, spelled as the link does.
+ *
+ *  *Fastest* is four seconds, as a floor and as a budget alike *(Matt, 2026-09-22)*: it
+ *  advances as soon as the next picture is ready and four seconds have passed, and the
+ *  next picture is fitted into four. It used to be no floor at all and a 2 s budget, which
+ *  put most seats at half the screen's size. */
 export const EVERY = [
-  { value: "fastest", label: "Fastest", seconds: 0 },
+  { value: "fastest", label: "Fastest", seconds: 4 },
   { value: "10s", label: "10 s", seconds: 10 },
   { value: "30s", label: "30 s", seconds: 30 },
   { value: "1m", label: "1 min", seconds: 60 },
@@ -40,10 +46,6 @@ export const EVERY = [
 
 export const DEFAULT_EVERY = "30s";
 
-/** What *Fastest* is priced against: it advances as soon as a picture is ready, and a
- *  picture that takes a minute to be ready is not what anybody choosing it meant. */
-export const FASTEST_BUDGET_S = 2;
-
 /** A render past this multiple of its price is cancelled and its seat skipped. */
 export const OVERRUN = 2;
 
@@ -53,12 +55,12 @@ const OVERRUN_FLOOR_S = 1;
 /** How long the controls stay up after the pointer last moved. */
 const CONTROLS_FOR_MS = 2000;
 
-/** The steps a seat is fitted down, most expensive first. `scale` is of each side. */
+/** The steps a seat is fitted down, most expensive first. `scale` is of each side.
+ *  It ends at the screen's size and one sample a pixel: a picture that cannot be drawn at
+ *  that in the interval is skipped rather than shown coarser than the screen. */
 export const LADDER = [
   { scale: 1, supersample: 2 },
   { scale: 1, supersample: 1 },
-  { scale: 0.5, supersample: 1 },
-  { scale: 0.25, supersample: 1 },
 ];
 
 /** Where the interval is remembered, and where the log is switched on. */
@@ -72,8 +74,18 @@ export function everyOf(value) {
 
 /** The seconds a render is fitted into at this interval. */
 export function budgetOf(every) {
-  const one = everyOf(every) ?? everyOf(DEFAULT_EVERY);
-  return one.seconds > 0 ? one.seconds : FASTEST_BUDGET_S;
+  return (everyOf(every) ?? everyOf(DEFAULT_EVERY)).seconds;
+}
+
+/**
+ * The browser's own key for full screen, as a reader on this machine presses it: ⌃⌘F on a
+ * Mac, F11 everywhere else. It is only ever a hint beside the button — the button asks
+ * the page's own full screen, which the key does not need.
+ */
+export function fullscreenKey(platform = null) {
+  const nav = globalThis.navigator;
+  platform ??= nav?.userAgentData?.platform ?? nav?.platform ?? "";
+  return /mac|iphone|ipad/i.test(platform) ? "⌃⌘F" : "F11";
 }
 
 /**
@@ -203,6 +215,7 @@ function store(key, value) {
  */
 export function install(host) {
   const { layer, canvases, controls, everyPicker, pauseButton, exitButton, note } = host;
+  const { fullscreenButton } = host;
   const { pool, parse, estimate, pictureOf, address, leave } = host;
 
   for (const canvas of canvases) canvas.style.transition = `opacity ${SCREENSAVER_FADE_MS}ms linear`;
@@ -212,6 +225,14 @@ export function install(host) {
     option.textContent = one.label;
     everyPicker.append(option);
   }
+  // The page's own full screen where the browser has it, which a click may ask for; where
+  // it does not (a phone's Safari), the browser's key is still said, as a hint.
+  const key = fullscreenKey();
+  const canFill = typeof layer.requestFullscreen === "function" && document.fullscreenEnabled !== false;
+  fullscreenButton.title = canFill
+    ? `Or press F here, or ${key} for the browser's own full screen.`
+    : `Press ${key} for full screen.`;
+  if (!canFill) fullscreenButton.disabled = true;
 
   let run = 0;
   let active = false;
@@ -247,6 +268,22 @@ export function install(host) {
     paused = on;
     pauseButton.textContent = on ? "Resume" : "Pause";
     pauseButton.setAttribute("aria-pressed", String(on));
+  }
+
+  function fillsScreen() {
+    return document.fullscreenElement === layer;
+  }
+
+  function sayFullscreen() {
+    fullscreenButton.textContent = fillsScreen() ? "Leave full screen" : `Full screen (${key})`;
+    fullscreenButton.setAttribute("aria-pressed", String(fillsScreen()));
+  }
+
+  function toggleFullscreen() {
+    if (!canFill) return;
+    const asked = fillsScreen() ? document.exitFullscreen() : layer.requestFullscreen();
+    // A refusal — no gesture, a policy — leaves the layer as it was, and the key still works.
+    asked?.catch?.((error) => log("fullscreen refused", { why: String(error?.message ?? error) }));
   }
 
   function showControls() {
@@ -337,15 +374,18 @@ export function install(host) {
     const budget = budgetOf(every);
     const step = fit({ ...size, budget, price: (samples) => prior(samples) * factor });
     if (step.skip) {
-      return { skip: `~${step.seconds.toFixed(1)} s at a quarter, over the ${budget} s budget` };
+      return { skip: `~${step.seconds.toFixed(1)} s at one sample a pixel, over the ${budget} s budget` };
     }
     const priced = prior(step.width * step.height * step.supersample * step.supersample);
     holder = {};
     const mineHolder = holder;
     let overran = false;
-    // Never inside the budget, though: a render still within its interval has made nothing
-    // late, and at a minute the first measured run cut a seat priced at 6.5 s at 13.
-    const limit = Math.max(OVERRUN_FLOOR_S, OVERRUN * step.seconds, budget);
+    // Never inside twice the budget, though: a render still within its interval has made
+    // nothing late, and at a minute the first measured run cut a seat priced at 6.5 s at 13.
+    // Past the interval is allowed too *(Matt, 2026-09-22)*: a seat that fitted at one
+    // sample a pixel and runs over is still worth waiting for, and under *Fastest* the
+    // interval alone cut seats priced at 1.4 s at exactly 4.
+    const limit = Math.max(OVERRUN_FLOOR_S, OVERRUN * Math.max(step.seconds, budget));
     const timer = setTimeout(() => {
       // A run ended since: the renderer here may already be the next entry's.
       if (mine !== run) return;
@@ -447,6 +487,9 @@ export function install(host) {
       event.preventDefault();
       setPaused(!paused);
       showControls();
+    } else if ((event.key === "f" || event.key === "F") && !event.ctrlKey && !event.metaKey && !event.altKey) {
+      event.preventDefault();
+      toggleFullscreen();
     }
   }
 
@@ -472,6 +515,7 @@ export function install(host) {
     }
     layer.hidden = false;
     layer.classList.remove("is-awake");
+    sayFullscreen();
     log("enter", { seats: seats.length, every, factor: +correction.factor().toFixed(2) });
     try {
       renderer = await pool();
@@ -499,6 +543,9 @@ export function install(host) {
     renderer = null;
     holder = null;
     clearTimeout(controlsTimer);
+    // The full screen this layer asked for ends with it; the browser's own (F11) is the
+    // reader's, and is left alone.
+    if (fillsScreen()) document.exitFullscreen().catch(() => {});
     layer.hidden = true;
     log("exit", { factor: +correction.factor().toFixed(2) });
     leave(shown);
@@ -511,6 +558,8 @@ export function install(host) {
   everyPicker.addEventListener("change", () => setEvery(everyPicker.value));
   pauseButton.addEventListener("click", () => setPaused(!paused));
   exitButton.addEventListener("click", exit);
+  fullscreenButton.addEventListener("click", toggleFullscreen);
+  document.addEventListener("fullscreenchange", sayFullscreen);
 
   return {
     enter,

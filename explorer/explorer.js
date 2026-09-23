@@ -4644,6 +4644,7 @@ async function main() {
     everyPicker: document.getElementById("screensaver-every"),
     pauseButton: document.getElementById("screensaver-pause"),
     exitButton: document.getElementById("screensaver-exit"),
+    fullscreenButton: document.getElementById("screensaver-fullscreen"),
     note: document.getElementById("screensaver-note"),
     // Its own pool over the module already compiled, the way the walk has one: a resize
     // or a pass on the page underneath cancels by generation, and must not cancel this.

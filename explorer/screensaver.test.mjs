@@ -11,8 +11,8 @@ import {
   DEFAULT_EVERY,
   EVERY,
   everyOf,
-  FASTEST_BUDGET_S,
   fit,
+  fullscreenKey,
   LADDER,
   sizeFor,
 } from "./screensaver.js";
@@ -25,7 +25,9 @@ test("the intervals are the seven the picker offers, and the default is one of t
   assert.notEqual(everyOf(DEFAULT_EVERY), null);
   assert.equal(everyOf("45s"), null);
   assert.equal(budgetOf("1m"), 60);
-  assert.equal(budgetOf("fastest"), FASTEST_BUDGET_S);
+  // Fastest is a four-second floor and a four-second budget alike.
+  assert.equal(everyOf("fastest").seconds, 4);
+  assert.equal(budgetOf("fastest"), 4);
   // A value nobody offers is priced as the default, never as zero.
   assert.equal(budgetOf("nonsense"), budgetOf(DEFAULT_EVERY));
 });
@@ -37,9 +39,11 @@ test("a picture is letterboxed at its own aspect", () => {
   assert.deepEqual(sizeFor({ across: 21, down: 9 }, 1000, 1000).width, 1000);
 });
 
-test("the ladder opens at four samples a pixel and ends at a quarter of the size", () => {
-  assert.deepEqual(LADDER[0], { scale: 1, supersample: 2 });
-  assert.deepEqual(LADDER.at(-1), { scale: 0.25, supersample: 1 });
+test("the ladder is four samples a pixel then one, both at the screen's size", () => {
+  assert.deepEqual(LADDER, [
+    { scale: 1, supersample: 2 },
+    { scale: 1, supersample: 1 },
+  ]);
 });
 
 test("a seat is fitted to the first step whose price is within the budget", () => {
@@ -51,16 +55,12 @@ test("a seat is fitted to the first step whose price is within the budget", () =
   // 2 M at 1x fits 3 s where 8 M does not.
   const one = fit({ ...size, budget: 3, price });
   assert.deepEqual([one.scale, one.supersample], [1, 1]);
-  // Half the size is 0.5 M.
-  assert.equal(fit({ ...size, budget: 1, price }).scale, 0.5);
-  // A quarter is 125 thousand.
-  const quarter = fit({ ...size, budget: 0.2, price });
-  assert.equal(quarter.scale, 0.25);
-  assert.deepEqual([quarter.width, quarter.height], [500, 250]);
-  // And under that the seat is skipped, with what a quarter would have cost.
-  const skipped = fit({ ...size, budget: 0.1, price });
+  assert.deepEqual([one.width, one.height], [2000, 1000]);
+  // And under that the seat is skipped, with what one sample a pixel would have cost:
+  // never drawn coarser than the screen.
+  const skipped = fit({ ...size, budget: 1, price });
   assert.equal(skipped.skip, true);
-  assert.equal(skipped.seconds, 0.125);
+  assert.equal(skipped.seconds, 2);
 });
 
 test("the correction is a clamped median of measured over priced", () => {
@@ -98,4 +98,11 @@ test("a new round never opens on the seat that closed the last one", () => {
   const bag = new Bag(["a", "b"], () => draws.shift());
   assert.deepEqual([bag.next(), bag.next()], ["b", "a"]);
   assert.equal(bag.next(), "b");
+});
+
+test("the full-screen hint names the key this platform's browser uses", () => {
+  assert.equal(fullscreenKey("Win32"), "F11");
+  assert.equal(fullscreenKey("Linux x86_64"), "F11");
+  assert.equal(fullscreenKey("MacIntel"), "⌃⌘F");
+  assert.equal(fullscreenKey("macOS"), "⌃⌘F");
 });

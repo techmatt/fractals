@@ -243,6 +243,7 @@
   border-radius: 2px;
   padding: 0.1rem 0.4rem;
 }
+.screensaver-controls button:disabled { opacity: 0.6; }
 .screensaver-note:empty { display: none; }
 
 /* **The dropdown draws itself here, so that a colour family's entry can wear its colour.**

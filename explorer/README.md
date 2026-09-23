@@ -495,23 +495,34 @@ picture here is the picture the tile opens, drawn at the screen's size.
 black, with the picture letterboxed at its own aspect. The studio and the bar go `inert`
 underneath, and nothing there moves, so the viewer keeps its size and does not redraw for
 the layer coming or going. Moving the pointer brings up a small bar for about two seconds:
-the interval, *Pause*, *Exit (Esc)*. Space pauses and resumes. Esc hands the viewer back on
+the interval, *Pause*, *Full screen*, *Exit (Esc)*. Space pauses and resumes.
+
+**Full screen is a button** *(Matt, 2026-09-22)*: *Full screen (F11)* asks the browser's
+Fullscreen API for the layer, which a click is allowed to, and so does `F` inside the
+screensaver. The key in its label is the browser's own, **F11**, or **⌃⌘F** on a Mac
+(`fullscreenKey`), which works as well. Where the API is missing (a phone's Safari) the
+button is disabled and still says the key. In the API's full screen the browser takes the
+first Esc to leave it and does not pass it on, so Esc twice exits. Leaving the screensaver
+leaves the full screen it asked for, and never the reader's own F11. Esc hands the viewer back on
 the Gallery tab at the last seat shown, opened the way its tile opens it, *not exact* line
 included, so it can be saved or downloaded.
 
 **The interval** is *Fastest · 10 s · 30 s · 1 min · 5 min · 10 min · 30 min*, 30 s by
-default, and remembered in `explorer.screensaver-every`. It is a floor: the 500 ms
+default, *Fastest* being 4 s, and remembered in `explorer.screensaver-every`. It is a floor: the 500 ms
 cross-fade (`SCREENSAVER_FADE_MS`) starts when the interval has passed **and** the next
 picture is finished, whichever is later. The next seat renders while the current one is up,
 and a partial pass is never shown.
 
 **Fitting a seat to the interval.** A seat is priced with the Download row's `estimate`,
 the `COST` table, at the screen's size in device pixels, multiplied by a correction. It is
-then stepped down until the price fits the interval: four samples a pixel, one, half the
-size, a quarter. *Fastest* is priced against 2 s (`FASTEST_BUDGET_S`). A seat that does not
-fit at a quarter is skipped. A render that runs past twice its price is cancelled and the
-seat skipped, but never while it is still inside the interval: at one minute, the first
-measured run cut a seat priced at 6.5 s at 13 s.
+then stepped down until the price fits the interval: four samples a pixel, then one, both
+at the screen's size. **Never under one sample a pixel** *(Matt, 2026-09-22)*: a seat that
+does not fit at one is skipped rather than drawn smaller. Until then the ladder went on to
+half the size and a quarter, and *Fastest* was priced against 2 s with no floor, which is
+what put most seats at half size in the measurements below. A render that runs past twice its price is cancelled and the
+seat skipped, but never while it is inside twice the interval: at one minute, the first
+measured run cut a seat priced at 6.5 s at 13 s, and under a 4 s *Fastest* the interval
+alone cut seats priced at 1.4 s at exactly 4.
 
 **The correction is learned** *(Matt, 2026-09-22)*. `COST` is one machine at the mandelbrot
 home view, and a seat is usually deeper and iterates more per sample. So each picture drawn
@@ -545,11 +556,12 @@ each `skip` with why.
   settled near 0.5.
 - At **10 s**, smooth fit at 4×, and stripe, smooth_mean_angle and tia fell to one sample.
   A stripe seat priced at 3.3 s took 5.9 s, and the correction rose to about 1.8.
-- Under **Fastest**, most seats fell to half size, and about one in six was cancelled for
+- Under **Fastest**, when it was 2 s and the ladder went down to a quarter, most seats fell
+  to half size, and about one in six was cancelled for
   overrunning twice its price, mostly deep seats costing three to four times their mode's
   typical price.
 - A quarter was never needed at this size. On a 4K display, stripe's corrected price is
-  about 28 s at one sample, so it falls to half at 10 s.
+  about 28 s at one sample, so it fell to half at 10 s, and is skipped at 10 s now.
 
 ## The box tool *(Matt, explorer_box_zoom_and_download_row_ckpt140, 2026-09-22)*
 
