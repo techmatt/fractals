@@ -2438,9 +2438,6 @@ function changed() {
   // the whole of its plane, so they are resynced by every move and not only by the routes
   // that rebuild the strips around one.
   syncToggles();
-  // The Phoenix plane is drawn in the viewer's palette, so a recolour reaches it; a move of
-  // the viewer's frame does not, and the tab tells the two apart itself.
-  phoenixTab?.recolor();
 }
 
 /**
@@ -3067,17 +3064,6 @@ function phoenixOpen(cx, cy, plane) {
   draw();
 }
 
-/** Open a named point's seat on the viewer exactly as it was recorded, holding the plane
- *  at that point's `p` for Back as a click on it would. The seat starts at z₋₁ = 0, which
- *  is what makes it a point of the plane and Back a way there. */
-function phoenixOpenSeat(point, plane) {
-  if (locked()) return;
-  const parent = link.emit(plane, contract);
-  if (!openLink(point.link, { gap: point.gap, key: point.key, what: "this wallpaper" })) return;
-  holdParent({ julia: "phoenix", constants: constantTexts(view), parent, panel: "phoenix" });
-  syncToggles();
-}
-
 function startPhoenix() {
   phoenixStarted ??= mountPhoenix();
   return phoenixStarted;
@@ -3103,11 +3089,18 @@ async function mountPhoenix() {
         return { x: home.x.value, y: home.y.value, w: home.w.value };
       },
       defaultP: () => seedConstants("phoenix_plane").px.value,
-      look: () => ({ palette: view.palette, shade: view.shade }),
+      // The panel's one style, as the record spells it: a mode, a map by its own name, and
+      // the shade keys it names over their defaults. No curve and no mode parameters.
+      lookOf: (style) => ({
+        mode: style.mode,
+        params: {},
+        palette: style.palette,
+        shade: { ...link.defaultShade(), ...style.shade },
+        level: null,
+      }),
       planeView: phoenixPlaneView,
       setOf: (cx, cy, plane) => juliaViewOf(link.coordinateOf(cx), link.coordinateOf(cy), plane),
       open: phoenixOpen,
-      openSeat: phoenixOpenSeat,
       points: at("phoenix-points"),
       say,
     });

@@ -40,7 +40,8 @@ python -m builder seats [--records-only]
                             land the general gallery and the nineteen collections next
                             door as one staged gallery: the record and a tile per seat
 python -m builder phoenix-points   choose the Phoenix tab's starting points from the
-                            staged gallery's Phoenix seats; write the record and tiles
+                            staged gallery's Phoenix seats; draw each whole set's tile and
+                            its plane frame through the committed wasm; write the record
 python -m builder explorer [--palettes-only]  bake the explorer's palettes, wasm, manifest
 python -m builder links [--write]   derive every picture's explorer link from its
                             provenance, or the reason it has none
@@ -192,19 +193,28 @@ The slot pictures were JPEG at 78 with no chroma subsampling until
 maker's own thumbnails rather than from the shipped JPEGs. The `.jpg` patterns stay in
 `.git/info/exclude` so a tree still holding the old copies cannot stage them by accident.
 
-**The Phoenix tab's starting points are the one place a staged tile is committed**
-*(phoenix_named_points_ckpt141)*. `python -m builder phoenix-points` reads the Phoenix
+**The Phoenix tab's starting points are chosen from this gallery and drawn here**
+*(phoenix_named_points_ckpt141; drawn rather than copied since
+phoenix_keypoints_and_plane_ckpt141)*. `python -m builder phoenix-points` reads the Phoenix
 rows of this gallery and `p_ge4` from each collection's tentative record next door, so it
-needs the checkout. It is not part of `build` or `check`. It writes
-`explorer/phoenix-points.json` and copies each chosen seat's tile, byte for byte, into
-`explorer/phoenix-points/`. That is seven files, 51.5 KB, and they are tracked, because
-this row is standing UI and a row of broken images until deploy is not. The rule is in
+needs the checkout. It is not part of `build` or `check`. The rule is in
 `builder/phoenix_points.py`'s docstring and on the record: seats that start at z₋₁ = 0,
 one per exact `(p, c)`, single-linkage neighbourhoods at 0.35 in `(Re p, Im p, Re c, Im c)`,
 the best seat standing for each, meaning a link that is its picture first and then the
-highest `p_ge4`, and seven taken farthest-first in `p` from the classic. Rerun it when a
-re-solve moves the seats; a changed pick lands as a diff in the record and in that
-directory.
+highest `p_ge4`, and seven taken farthest-first in `p` from the classic.
+
+A seat is where a point was found and not what its tile shows. `builder/phoenix_points.mjs`
+draws each point through the committed `engine.wasm`: the **whole Phoenix set** at its
+`(p, c)`, at the family's home view and 316×178, 2 samples a pixel, WebP at
+`TILE_WEBP_QUALITY`. It also records `plane`, the frame the tab's plane opens at on that
+tile's click: the filled set of `phoenix_m` at that `p`, found in a width-8 look and then a
+close one, boxed with `c`, padded 1.3 and set to 16:9. Both are drawn in `STYLE` in
+`phoenix_points.py` (`smooth`, `twilight_shifted` (shown as Violet Rosewood), gamma 0.38). It is the one place
+the tab's style is written, and the record carries it to `phoenix.js`. The native
+`fractal-engine` could not have drawn the frames: the binary next door predates
+`phoenix_m` and refuses it. Eight tiles, the classic's included, 16.6 KB. Rerun it when a
+re-solve moves the seats or when the style changes; either lands as a diff in the record
+and in `explorer/phoenix-points/`.
 
 What stays tracked: every record (`gallery.jsonl` and the per-collection files, the atlas
 record), `palettes.js`, and the six atlas plates, because a plate is drawn from the

@@ -138,7 +138,7 @@ deep-worker.js        one worker: one perturb instance, one held orbit, one band
 deep-fx.js            exact decimal coordinates, BigInt fixed point
 deep-link.js          the deep link contract, its own beside the shallow one
 phoenix.js            the Phoenix tab: the Phoenix plane drawn live, and a click into its sets
-phoenix-points.json   the tab's starting points, `builder phoenix-points`; tiles in phoenix-points/
+phoenix-points.json   the tab's starting points and its one style, `builder phoenix-points`; tiles in phoenix-points/
 paged-inflection/     PAGED: the Inflection tab, out of the working set — see below
 undo.js               the way back: the pictures shown, and the cursor into them
 saved.js              the Saved list: one localStorage value of links, and the save mark
@@ -2034,15 +2034,22 @@ parameter plane of the Julia-type Phoenix sets, and the classic Ushiki set is on
 it. The tab after Deep is the guided way in; `phoenix_plane` is also a family in Details'
 list, where `j` and Back work on it exactly as on Mandelbrot (see the view toggles above).
 
-- **The left pane is the plane, drawn live.** `phoenix.js` draws `phoenix_plane` in `smooth`
-  through the viewer's palette, on a small pool of its own (`Renderer.over`), so it never
-  cancels the picture on the right. The atlas's plate could not be reused: it is a picture
-  rendered once next door, and this one has to redraw whenever `p` moves. Wheel zooms about
-  the pointer and a drag pans, sliding the last picture under the hand until the new one
-  lands; **Whole plane** goes back to the measured home and keeps `p`. It redraws when the
-  viewer's palette or recipe moves and not when the viewer's frame does, and draws nothing
-  while the tab is hidden. The frame and `p` are this browser tab's session
-  (`explorer.phoenix-plane`), and the preview's flag has its own key beside the viewer's.
+- **The left pane is the plane, drawn live.** `phoenix.js` draws `phoenix_plane` on a small
+  pool of its own (`Renderer.over`), so it never cancels the picture on the right. The
+  atlas's plate could not be reused: it is a picture rendered once next door, and this one
+  has to redraw whenever `p` moves. Wheel zooms about the pointer and a drag pans, sliding
+  the last picture under the hand until the new one lands; **Whole plane** goes back to the
+  measured home and keeps `p`. It draws nothing while the tab is hidden. The frame and `p`
+  are this browser tab's session (`explorer.phoenix-plane`), and the preview's flag has its
+  own key beside the viewer's.
+- **One style for the whole left panel** *(phoenix_keypoints_and_plane_ckpt141)*. The plane,
+  the preview card over it and every tile are drawn in `smooth`, Violet Rosewood
+  (`twilight_shifted`), gamma 0.38, the other shade keys at their defaults, no curve. It
+  used to be the viewer's palette and recipe, which a click into a set replaces with the
+  set's own, so the map changed colour under the reader for a reason that had nothing to
+  do with the map. `builder/phoenix_points.py`'s `STYLE` is the one place the style is
+  written. The record carries it, the plane waits on the record, and the host's `lookOf`
+  turns it into a view's look. A click still opens the set in the viewer's mode and palette.
 - **The Atlas opens its Phoenix partition for both Phoenix families.** That partition is the
   Phoenix *set* the search walked; the atlas has none for the plane.
 - **`p` is a slider and a number box under it**: real, −1 to 1, step 0.001, opening at the
@@ -2070,19 +2077,30 @@ list, where `j` and Back work on it exactly as on Mandelbrot (see the view toggl
   its `p` bar, three to a row, read from `phoenix-points.json`. The plane stays at the top
   and the panel does not scroll; the grid takes the height left and scrolls inside it
   *(phoenix_plane_restore_ckpt141; the first cut put them above the plane, and the plane
-  was lost from the panel)*. Each tile shows its `p` under it. It holds the classic first, then seven seats of the
-  staged gallery. `python -m builder phoenix-points` wrote it, and `builder/README.md` has
-  the rule. A click on a tile moves `p` to the tile's full complex `p` at the digits its link carries,
-  centres the plane on its `c` if the point is off the frame, and marks the point. The
-  classic's mark is the classic mark; any other point gets the same crosshair in a ring.
-  The click then opens the set on the viewer: a seat through `openLink`, exactly as
-  recorded (mode, palette, phase, view, and `Reset to seat` back to it); the classic
-  through the same path a click on the plane takes, in the viewer's mode and palette.
-  Either way the plane is held for Back, as a click holds it. The mark clears when `p`
-  moves by hand or the plane is clicked. A pan or zoom keeps it. A seat's tile is its
-  gallery thumbnail, copied into `phoenix-points/` and committed, because the staged
-  gallery ships nothing until deploy. The classic's tile is drawn here after the plane, in
-  `smooth` and the viewer's palette, and is redrawn when that palette changes.
+  was lost from the panel)*. Each tile shows its `p` under it. It holds the classic first,
+  then seven `(p, c)` the staged gallery seats. `python -m builder phoenix-points` wrote it,
+  and `builder/README.md` has the rule. **A tile is a keypoint, not a seat**
+  *(phoenix_keypoints_and_plane_ckpt141)*. It shows the whole Phoenix set at its `(p, c)`
+  at the family's home view, drawn by the builder through the committed wasm in the
+  panel's style. A click is a click on the plane there. It moves `p` to the point's full
+  complex `p`, opens the plane at the frame the record's `plane` boxes that `p`'s filled
+  set in, marks `c`, and opens the whole set on the viewer in the viewer's mode and palette,
+  held for Back. The seat's own zoomed frame, and `Reset to seat`, are gone from this path.
+  The classic's mark is the classic mark; any other point gets the same crosshair in a
+  ring. The mark clears when `p` moves by hand or the plane is clicked. A pan or zoom
+  keeps it.
+- **The plane at a complex `p` was not mis-drawn** *(phoenix_keypoints_and_plane_ckpt141)*.
+  At p = −0.244 − 0.711i the plane was reported as a featureless gradient at the home
+  frame. The spec the tab sent carries both parts of `p`, captured off the pool's messages.
+  The set is inside the home frame: 12.3% of it interior in the committed wasm, 12.5% by an
+  independent sweep. A headless click on that tile drew the set with its boundary, so the
+  report did not reproduce. What could produce it was the frame. A tile click used to keep
+  the reader's last zoom and only recentre on `c`. At this point `c` sits on the edge of the
+  plane's set, so a narrow kept frame recentred there can hold little but exterior. The
+  seat's palette the plane was then redrawn in, a near-flat cyan on the outside, did the
+  rest. A tile now sets
+  the frame, and the style no longer follows the viewer. After each of the eight clicks the
+  plane is 3.7% to 28.7% interior.
 - **Only a set that starts at z₋₁ = 0 can be a starting point.** Of the 404 Phoenix seats
   in the staged gallery, 140 start there; the rest are points of no plane here, for the
   reason given above.

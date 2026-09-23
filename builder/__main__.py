@@ -492,7 +492,8 @@ def _parser() -> argparse.ArgumentParser:
     )
 
     commands.add_parser(
-        "phoenix-points", help="choose the Phoenix tab's named points from the staged seats"
+        "phoenix-points",
+        help="choose the Phoenix tab's starting points and draw their tiles and frames",
     )
 
     commands.add_parser(

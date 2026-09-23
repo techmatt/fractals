@@ -223,12 +223,19 @@ def write_thumb(
         _save(thumb, destination, webp_quality=webp_quality)
 
 
-def write_rgba(raw: bytes, size: tuple[int, int], destination: Path) -> None:
+def write_rgba(
+    raw: bytes,
+    size: tuple[int, int],
+    destination: Path,
+    *,
+    webp_quality: int = FIGURE_WEBP_QUALITY,
+) -> None:
     """Write a frame the renderer handed over as raw bytes, in the format the suffix names.
 
     The wasm module's `shade` returns RGBA and nothing else — there is no image encoder
     on that side of the boundary, and there should not be one — so a picture drawn in the
-    browser's own renderer and landed in this repository comes through here.
+    browser's own renderer and landed in this repository comes through here. A tile passes
+    `TILE_WEBP_QUALITY` by name, as `write_thumb`'s callers do.
     """
     from PIL import Image
 
@@ -237,4 +244,4 @@ def write_rgba(raw: bytes, size: tuple[int, int], destination: Path) -> None:
         raise ImageError(
             f"{destination.name}: {len(raw)} bytes is not a {width}x{height} RGBA frame"
         )
-    _save(Image.frombytes("RGBA", size, raw), destination)
+    _save(Image.frombytes("RGBA", size, raw), destination, webp_quality=webp_quality)

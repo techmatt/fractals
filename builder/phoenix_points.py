@@ -1,13 +1,15 @@
-"""The Phoenix tab's named points: a row of places on the plane, chosen from the seats.
+"""The Phoenix tab's starting points: places on the plane, chosen from the seats.
 
 ## What this is for
 
 The Phoenix tab draws the plane of Phoenix sets, `p` fixed and `c` over the plane, and a
 click opens the set at a point. A reader landing there has no idea where the good sets
 are. The curation passes next door do know: they seated a few hundred Phoenix pictures.
-So under the tab's sentence sits a row of tiles, each one a place on the plane some seat
-stands on, and a click moves the plane to that `p`, marks the point and opens the seat
-exactly as it was recorded.
+So under the plane sits a grid of tiles, each one a `(p, c)` some seat stands on, and a
+click moves the plane to that `p`, frames its set, marks `c` and opens the **whole set** at
+`(p, c)` on the viewer, the way a click on the plane there does
+*(phoenix_keypoints_and_plane_ckpt141)*. A seat is where a point was found, not what it
+opens: the seat's own frame is a zoom somewhere inside the set, and the tile is the set.
 
 ## Which seats are points of a plane at all
 
@@ -36,23 +38,36 @@ which is why the tab reads `p` as two numbers rather than one slider.
 
 The row shows them in reading order: the classic, then the rest by the real part of `p`.
 
+## One style for the tab's left panel
+
+Everything the tab draws beside the viewer — the plane and every tile — is drawn in
+`STYLE`, whatever the viewer is showing. It is written into the record, and `phoenix.js`
+reads it from there, so changing the style is an edit here and a rerun. The viewer keeps
+its own mode and palette: a click opens the set in those, and the left panel stays a map.
+
 ## What lands
 
-`explorer/phoenix-points.json`, tracked, and one thumbnail per seat in
-`explorer/phoenix-points/`, copied byte for byte from the staged gallery. The staged
-gallery is untracked until deploy and this row is standing UI, so its seven pictures are
-committed rather than borrowed. The classic has no picture file; the tab draws its tile.
+`explorer/phoenix-points.json`, tracked, and one tile per point in
+`explorer/phoenix-points/`, the classic's included. A tile is the whole set at `(p, c)`
+with z₋₁ = 0, at the Phoenix family's home view, in `STYLE`, at `TILE`. Each row also
+carries `plane`: the frame the plane opens at when the tile is clicked, which boxes the
+filled set at that `p` with `c` inside it. Both come out of `phoenix_points.mjs`, which
+draws through the committed `engine.wasm`, so a tile is the explorer's own picture and
+the frame is measured by the module that will draw it. A frame is recorded rather than
+found at draw time, because a frame the page derived would be free to answer differently.
 
 `p_ge4` is read from each collection's tentative record next door, so the command needs
 the wallpapers checkout. It is no part of `build` or `check`.
 """
 
 import json
-import shutil
+import subprocess
+import tempfile
 from dataclasses import dataclass
+from pathlib import Path
 from urllib.parse import parse_qsl
 
-from . import picks, seats
+from . import images, picks, seats
 from .paths import GALLERY_IMAGES_DIR, SITE_ROOT
 
 #: Two points closer than this in `(Re p, Im p, Re c, Im c)` are one neighbourhood. The
@@ -66,9 +81,18 @@ COUNT = 7
 #: The classic Ushiki instance, as `phoenix.js` marks it.
 CLASSIC = {"p": [-0.5, 0.0], "c": [0.5667, 0.0]}
 
+#: The one style the tab's left panel is drawn in: the plane, live, and every tile. The
+#: palette is addressed by its own name; the picker shows it as Violet Rosewood. Shade keys
+#: not named here are at their defaults.
+STYLE = {"mode": "smooth", "palette": "twilight_shifted", "shade": {"gamma": 0.38}}
+
+#: A tile's size, the staged gallery's, and the samples a pixel it is drawn at.
+TILE = {"width": 316, "height": 178, "supersample": 2}
+
 RECORD = SITE_ROOT / "explorer" / "phoenix-points.json"
 PICTURES = SITE_ROOT / "explorer" / "phoenix-points"
 STAGED = GALLERY_IMAGES_DIR / seats.SLUG
+DRAW = SITE_ROOT / "builder" / "phoenix_points.mjs"
 
 LF = "\n"
 
@@ -192,28 +216,70 @@ def choose() -> tuple[list[Seat], dict]:
 
 
 def _entry(seat: Seat) -> dict:
+    """A seat's point. `key`, `collections` and `p_ge4` say where it was found; the seat's
+    own frame, mode and palette are not what the tile opens, and are not carried."""
     row = seat.row
     p_re, p_im, c_re, c_im = seat.point
     return {
         "source": "seat",
+        "name": row["key"],
         "p": [p_re, p_im],
         "c": [c_re, c_im],
         "key": row["key"],
-        "mode": row["mode"],
-        "palette": row["palette"],
         "p_ge4": seat.p_ge4,
         "collections": sorted(row["collections"]),
-        "file": f"phoenix-points/{row['file']}",
-        "link": row["link"],
-        "gap": row["gap"],
     }
 
 
+def _draw(points: list[dict]) -> dict[str, dict]:
+    """Each point's tile as raw RGBA and its plane frame, drawn by the committed wasm."""
+    request = {"style": STYLE, "tile": TILE, "points": points}
+    with tempfile.TemporaryDirectory() as scratch:
+        completed = subprocess.run(
+            ["node", str(DRAW), scratch],
+            input=json.dumps(request),
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        if completed.returncode != 0:
+            raise PhoenixPointsError(
+                completed.stderr.strip() or f"phoenix_points.mjs exited {completed.returncode}"
+            )
+        drawn = {}
+        for answer in json.loads(completed.stdout):
+            drawn[answer["name"]] = {
+                "rgba": Path(answer["rgba"]).read_bytes(),
+                "plane": answer["plane"],
+            }
+    return drawn
+
+
 def write() -> list[str]:
-    """Choose the points, write the record and land the thumbnails. Returns what it did."""
+    """Choose the points, draw their tiles and frames, write the record. Returns what it did."""
     chosen, tally = choose()
+    points = [{"source": "classic", "name": "classic", **CLASSIC}] + [_entry(s) for s in chosen]
+    drawn = _draw([{"name": p["name"], "p": p["p"], "c": p["c"]} for p in points])
+
+    PICTURES.mkdir(exist_ok=True)
+    wanted = {f"{p['name']}.webp" for p in points}
+    for stale in PICTURES.iterdir():
+        if stale.name not in wanted:
+            stale.unlink()
+    size = (TILE["width"], TILE["height"])
+    for point in points:
+        name = f"{point['name']}.webp"
+        images.write_rgba(
+            drawn[point["name"]]["rgba"],
+            size,
+            PICTURES / name,
+            webp_quality=images.TILE_WEBP_QUALITY,
+        )
+        point["file"] = f"phoenix-points/{name}"
+        point["plane"] = drawn[point["name"]]["plane"]
+
     record = {
-        "schema": 1,
+        "schema": 2,
         "kind": "phoenix-points",
         "written_by": "python -m builder phoenix-points",
         "rule": (
@@ -221,37 +287,33 @@ def write() -> list[str]:
             "at z_-1 = 0, one per exact (p, c), grouped into neighbourhoods by single linkage "
             f"at {RADIUS} in (Re p, Im p, Re c, Im c), each stood for by its seat whose link is "
             "its picture and then by highest p_ge4, and the rest taken farthest-first in p from "
-            f"every p already taken, {COUNT} of them, shown by Re p. builder/phoenix_points.py "
-            "says why."
+            f"every p already taken, {COUNT} of them, shown by Re p. Each tile is the whole set "
+            "at (p, c) at the Phoenix home view in the style below; plane is the frame boxing "
+            "the filled set at that p with c inside it. builder/phoenix_points.py says why."
         ),
+        "style": STYLE,
+        "tile": TILE,
         "wallpapers_commit": _header_commit(),
-        "points": [{"source": "classic", **CLASSIC, "link": None}] + [_entry(s) for s in chosen],
+        "points": points,
     }
-    PICTURES.mkdir(exist_ok=True)
-    wanted = {s.row["file"] for s in chosen}
-    for stale in PICTURES.iterdir():
-        if stale.name not in wanted:
-            stale.unlink()
-    for name in sorted(wanted):
-        shutil.copyfile(STAGED / name, PICTURES / name)
     RECORD.write_text(json.dumps(record, indent=1, ensure_ascii=False) + LF, newline=LF)
 
     lines = [
         f"{tally['phoenix']} Phoenix seats, {tally['on_plane']} start at z_-1 = 0, "
         f"{tally['points']} distinct (p, c), {tally['neighbourhoods']} neighbourhoods "
         f"at {RADIUS}",
-        "  classic  p = -0.5  c = 0.5667",
     ]
-    for s in chosen:
-        p_re, p_im, c_re, c_im = s.point
+    for point in points:
+        p_re, p_im = point["p"]
+        c_re, c_im = point["c"]
+        plane = point["plane"]
         lines.append(
-            f"  {s.row['key']}  p = {p_re:+.4f}{p_im:+.4f}i  c = {c_re:+.4f}{c_im:+.4f}i  "
-            f"p_ge4 {s.p_ge4:.4f}  {s.row['mode']}  gap {'no' if s.row['gap'] is None else 'yes'}"
+            f"  {point['name']:<16}  p = {p_re:+.4f}{p_im:+.4f}i  c = {c_re:+.4f}{c_im:+.4f}i  "
+            f"plane ({plane['x']:+.3f}, {plane['y']:+.3f}) w {plane['w']:.3f}"
         )
-    size = sum((PICTURES / name).stat().st_size for name in wanted)
+    total = sum((PICTURES / name).stat().st_size for name in wanted)
     lines.append(
-        f"wrote {RECORD.relative_to(SITE_ROOT).as_posix()} and {len(wanted)} pictures, "
-        f"{size:,} bytes"
+        f"wrote {RECORD.relative_to(SITE_ROOT).as_posix()} and {len(wanted)} tiles, {total:,} bytes"
     )
     return lines
 

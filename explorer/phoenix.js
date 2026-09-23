@@ -10,9 +10,16 @@
 // **The plane is drawn here, live, on a pool of its own.** The atlas's plane is a picture
 // rendered once next door with marks over it, and this one has to move with `p`, so it is
 // the pattern the walk, the Saved tab and the preview card already use instead: a second
-// `Renderer` over the compiled module, one job at a time, never the viewer's. It draws
-// `smooth` at one sample a pixel in the viewer's palette, because it is a map to aim with
-// rather than a picture to keep; the picture is what the click opens.
+// `Renderer` over the compiled module, one job at a time, never the viewer's. It draws at
+// one sample a pixel in the panel's style, below, because it is a map to aim with rather
+// than a picture to keep; the picture is what the click opens.
+//
+// **One style for the whole panel** *(phoenix_keypoints_and_plane_ckpt141)*. The plane,
+// the preview card over it and every tile are drawn in the style `phoenix-points.json`
+// carries — `smooth`, Violet Rosewood, gamma 0.38 — and never in the viewer's palette,
+// which a click into a set is free to change. `builder/phoenix_points.py`'s `STYLE` is the
+// one place it is written; the tiles are drawn in it there and the plane reads it here.
+// What a click opens is the viewer's: its mode and its palette.
 //
 // **It is the viewer's gestures, a size smaller.** The wheel zooms about the pointer, a
 // drag pans, a press that does not move is the click. The frame and `p` are this browser
@@ -23,11 +30,16 @@
 //
 // **Starting points** *(phoenix_named_points_ckpt141)*. A grid of tiles under the plane and
 // its `p` *(phoenix_plane_restore_ckpt141)*, read from `phoenix-points.json`: the classic,
-// and seven sets the curation passes seated, which `python -m builder phoenix-points` chose
-// for spread over `p`. A click moves `p` to that point, marks it, and opens the set on the
-// viewer as it was recorded. Most of those `p` are complex, and the plane is drawn at the
-// whole of it. The control stays real: the slider and the box are `Re p`, `Im p` is shown
-// beside them, and moving either sets `Im p` back to zero.
+// and seven `(p, c)` the curation passes seated, which `python -m builder phoenix-points`
+// chose for spread over `p`. A tile is the **whole set** at its `(p, c)`, at the family's
+// home view *(phoenix_keypoints_and_plane_ckpt141)*, and a click is a click on the plane
+// there: `p` moves to the point's, the plane opens at the frame the record boxes that `p`'s
+// set in, `c` is marked, and the set opens on the viewer in the viewer's mode and palette.
+// The frame is set rather than kept, because the reader's last zoom, recentred on a `c`
+// at the set's edge, can hold little but exterior. Most of those `p` are
+// complex, and the plane is drawn at the whole of it. The control stays real: the slider
+// and the box are `Re p`, `Im p` is shown beside them, and moving either sets `Im p` back
+// to zero.
 
 import * as juliaPreview from "./julia-preview.js";
 import { Renderer } from "./render.js";
@@ -66,7 +78,7 @@ const MOST_WIDTH = 720;
 /** The starting points' record, beside this module. */
 const POINTS_URL = new URL("./phoenix-points.json", import.meta.url);
 
-/** A starting point's tile, the staged gallery's own size, which its seats' pictures are. */
+/** A starting point's tile, the staged gallery's own size, which the builder draws at. */
 const TILE = { width: 316, height: 178 };
 
 /** A number as the tile's label spells it: three places, a real minus sign. */
@@ -84,13 +96,13 @@ function spelledP([re, im]) {
  * Mount the tab.
  *
  * `host` is what this borrows from the page: the compiled module, the tab's elements, the
- * plane's home frame and default `p`, the viewer's palette and recipe, a way to build the
- * set a point opens and to open it, and the page's status line.
+ * plane's home frame and default `p`, a way to turn the record's style into a view's look,
+ * a way to build the set a point opens and to open it, and the page's status line.
  */
 export function mount(host) {
   const { module, canvas, plane, slider, box, boxIm, previewToggle, card, note, wholeButton } =
     host;
-  const { home, defaultP, look, setOf, open, openSeat, points, planeView, say } = host;
+  const { home, defaultP, lookOf, setOf, open, points, planeView, say } = host;
   const paint = canvas.getContext("2d", { alpha: false });
 
   let renderer = null;
@@ -98,8 +110,9 @@ export function mount(host) {
   let timer = 0;
   let drawing = false;
   let owed = false;
-  /** The viewer's palette and recipe the plane was last drawn in, as a key. */
-  let drawnLook = null;
+  /** The panel's style as a view's look — mode, palette, shade, no curve — once the record
+   *  has been read. Nothing on the panel draws before it. */
+  let style = null;
   let shown = false;
   /** The last picture drawn, as a bitmap, and the frame it was drawn at, so a drag or a
    *  wheel can slide it before the next frame is drawn. */
@@ -111,9 +124,6 @@ export function mount(host) {
   /** The starting point the reader last chose, marked while the plane is at its `p`, and
    *  let go by any other way of choosing a place. */
   let chosen = null;
-  /** The classic's tile canvas, drawn here, and the look it was drawn in. */
-  let classicTile = null;
-  let classicLook = null;
   let loadingPoints = null;
 
   const kept = restored();
@@ -133,10 +143,10 @@ export function mount(host) {
     toggle: previewToggle,
     storageKey: PREVIEW_KEY,
     name: "Phoenix preview",
-    viewFor: (cx, cy) => setOf(cx, cy, current()),
+    viewFor: (cx, cy) => ({ ...setOf(cx, cy, current()), ...style }),
     deriving: () => false,
     quiet: () => !drawing,
-    live: () => shown && drag === null,
+    live: () => shown && drag === null && style !== null,
     say,
   });
 
@@ -216,7 +226,9 @@ export function mount(host) {
 
   async function draw() {
     timer = 0;
-    if (!shown) return;
+    // The record carries the style, and the plane is drawn in nothing else: until it lands
+    // the plane waits, and `loadPoints` asks again when it has.
+    if (!shown || style === null) return;
     if (drawing) {
       // The draw in flight is of a frame the reader has left; this one is owed after it.
       owed = true;
@@ -227,8 +239,7 @@ export function mount(host) {
     owed = false;
     const { width, height } = grid();
     const at = { ...frame };
-    const colour = look();
-    const view = { ...current(), ...colour, mode: "smooth", params: {}, level: null };
+    const view = { ...current(), ...style };
     try {
       const r = await start();
       const field = await r.field(view, width, height);
@@ -243,10 +254,8 @@ export function mount(host) {
       const bitmap = new OffscreenCanvas(width, height);
       bitmap.getContext("2d").putImageData(shaded.image, 0, 0);
       last = { bitmap, frame: at };
-      drawnLook = JSON.stringify(colour);
       markPoints();
       note.hidden = true;
-      await drawClassicTile(r, colour);
     } catch (error) {
       note.textContent = `The plane could not be drawn: ${error.message}`;
       note.hidden = false;
@@ -296,8 +305,8 @@ export function mount(host) {
 
   // ---------------------------------------------------------------- starting points
 
-  /** Fill the row out of the record, once. A record that will not load says so in the
-   *  tab's note and leaves the plane working. */
+  /** Read the record, once: the panel's style, and the tiles. The plane waits on the style,
+   *  so a record that will not load says so in the tab's note and nothing is drawn. */
   function loadPoints() {
     loadingPoints ??= fetch(POINTS_URL)
       .then((response) => {
@@ -305,9 +314,8 @@ export function mount(host) {
         return response.json();
       })
       .then((record) => {
+        style = lookOf(record.style);
         points.replaceChildren(...record.points.map(tileOf));
-        // The classic's tile is drawn after the plane, so a row that lands after the first
-        // draw asks for one more.
         schedule();
       })
       .catch((error) => {
@@ -317,29 +325,24 @@ export function mount(host) {
     return loadingPoints;
   }
 
-  /** One tile: its picture, its `p` under it, and a click that goes there. */
+  /** One tile: the whole set at its `(p, c)`, its `p` under it, and a click that goes there. */
   function tileOf(point) {
     const entry = document.createElement("button");
     entry.type = "button";
     entry.className = "minibrot phoenix-point";
     const well = document.createElement("div");
     well.className = "minibrot-tile";
-    if (point.source === "classic") {
-      classicTile = document.createElement("canvas");
-      classicTile.width = TILE.width;
-      classicTile.height = TILE.height;
-      well.append(classicTile);
-      entry.title = "The classic Phoenix, drawn the way a click on the plane there draws it.";
-    } else {
-      const picture = document.createElement("img");
-      picture.src = new URL(point.file, POINTS_URL).href;
-      picture.width = TILE.width;
-      picture.height = TILE.height;
-      picture.alt = "";
-      picture.loading = "lazy";
-      well.append(picture);
-      entry.title = `A seated set, in ${point.mode}, opened as it was recorded.`;
-    }
+    const picture = document.createElement("img");
+    picture.src = new URL(point.file, POINTS_URL).href;
+    picture.width = TILE.width;
+    picture.height = TILE.height;
+    picture.alt = "";
+    picture.loading = "lazy";
+    well.append(picture);
+    entry.title =
+      point.source === "classic"
+        ? "The classic Phoenix: its whole set, and its place on the plane."
+        : "A set the gallery seats a picture in: its whole set, and its place on the plane.";
     entry.append(well);
     const said = document.createElement("span");
     said.className = "minibrot-said";
@@ -350,47 +353,18 @@ export function mount(host) {
     return entry;
   }
 
-  /** Go to a starting point: `p` to its `p`, the plane over its `c`, the mark on it, and
-   *  its set open on the viewer. */
+  /** Go to a starting point: `p` to its `p`, the plane at the frame the record boxes that
+   *  `p`'s set in, the mark on `c`, and the whole set open on the viewer — a click on the
+   *  plane there, arrived at by a tile. */
   function go(point) {
     chosen = point;
     p = point.p[0];
     pi = point.p[1];
     syncP();
-    const [cx, cy] = point.c;
-    const height = (frame.w * 9) / 16;
-    const inside = Math.abs(cx - frame.x) < frame.w * 0.45 && Math.abs(cy - frame.y) < height * 0.45;
-    if (!inside) frame = { ...frame, x: cx, y: cy };
+    frame = { ...point.plane };
     preview.hide();
     schedule();
-    if (point.source === "classic") open(cx, cy, current());
-    else openSeat(point, current());
-  }
-
-  /** The classic's tile: its set at one sample a pixel in the plane's own mode and the
-   *  viewer's palette, which is what a click on the plane there opens a smaller copy of.
-   *  Drawn after the plane, on the plane's pool, and again only when the look moves. */
-  async function drawClassicTile(r, colour) {
-    if (classicTile === null) return;
-    const key = JSON.stringify(colour);
-    if (key === classicLook) return;
-    try {
-      await drawClassic(r, colour);
-      classicLook = key;
-    } catch (error) {
-      // The tile stays a well; the plane it was drawn after is fine.
-      console.error(error);
-    }
-  }
-
-  async function drawClassic(r, colour) {
-    const plane = planeView({ ...frame, p: CLASSIC.p, pi: 0 });
-    const view = { ...setOf(CLASSIC.x, CLASSIC.y, plane), ...colour, mode: "smooth", params: {} };
-    const field = await r.field({ ...view, level: null }, TILE.width, TILE.height);
-    if (field === null) return;
-    const shaded = await r.shadePooled(field, { ...view, level: null }, {});
-    if (shaded === null) return;
-    classicTile.getContext("2d").putImageData(shaded.image, 0, 0);
+    open(point.c[0], point.c[1], current());
   }
 
   /** While a drag is under way, the last picture slid by the drag, so the plane moves
@@ -560,10 +534,6 @@ export function mount(host) {
       timer = 0;
       preview.hide();
       renderer?.cancel();
-    },
-    /** The viewer's palette or recipe moved, so the plane is owed a redraw in it. */
-    recolor() {
-      if (shown && JSON.stringify(look()) !== drawnLook) schedule();
     },
     /** The document is going away: both small pools go with it. */
     stop() {
