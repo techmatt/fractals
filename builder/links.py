@@ -159,9 +159,14 @@ def opened(page: Path) -> dict[str, str]:
 
     A picture with no link is simply absent, which is what a caller wants: the block it
     derives carries no link at all rather than a dead one.
+
+    The way to the explorer is one href per page, so it is worked out once here rather than
+    by `Link.href` per row: that resolves two paths on disk each time, and `check` asks for
+    every figure's page.
     """
+    explorer = relative_href(page, EXPLORER_PAGE)
     return {
-        identifier: link.href(page)
+        identifier: f"{explorer}?{link.link}"
         for identifier, link in load_all().items()
         if link.link is not None
     }

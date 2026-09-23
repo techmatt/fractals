@@ -266,14 +266,17 @@ def check_explorer() -> list[str]:
     """
     problems = []
     registered = links.load_all()
-    for identifier in links.picture_ids():
+    # Read once: every call walks every gallery record and the figure registry.
+    on_site = links.picture_ids()
+    for identifier in on_site:
         if identifier not in registered:
             problems.append(
                 f"links.jsonl: {identifier} is on the site and not in the registry — "
                 "`python -m builder links --write`"
             )
+    on_site = set(on_site)
     for identifier in registered:
-        if identifier not in set(links.picture_ids()):
+        if identifier not in on_site:
             problems.append(f"links.jsonl: {identifier} is registered and is not on the site")
     # The picker's two records beside the index. A map with no display name is not a
     # problem — the page shows its underlying name — so that is a count `check` prints as

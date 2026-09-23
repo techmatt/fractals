@@ -299,6 +299,10 @@ class Cached:
     fresh: bool
 
 
+#: Each manifest read so far, by path, with the (size, mtime) it was read at.
+_MANIFESTS: dict[Path, tuple[tuple[int, int], dict[str, dict]]] = {}
+
+
 class Cache:
     """Keyed renders and a manifest, so composing is cheap and re-deriving is possible.
 
@@ -323,15 +327,27 @@ class Cache:
         return self.root / self.MANIFEST_NAME
 
     def manifest(self) -> dict[str, dict]:
-        """Every recorded entry, keyed. A later row for a key replaces an earlier one."""
+        """Every recorded entry, keyed. A later row for a key replaces an earlier one.
+
+        Read once per state of the file: `check`'s `seats` asks for it once per panel, from
+        a fresh `Cache` each time, and reading it every time cost that check eight seconds.
+        So the memo is the module's, keyed on the path, and holds only while the file's size
+        and mtime do: an append, this store's or anybody's, is a fresh read.
+        """
         if not self.manifest_path.is_file():
             return {}
+        stat = self.manifest_path.stat()
+        stamp = (stat.st_size, stat.st_mtime_ns)
+        cached = _MANIFESTS.get(self.manifest_path)
+        if cached is not None and cached[0] == stamp:
+            return cached[1]
         rows: dict[str, dict] = {}
         with self.manifest_path.open(encoding="utf-8") as handle:
             for line in handle:
                 if line.strip():
                     row = json.loads(line)
                     rows[row["key"]] = row
+        _MANIFESTS[self.manifest_path] = (stamp, rows)
         return rows
 
     def _record(self, row: dict) -> None:
