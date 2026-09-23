@@ -36,7 +36,7 @@ Each line is a `##` below, and the question it is the answer to.
 | **The render bar** | what the bar on the Download row is measuring, and where its stops fall |
 | **The Julia preview under the pointer** | what the hover preview costs and why it never blocks |
 | **The walk** | how a frame is walked to a gallery of its neighbours, and what a step is |
-| **Deep** | the tab below the `f64` floor: the second module, the pool, the cap, the minibrots, what draws itself |
+| **Deep** | the tab below the `f64` floor: the second module, the pool, the cap, the minibrots, the gallery, what draws itself |
 | **Inflection — paged** | what that trial was, and why the tab is out of the working set |
 | **Saved** | what the Saved tab stores, and what it promises when storage refuses |
 | **The way back** | what one entry of undo is, and what collapses into one |
@@ -148,6 +148,9 @@ deep-render.js        its pool, its one reference orbit a frame, and its shade s
 deep-worker.js        one worker: one perturb instance, one held orbit, one band
 deep-fx.js            exact decimal coordinates, BigInt fixed point
 deep-link.js          the deep link contract, its own beside the shallow one
+deep-gallery.js       the Deep tab's gallery: the register read, grouped and tiled
+deep-gallery.jsonl    its register: a subject and a deep link a row, `builder deep-gallery`
+deep-gallery/         UNTRACKED: a tile a row, `python -m builder deep-gallery thumbs`
 phoenix.js            the Phoenix tab: the Phoenix plane drawn live, and a click into its sets
 phoenix-points.json   the tab's starting points and its one style, `builder phoenix-points`; tiles in phoenix-points/
 paged-inflection/     PAGED: the Inflection tab, out of the working set — see below
@@ -172,7 +175,8 @@ undo.test.mjs         8 tests: one action is one entry, a step back keeps what i
 zip.test.mjs          2 tests: CRC-32's check values, and an archive read back to its bytes
 stamp.test.mjs        12 tests: the link goes in, and the picture does not move
 deep-fx.test.mjs      12 tests: the Deep tab's arithmetic is exact where a double is not
-deep-link.test.mjs    29 tests: the deep contract, and the shallow one held to not moving
+deep-link.test.mjs    38 tests: the deep contract, the shallow one held to not moving,
+                      and the gallery register held to the deep one
 deep.test.mjs         17 tests: where the two modules meet, against both committed ones
 palettes.jsonl        the roster palettes.js is baked from; 1,022 maps, 77 offered,
                       232 a random pick may draw
@@ -1434,7 +1438,8 @@ Julia at this c, Nearby minibrots, Save and Back to the explorer are under the p
 in the Render group, in the order the shallow view keeps its rows: the Render line, then one
 row of view buttons, then Iterations, then Download. The minibrots list opens straight under
 the row that holds its button, where the column is wide enough for four across rather than
-two. Keys did not move. The left panel keeps the tab's one sentence and nothing else.
+two. Keys did not move. The left panel keeps the tab's one sentence and, since
+deep_gallery_build_ckpt144, the folded gallery under it (*The gallery*, below).
 
 **The sentence is Matt's** *(explorer_deep_polish_ckpt142, 2026-09-22)*: *Zoom far past
 where ordinary rendering breaks down, into the Mandelbrot set, its higher-degree cousins and
@@ -1973,6 +1978,34 @@ million-iteration ceiling, so those tiles cannot resolve either — and that is 
 depth, about 1e-30, at which a centre stops fitting in a link. Below it this feature finds
 minibrots it can neither draw nor address, and says so rather than pretending.
 
+### The gallery *(deep_gallery_build_ckpt144, 2026-09-23)*
+
+A fold under the tab's sentence, **Gallery**, closed until a reader opens it: deep frames a
+click opens, three tiles to a row under each subject's name, the Phoenix starting points'
+tile and the starting points' ruling of a grid that takes the panel's remaining height and
+scrolls inside it. It is the left panel's job by the studio's rule — choosing which view is
+up — and it is folded because the complexity bar asks what an open grid of thirty pictures
+costs a reader who came to zoom: nothing is fetched until the fold first opens, neither the
+register nor a tile.
+
+- **The register is `deep-gallery.jsonl`**: `{subject, link}` a row and nothing that can
+  be read off the link. Rows group by subject in the order each subject first appears, so
+  a row appended anywhere joins its group. `builder/README.md`'s *The Deep tab's gallery*
+  says how to add one and states how the first 31 were found; `deep-link.test.mjs` holds
+  every row to being a canonical link that pins its cap.
+- **A tile is a link, and a click opens it through `openAny`**, the door a saved deep
+  picture comes through: the tab's `open`, drawn the way any link is and remembered by the
+  way back. Its title and accessible name are the subject and `describe`'s line for the
+  link.
+- **The tiles are baked, not drawn here**: `python -m builder deep-gallery thumbs`, one
+  316×178 WebP a row in `deep-gallery/`, named by the 64-bit FNV-1a of the row's link —
+  `tileName` here and `fnv` in the builder, held to one known value by the suite. They are
+  staged, untracked, until deploy; without them the fold shows empty wells that still open
+  their frames.
+- **`panel=deep:gallery` opens the tab with the fold open**, the form the article links
+  with: `../explorer/?panel=deep:gallery`. It is `PANEL_AT`'s one suffix still read, and
+  like the atlas's plane it is not written back into the address bar.
+
 ### Getting in and out
 
 - **Clicking the tab** carries the viewer's frame over when it is on one of the ten
@@ -2087,7 +2120,7 @@ and a URL's escaping rule, neither of which has anything to do with how deep the
   *(ckpt141)*. The pass is committed rather than automatic — a link is a press — so Cancel
   is there for it.
 
-`deep-link.test.mjs` is 35 tests and `deep-fx.test.mjs` is 12, on Node's own runner with
+`deep-link.test.mjs` is 38 tests — two of them the gallery register's — and `deep-fx.test.mjs` is 12, on Node's own runner with
 nothing installed; three of them hold the shallow contract to not having moved, including
 that a deep Julia link is refused by it at both doors — `cx` and `cy` are keys that reader
 knows, which is exactly why the marker has to be what dispatches.
@@ -2199,8 +2232,10 @@ deep-render.js     the pool, the orbit per frame, and the shade spec's placehold
 deep-worker.js     one worker: one perturb instance, one held orbit, one band
 deep-fx.js         exact decimal coordinates, BigInt fixed point
 deep-link.js       the deep link contract — parse, emit, canonicalize, describe
+deep-gallery.js    the gallery under the tab's sentence, and deep-gallery.jsonl its register
 deep-fx.test.mjs   12 tests: the arithmetic is exact where a double is not
-deep-link.test.mjs 29 tests: the contract, and the shallow one held to not moving
+deep-link.test.mjs 38 tests: the contract, the shallow one held to not moving, and the
+                   gallery register
 deep.test.mjs      17 tests: where the two modules meet, against both committed ones —
                    and the cap policy's seam, which fails the same way the rest of
                    this file does, by drawing a plausible picture

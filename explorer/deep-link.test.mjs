@@ -414,3 +414,42 @@ test("a degree-d link with no frame opens at its own family's home", () => {
   assert.equal(view.w.value, 3.2);
   assert.deepEqual(asked, ["multibrot3"]);
 });
+
+// ------------------------------------------------------------ the Deep tab's gallery
+//
+// `deep-gallery.jsonl` is a register of links this contract reads *(deep_gallery_build_
+// ckpt144)*, so it is held here: every row is a fixed point in the page's own palette
+// roster, and pins its cap, which is what a gallery frame is drawn at. The tile a row names
+// is the builder's hash of the link, so the two sides are held to one known value.
+
+import { readFileSync } from "node:fs";
+import { PALETTES as ROSTER } from "./palettes.js";
+import { grouped, rowsOf, tileName } from "./deep-gallery.js";
+
+const REGISTER = rowsOf(readFileSync(new URL("./deep-gallery.jsonl", import.meta.url), "utf8"));
+const roster = { ...context, palettes: ROSTER };
+
+test("every gallery row is a canonical deep link that pins its cap", () => {
+  assert.ok(REGISTER.length > 0);
+  for (const row of REGISTER) {
+    assert.equal(deep.canonicalize(`?${row.link}`, roster), row.link, row.link);
+    assert.equal(deep.parse(`?${row.link}`, roster).capFrom, "reader", row.link);
+  }
+});
+
+test("a gallery row's tile is named as the builder names it, and subjects keep their order", () => {
+  assert.equal(
+    tileName(
+      "dv=3&f=multibrot4&x=0.46213756663599396642203&y=0.63716077751275259356461&w=2.95e-16&n=67810&p=gemini-25&phase=0.274&scale=absolute&period=812",
+    ),
+    "ec75f6976409f43f.webp",
+  );
+  const rows = [
+    { subject: "a", link: "dv=3" },
+    { subject: "b", link: "dv=3" },
+    { subject: "a", link: "dv=3" },
+  ];
+  assert.deepEqual([...grouped(rows).keys()], ["a", "b"]);
+  assert.equal(grouped(rows).get("a").length, 2);
+  assert.throws(() => rowsOf('{"subject": "a", "link": "dv=3", "n": 1}'));
+});

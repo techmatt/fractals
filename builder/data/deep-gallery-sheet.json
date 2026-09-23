@@ -1,0 +1,540 @@
+{
+ "schema": 1,
+ "kind": "deep-gallery-sheet",
+ "note": "The choices behind the Deep tab's first gallery set, frozen: which descents were turned into frames, the two nuclei at the video's centre, the extra Julia constants, which previews were zoomed into, and which 65 previews became the numbered sheet. builder/deep_gallery.py reads it; builder/README.md's 'The Deep tab's gallery' is the method. Written once by deep_gallery_build_ckpt144 from the sheet session's scratch (deep_gallery_sheet_ckpt144); the choices in it were that session's.",
+ "descent_runs": [
+  "degree 2: count 6, seed 1, extra 1",
+  "degrees 3-6: count 8, seed 2, extra 1; then again with extra 5",
+  "degree 2: count 8, seed 7, extra 2"
+ ],
+ "nuclei": {
+  "n6263": {
+   "found": "deepzoom_audit_ckpt143: the largest of the domain walk's nuclei, 1.8e-15 from the video's target",
+   "period": 6263,
+   "re": "-0.74937053247003647851233772355662401949597437",
+   "im": "0.04147266706816854434024588771448205387229792",
+   "size_log2": -67.3872692576889,
+   "steps": 6,
+   "residual": 4.231942607121515e-78,
+   "scale_log2": 67.3872692576889,
+   "scale_arg": 1.2404953304032564,
+   "l_log2": 29.859837471375325,
+   "limbs_hint": 4
+  },
+  "n12451": {
+   "found": "nuclei::search at the video's centre, width 1e-16: the period-12451 entry",
+   "period": 12451,
+   "re": "-0.74937053247003829003468938318930218467902506",
+   "im": "0.04147266706816878883440579136376532129954309",
+   "size_log2": -72.50337521128388,
+   "steps": 7,
+   "residual": 4.0140711742225355e-78,
+   "scale_log2": 72.5033752112839,
+   "scale_arg": 0.1373405967168584,
+   "l_log2": 32.41788890100204,
+   "limbs_hint": 4
+  }
+ },
+ "video": {
+  "record": "builder/data/deep-zoom-descent.keyframes.json",
+  "frames": [
+   {
+    "id": "video-k0",
+    "w": "3.4869054402668363e-15",
+    "source": "video final frame k0"
+   },
+   {
+    "id": "video-k4",
+    "w": "5.579048704426938e-14",
+    "source": "video keyframe k4"
+   },
+   {
+    "id": "video-k2",
+    "w": "1.3947621761067345e-14",
+    "source": "video keyframe k2"
+   }
+  ]
+ },
+ "continuations": {
+  "n6263": {
+   "widths": [
+    "1e-16",
+    "1e-17",
+    "3e-18",
+    "1e-18",
+    "3e-19",
+    "1e-19",
+    "3e-20"
+   ],
+   "framed": "3e-20"
+  },
+  "n12451": {
+   "widths": [
+    "1e-17",
+    "1e-18",
+    "1e-19",
+    "1e-20",
+    "3e-21",
+    "9e-22"
+   ],
+   "framed": "9e-22"
+  }
+ },
+ "plan": [
+  {
+   "label": "d2c1r7",
+   "degree": 2,
+   "place": [
+    "-0.7710874607667652",
+    "0.12599943541082503"
+   ],
+   "rung": 7,
+   "kinds": [
+    "minibrot",
+    "stage",
+    "valley",
+    "spiral",
+    "filigree"
+   ]
+  },
+  {
+   "label": "d2c38r3",
+   "degree": 2,
+   "place": [
+    "0.4164309791560987958137653086",
+    "-0.3274576758775474243485405816"
+   ],
+   "rung": 3,
+   "kinds": [
+    "minibrot",
+    "valley",
+    "spiral",
+    "stage"
+   ]
+  },
+  {
+   "label": "d2c3r5",
+   "degree": 2,
+   "place": [
+    "-0.7450177178549425",
+    "0.14993454382108742"
+   ],
+   "rung": 5,
+   "kinds": [
+    "minibrot",
+    "filigree",
+    "stage"
+   ]
+  },
+  {
+   "label": "d2c4r6",
+   "degree": 2,
+   "place": [
+    "-0.7473935921912778",
+    "-0.1154394195513082"
+   ],
+   "rung": 6,
+   "kinds": [
+    "valley",
+    "spiral"
+   ]
+  },
+  {
+   "label": "d2c37r6",
+   "degree": 2,
+   "place": [
+    "-0.7803381053478922",
+    "0.14964548577954784"
+   ],
+   "rung": 6,
+   "kinds": [
+    "julia"
+   ]
+  },
+  {
+   "label": "d3c6r11",
+   "degree": 3,
+   "place": [
+    "-0.5276108324891094",
+    "0.428763203471609"
+   ],
+   "rung": 11,
+   "kinds": [
+    "minibrot",
+    "stage"
+   ]
+  },
+  {
+   "label": "d3c7r8",
+   "degree": 3,
+   "place": [
+    "0.1106289028391712",
+    "1.1250202443360107"
+   ],
+   "rung": 8,
+   "kinds": [
+    "valley",
+    "spiral",
+    "filigree"
+   ]
+  },
+  {
+   "label": "d3c9r9",
+   "degree": 3,
+   "place": [
+    "0.40996180654597425",
+    "0.601694366041524"
+   ],
+   "rung": 9,
+   "kinds": [
+    "minibrot",
+    "julia"
+   ]
+  },
+  {
+   "label": "d3c8r1",
+   "degree": 3,
+   "place": [
+    "0.4684256099538344",
+    "0.5240780598014974"
+   ],
+   "rung": 1,
+   "kinds": [
+    "spiral",
+    "valley"
+   ]
+  },
+  {
+   "label": "d3c6r9",
+   "degree": 3,
+   "place": [
+    "-0.5276108324891094",
+    "0.428763203471609"
+   ],
+   "rung": 9,
+   "kinds": [
+    "julia"
+   ]
+  },
+  {
+   "label": "d4c13r10",
+   "degree": 4,
+   "place": [
+    "0.631351831289439835",
+    "0.106710768169814882"
+   ],
+   "rung": 10,
+   "kinds": [
+    "minibrot",
+    "valley"
+   ]
+  },
+  {
+   "label": "d4c14r7",
+   "degree": 4,
+   "place": [
+    "0.5338462343892397187360462584",
+    "0.6457282272217290106286754621"
+   ],
+   "rung": 7,
+   "kinds": [
+    "stage",
+    "spiral",
+    "filigree",
+    "julia"
+   ]
+  },
+  {
+   "label": "d4c18r10",
+   "degree": 4,
+   "place": [
+    "0.5735568105184271",
+    "0.651656335195268"
+   ],
+   "rung": 10,
+   "kinds": [
+    "minibrot",
+    "julia"
+   ]
+  },
+  {
+   "label": "d4c19r5",
+   "degree": 4,
+   "place": [
+    "0.5884462571604892",
+    "0.48506740145379684"
+   ],
+   "rung": 5,
+   "kinds": [
+    "valley",
+    "spiral"
+   ]
+  },
+  {
+   "label": "d4c16r1",
+   "degree": 4,
+   "place": [
+    "0.46213756979254605",
+    "0.6371607781708498"
+   ],
+   "rung": 1,
+   "kinds": [
+    "minibrot"
+   ]
+  },
+  {
+   "label": "d5c21r11",
+   "degree": 5,
+   "place": [
+    "0.22084398323444632",
+    "0.709609397990804"
+   ],
+   "rung": 11,
+   "kinds": [
+    "minibrot",
+    "stage",
+    "julia"
+   ]
+  },
+  {
+   "label": "d5c22r9",
+   "degree": 5,
+   "place": [
+    "0.6069417657890565",
+    "0.5273602800043362"
+   ],
+   "rung": 9,
+   "kinds": [
+    "valley",
+    "spiral"
+   ]
+  },
+  {
+   "label": "d5c24r11",
+   "degree": 5,
+   "place": [
+    "-0.684881358765513",
+    "-0.829009953573754"
+   ],
+   "rung": 11,
+   "kinds": [
+    "filigree",
+    "minibrot"
+   ]
+  },
+  {
+   "label": "d5c25r8",
+   "degree": 5,
+   "place": [
+    "0.32212495433745597",
+    "0.7135641680009221"
+   ],
+   "rung": 8,
+   "kinds": [
+    "julia",
+    "spiral"
+   ]
+  },
+  {
+   "label": "d5c26r6",
+   "degree": 5,
+   "place": [
+    "0.7137980890924742",
+    "0.32179996002875194"
+   ],
+   "rung": 6,
+   "kinds": [
+    "valley"
+   ]
+  },
+  {
+   "label": "d6c28r11",
+   "degree": 6,
+   "place": [
+    "0.7312884599480616",
+    "0.3871025064023554"
+   ],
+   "rung": 11,
+   "kinds": [
+    "minibrot",
+    "stage",
+    "julia"
+   ]
+  },
+  {
+   "label": "d6c29r8",
+   "degree": 6,
+   "place": [
+    "0.731737927338173",
+    "0.13435620884349772"
+   ],
+   "rung": 8,
+   "kinds": [
+    "valley",
+    "spiral"
+   ]
+  },
+  {
+   "label": "d6c32r10",
+   "degree": 6,
+   "place": [
+    "0.6987675800653115",
+    "0.41672377837845603"
+   ],
+   "rung": 10,
+   "kinds": [
+    "minibrot",
+    "filigree"
+   ]
+  },
+  {
+   "label": "d6c34r9",
+   "degree": 6,
+   "place": [
+    "-0.5137014562271204",
+    "0.570030151356348"
+   ],
+   "rung": 9,
+   "kinds": [
+    "julia",
+    "valley"
+   ]
+  },
+  {
+   "label": "d6c35r11",
+   "degree": 6,
+   "place": [
+    "-0.14036600593896353",
+    "-0.8925315081449631"
+   ],
+   "rung": 11,
+   "kinds": [
+    "spiral",
+    "stage"
+   ]
+  }
+ ],
+ "julia_extra": [
+  {
+   "label": "n6263",
+   "nucleus": "n6263",
+   "parent_w": 1e-15
+  },
+  {
+   "label": "d2c38r3",
+   "plan": "d2c38r3",
+   "parent_w": 1e-12
+  }
+ ],
+ "julia_extra_constants": {
+  "r": [
+   -0.1226,
+   0.7449
+  ],
+  "d": [
+   -0.7453,
+   0.1127
+  ]
+ },
+ "zooms": {
+  "factor": 6,
+  "from": [
+   "video-k0",
+   "video-k2",
+   "n6263-1e-17",
+   "n6263-3e-18",
+   "n12451-1e-18",
+   "n12451-1e-19",
+   "d2c1r7-st2",
+   "d2c38r3-st",
+   "d2c38r3-st2",
+   "d3c6r11-st",
+   "d3c7r8-fg",
+   "d4c14r7-st",
+   "d4c14r7-fg",
+   "d5c21r11-st",
+   "d5c24r11-fg",
+   "d6c28r11-st",
+   "d6c32r10-fg",
+   "d6c35r11-st",
+   "d6c28r11-jo",
+   "d5c21r11-jo",
+   "d4c14r7-jo"
+  ]
+ },
+ "selection": {
+  "minibrot": [
+   "n6263-3e-20",
+   "n12451-9e-22",
+   "d2c1r7-mb",
+   "d2c38r3-mb",
+   "d2c3r5-mb",
+   "d3c6r11-mb",
+   "d3c9r9-mb",
+   "d4c13r10-mb",
+   "d4c18r10-mb",
+   "d4c16r1-mb",
+   "d5c21r11-mb",
+   "d5c24r11-mb",
+   "d6c28r11-mb",
+   "d6c32r10-mb"
+  ],
+  "julia-stage": [
+   "n6263-1e-16",
+   "n6263-1e-18",
+   "n6263-1e-19",
+   "n12451-1e-17",
+   "n12451-1e-19",
+   "n12451-3e-21",
+   "d2c38r3-st",
+   "d2c38r3-st2",
+   "d3c6r11-st",
+   "d3c6r11-st2",
+   "d4c14r7-st",
+   "d4c14r7-st2",
+   "d5c21r11-st2",
+   "d6c28r11-st2",
+   "d6c35r11-st2",
+   "n6263-jr",
+   "n6263-jd",
+   "d2c38r3-jo",
+   "d3c9r9-ji",
+   "d3c6r9-ji",
+   "d4c14r7-ji",
+   "d4c18r10-jo",
+   "d5c21r11-ji",
+   "d5c25r8-jo",
+   "d6c28r11-ji",
+   "d6c34r9-jo"
+  ],
+  "spiral": [
+   "video-k0-z1",
+   "n6263-1e-17-z0",
+   "n6263-3e-18-z0",
+   "n12451-1e-18-z0",
+   "n12451-1e-19-z1",
+   "d2c38r3-st-z0",
+   "d2c38r3-st2-z0",
+   "d4c19r5-sp",
+   "d6c35r11-sp",
+   "d6c28r11-jo-z0",
+   "d5c21r11-jo-z0",
+   "d4c14r7-jo-z1"
+  ],
+  "filigree": [
+   "video-k0",
+   "video-k2",
+   "d2c1r7-st",
+   "d2c3r5-st",
+   "d2c1r7-st2-z0",
+   "d3c7r8-fg",
+   "d3c6r11-st-z0",
+   "d4c14r7-fg",
+   "d4c14r7-fg-z0",
+   "d5c24r11-fg",
+   "d5c25r8-sp",
+   "d6c32r10-fg",
+   "d6c28r11-st"
+  ]
+ }
+}

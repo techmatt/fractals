@@ -19,11 +19,12 @@ local.toml
 !/CLAUDE.md
 !/README.md
 
-# The wasm crates' build trees. `engine.wasm` and `perturb.wasm` beside the page are
+# The Rust crates' build trees. `engine.wasm` and `perturb.wasm` beside the page are
 # the committed artifacts; these are the several hundred megabytes cargo needs to
-# produce them.
+# produce them. The third is the Deep tab gallery's native crate, which commits no binary.
 explorer/engine-wasm/target/
 explorer/perturb-wasm/target/
+builder/deep-gallery-native/target/
 
 # The judges lab's working state (walk_tune_ckpt131). Its scripts, measurements and
 # report are tracked under tools/judges-lab/; what they read and write is not: the weights

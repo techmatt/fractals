@@ -11,8 +11,10 @@ placed from, and `review` builds the doc a page is marked up in and reads it bac
 `explorer` bakes the explorer page's palettes, wasm module and manifest. `seats` lands a
 published tentative record next door as a staged gallery — a record and its pictures, with
 no page made from them. `import`,
+`deep-gallery` bakes the Deep tab's gallery tiles from its register, and runs the stages
+that found the first set.
 `prose`, `review`, `explorer`, `locations`, `judges`, `picks`, `seats`, `phoenix-points`,
-`growth` and `pipeline` are the
+`deep-gallery`, `growth` and `pipeline` are the
 commands that reach outside the repository — for a full-size original, for the approved
 prose, for the Drive-synced review folder, and for the engine, the records and the
 judges next door.
@@ -39,6 +41,7 @@ from . import (
     renders,
 )
 from . import curation as curation_module
+from . import deep_gallery as deep_gallery_module
 from . import explorer as explorer_module
 from . import growth as growth_module
 from . import judges as judges_module
@@ -494,6 +497,19 @@ def _parser() -> argparse.ArgumentParser:
     commands.add_parser(
         "phoenix-points",
         help="choose the Phoenix tab's starting points and draw their tiles and frames",
+    )
+
+    deep = commands.add_parser(
+        "deep-gallery",
+        help="bake the Deep tab's gallery tiles, or run a stage of the search that found it",
+    )
+    deep.add_argument(
+        "stage",
+        choices=["thumbs", "descend", "frames", "preview", "zooms", "render", "sheet"],
+        help="thumbs is the one to rerun; the rest are builder/deep_gallery.py's method",
+    )
+    deep.add_argument(
+        "args", nargs="*", help="descend: DEGREE COUNT SEED EXTRA; preview: FRAMES NAME"
     )
 
     commands.add_parser(
@@ -1334,6 +1350,24 @@ def _do_phoenix_points() -> int:
     return 0
 
 
+def _do_deep_gallery(options: argparse.Namespace) -> int:
+    """One stage of `builder/deep_gallery.py`; its docstring lists them."""
+    stage, args = options.stage, options.args
+    if stage == "descend":
+        if len(args) != 4:
+            raise deep_gallery_module.DeepGalleryError("descend takes DEGREE COUNT SEED EXTRA")
+        lines = deep_gallery_module.descend(*(int(a) for a in args))
+    elif stage == "preview":
+        if len(args) != 2:
+            raise deep_gallery_module.DeepGalleryError("preview takes FRAMES NAME")
+        lines = deep_gallery_module.preview(Path(args[0]), args[1])
+    else:
+        lines = getattr(deep_gallery_module, stage)()
+    for line in lines:
+        print(line)
+    return 0
+
+
 def _do_serve(options: argparse.Namespace) -> int:
     serve_module.serve(options.port)
     return 0
@@ -1438,6 +1472,8 @@ def main(argv: list[str] | None = None) -> int:
             return _do_seats(options)
         if options.command == "phoenix-points":
             return _do_phoenix_points()
+        if options.command == "deep-gallery":
+            return _do_deep_gallery(options)
         if options.command == "serve":
             return _do_serve(options)
         if options.command == "walk":
@@ -1455,6 +1491,7 @@ def main(argv: list[str] | None = None) -> int:
         picker_module.PickerError,
         seats_module.SeatError,
         phoenix_points_module.PhoenixPointsError,
+        deep_gallery_module.DeepGalleryError,
         links.LinkError,
         pool_module.PoolError,
         curation_module.CurationError,

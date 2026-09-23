@@ -41,6 +41,9 @@ python -m builder diagram ID draw one of the three figures that are diagrams, no
 python -m builder seats [--records-only]
                             land the general gallery and the nineteen collections next
                             door as one staged gallery: the record and a tile per seat
+python -m builder deep-gallery thumbs   draw a tile for each row of the Deep tab's
+                            gallery register that has none (staged, untracked); the
+                            other stages are the search that found the first set
 python -m builder phoenix-points   choose the Phoenix tab's starting points from the
                             staged gallery's Phoenix seats; draw each whole set's tile and
                             its plane frame through the committed wasm; write the record
@@ -183,6 +186,7 @@ is local and no clone has it, so this list is the tracked record of the set:
 | `explorer/palettes.bin`, every map's control points | 1.04 MB | `python -m builder explorer --palettes-only` |
 | `explorer/palettes-swatch.png`, to look at | 0.3 MB | the same |
 | every plane's atlas slot pictures, `assets/images/atlas/<plane>-*.webp` | 1,464 files, 27.5 MB | `python -m builder atlas --ingest` |
+| `explorer/deep-gallery/*.webp`, the Deep tab's gallery tiles, one a register row | 31 files, 0.39 MB (2026-09-23) | `python -m builder deep-gallery thumbs` |
 | `explorer/judges/`, the ORT runtime and the render judge (the fine head is no longer placed, pre_closeout_website_ckpt140) | 33.8 MB | `python -m builder walk` |
 
 **`palettes.bin` is not optional.** The tracked tree alone never draws a first frame: served
@@ -790,6 +794,193 @@ The video is 1920×1080 at 60 fps. A frame crops the smallest keyframe that cove
 area-filters it down, then blends the next keyframe in over the centre with a feathered
 edge, so nothing is ever enlarged. The encoder is `imageio-ffmpeg`'s bundled `ffmpeg`
 (`pip install imageio-ffmpeg`), writing H.264 in yuv420p.
+
+## The Deep tab's gallery
+
+*(deep_gallery_sheet_ckpt144 found the first set; deep_gallery_build_ckpt144 placed it and
+promoted the code out of `scratch/`.)* The Deep tab carries a gallery of deep frames that a
+click opens. **The register is `explorer/deep-gallery.jsonl`**: one row a frame,
+`{"subject": …, "link": …}`, in subject order, and nothing that can be read off the link.
+The link is a canonical `dv=3` link that pins its cap with `n`. `deep-link.test.mjs` holds
+every row to both, so a row that breaks either one fails a suite.
+
+**To add a frame**, copy its link from the Deep tab (Copy link, not the address bar, which
+adds `panel=deep`), drop the leading `?`, and append a row:
+
+```
+{"subject": "Filigree", "link": "dv=3&x=…&y=…&w=…&n=…&p=…"}
+python -m builder deep-gallery thumbs
+```
+
+A row with an existing subject joins that subject's group in the tab, wherever it sits in
+the file. A new subject becomes a new group after the others. A link without `n` is
+refused: the Deep tab's link with no cap opens at the width's cap, and a gallery frame
+should open at the cap its tile was drawn at. `thumbs` refuses a link that is not in its
+canonical spelling and prints the spelling to use. Then it draws a tile for every row that
+has none and removes any tile no row names. Each tile is 316×178, drawn at 2×2 samples a
+pixel at the link's own cap, and saved as WebP at `TILE_WEBP_QUALITY`. It lands in
+`explorer/deep-gallery/`, named by the 64-bit FNV-1a hash of the row's link, which
+`deep-gallery.js` computes the same way. The tiles are staged rather than committed (see
+*What is staged*). The first 31 took 2 min 54 s and total 394 KB.
+
+A tile's field comes from `builder/deep-gallery-native/`, a small crate that uses
+`explorer/perturb-wasm` as an rlib, so it runs the arithmetic `perturb.wasm` runs, on every
+core. It is built on first use and its `target/` is ignored. A Julia tile is anchored the
+way the tab anchors one: at whichever of `z = c` and `z = 0` is nearer. Colour comes from
+the tab itself. `deep_gallery_shade.mjs` reads the link with `deep-link.js`, builds the spec
+with `deep-render.js`'s `shadeSpecOf` and shades it through the committed `engine.wasm`, so
+a tile is coloured exactly as its link colours it.
+
+### How the first set was found
+
+`builder/deep_gallery.py` holds the code, one stage a subcommand: `descend`, `frames`,
+`preview`, `zooms`, `render`, `sheet`. Each writes under ignored `artifacts/deep-gallery/`.
+The choices a person or a session made by eye are frozen in
+`builder/data/deep-gallery-sheet.json`, and the descents are frozen in
+`builder/data/deep-gallery-descents.jsonl`. Every place in them is addressed by its
+coordinates, never by a position in a list. Rerun against those records, `frames` writes
+the sheet session's 98 frames, `zooms` its 42 zoom frames, and `sheet` its 65 links, all
+identical to the scratch originals, with pixel-identical tiles on the three checked. What
+`descend` and `preview` produce depends on the checkout next door and on the kernel's
+search. They were ported line for line but not rerun.
+
+**The sources.** Every frame is below the `f64` floor for its own centre: its width is
+under `RESOLUTION_ULPS` = 4 ulps of the centre times 1,280 samples. That is about 5.7e-13
+near |re| ≈ 0.75. Frames came from three places.
+
+- **The deep zoom video.** Its centre, from `data/deep-zoom-descent.keyframes.json`, at
+  three of its keyframe widths: k0, the final frame, at 3.5e-15; k2 at 1.4e-14; and k4 at
+  5.6e-14.
+- **Two nuclei at the video's centre.** Period 6263 was found by deepzoom_audit_ckpt143's
+  domain walk 1.8e-15 from the target, and its body is 5.2e-21. Period 12451 was found by
+  `nuclei::search` at the video's centre at width 1e-16, and its body is 1.5e-22. Each is
+  recentred on its nucleus at a ladder of widths: 1e-16 down to 3e-20 for 6263, and 1e-17
+  down to 9e-22 for 12451. The narrowest width in each ladder frames the minibrot itself.
+- **Descents from enclosed places.** These start in the wallpaper project's
+  `artifacts/discovery/minibrot_examples.jsonl`: the rows that carry both a `place` and a
+  `picture`, which are places the discovery survey kept with a minibrot enclosed in the
+  frame. For each degree, the rows are shuffled with a seed, and one row is kept per
+  region (the same `q` and the same centre to three decimals). The record holds 43
+  descents: 11 at degree 2 and 8 at each of degrees 3 to 6.
+
+**The rung rule.** A descent is a chain of nuclei, each a smaller copy inside the view of
+the one before it. At each rung, `nuclei::search` runs over the current view with a seed
+budget of 60, asking for 40 nuclei, at the view's settled cap. It returns them largest
+first. The rung takes the first one that meets three conditions:
+
+- its period is at most 120,000;
+- its body is under an eighth of the last rung's body;
+- it lies farther than 1.5 bodies (in the larger of the two coordinates) from every
+  earlier rung's nucleus.
+
+The next view is 20 of the new body wide, centred on it.
+
+Why each condition:
+
+- **Largest first.** The largest copy in the view is the one a reader zooming in would
+  see.
+- **The eighth.** It makes each rung a real step down rather than a step sideways to a
+  sibling of about the same size.
+- **The distance.** Each view is centred on the last nucleus, so the search finds that
+  minibrot again, and this condition stops the chain taking it twice.
+- **The period cap.** It keeps eight periods of any rung (the tab's own tile rule) under
+  the million-iteration ceiling.
+
+A chain stops at twelve rungs, or when no nucleus qualifies. It also stops `extra` rungs
+after the first rung whose framed tile (6 bodies wide) is below the floor. The runs used
+`extra` of 1 and 2, and 5 for degrees 3 to 6. The smallest bodies the recorded chains
+reach are 1.5e-18 at degree 2 and 3e-22 to 1.3e-21 at degrees 3 to 6. The deeper degree-2
+frames come from the two video nuclei instead.
+
+**Frames from a rung.** Which rungs of which descents became frames, and of which kinds, is
+the record's `plan`: 25 entries, 5 at each degree, chosen by the sheet session from the
+descents. Each chosen nucleus is re-solved by Newton to 60 places, and then cut into these
+kinds:
+
+- **A framed minibrot:** 6 bodies wide, centred on the nucleus.
+- **Two symmetry stages:** centred on the nucleus, at the geometric half and quarter of the
+  way from the framed width up to the view the nucleus was found in.
+- **Copy-mapped points:** a whole-set point is mapped into the copy. That point is a
+  seahorse-valley point, a spiral point (both near the period-2 root, found on a 401-square
+  escape grid) or a filigree point at 2.2·e^{0.6i}.
+- **Julia frames.**
+
+Any frame not below the floor is dropped.
+
+**The Julia-plane `c` mapping.** A copy of period `p` at degree `D` has its own complex
+scale, `σ = d·l^{1/(D−1)}`. Here `d = dz_p/dc` at the nucleus and
+`l = ∏_{k=1}^{p−1} D·z_k^{D−1}`, both computed natively in fixed point and kept as mantissa
+and exponent, taking the principal root. A whole-set coordinate `C` becomes the copy's
+point `c = nucleus + C/σ`. The Julia set at that `c`, near `c`, is the whole set's Julia
+set at `C`, scaled: `s^D·(J_C − C)` about `c`, with `s = l^{−1/(D−1)}`. So the frame is
+centred at `c − s^D·C`, the image of `J_C`'s origin, and is `4.5·|s^D|` wide.
+
+The `C`s used are:
+
+- the main body's point whose multiplier is `0.95·e^{2πi/3}`, which is inside the copy's
+  body next to its period-3 bulb;
+- the valley point above, which is just outside the copy;
+- for the 6263 copy and one degree-2 descent only, the rabbit's `−0.1226 + 0.7449i` and a
+  seahorse-valley `−0.7453 + 0.1127i`.
+
+The sheet session checked the mapping by landing the 6263 copy's period-2 and period-3
+bulbs. Newton went to nuclei of period 12,526 and 18,789, to 0.4% of a body.
+
+**Off-centre zooms.** Some previews were zoomed into off-centre; the record names which.
+The preview is cut into an 8×6 grid of cells, skipping the corners and any cell that is
+more than 1% interior. Each cell is scored by the median of its log-count gradient,
+`m` where `m < 0.08` and `0.16 − m` otherwise, so that detail beats both flat colour and
+noise. The two best cells more than two cells apart each become a frame a sixth as wide.
+This is where most of the spirals and seahorses came from: a whole-set valley or spiral
+mapped into a deep copy escapes after about `p` times its shallow count. At these periods
+that is past the million-iteration ceiling, and 13 such frames came back as unresolved
+exterior.
+
+**The cap rule.** A frame's cap is `max(settled, min(1,000,000, period × periods))`. Here
+`settled` is the kernel's own cap policy, `policy::settle`, run on the frame at 256×144.
+A framed minibrot and every width of the two nucleus ladders ask for 32 periods of their
+nucleus. A descent's symmetry stage asks for 8, the tab's own tile rule. Every other frame
+takes the settled cap as it is. The reason for 32: at the settled cap a framed deep
+minibrot is a black blob. For the 6263 frame that cap was 83,726, about 13 periods, and the
+body only resolves at about 32. The cap is settled at the preview, kept for the final
+render, and written into the link as `n`, so the link opens pinned at it.
+
+**The colouring rule.** Every link is `scale=absolute` with its own `lambda`, `period`
+and `phase`, which the Deep tab reads as `frac(g/period + phase)` of the Box–Cox
+`g = (ν^λ − 1)/λ` of the smooth count (`ln ν` at λ = 0). For each λ in
+{0, 0.15, 0.3, 0.5, 0.75, 1}, the period is the field's 3rd-to-97th-percentile range of
+`g` divided by a number of cycles, to three figures. A λ is acceptable when under 4% of
+neighbouring sample pairs are more than a quarter turn apart. The acceptable λ nearest a
+preferred one wins, and failing any, the smoothest.
+
+The sheet numbers its 65 tiles in five groups, shallowest first within each. Tile `n` in
+group `g` (counting from 0) takes:
+
+- palette `PALETTES[7n mod 24]`, from 24 cyclic maps with the Popular list's cyclic
+  entries among them;
+- cycles `CYCLES[k mod 6]` from (2, 3, 1.5, 4, 2.5, 6), where `k = n + 3g`;
+- a preferred λ of `LAMBDAS[k mod 6]` from (0, 0.3, 0.6, 1, 0.15, 0.45), except that a
+  framed minibrot at odd `k` prefers 0;
+- phase `0.137·n mod 1`.
+
+No tile was coloured by hand. The previews used the same rule, with 3 cycles, a preferred
+λ of 0.3, six palettes in turn and phase 0.1.
+
+**From 140 previews to 65 tiles, and to 31.**
+
+1. 140 distinct frames were rendered at 256×144 and one sample a pixel, coloured by the
+   rule above and laid out on labelled contact sheets: the 98 from `frames` and the 42
+   from `zooms`.
+2. **The sheet session chose by eye** which 65 of them made the numbered sheet, and filed
+   each under one of four subjects. That session was deep_gallery_sheet_ckpt144, a Claude
+   session, and its choice is the record's `selection`.
+3. The 65 were rendered at 640×360 with 2×2 samples (43.3 minutes on 12 threads) and
+   numbered.
+4. **Matt chose the 31** in the register from that sheet.
+
+The sheet's five group titles are shortened to the register's subjects: *Framed
+minibrots*, *Symmetry stages*, *Embedded Julia sets*, *Spirals and seahorses*,
+*Filigree*.
 
 ## What refuses, on purpose
 

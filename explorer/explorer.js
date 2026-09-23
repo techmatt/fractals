@@ -75,7 +75,9 @@ const DEFAULT_PANEL = "gallery";
 
 /** What separated a panel from the plane it was open at, in the UI key: `atlas:phoenix`.
  *  The plane follows the view now and is not written; an older address that says one
- *  still opens its panel. */
+ *  still opens its panel. **`deep:gallery` is the one suffix still read**
+ *  *(deep_gallery_build_ckpt144)*: it opens the Deep tab with its gallery unfolded, which
+ *  is the form the article links with. Like the plane it is not written back. */
 const PANEL_AT = ":";
 
 /** Each Julia family's parameter plane: where its `c` is a point. Julia here goes one way
@@ -2730,8 +2732,9 @@ const tabs = [...document.querySelectorAll(".tab")];
  * and a side panel not loading is a note in that panel.
  */
 function showPanel(asked) {
-  // An older address may say which plane, after a colon; the view says that now.
-  const [name] = String(asked).split(PANEL_AT);
+  // An older address may say which plane, after a colon; the view says that now. The Deep
+  // tab's gallery is the one suffix read, and it unfolds the gallery.
+  const [name, at] = String(asked).split(PANEL_AT);
   const was = showing;
   showing = tabs.some((tab) => tab.dataset.panel === name) ? name : DEFAULT_PANEL;
   for (const tab of tabs) {
@@ -2791,6 +2794,7 @@ function showPanel(asked) {
   // said is the Deep tab's own. Coming out, whatever the Deep tab said goes, and the offer
   // comes back only on the frame it was made at.
   if (showing === "deep") {
+    if (at === "gallery") document.getElementById("deep-gallery").open = true;
     if (status.querySelector(".say-action") !== null) say("");
     startDeep().then(() => {
       if (showing !== "deep") return;
@@ -3367,6 +3371,16 @@ async function mountDeep() {
         palettes?.show(deep.view().palette);
         syncShade();
       },
+    });
+    // The gallery under the tab's sentence: a tile is a deep link, through the door a saved
+    // deep picture comes through.
+    const gallery = await import("./deep-gallery.js");
+    gallery.mount({
+      fold: at("deep-gallery"),
+      grid: at("deep-gallery-grid"),
+      note: at("deep-gallery-note"),
+      context: deepContext,
+      open: (query) => openAny(query),
     });
     document.querySelector(".viewer").classList.toggle("is-deep", showing === "deep");
   } catch (error) {

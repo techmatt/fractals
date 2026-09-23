@@ -118,15 +118,22 @@
       <p class="side-note" id="walk-note"></p>
     </div>
 
-    <!-- The Deep tab's panel says what the tab is and nothing else: every control that acts
-         on the deep view is under the picture, in the group beside Render
-         (deep_caption_and_controls_right_ckpt141). -->
+    <!-- The Deep tab's panel says what the tab is, and holds its gallery: every control that
+         acts on the deep view is under the picture, in the group beside Render
+         (deep_caption_and_controls_right_ckpt141). The gallery (deep_gallery_build_ckpt144)
+         is deep frames a click opens, out of explorer/deep-gallery.jsonl, folded until it is
+         wanted; `panel=deep:gallery` opens the tab with it unfolded. -->
     <div class="tabpanel" id="panel-deep" role="tabpanel" aria-labelledby="tab-deep" hidden>
       <p class="side-note" id="deep-side-note">Zoom far past where ordinary rendering breaks
       down, into the Mandelbrot set, its higher-degree cousins and their Julia sets. Deep
       frames take longer to draw and are colored smooth only. <i>Nearby minibrots</i> finds
       tiny copies of the set worth diving into. For more, read
       <a href="../article/deep-zoom.html">Deep zoom</a>.</p>
+      <details class="deep-gallery" id="deep-gallery">
+        <summary class="section-head"><h2>Gallery</h2></summary>
+        <div class="deep-gallery-grid" id="deep-gallery-grid"></div>
+        <p class="side-note" id="deep-gallery-note" hidden></p>
+      </details>
     </div>
 
     <!-- The Phoenix tab (phoenix_tab_ckpt140): the Phoenix plane drawn live, its `p` under

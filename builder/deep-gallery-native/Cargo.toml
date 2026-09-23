@@ -1,0 +1,17 @@
+[package]
+name = "deep-gallery-native"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+# The Deep tab's kernel, natively: `explorer/perturb-wasm` as an rlib, so the gallery's
+# fields are the arithmetic `perturb.wasm` does, on every core. Nothing in that crate is
+# built differently for it, and its own `Cargo.lock` is not read.
+[dependencies]
+perturb = { path = "../../explorer/perturb-wasm" }
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+panic = "abort"

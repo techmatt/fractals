@@ -1820,6 +1820,49 @@ canvas.palette-final {
 .minibrot:disabled { cursor: default; opacity: 0.55; }
 .minibrot:disabled:hover { border-color: transparent; color: var(--well-ink-dim); }
 
+/* ------------------------------------------------------------ the Deep tab's gallery
+
+   Folded under the tab's sentence until it is wanted *(deep_gallery_build_ckpt144)*. Open,
+   it takes the height the panel has left and scrolls inside it, the starting points'
+   ruling: three tiles to a row, each subject's name over its run of them. **The fold is
+   the scroller, not the grid**: a `<details>` does not hand flex sizing through to what it
+   holds, so a grid told to scroll grew to its full height and the panel clipped the last
+   rows. The summary stays put over the tiles as they scroll. */
+.deep-gallery {
+  flex: 0 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--well-ink-dim) transparent;
+}
+.deep-gallery > summary.section-head {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  padding: 0 var(--gutter);
+  background: var(--well);
+}
+.deep-gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  /* The minibrots' ruling, for the minibrots' reason. */
+  grid-auto-rows: max-content;
+  gap: 0.4rem;
+  padding: 0.2rem var(--gutter) 0.6rem;
+  align-items: start;
+}
+.deep-gallery-subject {
+  grid-column: 1 / -1;
+  margin: 0.4rem 0 0;
+  font-family: var(--sans);
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--well-ink-dim);
+}
+.deep-gallery-subject:first-child { margin-top: 0; }
+.deep-gallery-tile .minibrot-tile { padding: 0; }
+.deep-gallery-tile .minibrot-tile img { display: block; width: 100%; height: auto; }
+
 /* ------------------------------------------------------------------- the Phoenix tab */
 
 /* The plane is the panel's picture, so it takes the panel's width and a 16:9 share of it,
