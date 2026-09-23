@@ -48,6 +48,7 @@
 import * as fx from "./deep-fx.js";
 import * as deepLink from "./deep-link.js";
 import { DeepRenderer, deepSpecOf } from "./deep-render.js";
+import { homeward, stopOf } from "./outermost.js";
 
 /**
  * How long the last quarter-resolution pass may have taken for the next one to start on
@@ -204,6 +205,19 @@ export function mount(host) {
   let view = deepLink.fresh(context);
   /** The last picture drawn, as a canvas, and the view it was of. */
   let stale = null;
+  /**
+   * The last frame drawn to the end, held whole so that the way back to it costs nothing
+   * *(explorer_deep_polish_ckpt142)*: `{ view, canvas, image, key, field }` — its view, its
+   * picture as a canvas and as the image a download saves, and its full-resolution field by
+   * its cache key. `stale` is not enough for this: an auto pass puts its quarter picture
+   * there within a second of a stray gesture, and the picture that took minutes is gone.
+   *
+   * It is what Cancel returns to when it cancels a pass the reader did not ask for, and
+   * what a step back onto that frame puts up. **One frame, not a history**: a full field is
+   * 5.8 MB at a 1136×636 canvas, and the frame the reader was last looking at is the one a
+   * stray gesture takes away.
+   */
+  let settled = null;
   /** Fields kept for a recolour, by `deepLink.fieldKey`. */
   const fields = new Map();
   /** How long the last quarter pass took, which is what the quarter-pass exception reads. */
@@ -325,6 +339,61 @@ export function mount(host) {
     canvas.height = image.height;
     canvas.getContext("2d").putImageData(image, 0, 0);
     stale = { canvas, view: of };
+  }
+
+  /** Hold a full-resolution picture as `settled`, straight after `keep` has put it up. A
+   *  derived tone is the picture's own, so the view held carries the curve it was drawn
+   *  with. */
+  function hold(of, shaded, key, field) {
+    const level = host.deriving() ? shaded.level : of.level;
+    settled = { view: { ...of, level }, canvas: stale.canvas, image: shaded.image, key, field };
+  }
+
+  /** Whether `of` is the frame `settled` holds: the place, the set and the cap, whatever
+   *  its colour. */
+  function isSettled(of) {
+    return settled !== null && deepLink.fieldKey(settled.view, 1, 1) === deepLink.fieldKey(of, 1, 1);
+  }
+
+  /**
+   * Put the settled picture back as the view `to`, which is its frame: at once where the
+   * colour is the one it was drawn in, and by a recolour of its held field where the reader
+   * has turned the palette since — never by iterating. Stops whatever pass is in flight.
+   */
+  function putBack(to) {
+    stop();
+    clearTimeout(settleTimer);
+    const inked = { ...to, level: host.deriving() ? settled.view.level : to.level };
+    if (deepLink.emit(inked) !== deepLink.emit(settled.view)) {
+      view = to;
+      remember(settled.key, settled.field);
+      recolour();
+      clearMinibrots();
+      syncControls();
+      return;
+    }
+    view = to.capFrom === settled.view.capFrom ? settled.view : { ...settled.view, capFrom: to.capFrom };
+    drawn = view;
+    stale = { canvas: settled.canvas, view };
+    finished = settled.image;
+    finishedSamples = 1;
+    paint();
+    clearMinibrots();
+    stat(`full pass ${settled.image.width}×${settled.image.height} · put back without drawing · cap ${count(view.maxiter)}${ceilingSaid(view)}`);
+    host.showState("final");
+    host.settle();
+    syncControls();
+  }
+
+  /**
+   * Cancel, for a pass the reader did not ask for: stop it, and go back to the last frame
+   * drawn to the end with that frame's picture *(Matt, explorer_deep_polish_ckpt142)*. A
+   * stray drag with Auto-render ticked starts a pass on its own and dims the picture that
+   * took minutes; this is the way back from it that costs nothing.
+   */
+  function revert() {
+    if (settled === null) return;
+    putBack({ ...settled.view, palette: view.palette, shade: view.shade, level: view.level });
   }
 
   /**
@@ -630,6 +699,7 @@ export function mount(host) {
           finished = shaded.image;
           finishedSamples = stage.supersample;
         }
+        if (stage.name === "full") hold(target, shaded, key, field);
         paint();
         host.settle();
         said(stage, field, shaded, cached, target);
@@ -939,7 +1009,8 @@ export function mount(host) {
       { width: grid.width / PREVIEW_DIVISOR, height: grid.height / PREVIEW_DIVISOR, supersample: 1 },
     ];
     for (const stage of stages) {
-      const field = fields.get(deepLink.fieldKey(view, stage.width, stage.height, stage.supersample));
+      const key = deepLink.fieldKey(view, stage.width, stage.height, stage.supersample);
+      const field = fields.get(key);
       if (field === undefined) continue;
       const generation = ++pass;
       const shaded = await deep.shade(
@@ -956,9 +1027,19 @@ export function mount(host) {
       }
       drawn = view;
       keep(shaded.image, view);
+      // A recolour of the full field is that frame drawn to the end in its new colour: what
+      // a download at the canvas's size saves, and what Cancel and a step back return to.
+      if (stage.width === grid.width && stage.height === grid.height) {
+        finished = shaded.image;
+        finishedSamples = 1;
+        hold(view, shaded, key, field);
+      }
       paint();
+      host.showState("final");
       stat(`${stage.width}×${stage.height} · recolored in ${shaded.elapsed.toFixed(0)} ms · cap ${count(view.maxiter)}${ceilingSaid(view)}`);
       host.settle();
+      // The frame is drawn now, so the button and the note say so.
+      syncControls();
       return;
     }
   }
@@ -1042,9 +1123,21 @@ export function mount(host) {
    * which is `1`. The arithmetic is otherwise the same, and sharing it is the only reason
    * a box in this tab is a dozen lines rather than its own exact-decimal route.
    */
-  function reframe(px, py, pull, widthOf) {
+  function reframe(px, py, pullOf, widthOf) {
     const grid = host.grid();
     const on = display();
+    let width = widthOf(on);
+    if (!(width > 0) || !Number.isFinite(width)) return false;
+    // **Out no further than the set's outermost frame** *(explorer_deep_polish_ckpt142)* —
+    // the viewer's stop, `outermost.js`, on the same home the shallow view uses. Where it
+    // bites, the width is the stop's and the pull is re-taken for that width, so the point
+    // under the pointer still holds for as far as the zoom actually went.
+    const stop = width > view.w.value ? outermost() : null;
+    if (stop !== null) {
+      if (view.w.value > stop.w) return false;
+      width = Math.min(width, stop.w);
+    }
+    const pull = pullOf(width);
     // The point is taken on what the canvas is SHOWING, which is the widened frame while
     // something is pending — so the wheel zooms about what is under the pointer rather
     // than about where that pointer would be on a picture nobody is looking at.
@@ -1054,24 +1147,51 @@ export function mount(host) {
     const centreDown = fx.difference(view.y.dec, on.y.dec);
     const shiftAcross = fx.fromNumber((acrossOffset - centreAcross) * pull);
     const shiftDown = fx.fromNumber((downOffset - centreDown) * pull);
-    if (shiftAcross === null || shiftDown === null) return;
-    const width = widthOf(on);
-    if (!(width > 0) || !Number.isFinite(width)) return;
-    view = {
+    if (shiftAcross === null || shiftDown === null) return false;
+    let x = fx.add(view.x.dec, shiftAcross);
+    let y = fx.add(view.y.dec, shiftDown);
+    if (stop !== null) {
+      // Drawn home as the width nears the stop, and exactly home at it — the home's own
+      // decimal, not the centre plus a double that nearly reaches it.
+      const t = homeward(width, stop.w);
+      if (t >= 1) {
+        x = stop.xDec;
+        y = stop.yDec;
+      } else if (t > 0) {
+        const towardX = fx.fromNumber(fx.difference(stop.xDec, x) * t);
+        const towardY = fx.fromNumber(fx.difference(stop.yDec, y) * t);
+        if (towardX !== null) x = fx.add(x, towardX);
+        if (towardY !== null) y = fx.add(y, towardY);
+      }
+    }
+    const next = {
       ...view,
-      x: deepLink.coordinateOf(fx.add(view.x.dec, shiftAcross)),
-      y: deepLink.coordinateOf(fx.add(view.y.dec, shiftDown)),
+      x: deepLink.coordinateOf(x),
+      y: deepLink.coordinateOf(y),
       w: deepLink.widthOf(width),
     };
+    if (deepLink.fieldKey(next, 1, 1) === deepLink.fieldKey(view, 1, 1)) return false;
+    view = next;
     if (!pinned()) view = { ...view, maxiter: policyCap(width), capFrom: "width" };
     moved();
+    return true;
+  }
+
+  /** The frame no gesture zooms out past, with its centre as exact decimals. */
+  function outermost() {
+    const home = context.deepHome(deepLink.familyOf(view));
+    const xDec = fx.parse(home.x);
+    const yDec = fx.parse(home.y);
+    if (xDec === null || yDec === null) return null;
+    const stop = stopOf({ x: Number(home.x), y: Number(home.y), w: Number(home.w) }, view.julia !== null);
+    return { ...stop, xDec, yDec };
   }
 
   /** Zoom about a point of the canvas: the point under the pointer stays where it is, and
    *  a notch is a notch — the width scales off the view's own, so notches held down while a
    *  frame is pending compound on the frame being asked for rather than on the standin. */
   function zoom(px, py, factor) {
-    reframe(px, py, 1 - factor, () => view.w.value * factor);
+    return reframe(px, py, (width) => 1 - width / view.w.value, () => view.w.value * factor);
   }
 
   /**
@@ -1088,7 +1208,7 @@ export function mount(host) {
    * 1.3228 where the picture said 2.0350.
    */
   function box(px, py, factor) {
-    reframe(px, py, 1, (on) => on.w.value * factor);
+    return reframe(px, py, () => 1, (on) => on.w.value * factor);
   }
 
   // ----------------------------------------------------------------- the two sets
@@ -1572,7 +1692,31 @@ export function mount(host) {
   /** Whether Render is Cancel just now: a pass somebody commanded, or any pass the watchdog
    *  has found silent. */
   function cancellable() {
-    return running !== null && (!running.auto || running.stalled > 0);
+    return running !== null && (!running.auto || running.stalled > 0 || revertible());
+  }
+
+  /**
+   * Whether Cancel goes back as well as stopping: a pass that started on its own, of a frame
+   * that is not the one last drawn to the end, with that one held.
+   *
+   * **One button, and what it does follows from who started the pass**
+   * *(explorer_deep_polish_ckpt142)*. A pass the reader commanded — Render, a link, a step
+   * back — is a frame they asked for, and Cancel stops it where it is, as it always has. A
+   * pass that started by itself after a gesture is one they may never have wanted, and the
+   * picture it dimmed may have taken minutes: there Cancel is the way back to it, at once.
+   * Before this, such a pass left Render as Render, so that pressing it would upgrade the
+   * pass rather than stop it — the upgrade now waits for the pass to land, one press later
+   * as *Render again*, and the way back is under the pointer where it is wanted.
+   */
+  function revertible() {
+    return (
+      running !== null &&
+      running.auto &&
+      settled !== null &&
+      !isSettled(view) &&
+      running.upto !== "download" &&
+      running.upto !== "minibrots"
+    );
   }
 
   function syncControls() {
@@ -1585,11 +1729,15 @@ export function mount(host) {
     // would press Render and stop a render instead. Cancel is for a pass somebody
     // commanded; pressing Render through one that started on its own upgrades it to the
     // probed pass. **A silent pass is the exception** *(ckpt141)*: ten seconds with nothing
-    // from the pool, and the way out is offered on the button already there.
+    // from the pool, and the way out is offered on the button already there. **So is a pass
+    // with a finished picture behind it** *(explorer_deep_polish_ckpt142)*: there the button
+    // is Cancel from the start, and it goes back to that picture — see `revertible`.
     const committed = busy && !running.auto;
     const cancel = cancellable();
     els.render.textContent = cancel ? "Cancel" : pending() || drawn === null ? "Render" : "Render again";
     els.render.classList.toggle("is-running", cancel);
+    els.render.title =
+      cancel && revertible() ? "Stop, and go back to the last finished picture." : cancel ? "Stop this render." : "";
     els.render.disabled = why !== null;
     els.progress.hidden = !busy;
     if (busy) {
@@ -1649,7 +1797,9 @@ export function mount(host) {
       els.note.textContent =
         !autoRender && committed && pending()
           ? "This is still drawing the frame you left. Cancel stops it; tick Auto-render and a new frame takes over on its own."
-          : "";
+          : revertible()
+            ? "Cancel goes back to the last finished picture, without drawing it again."
+            : "";
     } else if (drawn === null) {
       els.note.textContent = "Nothing has been drawn yet. Render draws this frame.";
     } else if (pending()) {
@@ -1703,6 +1853,9 @@ export function mount(host) {
         view = carried;
         drawn = null;
         stale = null;
+        // A frame carried in from the viewer is a fresh start, and Cancel going back to a
+        // deep frame from before it would be going somewhere the reader has since left.
+        settled = null;
         fields.clear();
         settledAt = null;
         cameFrom = null;
@@ -1755,6 +1908,11 @@ export function mount(host) {
   // ----------------------------------------------------------------- the wiring
 
   els.render.addEventListener("click", () => {
+    if (revertible()) {
+      revert();
+      host.say("");
+      return;
+    }
     if (cancellable()) {
       stop();
       host.say("Stopped.");
@@ -1868,15 +2026,40 @@ export function mount(host) {
      *  *(ckpt141)*: a link that names one is drawn at it, pinned, and one that names none
      *  is drawn at the width's, as the auto pass draws it; Render is what asks for more. */
     open(query) {
-      view = deepLink.parse(`?${query}`, context);
-      drawn = null;
-      stale = null;
-      fields.clear();
-      settledAt = null;
+      let next = deepLink.parse(`?${query}`, context);
+      // A link with no cap reads the engine's policy until the kernel is up; once it is,
+      // the width's cap is the kernel's — which is what a held field was drawn at.
+      if (renderer !== null && next.capFrom === "width") {
+        next = { ...next, maxiter: renderer.maxiter(next.w.value) };
+      }
       // A link says where it points and not where its writer was standing.
       cameFrom = null;
       owns = true;
       warn();
+      // **A frame already drawn is put back rather than drawn again**
+      // *(explorer_deep_polish_ckpt142)*. This is the door a step back comes through, and
+      // the palette change it undoes was a recolour: so the undo is one too. The field
+      // cache is kept across a link for the same reason — it is keyed on the set, the
+      // frame and the cap, so nothing in it can be taken for another picture.
+      if (isSettled(next)) {
+        putBack(next);
+        return;
+      }
+      const full = host.grid();
+      if (fields.has(deepLink.fieldKey(next, full.width, full.height, 1))) {
+        stop();
+        clearTimeout(settleTimer);
+        view = next;
+        clearMinibrots();
+        syncControls();
+        host.settle();
+        recolour();
+        return;
+      }
+      view = next;
+      drawn = null;
+      stale = null;
+      settledAt = null;
       syncControls();
       host.settle();
       stat("");

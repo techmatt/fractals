@@ -42,6 +42,7 @@
 // to zero.
 
 import * as juliaPreview from "./julia-preview.js";
+import { heldOut, stopOf } from "./outermost.js";
 import { Renderer } from "./render.js";
 
 /** Where the frame and `p` are kept between visits to the tab, in this session. */
@@ -60,9 +61,8 @@ const P_LEAST = -1;
 const P_MOST = 1;
 const P_DECIMALS = 3;
 
-/** One notch of the wheel, and the widest the plane may be zoomed out to. */
+/** One notch of the wheel. How far out it may go is `outermost.js`'s, as on the viewer. */
 const WHEEL_ZOOM = 1.15;
-const WIDEST = 8;
 
 /** A press that moves less than this, in CSS pixels, is a click and not a drag. */
 const CLICK_SLOP = 4;
@@ -495,15 +495,16 @@ export function mount(host) {
     (event) => {
       event.preventDefault();
       const factor = event.deltaY < 0 ? 1 / WHEEL_ZOOM : WHEEL_ZOOM;
-      const w = Math.min(WIDEST, frame.w * factor);
+      const w = frame.w * factor;
       // About the pointer: the point under it stays under it.
       const under = planeAt(event.offsetX, event.offsetY);
       const kept = w / frame.w;
-      frame = {
-        x: under.x + (frame.x - under.x) * kept,
-        y: under.y + (frame.y - under.y) * kept,
-        w,
-      };
+      const centre = { x: under.x + (frame.x - under.x) * kept, y: under.y + (frame.y - under.y) * kept };
+      // Out, no further than the plane's home, and drawn back onto it as it gets there —
+      // the viewer's own stop, `outermost.js`.
+      const to = factor > 1 ? heldOut(centre, w, frame.w, stopOf(home(), true)) : { ...centre, w };
+      if (to === null || (to.w === frame.w && to.x === frame.x && to.y === frame.y)) return;
+      frame = to;
       preview.hide();
       slide();
       schedule();

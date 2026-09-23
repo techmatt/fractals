@@ -44,6 +44,7 @@ import * as saving from "./saved.js";
 import * as juliaPreview from "./julia-preview.js";
 import * as screensaver from "./screensaver.js";
 import { Trail } from "./undo.js";
+import { heldOut, stopOf } from "./outermost.js";
 import {
   PREVIEW_DIVISOR,
   Renderer,
@@ -763,26 +764,50 @@ function frameOf(of) {
   return [of.family, of.x.text, of.y.text, of.w.text].join(" ");
 }
 
-/** Zoom by `factor` about a point of the canvas, refusing to pass the `f64` wall. */
+/** Zoom by `factor` about a point of the canvas, refusing to pass the `f64` wall or the
+ *  family's outermost frame. Returns whether the view moved. */
 function zoomAbout(px, py, factor) {
   // Down in the Deep tab a zoom is exact arithmetic on a decimal centre, and it draws
   // nothing. There is no floor to refuse at: going deeper is what that tab is for.
-  if (deepOwns()) {
-    deep.zoom(px, py, factor);
-    return;
-  }
+  if (deepOwns()) return deep.zoom(px, py, factor);
   const anchor = planeAt(px, py);
   const width = view.w.value * factor;
-  if (tooDeep(width)) return;
+  if (tooDeep(width)) return false;
   const scale = width / view.w.value;
-  const before = view;
-  moveTo(
-    anchor.x + (view.x.value - anchor.x) * scale,
-    anchor.y + (view.y.value - anchor.y) * scale,
+  const to = outwardHeld(
+    {
+      x: anchor.x + (view.x.value - anchor.x) * scale,
+      y: anchor.y + (view.y.value - anchor.y) * scale,
+    },
     width,
   );
+  if (to === null) return false;
+  const before = view;
+  moveTo(to.x, to.y, to.w);
   reproject(before);
   draw();
+  return true;
+}
+
+/**
+ * A gesture's frame, held to the family's outermost one *(explorer_deep_polish_ckpt142)*:
+ * a zoom in untouched, and a zoom out no wider than the stop `outermost.js` derives from
+ * the family's home, with its centre drawn home as it nears it. `null` where the gesture
+ * would change nothing — already at the stop, or opened wider than it by a link.
+ */
+function outwardHeld(centre, width) {
+  if (!(width > view.w.value)) return { ...centre, w: width };
+  const home = homeOf(view.family);
+  const stop = stopOf(
+    { x: home.x.value, y: home.y.value, w: home.w.value },
+    // A dynamical plane's home is the whole plane, and the Phoenix plane's was measured at
+    // one `p`: neither is the extent of what a view of it shows. See `outermost.js`.
+    view.family in PARENT_PLANE || view.family === "phoenix_plane",
+  );
+  const held = heldOut(centre, width, view.w.value, stop);
+  if (held === null) return null;
+  const same = held.w === view.w.value && held.x === view.x.value && held.y === view.y.value;
+  return same ? null : held;
 }
 
 /**
@@ -801,11 +826,12 @@ function zoomToBox(px, py, across) {
     deep.box(px, py, factor);
     return;
   }
-  const centre = planeAt(px, py);
   const width = view.w.value * factor;
   if (tooDeep(width)) return;
+  const to = outwardHeld(planeAt(px, py), width);
+  if (to === null) return;
   const before = view;
-  moveTo(centre.x, centre.y, width);
+  moveTo(to.x, to.y, to.w);
   reproject(before);
   draw();
 }
@@ -3476,9 +3502,11 @@ function release(event) {
     pinch = null;
     pointers.clear();
     drag = null;
-    if (Number.isFinite(ratio) && ratio > 0) {
-      zoomAbout(grid.width / 2, grid.height / 2, 1 / ratio);
-    } else if (deepOwns()) {
+    // A pinch refused at the zoom-out stop has to put back the picture it scaled.
+    if (Number.isFinite(ratio) && ratio > 0 && zoomAbout(grid.width / 2, grid.height / 2, 1 / ratio)) {
+      return;
+    }
+    if (deepOwns()) {
       deep.repaint();
     } else {
       draw();

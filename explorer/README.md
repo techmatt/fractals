@@ -22,6 +22,7 @@ Each line is a `##` below, and the question it is the answer to.
 | **What is here** | which file does what, and what a reader downloads |
 | **The studio** | how the left panel and the viewer share one page and one URL |
 | **The box tool** | how a frame is named in two clicks, and why it commits like a wheel notch |
+| **The zoom-out stop** | how far out a gesture goes, and why a Julia plane goes further |
 | **The render bar** | what the bar on the Download row is measuring, and where its stops fall |
 | **The Julia preview under the pointer** | what the hover preview costs and why it never blocks |
 | **The walk** | how a frame is walked to a gallery of its neighbours, and what a step is |
@@ -141,6 +142,7 @@ phoenix.js            the Phoenix tab: the Phoenix plane drawn live, and a click
 phoenix-points.json   the tab's starting points and its one style, `builder phoenix-points`; tiles in phoenix-points/
 paged-inflection/     PAGED: the Inflection tab, out of the working set — see below
 undo.js               the way back: the pictures shown, and the cursor into them
+outermost.js          how far out a gesture may zoom, and how the frame settles onto home
 saved.js              the Saved list: one localStorage value of links, and the save mark
 saved-panel.js        the Saved tab: tiles drawn from their links, import, export, Download all
 zip.js                a stored (uncompressed) zip writer, for Download all
@@ -670,6 +672,41 @@ frame being asked for.
 sends no moves between taps — a second tap lands inside `BOX_LEAST` and cancels. That is the
 same line the Julia preview draws, and for the same reason; nothing on this page is only
 reachable through it.
+
+## The zoom-out stop *(Matt, explorer_deep_polish_ckpt142, 2026-09-22)*
+
+**Zooming out stops at the family's outermost frame and settles onto it.** It used to run on
+past the whole set until the set was a dot. `outermost.js` holds the rule, and every zoom
+route shares it: the viewer's `zoomAbout` (wheel, `+`/`-`, a pinch) and `zoomToBox`, the Deep
+tab's `reframe` (its wheel, keys and box), and the Phoenix tab's own wheel on its plane, which
+had a fixed `WIDEST = 8` and now has this.
+
+**The stop is the family's home, and the home is the engine's.** `homeOf` asks
+`engine.wasm`, whose answer is the engine's `Family::home_view` (`engine/src/family.rs`): the
+measured extent of the set plus `HOME_MARGIN` (10%) at 16:9 for a set the engine measured,
+and `WHOLE_PLANE` (0, 0, 3 across) for a dynamical plane, whose shape moves with `c`. Nothing
+here restates either number. There is no `HOMES` table in `permalink.js`; the prompt that
+asked for this remembered one, and the home has only ever been read out of the module.
+
+**A home that is not an extent stops twice as far out** (`LOOSE_STOP`). The Julia planes' 3
+across is a starting frame, and a Julia set near `c = −2` reaches ±2 on the real axis, so a
+stop at 3 would be a wall in front of the set; the stop is 6. The Phoenix plane is the other
+one: its extent was measured at the anchor's `p`, and the tab moves `p` — the record's own
+boxes for its starting points run from 0.85 to 4.8 across — so it stops at 5.6. Mandelbrot
+and the Multibrots stop at their homes exactly, which already carry the margin.
+
+**The centre is drawn home as the width nears the stop.** Over the last `PULL_SPAN` (4×, ten
+wheel notches) the centre a gesture asked for is moved toward the home's by a share that
+rises with the logarithm of the width, and at the stop it **is** the home's — in the Deep
+tab, the home's own decimal rather than a centre plus a double that nearly reaches it. A
+wheel spun out from a detail at the edge of the set therefore ends on the whole set, centred,
+and the link comes out as the family's bare home. A frame at the stop that has been panned
+off it comes back on the next zoom out.
+
+**The limit is on gestures.** A link that opens wider than the stop opens as written; a zoom
+out there does nothing and a zoom in works. Measured on the served page: `?w=20` stayed at
+20 on a notch out and went to 17.39 on a notch in. A pinch refused at the stop puts back the
+picture it had scaled.
 
 ## The render bar *(Matt, explorer_box_zoom_and_download_row_ckpt140, 2026-09-22)*
 
@@ -1375,19 +1412,20 @@ row of view buttons, then Iterations, then Download. The minibrots list opens st
 the row that holds its button, where the column is wide enough for four across rather than
 two. Keys did not move. The left panel keeps the tab's one sentence and nothing else.
 
-**And a sentence pointing back into the article** *(Matt, walk_tab_ckpt140 addendum 1,
-2026-09-22)*, on the end of that same line: *The writeup explains how deep frames are
-rendered: [Escape-time fractals].*
+**The sentence is Matt's** *(explorer_deep_polish_ckpt142, 2026-09-22)*: *Zoom far past
+where ordinary rendering breaks down, into the Mandelbrot set, its higher-degree cousins and
+their Julia sets. Deep frames take longer to draw and are colored smooth only.* Nearby
+minibrots *finds tiny copies of the set worth diving into.* The button's name is set in
+italics and is the button's own label, checked against `index.html` and `deep.js`'s
+`syncControls`. His draft spelled *coloured*; the page says *colored*, by the site's
+American-spelling rule.
 
-⚠ **It is a stand-in, and it says so here so it gets retargeted.** The section that owns
-this material is §Deep zoom, which is one of the two unwritten sections —
-`article/deep-zoom.html` exists and holds the slug, but its body reads *Not written yet*, so
-pointing a sentence that promises an explanation at it would be a promise the page does not
-keep. The anchor in force is **`../article/escape-time-fractals.html#locations`**, which is
-the nearest written prose that owns any of it: §Locations is where the article states that
-ordinary double precision gives out at magnifications around ten trillion to one, and where
-it hands the rest to deep zoom. **When §Deep zoom is written, this href moves to
-`../article/deep-zoom.html`** and the sentence is left alone.
+**It carries no link, and it gains one when §Deep zoom is written.** It used to end *The
+writeup explains how deep frames are rendered: [Escape-time fractals]*, pointing at
+`../article/escape-time-fractals.html#locations` as a stand-in, because
+`article/deep-zoom.html` holds the slug and its body reads *Not written yet*. The stand-in
+is gone rather than kept. ⚠ **When §Deep zoom is written, the sentence gains a link to
+`../article/deep-zoom.html`** — that is the one piece of this panel still owed.
 
 ### Rendering, and what starts on its own
 
@@ -1460,6 +1498,49 @@ and a committed pass is drawing a frame the reader has moved off, *This is still
 the frame you left* — it named Cancel and not Render because through a committed pass
 Render **is** Cancel. And the `full resolution 100%` line no longer arrives followed by
 minutes of silence at the entry setting, because at one sample a pixel that is the end.
+
+### Cancel goes back, and nothing drawn is drawn twice *(Matt, explorer_deep_polish_ckpt142, 2026-09-22)*
+
+**The tab holds the last frame drawn to the end** — `settled`: its view, its picture as a
+canvas and as the image a download saves, and its full-resolution field. `stale` could not
+do this: an auto pass puts its quarter picture there within a second of a stray gesture, and
+the picture that took minutes was gone. One frame, not a history, because a full field is
+5.8 MB at a 1136×636 canvas and the frame a stray gesture takes away is the one just left.
+A recolour of the full field updates it; a frame carried in from the viewer clears it.
+
+**One button, and what Cancel does follows from who started the pass.** A pass that started
+on its own after a gesture, on a frame that is not the held one, turns Render into
+**Cancel**, and Cancel stops it **and** puts the held frame back, at once, with no pass — the
+note under the line says *Cancel goes back to the last finished picture, without drawing it
+again*, and the button's title says the same. A pass the reader commanded — Render, a link,
+a step back — keeps today's Cancel, which stops it where it is: that frame was asked for.
+Two buttons were the alternative and were not taken: *Cancel* beside *Go back* is two words
+for what an artist reads as one intent, and the case that needs the revert is exactly the
+one where they did not ask for the pass. What was given up: Render pressed through an auto
+pass used to upgrade it to the probed pass mid-flight; with a held frame to go back to that
+press now reverts, and the probed pass is *Render again* once the auto pass lands. Without a
+held frame — the first picture of a session — the old behaviour is unchanged. Where the
+reader has turned the palette since the frame was held, the way back recolours its field in
+the new colour rather than bringing the old colour back.
+
+**The way back reuses the same pictures.** `open`, which a step back comes through, puts
+the held frame back instantly where the entry is that frame, recolours a full field still in
+the cache where it is one of those, and only otherwise draws as a link does. The cache is no
+longer cleared by `open`: it is keyed on the set, the frame and the cap, so nothing in it can
+be taken for another picture. A link with no `n` is re-capped by the kernel before the
+lookup, because that is the cap the held field was drawn at.
+
+Measured on the served page, at `x=-0.743643887037151 y=0.13182590420533 w=2e-11`: a palette
+change and its Ctrl+Z are both *recolored in* ~85 ms with no stage entered and no worker
+message; two stray wheel notches with Auto-render ticked turned the button to Cancel, and
+Cancel put the frame back in **~120 ms** including the harness round trip; a second frame
+drawn to the end and a Ctrl+Z back to the first is a recolour, and Ctrl+Y forward again is
+too.
+
+A recolour now also records its picture as the one a download at the canvas's size saves.
+Before, `finished` was only ever written by a pass, so — read from the code, not reproduced —
+*As shown* after a Deep palette change handed back the picture in the palette before it,
+under the new palette's link.
 
 ### The screen is one sample a pixel, and samples are the Download row's *(Matt, deep_tab_activity_and_layout_ckpt141)*
 
@@ -2242,8 +2323,14 @@ of the four things that would otherwise have to be arranged fall out of that:
   `drawPass` cancels every superseded pass before it reaches `settle`.
 - **A panel change is no entry at all**, because the panel is furniture appended after
   `currentQuery()` and is not part of the picture.
-- **A deep entry is restored by the Deep tab's own rule**: `deep.open` draws the quarter
-  pass and waits for Render, which is what a deep link does, and an entry is a link.
+- **A deep entry is restored by the Deep tab's own rule**: `deep.open`, which is what a deep
+  link does, and an entry is a link. **A frame the tab still holds is put back rather than
+  drawn** *(explorer_deep_polish_ckpt142)*: the last frame drawn to the end instantly, a
+  frame whose full field is in the cache by a recolour, and anything else as a link opens.
+  Before that `open` cleared the cache, so undoing a Deep palette change — a recolour going
+  forward — re-rendered the frame going back. The shallow side never had the bug: a palette
+  change and its undo both reach `drawPass`, whose field cache is keyed on the geometry
+  alone, and both land as *recolored* (measured on the served page).
 
 **The key is `keyOf` — the query with `level` and the derived parameters dropped**, the same
 reduction the greyed buttons use, which is why `pictureKey` is now a thin call over it and
