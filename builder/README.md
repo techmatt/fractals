@@ -747,6 +747,50 @@ The rigs that compose the article's figures live in `scratch/` and are untracked
 is what `scratch/` is for — but everything they used to re-implement is here now, and a
 figure made a year ago can be redrawn without reconstructing the session that made it.
 
+## The deep zoom video is a tool, not a figure
+
+*(deepzoom_video_ckpt143.)* A descent from the whole set to the frame of the deep-zoom
+section, drawn in three standalone steps. None of them is a maker, none is part of `build`
+or `check`, and no page carries what they make. **The recipe is
+`data/deep-zoom-descent.keyframes.json`**: the exact-decimal centre, the keyframe widths
+`w_k = target · 2^k` down from the first width that holds the whole set, each keyframe's cap
+as the Deep tab's probe settles it, the video's timing, and the default for each mapping.
+Everything big lands under ignored `artifacts/deep-zoom/`, and `FRACTAL_WEBSITE_ZOOM_DIR`
+moves it.
+
+```
+node builder/zoom_fields.mjs --caps     # widths and caps into the record (seconds)
+node builder/zoom_fields.mjs            # the fields (about an hour; resumes per keyframe)
+node builder/zoom_fields.mjs --agree    # neighbouring keyframes compared where they overlap
+python builder/zoom.py stats            # nu and band width per keyframe, for choosing L
+```
+
+**The fields are rendered once.** Each keyframe is 3840×2160 `f64` smooth counts, `NaN`
+for the interior, drawn by the committed `perturb.wasm` alone from the home view to the
+target. One kernel for the whole zoom means that `nu` means the same thing at every depth.
+They are 66 MB each, `fields/k<NN>.f64` with a `.json` beside it.
+
+**Colouring is the cheap step, and the one to rerun.** The mapping is one function of `nu`
+for every keyframe, with no per-frame stretch and no levelling, so two keyframes that
+overlap agree on colour: `index = frac(g(nu) / L + phase)`, with `g` = `nu` (`linear`),
+`ln nu` (`log`) or `nu^alpha` (`power`). The palette is the engine's own bake, taken by
+shading a linear ramp once through `engine.wasm` (`zoom_palette.mjs`), and the interior is
+black.
+
+```
+python builder/zoom.py sheet  --mapping log --L 0.35          # nine keyframes, one PNG
+python builder/zoom.py video  --mapping log                   # colour, composite, encode
+python builder/zoom.py video  --mapping power --alpha 0.4 --L 6 --phase 0.3 --palette <name>
+python builder/zoom.py encode --mapping log --crf 18          # re-encode what is coloured
+```
+
+A flag overrides the record for one run. Every coloured set is a directory named for all of
+its parameters, under `colour/`, and its MP4 is `video/deep-zoom-descent_<same name>.mp4`.
+The video is 1920×1080 at 60 fps. A frame crops the smallest keyframe that covers it and
+area-filters it down, then blends the next keyframe in over the centre with a feathered
+edge, so nothing is ever enlarged. The encoder is `imageio-ffmpeg`'s bundled `ffmpeg`
+(`pip install imageio-ffmpeg`), writing H.264 in yuv420p.
+
 ## What refuses, on purpose
 
 Three of the makers would rather stop than hand back a picture nobody would look at twice.
