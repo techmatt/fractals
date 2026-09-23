@@ -87,7 +87,7 @@ CLASSIC = {"p": [-0.5, 0.0], "c": [0.5667, 0.0]}
 
 #: Matt's `c` for a chosen point, keyed by its exact `p`. The seat at `p = 0` stands on
 #: `c = 0`, which is a plain disc.
-OVERRIDES = {(0.0, 0.0): {"c": [0.25004942312325246, -0.0000035532977390801417]}}
+OVERRIDES = {(0.0, 0.0): {"c": [0.25003107158799953, -2.664209715401086e-7]}}
 
 #: The one style the tab's left panel is drawn in: the plane, live, and every tile. The
 #: palette is addressed by its own name; the picker shows it as Violet Rosewood. Shade keys
