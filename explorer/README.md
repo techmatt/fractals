@@ -3733,6 +3733,18 @@ own links went through the same door:
 A link this page writes always carries the value in force, so an absent one only arrives
 from a person who left it out.
 
+**`settledParams` refuses a key the mode does not spell, and never drops one**
+*(ckpt141)*. `emit` writes only what `MODE_PARAMETERS` names, so a record that spelled
+the texture weight in the engine's word lost it without a sound, and this function then
+wrote the catalog's 0.85 where it had been. The atlas ingest had copied the ledger's
+`texture_weight` verbatim, and 28 atlas slots opened at 0.85 over thumbnails drawn at
+0.22 to 0.82. That was the atlas's fault and not this page's: native and wasm drew the
+reported slot byte for byte alike at each weight. Every record writer passes through this
+function, so a misspelled key now stops the writer instead of reaching a link.
+`builder/links.py`'s `contract_params` is the one place a ledger recipe is renamed into a
+link's parameters, and `builder check`'s **agreement** holds each atlas link to its
+thumbnail.
+
 ### What version 2 added, and why it is a 2
 
 Draft 1 drew one family in one mode. Version 2 draws every production family and every

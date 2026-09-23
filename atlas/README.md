@@ -173,6 +173,34 @@ follows is why it says it that way.
   list of everything the recipe holds that a link has no key for: that map, a
   `band_autolevel/v1` pass whose curve was not recorded, a curve a mode's catalog does not
   give it, a fold a cyclic map refuses.
+- **A slot's `mode_params` are spelled in the contract's words, not the engine's.** The
+  ledger next door calls a composite's texture weight `texture_weight`; a link calls it
+  `weight`, and the ingest renames it through `builder/links.py`'s `contract_params`, the
+  one place a ledger recipe becomes a link's parameters. `links.js` hands the record's
+  parameters to the contract whole, and `settledParams` **refuses** a key the mode does not
+  spell rather than dropping it. The drop is how *ckpt141* happened: the ingest copied
+  `texture_weight` verbatim, `opened` filtered it out as a key it did not know, and the
+  catalog's 0.85 took its place. 28 gallery slots opened in the explorer at a weight
+  none of them was drawn at, which read as a busier field than the thumbnail beside it,
+  and every test here stayed green because each one asked whether the link was a link.
+  `builder check`'s **agreement** check asks whether it is the *picture*. It holds every
+  slot's parsed link to its recipe member for member (`builder/agree.mjs`), and draws a
+  sample of one slot a plane in the committed wasm beside its thumbnail, with the old
+  defect as a control that has to fail. **Measured**, the wasm and the native engine drew
+  the ckpt141 slot byte for byte alike at each weight, so the explorer's renderer was
+  never at fault. Every one of the 1,464 slots was then drawn through wasm and set beside
+  its WebP thumbnail. The median is 6.1 of 255, the 99th percentile 12.4 and the worst
+  slot whose cap matches is 14.4; that spread is the JPEG and WebP steps. The wrong link
+  landed at 87.
+- **A slot whose cap its link cannot carry says `cap <n>` in `refused`.** A link carries
+  no iteration cap: the page draws at the engine's depth policy for the frame. A recipe's
+  `maxiter` is the cap somebody chose, and 46 gallery slots were drawn at one the policy
+  does not give (41 lower, 5 higher). On all but one the difference is invisible at
+  thumbnail size. `phoenix/4/gallery`, drawn at 1,071 where the policy gives 8,574, is 24
+  of 255 from its thumbnail, and 7.5 at its own cap. So the ingest asks `agree.mjs caps`
+  what each link will draw at and names the difference, the way a map the explorer does
+  not bake is named; the link stays. Four more slots land between 15 and 37, and each one
+  already says `curve log`. No other slot passes 14.4.
 - **A gallery picture's tone curve travels with it where it was recorded.** The gallery
   slot's `tone` is `clean`, `curved` or `lost`; a `curved` slot's `level` is the curve as
   the permalink's own `level` value, and `links.js` passes it through, so the seat opens

@@ -920,6 +920,23 @@ def _constants(family: str, fields: dict, record: dict | None) -> dict:
 LEDGER_TEXTURE_WEIGHT = "texture_weight"
 
 
+def contract_params(mode_params: dict | None) -> dict:
+    """A ledger recipe's `mode_params` in the words a link spells them in.
+
+    A composite's drawn weight is `texture_weight` in the ledger, which is the engine's
+    word, and `weight` in a link, which is the contract's. Every other setting a recipe
+    carries is spelled the same on both sides. **Every record this repository writes out
+    of a ledger recipe goes through here** — the atlas ingest skipped it once and 28
+    thumbnails opened at the catalog's 0.85 over pictures drawn at their own weights
+    *(ckpt141)*. The contract now refuses a key it does not spell rather than dropping it,
+    so a record that misses this fails at `check` instead of linking to the wrong picture.
+    """
+    params = dict(mode_params or {})
+    if LEDGER_TEXTURE_WEIGHT in params:
+        params["weight"] = params.pop(LEDGER_TEXTURE_WEIGHT)
+    return params
+
+
 def ledger_view(recipe: dict, *, level: dict | None = None) -> dict:
     """One candidate-ledger recipe in the shape `emit.mjs` reads.
 
@@ -940,12 +957,7 @@ def ledger_view(recipe: dict, *, level: dict | None = None) -> dict:
         "recipe": recipe.get("palette") or {},
     }
     family = _family({}, record)
-    params = dict(recipe.get("mode_params") or {})
-    # A composite's drawn weight is `texture_weight` in the ledger, which is the engine's
-    # word, and `weight` in a link, which is the contract's. Every other setting a recipe
-    # carries is spelled the same on both sides.
-    if LEDGER_TEXTURE_WEIGHT in params:
-        params["weight"] = params.pop(LEDGER_TEXTURE_WEIGHT)
+    params = contract_params(recipe.get("mode_params"))
     view = {
         "family": family,
         "constants": _constants(family, {}, record),

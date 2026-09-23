@@ -77,6 +77,14 @@ was raise, and every check after it went unrun.
   at the size its row gives. Whether a dot's *link* parses is asked of the permalink
   contract itself, by `atlas/atlas.test.mjs`, for the same reason the explorer's links are:
   the contract is written in JavaScript.
+- **agreement** — every atlas slot's link is its picture. The **atlas** check and
+  `atlas.test.mjs` ask whether a slot's link is a well-formed link; this asks whether it
+  opens the picture on the card, member for member against the recipe the thumbnail was
+  drawn from, on every slot — and, for a fixed sample of one slot a plane, by drawing the
+  link through the committed wasm and setting it beside the stored thumbnail, with a
+  control that has to fail. `agreement.py` says why it exists: 28 slots once opened at a
+  texture weight none of them was drawn at, with every structural test green. The pixel
+  half is a named skip without the staged thumbnails, `palettes.bin` or Pillow.
 - **theme** — the well colours a drawn figure is made of are the stylesheet's own. They
   have to be transcribed, because Pillow cannot read CSS; this is what keeps a restyle
   from moving the well and leaving every diagram drawn against the old one.
@@ -124,9 +132,7 @@ from pathlib import Path
 from urllib.parse import unquote, urldefrag
 
 from . import (
-    atlas as atlas_module,
-)
-from . import (
+    agreement,
     dashes,
     explorer,
     figures,
@@ -144,6 +150,9 @@ from . import (
     sections,
     theme,
     vocabulary,
+)
+from . import (
+    atlas as atlas_module,
 )
 from .paths import (
     ARTICLE_DIR,
@@ -1106,6 +1115,17 @@ def skips() -> tuple[Skip, ...]:
                 NO_STAGED_PICTURES,
             )
         )
+    unaskable = agreement.pixels_unaskable()
+    if unaskable is not None:
+        # Half: the members half reads the record and the contract, which a clone has.
+        found.append(
+            Skip(
+                "agreement",
+                f"the explorer's render of {len(agreement.SAMPLE)} sampled atlas slot(s) "
+                "against their thumbnails",
+                unaskable,
+            )
+        )
     return tuple(found)
 
 
@@ -1124,6 +1144,7 @@ def run_all() -> Report:
             "locations": check_locations(),
             "explorer": check_explorer(),
             "atlas": atlas_module.problems(),
+            "agreement": agreement.problems(),
             "bake": check_bake(),
             # Every gallery here, staged or not: a staged record has no page, and its
             # files are held to it exactly as any other gallery's are once they are landed.

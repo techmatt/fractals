@@ -167,7 +167,16 @@ test("an older link's absent weight or opacity is the catalog's, and a v3 link's
     // And a record's view writes the constant its picture was drawn at.
     assert.deepEqual(settledParams(mode, {}, CONTEXT), { [key]: settled });
     assert.deepEqual(settledParams(mode, { [key]: 0.3 }, CONTEXT), { [key]: 0.3 });
+    // A record spelling the weight in the engine's word is refused, never dropped: the
+    // drop is what put the catalog's constant in front of 28 atlas pictures (ckpt141).
+    assert.throws(
+      () => settledParams(mode, { texture_weight: 0.3 }, CONTEXT),
+      PermalinkError,
+      `${mode}: texture_weight`,
+    );
   }
+  // A key the contract spells for another mode is refused by the same sentence parse gives.
+  assert.throws(() => settledParams("smooth_mean_angle", { density: 2 }, CONTEXT), /no density/);
   // Only the listed keys: a v2 stripe link's density is still the catalog's by omission.
   assert.equal(parse(`v=2&m=smooth_stripe&${ANCHOR}`, CONTEXT).params.weight, undefined);
   assert.throws(() => parse(`v=2&m=smooth_mean_angle&${ANCHOR}`, { ...CONTEXT, settled: undefined }));

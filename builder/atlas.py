@@ -103,10 +103,11 @@ from __future__ import annotations
 
 import json
 import math
+import subprocess
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from . import images, records
+from . import images, links, records
 from .paths import IMAGES_DIR, SITE_ROOT
 
 ATLAS_DIR = SITE_ROOT / "atlas"
@@ -1227,7 +1228,9 @@ def _slot_row(name: str, held: dict, file: str, plate: Plate) -> dict:
         raise AtlasError(f"a {row['family']} {name} picture gives no {', '.join(missing)}")
     row["mode"] = str(held["mode"])
     if held.get("mode_params"):
-        row["mode_params"] = dict(held["mode_params"])
+        # The contract's words and not the engine's: `opened` hands these to the permalink
+        # contract whole, and it refuses `texture_weight` by name.
+        row["mode_params"] = links.contract_params(held["mode_params"])
     row["colormap"] = str(held["colormap"])
     shade = _shade_of(held.get("palette"))
     if shade:
@@ -1379,6 +1382,8 @@ def ingest(
             }
         )
 
+    _refuse_caps(rows)
+
     tally = dict(payload["tally"])
     tally.pop("radius_px", None)
     tally["gallery_seated"] = sum(1 for row in rows if row["slots"]["gallery"]["seated"])
@@ -1427,6 +1432,39 @@ def ingest(
         f"pictures at {thumb_across}x{thumb_down} WebP quality {quality}, {ours / 1e6:.2f} MB · "
         f"{len(swept)} swept",
     ]
+
+
+#: How `refused` names a cap the link cannot carry. `builder/agree.mjs`'s `capRefusal`
+#: spells it the same way, and `check`'s **agreement** holds the two to each other.
+CAP_REFUSAL = "cap {}"
+
+
+def _refuse_caps(rows: list[dict]) -> None:
+    """Name in `refused` every slot whose link draws at another cap than its picture was.
+
+    A link carries no iteration cap: the explorer asks the engine's depth policy for one at
+    the frame. A recipe's `maxiter` is a cap somebody chose, and 46 gallery slots were drawn
+    at one the policy does not give, one of them visibly (`phoenix/4/gallery`, 1,071
+    against 8,574: 24 of 255 from its thumbnail, 7.5 at its own cap). The link stays, the
+    way a map the explorer does not bake leaves the link and says so. The planned cap is
+    asked of the contract and the committed wasm, through `agree.mjs`, because a depth
+    policy restated here would be a second author of it.
+    """
+    slots = [slot for row in rows for slot in row["slots"].values()]
+    completed = subprocess.run(
+        ["node", str(SITE_ROOT / "builder" / "agree.mjs"), "caps"],
+        input=json.dumps(slots),
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        cwd=str(SITE_ROOT),
+    )
+    if completed.returncode != 0:
+        raise AtlasError(f"agree.mjs caps failed:\n{completed.stderr.strip()}")
+    for slot, planned in zip(slots, json.loads(completed.stdout), strict=True):
+        line = CAP_REFUSAL.format(slot["maxiter"])
+        if planned != slot["maxiter"] and line not in slot["refused"]:
+            slot["refused"].append(line)
 
 
 def ingest_every(*, quality: int = THUMB_QUALITY, made: str | None = None) -> list[str]:

@@ -8,9 +8,10 @@ Python. A build is done here and reviewed in a diff.
 ```
 python -m builder build     regenerate gallery pages, the gallery index, thumbnails,
                             and the contents rail every page carries
-python -m builder check     eighteen named checks: links, page sync, contents, figure
+python -m builder check     nineteen named checks: links, page sync, contents, figure
                             blocks, seat panels, landings, one location to one figure,
-                            explorer links, the atlas record, the explorer's bake, assets,
+                            explorer links, the atlas record, each atlas link against
+                            its picture, the explorer's bake, assets,
                             the palette record, prose, the editorial pointer, theme,
                             banned vocabulary, em-dashes, line endings
 python -m builder figure ID print a figure's markup block, to paste into an article page
@@ -580,6 +581,21 @@ configured. A palette entering the library next door costs one `--library` and o
   it to. `atlas/atlas.test.mjs` is the other half, and pins the one thing on that page that
   could break in silence: the map its node views are drawn through is the explorer's own
   `DEFAULT_PALETTE`.
+- **agreement** — every atlas slot's link opens the picture on its card. `agree.mjs
+  members` parses each slot's link back through the contract and holds the view to the
+  recipe member for member: family, constants, frame, mode, every mode parameter (the
+  catalog's constant where the recipe names none), map, every shade key and the curve —
+  and the cap. A link carries no cap, so a slot drawn at another cap than the depth
+  policy gives must say `cap <n>` in `refused`; the ingest writes that line from
+  `agree.mjs caps`. A member the link cannot carry is excused only by the record's own
+  `refused`. `agree.mjs
+  draw` renders `agreement.SAMPLE`, one slot a plane at 400x225 and two samples a side,
+  through the committed wasm. `agreement.py` sets each render beside its WebP thumbnail
+  at a tolerance of 20 of 255 mean absolute difference, and adds a control, the first
+  sample with its mode parameters stripped, which has to land outside it. About 8 s. The
+  full sweep that set the tolerance is in `atlas/README.md`. The pixel half is a named skip
+  without the staged thumbnails, `explorer/palettes.bin` or Pillow; the members half runs
+  on a clone.
 - **assets** — every image the metadata names exists at its stated size, every
   thumbnail is current, and no orphan file is left in a gallery directory.
 - **library** — `palettes/library.jsonl` still says what the wallpaper project's own

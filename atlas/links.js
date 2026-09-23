@@ -100,10 +100,10 @@ export function opened(contract, slot) {
   const palette = PALETTES.has(slot.colormap) ? slot.colormap : DEFAULT_PALETTE;
   const shade = { ...link.defaultShade(), ...(slot.shade ?? {}) };
   if (shade.mirror && PALETTES.get(palette).cyclic) shade.mirror = false;
-  const params = {};
-  for (const key of link.MODE_PARAMETERS[mode] ?? []) {
-    if (slot.mode_params?.[key] !== undefined) params[key] = slot.mode_params[key];
-  }
+  // Whole, and not filtered down to the keys the mode spells: a key the contract does not
+  // know is refused by `settledParams` rather than dropped here. Filtering is what let the
+  // engine's `texture_weight` fall out of 28 links and the catalog's 0.85 take its place.
+  const params = { ...(slot.mode_params ?? {}) };
   // A curved gallery picture opens levelled: the record carries the curve its run recorded,
   // spelled as the contract's own `level` value, and it is read through the contract rather
   // than taken apart here. The curve was measured through the picture's own map, so a link

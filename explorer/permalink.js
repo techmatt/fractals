@@ -367,8 +367,25 @@ export const DERIVED = {
  * was drawn at that constant. Without it a recorded view would emit as a v3 link that
  * asks the page to derive, and open as a picture nobody made. A reader's view never goes
  * through here — an absent value on the page is one still to be derived.
+ *
+ * **A key the mode has no room for is refused, never dropped.** `emit` writes only the
+ * keys `MODE_PARAMETERS` names, so a record that spells a parameter in another word — the
+ * engine's `texture_weight` for the contract's `weight` — used to lose it silently, and
+ * the constant above took its place: 28 atlas thumbnails opened in the explorer at 0.85
+ * over pictures drawn at their own weights *(ckpt141)*. Every writer of a recorded view
+ * comes through here, so this is where the other spelling becomes an error.
  */
 export function settledParams(mode, params, context) {
+  const wanted = MODE_PARAMETERS[mode] ?? [];
+  for (const key of Object.keys(params)) {
+    if (!wanted.includes(key)) {
+      throw new PermalinkError(
+        PARAMETER_KEYS.has(key)
+          ? `the ${mode} render mode has no ${key} parameter.`
+          : `a recorded ${mode} view carries ${key}, which is not a key this contract spells.`,
+      );
+    }
+  }
   const derived = DERIVED[mode];
   if (derived === undefined || params[derived] !== undefined) return params;
   const settled = context.settled?.(mode)?.[derived];

@@ -658,12 +658,16 @@ being drawn as the plain Julia set underneath it.
 After touching placed prose, `python -m builder prose <page>` as well — see **Where prose
 comes from** above for what it holds together and why one edit has several sites.
 
-`builder check` is read-only, and it runs eighteen named checks. It resolves every
+`builder check` is read-only, and it runs nineteen named checks. It resolves every
 internal link, refuses root-absolute and bare-directory hrefs, regenerates the gallery
 HTML and compares it byte for byte with what is committed, holds every figure block to
 its registry row, holds every made figure to being a block a redraw could land on —
 that is `landing`, whose subject is the derivation rather than the page, and the reason
-it is named here is that a redraw is refused by exactly this going wrong — rebakes the
+it is named here is that a redraw is refused by exactly this going wrong — holds every
+atlas slot's link to the recipe its thumbnail was drawn from, and draws a sample of them
+in the committed wasm beside their thumbnails — that is `agreement`, named here because
+every structural test was green while 28 of them opened at a weight none was drawn at
+*(ckpt141)* — rebakes the
 explorer's two generated modules and compares them with what is committed, holds every
 page's contents rail and prose heading ids to what the builder derives, sweeps the words
 a reader meets for em-dashes — that is `dashes`, mechanical since 2026-09-07, and it is
