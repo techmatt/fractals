@@ -1552,9 +1552,16 @@ canvas.palette-final {
 .deep-group, .deep-details { display: none; }
 .viewer.is-deep .deep-group, .viewer.is-deep .deep-details { display: block; }
 
-/* The panel's first head sits where the render controls used to, so it takes the padding
-   the head above it had. */
-#panel-deep .section-head.deep-first { padding-top: var(--gutter); }
+/* The panel holds the tab's one sentence and nothing else, so there is no rule above it to
+   draw *(deep_caption_and_controls_right_ckpt141)*. */
+#deep-side-note { border-top: none; }
+
+/* And what the shallow view says under the picture is the shallow view's: the note about
+   which picture was opened is a claim about a view the Deep tab is not showing. It comes
+   back by itself on the way out, because the shallow view has not moved. The zoom stop's
+   offer shares `#status` with the Deep tab's own messages, so that one is cleared in
+   `showPanel` rather than hidden here. */
+.viewer.is-deep #opened { display: none; }
 
 /* What goes with the shallow view is what is about the shallow view. Save, because the
    Deep panel carries its own; and the view buttons, every one of which names a frame this
@@ -1572,14 +1579,6 @@ canvas.palette-final {
    its samples and a price in plain text, and nothing on it is a bar or red. */
 .viewer.is-deep #download > .render-state {
   display: none;
-}
-
-/* The panel's own section heads take the gutter, as the Walk tab's Found head does: the
-   rule is drawn from the label to the section's right edge, and a head with no padding
-   would start its label at the panel's very edge while everything under it is inset. */
-#panel-deep .section-head {
-  flex: none;
-  padding: 0 var(--gutter);
 }
 
 /* Render, Auto-render, the samples and the progress line, on one row under the canvas.
@@ -1682,33 +1681,17 @@ canvas.palette-final {
 .bar.deep-coordinates { gap: 0.3rem 0.5rem; }
 .bar.deep-coordinates input.constant { width: min(100%, 31rem); }
 
-.deep-iterations, .deep-actions {
-  flex: none;
-  padding: 0.3rem var(--gutter) 0.6rem;
-  gap: 0.4rem;
-}
+/* The rows under the Render line *(deep_caption_and_controls_right_ckpt141)*: the view
+   buttons, then Iterations, in the order the shallow view keeps its own rows. They sit
+   inside the Render group rather than in groups of their own, so they take the controls'
+   spacing by margin, and their buttons are the bar's own outline buttons, the shallow
+   row's look. */
+.deep-group .deep-actions { margin-top: 0.6rem; gap: 0.25rem; }
+.deep-group .deep-actions button { white-space: nowrap; }
+.deep-group .deep-iterations-head { margin-top: 0.6rem; }
+.deep-group .side-note { border-top: none; padding: 0.4rem 0 0; }
+.deep-iterations { gap: 0.4rem; }
 .deep-iterations input { width: 6.5rem; text-align: right; }
-
-.deep-iterations button, .deep-actions button {
-  appearance: none;
-  border: 1px solid var(--well-rule);
-  border-radius: 4px;
-  background: none;
-  color: var(--well-ink);
-  font: inherit;
-  font-size: 0.75rem;
-  padding: 0.2rem 0.6rem;
-  cursor: pointer;
-  white-space: nowrap;
-}
-.deep-iterations button:hover, .deep-actions button:hover {
-  border-color: var(--well-ink-dim);
-  color: var(--well-link);
-}
-.deep-iterations button:disabled, .deep-actions button:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
-}
 
 /* The one thing under the canvas a reader can press: the offer at the zoom stop. */
 .say-action {
@@ -1736,13 +1719,14 @@ canvas.palette-final {
 /* ------------------------------------------------------- nearby minibrots, in the Deep tab
 
    An ephemeral list: nothing here is stored, nothing reaches Saved, and the whole thing is
-   cleared by the next search and by any change of location. Two to a row rather than the
-   gallery's three, because an entry carries a line of text under its picture and a 316px
-   tile at a third of this panel would be smaller than the text beside it. */
+   cleared by the next search and by any change of location. It sits under the picture,
+   straight under the row that opens it *(deep_caption_and_controls_right_ckpt141)*, where
+   the column is wide: as many across as leave each entry about the width the side panel
+   gave two of, so the line of text under a picture is never wider than the picture. */
 .minibrots {
-  padding: 0.2rem var(--gutter) 0.4rem;
+  padding: 0.4rem 0 0;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(45%, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(12rem, 1fr));
   gap: 0.4rem;
   /* The gallery's ruling, for the gallery's reason: an auto row asks a block holding one
      replaced element for a minimum height and is told zero. */
@@ -1815,9 +1799,9 @@ canvas.palette-final {
 
 /* The starting points: the Nearby-minibrots tile, three to a row, under the plane and its
    `p`. The plane is the panel's picture and keeps its place at the top, so the panel does
-   not scroll; the grid takes what height is left and scrolls inside it. Three across is
-   smaller than the minibrots' two, which is the point: these are ways in, and the plane is
-   what gets looked at. */
+   not scroll; the grid takes what height is left and scrolls inside it. Three across a side
+   panel keeps them small, which is the point: these are ways in, and the plane is what gets
+   looked at. */
 .phoenix-points-head { flex: none; padding: 0 var(--gutter); }
 .phoenix-points {
   flex: 1 1 auto;

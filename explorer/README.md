@@ -1359,8 +1359,16 @@ shallow `retype`'s long way round: the view is emitted, one key replaced, and th
 parsed back by the deep contract, so a typed coordinate is read and refused exactly as a
 link's would be. The **FRAME block that sat at the top of the left panel is gone**, and so
 is the stat line's old home: the tab used to write it into the shallow `#stats`, which is
-hidden on this tab, so nobody had ever seen it. The panel keeps Iterations (Halve, the cap,
-Double, From the width), Julia at this c, Nearby minibrots, Save and Back.
+hidden on this tab, so nobody had ever seen it.
+
+**And every other control followed them** *(Matt, deep_caption_and_controls_right_ckpt141,
+2026-09-22)*. The rule is the studio's: the left side changes which view is up, and the
+right side works on the one that is. So Iterations (Halve, the cap, Double, From the width),
+Julia at this c, Nearby minibrots, Save and Back to the explorer are under the picture too,
+in the Render group, in the order the shallow view keeps its rows: the Render line, then one
+row of view buttons, then Iterations, then Download. The minibrots list opens straight under
+the row that holds its button, where the column is wide enough for four across rather than
+two. Keys did not move. The left panel keeps the tab's one sentence and nothing else.
 
 **And a sentence pointing back into the article** *(Matt, walk_tab_ckpt140 addendum 1,
 2026-09-22)*, on the end of that same line: *The writeup explains how deep frames are
@@ -1788,7 +1796,14 @@ minibrots it can neither draw nor address, and says so rather than pretending.
   carried. It is the one place on this
   page that offers rather than states, and it is there because telling a reader who has
   zoomed until the arithmetic gave out that the thing is impossible would be a sentence that
-  is no longer true.
+  is no longer true. **The offer is the shallow view's and goes when it does**
+  *(deep_caption_and_controls_right_ckpt141)*: it used to stay under the picture after its
+  own button had opened the tab. Entering Deep by any route (the button, the tab, a `dv=`
+  link, a saved picture) clears it, and leaving puts it back only when the shallow view is
+  still the frame it was offered at, which the tab leaves it on and *Back to the explorer*
+  does not. Coming out also clears whatever the Deep tab last said, because the two share
+  `#status`. The other shallow line under the picture, `#opened`, is hidden while Deep owns
+  the viewer and returns on its own.
 - **A cost warning shows once per session**, on the first entry, in `sessionStorage`. It
   says what the tab costs and what Auto-render spends without being asked; it used to end
   *Nothing here draws until you press Render*, and that sentence went with the checkbox.

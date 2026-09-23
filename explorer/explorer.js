@@ -725,18 +725,42 @@ function tooDeep(width) {
   // when two neighbouring pixels round together. None of it changed what the reader
   // could do about it, which is the one thing there is to say — the Deep tab, or stop
   // *(explorer_ui_text_ckpt139)*.
-  const wall = "This is as deep as this renderer can zoom here.";
   // On the two sets `z² + c` draws, the page now has that arithmetic in a tab of its
   // own, and this frame is exactly what it opens at.
   if (carryable() !== null) {
-    offer(`${wall} The Deep tab goes further, and this frame carries over.`,
-      "Open this frame in Deep",
-      () => showPanel("deep"),
-    );
+    offeredAt = frameOf(view);
+    offerDeep();
   } else {
-    say(wall);
+    say(WALL);
   }
   return true;
+}
+
+const WALL = "This is as deep as this renderer can zoom here.";
+
+/** The zoom stop's offer: the wall, and the way through it. */
+function offerDeep() {
+  offer(
+    `${WALL} The Deep tab goes further, and this frame carries over.`,
+    "Open this frame in Deep",
+    () => showPanel("deep"),
+  );
+}
+
+/**
+ * The frame the offer was last made at, or `null`.
+ *
+ * **The offer belongs to the shallow view at its zoom stop and nowhere else**
+ * *(deep_caption_and_controls_right_ckpt141)*. It used to stay under the picture after the
+ * button had opened the Deep tab, a sentence about a view that was no longer up. Entering
+ * Deep clears it, by whichever route; leaving puts it back only when the shallow view is
+ * still the frame it was made at, which going back by the tab leaves it and *Back to the
+ * explorer* does not.
+ */
+let offeredAt = null;
+
+function frameOf(of) {
+  return [of.family, of.x.text, of.y.text, of.w.text].join(" ");
 }
 
 /** Zoom by `factor` about a point of the canvas, refusing to pass the `f64` wall. */
@@ -2634,6 +2658,7 @@ const tabs = [...document.querySelectorAll(".tab")];
 function showPanel(asked) {
   // An older address may say which plane, after a colon; the view says that now.
   const [name] = String(asked).split(PANEL_AT);
+  const was = showing;
   showing = tabs.some((tab) => tab.dataset.panel === name) ? name : DEFAULT_PANEL;
   for (const tab of tabs) {
     const mine = tab.dataset.panel === showing;
@@ -2685,7 +2710,14 @@ function showPanel(asked) {
   // stays, because since `deep_cap_policy_ckpt138` the row draws whichever view owns the
   // canvas rather than always the shallow one.
   document.querySelector(".viewer").classList.toggle("is-deep", showing === "deep");
+  //
+  // **What the line under the picture says goes with the view it was said about**
+  // *(deep_caption_and_controls_right_ckpt141)*. Going in, the zoom stop's offer goes and
+  // nothing else does: a link at the door is opened before this runs, and what its opening
+  // said is the Deep tab's own. Coming out, whatever the Deep tab said goes, and the offer
+  // comes back only on the frame it was made at.
   if (showing === "deep") {
+    if (status.querySelector(".say-action") !== null) say("");
     startDeep().then(() => {
       if (showing !== "deep") return;
       deep?.show();
@@ -2696,7 +2728,13 @@ function showPanel(asked) {
   } else if (deep !== null) {
     deep.hide();
     syncShade();
-    if (walk === null || showing !== "walk") draw();
+    const shallow = walk === null || showing !== "walk";
+    if (was === "deep") say("");
+    // After the draw starts, because a pass clears the line on its way in.
+    if (shallow) draw();
+    if (was === "deep" && shallow && carryable() !== null && offeredAt === frameOf(view)) {
+      offerDeep();
+    }
   }
   settle();
 }
