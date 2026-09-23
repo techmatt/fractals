@@ -2019,8 +2019,8 @@ list, where `j` and Back work on it exactly as on Mandelbrot (see the view toggl
 - **The Atlas opens its Phoenix partition for both Phoenix families.** That partition is the
   Phoenix *set* the search walked; the atlas has none for the plane.
 - **`p` is a slider and a number box under it**: real, −1 to 1, step 0.001, opening at the
-  classic −0.5 out of the anchor. Moving it redraws the plane. The imaginary part has its
-  own box since `phoenix_named_points_ckpt141`; see below.
+  classic −0.5 out of the anchor. Moving it redraws the plane. It stays real; a starting
+  point's imaginary part is shown beside it, see below.
 - **A click opens that point's Phoenix set on the viewer**, at `c` under the click and the
   current `p`, in whatever mode, palette and recipe the viewer has. The address bar follows,
   the button row reads `Back to Phoenix plane (j)`, and Back lands the viewer on the plane at
@@ -2032,14 +2032,20 @@ list, where `j` and Back work on it exactly as on Mandelbrot (see the view toggl
 - **The classic is marked** while `p` is −0.5, at c = 0.5667 + 0i. That pair (0.5667, −0.5)
   is `(c, p)` and not a point of the plane, which is why the mark is at (0.5667, 0) and
   goes away when `p` moves.
-- **`p` is complex** *(phoenix_named_points_ckpt141)*. The slider and the first box are its
-  real part, and a second box, `+ i`, is its imaginary part. The plane always took a complex
-  `p` from a link, and the control used to write `py=0`. It is two numbers now because
-  nine of the eleven places the gallery seats on this plane have a complex `p`.
-- **Starting points** *(phoenix_named_points_ckpt141)*: a row of tiles under the sentence,
-  read from `phoenix-points.json`. It holds the classic first, then seven seats of the
+- **`p` may be complex; the control is not** *(phoenix_named_points_ckpt141, reshaped by
+  phoenix_plane_restore_ckpt141)*. The engine's `phoenix_m` takes a complex `p` and the plane
+  is drawn at the whole of it, `px` and `py`. Nine of the eleven places the gallery seats on
+  this plane have one. Only a starting point sets `Im p`. The slider and the box are `Re p`,
+  and `Im p` is shown beside the box, read-only, while it is not zero. Moving the slider or
+  the box sets it back to zero and clears the mark, as any move of `p` does. The first cut
+  gave `Im p` a box of its own; the restore took that back to the bar as it was.
+- **Starting points** *(phoenix_named_points_ckpt141)*: a grid of tiles under the plane and
+  its `p` bar, three to a row, read from `phoenix-points.json`. The plane stays at the top
+  and the panel does not scroll; the grid takes the height left and scrolls inside it
+  *(phoenix_plane_restore_ckpt141; the first cut put them above the plane, and the plane
+  was lost from the panel)*. Each tile shows its `p` under it. It holds the classic first, then seven seats of the
   staged gallery. `python -m builder phoenix-points` wrote it, and `builder/README.md` has
-  the rule. A click on a tile moves `p` to the tile's `p` at the digits its link carries,
+  the rule. A click on a tile moves `p` to the tile's full complex `p` at the digits its link carries,
   centres the plane on its `c` if the point is off the frame, and marks the point. The
   classic's mark is the classic mark; any other point gets the same crosshair in a ring.
   The click then opens the set on the viewer: a seat through `openLink`, exactly as

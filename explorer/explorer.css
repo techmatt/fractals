@@ -1812,22 +1812,24 @@ canvas.palette-final {
 }
 .phoenix-canvas.is-dragging { cursor: grabbing; }
 
-/* The starting points: the Nearby-minibrots tile, a row of them. One row is the brief, and
-   eight tiles across a panel this wide would be too small to tell apart, so the row keeps
-   each tile at a size worth aiming at and scrolls sideways past what fits, the walk
-   strip's way. */
+/* The starting points: the Nearby-minibrots tile, three to a row, under the plane and its
+   `p`. The plane is the panel's picture and keeps its place at the top, so the panel does
+   not scroll; the grid takes what height is left and scrolls inside it. Three across is
+   smaller than the minibrots' two, which is the point: these are ways in, and the plane is
+   what gets looked at. */
 .phoenix-points-head { flex: none; padding: 0 var(--gutter); }
 .phoenix-points {
-  overflow-y: hidden;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
   scrollbar-width: thin;
   scrollbar-color: var(--well-ink-dim) transparent;
-  flex: none;
   display: grid;
-  grid-auto-flow: column;
-  grid-auto-columns: minmax(7.5rem, 1fr);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  /* The minibrots' ruling, for the minibrots' reason. */
+  grid-auto-rows: max-content;
   gap: 0.4rem;
   padding: 0.2rem var(--gutter) 0.6rem;
-  overflow-x: auto;
   align-items: start;
 }
 .phoenix-point .minibrot-tile { padding: 0; }
@@ -1836,6 +1838,10 @@ canvas.palette-final {
 .bar.phoenix-p { padding: 0.5rem var(--gutter); }
 .bar.phoenix-p input.slider { flex: 1 1 6rem; width: auto; }
 .bar.phoenix-p .phoenix-preview-on { margin-left: auto; }
+/* Im p, beside the box that holds Re p: read, never typed, and there only while a starting
+   point put it there. */
+.phoenix-p-im { font-size: 0.8rem; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.phoenix-p-im[hidden] { display: none; }
 
 /* The card sits over a plane a panel wide rather than over the stage, so it is sized to the
    plane: a picture half as wide as it, in the corner away from the pointer. */

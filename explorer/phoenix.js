@@ -21,12 +21,13 @@
 // The preview card is `julia-preview.js`, mounted a second time over this plane with its
 // own flag: the same machinery at one sample a pixel, off until the box says otherwise.
 //
-// **Starting points** *(phoenix_named_points_ckpt141)*. A row of tiles above the plane,
-// read from `phoenix-points.json`: the classic, and seven sets the curation passes seated,
-// which `python -m builder phoenix-points` chose for spread over `p`. A click moves `p` to
-// that point, marks it, and opens the set on the viewer as it was recorded. Most of those
-// `p` are complex, which is why `p` is two numbers here: the slider and the first box are
-// its real part, the second box its imaginary part.
+// **Starting points** *(phoenix_named_points_ckpt141)*. A grid of tiles under the plane and
+// its `p` *(phoenix_plane_restore_ckpt141)*, read from `phoenix-points.json`: the classic,
+// and seven sets the curation passes seated, which `python -m builder phoenix-points` chose
+// for spread over `p`. A click moves `p` to that point, marks it, and opens the set on the
+// viewer as it was recorded. Most of those `p` are complex, and the plane is drawn at the
+// whole of it. The control stays real: the slider and the box are `Re p`, `Im p` is shown
+// beside them, and moving either sets `Im p` back to zero.
 
 import * as juliaPreview from "./julia-preview.js";
 import { Renderer } from "./render.js";
@@ -118,7 +119,7 @@ export function mount(host) {
   const kept = restored();
   let frame = kept?.frame ?? { ...home() };
   let p = kept?.p ?? defaultP();
-  /** The imaginary part of `p`, zero unless a starting point or the second box moved it. */
+  /** The imaginary part of `p`, zero unless a starting point moved it. */
   let pi = Number.isFinite(kept?.pi) ? kept.pi : 0;
   syncP();
 
@@ -407,38 +408,40 @@ export function mount(host) {
 
   // ---------------------------------------------------------------------- the p control
 
-  /** The controls show `p` at three places. A starting point's `p` is held at the digits
-   *  its link carries, so the plane its Back lands on is the plane it was chosen from. */
+  /** The controls show `Re p` at three places, and `Im p` beside the box while it is not
+   *  zero. A starting point's `p` is held at the digits its link carries, so the plane its
+   *  Back lands on is the plane it was chosen from. */
   function syncP() {
     const text = p.toFixed(P_DECIMALS);
     slider.value = text;
     box.value = text;
-    boxIm.value = pi.toFixed(P_DECIMALS);
+    boxIm.hidden = pi === 0;
+    boxIm.textContent = pi === 0 ? "" : `${pi < 0 ? "−" : "+"} ${spelled(Math.abs(pi))}i`;
   }
 
-  /** The reader moved one part of `p` by hand: the other part stays as it is, the chosen
-   *  point is let go, and the plane redraws. */
-  function setP(value, imaginary) {
+  /** The reader moved `p` by hand. The control is real, so the move is to a real `p`: an
+   *  imaginary part a starting point left goes back to zero, the chosen point is let go,
+   *  and the plane redraws. */
+  function setP(value) {
     if (!Number.isFinite(value)) {
       syncP();
       return;
     }
     const next = Number(Math.min(P_MOST, Math.max(P_LEAST, value)).toFixed(P_DECIMALS));
-    if (next === (imaginary ? pi : p)) {
+    if (next === p && pi === 0) {
       syncP();
       return;
     }
-    if (imaginary) pi = next;
-    else p = next;
+    p = next;
+    pi = 0;
     chosen = null;
     syncP();
     preview.hide();
     schedule();
   }
 
-  slider.addEventListener("input", () => setP(Number(slider.value), false));
-  box.addEventListener("change", () => setP(Number(box.value), false));
-  boxIm.addEventListener("change", () => setP(Number(boxIm.value), true));
+  slider.addEventListener("input", () => setP(Number(slider.value)));
+  box.addEventListener("change", () => setP(Number(box.value)));
 
   // ---------------------------------------------------------------------- the gestures
 
