@@ -212,13 +212,14 @@ keeps the mechanics. **Every apply round ends by distilling that round's general
   recipe whole. A maker that changed the recipe to make its point, or that draws at a map
   of its own, needs its own per-panel view before its figure can be split.
 - **A figure's id opens with its page's prefix** — `overview-`, `escape-`, `render-`,
-  `modes-`, `locations-`, `judges-`, `palette-`, `wallpapers-` — so a slug says where it
+  `modes-`, `locations-`, `judges-`, `palette-`, `wallpapers-`, `gallery-`, `pipeline-`,
+  `atlas-` — so a slug says where it
   lives before anything looks it up. One prefix to a page and one page to a prefix, with
   the single carve-out that a page hanging off a section shares that section's prefix:
   `palette-generator-batch` sits on `palettes/make-your-own.html`. The front page's one
   picture is `index-hero`, on a row whose page is spelled `./index.html` — the slash a
-  bare name at the root lacks — and it is the one figure with no caption. The three unwritten
-  sections have no figures and so no prefix yet. The prose never uses that slug: a
+  bare name at the root lacks — and it is the one figure with no caption. `deep-zoom`, the
+  one section with neither prose nor figures, has no prefix yet. The prose never uses that slug: a
   reference from the text is **positional** (*the figure below*), because this site
   numbers no figures and anchors none.
 - **Exactly one line of a figure's `provenance` puts the word `colormap` in front of a
@@ -347,15 +348,14 @@ keeps the mechanics. **Every apply round ends by distilling that round's general
   So a maker is a module in `builder/` with an entry in its own `SHEETS`, `MAKERS` or
   `DIAGRAMS` table and a subcommand that draws it by figure id — `families`,
   `fundamentals`, `overview`, `diagram`, `locations`, `judges`, `palettes`, `pool`,
-  `picks`, `curation`, `front`. `scratch/` stays what it is for: the probes, sweeps and contact
+  `picks`, `curation`, `growth`, `pipeline`, `atlas`, `front`. `scratch/` stays what it is for: the probes, sweeps and contact
   sheets that *found* a choice. Once a choice is made, the program that acts on it is
   committed. **All 61 of them are, as of 2026-09-06**, and a row naming a path under
   `scratch/` is now a bug rather than a legacy.
 
-  Three rules come with it. **A maker addresses a location by its record** — the
-  constants a search settled on are frozen into the maker or read from a committed file,
-  never re-derived at draw time, because a maker free to re-derive is free to answer
-  differently and move a picture nobody asked to move. Where the answer to a search is
+  Three rules come with it. **A maker addresses a location by its record** (its own
+  bullet below has the history) — the constants a search settled on are frozen into the
+  maker or read from a committed file, never re-derived at draw time. Where the answer to a search is
   too big to write into the maker, it is a committed record beside it —
   `builder/data/locations-walk-descent.json` is the one of those. **One encoder**: a
   composed sheet goes through `images.land`, which downscales to `WEB_RES_MAX_WIDTH` and
@@ -451,7 +451,7 @@ builder/        the Python page generator
 docs/           how this repository's workflows are run — the page-review loop
 scratch/        the probes and contact sheets a choice was found with, reports,
                 anything untracked (gitignored). Not the makers — those are in
-                builder/, per the locked convention below
+                builder/, per the locked convention above
 ```
 
 ## How a page is put together
@@ -474,8 +474,8 @@ Wikipedia's shape: a sticky contents rail on the left, the reading column beside
   a heading opens something: the page title, and a subhead inside prose. `--mono` is code,
   and the formula block. No webfont is loaded.
 - **JS where a page needs it**, per the locked convention above: article pages carry none
-  and open from the filesystem; the explorer is the first and so far only exception, and
-  brings its own stylesheet as well as its own script.
+  and open from the filesystem; the explorer, and the atlas frame its Atlas tab mounts, are
+  the exceptions, and each brings its own stylesheet as well as its own script.
 
 **A page may hang off a section without being one.** The twelve sections are ratified
 and `article/` holds exactly those twelve; a page that belongs to a section but is not part of
@@ -600,7 +600,7 @@ node --test explorer/permalink.test.mjs explorer/bands.test.mjs explorer/level.t
 **The third line is there so that a reformat can never arrive as a side effect**
 *(deep_refactor_ckpt138, 2026-09-20)*. `perturb-wasm` was 25 `rustfmt` diffs from clean
 across seven files, which meant a contributor who ran `cargo fmt` produced a repo-wide
-reformat — the state the formatting rule below says should never be possible. The reformat
+reformat — the state the formatting rule above says should never be possible. The reformat
 was taken deliberately, in a commit of its own, and this line is what holds it.
 **`engine-wasm` joined it** *(pre_closeout_ckpt138, 2026-09-20)*, its own eight diffs in
 `src/level.rs` taken the same way, so both crates are now held and neither can drift again.
