@@ -43,7 +43,7 @@
 use crate::fx::{Fx, pow2};
 use crate::kernel::Kernel;
 use crate::reference::{BAILOUT, Reference};
-use crate::{Spec, reference};
+use crate::{Spec, progress, reference};
 
 /// How many samples across and down the domain grid is, by default.
 ///
@@ -246,9 +246,12 @@ pub fn seeds_in_rows(
     let rows = rows.clamp(1, sample_height);
 
     let mut found: Vec<Seed> = Vec::new();
-    for j in row_start..row_end.min(rows) {
+    let last = row_end.min(rows);
+    let cells = last.saturating_sub(row_start) * cols;
+    for j in row_start..last {
         let row = spread(j, rows, sample_height);
         for i in 0..cols {
+            progress::report((j - row_start) * cols + i, cells);
             let col = spread(i, cols, sample_width);
             let (re, im) = spec.dc(offset, col, row);
             let domain = kernel.domain_at(spec.degree, julia, re, im);

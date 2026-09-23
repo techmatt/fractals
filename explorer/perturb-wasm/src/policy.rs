@@ -67,7 +67,7 @@
 
 use crate::kernel::Kernel;
 use crate::reference::Reference;
-use crate::{Spec, cap};
+use crate::{Spec, cap, progress};
 
 /// How far `log₂|dz|²` has to have grown for a cap-starved sample to be the
 /// cap's fault rather than a picture that is already right.
@@ -194,9 +194,12 @@ pub fn probe_rows(
         maxiter,
         ..Counts::default()
     };
-    for j in row_start..row_end.min(rows) {
+    let last = row_end.min(rows);
+    let cells = last.saturating_sub(row_start) * cols;
+    for j in row_start..last {
         let row = spread(j, rows, sample_height);
         for i in 0..cols {
+            progress::report((j - row_start) * cols + i, cells);
             let col = spread(i, cols, sample_width);
             let (re, im) = spec.dc(offset, col, row);
             let outcome = kernel.sample_at(spec.degree, julia, re, im);

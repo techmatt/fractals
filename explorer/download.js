@@ -502,7 +502,7 @@ export function install(context) {
       const known = deep.measured();
       if (known === null) {
         refuse(
-          "not priced",
+          "not priced yet",
           "Press Render in the Deep tab, and this is estimated from what the pass took.",
         );
         return;
@@ -567,8 +567,13 @@ export function install(context) {
    * **The Deep tab's own download**, which is the tab's render at the row's size.
    *
    * The tab draws it — same pool, same spec, same cap policy — so there is one deep
-   * renderer and not two, and the picture comes back with the link it is of. Progress runs
-   * through both bars: this one, and the tab's own line, which is also where Cancel is.
+   * renderer and not two, and the picture comes back with the link it is of.
+   *
+   * **Its progress is the tab's, on the Render line, and not this button's**
+   * *(deep_tab_activity_and_layout_ckpt141)*. The Deep row keeps its buttons, its size, its
+   * samples and a price in plain text; the one bar is beside the tab's Cancel, labelled
+   * *file* while this runs, because that is where a reader watching a deep frame is already
+   * looking and where every other stage of it — the probe, the orbit — is said.
    */
   async function downloadDeep(go, width, height) {
     const { format } = go;
@@ -576,32 +581,18 @@ export function install(context) {
     const mine = running;
     go.button.classList.add("is-running");
     go.button.title = "Rendering. Press to cancel.";
+    go.label.textContent = "Cancel";
     lock(true, go);
-    progress(0);
     setBusy(true);
     const started = performance.now();
-    // The shade's share of the wait, from the last pass of this frame — the same split the
-    // shallow path makes, off the same two halves.
-    const known = deep.measured();
-    const samples = width * height * supersample * supersample;
-    const whole = scaled(known, samples);
-    const shadeShare =
-      known && whole > 0 ? Math.min(0.5, (known.shade * samples) / known.samples / whole) : 0;
 
     try {
-      const picture = await deep.picture(width, height, {
-        supersample,
-        holder: mine,
-        onProgress: (done) => {
-          if (!mine.cancelled) progress(done * (1 - shadeShare));
-        },
-      });
+      const picture = await deep.picture(width, height, { supersample, holder: mine });
       if (picture === null || mine.cancelled) {
         say("Download cancelled.");
         finish();
         return;
       }
-      progress(1);
       const name = fileNameOf(picture.name, width, height, format.extension);
       await save(picture.image, name, format, picture.query);
       const spent = (performance.now() - started) / 1000;

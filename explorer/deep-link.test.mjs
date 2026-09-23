@@ -57,10 +57,11 @@ test("a centre is normalized to one spelling and loses no digit", () => {
   assert.equal(a, b);
 });
 
-test("the cap is always written, even when it is the policy's own answer", () => {
+test("a link that names no cap opens at the width's and writes none until one is settled", () => {
   const view = deep.parse("?dv=1&w=2e-11&p=inferno", context);
   assert.equal(view.maxiter, 48551);
-  assert.match(deep.emit(view), /&n=48551/);
+  assert.doesNotMatch(deep.emit(view), /[?&]n=/);
+  assert.match(deep.emit({ ...view, capFrom: "probe" }), /&n=48551/);
 });
 
 test("a cap outside the kernel's range is refused by name", () => {
@@ -182,13 +183,37 @@ test("the UI key rides on a deep link as it rides on a shallow one", () => {
   assert.equal(deep.emit(view), ANCHOR.replace("dv=1", "dv=3"));
 });
 
-test("a fresh view is the home frame and carries a cap", () => {
+test("a fresh view is the home frame at the width's cap, and does not write it", () => {
   const view = deep.fresh(context);
   assert.equal(view.x.text, "-0.5");
   assert.equal(view.w.value, 3);
   assert.equal(view.maxiter, 4000);
-  assert.equal(deep.emit(view), "dv=3&x=-0.5&y=0&w=3&n=4000&p=twilight_shifted");
+  assert.equal(view.capFrom, "width");
+  assert.equal(deep.emit(view), "dv=3&x=-0.5&y=0&w=3&p=twilight_shifted");
   assert.equal(view.degree, 2);
+});
+
+test("the cap is written once it is settled, and a link that names one opens pinned", () => {
+  // The bug this is the fix for: a link copied while the probe was deciding carried the
+  // width's cap, and a link-carried cap is drawn as pinned.
+  const unsettled = { ...deep.fresh(context), maxiter: 55926 };
+  assert.doesNotMatch(deep.emit(unsettled), /[?&]n=/);
+  for (const capFrom of ["probe", "reader", "tile"]) {
+    assert.match(deep.emit({ ...unsettled, capFrom }), /&n=55926&/);
+  }
+  // A view built somewhere that says nothing about its cap keeps the old rule.
+  const { capFrom, ...silent } = unsettled;
+  assert.equal(capFrom, "width");
+  assert.match(deep.emit(silent), /&n=55926&/);
+
+  const named = deep.parse(`?${ANCHOR}`, context);
+  assert.equal(named.capFrom, "reader");
+  const bare = deep.parse(`?${ANCHOR.replace("&n=48551", "")}`, context);
+  assert.equal(bare.capFrom, "width");
+  assert.equal(bare.maxiter, 48551);
+  // Both round-trip: the absent key comes back absent, the named one named.
+  assert.equal(deep.emit(bare), ANCHOR.replace("dv=1", "dv=3").replace("&n=48551", ""));
+  assert.equal(deep.emit(named), ANCHOR.replace("dv=1", "dv=3"));
 });
 
 test("a field key moves with the arithmetic and not with the colour", () => {

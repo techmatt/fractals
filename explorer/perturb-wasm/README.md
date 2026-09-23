@@ -39,6 +39,8 @@ src/policy.rs      the cap a frame asks for: what died at a cap, and whether
 src/nuclei.rs      the minibrots in and around a view: atom domains, then a
                    high-precision Newton solve, then a size and a frame
 src/json.rs        a reader for one flat JSON object
+src/progress.rs    the module's one import, env.progress: how far a long
+                   call has got, told while it runs
 src/lib.rs         the spec, the width's cap, and the exports
 smooth-cases.json  400 of the engine's own samples, as the pin
 tests/oracle.rs    the kernel against a brute-force oracle (ignored by default)
@@ -1205,6 +1207,16 @@ exports. `python -m builder explorer --perturb` rebuilds both and nothing else:
 it needs `cargo` and the `wasm32-unknown-unknown` target and **no sibling
 checkout**, which is what this crate having no dependencies buys and is why it is
 its own branch rather than a stage of the explorer's bake.
+
+**The module has one import, `env.progress(done, total)`** *(deep_tab_activity_and_
+layout_ckpt141)*, and whoever instantiates it supplies it — `bench/perturb.mjs` and the
+page's own planner with a function that does nothing, `deep-worker.js` with one that posts
+at most every 100 ms. A wasm call cannot be looked into, and a reference orbit at a million
+or a probe rung beside a parabolic point is seconds inside one export; `src/progress.rs` is
+called every 4,096 orbit steps and once a probe or domain-walk cell, so the page can tell a
+slow frame from a stranded pool. Natively it compiles to nothing, and every native test is
+unmoved. Measured on the rebuild: the orbits, fields and probe counts of four frames came
+back byte for byte what the module before it produced, in 10.82 s against 10.83 s.
 
 | field | what it holds |
 | --- | --- |

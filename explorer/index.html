@@ -111,17 +111,7 @@
     </div>
 
     <div class="tabpanel" id="panel-deep" role="tabpanel" aria-labelledby="tab-deep" hidden>
-      <div class="section-head deep-first"><h2 id="head-deep-frame">Frame</h2></div>
-      <dl class="deep-frame" aria-labelledby="head-deep-frame">
-        <dt id="deep-param-row" hidden>Julia c</dt>
-        <dd id="deep-param-value" hidden><code class="deep-centre" id="deep-param"></code></dd>
-        <dt>Center</dt>
-        <dd><code class="deep-centre" id="deep-centre"></code></dd>
-        <dt>Width</dt>
-        <dd><code id="deep-width"></code></dd>
-      </dl>
-
-      <div class="section-head">
+      <div class="section-head deep-first">
         <h2 id="head-deep-iterations">Iterations</h2>
         <button type="button" class="head-action" id="deep-cap-policy">From the width</button>
       </div>
@@ -152,7 +142,8 @@
 
       <p class="side-note" id="deep-side-note">Smooth, degrees 2 to 6: the Mandelbrot and
       Multibrot sets and their Julia sets. Drag and scroll to move
-      the frame; Render and Auto-render are under the picture. The writeup explains how deep
+      the frame; Render and Auto-render are under the picture, and where the frame is sits in
+      Details below it. The writeup explains how deep
       frames are rendered:
       <a href="../article/escape-time-fractals.html#locations">Escape-time fractals</a>.</p>
     </div>
@@ -249,13 +240,18 @@
         <div class="section-head"><h2 id="head-deep-render">Render</h2></div>
         <div class="bar deep-go" role="group" aria-labelledby="head-deep-render">
           <button type="button" class="deep-render" id="deep-render">Render</button>
+          <!-- The pass in progress, beside the button that cancels it. The Download row keeps
+               a price and no bar while this tab owns the canvas; a file render fills this one. -->
+          <span class="deep-bar" id="deep-bar" aria-hidden="true"><span class="deep-bar-fill"></span></span>
+          <span class="deep-activity">
+            <span class="deep-spinner" id="deep-spinner" aria-hidden="true" hidden></span>
+            <span class="deep-progress" id="deep-progress" role="status" aria-live="polite" hidden></span>
+          </span>
           <span class="group">
             <label for="deep-auto">Auto-render</label>
             <input type="checkbox" id="deep-auto" class="flag" checked
-                   title="Draws each frame you move to, at one sample a pixel, without pressing Render.">
+                   title="Draws each frame you move to at the width's own cap, without pressing Render.">
           </span>
-          <span class="samples" id="deep-samples" role="group" aria-label="Samples per pixel on screen"></span>
-          <span class="deep-progress" id="deep-progress" role="status" aria-live="polite" hidden></span>
         </div>
         <p class="deep-note" id="deep-note" role="status"></p>
       </section>
@@ -354,6 +350,25 @@
           <button type="button" id="copy-view"
                   title="Everything about this view as text, for pasting.">Copy view</button>
         </div>
+      </details>
+
+      <!-- The Deep tab's Details (deep_tab_activity_and_layout_ckpt141): where the frame is,
+           in boxes a reader can retype, under the picture like the shallow one. Shown only
+           while that tab owns the canvas. -->
+      <details class="control-group deep-details" id="deep-details">
+        <summary class="section-head"><h2>Details</h2></summary>
+        <p class="stats" id="deep-stats"></p>
+        <p class="readout deep-family" id="deep-family"></p>
+        <p class="readout" id="deep-param-group" hidden>c = <span id="deep-param"></span></p>
+        <div class="bar deep-coordinates">
+          <label for="deep-x">x</label>
+          <input type="text" id="deep-x" class="constant" spellcheck="false" autocomplete="off">
+          <label for="deep-y">y</label>
+          <input type="text" id="deep-y" class="constant" spellcheck="false" autocomplete="off">
+          <label for="deep-w">width</label>
+          <input type="text" id="deep-w" class="constant" spellcheck="false" autocomplete="off">
+        </div>
+        <p class="readout" id="deep-cap-said"></p>
       </details>
 
     </div>

@@ -21,8 +21,8 @@
 // picture.
 //
 // **The orbit is the shape of everything here.** One high-precision reference orbit per
-// frame, computed on this thread, sent to each worker once, and held there across every
-// band. A band call never computes one. See `deep-worker.js`.
+// frame, computed in one worker, sent to each of the others once, and held there across
+// every band. A band call never computes one. See `deep-worker.js`.
 
 import { BAND_TARGET_MS, bandsOf, recut } from "./render.js";
 import { stopsOf } from "./stops.js";
@@ -267,19 +267,32 @@ function spawn(module) {
 /**
  * Everything the Deep tab needs to draw, once `perturb.wasm` is compiled and the pool is up.
  *
- * Cancellation is by generation, as it is in the viewer's renderer: a new pass bumps the
- * generation, no further bands are dispatched, and the band still in flight is finished and
- * thrown away. What makes that bearable here is the band cut — a cancel costs one band, so
- * a band is how long the tab can ignore the reader, which is why the cut is aimed at a
- * duration and opens fine.
+ * **One request per worker at a time, matched by id, and a worker is idle exactly when it
+ * has none outstanding** *(deep_tab_activity_and_layout_ckpt141)*. That sentence replaces a
+ * hand-kept `idle` list and a worker handler that each caller swapped in and out, and the
+ * pair of them was the bug the test frame was stuck on: a cancel left in-flight workers off
+ * the list, the next probe's handler swallowed their late bands, and after three gestures
+ * during a pass no worker was idle and the frame never started. Nothing is kept by hand
+ * now — `#slot.busy` is the only record of whether a worker is working, and the router
+ * that clears it is installed once, when the worker is born.
+ *
+ * **Cancel ends every worker that is working, and the pool comes back idle.** A wasm call
+ * cannot be interrupted, and the long ones — a reference orbit at a million, a probe rung
+ * beside a parabolic point — are seconds to minutes, so a cancel that waited for them was
+ * not a cancel. A busy worker is terminated and a fresh one started from the module already
+ * compiled, which costs a few milliseconds; it is fed the held orbit again the next time a
+ * request needs it, and that is the whole cost of being able to stop anything.
  */
 export class DeepRenderer {
   constructor(module, planner, workers, shading) {
     this.module = module;
-    /** A main-thread instance, for `plan`, the cap policy and the reference orbit. */
+    /** A main-thread instance, for `plan` and the policy's small questions. Never for an
+     *  orbit, which is a worker's (see `#reference`). */
     this.planner = planner;
-    this.workers = workers;
-    this.idle = [...workers];
+    /** The pool: `{ worker, ready, busy, fed }` a worker. `busy` is the request in flight
+     *  or `null`; `ready` resolves once a (re)started worker is up; `fed` is the stamp of
+     *  the orbit it holds. */
+    this.slots = workers.map((worker) => this.#slotOf(worker));
     /** The page's own shade worker, over `engine.wasm`. Deep fields are coloured there for
      *  the reason the viewer's final stage is: a recolour of a frame that took a minute
      *  must not freeze the page for half a second. */
@@ -287,20 +300,27 @@ export class DeepRenderer {
     this.generation = 0;
     this.queue = [];
     this.job = null;
-    this.inflight = new Map();
+    this.requests = 0;
     /** Milliseconds per output row per sample-per-pixel, as the last bands measured it. */
     this.rowCost = null;
-    /** The reference orbit the workers are holding: its bytes, the point it is of, the cap
-     *  and the limb count it was computed at, and its reach. `null` before the first. */
+    /** The reference orbit the pool holds: its bytes, the point it is of, the cap and the
+     *  limb count it was computed at, its stamp, and its reach. `null` before the first. */
     this.orbit = null;
     this.orbits = 0;
+    /** When any worker was last heard from — a reply or a progress message. What the tab's
+     *  watchdog reads: a pool that has said nothing for ten seconds is not a slow frame. */
+    this.heard = performance.now();
+    /** Called with every message a worker sends, for the tab's log. `null` is silence. */
+    this.onMessage = null;
   }
 
   static async start(url, engineShading, wanted) {
     const response = await fetch(url);
     if (!response.ok) throw new Error(`${url}: ${response.status} ${response.statusText}`);
     const module = await WebAssembly.compile(await response.arrayBuffer());
-    const planner = new WebAssembly.Instance(module, {}).exports;
+    // The module's one import, and on this thread there is nobody to tell: the planner
+    // answers `plan` and the policy's constants, all of which are microseconds.
+    const planner = new WebAssembly.Instance(module, PLANNER_IMPORTS).exports;
     const count =
       wanted ?? Math.min(MAX_WORKERS, navigator.hardwareConcurrency || DEFAULT_WORKERS);
     const workers = [];
@@ -309,7 +329,69 @@ export class DeepRenderer {
   }
 
   get workerCount() {
-    return this.workers.length;
+    return this.slots.length;
+  }
+
+  /** Whether any worker has a request in flight. */
+  get busy() {
+    return this.slots.some((slot) => slot.busy !== null);
+  }
+
+  #slotOf(worker) {
+    const slot = { worker, ready: Promise.resolve(), busy: null, fed: null };
+    this.#route(slot);
+    return slot;
+  }
+
+  /** The one handler a worker ever has. A reply settles the request with its id and frees
+   *  the worker; a progress message goes to that request's listener; anything else — a
+   *  reply to a request that was cancelled — is dropped, and the worker is still free. */
+  #route(slot) {
+    slot.worker.onmessage = (event) => {
+      const message = event.data;
+      this.heard = performance.now();
+      this.onMessage?.(message);
+      const busy = slot.busy;
+      if (busy === null || message.id !== busy.id) return;
+      if (message.kind === "progress") {
+        busy.onProgress?.(message.done, message.total);
+        return;
+      }
+      slot.busy = null;
+      busy.resolve(message);
+    };
+  }
+
+  /** Put a worker back as it was born: terminated, restarted from the compiled module, and
+   *  holding no orbit. Whatever it was asked is answered `null`. */
+  #restart(slot) {
+    const busy = slot.busy;
+    slot.busy = null;
+    slot.worker.terminate();
+    slot.fed = null;
+    slot.ready = spawn(this.module).then((worker) => {
+      slot.worker = worker;
+      this.#route(slot);
+    });
+    busy?.resolve(null);
+  }
+
+  /**
+   * Ask one worker one thing, and resolve with its reply — or with `null` where the request
+   * was cancelled before it was answered.
+   *
+   * The worker must be free; every caller here waits for a reply before it asks the same
+   * worker again, which is what one-at-a-time means, and a request sent to a busy worker
+   * is a mistake of this file's and is thrown as one.
+   */
+  async #send(slot, message, { onProgress, transfer = [] } = {}) {
+    await slot.ready;
+    if (slot.busy !== null) throw new Error("a deep worker was asked two things at once");
+    const id = ++this.requests;
+    return new Promise((resolve) => {
+      slot.busy = { id, kind: message.kind, resolve, onProgress, at: performance.now() };
+      slot.worker.postMessage({ ...message, id }, transfer);
+    });
   }
 
   /** Write a string into the planner's heap, call an export with it, and free it.
@@ -392,6 +474,10 @@ export class DeepRenderer {
    * three kinds of cap-death are set out and why only that one is a fault; what is here is
    * the loop and the pool.
    *
+   * `onStep` hears the rung's two halves as they go: `{ phase: "orbit", done, total, cap,
+   * rung }` in iterations of the reference, then `{ phase: "probe", done, total, cap, rung }`
+   * in cells of the probe, summed over the pool.
+   *
    * Resolves with `{ maxiter, from, steps, atCeiling, fault, rungs, iterations, elapsed }`,
    * or `null` where a newer generation started while it ran.
    *
@@ -400,7 +486,7 @@ export class DeepRenderer {
    * runs once, at the cap this settled on, and nothing about the decision is an
    * approximation of the thing being decided.
    */
-  async settle(view, width, height, { supersample = 1, onRung } = {}) {
+  async settle(view, width, height, { supersample = 1, onRung, onStep } = {}) {
     this.cancel();
     const generation = this.generation;
     const started = performance.now();
@@ -410,13 +496,20 @@ export class DeepRenderer {
     const rungs = [];
 
     for (;;) {
-      const reference = await this.#reference(at, width, height, supersample);
+      const rung = rungs.length + 1;
+      const cap = at.maxiter;
+      const reference = await this.#reference(at, width, height, supersample, null, {
+        generation,
+        onProgress: (done, total) => onStep?.({ phase: "orbit", done, total, cap, rung }),
+      });
       if (generation !== this.generation) return null;
       if (reference === null) {
         throw new Error("the kernel could not compute a reference orbit for this view");
       }
       const spec = deepSpecOf(at, width, height, { supersample, reference });
-      const counts = await this.#probe(JSON.stringify(spec), generation);
+      const counts = await this.#probe(JSON.stringify(spec), generation, (done, total) =>
+        onStep?.({ phase: "probe", done, total, cap, rung }),
+      );
       if (counts === null || generation !== this.generation) return null;
       iterations += counts.iterations;
       rungs.push(counts);
@@ -444,7 +537,7 @@ export class DeepRenderer {
 
   /** One rung's counts, over the pool. The probe's rows are cut between the workers and
    *  the counts summed; a band that comes back refused is the rung's error. */
-  async #probe(spec, generation) {
+  async #probe(spec, generation, onProgress) {
     const shares = await this.#shares(
       "probe",
       "counts",
@@ -453,6 +546,7 @@ export class DeepRenderer {
       PROBE_COLS,
       PROBE_ROWS,
       generation,
+      onProgress,
     );
     if (shares === null) return null;
     const total = {
@@ -485,20 +579,25 @@ export class DeepRenderer {
    *
    * Drawing is serial and has to be: the pool holds one reference orbit between all its
    * workers, and every tile wants a different one. That is also why the view's own orbit
-   * is gone afterwards and the next Render recomputes it, which is twenty milliseconds.
+   * is gone afterwards and the next Render recomputes it.
    *
    * Resolves with `null` where a newer generation started, as everything here does.
    */
-  async nuclei(view, width, height, { supersample = 1, tileSamples = 316, budget = 12, want = 6 } = {}) {
+  async nuclei(view, width, height, { supersample = 1, tileSamples = 316, budget = 12, want = 6, onStep } = {}) {
     this.cancel();
     const generation = this.generation;
-    const reference = await this.#reference(view, width, height, supersample);
+    const reference = await this.#reference(view, width, height, supersample, null, {
+      generation,
+      onProgress: (done, total) => onStep?.({ phase: "orbit", done, total }),
+    });
     if (generation !== this.generation) return null;
     if (reference === null) {
       throw new Error("the kernel could not compute a reference orbit for this view");
     }
     const spec = JSON.stringify(deepSpecOf(view, width, height, { supersample, reference }));
-    const seeds = await this.#seeds(spec, generation);
+    const seeds = await this.#seeds(spec, generation, (done, total) =>
+      onStep?.({ phase: "seeds", done, total }),
+    );
     if (seeds === null || generation !== this.generation) return null;
 
     // Widest domain first: the cells a domain takes on the grid are a free measure of how
@@ -513,9 +612,12 @@ export class DeepRenderer {
     const degree = view.degree ?? 2;
     const limbs = this.planner.nucleus_limbs(view.w.value, tileSamples, degree);
 
-    const lanes = this.workers.map((worker, index) => {
-      const mine = chosen.filter((_, at) => at % this.workers.length === index);
-      return this.#solveEach(worker, mine, view, limbs, generation);
+    let settled = 0;
+    const lanes = this.slots.map((slot, index) => {
+      const mine = chosen.filter((_, at) => at % this.slots.length === index);
+      return this.#solveEach(slot, mine, view, limbs, generation, () =>
+        onStep?.({ phase: "solves", done: ++settled, total: chosen.length }),
+      );
     });
     const solved = (await Promise.all(lanes)).flat();
     if (generation !== this.generation) return null;
@@ -538,7 +640,7 @@ export class DeepRenderer {
 
   /** The domain walk over the pool, its rows cut between the workers and its seeds merged
    *  by period: cells add, and the smallest approach keeps its cell. */
-  async #seeds(spec, generation) {
+  async #seeds(spec, generation, onProgress) {
     const shares = await this.#shares(
       "seeds",
       "found",
@@ -547,6 +649,7 @@ export class DeepRenderer {
       GRID_COLS,
       GRID_ROWS,
       generation,
+      onProgress,
     );
     if (shares === null) return null;
     const merged = new Map();
@@ -568,11 +671,12 @@ export class DeepRenderer {
   }
 
   /** Every seed in this lane, solved on this worker, in turn. */
-  async #solveEach(worker, mine, view, limbs, generation) {
+  async #solveEach(slot, mine, view, limbs, generation, onSolved) {
     const solved = [];
     for (const seed of mine) {
       if (generation !== this.generation) return solved;
-      const nucleus = await this.#solve(worker, seed, view, limbs, generation);
+      const nucleus = await this.#solve(slot, seed, view, limbs, generation);
+      onSolved();
       if (nucleus !== null) solved.push(nucleus);
     }
     return solved;
@@ -588,7 +692,7 @@ export class DeepRenderer {
    * next step's input. Nothing is narrowed between steps, which is the only reason a
    * solve converges past 1e-38 at all.
    */
-  async #solve(worker, seed, view, limbs, generation) {
+  async #solve(slot, seed, view, limbs, generation) {
     let re = fx.text(fx.add(view.x.dec, fx.fromNumber(seed.from_re) ?? fx.ZERO));
     let im = fx.text(fx.add(view.y.dec, fx.fromNumber(seed.from_im) ?? fx.ZERO));
     // The body is the view's width squared, near enough — to the power `d/(d−1)` at degree
@@ -600,11 +704,11 @@ export class DeepRenderer {
     let last = Infinity;
     for (let step = 1; step <= NEWTON_STEPS; step++) {
       if (generation !== this.generation) return null;
-      const answer = await this.#ask(worker, {
+      const reply = await this.#send(slot, {
         kind: "newton",
-        job: generation,
         request: JSON.stringify({ c_re: re, c_im: im, period: seed.period, limbs, degree }),
       });
+      const answer = reply?.step ?? null;
       if (answer === null || !answer.ok || answer.escaped) return null;
       re = answer.c_re;
       im = answer.c_im;
@@ -653,40 +757,19 @@ export class DeepRenderer {
     return null;
   }
 
-  /** One round trip to one worker, with its handler put back afterwards.
-   *
-   *  `field` is the member of the reply that is the answer — `step` for a Newton step,
-   *  `counts` for a probe band, `found` for a walk of the domains. */
-  #ask(worker, message, field = "step") {
-    return new Promise((resolve) => {
-      const previous = worker.onmessage;
-      worker.onmessage = (event) => {
-        if (event.data.kind !== message.kind) return;
-        worker.onmessage = previous;
-        resolve(event.data[field] ?? null);
-      };
-      worker.postMessage(message);
-    });
-  }
-
   /**
    * Cut `rows` of the frame's own grid across the pool and ask every worker for its
-   * share, as one message each.
+   * share, as one request each.
    *
    * **What a band of a probe and a band of the domain walk have in common**, which is
-   * everything except the tally: the same cut, the same one-message round trip, the same
+   * everything except the tally: the same cut, the same one-request round trip, the same
    * refusal. Resolves with one answer per worker, or `null` where the pool is empty or a
    * newer generation has started; throws the kernel's own sentence where a share was
-   * refused.
-   *
-   * ⚠ **A refusal surfaces after the last share lands, not on the first.** The two
-   * hand-written versions this replaced rejected the moment a bad one arrived, with the
-   * others still running; nothing a reader sees turns on it, since the sentence is the
-   * same and the frame is abandoned either way, but it is a difference and not a
-   * simplification.
+   * refused. `onProgress(done, total)` hears the cells walked so far over the whole pool,
+   * summed from each worker's own report of its share.
    */
-  async #shares(kind, field, refusal, spec, cols, rows, generation) {
-    const workers = this.workers.length;
+  async #shares(kind, field, refusal, spec, cols, rows, generation, onProgress) {
+    const workers = this.slots.length;
     if (workers === 0) return null;
     const ranges = [];
     for (let index = 0; index < workers; index++) {
@@ -694,41 +777,59 @@ export class DeepRenderer {
       const end = Math.floor(((index + 1) * rows) / workers);
       if (end > start) ranges.push([start, end]);
     }
+    if (!(await this.#feedAll(generation))) return null;
+    const done = ranges.map(() => 0);
+    const total = cols * rows;
     const answers = await Promise.all(
       ranges.map(([rowStart, rowEnd], index) =>
-        this.#ask(
-          this.workers[index],
-          { kind, job: generation, spec, cols, rows, rowStart, rowEnd },
-          field,
+        this.#send(
+          this.slots[index],
+          { kind, spec, cols, rows, rowStart, rowEnd },
+          {
+            onProgress: (cells) => {
+              done[index] = cells;
+              onProgress?.(done.reduce((sum, count) => sum + count, 0), total);
+            },
+          },
         ),
       ),
     );
-    for (const answer of answers) {
-      if (!answer?.ok) throw new Error(answer?.why ?? refusal);
+    if (generation !== this.generation || answers.some((reply) => reply === null)) return null;
+    for (const reply of answers) {
+      if (!reply[field]?.ok) throw new Error(reply[field]?.why ?? refusal);
     }
-    return generation === this.generation ? answers : null;
+    return answers.map((reply) => reply[field]);
   }
 
+  /**
+   * Stop whatever the pool is doing, and come back idle.
+   *
+   * The generation moves, so everything still awaiting drops its answer on the floor; and
+   * every worker with a request in flight is ended and restarted, so nothing is still
+   * running when this returns. That second half is what a reader's Cancel means — a probe
+   * rung, an orbit and a band are all things a wasm call cannot be talked out of.
+   */
   cancel() {
     this.generation += 1;
     this.queue = [];
     const job = this.job;
     this.job = null;
-    this.inflight.clear();
+    for (const slot of this.slots) {
+      if (slot.busy !== null) this.#restart(slot);
+    }
     if (job !== null) job.resolve(null);
   }
 
   /** Throw away the pool and the orbit every worker is holding. */
   stop() {
     this.cancel();
-    for (const worker of this.workers) worker.terminate();
-    this.workers = [];
-    this.idle = [];
+    for (const slot of this.slots) slot.worker.terminate();
+    this.slots = [];
     this.orbit = null;
   }
 
   /**
-   * Whether the orbit the workers hold can still draw this frame.
+   * Whether the orbit the pool holds can still draw this frame.
    *
    * Three things have to hold, and each of them is a way the orbit would be wrong rather
    * than merely unhelpful. **Its identity**, which is [`orbitKey`] — the limb count,
@@ -738,8 +839,7 @@ export class DeepRenderer {
    * because an orbit run to fewer iterations than the frame asks for would have the kernel
    * rebasing its way through the difference. And **the reach**: the reference has to be
    * inside the frame being drawn, which is the conservative reading of "still within its
-   * reach" and costs nothing to be conservative about — recomputing is fifteen to
-   * twenty-five milliseconds against a frame of seconds.
+   * reach" and costs nothing to be conservative about.
    *
    * The gesture this keeps it for is the one that matters: a zoom in about a point near
    * the middle of the frame stays inside the old frame, so a descent pays for one orbit
@@ -769,11 +869,17 @@ export class DeepRenderer {
   }
 
   /**
-   * Make sure every worker is holding the orbit this frame needs, computing one if the
-   * held one will not do. Resolves with the reference the frame's spec should name, or
-   * `null` where the kernel refused to produce one.
+   * Make sure the pool has the orbit this frame needs, computing one if the held one will
+   * not do. Resolves with the reference the frame's spec should name, or `null` where the
+   * kernel refused to produce one or the generation moved on.
+   *
+   * **Computed in a worker, never on this thread** *(deep_tab_activity_and_layout_
+   * ckpt141)*. At a cap of a million an orbit is seconds, and on the page's own thread
+   * those were seconds in which nothing — the progress line, the spinner, Cancel — could
+   * run. The first worker computes it and keeps it, and the bytes it hands back are what
+   * every other worker is fed from, lazily, by [`#feedAll`].
    */
-  async #reference(view, width, height, supersample, period = null) {
+  async #reference(view, width, height, supersample, period = null, { generation, onProgress } = {}) {
     // **The limbs are the spec's, asked of `plan`, and not the width's** *(deep_degrees_ckpt140)*.
     // A Julia frame anchored at `z = 0` is computed at twice the view's bits, because its
     // first step squares the pixel offset — so the width's own count would be the key of
@@ -790,14 +896,15 @@ export class DeepRenderer {
     // available; for a preview tile it is the nucleus the search solved, and the centre
     // *is* the nucleus — which is why a tile names a period and no reference.
     const spec = deepSpecOf(view, width, height, { supersample, period });
-    const out = this.#with(JSON.stringify(spec), (pointer, length) =>
-      this.planner.reference_orbit(pointer, length),
+    const slot = this.slots[0];
+    if (slot === undefined) return null;
+    const reply = await this.#send(
+      slot,
+      { kind: "reference", spec: JSON.stringify(spec) },
+      { onProgress },
     );
-    if (out === 0) return null;
-    const count = new DataView(this.planner.memory.buffer).getUint32(out, true);
-    const bytes = REFERENCE_HEADER + 16 * count;
-    const packed = new Uint8Array(this.planner.memory.buffer, out, bytes).slice();
-    this.planner.dealloc(out, bytes);
+    if (reply === null || (generation !== undefined && generation !== this.generation)) return null;
+    if (reply.orbit === null) return null;
 
     this.orbits += 1;
     this.orbit = {
@@ -816,25 +923,35 @@ export class DeepRenderer {
       maxiter: view.maxiter,
       // `null` for the ordinary walk; a period where this orbit wraps.
       period: period ?? null,
-      points: count,
-      bytes: packed.byteLength,
+      points: reply.points,
+      bytes: reply.orbit.byteLength,
+      stamp: this.orbits,
+      packed: reply.orbit,
     };
-    const stamp = this.orbits;
-    await Promise.all(
-      this.workers.map(
-        (worker) =>
-          new Promise((resolve) => {
-            const previous = worker.onmessage;
-            worker.onmessage = (event) => {
-              if (event.data.kind !== "orbited") return;
-              worker.onmessage = previous;
-              resolve();
-            };
-            worker.postMessage({ kind: "orbit", orbit: packed.buffer.slice(0), stamp });
-          }),
-      ),
-    );
+    // The worker that computed it holds it already.
+    slot.fed = this.orbit.stamp;
     return { x: this.orbit.x.text, y: this.orbit.y.text, kept: false };
+  }
+
+  /** Hand the held orbit to every worker that does not have it yet — the others after a
+   *  new one is computed, and a restarted worker after a cancel. Resolves `false` where the
+   *  generation moved on while it ran. */
+  async #feedAll(generation) {
+    const held = this.orbit;
+    if (held === null) return generation === this.generation;
+    const hungry = this.slots.filter((slot) => slot.fed !== held.stamp);
+    const replies = await Promise.all(
+      hungry.map((slot) => {
+        const copy = held.packed.slice(0);
+        return this.#send(slot, { kind: "orbit", orbit: copy }, { transfer: [copy] }).then(
+          (reply) => {
+            if (reply !== null) slot.fed = held.stamp;
+            return reply;
+          },
+        );
+      }),
+    );
+    return generation === this.generation && replies.every((reply) => reply !== null);
   }
 
   /**
@@ -844,7 +961,7 @@ export class DeepRenderer {
    * viewer's renderer does and for the same reason: a promise nobody settles holds its
    * whole `await` chain alive.
    */
-  async field(view, width, height, { supersample = 1, period = null, onProgress, onOrbit } = {}) {
+  async field(view, width, height, { supersample = 1, period = null, onProgress, onOrbit, onStep } = {}) {
     this.cancel();
     const generation = this.generation;
 
@@ -855,10 +972,13 @@ export class DeepRenderer {
     const refusal = this.plan(deepSpecOf(view, width, height, { supersample, period }));
     if (!refusal.ok) throw new Error(refusal.why);
 
-    const reference = await this.#reference(view, width, height, supersample, period);
+    const reference = await this.#reference(view, width, height, supersample, period, {
+      generation,
+      onProgress: (done, total) => onStep?.({ phase: "orbit", done, total }),
+    });
     if (generation !== this.generation) return null;
     if (reference === null) throw new Error("the kernel could not compute a reference orbit for this view");
-    onOrbit?.({ ...this.orbit, kept: reference.kept });
+    onOrbit?.({ ...this.orbit, packed: undefined, kept: reference.kept });
 
     // A tile centred on its own nucleus names the period and **not** the reference: the
     // centre already is the reference, and naming it as well would put the same point in
@@ -870,10 +990,11 @@ export class DeepRenderer {
     });
     const shape = this.plan(spec);
     if (!shape.ok) throw new Error(shape.why);
+    if (!(await this.#feedAll(generation))) return null;
 
     const sampleWidth = width * supersample;
     const values = new Float64Array(sampleWidth * height * supersample);
-    const bands = this.#cut(bandsOf(height, this.workers.length), supersample, true);
+    const bands = this.#cut(bandsOf(height, this.slots.length), supersample, true);
 
     return new Promise((resolve, reject) => {
       this.job = {
@@ -892,7 +1013,7 @@ export class DeepRenderer {
         started: performance.now(),
       };
       this.queue = bands;
-      for (const worker of [...this.idle]) this.#dispatch(worker);
+      for (const slot of this.slots) this.#dispatch(slot, this.job);
     });
   }
 
@@ -913,60 +1034,40 @@ export class DeepRenderer {
     return rows * RECUT_OVER < widest ? recut(bands, rows, 1) : bands;
   }
 
-  #dispatch(worker) {
-    const job = this.job;
-    if (job === null || job.generation !== this.generation || this.queue.length === 0) {
-      if (!this.idle.includes(worker)) this.idle.push(worker);
-      return;
-    }
+  /** Give this worker the next band of the job, if there is one and the job is current. */
+  #dispatch(slot, job) {
+    if (job !== this.job || job.generation !== this.generation || this.queue.length === 0) return;
+    if (slot.busy !== null) return;
     const [rowStart, rowEnd] = this.queue.shift();
-    const index = this.idle.indexOf(worker);
-    if (index !== -1) this.idle.splice(index, 1);
     const span = rowEnd - rowStart;
-    this.inflight.set(worker, { at: performance.now(), rows: span });
-    worker.onmessage = (event) => this.#collect(worker, event.data, job);
-    worker.postMessage({
+    const at = performance.now();
+    this.#send(slot, {
       kind: "band",
-      job: job.generation,
       spec: job.spec,
       rowStart,
       rowEnd,
       bytes: span * job.supersample * job.sampleWidth * 8,
-    });
+    }).then((reply) => this.#collect(slot, reply, job, at, span));
   }
 
-  #timed(worker, job) {
-    const band = this.inflight.get(worker);
-    if (band === undefined) return;
-    this.inflight.delete(worker);
-    if (job.generation !== this.generation || band.rows <= 0) return;
-    const elapsed = performance.now() - band.at;
-    const cost = elapsed / (band.rows * job.supersample * job.supersample);
+  #collect(slot, reply, job, at, span) {
+    if (reply === null || job !== this.job || job.generation !== this.generation) return;
+    const cost = (performance.now() - at) / (span * job.supersample * job.supersample);
     this.rowCost = this.rowCost === null ? cost : (this.rowCost + cost) / 2;
     this.queue = this.#cut(this.queue, job.supersample);
-  }
-
-  #collect(worker, message, job) {
-    if (message.kind !== "band") return;
-    this.#timed(worker, job);
-    if (message.job !== this.generation) {
-      if (!this.idle.includes(worker)) this.idle.push(worker);
-      this.#dispatch(worker);
-      return;
-    }
-    if (message.refused) {
-      job.reject(new Error("the kernel refused this view"));
+    if (reply.refused) {
       this.job = null;
+      job.reject(new Error("the kernel refused this view"));
       return;
     }
-    const span = (message.rowEnd - message.rowStart) * job.supersample;
+    const rows = (reply.rowEnd - reply.rowStart) * job.supersample;
     job.values.set(
-      new Float64Array(message.band),
-      message.rowStart * job.supersample * job.sampleWidth,
+      new Float64Array(reply.band),
+      reply.rowStart * job.supersample * job.sampleWidth,
     );
-    job.done += message.rowEnd - message.rowStart;
+    job.done += reply.rowEnd - reply.rowStart;
     if (job.onProgress) {
-      job.onProgress(job.done / job.rows, performance.now() - job.started, span);
+      job.onProgress(job.done / job.rows, performance.now() - job.started, rows);
     }
     if (job.done >= job.rows) {
       this.job = null;
@@ -977,10 +1078,9 @@ export class DeepRenderer {
         supersample: job.supersample,
         elapsed: performance.now() - job.started,
       });
-      if (!this.idle.includes(worker)) this.idle.push(worker);
       return;
     }
-    this.#dispatch(worker);
+    this.#dispatch(slot, job);
   }
 
   /**
@@ -1001,7 +1101,7 @@ export class DeepRenderer {
   }
 }
 
-/** Bytes of header on the reference buffer, before the orbit's `f64` pairs. The module's
- *  own `REFERENCE_HEADER`, which is sixteen rather than the twelve the fields need so that
- *  the pairs start `f64` aligned. */
-const REFERENCE_HEADER = 16;
+/** The imports the page's own instance is given: `env.progress` is the module's one import
+ *  (`perturb-wasm/src/progress.rs`), and the planner never makes a call long enough to
+ *  have anything to report. */
+const PLANNER_IMPORTS = { env: { progress() {} } };

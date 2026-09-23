@@ -108,13 +108,20 @@ export function familyOf(view) {
 
 /** The key carrying the iteration cap.
  *
- *  **It is always emitted, and that is the opposite of the shallow contract's ruling.**
- *  There, the cap is the engine's depth policy answering for a width and a key for it
- *  would let a link say "this frame, but shallower" — a different picture wearing the
- *  same name. Here the cap is not the policy's: a deep frame's policy cap runs to six
- *  figures and costs minutes, so the number in force is one a reader chose and part of
- *  what they are sending. A deep link without it would open at whatever this page's
- *  policy said today, which is the same failure from the other side. */
+ *  **Written once the cap is settled, and never before** *(deep_tab_activity_and_layout_
+ *  ckpt141)*. Here the cap is not simply the policy's: below about 1e-22 the width's own
+ *  answer paints exterior as interior, the tab's probe raises it, and a reader may pin one
+ *  of their own — so a cap that was settled, pinned, or chosen for a minibrot's tile is
+ *  part of the picture and every link to it names it.
+ *
+ *  What it must not do is name a cap that nothing has settled yet. It used to be written
+ *  always, so a link copied while the probe was still deciding carried the width's cap —
+ *  and a link-carried cap opens pinned, so that link drew the frame at the un-escalated
+ *  cap forever after, with no notice. A view says where its cap came from in `capFrom`:
+ *  `"width"` is the policy's unsettled answer and is left out of the link, because an
+ *  absent key already means exactly that (`parse` asks the policy); `"probe"`, `"reader"`
+ *  and `"tile"` are written. A view that says nothing is written, which is the old rule
+ *  and is safe. */
 const CAP_KEY = "n";
 
 /** The most iterations a link may name. The kernel's own ceiling is a million; a link
@@ -208,6 +215,9 @@ export function parse(search, context) {
   // the key is a reader's override of the policy, and having no override is a state.
   const capText = params.get(CAP_KEY);
   const maxiter = capText === null ? context.deepCap(w.value) : cap(capText);
+  // A link that names a cap is somebody's choice and opens pinned; one that names none is
+  // the width's, and stays the width's until something settles it.
+  const capFrom = capText === null ? "width" : "reader";
 
   const aspect = readAspect(params.get("a"));
 
@@ -231,7 +241,7 @@ export function parse(search, context) {
   const levelText = params.get(LEVEL_KEY.key);
   const level = levelText === null ? LEVEL_KEY.fallback : LEVEL_KEY.read(levelText);
 
-  return { version: VERSION, degree, julia, x, y, w, maxiter, aspect, palette, shade, level };
+  return { version: VERSION, degree, julia, x, y, w, maxiter, capFrom, aspect, palette, shade, level };
 }
 
 /**
@@ -295,6 +305,7 @@ export function fresh(context) {
     y: coordinate(home.y, "y"),
     w,
     maxiter: context.deepCap(w.value),
+    capFrom: "width",
     aspect: { ...DEFAULT_ASPECT },
     palette: context.defaultPalette,
     shade: defaultShade(),
@@ -306,12 +317,13 @@ export function fresh(context) {
  * The canonical query string for a deep view: keys in contract order, the shade keys left
  * out where they are the engine's own defaults.
  *
- * **The place, the width, the cap and the palette are always written.** The palette for
+ * **The place, the width and the palette are always written, and the cap once it is
+ * settled** — see `CAP_KEY`. The palette for
  * the shallow contract's reason — its default lives in the baked colormap set rather than
  * here, so a bare link that inherited it would change picture the day that set was
  * rebaked — and the frame for the same reason one step further out: the deep home is
- * `engine.wasm`'s Mandelbrot home, which is the engine's number and not this file's. The
- * cap for the reason `CAP_KEY` gives. So a deep link names its place unconditionally,
+ * `engine.wasm`'s Mandelbrot home, which is the engine's number and not this file's. So a
+ * deep link names its place unconditionally,
  * which is also the right shape for the one thing a deep link is for.
  *
  * **And the centre is written in one spelling rather than echoed.** The shallow contract
@@ -333,7 +345,7 @@ export function emit(view) {
   }
   for (const key of ["x", "y"]) parts.push(`${key}=${encode(view[key].text)}`);
   parts.push(`w=${encode(view.w.text)}`);
-  parts.push(`${CAP_KEY}=${view.maxiter}`);
+  if (view.capFrom !== "width") parts.push(`${CAP_KEY}=${view.maxiter}`);
   if (view.aspect.across !== DEFAULT_ASPECT.across || view.aspect.down !== DEFAULT_ASPECT.down) {
     parts.push(`a=${view.aspect.across}:${view.aspect.down}`);
   }

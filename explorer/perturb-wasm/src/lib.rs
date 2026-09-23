@@ -47,6 +47,7 @@ pub mod json;
 pub mod kernel;
 pub mod nuclei;
 pub mod policy;
+pub mod progress;
 pub mod reference;
 
 /// The record's own version, in the same spirit as every JSONL record in this

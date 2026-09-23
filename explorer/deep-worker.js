@@ -8,13 +8,18 @@
 // **What is different is the orbit, and it is the whole reason this file exists rather
 // than a third branch of `worker.js`.** The perturbation kernel needs one high-precision
 // reference orbit per frame — a couple of megabytes of `f64` pairs, fifteen to
-// twenty-five milliseconds to compute — and every sample of every band reads it. A band
-// call that computed its own would compute it some fifty times a frame. So the orbit is
-// computed once on the main thread, sent here once, and **held in this instance's heap
-// across every band of that frame**: `band` names no orbit, it uses the one that is here.
+// twenty-five milliseconds to compute at a shallow cap and seconds at a million — and
+// every sample of every band reads it. A band call that computed its own would compute it
+// some fifty times a frame. So the orbit is computed once, in one worker, sent to the
+// others once, and **held in each instance's heap across every band of that frame**:
+// `band` names no orbit, it uses the one that is here.
 //
-// A frame whose orbit is still good sends none, and the held one is used again. That is
-// what makes a zoom into the same neighbourhood cost no orbit at all.
+// **Every request carries an `id` and every answer echoes it** *(deep_tab_activity_and_
+// layout_ckpt141)*. The pool matches a reply to the request that asked for it by that id and
+// by nothing else, which is what makes a reply to a cancelled request land nowhere rather
+// than in whichever handler happens to be listening. Until this, a band that finished after
+// a cancel was read by the next probe's handler, ignored for being the wrong kind, and its
+// worker was never counted idle again: three gestures during a pass stranded the whole pool.
 
 let wasm = null;
 const encoder = new TextEncoder();
@@ -24,6 +29,30 @@ const decoder = new TextDecoder();
  *  another arrives, because a wasm heap never gives memory back and two orbits of a deep
  *  frame are four megabytes that nothing would ever read again. */
 let orbit = null;
+
+/** The request in flight, whose `id` a progress message is sent under. */
+let current = null;
+
+/** The fewest milliseconds between two progress messages. The module calls its import far
+ *  more often than that — once a cell of a probe, once every 4,096 steps of an orbit — and
+ *  a message a millisecond would be the main thread's whole budget spent reading them. */
+const PROGRESS_MS = 100;
+let posted = 0;
+
+/** `env.progress`, the module's one import: `done` of `total` units of the call in flight,
+ *  posted at most every `PROGRESS_MS`. `perturb-wasm/src/progress.rs` says where it is
+ *  called from and in what units. */
+const imports = {
+  env: {
+    progress(done, total) {
+      if (current === null) return;
+      const now = performance.now();
+      if (now - posted < PROGRESS_MS) return;
+      posted = now;
+      self.postMessage({ kind: "progress", id: current, done, total });
+    },
+  },
+};
 
 /** Write a string into the module's heap, call an export with it, and free it.
  *
@@ -56,12 +85,50 @@ function take(out) {
   return JSON.parse(body);
 }
 
+/** Bytes of header on the reference buffer, before the orbit's `f64` pairs. */
+const REFERENCE_HEADER = 16;
+
+/** Answer `message`, under its own id. */
+function answer(message, reply, transfer = []) {
+  self.postMessage({ kind: message.kind, id: message.id, ...reply }, transfer);
+}
+
 self.onmessage = (event) => {
   const message = event.data;
 
   if (message.kind === "start") {
-    wasm = new WebAssembly.Instance(message.module, {}).exports;
+    wasm = new WebAssembly.Instance(message.module, imports).exports;
     self.postMessage({ kind: "ready" });
+    return;
+  }
+
+  current = message.id ?? null;
+  posted = performance.now();
+  try {
+    handle(message);
+  } finally {
+    current = null;
+  }
+};
+
+function handle(message) {
+  // **The orbit, computed here** *(deep_tab_activity_and_layout_ckpt141)*. It used to be
+  // computed on the page's own thread, where a cap of a million froze the page for as long
+  // as it took and nothing — not a spinner, not Cancel — could run until it was done. Here
+  // it reports as it goes and a cancel can end it by ending the worker. The orbit is kept
+  // in this heap, where it was computed, and a copy goes back for the rest of the pool.
+  if (message.kind === "reference") {
+    release();
+    const out = withText(message.spec, (pointer, length) => wasm.reference_orbit(pointer, length));
+    if (out === 0) {
+      answer(message, { orbit: null });
+      return;
+    }
+    const count = new DataView(wasm.memory.buffer).getUint32(out, true);
+    const length = REFERENCE_HEADER + 16 * count;
+    orbit = { pointer: out, length };
+    const copy = new Uint8Array(wasm.memory.buffer, out, length).slice().buffer;
+    answer(message, { orbit: copy, points: count }, [copy]);
     return;
   }
 
@@ -71,7 +138,7 @@ self.onmessage = (event) => {
     const pointer = wasm.alloc(bytes.length);
     new Uint8Array(wasm.memory.buffer, pointer, bytes.length).set(bytes);
     orbit = { pointer, length: bytes.length };
-    self.postMessage({ kind: "orbited", stamp: message.stamp });
+    answer(message, {});
     return;
   }
 
@@ -90,15 +157,15 @@ self.onmessage = (event) => {
   };
   if (WALKS[message.kind] !== undefined) {
     const { call, field } = WALKS[message.kind];
-    const { kind, job, spec, cols, rows, rowStart, rowEnd } = message;
+    const { spec, cols, rows, rowStart, rowEnd } = message;
     if (orbit === null) {
-      self.postMessage({ kind, job, [field]: { ok: false, why: "no reference orbit" } });
+      answer(message, { [field]: { ok: false, why: "no reference orbit" } });
       return;
     }
-    const answer = withText(spec, (pointer, length) =>
+    const found = withText(spec, (pointer, length) =>
       take(wasm[call](pointer, length, orbit.pointer, orbit.length, cols, rows, rowStart, rowEnd)),
     );
-    self.postMessage({ kind, job, [field]: answer });
+    answer(message, { [field]: found });
     return;
   }
 
@@ -108,19 +175,18 @@ self.onmessage = (event) => {
   // down one thread. One step a call is the cancel granularity: a wasm call cannot be
   // interrupted, and a step at a period of a hundred thousand is a tenth of a second.
   if (message.kind === "newton") {
-    const { job, request } = message;
-    const step = withText(request, (pointer, length) => take(wasm.newton_step(pointer, length)));
-    self.postMessage({ kind: "newton", job, step });
+    const step = withText(message.request, (pointer, length) => take(wasm.newton_step(pointer, length)));
+    answer(message, { step });
     return;
   }
 
   if (message.kind === "band") {
-    const { job, spec, rowStart, rowEnd, bytes } = message;
+    const { spec, rowStart, rowEnd, bytes } = message;
     if (orbit === null) {
-      // Never reached by the pool, which sends an orbit before it dispatches a band. Said
-      // rather than trapped, because a null pointer into `compute_band` is a refusal with
-      // no sentence in it.
-      self.postMessage({ kind: "band", job, rowStart, rowEnd, refused: true });
+      // Never reached by the pool, which feeds a worker an orbit before it dispatches a
+      // band. Said rather than trapped, because a null pointer into `compute_band` is a
+      // refusal with no sentence in it.
+      answer(message, { rowStart, rowEnd, refused: true });
       return;
     }
     const started = performance.now();
@@ -131,21 +197,19 @@ self.onmessage = (event) => {
     );
 
     if (pointer === 0) {
-      self.postMessage({ kind: "band", job, rowStart, rowEnd, refused: true });
+      answer(message, { rowStart, rowEnd, refused: true });
       return;
     }
     // `.slice()` off the wasm heap: the view would be detached the moment the module grew
     // its memory, and the copy is what can be transferred.
     const band = new Uint8Array(wasm.memory.buffer, pointer, bytes).slice().buffer;
     wasm.dealloc(pointer, bytes);
-    self.postMessage(
-      { kind: "band", job, rowStart, rowEnd, band, elapsed: performance.now() - started },
-      [band],
-    );
+    answer(message, { rowStart, rowEnd, band, elapsed: performance.now() - started }, [band]);
     return;
   }
 
   if (message.kind === "drop") {
     release();
+    answer(message, {});
   }
-};
+}

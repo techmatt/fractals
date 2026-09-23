@@ -10,6 +10,7 @@
 //! frame.
 
 use crate::fx::{Fx, MAX_LIMBS};
+use crate::progress;
 
 /// Escape radius, and it is the engine's: `iterate::BAILOUT`.
 pub const BAILOUT: f64 = 65536.0;
@@ -135,7 +136,10 @@ pub fn orbit(c_re: &Fx, c_im: &Fx, maxiter: u32, period: Option<u32>) -> Referen
     points.push([0.0, 0.0]);
 
     let mut escaped = false;
-    for _ in 0..limit {
+    for step in 0..limit {
+        if step & (progress::EVERY - 1) == 0 {
+            progress::report(step, limit);
+        }
         let x2 = x.sqr();
         let y2 = y.sqr();
         let xy = x.mul(&y);
@@ -213,7 +217,10 @@ pub fn orbit_of(degree: u32, c_re: &Fx, c_im: &Fx, maxiter: u32, period: Option<
     points.push([0.0, 0.0]);
 
     let mut escaped = false;
-    for _ in 0..limit {
+    for step in 0..limit {
+        if step & (progress::EVERY - 1) == 0 {
+            progress::report(step, limit);
+        }
         let point = match tail {
             Some(z) => {
                 let w = cpow_f64(z, degree);

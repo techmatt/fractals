@@ -12,8 +12,9 @@
 // and then one sample a pixel; unticked, the tab is press-to-render and the only thing that
 // starts by itself is the quarter pass, and only once the last one came back under
 // `AUTO_PREVIEW_MS`, a threshold measured on this machine and this view rather than
-// assumed. **Render is what commits a supersampled finish**, whatever the box says, because
-// four samples a pixel of a deep frame is minutes.
+// assumed. **The screen is always one sample a pixel** *(deep_tab_activity_and_layout_
+// ckpt141)*: what Render adds over an auto pass is the cap probe, and more samples than one
+// are the Download row's to spend, on a file.
 //
 // The bug that ruling is the fix for was never in the staging: a 1× pass *is* run first and
 // *is* put up the moment it lands. It was that a gesture during a committed render moved
@@ -47,7 +48,6 @@
 import * as fx from "./deep-fx.js";
 import * as deepLink from "./deep-link.js";
 import { DeepRenderer, deepSpecOf } from "./deep-render.js";
-import { SUPERSAMPLES } from "./download.js";
 
 /**
  * How long the last quarter-resolution pass may have taken for the next one to start on
@@ -76,23 +76,28 @@ const SETTLE_MS = 350;
 const PREVIEW_DIVISOR = 4;
 
 /**
- * Samples per pixel, each way, the tab's last pass ends at **on entering**.
+ * How long the pool may say nothing before the tab says so, in milliseconds.
  *
- * **One, and that is the ruling** *(Matt, 2026-09-21)*. The viewer's own last pass is at
- * two — four samples a pixel — and it is right there, where a whole frame is a fraction of
- * a second. Down here the same finish is four times a pass that is already seconds to
- * minutes, and it was being spent on every Render without anybody asking for it. So the tab
- * opens at one sample a pixel and a finer finish is a choice, taken from `SUPERSAMPLES` —
- * the Download row's own three, imported rather than restated, because the two rows sit
- * beside each other and a reader reads `4×` as one thing.
- *
- * The choice holds while the reader stays on the tab and is reset by `enter`, so it is
- * per-visit rather than per-session: it is the most expensive thing on the page and nothing
- * should carry it silently into the next visit. It is **not** in the `dv` link and was
- * never in one — a link says what picture to draw, and how many samples to spend finding
- * out is the reader's, at their machine's speed.
+ * **Ten seconds, against a pool that reports ten times a second** *(deep_tab_activity_and_
+ * layout_ckpt141)*. Every stage a worker runs now tells the page how far it has got — the
+ * orbit in iterations, the probe in cells, the passes in bands — at most every hundred
+ * milliseconds, so a live frame is never quiet for long. A pool that has been quiet for a
+ * hundred times that is not a slow frame, it is a stranded one, and the line counts the
+ * silence and Render becomes Cancel so the way out is the button already under the pointer.
  */
-const ENTRY_SUPERSAMPLE = 1;
+const WATCHDOG_MS = 10000;
+
+/**
+ * The `localStorage` flag that turns the tab's log on: every stage it enters and every
+ * progress message a worker sends, with a timestamp and the frame's link, on the console.
+ *
+ * Off unless somebody sets it — `localStorage.setItem("explorer.deep-log", "1")` in the
+ * console, and `removeItem` to stop — and read at the start of each pass, so it takes
+ * effect on the next Render without a reload. **Off costs the read and nothing else**:
+ * the worker's messages are routed past the log without a call, because the hook it would
+ * be called through is left `null`.
+ */
+const LOG_FLAG = "explorer.deep-log";
 
 /** Where the auto-render flag is remembered. The tab's own session, the Julia preview's
  *  pattern and the Julia preview's reason: a way of working, not part of a picture, so no
@@ -183,9 +188,10 @@ export function mount(host) {
   // `deepLink.fieldKey` for a recolour, `finished` the last stage's own picture for a
   // download, `measure` what the last pass of *this* frame cost (and `null` the moment the
   // frame or its cap moves), `quarterMs` what the quarter-pass exception reads, `colouring`
-  // the shade in flight, `pinnedCap` whether the reader set the cap by hand, `samples` how
-  // many a pixel the finish is drawn at, `autoRender` whether a frame change draws itself,
-  // and `cameFrom` the Mandelbrot frame *Julia at this c* was pressed on.
+  // the shade in flight, `settledAt` what the probe last said about which frame,
+  // `autoRender` whether a frame change draws itself, and `cameFrom` the Mandelbrot frame
+  // *Julia at this c* was pressed on. Whether the reader pinned the cap is not a variable
+  // any more: it is `view.capFrom`, which travels with the view it is true of.
   const els = host.elements;
   const context = host.context;
 
@@ -216,8 +222,8 @@ export function mount(host) {
   let measure = null;
   /** The last pass's picture at the canvas's own size, once it has landed — what a download
    *  at that size saves instead of drawing it again — and how many samples a pixel it was
-   *  drawn at, because the row may be asking for a different number now that the finish is
-   *  a choice. Cleared by every pass, because a picture of the view before is not this one.
+   *  drawn at, which is one: the Download row asks, because it may want more. Cleared by
+   *  every pass, because a picture of the view before is not this one.
    */
   let finished = null;
   let finishedSamples = 0;
@@ -228,10 +234,13 @@ export function mount(host) {
   let shown = false;
   let owns = false;
   let colouring = {};
-  /** Whether the reader has set a cap of their own, which a zoom then leaves alone. */
-  let pinnedCap = false;
-  /** Samples per pixel, each way, the last stage of a committed pass is drawn at. */
-  let samples = ENTRY_SUPERSAMPLE;
+  /** What the probe last settled, and of which frame: `{ frame, atCeiling, fault }`, for
+   *  Details' *at the ceiling* clause. */
+  let settledAt = null;
+  /** Whether the log is on, read at the start of each pass (`LOG_FLAG`). */
+  let logging = false;
+  /** The watchdog's interval, while a worker stage runs. */
+  let watchdog = 0;
   /** Whether a settled frame change draws itself. */
   let autoRender = storedAuto();
   /**
@@ -247,14 +256,12 @@ export function mount(host) {
   /**
    * How many fields are kept.
    *
-   * **Three, which is the current view's stages at their most and nothing else**, and the
-   * arithmetic is why. A deep field is one `f64` a sample: at a 1136×636 canvas the
-   * quarter pass is 0.4 MB, the full pass 5.8 MB, and a finish at four samples a pixel
-   * 23 MB — so a view drawn to that finish is about 29 MB held, and at the entry setting,
-   * where there is no third stage, 6.2 MB. The viewer keeps six because its fields
-   * are the same size and its frames are cheap to recompute; here a field is the most
-   * expensive thing on the page and the largest, and keeping one view back would double
-   * the memory to save a re-iterate the reader has to press a button for anyway.
+   * **Three: the current view's two stages, and one field back**, and the arithmetic is
+   * why. A deep field is one `f64` a sample: at a 1136×636 canvas the quarter pass is
+   * 0.4 MB and the full pass 5.8 MB, so a view is 6.2 MB held. The viewer keeps six because
+   * its frames are cheap to recompute; here a field is the most expensive thing on the page
+   * and the largest, and the one field back is what lets a gesture undone by the next one
+   * come back without iterating.
    */
   const CACHE_LIMIT = 3;
 
@@ -360,7 +367,7 @@ export function mount(host) {
     // catch is attached before the assignment, so what is remembered is the promise that
     // clears itself.
     starting ??= (async () => {
-      host.stat("starting the deep renderer…");
+      activity("starting the deep renderer…");
       renderer = await DeepRenderer.start(
         new URL("./perturb.wasm", import.meta.url),
         host.shading(),
@@ -380,35 +387,153 @@ export function mount(host) {
 
   function stop() {
     pass += 1;
+    if (running !== null) log("stopped", { stage: running.stage });
     running = null;
     renderer?.cancel();
     colouring.stop?.();
     colouring = {};
+    watch();
     syncControls();
   }
 
+  // ------------------------------------------------------- what the tab says it is doing
+
+  /** Whether the reader has pinned the cap, which a zoom then leaves alone and the probe
+   *  never moves. */
+  function pinned() {
+    return view.capFrom === "reader";
+  }
+
+  /** Read the log flag, once a pass. The only cost the log has when it is off. */
+  function readLog() {
+    try {
+      logging = window.localStorage.getItem(LOG_FLAG) !== null;
+    } catch {
+      logging = false;
+    }
+    if (renderer !== null) {
+      renderer.onMessage = logging
+        ? (message) => {
+            if (message.kind === "progress") log("worker progress", { id: message.id, done: message.done, total: message.total });
+            else log(`worker ${message.kind}`, { id: message.id });
+          }
+        : null;
+    }
+  }
+
+  /** One line of the log: when, what, the detail, and the frame it is of. */
+  function log(event, detail = {}) {
+    if (!logging) return;
+    console.log(`[deep ${new Date().toISOString()}] ${event}`, detail, deepLink.emit(view));
+  }
+
   /**
-   * Draw the view, through as many stages as `upto` asks for.
+   * Enter a stage of the pass: say it, and start its clock.
    *
-   * Three values, coarsest first. `"preview"` is the quarter-resolution pass alone.
-   * `"screen"` adds one sample a pixel at the canvas's own size — **the two together are
-   * what auto-render starts**, because that is as much as a frame change is allowed to
-   * spend without being asked. `"fine"` adds the supersampled finish where the reader has
-   * chosen one, and is what Render commits.
+   * `live` is whether a worker is doing it — the orbit, the probe, the bands — which is what
+   * the spinner shows and what the watchdog is allowed to count. The colouring is the
+   * shade worker's and is short, and a stage on this thread cannot be silent in the way a
+   * stranded pool is.
+   */
+  function enterStage(stage, { live = true } = {}) {
+    if (running === null) return;
+    running.stage = stage;
+    running.live = live;
+    running.since = performance.now();
+    running.stalled = 0;
+    log("stage", { stage });
+    watch();
+  }
+
+  /** Put a sentence and a share on the Render line. `done` is `null` for a stage that has no
+   *  share to show yet, which leaves the bar where it was. */
+  function activity(text, done = null) {
+    if (running === null) return;
+    running.text = text;
+    if (done !== null) running.done = Math.max(0, Math.min(1, done));
+    showActivity();
+  }
+
+  function showActivity() {
+    if (running === null) return;
+    const silent = running.stalled > 0;
+    els.progress.textContent = silent
+      ? `${running.text} · no progress for ${running.stalled} s`
+      : running.text ?? "";
+    els.progress.classList.toggle("is-stalled", silent);
+    els.bar.style.setProperty("--done", String(running.done ?? 0));
+    els.spinner.hidden = !running.live;
+  }
+
+  /**
+   * The watchdog: once a second while a worker stage runs, how long since the pool last
+   * said anything, and past `WATCHDOG_MS` the line says so and counts.
+   *
+   * It reads the renderer's own `heard`, which every reply and every progress message
+   * moves, against the stage's own start — so a stage that has just begun is not silent
+   * for the time the one before it took.
+   */
+  function watch() {
+    const wanted = running !== null && running.live;
+    if (!wanted) {
+      clearInterval(watchdog);
+      watchdog = 0;
+      return;
+    }
+    if (watchdog !== 0) return;
+    watchdog = setInterval(() => {
+      if (running === null || !running.live) {
+        watch();
+        return;
+      }
+      const last = Math.max(running.since, renderer?.heard ?? 0);
+      const quiet = performance.now() - last;
+      const stalled = quiet >= WATCHDOG_MS ? Math.floor(quiet / 1000) : 0;
+      if (stalled !== running.stalled) {
+        const was = running.stalled;
+        running.stalled = stalled;
+        if (stalled > 0) log("watchdog", { stage: running.stage, quiet: stalled });
+        showActivity();
+        if ((was > 0) !== (stalled > 0)) syncControls();
+      }
+    }, 1000);
+  }
+
+  // ----------------------------------------------------------------- rendering
+
+  /**
+   * Draw the view: the quarter pass, and then — unless `upto` is `"preview"` — the full
+   * pass at one sample a pixel.
+   *
+   * **One sample a pixel is the screen's, always** *(Matt, deep_tab_activity_and_layout_
+   * ckpt141)*. The tab had a samples picker of its own and a supersampled finish behind it;
+   * a finer picture of a deep frame is minutes, and minutes spent on the screen are minutes
+   * nobody can keep. More samples are for a file, and the Download row is where they are
+   * chosen.
+   *
+   * **`probe` is whether the cap probe may run, and only an explicit Render asks it**
+   * *(ckpt141)*. The auto pass after a gesture draws at the width's own cap: the probe is a
+   * dozen rungs from the cap to the ceiling on a frame beside a parabolic point, it is not
+   * covered by the `AUTO_PREVIEW_MS` guard that keeps an unasked pass cheap, and a drag was
+   * enough to start minutes of it. A link opened is drawn the same way, at the cap it
+   * carries or, with none, the width's.
    *
    * Every stage is put up the moment it lands and the next replaces it in place, which is
-   * what makes a four-minute frame watchable: the quarter pass is about a fiftieth of the
-   * finish, so there is something true on the canvas within a fraction of the wait.
+   * what makes a slow frame watchable: the quarter pass is a sixteenth of the full one, so
+   * there is something true on the canvas within a fraction of the wait.
    */
-  async function render(upto, { auto = false } = {}) {
+  async function render(upto, { auto = false, probe = !auto } = {}) {
     const generation = ++pass;
     const grid = host.grid();
+    readLog();
     // **Before the await, not after it.** The pool takes a moment to start on the first
     // render of a session — a fetch, a compile and a worker apiece — and a Render button
     // that stayed pressable through it would start a second pass on a second press.
-    running = { upto, auto, stage: "preview", started: performance.now() };
+    running = { upto, auto, stage: "starting", started: performance.now(), done: 0 };
     finished = null;
     finishedSamples = 0;
+    enterStage("starting", { live: false });
+    activity("starting the deep renderer…", 0);
     syncControls();
     host.showState("rendering");
     host.say("");
@@ -417,15 +542,10 @@ export function mount(host) {
       { name: "preview", width: grid.width / PREVIEW_DIVISOR, height: grid.height / PREVIEW_DIVISOR, supersample: 1 },
       { name: "full", width: grid.width, height: grid.height, supersample: 1 },
     ];
-    // A finish at one sample a pixel is the `full` stage over again, so at the entry
-    // setting there is no third stage rather than a third stage that redraws the second.
-    if (upto === "fine" && samples > 1) {
-      stages.push({ name: "fine", width: grid.width, height: grid.height, supersample: samples });
-    }
     const wanted = upto === "preview" ? stages.slice(0, 1) : stages;
     const last = wanted[wanted.length - 1];
-    // What the Download row's bar is measured against: the stages this pass will actually
-    // draw, so a preview-only pass fills it and does not stop at a twentieth.
+    // What the bar is measured against: the stages this pass will actually draw, so a
+    // preview-only pass fills it and does not stop at a sixteenth.
     running.stages = wanted;
 
     try {
@@ -436,22 +556,25 @@ export function mount(host) {
       // same exit.
       const deep = await pool();
       if (generation !== pass) return;
+      readLog();
+      unsettle();
 
       let target = view;
-      if (upto !== "preview" && !pinnedCap) {
-        const chosen = await settleCap(deep, target, grid, last.supersample, generation);
+      if (probe && upto !== "preview" && !pinned()) {
+        const chosen = await settleCap(deep, target, grid, generation);
         if (generation !== pass) return;
-        if (chosen !== null && chosen.maxiter !== target.maxiter) target = chosen.frame;
+        if (chosen !== null) target = chosen.frame;
       }
 
       for (const stage of wanted) {
-        running.stage = stage.name;
         const key = deepLink.fieldKey(target, stage.width, stage.height, stage.supersample);
         let field = fields.get(key);
         const cached = field !== undefined;
-        // A stage off the cache iterated nothing, so the row's bar jumps its share rather
-        // than filling it.
-        if (cached) host.showProgress(spanOf(stage).from + spanOf(stage).width);
+        const span = spanOf(stage);
+        enterStage(stage.name);
+        // A stage off the cache iterated nothing, so the bar jumps its share rather than
+        // filling it.
+        activity(`${said_stage(stage)}…`, cached ? span.from + span.width : span.from);
         if (!cached) {
           const started = performance.now();
           field = await deep.field(target, stage.width, stage.height, {
@@ -463,11 +586,17 @@ export function mount(host) {
             onOrbit: (orbit) => {
               if (generation === pass) running.orbit = orbit;
             },
+            onStep: (step) => {
+              if (generation !== pass) return;
+              activity(`${said_stage(stage)} · ${said_step(step)}`, span.from);
+            },
           });
           if (field === null || generation !== pass) return;
           if (stage.name === "preview") quarterMs = performance.now() - started;
           remember(key, field);
         }
+        enterStage("coloring", { live: false });
+        activity(`${said_stage(stage)} · coloring`, span.from + span.width);
         // A copy, because the shade takes the buffer and detaches it, and the one in the
         // cache has to stay whole for the next recolour.
         const shaded = await deep.shade(
@@ -503,19 +632,38 @@ export function mount(host) {
         }
         paint();
         host.settle();
-        said(stage, field, shaded, cached);
+        said(stage, field, shaded, cached, target);
       }
+      log("finished", { upto });
       host.showState("final");
     } catch (error) {
       host.say(String(error.message ?? error));
       console.error("the deep render failed", { view: deepLink.emit(view) }, error);
+      log("failed", { message: String(error.message ?? error) });
       host.showState("stopped");
     } finally {
       if (generation === pass) {
         running = null;
+        watch();
         syncControls();
       }
     }
+  }
+
+  /**
+   * A view whose cap is the width's, re-asked of the kernel once the kernel is up.
+   *
+   * Before the module loads, the only cap policy on the page is the engine's, which stops
+   * at 67,000 — so a link with no `n` parsed before the pool started carries that answer,
+   * and below about 1e-22 the kernel's own answer is higher. The width's cap is supposed
+   * to be the kernel's, so it is put right here, before anything is drawn at it.
+   */
+  function unsettle() {
+    if (renderer === null || view.capFrom !== "width") return;
+    const wanted = renderer.maxiter(view.w.value);
+    if (wanted === view.maxiter) return;
+    view = { ...view, maxiter: wanted };
+    host.settle();
   }
 
   /**
@@ -529,32 +677,34 @@ export function mount(host) {
    * or exploding, and double while the frame is still dying for want of iterations — and
    * what is here is when it is asked and what it says.
    *
-   * **For any pass that draws the frame, and only when the reader has not chosen a cap.**
-   * The quarter pass alone is the cheap look and pays for nothing; an auto-rendered pass is
-   * the picture the reader is now looking at, so it settles the cap like a pressed one —
-   * the escalation exists because the width's cap paints exterior as interior down here,
-   * and a picture drawn unasked is no less owed the truth. A pinned cap is a choice and
+   * **For an explicit Render and a download, and only when the reader has not pinned a
+   * cap** *(ckpt141; it used to run for an auto pass too)*. A pinned cap is a choice and
    * escalation is a policy, so a typed cap and a cap a link carries are drawn exactly as
-   * they are asked for. That distinction is `pinnedCap`, which already existed for the
-   * zoom.
+   * they are asked for.
+   *
+   * **The cap box and the address move once, when this has settled**, and not a rung
+   * before. Until then the view's `capFrom` is `"width"` and its link names no cap, so a
+   * link copied mid-probe is a link to the width's answer and says so by leaving `n` out.
    *
    * The probe is a few thousand of the frame's own sample cells, so the passes below run
-   * **once**, at the settled cap — measured at 0.08% to 0.22% of the fine pass.
-   *
-   * `supersample` is the pass's own finest, and it is passed in rather than fixed: the
-   * probe is a subset of the frame's *sample* cells, so which cells those are follows the
-   * grid the pass will actually walk.
+   * **once**, at the settled cap — measured at 0.08% to 0.22% of the fine pass. Every
+   * sample cell is at one sample a pixel, because that is the only pass the screen draws;
+   * a download probes its own grid through `picture`.
    */
-  async function settleCap(deep, from, grid, supersample, generation) {
-    running.stage = "settling";
-    els.progress.style.removeProperty("--done");
-    els.progress.textContent = "choosing an iteration cap…";
-    host.stat(`choosing an iteration cap · from ${from.maxiter.toLocaleString("en-US")}`);
+  async function settleCap(deep, from, grid, generation, supersample = 1) {
+    enterStage("probe");
+    activity("choosing an iteration cap…", 0);
     const chosen = await deep.settle(from, grid.width, grid.height, {
       supersample,
-      onRung: (counts) => {
+      onStep: (step) => {
         if (generation !== pass) return;
-        els.progress.textContent = `choosing an iteration cap · ${counts.maxiter.toLocaleString("en-US")}`;
+        const trying = `choosing an iteration cap · trying ${count(step.cap)}` +
+          (step.rung > 1 ? ` (rung ${step.rung})` : "");
+        activity(`${trying} · ${said_step(step)}`, step.total > 0 ? step.done / step.total : null);
+      },
+      onRung: (counts, rung) => {
+        if (generation !== pass) return;
+        log("rung", { rung, maxiter: counts.maxiter, fault: counts.fault, samples: counts.samples });
       },
     });
     if (chosen === null || generation !== pass) return null;
@@ -564,11 +714,17 @@ export function mount(host) {
     // the tab's own design, and every mutation replaces the object — so adopting the
     // settled cap into a view the reader has since moved would put this frame's answer on
     // a different frame.
-    const frame = { ...from, maxiter: chosen.maxiter };
-    if (chosen.maxiter !== from.maxiter && view === from) {
+    const frame = { ...from, maxiter: chosen.maxiter, capFrom: "probe" };
+    if (view === from) {
       view = frame;
       host.settle();
     }
+    settledAt = {
+      frame: deepLink.fieldKey(frame, 1, 1),
+      atCeiling: chosen.atCeiling,
+      fault: chosen.fault,
+    };
+    log("settled", { maxiter: chosen.maxiter, from: chosen.from, steps: chosen.steps, atCeiling: chosen.atCeiling });
     say_settled(chosen);
     syncControls();
     return { ...chosen, frame };
@@ -583,36 +739,46 @@ export function mount(host) {
    * the same spec, the same cap policy, with two numbers changed, which is the ruling
    * `download.js` opens with and is as true on this side of the floor as on the other.
    *
-   * It takes the pass, so the tab's own Cancel stops it and its progress goes through the
-   * tab's own line as well as the button's bar. Hands back the picture, the link that
-   * picture is of — **written after the cap has settled**, because the cap is part of what
-   * a deep link says — and the three names a file is spelled from.
+   * It takes the pass, so the tab's own Cancel stops it, and **its progress is the Render
+   * line's**, labelled *file* *(ckpt141)* — the Download row keeps a price and no bar.
+   * Hands back the picture, the link that picture is of — **written after the cap has
+   * settled**, because the cap is part of what a deep link says — and the three names a
+   * file is spelled from.
    */
-  async function picture(width, height, { supersample = 1, onProgress, holder = {} } = {}) {
+  async function picture(width, height, { supersample = 1, holder = {} } = {}) {
     const generation = ++pass;
-    running = { upto: "download", auto: false, stage: "download", started: performance.now() };
+    readLog();
+    running = { upto: "download", auto: false, stage: "file", started: performance.now(), done: 0 };
     finished = null;
     finishedSamples = 0;
+    const file = { name: "file", width, height, supersample };
+    enterStage("file", { live: false });
+    activity("file · starting…", 0);
     syncControls();
     host.showState("rendering");
     try {
       const deep = await pool();
       if (generation !== pass) return null;
+      readLog();
+      unsettle();
 
       let target = view;
-      if (!pinnedCap) {
-        const chosen = await settleCap(deep, target, { width, height }, supersample, generation);
+      if (!pinned()) {
+        const chosen = await settleCap(deep, target, { width, height }, generation, supersample);
         if (generation !== pass) return null;
-        if (chosen !== null && chosen.maxiter !== target.maxiter) target = chosen.frame;
+        if (chosen !== null) target = chosen.frame;
       }
 
-      running.stage = "fine";
+      enterStage("file");
+      activity(`${said_stage(file)}…`, 0);
       const field = await deep.field(target, width, height, {
         supersample,
         onProgress: (done, elapsed) => {
           if (generation !== pass) return;
-          report({ name: "fine", width, height, supersample }, done, elapsed);
-          onProgress?.(done, elapsed);
+          report(file, done, elapsed);
+        },
+        onStep: (step) => {
+          if (generation === pass) activity(`${said_stage(file)} · ${said_step(step)}`, 0);
         },
       });
       if (field === null || generation !== pass) return null;
@@ -621,11 +787,14 @@ export function mount(host) {
       // couple of gigabytes, and two ways out that stop different halves is one way out
       // too few.
       colouring = holder;
+      enterStage("coloring", { live: false });
+      activity(`${said_stage(file)} · coloring`, 1);
       const shaded = await deep.shade(field, target, colouring, { derive: host.deriving() });
       if (shaded === null || generation !== pass) return null;
       // A view the reader made measures its own curve on the frame being saved, exactly as
       // the shallow download does — so the link on the file is the link that redraws it.
       const drawnAs = host.deriving() ? { ...target, level: shaded.level } : target;
+      log("file finished", { width, height, supersample });
       host.showState("final");
       return {
         image: shaded.image,
@@ -639,27 +808,20 @@ export function mount(host) {
     } finally {
       if (generation === pass) {
         running = null;
+        watch();
         syncControls();
       }
     }
   }
 
-  /** What the tab says about the cap it chose: nothing where the width's own answer drew
-   *  the frame, and a plain sentence where it did not.
+  /** What the tab says about a raised cap: nothing where the width's own answer drew the
+   *  frame, and a plain sentence under the picture where it did not.
    *
-   *  **The ceiling has its own sentence** *(Matt, pre_closeout_website_ckpt140)*: where the
-   *  walk reached `cap::CEILING` with more than `FAULT_SHARE` of the probe still undecided,
-   *  it says so in the same shape as the raise, and the limit itself is unchanged. */
+   *  **The ceiling is said in Details' stat line now** *(ckpt141)*, beside the pass it is a
+   *  fact about — *at the ceiling: x% undecided* — rather than as a sentence under the
+   *  canvas that outlived the frame it described. */
   function say_settled(chosen) {
-    const count = (value) => value.toLocaleString("en-US");
-    if (chosen.atCeiling) {
-      host.say(
-        `At the ceiling (${count(chosen.maxiter)}): ${Math.round(chosen.fault * 100)}% of ` +
-          "this frame is still undecided.",
-      );
-      return;
-    }
-    if (chosen.maxiter === chosen.from) return;
+    if (chosen.atCeiling || chosen.maxiter === chosen.from) return;
     // The rungs carry counts, because they are summed over the pool's bands; the share is
     // taken here, once, against the samples that were actually walked.
     const opening = chosen.rungs[0];
@@ -671,7 +833,22 @@ export function mount(host) {
   }
 
   /**
-   * What the progress line says while a stage runs, and the time left.
+   * Where a stage of the running pass falls on the Render line's bar, by the samples each
+   * stage of it computes — the same rule `explorer.js`'s `STAGE_SPAN` states for the
+   * shallow pass, except that down here the stages are the pass's own: a preview-only
+   * render has one stage and fills the whole bar with it.
+   */
+  function spanOf(stage) {
+    const stages = running?.stages?.includes(stage) ? running.stages : [stage];
+    const samples = stages.map((s) => s.width * s.height * s.supersample ** 2);
+    const whole = samples.reduce((sum, value) => sum + value, 0);
+    const index = Math.max(0, stages.indexOf(stage));
+    const before = samples.slice(0, index).reduce((sum, value) => sum + value, 0);
+    return { from: before / whole, width: samples[index] / whole };
+  }
+
+  /**
+   * What the Render line says while a stage's bands run, and the time left.
    *
    * **The estimate comes from the bands this pass has already finished** and from nothing
    * else — not from a table, not from the last view, not from a cost per sample settled
@@ -679,44 +856,36 @@ export function mount(host) {
    * interior, and the only honest predictor of the rest of *this* frame is the part of it
    * that has already been drawn.
    */
-  /**
-   * Where a stage of the running pass falls on the Download row's bar, by the samples each
-   * stage of it computes — the same rule `explorer.js`'s `STAGE_SPAN` states for the
-   * shallow pass, except that down here the stages are the pass's own: a preview-only
-   * render has one stage and fills the whole bar with it, and a finish at one sample a
-   * pixel is two rather than three.
-   */
-  function spanOf(stage) {
-    const stages = running?.stages ?? [stage];
-    const samples = stages.map((s) => s.width * s.height * s.supersample ** 2);
-    const whole = samples.reduce((sum, count) => sum + count, 0);
-    const index = Math.max(0, stages.indexOf(stage));
-    const before = samples.slice(0, index).reduce((sum, count) => sum + count, 0);
-    return { from: before / whole, width: samples[index] / whole };
-  }
-
   function report(stage, done, elapsed) {
     const percent = Math.round(done * 100);
     const span = spanOf(stage);
-    host.showProgress(span.from + span.width * done);
-    els.progress.style.setProperty("--done", `${percent}%`);
     const left = done > 0.02 ? (elapsed / done) * (1 - done) : null;
     const remaining = left === null ? "" : ` · about ${said_time(left / 1000)} left`;
-    els.progress.textContent = `${said_stage(stage)} ${percent}%${remaining}`;
-    host.stat(`${stage.width}×${stage.height}${stage.supersample > 1 ? ` at ${stage.supersample ** 2}×` : ""} · ${percent}%`);
+    activity(`${said_stage(stage)} ${percent}%${remaining}`, span.from + span.width * done);
+    log("bands", { stage: stage.name, done: Number(done.toFixed(4)) });
   }
 
-  /** What a stage is called while it runs. The supersampled finish names its own samples,
-   *  because how many there are is the reader's choice now and no longer four. */
+  /** What a stage is called while it runs. A file names its own size and samples, because
+   *  those are what the Download row asked for. */
   function said_stage(stage) {
     if (stage.name === "preview") return "quarter resolution";
     if (stage.name === "full") return "full resolution";
     const each = stage.supersample ** 2;
-    if (each === 1) return "one sample a pixel";
-    return `${SAMPLES_SAID[each] ?? each} samples a pixel`;
+    return `file ${stage.width}×${stage.height}${each > 1 ? ` at ${each}×` : ""}`;
   }
 
-  const SAMPLES_SAID = { 4: "four", 16: "sixteen" };
+  /** A worker's own report of the call it is in, as the Render line says it. */
+  function said_step(step) {
+    if (step.phase === "orbit") return `reference orbit ${count(step.done)} of ${count(step.total)}`;
+    if (step.phase === "probe") return `${count(step.done)} of ${count(step.total)} cells`;
+    if (step.phase === "seeds") return `walking ${count(step.done)} of ${count(step.total)} cells`;
+    if (step.phase === "solves") return `solved ${step.done} of ${step.total}`;
+    return "";
+  }
+
+  function count(value) {
+    return Math.round(value).toLocaleString("en-US");
+  }
 
   function said_time(seconds) {
     if (seconds < 1) return "a second";
@@ -724,36 +893,48 @@ export function mount(host) {
     return `${Math.round(seconds / 60)} min`;
   }
 
-  /** The stat line for a stage that has landed. */
-  function said(stage, field, shaded, cached) {
+  /**
+   * Details' stat line for a stage that has landed: which pass, what it cost, the cap it
+   * drew at, and — where the probe ran out of ceiling on this frame — how much of it is
+   * still undecided.
+   */
+  function said(stage, field, shaded, cached, target) {
     const size = `${stage.width}×${stage.height}`;
-    const samples = stage.supersample > 1 ? ` at ${stage.supersample ** 2}×` : "";
+    const which = stage.name === "preview" ? "quarter pass" : "full pass";
     const orbit = running?.orbit;
     const orbitSaid =
       orbit === undefined
         ? ""
-        : ` · orbit ${orbit.points.toLocaleString("en-US")} points, ${orbit.limbs} limbs${orbit.kept ? " (kept)" : ""}`;
-    host.stat(
-      cached
-        ? `${size}${samples} · recolored in ${shaded.elapsed.toFixed(0)} ms`
-        : `${size}${samples} · field ${(field.elapsed / 1000).toFixed(2)} s · shade ${shaded.elapsed.toFixed(0)} ms${orbitSaid}`,
-    );
+        : ` · orbit ${count(orbit.points)} points, ${orbit.limbs} limbs${orbit.kept ? " (kept)" : ""}`;
+    const cost = cached
+      ? `recolored in ${shaded.elapsed.toFixed(0)} ms`
+      : `${(field.elapsed / 1000).toFixed(2)} s, shade ${shaded.elapsed.toFixed(0)} ms`;
+    stat(`${which} ${size} · ${cost} · cap ${count(target.maxiter)}${ceilingSaid(target)}${cached ? "" : orbitSaid}`);
+  }
+
+  /** *at the ceiling: x% undecided*, where the probe settled this frame at the ceiling. */
+  function ceilingSaid(of) {
+    if (settledAt === null || !settledAt.atCeiling) return "";
+    if (settledAt.frame !== deepLink.fieldKey(of, 1, 1)) return "";
+    return ` · at the ceiling: ${Math.round(settledAt.fault * 100)}% undecided`;
+  }
+
+  /** Details' first line. The Deep tab's own, since the shallow Details is not shown here. */
+  function stat(text) {
+    els.stats.textContent = text;
   }
 
   /**
    * Colour the best field already kept, at the best size it was kept at.
    *
    * **This is what the cache is for.** A deep field costs seconds to minutes and a
-   * palette costs a shade, so a recolour walks back from the finished stage to the
-   * cheapest one that is here and colours that. Nothing re-iterates.
+   * palette costs a shade, so a recolour walks back from the full pass to the cheapest
+   * one that is here and colours that. Nothing re-iterates.
    */
   async function recolour() {
     const grid = host.grid();
     const deep = await pool();
-    // Finest first, and the finest is whatever this visit has chosen: a recolour walks back
-    // from the best field already kept to the cheapest one that is here.
     const stages = [
-      { width: grid.width, height: grid.height, supersample: samples },
       { width: grid.width, height: grid.height, supersample: 1 },
       { width: grid.width / PREVIEW_DIVISOR, height: grid.height / PREVIEW_DIVISOR, supersample: 1 },
     ];
@@ -776,7 +957,7 @@ export function mount(host) {
       drawn = view;
       keep(shaded.image, view);
       paint();
-      host.stat(`${stage.width}×${stage.height} · recolored in ${shaded.elapsed.toFixed(0)} ms`);
+      stat(`${stage.width}×${stage.height} · recolored in ${shaded.elapsed.toFixed(0)} ms · cap ${count(view.maxiter)}${ceilingSaid(view)}`);
       host.settle();
       return;
     }
@@ -882,7 +1063,7 @@ export function mount(host) {
       y: deepLink.coordinateOf(fx.add(view.y.dec, shiftDown)),
       w: deepLink.widthOf(width),
     };
-    if (!pinnedCap) view = { ...view, maxiter: policyCap(width) };
+    if (!pinned()) view = { ...view, maxiter: policyCap(width), capFrom: "width" };
     moved();
   }
 
@@ -932,7 +1113,7 @@ export function mount(host) {
       ink.fillStyle = "#000";
       ink.fillRect(0, 0, grid.width, grid.height);
     });
-    host.stat("");
+    stat("");
     host.say("");
     // The fields are NOT cleared: the cache is keyed on the set as well as the
     // frame, so the two views cannot be confused for one another, and a small
@@ -962,7 +1143,8 @@ export function mount(host) {
       julia: null,
       x: view.julia.x,
       y: view.julia.y,
-      maxiter: pinnedCap ? view.maxiter : policyCap(view.w.value),
+      maxiter: pinned() ? view.maxiter : policyCap(view.w.value),
+      capFrom: pinned() ? "reader" : "width",
     };
     cameFrom = null;
     swap({ ...home, palette: view.palette, shade: view.shade, level: view.level });
@@ -1074,6 +1256,9 @@ export function mount(host) {
       y: nucleus.y,
       w: deepLink.widthOf(width),
       maxiter: renderer.tileCap(nucleus.period, width),
+      // Not the width's and not the reader's: the cap a minibrot's own period asks for,
+      // written into the link like any settled cap.
+      capFrom: "tile",
       julia: null,
     };
   }
@@ -1100,7 +1285,10 @@ export function mount(host) {
     const generation = ++pass;
     const grid = host.grid();
     const target = view;
-    running = { upto: "minibrots", auto: false, stage: "searching", started: performance.now() };
+    readLog();
+    running = { upto: "minibrots", auto: false, stage: "searching", started: performance.now(), done: 0 };
+    enterStage("starting", { live: false });
+    activity("starting the deep renderer…", 0);
     syncControls();
     host.say("");
     clearMinibrots();
@@ -1108,6 +1296,7 @@ export function mount(host) {
     try {
       const deep = await pool();
       if (generation !== pass) return;
+      readLog();
 
       // **The search escalates the cap even where the picture does not**
       // *(pre_closeout_ckpt138, 2026-09-20)*. A nucleus is detected by the index of the
@@ -1121,37 +1310,42 @@ export function mount(host) {
       // of 187,200.
       //
       // So the cap is settled for the **search spec alone**, and `view` is not touched.
-      // A cap is a picture choice everywhere else on this tab — it is what `pinnedCap`
-      // exists to defend — but here it is a floor under correctness, and moving the
+      // A cap is a picture choice everywhere else on this tab — it is what a pinned
+      // `capFrom` exists to defend — but here it is a floor under correctness, and moving the
       // reader's picture and rewriting their link as a side effect of pressing a search
       // button would be the wrong trade. Where the cap is already settled this costs one
       // rung, because `settle` starts where it is and stops as soon as the fault share is
       // met.
-      running.stage = "settling";
+      enterStage("probe");
+      activity("finding the cap to search at…", 0);
       const floor = await deep.settle(target, grid.width, grid.height, {
         supersample: 1,
-        onRung: (counts) => {
+        onStep: (step) => {
           if (generation !== pass) return;
-          host.stat(`finding the cap to search at · ${counts.maxiter.toLocaleString("en-US")}`);
+          activity(
+            `finding the cap to search at · trying ${count(step.cap)} · ${said_step(step)}`,
+            step.total > 0 ? step.done / step.total : null,
+          );
         },
       });
       if (floor === null || generation !== pass) return;
-      running.stage = "searching";
       const searched =
         floor.maxiter > target.maxiter ? { ...target, maxiter: floor.maxiter } : target;
-      host.stat(
-        searched === target
-          ? "looking for nuclei…"
-          : `looking for nuclei · to ${floor.maxiter.toLocaleString("en-US")}`,
-      );
+      const looking =
+        searched === target ? "looking for nuclei" : `looking for nuclei to ${count(floor.maxiter)}`;
+      enterStage("searching");
+      activity(`${looking}…`, 0);
       const found = await deep.nuclei(searched, grid.width, grid.height, {
         supersample: 1,
         tileSamples: TILE.width,
+        onStep: (step) => {
+          if (generation !== pass) return;
+          activity(`${looking} · ${said_step(step)}`, step.total > 0 ? step.done / step.total : null);
+        },
       });
       if (found === null || generation !== pass) return;
 
       if (found.length === 0) {
-        host.stat("");
         els.minibrotNote.hidden = false;
         els.minibrotNote.textContent = "No minibrot was found in this view.";
         return;
@@ -1172,25 +1366,34 @@ export function mount(host) {
           : ` ${lost} of them ${lost === 1 ? "sits" : "sit"} deeper than a link can spell a ` +
             "center for, so they are listed without one.");
 
+      let tile = 0;
       for (const nucleus of reachable) {
         if (generation !== pass) return;
+        tile += 1;
         const frame = frameOf(nucleus);
         if (tileSeconds(frame.maxiter) * 1000 > TILE_BUDGET_MS) continue;
+        enterStage("tiles");
+        activity(`drawing previews · ${tile} of ${reachable.length}`, (tile - 1) / reachable.length);
         const field = await deep.field(frame, TILE.width, TILE.height, {
           supersample: 1,
           period: nucleus.period,
+          onStep: (step) => {
+            if (generation === pass) {
+              activity(`drawing previews · ${tile} of ${reachable.length} · ${said_step(step)}`);
+            }
+          },
         });
         if (field === null || generation !== pass) return;
         const shaded = await deep.shade(field, frame, {}, { derive: false });
         if (shaded === null || generation !== pass) return;
         paintTile(nucleus, shaded.image);
       }
-      host.stat("");
     } catch (error) {
       host.say(String(error.message ?? error));
     } finally {
       if (generation === pass) {
         running = null;
+        watch();
         host.showState(drawn === null ? "stopped" : "final");
         syncControls();
       }
@@ -1266,13 +1469,78 @@ export function mount(host) {
   function setCap(value) {
     const wanted = Math.round(value);
     const held = Math.max(deepLink.CAP_FLOOR, Math.min(deepLink.CAP_LIMIT, wanted));
-    if (held === view.maxiter) return;
-    pinnedCap = true;
-    view = { ...view, maxiter: held };
+    if (held === view.maxiter && pinned()) return;
+    view = { ...view, maxiter: held, capFrom: "reader" };
     moved();
   }
 
-  // ------------------------------------------------------- auto-render, and the samples
+  // ------------------------------------------------------------------ Details
+
+  /**
+   * One coordinate box, retyped: the deep contract reads it, or says why it will not.
+   *
+   * **The shallow Details' route, taken on purpose** — `explorer.js`'s `retype`: the view is
+   * emitted, one key replaced, and the whole string parsed back, so a typed coordinate is
+   * read by exactly the reader a link's coordinate is read by and refused with exactly its
+   * sentence, and nothing about the place is re-spelled through a double. What comes back
+   * is taken for the frame alone; the colour and the cap stay the view's own, except that a
+   * new width re-asks the width's cap where the reader has not pinned one, as a zoom does.
+   */
+  function retype(key, text) {
+    const params = new URLSearchParams(deepLink.emit(view));
+    params.set(key, text);
+    let read;
+    try {
+      read = deepLink.parse(`?${params}`, context);
+    } catch (error) {
+      host.say(error.message);
+      return false;
+    }
+    const next = { ...view, x: read.x, y: read.y, w: read.w };
+    if (key === "w" && !pinned()) {
+      next.maxiter = policyCap(read.w.value);
+      next.capFrom = "width";
+    }
+    if (deepLink.emit(next) === deepLink.emit(view)) return true;
+    view = next;
+    moved();
+    return true;
+  }
+
+  const COORDINATE_BOXES = { x: els.x, y: els.y, w: els.w };
+  for (const [key, input] of Object.entries(COORDINATE_BOXES)) {
+    input.addEventListener("change", () => {
+      if (!retype(key, input.value.trim())) input.value = view[key].text;
+    });
+  }
+
+  const POWERS = { 2: "²", 3: "³", 4: "⁴", 5: "⁵", 6: "⁶" };
+
+  /** Where the cap in force came from, as Details says it. */
+  const CAP_SOURCES = {
+    width: "from the width; Render may raise it",
+    probe: "settled by the probe",
+    reader: "yours",
+    tile: "the minibrot's own",
+  };
+
+  /** Details, synced to the view: the set, `c` for a Julia view, the three boxes, and the
+   *  cap with where it came from. The stat line is written by the passes, not here. */
+  function syncDetails() {
+    const degree = view.degree ?? 2;
+    const julia = view.julia !== null;
+    const set = julia ? "Julia set" : degree === 2 ? "Mandelbrot set" : "Multibrot set";
+    els.family.textContent = `${set} · z${POWERS[degree] ?? `^${degree}`} + c · degree ${degree}`;
+    els.paramGroup.hidden = !julia;
+    if (julia) els.param.textContent = `${view.julia.x.text} + ${view.julia.y.text}i`;
+    for (const [key, input] of Object.entries(COORDINATE_BOXES)) {
+      // Never under the reader's cursor: a drag while they type would take the box away.
+      if (document.activeElement !== input) input.value = view[key].text;
+    }
+    els.capSaid.textContent = `cap ${count(view.maxiter)} · ${CAP_SOURCES[view.capFrom] ?? CAP_SOURCES.reader}`;
+  }
+
+  // ------------------------------------------------------------------- auto-render
 
   function storedAuto() {
     try {
@@ -1301,64 +1569,45 @@ export function mount(host) {
     if (value && drawn !== null && pending()) moved();
   }
 
-  /** The samples picker: the Download row's own three factors, labelled the way that row
-   *  labels them, because the two sit one above the other. */
-  const sampleChips = SUPERSAMPLES.map((factor) => {
-    const chip = document.createElement("button");
-    chip.type = "button";
-    chip.className = "chip";
-    chip.textContent = `${factor * factor}×`;
-    chip.title =
-      factor === 1
-        ? "One sample per pixel: the fastest a frame is drawn here."
-        : `${factor * factor} samples per pixel: smoother edges, and about ${factor * factor} times as long.`;
-    chip.addEventListener("click", () => {
-      if (samples === factor) return;
-      samples = factor;
-      syncControls();
-    });
-    els.samples.append(chip);
-    return { factor, chip };
-  });
+  /** Whether Render is Cancel just now: a pass somebody commanded, or any pass the watchdog
+   *  has found silent. */
+  function cancellable() {
+    return running !== null && (!running.auto || running.stalled > 0);
+  }
 
   function syncControls() {
     const busy = running !== null;
     const why = busy ? null : refused();
-    // **A pass that started on its own does not take the button.** It is a pass the reader
-    // did not ask for, so turning Render into Cancel while it runs would put the one
-    // control this tab has out of reach at exactly the moment it is wanted: a reader who
-    // gestures and then wants the picture would press Render and stop a render instead.
-    // Cancel is for a pass somebody commanded; pressing Render through one that started on
-    // its own upgrades it to the finish.
+    // **A pass that started on its own does not take the button** — until the watchdog
+    // says it has gone quiet. It is a pass the reader did not ask for, so turning Render
+    // into Cancel while it runs would put the one control this tab has out of reach at
+    // exactly the moment it is wanted: a reader who gestures and then wants the picture
+    // would press Render and stop a render instead. Cancel is for a pass somebody
+    // commanded; pressing Render through one that started on its own upgrades it to the
+    // probed pass. **A silent pass is the exception** *(ckpt141)*: ten seconds with nothing
+    // from the pool, and the way out is offered on the button already there.
     const committed = busy && !running.auto;
-    els.render.textContent = committed ? "Cancel" : pending() || drawn === null ? "Render" : "Render again";
-    els.render.classList.toggle("is-running", committed);
+    const cancel = cancellable();
+    els.render.textContent = cancel ? "Cancel" : pending() || drawn === null ? "Render" : "Render again";
+    els.render.classList.toggle("is-running", cancel);
     els.render.disabled = why !== null;
     els.progress.hidden = !busy;
-    if (!busy) els.progress.style.removeProperty("--done");
-    els.auto.checked = autoRender;
-    for (const { factor, chip } of sampleChips) {
-      chip.setAttribute("aria-pressed", String(factor === samples));
-      chip.disabled = committed;
+    if (busy) {
+      showActivity();
+    } else {
+      els.spinner.hidden = true;
+      els.progress.classList.remove("is-stalled");
+      // At rest the bar says whether the picture up is the frame: full when it is, empty
+      // when nothing has been drawn or the reader has moved off it.
+      els.bar.style.setProperty("--done", drawn !== null && !pending() ? "1" : "0");
     }
+    els.auto.checked = autoRender;
     els.cap.value = String(view.maxiter);
     els.capUp.disabled = committed || view.maxiter >= deepLink.CAP_LIMIT;
     els.capDown.disabled = committed || view.maxiter <= deepLink.CAP_FLOOR;
-    els.width.textContent = view.w.text;
-    els.centre.textContent = `${view.x.text}\n${view.y.text}`;
-    els.centre.title = `${view.x.text} + ${view.y.text}i`;
+    syncDetails();
 
-    // The parameter, where there is one. A Mandelbrot view has no `c` to show:
-    // every point of it is one.
     const julia = view.julia !== null;
-    // Both halves of the row, or neither: an empty `dd` still takes its cell in the
-    // grid and shifts every label after it into the wrong column.
-    els.paramRow.hidden = !julia;
-    els.paramValue.hidden = !julia;
-    if (julia) {
-      els.param.textContent = `${view.julia.x.text}\n${view.julia.y.text}`;
-      els.param.title = `${view.julia.x.text} + ${view.julia.y.text}i`;
-    }
     els.julia.textContent = julia ? "Back to the Mandelbrot set (j)" : "Julia at this c (j)";
     els.julia.disabled = committed;
     els.julia.title =
@@ -1433,8 +1682,8 @@ export function mount(host) {
     }
     host.say(
       "This tab is several times slower than the explorer and gets slower as you go " +
-        "deeper — a frame can take minutes. Auto-render draws each frame you move to at " +
-        "one sample a pixel; Render is what spends more than that.",
+        "deeper — a frame can take minutes. Auto-render draws each frame you move to at the " +
+        "width's own cap; Render also checks whether the frame needs a higher one.",
     );
   }
 
@@ -1448,11 +1697,6 @@ export function mount(host) {
    */
   function enter(from) {
     warn();
-    // **The samples reset on every entry, and the auto-render flag does not.** One is the
-    // most expensive setting on the page and is reset so that nothing carries a sixteen-fold
-    // cost into a visit that did not ask for it; the other is a way of working and is the
-    // tab's own session, like the Julia preview's box.
-    samples = ENTRY_SUPERSAMPLE;
     if (from !== null) {
       const carried = carry(from);
       if (carried !== null) {
@@ -1460,7 +1704,7 @@ export function mount(host) {
         drawn = null;
         stale = null;
         fields.clear();
-        pinnedCap = false;
+        settledAt = null;
         cameFrom = null;
       }
     } else if (drawn === null && stale === null) {
@@ -1500,6 +1744,7 @@ export function mount(host) {
       y: deepLink.coordinateOf(y),
       w: deepLink.widthOf(from.w.value),
       maxiter: policyCap(from.w.value),
+      capFrom: "width",
       aspect: from.aspect,
       palette: from.palette,
       shade: from.shade,
@@ -1510,15 +1755,16 @@ export function mount(host) {
   // ----------------------------------------------------------------- the wiring
 
   els.render.addEventListener("click", () => {
-    if (running !== null && !running.auto) {
+    if (cancellable()) {
       stop();
-      host.stat("stopped");
+      host.say("Stopped.");
       host.showState("stopped");
       return;
     }
     // Through a pass that started on its own: that one is abandoned and the committed one
     // starts, which picks its quarter field straight back out of the cache if it finished.
-    render("fine");
+    // A committed pass is the one that may probe the cap.
+    render("screen");
   });
 
   els.auto.addEventListener("change", () => setAuto(els.auto.checked));
@@ -1531,12 +1777,14 @@ export function mount(host) {
     els.cap.value = String(view.maxiter);
   });
   els.policy.addEventListener("click", () => {
-    pinnedCap = false;
     const wanted = policyCap(view.w.value);
-    if (wanted !== view.maxiter) {
-      view = { ...view, maxiter: wanted };
+    const changed = wanted !== view.maxiter;
+    view = { ...view, maxiter: wanted, capFrom: "width" };
+    if (changed) {
       moved();
     } else {
+      // The same number, but no longer anybody's choice: the link drops its `n`.
+      host.settle();
       syncControls();
     }
   });
@@ -1584,10 +1832,10 @@ export function mount(host) {
     /** The finished picture at the canvas's own size, once the last stage has landed. */
     shown: () => finished,
     /** How many samples a pixel, each way, that picture was drawn at — `0` where there is
-     *  none. **Asked rather than assumed** *(deep_ui_ckpt140)*: the Download row used to
-     *  take it that this tab ends where the viewer does, at two, and reuse the screen's
-     *  picture for a 4× download on the strength of it. The finish is the reader's choice
-     *  now, so a row asking for more samples than the canvas holds has to draw. */
+     *  none, and one where there is, because one is all the screen draws *(ckpt141)*.
+     *  **Asked rather than assumed** *(deep_ui_ckpt140)*: the Download row used to take it
+     *  that this tab ends where the viewer does, at two, and reuse the screen's picture for
+     *  a 4× download on the strength of it. */
     finalSupersample: () => finishedSamples,
     picture,
 
@@ -1616,23 +1864,25 @@ export function mount(host) {
      *  **A link is a frame change the reader asked for**, so auto-render draws it the way it
      *  draws any other, at one sample a pixel; untick the box and it is the quarter pass
      *  alone, which is what this always did. Either way the pass is committed rather than
-     *  auto — a link is a press — so Cancel is there for it. */
+     *  auto — a link is a press — so Cancel is there for it. **It does not probe the cap**
+     *  *(ckpt141)*: a link that names one is drawn at it, pinned, and one that names none
+     *  is drawn at the width's, as the auto pass draws it; Render is what asks for more. */
     open(query) {
       view = deepLink.parse(`?${query}`, context);
       drawn = null;
       stale = null;
       fields.clear();
-      pinnedCap = true;
+      settledAt = null;
       // A link says where it points and not where its writer was standing.
       cameFrom = null;
       owns = true;
       warn();
       syncControls();
       host.settle();
-      host.stat("");
+      stat("");
       host.say("");
       host.showState("stopped");
-      render(autoRender ? "screen" : "preview");
+      render(autoRender ? "screen" : "preview", { probe: false });
     },
 
     /** A colour control moved. The field is kept, so this never re-iterates. */

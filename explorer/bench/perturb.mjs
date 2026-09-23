@@ -14,7 +14,9 @@ const decoder = new TextDecoder();
 export const REFERENCE_HEADER = 16;
 
 export async function load(url = new URL("../perturb.wasm", import.meta.url)) {
-  const wasm = (await WebAssembly.instantiate(readFileSync(url), {})).instance.exports;
+  // `env.progress` is the module's one import, and nothing here has anybody to tell.
+  const imports = { env: { progress() {} } };
+  const wasm = (await WebAssembly.instantiate(readFileSync(url), imports)).instance.exports;
 
   const put = (text) => {
     const raw = encoder.encode(text);

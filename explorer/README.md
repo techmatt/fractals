@@ -609,11 +609,9 @@ cached final field sits at 20.7% and goes full at `final`.
 is seconds to minutes; a screen's is not, and a bar that crawled the last few percent for it
 would be measuring the wrong thing.
 
-**The Deep tab drives the same bar**, through a `showProgress` on the host beside
-`showState`, called from that tab's own per-band `report`. Its stages are the pass's own
-rather than a fixed three — a preview-only render has one stage and fills the whole bar with
-it, a finish at one sample a pixel is two — so `spanOf` weights them by their own samples.
-The tab's own `#deep-progress` line, with its percentage and its time-left, is unchanged.
+**The Deep tab does not drive this bar** *(deep_tab_activity_and_layout_ckpt141)*. It has
+its own, `#deep-bar`, on its Render line beside Cancel, and `#render-state` is hidden while
+the tab owns the canvas — see §Deep, *The Render line says what the tab is doing*.
 
 ⚠ **`data-state` stays on that element**, and the fill is a child. `bench/page.mjs` puts a
 `MutationObserver` on it and `bench/hunt/lib.mjs` reads it; the observer filters on
@@ -1260,13 +1258,25 @@ binds first: a plain decimal at about 1e-45 reaches the shallow contract's 64-ch
 
 ### The render controls are under the picture *(deep_ui_ckpt140, 2026-09-21)*
 
-Render, Cancel, **Auto-render**, the samples and the progress line are a control group of
+Render, Cancel, the render bar, the activity line and **Auto-render** are a control group of
 their own in the right pane, first under the canvas and above Download, shown only while
 this tab owns the viewer. They were in the left panel until Matt used the tab and said
 otherwise, and the reason is what a reader is looking at: pressing Render is watching the
-picture, and the wait and the way to stop it belong where the eye already is. The panel
-keeps what is about the *frame* — Frame, Iterations, Julia at this c, Nearby minibrots,
-Save, Back to the explorer — and one line saying where Render went.
+picture, and the wait and the way to stop it belong where the eye already is.
+
+**Where the frame is lives in a Details fold under the picture** *(Matt,
+deep_tab_activity_and_layout_ckpt141)*, the shallow Details' shape, shown only while this
+tab owns the viewer (the shallow one is hidden then): the render stat line — the last pass,
+its time, the cap it drew at, the orbit, and *at the ceiling: x% undecided* where the probe
+ran out of ceiling on this frame — then the set and its degree, `c` for a Julia view, `x`,
+`y` and `width` in boxes a reader can retype, and the cap with where it came from (*from the
+width*, *settled by the probe*, *yours*, *the minibrot's own*). A retyped box goes the
+shallow `retype`'s long way round: the view is emitted, one key replaced, and the string
+parsed back by the deep contract, so a typed coordinate is read and refused exactly as a
+link's would be. The **FRAME block that sat at the top of the left panel is gone**, and so
+is the stat line's old home: the tab used to write it into the shallow `#stats`, which is
+hidden on this tab, so nobody had ever seen it. The panel keeps Iterations (Halve, the cap,
+Double, From the width), Julia at this c, Nearby minibrots, Save and Back.
 
 **And a sentence pointing back into the article** *(Matt, walk_tab_ckpt140 addendum 1,
 2026-09-22)*, on the end of that same line: *The writeup explains how deep frames are
@@ -1299,8 +1309,17 @@ further. Every route into a new frame goes through it — a drag, a wheel notch,
 change, *Julia at this c* and its way back, a *Nearby minibrots* pick, and a deep link
 opened from Saved or the address bar. Unticked, the tab is press-to-render, and the only
 thing that starts by itself is the quarter pass, and only **if the previous quarter pass
-came back under `AUTO_PREVIEW_MS`** — provisional at 1.5 s. Either way a supersampled
-finish is a press.
+came back under `AUTO_PREVIEW_MS`** — provisional at 1.5 s.
+
+**An auto pass never runs the cap probe** *(deep_tab_activity_and_layout_ckpt141)*. It
+draws at the width's own cap with no escalation; only an explicit Render (and a download)
+probes. The reason is that the probe is not covered by the `AUTO_PREVIEW_MS` guard, which
+times the quarter *field* and nothing before it: the probe is a reference orbit and 2,304
+cells per rung, doubling to the 1,000,000 ceiling, and on a frame beside a parabolic point
+— where the escape count grows like one over the square root of the distance — every rung
+is short of enough and the walk runs to the ceiling. A drag was enough to start that. A
+link opened is drawn the same way, at the cap it names (pinned) or at the width's; Render is
+what asks whether the frame wants more.
 
 The flag is the tab's own `sessionStorage`, the Julia preview's pattern and its reason: it
 is a way of working rather than part of a picture, so no link carries it and the browser
@@ -1345,28 +1364,77 @@ the frame you left* — it named Cancel and not Render because through a committ
 Render **is** Cancel. And the `full resolution 100%` line no longer arrives followed by
 minutes of silence at the entry setting, because at one sample a pixel that is the end.
 
-### The finish is one sample a pixel until the reader asks for more
+### The screen is one sample a pixel, and samples are the Download row's *(Matt, deep_tab_activity_and_layout_ckpt141)*
 
-The tab used to end every committed pass at `FINAL_SUPERSAMPLE` — two, four samples a
-pixel, the viewer's own number — and **nothing on the page chose it**. It was not carried
-in from the shallow explorer, which does not have a canvas-samples control at all, and not
-from the Download row's `1× / 4× / 16×`, which drives the file and never the screen: it was
-a module constant in `deep.js`, copied from `explorer.js`, spending four times a pass that
-is already seconds to minutes on every Render.
+The tab used to end every committed pass at `FINAL_SUPERSAMPLE` — four samples a pixel,
+copied from `explorer.js` — and then, from `deep_ui_ckpt140`, at one sample a pixel with a
+`1× / 4× / 16×` picker beside Render. **The picker is gone and the screen is one sample a
+pixel, always**: the quarter pass, then the full pass, and no third stage. A finer picture
+of a deep frame is minutes, and minutes spent on the screen are minutes nobody can keep; a
+file is where more samples are worth having, so the Download row's own `1× / 4× / 16×` is
+the only place they are chosen, 16× still refused by its ceiling. Render over an auto pass
+now buys one thing, the cap probe. No `explorer.deep-*` setting ever held the samples — the
+choice was a per-visit variable reset by `enter` — so there was no stored key to delete, and
+nothing in a `dv` link ever carried it.
 
-So the tab opens at **one sample a pixel** and the finer finishes are a picker beside
-Render, `SUPERSAMPLES` imported from `download.js` rather than restated because the two
-rows sit one above the other and a reader reads `4×` as one thing. The choice holds while
-the reader stays on the tab and `enter` resets it, so nothing carries a sixteen-fold cost
-into a visit that did not ask for it. It is not in the `dv` link and never was — a link
-says what picture to draw, and how many samples to spend finding out is the reader's, at
-their machine's speed.
+The Download row still asks the tab how many samples the picture on the canvas holds rather
+than assuming, so *As shown* at 1× is `ready` and at 4× draws.
 
-Two things follow it. The cap policy's probe walks the grid of the pass's own finest stage
-rather than a fixed two, because the probe is a subset of the frame's *sample* cells. And
-the Download row asks the tab how many samples the picture on the canvas holds instead of
-assuming the tab ends where the viewer does — otherwise *As shown* at 4× would hand back a
-1× picture under a 4× name. Measured: at 1× the row says `ready`, at 4× it says `~75 s`.
+### The Render line says what the tab is doing *(deep_tab_activity_and_layout_ckpt141)*
+
+**The frame that motivated it**, `?dv=3&x=-0.7496032252489404457405605910029&y=0.0944858831962337079727787133191&w=2.82515203644319e-13&n=55926&p=cmr.redshift&mirror=1&panel=deep`
+— `c ≈ −0.75 + 0.09i`, beside the parabolic point — sat on *choosing an iteration cap ·
+55,926* for minutes. **It was a stranded pool, not a slow probe.** Measured in node on the
+committed module: the reference orbit there escapes at 9,538 points in 7 ms, and the first
+rung of the probe resolves the frame — 2,304 of 2,304 cells escaped, no fault — in 0.1 s on
+one thread. The line is what `onRung` wrote after that rung, and it stays until the first
+band reports, so the full pass never started. The mechanism was the pool's: `cancel()` bumped
+the generation and left every in-flight worker off the `idle` list, and the probe and orbit
+round trips swapped each worker's `onmessage` for their own — so a band finishing after a
+cancel landed in the probe's handler, was ignored for being the wrong kind, and its worker
+was never idle again. Three wheel notches during full passes stranded all of them, `field()`
+dispatched to an empty list, and its promise never settled. Reproduced over CDP on the old
+code exactly that way — *choosing an iteration cap · 57,377*, forever, with Render reading
+*Render* because the pass had started on its own — and the same script finishes every pass
+on the new one.
+
+**The pool** (`deep-render.js`) now keeps one request per worker, matched by id: a worker
+is idle exactly when it has none outstanding, the one handler it ever has is installed when
+it is born, and a reply to a request nobody is waiting for any more frees the worker and is
+dropped. A stale probe reply can no longer be read as a new rung, which the old kind-only
+match allowed. **The reference orbit is computed in a worker**, never on the page's thread,
+where a cap of a million froze the page for as long as it took: the first worker computes it
+and keeps it, and the bytes it hands back feed the others lazily.
+
+**Every stage reports, at most every 100 ms.** `perturb.wasm` has one import now,
+`env.progress(done, total)`, called every 4,096 iterations of a reference orbit and once a
+cell of a probe or domain-walk share (`perturb-wasm/src/progress.rs`); the worker throttles
+it to a message every 100 ms, and the page's own planner instance supplies a function that
+does nothing. The line says which: *choosing an iteration cap · trying 111,852 (rung 2) ·
+1,152 of 2,304 cells*, *full resolution · reference orbit 40,960 of 330,708*, *full
+resolution 40% · about 3 s left* from the bands as before. A spinner is up whenever a worker
+stage is live, and the bar beside Cancel fills with it — the Download row keeps a price in
+plain text (*~4 s*, *not priced yet*) and no bar, and a file render fills this bar under the
+label *file*. **What the hook costs**: every deep field, probe count and orbit at four frames
+(the test frame, a 1e-22 seahorse, a degree-3 and a Julia frame) came back byte for byte
+what the module before it produced, and the four took 10.82 s against 10.83 s.
+
+**The watchdog.** Once a second while a worker stage runs, the tab reads how long since the
+pool last said anything — any reply, any progress message — against the stage's own start.
+Past **10 s** the line reads *… · no progress for N s*, counting, in the warning ink, and
+Render becomes Cancel even for a pass that started on its own. A live frame reports ten
+times a second, so a pool that is silent for a hundred times that is not a slow frame.
+
+**Cancel cancels everything.** A wasm call cannot be interrupted, and the orbit and the
+probe are the long ones, so `cancel()` terminates every worker with a request in flight and
+starts a fresh one from the module already compiled; it is fed the held orbit again the next
+time it needs it. The page is idle when Cancel returns, whatever was running.
+
+**A log, off by default.** `localStorage.setItem("explorer.deep-log", "1")` in the console
+turns it on from the next pass (`removeItem` to stop): every stage the tab enters, every
+worker message, every rung, the watchdog's ticks, each with an ISO timestamp and the frame's
+`dv` link. Off, it costs one `localStorage` read a pass and nothing else — the pool's message
+hook is left `null`.
 
 ### Julia at this c *(deep_julia_at_c_ckpt136, 2026-09-20)*
 
@@ -1434,11 +1502,13 @@ against the Mandelbrot loop's 5.08**, which is the two additions it does not do.
 
 ### The reference orbit, and the pool
 
-**One high-precision orbit per frame, computed on the main thread and held in each worker.**
-It is a couple of megabytes of `f64` pairs and every sample of every band reads it, so a
-band call that computed its own would compute it some fifty times a frame. `deep-worker.js`
-takes an `orbit` message, keeps the buffer in its own heap, and every `band` after it uses
-the one that is there; a frame whose orbit is still good sends none.
+**One high-precision orbit per frame, computed in one worker and held in each of them**
+*(computed on the main thread until deep_tab_activity_and_layout_ckpt141)*. It is a couple
+of megabytes of `f64` pairs and every sample of every band reads it, so a band call that
+computed its own would compute it some fifty times a frame. `deep-worker.js` computes it on a
+`reference` request and keeps it, takes an `orbit` message on the others and keeps the
+buffer in its own heap, and every `band` after it uses the one that is there; a frame whose
+orbit is still good sends none, and a worker restarted by a cancel is fed it again.
 
 **It is kept while the new view is still within its reach**, and the test is conservative
 on purpose: the same limb count, a cap no larger, and the reference still inside the frame
@@ -1485,14 +1555,12 @@ on the way out. At this depth that rounding is visible — the `f32` step at a s
 
 ### The field is kept, so a recolour never re-iterates
 
-Three fields: the current view's stages, keyed on the centre, the width, the cap and
-the grid — never on the palette or the seven, because nothing on the colour side can move a
-sample. **The arithmetic of that:** at a 1136×636 canvas the quarter pass is 0.4 MB, the
-full pass 5.8 MB and a finish at four samples a pixel 23 MB, so a view drawn to that finish
-is about 29 MB held; at the entry setting, where there is no third stage, it is 6.2 MB. The viewer keeps six because its fields are cheap to recompute; here a field is
-the most expensive thing on the page, and keeping one view back would double the memory to
-save a re-iterate the reader presses a button for anyway. A recolour walks back from the
-finished stage to the cheapest one that is here.
+Three fields: the current view's two stages and one field back, keyed on the centre, the
+width, the cap and the grid — never on the palette or the seven, because nothing on the
+colour side can move a sample. **The arithmetic of that:** at a 1136×636 canvas the quarter
+pass is 0.4 MB and the full pass 5.8 MB, so a view is 6.2 MB held. The viewer keeps six
+because its fields are cheap to recompute; here a field is the most expensive thing on the
+page. A recolour walks back from the full pass to the cheapest stage that is here.
 
 ### Iterations, and the cap a frame asks for *(deep_cap_policy_ckpt138, 2026-09-20)*
 
@@ -1500,8 +1568,8 @@ The cap opens at the kernel's own answer for the width — the engine's shape wi
 engine's ceiling lifted to a million, so 48,551 at 2e-11 and 117,518 at 1e-28 where
 `maxiter::for_width` would flatten both to 67,000. **Halve** and **Double** move it, and a
 reader who has moved it has pinned it: a zoom then leaves it alone until *From the width*
-gives it back. **The cap in force is part of the view**, which is why the deep link always
-carries it.
+gives it back. **The cap in force is part of the view once it is settled**, which is why
+the deep link carries it then and only then — see the next list and §Deep links.
 
 **But the width's answer is where a Render starts rather than what it draws at.** Below
 about 1e-22 that cap lands *inside* the frame's own escape-count distribution: a sixth to a
@@ -1514,12 +1582,20 @@ samples are still dying at it with `|dz|` grown past the escape radius, under th
 The rule, its threshold and the thirteen frames it was measured on are
 `perturb-wasm/README.md` §8; what is here is what the tab does with it.
 
-- **Deciding costs 0.08% to 0.22% of the fine pass**, so the supersampled pass runs once,
-  at the settled cap. The probe is a subset of the frame — its cells, its limbs, its
-  geometry, its orbit — and not a smaller picture of it.
-- **The progress line says so** while it runs, naming the cap it is trying, and the cap box
-  and the address bar both move to the settled value before anything is drawn. The cap
-  travels in the link, so a reopened link redraws the same picture without re-deciding.
+- **Deciding costs 0.08% to 0.22% of the fine pass**, so the full pass runs once, at the
+  settled cap. The probe is a subset of the frame — its cells, its limbs, its geometry, its
+  orbit — and not a smaller picture of it.
+- **Only an explicit Render or a download probes** *(ckpt141)*; an auto pass and an opened
+  link draw at the cap they have. See *Rendering, and what starts on its own*.
+- **The activity line says so** while it runs, naming the cap it is trying, the rung, and
+  the orbit's iterations or the probe's cells, and **the cap box and the address bar move
+  once, when the probe has settled** *(ckpt141)*. Before that the view's `capFrom` is
+  `"width"` and the address carries no `n` at all. It used to carry the width's cap from the
+  moment a gesture landed, and a link-carried cap opens pinned — so a link copied mid-probe
+  drew the frame at the un-escalated cap forever after, with no notice. Verified over CDP on
+  the committed `tangle 1e-40` opened with no `n`: throughout the probe the address had no
+  `n` and the box read 165,354; the settled 330,708 reached both at once, with *Raised the
+  cap to 330,708: at 165,354, 25% of this frame was still escaping*.
 - **A pinned cap is drawn as pinned.** Escalation is the *policy*, so it runs where the
   width's answer is in force and nowhere else: a cap a reader typed, and a cap a link
   carries, are drawn exactly as asked. That distinction already existed as the zoom's, and
@@ -1530,11 +1606,11 @@ The rule, its threshold and the thirteen frames it was measured on are
   nothing, which is the honest thing and is what every shallow view and six of the thirteen
   measured frames get.
 - **And a frame can run out of ceiling.** At `cap::CEILING` — 1,000,000 — with more than
-  `FAULT_SHARE` of the probe still undecided, the cap sentence has its own variant,
-  *At the ceiling (1,000,000): 14% of this frame is still undecided.*, in the raise's shape
-  *(Matt, pre_closeout_website_ckpt140)*. It replaced a longer sentence that ended by
-  telling the reader to zoom out. The limit itself is unchanged, there is no control for it
-  and no retry: the sentence is the answer.
+  `FAULT_SHARE` of the probe still undecided, Details' stat line ends *at the ceiling: 14%
+  undecided* *(ckpt141; it was a sentence under the canvas, in the raise's shape, from Matt,
+  pre_closeout_website_ckpt140)*, beside the pass it is a fact about and only while the
+  frame is that frame. The limit itself is unchanged, there is no control for it and no
+  retry: the clause is the answer.
 
 ### Nearby minibrots *(deep_nearby_minibrots_ckpt138, 2026-09-20)*
 
@@ -1672,17 +1748,17 @@ and a URL's escaping rule, neither of which has anything to do with how deep the
 - **`w`** is the width, as a double and the shortest string that reads back as it. A width
   is a *spacing* and not a place, which is why it is the one number down here a double still
   holds honestly.
-- **`n`** is the iteration cap, **always written**. The opposite of the shallow ruling, for
-  the opposite reason: there the cap is the policy answering for a width and a key would let
-  a link say "this frame, but shallower"; here a deep frame's policy cap runs to six figures
-  and costs minutes, so the number in force is one a reader chose and part of what they are
-  sending. A link that left it out would open at whatever the policy said today.
-  **And a link that leaves it out is still accepted** *(pre_closeout_ckpt138)*, which is
-  the qualification that sentence needs: always written is a rule about emitting, not about
-  reading. Absent is not a hole — the width's policy cap plus the escalation ladder is
-  deterministic, so an `n`-less deep link names exactly one picture, the same one on every
-  machine and on every day the policy has not moved. What it cannot do is promise that
-  picture against a policy that *does* move, which is why emit writes the number down.
+- **`n`** is the iteration cap, **written once it is settled** *(deep_tab_activity_and_
+  layout_ckpt141; it was always written until then)*. A view carries `capFrom`: `"probe"`
+  (the probe settled it), `"reader"` (typed, halved, doubled, or named by the link it came
+  from), `"tile"` (a minibrot's own) are written; `"width"`, the policy's unsettled answer,
+  is not, because an absent key already means exactly that — `parse` asks the policy for the
+  width. Writing the width's cap was the bug: a link-carried cap opens pinned, so a link
+  copied while the probe was deciding pinned the un-escalated cap. A view built without a
+  `capFrom` is written, which is the old rule and safe. **A link that names `n` opens
+  pinned**, as before; one that names none opens at the width's cap, which is the kernel's
+  once the module is up (`unsettle` re-asks it, because before that only the engine's
+  policy is on the page and it stops at 67,000). `deep-link.test.mjs` holds both halves.
 - **`cx` and `cy`** are the Julia parameter, exact decimals, **both or neither**, and they
   are the shallow contract's own spelling of the same quantity — the `c` of `z² + c`, half
   of a dynamical location's identity. A second name for one number is how two readers of
@@ -1712,13 +1788,14 @@ and a URL's escaping rule, neither of which has anything to do with how deep the
   writes says `dv=3`. ⚠ The prompt that asked for this called it v4 with v1–v3 reading; the
   contract was at v2, so the number it took is 3.
 - **No `m`.** There is one mode down here.
-- The place, the width, the cap and the palette are emitted unconditionally; the shade keys
-  are omitted at the engine's defaults. `panel` rides as a UI key and is never emitted.
+- The place, the width and the palette are emitted unconditionally, the cap once it is
+  settled; the shade keys are omitted at the engine's defaults. `panel` rides as a UI key
+  and is never emitted.
 - **Loading a deep link** opens the tab on that view and draws it the way any other frame
   change is drawn *(deep_ui_ckpt140)*: the quarter pass and then one sample a pixel where
-  auto-render is on, the quarter pass alone where it is off. Never the supersampled finish,
-  which is what would make a link cost minutes to follow. The pass is committed rather than
-  automatic — a link is a press — so Cancel is there for it.
+  auto-render is on, the quarter pass alone where it is off, and **no cap probe**
+  *(ckpt141)*. The pass is committed rather than automatic — a link is a press — so Cancel
+  is there for it.
 
 `deep-link.test.mjs` is 35 tests and `deep-fx.test.mjs` is 12, on Node's own runner with
 nothing installed; three of them hold the shallow contract to not having moved, including
@@ -1751,10 +1828,10 @@ three of them: 1.2 s for the quarter pass, something near 13 s for the full one 
 its own `about 12 s left` progress line rather than timed — and then the 62.7 s below, so
 **about 77 s**, of which the fine pass is four fifths.
 
-⚠ **Since `deep_ui_ckpt140` that is the 4× row and not the default one.** The tab opens at
-one sample a pixel, so the Render a reader gets without touching the samples picker is the
-first two stages — about 14 s at the anchor rather than 77, and four fifths of the wait is
-the part that was never asked for.
+⚠ **Since `deep_ui_ckpt140` that is the 4× row and not the default one, and since
+`deep_tab_activity_and_layout_ckpt141` the screen cannot draw it at all** — the Render a
+reader gets is the first two stages, about 14 s at the anchor rather than 77, and four
+samples a pixel is a Download.
 
 | | |
 |---|---|

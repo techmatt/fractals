@@ -1476,12 +1476,12 @@ canvas.palette-final {
    the canvas, first in the controls, because pressing it is watching the picture. It is the
    one control group that appears only while this tab owns the canvas, which is why it is
    hidden by default and shown rather than the other way about. */
-.viewer.is-deep .control-group:not(.palette-group):not(.download-group):not(.deep-group),
+.viewer.is-deep .control-group:not(.palette-group):not(.download-group):not(.deep-group):not(.deep-details),
 .viewer.is-deep #details {
   display: none;
 }
-.deep-group { display: none; }
-.viewer.is-deep .deep-group { display: block; }
+.deep-group, .deep-details { display: none; }
+.viewer.is-deep .deep-group, .viewer.is-deep .deep-details { display: block; }
 
 /* The panel's first head sits where the render controls used to, so it takes the padding
    the head above it had. */
@@ -1498,6 +1498,13 @@ canvas.palette-final {
   display: none;
 }
 
+/* And the render bar, which on this tab is on the Render line beside Cancel
+   *(deep_tab_activity_and_layout_ckpt141)*: the Download row keeps its buttons, its size,
+   its samples and a price in plain text, and nothing on it is a bar or red. */
+.viewer.is-deep #download > .render-state {
+  display: none;
+}
+
 /* The panel's own section heads take the gutter, as the Walk tab's Found head does: the
    rule is drawn from the label to the section's right edge, and a head with no padding
    would start its label at the panel's very edge while everything under it is inset. */
@@ -1507,11 +1514,53 @@ canvas.palette-final {
 }
 
 /* Render, Auto-render, the samples and the progress line, on one row under the canvas.
-   The progress takes what the three controls leave, the way the Download row's estimate
-   does, so a stage name and a time left never push the button about. */
+   The activity takes what the controls leave, the way the Download row's estimate does, so
+   a stage name and a time left never push the button about. */
 .deep-go { gap: 0.4rem 0.9rem; }
-.deep-go .samples { display: inline-flex; gap: 0.25rem; flex: none; }
-.deep-go .deep-progress { flex: 1 1 12rem; min-width: 0; }
+.deep-go .deep-activity {
+  flex: 1 1 12rem;
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+/* The pass in progress, beside the button that stops it. The shallow row's bar, moved:
+   full at rest when the picture up is the frame, and one colour, because the words beside
+   it say which stage it is and a colour that also said so was a second thing to learn. */
+.deep-bar {
+  flex: none;
+  width: 4rem;
+  height: 0.35rem;
+  border-radius: 0.2rem;
+  overflow: hidden;
+  background: var(--well-rule);
+}
+.deep-bar-fill {
+  display: block;
+  height: 100%;
+  width: calc(var(--done, 0) * 100%);
+  border-radius: inherit;
+  background: var(--well-link);
+}
+.deep-bar { --done: 0; }
+
+/* Up whenever a worker is doing something, which is what tells a reader that a line which
+   has not changed for a second is still a live frame. */
+.deep-spinner {
+  flex: none;
+  width: 0.7rem;
+  height: 0.7rem;
+  border: 2px solid var(--well-rule);
+  border-top-color: var(--well-link);
+  border-radius: 50%;
+  animation: deep-spin 0.9s linear infinite;
+}
+.deep-spinner[hidden] { display: none; }
+@keyframes deep-spin { to { transform: rotate(1turn); } }
+@media (prefers-reduced-motion: reduce) {
+  .deep-spinner { animation-duration: 3s; }
+}
 
 /* Render is the one action this tab has, so it is drawn the way Start is on the Walk tab.
    Running, it is Cancel and carries its own progress as a fill, because a button that is
@@ -1538,24 +1587,17 @@ canvas.palette-final {
 .bar button.deep-render:disabled { opacity: 0.45; cursor: not-allowed; }
 
 .deep-progress {
-  position: relative;
+  min-width: 0;
   color: var(--well-ink-dim);
   font-size: 0.75rem;
-  padding-bottom: 0.3rem;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
-.deep-progress::after {
-  content: "";
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  height: 2px;
-  background: linear-gradient(
-    to right,
-    var(--well-link) 0 var(--done, 0%),
-    var(--well-rule) var(--done, 0%) 100%
-  );
-}
+/* The watchdog's sentence: a pool that has said nothing for ten seconds reads differently
+   from a slow one, in the ink the page already spends on a warning. */
+.deep-progress.is-stalled { color: var(--state-sharpening); }
 
 .deep-note {
   margin: 0.4rem 0 0;
@@ -1565,27 +1607,11 @@ canvas.palette-final {
 }
 .deep-note:empty { display: none; }
 
-/* The frame, spelled out. The centre is the one number on this page that is worth reading
-   digit by digit — it is what a deep link carries and what a double could not hold — so it
-   is monospaced, wrapped where it has to be, and never abbreviated. */
-.deep-frame {
-  flex: none;
-  margin: 0;
-  padding: 0.3rem var(--gutter) 0.6rem;
-  display: grid;
-  grid-template-columns: max-content 1fr;
-  gap: 0.15rem 0.6rem;
-  font-size: 0.75rem;
-}
-.deep-frame dt { color: var(--well-ink-dim); }
-.deep-frame dd { margin: 0; }
-.deep-frame code {
-  font-family: var(--mono);
-  font-size: 0.72rem;
-  color: var(--well-ink);
-  overflow-wrap: anywhere;
-}
-.deep-centre { white-space: pre-line; }
+/* Details' coordinates. A deep centre is up to sixty-four digits and is the one number on
+   the page worth reading digit by digit, so its box is wide enough to hold one whole rather
+   than scroll it — and wraps onto its own line where the row is narrower than that. */
+.bar.deep-coordinates { gap: 0.3rem 0.5rem; }
+.bar.deep-coordinates input.constant { width: min(100%, 31rem); }
 
 .deep-iterations, .deep-actions {
   flex: none;
