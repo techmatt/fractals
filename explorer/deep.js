@@ -619,9 +619,14 @@ export function mount(host) {
       ? `${running.text} · no progress for ${running.stalled} s`
       : running.text ?? "";
     els.progress.classList.toggle("is-stalled", silent);
+    // The sentence is the bar's hover title and the live region's words, never a line of
+    // its own *(deep_tab_controls_grid_ckpt144)*: nothing up only while a pass runs may
+    // move the controls under the picture.
+    els.bar.title = els.progress.textContent;
     els.bar.style.setProperty("--done", String(running.done ?? 0));
     els.bar.dataset.state = running.sharpening ? "sharpening" : "rendering";
-    els.spinner.hidden = !running.live;
+    // Idle is a class and not `hidden`, so the spinner keeps its place on the Render row.
+    els.spinner.classList.toggle("is-idle", !running.live);
   }
 
   /**
@@ -1881,19 +1886,27 @@ export function mount(host) {
     const cancel = cancellable();
     els.render.textContent = cancel ? "Cancel" : pending() || drawn === null ? "Render" : "Render again";
     els.render.classList.toggle("is-running", cancel);
-    els.render.title =
-      cancel && revertible() ? "Stop, and go back to the frame you left, as it was drawn." : cancel ? "Stop this render." : "";
+    // What Cancel will do is its hover title, and nowhere else *(deep_tab_controls_grid_ckpt144)*:
+    // the sentence that used to say it under the Render line was up only while a pass ran.
+    els.render.title = !cancel
+      ? ""
+      : revertible()
+        ? "Stop, and go back to the frame you left, as it was drawn, without drawing it again."
+        : !autoRender && committed && pending()
+          ? "This is still drawing the frame you left. Cancel stops it; tick Auto-render and a new frame takes over on its own."
+          : "Stop this render.";
     els.render.disabled = why !== null;
     els.progress.hidden = !busy;
     if (busy) {
       showActivity();
     } else {
-      els.spinner.hidden = true;
+      els.spinner.classList.add("is-idle");
       els.progress.classList.remove("is-stalled");
       // At rest the bar says whether the picture up is the frame: full when it is, empty
       // when nothing has been drawn or the reader has moved off it.
       els.bar.style.setProperty("--done", drawn !== null && !pending() ? "1" : "0");
       els.bar.dataset.state = drawn !== null && !pending() ? "final" : "rendering";
+      els.bar.title = "";
     }
     els.auto.checked = autoRender;
     els.cap.value = String(view.maxiter);
@@ -1934,18 +1947,11 @@ export function mount(host) {
     if (why !== null) {
       els.note.textContent = why;
     } else if (busy) {
-      // **The one thing a busy tab has to say**, and the reason it says it: a committed
-      // pass of a frame the reader has since left runs on for minutes showing the picture
-      // they moved off, and until this sentence existed the tab explained none of it. Only
-      // with auto-render off, because with it on the same state lasts the 350 ms before the
-      // settle timer takes the pass over — and it names Cancel rather than Render, because
-      // through a committed pass Render *is* Cancel.
-      els.note.textContent =
-        !autoRender && committed && pending()
-          ? "This is still drawing the frame you left. Cancel stops it; tick Auto-render and a new frame takes over on its own."
-          : revertible()
-            ? "Cancel goes back to the frame you left, without drawing it again."
-            : "";
+      // **What a busy tab has to say is Cancel's title now**, set above: a committed pass of
+      // a frame the reader has since left runs on for minutes showing the picture they moved
+      // off, and a pass that started on its own goes back rather than stopping. Both were a
+      // line here until a line that came and went with every pass moved the grid.
+      els.note.textContent = "";
     } else if (drawn === null) {
       els.note.textContent = "Nothing has been drawn yet. Render draws this frame.";
     } else if (pending()) {

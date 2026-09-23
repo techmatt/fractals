@@ -1222,7 +1222,9 @@ summary.section-head:focus-visible { outline: 2px solid var(--well-link); outlin
    press. The green is `--state-final`, the one the Download arrow already spends, and the
    `:hover` spelling keeps the glow up while the pointer is still resting on it. */
 .download .view-toggles button.is-armed,
-.download .view-toggles button.is-armed:hover {
+.download .view-toggles button.is-armed:hover,
+.deep-group .deep-actions button.is-armed,
+.deep-group .deep-actions button.is-armed:hover {
   border-color: var(--state-final);
   color: var(--state-final);
   box-shadow: 0 0 0 1px var(--state-final), 0 0 8px 1px color-mix(in srgb, var(--state-final) 60%, transparent);
@@ -1622,23 +1624,56 @@ canvas.palette-final {
   display: none;
 }
 
-/* And the row sits straight under Iterations, as one more row of the Render group
-   *(Matt, deep_tab_undo_and_layout_ckpt144)*: no heading of its own and the deep rows'
-   spacing, so the controls under the picture are a line shorter. The heading stays in the
-   document, because it is what names the row's group to a screen reader. */
-.viewer.is-deep .download-group > .section-head { display: none; }
-.viewer.is-deep .download-group { margin-top: calc(0.4rem - 0.6rem); }
+/* The line over the controls holds a whole line of text while it is empty, not the 1.2em
+   the shallow view gives it: the probe's *Raised the cap* lands there during a pass, and
+   the few pixels between the two moved the whole grid down and back. */
+.viewer.is-deep .status { min-height: 1lh; }
 
-/* Render, Auto-render, the samples and the progress line, on one row under the canvas.
-   The activity takes what the controls leave, the way the Download row's estimate does, so
-   a stage name and a time left never push the button about. */
+/* The control block is a two-by-two grid *(Matt, deep_tab_controls_grid_ckpt144)*: Render
+   and Navigation over Iterations and Download, each cell a heading and its row, the
+   shallow view's own section heading on all four. The Render group is `display: contents`,
+   so its three cells and the Download group are the grid's four items in document order,
+   and auto-placement lays them out. Everything else under the canvas runs the width of
+   both columns. The rows are the grid's, so a cell's heading lines up with the one beside
+   it.
+
+   **The columns are not equal.** Render and Iterations are short rows of fixed things, and
+   Navigation and Download are the long ones, so the left column is as wide as its content
+   and the right takes the rest: at an even split the Download row put its estimate on a
+   line of its own at 1600 wide. The left column's content cannot change width with state,
+   because Render, Render again and Cancel share one button width (below). Where the viewer
+   is narrower than 44rem there is no room for the two, and it is one column in document
+   order: Render, Navigation, Iterations, Download. */
+.viewer.is-deep { container-type: inline-size; }
+.viewer.is-deep .controls {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.6rem 1.6rem;
+  align-content: start;
+}
+@container (min-width: 44rem) {
+  .viewer.is-deep .controls { grid-template-columns: max-content minmax(0, 1fr); }
+}
+.viewer.is-deep .deep-go .deep-render { min-width: 7.5rem; }
+.viewer.is-deep .controls > * { grid-column: 1 / -1; }
+.viewer.is-deep .deep-group:not(.deep-under) { display: contents; }
+.viewer.is-deep .deep-cell,
+.viewer.is-deep .controls > .download-group { grid-column: auto; min-width: 0; }
+.viewer.is-deep .deep-under:not(:has(> :not(:empty):not([hidden]))) { display: none; }
+
+/* Render, Auto-render and the bar, on one row. What the pass is doing is the bar's hover
+   title, and the live region a screen reader hears is clipped out of the layout: the
+   stage name and the time left used to take a line of their own while a pass ran, which
+   moved the whole block down and back each time. The spinner keeps its place when it is
+   down, for the same reason. */
 .deep-go { gap: 0.4rem 0.9rem; }
-.deep-go .deep-activity {
-  flex: 1 1 12rem;
-  min-width: 0;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
+.deep-go .deep-progress {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
 
 /* The pass in progress, beside the button that stops it. The shallow row's bar, moved:
@@ -1678,7 +1713,7 @@ canvas.palette-final {
   border-radius: 50%;
   animation: deep-spin 0.9s linear infinite;
 }
-.deep-spinner[hidden] { display: none; }
+.deep-spinner.is-idle { visibility: hidden; }
 @keyframes deep-spin { to { transform: rotate(1turn); } }
 @media (prefers-reduced-motion: reduce) {
   .deep-spinner { animation-duration: 3s; }
@@ -1735,14 +1770,11 @@ canvas.palette-final {
 .bar.deep-coordinates { gap: 0.3rem 0.5rem; }
 .bar.deep-coordinates input.constant { width: min(100%, 31rem); }
 
-/* The rows under the Render line *(deep_caption_and_controls_right_ckpt141)*: the view
-   buttons, then Iterations, in the order the shallow view keeps its own rows. They sit
-   inside the Render group rather than in groups of their own, so they take the controls'
-   spacing by margin, and their buttons are the bar's own outline buttons, the shallow
-   row's look. */
-.deep-group .deep-actions { margin-top: 0.6rem; gap: 0.25rem; }
+/* Navigation's buttons are the bar's own outline buttons, the shallow row's look, and Box
+   (b) is lit while armed exactly as the shallow one is. */
+.deep-group .deep-actions { gap: 0.25rem; }
 .deep-group .deep-actions button { white-space: nowrap; }
-.deep-group .deep-iterations-head { margin-top: 0.6rem; }
+.deep-under .deep-note { margin: 0; }
 .deep-group .side-note { border-top: none; padding: 0.4rem 0 0; }
 .deep-iterations { gap: 0.4rem; }
 .deep-iterations input { width: 6.5rem; text-align: right; }

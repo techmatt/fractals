@@ -241,6 +241,9 @@ const renderState = document.getElementById("render-state");
  *  the box tool's own code is up here too — the tool paints with the mark and the walk's
  *  cells, and its button is the one piece of it that is furniture. */
 const boxButton = document.getElementById("view-box");
+/** The Deep tab's own Box (b), in its Navigation cell: the same tool on the same canvas,
+ *  so it is kept in step with the shallow one rather than being a second state. */
+const deepBoxButton = document.getElementById("deep-box");
 
 let renderer = null;
 let contract = null;
@@ -1100,8 +1103,10 @@ function cancelBox({ quiet = false } = {}) {
  *  armed, so the pointer says what a click will do. */
 function syncBox() {
   const armed = box !== null;
-  boxButton.setAttribute("aria-pressed", String(armed));
-  boxButton.classList.toggle("is-armed", armed);
+  for (const button of [boxButton, deepBoxButton]) {
+    button.setAttribute("aria-pressed", String(armed));
+    button.classList.toggle("is-armed", armed);
+  }
   canvas.classList.toggle("is-boxing", armed);
 }
 
@@ -4056,6 +4061,7 @@ function syncToggles() {
   // The tool zooms the viewer, and the Deep tab's viewer is the same canvas — so it is
   // live in both, and greyed only while a download owns the pool.
   boxButton.disabled = busy;
+  deepBoxButton.disabled = busy;
   if (busy) cancelBox({ quiet: true });
 }
 
@@ -4275,6 +4281,7 @@ function randomPhase() {
 // The box button arms the tool as `b` does *(walk_root_frame_and_box_armed_ckpt141)*: it wore
 // the key and the pressed state from the start, and nothing listened to it.
 boxButton.addEventListener("click", toggleBox);
+deepBoxButton.addEventListener("click", toggleBox);
 seatButton.addEventListener("click", resetToSeat);
 wholeButton.addEventListener("click", wholePlane);
 juliaButton.addEventListener("click", () => toggleJulia());

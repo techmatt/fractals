@@ -232,51 +232,56 @@
            pressing Render is watching the canvas, and the left side changes which view is
            up while this side works on the one that is. Shown only while that tab owns the
            canvas. -->
+      <!-- Four cells in a two-by-two grid with Download (Matt, deep_tab_controls_grid_ckpt144):
+           Render | Navigation over Iterations | Download, and one column in that order where
+           the viewer is too narrow for two. The section is `display: contents` in the grid, so
+           its cells are the grid's items; the tab's note and the minibrots are in a second
+           section after Download, under the whole grid, where the tiles have the width. -->
       <section class="control-group deep-group">
-        <div class="section-head"><h2 id="head-deep-render">Render</h2></div>
-        <div class="bar deep-go" role="group" aria-labelledby="head-deep-render">
-          <button type="button" class="deep-render" id="deep-render">Render</button>
-          <!-- The pass in progress, beside the button that cancels it. The Download row keeps
-               a price and no bar while this tab owns the canvas; a file render fills this one. -->
-          <span class="deep-bar" id="deep-bar" aria-hidden="true"><span class="deep-bar-fill"></span></span>
-          <span class="deep-activity">
-            <span class="deep-spinner" id="deep-spinner" aria-hidden="true" hidden></span>
+        <div class="deep-cell deep-cell-render">
+          <div class="section-head"><h2 id="head-deep-render">Render</h2></div>
+          <div class="bar deep-go" role="group" aria-labelledby="head-deep-render">
+            <button type="button" class="deep-render" id="deep-render">Render</button>
+            <span class="group">
+              <label for="deep-auto">Auto-render</label>
+              <input type="checkbox" id="deep-auto" class="flag" checked
+                     title="Draws each frame you move to at the width's own cap, without pressing Render.">
+            </span>
+            <!-- The pass in progress, beside the button that cancels it. What it is doing is the
+                 bar's hover title and the live region a screen reader hears, never a line of
+                 its own: nothing that is up only while a pass runs may move the grid. -->
+            <span class="deep-bar" id="deep-bar" aria-hidden="true"><span class="deep-bar-fill"></span></span>
+            <span class="deep-spinner is-idle" id="deep-spinner" aria-hidden="true"></span>
             <span class="deep-progress" id="deep-progress" role="status" aria-live="polite" hidden></span>
-          </span>
-          <span class="group">
-            <label for="deep-auto">Auto-render</label>
-            <input type="checkbox" id="deep-auto" class="flag" checked
-                   title="Draws each frame you move to at the width's own cap, without pressing Render.">
-          </span>
+          </div>
         </div>
-        <p class="deep-note" id="deep-note" role="status"></p>
 
-        <!-- The view buttons, in the row the shallow view keeps them on under Download, and
-             the minibrots they open straight under them, where the tiles have the width. -->
-        <div class="bar deep-actions" role="group" aria-label="This view">
-          <button type="button" id="deep-julia" aria-keyshortcuts="J">Julia at this c (j)</button>
-          <button type="button" id="deep-origin" hidden
-                  title="The frame widens to the square root of its width.">Same view at z = 0</button>
-          <button type="button" id="deep-minibrots"
-                  title="Largest first. Click one to go to it.">Nearby minibrots</button>
-          <button type="button" id="deep-save">Save</button>
-          <button type="button" id="deep-back">Back to the explorer</button>
+        <div class="deep-cell deep-cell-navigation">
+          <div class="section-head"><h2 id="head-deep-navigation">Navigation</h2></div>
+          <div class="bar deep-actions" role="group" aria-labelledby="head-deep-navigation">
+            <button type="button" id="deep-box" aria-keyshortcuts="B" aria-pressed="false">Box (b)</button>
+            <button type="button" id="deep-julia" aria-keyshortcuts="J">Julia at this c (j)</button>
+            <button type="button" id="deep-origin" hidden
+                    title="The frame widens to the square root of its width.">Same view at z = 0</button>
+            <button type="button" id="deep-minibrots"
+                    title="Largest first. Click one to go to it.">Nearby minibrots</button>
+            <button type="button" class="save-view" id="deep-save"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M6.5 3.5h11v17l-5.5-4.2-5.5 4.2z"/></svg><span class="save-label">Save</span></button>
+            <button type="button" id="deep-back">Back to the explorer</button>
+          </div>
         </div>
-        <div class="minibrots" id="deep-minibrot-list" hidden></div>
-        <p class="side-note" id="deep-minibrot-note" hidden></p>
 
         <!-- The arrows step the cap by 5,000 (Matt, deep_tab_undo_and_layout_ckpt144): the
              step's base is `min`, so it is 0 and the arrows land on round thousands; a typed
              cap is still read exactly, and the kernel's floor is `setCap`'s to hold. -->
-        <div class="section-head deep-iterations-head">
-          <h2 id="head-deep-iterations">Iterations</h2>
-        </div>
-        <div class="bar deep-iterations" role="group" aria-labelledby="head-deep-iterations">
-          <button type="button" id="deep-cap-down" title="Faster, and shallower.">Halve</button>
-          <input type="number" id="deep-cap" class="param" min="0" max="1000000" step="5000"
-                 aria-label="Iteration cap">
-          <button type="button" id="deep-cap-up" title="Slower, with more of the boundary in it.">Double</button>
-          <button type="button" id="deep-cap-policy">From the width</button>
+        <div class="deep-cell deep-cell-iterations">
+          <div class="section-head"><h2 id="head-deep-iterations">Iterations</h2></div>
+          <div class="bar deep-iterations" role="group" aria-labelledby="head-deep-iterations">
+            <button type="button" id="deep-cap-down" title="Faster, and shallower.">Halve</button>
+            <input type="number" id="deep-cap" class="param" min="0" max="1000000" step="5000"
+                   aria-label="Iteration cap">
+            <button type="button" id="deep-cap-up" title="Slower, with more of the boundary in it.">Double</button>
+            <button type="button" id="deep-cap-policy">From the width</button>
+          </div>
         </div>
       </section>
 
@@ -319,6 +324,14 @@
             </span>
           </span>
         </div>
+      </section>
+
+      <!-- Under the grid, the width of both columns: what the tab says about itself at rest,
+           and the minibrots Navigation opens. -->
+      <section class="control-group deep-group deep-under">
+        <p class="deep-note" id="deep-note" role="status"></p>
+        <div class="minibrots" id="deep-minibrot-list" hidden></div>
+        <p class="side-note" id="deep-minibrot-note" hidden></p>
       </section>
 
       <section class="control-group">

@@ -1447,6 +1447,22 @@ thousands, while a typed cap is still taken exactly and `setCap` holds the floor
 Download row drops its heading on this tab and sits directly under the Iterations row, one
 line shorter. The heading stays in the document as the row's accessible name.
 
+**And the block is a two-by-two grid** *(Matt, deep_tab_controls_grid_ckpt144)*: **Render**
+(Render or Cancel, Auto-render, the bar) and **Navigation** (Box (b), Julia at this c,
+Nearby minibrots, Save, Back to the explorer) over **Iterations** and **Download**, each
+cell the studio's own section heading over one row. The Render group is `display:
+contents`, so its three cells and the Download group are the grid's items in document
+order and `repeat(auto-fit, minmax(19rem, 1fr))` lays them out: two across where both
+columns get their minimum, and one column in that same order where they do not. The rows
+are the grid's, so the two headings on a row line up. Download's heading is back on this
+tab, because it is a cell's heading now rather than a row tacked onto another group. The
+tab's note at rest and the minibrots are a second section under the grid, both columns
+wide. **Nothing that is up only while a pass runs takes space**: the stage and time left
+are the bar's hover title (and still the live region's words, clipped out of the layout),
+what Cancel will do is Cancel's title, and the spinner keeps its place while it is down.
+Box (b) is a second button on the shallow tool, kept pressed and greyed in step with the
+shallow one, and Save wears the shallow Save's bookmark.
+
 The left panel keeps the tab's one sentence and, since
 deep_gallery_build_ckpt144, the folded gallery under it (*The gallery*, below).
 
@@ -1553,8 +1569,9 @@ reader is on updates its entry; a frame carried in from the viewer clears them a
 **One button, and what Cancel does follows from who started the pass.** A pass that started
 on its own after a gesture, with another frame held, is stopped by Cancel **and** the newest
 held frame that is not the one the reader is on — the frame the gesture left — is put back,
-at once, with no pass; the note under the line says *Cancel goes back to the frame you left,
-without drawing it again*, and the button's title says the same. A pass the reader commanded — Render, a link,
+at once, with no pass; the button's title says *Stop, and go back to the frame you left, as
+it was drawn, without drawing it again* (a note under the line said it too until
+deep_tab_controls_grid_ckpt144 took every pass-time line out of the layout). A pass the reader commanded — Render, a link,
 a step back — keeps today's Cancel, which stops it where it is: that frame was asked for.
 Two buttons were the alternative and were not taken: *Cancel* beside *Go back* is two words
 for what an artist reads as one intent, and the case that needs the revert is exactly the
