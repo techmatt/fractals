@@ -809,6 +809,29 @@ function tooDeep(width) {
 
 const WALL = "This is as deep as this renderer can zoom here.";
 
+/**
+ * Say why the view on the screen cannot be drawn, and whether that is the `f64` wall.
+ *
+ * **A frame past the wall says what the zoom stop says** *(profiling_pass_ckpt146)*. A
+ * gesture never gets this far — `tooDeep` refuses it first, with the short sentence and, on
+ * the two sets Deep draws, the way through — but a link or a saved picture past the wall
+ * arrives as a view, and it used to be refused by the module in its own words under a
+ * black canvas, with no offer. It is the same frame and the same answer. Anything else
+ * refused is said as the module says it.
+ */
+function sayRefused(said) {
+  const walled =
+    renderer !== null &&
+    !renderer.resolves(view.x.value, view.y.value, view.w.value, grid.width, grid.height);
+  if (walled && carryable() !== null) {
+    offeredAt = frameOf(view);
+    offerDeep();
+  } else {
+    say(walled ? WALL : said);
+  }
+  return walled;
+}
+
 /** The zoom stop's offer: the wall, and the way through it. */
 function offerDeep() {
   offer(
@@ -1409,7 +1432,7 @@ async function drawPass() {
   if (!shape.ok) {
     measure = null;
     stat("");
-    say(shape.why);
+    sayRefused(shape.why);
     showState("stopped");
     return;
   }
@@ -1653,10 +1676,12 @@ async function drawPass() {
     // modulate, which spends its base by rank already. The control keeps what was
     // asked for, so a reader can see what to change; the address bar keeps naming the
     // picture that is still on the screen, because a refused recipe is not a view.
-    say(String(error.message ?? error));
+    //
+    const walled = sayRefused(String(error.message ?? error));
     if (progressing) stat("");
-    // The line above is a sentence for a reader; the stack is for whoever has to find it.
-    console.error("draw failed", { state: renderState.dataset.state, view }, error);
+    // The line above is a sentence for a reader; the stack is for whoever has to find it —
+    // and the wall is not a failure anybody has to find.
+    if (!walled) console.error("draw failed", { state: renderState.dataset.state, view }, error);
     if (pass === drawing) showState("stopped");
   }
 }
