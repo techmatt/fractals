@@ -76,15 +76,13 @@ The naming rule above and the italic rule below are the two that touch markup an
 filenames, so they are stated here where a session meets them. `writing-guidance.md` on
 the synced drive is the authority for everything else the prose is held to.
 
-- **A term's first mention is italic.** Where the article introduces a piece of its own
-  vocabulary — defines it, or first puts it to work — that mention is wrapped in `<i>`:
-  *pipeline*, *location*, *escape time*, *palette*, a mode name. This is Wikipedia's
-  words-as-words style; never bold, never a class. Once for the whole article in reading
-  order, not once per page — a term italicized in Overview is plain everywhere after.
-  `<em>` keeps its own job, real emphasis, which is why the two are spelled differently.
-  Sparingly: a page speckled with italics has stopped marking anything. Figure captions
-  sit outside the count — a caption may use a term the prose has not reached yet, and the
-  prose still gets the italic when it does.
+- **No italics for emphasis or to introduce a term** *(Matt, 2026-09-24, no_italics_ckpt147,
+  replacing the rule that italicized a term's first mention)*. He finds both patronizing,
+  the words-as-words kind most of all. Italics are kept only for math variables, titles of
+  works and quoted material, and the site had none of those set in italics when the rule
+  landed. That covers prose, captions, the explorer's text and the prose masters alike: a
+  master spells none of it with `*`. Anything else keeps an italic only where its
+  sentence genuinely misreads without one, and a prompt that keeps one names it.
 
 ## Where prose comes from
 

@@ -153,7 +153,7 @@
     <p>Three modes keep smooth's recipe, one number per orbit and one continuous field, but
     measure some property of the path instead of the clock.</p>
 
-    <p><i>Triangle-inequality average</i> (tia) checks, at every step, where the orbit
+    <p>Triangle-inequality average (tia) checks, at every step, where the orbit
     actually landed inside the range it could possibly have landed in. Before the step, the
     triangle inequality brackets the next distance from the origin between a lowest and
     highest possible value; the mode scores the real landing as a fraction between those
@@ -166,7 +166,7 @@
         <figcaption>Two locations, each drawn twice: smooth on the left, tia on the right, in that location's own palette. Because the triangle-inequality score can swing fully between one step and the next, the field bands far more finely than escape time, and the same frame that reads as contour lines comes back engraved.</figcaption>
       </figure>
 
-    <p><i>Stripe coloring</i> works from the angles of the orbit's points. Each orbit point is
+    <p>Stripe coloring works from the angles of the orbit's points. Each orbit point is
     a complex number and so has an angle, and the mode averages a wave over those angles:
     one-half plus one-half the sine of six times the angle, six being the stripe count the
     pipeline draws with. The wave's crests show up as flowing bands laid along the fractal's
@@ -180,7 +180,7 @@
         <figcaption>Smooth on the left, stripe on the right, at two locations. Averaging a wave over the angles of the orbit's points lays flowing bands along the structure the smooth render draws as a plain gradient.</figcaption>
       </figure>
 
-    <p><i>Curvature coloring</i> measures how sharply the path turns: at each step, the
+    <p>Curvature coloring measures how sharply the path turns: at each step, the
     unsigned angle between the new step and the one before it, averaged along the orbit.
     Orbits that turn differently separate cleanly in the image even when they escape at
     nearly the same moment, which is a distinction escape time makes nothing of, and one
@@ -193,12 +193,12 @@
 
     <h2 id="orbit-traps">Orbit traps</h2>
 
-    <p>An <i>orbit trap</i> places a fixed shape in the complex plane and asks each orbit how
+    <p>An orbit trap places a fixed shape in the complex plane and asks each orbit how
     close it ever came to the shape. No trap is drawn as a mode of its own in the roster
     below; traps appear in two roles, as a texture laid over a smooth rendering in the
     composites, and painted directly in the last family on the page. Two shapes carry that
-    work. The <i>cross trap</i> is the distance to the two coordinate axes, crossing at the
-    origin. The <i>Gaussian-integer trap</i> traps against the grid of points with
+    work. The cross trap is the distance to the two coordinate axes, crossing at the
+    origin. The Gaussian-integer trap traps against the grid of points with
     whole-number real and imaginary parts, so it is not one shape at a center at all: a
     single trap cell repeats across the entire plane, and the stamped echoes tile instead of
     radiating, a texture with the granularity of graph paper crumpled along the fractal's
@@ -212,10 +212,10 @@
     base and a texture, normalize each, and blend them with any of the standard
     picture-blending operators (multiply, screen, additive, and their relatives). Five of the
     modes the pipeline draws are built this way, all on a smooth base. Four of them blend with
-    screen at 85% strength. <i>smooth_stripe</i> and <i>smooth_curvature</i> lay their
-    namesake fields over the smooth rendering. <i>smooth_angle_min</i> lays over the angle of
+    screen at 85% strength. smooth_stripe and smooth_curvature lay their
+    namesake fields over the smooth rendering. smooth_angle_min lays over the angle of
     the iterate at the orbit's closest approach to the Gaussian-integer trap.
-    <i>smooth_mean_angle</i> reads something less obvious: it takes the orbit's nearest, mean
+    smooth_mean_angle reads something less obvious: it takes the orbit's nearest, mean
     and farthest distances to that same lattice and turns the imbalance among those three
     into an angle, so what it draws is how lopsided the orbit's approaches were rather than
     which direction they came from. The 85% is a taste constant with a reason: at full
@@ -242,7 +242,7 @@
         <figcaption>Smooth on the left, smooth_angle_min on the right: the direction of the trap at the orbit's closest approach, screened over the same smooth base. The base is unchanged underneath, because the texture is a second reading of the same orbits rather than a second picture.</figcaption>
       </figure>
 
-    <p>The fifth, <i>threads</i>, is the family's extremist. Its texture accumulates the cross
+    <p>The fifth, threads, is the family's extremist. Its texture accumulates the cross
     trap over the whole orbit: every pass near the axes contributes, weighted by a narrow bell
     around the trap, so a pixel whose orbit grazed the axes a dozen times reads differently
     from one that grazed once. The result is laid additively over the smooth base at half
@@ -259,7 +259,7 @@
 
     <h2 id="the-itinerary-mode">The itinerary mode</h2>
 
-    <p>The <i>itinerary</i> mode comes from a classical idea in the study of dynamics: instead
+    <p>The itinerary mode comes from a classical idea in the study of dynamics: instead
     of asking when an orbit escapes, ask where it goes on the way. Cut the plane into four
     equal angular sectors around the origin, follow the orbit, and write down the sequence of
     sectors it visits, its route recorded coarsely, then read that sequence as digits after
@@ -282,7 +282,7 @@
 
     <h2 id="direct-traps">Direct traps</h2>
 
-    <p>The last family never makes a field at all. A <i>direct trap</i> watches each orbit as
+    <p>The last family never makes a field at all. A direct trap watches each orbit as
     it iterates, and every time an iterate falls within a threshold of the trap shape, it
     takes a sample from the palette and paints it into the pixel then and there. How close the
     iterate came decides both where in the gradient the sample is taken and how much of it
@@ -367,7 +367,7 @@
     and a few come up often enough to deserve a name and a pointer:</p>
 
     <ul>
-      <li><i>Distance estimation</i> tracks, alongside each orbit, how sensitively its
+      <li>Distance estimation tracks, alongside each orbit, how sensitively its
       endpoint responds to nudging the pixel, and converts that into an estimate of the
       pixel's
       <a href="https://en.wikipedia.org/wiki/Plotting_algorithms_for_the_Mandelbrot_set#Exterior_distance_estimation">distance
@@ -376,7 +376,7 @@
       implements this one and will draw it on request; it is simply not among the modes the
       wallpaper search draws from.</li>
 
-      <li><i>Normal-map lighting</i> treats a field as terrain: read its slope, convert the
+      <li>Normal-map lighting treats a field as terrain: read its slope, convert the
       slope to a surface direction, and light the fractal as relief carved in material, the
       same <a href="https://en.wikipedia.org/wiki/Normal_mapping">normal mapping</a> trick
       games use to shade detailed surfaces cheaply. The engine leaves this one out on purpose
@@ -384,20 +384,20 @@
       instead of as a field, and the picture's own structure gets replaced by a lighting
       model's.</li>
 
-      <li>The <i><a href="https://en.wikipedia.org/wiki/Buddhabrot">Buddhabrot</a></i>
+      <li>The <a href="https://en.wikipedia.org/wiki/Buddhabrot">Buddhabrot</a>
       abandons per-pixel coloring entirely: it follows the full orbits of millions of
       escaping points and brightens every pixel each orbit passes through, building a glowing
       density image of where the dynamics actually travel, something like an X-ray of the
       Mandelbrot set.</li>
 
-      <li><i><a href="https://en.wikipedia.org/wiki/Plotting_algorithms_for_the_Mandelbrot_set#Histogram_coloring">Histogram
-      coloring</a></i> maps field values by how often each value occurs rather than by its raw
+      <li><a href="https://en.wikipedia.org/wiki/Plotting_algorithms_for_the_Mandelbrot_set#Histogram_coloring">Histogram
+      coloring</a> maps field values by how often each value occurs rather than by its raw
       size, so every color gets used in proportion to how much of the image wants it. It
       solves the same squeezed-range problem as the percentile stretch from
       <a href="rendering-fundamentals.html">rendering fundamentals</a>, but reads the whole
       distribution rather than two points on it.</li>
 
-      <li><i><a href="https://en.wikipedia.org/wiki/Fractal_flame">Fractal flames</a></i>
+      <li><a href="https://en.wikipedia.org/wiki/Fractal_flame">Fractal flames</a>
       leave escape-time fractals altogether: they iterate a system of nonlinear functions and
       accumulate the wandering point's path into a log-scaled density image, colored by which
       functions the path took, a different mathematical object with its own dedicated

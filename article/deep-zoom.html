@@ -161,7 +161,7 @@
     A frame that zooms into the copy's neighborhood sees more than that. It finds the copy's own seahorse valleys and spirals laid over the structure it was
     already in, so a region that looked smooth from further out fills with filigree. Close to
     a copy, that filigree often arranges into what look like whole Julia sets, the
-    <i>embedded Julia sets</i> that deep-zoom artists steer toward. The
+    embedded Julia sets that deep-zoom artists steer toward. The
     figure below follows one descent of this kind, six steps down a chain of components
     nested one inside the next. Each step frames the next component in the chain, and the
     last frame is about a billionth of the complex plane wide.</p>
@@ -270,7 +270,7 @@
     <h2 id="how-a-deep-frame-is-computed">How a deep frame is computed</h2>
 
     <p>The deep tab in the <a href="../explorer/index.html?panel=deep">fractal explorer</a>
-    computes one orbit at high precision, the <i>reference orbit</i>, for the center of the
+    computes one orbit at high precision, the reference orbit, for the center of the
     frame, using fixed-point arithmetic with as many bits as the frame's width
     requires. Every pixel then iterates only its small offset from that orbit. Write a
     pixel's orbit as z<sub>n</sub> = Z<sub>n</sub> + δ<sub>n</sub>, where Z<sub>n</sub> is
@@ -288,7 +288,7 @@
     <p>The reference orbit is only a good anchor while a pixel's orbit stays near it. When
     the full value Z<sub>n</sub> + δ<sub>n</sub> passes closer to zero than δ<sub>n</sub>
     itself, the offset has become the larger quantity and precision starts to drain away.
-    The fix used here is <i>rebasing</i>, due to
+    The fix used here is rebasing, due to
     <a href="https://fractalforums.org/fractal-mathematics-and-new-theories/28/another-solution-to-perturbation-glitches/4360">Zhuoran
     on fractalforums.org</a>. At that step the pixel takes its whole current value as a new
     offset and restarts from the beginning of the same reference orbit. With rebasing, one

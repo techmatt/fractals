@@ -129,7 +129,7 @@
     renders of the same location, because the thing being rated is the geometry. The question
     is not "is this picture good as rendered" but "could this place make a good wallpaper
     across the many rendering modes and palettes available to it." Those ratings are the raw
-    material for the <i>location judge</i>, a small neural network trained to predict the same
+    material for the location judge, a small neural network trained to predict the same
     scale (see <a href="training-judges.html">training judges</a>); here are a few examples
     from each category:</p>
 
@@ -280,9 +280,9 @@
 
     <p>Escape-time sets have a wonderful property: they contain infinitely many miniature
     copies of themselves, at arbitrarily small scales. For the Mandelbrot set we call these
-    copies <i>minibrots</i>, and the multibrot parameter planes carry analogous copies of their
+    copies minibrots, and the multibrot parameter planes carry analogous copies of their
     own. Two facts make them special to a search. Each copy has a distinguished center, its
-    <i>nucleus</i>, a point whose orbit repeats in a perfect cycle. That makes the nucleus the
+    nucleus, a point whose orbit repeats in a perfect cycle. That makes the nucleus the
     root of an equation
     <a href="https://en.wikipedia.org/wiki/Newton%27s_method">Newton's method</a> can solve, so
     a minibrot is not just a shape but an addressable coordinate at a known scale.</p>
@@ -303,7 +303,7 @@
     out is an exact center, together with an estimate of the copy's characteristic scale; how
     wide to make the frame around it is a separate question, answered later.</p>
 
-    <p>I rate the filament and spiral structure in the halo <em>around</em> a copy highly, more
+    <p>I rate the filament and spiral structure in the halo around a copy highly, more
     often than the copy's own interior, so minibrots tend to sit near locations worth
     framing.</p>
 
@@ -325,7 +325,7 @@
     <h2 id="the-walk">The walk</h2>
 
     <p>Each fractal family gets its own walk, and a walk is not one path but a growing forest
-    of frames. Its <i>roots</i> are starting frames, and where they come from depends on the
+    of frames. Its roots are starting frames, and where they come from depends on the
     family. The parameter planes (the Mandelbrot set and its multibrot cousins) start from
     stored seed views derived from solved nuclei, plus each plane's home view. The degree-2
     Julia family and the parameterized phoenix families have tracked pools of constants,
@@ -340,7 +340,7 @@
     fresh roots are still worth their cost, because they are what opens territory nobody has
     looked at yet.</p>
 
-    <p>From those roots the walk grows trees. The <i>frontier</i> is a priority queue of
+    <p>From those roots the walk grows trees. The frontier is a priority queue of
     frames; the walk repeatedly takes the most promising one it knows about and expands it.
     (Every frame shares the project's fixed aspect ratio, which is why a center and a width
     fully specify one.) One expansion runs in five stages.</p>
@@ -352,7 +352,7 @@
     Nothing is rendered twice.</p>
 
     <p><strong>Propose children.</strong> Four candidate child frames are drawn inside the
-    parent, each zoomed to between 35% and 50% of its width. Most are pointed at <i>foci</i>:
+    parent, each zoomed to between 35% and 50% of its width. Most are pointed at foci:
     blur the smooth field at several radii and keep the peaks that survive every blur. A peak
     that persists across scales is spatially coherent structure rather than one bright pixel,
     and the survivors are kept spaced apart so the four candidates don't pile onto a single
@@ -393,9 +393,9 @@
     <p><strong>Score.</strong> The judge scores the rendering the gates just examined, always
     in the same neutral palette, so it compares geometry and never coloring. It returns the
     probability that the view would be rated at least a 3 on the four-point scale above. Two
-    cuts act on that number. Above the <i>admission bar</i> the frame is <i>admitted</i>: recorded as a
-    find and placed on the frontier. Between the two bars it is <i>expandable</i>, a stepping
-    stone the walk may explore through but never a find. Below the <i>expansion bar</i> it is refused. The
+    cuts act on that number. Above the admission bar the frame is admitted: recorded as a
+    find and placed on the frontier. Between the two bars it is expandable, a stepping
+    stone the walk may explore through but never a find. Below the expansion bar it is refused. The
     heights of those bars are operating policy on one model's score scale rather than
     calibrated aesthetic constants: when the judge was last retrained, they were restated to
     preserve the volume of frames admitted and refused, not reinterpreted as new probabilities.
@@ -420,7 +420,7 @@
     one, only reorder the queue and decide each candidate's fate. Where the camera can go is
     decided entirely by the geometric proposal rules above. Elsewhere in the pipeline the same
     judge does get asked to choose among framings that have already been generated, which is a
-    different job. What admission is <em>for</em> comes later: admitted locations are the
+    different job. What admission is for comes later: admitted locations are the
     standing stock that rendering and selection draw from
     (<a href="finding-good-wallpapers.html">finding good wallpapers</a>,
     <a href="gallery-curation.html">gallery curation</a>).</p>
@@ -445,11 +445,11 @@
     list of great seed locations. It failed: locations found that way were almost universally
     bad. The complex plane holds unimaginably many minibrots, and nearly all of them turn out
     to sit in dull neighborhoods. What worked instead was the opposite direction: find
-    minibrots <em>near views the walk already likes</em>, and use them to recompose the camera.
+    minibrots near views the walk already likes, and use them to recompose the camera.
     A reframing inherits the quality of whatever triggered it, which is exactly why
     nearby-minibrots works and cold enumeration does not.</p>
 
-    <p>That idea is packaged as three <i>reframing operators</i>, each triggered when a frame
+    <p>That idea is packaged as three reframing operators, each triggered when a frame
     the walk has chosen to keep exploring (admitted or expandable) shows signs of a minibrot.
     Each is easiest to see in the figure below.</p>
 
@@ -493,7 +493,7 @@
     <a href="escape-time-fractals.html">escape-time fractals</a>, a Julia set inherits the
     character of where its c sits. The higher-degree Julia families are the ones that need
     this, having no tracked pool of their own: the center of an admitted degree-d plane
-    location becomes the fixed c of a degree-d Julia root. That is the <i>twin channel</i>. It
+    location becomes the fixed c of a degree-d Julia root. That is the twin channel. It
     is primed from locations already on the books and can also take new plane admissions during
     the run that produces them. Degree-2 Julia sits out, because it already has a separately
     screened pool.</p>
@@ -562,7 +562,7 @@
     left in double precision below it. Pushing the same descent deeper would be easy
     engineering, and the reason not to is economic as much as numerical: the scales below that
     minimum are better reached by starting from a precisely solved nucleus than by spending a
-    shallow walk's budget traversing everything above them. Rendering <em>past</em> the point
+    shallow walk's budget traversing everything above them. Rendering past the point
     where double precision does fail takes genuinely different machinery, and that story has
     its own page, <a href="deep-zoom.html">deep zoom</a>. Second, an ordinary root that has
     been expanded twelve times retires, so no root monopolizes a run, while the pinned plane

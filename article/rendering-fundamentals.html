@@ -96,7 +96,7 @@
 
     <p>To convert the discrete escape time into a continuous one, start from what the
     integer count discards. It records that the orbit crossed the bailout radius
-    <em>during</em> step 40, not whether it barely crossed or shot far past, which is
+    during step 40, not whether it barely crossed or shot far past, which is
     exactly the missing fractional part. And that fraction is recoverable from the orbit's
     final value. Once |z| is large the leading power dominates the update, so each further
     step roughly raises |z| to the degree. That multiplies log |z| by the degree, and
@@ -122,14 +122,14 @@
     <p>One practical wrinkle: the formula is only accurate when the orbit has traveled well
     past the bailout circle before the loop stops, so the engine tests escape against a
     radius far larger than the mathematical minimum, which for a degree-d family is 2
-    raised to the power 1/(d − 1). That radius is enough to <em>decide</em> escape;
+    raised to the power 1/(d − 1). That radius is enough to decide escape;
     measuring it smoothly wants much more room, and the engine uses 2<sup>16</sup>. The
     angle-reading modes need the same headroom for a second reason: they assume the orbit's
     last value is dominated by the recurrence rather than by the constant.</p>
 
     <p>Rendered this way, the terraces melt into continuous ramps. Each sample now carries
     one continuously varying number, and the two-dimensional array of those numbers is a
-    floating-point <i>field</i>. Turning a field into colors is a separate, later decision,
+    floating-point field. Turning a field into colors is a separate, later decision,
     which is why the same field can be recolored without recomputing a single orbit.
     <a href="rendering-modes.html">Rendering modes</a> introduces other fields measured from
     the same orbits, along with several modes that never reduce an orbit to a single number
@@ -143,8 +143,8 @@
     <h2 id="iteration-caps">Iteration caps</h2>
 
     <p>A finite renderer cannot wait forever to tell a bounded orbit from one that escapes
-    very late. So every renderer picks a <i>cap</i>: iterate each orbit at most N steps, and
-    treat any orbit still bounded at N as <i>interior</i> for that render, painted with the
+    very late. So every renderer picks a cap: iterate each orbit at most N steps, and
+    treat any orbit still bounded at N as interior for that render, painted with the
     flat interior tone. Reaching the cap is not proof that the orbit is bounded; it is where
     the renderer stops asking.</p>
 
@@ -195,7 +195,7 @@
     own subsamples ignores everything just outside the pixel, so a filament crossing a pixel
     boundary contributes to one side and not the other, and that aliases too. The engine
     reduces with a Lanczos-3 filter scaled to the reduction, which reaches three
-    <em>output</em> pixels either way rather than three source samples, and it filters in
+    output pixels either way rather than three source samples, and it filters in
     linear light and converts to 8-bit color only at the very end, because averaging
     gamma-encoded values darkens every edge in the picture. The production setting is s = 4,
     so sixteen orbits stand behind each finished pixel. Orbit work grows with
@@ -246,7 +246,7 @@
       </figure>
 
     <p>This project keeps repetition but removes the guesswork underneath it. Before any
-    color exists, the field is normalized by a <i>percentile stretch</i>: the 0.5th and
+    color exists, the field is normalized by a percentile stretch: the 0.5th and
     99.5th percentiles of the frame's own finite values become the two ends of the working
     range, and the half a percent past each end is clipped flat. It is the automatic cousin
     of dragging the levels sliders in a photo editor, except that it reads the distribution
@@ -271,7 +271,7 @@
     rather than integer counts, with interior samples held separately; percentile-stretch
     the finite values against their own distribution; map a palette across the result; and
     reduce the supersampled colors to the finished size with the linear-light Lanczos
-    filter. What this produces is the project's <i>smooth</i> rendering, the clean classic
+    filter. What this produces is the project's smooth rendering, the clean classic
     look of these fractals, and it is one style among several.
     <a href="rendering-modes.html">Rendering modes</a> changes what gets measured from each
     orbit, or how those measurements are colored, mostly reusing this same machinery, and

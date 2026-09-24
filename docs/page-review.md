@@ -488,8 +488,8 @@ says** rather than how it says it, and that neither of those two files carries.
 - **No page states a count of modes.** The roster is whatever the scoreboard lists; three
   pages once carried three different counts, which is what a number typed into prose does.
 - **A cut's two sides are `keeper` and `junk`**, wherever a page names them.
-- **`partition` is defined once, on Training judges**, where it takes its italic; every
-  later page uses the word plain. The family/partition distinction itself is
+- **`partition` is defined once, on Training judges**, and every later page uses the word
+  without defining it again. The family/partition distinction itself is
   `writing-guidance.md`'s.
 - **Numbers go in at their current values, and nothing schedules a refresh.** A corpus count
   or a scoreboard reading is written as it stands. There is no number-upkeep prompt and

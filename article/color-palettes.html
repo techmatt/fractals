@@ -72,7 +72,7 @@
     array; a composite or a direct trap has no single field to keep and pays for a whole
     render each time. The pipeline chooses each location's palettes with a trained palette
     judge, and it asks the question on the cheap half deliberately: the 32 candidates it
-    ranks are always recolorings of that location's <i>smooth</i> field, whatever mode the
+    ranks are always recolorings of that location's smooth field, whatever mode the
     wallpaper is eventually drawn in. One iteration pass per location instead of
     thirty-two, and the judge is shown the kind of picture it was trained on; the palette it
     picks then colors whatever mode the attempt actually draws.</p>
@@ -82,17 +82,17 @@
         <figcaption>Three locations, three palettes. Each row is one stored smooth field recolored down the columns, and the strip above a column is the palette that column is drawn in.</figcaption>
       </figure>
 
-    <p>A palette is a short list of <i>stops</i>: positions from 0 to 1, each with a color.
+    <p>A palette is a short list of stops: positions from 0 to 1, each with a color.
     The engine fills in between the stops by linear interpolation in
     <a href="https://en.wikipedia.org/wiki/Oklab_color_space">OKLab</a> and bakes the result
     into a table of 4,096 colors, which a render reads through the recipe below. OKLab is a
     color space arranged so that distance in its coordinates roughly tracks how different
     two colors look, which is what makes a blend through it cleaner than the same blend in
     RGB: blue to yellow in ordinary RGB passes through a dull gray-brown, because the
-    midpoint of the coordinates is not the midpoint of what you see. A <i>cyclic</i> palette
+    midpoint of the coordinates is not the midpoint of what you see. A cyclic palette
     ends with the color it began with, so when a render sweeps the table more than once
-    there is no seam where it starts again. A <i>sequential</i> palette has two different
-    ends, and repeating one slams the last color against the first. <i>Folding</i> is the
+    there is no seam where it starts again. A sequential palette has two different
+    ends, and repeating one slams the last color against the first. Folding is the
     fix: the palette is baked as an out-and-back, forward and then backward, so it meets
     itself. Folding bakes a different table rather than reading the same one differently,
     and it is not a choice a render makes: the library records each palette as cyclic or
@@ -108,8 +108,8 @@
     those set the standard I wanted the rest built to: a wide range of lightness; darks and
     lights that still carry a hue; a bright band that reads as light; and at least one of
     pure-hue contrast, a big warm-to-cool swing, or several hues held in balance. The rest
-    were written by Claude, in tracked batches, from a prompt I wrote. The <i>palette
-    prompt</i> states those properties as rules, names a mood family (fire-ice, jewel-earth,
+    were written by Claude, in tracked batches, from a prompt I wrote. The palette
+    prompt states those properties as rules, names a mood family (fire-ice, jewel-earth,
     oceanic, and so on), gives each batch a handful of structural templates to spread
     across, and ends with a schema. A request looks like: twenty palettes, fire-ice,
     moderate complexity, bright on dark. A small script checks the mechanical rules before
@@ -184,7 +184,7 @@
     <p>The counterweight is in how a candidate set is built. Each palette gets a descriptor:
     the ramp as a render spends it, folded if sequential, sampled at 32 evenly spaced colors
     and written in OKLab, which is 96 numbers per palette. The set for a location is a
-    <i>neighborhood</i> in that space: one anchor palette and its 31 nearest neighbors, so
+    neighborhood in that space: one anchor palette and its 31 nearest neighbors, so
     the judge always chooses among palettes that belong together rather than among 32
     unrelated ones. Palettes near enough to be the same choice are grouped, and a run stands
     one member of each; that grouping is cut on a second and more careful distance than the

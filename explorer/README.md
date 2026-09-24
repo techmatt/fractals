@@ -1567,8 +1567,8 @@ explorer_nav_layout_ckpt145.
 **The sentence is Matt's** *(explorer_deep_polish_ckpt142, 2026-09-22)*: *Zoom far past
 where ordinary rendering breaks down, into the Mandelbrot set, its higher-degree cousins and
 their Julia sets. Deep frames take longer to draw and are colored smooth only.* Find
-minibrots *finds tiny copies of the set worth diving into.* The button's name is set in
-italics and is the button's own label, checked against `index.html` and `deep.js`'s
+minibrots *finds tiny copies of the set worth diving into.* The button's name is the
+button's own label, set plain since no_italics_ckpt147 took italics off the site, checked against `index.html` and `deep.js`'s
 `syncControls`, which is why the sentence said *Nearby minibrots* until the button was
 renamed (explorer_shallow_deep_parity_ckpt144). His draft spelled *coloured*; the page says *colored*, by the site's
 American-spelling rule.
