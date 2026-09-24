@@ -8,10 +8,10 @@ Python. A build is done here and reviewed in a diff.
 ```
 python -m builder build     regenerate gallery pages, the gallery index, thumbnails,
                             and the contents rail every page carries
-python -m builder check     nineteen named checks: links, page sync, contents, figure
+python -m builder check     twenty named checks: links, page sync, contents, figure
                             blocks, seat panels, landings, one location to one figure,
                             explorer links, the atlas record, each atlas link against
-                            its picture, the explorer's bake, assets,
+                            its picture, the explorer's bake, embedded links, assets,
                             the palette record, prose, the editorial pointer, theme,
                             banned vocabulary, em-dashes, line endings
 python -m builder figure ID print a figure's markup block, to paste into an article page
@@ -71,7 +71,8 @@ Install what it needs with `pip install -r builder/requirements.txt`.
 nothing else — that is the whole contract, because CI clones this repository alone and
 a check that cannot run there is a check nobody runs. Two things it will use if they are
 here and does not need: the wallpaper project's checkout, which is what the `library`
-check, the `bake` check, the `seats` check and the source-key half of `figures` want; and Pillow, which is
+check, the `bake` check, the `seats` check, the source-key half of `figures` and the
+next-door half of `stamps` want; and Pillow, which is
 what lets `figures` and `assets` verify pixel sizes. Missing either is a **named skip** —
 the check line says `skipped` rather than `ok`, and the exit summary counts them — never a
 failure and never a silent pass. `check` once built the palette library page straight off
@@ -176,6 +177,27 @@ the tone curve the run acted with, with the permalink for each emitted by the co
 itself through `builder/emit.mjs`. Where the link is not quite the picture the row says so
 in a `gap` clause: a curve the run recorded as a fact and not as coefficients, a curve a
 mode's identity fixes, an iteration cap the depth policy answers differently.
+
+## No full-size wallpaper is written here, and the ones that are carry their link
+
+*(embedded_links_ckpt145, 2026-09-23.)* Every full-size wallpaper this project writes
+carries, in its metadata, the explorer link that draws it again — `explorer/README.md`'s
+*And the same link, absolute, where ordinary tools look* has the fields and why. Two writers
+exist, and **the builder is neither**: everything it writes is web resolution, landed
+through `images.land` at `WEB_RES_MAX_WIDTH` or smaller (figures, gallery and atlas tiles,
+the Deep gallery's thumbnails), and the deep gallery's `render` stage draws 640×360 work
+files under `artifacts/`. If a builder step ever writes a wallpaper a reader downloads,
+`images.land` is where the stamp goes, and `explorer/stamp.js`'s layout is what it writes.
+
+The two writers are the explorer's downloads and the release writer next door
+(`curation/release.py`'s `render_task`, which every leg rendering at release geometry
+comes through, the phase-3 2560×1440 ss4 pass included). The second spells the permalink
+in Python, which `emit.mjs` says should not happen, so `check`'s **stamps** holds it to the
+contract: every seat of the general collection spelled both ways to the same string, and
+one PNG and one JPG embedded both ways to the same bytes. The base both use is `SITE_URL`
+with `explorer/` after it, and the hosting choice is not made: moving it is one line in
+`pages.py`, one in `explorer/stamp.js` and one in `curation/explorer_link.py`, and `stamps`
+fails until all three agree.
 
 ## What is staged, and goes in at deploy
 

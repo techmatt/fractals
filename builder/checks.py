@@ -121,6 +121,13 @@ was raise, and every check after it went unrun.
   carry is a picture the explorer cannot open. Only where the checkout is configured — a
   clone has no library to bake from, and the modules it serves are the committed ones
   either way.
+- **stamps** — the link a full-size picture carries in its metadata is the contract's
+  link, whichever repository wrote the file. Everywhere: `stamp.js`'s `EXPLORER_URL` is
+  `pages.SITE_URL` with `explorer/` after it. Where the checkout is configured: the
+  wallpaper project's release writer spells every seat of the general collection exactly
+  as `emit.mjs` does, byte for byte, and embeds a PNG and a JPEG into exactly the bytes
+  `stamp.js` does, pixels unmoved. `stamps.py` says why a second author of the contract
+  exists at all. About half a minute, most of it reading the thousand recipes.
 """
 
 import json
@@ -148,6 +155,7 @@ from . import (
     records,
     renders,
     sections,
+    stamps,
     theme,
     vocabulary,
 )
@@ -1087,6 +1095,14 @@ def skips() -> tuple[Skip, ...]:
                 whole=True,
             )
         )
+        # Half: the base half reads two files of this repository.
+        found.append(
+            Skip(
+                "stamps",
+                "the release writer's links and bytes against the explorer's own",
+                NO_CHECKOUT,
+            )
+        )
     if not images.available():
         found.append(Skip("figures", "each figure's size on disk", NO_PILLOW))
         found.append(Skip("assets", "each image's and each thumbnail's size on disk", NO_PILLOW))
@@ -1149,6 +1165,7 @@ def run_all() -> Report:
             "atlas": atlas_module.problems(),
             "agreement": agreement.problems(),
             "bake": check_bake(),
+            "stamps": stamps.problems(with_checkout=figures.stores_available()),
             # Every gallery here, staged or not: a staged record has no page, and its
             # files are held to it exactly as any other gallery's are once they are landed.
             "assets": check_assets(galleries.load_every()),

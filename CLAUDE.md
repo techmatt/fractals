@@ -677,7 +677,7 @@ being drawn as the plain Julia set underneath it.
 After touching placed prose, `python -m builder prose <page>` as well — see **Where prose
 comes from** above for what it holds together and why one edit has several sites.
 
-`builder check` is read-only, and it runs nineteen named checks. It resolves every
+`builder check` is read-only, and it runs twenty named checks. It resolves every
 internal link, refuses root-absolute and bare-directory hrefs, regenerates the gallery
 HTML and compares it byte for byte with what is committed, holds every figure block to
 its registry row, holds every made figure to being a block a redraw could land on —
@@ -687,7 +687,10 @@ atlas slot's link to the recipe its thumbnail was drawn from, and draws a sample
 in the committed wasm beside their thumbnails — that is `agreement`, named here because
 every structural test was green while 28 of them opened at a weight none was drawn at
 *(ckpt141)* — rebakes the
-explorer's two generated modules and compares them with what is committed, holds every
+explorer's two generated modules and compares them with what is committed, holds the
+explorer link written into every full-size wallpaper to the contract whichever repository
+wrote the file — that is `stamps`, named here because the release writer next door is a
+second, Python author of the permalink and this is all that keeps it honest — holds every
 page's contents rail and prose heading ids to what the builder derives, sweeps the words
 a reader meets for em-dashes — that is `dashes`, mechanical since 2026-09-07, and it is
 named here because the rule it holds is `writing-guidance.md`'s rather than this file's —
@@ -701,7 +704,8 @@ prints one note — never a failure — about the committed wasm module, describ
 
 **Every check runs on a bare clone, and what cannot run says so by name.** CI clones this
 repository alone, so a check that needs the wallpapers checkout is a check CI never makes.
-Four of them want it — `library`, which holds `palettes/library.jsonl` to the palette
+Five of them want it — the next-door half of `stamps`, which holds the release writer's
+links to the explorer's own; `library`, which holds `palettes/library.jsonl` to the palette
 library next door; `bake`, which rebakes the explorer's modules; `seats`, which holds a
 panel to the picture its gallery ships; and the source-key half of `figures` — and
 without it each reports a **named skip**: `skipped` rather than `ok`
@@ -716,8 +720,8 @@ lands any missing strip.
 **Which is why a checkpoint runs `check` here, not in CI.** A green CI says every check
 that a bare clone can ask came back clean; it says nothing about the palette record, the
 explorer's generated modules, whether a seat panel is still the picture its gallery
-ships, or a single one of the source keys a figure cites, because
-those four questions were skipped by name. Before a prompt is called done, run
+ships, whether the release writer still spells the explorer's links, or a single one of
+the source keys a figure cites, because those five questions were skipped by name. Before a prompt is called done, run
 `python -m builder check` on this machine with the checkout configured and read the skip
 count in the exit summary — a run that reports skips is a run that answered part of the
 question.

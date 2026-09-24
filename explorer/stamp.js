@@ -23,8 +23,27 @@
 // needs no guard about what a query may contain; `tEXt` is Latin-1 and would need one. The
 // reader takes both, uncompressed, so a file stamped by some other writer still opens.
 //
+// **And the same link again, whole, where ordinary tools look** *(embedded_links_ckpt145)*.
+// The tag above is this page's own and no other program reads it, so a file also carries
+// the absolute URL — `EXPLORER_URL` and the query — in the fields a photo viewer, a file
+// manager or `exiftool` shows: an XMP packet's `dc:source` in both formats, and in a JPEG
+// an EXIF `ImageDescription` too, which is the field Windows shows as a file's Title.
+// `dc:source` is Dublin Core's "a related resource from which the described resource is
+// derived", which is what a link that draws the picture again is. The host is a constant
+// here and the drop-to-reopen reader never needs it: it reads the tag first, and the XMP
+// only where there is no tag, and then only the query.
+//
+// **One packet per file, and never somebody else's replaced.** A PNG or JPEG carries one
+// standard XMP packet and one EXIF block, so a file that already holds a packet or a block
+// that is not ours keeps it and goes without that half of ours; the tag still goes in.
+// Ours is recognized by what it says — a URL whose path is the explorer's — so a stamp
+// written under another base is still ours to replace.
+//
 // Nothing here touches the DOM except `stamp`, which is the one function that takes and
 // returns a `Blob`; the rest is bytes, and runs under node's own test runner.
+//
+// `fractal-wallpapers`' `curation/embed_link.py` writes these same bytes into the
+// release renders next door, and is held to this file by `builder check`'s `stamps`.
 
 // PNG's chunk CRC is the same CRC-32 the zip's central directory uses — same polynomial,
 // same reflection, same pre- and post-conditioning — and `zip.test.mjs` already pins it to
@@ -42,6 +61,28 @@ export const KEYWORD = "fractal-explorer";
 /** The most a JPEG comment may hold: the segment's length word is two bytes and counts
  *  itself. A link is a few hundred characters, so this is a guard and not a case. */
 export const COMMENT_LIMIT = 0xffff - 2;
+
+/**
+ * Where a link written into a file points: the explorer, on the site as it is served.
+ *
+ * **The one place this module spells a host**, and it is `builder/pages.py`'s `SITE_URL`
+ * with `explorer/` after it — `builder check`'s `stamps` holds the two together, and the
+ * wallpaper project's `curation/explorer_link.py` to both. The hosting choice is not
+ * final; when it moves, this line and `SITE_URL` move together and the check says so.
+ */
+export const EXPLORER_URL = "https://techmatt.github.io/fractal-website/explorer/";
+
+/** The PNG keyword an XMP packet travels under, by the XMP specification. */
+export const XMP_KEYWORD = "XML:com.adobe.xmp";
+
+/** What opens a JPEG's XMP segment, by the same specification. */
+const XMP_SIGNATURE = "http://ns.adobe.com/xap/1.0/\0";
+
+/** What opens a JPEG's EXIF segment. */
+const EXIF_SIGNATURE = "Exif\0\0";
+
+/** The TIFF tag EXIF's `ImageDescription` is. */
+const IMAGE_DESCRIPTION = 0x010e;
 
 const PNG_MAGIC = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];
 const TEXT_TYPES = new Set(["tEXt", "iTXt"]);
@@ -71,6 +112,113 @@ export function linkOf(payload) {
 function bare(query) {
   const text = String(query ?? "").trim();
   return text.startsWith("?") ? text.slice(1) : text;
+}
+
+/** The absolute link a file carries for ordinary tools: the explorer and the query. */
+export function urlOf(query) {
+  return `${EXPLORER_URL}?${bare(query)}`;
+}
+
+/** The query an explorer URL carries, whatever host it names, or `null` for a URL that is
+ *  not the explorer's. Reading is by path, so a file stamped under another base opens. */
+export function queryOfUrl(url) {
+  if (typeof url !== "string") return null;
+  const found = /^[a-z][a-z0-9+.-]*:\/\/[^?#\s]*\/explorer\/(?:index\.html)?\?([^#\s]+)$/i.exec(url.trim());
+  return found === null ? null : found[1];
+}
+
+// ---------------------------------------------------------------------------- XMP
+
+const XML_ESCAPES = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" };
+
+/**
+ * The XMP packet for this link: one `rdf:Description` holding `dc:source`, and nothing
+ * else. No padding — nothing here edits a packet in place, and a stamp is replaced whole.
+ */
+export function xmpOf(url) {
+  const text = url.replace(/[&<>"]/g, (one) => XML_ESCAPES[one]);
+  return (
+    '<?xpacket begin="﻿" id="W5M0MpCehiHzreSzNTczkc9d"?>' +
+    '<x:xmpmeta xmlns:x="adobe:ns:meta/">' +
+    '<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">' +
+    '<rdf:Description rdf:about="" xmlns:dc="http://purl.org/dc/elements/1.1/">' +
+    `<dc:source>${text}</dc:source>` +
+    "</rdf:Description></rdf:RDF></x:xmpmeta>" +
+    '<?xpacket end="r"?>'
+  );
+}
+
+/** The `dc:source` an XMP packet names, unescaped, or `null`. Both the element form this
+ *  writes and the attribute form other writers use. */
+export function sourceOf(packet) {
+  if (typeof packet !== "string") return null;
+  const found =
+    /<dc:source>([^<]*)<\/dc:source>/.exec(packet) ?? /\bdc:source="([^"]*)"/.exec(packet);
+  if (found === null) return null;
+  return found[1].replace(/&(amp|lt|gt|quot|apos);/g, (_, name) =>
+    ({ amp: "&", lt: "<", gt: ">", quot: '"', apos: "'" })[name],
+  );
+}
+
+/** Whether a packet is one of ours: its source is an explorer link. */
+function ourXmp(packet) {
+  return queryOfUrl(sourceOf(packet)) !== null;
+}
+
+// --------------------------------------------------------------------------- EXIF
+
+/**
+ * An EXIF block — the TIFF structure after `Exif\0\0` — with one entry in IFD0: the URL as
+ * `ImageDescription`. Big-endian, the way the TIFF header says. `null` where the URL is not
+ * ASCII, which is what the field's type is; a link percent-encodes everything else.
+ */
+export function exifOf(url) {
+  if (!/^[\x20-\x7e]*$/.test(url)) return null;
+  const text = ENCODER.encode(url);
+  const count = text.length + 1;
+  // Header 8, entry count 2, one entry 12, next-IFD offset 4, then the string.
+  const out = new Uint8Array(EXIF_SIGNATURE.length + 26 + count);
+  out.set(ENCODER.encode(EXIF_SIGNATURE), 0);
+  const view = new DataView(out.buffer, EXIF_SIGNATURE.length);
+  view.setUint16(0, 0x4d4d); // "MM"
+  view.setUint16(2, 42);
+  view.setUint32(4, 8);
+  view.setUint16(8, 1);
+  view.setUint16(10, IMAGE_DESCRIPTION);
+  view.setUint16(12, 2); // ASCII
+  view.setUint32(14, count);
+  view.setUint32(18, 26);
+  view.setUint32(22, 0);
+  out.set(text, EXIF_SIGNATURE.length + 26);
+  return out;
+}
+
+/** The `ImageDescription` an EXIF block's IFD0 carries, either byte order, or `null`. */
+export function descriptionOf(block) {
+  if (block.length < EXIF_SIGNATURE.length + 8) return null;
+  if (DECODER.decode(block.subarray(0, EXIF_SIGNATURE.length)) !== EXIF_SIGNATURE) return null;
+  const tiff = block.subarray(EXIF_SIGNATURE.length);
+  const view = new DataView(tiff.buffer, tiff.byteOffset, tiff.byteLength);
+  const little = view.getUint16(0) === 0x4949;
+  if (!little && view.getUint16(0) !== 0x4d4d) return null;
+  const ifd = view.getUint32(4, little);
+  if (ifd + 2 > tiff.length) return null;
+  const entries = view.getUint16(ifd, little);
+  for (let at = ifd + 2; at + 12 <= tiff.length && at < ifd + 2 + entries * 12; at += 12) {
+    if (view.getUint16(at, little) !== IMAGE_DESCRIPTION || view.getUint16(at + 2, little) !== 2) continue;
+    const count = view.getUint32(at + 4, little);
+    const start = count <= 4 ? at + 8 : view.getUint32(at + 8, little);
+    if (start + count > tiff.length) return null;
+    const text = tiff.subarray(start, start + count);
+    const end = text.indexOf(0);
+    return DECODER.decode(end < 0 ? text : text.subarray(0, end));
+  }
+  return null;
+}
+
+/** Whether an EXIF block is one of ours: its description is an explorer link. */
+function ourExif(block) {
+  return queryOfUrl(descriptionOf(block)) !== null;
 }
 
 // --------------------------------------------------------------------------- PNG
@@ -120,8 +268,8 @@ function chunk(type, data) {
 }
 
 /** The data of an `iTXt` chunk: keyword, uncompressed, no language and no translation. */
-function textChunk(payload) {
-  const keyword = ENCODER.encode(KEYWORD);
+function textChunk(payload, name = KEYWORD) {
+  const keyword = ENCODER.encode(name);
   const text = ENCODER.encode(payload);
   const data = new Uint8Array(keyword.length + 5 + text.length);
   data.set(keyword, 0);
@@ -188,6 +336,54 @@ export function readPng(bytes) {
     if (said !== null && said.keyword === KEYWORD) return said.text;
   }
   return null;
+}
+
+/** The XMP packet a PNG carries, or `null`. */
+export function xmpInPng(bytes) {
+  if (!isPng(bytes)) return null;
+  for (const one of chunks(bytes)) {
+    if (one.type !== "iTXt") continue;
+    const said = textOf(one.type, one.data);
+    if (said !== null && said.keyword === XMP_KEYWORD) return said.text;
+  }
+  return null;
+}
+
+/**
+ * The PNG with every field of the link in it: the tag's chunk, then an XMP packet naming
+ * the absolute URL, both straight after `IHDR`.
+ *
+ * Idempotent like `stampPng`: an XMP packet of ours is replaced, and one of somebody
+ * else's is left alone and ours goes without — a PNG carries one.
+ */
+export function embedPng(bytes, query) {
+  const tagged = stampPng(bytes, payloadOf(query));
+  const parts = [];
+  let foreign = false;
+  let at = 0;
+  let after = null;
+  for (const one of chunks(tagged)) {
+    // The tag's chunk is the one straight after IHDR, and the packet goes after it.
+    if (after === null && one.type !== "IHDR") after = one.end;
+    if (one.type !== "iTXt") continue;
+    const said = textOf(one.type, one.data);
+    if (said === null || said.keyword !== XMP_KEYWORD) continue;
+    if (!ourXmp(said.text)) {
+      foreign = true;
+      continue;
+    }
+    parts.push(tagged.subarray(at, one.at));
+    at = one.end;
+  }
+  parts.push(tagged.subarray(at));
+  const kept = join(parts);
+  if (foreign) return kept;
+  // Nothing before `after` was dropped — a packet of ours never sits before the tag.
+  return join([
+    kept.subarray(0, after),
+    textChunk(xmpOf(urlOf(query)), XMP_KEYWORD),
+    kept.subarray(after),
+  ]);
 }
 
 // -------------------------------------------------------------------------- JPEG
@@ -284,6 +480,106 @@ export function readJpeg(bytes) {
   return null;
 }
 
+/** Every marker segment before the scan, as `{ marker, at, end, data }`, and where the
+ *  scan starts. The standalone markers are carried as segments with no data. */
+function jpegSegments(bytes) {
+  const out = [];
+  let at = 2;
+  while (at + 4 <= bytes.length && bytes[at] === 0xff) {
+    const marker = bytes[at + 1];
+    if (marker === 0xd9 || marker === 0xda) break;
+    if (marker === 0x01 || (marker >= 0xd0 && marker <= 0xd7)) {
+      out.push({ marker, at, end: at + 2, data: bytes.subarray(at + 2, at + 2) });
+      at += 2;
+      continue;
+    }
+    const length = (bytes[at + 2] << 8) | bytes[at + 3];
+    if (length < 2 || at + 2 + length > bytes.length) break;
+    out.push({ marker, at, end: at + 2 + length, data: bytes.subarray(at + 4, at + 2 + length) });
+    at += 2 + length;
+  }
+  return { segments: out, scan: at };
+}
+
+/** What an `APP1` segment is: `exif`, `xmp`, or `null` for anything else. */
+function app1Kind(data) {
+  const head = (signature) =>
+    data.length >= signature.length && DECODER.decode(data.subarray(0, signature.length)) === signature;
+  if (head(EXIF_SIGNATURE)) return "exif";
+  if (head(XMP_SIGNATURE)) return "xmp";
+  return null;
+}
+
+/** One `APP1` segment around this data, or `null` where it would not fit in one. */
+function app1(data) {
+  if (data.length + 2 > 0xffff) return null;
+  const out = new Uint8Array(4 + data.length);
+  out[0] = 0xff;
+  out[1] = 0xe1;
+  out[2] = (data.length + 2) >> 8;
+  out[3] = (data.length + 2) & 0xff;
+  out.set(data, 4);
+  return out;
+}
+
+/** The XMP packet a JPEG carries, or `null`. */
+export function xmpInJpeg(bytes) {
+  if (!isJpeg(bytes)) return null;
+  for (const one of jpegSegments(bytes).segments) {
+    if (one.marker === 0xe1 && app1Kind(one.data) === "xmp") {
+      return DECODER.decode(one.data.subarray(XMP_SIGNATURE.length));
+    }
+  }
+  return null;
+}
+
+/** The EXIF block a JPEG carries, `Exif\0\0` and all, or `null`. */
+export function exifInJpeg(bytes) {
+  if (!isJpeg(bytes)) return null;
+  for (const one of jpegSegments(bytes).segments) {
+    if (one.marker === 0xe1 && app1Kind(one.data) === "exif") return one.data;
+  }
+  return null;
+}
+
+/**
+ * The JPEG with every field of the link in it: an EXIF block and an XMP packet at the end
+ * of the leading `APPn` run, and the tag's comment after them.
+ *
+ * Idempotent: a block, a packet or a comment of ours is replaced. One of somebody else's
+ * is kept, and that half of ours is left out, because a JPEG carries one of each.
+ */
+export function embedJpeg(bytes, query) {
+  const tagged = stampJpeg(bytes, payloadOf(query));
+  const { segments, scan } = jpegSegments(tagged);
+  const kept = [];
+  const foreign = new Set();
+  for (const one of segments) {
+    const kind = one.marker === 0xe1 ? app1Kind(one.data) : null;
+    if (kind === "exif" && ourExif(one.data)) continue;
+    if (kind === "xmp" && ourXmp(DECODER.decode(one.data.subarray(XMP_SIGNATURE.length)))) continue;
+    if (kind !== null) foreign.add(kind);
+    kept.push(one);
+  }
+  let insert = 0;
+  while (insert < kept.length && kept[insert].marker >= 0xe0 && kept[insert].marker <= 0xef) insert += 1;
+
+  const url = urlOf(query);
+  const added = [];
+  const exif = foreign.has("exif") ? null : exifOf(url);
+  if (exif !== null) added.push(app1(exif));
+  if (!foreign.has("xmp")) added.push(app1(join([ENCODER.encode(XMP_SIGNATURE), ENCODER.encode(xmpOf(url))])));
+
+  const parts = [tagged.subarray(0, 2)];
+  kept.forEach((one, at) => {
+    if (at === insert) parts.push(...added.filter((segment) => segment !== null));
+    parts.push(tagged.subarray(one.at, one.end));
+  });
+  if (insert === kept.length) parts.push(...added.filter((segment) => segment !== null));
+  parts.push(tagged.subarray(scan));
+  return join(parts);
+}
+
 // -------------------------------------------------------------------------- both
 
 function join(parts) {
@@ -296,10 +592,27 @@ function join(parts) {
   return out;
 }
 
-/** The link a picture carries, whatever of the two it is, or `null`. */
+/**
+ * The link a picture carries, whatever of the two it is, or `null`.
+ *
+ * The tag first, because it is this page's own; the XMP packet's `dc:source` where there is
+ * no tag, so a file whose comment some other program dropped still opens. The EXIF copy is
+ * for people and is not read.
+ */
 export function linkIn(bytes) {
   const payload = isPng(bytes) ? readPng(bytes) : isJpeg(bytes) ? readJpeg(bytes) : null;
-  return payload === null ? null : linkOf(payload);
+  const tagged = payload === null ? null : linkOf(payload);
+  if (tagged !== null) return tagged;
+  const packet = isPng(bytes) ? xmpInPng(bytes) : isJpeg(bytes) ? xmpInJpeg(bytes) : null;
+  return queryOfUrl(sourceOf(packet));
+}
+
+/** A finished file with every field of its link in it, whatever of the two it is. Throws
+ *  where the bytes are neither. */
+export function embed(bytes, query) {
+  if (isPng(bytes)) return embedPng(bytes, query);
+  if (isJpeg(bytes)) return embedJpeg(bytes, query);
+  throw new Error("neither a PNG nor a JPEG");
 }
 
 /**
@@ -311,8 +624,7 @@ export function linkIn(bytes) {
 export async function stamp(blob, type, query) {
   if (type !== "image/png" && type !== "image/jpeg") return blob;
   const bytes = new Uint8Array(await blob.arrayBuffer());
-  const payload = payloadOf(query);
-  const stamped = type === "image/png" ? stampPng(bytes, payload) : stampJpeg(bytes, payload);
+  const stamped = type === "image/png" ? embedPng(bytes, query) : embedJpeg(bytes, query);
   return new Blob([stamped], { type });
 }
 

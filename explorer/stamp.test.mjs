@@ -14,18 +14,32 @@ import { deflateSync, inflateSync } from "node:zlib";
 
 import {
   COMMENT_LIMIT,
+  EXPLORER_URL,
   KEYWORD,
   TAG,
+  XMP_KEYWORD,
+  descriptionOf,
+  embed,
+  embedJpeg,
+  embedPng,
+  exifInJpeg,
+  exifOf,
   isJpeg,
   isPng,
   linkIn,
   linkOf,
   payloadOf,
+  queryOfUrl,
   readJpeg,
   readPng,
+  sourceOf,
   stamp,
   stampJpeg,
   stampPng,
+  urlOf,
+  xmpInJpeg,
+  xmpInPng,
+  xmpOf,
 } from "./stamp.js";
 
 const QUERY = "v=3&f=mandelbrot&m=smooth&x=-0.75&y=0&w=3.5&p=dimensionality-25";
@@ -296,6 +310,141 @@ test("a link too long for one comment is refused rather than truncated", () => {
   assert.equal(linkIn(stampPng(makePng().bytes, payloadOf(long))), long);
 });
 
+// ------------------------------------------------- the fields ordinary tools read
+
+test("the absolute link is the explorer and the query, and reads back by path", () => {
+  assert.ok(EXPLORER_URL.startsWith("https://") && EXPLORER_URL.endsWith("/explorer/"));
+  assert.equal(urlOf(QUERY), `${EXPLORER_URL}?${QUERY}`);
+  assert.equal(urlOf(`?${DEEP}`), `${EXPLORER_URL}?${DEEP}`);
+  assert.equal(queryOfUrl(urlOf(QUERY)), QUERY);
+  // Another host, and the explorer's own index, are still the explorer.
+  assert.equal(queryOfUrl(`http://localhost:8000/explorer/?${QUERY}`), QUERY);
+  assert.equal(queryOfUrl(`https://example.org/site/explorer/index.html?${DEEP}`), DEEP);
+  assert.equal(queryOfUrl(`https://example.org/article/?${QUERY}`), null);
+  assert.equal(queryOfUrl(`${EXPLORER_URL}`), null);
+  assert.equal(queryOfUrl(null), null);
+});
+
+test("an XMP packet escapes the link and gives it back", () => {
+  const url = urlOf(QUERY);
+  const packet = xmpOf(url);
+  assert.ok(!packet.includes("&f="), "an ampersand in XML is escaped");
+  assert.ok(packet.includes("&amp;f="));
+  assert.equal(sourceOf(packet), url);
+  assert.equal(sourceOf(`<rdf:Description dc:source="${url.replaceAll("&", "&amp;")}"/>`), url);
+  assert.equal(sourceOf("<x:xmpmeta/>"), null);
+});
+
+test("an EXIF block carries the link as ImageDescription, and a non-ASCII one is refused", () => {
+  const url = urlOf(QUERY);
+  assert.equal(descriptionOf(exifOf(url)), url);
+  assert.equal(exifOf(`${url}é`), null);
+});
+
+test("an embedded PNG carries the tag and the packet, and the picture does not move", () => {
+  const { bytes, raw } = makePng();
+  const embedded = embedPng(bytes, QUERY);
+  const kinds = chunksOf(embedded).map((one) => one.type);
+  assert.deepEqual(kinds, ["IHDR", "iTXt", "iTXt", "IDAT", "IEND"]);
+  assert.deepEqual(rasterOf(embedded), raw);
+  // Both text chunks back out, and what is left is the original file byte for byte.
+  const kept = [];
+  let at = 8;
+  const view = new DataView(embedded.buffer);
+  while (at < embedded.length) {
+    const end = at + 12 + view.getUint32(at);
+    if (String.fromCharCode(...embedded.subarray(at + 4, at + 8)) !== "iTXt") kept.push(embedded.subarray(at, end));
+    at = end;
+  }
+  assert.deepEqual(join([MAGIC, ...kept]), bytes);
+
+  assert.equal(readPng(embedded), payloadOf(QUERY));
+  assert.equal(sourceOf(xmpInPng(embedded)), urlOf(QUERY));
+  assert.equal(linkIn(embedded), QUERY);
+});
+
+test("embedding a PNG twice leaves one of each, and the second link wins", () => {
+  const once = embedPng(makePng().bytes, QUERY);
+  const twice = embedPng(once, DEEP);
+  assert.deepEqual(chunksOf(twice).map((one) => one.type), ["IHDR", "iTXt", "iTXt", "IDAT", "IEND"]);
+  assert.equal(linkIn(twice), DEEP);
+  assert.equal(sourceOf(xmpInPng(twice)), urlOf(DEEP));
+  assert.deepEqual(embedPng(twice, DEEP), twice);
+});
+
+test("a PNG's packet alone opens it, and somebody else's packet is left alone", () => {
+  const { bytes } = makePng();
+  const head = 8 + 12 + 13;
+  const packetOnly = join([
+    bytes.subarray(0, head),
+    chunk("iTXt", join([new TextEncoder().encode(`${XMP_KEYWORD}\0\0\0\0\0`), new TextEncoder().encode(xmpOf(urlOf(QUERY)))])),
+    bytes.subarray(head),
+  ]);
+  assert.equal(readPng(packetOnly), null);
+  assert.equal(linkIn(packetOnly), QUERY);
+
+  const theirs = '<x:xmpmeta xmlns:x="adobe:ns:meta/"><dc:source>a camera</dc:source></x:xmpmeta>';
+  const withTheirs = join([
+    bytes.subarray(0, head),
+    chunk("iTXt", join([new TextEncoder().encode(`${XMP_KEYWORD}\0\0\0\0\0`), new TextEncoder().encode(theirs)])),
+    bytes.subarray(head),
+  ]);
+  const embedded = embedPng(withTheirs, QUERY);
+  assert.equal(xmpInPng(embedded), theirs);
+  assert.deepEqual(chunksOf(embedded).map((one) => one.type), ["IHDR", "iTXt", "iTXt", "IDAT", "IEND"]);
+  assert.equal(linkIn(embedded), QUERY);
+});
+
+test("an embedded JPEG carries EXIF, XMP and the tag, and keeps every other byte in order", () => {
+  const bytes = makeJpeg();
+  const embedded = embedJpeg(bytes, QUERY);
+  const plain = markersOf(bytes);
+  const after = markersOf(embedded);
+  assert.deepEqual(after.markers.map((one) => one.marker), [0xe0, 0xe1, 0xe1, 0xfe, 0xdb]);
+  assert.deepEqual(after.markers[0].data, plain.markers[0].data);
+  assert.deepEqual(after.markers[4].data, plain.markers[1].data);
+  assert.deepEqual(after.rest, plain.rest);
+
+  assert.equal(descriptionOf(exifInJpeg(embedded)), urlOf(QUERY));
+  assert.equal(sourceOf(xmpInJpeg(embedded)), urlOf(QUERY));
+  assert.equal(readJpeg(embedded), payloadOf(QUERY));
+  assert.equal(linkIn(embedded), QUERY);
+  assert.deepEqual(embed(bytes, QUERY), embedded);
+});
+
+test("embedding a JPEG twice leaves one of each, and the second link wins", () => {
+  const once = embedJpeg(makeJpeg(), QUERY);
+  const twice = embedJpeg(once, DEEP);
+  assert.deepEqual(markersOf(twice).markers.map((one) => one.marker), [0xe0, 0xe1, 0xe1, 0xfe, 0xdb]);
+  assert.equal(linkIn(twice), DEEP);
+  assert.equal(descriptionOf(exifInJpeg(twice)), urlOf(DEEP));
+  assert.deepEqual(embedJpeg(twice, DEEP), twice);
+});
+
+test("a JPEG's own EXIF is kept, and its packet alone opens it", () => {
+  const bytes = makeJpeg();
+  const camera = exifOf("A camera wrote this");
+  const segment = new Uint8Array([0xff, 0xe1, (camera.length + 2) >> 8, (camera.length + 2) & 0xff, ...camera]);
+  const withCamera = join([bytes.subarray(0, 20), segment, bytes.subarray(20)]);
+  const embedded = embedJpeg(withCamera, QUERY);
+  assert.equal(descriptionOf(exifInJpeg(embedded)), "A camera wrote this");
+  assert.equal(sourceOf(xmpInJpeg(embedded)), urlOf(QUERY));
+  assert.deepEqual(markersOf(embedded).markers.map((one) => one.marker), [0xe0, 0xe1, 0xe1, 0xfe, 0xdb]);
+
+  // Take the comment back out: the packet is still enough to reopen the view.
+  const full = embedJpeg(bytes, QUERY);
+  const { markers, rest } = markersOf(full);
+  const noComment = join([
+    full.subarray(0, 2),
+    ...markers
+      .filter((one) => one.marker !== 0xfe)
+      .map((one) => full.subarray(one.at, one.at + 4 + one.data.length)),
+    rest,
+  ]);
+  assert.equal(readJpeg(noComment), null);
+  assert.equal(linkIn(noComment), QUERY);
+});
+
 // ------------------------------------------------------------------- the blobs
 
 test("stamp takes a blob and gives one back, and leaves a type it cannot stamp alone", async () => {
@@ -303,9 +452,11 @@ test("stamp takes a blob and gives one back, and leaves a type it cannot stamp a
   const png = await stamp(new Blob([bytes], { type: "image/png" }), "image/png", QUERY);
   assert.equal(png.type, "image/png");
   assert.equal(linkIn(new Uint8Array(await png.arrayBuffer())), QUERY);
+  assert.equal(sourceOf(xmpInPng(new Uint8Array(await png.arrayBuffer()))), urlOf(QUERY));
 
   const jpeg = await stamp(new Blob([makeJpeg()], { type: "image/jpeg" }), "image/jpeg", QUERY);
   assert.equal(linkIn(new Uint8Array(await jpeg.arrayBuffer())), QUERY);
+  assert.equal(descriptionOf(exifInJpeg(new Uint8Array(await jpeg.arrayBuffer()))), urlOf(QUERY));
 
   // The thumbnail's WebP goes through the same call site and comes back as it went in.
   const webp = new Blob([new Uint8Array([1, 2, 3])], { type: "image/webp" });

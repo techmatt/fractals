@@ -176,7 +176,7 @@ derive.test.mjs       6 tests: a derived weight replays, a derived opacity lands
 saved.test.mjs        8 tests: a bad stored value is an empty list, one link is one entry, the cap
 undo.test.mjs         8 tests: one action is one entry, a step back keeps what is ahead, the cap
 zip.test.mjs          2 tests: CRC-32's check values, and an archive read back to its bytes
-stamp.test.mjs        12 tests: the link goes in, and the picture does not move
+stamp.test.mjs        21 tests: the link goes in three ways, and the picture does not move
 deep-fx.test.mjs      12 tests: the Deep tab's arithmetic is exact where a double is not
 deep-link.test.mjs    39 tests: the deep contract, the shallow one held to not moving,
                       and the gallery register held to the deep one
@@ -3454,13 +3454,55 @@ changes nothing. The Saved tab takes a drop too, and **keeps** it rather than op
 eight bytes decide whether what landed is a picture or the JSON its Import box already
 takes, and a picture's link then goes through the same import and gets the same tally.
 
-**What still reaches a reader without one.** Every picture the builder writes — the article's
-figure sheets, the atlas plates, `palettes-swatch.png`, and gallery tiles when there are
-any — is saved by a right-click and carries nothing, although `links.jsonl` already holds a
-permalink for most of them and `images.land` is where a stamp would go. So does the canvas
-itself, saved by a right-click rather than by the button. So do the Saved and Walk tabs'
-WebP thumbnails, and so will the full-size wallpapers when they ship, which are release
-assets built next door and never touch this page. None of that is fixed here.
+### And the same link, absolute, where ordinary tools look *(embedded_links_ckpt145, 2026-09-23)*
+
+The tag is this page's own and nothing else reads it, so a file carries the link a second
+time, whole, as an address: `EXPLORER_URL` — `https://techmatt.github.io/fractal-website/explorer/`,
+which is `builder/pages.py`'s `SITE_URL` with `explorer/` after it — then `?` and the
+query. The hosting choice is not made; that constant is the one place this page spells a
+host, and `builder check`'s `stamps` holds it to `SITE_URL`.
+
+| Field | PNG | JPG | Who shows it |
+|---|---|---|---|
+| the tag, `fractal-explorer <query>` | `iTXt`, keyword `fractal-explorer` | `COM` | this page's drop reader |
+| XMP `dc:source` = the URL | `iTXt`, keyword `XML:com.adobe.xmp` | `APP1` XMP | `exiftool`, asset managers, Pillow |
+| EXIF IFD0 `ImageDescription` = the URL | — | `APP1` Exif | Windows file properties, as Title and Subject |
+
+**Why `dc:source`.** Dublin Core defines it as "a related resource from which the described
+resource is derived", which is exactly a link that draws the picture again, and it is a
+plain text property, so the packet is one element. **Why `ImageDescription`**: it is the
+EXIF field the Windows file-properties dialog shows. Measured on this machine: a stamped
+JPG's Title and Subject read the URL; a PNG shows nothing there under any keyword, whether
+`tEXt` or `iTXt` (`Title`, `Description`, `Comment` and `Source` each tried). So a PNG's
+link is for `exiftool` and Pillow, and EXIF goes into the JPG alone.
+
+**One of each, and never somebody else's replaced.** A file holds one XMP packet and one
+EXIF block, so a file that already carries one that is not ours keeps it and goes without
+that half of ours; ours is recognized by what it says (a URL whose path is the explorer's),
+so a stamp written under another base is still ours to replace. The drop reader takes the
+tag first and the packet's `dc:source` where there is no tag, so a file whose comment some
+other program dropped still reopens. The order in a JPG is `APP0`, Exif, XMP, `COM`, then
+the file as the browser wrote it.
+
+**The pixels do not move, measured again** with all three fields, by the page's own encoder:
+a 640×360 frame encoded by Chrome 153 as PNG and as JPG at quality 95, embedded through
+`stamp.js` with a shallow link from `links.jsonl` and with a Deep gallery link, and each
+decoded by Pillow beside its original: **0 of 230,400 pixels differ** in all four. Each file
+grows by 675 to 969 bytes.
+
+**The release wallpapers carry the same bytes.** `fractal-wallpapers`' release writer,
+`curation/release.py`'s `render_task`, spells the link with `curation/explorer_link.py` and
+writes it with `curation/embed_link.py`, which is this file's layout in Python. `stamps` holds
+both to this page: a thousand seats spelled both ways to the same string, and one PNG and
+one JPG embedded both ways to the same bytes. So a release wallpaper dropped on the canvas
+opens its view.
+
+**What still reaches a reader without one.** The builder writes no full-size wallpaper —
+every picture it writes is web resolution, landed through `images.land` — and the article's
+figure sheets, the atlas plates, `palettes-swatch.png` and gallery tiles carry nothing,
+although `links.jsonl` holds a permalink for most of them and `images.land` is where a stamp
+would go. So does the canvas itself, saved by a right-click rather than by the button, and
+so do the Saved and Walk tabs' WebP thumbnails. None of that is fixed here.
 
 ## Measured
 
