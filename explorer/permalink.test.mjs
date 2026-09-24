@@ -146,9 +146,45 @@ test("a version 1 link still parses, and settles as the current version", () => 
   assert.equal(canonicalize("v=1&p=viridis&gamma=2", CONTEXT), `v=${VERSION}&p=viridis&gamma=2`);
   assert.equal(parse("v=1&f=mandelbrot&m=smooth", CONTEXT).mode, "smooth");
   // And a version nobody has written yet is still refused rather than read hopefully.
-  assert.throws(() => parse("v=4&x=0", CONTEXT), PermalinkError);
+  assert.throws(() => parse("v=5&x=0", CONTEXT), PermalinkError);
   assert.throws(() => parse("v=1.0&x=0", CONTEXT), PermalinkError);
   assert.throws(() => parse("x=0&y=0", CONTEXT), /carries no v/);
+});
+
+test("n is the cap, written only where it is not the width's, and a v3 link never carries one", () => {
+  // What v4 changed. The page's `cap` is the engine's width policy; this is its shape.
+  const policy = (w) => Math.trunc(Math.min(67000, Math.max(200, 4000 * (1 + 0.3 * Math.log2(3 / w)))));
+  const ctx = { ...CONTEXT, cap: policy };
+  const place = "x=-1.7686&y=0.0017&w=0.004";
+
+  // Absent is the width's, and a view that holds none is the string it always was.
+  const plain = parse(`v=${VERSION}&${place}`, ctx);
+  assert.equal(plain.maxiter, null);
+  assert.equal(emit(plain, ctx), `v=${VERSION}&${place}&${HOUSE}`);
+  assert.equal(fresh("mandelbrot", "smooth", ctx).maxiter, null);
+
+  // A cap the width does not give is written after `w`, and is a fixed point.
+  const held = `v=${VERSION}&${place}&n=32832&${HOUSE}`;
+  assert.equal(parse(held, ctx).maxiter, 32832);
+  assert.equal(canonicalize(held, ctx), held);
+
+  // One that the width does give is the width's, and settles to the link without it.
+  const same = policy(0.004);
+  assert.equal(canonicalize(`v=${VERSION}&${place}&n=${same}`, ctx), `v=${VERSION}&${place}&${HOUSE}`);
+
+  // A caller without the module writes any cap it holds.
+  assert.equal(emit({ ...plain, maxiter: same }, CONTEXT), `v=${VERSION}&${place}&n=${same}&${HOUSE}`);
+
+  // The cap decides the arithmetic, so it splits the field cache.
+  assert.notEqual(
+    fieldKey(parse(held, ctx), ctx, 16, 9),
+    fieldKey(plain, ctx, 16, 9),
+  );
+
+  // An older link did not have the key, and a reader of it is told so rather than served.
+  assert.throws(() => parse(`v=3&${place}&n=32832`, ctx), /does not know: n/);
+  assert.throws(() => parse(`v=${VERSION}&n=32.5`, ctx), /whole number/);
+  assert.throws(() => parse(`v=${VERSION}&n=2000000`, ctx), /between 50 and 1,000,000/);
 });
 
 test("an older link's absent weight or opacity is the catalog's, and a v3 link's is left to derive", () => {
@@ -289,8 +325,9 @@ test("z₋₁ is a phoenix constant, and a link written before it existed still 
 
 test("the Phoenix plane carries p and nothing else, and widened v3 rather than bumping it", () => {
   // A new family and a key with a default are a widening under the contract's own rule,
-  // so no link written before the plane existed means anything else and `v` stays 3.
-  assert.equal(VERSION, 3);
+  // so no link written before the plane existed means anything else, and `v` stayed 3 for
+  // it. The 4 is `n`'s, which overturned a ruling rather than widening one.
+  assert.equal(VERSION, 4);
   assert.deepEqual(FAMILY_CONSTANTS.phoenix_plane, ["px", "py"]);
 
   // Its `p` is the classic set's, read off the same anchor, and always emitted.

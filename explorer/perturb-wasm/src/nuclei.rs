@@ -57,10 +57,16 @@ pub const GRID_ROWS: u32 = 36;
 /// How wide a preview tile is drawn beside the minibrot it frames, as a multiple
 /// of the body's own width.
 ///
-/// **Six**, which puts the body at a sixth of the frame: large enough to read as
-/// a minibrot rather than a dot, small enough that the filaments around it are in
-/// the picture. A body at 1× is a black tile.
-pub const TILE_BODIES: f64 = 6.0;
+/// **Twelve** *(find_minibrots_cap2_ckpt145; it was six)*, which puts the copy's
+/// black body at about **a quarter of a 16:9 frame's height**. The size estimate is
+/// the copy's scale and not its extent: a copy is roughly as tall as the whole set
+/// is, about two of its own sizes, so at six the body filled 0.59 to 0.61 of the
+/// height on every real-axis copy measured and read as the picture rather than as
+/// a place in one. At twelve it is 0.25 to 0.27 — a copy with its surroundings in
+/// frame, which is what a reader zooms out from to find the symmetry stages. Ten
+/// gave 0.30 to 0.37 and sixteen 0.19 to 0.20; twelve is inside the fifth-to-a-third
+/// the brief asked for at every one. A body at 1× is a black tile.
+pub const TILE_BODIES: f64 = 12.0;
 
 /// How many periods of its own nucleus a preview tile is iterated for.
 ///
@@ -104,8 +110,37 @@ pub const TILE_PERIODS: u32 = 8;
 /// The width policy is still the floor because a *shallow* minibrot's period can
 /// be small enough that eight of them is less depth than the frame deserves.
 pub fn tile_cap(period: u32, width: f64) -> u32 {
+    periods_cap(period, TILE_PERIODS, width)
+}
+
+/// How many periods of its own nucleus a minibrot is iterated for **once it is
+/// opened** — the frame a list entry goes to, and the `n` its link carries.
+///
+/// **Thirty-two, and a preview tile's eight is not enough for it** *(Matt,
+/// find_minibrots_cap2_ckpt145)*. [`TILE_PERIODS`] was chosen on the share of a
+/// 316-pixel tile that escapes, and at that size eight reads. The frame a reader
+/// opens is the viewer's own, several times the pixels, and there a copy drawn at
+/// about thirteen periods came back as an all-black blob with nothing of its own
+/// edge resolved; at about thirty-two it resolved. A blob is the failure this cap
+/// exists to prevent, so the open frame pays four times a tile's periods, and the
+/// preview keeps its eight because it is drawn unasked.
+pub const OPEN_PERIODS: u32 = 32;
+
+/// The cap an opened minibrot of period `p` is drawn at: whichever of the width
+/// policy and [`OPEN_PERIODS`] periods is larger, under the ceiling.
+///
+/// ⚠ **The ceiling binds from period 31,250.** Past it a copy is drawn at the
+/// million iterations [`crate::cap::CEILING`] allows, which is fewer than thirty-two
+/// of its periods and falls to eight — [`TILE_PERIODS`] — at period 125,000.
+pub fn open_cap(period: u32, width: f64) -> u32 {
+    periods_cap(period, OPEN_PERIODS, width)
+}
+
+/// The width policy or `periods` of a period-`p` nucleus, whichever is larger, under
+/// the ceiling.
+fn periods_cap(period: u32, periods: u32, width: f64) -> u32 {
     crate::cap::for_width(width)
-        .max(period.saturating_mul(TILE_PERIODS))
+        .max(period.saturating_mul(periods))
         .min(crate::cap::CEILING as u32)
 }
 

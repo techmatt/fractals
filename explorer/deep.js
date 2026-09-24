@@ -1546,11 +1546,12 @@ export function mount(host) {
     return (lanes * cap * 0.85 * 5.0e-9 * 1.05) / threads;
   }
 
-  /** The view one entry opens: its own centre, framed at six body widths, at the cap the
-   *  kernel says a tile of that period needs. The palette and the shade recipe come with
-   *  the reader, because a preview a reader cannot recognise as theirs is a different
-   *  picture of the same place. `base` is the view searched, which is the tab's own unless
-   *  the viewer asked. */
+  /** The view one entry opens: its own centre, framed at twelve body widths so the copy
+   *  is about a quarter of the frame's height with its surroundings round it, at
+   *  thirty-two periods of its own nucleus (`renderer.openCap`). The palette and the shade
+   *  recipe come with the reader, because a preview a reader cannot recognise as theirs is
+   *  a different picture of the same place. `base` is the view searched, which is the
+   *  tab's own unless the viewer asked. */
   function frameOf(nucleus, base = view) {
     const width = renderer.tileWidth(nucleus.size);
     return {
@@ -1558,12 +1559,19 @@ export function mount(host) {
       x: nucleus.x,
       y: nucleus.y,
       w: deepLink.widthOf(width),
-      maxiter: renderer.tileCap(nucleus.period, width),
+      maxiter: renderer.openCap(nucleus.period, width),
       // Not the width's and not the reader's: the cap a minibrot's own period asks for,
       // written into the link like any settled cap.
       capFrom: "tile",
       julia: null,
     };
+  }
+
+  /** The frame an entry's preview tile is drawn at: the entry's own, at the tile's eight
+   *  periods rather than the open frame's thirty-two. A preview is drawn unasked, and four
+   *  times its cost would put most of a list past `TILE_BUDGET_MS`. */
+  function previewOf(frame, nucleus) {
+    return { ...frame, maxiter: renderer.tileCap(nucleus.period, frame.w.value) };
   }
 
   /** The list and its note gone, whoever they were for. */
@@ -1698,7 +1706,7 @@ export function mount(host) {
       for (const nucleus of reachable) {
         if (generation !== pass) return;
         tile += 1;
-        const frame = frameOf(nucleus, target);
+        const frame = previewOf(frameOf(nucleus, target), nucleus);
         if (tileSeconds(frame.maxiter) * 1000 > TILE_BUDGET_MS) continue;
         enterStage("tiles");
         activity(`drawing previews · ${tile} of ${reachable.length}`, (tile - 1) / reachable.length);
@@ -1754,7 +1762,7 @@ export function mount(host) {
       const well = document.createElement("div");
       well.className = "minibrot-tile";
       const frame = frameOf(nucleus, base);
-      const seconds = tileSeconds(frame.maxiter);
+      const seconds = tileSeconds(previewOf(frame, nucleus).maxiter);
       well.textContent = !reachable
         ? "past what a link can spell"
         : seconds * 1000 > TILE_BUDGET_MS
@@ -2136,8 +2144,12 @@ export function mount(host) {
       x: deepLink.coordinateOf(x),
       y: deepLink.coordinateOf(y),
       w: deepLink.widthOf(from.w.value),
-      maxiter: policyCap(from.w.value),
-      capFrom: "width",
+      // **A cap the shallow view holds crosses with it**, since permalink v4 gave it one:
+      // it is the same `n` in both contracts, and one that a found minibrot or a link
+      // settled is a picture choice on either side of the floor. Held here as the
+      // reader's, which is how a `dv` link that names `n` opens.
+      maxiter: from.maxiter ?? policyCap(from.w.value),
+      capFrom: from.maxiter == null ? "width" : "reader",
       aspect: from.aspect,
       palette: from.palette,
       shade: from.shade,

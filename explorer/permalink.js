@@ -1,4 +1,4 @@
-// The permalink contract, version 3. This module owns parse, validate and
+// The permalink contract, version 4. This module owns parse, validate and
 // canonicalize, and nothing else in the explorer is allowed a second opinion
 // about what a link means.
 //
@@ -62,7 +62,7 @@
 // rather than the catalog's constant. See "What version 3 changed" below.
 //
 // Emit order: v · f · cx · cy · px · py · zx · zy · m · the mode's parameters · x · y · w ·
-// a · p · then the shade parameters, in the order the engine's own palette recipe
+// n · a · p · then the shade parameters, in the order the engine's own palette recipe
 // declares them · level.
 //
 // ## What version 3 changed, and why it is a 3
@@ -79,6 +79,25 @@
 // written down. Nothing anybody saved changes picture. A v3 link the page writes always
 // carries the value in force, derived or not, so an absent one only ever arrives from a
 // person who left it out on purpose.
+//
+// ## What version 4 changed, and why it is a 4
+//
+// Version 4 gives the shallow view an **iteration cap**, `n`, spelled and read exactly as
+// the deep contract's (`CAP_KEY`, `readCap`). Until v4 the cap was not a key by ruling:
+// the engine's depth policy works it out from `w`, and a link carried a place rather than
+// a budget. That ruling was right for every view this page could reach by panning and
+// wrong for one it could reach by asking — a minibrot Find minibrots framed is drawn at
+// thirty-two periods of its own nucleus, and at the width's cap the same frame is an
+// all-black blob. So the cap that decided the picture has to be in the link to it.
+//
+// **Absent is the width policy, which is what every older link meant**, so nothing
+// anybody saved changes picture: `n` is emitted only where it differs from what
+// `context.cap(w)` gives, and a view that holds no cap of its own (`maxiter: null`) emits
+// the string it always did. What makes it a version and not a widening is the ruling it
+// overturns — a cap was *not a thing a link could say*, and a reader holding a v3 page
+// should be told that a v4 link says something it cannot hear, rather than draw the
+// frame at the wrong cap. A link below v4 that spells `n` is refused, the deep
+// contract's rule for its own `f`.
 //
 // ## `level`, and why it is last
 //
@@ -120,10 +139,10 @@
 // default and a reader.
 
 /** The contract version this module emits. */
-export const VERSION = 3;
+export const VERSION = 4;
 
 /** The versions this module reads. See the note above on why 1 is still one of them. */
-export const READS = [1, 2, 3];
+export const READS = [1, 2, 3, 4];
 
 /**
  * The families this page draws, by the name a link carries.
@@ -405,6 +424,34 @@ export const DEFAULT_ASPECT = { across: 16, down: 9 };
 /** The longest a coordinate string may be. Long enough for far more digits than
  *  `f64` carries, short enough that a link is not an attack surface. */
 export const COORDINATE_LIMIT = 64;
+
+/** The key carrying an iteration cap, in this contract since v4 and in the deep one since
+ *  its first version. One spelling and one reader for both — see "What version 4 changed". */
+export const CAP_KEY = "n";
+
+/** The most iterations a link may name: `perturb.wasm`'s own ceiling, a million. A link
+ *  that named more would be asking for a frame that never finishes. It is the shallow
+ *  view's ceiling too, which has none of its own once a cap is explicit — the engine's
+ *  67,000 bounds its width policy and not a cap somebody names. */
+export const CAP_LIMIT = 1_000_000;
+
+/** The fewest. Below this there is no picture, only the disc. */
+export const CAP_FLOOR = 50;
+
+/** An `n` as a link spells it: a whole number between the floor and the limit. Exported
+ *  for `deep-link.js`, which reads its `n` by exactly this rule. */
+export function readCap(text) {
+  if (!/^\d+$/.test(text)) {
+    throw new PermalinkError(`${CAP_KEY} is the iteration cap and has to be a whole number; the link says ${text}.`);
+  }
+  const value = Number(text);
+  if (value < CAP_FLOOR || value > CAP_LIMIT) {
+    throw new PermalinkError(
+      `${CAP_KEY} is the iteration cap and is between ${CAP_FLOOR} and ${CAP_LIMIT.toLocaleString("en-US")}; the link says ${text}.`,
+    );
+  }
+  return value;
+}
 
 /** The largest side an aspect may name. An aspect is a shape, not a resolution. */
 const ASPECT_LIMIT = 10000;
@@ -741,10 +788,15 @@ export function parse(search, context) {
 
   const wanted = MODE_PARAMETERS[mode] ?? [];
   const known = new Set([
-    "v", "f", "m", "x", "y", "w", "a", "p", LEVEL_KEY.key,
+    "v", "f", "m", "x", "y", "w", CAP_KEY, "a", "p", LEVEL_KEY.key,
     ...CONSTANTS[family], ...wanted, ...SHADE_KEYS.map((spec) => spec.key),
   ]);
   for (const key of seen) {
+    // `n` arrived with v4, so an older link that spells it spells a key its own version
+    // never had — the deep contract's rule for its `f`.
+    if (key === CAP_KEY && Number(version) < 4) {
+      throw new PermalinkError(`the link carries a key this page does not know: ${key}. The iteration cap is a key from v=4 on.`);
+    }
     if (known.has(key) || UI_KEYS.has(key)) continue;
     if (CONSTANT_KEYS.includes(key)) {
       throw new PermalinkError(`${key} is a constant of a family this link does not name — ${family} has ${CONSTANTS[family].length === 0 ? "none" : CONSTANTS[family].join(" and ")}.`);
@@ -772,6 +824,11 @@ export function parse(search, context) {
   if (!(w.value > 0)) {
     throw new PermalinkError(`w is the width of the view in the plane, so it has to be positive; the link says ${w.text}.`);
   }
+
+  // Absent is the width policy's cap, which is what every link before v4 meant and what
+  // `null` says on a view: the page asks the engine, as it always has.
+  const capText = params.get(CAP_KEY);
+  const maxiter = capText === null ? null : readCap(capText);
 
   const aspect = readAspect(params.get("a"));
 
@@ -811,7 +868,7 @@ export function parse(search, context) {
   const levelText = params.get(LEVEL_KEY.key);
   const level = levelUnder(shade, levelText === null ? LEVEL_KEY.fallback : LEVEL_KEY.read(levelText));
 
-  return { version: VERSION, family, constants, mode, params: values, x, y, w, aspect, palette, shade, level };
+  return { version: VERSION, family, constants, mode, params: values, x, y, w, maxiter, aspect, palette, shade, level };
 }
 
 /** A view nobody has said anything about: this family, this mode, at home. */
@@ -826,6 +883,7 @@ export function fresh(family, mode, context) {
     mode,
     params: {},
     ...context.home(family),
+    maxiter: null,
     aspect: { ...DEFAULT_ASPECT },
     palette: context.defaultPalette,
     shade: defaultShade(),
@@ -855,6 +913,11 @@ export function emit(view, context) {
   for (const key of ["x", "y", "w"]) {
     if (view[key].text !== home[key].text) parts.push(`${key}=${encode(view[key].text)}`);
   }
+  // Only where it is not what the width already says — so every view that holds no cap of
+  // its own is the string it always was. `context.cap` is the engine's width policy; a
+  // caller without the module passes none, and then a held cap is always written.
+  const cap = view.maxiter ?? null;
+  if (cap !== null && cap !== context.cap?.(view.w.value)) parts.push(`${CAP_KEY}=${cap}`);
   if (view.aspect.across !== DEFAULT_ASPECT.across || view.aspect.down !== DEFAULT_ASPECT.down) {
     parts.push(`a=${view.aspect.across}:${view.aspect.down}`);
   }

@@ -252,30 +252,16 @@ def derive() -> list[Link]:
 
     emitted = emit(views)
     return [
-        link if link.link is not None or link.reason is not None else _settled(link, emitted, views)
+        link if link.link is not None or link.reason is not None else _settled(link, emitted)
         for link in wanted
     ]
 
 
-def _settled(link: Link, emitted: dict[str, dict], views: dict[str, dict]) -> Link:
+def _settled(link: Link, emitted: dict[str, dict]) -> Link:
     """A derived view, once the contract has had its say about it."""
     answer = emitted[link.id]
     if not answer.get("ok"):
         return _refused(link.id, "not_exposed", answer["why"], link.source)
-    # **The cap is not a permalink key**, and this is where that costs something. The
-    # engine's depth policy works it out from the width, a link carries a place rather
-    # than a budget, and a picture drawn at a cap somebody chose is a picture this link
-    # would not draw. Two of this article's figures are about exactly that choice.
-    wanted = views[link.id].get("cap")
-    if wanted is not None and wanted != answer["maxiter"]:
-        return _refused(
-            link.id,
-            "not_exposed",
-            f"the picture was drawn at a cap of {wanted:,} and the depth policy gives "
-            f"{answer['maxiter']:,} at this width — the cap is the engine's own and is "
-            "not a key a link may carry, so the link would draw a different picture",
-            link.source,
-        )
     return Link(link.id, answer["link"], None, None, link.source)
 
 
@@ -479,15 +465,11 @@ def emit(views: dict[str, dict]) -> dict[str, dict]:
     """
     if not views:
         return {}
-    # The cap is not part of a view the contract has an opinion about — it is compared
-    # against what the module plans, back here.
-    asked = {
-        key: {name: held for name, held in view.items() if name != "cap"}
-        for key, view in views.items()
-    }
+    # A view's `cap` goes over as it stands: since permalink v4 it is a key, and the
+    # contract writes `n` only where it is not what the width already gives.
     finished = subprocess.run(
         ["node", str(EMITTER)],
-        input=json.dumps(asked),
+        input=json.dumps(views),
         capture_output=True,
         text=True,
         encoding="utf-8",

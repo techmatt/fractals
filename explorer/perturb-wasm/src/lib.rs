@@ -886,6 +886,13 @@ pub extern "C" fn tile_cap(period: u32, width: f64) -> u32 {
     nuclei::tile_cap(period, width)
 }
 
+/// The cap an opened minibrot of period `p` is drawn at, and the `n` its link
+/// carries — four times a tile's periods. See [`nuclei::OPEN_PERIODS`].
+#[unsafe(no_mangle)]
+pub extern "C" fn open_cap(period: u32, width: f64) -> u32 {
+    nuclei::open_cap(period, width)
+}
+
 /// How wide a preview tile is, given the body it frames. See
 /// [`nuclei::TILE_BODIES`].
 #[unsafe(no_mangle)]

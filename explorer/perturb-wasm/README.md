@@ -936,6 +936,17 @@ centred on a nucleus just solved — so `TILE_PERIODS` is 8 and `tile_cap` is th
 or the width policy, whichever is larger. Everywhere else the cap is the frame's
 to ask for (§8) precisely because nothing knows what the frame contains.
 
+**An opened copy is drawn at 32 periods, not 8** *(find_minibrots_cap2_ckpt145)*.
+The table above is a 316-pixel tile's escaped share, and at that size eight reads.
+The frame a reader opens from the list is the viewer's own, several times the
+pixels, and there a copy at about thirteen of its periods was an all-black blob.
+`OPEN_PERIODS` is 32 and `open_cap` (exported beside `tile_cap`) is that or the
+width policy, under the ceiling — which binds from period 31,250. The tile keeps
+its eight because it is drawn unasked. **And both are framed at `TILE_BODIES` =
+12**, not 6: the size estimate is a copy's scale rather than its extent, and a copy
+is about two of its own sizes tall, so at six its body filled 0.59–0.61 of a 16:9
+frame's height and at twelve 0.25–0.27.
+
 **The cost is then `samples × 8p`, and `p` at these depths is of the order of the
 cap itself.** That is a finding and not a tuning, and it is what the tab's list
 had to be shaped around.

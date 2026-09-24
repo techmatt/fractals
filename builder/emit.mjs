@@ -88,6 +88,9 @@ const CONTEXT = {
   palettes: PALETTES,
   defaultPalette: DEFAULT_PALETTE,
   settled: (mode) => SETTLED[mode],
+  // The width policy, out of the same module the page asks — so a view whose record names
+  // the cap the policy gives emits no `n`, exactly as the page's own would.
+  cap: (width) => engine.maxiter_for_width(width),
 };
 
 const written = (text) => ({ text, value: Number(text) });
@@ -106,6 +109,9 @@ function viewOf(derived) {
     x: written(derived.x),
     y: written(derived.y),
     w: written(derived.w),
+    // A cap the record chose, where it chose one. Since permalink v4 that is a key, and
+    // the contract writes it only where it is not what the width already gives.
+    maxiter: derived.cap ?? null,
     aspect: { across: 16, down: 9 },
     palette: derived.palette,
     shade: derived.shade,
@@ -124,19 +130,7 @@ function answer(derived) {
     return { ok: false, why: `the contract does not settle on this view: ${link} became ${again}` };
   }
   parse(link, CONTEXT);
-  // The cap the page will draw this link at. It is NOT a permalink key — the engine's
-  // depth policy owns it, and a link carries a place rather than a budget — so a figure
-  // whose record pinned a different one is a figure this link would not reproduce. The
-  // caller compares, and refuses rather than landing the reader on a shallower picture.
-  const answered = plan({
-    schema: 1,
-    family: familySpecOf(view.family, view.constants),
-    viewport: { center_re: view.x.text, center_im: view.y.text, width: view.w.text },
-    mode: view.mode,
-    ...(Object.keys(view.params).length > 0 ? { params: view.params } : {}),
-  });
-  if (!answered.ok) return { ok: false, why: answered.why };
-  return { ok: true, link, maxiter: answered.maxiter };
+  return { ok: true, link };
 }
 
 const wanted = JSON.parse(readFileSync(0, "utf8"));

@@ -751,8 +751,35 @@ function moveTo(x, y, w) {
     x: link.coordinateOf(x),
     y: link.coordinateOf(y),
     w: link.coordinateOf(w),
+    maxiter: heldCap(w),
   };
   changed();
+}
+
+/**
+ * The cap a move to width `w` keeps: the view's own, while it is still more than the width
+ * policy gives there, and the width's — `null` — once the policy has caught up with it.
+ *
+ * **A held cap is a property of the place, not of the width** *(find_minibrots_cap2_ckpt145)*.
+ * A found minibrot is drawn at thirty-two periods of its own nucleus, and zooming out from
+ * it to the symmetry stages round it is exactly what the frame is for — at the width's cap
+ * the copy in the middle of that picture is the blob the held cap was set to prevent. So a
+ * pan or a zoom keeps it. What returns the view to the policy is the policy reaching it: a
+ * zoom in far enough that the width alone asks for as much, past which a held cap would
+ * only be a shallower picture than the one the width draws. The Deep tab drops a tile's
+ * cap on any zoom and lets its probe re-raise it; this view has no probe, so it keeps the
+ * cap instead. Leaving the place — Root, another plane, a link — leaves it behind.
+ */
+function heldCap(w) {
+  const held = view.maxiter ?? null;
+  return held !== null && held > renderer.maxiter(w) ? held : null;
+}
+
+/** `cap` as a view holds it at width `w`: itself, or `null` where it is the width's own —
+ *  which is what a view with no cap of its own already draws at, and what its link leaves
+ *  out. */
+function ownCap(cap, w) {
+  return cap === null || cap === undefined || cap === renderer.maxiter(w) ? null : cap;
 }
 
 /**
@@ -1657,11 +1684,13 @@ function stretch(image) {
 }
 
 function updateReadout() {
-  const cap = renderer.maxiter(view.w.value);
+  const held = ownCap(view.maxiter ?? null, view.w.value);
+  const cap = held ?? renderer.maxiter(view.w.value);
   const level = view.level === null ? "" : `  ·  levels by ${view.level.operator}`;
   readout.textContent =
     `${bothNamesOf(view.palette)}  ·  ${view.mode}  ·  ` +
-    `${view.aspect.across}:${view.aspect.down}  ·  ${cap} iterations at this width${level}`;
+    `${view.aspect.across}:${view.aspect.down}  ·  ${cap} iterations ` +
+    `${held === null ? "at this width" : "held by this view"}${level}`;
   syncCoordinates();
 }
 
@@ -3373,6 +3402,9 @@ function leaveDeep(from) {
     x: { text: from.x.text, value: Number(from.x.text) },
     y: { text: from.y.text, value: Number(from.y.text) },
     w: { text: from.w.text, value: from.w.value },
+    // A cap the Deep tab settled, pinned or took from a minibrot crosses back as the same
+    // `n`; the width's own stays the width's.
+    maxiter: from.capFrom === "width" ? null : ownCap(from.maxiter, from.w.value),
     aspect: view.aspect,
     palette: from.palette,
     shade: from.shade,
@@ -4195,10 +4227,17 @@ async function findMinibrots() {
  * One entry of the list, opened in whichever view can draw it: here where the ordinary
  * renderer still resolves the frame, and in the Deep tab where it does not.
  *
- * **The frame is the Deep tab's**, six body widths across (`renderer.tileWidth` in
+ * **The frame is the Deep tab's**, twelve body widths across (`renderer.tileWidth` in
  * `deep-render.js`), in both views, so a minibrot looks the same size whichever one opens
- * it. Here it is drawn at the width's own cap like every shallow view; the cap the Deep
- * tab would have used, its own period's, goes with it only down there.
+ * it — about a quarter of the frame's height, with its surroundings round it.
+ *
+ * **And so is the cap** *(find_minibrots_cap2_ckpt145)*: thirty-two periods of the copy's
+ * own nucleus, or the width's where that is more, under the million `n` may name. Until
+ * this checkpoint the shallow view drew the frame at the width's cap, which gives a
+ * framed copy about thirteen of its periods — an all-black blob. The cap goes into the view
+ * and so into its link as `n` (permalink v4), and it is the same number the Deep tab would
+ * have drawn the frame at: the frame's `maxiter` is `renderer.openCap`'s, and the kernel's
+ * width policy is the engine's everywhere a frame still resolves in `f64`.
  */
 function openMinibrot(frame) {
   if (locked()) return;
@@ -4208,6 +4247,7 @@ function openMinibrot(frame) {
       x: { text: frame.x.text, value: Number(frame.x.text) },
       y: { text: frame.y.text, value: Number(frame.y.text) },
       w: { text: frame.w.text, value: frame.w.value },
+      maxiter: ownCap(frame.maxiter, frame.w.value),
     };
     changed();
     draw();
@@ -4228,7 +4268,7 @@ function resetToSeat() {
 function wholePlane() {
   if (locked() || atHome()) return;
   const home = homeOf(view.family);
-  view = { ...view, x: home.x, y: home.y, w: home.w };
+  view = { ...view, x: home.x, y: home.y, w: home.w, maxiter: null };
   changed();
   draw();
 }
@@ -4761,6 +4801,9 @@ async function main() {
     palettes: PALETTES,
     defaultPalette: DEFAULT_PALETTE,
     settled: (mode) => SETTLED[mode],
+    // The width policy, which is what an absent `n` means: a view whose held cap is the
+    // width's own emits none, so it is the string it always was (permalink v4).
+    cap: (width) => renderer.maxiter(width),
   };
 
   // What the deep contract needs, which is the shallow one's palette set and two numbers

@@ -7,9 +7,11 @@
 // `permalink.js` to carry those would have moved three of its own rulings at once: that
 // `x` is echoed as written and read as a double, that the cap is emphatically not a key,
 // and that `f` and `m` say what is being drawn. Every shallow link ever written is held
-// by those rulings, so the deep view gets a contract of its own and the shallow one does
-// not move — `VERSION`, `READS`, the unknown-key sweep and the cap ruling are all exactly
-// where they were.
+// by those rulings, so the deep view gets a contract of its own and the shallow one did
+// not move. **One of the three has moved since, on its own terms**: the shallow contract's
+// v4 *(find_minibrots_cap2_ckpt145)* took `n`, because a minibrot framed by Find minibrots
+// is a blob at the width's cap, and it took it in this contract's spelling — one key, one
+// reader (`readCap`), one range — so the two read a cap the same way.
 //
 // **The marker is `dv`, and it is what dispatches.** A query carrying it is a deep link
 // and is read here; a query without it is a shallow link and is read there. Each refuses
@@ -31,6 +33,9 @@
 // node's own runner with nothing installed.
 
 import {
+  CAP_FLOOR,
+  CAP_KEY,
+  CAP_LIMIT,
   COORDINATE_LIMIT,
   DEEP_MARKER,
   LEVEL_KEY,
@@ -41,6 +46,7 @@ import {
   encode,
   encodeCurve,
   levelUnder,
+  readCap,
   shortest,
 } from "./permalink.js";
 import * as fx from "./deep-fx.js";
@@ -107,36 +113,33 @@ export function familyOf(view) {
   return degree === 2 ? "mandelbrot" : `multibrot${degree}`;
 }
 
-/** The key carrying the iteration cap.
- *
- *  **Written once the cap is settled, and never before** *(deep_tab_activity_and_layout_
- *  ckpt141)*. Here the cap is not simply the policy's: below about 1e-22 the width's own
- *  answer paints exterior as interior, the tab's probe raises it, and a reader may pin one
- *  of their own — so a cap that was settled, pinned, or chosen for a minibrot's tile is
- *  part of the picture and every link to it names it.
- *
- *  What it must not do is name a cap that nothing has settled yet. It used to be written
- *  always, so a link copied while the probe was still deciding carried the width's cap —
- *  and a link-carried cap opens pinned, so that link drew the frame at the un-escalated
- *  cap forever after, with no notice. A view says where its cap came from in `capFrom`:
- *  `"width"` is the policy's unsettled answer and is left out of the link, because an
- *  absent key already means exactly that (`parse` asks the policy); `"probe"`, `"reader"`
- *  and `"tile"` are written. A view that says nothing is written, which is the old rule
- *  and is safe. */
-const CAP_KEY = "n";
+// `n`, the iteration cap — `CAP_KEY`, from `permalink.js`, whose v4 reads it by this
+// contract's rule.
+//
+// **Written once the cap is settled, and never before** *(deep_tab_activity_and_layout_
+// ckpt141)*. Here the cap is not simply the policy's: below about 1e-22 the width's own
+// answer paints exterior as interior, the tab's probe raises it, and a reader may pin one
+// of their own — so a cap that was settled, pinned, or chosen for a minibrot's tile is
+// part of the picture and every link to it names it.
+//
+// What it must not do is name a cap that nothing has settled yet. It used to be written
+// always, so a link copied while the probe was still deciding carried the width's cap —
+// and a link-carried cap opens pinned, so that link drew the frame at the un-escalated
+// cap forever after, with no notice. A view says where its cap came from in `capFrom`:
+// `"width"` is the policy's unsettled answer and is left out of the link, because an
+// absent key already means exactly that (`parse` asks the policy); `"probe"`, `"reader"`
+// and `"tile"` are written. A view that says nothing is written, which is the old rule
+// and is safe.
 
-/** The most iterations a link may name. The kernel's own ceiling is a million; a link
- *  that named more would be asking for a frame that never finishes. */
-export const CAP_LIMIT = 1_000_000;
+/** The most iterations a link may name, and the fewest — the shallow contract's, since
+ *  its v4 took the same key: one `n`, one reader, one range. */
+export { CAP_FLOOR, CAP_LIMIT };
 
 /** The shallow contract's own cap on a coordinate's length, re-exported rather than
  *  restated — a URL is one thing however deep the picture is, and a caller that needs to
  *  know whether a place it has just computed can be spelled should ask this contract
  *  rather than carry a 64 of its own. */
 export { COORDINATE_LIMIT };
-
-/** The fewest. Below this there is no picture, only the disc. */
-export const CAP_FLOOR = 50;
 
 /** The aspect a link means when it says nothing — the shallow contract's, because a
  *  canvas is a canvas. */
@@ -215,7 +218,7 @@ export function parse(search, context) {
   // view always carries one. Absent is "whatever this width implies" rather than a hole:
   // the key is a reader's override of the policy, and having no override is a state.
   const capText = params.get(CAP_KEY);
-  const maxiter = capText === null ? context.deepCap(w.value) : cap(capText);
+  const maxiter = capText === null ? context.deepCap(w.value) : readCap(capText);
   // A link that names a cap is somebody's choice and opens pinned; one that names none is
   // the width's, and stays the width's until something settles it.
   const capFrom = capText === null ? "width" : "reader";
@@ -497,19 +500,6 @@ function width(text) {
 /** A width built here rather than read. */
 export function widthOf(value) {
   return { text: shortest(value), value };
-}
-
-function cap(text) {
-  if (!/^\d+$/.test(text)) {
-    throw new PermalinkError(`${CAP_KEY} is the iteration cap and has to be a whole number; the link says ${text}.`);
-  }
-  const value = Number(text);
-  if (value < CAP_FLOOR || value > CAP_LIMIT) {
-    throw new PermalinkError(
-      `${CAP_KEY} is the iteration cap and is between ${CAP_FLOOR} and ${CAP_LIMIT.toLocaleString("en-US")}; the link says ${text}.`,
-    );
-  }
-  return value;
 }
 
 function readAspect(text) {

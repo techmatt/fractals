@@ -450,8 +450,8 @@ export class DeepRenderer {
     return this.planner.limbs_for_width(width, sampleWidth);
   }
 
-  /** How wide a preview tile of a minibrot this size is — six body widths, the crate's
-   *  `nuclei::TILE_BODIES`. */
+  /** How wide a preview tile of a minibrot this size is — twelve body widths, the crate's
+   *  `nuclei::TILE_BODIES`, which is also the frame an entry opens at. */
   tileWidth(size) {
     return this.planner.tile_width(size);
   }
@@ -467,6 +467,18 @@ export class DeepRenderer {
    */
   tileCap(period, width) {
     return this.planner.tile_cap(period, width);
+  }
+
+  /**
+   * The cap an opened minibrot of period `p` is drawn at, and the `n` its link carries:
+   * thirty-two periods of it, or the width policy where that is more, under the ceiling.
+   *
+   * **Four times a tile's**, because a tile's eight was measured on a 316-pixel preview
+   * and the frame a reader opens is the viewer's own, where a copy at about thirteen
+   * periods is an all-black blob. `nuclei::OPEN_PERIODS` is where that is said.
+   */
+  openCap(period, width) {
+    return this.planner.open_cap(period, width);
   }
 
   /** The share of a frame that may still be the cap's fault before the cap is raised.

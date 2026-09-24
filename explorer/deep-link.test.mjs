@@ -164,12 +164,14 @@ test("the marker is what dispatches, and each contract refuses the other's", () 
   assert.throws(() => deep.parse("?v=3&p=inferno", context), /not a deep link/);
 });
 
-test("the shallow contract did not move", () => {
-  assert.equal(link.VERSION, 3);
-  assert.deepEqual(link.READS, [1, 2, 3]);
+test("the shallow contract moved once, and reads n by this contract's rule", () => {
+  // v4 is the one move: the cap became a shallow key *(find_minibrots_cap2_ckpt145)*, in
+  // this contract's spelling and range. Nothing else about the shallow reader moved.
+  assert.equal(link.VERSION, 4);
+  assert.deepEqual(link.READS, [1, 2, 3, 4]);
   assert.equal(link.COORDINATE_LIMIT, 64);
-  // The cap is still not a shallow key, which is the ruling this second contract exists
-  // beside rather than inside.
+  assert.equal(deep.CAP_LIMIT, link.CAP_LIMIT);
+  assert.equal(deep.CAP_FLOOR, link.CAP_FLOOR);
   const shallow = {
     home: () => ({
       x: { text: "-0.5", value: -0.5 },
@@ -181,7 +183,22 @@ test("the shallow contract did not move", () => {
     defaultPalette: "twilight_shifted",
     settled: () => ({}),
   };
+  // A v3 link never carried one, so one that does is refused rather than read.
   assert.throws(() => link.parse("?v=3&n=48551", shallow), /a key this page does not know: n/);
+  assert.equal(link.parse("?v=4&n=48551", shallow).maxiter, 48551);
+  // The same refusals, word for word, on either side.
+  for (const bad of ["49", "1000001", "1e5", "-3"]) {
+    const said = (() => {
+      try {
+        deep.parse(`?dv=3&n=${bad}`, context);
+      } catch (error) {
+        return error.message;
+      }
+      return null;
+    })();
+    assert.ok(said !== null, bad);
+    assert.throws(() => link.parse(`?v=4&n=${bad}`, shallow), { message: said });
+  }
 });
 
 test("the UI key rides on a deep link as it rides on a shallow one", () => {

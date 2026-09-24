@@ -47,7 +47,7 @@ Each line is a `##` below, and the question it is the answer to.
 | **The download** | what Download and Download all write, and what a picture carries |
 | **Measured** | every price this page has been held to: frames, bands, pools, tabs |
 | **A mode's parameters, from the view** | which parameters are derived rather than asked for |
-| **The permalink contract, version 3** | what a link may say, what it refuses, and why a URL is permanent |
+| **The permalink contract, version 4** | what a link may say, what it refuses, and why a URL is permanent |
 | **The link registry** | how a figure's link is derived, and what a refusal is called |
 | **Every pool is given back** | why a document's workers are terminated, and what it cost not to |
 | **What the last bug hunt covered** | what was exercised and came back clean, so a next hunt need not |
@@ -73,13 +73,16 @@ minute and a supersampled one costs several. The
 eleven families and seventeen modes above are still `f64` and still stop where they
 stopped. The article's deep-zoom figures stay baked rasters.
 
-Two more things are outside the contract **by ruling**, and each is a refusal a figure can
-run into. **The iteration cap is not a link key.** The depth a picture is drawn to is the
-engine's own depth-aware policy at that width, and a key for it would let a link say "this
-frame, but shallower" — a different picture wearing the same name. The article's
-`render-maxiter` figure was drawn at a cap of 300 where the policy gives 32,474 at its
-width, so it stays unlinked by design rather than opening at something near it. **A mode
-parameter left alone is not emitted.** Its default lives in the engine's mode catalog,
+**The iteration cap was outside the contract by ruling until permalink v4** *(find_minibrots_
+cap2_ckpt145)*, and now is not. The depth a picture is drawn to is still the engine's own
+depth-aware policy at that width wherever a view holds no cap of its own, and a link to such
+a view is the string it always was. What moved the ruling is Find minibrots: a copy it frames
+is drawn at thirty-two of its own periods, and at the width's cap the same frame is an
+all-black blob, so the cap that decided the picture has to travel with its link. `n` is
+written only where it is not the width's. The same key let four figures that were refused
+only for a chosen cap be linked — `render-maxiter` at its 300, and three panels of
+`locations-style-spectrum` — which is the contract's own rule that a link is exact or absent.
+**A mode parameter left alone is not emitted.** Its default lives in the engine's mode catalog,
 which is the same place the mode's identity lives, so a link that omits `density` is asking
 for "the stripe mode" rather than for "a stripe mode at 6" — and it should move if the
 catalog ever retunes that mode. The two exceptions since permalink v3 are an angle mode's
@@ -2037,13 +2040,42 @@ doors into the Deep module like the tab itself. The list is one element under th
 both views (`#minibrot-list`), goes when the view it was found in moves, and is dropped
 when the other view takes the canvas. **An entry opens in whichever view can draw it**:
 `resolvesShallow`, the question *Shallow mode* asks, keeps a frame above the `f64`
-floor in the shallow view, and a frame below it opens in the Deep tab with the period's own
-cap. **The frame is the Deep tab's in both**, six body widths across (`tileWidth`), so a
-minibrot is the same size on the screen whichever view opens it; the shallow view draws it
-at the width's cap, as it draws everything. Measured on the served page at 1600 wide: from
-`-1.7686, 0.0017` at 0.004 the six found opened in the shallow view (the first at
-6.5e-4 across); from the deep anchor's centre at 1e-12, the smallest of six, 8.0e-14
-across, opened in the Deep tab at `n=181632`.
+floor in the shallow view, and a frame below it opens in the Deep tab. **The frame is the
+Deep tab's in both, and so is the cap** — a minibrot is the same size on the screen and
+drawn to the same depth whichever view opens it.
+
+**Opening a copy: twelve body widths, thirty-two periods** *(Matt, find_minibrots_cap2_
+ckpt145)*. *A found minibrot that renders as an all-black blob is a failure.* Until this
+checkpoint an entry opened at six body widths — the copy filled about 60% of the frame's
+height — and the shallow view drew it at the width's cap, which on a high-period copy is
+about thirteen of its periods and a blob. Now:
+
+- **The cap is `renderer.openCap(period, width)`**, the crate's `nuclei::open_cap`:
+  `OPEN_PERIODS` (32) periods of the copy's own nucleus, or the width policy where that
+  is more, under the million. It is written into the frame and so into the link as `n` —
+  a `dv` link's as a `tile` cap, a shallow link's under permalink v4. Neither view runs the
+  fault-share probe on it: the Deep tab never probes a non-width cap, and the shallow view
+  has no probe. ⚠ **The ceiling binds from period 31,250**, past which a copy gets fewer
+  than 32 periods, falling to eight at 125,000 — the same wall the tiles have.
+- **The frame is `nuclei::TILE_BODIES` (12) body widths across**, which puts the copy's
+  black body at about a quarter of a 16:9 frame's height (0.25 to 0.27 on the real-axis
+  copies measured; six gave 0.59 to 0.61, ten 0.30 to 0.37, sixteen 0.19 to 0.20), so the
+  copy sits in its own surroundings and a reader can zoom out from it to the stages round it.
+- **A preview tile keeps its eight periods** (`previewOf` in `deep.js`): a tile is drawn
+  unasked under `TILE_BUDGET_MS`, and four times its cost would put most lists past it.
+  The tile is the same frame at a quarter of the open cap.
+
+Checked on the served page (`scratch/find_minibrots/`): thirteen entries opened, eight in
+the shallow view and five in the Deep tab, degrees two to five, periods 36 to 34,056. None
+is a blob. The five true copies among them land with the body at about a quarter to a third
+of the height; the Deep ones cost 5.9 s at period 2,838, 31 s at 19,866 and 87 s at 34,056,
+where the ceiling holds it to 29 periods. ⚠ **Seven of the thirteen are satellite bulbs of a
+larger component, not copies.** The search ranks every nucleus it solves, a bulb is a
+nucleus, and the size estimate means nothing for a bulb, so the frame shows the bulb on the
+edge of its parent. A bulb is a disc at any cap, so none of these is a blob either; which
+entries should be offered is a question for the search and is left open. **Degree three
+frames large**: a period-770 copy's body filled about half the height, so the size estimate
+reads small at that degree.
 
 One button, on the parameter plane only, at every degree the tab draws *(degrees three to six since
 deep_degrees_ckpt140, each against a measured pin — `perturb-wasm/README.md` §10)*. It searches the current view for the minibrots in and around
@@ -2074,7 +2106,8 @@ shape what this tab can offer, and the third is the reason the list looks the wa
   puts the link wall deeper there — so below about a 1e-30 view the entries are places this site can find and cannot
   spell a link to. They are **listed anyway, greyed, and the footer counts them** — the
   link contract does not move for this, and the honest thing is to say what is there.
-- ⚠ **A tile's cap is eight periods of its own nucleus, and that is expensive.** At the
+- ⚠ **A tile's cap is eight periods of its own nucleus, and that is expensive** — and the
+  frame an entry *opens* at is thirty-two (above). At the
   *width's* cap a deep minibrot's tile is 100% unresolved — a flat black rectangle — because
   the width policy at a tile's width gives about one and a half periods of it. Eight
   resolves it, and the periods at these depths run to six figures, so a tile at 1e-22 is
@@ -2229,6 +2262,8 @@ and a URL's escaping rule, neither of which has anything to do with how deep the
   pinned**, as before; one that names none opens at the width's cap, which is the kernel's
   once the module is up (`unsettle` re-asks it, because before that only the engine's
   policy is on the page and it stops at 67,000). `deep-link.test.mjs` holds both halves.
+  **The shallow contract reads it too since its v4**, by the same `readCap` out of
+  `permalink.js`, so the key, its range and its refusals are one thing on both sides.
 - **`cx` and `cy`** are the Julia parameter, exact decimals, **both or neither**, and they
   are the shallow contract's own spelling of the same quantity — the `c` of `z² + c`, half
   of a dynamical location's identity. A second name for one number is how two readers of
@@ -3402,10 +3437,10 @@ quality 95. The file grows by the payload and its header — 194 bytes and 165 b
 **The payload is the query and a tag in front of it, and no host.** Nothing here is live,
 the site is served from a project-Pages subpath that could move, and a picture saved today
 should open on whatever origin the reader has — so the file carries
-`fractal-explorer v=3&f=…` and the page it is dropped on supplies the rest. *Which*
+`fractal-explorer v=4&f=…` and the page it is dropped on supplies the rest. *Which*
 contract it belongs to is already in the query, because a deep link leads with `dv` in a
 file exactly as it does in a URL. There is **no version of its own** either: the query
-carries `v=3` or `dv=3`, so a payload this page cannot read is refused by the contract in
+carries `v=4` or `dv=3`, so a payload this page cannot read is refused by the contract in
 the contract's own words, which is a better sentence than a second version number could
 produce. The tag is what the JPEG side needs — a comment segment is free text with no
 keyword — and is how a reader tells our comment from somebody else's.
@@ -4310,10 +4345,45 @@ engine's behaviour and it is left alone.
   single-threaded, on a view that is almost all interior at 40,000 iterations. A probe that
   is cached costs nothing, and the stat line names the probe's time when it ran.
 
-## The permalink contract, version 3
+## The permalink contract, version 4
 
 `permalink.js` is the only thing that decides what a link means, and nothing else in the
 explorer is allowed a second opinion. A URL is the only permanent thing this page emits.
+
+### What version 4 changed, and why it is a 4 *(find_minibrots_cap2_ckpt145, 2026-09-23)*
+
+Version 4 gives a shallow view an **iteration cap**, `n`. It is the deep contract's key,
+spelled, ranged and read the same way — `CAP_KEY`, `CAP_FLOOR` (50), `CAP_LIMIT` (a
+million, `perturb.wasm`'s ceiling) and `readCap` live in `permalink.js` and `deep-link.js`
+imports them, so a refusal of `n=49` is word for word the same sentence on either side.
+
+- **Absent is the width policy**, which is what every link before v4 meant. A view holds
+  `maxiter: null` for it, and `render.js`'s `specOf` then leaves the key out of the spec
+  so the module asks `maxiter::for_width` as it always has. Every existing link parses to
+  a view that produces the same engine spec, byte for byte: all ten of the wallpaper
+  project's pins and all 218 shallow links in `links.jsonl`, read by the v3 contract and by
+  this one, gave identical specs, and the pins' fields are identical at 160×90.
+- **`n` is written only where it differs from the width's** — `context.cap(w)`, which the
+  page answers from `engine.wasm` and `builder/emit.mjs` from the same module. So a view
+  that happens to hold the width's own number emits no `n`, and the canonical string is
+  still a fixed point. A caller that passes no `cap` writes any cap a view holds.
+- **A v1–v3 link that spells `n` is refused**, the deep contract's rule for its `f`: those
+  versions never had the key, so no page that wrote one wrote it.
+- **What bumps it is the ruling it overturns.** A key with a default is a widening under
+  the v2 note below; but "the cap is not a key" was a ruling this README stated, and a page
+  still speaking v3 should say it cannot read a v4 link rather than draw that frame at the
+  width's cap under the same name.
+
+**How a held cap moves with the view.** `openMinibrot` sets it, a link sets it, and
+*Shallow mode* out of the Deep tab carries the tab's cap across wherever it is not the
+width's. A pan keeps it, and so does a zoom **until the width's own cap reaches it** —
+`heldCap` in `explorer.js`, which then drops it to `null`. That differs from the Deep tab,
+where any zoom drops a tile's cap and the probe re-raises it: this view has no probe, and
+zooming out from a found copy to the symmetry stages round it is what the copy's frame is
+for, so dropping the cap there would put back the blob it was set to prevent. Root, another
+plane, Julia here and any link leave it behind. Entering the Deep tab carries it as a
+`reader` cap. The readout under the picture says *iterations held by this view* in place
+of *at this width* while one is held.
 
 ### What version 3 changed, and why it is a 3
 
@@ -4382,10 +4452,10 @@ turns `multibrot3` into `{kind: "multibrot", degree: 3}`.
 ### The keys, in emit order
 
 ```
-v · f · cx · cy · px · py · zx · zy · m · the mode's parameters · x · y · w · a · p · the shade keys · level
+v · f · cx · cy · px · py · zx · zy · m · the mode's parameters · x · y · w · n · a · p · the shade keys · level
 ```
 
-- **`v`** — required. `1`, `2` and `3` parse; every string this page writes says `v=3`.
+- **`v`** — required. `1` to `4` parse; every string this page writes says `v=4`.
   Anything else is refused: it was written for a version of this page that no longer
   exists, or for one that does not exist yet.
 - **`f`** — the family. A name is the whole recurrence **including its exponent**, because
@@ -4448,6 +4518,9 @@ v · f · cx · cy · px · py · zx · zy · m · the mode's parameters · x ·
   an exact decimal centre. See *Deep* above. `w`
   must be positive. Omitted means the **family's own home view**, which is
   `Family::home_view()` and not a number this file holds.
+- **`n`** *(v4)* — the iteration cap, a whole number from 50 to 1,000,000. Omitted means
+  the engine's width policy at `w`, and it is only written where the view's cap is not
+  that. See *What version 4 changed*.
 - **`a`** — the aspect, written `across:down`, defaulting to `16:9`, each side between 1
   and 10000. An aspect is a shape. **Pixel dimensions are not a field of the contract**:
   the canvas is drawn at whatever size the reader's window gives it, and a link does not

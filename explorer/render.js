@@ -315,9 +315,11 @@ export function specOf(
   // Omitted at one, which is the module's own default, so the screen's specs are
   // the strings they have always been and the plan cache does not split in two.
   if (supersample > 1) spec.supersample = supersample;
-  // A probe's knob and never a picture's: the Walk tab's straddle probe asks for the
-  // sampler's 256, and nothing a link opens sets it, so the screen's specs never carry it.
-  if (maxiter !== null) spec.maxiter = maxiter;
+  // A probe's knob, or the view's own. The Walk tab's straddle probe asks for the sampler's
+  // 256; otherwise a view that holds a cap (permalink v4's `n`) is drawn at it, and one that
+  // holds none leaves the key out and the module asks the width policy, as it always has.
+  const cap = maxiter ?? view.maxiter ?? null;
+  if (cap !== null) spec.maxiter = cap;
   if (Object.keys(view.params).length > 0) spec.params = view.params;
   if (colormap) spec.colormap = stopsOf(view.palette);
   // The tone operator acts on the map's stops, so it travels with the colormap and is
