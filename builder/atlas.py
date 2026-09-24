@@ -742,6 +742,7 @@ def problems() -> list[str]:
         found.extend(_galleried(partition))
         found.extend(_sliced(partition))
         found.extend(_pictures(partition, atlas.thumb))
+        found.extend(_miniatured(partition))
     found.extend(_named(atlas))
     found.extend(_tallied(atlas))
     return found
@@ -1921,6 +1922,93 @@ def plates() -> list[str]:
 
     _write_rows(ATLAS_INDEX, [method] + partitions)
     return lines
+
+
+# ----------------------------------------------------------------------- the miniatures
+
+#: The square a plane chip's miniature is landed at, in pixels. The chip shows it at
+#: about half this, so a screen at twice the density still gets a pixel per pixel.
+MINIATURE_SIDE = 64
+
+#: How bright a plate pixel has to be to count as the set's, when the miniature is cropped
+#: to it. The plate's background is its ramp's black and the glow round the boundary fades
+#: into it, so this is where the glow is taken to stop.
+MINIATURE_FLOOR = 24
+
+#: The air round the set inside its square, as a share of the set's longer side.
+MINIATURE_PAD = 0.06
+
+#: The share of a miniature's pixels left brighter than its brightest level, and that level.
+#: A plate shrunk thirty-fold averages its hairline boundary into the black round it, and
+#: what is left reads as nothing at a chip's size; stretching the levels so all but the top
+#: half a percent reach `MINIATURE_TOP` is what keeps the outline an outline.
+MINIATURE_CLIP = 0.005
+MINIATURE_TOP = 235
+
+
+def miniature_path(partition: str) -> Path:
+    """Where one plane's miniature lands. `frame.js` spells the same name by rule."""
+    return IMAGE_DIR / f"miniature-{partition}.png"
+
+
+def _miniature(plate: Path):
+    """One plate, as the small grey picture its plane's chip carries.
+
+    **The plate itself, made small**, which is what makes a chip read as a miniature of the
+    plate it opens: the same set at the same home view through the same grey ramp. Two
+    things are done to it and both are only what the size needs. It is cropped square to the
+    set, because the plate's air is spent on a picture a hundredth of the size; and its
+    levels are stretched, for `MINIATURE_CLIP`'s reason. Grey in, grey out, and a lossless
+    PNG, so there is no encode here to have an opinion about.
+    """
+    from PIL import Image
+
+    with Image.open(plate) as opened:
+        grey = opened.convert("L")
+    left, top, right, bottom = grey.point(lambda v: 255 if v > MINIATURE_FLOOR else 0).getbbox()
+    middle_x, middle_y = (left + right) / 2, (top + bottom) / 2
+    half = max(right - left, bottom - top) / 2 * (1 + MINIATURE_PAD)
+    square = grey.crop(
+        (
+            round(middle_x - half),
+            round(middle_y - half),
+            round(middle_x + half),
+            round(middle_y + half),
+        )
+    )
+    small = square.resize((MINIATURE_SIDE, MINIATURE_SIDE), Image.Resampling.LANCZOS)
+    histogram = small.histogram()
+    left_over = MINIATURE_CLIP * MINIATURE_SIDE * MINIATURE_SIDE
+    level = 255
+    while level > 1 and histogram[level] <= left_over:
+        left_over -= histogram[level]
+        level -= 1
+    return small.point(lambda v: min(MINIATURE_TOP, round(v * MINIATURE_TOP / level)))
+
+
+def miniatures() -> list[str]:
+    """Land every plane's miniature from the plate the record names for it.
+
+    Read off the committed plates, so it needs neither the engine nor the checkout next
+    door, and a plate redrawn by `--plates` is a miniature to redraw by this.
+    """
+    lines: list[str] = []
+    for partition in load_all().partitions:
+        destination = miniature_path(partition.name)
+        images.save(_miniature(partition.plate.path), destination)
+        lines.append(
+            f"  {destination.name}  {MINIATURE_SIDE}x{MINIATURE_SIDE}  "
+            f"{destination.stat().st_size / 1e3:.1f} kB"
+        )
+    return lines
+
+
+def _miniatured(partition: Partition) -> list[str]:
+    """Every plane's chip has its miniature, since a page may ask for it by rule."""
+    path = miniature_path(partition.name)
+    if path.is_file():
+        return []
+    return [f"{partition.name}: no {path.name}; run `python -m builder atlas --miniatures`"]
 
 
 # ---------------------------------------------------------------------------- the maker

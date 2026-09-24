@@ -103,6 +103,26 @@
 }
 .plane:focus-visible { outline: 2px solid var(--well-link); outline-offset: 1px; }
 
+/* A chip with a miniature of its plate beside its label, which only the article asks for.
+   The picture sits inside the pill's left end, so the padding that side is the pill's
+   border radius rather than the text's air; the chip grows about a third taller and is a
+   better thing to tap for it. On a phone column the strip wraps to two rows. */
+.plane.has-miniature {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.15rem 0.7rem 0.15rem 0.2rem;
+}
+/* Two classes deep, because an article page's `.figure img` sizes every picture in a figure
+   to the figure's width and outranks one class. */
+.plane .plane-miniature {
+  display: block;
+  flex: 0 0 auto;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 0.3rem;
+}
+
 /* `.slot img` sets a display of its own, so the browser's `[hidden]` no longer wins: an
    empty slot's picture is hidden by a rule of the frame's instead. */
 .frame [hidden] { display: none !important; }

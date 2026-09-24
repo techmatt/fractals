@@ -55,7 +55,11 @@ the keyboard.
 gallery slot goes, in the same tab. It passes `fit: "width"`, because an article column
 sizes nothing but width: the frame reads the host's width alone and the host's height
 follows the frame, which is still one-way. And it passes `least`, the narrowest plate it
-may draw, because a phone's column is narrower than the studio's 320. Colours, chips,
+may draw, because a phone's column is narrower than the studio's 320. And it passes
+`miniatures` *(atlas_v2_ckpt146)*: each plane chip carries a 64-pixel grey miniature of its
+plate beside its label, `assets/images/atlas/miniature-<partition>.png`, because a reader of
+the article meets the chips before the planes have names to them. The studio's chips stay
+words. On a phone column the six wrap to two rows. Colours, chips,
 slots, hover and linger are the frame's, so the two callers cannot drift apart. What an
 article reader does not get is the studio's own furniture: the save marks and the colour
 key line above the frame, which the page's prose says instead.
@@ -302,6 +306,7 @@ python -m builder atlas                                  # what the record holds
 python -m builder atlas --make [--record STAMP]          # run the maker next door, all six planes
 python -m builder atlas --ingest [<maker>/dots.json]     # rewrite a plane, or all of them
 python -m builder atlas --plates                         # all six plates, dots re-projected
+python -m builder atlas --miniatures                     # the chips' miniatures, off the plates
 python -m builder atlas --figure atlas-places            # the plate and its marks (retired, below)
 ```
 
@@ -319,7 +324,10 @@ and a width that is the explorer's own has no business being a constant over the
 measurement of a family and from each dot's own `place.at`, and the absorption radius is
 kept on the plane as `radius_plane` and restated in pixels against the plate the dots are
 drawn on. The grey ramp is `builder/data/atlas-grey.json`, committed here so the maker has
-no input in anybody's scratch.
+no input in anybody's scratch. `--plates` lands the miniatures after it, and `--miniatures`
+lands them alone: each is its plate cropped square to the set and shrunk, with its levels
+stretched so the hairline boundary survives a thirty-fold reduction, and written as a
+lossless grey PNG. `check`'s `atlas` fails on a plane without one.
 
 `--ingest` is the second half of the maker and is committed for the reason the figure
 makers are: a record nobody can rebuild is a record nobody can correct. It re-encodes

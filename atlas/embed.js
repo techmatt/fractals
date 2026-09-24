@@ -7,7 +7,9 @@
 // well comes near the viewport, so the page's own pictures and text are never waiting on
 // the record, the plates or the engine the frame instantiates for `plan`.
 //
-// **The two callers differ in three options and nothing else.** The studio hands a click
+// **The two callers differ in four options and nothing else.** The fourth is `miniatures`:
+// a reader of the article meets the chips before the planes have names to them, so here
+// each chip carries a small picture of its plate, and the studio's chips stay words. The studio hands a click
 // back to its own viewer (`onPick`) and puts a save mark on each slot; an article page has
 // no viewer, so a slot is a link into the explorer and a mark goes where its gallery slot
 // goes, in the same tab as every other figure link. The studio's panel is a box its page
@@ -51,7 +53,7 @@ async function start(host) {
   try {
     const [{ mount }] = await Promise.all([import("./frame.js"), stylesheet()]);
     note?.remove();
-    await mount(host, { fit: "width", least: LEAST, linger: true });
+    await mount(host, { fit: "width", least: LEAST, linger: true, miniatures: true });
   } catch (error) {
     // Whatever did not load, the well goes back to what the builder wrote.
     console.warn("the atlas could not be mounted", error);

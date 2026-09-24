@@ -278,6 +278,12 @@ function contentBox(node) {
  * - **`least`** (default `LEAST`) — the narrowest plate the frame will draw, in CSS
  *   pixels. A phone's article column is narrower than the studio's floor, and a frame
  *   wider than its column is a page that scrolls sideways.
+ * - **`miniatures`** (default `false`) — whether each plane chip carries a small picture of
+ *   its plate beside its label *(atlas_v2_ckpt146)*, so a reader who has not met `z⁴` yet
+ *   sees which set a chip opens. The article's page asks for them; the studio does not, and
+ *   its chips are what they were. The pictures are `miniature-<partition>.png` beside the
+ *   plates, landed from them by `python -m builder atlas --miniatures`, and `check`'s
+ *   `atlas` fails on a plane without one.
  *
  * The handle is `{ record, refit, open, destroy }`: the record as `record.js` read it, a
  * `refit` that re-sizes the frame to its host and returns the `{ width, height }` it settled
@@ -295,6 +301,7 @@ export async function mount(host, options = {}) {
   const slotMark = options.slotMark;
   const byWidth = options.fit === "width";
   const least = options.least ?? LEAST;
+  const miniatures = options.miniatures ?? false;
 
   const plan = await planner(base);
   const contract = contractOf((spec) => {
@@ -372,7 +379,23 @@ export async function mount(host, options = {}) {
   const planes = made("div", "planes");
   const buttons = new Map();
   for (const one of record.partitions) {
-    const button = typeset(made("button", "plane"), one.label);
+    const button = made("button", "plane");
+    if (miniatures) {
+      // Beside the label rather than instead of it: the lobes tell the degrees apart for a
+      // reader who knows to count them, and the label is what tells the rest. The picture
+      // says nothing the label and `title` do not, so it is hidden from a screen reader.
+      // The label goes in a span of its own, because the chip is a flex row now and a bare
+      // `sup` would be an item of it, set a gap away from the `z` it raises.
+      const miniature = made("img", "plane-miniature");
+      miniature.src = new URL(`../assets/images/atlas/miniature-${one.partition}.png`, base);
+      miniature.alt = "";
+      miniature.width = 64;
+      miniature.height = 64;
+      button.classList.add("has-miniature");
+      button.append(miniature, typeset(made("span"), one.label));
+    } else {
+      typeset(button, one.label);
+    }
     button.type = "button";
     button.title = one.title;
     button.setAttribute("aria-pressed", String(one === partition));
