@@ -46,9 +46,9 @@ const BUILT = new Map();
  * **Kept without a bound, this was the screensaver's only growth** *(profiling_pass_ckpt146)*:
  * it shows a different map almost every picture, and a map of a few hundred stops is two
  * arrays and a number a stop — about 23 KB of heap a picture, 3.7 MB to 7.8 MB over twenty
- * minutes at *Fastest*, heading for the whole library's ~20 MB by morning. Building one is a
- * loop over a few hundred bytes of the blob, so a pan or a download that re-asks for the map
- * on the screen still finds it here, and nothing else pays for its going.
+ * minutes at *Fastest*, heading for the whole library's ~20 MB over a long enough run.
+ * Building one is a loop over a few hundred bytes of the blob, so a pan or a download that
+ * re-asks for the map on the screen still finds it here, and nothing else pays for its going.
  */
 const BUILT_KEPT = 64;
 
