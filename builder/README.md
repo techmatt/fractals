@@ -929,7 +929,13 @@ deep zoom video's, byte for byte, in `artifacts/deep-zoom/`.
 
 **Colour, by Hold look.** `--colour` sets the log mapping's `L` and phase so that the band
 density and the colour at the twin frame's median `nu` are what `deep-zoom-descent`'s log
-look (`L = 0.25`) gives at its own target's median. It is a first cut for Matt to tune.
+look (`L = 0.25`) gives at its own target's median. **It came out too dense, the opening
+most** (Matt): the twin's median `nu` is 3.4 times the old target's, so the held `L` is 3.4
+times finer, 13.5 bands per e-fold of `nu` everywhere. The chosen cut is the record's
+`power` mapping, `alpha = 0.15`, `L = 0.38`: `nu^alpha` lays `alpha·nu^alpha/L` bands per
+e-fold, so the bands thin as `nu` falls — about 2 per e-fold at the deep end and 0.5 at the
+home view — which calms the opening without a depth-dependent colouring, since it is still
+one function of `nu`.
 `deep-descent-pairs` colours a twin the other way round: its counts are about `p_A` times
 its source's, so under `lambda=0` it is its source shifted by `ln p_A`, and taking that off
 the phase puts the twin in its source's colours.

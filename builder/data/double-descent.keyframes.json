@@ -181,7 +181,7 @@
   },
   "colour": {
     "interior": [0, 0, 0],
-    "note": "index = frac(g(nu) / L + phase). The log mapping's L and phase are Hold look's, set by `python -m builder descent --colour`.",
+    "note": "index = frac(g(nu) / L + phase). The log mapping's L and phase are Hold look's, set by `python -m builder descent --colour`, and too dense; the power mapping is the chosen cut.",
     "mappings": {
       "linear": {
         "g": "nu",
@@ -196,9 +196,10 @@
       },
       "power": {
         "g": "nu^alpha",
-        "alpha": 0.3,
-        "L": 0.6,
-        "phase": 0
+        "alpha": 0.15,
+        "L": 0.38,
+        "phase": 0,
+        "why": "The second cut (Matt: the Hold-look log cut is too high-frequency, the opening most). A band per unit of g is alpha*nu^alpha/L bands per e-fold of nu, so it thins as nu falls: about 2 per e-fold at the deep end (nu ~ 5e4), 0.5 at the home view (nu ~ 4), where the log cut laid 13.5. One function of nu, so overlapping keyframes still agree."
       }
     }
   }
