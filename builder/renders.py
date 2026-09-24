@@ -1148,6 +1148,11 @@ def _refuse_if_superseded(head: str, row: dict) -> None:
                     )
 
 
+#: The one setting a composite takes: next door's `engine_spec.TEXTURE_WEIGHT`, and the
+#: engine's own field name, so it goes into the coloring as it came out of the record.
+TEXTURE_WEIGHT = "texture_weight"
+
+
 def wallpaper_coloring(row: dict, catalog: dict[str, dict] | None = None) -> dict:
     """The mode's coloring with this row's curve, trap settings and plane written into it.
 
@@ -1158,7 +1163,12 @@ def wallpaper_coloring(row: dict, catalog: dict[str, dict] | None = None) -> dic
     the row's curve in it, puts the row's trap settings in it, and hands over the result
     in full.
 
-    This mirrors `fractal_wallpapers.models.renders.coloring_of`, which is library code
+    **Settings, by kind**, as next door takes them: a direct trap's `opacity` and
+    `threshold`, a composite's `texture_weight`, and nothing for any other kind. The
+    composite's was missing here until *start_here_followups_ckpt146*, which refused every
+    screened recipe that carried its own weight.
+
+    This mirrors `fractal_wallpapers.engine_spec.coloring_of`, which is library code
     with no command-line door, and it is the only piece of that project's policy this
     repository restates. It is held to the original by rendering a row at its own geometry
     and comparing the picture against the corpus crop the judge was trained on — see
@@ -1175,6 +1185,14 @@ def wallpaper_coloring(row: dict, catalog: dict[str, dict] | None = None) -> dic
         coloring["transform"] = row["curve"]
     elif coloring["kind"] in ("composite", "modulate"):
         coloring["base"]["transform"] = row["curve"]
+        if coloring["kind"] == "composite" and TEXTURE_WEIGHT in settings:
+            # The one setting a composite takes: how much of its texture is let through.
+            # A real setting and not a no-op — a screened recipe draws at its own weight
+            # rather than the catalog's — and absent it is the catalog's picture exactly.
+            weight = float(settings.pop(TEXTURE_WEIGHT))
+            if not 0.0 <= weight <= 1.0:
+                raise EngineError(f"{mode}: texture_weight {weight} is outside [0, 1]")
+            coloring[TEXTURE_WEIGHT] = weight
     elif coloring["kind"] == "direct":
         # No curve here, and that is what the corpora did: a direct trap has no field, so
         # its colour key is how near the orbit came and the gradient is sampled at that

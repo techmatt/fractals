@@ -122,8 +122,8 @@
     off its palette, since a map only colors what the fractal's own values reach), and a
     picture may be dominant in two colors or in none.</p>
 
-    <p>Each color cell then gets an <i>allowance</i>: roughly twice its even share of the
-    gallery, so that a color can be over-represented but not by much, and the same rule one
+    <p>Each color cell then gets an <i>allowance</i>: roughly three times its even share of
+    the gallery, so that a color can be over-represented but not by much, and the same rule one
     level up for hue families. The rounding is generous on purpose. An allowance is a ceiling
     and never a quota: nothing is obliged to reach it, and a color the pool cannot supply
     simply does not appear.</p>
@@ -170,7 +170,8 @@
 
     <p>A floor is not a ceiling in the other direction, and it never overrides the rules above
     it. Where a mode's floor collides with a color allowance or a palette group's cap, the
-    ceiling wins and the floor goes unfilled and is recorded as such.</p>
+    ceiling wins and the floor goes unfilled and is recorded as such. Spirals are capped at a
+    tenth of the gallery; without the cap they would take far more of it.</p>
 
     <h2 id="what-the-pass-is-trying-to-do">What the pass is trying to do</h2>
 
@@ -217,11 +218,13 @@
 
     <p>It is worth being plain about what is <em>not</em> constrained here. Nothing in the
     selection reads which fractal family or which parameter plane a picture came from, or
-    which minibrot the location was found near, and nothing asks whether the finished gallery
-    struck a particular balance between the plain smooth rendering and the other modes. Those
-    things do come out reasonably mixed, but they come out that way because the pool is mixed
-    and because the rules above (one wallpaper per location, near-duplicates refused, color
-    spread) push hard against concentration, not because anything checks them.</p>
+    which minibrot the location was found near. Those things do come out reasonably mixed, but
+    they come out that way because the pool is mixed and because the rules above (one
+    wallpaper per location, near-duplicates refused, color spread) push hard against
+    concentration, not because anything checks them. Rendering mode is the exception: the
+    solve tries to give every mode but smooth a minimum number of seats, and it caps threads
+    at a fifth of the gallery, after one gallery gave it more than seven times its share of
+    the pool.</p>
 
     <p>That is a deliberate position rather than an oversight, and it is provisional.
     Enforcing a mix directly is easy; knowing what mix is worth enforcing is not, and a
