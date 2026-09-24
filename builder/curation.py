@@ -59,7 +59,6 @@ from .theme import (
     WELL,
     WELL_INK,
     WELL_INK_DIM,
-    WELL_PANEL,
     WELL_RULE,
     font,
     text_width,
@@ -480,148 +479,6 @@ def allowance_provenance(pass_: Pass) -> list[str]:
     ]
 
 
-# ------------------------------------------------------------- what a mode was asked for
-
-FLOOR_TOP = 300
-FLOOR_PITCH_ROOM = 82
-
-
-def gallery_floors() -> Drawn:
-    """`gallery-floors` — every mode's floor against the seats it actually took."""
-    pass_ = read()
-    floors = pass_.manifest["shortfalls"]["modes"]["floors"]
-    seated = pass_.manifest["counts"]["mode"]
-    order = sorted(seated, key=lambda name: (-int(seated[name]), name))
-    ceiling = _round_up(max(int(value) for value in seated.values()))
-
-    sheet, draw = sheets.canvas(SHEET_WIDTH, 536)
-    top = _title(
-        draw,
-        "What each mode was asked for, and what it took",
-        "a floor is a presence a mode is guaranteed if the pool can supply it — never a "
-        "ceiling, and never a share",
-    )
-    base = top + FLOOR_TOP
-    step = (PLOT_RIGHT - PLOT_LEFT) / len(order)
-    width = step - 26
-
-    for value in range(0, ceiling + 1, 50):
-        y = base - value / ceiling * FLOOR_TOP
-        draw.line([PLOT_LEFT, y, PLOT_RIGHT, y], fill=WELL_RULE, width=1)
-        text = f"{value:d}"
-        draw.text(
-            (PLOT_LEFT - 10 - text_width(draw, text, font(14)), y - 8),
-            text,
-            fill=SECTION_INK,
-            font=font(14),
-        )
-    draw.text((PLOT_LEFT, top - 24), "seats", fill=WELL_INK_DIM, font=font(15))
-
-    small = font(13)
-    for index, mode in enumerate(order):
-        took, floor = int(seated[mode]), int(floors.get(mode, 0))
-        x = PLOT_LEFT + index * step + 13
-        height = took / ceiling * FLOOR_TOP
-        draw.rectangle([x, base - height, x + width, base], fill=WELL_PANEL, outline=SECTION_INK)
-        if floor:
-            y = base - floor / ceiling * FLOOR_TOP
-            draw.rectangle([x, y, x + width, base], fill=BAR_INK, outline=SECTION_INK)
-            draw.line([x - 5, y, x + width + 5, y], fill=WELL_INK, width=2)
-        draw.text(
-            (x + width / 2 - text_width(draw, f"{took}", small) / 2, base - height - 19),
-            f"{took}",
-            fill=WELL_INK,
-            font=small,
-        )
-        lines = _wrapped(draw, mode.replace("_", " "), small, step - 6)
-        for line, words in enumerate(lines):
-            sheets.centred(draw, x - 13, base + 10 + line * 17, step, words, small, WELL_INK_DIM)
-        sheets.centred(
-            draw,
-            x - 13,
-            base + 10 + len(lines) * 17,
-            step,
-            f"floor {floor}" if floor else "no floor",
-            small,
-            SECTION_INK,
-        )
-
-    refusals = pass_.manifest["shortfalls"]["refusals_while_choosing"]
-    ranked = sorted(refusals.items(), key=lambda item: -item[1])
-    y = _foot(
-        draw,
-        [
-            f"every floor was met: {pass_.manifest['shortfalls']['demands']['short_total']} "
-            f"seats short across all {len(order)} modes, and the shaded part of a bar is "
-            "the floor inside what the mode took",
-            f"what went unfilled was seats — {pass_.unfilled} of {pass_.asked:,} — and what "
-            "refused the candidates offered for them was "
-            + ", ".join(f"{name.replace('_', ' ')} {count:,}" for name, count in ranked if count),
-        ],
-        sheets.PAD,
-        base + FLOOR_PITCH_ROOM,
-    )
-    _stamped(draw, pass_, y + 6)
-    return Drawn(sheets.save(sheet, sheet_path("gallery-floors")), floors_provenance(pass_))
-
-
-def _wrapped(draw, words: str, face, room: float) -> list[str]:
-    """One mode's name over as few lines as fit under its own bar.
-
-    The engine's own name for a mode, which is the name this article teaches and the one
-    its scoreboard lists — never an abbreviation invented for a chart, which would be a
-    second name for a thing the page has already named once.
-    """
-    lines: list[str] = []
-    for word in words.split():
-        if lines and text_width(draw, f"{lines[-1]} {word}", face) <= room:
-            lines[-1] = f"{lines[-1]} {word}"
-        else:
-            lines.append(word)
-    return lines
-
-
-def _round_up(value: int, step: int = 50) -> int:
-    return max(step, math.ceil(value / step) * step)
-
-
-def floors_provenance(pass_: Pass) -> list[str]:
-    floors = pass_.manifest["shortfalls"]["modes"]["floors"]
-    seated = pass_.manifest["counts"]["mode"]
-    demands = pass_.manifest["shortfalls"]["demands"]
-    refusals = pass_.manifest["shortfalls"]["refusals_while_choosing"]
-    return [
-        "Drawn, not rendered: a chart composed by builder.curation:gallery_floors from "
-        f"artifacts/curation/tentative/{pass_.stamp}/manifest.json — `counts.mode` for "
-        "what each mode took, `shortfalls.modes.floors` for what it was asked for, and "
-        "`shortfalls.refusals_while_choosing` for the foot. Nothing is rendered and no "
-        "engine is reached.",
-        _pass_line(pass_),
-        "One bar a mode, ordered by the seats it took: the whole bar is the seats, the "
-        "shaded part is the floor inside them, and the rule across the shading is the "
-        "floor itself. A mode's seats are counted by the mode its ledger recipe names, "
-        "which is what the engine was handed.",
-        "Floor against seated, in the order drawn: "
-        + ", ".join(
-            f"{mode} {int(floors.get(mode, 0))}/{int(seated[mode])}"
-            for mode in sorted(seated, key=lambda name: (-int(seated[name]), name))
-        )
-        + f". The floors sum to {pass_.manifest['shortfalls']['modes']['asked']} against "
-        f"{pass_.asked:,} seats, and the pass's own demand table records "
-        f"{demands['short_total']} seats short over {len(demands['rows'])} demands.",
-        f"The {pass_.unfilled} unfilled seats are not floors. What refused the candidates "
-        "offered while the set was being built, by rule: "
-        + ", ".join(f"{name} {count:,}" for name, count in sorted(refusals.items()) if count)
-        + ". A refusal is one offer refused and not one candidate lost — the same picture "
-        "is offered again as the set changes around it.",
-        "This figure was specified as two gallery sizes side by side, and it is one. The "
-        "only sizes recorded against this pool are n = 1,000; every n = 150 record on this "
-        "machine was solved over an earlier and smaller pool, and two sizes over two pools "
-        "is not the comparison the figure claims. The page's sentence about a gallery of a "
-        "hundred and fifty is the claim that still wants a record.",
-    ]
-
-
 # ------------------------------------------------------- two pictures that read as one
 
 #: The three pairs, and what each is doing on the sheet. The keys live on the registry
@@ -796,12 +653,11 @@ def twins_provenance(pass_: Pass, resolved, measured: list[float]) -> list[str]:
 
 #: Which of these are drawn art rather than photographs, and so ship lossless. A chart
 #: is hairlines and flat ground, and JPEG rings every one of them.
-CHARTS = ("gallery-pool", "gallery-allowance", "gallery-floors")
+CHARTS = ("gallery-pool", "gallery-allowance")
 
 MAKERS = {
     "gallery-pool": gallery_pool,
     "gallery-allowance": gallery_allowance,
-    "gallery-floors": gallery_floors,
     "gallery-twins": gallery_twins,
 }
 
