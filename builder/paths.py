@@ -31,7 +31,7 @@ def carrier_path(page: str) -> Path:
     A bare file name is an article section — the case every row was until the palette
     library and the palette prompt arrived, and the one a row should keep saying. A
     name with a `/` in it is site-relative, which is how a page that hangs off a section
-    without being one of the twelve is addressed. Two spellings, and the slash is what
+    without being one of the fourteen is addressed. Two spellings, and the slash is what
     tells them apart, so no row has to say which kind it is. The front page is
     `./index.html`, which is the same rule given the slash a bare name at the root lacks.
     """

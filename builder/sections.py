@@ -153,7 +153,7 @@ def load_all() -> list[Section]:
 
 
 def rail(page: Path, sections: list[Section]) -> str:
-    """The rail as one page carries it: twelve sections, this page's own headings open,
+    """The rail as one page carries it: fourteen sections, this page's own headings open,
     and under them the two places a reader leaves the article for.
 
     The title is the way back to the front page. It was the one word in the rail that
@@ -192,10 +192,10 @@ def rail(page: Path, sections: list[Section]) -> str:
 
 #: The page a reader new to the project is sent to first *(start_here_ckpt146)*. It sits in
 #: the rail above the contents and is not one of them: it is an outline of the whole
-#: project in a few paragraphs, told as how it came about, and the twelve sections are the
+#: project in a few paragraphs, told as how it came about, and the fourteen sections are the
 #: article that outline points into. So it is not in `sections.jsonl`, carries no done
 #: marker and no place in the reading order, and lives at the site's root beside the front
-#: page rather than in `article/`, which holds exactly the twelve.
+#: page rather than in `article/`, which holds exactly the fourteen.
 START = SITE_ROOT / "start-here.html"
 
 
@@ -229,7 +229,7 @@ def _start(page: Path) -> list[str]:
     return lines
 
 
-#: What the rail carries under the twelve sections: the page that runs the engine, and the
+#: What the rail carries under the fourteen sections: the page that runs the engine, and the
 #: code the article is about. Both are in the site bar too, and the bar is one line at
 #: the very top of a page the reader has scrolled away from — the rail is where a reader
 #: is looking when the question "can I try this myself?" arrives.
@@ -263,7 +263,7 @@ def with_rail(page: Path, page_html: str, sections: list[Section]) -> str:
     return _BLOCK.sub(lambda _: block(page, sections), page_html, count=1)
 
 
-#: Pages that are written by hand and carry the rail without being one of the twelve
+#: Pages that are written by hand and carry the rail without being one of the fourteen
 #: sections — they hang off a section rather than taking a place in the reading order. Written
 #: down here because there is nothing to derive them from: a page's own HTML cannot say
 #: "check my rail" and be believed, and the alternative is a rail nothing re-derives.

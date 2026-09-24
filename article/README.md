@@ -1,22 +1,24 @@
 # article
 
 One page per section, in reading order, named for the section slug the front page links
-to. The twelve sections, ratified:
+to. The fourteen sections, ratified, in reading order:
 
 ```
-overview.html                     rendering-modes.html      color-palettes.html
-escape-time-fractals.html         finding-good-locations.html
-rendering-fundamentals.html       training-judges.html      full-pipeline.html
-                                  finding-good-wallpapers.html
-                                  gallery-curation.html
-                                  fractal-atlases.html
-                                  deep-zoom.html
+overview.html                     color-palettes.html
+escape-time-fractals.html         finding-good-wallpapers.html
+rendering-fundamentals.html       gallery-curation.html
+rendering-modes.html              full-pipeline.html
+finding-good-locations.html       fractal-atlases.html
+training-judges.html              deep-zoom.html
+                                  other-artistic-techniques.html
+                                  cool-math.html
 ```
 
-The first eight are written; `gallery-curation.html`, `full-pipeline.html`,
-`fractal-atlases.html` and `deep-zoom.html` are still stubs. `sections.jsonl` is what says so. A stub is the slug,
-the section navigation, whatever figures the prose will be built around, and an `intro`
-section that says what the section is about and then says it is not written yet. A page
+The first twelve are written; `other-artistic-techniques.html` and `cool-math.html` are
+placeholders. `sections.jsonl` is what says so. A placeholder is the slug, the heading, the
+section navigation and an `intro` section of one sentence saying it is not written yet
+(an older stub also said what the section would be about, and carried whatever figures
+its prose would be built around). A page
 that has been written loses that `intro`, and its prose lives in
 `<section class="prose">`. **No page carries a standfirst** — the ruling in
 `writing-guidance.md` cut the device site-wide, and a page opens on its lead.
@@ -60,7 +62,7 @@ every palette in the library as a strip, grouped the way the section groups them
 A registry names either of them with its slash: `palettes/make-your-own.html`.
 
 Three registries live here, one per thing a page is held to. `sections.jsonl` gives the
-twelve pages their reading order and marks the ones that are written — the flag behind the
+fourteen pages their reading order and marks the ones that are written — the flag behind the
 done marker in the rail and on the front page. A new page goes in that file, or the rail
 will not know about it and `check` will say so. `prose.jsonl` names the approved master a
 placed page is held to. `figures.jsonl` holds one row per figure: its words, its status,

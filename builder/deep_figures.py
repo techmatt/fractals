@@ -379,6 +379,9 @@ class Misiurewicz:
     whole: str
     likeness: str
     shape: str
+    #: The whole-Julia panel's width, centred at 0: the Julia home's 3 unless the set
+    #: runs off the frame there.
+    home: str = "3"
 
     def short(self) -> str:
         """c as a reader reads it: four places, real minus signs."""
@@ -415,12 +418,16 @@ MISIUREWICZ = (
         0.950,
         "3e-3",
         _colour("High Cyan, Low Gold"),
-        "a thin branching curve of pale filigree crossing the frame on a diagonal over "
-        "bands of green, running off its top and bottom edges",
+        "a thin branching curve of pale filigree lying on a diagonal, ringed by bands of "
+        "cyan, orange and green",
         "the same three-armed junction, turned about 22 degrees, its arms studded with "
         "six-pointed stars",
         "three arms of filigree meeting at the center, each studded with six-pointed stars, "
         "over dark green",
+        # At the home's 3 the set runs off the frame's top and bottom edges: it reaches
+        # |Im z| 1.11, and a 16:9 frame holds that with a margin from 4.4 across. 3.6, the
+        # first ask, still clipped both tips.
+        home="4.4",
     ),
     # Degree 3: B = M(4,1) at 0.6578512382 + 0.5005407815i (|ρ| 1.33), carried into the
     # period-25 copy at -0.6352281642333385081490412669827353703653
@@ -505,8 +512,8 @@ def _descents() -> tuple[Frame, ...]:
 
 
 def _row(point: Misiurewicz) -> tuple[Frame, Frame, Frame]:
-    """The whole Julia set at the Julia home, that set zoomed in at c, and the parameter
-    plane zoomed in at c."""
+    """The whole Julia set centred at 0 at the point's `home` width, that set zoomed in at
+    c, and the parameter plane zoomed in at c."""
     here = point.short()
     c = (point.x, point.y)
     degree = "" if point.degree == 2 else f", degree {point.degree}"
@@ -514,7 +521,7 @@ def _row(point: Misiurewicz) -> tuple[Frame, Frame, Frame]:
         Frame(
             "0",
             "0",
-            "3",
+            point.home,
             point.colour,
             "Julia set",
             note=f"{here}{degree}",
@@ -678,7 +685,8 @@ FIGURES = {
         (960, 540),
         2,
         "three Misiurewicz points, one of degree 2 at 3e-3 and tuned ones of degrees 3 and "
-        "4 at 5.2e-16 and 2e-16, each row the whole Julia set at the Julia home, that set "
+        "4 at 5.2e-16 and 2e-16, each row the whole Julia set centred at 0 at width 3 (4.4 "
+        "for the degree-2 point, whose set runs off the frame at 3), that set "
         "zoomed in at c at Tan Lei's scale, and the parameter plane zoomed in at c; the "
         "constants are MISIUREWICZ's",
     ),

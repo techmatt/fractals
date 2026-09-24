@@ -29,7 +29,7 @@ What is covered, and why it stops where it does:
   what closed that gap.
 - **`palettes/make-your-own.html`**, the page that hangs off Color palettes, which the
   register always carried.
-- **`index.html`**, the front page: a lead, twelve section blurbs and two pointers, all of
+- **`index.html`**, the front page: a lead, fourteen section blurbs and two pointers, all of
   it reader-facing prose with no master behind it, and outside every register until now.
 - **the gallery index**, whose prose is two paragraphs and carries none.
 

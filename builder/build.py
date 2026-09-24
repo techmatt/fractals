@@ -54,7 +54,7 @@ def _hand_written(article: list[sections.Section]) -> list[str]:
     """The two things the builder owns inside a hand-written page.
 
     The prose is nobody's business but the writer's. The contents rail between the
-    markers is derived from all twelve pages at once, and a prose `<h2>` gets the id its
+    markers is derived from all fourteen pages at once, and a prose `<h2>` gets the id its
     rail entry links to — both would be a chore to keep by hand and neither is prose.
     """
     changed = []

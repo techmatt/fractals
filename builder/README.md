@@ -260,7 +260,7 @@ preparation, and `docs/page-review.md`'s *Leftovers* carries it.
 
 ## A page may hang off a section without being one
 
-`article/` holds exactly the twelve ratified sections, and `check` refuses an HTML file
+`article/` holds exactly the fourteen ratified sections, and `check` refuses an HTML file
 there that `sections.jsonl` does not list. A page that belongs to a section without being
 part of the reading order — the palette library, the palette prompt — lives in its own
 directory and is named with a slash wherever a registry names a page:
@@ -277,7 +277,7 @@ derive the list from, because a page cannot ask to be checked and be believed.
 *(start_here_ckpt146.)* `start-here.html` is the page a reader new to the project is sent
 to: the project in a few paragraphs, told as how it came about, with a picture for each
 stage. It sits at the site's root beside the front page, because `article/` holds exactly
-the twelve sections, and its registry spelling is `./start-here.html`, the same rule
+the fourteen sections, and its registry spelling is `./start-here.html`, the same rule
 `./index.html` follows. `sections.START` names it and `sections.rail` puts it above the
 rail's title as a list of one, named by its `<h1>` and opened to its own `<h2>`s when it is
 the current page, exactly as a section is; it has no `sections.jsonl` row, no done marker
@@ -296,7 +296,7 @@ walk the twin channel started in that point's Julia set. `start-video` is a pend
 
 ## The contents rail is derived, never kept
 
-`article/sections.jsonl` gives the twelve sections their reading order and says which are
+`article/sections.jsonl` gives the fourteen sections their reading order and says which are
 written; everything else the rail shows comes off the pages themselves. A section's name
 is its `<h1>`, and the entries that open under the current page are the `<h2>`s of its
 prose — a stub's *Figures* block is scaffolding, not reading, so it is not listed.

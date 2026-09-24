@@ -203,7 +203,7 @@ def words_of_body(page_html: str) -> str:
 
     The same reduction, over a wider set of pages. An article section keeps its words in
     `<section class="prose">` and is compared to a master; the front page and the gallery
-    index have no master and no prose section, and their words — a lead, twelve blurbs,
+    index have no master and no prose section, and their words — a lead, fourteen blurbs,
     two pointers — are read by exactly the same reader. So where there is no prose
     section this falls back to `<main>`, which on those two pages is all of it and on an
     article page would also carry the section nav.

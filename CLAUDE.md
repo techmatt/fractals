@@ -491,8 +491,8 @@ Wikipedia's shape: a sticky contents rail on the left, the reading column beside
   own script. That same frame is Fractal atlases' live figure, mounted by
   `atlas/embed.js`: one implementation with two callers, never a copy.
 
-**A page may hang off a section without being one.** The twelve sections are ratified
-and `article/` holds exactly those twelve; a page that belongs to a section but is not part of
+**A page may hang off a section without being one.** The fourteen sections are ratified
+and `article/` holds exactly those fourteen; a page that belongs to a section but is not part of
 the reading order lives in its own directory and says so in the registries by naming
 itself with a slash — `palettes/make-your-own.html`. It carries the rail like any other
 page and the rail has no current entry on it, which is what the gallery pages already do.
@@ -500,7 +500,7 @@ page and the rail has no current entry on it, which is what the gallery pages al
 **The rail is derived, never typed.** `article/sections.jsonl` gives the reading order and
 which sections are `"status": "written"`; a rail entry's name is the page's own `<h1>`,
 and the entries that open under the current page are that page's prose `<h2>`s. Its title
-is the way back to the front page, and under the twelve sections it carries the two links
+is the way back to the front page, and under the fourteen sections it carries the two links
 that leave the article — the explorer and the code *(Matt, 2026-08-21)*. Above the title
 sits one entry that is not a section, **Start here** *(start_here_ckpt146)*:
 `start-here.html`, at the root beside the front page, named and opened like a section but

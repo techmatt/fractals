@@ -9,7 +9,7 @@ be argued with.
 
 **Read it at [techmatt.github.io/fractal-website](https://techmatt.github.io/fractal-website/).**
 
-- **[The article](https://techmatt.github.io/fractal-website/)** — twelve sections in
+- **[The article](https://techmatt.github.io/fractal-website/)** — fourteen sections in
   reading order, from what a fractal is through to the whole pipeline end to end.
 - **[The explorer](https://techmatt.github.io/fractal-website/explorer/)** — the same
   renderer the wallpapers were drawn with, running in the browser. Pan and zoom any family
