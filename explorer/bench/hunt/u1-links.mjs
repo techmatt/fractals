@@ -192,6 +192,9 @@ const fuzz = [
   ["a 60 KB coordinate", `${SHALLOW.replace("x=-0.5", `x=${"1".repeat(60000)}`)}`, "refused"],
   ["fragment only", "#deep", "draws"],
   ["unknown panel", `${SHALLOW}&panel=nosuch`, "either"],
+  // Entering the Deep tab draws the carried frame with Auto-render on (ckpt146), so the
+  // fixed point below holds here too: before, entering drew nothing and the raster was
+  // whatever the canvas held, a different one on each load.
   ["panel deep", `${SHALLOW}&panel=deep`, "draws"],
 ];
 

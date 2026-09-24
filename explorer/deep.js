@@ -7,12 +7,14 @@
 // box saying what would be drawn.
 //
 // **What follows a gesture on its own is the one-sample pass, and `autoRender` is the
-// switch** *(deep_ui_ckpt140, 2026-09-21)*. Ticked — which it is on entering — a settled
-// frame change cancels whatever is in flight and draws the new frame at the quarter pass
-// and then one sample a pixel; unticked, the tab is press-to-render and the only thing that
-// starts by itself is the quarter pass, and only once the last one came back under
-// `AUTO_PREVIEW_MS`, a threshold measured on this machine and this view rather than
-// assumed. **The screen is always one sample a pixel** *(deep_tab_activity_and_layout_
+// switch** *(deep_ui_ckpt140, 2026-09-21)*. Ticked — which it is unless this viewer turned
+// it off — a settled frame change cancels whatever is in flight and draws the new frame at
+// the quarter pass and then one sample a pixel, and so does arriving: entering the tab and
+// opening a link are frame changes too *(Matt, interior_seam_deep_autorender_ckpt146)*.
+// Unticked, the tab is press-to-render and the only thing that starts by itself is the
+// quarter pass, and only once the last one came back under `AUTO_PREVIEW_MS`, a threshold
+// measured on this machine and this view rather than assumed; the canvas is then empty
+// until something of this tab's own is drawn, never the picture it was entered over. **The screen is always one sample a pixel** *(deep_tab_activity_and_layout_
 // ckpt141)*: what Render adds over an auto pass is the cap probe, and more samples than one
 // are the Download row's to spend, on a file.
 //
@@ -129,9 +131,11 @@ const WATCHDOG_MS = 10000;
  */
 const LOG_FLAG = "explorer.deep-log";
 
-/** Where the auto-render flag is remembered. The tab's own session, the Julia preview's
- *  pattern and the Julia preview's reason: a way of working, not part of a picture, so no
- *  link carries it and the browser does not keep it past the tab. */
+/** Where the auto-render flag is remembered: `localStorage`, so it is the viewer's and
+ *  outlives the tab *(Matt, interior_seam_deep_autorender_ckpt146)*. On is what the tab is
+ *  meant to be, and off is for a machine or a moment that does not want it; a reader who
+ *  turned it off on a slow laptop should not have to turn it off again on every visit. A
+ *  way of working and not part of a picture, so no link carries it. */
 const AUTO_RENDER = "explorer.deep-auto-render";
 
 /**
@@ -522,7 +526,20 @@ export function mount(host) {
    * iterated, and the picture on screen is honestly labelled as the old one.
    */
   function paint() {
-    if (stale === null) return;
+    // **Nothing to slide is an empty canvas, never the last picture of something else**
+    // *(interior_seam_deep_autorender_ckpt146)*. With no picture of this tab's own the
+    // canvas used to keep whatever was there — the shallow view it was entered from, or a
+    // frame a link replaced — so a `panel=deep` link drew a different raster on each load.
+    // `swap`'s reason, applied everywhere.
+    if (stale === null) {
+      if (owns) {
+        host.compose((ink, grid) => {
+          ink.fillStyle = "#000";
+          ink.fillRect(0, 0, grid.width, grid.height);
+        });
+      }
+      return;
+    }
     const on = display();
     const at = place(stale.view, on);
     host.compose((ink, grid) => {
@@ -1973,8 +1990,8 @@ export function mount(host) {
 
   function storedAuto() {
     try {
-      // Ticked unless this tab has been told otherwise, so absent is on.
-      return window.sessionStorage.getItem(AUTO_RENDER) !== "off";
+      // Ticked unless this viewer has said otherwise, so absent is on.
+      return window.localStorage.getItem(AUTO_RENDER) !== "off";
     } catch {
       // A browser that stores nothing still has the box; it forgets it on a reload.
       return true;
@@ -1985,17 +2002,14 @@ export function mount(host) {
     autoRender = value;
     els.auto.checked = value;
     try {
-      window.sessionStorage.setItem(AUTO_RENDER, value ? "on" : "off");
+      window.localStorage.setItem(AUTO_RENDER, value ? "on" : "off");
     } catch {
       /* As above. */
     }
     syncControls();
-    // Ticking it over a frame the reader has already moved to draws that frame, rather
-    // than waiting for another gesture to prove they meant it. **Not where nothing has
-    // been drawn at all**: that is not a frame change, it is arriving, and arriving does
-    // not start minutes of work — the same rule `enter` keeps, and Render is right beside
-    // the box.
-    if (value && drawn !== null && pending()) moved();
+    // Ticking it over a frame that is not drawn draws it, rather than waiting for another
+    // gesture to prove the reader meant it: on is "the canvas is the frame".
+    if (value && shown && owns && pending()) moved();
   }
 
   /**
@@ -2167,8 +2181,8 @@ export function mount(host) {
     }
     host.say(
       "This tab is several times slower than the explorer and gets slower as you go " +
-        "deeper — a frame can take minutes. Auto-render draws each frame you move to at the " +
-        "width's own cap; Render also checks whether the frame needs a higher one.",
+        "deeper — a frame can take minutes. Auto-render draws each frame you open or move to " +
+        "at the width's own cap; Render also checks whether the frame needs a higher one.",
     );
   }
 
@@ -2204,6 +2218,14 @@ export function mount(host) {
     paint();
     syncControls();
     host.settle();
+    // **Arriving draws the frame, with Auto-render on** *(Matt,
+    // interior_seam_deep_autorender_ckpt146: "never renders unasked" was never the
+    // intent)*. The same pass a settled gesture starts — quarter, then full at one sample a
+    // pixel, no cap probe — and no settle wait, because nothing is still moving. A frame
+    // already drawn is left as it is.
+    if (autoRender && running === null && pending() && refused() === null) {
+      render("screen", { auto: true });
+    }
   }
 
   /** A shallow view as a deep one, where it is a frame this tab can take. */
@@ -2498,6 +2520,7 @@ export function mount(host) {
       drawn = null;
       stale = null;
       settledAt = null;
+      paint();
       syncControls();
       host.settle();
       stat("");

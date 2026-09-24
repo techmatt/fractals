@@ -1589,14 +1589,15 @@ walk's framing and the walk's reason: at that framing a box drawn inside the pic
 as a box rather than as the edge of the canvas. The stale picture is dimmed to 0.55, the
 walk's backdrop, because dim says *old* without hiding it.
 
-**Then `autoRender` decides what follows.** Ticked, which is what entering the tab gives,
-a frame change that has settled for 350 ms **cancels whatever is in flight** and draws the
-new frame: the quarter-resolution field, then the full one at one sample a pixel, and no
-further. Every route into a new frame goes through it — a drag, a wheel notch, a cap
-change, *Julia at this c* and its way back, a *Find minibrots* pick, and a deep link
-opened from Saved or the address bar. Unticked, the tab is press-to-render, and the only
-thing that starts by itself is the quarter pass, and only **if the previous quarter pass
-came back under `AUTO_PREVIEW_MS`** — provisional at 1.5 s.
+**Then `autoRender` decides what follows.** Ticked, which is the default and is expected to
+stay on *(Matt, interior_seam_deep_autorender_ckpt146)*, a frame change that has settled for
+350 ms **cancels whatever is in flight** and draws the new frame: the quarter-resolution
+field, then the full one at one sample a pixel, and no further. Every route into a new frame
+goes through it — entering the tab, a `panel=deep` or `dv` link, a drag, a wheel notch, a
+cap change, *Julia at this c* and its way back, a *Find minibrots* pick, and a deep link
+opened from Saved. Unticked, the tab is press-to-render, and the only thing that starts by
+itself is the quarter pass, and only **if the previous quarter pass came back under
+`AUTO_PREVIEW_MS`** — provisional at 1.5 s. Render is there in both states.
 
 **An auto pass never runs the cap probe** *(deep_tab_activity_and_layout_ckpt141)*. It
 draws at the width's own cap with no escalation; only an explicit Render (and a download)
@@ -1608,10 +1609,21 @@ is short of enough and the walk runs to the ceiling. A drag was enough to start 
 link opened is drawn the same way, at the cap it names (pinned) or at the width's; Render is
 what asks whether the frame wants more.
 
-The flag is the tab's own `sessionStorage`, under `explorer.deep-auto-render` (absent reads
-as on, `off` as off), the Julia preview's pattern and its reason: it
-is a way of working rather than part of a picture, so no link carries it and the browser
-does not keep it past the tab. The box is beside Render.
+The flag is the viewer's, in `localStorage` under `explorer.deep-auto-render` (absent reads
+as on, `off` as off) *(ckpt146; it was the tab's `sessionStorage` until then)*: off is for a
+machine or a moment that does not want the work, and a reader who turned it off on a slow
+laptop should not have to turn it off again on every visit. It is a way of working rather
+than part of a picture, so no link carries it. The box is beside Render, and it is the one
+switch.
+
+**A superseded pass yields in milliseconds, so the settle is the only debounce there is**
+*(measured, ckpt146, `bench/deep-supersede.mjs`)*. A wheel notch during the anchor's full
+pass at 2e-11 starts the new frame's pass 358–364 ms later, against 352–360 ms from an idle
+tab: the 350 ms settle and under 15 ms of cancel, since a busy worker is terminated rather
+than waited on. Its quarter picture is up about 0.1 s later than from idle (1.36–1.50 s
+against 1.26–1.37 s), which is the restarted workers taking the orbit again. Ten notches at
+120 ms start nothing while they last, and the pass follows 353 ms after the last. So
+continuous input needs nothing added.
 
 **A progress line names the stage and the percentage, and the time left comes from the
 bands this pass has already finished** and from nothing else — a deep frame's cost swings
@@ -2333,9 +2345,16 @@ while the panel is hidden.
 - **A cost warning shows once per session**, on the first entry, in `sessionStorage`. It
   says what the tab costs and what Auto-render spends without being asked; it used to end
   *Nothing here draws until you press Render*, and that sentence went with the checkbox.
-- **Entering does not start a render**: coming into the tab is not a frame change, and a
-  reader who has arrived should see where they are before minutes are spent. The screen is
-  one sample a pixel whatever route came in (*The screen is one sample a pixel*, above).
+- **Entering draws the frame, with Auto-render on** *(Matt, interior_seam_deep_autorender_ckpt146:
+  "never renders unasked" was never the intent)*. Coming into the tab is a frame change like
+  any other, so it starts the pass a settled gesture starts — quarter, then full at one
+  sample a pixel, no cap probe — without the settle wait, and a frame already drawn is left
+  as it is. So does opening a `panel=deep` link, which is how the bug hunt's u1 finding
+  closed: the canvas used to keep whatever was up when the tab took it, so the same link
+  drew a different raster on each load, and two loads now draw one. **With it off, the
+  canvas is empty until something of this tab's own is drawn** — never the shallow picture
+  it was entered over, nor a frame a link replaced. The screen is one sample a pixel
+  whatever route came in (*The screen is one sample a pixel*, above).
 - **Zooming back out is fine at any depth.** *Shallow mode* carries the view where
   `f64` can still resolve it and says why not where it cannot — the module's own question,
   not a width written down here. A Julia view has a second way to fail it, and the refusal
@@ -3920,6 +3939,25 @@ mandelbrot `smooth_trap_circle` 1.47 s, and the worst seen, julia5 `threads` at 
 0.25, 7.77 s. A preview lands at a sixteenth of the samples before any of it. The shade
 was main-thread and pool-independent at 150–500 ms when that was read, and is neither now:
 see *The shade over the pool* below.
+
+### The Julia homes, stopped once proven interior *(interior_seam_deep_autorender_ckpt146, 2026-09-24)*
+
+The shipped `c` has an attracting cycle on the degree-3 to degree-6 planes, so their homes
+were mostly interior run to the cap, and the page's dearest. The engine now stops such an
+orbit once it enters a disk the cycle carries into itself, and on any family once the
+loop's state repeats exactly — where every field reads an escape, as the section below.
+Zero behaviour: 289 frames × 17 modes through the old and the new module, lanes and shaded
+pictures identical, besides the pipeline's own battery and edge frames (the engine's
+README). The page, 12 workers, time to the finished picture, the modules alternated
+(`bench/page.mjs ladder`, which now carries the three):
+
+| | before | after |
+| --- | --- | --- |
+| julia3 home | 3.3–3.4 s | **0.60–0.84 s** |
+| julia4 home | 4.3–4.6 s | **0.62–0.63 s** |
+| julia6 home | 7.9 s | **0.68 s** |
+| mandelbrot home (control) | 0.68–0.72 s | 0.63–0.75 s |
+| julia at −0.4+0.6i (control) | 0.78–0.82 s | 0.76–0.79 s |
 
 ### The interior, answered without iterating *(profiling_pass_ckpt146, 2026-09-24)*
 

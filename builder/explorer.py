@@ -326,6 +326,18 @@ ENGINE_CHANGES = [
     "profiling_pass_ckpt146. 360 pipeline renders and 504 edge frames at each degree's "
     "touching points and rim byte-identical, the fingerprint unmoved, engine tests 229 "
     "unmoved; multibrot home views 1.28x (d=3) to 1.93x (d=6) natively.",
+    "iterate::Wants gains interior, with iterate::Interior and Interior::of: an orbit is "
+    "stopped once proven never to escape, by a disk about a Julia plane's attracting cycle "
+    "that the cycle carries into itself, or by an exact (bitwise) repeat of the loop's state, "
+    "tested every sixteenth step; field::sweep_row sets it only where every field of the pass "
+    "reads an escape, so a stopped sample writes the NaN it would have written at the cap. A "
+    "new member and a new type and function, which the carve-out allows where the prompt "
+    "asked for the seam; interior_seam_deep_autorender_ckpt146 did. 540 pipeline renders and "
+    "1,656 edge frames (the cardioid, the bulb, each Multibrot disk and each Julia disk's rim, "
+    "widths 1e-2 to 1e-9, two caps) byte-identical through `fractal-wallpapers identity`; the "
+    "fingerprint unmoved (5d97e76bb16be71d / cbd9bc03a0f33e1c); engine tests 229 unmoved plus "
+    "two new; the three anchors at 1600x900 ss4 alternated x5: Julia 1.04x, Phoenix 0.99x, "
+    "Mandelbrot 1.77x; julia3/4/6 homes 17x to 44x natively in smooth.",
 ]
 
 _RUSTC_VERSION = re.compile(r"^rustc (\S+ \([0-9a-f]+ \d{4}-\d{2}-\d{2}\))")

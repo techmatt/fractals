@@ -116,6 +116,11 @@ const LADDER = [
   { name: "trap", note: "a direct trap: painted during the iteration, no field", query: "v=3&f=mandelbrot&m=direct_trap_ring&radius=0.5" },
   { name: "d6", note: "the degree-6 parameter plane", query: "v=3&f=multibrot6&m=smooth" },
   { name: "julia", note: "a dynamical plane", query: "v=3&f=julia&cx=-0.4&cy=0.6&m=smooth" },
+  // The shipped `c` has an attracting cycle at degrees 3 to 6, so these homes are mostly
+  // interior: the page's dearest until the engine's interior seam (ckpt146).
+  { name: "julia3", note: "degree-3 Julia home: an attracting fixed point", query: "v=3&f=julia3&m=smooth" },
+  { name: "julia4", note: "degree-4 Julia home: an attracting fixed point", query: "v=3&f=julia4&m=smooth" },
+  { name: "julia6", note: "degree-6 Julia home: an attracting fixed point", query: "v=3&f=julia6&m=smooth" },
   {
     name: "floor",
     note: "two ulps off the `f64` wall at 1e-12, cap 53 737",
@@ -423,7 +428,7 @@ async function edits() {
 
 async function cancel() {
   const rows = [];
-  for (const view of [LADDER[1], LADDER[5], LADDER[8]]) {
+  for (const view of LADDER.filter((row) => ["spike", "trap", "floor"].includes(row.name))) {
     await openView(view.query);
     await settled();
     // Two pans the SAME way, so both geometries are ones the field cache has never held —
