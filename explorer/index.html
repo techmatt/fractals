@@ -494,16 +494,22 @@
     var said = document.getElementById("notice-boot-file");
     if (said) said.remove();
   }
-  setTimeout(function () {
+  function failed() {
     var studio = document.getElementById("studio");
     var boot = document.getElementById("notice-boot");
     var notice = document.getElementById("notice");
     if (!studio || !boot || !notice || !studio.hidden) return;
     notice.textContent =
       "The explorer did not finish loading. Reloading the page usually fixes it.";
-  }, 45000);
+  }
+  setTimeout(failed, 45000);
+  // A module the page imports that did not arrive — a dropped connection, a 404 — fails
+  // the whole graph, and the browser says so on this element at once. That is certain
+  // where the timer is a guess, so it says the timer's sentence without waiting for it
+  // (profiling_pass_ckpt146).
+  window.explorerBootFailed = failed;
 })();
 </script>
-<script type="module" src="explorer.js"></script>
+<script type="module" src="explorer.js" onerror="window.explorerBootFailed()"></script>
 </body>
 </html>

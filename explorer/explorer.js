@@ -5070,9 +5070,14 @@ async function main() {
 }
 
 main().catch((error) => {
+  // The filesystem advice only where it is the page's situation *(profiling_pass_ckpt146)*:
+  // served over http, a start that failed is a file that did not arrive, and telling that
+  // reader to serve the page over http sends them looking for the wrong thing.
   refuse(
-    `The explorer could not start: ${error.message ?? error}. It needs to be served over http — ` +
-      "opened straight off the filesystem a browser will not load its module, its workers or its " +
-      "renderer. `python -m builder serve` puts this tree on localhost.",
+    location.protocol === "file:"
+      ? `The explorer could not start: ${error.message ?? error}. It needs to be served over http — ` +
+          "opened straight off the filesystem a browser will not load its module, its workers or its " +
+          "renderer. `python -m builder serve` puts this tree on localhost."
+      : `The explorer could not start: ${error.message ?? error}. Reloading the page usually fixes it.`,
   );
 });

@@ -319,10 +319,19 @@ export function orbitKey(view, limbs, period = null) {
 
 /** One pool worker, instantiated and ready. */
 function spawn(module) {
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     const worker = new Worker(new URL("./deep-worker.js", import.meta.url), { type: "module" });
     worker.onmessage = (event) => {
-      if (event.data.kind === "ready") resolve(worker);
+      if (event.data.kind === "ready") {
+        worker.onerror = null;
+        resolve(worker);
+      }
+    };
+    // As `render.js`'s: a worker whose script never arrived rejects rather than leaving the
+    // tab on "starting the deep renderer…" for good (profiling_pass_ckpt146).
+    worker.onerror = (event) => {
+      worker.terminate();
+      reject(new Error(`a deep worker did not start (${event.message || "its script did not load"})`));
     };
     worker.postMessage({ kind: "start", module });
   });
@@ -437,6 +446,8 @@ export class DeepRenderer {
       slot.worker = worker;
       this.#route(slot);
     });
+    // Whoever next waits on the slot hears a failed start; nobody waiting is not a fault.
+    slot.ready.catch(() => {});
     busy?.resolve(null);
   }
 
