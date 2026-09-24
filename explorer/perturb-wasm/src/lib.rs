@@ -37,6 +37,8 @@
 //! parameter — which is the shape the explorer's own README already said a deep
 //! renderer would have to take.
 
+use std::sync::atomic::{AtomicU64, Ordering};
+
 use crate::fx::Fx;
 use crate::json::Value;
 use crate::kernel::Kernel;
@@ -562,13 +564,45 @@ fn fill<const D: usize, const JULIA: bool>(
     bytes: &mut Vec<u8>,
 ) {
     let width = spec.sample_width();
+    let (mut ran, mut saved) = (0u64, 0u64);
     for row in first..last {
         for col in 0..width {
             let (re, im) = spec.dc(offset, col, row);
             let outcome = kernel.sample_with::<D, JULIA>(re, im);
+            ran += outcome.iterations as u64;
+            if outcome.detected_interior {
+                saved += spec.maxiter().saturating_sub(outcome.iterations) as u64;
+            }
             bytes.extend_from_slice(&outcome.smooth.to_le_bytes());
         }
     }
+    BAND_RAN.store(ran, Ordering::Relaxed);
+    BAND_SAVED.store(saved, Ordering::Relaxed);
+}
+
+/// What the last band cost, in iterations, and what the interior switch saved it: the
+/// two numbers [`band_ran`] and [`band_saved`] hand the page.
+static BAND_RAN: AtomicU64 = AtomicU64::new(0);
+static BAND_SAVED: AtomicU64 = AtomicU64::new(0);
+
+/// The iterations the last [`compute_band`] ran, as an `f64` (a `u64` does not cross).
+///
+/// **The page reads these two to choose the interior switch for the next pass of the
+/// same frame** *(profiling_pass_ckpt146)*. The switch never moves a pixel — a sample it
+/// stops is one the plain loop runs to the cap, and both write `NaN` — but in wasm it is
+/// about half the loop's speed where it does not fire, which is most of the frames a
+/// reader opens. `ran + saved` is what the plain loop would have run, so a quarter pass
+/// drawn with the switch on says, exactly, what the full pass would run either way.
+#[unsafe(no_mangle)]
+pub extern "C" fn band_ran() -> f64 {
+    BAND_RAN.load(Ordering::Relaxed) as f64
+}
+
+/// The iterations the interior switch spared the last [`compute_band`]: the cap less
+/// the step it stopped at, summed over the samples it stopped. Zero with it off.
+#[unsafe(no_mangle)]
+pub extern "C" fn band_saved() -> f64 {
+    BAND_SAVED.load(Ordering::Relaxed) as f64
 }
 
 // ------------------------------------------------------------------- the exports

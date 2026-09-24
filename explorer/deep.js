@@ -77,6 +77,35 @@ const SETTLE_MS = 350;
 const PREVIEW_DIVISOR = 4;
 
 /**
+ * What an iteration costs with the kernel's interior switch on, against one with it off,
+ * where the switch does not fire — the price the full pass pays for asking.
+ *
+ * **Measured in the committed module, and taken low** *(profiling_pass_ckpt146)*: on
+ * frames the switch never fires on, off ran in 0.50 to 0.73 of the time on did, the lanes
+ * identical, so the price is 1.4x to 2x. The rule below keeps the switch on unless
+ * turning it off is cheaper at the low end of that range, so a frame near the crossing
+ * keeps the setting the kernel ships.
+ */
+const SWITCH_PRICE = 1.4;
+
+/**
+ * Whether the full pass should run with the interior switch on, read off the quarter pass
+ * of the same frame.
+ *
+ * **The switch never moves a pixel**: a sample it stops early is one the plain loop runs to
+ * the cap, and both write `NaN`. So this is a speed and nothing else, and the quarter pass —
+ * drawn with it on, the kernel's default — says exactly what the plain loop would have run:
+ * `ran` is what it did run and `saved` what the switch spared it. The plain loop runs
+ * `ran + saved` at the lower price; the switch runs `ran` at `SWITCH_PRICE`. A sixteenth of
+ * the samples is a sample of the frame's interior share, which is the thing that decides
+ * it and the thing the crate README showed no width can stand in for.
+ */
+function switchFor(quarter) {
+  if (quarter?.ran == null || quarter.saved == null || quarter.ran <= 0) return true;
+  return quarter.ran + quarter.saved >= SWITCH_PRICE * quarter.ran;
+}
+
+/**
  * How long the pool may say nothing before the tab says so, in milliseconds.
  *
  * **Ten seconds, against a pool that reports ten times a second** *(deep_tab_activity_and_
@@ -730,6 +759,9 @@ export function mount(host) {
         if (chosen !== null) target = chosen.frame;
       }
 
+      // Read off the quarter pass once it has landed; the quarter pass itself asks for the
+      // switch, which is what makes its reading the plain loop's too.
+      let interior = true;
       for (const stage of wanted) {
         const key = deepLink.fieldKey(target, stage.width, stage.height, stage.supersample);
         let field = fields.get(key);
@@ -746,6 +778,7 @@ export function mount(host) {
           const started = performance.now();
           field = await deep.field(target, stage.width, stage.height, {
             supersample: stage.supersample,
+            interior: stage.name === "preview" ? true : interior,
             onProgress: (done, elapsed) => {
               if (generation !== pass) return;
               report(stage, done, elapsed);
@@ -762,6 +795,7 @@ export function mount(host) {
           if (stage.name === "preview") quarterMs = performance.now() - started;
           remember(key, field);
         }
+        if (stage.name === "preview") interior = switchFor(field);
         enterStage("coloring", { live: false });
         activity(`${said_stage(stage)} · coloring`, span.from + span.width);
         // A copy each time, because the shade takes the buffer and detaches it, and the one
@@ -939,8 +973,15 @@ export function mount(host) {
 
       enterStage("file");
       activity(`${said_stage(file)}…`, 0);
+      // The interior switch as the screen's quarter pass of this frame reads it, where
+      // that pass is still held; the kernel's own default where it is not.
+      const grid = host.grid();
+      const quarter = fields.get(
+        deepLink.fieldKey(target, grid.width / PREVIEW_DIVISOR, grid.height / PREVIEW_DIVISOR, 1),
+      );
       const field = await deep.field(target, width, height, {
         supersample,
+        interior: switchFor(quarter),
         onProgress: (done, elapsed) => {
           if (generation !== pass) return;
           report(file, done, elapsed);

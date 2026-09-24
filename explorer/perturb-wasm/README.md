@@ -737,6 +737,29 @@ ships on, at −64, and on the frames a reader actually opens it costs 9% to 12%
 width rule was the thing this section set out to write, and the table is the
 reason there is not one.
 
+#### In wasm the switch is dearer, and the page now chooses it per frame *(profiling_pass_ckpt146, 2026-09-24)*
+
+The 9% above is native. **In the committed module the same switch costs the loop about
+half its speed where it does not fire**: at 240×135, alternated, lanes identical both
+ways, off ran in 0.50 to 0.73 of the time on did — `tangle 1e-22` 55.1 s against 28.3,
+`body 1e-22` 56.6 against 31.4, the anchor at 2e-11 15.6 against 8.9, and even
+`anchor 3e-12`, 100% interior, 28.7 against 19.4. Only `anchor 1e-12` came out even
+(18.8 against 19.6), and the table above says the return deepens below it. Making the
+flag a const parameter, one monomorphized loop per setting, bought nothing measurable,
+so the price is the tracking itself and not the branch.
+
+The table's conclusion still holds — no width says which way to set it — but the frame
+itself does, once a sixteenth of it has been drawn. `compute_band` now leaves two
+numbers behind, read by `band_ran()` and `band_saved()`: the iterations the band ran,
+and the iterations the switch spared it (the cap less the step it stopped at, over the
+samples it stopped). `ran + saved` is exactly what the plain loop would have run, so
+the quarter pass, drawn with the switch on, prices the full pass both ways, and
+`deep.js`'s `switchFor` turns it off where `ran + saved < 1.4 × ran`. **No pixel moves
+either way** — a stopped sample is one the plain loop runs to the cap, and both write
+`NaN` — and 1.4 is the cheap end of the measured price, so a frame near the crossing
+keeps the setting the kernel ships. A download uses the screen's quarter pass of the
+same frame when it is still held.
+
 ### 8. The cap a frame asks for *(deep_cap_policy_ckpt138, 2026-09-20)*
 
 §6's open problem, closed. **The cap is no longer the width's answer alone: a frame

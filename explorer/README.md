@@ -2471,6 +2471,21 @@ a shade, which is the whole reason the field is kept. The anchor's quarter pass 
 just under `AUTO_PREVIEW_MS`, which is worth knowing: at the anchor a gesture does settle
 into a preview, and one decade deeper it stops doing so.
 
+**The full pass now chooses the interior switch off its own quarter pass**
+*(profiling_pass_ckpt146, 2026-09-24)*. In wasm the switch costs the loop about half its
+speed wherever it does not fire, and on the frames a reader opens it mostly does not;
+the quarter pass says exactly what the full pass would run either way (`switchFor` in
+`deep.js`, and `perturb-wasm/README.md` §7 for the price). No pixel moves. A deep link
+opened in the page, a 1600×1100 window on twelve cores, to the finished screen picture,
+alternated over two rounds, rasters identical:
+
+| link | before | after | x |
+| --- | --- | --- | --- |
+| the anchor at 2e-11 | 20.0 s | **12.7 s** | 1.57 |
+| `tangle 1e-22` | 50.6 s | **32.8 s** | 1.54 |
+| `body 1e-22` | 53.8 s | **33.5 s** | 1.61 |
+| the Julia set at the anchor's `c`, 2e-9 | 4.6 s | **3.1 s** | 1.47 |
+
 **Two deep links to paste.** The audit's anchor — a period-2838 minibrot nucleus in the
 seahorse valley, at a width four decades below where `f64` gives out:
 

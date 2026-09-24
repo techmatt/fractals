@@ -216,7 +216,17 @@ function handle(message) {
     // its memory, and the copy is what can be transferred.
     const band = new Uint8Array(wasm.memory.buffer, pointer, bytes).slice().buffer;
     wasm.dealloc(pointer, bytes);
-    answer(message, { rowStart, rowEnd, band, elapsed: performance.now() - started }, [band]);
+    // What the band ran and what the interior switch spared it, in iterations: the
+    // renderer sums them over the pass, and the tab reads a quarter pass's pair to choose
+    // the switch for the full one (`deep.js`, `switchFor`). A module older than the pair
+    // answers `null`, and the tab then leaves the switch as the kernel ships it.
+    const ran = wasm.band_ran?.() ?? null;
+    const saved = wasm.band_saved?.() ?? null;
+    answer(
+      message,
+      { rowStart, rowEnd, band, elapsed: performance.now() - started, ran, saved },
+      [band],
+    );
     return;
   }
 

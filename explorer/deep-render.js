@@ -226,7 +226,7 @@ export function deepSpecOf(
   view,
   width,
   height,
-  { supersample = 1, reference = null, period = null } = {},
+  { supersample = 1, reference = null, period = null, interior = true } = {},
 ) {
   const spec = {
     schema: 1,
@@ -237,6 +237,12 @@ export function deepSpecOf(
     maxiter: view.maxiter,
   };
   if (supersample > 1) spec.supersample = supersample;
+  // **The interior switch, only where it is turned off** *(profiling_pass_ckpt146)*: the
+  // kernel ships it on, so a spec with the switch on is byte for byte the spec it was. It
+  // never moves a pixel — a sample it stops early is one the plain loop runs to the cap,
+  // and both write `NaN` — so which way it is set is a speed and nothing else. See
+  // `switchFor` in `deep.js`.
+  if (interior === false) spec.interior = false;
   // The degree, where it is not two: the kernel's default is two, so a degree-2 spec is
   // byte for byte the spec it was before the member existed.
   if ((view.degree ?? 2) !== 2) spec.degree = view.degree;
@@ -1092,7 +1098,12 @@ export class DeepRenderer {
    * viewer's renderer does and for the same reason: a promise nobody settles holds its
    * whole `await` chain alive.
    */
-  async field(view, width, height, { supersample = 1, period = null, onProgress, onOrbit, onStep } = {}) {
+  async field(
+    view,
+    width,
+    height,
+    { supersample = 1, period = null, interior = true, onProgress, onOrbit, onStep } = {},
+  ) {
     this.cancel();
     const generation = this.generation;
 
@@ -1118,6 +1129,7 @@ export class DeepRenderer {
       supersample,
       period,
       reference: period === null ? reference : null,
+      interior,
     });
     const shape = this.plan(spec);
     if (!shape.ok) throw new Error(shape.why);
@@ -1142,6 +1154,8 @@ export class DeepRenderer {
         resolve,
         reject,
         started: performance.now(),
+        ran: 0,
+        saved: 0,
       };
       this.queue = bands;
       for (const slot of this.slots) this.#dispatch(slot, this.job);
@@ -1197,6 +1211,9 @@ export class DeepRenderer {
       reply.rowStart * job.supersample * job.sampleWidth,
     );
     job.done += reply.rowEnd - reply.rowStart;
+    // Iterations, summed over the pass; one band without the pair makes the pass's `null`.
+    job.ran = reply.ran === null || job.ran === null ? null : job.ran + reply.ran;
+    job.saved = reply.saved === null || job.saved === null ? null : job.saved + reply.saved;
     if (job.onProgress) {
       job.onProgress(job.done / job.rows, performance.now() - job.started, rows);
     }
@@ -1208,6 +1225,8 @@ export class DeepRenderer {
         height: job.height,
         supersample: job.supersample,
         elapsed: performance.now() - job.started,
+        ran: job.ran,
+        saved: job.saved,
       });
       return;
     }
