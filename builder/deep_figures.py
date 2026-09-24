@@ -174,10 +174,16 @@ NUCLEUS_54 = ("-0.78260206005940088591", "0.15006965844999610089")
 #: The descent's last frame: the place of the `threads` pool candidate `ca42a73543b6c213`.
 THREADS = ("-0.782601984654748", "0.15006989511782523", "1.2860948266974178e-9")
 
-#: The Julia parameter the stages imitate: the target's position relative to the
-#: period-221 copy, `σ·(target − nucleus)` with the copy's own complex scale, which the
-#: native `orient` gives as −0.77159 + 0.13442i.
-U = ("-0.7716", "0.1344")
+#: The rung between the period-54 disk and the threads frame: the nucleus of the period-972
+#: bulb (54 × 18) 2.3e-9 from the threads centre, by Newton to 30 places from that centre.
+#: No component of lower period lies between: the threads centre's atom domains run 1, 2,
+#: 27, 54, 1026, and Newton from it for every period 55–1025 lands only on 918 and 972.
+NUCLEUS_972 = ("-0.782601984826695942254944884344", "0.15006989282157889324981067557")
+
+#: The deep frame of `deep-shallow-and-deep`, and its colouring, exactly as Matt gave the
+#: link (deep_zoom_edits_ckpt145). The shallow frame shares its centre and its colouring.
+KNOT = ("-0.7493705324700378557700614606921816", "0.0414726670681690448763936935919414")
+COALGLOW = "p=Coalglow&phase=0.617&scale=absolute&lambda=0.04&period=0.596"
 
 #: The video's keyframe k2: a double still places a pixel along the imaginary axis here and
 #: no longer does along the real one, so the f64 picture breaks up and is still recognizable.
@@ -228,6 +234,123 @@ def _wide(text: str) -> str:
     return f"width {_width(text)}"
 
 
+# ---------------------------------------------------------------------- Misiurewicz pairs
+#
+# At a Misiurewicz point c the critical orbit z_0 = 0, z_{n+1} = z_n² + c lands on a
+# repelling cycle of period p with multiplier ρ. A Julia offset d at z_1 = c reaches
+# a_n·d at z_n, where a_n = ∂z_n/∂z_1, and a parameter offset e reaches b_n·e, where
+# b_n = ∂z_n/∂c; both land in the same neighbourhood of the cycle. So M at c + e looks like
+# J_c at c + λe, λ = lim b_n/a_n — Tan Lei's similarity, derived rather than fitted. J_c is
+# self-similar about c by ρ as well, so λρ^m aligns the two for every integer m: m is
+# chosen to leave the least rotation, since the explorer draws no rotation. The J panel's
+# width is |λρ^m| times the M panel's, and arg(λρ^m) is the rotation left over.
+#
+# Each c is Newton-solved to 25 places in mpmath; λ and ρ come from the same orbit. A
+# numerical check (log smooth count at 20,000 random offsets, correlated between the two
+# planes over a grid of ±10% scale and ±6° rotation) put its maximum on the derived value
+# for all three.
+
+
+@dataclass(frozen=True)
+class Misiurewicz:
+    """One point: where it is, where its orbit lands, and the similarity at it."""
+
+    x: str
+    y: str
+    #: The orbit first lands on its cycle at z_k, a cycle of period p.
+    k: int
+    p: int
+    #: The power of ρ that aligns the pair, |λρ^m|, and arg(λρ^m) in degrees: the
+    #: rotation the pair is left with.
+    m: int
+    scale: float
+    rotation: float
+    #: The M panel's width; the J panel's is `scale` times it.
+    width: str
+    #: What each panel shows, for its alt text.
+    shape: str
+    likeness: str
+
+    def short(self) -> str:
+        """c as a reader reads it: four places, real minus signs."""
+
+        def four(text: str) -> str:
+            return f"{abs(float(text)):.4f}"
+
+        re = ("−" if self.x.startswith("-") else "") + four(self.x)
+        sign = "−" if self.y.startswith("-") else "+"
+        return f"c = {re} {sign} {four(self.y)}i"
+
+    def julia_width(self) -> str:
+        return f"{self.scale * float(self.width):.5g}"
+
+
+MISIUREWICZ = (
+    Misiurewicz(
+        "-0.7756837680090537974694835",
+        "0.1364673682946901247332744",
+        24,
+        1,
+        -10,
+        2.97912,
+        0.485,
+        "2e-5",
+        "in the seahorse valley: a spiral arm of filigree winding in to the center over "
+        "orange and blue bands",
+        "the same spiral, in shifted colors",
+    ),
+    Misiurewicz(
+        "-0.2397161902231344106662341",
+        "0.8455033137002887225928533",
+        7,
+        1,
+        0,
+        0.892874,
+        0.921,
+        "1e-4",
+        "a jagged chain of filigree branching through the center over blue bands",
+        "the same chain, nearly pixel for pixel",
+    ),
+    Misiurewicz(
+        "0.3973918222965411749842944",
+        "0.1335112048718776326576995",
+        8,
+        1,
+        -56,
+        0.0592612,
+        0.929,
+        "1e-4",
+        "seven arms of filigree radiating from the center, studded with small spirals",
+        "the same seven-armed star, in shifted colors",
+    ),
+)
+
+
+def _pair(point: Misiurewicz, colour: str) -> tuple[Frame, Frame]:
+    here = point.short()
+    return (
+        Frame(
+            point.x,
+            point.y,
+            point.width,
+            colour,
+            "Mandelbrot set",
+            note=f"{here}, {_wide(point.width)}",
+            alt=f"The Mandelbrot set at {here}, {point.shape}.",
+        ),
+        Frame(
+            point.x,
+            point.y,
+            point.julia_width(),
+            colour,
+            "Julia set",
+            note=_wide(point.julia_width()),
+            julia=(point.x, point.y),
+            alt=f"The Julia set for that c at the same point: {point.likeness}.",
+        ),
+    )
+
+
 FIGURES = {
     "deep-f64-and-perturbation": Figure(
         (
@@ -258,29 +381,32 @@ FIGURES = {
     "deep-shallow-and-deep": Figure(
         (
             Frame(
-                *TARGET,
-                "6e-5",
-                COARSE,
+                *KNOT,
+                "1e-12",
+                COALGLOW,
                 "Shallow",
-                note=_wide("6e-5"),
-                alt="A shallow frame near the seahorse valley: broad smooth bands of orange "
-                "and blue crossed by chains of filigree. The deep frame beside it is at its "
-                "exact center.",
+                note=_wide("1e-12"),
+                alt="A frame at the same center 10⁻¹² wide: broad smooth bands of pale orange "
+                "crossed by thin chains of filigree, the center on a small knot where two of them "
+                "meet.",
             ),
             Frame(
-                *TARGET,
-                "5.579048704426938e-14",
-                COARSE,
+                *KNOT,
+                "2.2944996147726803e-17",
+                "n=66636&" + COALGLOW,
                 "Deep",
-                note=_wide("5.579048704426938e-14"),
-                alt="The deep frame at the center of the shallow one: a four-fold knot of "
-                "spirals and filigree in orange, yellow and blue.",
+                note=_wide("2.2944996147726803e-17"),
+                alt="The deep frame at the center of the shallow one: rings of small curled "
+                "spirals around a dark eye, in rust, cream and black, with a field of finer "
+                "filigree at lower left.",
             ),
         ),
         2,
         (960, 540),
         2,
-        "the video's target at width 6e-5, where it sits in a smooth band, and at its keyframe k4",
+        "the deep frame deep_zoom_edits_ckpt145 names, 2.3e-17 wide, and the same centre "
+        "zoomed out to 1e-12, the first width going out at which the neighbourhood of the "
+        "centre reads as smooth bands",
     ),
     "deep-descent-rungs": Figure(
         (
@@ -319,6 +445,15 @@ FIGURES = {
                 alt="The copy's own large disk, of period 54, with the filigree around it.",
             ),
             Frame(
+                *NUCLEUS_972,
+                "5e-8",
+                COARSE,
+                "Period 972",
+                note=_wide("5e-8"),
+                alt="The edge of the period-54 disk, lined with its tiny satellite bulbs, the one "
+                "of period 972 at the center, under a band of filigree.",
+            ),
+            Frame(
                 *THREADS,
                 COARSE,
                 "Last step",
@@ -327,11 +462,11 @@ FIGURES = {
                 "in orange and blue.",
             ),
         ),
-        5,
-        (640, 360),
+        2,
+        (960, 540),
         2,
         "the S4 descent chain of the wallpaper project's minibrot examples, periods 1, 2, "
-        "27 and 54, ending on the place of the threads candidate ca42a73543b6c213",
+        "27, 54 and 972, ending on the place of the threads candidate ca42a73543b6c213",
     ),
     "deep-seahorse-valley": Figure(
         (
@@ -368,48 +503,13 @@ FIGURES = {
         2,
         "the video's target at three widths inside its first decades",
     ),
-    "deep-julia-stages": Figure(
-        (
-            Frame(
-                *TARGET,
-                "3e-6",
-                FINE,
-                "Two-fold",
-                note=_wide("3e-6"),
-                alt="A two-fold shape: two spirals turning about the center.",
-            ),
-            Frame(
-                *TARGET,
-                "1e-6",
-                FINE,
-                "Four-fold",
-                note=_wide("1e-6"),
-                alt="A four-fold shape: four arms of spirals about the center.",
-            ),
-            Frame(
-                *TARGET,
-                "3e-7",
-                FINE,
-                "Eight-fold",
-                note=_wide("3e-7"),
-                alt="An eight-fold shape around a small black copy at the center.",
-            ),
-            Frame(
-                "0",
-                "0",
-                "3.2",
-                COARSE,
-                "Julia set",
-                note="u = −0.7716 + 0.1344i",
-                julia=U,
-                alt="The Julia set for u: a disconnected dust of curled fragments, banded in "
-                "orange and blue.",
-            ),
-        ),
-        4,
-        (640, 360),
+    "deep-misiurewicz-pairs": Figure(
+        tuple(frame for point in MISIUREWICZ for frame in _pair(point, COARSE)),
         2,
-        "the video's target at the three widths the stages appear at, and J(u)",
+        (960, 540),
+        2,
+        "three Misiurewicz points, each drawn in the parameter plane and in its own Julia "
+        "set's plane at Tan Lei's scale; the constants are MISIUREWICZ's",
     ),
 }
 
@@ -428,8 +528,8 @@ WORDS = {
         "at the shallow depth fills with detail further down.",
     ),
     "deep-descent-rungs": (
-        "Five frames down one descent, from the whole set to a frame about a billionth wide.",
-        "Five steps down one descent, each frame centered on the next component in a chain "
+        "Six frames down one descent, from the whole set to a frame about a billionth wide.",
+        "Six steps down one descent, each frame centered on the next component in a chain "
         "nested one inside the next. Filigree from each copy appears in regions that were "
         "smooth one step earlier.",
     ),
@@ -438,11 +538,11 @@ WORDS = {
         "The seahorse valley along the video's path: the cleft, the double spiral on one "
         "side and the seahorses on the other.",
     ),
-    "deep-julia-stages": (
-        "Two-, four- and eight-fold stages near a small copy, and a Julia set.",
-        "Approaching a small copy of the set, the zoom passes shapes of two-, four- and "
-        "eight-fold symmetry. At right, the Julia set for the parameter that sits where the "
-        "frame sits relative to the copy.",
+    "deep-misiurewicz-pairs": (
+        "Three pairs of zooms, each the Mandelbrot set and a Julia set at one Misiurewicz point.",
+        "Each pair shows the Mandelbrot set (left) and the Julia set for the parameter at its "
+        "center (right), zoomed in at the same point. The two agree up to a fixed scale and "
+        "rotation.",
     ),
 }
 
@@ -475,8 +575,8 @@ def draw(identifier: str) -> Split:
     _DRAWN[identifier] = drawn
     lines = [
         f"builder.deep_figures:draw — {figure.about}. Every panel {width}x{height}, "
-        f"supersample {ss}, drawn in colormap glowdon under scale absolute. A Deep-tab panel "
-        "is its link, held in article/figure-recipes.jsonl under deep|<figure id>#<panel>: "
+        f"supersample {ss}, drawn in colormap {_map(figure)} under scale absolute. A Deep-tab "
+        "panel is its link, held in article/figure-recipes.jsonl under deep|<figure id>#<panel>: "
         "its field drawn by zoom_fields.mjs on the committed perturb.wasm and coloured by "
         "deep_gallery_shade.mjs through engine.wasm, exactly as the Deep tab draws the link.",
     ]
@@ -492,7 +592,7 @@ def draw(identifier: str) -> Split:
             made.append(Made(target, frame.alt, label=frame.label, note=frame.note, spec=spec))
             lines.append(
                 f"panel {index}, {frame.label}: fractal-engine render, family mandelbrot, "
-                f"centre {frame.x} + {frame.y}i, width {frame.w}, mode smooth, palette glowdon "
+                f"centre {frame.x} + {frame.y}i, width {frame.w}, mode smooth, palette "
                 f"{_colour_words(frame.colour)}, maxiter {cap} (the perturbation panel's "
                 "settled cap, so the two differ only in arithmetic), allow_unresolvable_in_f64 "
                 "true, the engine's opt-in past its f64 floor. The explorer refuses this frame "
@@ -508,22 +608,39 @@ def draw(identifier: str) -> Split:
             if frame.julia
             else "family mandelbrot"
         )
+        cap = "named by the link" if "n=" in frame.colour else "settled by the tab's own probe"
         lines.append(
             f"panel {index}, {frame.label}: Deep tab, {family}, centre {frame.x} + {frame.y}i, "
-            f"width {frame.w}, cap {one.maxiter} settled by the tab's own probe, palette "
-            f"glowdon {_colour_words(frame.colour)}; recipe {key}"
+            f"width {frame.w}, cap {one.maxiter} {cap}, palette "
+            f"{_colour_words(frame.colour)}; recipe {key}"
         )
     return Split(made, lines, figure.columns)
 
 
+def _parts(colour: str) -> dict[str, str]:
+    return dict(part.split("=") for part in colour.split("&"))
+
+
 def _colour_words(colour: str) -> str:
-    parts = dict(part.split("=") for part in colour.split("&"))
-    return f"scale {parts['scale']}, lambda {parts['lambda']}, period {parts['period']}"
+    """The palette pass in words, map first: `palette` and never `colormap`, which the
+    figure's header line spends once."""
+    parts = _parts(colour)
+    phase = f"phase {parts['phase']}, " if "phase" in parts else ""
+    return (
+        f"{parts['p']} {phase}scale {parts['scale']}, lambda {parts['lambda']}, "
+        f"period {parts['period']}"
+    )
+
+
+def _map(figure: Figure) -> str:
+    """The one map a figure is drawn in: one colouring to a figure, so one map."""
+    (name,) = {_parts(frame.colour)["p"] for frame in figure.frames}
+    return name
 
 
 def _f64_spec(frame: Frame, cap: int) -> dict:
     """The engine render spec an f64 panel is drawn from, colouring spelled as the link's."""
-    parts = dict(part.split("=") for part in frame.colour.split("&"))
+    parts = _parts(frame.colour)
     return {
         "family": {"kind": "mandelbrot"},
         "viewport": {"center_re": frame.x, "center_im": frame.y, "width": frame.w},

@@ -35,7 +35,7 @@
       <ol class="rail-headings">
         <li><a href="#what-depth-adds-to-a-picture">What depth adds to a picture</a></li>
         <li><a href="#satellite-copies-and-the-seahorse-valley">Satellite copies and the seahorse valley</a></li>
-        <li><a href="#embedded-julia-sets">Embedded Julia sets</a></li>
+        <li><a href="#julia-sets-inside-the-mandelbrot-set">Julia sets inside the Mandelbrot set</a></li>
         <li><a href="#how-a-deep-frame-is-computed">How a deep frame is computed</a></li>
         <li><a href="#a-gallery-of-deep-frames">A gallery of deep frames</a></li>
       </ol>
@@ -105,8 +105,8 @@
     <p>Deep frames have wildly varying escape times, and getting a rendering that conveys
     their full range of detail often takes more exploration and parameter tweaking. The
     percentile stretch from <a href="rendering-fundamentals.html">rendering fundamentals</a>
-    spreads the palette evenly over each frame's own values. At this depth escape counts run
-    into the tens of thousands, and the stretch leaves most of the picture inside a few
+    spreads the palette evenly over each frame's own values. At extreme depths escape counts
+    run into the tens of thousands, and the stretch leaves most of the picture inside a few
     percent of the palette. For deep frames an absolute scale generally works best: the
     smooth count passes through a logarithm or a power curve, and the palette then repeats
     at a fixed period. The figure below shows the video's final frame under several such
@@ -127,50 +127,55 @@
       <figure class="figure figure-split" data-figure="deep-shallow-and-deep">
         <div class="figure-panels" style="--figure-across: 2">
         <div class="figure-panel">
-          <a class="figure-open" href="../explorer/index.html?dv=3&amp;x=-0.74937053247003823168823992075369&amp;y=0.041472667068168900034718746387049&amp;w=0.00006&amp;n=22731&amp;p=glowdon&amp;scale=absolute&amp;lambda=0&amp;period=0.5" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/deep-shallow-and-deep-1.webp" width="960" height="540" alt="A shallow frame near the seahorse valley: broad smooth bands of orange and blue crossed by chains of filigree. The deep frame beside it is at its exact center." loading="lazy"><span class="figure-open-mark" aria-hidden="true">↗</span></a>
-          <p class="figure-label">Shallow<span class="figure-note">width 6 × 10⁻⁵</span></p>
+          <a class="figure-open" href="../explorer/index.html?dv=3&amp;x=-0.7493705324700378557700614606921816&amp;y=0.0414726670681690448763936935919414&amp;w=1e-12&amp;n=53737&amp;p=Coalglow&amp;phase=0.617&amp;scale=absolute&amp;lambda=0.04&amp;period=0.596" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/deep-shallow-and-deep-1.webp" width="960" height="540" alt="A frame at the same center 10⁻¹² wide: broad smooth bands of pale orange crossed by thin chains of filigree, the center on a small knot where two of them meet." loading="lazy"><span class="figure-open-mark" aria-hidden="true">↗</span></a>
+          <p class="figure-label">Shallow<span class="figure-note">width 10⁻¹²</span></p>
         </div>
         <div class="figure-panel">
-          <a class="figure-open" href="../explorer/index.html?dv=3&amp;x=-0.74937053247003823168823992075369&amp;y=0.041472667068168900034718746387049&amp;w=5.579048704426938e-14&amp;n=58734&amp;p=glowdon&amp;scale=absolute&amp;lambda=0&amp;period=0.5" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/deep-shallow-and-deep-2.webp" width="960" height="540" alt="The deep frame at the center of the shallow one: a four-fold knot of spirals and filigree in orange, yellow and blue." loading="lazy"><span class="figure-open-mark" aria-hidden="true">↗</span></a>
-          <p class="figure-label">Deep<span class="figure-note">width 5.6 × 10⁻¹⁴</span></p>
+          <a class="figure-open" href="../explorer/index.html?dv=3&amp;x=-0.7493705324700378557700614606921816&amp;y=0.0414726670681690448763936935919414&amp;w=2.2944996147726803e-17&amp;n=66636&amp;p=Coalglow&amp;phase=0.617&amp;scale=absolute&amp;lambda=0.04&amp;period=0.596" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/deep-shallow-and-deep-2.webp" width="960" height="540" alt="The deep frame at the center of the shallow one: rings of small curled spirals around a dark eye, in rust, cream and black, with a field of finer filigree at lower left." loading="lazy"><span class="figure-open-mark" aria-hidden="true">↗</span></a>
+          <p class="figure-label">Deep<span class="figure-note">width 2.3 × 10⁻¹⁷</span></p>
         </div>
         </div>
         <figcaption>A shallow frame (left) and a deep frame inside it (right): a region that is smooth at the shallow depth fills with detail further down.</figcaption>
       </figure>
 
-    <p>Small copies of the set, minibrots, are everywhere along the boundary: every filament
-    passes infinitely many of them, at every scale. From outside, a copy looks like a small
+    <p>Small copies of the set, minibrots, lie all along the boundary: every filament passes
+    infinitely many of them, at every depth, smaller and more numerous the further down you
+    go. From outside, a copy looks like a small
     black body with the familiar bulbs and hairs. A frame that zooms into the copy's neighborhood sees more than
     that. It finds the copy's own seahorse valleys and spirals laid over the structure it was
     already in, so a region that looked smooth from further out fills with filigree. The
-    strip below follows one descent of this kind, five steps down a chain of components
+    figure below follows one descent of this kind, six steps down a chain of components
     nested one inside the next. Each step frames the next component in the chain, and the
     last frame is about a billionth of the complex plane wide.</p>
 
       <figure class="figure figure-split" data-figure="deep-descent-rungs">
-        <div class="figure-panels" style="--figure-across: 5">
+        <div class="figure-panels" style="--figure-across: 2">
         <div class="figure-panel">
-          <a class="figure-open" href="../explorer/index.html?dv=3&amp;x=-0.5&amp;y=0&amp;w=3&amp;n=4000&amp;p=glowdon&amp;scale=absolute&amp;lambda=0&amp;period=0.5" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/deep-descent-rungs-1.webp" width="640" height="360" alt="The whole Mandelbrot set, black on banded color." loading="lazy"><span class="figure-open-mark" aria-hidden="true">↗</span></a>
+          <a class="figure-open" href="../explorer/index.html?dv=3&amp;x=-0.5&amp;y=0&amp;w=3&amp;n=4000&amp;p=glowdon&amp;scale=absolute&amp;lambda=0&amp;period=0.5" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/deep-descent-rungs-1.webp" width="960" height="540" alt="The whole Mandelbrot set, black on banded color." loading="lazy"><span class="figure-open-mark" aria-hidden="true">↗</span></a>
           <p class="figure-label">Whole set<span class="figure-note">width 3</span></p>
         </div>
         <div class="figure-panel">
-          <a class="figure-open" href="../explorer/index.html?dv=3&amp;x=-0.782601462031970873215191715691&amp;y=0.150070431906352576566418312168&amp;w=0.05&amp;n=11088&amp;p=glowdon&amp;scale=absolute&amp;lambda=0&amp;period=0.5" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/deep-descent-rungs-2.webp" width="640" height="360" alt="The seahorse valley between the main cardioid and the large disk, centered on a copy too small to see." loading="lazy"><span class="figure-open-mark" aria-hidden="true">↗</span></a>
+          <a class="figure-open" href="../explorer/index.html?dv=3&amp;x=-0.782601462031970873215191715691&amp;y=0.150070431906352576566418312168&amp;w=0.05&amp;n=11088&amp;p=glowdon&amp;scale=absolute&amp;lambda=0&amp;period=0.5" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/deep-descent-rungs-2.webp" width="960" height="540" alt="The seahorse valley between the main cardioid and the large disk, centered on a copy too small to see." loading="lazy"><span class="figure-open-mark" aria-hidden="true">↗</span></a>
           <p class="figure-label">Seahorse valley<span class="figure-note">width 0.05</span></p>
         </div>
         <div class="figure-panel">
-          <a class="figure-open" href="../explorer/index.html?dv=3&amp;x=-0.782601462031970873215191715691&amp;y=0.150070431906352576566418312168&amp;w=0.0000194&amp;n=24686&amp;p=glowdon&amp;scale=absolute&amp;lambda=0&amp;period=0.5" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/deep-descent-rungs-3.webp" width="640" height="360" alt="A small copy of period 27, a black speck ringed with filigree." loading="lazy"><span class="figure-open-mark" aria-hidden="true">↗</span></a>
+          <a class="figure-open" href="../explorer/index.html?dv=3&amp;x=-0.782601462031970873215191715691&amp;y=0.150070431906352576566418312168&amp;w=0.0000194&amp;n=24686&amp;p=glowdon&amp;scale=absolute&amp;lambda=0&amp;period=0.5" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/deep-descent-rungs-3.webp" width="960" height="540" alt="A small copy of period 27, a black speck ringed with filigree." loading="lazy"><span class="figure-open-mark" aria-hidden="true">↗</span></a>
           <p class="figure-label">Period 27<span class="figure-note">width 1.9 × 10⁻⁵</span></p>
         </div>
         <div class="figure-panel">
-          <a class="figure-open" href="../explorer/index.html?dv=3&amp;x=-0.78260206005940088591&amp;y=0.15006965844999610089&amp;w=0.000002&amp;n=28619&amp;p=glowdon&amp;scale=absolute&amp;lambda=0&amp;period=0.5" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/deep-descent-rungs-4.webp" width="640" height="360" alt="The copy's own large disk, of period 54, with the filigree around it." loading="lazy"><span class="figure-open-mark" aria-hidden="true">↗</span></a>
+          <a class="figure-open" href="../explorer/index.html?dv=3&amp;x=-0.78260206005940088591&amp;y=0.15006965844999610089&amp;w=0.000002&amp;n=28619&amp;p=glowdon&amp;scale=absolute&amp;lambda=0&amp;period=0.5" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/deep-descent-rungs-4.webp" width="960" height="540" alt="The copy's own large disk, of period 54, with the filigree around it." loading="lazy"><span class="figure-open-mark" aria-hidden="true">↗</span></a>
           <p class="figure-label">Period 54<span class="figure-note">width 2 × 10⁻⁶</span></p>
         </div>
         <div class="figure-panel">
-          <a class="figure-open" href="../explorer/index.html?dv=3&amp;x=-0.782601984654748&amp;y=0.15006989511782523&amp;w=1.2860948266974178e-9&amp;n=41343&amp;p=glowdon&amp;scale=absolute&amp;lambda=0&amp;period=0.5" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/deep-descent-rungs-5.webp" width="640" height="360" alt="The last frame, about a billionth wide: a tiny copy among dense spirals in orange and blue." loading="lazy"><span class="figure-open-mark" aria-hidden="true">↗</span></a>
+          <a class="figure-open" href="../explorer/index.html?dv=3&amp;x=-0.782601984826695942254944884344&amp;y=0.15006989282157889324981067557&amp;w=5e-8&amp;n=35006&amp;p=glowdon&amp;scale=absolute&amp;lambda=0&amp;period=0.5" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/deep-descent-rungs-5.webp" width="960" height="540" alt="The edge of the period-54 disk, lined with its tiny satellite bulbs, the one of period 972 at the center, under a band of filigree." loading="lazy"><span class="figure-open-mark" aria-hidden="true">↗</span></a>
+          <p class="figure-label">Period 972<span class="figure-note">width 5 × 10⁻⁸</span></p>
+        </div>
+        <div class="figure-panel">
+          <a class="figure-open" href="../explorer/index.html?dv=3&amp;x=-0.782601984654748&amp;y=0.15006989511782523&amp;w=1.2860948266974178e-9&amp;n=41343&amp;p=glowdon&amp;scale=absolute&amp;lambda=0&amp;period=0.5" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/deep-descent-rungs-6.webp" width="960" height="540" alt="The last frame, about a billionth wide: a tiny copy among dense spirals in orange and blue." loading="lazy"><span class="figure-open-mark" aria-hidden="true">↗</span></a>
           <p class="figure-label">Last step<span class="figure-note">width 1.3 × 10⁻⁹</span></p>
         </div>
         </div>
-        <figcaption>Five steps down one descent, each frame centered on the next component in a chain nested one inside the next. Filigree from each copy appears in regions that were smooth one step earlier.</figcaption>
+        <figcaption>Six steps down one descent, each frame centered on the next component in a chain nested one inside the next. Filigree from each copy appears in regions that were smooth one step earlier.</figcaption>
       </figure>
 
     <h2 id="satellite-copies-and-the-seahorse-valley">Satellite copies and the seahorse valley</h2>
@@ -203,46 +208,48 @@
         <figcaption>The seahorse valley along the video's path: the cleft, the double spiral on one side and the seahorses on the other.</figcaption>
       </figure>
 
-    <h2 id="embedded-julia-sets">Embedded Julia sets</h2>
+    <h2 id="julia-sets-inside-the-mandelbrot-set">Julia sets inside the Mandelbrot set</h2>
 
-    <p>The repetition has a reason. Near a copy whose orbit has period p, taking p steps of
-    the map at once behaves, to a good approximation, like a single step of a fresh
-    <a href="https://en.wikipedia.org/wiki/Complex_quadratic_polynomial">quadratic map</a>.
-    So the neighborhood of the copy reproduces the structure of the whole set, slightly
-    distorted. The same mechanism makes
-    <a href="https://en.wikipedia.org/wiki/Julia_set">Julia sets</a> appear inside the
-    Mandelbrot set. As the video approaches its copy it passes a two-fold shape, then a
-    four-fold one, then an eight-fold one, each twice as symmetric as the last, before the
-    copy's black body comes into view. These are embedded Julia sets. Wikipedia's gallery
-    states which Julia set they imitate: the one for the parameter that sits in the same
-    position relative to the whole set as the frame sits relative to the copy. The target of
-    this zoom sits in its copy's seahorse valley but just outside the copy itself, so that
-    parameter lies outside the set, and its Julia set is a cloud of disconnected dust. That
-    is the shape the stages break into as the zoom closes in. The panel beside the strip
-    shows that Julia set for
-    comparison, and the explorer's Julia preview shows the Julia set under the pointer for
-    any parameter.</p>
+    <p>At some points on the boundary, zooming far enough into the Mandelbrot set shows what
+    you see zooming into the <a href="https://en.wikipedia.org/wiki/Julia_set">Julia set</a>
+    for that same parameter, at the same point. These are the
+    <a href="https://en.wikipedia.org/wiki/Misiurewicz_point">Misiurewicz points</a>, where
+    the orbit of zero never returns to zero but eventually lands on a repeating cycle. Tan
+    Lei proved in 1990 that at such a point the two sets become identical in the limit, up
+    to a fixed scale and rotation: the deeper the zoom, the closer the match. The figure
+    below pairs zooms at a few of these points. The explorer's Julia preview shows the Julia
+    set of the
+    <a href="https://en.wikipedia.org/wiki/Complex_quadratic_polynomial">quadratic map</a>
+    under the pointer for any parameter.</p>
 
-      <figure class="figure figure-split" data-figure="deep-julia-stages">
-        <div class="figure-panels" style="--figure-across: 4">
+      <figure class="figure figure-split" data-figure="deep-misiurewicz-pairs">
+        <div class="figure-panels" style="--figure-across: 2">
         <div class="figure-panel">
-          <a class="figure-open" href="../explorer/index.html?dv=3&amp;x=-0.74937053247003823168823992075369&amp;y=0.041472667068168900034718746387049&amp;w=0.000003&amp;n=27917&amp;p=glowdon&amp;scale=absolute&amp;lambda=0&amp;period=0.25" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/deep-julia-stages-1.webp" width="640" height="360" alt="A two-fold shape: two spirals turning about the center." loading="lazy"><span class="figure-open-mark" aria-hidden="true">↗</span></a>
-          <p class="figure-label">Two-fold<span class="figure-note">width 3 × 10⁻⁶</span></p>
-        </div>
-        <div class="figure-panel">
-          <a class="figure-open" href="../explorer/index.html?dv=3&amp;x=-0.74937053247003823168823992075369&amp;y=0.041472667068168900034718746387049&amp;w=0.000001&amp;n=29819&amp;p=glowdon&amp;scale=absolute&amp;lambda=0&amp;period=0.25" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/deep-julia-stages-2.webp" width="640" height="360" alt="A four-fold shape: four arms of spirals about the center." loading="lazy"><span class="figure-open-mark" aria-hidden="true">↗</span></a>
-          <p class="figure-label">Four-fold<span class="figure-note">width 10⁻⁶</span></p>
+          <a class="figure-open" href="../explorer/index.html?dv=3&amp;x=-0.7756837680090537974694835&amp;y=0.1364673682946901247332744&amp;w=0.00002&amp;n=24633&amp;p=glowdon&amp;scale=absolute&amp;lambda=0&amp;period=0.5" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/deep-misiurewicz-pairs-1.webp" width="960" height="540" alt="The Mandelbrot set at c = −0.7757 + 0.1365i, in the seahorse valley: a spiral arm of filigree winding in to the center over orange and blue bands." loading="lazy"><span class="figure-open-mark" aria-hidden="true">↗</span></a>
+          <p class="figure-label">Mandelbrot set<span class="figure-note">c = −0.7757 + 0.1365i, width 2 × 10⁻⁵</span></p>
         </div>
         <div class="figure-panel">
-          <a class="figure-open" href="../explorer/index.html?dv=3&amp;x=-0.74937053247003823168823992075369&amp;y=0.041472667068168900034718746387049&amp;w=3e-7&amp;n=31904&amp;p=glowdon&amp;scale=absolute&amp;lambda=0&amp;period=0.25" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/deep-julia-stages-3.webp" width="640" height="360" alt="An eight-fold shape around a small black copy at the center." loading="lazy"><span class="figure-open-mark" aria-hidden="true">↗</span></a>
-          <p class="figure-label">Eight-fold<span class="figure-note">width 3 × 10⁻⁷</span></p>
+          <a class="figure-open" href="../explorer/index.html?dv=3&amp;cx=-0.7756837680090537974694835&amp;cy=0.1364673682946901247332744&amp;x=-0.7756837680090537974694835&amp;y=0.1364673682946901247332744&amp;w=0.000059582&amp;n=22743&amp;p=glowdon&amp;scale=absolute&amp;lambda=0&amp;period=0.5" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/deep-misiurewicz-pairs-2.webp" width="960" height="540" alt="The Julia set for that c at the same point: the same spiral, in shifted colors." loading="lazy"><span class="figure-open-mark" aria-hidden="true">↗</span></a>
+          <p class="figure-label">Julia set<span class="figure-note">width 6 × 10⁻⁵</span></p>
         </div>
         <div class="figure-panel">
-          <a class="figure-open" href="../explorer/index.html?dv=3&amp;cx=-0.7716&amp;cy=0.1344&amp;x=0&amp;y=0&amp;w=3.2&amp;n=3888&amp;p=glowdon&amp;scale=absolute&amp;lambda=0&amp;period=0.5" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/deep-julia-stages-4.webp" width="640" height="360" alt="The Julia set for u: a disconnected dust of curled fragments, banded in orange and blue." loading="lazy"><span class="figure-open-mark" aria-hidden="true">↗</span></a>
-          <p class="figure-label">Julia set<span class="figure-note">u = −0.7716 + 0.1344i</span></p>
+          <a class="figure-open" href="../explorer/index.html?dv=3&amp;x=-0.2397161902231344106662341&amp;y=0.8455033137002887225928533&amp;w=0.0001&amp;n=21847&amp;p=glowdon&amp;scale=absolute&amp;lambda=0&amp;period=0.5" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/deep-misiurewicz-pairs-3.webp" width="960" height="540" alt="The Mandelbrot set at c = −0.2397 + 0.8455i, a jagged chain of filigree branching through the center over blue bands." loading="lazy"><span class="figure-open-mark" aria-hidden="true">↗</span></a>
+          <p class="figure-label">Mandelbrot set<span class="figure-note">c = −0.2397 + 0.8455i, width 10⁻⁴</span></p>
+        </div>
+        <div class="figure-panel">
+          <a class="figure-open" href="../explorer/index.html?dv=3&amp;cx=-0.2397161902231344106662341&amp;cy=0.8455033137002887225928533&amp;x=-0.2397161902231344106662341&amp;y=0.8455033137002887225928533&amp;w=0.000089287&amp;n=22043&amp;p=glowdon&amp;scale=absolute&amp;lambda=0&amp;period=0.5" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/deep-misiurewicz-pairs-4.webp" width="960" height="540" alt="The Julia set for that c at the same point: the same chain, nearly pixel for pixel." loading="lazy"><span class="figure-open-mark" aria-hidden="true">↗</span></a>
+          <p class="figure-label">Julia set<span class="figure-note">width 8.9 × 10⁻⁵</span></p>
+        </div>
+        <div class="figure-panel">
+          <a class="figure-open" href="../explorer/index.html?dv=3&amp;x=0.3973918222965411749842944&amp;y=0.1335112048718776326576995&amp;w=0.0001&amp;n=21847&amp;p=glowdon&amp;scale=absolute&amp;lambda=0&amp;period=0.5" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/deep-misiurewicz-pairs-5.webp" width="960" height="540" alt="The Mandelbrot set at c = 0.3974 + 0.1335i, seven arms of filigree radiating from the center, studded with small spirals." loading="lazy"><span class="figure-open-mark" aria-hidden="true">↗</span></a>
+          <p class="figure-label">Mandelbrot set<span class="figure-note">c = 0.3974 + 0.1335i, width 10⁻⁴</span></p>
+        </div>
+        <div class="figure-panel">
+          <a class="figure-open" href="../explorer/index.html?dv=3&amp;cx=0.3973918222965411749842944&amp;cy=0.1335112048718776326576995&amp;x=0.3973918222965411749842944&amp;y=0.1335112048718776326576995&amp;w=0.0000059261&amp;n=26739&amp;p=glowdon&amp;scale=absolute&amp;lambda=0&amp;period=0.5" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/deep-misiurewicz-pairs-6.webp" width="960" height="540" alt="The Julia set for that c at the same point: the same seven-armed star, in shifted colors." loading="lazy"><span class="figure-open-mark" aria-hidden="true">↗</span></a>
+          <p class="figure-label">Julia set<span class="figure-note">width 5.9 × 10⁻⁶</span></p>
         </div>
         </div>
-        <figcaption>Approaching a small copy of the set, the zoom passes shapes of two-, four- and eight-fold symmetry. At right, the Julia set for the parameter that sits where the frame sits relative to the copy.</figcaption>
+        <figcaption>Each pair shows the Mandelbrot set (left) and the Julia set for the parameter at its center (right), zoomed in at the same point. The two agree up to a fixed scale and rotation.</figcaption>
       </figure>
 
     <h2 id="how-a-deep-frame-is-computed">How a deep frame is computed</h2>

@@ -819,8 +819,12 @@ stamp `deep`, key `<figure id>#<panel>`: the canonical `dv=3` link with its sett
 the resolution and the supersample. The panel's registry row names that key in `deep`, the
 way a seat panel names its seat, and `links.py` copies the link off the store rather than
 deriving one. The maker writes those rows when it lands a figure and replaces a figure's
-rows whole on a redraw. `recipes --fill` never touches them, because nothing next door can
-answer for one. `deep-link.test.mjs` holds every `dv` row of `explorer/links.jsonl` to the
+rows whole on a redraw. **A figure that leaves the page takes its deep rows with it**: its
+`FIGURES` entry, its registry row, its panels, its `explorer/links.jsonl` rows and its
+`deep|<id>#…` rows in the store all go in one commit. Unlike a seat row, a deep row is not
+the only copy of anything, because the link it holds is the maker's own frame and the maker
+is in git history. `deep-julia-stages` left that way *(deep_zoom_edits_ckpt145)*.
+`recipes --fill` never touches deep rows, because nothing next door can answer for one. `deep-link.test.mjs` holds every `dv` row of `explorer/links.jsonl` to the
 Deep contract and to pinning its cap, and `permalink.test.mjs` passes those rows over.
 
 **One panel is not a deep panel.** The left half of `deep-f64-and-perturbation` is the frame
@@ -831,15 +835,27 @@ refuses it as `deep`, which is true: the explorer refuses that frame.
 
 **Colouring is `scale=absolute` throughout**, the percentile stretch being what flattens a
 deep frame. The page's own Deep-tab link colours at `lambda=0&period=0.25`, and the figures
-whose counts run to tens rather than thousands use `period=0.5`, which bands less. One
-figure uses one colouring, so a colour is one escape count across a strip. Measured on the
+whose counts run to tens rather than thousands use `period=0.5`, which bands less.
+`deep-shallow-and-deep` is drawn in the colouring its deep frame's link was given in
+(Coalglow, with a phase), and the map is read off each figure's frames, so a figure in
+another map writes that map's name after `colormap`. One figure uses one colouring, so a
+colour is one escape count across a strip. Measured on the
 f64 figure at the widths f64 still resolves: the engine's colouring and the tab's shade of
 the perturbation field agree pixel for pixel by eye, so the pair is a fair comparison.
 
 Landing is the standard split landing plus one step. A new figure needs a `pending` row
 whose block is on the page, then `deep <id> --place`, then `links --write`, then
-`figure <id> --heal`, the order *Still hand-done* names. Five figures, 16 panels, 1.7 MB,
-91 s on this machine at 2×2 samples.
+`figure <id> --heal`, the order *Still hand-done* names. Five figures, 19 panels, 2.75 MB
+at 2×2 samples; the three drawn in deep_zoom_edits_ckpt145 took 177 s together on this
+machine.
+
+**`deep-misiurewicz-pairs` is aligned by derivation, not by fit.** At a Misiurewicz point
+the M plane at c + e looks like J_c at c + λe, λ = lim b_n/a_n, with a_n and b_n the
+orbit's derivatives in z and in c. J_c is also self-similar about c by the cycle's
+multiplier ρ, so λρ^m aligns the pair for every integer m. The explorer draws no rotation,
+so each point was chosen, and each m, for arg(λρ^m) under a degree at a scale between 0.05
+and 20. `MISIUREWICZ` in `deep_figures.py` freezes the three points and their constants,
+and its comment has the derivation and the numerical check that confirmed it.
 
 ## The Deep tab's gallery
 
