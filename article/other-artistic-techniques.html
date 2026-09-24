@@ -37,7 +37,16 @@
     <li><a href="full-pipeline.html">Full pipeline</a> <span class="done" role="img" aria-label="written">✓</span></li>
     <li><a href="fractal-atlases.html">Fractal atlases</a> <span class="done" role="img" aria-label="written">✓</span></li>
     <li><a href="deep-zoom.html">Deep zoom</a> <span class="done" role="img" aria-label="written">✓</span></li>
-    <li class="rail-current"><a href="other-artistic-techniques.html" aria-current="page">Other artistic techniques</a></li>
+    <li class="rail-current"><a href="other-artistic-techniques.html" aria-current="page">Other artistic techniques</a> <span class="done" role="img" aria-label="written">✓</span>
+      <ol class="rail-headings">
+        <li><a href="#julia-morphing-and-inflection">Julia morphing and inflection</a></li>
+        <li><a href="#jumping-to-minibrots">Jumping to minibrots</a></li>
+        <li><a href="#exponential-map-zooms">Exponential-map zooms</a></li>
+        <li><a href="#distance-estimates-and-slope-shading">Distance estimates and slope shading</a></li>
+        <li><a href="#inside-the-black">Inside the black</a></li>
+        <li><a href="#parabolic-julia-sets">Parabolic Julia sets</a></li>
+      </ol>
+    </li>
     <li><a href="cool-math.html">Cool math</a></li>
   </ol>
   <ul class="rail-links">
@@ -55,8 +64,77 @@
 </header>
 
 <main>
-  <section class="intro">
-    <p><em>This section is not written yet.</em></p>
+  <section class="prose">
+    <p>The fractal-art community has built up a large toolbox beyond what this project uses.
+    This page collects the techniques I came across, with a few sentences on each and a
+    pointer to where to read more.</p>
+
+    <h2 id="julia-morphing-and-inflection">Julia morphing and inflection</h2>
+
+    <p>Deep-zoom artists often steer slightly off-center on the way down to a minibrot. Each
+    off-center choice is doubled into the decorations around the next copy, so a sequence of
+    choices sculpts a pattern: stacked shapes, trees, X shapes, and "evolutions" of one shape
+    into another. The
+    <a href="https://en.wikibooks.org/wiki/Fractals/Iterations_in_the_complex_plane/sculpt">wikibooks
+    page on sculpting</a> collects the vocabulary, and Claude Heiland-Allen's
+    <a href="https://2025.algorithmicpattern.org/proceedings/CVCS8B/paper.html">Patterns in
+    Inflected Julia Sets</a> analyzes it. The real thing lives at enormous depth, but
+    <i>inflection</i> reproduces the same doubling at shallow cost, by warping the plane
+    around a chosen point before iterating. Heiland-Allen's
+    <a href="https://mathr.co.uk/web/inflector-gadget.html">Inflector Gadget</a> does this in
+    the browser, one click per step. I built an inflection tab for the fractal explorer, and
+    it worked, but I didn't like the results enough to keep it.</p>
+
+    <h2 id="jumping-to-minibrots">Jumping to minibrots</h2>
+
+    <p>Instead of zooming by hand, a renderer can solve for a minibrot's exact center with
+    Newton's method and jump straight to it. The fractal explorer's Deep tab does this with
+    <a href="../explorer/index.html?panel=deep">Find minibrots</a>, and the
+    <a href="deep-zoom.html#automatic-minibrot-descents">automatic descents</a> are built on
+    the same solve. Some tools also jump to the stages on the way down, where the decorations
+    around a minibrot double in symmetry; the explorer jumps only to the minibrot itself.</p>
+
+    <h2 id="exponential-map-zooms">Exponential-map zooms</h2>
+
+    <p>A whole zoom can be drawn as one long strip in log-polar coordinates, where every step
+    deeper is the same distance along the strip. The frames of a zoom video are then cut out
+    of the strip, so no point is computed twice. Robert Munafo's
+    <a href="https://mrob.com/pub/muency/exponentialmap.html">exponential map</a> entry
+    explains the transform, and
+    <a href="https://www.youtube.com/watch?v=h3BA4mKYtv8">this video</a> shows a zoom made
+    this way. This project's zoom videos instead compute a field at every halving of the
+    width.</p>
+
+    <h2 id="distance-estimates-and-slope-shading">Distance estimates and slope shading</h2>
+
+    <p>Carrying the derivative of the orbit along with the orbit gives an estimate of each
+    pixel's distance to the set, and its direction gives a surface that can be lit. That is
+    the embossed, relief-lit look of much deep-zoom art. Arnaud Chéritat's
+    <a href="https://www.math.univ-toulouse.fr/~cheritat/wiki-draw/index.php/Mandelbrot_set#Normal_map_effect">notes
+    on the normal map effect</a> show how it works, and
+    <a href="https://eamonn.org/mandelbrot-3">Eamonn O'Brien-Strain</a> and
+    <a href="https://philthompson.me/mandelbrot-gallery/2022.html">Phil Thompson</a> show it in
+    artists' hands. It isn't one of this project's render modes: on its own I didn't think it
+    worked well, though other artists use it all the time.</p>
+
+    <h2 id="inside-the-black">Inside the black</h2>
+
+    <p>The interior of the set can be colored too. Interior distance estimates how deep a
+    point sits inside its component, and atom-domain coloring shows which period each region
+    belongs to (Heiland-Allen
+    <a href="https://mathr.co.uk/blog/2014-11-02_practical_interior_distance_rendering.html">writes
+    up both</a>). About half of this project's render modes paint the interior flat. The rest
+    are built on orbit traps and color it from each point's orbit instead, but none measure
+    interior distance or atom domains.</p>
+
+    <h2 id="parabolic-julia-sets">Parabolic Julia sets</h2>
+
+    <p>When c sits at or very near a cusp of the Mandelbrot set, orbits approach their limit
+    extremely slowly, and the Julia set is rich even at a shallow view (the
+    <a href="https://en.wikibooks.org/wiki/Fractals/Iterations_in_the_complex_plane/parabolic">wikibooks
+    page on parabolic Julia sets</a> has examples). They need very high iteration counts. A
+    pilot that aimed the pipeline's Julia search near them found far fewer locations worth
+    keeping than its usual search, so I haven't gone further.</p>
   </section>
 
   <nav class="section-nav">
