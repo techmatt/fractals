@@ -294,16 +294,18 @@ DEGREES = (
     (3, {"kind": "multibrot", "degree": 3}, "two-fold symmetry"),
     (4, {"kind": "multibrot", "degree": 4}, "three-fold symmetry"),
     (5, {"kind": "multibrot", "degree": 5}, "four-fold symmetry"),
+    (6, {"kind": "multibrot", "degree": 6}, "five-fold symmetry"),
 )
 
 
-MULTIBROT_COLUMNS = 4
+#: One row: the ladder reads as a ladder, and five 320-wide panels fit the figure's width.
+MULTIBROT_COLUMNS = 5
 
 
 def multibrot_degrees() -> Split:
-    """The first four integer degrees, each whole in its own frame.
+    """The integer degrees 2 through 6, each whole in its own frame.
 
-    **Four pictures rather than one** *(figure_split_all_ckpt140, 2026-09-22)*. A degree
+    **Separate pictures rather than one** *(figure_split_all_ckpt140, 2026-09-22)*. A degree
     row *is* the explorer's family picker, said in pictures, so each panel is a link at
     that family's own home view: the reader can go and do the same thing with the control.
     """

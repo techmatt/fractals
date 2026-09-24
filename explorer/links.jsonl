@@ -48,6 +48,7 @@
 {"schema": 1, "kind": "link", "id": "figure:escape-multibrot-degrees#2", "link": "v=4&f=multibrot3&x=0.0&y=0.0&p=twilight_shifted", "from": "spec"}
 {"schema": 1, "kind": "link", "id": "figure:escape-multibrot-degrees#3", "link": "v=4&f=multibrot4&y=0.0&p=twilight_shifted", "from": "spec"}
 {"schema": 1, "kind": "link", "id": "figure:escape-multibrot-degrees#4", "link": "v=4&f=multibrot5&x=0.0&y=0.0&p=twilight_shifted", "from": "spec"}
+{"schema": 1, "kind": "link", "id": "figure:escape-multibrot-degrees#5", "link": "v=4&f=multibrot6&y=0.0&p=twilight_shifted", "from": "spec"}
 {"schema": 1, "kind": "link", "id": "figure:escape-fractional-degrees#1", "no_link": "not_exposed", "why": "a non-integer degree is render-only: the engine gives it no home view, so there is nowhere for the explorer to open it at"}
 {"schema": 1, "kind": "link", "id": "figure:escape-fractional-degrees#2", "no_link": "not_exposed", "why": "a non-integer degree is render-only: the engine gives it no home view, so there is nowhere for the explorer to open it at"}
 {"schema": 1, "kind": "link", "id": "figure:escape-fractional-degrees#3", "no_link": "not_exposed", "why": "a non-integer degree is render-only: the engine gives it no home view, so there is nowhere for the explorer to open it at"}
