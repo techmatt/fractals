@@ -4807,6 +4807,41 @@ recipe** group. What is worth writing down is the shape rather than the widgets:
   strip under both scales, for the transfer's reason: it acts before the strip's 0 to 1.
   All three are recolours in both tabs: the shallow tab's measured statistics are keyed
   on `transfer`, `scale` and `lambda`, and the Deep tab re-shades its kept field.
+- **Hold look** *(Matt, palette_hold_ckpt145)*. Under Absolute, unheld, Lambda was
+  unusable: at a deep `ν` of tens of thousands one 0.01 step slides the whole palette by
+  several cycles and rescales the band density by orders of magnitude across the range, so
+  the picture after a step has nothing to do with the one before it (measured: 0.17 to 0.36
+  of a turn for the average pixel, where two unrelated pictures differ by 0.25). So a box
+  after Period, **ticked by default and shown under Absolute alone**, holds two things at
+  the reference value `ν_m`, the median escaped `ν` of the picture on the screen:
+  the band density there, `ν_m^(λ−1)/period`, and the colour there,
+  `frac(T(ν_m)/period + phase)`. Moving **Lambda** re-solves Period
+  (`period · ν_m^(λ′−λ)`) and Phase; moving **Period** re-solves Phase; **Phase** is free.
+  Both solves are exact in closed form, and the re-solved numbers are written at four
+  significant figures and four places, shown live in their boxes, and carried by the link
+  in their own keys. Held, the same 0.01 step moves the average pixel 0.003 to 0.005 of a
+  turn at the §Deep zoom target and 0.010 to 0.024 on a shallow frame, so the slider is a
+  control of the picture's *shape* instead of a scramble. The sliders were not rescaled:
+  Lambda stays linear over 0 to 1 and Period in decades from 10⁻³ to 10⁵, as `shade.js`
+  says, with the measurement.
+  - **Nothing about the maths or a link changes.** The box is UI state, never enters a
+    link, and unticked the controls are exactly what they were. The video's three mappings
+    parse, canonicalize and shade the k00 field to the same SHA-256 with and without the
+    change.
+  - **One implementation for both tabs.** The solve and the reference are `hold.js`, pure,
+    held by `hold.test.mjs`; `explorer.js`'s `held` applies it in `setShade`, which both
+    tabs' colour controls go through. The reference is read off the field the view
+    already holds — the shallow tab's last full or final stage (`drawnField`), the Deep
+    tab's kept stage of the picture up (`shownField`) — memoized on that field, so a new
+    frame is a new `ν_m` and a recolour asks nothing twice. Lane 0 is read, which is the
+    base a composite's scale lays out.
+  - **The anchor is taken once and kept while the reader goes on moving the two**, so a
+    drag back and forth comes home rather than walking on its own rounding. It is taken
+    again when anything else moved the recipe (Phase, a link, a reset, the other tab), when
+    a new frame changes `ν_m`, and when the box is ticked. With no field to read — before
+    the first picture, or under a direct trap — the controls behave as unheld.
+  - **Hidden under Leveled**, rather than shown inert: the stretch already refits the scale
+    to every frame, so there is nothing for it to hold there. Its tick is kept.
 - **The count of what is set is the reset button's state.** Engine defaults is disabled
   at zero and reads *Engine defaults (3)* otherwise; there is no separate counter.
 - **Autolevel is disabled only where the operator has nothing to say** — a direct trap or

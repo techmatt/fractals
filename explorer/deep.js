@@ -1117,16 +1117,23 @@ export function mount(host) {
    * tab no longer owns the canvas, or where a pass's stage has replaced the picture it
    * started from — that stage was shaded in the current colour already.
    */
-  async function recolour(of = drawn) {
-    if (of === null) return;
+  /** The best stage of `of` whose field is kept — the full pass, else the quarter — or
+   *  `undefined` where neither is. */
+  function keptStage(of) {
     const grid = host.grid();
     const stages = [
       { width: grid.width, height: grid.height, supersample: 1 },
       { width: grid.width / PREVIEW_DIVISOR, height: grid.height / PREVIEW_DIVISOR, supersample: 1 },
     ];
-    const stage = stages.find(
+    return stages.find(
       (each) => fields.has(deepLink.fieldKey(of, each.width, each.height, each.supersample)),
     );
+  }
+
+  async function recolour(of = drawn) {
+    if (of === null) return;
+    const grid = host.grid();
+    const stage = keptStage(of);
     if (stage === undefined) {
       // The picture up is always a stage that was just kept, so this is a bug and not a
       // state: said in the console, and in the log, rather than a colour that silently
@@ -2261,6 +2268,15 @@ export function mount(host) {
      *  a 4× download on the strength of it. */
     finalSupersample: () => finishedSamples,
     picture,
+    /** The kept field of the picture up, or `null`: what the colour controls' Hold look
+     *  takes its reference value from *(palette_hold_ckpt145)*. The stage a recolour would
+     *  colour, so the reference and the picture it holds are of one field. */
+    shownField() {
+      if (drawn === null) return null;
+      const stage = keptStage(drawn);
+      if (stage === undefined) return null;
+      return fields.get(deepLink.fieldKey(drawn, stage.width, stage.height, stage.supersample));
+    },
 
     show() {
       // A list the viewer found is about the viewer's frame, which is not on the screen now.

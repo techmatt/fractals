@@ -72,6 +72,15 @@ import { SHADE_KEYS, defaultShade, shadeKey } from "./permalink.js";
  * a period is a length along the compressed field, and which decade is right depends on
  * the compression — a log field runs a few units across a frame, a linear deep one tens
  * of thousands.
+ *
+ * **Both were kept as they were when Hold look arrived** *(palette_hold_ckpt145)*, and the
+ * reason is measured rather than argued. Unheld, one 0.01 step of Lambda moves the average
+ * pixel of the deep zoom's target 0.17 to 0.30 of a turn — a quarter of a turn is what two
+ * unrelated pictures differ by — and no scale on the slider cures that, because the jump is
+ * the whole palette sliding at a deep `ν`. Held (`hold.js`), the same step moves it 0.003 to
+ * 0.005 of a turn there and 0.010 to 0.024 on a shallow frame: small and visible, which is
+ * what a linear 0 to 1 at one step a pixel of the 8rem slider gives. Period's decades
+ * already covered the 0.05 to 1000 a held Lambda sweeps it across.
  */
 const PRESENTATION = {
   gamma: { step: 0.05, slider: { min: -2, max: 2, step: 0.02, scale: "log" }, under: ["leveled"] },

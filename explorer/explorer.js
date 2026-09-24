@@ -33,6 +33,7 @@
 
 import * as link from "./permalink.js";
 import * as shade from "./shade.js";
+import * as hold from "./hold.js";
 import * as modeParams from "./params.js";
 import { CONSTANTS as ANCHORS, MODES as IDENTITIES, SETTLED } from "./catalog.js";
 import { DEFAULT_PALETTE, PALETTES, PROVENANCE } from "./palettes.js";
@@ -230,6 +231,8 @@ const shadeNote = document.getElementById("shade-note");
 const paletteGroup = shadeBar.closest(".palette-group");
 const levelGroup = document.getElementById("level-group");
 const levelToggle = document.getElementById("level-toggle");
+const holdGroup = document.getElementById("hold-group");
+const holdToggle = document.getElementById("hold-toggle");
 /** Named here and not only at the mount, because a download has to grey it: it used to be
  *  swept with the shade bar it sat in, and beside Julia here there is no sweep over it
  *  *(explorer_controls_ckpt140)*. */
@@ -1245,6 +1248,12 @@ let drawing = 0;
  *  again; cleared by every pass, because a picture of the view before is not this one. */
 let finished = null;
 
+/** The field of the picture on the screen — the full stage's, then the final one's — and
+ *  `null` under a direct trap, which has none. Where Hold look takes its reference value
+ *  from; it is kept across a pass until the pass lands a field of its own, because the
+ *  picture it describes is the one still up. */
+let drawnField = null;
+
 /** The worker colouring the last stage, while it is. A pass that starts stops it. */
 let colouring = {};
 
@@ -1467,6 +1476,7 @@ async function drawPass() {
     // there: a direct trap arrived painted, and a derived texture weight is measured off
     // these lanes in the one call that colours them.
     const shadeFull = async (full) => {
+      drawnField = full.shape.direct ? null : full;
       if (full.shape.direct || derivingWeight) {
         const shaded = renderer.shade(full, view, { deriveWeight: derivingWeight });
         if (derivingWeight && shaded.weight !== null) {
@@ -1552,6 +1562,7 @@ async function drawPass() {
       ? renderer.shade(field, view)
       : await renderer.shadePooled(field, view, colouring, { derive: deriving, key: finalKey });
     if (shaded === null || pass !== drawing) return;
+    drawnField = shape.direct ? null : field;
     // The curve the picture was drawn through is this pass's where it derived one, and
     // the view's where it replayed one — and the view has not been told about a derived
     // curve yet, which is why the level is named here rather than read off it.
@@ -2176,6 +2187,9 @@ function buildShade() {
   // other one until it moved beside Julia here *(explorer_controls_ckpt140)*, which is
   // where the thing it previews is.
   shadeBar.append(chips, levelGroup);
+  // Hold look sits after Period, beside the two controls it changes the meaning of, and is
+  // shown under Absolute alone: see `holding`.
+  shadeWidgets.get("period").group.after(holdGroup);
 }
 
 /** The one action on the Palette header. It is disabled with nothing to put back, and its
@@ -2203,13 +2217,68 @@ function setShade(key, text, { moving = false } = {}) {
   if (shade.spelling(subject.shade, key) === text) return;
   let next;
   try {
-    next = shade.withKey(subject.shade, key, text);
+    next = held(subject, key, shade.withKey(subject.shade, key, text));
   } catch (error) {
     say(error.message);
     syncShade();
     return;
   }
   tint({ shade: next }, { moving });
+}
+
+/**
+ * What a hold keeps, and the recipe it last wrote: `{ anchor, wrote }`, or `null` where no
+ * hold is running. See `held`.
+ */
+let holding = null;
+
+/** Lambda, Period and Phase as one string, which is how a hold knows the recipe in front of
+ *  it is the one it wrote rather than one something else moved. */
+function holdSpelling(recipe) {
+  return ["lambda", "period", "phase"].map((key) => shade.spelling(recipe, key)).join("|");
+}
+
+/**
+ * `next` with the hold applied, where it applies *(Matt, palette_hold_ckpt145)*.
+ *
+ * **Hold look** is ticked, the scale is absolute, the key is Lambda or Period, and the
+ * picture on the screen has a field to take the reference value from — the median escaped
+ * `ν` of it, `hold.reference`. Then a moved Lambda brings Period and Phase with it and a
+ * moved Period brings Phase, so the band width and the colour at that value stay where
+ * they were; `hold.js` has the solve. Anywhere else, and with the box unticked, `next` is
+ * exactly what the control said, which is what the page always did.
+ *
+ * The anchor is taken once and kept while the reader goes on moving the two, and re-taken
+ * where anything else has moved the recipe since — Phase, a link, a reset, the other tab —
+ * or where a new frame has changed the reference. It never enters a link: what the link
+ * carries is the re-solved numbers, in their own keys, as it would have carried typed ones.
+ */
+function held(subject, key, next) {
+  if (!holdToggle.checked || subject.shade.scale !== "absolute") return next;
+  if (key !== "lambda" && key !== "period") return next;
+  const nu = hold.reference(shownField());
+  if (nu === null) return next;
+  if (
+    holding === null ||
+    holding.anchor.nu !== nu ||
+    holding.wrote !== holdSpelling(subject.shade)
+  ) {
+    holding = { anchor: hold.anchor(subject.shade, nu), wrote: null };
+  }
+  const solved = hold.resolve(next, key, holding.anchor);
+  // Through the contract's own reader, like any other value a control writes.
+  const checked = shade.withKey(
+    shade.withKey(solved, "period", String(solved.period)),
+    "phase",
+    String(solved.phase),
+  );
+  holding.wrote = holdSpelling(checked);
+  return checked;
+}
+
+/** The field of the picture on the screen, in whichever tab owns it, or `null`. */
+function shownField() {
+  return deep !== null && deep.owns() ? deep.shownField() : drawnField;
 }
 
 /** Show what the recipe now says, in every control that carries a piece of it. */
@@ -2406,6 +2475,11 @@ function syncLevel() {
   // Autolevel fits the picture to itself, which is what that scale exists not to do. Hidden
   // rather than disabled, as the row hides Gamma there, and its tick is kept for Leveled.
   levelGroup.hidden = tinting().shade.scale === "absolute";
+  // Hold look is the other way about: Absolute's alone, and hidden under Leveled rather than
+  // shown doing nothing, because there the stretch already refits the scale to every frame
+  // *(palette_hold_ckpt145)*. Its tick is UI state and is kept either way.
+  holdGroup.hidden = tinting().shade.scale !== "absolute";
+  holdToggle.disabled = busy;
 }
 
 /**
@@ -4446,6 +4520,12 @@ function pickPalette(name) {
   palettes.show(name);
   tint(changes);
 }
+
+// Hold look changes what the next move of Lambda or Period means and nothing about the
+// picture up, so it draws nothing; a hold starts afresh from whatever the recipe is then.
+holdToggle.addEventListener("change", () => {
+  holding = null;
+});
 
 levelToggle.addEventListener("change", () => {
   if (locked()) {

@@ -75,3 +75,5 @@ jobs:
         run: node --test explorer/deep.test.mjs
       - name: the screensaver's intervals, fitting ladder, correction and bag
         run: node --test explorer/screensaver.test.mjs
+      - name: Hold look's re-solve of Lambda and Period, and its reference value
+        run: node --test explorer/hold.test.mjs
