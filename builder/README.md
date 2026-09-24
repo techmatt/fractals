@@ -868,6 +868,68 @@ area-filters it down, then blends the next keyframe in over the centre with a fe
 edge, so nothing is ever enlarged. The encoder is `imageio-ffmpeg`'s bundled `ffmpeg`
 (`pip install imageio-ffmpeg`), writing H.264 in yuv420p.
 
+## Automatic minibrot descents
+
+*(double_descent_ckpt145 and its addendum.)* `python -m builder descent <link> [<link> …]`
+turns a chain of explorer frames, each centred on a copy, into a keyframe record the two
+tools above render. The neighbourhood of a copy `M_A` is close to `c_A + s_A·M`, so every
+place has a **twin** inside it: location `B`'s twin sits at `c_A + s_A·c_B`, `w_B·|s_A|`
+wide and turned by `arg(s_A)`, with `M_AB`, of period `p_A·p_B`, at its heart. The chain
+descends home → `L₁` → `M₁` framed → the twin of `L₂` → `M₁₂` framed → … One link means
+`[A, A]`, the copy of `M_A` inside itself. Every family must be the same, degree 2 to 6.
+
+```
+python -m builder descent "<link>" --dry-run          # solve the chain, print it (seconds)
+python -m builder descent "<link>" ["<link>" …]       # and write data/double-descent.keyframes.json
+node builder/zoom_fields.mjs --record builder/data/double-descent.keyframes.json
+python -m builder descent --colour double-descent     # the log mapping by Hold look, at the twin
+python -m builder descent --stills double-descent     # stage frames + the twin turned back
+python builder/zoom.py --record builder/data/double-descent.keyframes.json video --mapping log
+```
+
+`--name` names the record and its directory, `artifacts/<name>/`; `--branch` picks the twin
+at degree 3 and up, where the scale is defined up to a `(D−1)`-th root of unity and there
+are `D−1` of them. The numbers are `builder/deep-gallery-native`'s, and so `perturb-wasm`'s:
+
+- **A location's copy** is `search`'s nucleus nearest the centre, **refused** unless it is
+  within an eighth of the frame and `classify` (Find minibrots' test) calls it a copy.
+- **`s_A` with its rotation** is `orient`: `1/(d·l^{1/(D−1)})` off the nucleus's own
+  derivatives. It is good: on the favicon seat the images of the set's period-2 nuclei,
+  solved at period 362, put it within 0.12%.
+- **The twin's copy is `twin`, multiple shooting on the renormalised orbit**, then Newton at
+  `p_A·p_B` to polish. ⚠ **The first-order place is not enough, and no cheap correction
+  fixes it.** `c_A + s_A·c_B` misses by the tuning's nonlinearity, 0.04% to 0.34% of the
+  offset on every case measured, and on the favicon seat that is 4.2e-14 against a twin
+  frame 2.3e-19 wide. Newton at period 32,761 escapes from there on both branches; a grid of
+  starts found a period-32,761 nucleus that is **the wrong one** (size 1e-19, not 1.8e-21);
+  a quadratic correction fitted off the period-2 images escapes too. Shooting holds each of
+  the `p_B` returns `z_{k·p_A}` as its own unknown, seeded from `c_B`'s orbit over the
+  dynamic scale, and converges quadratically in four steps on every case. The record keeps
+  the steps, the first-order miss, and the found size over `|s_A|·|s_B|` (0.995 to 1.0002).
+- **A copy is framed by `frame`**, Find minibrots' rule natively: the preview tile at
+  `copy_width`, eight periods deep, its body measured and set at a quarter of the height.
+- **The ceiling.** Where `32·p_A·p_B` passes `cap::CEILING`, the descent ends on the
+  lowest-period copy `find` offers in the twin frame that fits, and where none does it ends
+  on the twin's copy at the ceiling and the record's `notes` say so. Inside `M_A` every copy
+  is a multiple of `p_A`, so for `[A, A]` none fits once `p_A` passes 176.
+
+**The record is `deep-zoom-descent`'s shape** with a few fields more: `chain`, `stages`
+(each stage's exact width, its nearest keyframe `k`, its copy, and for a twin the turn and
+the solve's numbers), `notes`, `mode` (always `smooth`: the Deep tab's), `family` and
+`branch`. Every keyframe is centred on the last copy, as `zoom.py` composites, so the stages
+above it are off centre by `|c_last − c_stage|`, which is 5% of the width at the favicon
+seat's `copy 1`. Caps are `policy::settle` at the field grid, raised at each stage frame
+**and every keyframe deeper** to 32 periods of that stage's copy, so a cap never falls with
+depth at a stage. `zoom_fields.mjs` and `zoom.py` take `--record`; without it they are the
+deep zoom video's, byte for byte, in `artifacts/deep-zoom/`.
+
+**Colour, by Hold look.** `--colour` sets the log mapping's `L` and phase so that the band
+density and the colour at the twin frame's median `nu` are what `deep-zoom-descent`'s log
+look (`L = 0.25`) gives at its own target's median. It is a first cut for Matt to tune.
+`deep-descent-pairs` colours a twin the other way round: its counts are about `p_A` times
+its source's, so under `lambda=0` it is its source shifted by `ln p_A`, and taking that off
+the phase puts the twin in its source's colours.
+
 ## The deep figures
 
 *(deep_figures_ckpt145.)* `python -m builder deep [ID ...] [--place] [--replace]` draws the
@@ -917,9 +979,9 @@ the perturbation field agree pixel for pixel by eye, so the pair is a fair compa
 
 Landing is the standard split landing plus one step. A new figure needs a `pending` row
 whose block is on the page, then `deep <id> --place`, then `links --write`, then
-`figure <id> --heal`, the order *Still hand-done* names. Four figures, 16 panels, 2.55 MB
-at 2×2 samples, since `deep-seahorse-valley` left the page *(PLACE_deep_zoom_v3_ckpt145)*; the three drawn in deep_zoom_edits_ckpt145 took 177 s together on this
-machine.
+`figure <id> --heal`, the order *Still hand-done* names. Five figures, 22 panels, 3.94 MB
+at 2×2 samples, since `deep-descent-pairs` joined *(double_descent_ckpt145)*; the three drawn in deep_zoom_edits_ckpt145 took 177 s together on this
+machine, and `deep-descent-pairs`' six took 53 s.
 
 **`deep-misiurewicz-pairs` is aligned by derivation, not by fit.** At a Misiurewicz point
 the M plane at c + e looks like J_c at c + λe, λ = lim b_n/a_n, with a_n and b_n the

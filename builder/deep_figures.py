@@ -53,6 +53,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import math
 import subprocess
 import tempfile
 from dataclasses import dataclass
@@ -256,6 +257,78 @@ def _wide(text: str) -> str:
 # for all three.
 
 
+# ------------------------------------------------------------------ automatic descents
+#
+# A and B are two seats of the general gallery, degree 2, each centred on a copy, picked by
+# the session (double_descent_ckpt145 addendum 1: "pick A and B yourself") as the two
+# highest-ranked general seats whose centre is a copy of low period: seat afdb47c0d3307d70
+# (general #17, period 28) and seat 9c6a3d8779c20d20 (general #51, period 18). Every pair's
+# product stays far under the ceiling at 32 periods. A panel is its seat's frame, drawn by
+# the Deep tab; the seat's own mode and palette do not travel, because the tab draws smooth.
+#
+# The four twins are `python -m builder descent`'s: the copy of M_B inside M_A, solved by
+# multiple shooting and confirmed by Newton at period p_A·p_B, framed at w_B·|s_A| and
+# turned by arg(s_A), which the explorer does not undo. Frozen here as the solve gave them.
+
+DESCENT_PLACES = {
+    "A": {
+        "x": "-0.048481003091324464",
+        "y": "0.671423098072995",
+        "w": "0.000004214533046626384",
+        "period": 28,
+        "alt": "Spiral arms of filigree in blue, orange and pale green winding round a center "
+        "whose copy is too small to see.",
+    },
+    "B": {
+        "x": "-0.7965805906382233",
+        "y": "0.1836388307197798",
+        "w": "0.00014167356735746674",
+        "period": 18,
+        "alt": "A small black copy of the set at the center of a cross of filigree, between "
+        "broad smooth fields of blue.",
+    },
+}
+
+DESCENT_TWINS = {
+    "AA": {
+        "x": "-0.04848101781523578090590898720382084",
+        "y": "0.67142308149718838830534665356761823",
+        "w": "1.3876788125863967e-13",
+        "period": 784,
+        "turned": 134,
+        "alt": "A's spirals again, inside A's own copy and turned by 134 degrees, their "
+        "smooth fields now grained with finer filigree.",
+    },
+    "AB": {
+        "x": "-0.04848098911754255814904710902389903",
+        "y": "0.67142307507264977946066054203043301",
+        "w": "4.664749464542912e-12",
+        "period": 504,
+        "turned": 134,
+        "alt": "B's cross and its copy again, inside A's copy and turned by 134 degrees, "
+        "the blue fields grained with finer filigree.",
+    },
+    "BA": {
+        "x": "-0.79658390622656352414119250317177613",
+        "y": "0.18364103042075131818520349951684389",
+        "w": "2.487866381089557e-11",
+        "period": 504,
+        "turned": 52,
+        "alt": "A's spirals again, inside B's copy and turned by 52 degrees, with finer "
+        "filigree grained through the smooth fields.",
+    },
+    "BB": {
+        "x": "-0.79658432800273572645421705275026704",
+        "y": "0.18363575208568885608713189736359006",
+        "w": "8.363083203246127e-10",
+        "period": 324,
+        "turned": 52,
+        "alt": "B's cross and copy again, inside B's own copy and turned by 52 degrees, "
+        "its fields grained with finer filigree.",
+    },
+}
+
+
 @dataclass(frozen=True)
 class Misiurewicz:
     """One point: where it is, where its orbit lands, and the similarity at it."""
@@ -329,6 +402,43 @@ MISIUREWICZ = (
         "the same seven-armed star, in shifted colors",
     ),
 )
+
+
+def _descents() -> tuple[Frame, ...]:
+    """A and B, then the four two-step descents: AA, AB, BA, BB, in that order."""
+    period = float(dict(part.split("=") for part in COARSE.split("&"))["period"])
+    frames = []
+    for name in ("A", "B"):
+        place = DESCENT_PLACES[name]
+        frames.append(
+            Frame(
+                place["x"],
+                place["y"],
+                place["w"],
+                COARSE,
+                name,
+                note=f"period {place['period']}, {_wide(place['w'])}",
+                alt=place["alt"],
+            )
+        )
+    for pair, twin in DESCENT_TWINS.items():
+        # A twin's escape counts are about p_A times its source's, so under a log colouring
+        # it is its source's picture shifted by ln p_A: taking that back off the phase puts
+        # the twin in its source's colors.
+        outer = DESCENT_PLACES[pair[0]]["period"]
+        shift = (-math.log(outer) / period) % 1.0
+        frames.append(
+            Frame(
+                twin["x"],
+                twin["y"],
+                twin["w"],
+                COARSE.replace("&scale=", f"&phase={shift:.4f}&scale="),
+                f"{pair[0]} then {pair[1]}",
+                note=f"period {twin['period']}, {_wide(twin['w'])}, turned {twin['turned']}°",
+                alt=twin["alt"],
+            )
+        )
+    return tuple(frames)
 
 
 def _pair(point: Misiurewicz, colour: str) -> tuple[Frame, Frame]:
@@ -473,6 +583,15 @@ FIGURES = {
         "the S4 descent chain of the wallpaper project's minibrot examples, periods 1, 2, "
         "27, 54 and 972, ending on the place of the threads candidate ca42a73543b6c213",
     ),
+    "deep-descent-pairs": Figure(
+        _descents(),
+        2,
+        (960, 540),
+        2,
+        "two general-gallery seats A and B, each centred on a copy, and the four two-step "
+        "descents python -m builder descent builds from them; the constants are "
+        "DESCENT_PLACES' and DESCENT_TWINS'",
+    ),
     "deep-misiurewicz-pairs": Figure(
         tuple(frame for point in MISIUREWICZ for frame in _pair(point, COARSE)),
         2,
@@ -502,6 +621,12 @@ WORDS = {
         "Six steps down one descent, each frame centered on the next component in a chain "
         "nested one inside the next. Filigree from each copy appears in regions that were "
         "smooth one step earlier.",
+    ),
+    "deep-descent-pairs": (
+        "Two deep frames, A and B, each centered on a copy, and the four two-step descents "
+        "built from them.",
+        "Two frames, A and B (top), each centered on a minibrot, and the four two-step "
+        "descents built from them: A then A, A then B, B then A, and B then B.",
     ),
     "deep-misiurewicz-pairs": (
         "Three pairs of zooms, each the Mandelbrot set and a Julia set at one Misiurewicz point.",

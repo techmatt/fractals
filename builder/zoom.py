@@ -43,13 +43,23 @@ TABLE_SIZE = 65536
 MAPPINGS = ("linear", "log", "power")
 
 
-def zoom_dir() -> Path:
+#: The record this run reads: `RECORD` unless `--record` names another, such as an
+#: automatic descent's (`builder/descent.py`).
+_record_path = RECORD
+
+
+def zoom_dir(name: str | None = None) -> Path:
+    """Where a record's fields, colourings and videos land: `artifacts/deep-zoom/` for the
+    deep zoom video, which had it first, and `artifacts/<name>/` for any other record."""
     moved = os.environ.get("FRACTAL_WEBSITE_ZOOM_DIR")
-    return Path(moved) if moved else HERE.parent / "artifacts" / "deep-zoom"
+    if moved:
+        return Path(moved)
+    name = name or read_record()["name"]
+    return HERE.parent / "artifacts" / ("deep-zoom" if name == "deep-zoom-descent" else name)
 
 
 def read_record() -> dict:
-    return json.loads(RECORD.read_text(encoding="utf-8"))
+    return json.loads(_record_path.read_text(encoding="utf-8"))
 
 
 def tag(k: int) -> str:
@@ -59,7 +69,7 @@ def tag(k: int) -> str:
 def read_field(record: dict, k: int) -> np.ndarray:
     cols, rows = record["keyframes"]["grid"]
     ss = record["keyframes"]["supersample"]
-    path = zoom_dir() / "fields" / f"{tag(k)}.f64"
+    path = zoom_dir(record["name"]) / "fields" / f"{tag(k)}.f64"
     return np.fromfile(path, dtype="<f8").reshape(rows * ss, cols * ss)
 
 
@@ -75,6 +85,7 @@ def mapping_of(record: dict, args: argparse.Namespace) -> dict:
         if value is not None:
             chosen[key] = value
     chosen["palette"] = args.palette or record["palette"]
+    chosen["record"] = record["name"]
     chosen["mirror"] = bool(args.mirror)
     chosen["reverse"] = bool(args.reverse)
     if not chosen["L"] or chosen["L"] <= 0:
@@ -109,11 +120,12 @@ def g_of(nu: np.ndarray, m: dict) -> np.ndarray:
 def palette_table(m: dict) -> np.ndarray:
     """The engine's bake of this palette, lifted through `engine.wasm` once and kept."""
     suffix = ("-mirror" if m["mirror"] else "") + ("-reverse" if m["reverse"] else "")
-    path = zoom_dir() / "palettes" / f"{m['palette']}{suffix}.rgb"
+    path = zoom_dir(m["record"]) / "palettes" / f"{m['palette']}{suffix}.rgb"
     if not path.exists():
         command = ["node", str(HERE / "zoom_palette.mjs"), m["palette"]]
         command += ["--mirror"] * m["mirror"] + ["--reverse"] * m["reverse"]
-        subprocess.run(command, check=True)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        subprocess.run(command + ["--out", str(path)], check=True)
     return np.fromfile(path, dtype=np.uint8).reshape(TABLE_SIZE, 3)
 
 
@@ -136,7 +148,7 @@ def _colour_one(job: tuple) -> str:
 
 
 def colour_all(record: dict, m: dict, workers: int) -> Path:
-    out_dir = zoom_dir() / "colour" / mapping_name(m)
+    out_dir = zoom_dir(record["name"]) / "colour" / mapping_name(m)
     out_dir.mkdir(parents=True, exist_ok=True)
     (out_dir / "mapping.json").write_text(json.dumps(m, indent=2) + "\n", encoding="utf-8")
     palette_table(m)  # lifted once here, not raced by the pool
@@ -194,7 +206,7 @@ def sheet(record: dict, m: dict, picks: list[int]) -> Path:
     out = Image.new("RGB", (960 * cols, 540 * rows))
     for i, tile in enumerate(tiles):
         out.paste(tile, (960 * (i % cols), 540 * (i // cols)))
-    path = zoom_dir() / "sheets" / f"{mapping_name(m)}.png"
+    path = zoom_dir(record["name"]) / "sheets" / f"{mapping_name(m)}.png"
     path.parent.mkdir(parents=True, exist_ok=True)
     out.save(path)
     print(path)
@@ -342,6 +354,9 @@ def encode(record: dict, directory: Path, out: Path, crf: int, preset: str) -> N
 
 def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(prog="zoom", description=__doc__.split("\n")[0])
+    parser.add_argument(
+        "--record", type=Path, help="a keyframe record other than the deep zoom video's"
+    )
     sub = parser.add_subparsers(dest="command", required=True)
     sub.add_parser("stats", help="nu and band widths per keyframe")
     for name in ("colour", "sheet", "encode", "video"):
@@ -359,12 +374,15 @@ def main(argv: list[str] | None = None) -> None:
         p.add_argument("--out", type=Path, help="encode: the MP4's path")
         p.add_argument("--keys", default="51,45,38,30,24,20,12,4,0", help="sheet: keyframes")
     args = parser.parse_args(argv)
+    global _record_path
+    if args.record is not None:
+        _record_path = args.record.resolve()
     record = read_record()
     if args.command == "stats":
         stats(record)
         return
     m = mapping_of(record, args)
-    directory = zoom_dir() / "colour" / mapping_name(m)
+    directory = zoom_dir(record["name"]) / "colour" / mapping_name(m)
     if args.command == "sheet":
         sheet(record, m, [int(k) for k in args.keys.split(",")])
         return
@@ -373,7 +391,8 @@ def main(argv: list[str] | None = None) -> None:
     if args.command in ("encode", "video"):
         if not directory.exists():
             raise SystemExit(f"{directory} is not coloured yet: run colour first")
-        out = args.out or zoom_dir() / "video" / f"deep-zoom-descent_{mapping_name(m)}.mp4"
+        video = zoom_dir(record["name"]) / "video"
+        out = args.out or video / f"{record['name']}_{mapping_name(m)}.mp4"
         encode(record, directory, out, args.crf, args.preset)
 
 

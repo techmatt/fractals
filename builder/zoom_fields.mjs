@@ -12,6 +12,9 @@
 //                                              keyframe already on disk
 //   node builder/zoom_fields.mjs --agree       neighbouring keyframes compared where they
 //                                              overlap
+//   ... --record <path>                        any of the above on another record, such as
+//                                              an automatic descent's (`descent.py`); its
+//                                              caps are that command's, so no `--caps`
 //
 // Fields land in `artifacts/deep-zoom/fields/` (or `FRACTAL_WEBSITE_ZOOM_DIR`/fields), one
 // `k<NN>.f64` and one `k<NN>.json` each. The `.f64` is written under a temporary name and
@@ -24,8 +27,15 @@ import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { load } from "../explorer/bench/perturb.mjs";
 
-const RECORD = new URL("./data/deep-zoom-descent.keyframes.json", import.meta.url);
 const ROOT = new URL("../", import.meta.url);
+/** The record this run reads: the deep zoom video's, or the one `--record` names — an
+ *  automatic descent's (`builder/descent.py`). */
+const RECORD = (() => {
+  const at = process.argv.indexOf("--record");
+  return at >= 0
+    ? resolve(process.argv[at + 1])
+    : fileURLToPath(new URL("./data/deep-zoom-descent.keyframes.json", import.meta.url));
+})();
 /** The file a band worker runs: this one, whoever imported it. */
 const WORKER = new URL(import.meta.url);
 
@@ -34,9 +44,14 @@ const BAND_ROWS = 8;
 /** The probe's grid, `deep-render.js`'s `PROBE_COLS` and `PROBE_ROWS`. */
 const PROBE = [64, 36];
 
+/** `artifacts/deep-zoom/` for the deep zoom video, which had it first, and
+ *  `artifacts/<name>/` for any other record — `zoom.py`'s `zoom_dir`. */
 export function zoomDir() {
   const moved = process.env.FRACTAL_WEBSITE_ZOOM_DIR;
-  return moved ? moved : fileURLToPath(new URL("artifacts/deep-zoom/", ROOT));
+  if (moved) return moved;
+  const { name } = readRecord();
+  const dir = name === "deep-zoom-descent" ? "deep-zoom" : name;
+  return fileURLToPath(new URL(`artifacts/${dir}/`, ROOT));
 }
 
 const fieldsDir = () => `${zoomDir()}/fields`;

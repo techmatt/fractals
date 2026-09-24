@@ -1,0 +1,207 @@
+{
+  "schema": 1,
+  "name": "double-descent",
+  "note": "An automatic minibrot descent's recipe, written by `python -m builder descent`: the chain it was asked for, the stages it found, and a keyframe at every halving centred on the last copy. `zoom_fields.mjs --record` draws the fields and `zoom.py --record` colours and encodes them; `builder/README.md` has the commands.",
+  "links": [
+    "v=4&f=multibrot3&m=tia&x=-0.09178757243773844&y=0.7701228096146883&w=0.0000000054204822587819985&p=along-the-starry-way-25&phase=0.156064",
+    "v=4&f=multibrot3&m=tia&x=-0.09178757243773844&y=0.7701228096146883&w=0.0000000054204822587819985&p=along-the-starry-way-25&phase=0.156064"
+  ],
+  "link": "explorer/index.html?dv=3&f=multibrot3&x=-0.091787572404909345106232727870690288512781443&y=0.770122809612858986618006679377867322680058673&w=3.3314e-20&p=along-the-starry-way-25",
+  "center_re": "-0.091787572404909345106232727870690288512781443",
+  "center_im": "0.770122809612858986618006679377867322680058673",
+  "target_width": 3.331396073173065e-20,
+  "degree": 3,
+  "family": "multibrot3",
+  "mode": "smooth",
+  "palette": "along-the-starry-way-25",
+  "branch": 0,
+  "chain": [
+    {
+      "link": "v=4&f=multibrot3&m=tia&x=-0.09178757243773844&y=0.7701228096146883&w=0.0000000054204822587819985&p=along-the-starry-way-25&phase=0.156064",
+      "period": 181,
+      "re": "-0.0917875724377384402982211239190766976843",
+      "im": "0.7701228096146882950897930152554936662650",
+      "size": 4.2347517646734195e-11,
+      "arg_degrees": -99.95006456217493
+    },
+    {
+      "link": "v=4&f=multibrot3&m=tia&x=-0.09178757243773844&y=0.7701228096146883&w=0.0000000054204822587819985&p=along-the-starry-way-25&phase=0.156064",
+      "period": 181,
+      "re": "-0.0917875724377384402982211239190766976843",
+      "im": "0.7701228096146882950897930152554936662650",
+      "size": 4.2347517646734195e-11,
+      "arg_degrees": -99.95006456217493
+    }
+  ],
+  "stages": [
+    {
+      "name": "home",
+      "width": 7.938214434179055,
+      "k": 68,
+      "cap_floor": null
+    },
+    {
+      "name": "location 1",
+      "width": 5.4204822587819985e-09,
+      "period": 181,
+      "k": 37,
+      "cap_floor": 5792
+    },
+    {
+      "name": "copy 1",
+      "width": 4.357702310290455e-10,
+      "period": 181,
+      "body_share": 0.20224719101123595,
+      "k": 34,
+      "cap_floor": 5792
+    },
+    {
+      "name": "twin 2",
+      "width": 2.2954396810758033e-19,
+      "period": 32761,
+      "centre_re": "-0.091787572404909345106232727870690288512781443",
+      "centre_im": "0.770122809612858986618006679377867322680058673",
+      "turned_degrees": -99.95006456217493,
+      "shooting_steps": [
+        4.188839780979338e-14,
+        1.3416919394950947e-17,
+        1.3508112865783128e-23,
+        2.3794033193463243e-35
+      ],
+      "first_order_miss": 4.187521691990756e-14,
+      "first_order_miss_of_offset": 0.0012749883190712828,
+      "size_over_product": 0.9998385953146308,
+      "k": 3,
+      "cap_floor": 1000000
+    },
+    {
+      "name": "copy 1·2",
+      "width": 3.331396073173065e-20,
+      "period": 32761,
+      "body_share": 0.3651685393258427,
+      "size": 1.7930228018408486e-21,
+      "arg_degrees": -199.90012912434986,
+      "k": 0,
+      "cap_floor": 1000000
+    }
+  ],
+  "notes": [
+    "32 x 32761 = 1048352 passes the ceiling of 1000000, and the twin frame offers no copy that fits (Find minibrots' periods there: [32761, 37105, 40544, 40906, 41449, 45612, 59187]); ended on the twin's own copy at the ceiling, 30.5 periods"
+  ],
+  "fit": {
+    "note": "The family's home view, from engine.wasm's plan.",
+    "re": [-2.6, 2.6],
+    "im": [-1.4625000000000001, 1.4625000000000001]
+  },
+  "keyframes": {
+    "rule": "w_k = target_width * 2^k, k = 0 up to the first width that holds the home view",
+    "grid": [1920, 1080],
+    "supersample": 1,
+    "cap_rule": "the Deep tab's settle (deep-gallery-native settle, policy::settle), raised at every stage frame and each keyframe deeper to 32 periods of that stage's copy, under cap::CEILING",
+    "frames": [
+      { "k": 0, "width": 3.331396073173065e-20, "maxiter": 1000000, "settled": 167088, "probe_mean": 79975, "escaped": 0.9818, "stage": "copy 1·2" },
+      { "k": 1, "width": 6.66279214634613e-20, "maxiter": 1000000, "settled": 164688, "probe_mean": 74124, "escaped": 0.9957 },
+      { "k": 2, "width": 1.332558429269226e-19, "maxiter": 1000000, "settled": 81144, "probe_mean": 59264, "escaped": 0.9314 },
+      { "k": 3, "width": 2.665116858538452e-19, "maxiter": 1000000, "settled": 79944, "probe_mean": 49366, "escaped": 0.9761, "stage": "twin 2" },
+      { "k": 4, "width": 5.330233717076904e-19, "maxiter": 78744, "settled": 78744, "probe_mean": 43941, "escaped": 0.9887 },
+      { "k": 5, "width": 1.0660467434153808e-18, "maxiter": 77544, "settled": 77544, "probe_mean": 41160, "escaped": 0.9952 },
+      { "k": 6, "width": 2.1320934868307615e-18, "maxiter": 76344, "settled": 76344, "probe_mean": 39481, "escaped": 0.9944 },
+      { "k": 7, "width": 4.264186973661523e-18, "maxiter": 75144, "settled": 75144, "probe_mean": 39975, "escaped": 0.9944 },
+      { "k": 8, "width": 8.528373947323046e-18, "maxiter": 73944, "settled": 73944, "probe_mean": 39241, "escaped": 0.9913 },
+      { "k": 9, "width": 1.7056747894646092e-17, "maxiter": 72744, "settled": 72744, "probe_mean": 38340, "escaped": 0.9922 },
+      { "k": 10, "width": 3.4113495789292185e-17, "maxiter": 71544, "settled": 71544, "probe_mean": 34757, "escaped": 0.99 },
+      { "k": 11, "width": 6.822699157858437e-17, "maxiter": 70344, "settled": 70344, "probe_mean": 26675, "escaped": 0.9931 },
+      { "k": 12, "width": 1.3645398315716874e-16, "maxiter": 69144, "settled": 69144, "probe_mean": 18630, "escaped": 0.9978 },
+      { "k": 13, "width": 2.729079663143375e-16, "maxiter": 67944, "settled": 67944, "probe_mean": 13988, "escaped": 0.9987 },
+      { "k": 14, "width": 5.45815932628675e-16, "maxiter": 66744, "settled": 66744, "probe_mean": 11548, "escaped": 0.9996 },
+      { "k": 15, "width": 1.09163186525735e-15, "maxiter": 65544, "settled": 65544, "probe_mean": 10981, "escaped": 0.9983 },
+      { "k": 16, "width": 2.1832637305147e-15, "maxiter": 64344, "settled": 64344, "probe_mean": 12746, "escaped": 0.9987 },
+      { "k": 17, "width": 4.3665274610294e-15, "maxiter": 63144, "settled": 63144, "probe_mean": 10796, "escaped": 0.9983 },
+      { "k": 18, "width": 8.7330549220588e-15, "maxiter": 61944, "settled": 61944, "probe_mean": 8003, "escaped": 0.9978 },
+      { "k": 19, "width": 1.74661098441176e-14, "maxiter": 60744, "settled": 60744, "probe_mean": 7520, "escaped": 0.9978 },
+      { "k": 20, "width": 3.49322196882352e-14, "maxiter": 59544, "settled": 59544, "probe_mean": 7992, "escaped": 0.9987 },
+      { "k": 21, "width": 6.98644393764704e-14, "maxiter": 58344, "settled": 58344, "probe_mean": 8477, "escaped": 0.997 },
+      { "k": 22, "width": 1.397288787529408e-13, "maxiter": 57144, "settled": 57144, "probe_mean": 9266, "escaped": 0.9852 },
+      { "k": 23, "width": 2.794577575058816e-13, "maxiter": 55944, "settled": 55944, "probe_mean": 10448, "escaped": 0.9692 },
+      { "k": 24, "width": 5.589155150117632e-13, "maxiter": 54744, "settled": 54744, "probe_mean": 13820, "escaped": 0.8845 },
+      { "k": 25, "width": 1.1178310300235263e-12, "maxiter": 428352, "settled": 428352, "probe_mean": 116849, "escaped": 0.7118 },
+      { "k": 26, "width": 2.2356620600470526e-12, "maxiter": 52344, "settled": 52344, "probe_mean": 30936, "escaped": 0.4826 },
+      { "k": 27, "width": 4.471324120094105e-12, "maxiter": 102288, "settled": 102288, "probe_mean": 63426, "escaped": 0.2648 },
+      { "k": 28, "width": 8.94264824018821e-12, "maxiter": 99888, "settled": 99888, "probe_mean": 45759, "escaped": 0.1541 },
+      { "k": 29, "width": 1.788529648037642e-11, "maxiter": 48744, "settled": 48744, "probe_mean": 22264, "escaped": 0.128 },
+      { "k": 30, "width": 3.577059296075284e-11, "maxiter": 47544, "settled": 47544, "probe_mean": 14142, "escaped": 0.2543 },
+      { "k": 31, "width": 7.154118592150568e-11, "maxiter": 46344, "settled": 46344, "probe_mean": 8398, "escaped": 0.4531 },
+      { "k": 32, "width": 1.4308237184301137e-10, "maxiter": 45144, "settled": 45144, "probe_mean": 5049, "escaped": 0.7357 },
+      { "k": 33, "width": 2.8616474368602273e-10, "maxiter": 43944, "settled": 43944, "probe_mean": 1734, "escaped": 0.9306 },
+      { "k": 34, "width": 5.723294873720455e-10, "maxiter": 42744, "settled": 42744, "probe_mean": 840, "escaped": 0.9809, "stage": "copy 1" },
+      { "k": 35, "width": 1.144658974744091e-09, "maxiter": 41544, "settled": 41544, "probe_mean": 496, "escaped": 0.9957 },
+      { "k": 36, "width": 2.289317949488182e-09, "maxiter": 40344, "settled": 40344, "probe_mean": 394, "escaped": 0.9987 },
+      { "k": 37, "width": 4.578635898976364e-09, "maxiter": 39144, "settled": 39144, "probe_mean": 292, "escaped": 1.0, "stage": "location 1" },
+      { "k": 38, "width": 9.157271797952727e-09, "maxiter": 37944, "settled": 37944, "probe_mean": 260, "escaped": 1.0 },
+      { "k": 39, "width": 1.8314543595905455e-08, "maxiter": 36744, "settled": 36744, "probe_mean": 236, "escaped": 1.0 },
+      { "k": 40, "width": 3.662908719181091e-08, "maxiter": 35544, "settled": 35544, "probe_mean": 231, "escaped": 1.0 },
+      { "k": 41, "width": 7.325817438362182e-08, "maxiter": 34344, "settled": 34344, "probe_mean": 228, "escaped": 1.0 },
+      { "k": 42, "width": 1.4651634876724364e-07, "maxiter": 33144, "settled": 33144, "probe_mean": 220, "escaped": 1.0 },
+      { "k": 43, "width": 2.930326975344873e-07, "maxiter": 31944, "settled": 31944, "probe_mean": 225, "escaped": 1.0 },
+      { "k": 44, "width": 5.860653950689746e-07, "maxiter": 30744, "settled": 30744, "probe_mean": 216, "escaped": 1.0 },
+      { "k": 45, "width": 1.1721307901379491e-06, "maxiter": 29544, "settled": 29544, "probe_mean": 176, "escaped": 1.0 },
+      { "k": 46, "width": 2.3442615802758982e-06, "maxiter": 28344, "settled": 28344, "probe_mean": 131, "escaped": 1.0 },
+      { "k": 47, "width": 4.6885231605517965e-06, "maxiter": 27144, "settled": 27144, "probe_mean": 97, "escaped": 1.0 },
+      { "k": 48, "width": 9.377046321103593e-06, "maxiter": 25944, "settled": 25944, "probe_mean": 113, "escaped": 0.9944 },
+      { "k": 49, "width": 1.8754092642207186e-05, "maxiter": 24744, "settled": 24744, "probe_mean": 79, "escaped": 0.9983 },
+      { "k": 50, "width": 3.750818528441437e-05, "maxiter": 23544, "settled": 23544, "probe_mean": 79, "escaped": 0.9996 },
+      { "k": 51, "width": 7.501637056882874e-05, "maxiter": 22344, "settled": 22344, "probe_mean": 82, "escaped": 1.0 },
+      { "k": 52, "width": 0.0001500327411376575, "maxiter": 21144, "settled": 21144, "probe_mean": 57, "escaped": 1.0 },
+      { "k": 53, "width": 0.000300065482275315, "maxiter": 19944, "settled": 19944, "probe_mean": 65, "escaped": 0.9974 },
+      { "k": 54, "width": 0.00060013096455063, "maxiter": 18744, "settled": 18744, "probe_mean": 64, "escaped": 0.9978 },
+      { "k": 55, "width": 0.00120026192910126, "maxiter": 17544, "settled": 17544, "probe_mean": 53, "escaped": 0.9996 },
+      { "k": 56, "width": 0.00240052385820252, "maxiter": 16344, "settled": 16344, "probe_mean": 63, "escaped": 0.9944 },
+      { "k": 57, "width": 0.00480104771640504, "maxiter": 15144, "settled": 15144, "probe_mean": 55, "escaped": 0.9961 },
+      { "k": 58, "width": 0.00960209543281008, "maxiter": 13944, "settled": 13944, "probe_mean": 54, "escaped": 0.997 },
+      { "k": 59, "width": 0.01920419086562016, "maxiter": 12744, "settled": 12744, "probe_mean": 188, "escaped": 0.9488 },
+      { "k": 60, "width": 0.03840838173124032, "maxiter": 11544, "settled": 11544, "probe_mean": 1337, "escaped": 0.7791 },
+      { "k": 61, "width": 0.07681676346248063, "maxiter": 10344, "settled": 10344, "probe_mean": 1437, "escaped": 0.5352 },
+      { "k": 62, "width": 0.15363352692496127, "maxiter": 9144, "settled": 9144, "probe_mean": 983, "escaped": 0.3325 },
+      { "k": 63, "width": 0.30726705384992253, "maxiter": 7944, "settled": 7944, "probe_mean": 576, "escaped": 0.2669 },
+      { "k": 64, "width": 0.6145341076998451, "maxiter": 6744, "settled": 6744, "probe_mean": 336, "escaped": 0.3177 },
+      { "k": 65, "width": 1.2290682153996901, "maxiter": 5544, "settled": 5544, "probe_mean": 182, "escaped": 0.4948 },
+      { "k": 66, "width": 2.4581364307993803, "maxiter": 4344, "settled": 4344, "probe_mean": 71, "escaped": 0.7552 },
+      { "k": 67, "width": 4.9162728615987605, "maxiter": 3144, "settled": 3144, "probe_mean": 25, "escaped": 0.8828 },
+      { "k": 68, "width": 9.832545723197521, "maxiter": 1944, "settled": 1944, "probe_mean": 10, "escaped": 0.967, "stage": "home" }
+    ]
+  },
+  "video": {
+    "resolution": [960, 540],
+    "fps": 60,
+    "seconds_per_halving": 1.5,
+    "hold_start": 1,
+    "hold_end": 3,
+    "ease_seconds": 2,
+    "ease_note": "The zoom's speed in halvings per second rises from zero to 1/seconds_per_halving over ease_seconds along a raised cosine, and falls back the same way at the end.",
+    "feather": 0.08,
+    "feather_note": "The inner keyframe's edge fades over this share of its own width."
+  },
+  "colour": {
+    "interior": [0, 0, 0],
+    "note": "index = frac(g(nu) / L + phase). The log mapping's L and phase are Hold look's, set by `python -m builder descent --colour`.",
+    "mappings": {
+      "linear": {
+        "g": "nu",
+        "L": 600,
+        "phase": 0
+      },
+      "log": {
+        "g": "ln nu",
+        "L": 0.07394,
+        "phase": 0.0584,
+        "why": "Hold look at the twin frame k03, median nu 45092.2, holding deep-zoom-descent's log L=0.25 phase=0 as it lands at that video's target frame, median nu 13336.3"
+      },
+      "power": {
+        "g": "nu^alpha",
+        "alpha": 0.3,
+        "L": 0.6,
+        "phase": 0
+      }
+    }
+  }
+}

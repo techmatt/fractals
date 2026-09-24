@@ -433,6 +433,26 @@ def _parser() -> argparse.ArgumentParser:
         "--replace", action="store_true", help="land a redraw of a figure already on the page"
     )
 
+    descended = commands.add_parser(
+        "descent", help="an automatic minibrot descent's keyframe record, from explorer links"
+    )
+    descended.add_argument(
+        "links", nargs="*", help="the chain's frames, each centred on a copy; one means [A, A]"
+    )
+    descended.add_argument("--name", default="double-descent", help="the record's name")
+    descended.add_argument(
+        "--branch", type=int, default=0, help="which twin, at degree D: 0 to D-2"
+    )
+    descended.add_argument(
+        "--dry-run", action="store_true", help="solve the chain and print it; write nothing"
+    )
+    descended.add_argument(
+        "--colour", metavar="NAME", help="set a drawn record's log colouring by Hold look"
+    )
+    descended.add_argument(
+        "--stills", metavar="NAME", help="the stage frames on one labelled sheet, in artifacts/"
+    )
+
     fronted = commands.add_parser("front", help="draw the front page's picture")
     fronted.add_argument(
         "id", nargs="*", choices=[[], *sorted(front.SHEETS)], help="the figure's id"
@@ -1524,6 +1544,12 @@ def main(argv: list[str] | None = None) -> int:
             return _do_phoenix_points()
         if options.command == "deep-gallery":
             return _do_deep_gallery(options)
+        if options.command == "descent":
+            from . import descent
+
+            for line in descent.main(options):
+                print(line)
+            return 0
         if options.command == "serve":
             return _do_serve(options)
         if options.command == "walk":
