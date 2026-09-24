@@ -670,3 +670,220 @@ fn the_interior_floor_at_a_degree() {
         "at the shipped floor the switch painted an escaping sample interior"
     );
 }
+
+// ------------------------------------------------------------- a copy's framing
+
+/// The body a frame of `spec` holds: the rows the interior component through the
+/// centre spans, over the frame's height — `None` where there is no interior near
+/// the centre, the component reaches the frame's edge, which is a lower bound
+/// rather than a measurement, or it spans under four rows. `explorer/deep-render.js`'s `bodyShare`, natively.
+fn body_share(spec: &Spec) -> Option<f64> {
+    let (w, h) = (spec.sample_width() as usize, spec.sample_height() as usize);
+    let orbit = spec.reference_orbit().unwrap();
+    let mut inside = Vec::with_capacity(w * h);
+    walk_frame(spec, &orbit, |outcome| inside.push(outcome.smooth.is_nan()));
+    let (cx, cy) = (w / 2, h / 2);
+    let mut start = None;
+    'find: for r in 0..=4usize {
+        for y in cy.saturating_sub(r)..=(cy + r).min(h - 1) {
+            for x in cx.saturating_sub(r)..=(cx + r).min(w - 1) {
+                if inside[y * w + x] {
+                    start = Some(y * w + x);
+                    break 'find;
+                }
+            }
+        }
+    }
+    let start = start?;
+    let mut seen = vec![false; w * h];
+    let mut stack = vec![start];
+    seen[start] = true;
+    let (mut top, mut bottom, mut edge) = (h, 0, false);
+    while let Some(at) = stack.pop() {
+        let (x, y) = (at % w, at / w);
+        top = top.min(y);
+        bottom = bottom.max(y);
+        edge |= x == 0 || y == 0 || x == w - 1 || y == h - 1;
+        let mut push = |n: usize| {
+            if inside[n] && !seen[n] {
+                seen[n] = true;
+                stack.push(n);
+            }
+        };
+        if x > 0 {
+            push(at - 1);
+        }
+        if x + 1 < w {
+            push(at + 1);
+        }
+        if y > 0 {
+            push(at - w);
+        }
+        if y + 1 < h {
+            push(at + w);
+        }
+    }
+    let rows = bottom - top + 1;
+    (!edge && rows >= 4).then(|| rows as f64 / h as f64)
+}
+
+/// **How much of a frame a copy's body fills at [`nuclei::TILE_BODIES`] of its size,
+/// per degree** — what `nuclei::FALLBACK_BODIES` is calibrated from
+/// *(find_minibrots_bulbs_ckpt145)*.
+///
+/// The copies are the ones [`nuclei::find`] lists from a few views at each degree,
+/// and each is drawn as a preview tile is: 316×178, centred on its nucleus, at eight
+/// periods — and again at the open frame's thirty-two, which is what says how much of
+/// the eight-period body is unresolved rim rather than body. The factor a degree
+/// needs is its median share over a quarter.
+#[test]
+#[ignore = "minutes: a few copies a degree, each drawn twice"]
+fn what_a_copy_frame_holds() {
+    const TILE: (u32, u32) = (316, 178);
+    let views: &[(u32, &str, &str, &str, f64)] = &[
+        (2, "anchor 2e-11", ANCHOR_RE, ANCHOR_IM, 2e-11),
+        (2, "seahorse 1e-6", "-0.745017", "0.149934", 1e-6),
+        (2, "antenna 4e-3", "-1.7686", "0.0017", 0.004),
+        (
+            3,
+            "s6 5.6e-8",
+            "-0.0693668444165554",
+            "0.7786163029308374",
+            5.6412438043129286e-08,
+        ),
+        (
+            4,
+            "s7 1.7e-7",
+            "0.4463839370384832",
+            "0.6581804592603596",
+            1.6659688118789476e-07,
+        ),
+        (
+            4,
+            "d5 4e-12",
+            "-1.084215082746655198570484569323",
+            "0.290514556108830899669391778917",
+            4e-12,
+        ),
+        (
+            5,
+            "s8 2.3e-7",
+            "0.5346286758046401",
+            "0.7421518803373967",
+            2.2650676563702367e-07,
+        ),
+    ];
+    let mut starts: Vec<(u32, String, String, String, f64)> = views
+        .iter()
+        .map(|&(d, l, re, im, w)| (d, l.to_string(), re.to_string(), im.to_string(), w))
+        .collect();
+    for degree in 3..=6 {
+        let &(_, _, re, im, body) = PINS.iter().find(|pin| pin.0 == degree).unwrap();
+        starts.push((
+            degree,
+            "island 3 bodies".into(),
+            re.into(),
+            im.into(),
+            3.0 * body,
+        ));
+        starts.push((
+            degree,
+            "island 30 bodies".into(),
+            re.into(),
+            im.into(),
+            30.0 * body,
+        ));
+    }
+
+    println!("\n| degree | view | period | size | share at 8 periods | at 32 | factor |");
+    println!("|--:|---|--:|--:|--:|--:|--:|");
+    let mut factors: Vec<Vec<f64>> = vec![Vec::new(); 7];
+    for degree in 2..=6u32 {
+        let mut taken = 0;
+        for (d, label, re, im, width) in starts.iter().filter(|s| s.0 == degree) {
+            if taken >= 4 {
+                break;
+            }
+            let view = Spec {
+                center_re: re.clone(),
+                center_im: im.clone(),
+                width: *width,
+                resolution: [692, 388],
+                supersample: 1,
+                maxiter: None,
+                reference: None,
+                period: None,
+                julia: None,
+                anchor: Anchor::Parameter,
+                interior: true,
+                degree: *d,
+            };
+            let settled = policy::settle(&view, policy::PROBE_COLS, policy::PROBE_ROWS).unwrap();
+            let view = Spec {
+                maxiter: Some(settled.maxiter),
+                ..view
+            };
+            let found = nuclei::find(&view, nuclei::GRID_COLS, nuclei::GRID_ROWS, 12, 6).unwrap();
+            for (nucleus, reading) in found {
+                if taken >= 4 || reading.kind != nuclei::Kind::Copy || nucleus.period > 12_000 {
+                    continue;
+                }
+                let tile_width = nucleus.size() * nuclei::TILE_BODIES;
+                let digits = digits_for(tile_width);
+                let at = |periods: u32| Spec {
+                    center_re: nucleus.c_re.to_decimal(digits),
+                    center_im: nucleus.c_im.to_decimal(digits),
+                    width: tile_width,
+                    resolution: [TILE.0, TILE.1],
+                    supersample: 1,
+                    maxiter: Some(
+                        (nucleus.period * periods)
+                            .max(cap::for_width(tile_width))
+                            .min(cap::CEILING as u32),
+                    ),
+                    reference: None,
+                    period: Some(nucleus.period),
+                    julia: None,
+                    anchor: Anchor::Parameter,
+                    interior: true,
+                    degree,
+                };
+                let eight = body_share(&at(nuclei::TILE_PERIODS));
+                let open = body_share(&at(nuclei::OPEN_PERIODS));
+                let show =
+                    |s: Option<f64>| s.map_or("edge/none".to_string(), |s| format!("{s:.3}"));
+                let factor = eight.map(|s| s / 0.25);
+                println!(
+                    "| {degree} | {label} | {} | {:.3e} | {} | {} | {} |",
+                    nucleus.period,
+                    nucleus.size(),
+                    show(eight),
+                    show(open),
+                    factor.map_or("-".to_string(), |f| format!("{f:.2}")),
+                );
+                if let Some(f) = factor {
+                    factors[degree as usize].push(f);
+                    taken += 1;
+                }
+            }
+        }
+    }
+    println!("\n| degree | copies | factors | median |");
+    println!("|--:|--:|---|--:|");
+    for degree in 2..=6 {
+        let mut f = factors[degree].clone();
+        f.sort_by(|a, b| a.partial_cmp(b).unwrap());
+        let median = if f.is_empty() {
+            f64::NAN
+        } else {
+            f[f.len() / 2]
+        };
+        println!(
+            "| {degree} | {} | {:?} | {median:.2} |",
+            f.len(),
+            f.iter()
+                .map(|x| (x * 100.0).round() / 100.0)
+                .collect::<Vec<_>>()
+        );
+    }
+}

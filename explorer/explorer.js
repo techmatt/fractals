@@ -4227,9 +4227,10 @@ async function findMinibrots() {
  * One entry of the list, opened in whichever view can draw it: here where the ordinary
  * renderer still resolves the frame, and in the Deep tab where it does not.
  *
- * **The frame is the Deep tab's**, twelve body widths across (`renderer.tileWidth` in
- * `deep-render.js`), in both views, so a minibrot looks the same size whichever one opens
- * it — about a quarter of the frame's height, with its surroundings round it.
+ * **The frame is the Deep tab's**, in both views, so a minibrot looks the same size
+ * whichever one opens it — a copy framed so its measured body is about a quarter of the
+ * frame's height, a bulb at twelve of its sizes on its parent's edge (`frameOf` in
+ * `deep.js`).
  *
  * **And so is the cap** *(find_minibrots_cap2_ckpt145)*: thirty-two periods of the copy's
  * own nucleus, or the width's where that is more, under the million `n` may name. Until

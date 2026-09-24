@@ -26,7 +26,7 @@ import { existsSync } from "node:fs";
 
 import { load as loadEngine, RAMP } from "./bench/engine.mjs";
 import { load as loadPerturb } from "./bench/perturb.mjs";
-import { shadeSpecOf, deepSpecOf, orbitKey } from "./deep-render.js";
+import { BODY_TARGET, bodyShare, shadeSpecOf, deepSpecOf, orbitKey } from "./deep-render.js";
 import * as deep from "./deep-link.js";
 
 const MODULE = new URL("./perturb.wasm", import.meta.url);
@@ -740,4 +740,82 @@ test("a julia frame at z = 0 is planned at d times the view's bits", { skip }, (
   assert.ok(two.ok && five.ok, `${two.why ?? ""} ${five.why ?? ""}`);
   assert.ok(two.limbs > view.limbs, `origin ${two.limbs} against parameter ${view.limbs}`);
   assert.ok(five.limbs > two.limbs, `degree 5 at ${five.limbs} against degree 2 at ${two.limbs}`);
+});
+
+// ------------------------------------------------ Find minibrots: copy or bulb, and framing
+
+test("bodyShare measures the interior component through the centre, and refuses the rest", () => {
+  const W = 40;
+  const H = 30;
+  const tile = (inside) => {
+    const values = new Float64Array(W * H).fill(1);
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (inside(x, y)) values[y * W + x] = NaN;
+    return values;
+  };
+  // A disc ten rows tall at the centre, and a second blob elsewhere that must not count.
+  const disc = tile((x, y) => (x - 20) ** 2 + (y - 15) ** 2 <= 25 || (x < 3 && y < 3 && x > 0 && y > 0));
+  assert.equal(bodyShare(disc, W, H), 11 / H);
+  // Off centre by two samples is still found.
+  assert.equal(bodyShare(tile((x, y) => (x - 22) ** 2 + (y - 13) ** 2 <= 9), W, H), 7 / H);
+  // Nothing interior near the centre, a body that runs off the tile, a body under four rows.
+  assert.equal(bodyShare(tile(() => false), W, H), null);
+  assert.equal(bodyShare(tile((x, y) => y >= 10 && y <= 20), W, H), null);
+  assert.equal(bodyShare(tile((x, y) => y >= 14 && y <= 16 && x >= 18 && x <= 22), W, H), null);
+});
+
+/** `classify_nucleus`, called the way `deep-worker.js` calls it. */
+function classify(request) {
+  const { wasm } = perturb;
+  const raw = new TextEncoder().encode(JSON.stringify(request));
+  const pointer = wasm.alloc(raw.length);
+  new Uint8Array(wasm.memory.buffer, pointer, raw.length).set(raw);
+  const out = wasm.classify_nucleus(pointer, raw.length);
+  wasm.dealloc(pointer, raw.length);
+  const size = new DataView(wasm.memory.buffer).getUint32(out, true);
+  const text = new TextDecoder().decode(new Uint8Array(wasm.memory.buffer, out + 4, size));
+  wasm.dealloc(out, size + 4);
+  return JSON.parse(text);
+}
+
+test("the committed module reads the anchor as a copy and a bulb on pin 10's copy as a bulb", { skip }, () => {
+  const anchor = classify({
+    c_re: ANCHOR.center_re,
+    c_im: ANCHOR.center_im,
+    period: 2838,
+    limbs: 5,
+    degree: 2,
+    size_log2: Math.log2(6.4775e-12),
+  });
+  assert.equal(anchor.ok, true, anchor.why);
+  assert.equal(anchor.kind, "copy");
+  // The law alone named period 33 as its parent; the root test is what refused it.
+  assert.ok(anchor.rooted > 1, `rooted ${anchor.rooted}`);
+  const bulb = classify({
+    c_re: "-0.057412939209682502",
+    c_im: "0.669186045946984554",
+    period: 1253,
+    limbs: 5,
+    degree: 2,
+    size_log2: Math.log2(1.191e-11),
+  });
+  assert.equal(bulb.ok, true, bulb.why);
+  assert.deepEqual([bulb.kind, bulb.parent, bulb.m], ["bulb", 179, 7]);
+});
+
+test("a copy framed at the fallback width holds its body near a quarter of the height", { skip }, () => {
+  const size = 6.4775e-12;
+  const width = perturb.wasm.copy_width(size, 2);
+  assert.ok(Math.abs(width / (size * perturb.wasm.tile_width(1)) - 1.06) < 1e-12);
+  const spec = {
+    schema: 1,
+    center_re: ANCHOR.center_re,
+    center_im: ANCHOR.center_im,
+    width,
+    resolution: [160, 90],
+    maxiter: perturb.wasm.tile_cap(2838, width),
+    period: 2838,
+  };
+  const lanes = new Float64Array(perturb.frame(spec).buffer);
+  const share = bodyShare(lanes, 160, 90);
+  assert.ok(share !== null && Math.abs(share - BODY_TARGET) < 0.05, `share ${share}`);
 });

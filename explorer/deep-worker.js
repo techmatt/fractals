@@ -180,6 +180,18 @@ function handle(message) {
     return;
   }
 
+  // **A copy or a bulb, in one call** *(find_minibrots_bulbs_ckpt145)*. It reads no orbit
+  // either — its chain and its solves start from the nucleus — and it is one call rather
+  // than one a step because the periods it solves are divisors of the one just solved, so
+  // the whole reading costs about what that solve did.
+  if (message.kind === "classify") {
+    const reading = withText(message.request, (pointer, length) =>
+      take(wasm.classify_nucleus(pointer, length)),
+    );
+    answer(message, { reading });
+    return;
+  }
+
   if (message.kind === "band") {
     const { spec, rowStart, rowEnd, bytes } = message;
     if (orbit === null) {

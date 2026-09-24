@@ -129,8 +129,11 @@ function answer(derived) {
   if (again !== link) {
     return { ok: false, why: `the contract does not settle on this view: ${link} became ${again}` };
   }
-  parse(link, CONTEXT);
-  return { ok: true, link };
+  const read = parse(link, CONTEXT);
+  // The cap the page will draw this link at, as v4 says it: the link's own `n` where it
+  // carries one, and otherwise the width policy, which is what an absent `n` means. A
+  // caller that holds a record's cap compares against this (`seats.py`'s gap).
+  return { ok: true, link, maxiter: read.maxiter ?? CONTEXT.cap(read.w.value) };
 }
 
 const wanted = JSON.parse(readFileSync(0, "utf8"));

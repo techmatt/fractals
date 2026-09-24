@@ -2057,10 +2057,10 @@ about thirteen of its periods and a blob. Now:
   fault-share probe on it: the Deep tab never probes a non-width cap, and the shallow view
   has no probe. ⚠ **The ceiling binds from period 31,250**, past which a copy gets fewer
   than 32 periods, falling to eight at 125,000 — the same wall the tiles have.
-- **The frame is `nuclei::TILE_BODIES` (12) body widths across**, which puts the copy's
-  black body at about a quarter of a 16:9 frame's height (0.25 to 0.27 on the real-axis
-  copies measured; six gave 0.59 to 0.61, ten 0.30 to 0.37, sixteen 0.19 to 0.20), so the
-  copy sits in its own surroundings and a reader can zoom out from it to the stages round it.
+- **The frame puts the copy's body at about a quarter of the height.** It was
+  `nuclei::TILE_BODIES` (12) sizes across, which gave 0.25 to 0.27 on the real-axis copies
+  measured (six gave 0.59 to 0.61, ten 0.30 to 0.37, sixteen 0.19 to 0.20). Since
+  find_minibrots_bulbs_ckpt145 it is **measured**, below.
 - **A preview tile keeps its eight periods** (`previewOf` in `deep.js`): a tile is drawn
   unasked under `TILE_BUDGET_MS`, and four times its cost would put most lists past it.
   The tile is the same frame at a quarter of the open cap.
@@ -2069,13 +2069,71 @@ Checked on the served page (`scratch/find_minibrots/`): thirteen entries opened,
 the shallow view and five in the Deep tab, degrees two to five, periods 36 to 34,056. None
 is a blob. The five true copies among them land with the body at about a quarter to a third
 of the height; the Deep ones cost 5.9 s at period 2,838, 31 s at 19,866 and 87 s at 34,056,
-where the ceiling holds it to 29 periods. ⚠ **Seven of the thirteen are satellite bulbs of a
-larger component, not copies.** The search ranks every nucleus it solves, a bulb is a
-nucleus, and the size estimate means nothing for a bulb, so the frame shows the bulb on the
-edge of its parent. A bulb is a disc at any cap, so none of these is a blob either; which
-entries should be offered is a question for the search and is left open. **Degree three
-frames large**: a period-770 copy's body filled about half the height, so the size estimate
-reads small at that degree.
+where the ceiling holds it to 29 periods. Seven of the thirteen were satellite bulbs, which
+is what the next checkpoint took up.
+
+**Copies first, bulbs only where there is no copy** *(Matt, find_minibrots_bulbs_ckpt145)*.
+A satellite bulb is a nucleus like any other and the walk finds them readily, but a bulb is
+not a copy. Every distinct nucleus a search solves is now read as one or the other
+(`nuclei::classify`, exported as `classify_nucleus`, one worker call a nucleus after the
+solves), and the list offers **the copies, largest first; and only where the view holds no
+copy, its bulbs**, labelled *bulb, period p on period q*, under a note that says there is no
+copy in the view. A bulb is framed as before, at twelve of its own sizes, which shows it on
+its parent's edge.
+
+- **The reading is the wallpapers repository's, ported** (`discovery/minibrot.py`): the
+  record minima of `|z_k|` along the nucleus's orbit give the chain of components it sits
+  near; each is solved at its own period and kept where it lands within two of its own
+  sizes (`ENCLOSE_K`); the main body is prepended at period 1, size 1; and the chain is
+  split into `generations` by the bulb law, `size ≥ 2·sin(π/m)/(m²(d−1)) × size_parent / 3`
+  (`bulb_scale`, `BULB_SLACK`). A nucleus that would join the last generation is a bulb.
+  **Only chain entries whose period divides the nucleus's are solved**, which is the
+  cheap part: a bulb's parent always divides it, and what a non-dividing entry could do is
+  open a generation in between, which no case measured did.
+- ⚠ **The law alone calls the audit anchor a bulb**, an 86-bulb of a period-33
+  component. That repository measured it for `m` up to 11; at these depths `m` is in the
+  hundreds, the law falls as `1/m³`, and a third of it no longer separates a copy from a
+  bulb; the same goes for a period-69 and a period-72 copy on the antenna. So **at degree
+  two** a parent the law names is checked by a **root test**, which is this crate's own: a
+  `p/m` bulb hangs where the parent's cycle multiplier is `e^{2πip/m}` with `p` prime to
+  `m`, so the multiplier at the nucleus points within about `1/m²` of a turn of a
+  primitive `m`-th root (`nuclei::rooted`, `ROOTED_WITHIN` 0.1). Every bulb measured
+  reads 0 to 0.011, the four misnamed copies 1.31 to 149.
+- ⚠ **Above degree two the law is taken alone.** The cycle search the root test rests on
+  lands on another cycle there (`|λ|` of 1.8 to 2.0 on plain bulbs), so it is not asked.
+  The law named every degree-three-to-six bulb measured correctly, and that repository
+  measured it on all five planes; a high-`m` copy at those degrees would be offered as a
+  bulb, and none was seen. A first try, the nucleus's distance from the parent's boundary
+  in its own sizes, failed the same way: a plain degree-four 7-bulb read 25.9 against
+  copies at 29.6.
+- **It costs little.** A reading is a few solves at divisors of the nucleus's own period
+  plus one cycle search, which on the cases measured natively is milliseconds to 0.13 s
+  (period 34,056), beside a search of seconds. It adds 33.5 KB to `perturb.wasm` (11.2 KB
+  gzipped), almost all the fixed-point step at five degrees; `#[inline(never)]` on the
+  readings did not move it.
+
+**A copy is framed by its measured body** *(Matt, find_minibrots_bulbs_ckpt145)*. The
+preview tile is already drawn at eight periods, and before it is coloured its lanes say
+which samples are interior. `bodyShare` in `deep-render.js` takes the 4-connected interior
+component through the tile's centre and its height as a share of the tile's; the entry is
+then re-aimed (`aim` in `deep.js`) at the width that puts that at a quarter, and its title
+says the new width and cap. The measurement is refused, and the entry keeps its first
+width, where there is no interior near the centre, where the component reaches the tile's
+edge, or where it is under four rows. **The first width, and the one an entry keeps where
+its preview is never drawn** (over `TILE_BUDGET_MS`), is `renderer.copyWidth`: twelve sizes
+times a per-degree factor, `nuclei::FALLBACK_BODIES`, calibrated by `tests/measure.rs`'s
+`what_a_copy_frame_holds` on four copies a degree:
+
+| degree | 2 | 3 | 4 | 5 | 6 |
+|---|--:|--:|--:|--:|--:|
+| body share at twelve sizes | 0.24–0.27 | 0.23–0.32 | 0.29 | 0.28–0.33 | 0.30 |
+| factor | 1.06 | 1.06 | 1.15 | 1.28 | 1.21 |
+
+⚠ **Degree three does not read small**, which is what the brief for this assumed from the
+period-770 frame that filled half the height. That entry was a 5-bulb on a period-154 copy,
+framed by the bulb's size; the half was the copy's body. Its view now offers the copy first.
+An eight-period preview's unresolved rim is not what these measure: at thirty-two periods
+every share above is the same to three places but the anchor's, 0.270 against 0.253.
 
 One button, on the parameter plane only, at every degree the tab draws *(degrees three to six since
 deep_degrees_ckpt140, each against a measured pin — `perturb-wasm/README.md` §10)*. It searches the current view for the minibrots in and around

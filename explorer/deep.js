@@ -47,7 +47,7 @@
 
 import * as fx from "./deep-fx.js";
 import * as deepLink from "./deep-link.js";
-import { DeepRenderer, deepSpecOf } from "./deep-render.js";
+import { BODY_TARGET, DeepRenderer, bodyShare, deepSpecOf } from "./deep-render.js";
 import { stopOf } from "./outermost.js";
 
 /**
@@ -1048,6 +1048,7 @@ export function mount(host) {
     if (step.phase === "probe") return `${count(step.done)} of ${count(step.total)} cells`;
     if (step.phase === "seeds") return `walking ${count(step.done)} of ${count(step.total)} cells`;
     if (step.phase === "solves") return `solved ${step.done} of ${step.total}`;
+    if (step.phase === "classify") return `copy or bulb, ${step.done} of ${step.total}`;
     return "";
   }
 
@@ -1546,14 +1547,23 @@ export function mount(host) {
     return (lanes * cap * 0.85 * 5.0e-9 * 1.05) / threads;
   }
 
-  /** The view one entry opens: its own centre, framed at twelve body widths so the copy
-   *  is about a quarter of the frame's height with its surroundings round it, at
-   *  thirty-two periods of its own nucleus (`renderer.openCap`). The palette and the shade
-   *  recipe come with the reader, because a preview a reader cannot recognise as theirs is
-   *  a different picture of the same place. `base` is the view searched, which is the
-   *  tab's own unless the viewer asked. */
+  /** The view one entry opens: its own centre, at thirty-two periods of its own nucleus
+   *  (`renderer.openCap`). The palette and the shade recipe come with the reader, because a
+   *  preview a reader cannot recognise as theirs is a different picture of the same place.
+   *  `base` is the view searched, which is the tab's own unless the viewer asked.
+   *
+   *  **How wide depends on what it is** *(find_minibrots_bulbs_ckpt145)*. A copy is framed
+   *  so that its body fills about a quarter of the height: by `measured` — the width its
+   *  preview's body asked for — once the preview is drawn, and before that, or where the
+   *  preview is never drawn or holds no usable body, by `renderer.copyWidth`, twelve sizes
+   *  times the degree's calibrated factor. A bulb keeps twelve of its own sizes, which puts
+   *  it on the edge of its parent. */
   function frameOf(nucleus, base = view) {
-    const width = renderer.tileWidth(nucleus.size);
+    const width =
+      nucleus.measured ??
+      (nucleus.kind === "bulb"
+        ? renderer.tileWidth(nucleus.size)
+        : renderer.copyWidth(nucleus.size, base.degree ?? 2));
     return {
       ...base,
       x: nucleus.x,
@@ -1695,8 +1705,12 @@ export function mount(host) {
       const reachable = found.filter((one) => spellable(one));
       const lost = found.length - reachable.length;
       els.minibrotNote.hidden = false;
+      const bulbs = found[0].kind === "bulb";
       els.minibrotNote.textContent =
-        `${found.length} found, largest first.` +
+        (bulbs
+          ? `No copy of the set in this view; ${found.length} satellite ` +
+            `${found.length === 1 ? "bulb" : "bulbs"}, largest first.`
+          : `${found.length} found, largest first.`) +
         (lost === 0
           ? ""
           : ` ${lost} of them ${lost === 1 ? "sits" : "sit"} deeper than a link can spell a ` +
@@ -1720,6 +1734,21 @@ export function mount(host) {
           },
         });
         if (field === null || generation !== pass) return;
+        // **A copy is framed by the body its preview holds** — the interior component
+        // through the tile's centre, measured on the lanes before they are coloured — and
+        // not by the size estimate, which gives a copy's scale and not its extent. The
+        // entry is re-aimed at the width that puts that body at a quarter of the height.
+        if (nucleus.kind !== "bulb") {
+          const share = bodyShare(
+            field.values,
+            field.width * field.supersample,
+            field.height * field.supersample,
+          );
+          if (share !== null) {
+            nucleus.measured = (frame.w.value * share) / BODY_TARGET;
+            aim(nucleus, target);
+          }
+        }
         const shaded = await deep.shade(field, frame, {}, { derive: false });
         if (shaded === null || generation !== pass) return;
         paintTile(nucleus, shaded.image);
@@ -1761,8 +1790,9 @@ export function mount(host) {
 
       const well = document.createElement("div");
       well.className = "minibrot-tile";
-      const frame = frameOf(nucleus, base);
-      const seconds = tileSeconds(previewOf(frame, nucleus).maxiter);
+      nucleus.entry = entry;
+      aim(nucleus, base);
+      const seconds = tileSeconds(previewOf(nucleus.frame, nucleus).maxiter);
       well.textContent = !reachable
         ? "past what a link can spell"
         : seconds * 1000 > TILE_BUDGET_MS
@@ -1772,19 +1802,35 @@ export function mount(host) {
 
       const said = document.createElement("span");
       said.className = "minibrot-said";
-      said.textContent = `period ${nucleus.period.toLocaleString("en-US")} · ${exponent(nucleus.size)} across`;
+      // A bulb is said to be one, and whose: the list offers bulbs only where the view
+      // holds no copy, and an entry that called a disc on something's edge a minibrot
+      // would be the promise this label exists to stop making.
+      const what =
+        nucleus.kind === "bulb"
+          ? `bulb, period ${nucleus.period.toLocaleString("en-US")} on period ` +
+            nucleus.parent.toLocaleString("en-US")
+          : `period ${nucleus.period.toLocaleString("en-US")}`;
+      said.textContent = `${what} · ${exponent(nucleus.size)} across`;
       entry.append(said);
 
-      entry.title = reachable
-        ? `Go to this minibrot: ${frame.w.text} across, ${frame.maxiter.toLocaleString("en-US")} iterations.`
-        : "This minibrot's center needs more digits than a link carries, so the tab cannot open it.";
-      // **The frame this entry was built with**, and never one derived at click time: by
+      // **The frame this entry was aimed at**, and never one derived at click time: by
       // then `view` may have moved, and an entry that quietly re-aims is an entry that
-      // sends a reader somewhere they were not shown.
-      if (reachable) entry.addEventListener("click", () => (pick ?? swap)({ ...frame }));
+      // sends a reader somewhere they were not shown. The one re-aim is its own preview
+      // landing, which measures the copy the entry then goes to (`aim`).
+      if (reachable) entry.addEventListener("click", () => (pick ?? swap)({ ...nucleus.frame }));
       nucleus.node = well;
       els.minibrotList.append(entry);
     }
+  }
+
+  /** Point an entry at the frame `frameOf` gives it now, and say so in its title. */
+  function aim(nucleus, base) {
+    const frame = frameOf(nucleus, base);
+    nucleus.frame = frame;
+    const what = nucleus.kind === "bulb" ? "bulb" : "minibrot";
+    nucleus.entry.title = spellable(nucleus)
+      ? `Go to this ${what}: ${frame.w.text} across, ${frame.maxiter.toLocaleString("en-US")} iterations.`
+      : `This ${what}'s center needs more digits than a link carries, so the tab cannot open it.`;
   }
 
   /** One tile's picture, once it has been drawn. */

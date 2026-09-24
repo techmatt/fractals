@@ -863,6 +863,97 @@ pub extern "C" fn newton_step(request_ptr: *const u8, request_len: usize) -> *mu
     }))
 }
 
+/// **A copy or a bulb**: [`nuclei::classify`] on one solved nucleus
+/// *(find_minibrots_bulbs_ckpt145)*.
+///
+/// One request per nucleus rather than one per Newton step, as [`newton_step`] is,
+/// because the chain it solves is a handful of periods each a divisor of this one:
+/// the whole reading costs about what the nucleus's own solve did, and a reader who
+/// cancels loses at most that.
+///
+/// Takes `{"c_re":"…","c_im":"…","period":n,"limbs":k,"degree":d,"size_log2":x}`
+/// and returns `{"ok":true,"kind":"copy"|"bulb","parent":q,"m":m,"chain":[…],
+/// "solves":n,"rooted":x,"primitive":b}` — `parent` and `m` zero on a copy; `rooted`
+/// is [`nuclei::rooted`]'s reading, `null` where it was not taken (no parent named,
+/// or above degree two) or where the root is not primitive, which `primitive` says.
+#[unsafe(no_mangle)]
+pub extern "C" fn classify_nucleus(request_ptr: *const u8, request_len: usize) -> *mut u8 {
+    const KNOWN: &[&str] = &["c_re", "c_im", "period", "limbs", "degree", "size_log2"];
+    let read = text(request_ptr, request_len)
+        .ok_or_else(|| "the request is not UTF-8".to_string())
+        .and_then(|text| {
+            let object = json::object(&text).ok_or("the request is not a flat JSON object")?;
+            if let Some(name) = object.unknown(KNOWN) {
+                return Err(format!("the request carries no member named `{name}`"));
+            }
+            let count = |key: &str| match object.get(key) {
+                Some(json::Value::Num(value)) if *value >= 1.0 && value.fract() == 0.0 => {
+                    Ok(*value as u32)
+                }
+                _ => Err(format!("`{key}` is a whole number of at least one")),
+            };
+            let coordinate = |key: &str| match object.get(key) {
+                Some(json::Value::Str(value)) => Ok(value.clone()),
+                _ => Err(format!("`{key}` has to be a string")),
+            };
+            let limbs = (count("limbs")? as usize).clamp(3, fx::MAX_LIMBS);
+            let period = count("period")?;
+            let degree = match object.get("degree") {
+                None => 2,
+                Some(_) => match count("degree") {
+                    Ok(degree) if kernel::DEGREES.contains(&degree) => degree,
+                    _ => return Err("`degree` is a whole number from 2 to 6".to_string()),
+                },
+            };
+            let size_log2 = match object.get("size_log2") {
+                Some(json::Value::Num(value)) if value.is_finite() => *value,
+                _ => return Err("`size_log2` is a finite number".to_string()),
+            };
+            let re_text = coordinate("c_re")?;
+            let im_text = coordinate("c_im")?;
+            let c_re = Fx::parse(&re_text, limbs)
+                .ok_or_else(|| format!("`{re_text}` is not a decimal"))?;
+            let c_im = Fx::parse(&im_text, limbs)
+                .ok_or_else(|| format!("`{im_text}` is not a decimal"))?;
+            let nucleus = nuclei::Nucleus {
+                period,
+                c_re,
+                c_im,
+                size_log2,
+                window_log2: f64::NAN,
+                steps: 0,
+                residual: 0.0,
+            };
+            Ok(nuclei::classify(&nucleus, degree))
+        });
+    report(read.map(|reading| {
+        let (kind, parent, m) = match reading.kind {
+            nuclei::Kind::Copy => ("copy", 0, 0),
+            nuclei::Kind::Bulb { parent, m } => ("bulb", parent, m),
+        };
+        let chain: Vec<String> = reading.chain.iter().map(u32::to_string).collect();
+        // JSON has no infinity, so a root that is not primitive is said as a flag.
+        let (rooted, primitive) = match reading.rooted {
+            Some(off) if off.is_finite() => (format!("{off:e}"), true),
+            Some(_) => ("null".to_string(), false),
+            None => ("null".to_string(), true),
+        };
+        format!(
+            concat!(
+                r#"{{"ok":true,"kind":"{}","parent":{},"m":{},"chain":[{}],"#,
+                r#""solves":{},"rooted":{},"primitive":{}}}"#
+            ),
+            kind,
+            parent,
+            m,
+            chain.join(","),
+            reading.solves,
+            rooted,
+            primitive,
+        )
+    }))
+}
+
 /// The limb count a nucleus found in a view of this width is solved at, so the
 /// page does not restate the rule. See [`nuclei::limbs_for_nucleus`].
 #[unsafe(no_mangle)]
@@ -898,6 +989,19 @@ pub extern "C" fn open_cap(period: u32, width: f64) -> u32 {
 #[unsafe(no_mangle)]
 pub extern "C" fn tile_width(size: f64) -> f64 {
     size * nuclei::TILE_BODIES
+}
+
+/// How wide to frame a copy of this size at this degree, before its body has been
+/// measured or where it cannot be. See [`nuclei::copy_width`]. A caller that passes
+/// no degree passes zero, which is two.
+#[unsafe(no_mangle)]
+pub extern "C" fn copy_width(size: f64, degree: u32) -> f64 {
+    let degree = if kernel::DEGREES.contains(&degree) {
+        degree
+    } else {
+        2
+    };
+    nuclei::copy_width(size, degree)
 }
 
 /// What [`newton_step`] means by a number JSON cannot carry: a step that did not

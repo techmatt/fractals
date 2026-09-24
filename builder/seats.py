@@ -648,6 +648,8 @@ def _row(
     read = str(recipe.get("curve") or "linear")
     if held is not None and read != held:
         gaps.append(CURVE_GAP.format(read=read, mode=mode, held=held))
+    # The cap the link draws at: its `n` where it carries one, the width policy where it
+    # does not — `emit.mjs` reads both off the parsed link since permalink v4.
     cap = recipe.get("maxiter")
     if cap is not None and int(cap) != int(answer["maxiter"]):
         gaps.append(

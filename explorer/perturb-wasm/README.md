@@ -945,7 +945,9 @@ width policy, under the ceiling — which binds from period 31,250. The tile kee
 its eight because it is drawn unasked. **And both are framed at `TILE_BODIES` =
 12**, not 6: the size estimate is a copy's scale rather than its extent, and a copy
 is about two of its own sizes tall, so at six its body filled 0.59–0.61 of a 16:9
-frame's height and at twelve 0.25–0.27.
+frame's height and at twelve 0.25–0.27. *(find_minibrots_bulbs_ckpt145: an opened copy
+is now framed by the body its preview measures, and twelve sizes times a per-degree
+`FALLBACK_BODIES` factor is the fallback. See `copy_width`.)*
 
 **The cost is then `samples × 8p`, and `p` at these depths is of the order of the
 cap itself.** That is a finding and not a tuning, and it is what the tab's list
@@ -1192,9 +1194,13 @@ main component's golden-mean boundary came out at 3.1 to 4 times the formula and
 converge with `K`. Those are almost certainly bulbs attached to the main component rather
 than copies of the set — their periods are Fibonacci numbers (610, 987, 1,597, …), which is
 what the bulbs nearest a golden-mean boundary point have — and the renormalisation says
-nothing about a bulb. The search cannot tell the two apart and
-neither could it at degree two; what the list offers there is framed on a size that is an
-island's, and a satellite's tile is framed too tight.
+nothing about a bulb. The search could not tell the two apart at any degree until
+find_minibrots_bulbs_ckpt145, which added `nuclei::classify`: the wallpapers repository's
+bulb law over the chain of components a nucleus sits near, with a root test this crate
+adds at degree two because the law alone misreads high-`m` copies (the audit anchor among
+them).
+The list now offers copies first and bulbs only where a view holds no copy;
+`explorer/README.md`'s *Find minibrots* has the numbers.
 
 ## Running it
 

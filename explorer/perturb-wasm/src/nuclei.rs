@@ -63,9 +63,14 @@ pub const GRID_ROWS: u32 = 36;
 /// is, about two of its own sizes, so at six the body filled 0.59 to 0.61 of the
 /// height on every real-axis copy measured and read as the picture rather than as
 /// a place in one. At twelve it is 0.25 to 0.27 — a copy with its surroundings in
-/// frame, which is what a reader zooms out from to find the symmetry stages. Ten
-/// gave 0.30 to 0.37 and sixteen 0.19 to 0.20; twelve is inside the fifth-to-a-third
-/// the brief asked for at every one. A body at 1× is a black tile.
+/// frame, which is what a reader zooms out from to find the two-, four- and
+/// eight-fold frames around it. Ten gave 0.30 to 0.37 and sixteen 0.19 to 0.20;
+/// twelve is inside the fifth-to-a-third the brief asked for at every one. A body at
+/// 1× is a black tile.
+///
+/// **A copy the page opens is framed by its measured body now, and this is the
+/// preview's framing and the fallback's** *(find_minibrots_bulbs_ckpt145)*: see
+/// [`copy_width`], and `explorer/deep.js`'s `measured`. A bulb keeps this framing.
 pub const TILE_BODIES: f64 = 12.0;
 
 /// How many periods of its own nucleus a preview tile is iterated for.
@@ -595,6 +600,48 @@ pub fn search(
     budget: usize,
     want: usize,
 ) -> Result<Vec<Nucleus>, String> {
+    let mut distinct = candidates(spec, cols, rows, budget)?;
+    distinct.truncate(want);
+    Ok(distinct)
+}
+
+/// [`search`] as the list offers it: every candidate [`classify`]'d, **the copies
+/// largest first, and the bulbs only where the view holds no copy**
+/// *(find_minibrots_bulbs_ckpt145)*.
+///
+/// A separate door rather than a change to [`search`], because `search` is also
+/// what `builder/deep-gallery-native` descends by, and that tool's picks were made
+/// under the old order.
+pub fn find(
+    spec: &Spec,
+    cols: u32,
+    rows: u32,
+    budget: usize,
+    want: usize,
+) -> Result<Vec<(Nucleus, Reading)>, String> {
+    let read: Vec<(Nucleus, Reading)> = candidates(spec, cols, rows, budget)?
+        .into_iter()
+        .map(|nucleus| {
+            let reading = classify(&nucleus, spec.degree);
+            (nucleus, reading)
+        })
+        .collect();
+    Ok(copies_first(read, want))
+}
+
+/// The copies in `read`, or its bulbs where it holds none, in the order they came
+/// — which is largest first — and at most `want` of them.
+pub fn copies_first(read: Vec<(Nucleus, Reading)>, want: usize) -> Vec<(Nucleus, Reading)> {
+    let any_copy = read.iter().any(|(_, reading)| reading.kind == Kind::Copy);
+    read.into_iter()
+        .filter(|(_, reading)| (reading.kind == Kind::Copy) == any_copy)
+        .take(want)
+        .collect()
+}
+
+/// Every distinct nucleus in and around the frame, largest first, before the list
+/// is cut: [`search`] without its `want`.
+fn candidates(spec: &Spec, cols: u32, rows: u32, budget: usize) -> Result<Vec<Nucleus>, String> {
     let orbit = spec.reference_orbit()?;
     let limbs = limbs_for_nucleus(spec.width, spec.sample_width(), spec.degree);
     let centre_re = Fx::parse(&spec.center_re, limbs)
@@ -667,8 +714,414 @@ pub fn search(
             .partial_cmp(&a.size_log2)
             .unwrap_or(core::cmp::Ordering::Equal)
     });
-    distinct.truncate(want);
     Ok(distinct)
+}
+
+// ------------------------------------------------------------------ copy or bulb
+
+/// How far under [`bulb_scale`] a nucleus may sit and still be read as a bulb of
+/// the component above it rather than as a copy of its own.
+///
+/// **Ported, not chosen** *(find_minibrots_bulbs_ckpt145)*: this is `BULB_SLACK` in
+/// the wallpapers repository's `discovery/minibrot.py`, which is where it was
+/// measured. The bulbs attached to the main body read 0.98 to 1.40 of the law on
+/// every plane and every `m` from 2 to 11; degree two's largest primitive copy, at
+/// period 3, reads 0.099 of it. A third is between the two with room either side.
+pub const BULB_SLACK: f64 = 3.0;
+
+/// How many of its own sizes a component's nucleus may sit from the point being
+/// read and still count as one the point hangs off. `ENCLOSE_K` in the same file.
+pub const ENCLOSE_K: f64 = 2.0;
+
+/// How far from a primitive `m`-th root of unity the parent's multiplier may point and
+/// the nucleus still be an `m`-bulb on it, as `|λ̂^m − 1|·m/2π` — about
+/// `|arg λ/2π − p/m|·m²`. See [`rooted`].
+///
+/// **The one thing here that is not the wallpapers repository's, and why it had to
+/// be added** *(find_minibrots_bulbs_ckpt145)*. That repository's law was measured
+/// for `m` up to 11, where a copy reads a tenth of it or less. At the depths Find
+/// minibrots works `m` runs to the hundreds, the law falls as `1/m³`, and a third of it
+/// no longer separates anything: **the audit anchor** — period 2,838, a copy whose
+/// body was measured by area against the whole set — reads as an 86-bulb of a
+/// period-33 component under the law alone, and so do a period-69 and a period-72
+/// copy on the antenna. So at degree two the law names a candidate parent and this
+/// asks whether the nucleus is rooted on it: a `p/m` bulb hangs where the parent's
+/// multiplier is `e^{2πip/m}`, with `p` prime to `m`.
+///
+/// Measured at degree two: every bulb reads **0 to 0.011** — the main body's, the
+/// period-2 and period-3 components', and the eight the last prompt's cases and this
+/// one's found, `m` from 2 to 13 — and the four copies the law misnamed read **1.31 to
+/// 149**. A tenth is a factor of nine and more from both.
+///
+/// ⚠ **Degree two only.** Above it the cycle search in [`multiplier`] lands on another
+/// of the `q`-cycles (it read `|λ|` of 1.8 to 2.0 on three plain bulbs), so neither
+/// this nor any reading built on `λ` means anything there, and [`classify`] takes the
+/// law alone — which that repository measured on all five planes, and which named every
+/// degree-three-to-six bulb measured here correctly. A copy at those degrees with an
+/// `m` large enough to fool the law would be offered as a bulb; none was seen.
+pub const ROOTED_WITHIN: f64 = 0.1;
+
+/// How far every `λ̂^{m/r}`, for `r` a prime factor of `m`, must stay from one for the
+/// root to be *primitive* — `p` prime to `m`. A multiplier near `−1`, the seahorse
+/// valley's, is a 2nd root and not an 86th, however close its 86th power is to one.
+pub const PRIMITIVE_APART: f64 = 0.1;
+
+/// Newton solves one [`classify`] may spend. `ENCLOSE_MAX_SOLVES` there: the
+/// chain it solves is a handful of entries on everything measured.
+pub const CLASSIFY_MAX_SOLVES: usize = 12;
+
+/// How big a satellite bulb of index `m` is against the component it hangs off:
+/// `2·sin(π/m) / (m²·(d−1))`.
+///
+/// The wallpapers repository's `bulb_scale`, ported as it stands. It is the
+/// smallest such bulb, the one at internal angle `1/m`; the others run up to `m/π`
+/// times larger and pass the same test with room to spare. The `1/(d−1)` is what
+/// makes degrees three to six read the same as two.
+pub fn bulb_scale(m: u32, degree: u32) -> f64 {
+    if m < 2 {
+        return f64::INFINITY;
+    }
+    let m = m as f64;
+    2.0 * sine(core::f64::consts::PI / m) / (m * m * (degree.max(2) - 1) as f64)
+}
+
+/// `sin x` for `0 < x ≤ π/2`, by its series to `x²¹`: within a unit or two of the last
+/// place there, which is far past what a law with a slack of three needs. Written out
+/// because `f64::sin` brings its whole implementation into the module for this one
+/// call.
+fn sine(x: f64) -> f64 {
+    let x2 = x * x;
+    let mut term = x;
+    let mut sum = x;
+    for k in 1..11 {
+        term *= -x2 / ((2 * k) * (2 * k + 1)) as f64;
+        sum += term;
+    }
+    sum
+}
+
+/// A copy of the set, or a bulb on something bigger.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum Kind {
+    Copy,
+    /// A satellite bulb of index `m` on the component of period `parent` — period 1
+    /// being the main body.
+    Bulb {
+        parent: u32,
+        m: u32,
+    },
+}
+
+/// What [`classify`] read, and what it read it from.
+#[derive(Clone, Debug)]
+pub struct Reading {
+    pub kind: Kind,
+    /// The periods the verdict was taken over, the main body's `1` first: every
+    /// component that qualified as one this nucleus hangs off.
+    pub chain: Vec<u32>,
+    /// Newton solves spent, the root test's cycle search counted as one.
+    pub solves: u32,
+    /// Where the law named a parent at degree two: how far the parent's multiplier
+    /// points from a primitive `m`-th root of unity — see [`rooted`], and infinite where
+    /// the root is not primitive. `None` where the law named none, above degree two, or
+    /// where the cycle was not found.
+    pub rooted: Option<f64>,
+}
+
+/// `z ↦ z^d + c` in fixed point, for [`chain`] and [`multiplier`].
+///
+/// **Not inlined, and that is a size decision rather than a speed one.** The release
+/// profile is `opt-level = 3` with LTO, and each inlined copy of this — five degrees
+/// of `cpow_fx` over `Fx` — is kilobytes of module. The two readings call it a few
+/// thousand times per nucleus, where a call is nothing beside the multiplies it makes.
+/// [`newton_step`] keeps its own copy, since it is the solve's hot loop.
+#[inline(never)]
+fn advance(z_re: &Fx, z_im: &Fx, c_re: &Fx, c_im: &Fx, degree: u32) -> (Fx, Fx) {
+    if degree == 2 {
+        let x2 = z_re.sqr();
+        let y2 = z_im.sqr();
+        let xy = z_re.mul(z_im);
+        (x2.sub(&y2).add(c_re), xy.shl1().add(c_im))
+    } else {
+        let (re, im) = reference::cpow_fx(z_re, z_im, degree);
+        (re.add(c_re), im.add(c_im))
+    }
+}
+
+/// The record minima of `|z_k|` along the critical orbit at `c`, for `2 ≤ k < period`.
+///
+/// Each `k` at which `|z_k|` sets a new low is a period whose component the point
+/// sits near, and they arrive nested, lowest first — the chain the wallpapers
+/// repository's `scan` reads, taken here in fixed point because `c` is a nucleus
+/// far below what an `f64` can place.
+pub fn chain(c_re: &Fx, c_im: &Fx, period: u32, degree: u32) -> Vec<u32> {
+    let n = c_re.n;
+    let bailout_sq = if degree == 2 { BAILOUT * BAILOUT } else { 64.0 };
+    let mut z_re = Fx::zero(n);
+    let mut z_im = Fx::zero(n);
+    let mut best = f64::INFINITY;
+    let mut found = Vec::new();
+    for k in 1..period {
+        (z_re, z_im) = advance(&z_re, &z_im, c_re, c_im, degree);
+        let (zr, zi) = (z_re.to_f64(), z_im.to_f64());
+        let norm = zr * zr + zi * zi;
+        if !(norm <= bailout_sq) {
+            break;
+        }
+        // `z_1 = c`, and its record is the main body's, which is prepended rather
+        // than read.
+        if norm < best {
+            best = norm;
+            if k >= 2 {
+                found.push(k);
+            }
+        }
+    }
+    found
+}
+
+/// **A copy or a bulb** *(find_minibrots_bulbs_ckpt145)*: the wallpapers
+/// repository's `generations` reading, ported, over the chain at this nucleus.
+///
+/// The chain's entries are solved at their own periods from this nucleus, and one
+/// counts where Newton lands within [`ENCLOSE_K`] of its own sizes of here and is
+/// bigger than this nucleus. The main body is prepended at period 1, size 1. Then
+/// the chain is split into generations — a copy and the bulbs hanging off it: an
+/// entry joins the generation above when it is a bulb of **any** member of it, a
+/// multiple `m` of that member's period no smaller than [`BULB_SLACK`] under
+/// [`bulb_scale`]; otherwise it starts one. This nucleus is a bulb when it would
+/// join the last generation — **and, at degree two, is rooted on the member it would
+/// hang off**, its multiplier within [`ROOTED_WITHIN`] of a primitive `m`-th root of
+/// unity — and a copy otherwise. The second half is this module's and not the
+/// wallpapers repository's, and [`ROOTED_WITHIN`] says why it had to be added and why
+/// only at degree two.
+///
+/// ⚠ **Only entries whose period divides this one's are solved**, which is the
+/// cheap part and the one departure. A bulb's parent always divides it, so no bulb
+/// is missed for it. What a non-dividing entry can do in the full reading is open
+/// a generation between the parent and here, which turns a would-be bulb into a
+/// copy; that takes a component this nucleus is not tuned into lying within two of
+/// its own sizes of here, and it did not happen on any case measured.
+pub fn classify(nucleus: &Nucleus, degree: u32) -> Reading {
+    let period = nucleus.period;
+    let mut reading = Reading {
+        kind: Kind::Copy,
+        chain: vec![1],
+        solves: 0,
+        rooted: None,
+    };
+    // `(period, log₂ size, where)`: the main body at the origin, one across.
+    let mut held: Vec<(u32, f64, Option<(Fx, Fx)>)> = vec![(1, 0.0, None)];
+    let tolerance = (nucleus.size() * 1e-8).max(f64::MIN_POSITIVE);
+    for q in chain(&nucleus.c_re, &nucleus.c_im, period, degree) {
+        if period % q != 0 || reading.solves as usize >= CLASSIFY_MAX_SOLVES {
+            continue;
+        }
+        reading.solves += 1;
+        let Some(found) = solve(&nucleus.c_re, &nucleus.c_im, q, degree, tolerance) else {
+            continue;
+        };
+        if !found.size_log2.is_finite() || found.size_log2 <= nucleus.size_log2 {
+            continue;
+        }
+        // A harmonic of an entry already held lands on it, with a size that is not one.
+        let apart_log2 = |re: &Fx, im: &Fx| {
+            let dx = found.c_re.sub(re).to_f64();
+            let dy = found.c_im.sub(im).to_f64();
+            (dx * dx + dy * dy).sqrt().log2()
+        };
+        if held.iter().any(|(_, size_log2, at)| {
+            at.as_ref()
+                .is_some_and(|(re, im)| apart_log2(re, im) < size_log2 - 20.0)
+        }) {
+            continue;
+        }
+        if apart_log2(&nucleus.c_re, &nucleus.c_im) > ENCLOSE_K.log2() + found.size_log2 {
+            continue;
+        }
+        held.push((q, found.size_log2, Some((found.c_re, found.c_im))));
+        reading.chain.push(q);
+    }
+
+    // `record` is a bulb of `prior` — the wallpapers repository's `_is_bulb_of`.
+    let bulb_of = |record: (u32, f64), prior: (u32, f64)| -> Option<u32> {
+        let (below, above) = (record.0, prior.0);
+        if above == 0 || below <= above || below % above != 0 {
+            return None;
+        }
+        let m = below / above;
+        let floor = prior.1 + (bulb_scale(m, degree) / BULB_SLACK).log2();
+        (record.1 >= floor).then_some(m)
+    };
+    let mut last: Vec<(u32, f64)> = Vec::new();
+    for &(q, size_log2, _) in &held {
+        let joins = last
+            .iter()
+            .any(|&prior| bulb_of((q, size_log2), prior).is_some());
+        if !joins {
+            last.clear();
+        }
+        last.push((q, size_log2));
+    }
+    // The nearest parent: the last member of the generation this one would join.
+    if let Some((parent, m)) = last
+        .iter()
+        .rev()
+        .find_map(|&prior| bulb_of((period, nucleus.size_log2), prior).map(|m| (prior.0, m)))
+    {
+        if degree == 2 {
+            reading.solves += 1;
+            reading.rooted = rooted(nucleus, parent, m, degree);
+            if reading.rooted.is_some_and(|off| off <= ROOTED_WITHIN) {
+                reading.kind = Kind::Bulb { parent, m };
+            }
+        } else {
+            reading.kind = Kind::Bulb { parent, m };
+        }
+    }
+    reading
+}
+
+/// The multiplier of the period-`q` cycle at this nucleus's `c` that continues the
+/// parent's superattracting one: Newton on `f^q(z) − z` from `z = c`, which is on that
+/// cycle at the parent's own nucleus. `None` where the orbit escapes or Newton breaks.
+///
+/// ⚠ **Right at degree two only**: above it this start converges to another of the
+/// `q`-cycles, which is why [`classify`] asks it nothing there. See [`ROOTED_WITHIN`].
+pub fn multiplier(nucleus: &Nucleus, q: u32, degree: u32) -> Option<(f64, f64)> {
+    let n = nucleus.c_re.n;
+    let (c_re, c_im) = (&nucleus.c_re, &nucleus.c_im);
+    let step = |z_re: &Fx, z_im: &Fx| advance(z_re, z_im, c_re, c_im, degree);
+    let slope = degree as f64;
+    // The cycle point near the critical point: Newton on `f^q(z) − z` from `z = c`.
+    let (mut z_re, mut z_im) = (*c_re, *c_im);
+    let mut lambda = (0.0f64, 0.0f64, 0i32);
+    for _ in 0..24 {
+        let (mut w_re, mut w_im) = (z_re, z_im);
+        let (mut l_re, mut l_im, mut l_exp) = (1.0f64, 0.0f64, 0i32);
+        for _ in 0..q {
+            let (zr, zi) = (w_re.to_f64(), w_im.to_f64());
+            if !(zr * zr + zi * zi <= 64.0) {
+                return None;
+            }
+            let [sr, si] = if degree == 2 {
+                [zr, zi]
+            } else {
+                reference::cpow_f64([zr, zi], degree - 1)
+            };
+            let mut next_re = slope * (sr * l_re - si * l_im);
+            let mut next_im = slope * (sr * l_im + si * l_re);
+            renormalize(&mut next_re, &mut next_im, &mut l_exp);
+            l_re = next_re;
+            l_im = next_im;
+            (w_re, w_im) = step(&w_re, &w_im);
+        }
+        lambda = (l_re, l_im, l_exp);
+        // `g = f^q(z) − z`, `g' = λ − 1`.
+        let g_re = w_re.sub(&z_re).to_f64();
+        let g_im = w_im.sub(&z_im).to_f64();
+        let scale = pow2(l_exp);
+        let (d_re, d_im) = (l_re * scale - 1.0, l_im * scale);
+        let norm = d_re * d_re + d_im * d_im;
+        if !(norm > 0.0) || !norm.is_finite() {
+            return None;
+        }
+        let dz_re = (g_re * d_re + g_im * d_im) / norm;
+        let dz_im = (g_im * d_re - g_re * d_im) / norm;
+        let (Some(dr), Some(di)) = (Fx::from_f64(dz_re, n), Fx::from_f64(dz_im, n)) else {
+            break;
+        };
+        z_re = z_re.sub(&dr);
+        z_im = z_im.sub(&di);
+        let moved = (dz_re * dz_re + dz_im * dz_im).sqrt();
+        let here = (z_re.to_f64().powi(2) + z_im.to_f64().powi(2))
+            .sqrt()
+            .max(1e-300);
+        if moved <= here * 1e-12 {
+            break;
+        }
+    }
+    let scale = pow2(lambda.2);
+    Some((lambda.0 * scale, lambda.1 * scale))
+}
+
+/// How nearly the parent's multiplier points at a primitive `m`-th root of unity:
+/// `|λ̂^m − 1|·m/2π`, which is about `|arg λ/2π − p/m|·m²` — or infinite where some
+/// `λ̂^{m/r}`, `r` a prime factor of `m`, is within [`PRIMITIVE_APART`] of one, so that
+/// the root is not primitive. See [`ROOTED_WITHIN`].
+///
+/// A `p/m` satellite bulb hangs from its parent where the parent's cycle multiplier is
+/// `e^{2πip/m}`, and its nucleus sits radially off that root, so the multiplier there
+/// points within about `1/m²` of a turn of it. A copy the law misnames has no such
+/// relation to the component. Powers are taken by squaring and the distance is a
+/// chord, so no angle is formed and no trigonometry enters the module. `None` where
+/// the cycle is not found.
+pub fn rooted(nucleus: &Nucleus, q: u32, m: u32, degree: u32) -> Option<f64> {
+    let (l_re, l_im) = multiplier(nucleus, q, degree)?;
+    let modulus = (l_re * l_re + l_im * l_im).sqrt();
+    if !modulus.is_finite() || modulus == 0.0 {
+        return None;
+    }
+    let unit = (l_re / modulus, l_im / modulus);
+    let power = |mut k: u32| {
+        let (mut acc, mut base) = ((1.0f64, 0.0f64), unit);
+        while k > 0 {
+            if k & 1 == 1 {
+                acc = (
+                    acc.0 * base.0 - acc.1 * base.1,
+                    acc.0 * base.1 + acc.1 * base.0,
+                );
+            }
+            base = (base.0 * base.0 - base.1 * base.1, 2.0 * base.0 * base.1);
+            k >>= 1;
+        }
+        acc
+    };
+    let off = |z: (f64, f64)| ((z.0 - 1.0) * (z.0 - 1.0) + z.1 * z.1).sqrt();
+    let (mut rest, mut r) = (m, 2);
+    while rest > 1 {
+        if rest % r == 0 {
+            if off(power(m / r)) < PRIMITIVE_APART {
+                return Some(f64::INFINITY);
+            }
+            while rest % r == 0 {
+                rest /= r;
+            }
+        }
+        r += 1;
+    }
+    Some(off(power(m)) * m as f64 / (2.0 * core::f64::consts::PI))
+}
+
+/// How many times a copy's body is its own size across, at each degree — what a
+/// frame of [`TILE_BODIES`] sizes is corrected by where the body cannot be measured.
+///
+/// Indexed by degree; see [`copy_width`]. **Calibrated, not argued**
+/// *(find_minibrots_bulbs_ckpt145)*: `tests/measure.rs`'s `what_a_copy_frame_holds`
+/// draws four copies a degree at twelve sizes and eight periods, and this is the
+/// median of each one's body share over a quarter:
+///
+/// | degree | shares at twelve sizes | factor |
+/// |--:|---|--:|
+/// | 2 | 0.236, 0.242, 0.264, 0.270 | 1.06 |
+/// | 3 | 0.225, 0.236, 0.264, 0.320 | 1.06 |
+/// | 4 | 0.287, 0.287, 0.287, 0.292 | 1.15 |
+/// | 5 | 0.281, 0.298, 0.320, 0.326 | 1.28 |
+/// | 6 | 0.298, 0.303, 0.303, 0.303 | 1.21 |
+///
+/// ⚠ **Degree three does not read small.** The brief that asked for this took a
+/// period-770 frame at degree three whose body filled half the height as the size
+/// estimate's fault; it was a 5-bulb on a period-154 copy, framed by the bulb's size,
+/// and the half was the copy's. At thirty-two periods rather than eight every share
+/// above is the same to three places but the anchor's, 0.270 against 0.253, so the
+/// rim a preview leaves unresolved is not what these measure.
+pub const FALLBACK_BODIES: [f64; 7] = [1.0, 1.0, 1.06, 1.06, 1.15, 1.28, 1.21];
+
+/// How wide to frame a copy of this size at this degree when its body cannot be
+/// measured: [`TILE_BODIES`] of its size, times the degree's [`FALLBACK_BODIES`].
+pub fn copy_width(size: f64, degree: u32) -> f64 {
+    let factor = FALLBACK_BODIES.get(degree as usize).copied().unwrap_or(1.0);
+    size * TILE_BODIES * factor
 }
 
 /// Whether two solves landed on the same nucleus.
@@ -896,6 +1349,123 @@ mod tests {
             // And the body sits at the view's width to the power d/(d−1), not squared:
             // the 1e-11 frame this was found from puts it near 1e-11·(d/(d−1)).
             assert!(body_scale(1e-8, degree) > body_scale(1e-8, 2));
+        }
+    }
+
+    /// **The bulb law is the wallpapers repository's, to its own numbers.** Its
+    /// docstring gives `2·sin(π/m)/(m²(d−1))` and the `1/(d−1)` that makes the degrees
+    /// agree; these are that formula at a few points, worked by hand.
+    #[test]
+    fn the_bulb_law_is_the_ported_one() {
+        assert!((bulb_scale(2, 2) - 0.5).abs() < 1e-15);
+        assert!((bulb_scale(3, 2) - 2.0 * (3f64).sqrt() / 2.0 / 9.0).abs() < 1e-15);
+        assert!((bulb_scale(4, 3) - 2.0 * (0.5f64).sqrt() / 32.0).abs() < 1e-15);
+        assert!(bulb_scale(1, 2).is_infinite());
+        for m in 2..200 {
+            let x = core::f64::consts::PI / m as f64;
+            assert!((sine(x) - x.sin()).abs() < 1e-12, "m = {m}");
+        }
+    }
+
+    fn solved(re: &str, im: &str, period: u32, degree: u32) -> Nucleus {
+        let limbs = 5;
+        let re = Fx::parse(re, limbs).unwrap();
+        let im = Fx::parse(im, limbs).unwrap();
+        solve(&re, &im, period, degree, 1e-40).unwrap()
+    }
+
+    /// **The main body's bulbs are bulbs and the real axis's copy is a copy** — the
+    /// cases the wallpapers repository's constants were set against.
+    #[test]
+    fn a_bulb_on_the_main_body_is_a_bulb() {
+        // The period-2 disc, the 1/3 bulb, and the 1/2 bulb on the period-2 disc.
+        let two = solved("-0.99", "0.01", 2, 2);
+        assert_eq!(classify(&two, 2).kind, Kind::Bulb { parent: 1, m: 2 });
+        let three = solved("-0.12", "0.74", 3, 2);
+        assert_eq!(classify(&three, 2).kind, Kind::Bulb { parent: 1, m: 3 });
+        let four = solved("-1.31", "0.0", 4, 2);
+        assert_eq!(classify(&four, 2).kind, Kind::Bulb { parent: 2, m: 2 });
+        // The period-3 copy on the antenna, and its own period doubling.
+        let copy = solved("-1.754", "0.0", 3, 2);
+        assert_eq!(classify(&copy, 2).kind, Kind::Copy);
+        let doubling = solved("-1.7729", "0.0", 6, 2);
+        let reading = classify(&doubling, 2);
+        assert_eq!(reading.kind, Kind::Bulb { parent: 3, m: 2 }, "{reading:?}");
+        // And a deep one: a period-1,253 bulb the list offered as a minibrot from pin
+        // 10's view at 1.8e-8, a 7-bulb on a period-179 copy.
+        let deep = solved("-0.057412939209682502", "0.669186045946984554", 1253, 2);
+        let reading = classify(&deep, 2);
+        assert_eq!(
+            reading.kind,
+            Kind::Bulb { parent: 179, m: 7 },
+            "{reading:?}"
+        );
+        // And at degree four, where the law is taken alone: a 7-bulb on the island.
+        let four = solved("-1.084215082745679884463", "0.290514556109366003724", 91, 4);
+        let reading = classify(&four, 4);
+        assert_eq!(reading.kind, Kind::Bulb { parent: 13, m: 7 }, "{reading:?}");
+    }
+
+    /// **Two copies on the antenna that the law alone calls bulbs** — a period-69 at
+    /// 0.6 of the law as a 23-bulb of period 3, and a period-72 as a 12-bulb of period
+    /// 6 — which the root test refuses.
+    #[test]
+    fn the_antennas_copies_are_not_its_bulbs() {
+        for (re, im, period) in [
+            ("-1.7684014422285", "0.0026810993276", 69),
+            ("-1.7691235660421", "0.0024690072851", 72),
+        ] {
+            let copy = solved(re, im, period, 2);
+            let reading = classify(&copy, 2);
+            assert_eq!(reading.kind, Kind::Copy, "period {period}: {reading:?}");
+            assert!(reading.rooted.is_some_and(|off| off > 1.0), "{reading:?}");
+        }
+    }
+
+    /// **The anchor and every degree's island are copies**, deep, which is the common
+    /// case and the one that must not be read as a bulb.
+    #[test]
+    fn the_anchor_and_the_islands_are_copies() {
+        let anchor = solved(
+            "-0.74501772828532335842941892835857434",
+            "0.14993443275456819177805709088257971",
+            2838,
+            2,
+        );
+        let reading = classify(&anchor, 2);
+        assert_eq!(reading.kind, Kind::Copy, "{reading:?}");
+        // The law alone named a parent, and it was the root test that refused it: this
+        // is the case `ROOTED_WITHIN` exists for, so it is pinned by what it read.
+        assert!(reading.rooted.is_some_and(|off| off > 1.0), "{reading:?}");
+        for &(degree, period, re, im) in &[
+            (
+                3,
+                12,
+                "-0.340625023896664202920126013425",
+                "1.271229851873307358570127896315",
+            ),
+            (
+                4,
+                13,
+                "-1.084215082746655198570484569323",
+                "0.290514556108830899669391778917",
+            ),
+            (
+                5,
+                13,
+                "-0.887826199618012593110848012131",
+                "0.544060594135647520437421634489",
+            ),
+            (
+                6,
+                13,
+                "-0.978147600299778310338872737920",
+                "0.207911690569371132751240736148",
+            ),
+        ] {
+            let island = solved(re, im, period, degree);
+            let reading = classify(&island, degree);
+            assert_eq!(reading.kind, Kind::Copy, "degree {degree}: {reading:?}");
         }
     }
 

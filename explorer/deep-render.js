@@ -117,6 +117,64 @@ function near(a, b, step) {
   return apart <= step;
 }
 
+/** The share of a frame's height a copy's body should fill once it is opened: a quarter,
+ *  `nuclei::TILE_BODIES`' own target. */
+export const BODY_TARGET = 0.25;
+
+/**
+ * **The body a preview tile holds, measured** *(find_minibrots_bulbs_ckpt145)*: the rows
+ * the interior component through the tile's centre spans, as a share of its height.
+ *
+ * The lanes are the field `field()` resolves with, one `f64` a sample and `NaN` for the
+ * interior, so this reads the tile before it is coloured. The component is 4-connected and
+ * starts at the interior sample nearest the centre within four samples — the tile is centred
+ * on the nucleus, which is interior — so a copy's cardioid and its bulbs count and the
+ * filaments round it do not.
+ *
+ * `null` where there is nothing to measure: no interior near the centre, a component that
+ * reaches the tile's edge (a lower bound, not a measurement), or one under four rows, where
+ * a row either way is more than a tenth of the answer. `tests/measure.rs`'s `body_share` is
+ * the same measurement natively, and is what the fallback factors were calibrated with.
+ */
+export function bodyShare(values, width, height) {
+  const inside = (at) => Number.isNaN(values[at]);
+  const cx = width >> 1;
+  const cy = height >> 1;
+  let start = -1;
+  search: for (let r = 0; r <= 4; r++) {
+    for (let y = Math.max(0, cy - r); y <= Math.min(height - 1, cy + r); y++) {
+      for (let x = Math.max(0, cx - r); x <= Math.min(width - 1, cx + r); x++) {
+        if (inside(y * width + x)) {
+          start = y * width + x;
+          break search;
+        }
+      }
+    }
+  }
+  if (start < 0) return null;
+  const seen = new Uint8Array(width * height);
+  const stack = [start];
+  seen[start] = 1;
+  let top = height;
+  let bottom = 0;
+  while (stack.length > 0) {
+    const at = stack.pop();
+    const x = at % width;
+    const y = (at - x) / width;
+    if (x === 0 || y === 0 || x === width - 1 || y === height - 1) return null;
+    top = Math.min(top, y);
+    bottom = Math.max(bottom, y);
+    for (const next of [at - 1, at + 1, at - width, at + width]) {
+      if (!seen[next] && inside(next)) {
+        seen[next] = 1;
+        stack.push(next);
+      }
+    }
+  }
+  const rows = bottom - top + 1;
+  return rows < 4 ? null : rows / height;
+}
+
 /** The viewport the shade spec names, so that `engine.wasm` has one it can resolve.
  *
  *  Left empty, which the module reads as the family's own home view — the most obviously
@@ -456,6 +514,13 @@ export class DeepRenderer {
     return this.planner.tile_width(size);
   }
 
+  /** How wide a copy of this size is framed before its body has been measured, or where
+   *  it cannot be: twelve sizes times the degree's calibrated factor, the crate's
+   *  `nuclei::copy_width`. A bulb keeps `tileWidth`. */
+  copyWidth(size, degree = 2) {
+    return this.planner.copy_width(size, degree);
+  }
+
   /**
    * The cap a preview tile of a period-`p` nucleus is drawn at.
    *
@@ -658,7 +723,50 @@ export class DeepRenderer {
       if (!(nucleus.size > 0) || nucleus.size >= view.w.value) continue;
       distinct.push(nucleus);
     }
-    return distinct.sort((a, b) => b.sizeLog2 - a.sizeLog2).slice(0, want);
+    distinct.sort((a, b) => b.sizeLog2 - a.sizeLog2);
+
+    // **Copies first, and bulbs only where the view holds no copy**
+    // *(find_minibrots_bulbs_ckpt145)*. A satellite bulb is a nucleus like any other and
+    // the walk finds them readily — seven of the thirteen entries the last check opened
+    // were bulbs — but a bulb is not a copy. Every distinct nucleus is read, not only the
+    // first `want`, because a list of copies is filled from all of them; `perturb-wasm`'s
+    // `nuclei::classify` is the reading and `nuclei::copies_first` the same rule natively.
+    let read = 0;
+    const readings = this.slots.map((slot, index) => {
+      const mine = distinct.filter((_, at) => at % this.slots.length === index);
+      return this.#classifyEach(slot, mine, limbs, degree, generation, () =>
+        onStep?.({ phase: "classify", done: ++read, total: distinct.length }),
+      );
+    });
+    await Promise.all(readings);
+    if (generation !== this.generation) return null;
+    const copies = distinct.filter((nucleus) => nucleus.kind === "copy");
+    return (copies.length > 0 ? copies : distinct).slice(0, want);
+  }
+
+  /** Every nucleus in this lane read as a copy or a bulb, on this worker, in turn. A
+   *  reading the module refuses leaves its nucleus a copy, which is what the list offered
+   *  before there was a reading at all. */
+  async #classifyEach(slot, mine, limbs, degree, generation, onRead) {
+    for (const nucleus of mine) {
+      if (generation !== this.generation) return;
+      const reply = await this.#send(slot, {
+        kind: "classify",
+        request: JSON.stringify({
+          c_re: nucleus.x.text,
+          c_im: nucleus.y.text,
+          period: nucleus.period,
+          limbs,
+          degree,
+          size_log2: nucleus.sizeLog2,
+        }),
+      });
+      const reading = reply?.reading ?? null;
+      nucleus.kind = reading?.ok ? reading.kind : "copy";
+      nucleus.parent = reading?.ok ? reading.parent : 0;
+      nucleus.m = reading?.ok ? reading.m : 0;
+      onRead();
+    }
   }
 
   /** The domain walk over the pool, its rows cut between the workers and its seeds merged
