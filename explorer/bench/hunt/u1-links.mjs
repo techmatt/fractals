@@ -44,7 +44,9 @@ const LONG = "0.1234567890123456789012345678901234567890123456789012345678901234
 const fuzz = [
   // the version
   ["v=0", `${SHALLOW.replace("v=3", "v=0")}`, "refused"],
-  ["v=4", `${SHALLOW.replace("v=3", "v=4")}`, "refused"],
+  // v4 is live since find_minibrots_cap2_ckpt145; the next number is the refusal.
+  ["v=4", `${SHALLOW.replace("v=3", "v=4")}`, "draws"],
+  ["v=5", `${SHALLOW.replace("v=3", "v=5")}`, "refused"],
   ["v empty", `${SHALLOW.replace("v=3", "v=")}`, "refused"],
   ["v=3.0", `${SHALLOW.replace("v=3", "v=3.0")}`, "refused"],
   ["v missing", SHALLOW.replace("v=3&", ""), "refused"],
@@ -82,7 +84,8 @@ const fuzz = [
   ["x empty", `${SHALLOW.replace("x=-0.5", "x=")}`, "refused"],
   ["x past 64 chars", `${SHALLOW.replace("x=-0.5", `x=${LONG}`)}`, "refused"],
   ["x twice", `${SHALLOW}&x=0.1`, "refused"],
-  ["x without y", `v=3&f=mandelbrot&x=-0.5&w=3&p=twilight_shifted`, "refused"],
+  // `y` absent is `y=0`: the emitter itself leaves it out there.
+  ["x without y", `v=3&f=mandelbrot&x=-0.5&w=3&p=twilight_shifted`, "draws"],
   ["w zero", `${SHALLOW.replace("w=3", "w=0")}`, "refused"],
   ["w negative", `${SHALLOW.replace("w=3", "w=-1")}`, "refused"],
   ["w not a number", `${SHALLOW.replace("w=3", "w=abc")}`, "refused"],
@@ -140,7 +143,8 @@ const fuzz = [
   ["julia bare", `v=3&f=julia&p=twilight_shifted`, "either"],
   ["phoenix param on julia", `v=3&f=julia&cx=-0.4&cy=0.6&px=0.1&p=twilight_shifted`, "refused"],
   ["constant letters", `v=3&f=julia&cx=abc&cy=0.6&p=twilight_shifted`, "refused"],
-  ["z-1 carried", `v=3&f=julia&cx=-0.4&cy=0.6&zx=0.1&zy=0.1&p=twilight_shifted`, "draws"],
+  // `zx`/`zy` are Phoenix's constants, refused on Julia by the rule the line above holds.
+  ["z-1 carried", `v=3&f=julia&cx=-0.4&cy=0.6&zx=0.1&zy=0.1&p=twilight_shifted`, "refused"],
   // the paged tab's marker, which must be refused by name at both doors
   ["iv=1 shallow", `${SHALLOW}&iv=1`, "refused"],
   ["iv=0 shallow", `${SHALLOW}&iv=0`, "refused"],
@@ -156,13 +160,16 @@ const fuzz = [
   // deep's own
   ["deep valid", DEEP, "draws"],
   ["deep v1", DEEP.replace("dv=2", "dv=1"), "draws"],
-  ["deep dv=3", DEEP.replace("dv=2", "dv=3"), "refused"],
+  // dv=3 is live since deep_degrees_ckpt140; the next number is the refusal.
+  ["deep dv=3", DEEP.replace("dv=2", "dv=3"), "draws"],
+  ["deep dv=4", DEEP.replace("dv=2", "dv=4"), "refused"],
   ["deep dv=0", DEEP.replace("dv=2", "dv=0"), "refused"],
   ["deep n zero", DEEP.replace("n=48551", "n=0"), "refused"],
   ["deep n negative", DEEP.replace("n=48551", "n=-1"), "refused"],
   ["deep n letters", DEEP.replace("n=48551", "n=abc"), "refused"],
   ["deep n past the ceiling", DEEP.replace("n=48551", "n=100000000"), "refused"],
-  ["deep n missing", DEEP.replace("&n=48551", ""), "refused"],
+  // A deep link with no cap draws at the width's own.
+  ["deep n missing", DEEP.replace("&n=48551", ""), "draws"],
   ["deep w zero", DEEP.replace("w=2e-11", "w=0"), "refused"],
   ["deep w negative", DEEP.replace("w=2e-11", "w=-1"), "refused"],
   ["deep x past 64 chars", DEEP.replace(/x=[^&]+/, `x=${LONG}${LONG}`), "refused"],

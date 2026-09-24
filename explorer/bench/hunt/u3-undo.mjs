@@ -106,7 +106,9 @@ await stack("plain: zoom, pan, mode, palette, phase", [
 await stack("across the planes: Julia here, and back to the parameter plane", [
   ["julia here", click("view-julia")],
   ["a mode", pick("stripe")],
-  ["whole set", click("view-whole")],
+  // Not *Whole Julia set*: "Julia here" lands on the plane's home, where that button is
+  // disabled on purpose, so the step made no rung and every later step read one short.
+  ["random palette", click("view-palette")],
 ]);
 
 // The shallow/deep contract. A deep view is a different reader and a different emitter,

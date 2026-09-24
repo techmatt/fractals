@@ -85,6 +85,12 @@ async function dropCase(kind, target, expect, { count = 1 } = {}) {
     await sleep(300);
   }
   const before = await page.state();
+  // **The Saved tab keeps a dropped picture rather than opening it**, and it speaks in
+  // `#saved-progress`, not `#status` (explorer_download_carries_link_ckpt137): so there
+  // what is read is the tile count and that line.
+  const savedCount = () => page.ev(`document.querySelectorAll('#saved-tiles .tile').length`);
+  const savedSaid = () => page.ev(`document.getElementById('saved-progress')?.textContent?.trim() ?? ''`);
+  const keptBefore = target === "saved" ? await savedCount() : 0;
   const row = { name, expect };
   try {
     row.built = await drop(kind, target, { count });
@@ -92,15 +98,19 @@ async function dropCase(kind, target, expect, { count = 1 } = {}) {
     await page.settled(120);
     const after = await page.state();
     row.url = after.url;
-    row.status = after.status;
+    row.status = target === "saved" ? await savedSaid() : after.status;
+    row.kept = target === "saved" ? (await savedCount()) - keptBefore : 0;
     row.noticeUp = after.noticeUp;
     row.moved = after.url !== before.url;
+    if (expect === "keeps" && row.kept < 1) {
+      findings.push({ name, why: `a stamped picture was not kept: ${row.kept} new tiles` });
+    }
     if (expect === "opens" && !row.moved) {
       findings.push({ name, why: `a stamped picture did not reopen: url stayed ${after.url.slice(0, 60)}` });
     }
     if (expect === "says no") {
       if (row.moved) findings.push({ name, why: `a file with no link in it moved the view to ${after.url.slice(0, 60)}` });
-      if (!after.status) findings.push({ name, why: "a file that could not be used said nothing at all" });
+      if (!row.status) findings.push({ name, why: "a file that could not be used said nothing at all" });
     }
     // Whatever happened, the page must still be a page.
     const alive = await page.ev(`!!document.getElementById('canvas') && !document.getElementById('studio').hidden`);
@@ -125,11 +135,13 @@ await dropCase("plain-png", "stage", "says no");
 await dropCase("text", "stage", "says no");
 await dropCase("json", "stage", "says no");
 await dropCase("empty", "stage", "says no");
-await dropCase("truncated-png", "stage", "says no");
+// The stamp is written ahead of the picture's data, so half of a stamped PNG still carries
+// its whole link, and opening the view it names is the right answer.
+await dropCase("truncated-png", "stage", "opens");
 await dropCase("corrupt-stamp", "stage", "says no");
 await dropCase("stamped-png", "stage", "opens", { count: 3 });
 await dropCase("huge", "stage", "says no");
-await dropCase("stamped-png", "saved", "opens");
+await dropCase("stamped-png", "saved", "keeps");
 await dropCase("text", "saved", "says no");
 
 // ------------------------------------------------------------------ downloads out

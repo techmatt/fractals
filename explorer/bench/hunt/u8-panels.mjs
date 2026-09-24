@@ -2,7 +2,7 @@
 // buttons, and the Julia preview under the pointer.
 //
 // usage: node explorer/bench/hunt/u8-panels.mjs [debugPort] [sitePort]
-import { mkdirSync, readdirSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, readdirSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { record } from "../output.mjs";
 import { fileURLToPath } from "node:url";
 import { Page, SITE, say, sleep } from "./lib.mjs";
@@ -139,13 +139,20 @@ await check("import from a file", async () => {
 await check("Download all, in each format", async () => {
   const out = [];
   for (const fmt of await page.ev(`[...document.getElementById('saved-format').options].map((o) => o.value)`)) {
-    const before = new Set(readdirSync(DOWNLOADS));
+    // By modification time and not by name: the two formats' zips share a name, and
+    // Chrome overwrites the first with the second, which read as "wrote nothing". And
+    // only a zip: a fresh profile's component updater drops a `.htm` CRX in the same
+    // folder, which read as the JPEG run's file.
+    const stamp = (f) => statSync(`${DOWNLOADS}${f}`).mtimeMs;
+    const before = new Map(readdirSync(DOWNLOADS).map((f) => [f, stamp(f)]));
     await page.ev(`(() => { const s = document.getElementById('saved-format'); s.value = ${JSON.stringify(fmt)};
       s.dispatchEvent(new Event('change', { bubbles: true })); document.getElementById('saved-download').click(); })()`);
     let file = null;
     for (let i = 0; i < 300 && !file; i++) {
       await sleep(500);
-      file = readdirSync(DOWNLOADS).find((f) => !before.has(f) && !f.endsWith(".crdownload"));
+      file = readdirSync(DOWNLOADS).find(
+        (f) => f.endsWith(".zip") && before.get(f) !== stamp(f),
+      );
     }
     out.push({ fmt, file });
     if (!file) note("Download all", `${fmt} wrote nothing in 150 s`);
@@ -173,6 +180,13 @@ await check("the panel after a reload", async () => {
 say("U8: the Julia preview under the pointer");
 await page.open(`?${HOME}`, { settle: 1500 });
 await page.settled(120);
+// **The preview is off until a tab switches it on** (explorer_ui_text_ckpt139), and the
+// switch is the tab's sessionStorage, so it is set here by state rather than toggled: a
+// click that assumed it started on is how this unit came to report the card coming up
+// with the switch off, when the click had just turned it on.
+const preview = (on) => page.ev(`(() => { const t = document.getElementById('julia-preview-on');
+  if (t.checked !== ${on}) t.click(); return t.checked; })()`);
+await preview(true);
 const box = await page.ev(`(() => { const r = document.getElementById('canvas').getBoundingClientRect();
   return { x: r.x, y: r.y, w: r.width, h: r.height }; })()`);
 const move = (x, y) => page.send("Input.dispatchMouseEvent", { type: "mouseMoved", x, y });
@@ -211,13 +225,13 @@ await check("the preview during a slow render", async () => {
 await check("the preview switched off and on again", async () => {
   await page.open(`?${HOME}`, { settle: 1200 });
   await page.ev(`document.getElementById('details').open = true`);
-  await page.ev(`(() => { const t = document.getElementById('julia-preview-on'); t.click(); return t.checked; })()`);
+  await preview(false);
   await sleep(300);
   for (let i = 0; i < 20; i++) await move(box.x + 200 + i * 5, box.y + 150);
   await sleep(900);
   const offShown = await page.ev(`!document.getElementById('julia-preview').hidden`);
   if (offShown) note("julia preview", "the card came up with the switch off");
-  await page.ev(`document.getElementById('julia-preview-on').click()`);
+  await preview(true);
   await sleep(300);
   for (let i = 0; i < 20; i++) await move(box.x + 200 + i * 5, box.y + 150);
   await sleep(1200);

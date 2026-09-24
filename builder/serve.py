@@ -43,6 +43,7 @@ compressed once per edit rather than once per reload.
 import email.utils
 import functools
 import gzip
+import os
 import threading
 from http import HTTPStatus
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
@@ -142,6 +143,13 @@ class Server(ThreadingHTTPServer):
     """
 
     request_queue_size = 128
+
+    # `HTTPServer` asks for `SO_REUSEADDR`, which on Windows means a second server on a port
+    # already served binds it too, and the two split the connections between them — so a
+    # server restarted over one still running answers half the page from the old code, which
+    # is how this very fix measured as not working at first. Off there, a second bind is a
+    # refusal with the port in it.
+    allow_reuse_address = os.name != "nt"
 
 
 def serve(port: int = DEFAULT_PORT) -> None:
