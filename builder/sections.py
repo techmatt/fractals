@@ -198,21 +198,20 @@ def rail(page: Path, sections: list[Section]) -> str:
 #: page rather than in `article/`, which holds exactly the fourteen.
 START = SITE_ROOT / "start-here.html"
 
-#: The rail heading the start page sits under *(start_here_v2_ckpt147)*: a group at the
-#: same level as *Contents* and set the same way, with one entry, the page named by its own
-#: `<h1>`, *Making fractal wallpapers*. Until then the entry itself was called this and the
-#: `<h1>` never reached the rail; the heading says what the group is for a reader arriving,
-#: and the entry says what the page is, which is how every section is named.
+#: The rail heading the start page sits under, set like *Contents* *(start_here_v2_ckpt147)*.
+#: It is the page's own `<h1>` too *(start_here_heading_ckpt147)*, so the group has no
+#: entry naming the page a second time: its entries are the page's prose `<h2>`s.
 START_NAME = "Start here"
 
 
 def _start(page: Path) -> list[str]:
-    """The rail's first group: its heading, then the start page, open to its own headings
-    when it is current.
+    """The rail's first group: its heading, a link to the start page, and under it the
+    page's own headings when it is current.
 
-    The heading is a link to the page, as *Contents* is a link to the front page. The entry
-    is opened exactly as a section is, onto its prose `<h2>`s, so a renamed heading moves
-    here on the next `build` the way a section's does.
+    The heading is a link to the page, as *Contents* is a link to the front page. Its
+    entries open exactly when a section's headings do, on the page itself, so a renamed
+    heading moves here on the next `build` the way a section's does. Elsewhere the group
+    is its heading alone, ruled off from the contents all the same.
     """
     if not START.is_file():
         return []
@@ -220,25 +219,19 @@ def _start(page: Path) -> list[str]:
     here = page.resolve() == START.resolve()
     href = attribute(relative_href(page, START))
     current = ' aria-current="page"' if here else ""
-    item = ' class="rail-current"' if here else ""
-    name = title_of(start_html, START.name)
-    entry = f'    <li{item}><a href="{href}"{current}>{text(name)}</a>'
-    headings = headings_of(start_html) if here else ()
     lines = [
-        f'  <p class="rail-title"><a href="{href}">{text(START_NAME)}</a></p>',
-        '  <ul class="rail-start">',
+        '  <div class="rail-start">',
+        f'    <p class="rail-title"><a href="{href}"{current}>{text(START_NAME)}</a></p>',
     ]
-    if not headings:
-        lines.append(f"{entry}</li>")
-    else:
-        lines.append(entry)
-        lines.append('      <ol class="rail-headings">')
+    headings = headings_of(start_html) if here else ()
+    if headings:
+        lines.append("    <ul>")
         for heading in headings:
             lines.append(
-                f'        <li><a href="#{attribute(heading.id)}">{text(heading.title)}</a></li>'
+                f'      <li><a href="#{attribute(heading.id)}">{text(heading.title)}</a></li>'
             )
-        lines.extend(["      </ol>", "    </li>"])
-    lines.append("  </ul>")
+        lines.append("    </ul>")
+    lines.append("  </div>")
     return lines
 
 

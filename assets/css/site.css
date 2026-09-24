@@ -146,15 +146,23 @@ body {
    no underlines: a column of ten blue links reads as a link list, not as contents. */
 /* Above the contents, the page a new reader is sent to first, under a heading of its own
    set like theirs. Ruled off from them, the way the links under them are, because it is
-   an outline of the whole project rather than one of its sections. */
+   an outline of the whole project rather than one of its sections. On that page the
+   group lists its headings as plain entries; elsewhere it is the heading alone. */
 .rail-start {
-  list-style: none;
   margin: 0 0 1rem;
   padding: 0 0 0.9rem;
   border-bottom: 1px solid var(--rule);
+}
+.rail-start > :last-child { margin-bottom: 0; }
+.rail-start ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
   font-size: 0.875rem;
   line-height: 1.45;
 }
+.rail-start li { margin-bottom: 0.55rem; }
+.rail-start li:last-child { margin-bottom: 0; }
 
 .rail-title {
   margin: 0 0 0.5rem;

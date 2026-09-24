@@ -501,9 +501,11 @@ and the entries that open under the current page are that page's prose `<h2>`s. 
 is the way back to the front page, and under the fourteen sections it carries the two links
 that leave the article — the explorer and the code *(Matt, 2026-08-21)*. Above the title
 sits one group that is not a section, **Start here** *(start_here_ckpt146; a group since
-start_here_v2_ckpt147)*: a heading set like *Contents* and spelled by
-`sections.START_NAME`, over one entry, `start-here.html` named by its own `<h1>`, *Making
-fractal wallpapers* — at the root beside the front page, opened like a section but in no
+start_here_v2_ckpt147)*: a heading set like *Contents*, spelled by `sections.START_NAME`
+and linking to `start-here.html`, whose `<h1>` is the same two words *(since
+start_here_heading_ckpt147)*. On that page the group lists its four prose `<h2>`s as plain
+entries at one level; everywhere else it is the heading alone, which is when a section
+opens onto its headings too. The page sits at the root beside the front page, in no
 `sections.jsonl` row and with no done marker. A prose
 `<h2>` also gets the id its rail entry links to, spelled from its own words by rule —
 a fragment is a permanent URL. `python -m builder build` writes the rail between two
