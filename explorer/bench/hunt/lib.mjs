@@ -61,8 +61,9 @@
 // ⚠ **And one contamination, which is why runs are serial.** The first link fuzz ran four
 // browsers against one `builder serve` and got `ERR_CONNECTION_REFUSED` on the gallery's
 // tile flood — which drew the home view under someone else's link and looked exactly like a
-// wrong-picture bug. Three such refusals survive even in a clean re-run: that is a capacity
-// limit of the dev server, not of the site.
+// wrong-picture bug. A few such refusals survived even a clean re-run. It was the dev
+// server's listen backlog of five, not the site, and `builder/serve.py` now asks for 128
+// (profiling_pass_ckpt146): a refusal on a server started since then is a finding again.
 import { spawn } from "node:child_process";
 import { createHash } from "node:crypto";
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";

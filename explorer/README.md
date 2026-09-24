@@ -5328,11 +5328,15 @@ belong to.
 - **The site** — 18 pages, clean consoles, no broken image, no root-absolute href, 19 gallery
   collections all non-empty, the atlas's 112 marks and its link into the explorer.
 
-⚠ **The dev server has a capacity limit, and it looks exactly like a wrong-picture bug.** Four
+⚠ **The dev server refused connections, and it looked exactly like a wrong-picture bug.** Four
 browsers against one `python -m builder serve` produced `ERR_CONNECTION_REFUSED` on the
-gallery's tile flood, which drew the home view under someone else's link. Three such refusals
-survive even in a clean single-browser re-run. Run the units serially; `bench/hunt/lib.mjs`
-carries this and the eight other false alarms that each cost a verification.
+gallery's tile flood, which drew the home view under someone else's link, and a few such
+refusals survived even a clean single-browser re-run. **It was the listen backlog, and it is
+fixed** *(profiling_pass_ckpt146)*: `socketserver` listens with a queue of five, and on
+Windows a connection past it is refused rather than held. `builder/serve.py`'s `Server` asks
+for 128. Measured, 300 requests at once, three runs: the old server refused 126, 66 and 79 of
+them, the new one none. Run the units serially anyway; `bench/hunt/lib.mjs` carries the eight
+other false alarms that each cost a verification.
 
 ## Rebuilding
 

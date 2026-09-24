@@ -130,10 +130,24 @@ class Preview(SimpleHTTPRequestHandler):
         return BytesIO(body)
 
 
+class Server(ThreadingHTTPServer):
+    """A threading server whose listen queue can take a page's worth of requests at once.
+
+    `socketserver` listens with a backlog of five, and a gallery panel asks for dozens of
+    tiles in the same instant: on Windows the connections past the backlog are refused
+    outright, which a browser reports as `ERR_CONNECTION_REFUSED` and the page as a tile or
+    a module that never came. The bug hunt had filed that as this server's capacity limit
+    and learned to discount it (`explorer/bench/hunt/lib.mjs`). It was the backlog
+    (profiling_pass_ckpt146).
+    """
+
+    request_queue_size = 128
+
+
 def serve(port: int = DEFAULT_PORT) -> None:
     """Serve the checkout root until interrupted."""
     handler = functools.partial(Preview, directory=str(SITE_ROOT))
-    with ThreadingHTTPServer((HOST, port), handler) as server:
+    with Server((HOST, port), handler) as server:
         print(f"serving the committed tree at http://{HOST}:{port}/index.html")
         print("ctrl-c to stop")
         try:
