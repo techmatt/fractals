@@ -40,6 +40,18 @@ let held = null;
 /** Each map's control points in the shape the module's spec takes, built on demand. */
 const BUILT = new Map();
 
+/**
+ * How many built maps are kept, the least recently asked for going first.
+ *
+ * **Kept without a bound, this was the screensaver's only growth** *(profiling_pass_ckpt146)*:
+ * it shows a different map almost every picture, and a map of a few hundred stops is two
+ * arrays and a number a stop — about 23 KB of heap a picture, 3.7 MB to 7.8 MB over twenty
+ * minutes at *Fastest*, heading for the whole library's ~20 MB by morning. Building one is a
+ * loop over a few hundred bytes of the blob, so a pan or a download that re-asks for the map
+ * on the screen still finds it here, and nothing else pays for its going.
+ */
+const BUILT_KEPT = 64;
+
 /** Whether the gradients have arrived. */
 export function ready() {
   return held !== null;
@@ -128,7 +140,13 @@ export async function fetchStops(url) {
  */
 export function stopsOf(name) {
   const built = BUILT.get(name);
-  if (built !== undefined) return built;
+  if (built !== undefined) {
+    // To the back of the queue: `Map` iterates in insertion order, so the front is the
+    // least recently asked for.
+    BUILT.delete(name);
+    BUILT.set(name, built);
+    return built;
+  }
   if (held === null) {
     throw new Error(`the colormaps have not been read yet, so ${name} has no gradient`);
   }
@@ -142,5 +160,6 @@ export function stopsOf(name) {
   }
   const made = { kind: map.cyclic ? "cyclic" : "sequential", stops };
   BUILT.set(name, made);
+  while (BUILT.size > BUILT_KEPT) BUILT.delete(BUILT.keys().next().value);
   return made;
 }
