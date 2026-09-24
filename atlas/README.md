@@ -30,6 +30,7 @@ they sit *on* the pictures for the same reason.
 index.html        the redirect into the explorer's Atlas tab, for the old address
 frame.js          the frame: the marks, the three slots, and the one size it is
 frame.css         the frame's own stylesheet, loaded by the page that mounts one
+embed.js          the frame mounted live in an article page, over a live figure's well
 links.js          a slot as a link — the one place a view is spelled, for two callers
 record.js         the record, fetched and read
 atlas.test.mjs    17 tests, `node --test atlas/atlas.test.mjs`
@@ -45,7 +46,21 @@ multibrot3.jsonl  multibrot4.jsonl  multibrot5.jsonl  multibrot6.jsonl  phoenix.
 colours, which sit on the frame itself so that a page which does not know about them gets
 them. The explorer's studio mounts one in a panel with an `onPick`, which takes a click
 instead of the link and leaves the slots as buttons so that they are still reachable from
-the keyboard. It is the only caller. **`keep` is gone with the page that spent it**
+the keyboard.
+
+**The article's Fractal atlases page is the second caller** *(atlas_live_ckpt146)*.
+`embed.js` mounts the same frame into the well a live figure block leaves
+(`builder/figures.py`'s `LIVE`), once that well comes near the viewport. It passes no
+`onPick`, so a slot is a link into the explorer and a click on a mark goes where the mark's
+gallery slot goes, in the same tab. It passes `fit: "width"`, because an article column
+sizes nothing but width: the frame reads the host's width alone and the host's height
+follows the frame, which is still one-way. And it passes `least`, the narrowest plate it
+may draw, because a phone's column is narrower than the studio's 320. Colours, chips,
+slots, hover and linger are the frame's, so the two callers cannot drift apart. What an
+article reader does not get is the studio's own furniture: the save marks and the colour
+key line above the frame, which the page's prose says instead.
+
+**`keep` is gone with the page that spent it**
 *(leftovers_rebake_ckpt140, 2026-09-21)*: it stored a clicked mark, nothing has read it
 since the standalone page retired, and an option one caller passes `false` by name is an
 option. What the retired page still leaves behind is the bare host it handed a size it had
@@ -287,7 +302,7 @@ python -m builder atlas                                  # what the record holds
 python -m builder atlas --make [--record STAMP]          # run the maker next door, all six planes
 python -m builder atlas --ingest [<maker>/dots.json]     # rewrite a plane, or all of them
 python -m builder atlas --plates                         # all six plates, dots re-projected
-python -m builder atlas --figure atlas-places            # the plate and its marks, for §11
+python -m builder atlas --figure atlas-places            # the plate and its marks (retired, below)
 ```
 
 **`--make` is how the maker is run, and it exists so the Julia plate width has somewhere to
@@ -320,3 +335,8 @@ already in the record is refused, because the method row says those once.
 The figure is the only thing this module draws. It is the plate with the marks on it and
 nothing else — no frames, no captions, no interface — because a still of a tool should be
 the thing the tool is about rather than a photograph of its buttons.
+
+**That still is retired** *(atlas_live_ckpt146)*: Fractal atlases mounts the tool itself
+now, and the figure's block, asset, registry row and link row are gone. The maker is left
+where it is and has no row to land on, so `--figure atlas-places` stops on a `KeyError`
+before it writes anything, until a row names it again.

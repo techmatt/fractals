@@ -250,7 +250,6 @@
 {"schema": 1, "kind": "link", "id": "figure:pipeline-overview", "no_link": "drawn", "why": "a drawn diagram or chart, with no engine render behind it to reopen"}
 {"schema": 1, "kind": "link", "id": "figure:pipeline-yield-decay", "no_link": "drawn", "why": "a drawn diagram or chart, with no engine render behind it to reopen"}
 {"schema": 1, "kind": "link", "id": "figure:pipeline-growth", "no_link": "drawn", "why": "a drawn diagram or chart, with no engine render behind it to reopen"}
-{"schema": 1, "kind": "link", "id": "figure:atlas-places", "no_link": "incomplete_provenance", "why": "no colormap is written down"}
 {"schema": 1, "kind": "link", "id": "figure:index-hero#1", "link": "v=4&f=julia4&cx=0.44637678855595264&cy=0.6581861161102234&x=-0.0006944498037232774&y=-0.007170259608518661&w=0.644829668143998&p=glowdon&phase=0.053", "from": "spec"}
 {"schema": 1, "kind": "link", "id": "figure:deep-f64-and-perturbation#1", "no_link": "deep", "why": "the frame is past the wall f64 coordinates stop resolving, and the explorer refuses it in the engine's own words rather than drawing the arithmetic"}
 {"schema": 1, "kind": "link", "id": "figure:deep-f64-and-perturbation#2", "link": "dv=3&x=-0.74937053247003823168823992075369&y=0.041472667068168900034718746387049&w=1.3947621761067345e-14&n=61134&p=glowdon&scale=absolute&lambda=0&period=0.25", "from": "deep deep|deep-f64-and-perturbation#2"}

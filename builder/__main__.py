@@ -784,6 +784,8 @@ def _do_figures(options: argparse.Namespace) -> int:
             elif figure.split:
                 one = figure.panels[0]
                 size = f"{len(figure.panels)}x {one.width}x{one.height}"
+            elif figure.live is not None:
+                size = f"live {figure.live}"
             else:
                 size = f"{figure.width}x{figure.height}"
             recipe = figure.recipe.maker if figure.recipe else "no recipe"

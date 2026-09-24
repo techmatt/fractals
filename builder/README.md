@@ -310,11 +310,19 @@ point at which somebody can still act on it. **`draft`** is made and on its page
 it says what re-bakes it in `note`, which is also what its caption's small `Draft` mark
 points at — and the note is required rather than encouraged: a draft row without one is a
 failing check, and `--place` refuses to land a draft that has nothing to say about its own
-shelf life. Two rows are drafts today: `pipeline-growth`, which `python -m builder growth`
-re-bakes from the curation growth instrument's own stamped record next door, and
-`atlas-places`, which `python -m builder atlas --figure atlas-places` redraws when the
-unpublished records its counts are read off are solved again. `check` prints one note per
-draft, which is the list rather than this sentence. Every page on this site is a draft and none of them says so; this status is
+shelf life. One row is a draft today: `pipeline-growth`, which `python -m builder growth`
+re-bakes from the curation growth instrument's own stamped record next door. `atlas-places`
+was the other until `atlas_live_ckpt146` retired it for the live panel; its maker in
+`builder/atlas.py` is left in place and has no row to land on. `check` prints one note per
+draft, which is the list rather than this sentence.
+
+**A row may be `live`** *(atlas_live_ckpt146)*: a piece of the site running in the page
+rather than a picture of it. `"live": "atlas"` names the piece from `figures.py`'s `LIVE`,
+and the row carries no file, size or panels, and no link row, because every mark in the
+piece builds its own link. The block is a well holding the row's `alt` and a link to the
+piece's own page, plus one `<script type="module">` that mounts the piece over the well.
+Opened from disk or with scripting off, the well is what a reader gets. `atlas-live` on
+Fractal atlases is the one live row, mounted by `atlas/embed.js`. Every page on this site is a draft and none of them says so; this status is
 the narrower claim, that a reader who copied a number off this picture would be copying
 something with a shelf life. Prose gets written before pictures get made, and a
 page that says what is coming beats a broken image or a silent gap; `figures` lists what

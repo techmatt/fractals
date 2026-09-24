@@ -628,6 +628,28 @@ a:hover { color: var(--ink); }
   color: var(--well-ink-dim);
 }
 
+/* A live figure: a piece of the site running in the page rather than a picture of it
+   (atlas_live_ckpt146). The atlas frame is the explorer's own and brings `atlas/frame.css`
+   with it; what is this file's is the well. Until the frame is in it, the well holds a
+   line and a link, the same honesty a pending well has, and that is all a page opened
+   from disk or read with scripting off ever shows. While the frame is loading the well
+   holds roughly the frame's own shape, so the text under it does not jump when it lands;
+   once it has landed the well's height is the frame's, and nothing here sizes it. */
+.figure-live-host.is-loading { aspect-ratio: 9 / 10; }
+.figure-live-note {
+  margin: 0;
+  padding: 1.5rem;
+  text-align: center;
+  font-size: 0.9375rem;
+  line-height: 1.5;
+  color: var(--well-ink-dim);
+}
+.figure-live-note a { color: var(--well-link); }
+/* `.figure img` sizes a figure's picture to its width and lets the height follow, and the
+   frame's pictures are sized by the frame. The frame's stylesheet arrives after this one
+   and wins on order alone; this says so rather than leaning on it. */
+.figure-live .frame img { height: 100%; }
+
 /* A slot held open before its figure is even registered: the slug its row will carry and
    the draft caption, on a 16:9 well. Placed prose is reviewed on the site before a figure
    round draws anything, and this is how that page shows where the figures go. It is not a

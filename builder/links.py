@@ -184,10 +184,15 @@ def picture_ids() -> list[str]:
     **A split figure is its panels and not itself.** Six pictures a reader can open one
     at a time are six rows here; a row for the figure as a whole would be a link nothing
     on the page could carry.
+
+    **A live figure is not a picture at all.** It is a piece running in the page, and
+    every mark in it builds its own link through the piece's own code — the atlas's
+    `atlas/links.js` — so a row here would be a second author of links that already have
+    one.
     """
     found = []
     for identifier, figure in figures.load_all().items():
-        if not figure.on_page:
+        if not figure.on_page or figure.live is not None:
             continue
         if figure.split:
             found.extend(
@@ -217,7 +222,7 @@ def derive() -> list[Link]:
 
     for identifier, figure in figures.load_all().items():
         key = f"figure:{identifier}"
-        if not figure.on_page:
+        if not figure.on_page or figure.live is not None:
             continue
         if figure.pending:
             wanted.append(_refused(key, "incomplete_provenance", "the picture is not made yet"))

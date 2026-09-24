@@ -28,6 +28,14 @@ inside `builder` to that maker still existing.
 Every row also names the `page` it sits on. A figure exists to be on a page; a row that
 is on none is either a rename that half-landed or a figure somebody forgot to place, and
 before this field both passed `check` in silence.
+
+**A figure may be live** *(atlas_live_ckpt146)*: a piece of the site that runs in the page
+instead of a picture of it. Such a row says `live` and names which piece, from `LIVE`
+below, and carries no file, size or panels, because nothing about it is a raster. Its
+block is a well holding the row's `alt` and a link to where the piece lives on its own,
+and one module script that mounts the piece over that well. A page that cannot run the
+script (scripting off, or opened from disk, where a browser refuses a module) keeps the
+well as it was written, which is the same honesty a pending row's well has.
 """
 
 import importlib
@@ -117,6 +125,34 @@ MADE = (PLACED, STALE, DRAFT)
 RUN_ROW, LOCATION, SYNTHETIC, NO_SOURCE = "run_row", "location", "synthetic", "none"
 GALLERY_SEAT, CANDIDATE = "gallery_seat", "candidate"
 SOURCE_KINDS = (RUN_ROW, LOCATION, GALLERY_SEAT, CANDIDATE, SYNTHETIC, NO_SOURCE)
+
+
+@dataclass(frozen=True)
+class Live:
+    """A piece a live figure mounts: its module, and the way to it when it cannot run.
+
+    `module` and `elsewhere` are paths from the site root, spelled relative to the page at
+    derivation like every other href here; `elsewhere` may carry a query, which rides
+    along untouched. `words` is the link text the well carries.
+    """
+
+    module: str
+    elsewhere: str
+    words: str
+
+
+#: The pieces a figure may mount live. A closed list, like the statuses: a name outside it
+#: is a typo in the registry rather than a new kind of figure.
+#:
+#: - `atlas` — the explorer's Atlas panel, `atlas/frame.js`, mounted by `atlas/embed.js`
+#:   in the explorer's own stylesheet for it, with a click opening the explorer.
+LIVE = {
+    "atlas": Live(
+        module="atlas/embed.js",
+        elsewhere="explorer/index.html?panel=atlas",
+        words="Open the atlas in the fractal explorer",
+    ),
+}
 
 #: The kinds that carry keys at all. A `synthetic` or `none` row naming one is a row
 #: claiming a record it does not have.
@@ -316,6 +352,8 @@ class Figure:
     caption_link: tuple[str, str] | None
     panels: tuple[Panel, ...] = ()
     columns: int | None = None
+    #: The piece a live figure mounts, by its name in `LIVE`; `None` for a picture.
+    live: str | None = None
 
     @property
     def split(self) -> bool:
@@ -382,8 +420,8 @@ class Figure:
 
     @property
     def pending(self) -> bool:
-        """True while the picture is planned but not yet made."""
-        return self.file is None and not self.panels
+        """True while the picture is planned but not yet made. A live figure never is."""
+        return self.file is None and not self.panels and self.live is None
 
     @property
     def held(self) -> bool:
@@ -421,13 +459,14 @@ class Figure:
 
         One entry for a composited figure and one per panel for a split one, so a caller
         that only wants to know whether the pictures are there and are the size the
-        registry says does not have to know which shape it is holding.
+        registry says does not have to know which shape it is holding. A live figure ships
+        none: what it shows is its piece's own record.
         """
         if self.split:
             return tuple(
                 (panel.file, panel.path, panel.width, panel.height) for panel in self.panels
             )
-        if self.pending:
+        if self.pending or self.live is not None:
             return ()
         return ((self.file, self.path, self.width, self.height),)
 
@@ -463,9 +502,17 @@ def markup(figure: Figure, opened: dict[str, str] | None = None) -> str:
         classes.append("figure-pending")
     if figure.split:
         classes.append("figure-split")
+    if figure.live is not None:
+        classes.append("figure-live")
+    if figure.live is not None:
+        well = _live(figure)
+    elif figure.split:
+        well = _panels(figure, links_by_id)
+    else:
+        well = _well(figure, links_by_id)
     lines = [
         f'{INDENT}<figure class="{" ".join(classes)}" data-figure="{attribute(figure.id)}">',
-        _panels(figure, links_by_id) if figure.split else _well(figure, links_by_id),
+        well,
     ]
     if figure.caption or figure.caption_link is not None:
         lines.append(
@@ -551,6 +598,30 @@ def _well(figure: Figure, opened: dict[str, str]) -> str:
         f'height="{figure.height}" alt="{attribute(figure.alt)}"{lazy}>'
     )
     return f"{INDENT}  {_linked(picture, opened.get(f'figure:{figure.id}'))}"
+
+
+def _live(figure: Figure) -> str:
+    """A live figure's well, and the one script that mounts its piece over it.
+
+    The well is what a reader gets where the script cannot run: the row's `alt`, saying
+    what would be here, and a link to the piece on its own page. The module finds the well
+    by `data-live` beside it and mounts into it. A module script is deferred by the
+    browser, so it costs the page nothing before the page has been drawn, and the piece
+    fetches what it needs only when its well comes near the viewport.
+    """
+    piece = LIVE[figure.live]
+    target, _, query = piece.elsewhere.partition("?")
+    elsewhere = relative_href(figure.page_path, SITE_ROOT / target) + (query and f"?{query}")
+    module = relative_href(figure.page_path, SITE_ROOT / piece.module)
+    return "\n".join(
+        [
+            f'{INDENT}  <div class="figure-live-host" data-live="{attribute(figure.live)}">',
+            f'{INDENT}    <p class="figure-live-note">{text(figure.alt)} '
+            f'<a href="{attribute(elsewhere)}">{text(piece.words)}</a>.</p>',
+            f"{INDENT}  </div>",
+            f'{INDENT}  <script type="module" src="{attribute(module)}"></script>',
+        ]
+    )
 
 
 def _linked(picture: str, opened: str | None) -> str:
@@ -679,6 +750,22 @@ def _figure(row: records.Record, identifier: str) -> Figure:
     asset = (row.optional_text("file"), row.optional_count("width"), row.optional_count("height"))
     panels = _panel_rows(row)
     columns = row.optional_count("columns")
+    live = row.optional_text("live")
+    if live is not None:
+        if live not in LIVE:
+            raise records.RecordError(
+                f"{row.where}: live {live!r} — the pieces are {', '.join(sorted(LIVE))}"
+            )
+        if not made:
+            raise records.RecordError(
+                f"{row.where}: a live figure is made or it is not on the page — "
+                f"it cannot be {status}"
+            )
+        if panels or columns is not None or any(field is not None for field in asset):
+            raise records.RecordError(
+                f"{row.where}: a live figure is a piece that runs, and names no file, size "
+                "or panels"
+            )
     if not made and (any(field is not None for field in asset) or panels):
         raise records.RecordError(
             f"{row.where}: a {status} figure names no file or size — the asset does not exist yet"
@@ -694,7 +781,7 @@ def _figure(row: records.Record, identifier: str) -> Figure:
         )
     if columns is not None and not panels:
         raise records.RecordError(f"{row.where}: columns is the width of a grid, and there is none")
-    if made and not panels and any(field is None for field in asset):
+    if made and not panels and live is None and any(field is None for field in asset):
         raise records.RecordError(f"{row.where}: a {status} figure needs file, width and height")
     held_reason = row.optional_text("held_reason")
     if status == HELD and held_reason is None:
@@ -735,6 +822,7 @@ def _figure(row: records.Record, identifier: str) -> Figure:
         caption_link=_caption_link(row),
         panels=panels,
         columns=columns,
+        live=live,
     )
 
 
@@ -1029,6 +1117,7 @@ KEY_ORDER = (
     "stale_when",
     "reuse_reason",
     "note",
+    "live",
     "file",
     "width",
     "height",

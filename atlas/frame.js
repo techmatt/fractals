@@ -18,8 +18,9 @@
 // **The frame is a piece, mounted rather than a page.** It was written that way because
 // two pages mounted one — the standalone atlas page full bleed under the site bar, and the
 // explorer's studio in a panel beside its canvas — and since
-// `website_webp_and_atlas_deprecate` retired that page the studio is the only caller. What
-// the split bought is kept: the frame is measured against the host it is mounted in rather
+// `website_webp_and_atlas_deprecate` retired that page there are two callers again: the
+// studio, and `embed.js`, which mounts the frame live in the article's Fractal atlases
+// page *(atlas_live_ckpt146)*. What the split bought is kept: the frame is measured against the host it is mounted in rather
 // than against the window, and every file it fetches — the record, the thumbnails, the
 // engine — is resolved against `options.base` rather than against whichever document is
 // carrying it, so a page anywhere in the tree finds them.
@@ -259,13 +260,24 @@ function contentBox(node) {
  *   a click on a mark calls `onPick({ dot, slot, query, palette })` for that mark's gallery
  *   slot and a click on a slot calls it for that slot, the frame navigates nowhere, and the
  *   slots are buttons rather than links so that they stay operable from the keyboard.
- *   Absent, each slot is an `<a href>` into the explorer at the view it shows.
+ *   Absent, each slot is an `<a href>` into the explorer at the view it shows, and a click
+ *   on a mark goes where that mark's gallery slot goes.
  * - **`slotMark`** (default absent) — a page's own control over each slot, which the frame
  *   places and points and knows nothing else about *(saved_tab_ckpt131)*. Called once per
  *   slot, it returns `{ node, show(query) }`; the node sits beside the slot in a cell of its
  *   own, because the studio's slots are buttons and a button cannot hold another, and
  *   `show` is told the query the slot now opens, or `null` while the slot is empty. The
  *   studio's is the save mark, and a caller that passes none gets the strip as it was.
+ * - **`fit`** (default `"box"`) — what the frame is fitted to. `"box"` is the host's
+ *   content box, width and height both, which is the studio's panel: a box its page has
+ *   already sized. `"width"` is the host's width alone, and the host's height is left to
+ *   follow the frame *(atlas_live_ckpt146)*, which is an article column: nothing there
+ *   sizes a box's height but what is in it. The flow is still one way — the frame reads
+ *   the width and never the height, and the host's height reads the frame and never
+ *   reaches back — so a host that grows with its frame is not the frame's input.
+ * - **`least`** (default `LEAST`) — the narrowest plate the frame will draw, in CSS
+ *   pixels. A phone's article column is narrower than the studio's floor, and a frame
+ *   wider than its column is a page that scrolls sideways.
  *
  * The handle is `{ record, refit, open, destroy }`: the record as `record.js` read it, a
  * `refit` that re-sizes the frame to its host and returns the `{ width, height }` it settled
@@ -281,6 +293,8 @@ export async function mount(host, options = {}) {
   const onPick = options.onPick;
   const navigates = onPick === undefined;
   const slotMark = options.slotMark;
+  const byWidth = options.fit === "width";
+  const least = options.least ?? LEAST;
 
   const plan = await planner(base);
   const contract = contractOf((spec) => {
@@ -449,10 +463,25 @@ export async function mount(host, options = {}) {
       node.addEventListener("focus", enter);
       node.addEventListener("mouseleave", leave);
       node.addEventListener("blur", leave);
-      node.addEventListener("click", () => {
+      node.addEventListener("click", (event) => {
         // A mark is a place, and the one of its three pictures a place is worth opening at
         // is the wallpaper. The other two are what a picker would go to the slots for.
-        if (!navigates) pick(dot, "gallery");
+        if (!navigates) {
+          pick(dot, "gallery");
+          return;
+        }
+        // Navigating, a mark goes where its gallery slot's link goes, in the same tab as
+        // any link on the page, and a modified click opens it beside the page the way a
+        // link would. A mark stays a button rather than becoming a second link to one
+        // place: the slot above it is that link, and a keyboard already reaches it.
+        const slot = dot.slots.gallery;
+        if (slot === undefined) return;
+        const href = `${explorer}?${links.get(slot).query}`;
+        if (event.ctrlKey || event.metaKey || event.shiftKey) {
+          window.open(href, "_blank", "noopener");
+        } else {
+          window.location.assign(href);
+        }
       });
       nodes.set(dot, node);
       plate.appendChild(node);
@@ -519,13 +548,13 @@ export async function mount(host, options = {}) {
 
   const refit = (force = false) => {
     const box = contentBox(host);
-    if (box.width <= 0 || box.height <= 0) return fitted;
+    if (box.width <= 0 || (box.height <= 0 && !byWidth)) return fitted;
     // What the strip of planes takes is its own before the frame divides up what is left;
     // it is laid out by the page's own stylesheet and is no part of the rectangle the
     // plate's aspect describes.
     const spare = planes.offsetHeight;
-    const room = Math.max(LEAST * ratio, box.height - spare);
-    const width = Math.max(LEAST, Math.floor(Math.min(box.width, room / ratio, most)));
+    const room = byWidth ? Infinity : Math.max(least * ratio, box.height - spare);
+    const width = Math.max(least, Math.floor(Math.min(box.width, room / ratio, most)));
     if (width === fitted.width && !force) return fitted;
 
     const slotWidth = Math.floor(width * SLOT_SHARE);

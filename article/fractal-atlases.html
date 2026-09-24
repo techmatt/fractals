@@ -32,7 +32,7 @@
     <li><a href="finding-good-wallpapers.html">Finding good wallpapers</a> <span class="done" role="img" aria-label="written">✓</span></li>
     <li><a href="gallery-curation.html">Gallery curation</a> <span class="done" role="img" aria-label="written">✓</span></li>
     <li><a href="full-pipeline.html">Full pipeline</a> <span class="done" role="img" aria-label="written">✓</span></li>
-    <li class="rail-current"><a href="fractal-atlases.html" aria-current="page">Fractal atlases</a></li>
+    <li class="rail-current"><a href="fractal-atlases.html" aria-current="page">Fractal atlases</a> <span class="done" role="img" aria-label="written">✓</span></li>
     <li><a href="deep-zoom.html">Deep zoom</a> <span class="done" role="img" aria-label="written">✓</span></li>
   </ol>
   <ul class="rail-links">
@@ -50,27 +50,31 @@
 </header>
 
 <main>
-  <section class="intro">
-    <p>Every location the search has kept sits somewhere in one of the fractal families,
-    and a family is a picture in its own right. This section maps them: each family drawn
-    whole, with the locations the pipeline has found marked on it, so that where the good
-    ground lies, and where the search has never brought anything back, can be looked at
-    rather than tabulated. Each mark opens at the view it stands for.</p>
+  <section class="prose">
+    <p>Any interesting region of these fractals holds infinitely many small copies of the
+    whole set, so a patient enough search could find a good picture almost anywhere. The
+    atlas is not a map of where good pictures are possible. It is a map of where this
+    project's search found them: every place that scored above the bar the gallery seats
+    at, marked on the plane it came from with one mark to a neighborhood, one plate per
+    plane.</p>
 
-    <p>The atlas itself is built, on the search's own record: <a
-    href="../explorer/index.html?panel=atlas">every place the search kept</a>, drawn on the
-    plane it came out of. The figure below is that plane and those marks; the explorer's
-    Atlas tab gives every mark its pictures and its links, beside a viewer that draws the
-    place a mark stands for.</p>
-
-      <figure class="figure" data-figure="atlas-places">
-        <img src="../assets/images/figures/atlas-places.webp" width="1600" height="1422" alt="The Mandelbrot set drawn whole in gray on a black field, with a hundred and thirteen small round marks over it. The marks crowd the boundary of the set, densest in the valley between the main cardioid and the largest bulb and along the rim of the cardioid, and leave the interior and the outer field almost empty. Blue and red marks are mixed through each other in roughly equal numbers.">
-        <figcaption><span class="figure-draft">Draft</span> Every place the search has kept, on the plane it came out of. A place is here because at least one render at it scored above the bar a gallery solve seats over, and nothing else puts a mark on this plate. One mark stands for one neighborhood: 113 of them, thinned from 1,369 places by dropping anything that landed within eight pixels of a mark already drawn. Blue is a location on the parameter plane itself; red is a Julia location, which is a value of c, and c is a point of this same plane, so both halves of the search are drawn together: 58 blue and 55 red. The search has spent its whole life on the boundary, and at this scale that is most of what there is to see. <a href="../explorer/index.html?panel=atlas">Every one of them carries three pictures and three links in the explorer's Atlas tab</a>.</figcaption>
+      <figure class="figure figure-live" data-figure="atlas-live">
+        <div class="figure-live-host" data-live="atlas">
+          <p class="figure-live-note">The atlas runs live here: a plate for each plane, marked with the places the search kept. It needs scripting, and a page served over the web rather than opened from a file. <a href="../explorer/index.html?panel=atlas">Open the atlas in the fractal explorer</a>.</p>
+        </div>
+        <script type="module" src="../atlas/embed.js"></script>
       </figure>
 
-    <p><em>Not written yet.</em> This page holds the section's slug, which is a permanent
-    URL. The search whose finds it will map is in
-    <a href="https://github.com/techmatt/fractal-wallpapers">fractal-wallpapers</a>.</p>
+    <p>The panel above is the fractal explorer's Atlas tab, running live. Blue marks are
+    places on the parameter plane. Red marks are Julia sets, drawn at their value of c,
+    which is a point on the same plane. On the Phoenix plate every mark is red, because its
+    constants are fixed and every place on it is a view of that one set. Clicking a mark
+    opens that place in the explorer, drawn as the wallpaper the search found there.</p>
+
+    <p>The atlas is fun to browse, and it is also useful. When descending into minibrots in
+    search of pretty areas, it often helps to start at a place you like and zoom back out to
+    the whole set, to see where it sits: which parts of the boundary tend to give graceful
+    pictures, and which give chaotic ones. The atlas shows that for every place at once.</p>
   </section>
 
   <nav class="section-nav">
