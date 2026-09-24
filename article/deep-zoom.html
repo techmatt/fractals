@@ -156,7 +156,9 @@
     infinitely many of them, at every depth, smaller and more numerous the further down you
     go. From outside, a copy looks like a small black body with the familiar bulbs and hairs.
     A frame that zooms into the copy's neighborhood sees more than that. It finds the copy's own seahorse valleys and spirals laid over the structure it was
-    already in, so a region that looked smooth from further out fills with filigree. The
+    already in, so a region that looked smooth from further out fills with filigree. Close to
+    a copy, that filigree often arranges into what look like whole Julia sets, the
+    <i>embedded Julia sets</i> that deep-zoom artists steer toward. The
     figure below follows one descent of this kind, six steps down a chain of components
     nested one inside the next. Each step frames the next component in the chain, and the
     last frame is about a billionth of the complex plane wide.</p>
@@ -193,47 +195,74 @@
 
     <h2 id="julia-sets-inside-the-mandelbrot-set">Julia sets inside the Mandelbrot set</h2>
 
-    <p>At some points on the boundary, zooming far enough into the Mandelbrot set shows what
-    you see zooming into the <a href="https://en.wikipedia.org/wiki/Julia_set">Julia set</a>
-    for that same parameter, at the same point. These are the
-    <a href="https://en.wikipedia.org/wiki/Misiurewicz_point">Misiurewicz points</a>, where
-    the orbit of zero never returns to zero but eventually lands on a repeating cycle. Tan
-    Lei proved in 1990 that at such a point the two sets become identical in the limit, up
-    to a fixed scale and rotation: the deeper the zoom, the closer the match. The figure
-    below pairs zooms at a few of these points. The explorer's Julia preview shows the Julia
-    set of the
-    <a href="https://en.wikipedia.org/wiki/Complex_quadratic_polynomial">quadratic map</a>
-    under the pointer for any parameter.</p>
+    <p>Every parameter of the Mandelbrot set has its own
+    <a href="https://en.wikipedia.org/wiki/Julia_set">Julia set</a>, the starting points
+    whose orbits stay bounded under that parameter's map. Is it worth zooming deep into a
+    Julia set? Mostly not. The map carries a small piece of its Julia set onto a larger piece
+    of the same set, so a Julia set repeats itself at every scale, and a deep zoom mostly
+    finds shapes it has already shown. The Mandelbrot set is different, because each of its
+    points is a different parameter, so a deeper frame keeps meeting new Julia sets.</p>
+
+    <p>The two meet at the
+    <a href="https://en.wikipedia.org/wiki/Misiurewicz_point">Misiurewicz points</a>,
+    parameters where the orbit of zero never returns to zero but eventually lands on a
+    repeating cycle. <a href="https://doi.org/10.1007/BF02098448">Tan Lei</a> proved in 1990
+    that at such a point the Mandelbrot set and the Julia set for that parameter, zoomed in
+    at the same point, become identical in the limit, up to a fixed scale and rotation: the
+    deeper the zoom, the closer the match. The figure below shows one shallow example on the
+    Mandelbrot set and two deep ones on the multibrots, where the same match holds. At depth
+    the filigree agrees almost line for line. The one difference is that the parameter plane
+    also holds tiny copies of the set, which the Julia set does not.</p>
 
       <figure class="figure figure-split" data-figure="deep-misiurewicz-pairs">
-        <div class="figure-panels" style="--figure-across: 2">
+        <div class="figure-panels" style="--figure-across: 3">
         <div class="figure-panel">
-          <a class="figure-open" href="../explorer/index.html?dv=3&amp;x=-0.7756837680090537974694835&amp;y=0.1364673682946901247332744&amp;w=0.00002&amp;n=24633&amp;p=glowdon&amp;scale=absolute&amp;lambda=0&amp;period=0.5" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/deep-misiurewicz-pairs-1.webp" width="960" height="540" alt="The Mandelbrot set at c = −0.7757 + 0.1365i, in the seahorse valley: a spiral arm of filigree winding in to the center over orange and blue bands." loading="lazy"><span class="figure-open-mark" aria-hidden="true">↗</span></a>
-          <p class="figure-label">Mandelbrot set<span class="figure-note">c = −0.7757 + 0.1365i, width 2 × 10⁻⁵</span></p>
-        </div>
-        <div class="figure-panel">
-          <a class="figure-open" href="../explorer/index.html?dv=3&amp;cx=-0.7756837680090537974694835&amp;cy=0.1364673682946901247332744&amp;x=-0.7756837680090537974694835&amp;y=0.1364673682946901247332744&amp;w=0.000059582&amp;n=22743&amp;p=glowdon&amp;scale=absolute&amp;lambda=0&amp;period=0.5" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/deep-misiurewicz-pairs-2.webp" width="960" height="540" alt="The Julia set for that c at the same point: the same spiral, in shifted colors." loading="lazy"><span class="figure-open-mark" aria-hidden="true">↗</span></a>
-          <p class="figure-label">Julia set<span class="figure-note">width 6 × 10⁻⁵</span></p>
+          <a class="figure-open" href="../explorer/index.html?dv=3&amp;cx=-0.1010963638456221610257854&amp;cy=0.9562865108091415007710961&amp;x=0&amp;y=0&amp;w=3&amp;n=4000&amp;p=High%20Cyan%2C%20Low%20Gold&amp;scale=absolute&amp;lambda=0&amp;period=0.5" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/deep-misiurewicz-pairs-1.webp" width="960" height="540" alt="The whole Julia set for c = −0.1011 + 0.9563i: a thin branching curve of pale filigree crossing the frame on a diagonal over bands of green, running off its top and bottom edges." loading="lazy"><span class="figure-open-mark" aria-hidden="true">↗</span></a>
+          <p class="figure-label">Julia set<span class="figure-note">c = −0.1011 + 0.9563i</span></p>
         </div>
         <div class="figure-panel">
-          <a class="figure-open" href="../explorer/index.html?dv=3&amp;x=-0.2397161902231344106662341&amp;y=0.8455033137002887225928533&amp;w=0.0001&amp;n=21847&amp;p=glowdon&amp;scale=absolute&amp;lambda=0&amp;period=0.5" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/deep-misiurewicz-pairs-3.webp" width="960" height="540" alt="The Mandelbrot set at c = −0.2397 + 0.8455i, a jagged chain of filigree branching through the center over blue bands." loading="lazy"><span class="figure-open-mark" aria-hidden="true">↗</span></a>
-          <p class="figure-label">Mandelbrot set<span class="figure-note">c = −0.2397 + 0.8455i, width 10⁻⁴</span></p>
+          <a class="figure-open" href="../explorer/index.html?dv=3&amp;cx=-0.1010963638456221610257854&amp;cy=0.9562865108091415007710961&amp;x=-0.1010963638456221610257854&amp;y=0.9562865108091415007710961&amp;w=0.0024101&amp;n=16337&amp;p=High%20Cyan%2C%20Low%20Gold&amp;scale=absolute&amp;lambda=0&amp;period=0.5" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/deep-misiurewicz-pairs-2.webp" width="960" height="540" alt="That Julia set zoomed in at c: the same three-armed junction, turned about 22 degrees, its arms studded with six-pointed stars." loading="lazy"><span class="figure-open-mark" aria-hidden="true">↗</span></a>
+          <p class="figure-label">Julia set, zoomed<span class="figure-note">width 2.4 × 10⁻³</span></p>
         </div>
         <div class="figure-panel">
-          <a class="figure-open" href="../explorer/index.html?dv=3&amp;cx=-0.2397161902231344106662341&amp;cy=0.8455033137002887225928533&amp;x=-0.2397161902231344106662341&amp;y=0.8455033137002887225928533&amp;w=0.000089287&amp;n=22043&amp;p=glowdon&amp;scale=absolute&amp;lambda=0&amp;period=0.5" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/deep-misiurewicz-pairs-4.webp" width="960" height="540" alt="The Julia set for that c at the same point: the same chain, nearly pixel for pixel." loading="lazy"><span class="figure-open-mark" aria-hidden="true">↗</span></a>
-          <p class="figure-label">Julia set<span class="figure-note">width 8.9 × 10⁻⁵</span></p>
+          <a class="figure-open" href="../explorer/index.html?dv=3&amp;x=-0.1010963638456221610257854&amp;y=0.9562865108091415007710961&amp;w=0.003&amp;n=15958&amp;p=High%20Cyan%2C%20Low%20Gold&amp;scale=absolute&amp;lambda=0&amp;period=0.5" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/deep-misiurewicz-pairs-3.webp" width="960" height="540" alt="The parameter plane zoomed in at c: three arms of filigree meeting at the center, each studded with six-pointed stars, over dark green." loading="lazy"><span class="figure-open-mark" aria-hidden="true">↗</span></a>
+          <p class="figure-label">Parameter plane<span class="figure-note">width 3 × 10⁻³</span></p>
         </div>
         <div class="figure-panel">
-          <a class="figure-open" href="../explorer/index.html?dv=3&amp;x=0.3973918222965411749842944&amp;y=0.1335112048718776326576995&amp;w=0.0001&amp;n=21847&amp;p=glowdon&amp;scale=absolute&amp;lambda=0&amp;period=0.5" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/deep-misiurewicz-pairs-5.webp" width="960" height="540" alt="The Mandelbrot set at c = 0.3974 + 0.1335i, seven arms of filigree radiating from the center, studded with small spirals." loading="lazy"><span class="figure-open-mark" aria-hidden="true">↗</span></a>
-          <p class="figure-label">Mandelbrot set<span class="figure-note">c = 0.3974 + 0.1335i, width 10⁻⁴</span></p>
+          <a class="figure-open" href="../explorer/index.html?dv=3&amp;f=julia3&amp;cx=-0.6352281642333808681320495886221720723227&amp;cy=0.6451971639494320595845265674548798440034&amp;x=0&amp;y=0&amp;w=3&amp;n=4000&amp;p=Orchid%20Furnace&amp;scale=absolute&amp;lambda=0&amp;period=0.5" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/deep-misiurewicz-pairs-4.webp" width="960" height="540" alt="The whole Julia set for c = −0.6352 + 0.6452i, degree 3: a thin branching curve of magenta filigree inside a dark halo on pale pink." loading="lazy"><span class="figure-open-mark" aria-hidden="true">↗</span></a>
+          <p class="figure-label">Julia set<span class="figure-note">c = −0.6352 + 0.6452i, degree 3</span></p>
         </div>
         <div class="figure-panel">
-          <a class="figure-open" href="../explorer/index.html?dv=3&amp;cx=0.3973918222965411749842944&amp;cy=0.1335112048718776326576995&amp;x=0.3973918222965411749842944&amp;y=0.1335112048718776326576995&amp;w=0.0000059261&amp;n=26739&amp;p=glowdon&amp;scale=absolute&amp;lambda=0&amp;period=0.5" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/deep-misiurewicz-pairs-6.webp" width="960" height="540" alt="The Julia set for that c at the same point: the same seven-armed star, in shifted colors." loading="lazy"><span class="figure-open-mark" aria-hidden="true">↗</span></a>
-          <p class="figure-label">Julia set<span class="figure-note">width 5.9 × 10⁻⁶</span></p>
+          <a class="figure-open" href="../explorer/index.html?dv=3&amp;f=julia3&amp;cx=-0.6352281642333808681320495886221720723227&amp;cy=0.6451971639494320595845265674548798440034&amp;x=-0.6352281642333808681320495886221720723227&amp;y=0.6451971639494320595845265674548798440034&amp;w=5.4912e-16&amp;n=66734&amp;p=Orchid%20Furnace&amp;scale=absolute&amp;lambda=0&amp;period=0.5" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/deep-misiurewicz-pairs-5.webp" width="960" height="540" alt="That Julia set zoomed in at c: a branching chain of magenta filigree with spiral knots along it, over plain magenta fields." loading="lazy"><span class="figure-open-mark" aria-hidden="true">↗</span></a>
+          <p class="figure-label">Julia set, zoomed<span class="figure-note">width 5.5 × 10⁻¹⁶</span></p>
+        </div>
+        <div class="figure-panel">
+          <a class="figure-open" href="../explorer/index.html?dv=3&amp;f=multibrot3&amp;x=-0.6352281642333808681320495886221720723227&amp;y=0.6451971639494320595845265674548798440034&amp;w=5.2e-16&amp;n=66828&amp;p=Orchid%20Furnace&amp;scale=absolute&amp;lambda=0&amp;period=0.5" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/deep-misiurewicz-pairs-6.webp" width="960" height="540" alt="The parameter plane zoomed in at c: the same chain almost line for line, with small dark copies of the set in its knots and a larger black one at the right edge." loading="lazy"><span class="figure-open-mark" aria-hidden="true">↗</span></a>
+          <p class="figure-label">Parameter plane<span class="figure-note">width 5.2 × 10⁻¹⁶</span></p>
+        </div>
+        <div class="figure-panel">
+          <a class="figure-open" href="../explorer/index.html?dv=3&amp;f=julia4&amp;cx=0.3261226732769710318848390308533958858192&amp;cy=1.1187243018613215064422951991895119177729&amp;x=0&amp;y=0&amp;w=3&amp;n=4000&amp;p=Coral%20Tideline&amp;scale=absolute&amp;lambda=0&amp;period=0.5" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/deep-misiurewicz-pairs-7.webp" width="960" height="540" alt="The whole Julia set for c = 0.3261 + 1.1187i, degree 4: a thin branching cross of filigree over bands of brown and cream." loading="lazy"><span class="figure-open-mark" aria-hidden="true">↗</span></a>
+          <p class="figure-label">Julia set<span class="figure-note">c = 0.3261 + 1.1187i, degree 4</span></p>
+        </div>
+        <div class="figure-panel">
+          <a class="figure-open" href="../explorer/index.html?dv=3&amp;f=julia4&amp;cx=0.3261226732769710318848390308533958858192&amp;cy=1.1187243018613215064422951991895119177729&amp;x=0.3261226732769710318848390308533958858192&amp;y=1.1187243018613215064422951991895119177729&amp;w=4.1606e-16&amp;n=67214&amp;p=Coral%20Tideline&amp;scale=absolute&amp;lambda=0&amp;period=0.5" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/deep-misiurewicz-pairs-8.webp" width="960" height="540" alt="That Julia set zoomed in at c: a dense web of filigree full of small spirals, between smooth fields of cream and brown." loading="lazy"><span class="figure-open-mark" aria-hidden="true">↗</span></a>
+          <p class="figure-label">Julia set, zoomed<span class="figure-note">width 4.2 × 10⁻¹⁶</span></p>
+        </div>
+        <div class="figure-panel">
+          <a class="figure-open" href="../explorer/index.html?dv=3&amp;f=multibrot4&amp;x=0.3261226732769710318848390308533958858192&amp;y=1.1187243018613215064422951991895119177729&amp;w=2e-16&amp;n=68482&amp;p=Coral%20Tideline&amp;scale=absolute&amp;lambda=0&amp;period=0.5" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/deep-misiurewicz-pairs-9.webp" width="960" height="540" alt="The parameter plane zoomed in at c: the same web, with small black copies of the set scattered through it." loading="lazy"><span class="figure-open-mark" aria-hidden="true">↗</span></a>
+          <p class="figure-label">Parameter plane<span class="figure-note">width 2 × 10⁻¹⁶</span></p>
         </div>
         </div>
-        <figcaption>Each pair shows the Mandelbrot set (left) and the Julia set for the parameter at its center (right), zoomed in at the same point. The two agree up to a fixed scale and rotation.</figcaption>
+        <figcaption>Three Misiurewicz points: one shallow on the Mandelbrot set (top) and two deep on the multibrots. Each row shows the whole Julia set for the point's parameter (left), that Julia set zoomed in at the point (middle), and the parameter plane zoomed in at the same point (right). The two zooms agree up to a fixed scale and rotation.</figcaption>
       </figure>
+
+    <p>The left column answers the question from the other side. At a deep parameter, the
+    whole Julia set is a thin, plain branching curve, hard to tell apart from its
+    neighbors' (at a Misiurewicz point it has no interior at all). What is particular to that
+    parameter is packed into a region about as small as the zoom that found it. So a deep
+    Julia zoom pays off at one place, the parameter's own point, and what it finds there is
+    the Mandelbrot set's picture of the same place. The fractal explorer's Julia preview
+    shows the Julia set for the parameter under the pointer.</p>
 
     <h2 id="how-a-deep-frame-is-computed">How a deep frame is computed</h2>
 

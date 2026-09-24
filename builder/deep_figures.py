@@ -46,7 +46,9 @@ the video is about it). The one is the shallow half of `deep-shallow-and-deep`, 
 is Matt's as he gave it, on the leveled scale. `lambda` and `period` are chosen per figure
 and written into the link, which is where the recipe records them. Panels of one strip
 share one colouring, so that one colour means one escape count across the strip, the way
-the video's frames do; that pair is the one exception.
+the video's frames do; that pair is one exception, and `deep-misiurewicz-pairs` the other:
+one map to a row, so that its three rows read as three places, and one colouring across
+each row's three panels.
 """
 
 from __future__ import annotations
@@ -58,6 +60,7 @@ import subprocess
 import tempfile
 from dataclasses import dataclass
 from pathlib import Path
+from urllib.parse import quote, unquote
 
 from . import images
 from .locations import Made, Split, panel_path
@@ -210,10 +213,15 @@ class Frame:
     julia: tuple[str, str] | None = None
     #: Drawn by `fractal-engine` in plain `f64` past its own floor, on purpose.
     f64: bool = False
+    #: The degree of `z^d + c`; the link names a family only where it is not two.
+    degree: int = 2
 
     def link(self) -> str:
+        f = ""
+        if self.degree != 2:
+            f = f"f={'julia' if self.julia else 'multibrot'}{self.degree}&"
         c = f"cx={self.julia[0]}&cy={self.julia[1]}&" if self.julia else ""
-        return f"dv=3&{c}x={self.x}&y={self.y}&w={self.w}&{self.colour}"
+        return f"dv=3&{f}{c}x={self.x}&y={self.y}&w={self.w}&{self.colour}"
 
 
 @dataclass(frozen=True)
@@ -242,19 +250,34 @@ def _wide(text: str) -> str:
 
 # ---------------------------------------------------------------------- Misiurewicz pairs
 #
-# At a Misiurewicz point c the critical orbit z_0 = 0, z_{n+1} = z_n² + c lands on a
-# repelling cycle of period p with multiplier ρ. A Julia offset d at z_1 = c reaches
-# a_n·d at z_n, where a_n = ∂z_n/∂z_1, and a parameter offset e reaches b_n·e, where
-# b_n = ∂z_n/∂c; both land in the same neighbourhood of the cycle. So M at c + e looks like
-# J_c at c + λe, λ = lim b_n/a_n — Tan Lei's similarity, derived rather than fitted. J_c is
-# self-similar about c by ρ as well, so λρ^m aligns the two for every integer m: m is
-# chosen to leave the least rotation, since the explorer draws no rotation. The J panel's
-# width is |λρ^m| times the M panel's, and arg(λρ^m) is the rotation left over.
+# At a Misiurewicz point c the critical orbit z_0 = 0, z_{n+1} = z_n^d + c lands on a
+# repelling cycle of period p with multiplier ρ. A Julia offset δ at z_1 = c reaches
+# a_n·δ at z_n, where a_n = ∂z_n/∂z_1, and a parameter offset e reaches b_n·e, where
+# b_n = ∂z_n/∂c; both land in the same neighbourhood of the cycle. So the parameter plane
+# at c + e looks like J_c at c + λe, λ = lim b_n/a_n — Tan Lei's similarity, derived
+# rather than fitted, and the same at every degree. J_c is self-similar about c by ρ as
+# well, so λρ^m aligns the two for every integer m. The J zoom's width is |λρ^m| times the
+# M zoom's, and arg(λρ^m) is the turn left over: the explorer draws no rotation, so the J
+# zoom is drawn unturned and the turn is recorded rather than undone.
 #
-# Each c is Newton-solved to 25 places in mpmath; λ and ρ come from the same orbit. A
-# numerical check (log smooth count at 20,000 random offsets, correlated between the two
-# planes over a grid of ±10% scale and ±6° rotation) put its maximum on the derived value
-# for all three.
+# Row one is shallow: c is M(4,1) of the Mandelbrot set, Newton-solved on
+# f^{k+p}(0) = f^k(0). The deep rows are *tuned* Misiurewicz points (deep_misiurewicz_
+# ckpt146), because an ordinary one cannot carry what the figure shows: near c a copy at
+# distance r is about r² over the size of c's own neighbourhood, so at 1e-15 the copies
+# round an ordinary point are some thirteen orders below a pixel and the two zooms are
+# the same picture. So each deep c is a shallow point B of the multibrot, preperiod 4 and
+# period 1 and weakly repelling (|ρ| ≈ 1.33, which is what puts filigree through its
+# centre rather than a hair), carried into a copy A of period P found by `deep-gallery-
+# native find` next to a strongly repelling point: seeded at c_A + s_A·c_B and solved by
+# Newton on f^{P(k+p)}(0) = f^{Pk}(0) to 80 digits. Its orbit lands at z_{3P+1} on a cycle
+# of period P, and the frame is s_A times B's frame at 0.01, where B's own copies show.
+#
+# Each (k, p) is read off the solved orbit, not assumed. The turn was also measured, as
+# `measured`: log smooth count at 20,000 random offsets in a disc about c, from the
+# native fields of both planes, correlated over the full circle at 0.5°, then 0.05° and
+# a scale grid of ±30%. The peak r is `agreement`: 0.95 on the shallow row at 3e-3, near
+# 0.8 on the deep rows, whose frames are 1e-2 of their B's, wide enough to show copies.
+# Every deep candidate agreed better at 1e-2 of its B than at 3e-2, as the theorem says.
 
 
 # ------------------------------------------------------------------ automatic descents
@@ -335,6 +358,7 @@ class Misiurewicz:
 
     x: str
     y: str
+    degree: int
     #: The orbit first lands on its cycle at z_k, a cycle of period p.
     k: int
     p: int
@@ -343,11 +367,18 @@ class Misiurewicz:
     m: int
     scale: float
     rotation: float
+    #: The turn the correlation found, in degrees, and its peak r.
+    measured: float
+    agreement: float
     #: The M panel's width; the J panel's is `scale` times it.
     width: str
-    #: What each panel shows, for its alt text.
-    shape: str
+    #: The row's colouring: one map to a row, one colouring across its three panels.
+    colour: str
+    #: What each panel shows, for its alt text: the whole Julia set, its zoom, and the
+    #: parameter plane's zoom.
+    whole: str
     likeness: str
+    shape: str
 
     def short(self) -> str:
         """c as a reader reads it: four places, real minus signs."""
@@ -363,43 +394,75 @@ class Misiurewicz:
         return f"{self.scale * float(self.width):.5g}"
 
 
+#: One colouring to a row: the figure's pass, `scale=absolute` at period 0.5, in the
+#: row's own map. Three maps so that the rows read as three places; Matt picks the maps.
+def _colour(name: str) -> str:
+    return COARSE.replace("p=glowdon", f"p={quote(name, safe='')}")
+
+
 MISIUREWICZ = (
+    # M(4,1) of the Mandelbrot set, where three arms of the 1/3 limb meet.
     Misiurewicz(
-        "-0.7756837680090537974694835",
-        "0.1364673682946901247332744",
-        24,
-        1,
-        -10,
-        2.97912,
-        0.485,
-        "2e-5",
-        "in the seahorse valley: a spiral arm of filigree winding in to the center over "
-        "orange and blue bands",
-        "the same spiral, in shifted colors",
-    ),
-    Misiurewicz(
-        "-0.2397161902231344106662341",
-        "0.8455033137002887225928533",
-        7,
+        "-0.1010963638456221610257854",
+        "0.9562865108091415007710961",
+        2,
+        4,
         1,
         0,
-        0.892874,
-        0.921,
-        "1e-4",
-        "a jagged chain of filigree branching through the center over blue bands",
-        "the same chain, nearly pixel for pixel",
+        0.803354,
+        -21.88,
+        -21.70,
+        0.950,
+        "3e-3",
+        _colour("High Cyan, Low Gold"),
+        "a thin branching curve of pale filigree crossing the frame on a diagonal over "
+        "bands of green, running off its top and bottom edges",
+        "the same three-armed junction, turned about 22 degrees, its arms studded with "
+        "six-pointed stars",
+        "three arms of filigree meeting at the center, each studded with six-pointed stars, "
+        "over dark green",
     ),
+    # Degree 3: B = M(4,1) at 0.6578512382 + 0.5005407815i (|ρ| 1.33), carried into the
+    # period-25 copy at -0.6352281642333385081490412669827353703653
+    # + 0.6451971639494240000173174432003595722745i (|s| 5.22e-14).
     Misiurewicz(
-        "0.3973918222965411749842944",
-        "0.1335112048718776326576995",
-        8,
-        1,
-        -56,
-        0.0592612,
-        0.929,
-        "1e-4",
-        "seven arms of filigree radiating from the center, studded with small spirals",
-        "the same seven-armed star, in shifted colors",
+        "-0.6352281642333808681320495886221720723227",
+        "0.6451971639494320595845265674548798440034",
+        3,
+        76,
+        25,
+        0,
+        1.05600,
+        -1.06,
+        -2.15,
+        0.790,
+        "5.2e-16",
+        _colour("Orchid Furnace"),
+        "a thin branching curve of magenta filigree inside a dark halo on pale pink",
+        "a branching chain of magenta filigree with spiral knots along it, over plain "
+        "magenta fields",
+        "the same chain almost line for line, with small dark copies of the set in its "
+        "knots and a larger black one at the right edge",
+    ),
+    # Degree 4: B = M(4,1) at 0.0110987848 + 0.8573524529i (|ρ| 1.33), carried into the
+    # period-19 copy at 0.3261226732769855817858158047731364348231
+    # + 1.1187243018613302414634701202642722569353i (|s| 1.98e-14).
+    Misiurewicz(
+        "0.3261226732769710318848390308533958858192",
+        "1.1187243018613215064422951991895119177729",
+        4,
+        58,
+        19,
+        3,
+        2.08028,
+        -2.09,
+        -2.95,
+        0.778,
+        "2e-16",
+        _colour("Coral Tideline"),
+        "a thin branching cross of filigree over bands of brown and cream",
+        "a dense web of filigree full of small spirals, between smooth fields of cream and brown",
+        "the same web, with small black copies of the set scattered through it",
     ),
 )
 
@@ -441,27 +504,44 @@ def _descents() -> tuple[Frame, ...]:
     return tuple(frames)
 
 
-def _pair(point: Misiurewicz, colour: str) -> tuple[Frame, Frame]:
+def _row(point: Misiurewicz) -> tuple[Frame, Frame, Frame]:
+    """The whole Julia set at the Julia home, that set zoomed in at c, and the parameter
+    plane zoomed in at c."""
     here = point.short()
+    c = (point.x, point.y)
+    degree = "" if point.degree == 2 else f", degree {point.degree}"
     return (
         Frame(
-            point.x,
-            point.y,
-            point.width,
-            colour,
-            "Mandelbrot set",
-            note=f"{here}, {_wide(point.width)}",
-            alt=f"The Mandelbrot set at {here}, {point.shape}.",
+            "0",
+            "0",
+            "3",
+            point.colour,
+            "Julia set",
+            note=f"{here}{degree}",
+            julia=c,
+            degree=point.degree,
+            alt=f"The whole Julia set for {here}{degree}: {point.whole}.",
         ),
         Frame(
             point.x,
             point.y,
             point.julia_width(),
-            colour,
-            "Julia set",
+            point.colour,
+            "Julia set, zoomed",
             note=_wide(point.julia_width()),
-            julia=(point.x, point.y),
-            alt=f"The Julia set for that c at the same point: {point.likeness}.",
+            julia=c,
+            degree=point.degree,
+            alt=f"That Julia set zoomed in at c: {point.likeness}.",
+        ),
+        Frame(
+            point.x,
+            point.y,
+            point.width,
+            point.colour,
+            "Parameter plane",
+            note=_wide(point.width),
+            degree=point.degree,
+            alt=f"The parameter plane zoomed in at c: {point.shape}.",
         ),
     )
 
@@ -593,12 +673,14 @@ FIGURES = {
         "DESCENT_PLACES' and DESCENT_TWINS'",
     ),
     "deep-misiurewicz-pairs": Figure(
-        tuple(frame for point in MISIUREWICZ for frame in _pair(point, COARSE)),
-        2,
+        tuple(frame for point in MISIUREWICZ for frame in _row(point)),
+        3,
         (960, 540),
         2,
-        "three Misiurewicz points, each drawn in the parameter plane and in its own Julia "
-        "set's plane at Tan Lei's scale; the constants are MISIUREWICZ's",
+        "three Misiurewicz points, one of degree 2 at 3e-3 and tuned ones of degrees 3 and "
+        "4 at 5.2e-16 and 2e-16, each row the whole Julia set at the Julia home, that set "
+        "zoomed in at c at Tan Lei's scale, and the parameter plane zoomed in at c; the "
+        "constants are MISIUREWICZ's",
     ),
 }
 
@@ -629,9 +711,12 @@ WORDS = {
         "descents built from them: A then A, A then B, B then A, and B then B.",
     ),
     "deep-misiurewicz-pairs": (
-        "Three pairs of zooms, each the Mandelbrot set and a Julia set at one Misiurewicz point.",
-        "Each pair shows the Mandelbrot set (left) and the Julia set for the parameter at its "
-        "center (right), zoomed in at the same point. The two agree up to a fixed scale and "
+        "Three rows at three Misiurewicz points, each the whole Julia set, that Julia set "
+        "zoomed in at the point, and the parameter plane zoomed in at the same point.",
+        "Three Misiurewicz points: one shallow on the Mandelbrot set (top) and two deep on "
+        "the multibrots. Each row shows the whole Julia set for the point's parameter "
+        "(left), that Julia set zoomed in at the point (middle), and the parameter plane "
+        "zoomed in at the same point (right). The two zooms agree up to a fixed scale and "
         "rotation.",
     ),
 }
@@ -665,7 +750,7 @@ def draw(identifier: str) -> Split:
     _DRAWN[identifier] = drawn
     lines = [
         f"builder.deep_figures:draw — {figure.about}. Every panel {width}x{height}, "
-        f"supersample {ss}, drawn in colormap {_map(figure)} under the scale each panel's "
+        f"supersample {ss}, drawn in {_maps(figure)} under the scale each panel's "
         "line names. A Deep-tab "
         "panel is its link, held in article/figure-recipes.jsonl under deep|<figure id>#<panel>: "
         "its field drawn by zoom_fields.mjs on the committed perturb.wasm and coloured by "
@@ -694,11 +779,11 @@ def draw(identifier: str) -> Split:
         target.write_bytes(one.path.read_bytes())
         key = _key(identifier, index)
         made.append(Made(target, frame.alt, label=frame.label, note=frame.note, deep=key))
-        family = (
-            f"family julia, c = {frame.julia[0]} + {frame.julia[1]}i"
-            if frame.julia
-            else "family mandelbrot"
-        )
+        family = "family julia" if frame.julia else "family mandelbrot"
+        if frame.degree != 2:
+            family = f"family {'julia' if frame.julia else 'multibrot'}, degree {frame.degree}"
+        if frame.julia:
+            family += f", c = {frame.julia[0]} + {frame.julia[1]}i"
         cap = "named by the link" if "n=" in frame.colour else "settled by the tab's own probe"
         lines.append(
             f"panel {index}, {frame.label}: Deep tab, {family}, centre {frame.x} + {frame.y}i, "
@@ -709,7 +794,8 @@ def draw(identifier: str) -> Split:
 
 
 def _parts(colour: str) -> dict[str, str]:
-    return dict(part.split("=") for part in colour.split("&"))
+    """A colouring's keys, each value as it reads rather than as a link escapes it."""
+    return {key: unquote(value) for key, value in (p.split("=") for p in colour.split("&"))}
 
 
 def _colour_words(colour: str) -> str:
@@ -723,10 +809,14 @@ def _colour_words(colour: str) -> str:
     )
 
 
-def _map(figure: Figure) -> str:
-    """The one map a figure is drawn in: one colouring to a figure, so one map."""
-    (name,) = {_parts(frame.colour)["p"] for frame in figure.frames}
-    return name
+def _maps(figure: Figure) -> str:
+    """The maps a figure is drawn in, each after the word `colormap`: one colouring to a
+    figure, so one map, except `deep-misiurewicz-pairs`, which has one to a row."""
+    names = list(dict.fromkeys(_parts(frame.colour)["p"] for frame in figure.frames))
+    if len(names) == 1:
+        return f"colormap {names[0]}"
+    words = [f"colormap {name}" for name in names]
+    return f"{', '.join(words[:-1])} and {words[-1]}, one to a row,"
 
 
 def _f64_spec(frame: Frame, cap: int) -> dict:

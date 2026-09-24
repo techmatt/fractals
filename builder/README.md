@@ -1012,7 +1012,8 @@ what flattens a deep frame. The page's own Deep-tab link colours at `lambda=0&pe
 whose counts run to tens rather than thousands use `period=0.5`, which bands less.
 `deep-shallow-and-deep` is drawn in Coalglow, and the map is read off each figure's frames,
 so a figure in another map writes that map's name after `colormap`. One figure uses one
-colouring, so a colour is one escape count across a strip, **with one exception**: both of
+colouring, so a colour is one escape count across a strip, **with two exceptions**.
+`deep-misiurewicz-pairs` uses one map to a row (below), and both of
 `deep-shallow-and-deep`'s links are Matt's as he gave them, and its shallow half carries a
 colouring of its own on the leveled scale *(PLACE_deep_zoom_v3_ckpt145)*, so across that
 pair a colour is not one escape count. Measured on the
@@ -1021,17 +1022,32 @@ the perturbation field agree pixel for pixel by eye, so the pair is a fair compa
 
 Landing is the standard split landing plus one step. A new figure needs a `pending` row
 whose block is on the page, then `deep <id> --place`, then `links --write`, then
-`figure <id> --heal`, the order *Still hand-done* names. Five figures, 22 panels, 3.94 MB
-at 2×2 samples, since `deep-descent-pairs` joined *(double_descent_ckpt145)*; the three drawn in deep_zoom_edits_ckpt145 took 177 s together on this
-machine, and `deep-descent-pairs`' six took 53 s.
+`figure <id> --heal`, the order *Still hand-done* names. Five figures, 25 panels, 4.15 MB
+at 2×2 samples, since `deep-misiurewicz-pairs` went to three rows of three
+*(deep_misiurewicz_ckpt146)*; the three drawn in deep_zoom_edits_ckpt145 took 177 s together on this
+machine, `deep-descent-pairs`' six took 53 s, and `deep-misiurewicz-pairs`' nine took 23 s.
+A redraw with `--replace` leaves the row's `caption` and `alt` as they were: a new caption
+in `WORDS` goes onto the row by hand, then `figure <id> --heal`.
 
-**`deep-misiurewicz-pairs` is aligned by derivation, not by fit.** At a Misiurewicz point
-the M plane at c + e looks like J_c at c + λe, λ = lim b_n/a_n, with a_n and b_n the
-orbit's derivatives in z and in c. J_c is also self-similar about c by the cycle's
-multiplier ρ, so λρ^m aligns the pair for every integer m. The explorer draws no rotation,
-so each point was chosen, and each m, for arg(λρ^m) under a degree at a scale between 0.05
-and 20. `MISIUREWICZ` in `deep_figures.py` freezes the three points and their constants,
-and its comment has the derivation and the numerical check that confirmed it.
+**`deep-misiurewicz-pairs` is scaled by derivation and its turn is measured**
+*(deep_misiurewicz_ckpt146)*. Three rows, each the whole Julia set at the Julia home, that
+set zoomed in at c, and the parameter plane zoomed in at c. At a Misiurewicz point the
+parameter plane at c + e looks like J_c at c + λe, λ = lim b_n/a_n, with a_n and b_n the
+orbit's derivatives in z and in c, at every degree. J_c is also self-similar about c by the
+cycle's multiplier ρ, so λρ^m aligns the zooms for every integer m, and the J zoom is
+|λρ^m| times as wide. The explorer draws no rotation, so arg(λρ^m) is left in the picture:
+m is chosen for a small one, and a log-ν correlation over the full circle measures it.
+Row one is M(4,1) of the Mandelbrot set at 3e-3, turned −21.9° derived and −21.7°
+measured. **The deep rows are tuned points** of degrees 3 and 4, at 5.2e-16 and 2e-16.
+An ordinary Misiurewicz point cannot be both deep and show copies, because near c a copy
+at distance r is about r² over the size of c's own neighbourhood, so each is a shallow
+point carried into a copy about 1e-14 across and solved exactly there, which makes its
+neighbourhood that small. `MISIUREWICZ` in `deep_figures.py` freezes the three points,
+their preperiods and periods as read off the orbit, both turns and the correlation, and
+its comment has the method. **One map to a row**, which is this figure's exception to
+one colouring per figure, so the figure's header line names three maps after `colormap`.
+That is safe here because a deep panel's link comes from its recipe row and never from
+that word.
 
 ## The Deep tab's gallery
 
