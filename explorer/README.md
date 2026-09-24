@@ -607,6 +607,13 @@ each `skip` with why.
 - Under **Fastest** at four samples *(screensaver_polish_ckpt143, 1584×891)*, tia seats
   priced at 4.7–5.5 s took 3.7–7.6 s, and one seat priced at 8.3 s was cancelled at 16.6 s.
 
+**Over a long run it holds still** *(profiling_pass_ckpt146, 2026-09-24)*. Twenty minutes
+at *Fastest* in a 1600×1100 window, sampled every minute after a forced collection: 175
+pictures, no long task, a silent console, and DOM nodes, listeners and workers (25–26) flat.
+The heap was not: 3.7 MB to 7.8 MB and still rising, about 23 KB a picture, and heap
+snapshots put the whole of it on `stops.js`'s memo of every map ever built, one a picture.
+That memo keeps 64 now, and the same run levels at 5.2–5.3 MB from its fifth minute.
+
 ## The box tool *(Matt, explorer_box_zoom_and_download_row_ckpt140, 2026-09-22)*
 
 `b`, or `Box (b)` at the left of the Download row's toggles. **Click the center, move away
