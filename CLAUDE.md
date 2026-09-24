@@ -502,10 +502,11 @@ which sections are `"status": "written"`; a rail entry's name is the page's own 
 and the entries that open under the current page are that page's prose `<h2>`s. Its title
 is the way back to the front page, and under the fourteen sections it carries the two links
 that leave the article — the explorer and the code *(Matt, 2026-08-21)*. Above the title
-sits one entry that is not a section, **Start here** *(start_here_ckpt146)*:
-`start-here.html`, at the root beside the front page, opened like a section but in no
-`sections.jsonl` row and with no done marker, and named by `sections.START_NAME` rather
-than its `<h1>`, which is *Making fractal wallpapers*. A prose
+sits one group that is not a section, **Start here** *(start_here_ckpt146; a group since
+start_here_v2_ckpt147)*: a heading set like *Contents* and spelled by
+`sections.START_NAME`, over one entry, `start-here.html` named by its own `<h1>`, *Making
+fractal wallpapers* — at the root beside the front page, opened like a section but in no
+`sections.jsonl` row and with no done marker. A prose
 `<h2>` also gets the id its rail entry links to, spelled from its own words by rule —
 a fragment is a permanent URL. `python -m builder build` writes the rail between two
 marker comments; `check`'s `contents` check re-derives the rail, the heading ids and the

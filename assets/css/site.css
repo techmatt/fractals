@@ -144,9 +144,9 @@ body {
 /* The contents rail. Ten sections in reading order, the current one open to its own
    headings; the builder writes it, so it cannot fall behind the article. Dark ink and
    no underlines: a column of ten blue links reads as a link list, not as contents. */
-/* Above the contents, the page a new reader is sent to first. Ruled off from them, the
-   way the links under them are, because it is an outline of the whole project rather
-   than one of its sections. */
+/* Above the contents, the page a new reader is sent to first, under a heading of its own
+   set like theirs. Ruled off from them, the way the links under them are, because it is
+   an outline of the whole project rather than one of its sections. */
 .rail-start {
   list-style: none;
   margin: 0 0 1rem;

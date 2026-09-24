@@ -20,11 +20,12 @@
 <div class="page">
 <!-- contents-rail:start — written by builder/. Run `python -m builder build`. -->
 <nav class="contents-rail" aria-label="Contents">
+  <p class="rail-title"><a href="start-here.html">Start here</a></p>
   <ul class="rail-start">
-    <li class="rail-current"><a href="start-here.html" aria-current="page">Start here</a>
+    <li class="rail-current"><a href="start-here.html" aria-current="page">Making fractal wallpapers</a>
       <ol class="rail-headings">
         <li><a href="#fractal-explorer">Fractal explorer</a></li>
-        <li><a href="#deep-zoom">Deep zoom</a></li>
+        <li><a href="#deep-zoom-rendering">Deep zoom rendering</a></li>
         <li><a href="#future-work">Future work</a></li>
       </ol>
     </li>
@@ -42,7 +43,7 @@
     <li><a href="article/gallery-curation.html">Gallery curation</a> <span class="done" role="img" aria-label="written">✓</span></li>
     <li><a href="article/full-pipeline.html">Full pipeline</a> <span class="done" role="img" aria-label="written">✓</span></li>
     <li><a href="article/fractal-atlases.html">Fractal atlases</a> <span class="done" role="img" aria-label="written">✓</span></li>
-    <li><a href="article/deep-zoom.html">Deep zoom</a> <span class="done" role="img" aria-label="written">✓</span></li>
+    <li><a href="article/deep-zoom.html">Deep zoom rendering</a> <span class="done" role="img" aria-label="written">✓</span></li>
     <li><a href="article/other-artistic-techniques.html">Other artistic techniques</a> <span class="done" role="img" aria-label="written">✓</span></li>
     <li><a href="article/cool-math.html">Cool math</a> <span class="done" role="img" aria-label="written">✓</span></li>
   </ol>
@@ -61,23 +62,22 @@
 
 <main>
   <section class="prose">
-    <p>This project started, indirectly, after many years of the same fractal wallpapers
-    rotating on my desktop. My three-year-old daughter enjoyed looking at them, but
-    after a detailed examination of my 500 wallpapers, it turned out she only liked
-    about five specific pink fractals. A Google search for "pink fractals" was
-    surprisingly barren of good options.</p>
+    <p>This project began when my three-year-old daughter took an interest in the fractal
+    wallpapers that had been rotating on my desktop for years. But after her detailed
+    examination of all 500, it turned out she only liked about five specific pink ones. A
+    Google search for "pink fractals" was surprisingly barren of good options.</p>
 
-    <p>That got me thinking about how to procedurally generate a diverse set of beautiful
-    fractals, subject to constraints like color, shape, or rendering style.
-    Classification was one of the first big successes of modern convolutional networks,
-    and given enough training data, a network can do quite a good job of answering "how
-    good is this wallpaper, on a scale of 1 to 4?" Coupled with a fairly extensive
-    search and rendering engine, that became the first version of the
+    <p>I started thinking about how to procedurally generate a diverse set of artistic
+    fractals subject to constraints like color, shape, or rendering styles. Classification
+    was one of the first big successes of modern convolutional networks, and given enough
+    training data, a network can do quite a good job of answering a question like "how good
+    is this wallpaper, on a scale of 1 to 4?" Coupled with a fairly extensive search and
+    rendering engine, that became the first version of the
     <a href="https://github.com/techmatt/fractal-wallpapers">fractal-wallpapers</a>
-    project. Here is a terse outline.</p>
+    project. Below is a terse outline.</p>
 
     <p>First, pick a starting
-    <a href="article/escape-time-fractals.html#the-projects-families">escape-time fractal</a>:</p>
+    <a href="article/escape-time-fractals.html">escape-time fractal</a>:</p>
 
       <figure class="figure figure-split" data-figure="start-families">
         <div class="figure-panels" style="--figure-across: 3">
@@ -108,7 +108,7 @@
         </div>
       </figure>
 
-    <p>Then, starting at a point on the boundary, walk deeper, guided by a
+    <p>Then, starting at a point near the boundary, walk deeper, guided by a
     <a href="article/training-judges.html#what-the-judge-sees">location judge</a> trained to
     estimate how beautiful the geometry is at each location. Maneuvers like "switch to the
     Julia set for this point and descend it from the top" or "find a nearby minibrot" turn
@@ -143,9 +143,10 @@
         </div>
       </figure>
 
-    <p>At each location, search across
-    <a href="article/rendering-modes.html">palettes and rendering modes</a> for the most
-    beautiful wallpapers, according to a
+    <p>At each location that the location judge finds to be high-quality, search across
+    <a href="article/color-palettes.html">palettes</a> and
+    <a href="article/rendering-modes.html">rendering modes</a> for the most beautiful
+    wallpapers, according to a
     <a href="article/training-judges.html#the-rating-scale">judge trained on explicit
     labels</a>.</p>
 
@@ -196,7 +197,8 @@
 
     <p>Finally, <a href="article/gallery-curation.html">curate a gallery</a> of a given size
     or property from all the candidates, aiming for diversity across many axes: color,
-    geometry, palette, rendering mode, and a cap on how many spirals get in.</p>
+    geometry, palette, rendering mode, fractal family, and other constraints such as a cap
+    on how many spirals get in.</p>
 
       <figure class="figure figure-split" data-figure="start-gallery">
         <div class="figure-panels" style="--figure-across: 4">
@@ -284,25 +286,26 @@
 
     <h2 id="fractal-explorer">Fractal explorer</h2>
 
-    <p>Once I was reasonably happy with the gallery, I thought about putting it online as a
-    simple zip of wallpapers. But the Rust code behind fractal-wallpapers carried over to
-    the web almost directly, as what is now the
-    <a href="explorer/index.html">fractal explorer</a>. It was delightful to move around and
-    explore the areas around the wallpaper locations, and that motivated a more polished
-    writeup and interface than "here's a zip of 1,000 fractal wallpapers."</p>
+    <p>Once I was reasonably happy with the fractal galleries I produced, I thought about
+    putting them online as a simple zip of wallpapers. But the Rust code behind
+    fractal-wallpapers carried over to the web almost directly, as what is now the
+    <a href="explorer/index.html">fractal explorer</a>. Moving around and exploring the
+    areas around the wallpaper locations was fun, and that motivated a more polished
+    writeup and interface than just "here's a zip of 1,000 fractal wallpapers."</p>
 
-    <h2 id="deep-zoom">Deep zoom</h2>
+    <h2 id="deep-zoom-rendering">Deep zoom rendering</h2>
 
-    <p>Originally, I wasn't planning to handle anything beyond 64-bit floating point. The
-    whole point of the gallery is that the search is automatic and fast, so it can try a
-    vast number of locations and keep the best. But some of the most beautiful fractal
-    artwork lives in the deepest parts of these fractals. So although most of the gallery
-    sits in the shallow regions, I eventually extended the renderer to
-    <a href="article/deep-zoom.html">work much deeper</a>, though not as deep as dedicated
-    deep-zoom renderers like <a href="https://mathr.co.uk/kf/kf.html">Kalles Fraktaler</a>
-    and <a href="https://mathr.co.uk/web/fraktaler.html">Fraktaler 3</a>. Along the way I
-    learned a lot of fractal mathematics, including properties that are directly useful for
-    fractal artwork, like the
+    <p>Originally, I wasn't planning to handle anything beyond 64-bit floating point
+    arithmetic. The whole point of the gallery is that the search is automatic and fast, so
+    it can try hundreds of millions of locations and keep the best. But some of the most
+    beautiful fractal artwork lives in the deepest parts of these fractals. So although most
+    of the gallery sits in the shallow regions, I eventually extended the renderer to
+    <a href="article/deep-zoom.html">work much deeper</a>, though not as deep or as fast as
+    dedicated deep-zoom renderers like
+    <a href="https://mathr.co.uk/kf/kf.html">Kalles Fraktaler</a> and
+    <a href="https://mathr.co.uk/web/fraktaler.html">Fraktaler 3</a>. Along the way I
+    learned a lot of <a href="article/cool-math.html">fractal mathematics</a>, including
+    properties that are directly useful for fractal artwork, like the
     <a href="article/deep-zoom.html#automatic-minibrot-descents">minibrot twins behind
     automatic descents</a> and
     <a href="article/deep-zoom.html#julia-sets-inside-the-mandelbrot-set">Tan Lei's
