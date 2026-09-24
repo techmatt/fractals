@@ -563,6 +563,11 @@ FAMILY_ROWS = (
         "name": "Multibrot, degree 5 — z⁵ + c",
         "colormap": "cmr.jungle",
     },
+    {
+        "family": {"kind": "multibrot", "degree": 6},
+        "name": "Multibrot, degree 6 — z⁶ + c",
+        "colormap": "cmr.sunburst",
+    },
 )
 
 #: The phoenix row: the celebrated constants at the family's home view, then two views from
@@ -644,22 +649,29 @@ def _render_line(family: dict, viewport: dict, colormap: str) -> str:
 #: The sheet's own line, the part of its provenance that is about the composition rather
 #: than about any one panel.
 FAMILIES_PROVENANCE = (
-    "builder.families:family_planes — fifteen panels at 640x360, three to a row and "
+    "builder.families:family_planes — eighteen panels at 640x360, three to a row and "
     "landed one file a panel, this figure being split rather than composited: a "
     "family's whole-set view with two marked points on it, then a finished wallpaper of "
-    "the Julia set each mark produces. The four whole-set views are the engine's own "
+    "the Julia set each mark produces. The five whole-set views are the engine's own "
     "derived home views, rendered at supersample 3, mode smooth, in the map named on each "
-    "line. The eight Julia panels are seats of the recorded tentative gallery, named on "
+    "line. The ten Julia panels are seats of recorded tentative galleries, named on "
     "this row as <stamp>|<recipe key> and resolved from "
     "artifacts/curation/tentative/<stamp>/gallery.jsonl for the seat and the candidate "
-    "ledger for the recipe; each is rendered fresh through the engine at 1280x720, "
+    "ledger for the recipe (article/figure-recipes.jsonl holds both since those records "
+    "went); each is rendered fresh through the engine at 1280x720, "
     "supersample 3, and fitted to the panel. Nothing about their coloring is this figure's "
     "choice — mode, curve, map, palette pass and cap all come off the ledger's "
     "recipe; what this figure chooses is which seats are eligible, and it admits only "
     "seats drawn in smooth that the render judge scored P(>=4) 0.5 or better, so that the "
     "one thing varying down the sheet is the family. The two panels of a row are drawn "
     "from hue families the gallery record itself keeps apart, and the plane's own map is a "
-    "third. The Phoenix row is unchanged: two label-store rows scored 4 by hand, drawn the "
+    "third. The degree-6 row's two seats are off the cyan collection's record "
+    "(20260922T013657Z), and they are the only degree-6 Julia seats in any of the "
+    "twenty-one recorded galleries whose ledger recipe is smooth and scores 0.5: a third, "
+    "d70c928f5417e54a, is seated as smooth in its gallery rows and its recipe draws it in "
+    "itinerary, so it is not one. Those two stand in the cyan and azure hue families, "
+    "which the record keeps apart. The Phoenix row is unchanged: two label-store rows "
+    "scored 4 by hand, drawn the "
     "way a Julia set is, because that family has no parameter plane to mark."
 )
 

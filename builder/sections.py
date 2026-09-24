@@ -198,12 +198,17 @@ def rail(page: Path, sections: list[Section]) -> str:
 #: page rather than in `article/`, which holds exactly the fourteen.
 START = SITE_ROOT / "start-here.html"
 
+#: What the rail calls it, which is not its title *(start_here_layout_ckpt146)*. The page's
+#: `<h1>` names the project, *Making fractal wallpapers*, and the rail names the page by
+#: what it is for a reader arriving: the place to start.
+START_NAME = "Start here"
+
 
 def _start(page: Path) -> list[str]:
     """The rail's first entry: the start page, open to its own headings when it is current.
 
-    Named and opened exactly as a section is — its `<h1>` and its prose `<h2>`s — so a
-    renamed heading moves here on the next `build` the way a section's does.
+    Opened exactly as a section is, onto its prose `<h2>`s, so a renamed heading moves here
+    on the next `build` the way a section's does. Named by `START_NAME` and not its `<h1>`.
     """
     if not START.is_file():
         return []
@@ -212,7 +217,7 @@ def _start(page: Path) -> list[str]:
     href = attribute(relative_href(page, START))
     current = ' aria-current="page"' if here else ""
     item = ' class="rail-current"' if here else ""
-    entry = f'    <li{item}><a href="{href}"{current}>{text(title_of(start_html, START.name))}</a>'
+    entry = f'    <li{item}><a href="{href}"{current}>{text(START_NAME)}</a>'
     headings = headings_of(start_html) if here else ()
     lines = ['  <ul class="rail-start">']
     if not headings:

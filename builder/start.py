@@ -3,13 +3,15 @@
     python -m builder start [ID ...] [--place] [--replace]
 
 The page is the project in a few paragraphs, and its figures are the pipeline's stages in
-the order the page walks them: the families a search starts from, one descent, one
+the order the page walks them: the base sets a search starts from, one descent, one
 location drawn in four rendering modes, a general gallery and a pink one. **Every picture
-here is new to the site** *(start_here_ckpt146)*: no seat, candidate or frame another figure
-already stands on, because the point of the page is how much the collection holds. Which
-places are taken is `builder.frames`, asked before anything was picked.
+here but the first is new to the site** *(start_here_ckpt146)*: no seat, candidate or frame
+another figure already stands on, because the point of the page is how much the collection
+holds. Which places are taken is `builder.frames`, asked before anything was picked. The
+first is the base sets whole at their home views *(start_here_layout_ckpt146)*, which are
+each family's identity rather than a place, and its row says so in `reuse_reason`.
 
-Four of the five drawn figures stand on records next door and name them on their own
+Three of the five drawn figures stand on records next door and name them on their own
 registry rows, the way `builder.picks` does: a re-pick is an edit to the row followed by
 `python -m builder start <id> --replace`. The walk is frozen here instead, as the ledger
 nodes it was read from, because a descent is a path through one ledger rather than a list
@@ -24,6 +26,7 @@ from __future__ import annotations
 
 import json
 
+from . import families as families_module
 from . import figures as figures_module
 from . import links, records, renders, sheets
 from . import picks as picks_module
@@ -38,19 +41,19 @@ FAMILIES, WALK, MODES, GALLERY, PINK = (
     "start-pink-gallery",
 )
 
-#: The families, one picture each: the Mandelbrot set and the multibrots of degree 3 to 5,
-#: each followed by one of its own Julia sets, and Phoenix. The roster the Escape-time
-#: fractals page names in *The project's families*, in that order, three across.
-FAMILY_PARTITIONS = (
-    "mandelbrot",
-    "julia:mandelbrot",
-    "multibrot3",
-    "julia:multibrot3",
-    "multibrot4",
-    "julia:multibrot4",
-    "multibrot5",
-    "julia:multibrot5",
-    "phoenix",
+#: The base sets, one picture each, whole at the engine's home view with nothing marked on
+#: them, and the map each is drawn in *(start_here_layout_ckpt146)*. **No Julia set**, so
+#: that nobody reads the figure as "there is one Julia set": each plane has a Julia set at
+#: every point of it, and a single one standing beside its plane says otherwise. Six maps,
+#: no two alike, and none that the Escape-time fractals page colours anything in. Phoenix is
+#: drawn at the engine's own default constants, which is what its home view is.
+FAMILY_SETS = (
+    ({"kind": "mandelbrot"}, "cmr.guppy"),
+    ({"kind": "multibrot", "degree": 3}, "cmr.viola"),
+    ({"kind": "multibrot", "degree": 4}, "summer"),
+    ({"kind": "multibrot", "degree": 5}, "cmr.copper_s"),
+    ({"kind": "multibrot", "degree": 6}, "cmr.iceburn"),
+    (families_module.PHOENIX_DEFAULT, "turbo"),
 )
 FAMILY_COLUMNS = 3
 
@@ -77,11 +80,6 @@ DRAW = (
     "autolevel operator acted without recording the curve, so no render of the recipe is "
     "its picture; a place another Start here panel already took. Nothing here was chosen "
     "for how it looks.",
-)
-FAMILY_DRAW = (
-    *DRAW,
-    "start-families takes the first seat of the general collection in each partition of "
-    "the roster, with no hue family repeated and no rendering mode more than twice.",
 )
 GALLERY_DRAW = (
     *DRAW,
@@ -110,31 +108,57 @@ def _args(identifier: str) -> dict:
     return dict(figure.recipe.args)
 
 
+def _family_words(family: dict) -> str:
+    """A base set as the provenance of the degree ladder spells it."""
+    kind = family["kind"]
+    if kind == "multibrot":
+        return f"multibrot degree {family['degree']}"
+    if kind == "phoenix":
+        c, p, z_prev = (f"{a} + {b}i" for a, b in (family[k] for k in ("c", "p", "z_prev")))
+        return f"phoenix, c = {c}, p = {p}, z_prev = {z_prev}"
+    return kind
+
+
 def families() -> Split:
-    """One wallpaper per family, labelled with the family and the iteration it runs."""
-    wanted = picks_module.picks_of(FAMILIES)
-    resolved = picks_module.resolve(wanted)
-    drawn = [str(pick.seat.get("partition")) for pick in resolved]
-    if drawn != list(FAMILY_PARTITIONS):
-        raise StartError(
-            f"{FAMILIES} is one seat per partition, {', '.join(FAMILY_PARTITIONS)}, and its "
-            f"row names {', '.join(drawn)}"
+    """Each base set whole, labelled with the family and the iteration it runs."""
+    cache = renders.Cache()
+    size = families_module.FAMILIES_PANEL
+    supersample = families_module.SUPERSAMPLE
+    made: list[Made] = []
+    lines = [
+        f"builder.start:families — {len(FAMILY_SETS)} panels at {size[0]}x{size[1]}, "
+        f"{FAMILY_COLUMNS} to a row, landed one file a panel: each base set whole at the "
+        "home view the engine derives for it, with no marks, in the map named on its line. "
+        "The maps were picked by this session off a sheet of candidates at these home views "
+        "(start_here_layout_ckpt146), for a ground that reads in the well and so that no two "
+        "panels and nothing on the Escape-time fractals page share one."
+    ]
+    for family, colormap in FAMILY_SETS:
+        spec = families_module.home_spec(family, colormap)
+        drawn = cache.render(
+            f"start-families-{colormap}", spec, size, supersample=supersample, colormap=None
         )
-    made, size = picks_module.seat_panels(
-        FAMILIES,
-        resolved,
-        FAMILY_COLUMNS,
-        "start-families",
-        label=lambda pick: picks_module.family_name(pick.family),
-        note=lambda pick: picks_module.family_formula(pick.family),
-    )
-    return Split(
-        made,
-        picks_module.provenance(
-            resolved, size, columns=FAMILY_COLUMNS, chosen=FAMILY_DRAW, composed=False
-        ),
-        FAMILY_COLUMNS,
-    )
+        name = picks_module.family_name(family)
+        made.append(
+            Made(
+                sheets.save(
+                    sheets.fitted(drawn.path, size), panel_path(FAMILIES, len(made) + 1), quiet=True
+                ),
+                alt=f"The whole {name} set, drawn in one palette.",
+                label=name,
+                note=picks_module.family_formula(family),
+                spec=spec,
+            )
+        )
+        view = spec["viewport"]
+        lines.append(
+            f"fractal-engine render: {_family_words(family)} at its home view (centre "
+            f"{view['center_re']} + {view['center_im']}i, width {view['width']}), "
+            f"{size[0]}x{size[1]}, supersample {supersample}, mode smooth, "
+            + ("colormap" if not lines[1:] else "palette")
+            + f" {colormap}, maxiter auto (the depth policy)"
+        )
+    return Split(made, lines, FAMILY_COLUMNS)
 
 
 def _grid(identifier: str, chosen: tuple[str, ...], stamps: tuple[str, ...]) -> Split:
@@ -417,10 +441,12 @@ MAKERS = {
 }
 
 #: The figures whose panels are gallery seats named in `picks`.
-SEATED = (FAMILIES, GALLERY, PINK)
+SEATED = (GALLERY, PINK)
 
 
 def sources(identifier: str) -> list[dict]:
+    if identifier == FAMILIES:
+        return [{"kind": figures_module.SYNTHETIC, "keys": []}]
     if identifier in SEATED:
         return [{"kind": figures_module.GALLERY_SEAT, "keys": picks_module.picks_of(identifier)}]
     if identifier == MODES:
@@ -435,7 +461,7 @@ def sources(identifier: str) -> list[dict]:
 def recipe(identifier: str) -> dict:
     if identifier not in MAKERS:
         raise records.RecordError(f"{identifier} is not drawn by {__name__}")
-    args = {} if identifier == WALK else _args(identifier)
+    args = {} if identifier in (WALK, FAMILIES) else _args(identifier)
     return {"maker": f"{__name__}:{MAKERS[identifier].__name__}", "args": args}
 
 
