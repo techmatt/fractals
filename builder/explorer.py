@@ -312,6 +312,14 @@ ENGINE_CHANGES = [
     "recipe key, render key or cache name moves. 315 pipeline renders byte-identical before "
     "and after, 212 shades of this module identical, the three anchors timed within noise, "
     "engine tests 221 unmoved plus seven new.",
+    "field::sweep_row answers a Mandelbrot sample inside the main cardioid or the period-2 "
+    "bulb without iterating, where every field of the pass reads an escape, and "
+    "direct_trap::Painter::trace takes over_written_out!'s family table around its orbit "
+    "loop: both inside existing function bodies, no signature added or moved. "
+    "profiling_pass_ckpt146. 360 pipeline renders and 216 cardioid- and bulb-edge frames "
+    "byte-identical, the engine fingerprint unmoved (5d97e76bb16be71d), engine tests 229 "
+    "unmoved; the Mandelbrot anchor at 1600x900 ss4 24.4 s to 1.86 s, Julia and Phoenix "
+    "anchors within noise.",
 ]
 
 _RUSTC_VERSION = re.compile(r"^rustc (\S+ \([0-9a-f]+ \d{4}-\d{2}-\d{2}\))")
