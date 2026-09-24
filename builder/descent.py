@@ -27,8 +27,10 @@ natively:
 - a copy is framed by `frame`, Find minibrots' own rule: the body measured on the preview
   tile and set at a quarter of the height.
 
-**The ceiling.** A copy is opened at 32 of its periods. Where `32·p_A·p_B` passes
-`cap::CEILING`, the descent ends instead on the lowest-period copy `find` offers in the twin
+**The ceiling.** A copy is opened at 32 of its periods, a cap asked for deliberately and so
+held to the kernel's explicit ceiling, `cap::EXPLICIT_CEILING` — two million, not the
+automatic million the probe stops at (cap_split_ckpt145). Where `32·p_A·p_B` passes it, the
+descent ends instead on the lowest-period copy `find` offers in the twin
 frame that fits; where none fits — and inside a twin every copy's period is a multiple of
 `p_A`, so often none does — it ends on the twin's copy at the ceiling and says so.
 
@@ -57,14 +59,14 @@ from urllib.parse import parse_qs, urlsplit
 
 import numpy as np
 
-from .deep_gallery import DeepGalleryError, _native
+from .deep_gallery import EXPLICIT_CEILING, DeepGalleryError, _native
 
 HERE = Path(__file__).resolve().parent
 DATA = HERE / "data"
 SITE_ROOT = HERE.parent
 
-#: `cap::CEILING` and `nuclei::OPEN_PERIODS`.
-CEILING = 1_000_000
+#: `nuclei::OPEN_PERIODS`. The ceiling it is held under is `deep_gallery`'s
+#: `EXPLICIT_CEILING`, imported rather than restated.
 OPEN_PERIODS = 32
 
 #: The families a descent may run in, and their degrees: the Deep tab's parameter planes.
@@ -262,7 +264,7 @@ def framed(copy: Copy, degree: int) -> dict:
 
 
 def _fits(period: int) -> bool:
-    return OPEN_PERIODS * period <= CEILING
+    return OPEN_PERIODS * period <= EXPLICIT_CEILING
 
 
 def descend(links: list[str], branch: int = 0) -> dict:
@@ -342,10 +344,11 @@ def descend(links: list[str], branch: int = 0) -> dict:
             else:
                 periods = sorted({n["period"] for n in fallback["nuclei"]})
                 notes.append(
-                    f"32 x {nxt.period} = {32 * nxt.period} passes the ceiling of {CEILING}, and "
-                    f"the twin frame offers no copy that fits (Find minibrots' periods there: "
+                    f"32 x {nxt.period} = {32 * nxt.period} passes the ceiling of "
+                    f"{EXPLICIT_CEILING}, and the twin frame offers no copy that fits "
+                    f"(Find minibrots' periods there: "
                     f"{periods}); ended on the twin's own copy at the ceiling, "
-                    f"{CEILING / nxt.period:.1f} periods"
+                    f"{EXPLICIT_CEILING / nxt.period:.1f} periods"
                 )
         size_n = framed(nxt, degree)
         stages.append(
@@ -406,7 +409,7 @@ def record(descent: dict, name: str, links: list[str], log=print) -> dict:
     for stage in stages:
         stage["k"] = min(count - 1, max(0, round(math.log2(stage["width"] / target))))
         period = stage.get("period")
-        stage["cap_floor"] = min(OPEN_PERIODS * period, CEILING) if period else None
+        stage["cap_floor"] = min(OPEN_PERIODS * period, EXPLICIT_CEILING) if period else None
     frames = []
     for k in range(count):
         width = target * 2.0**k
@@ -462,7 +465,7 @@ def record(descent: dict, name: str, links: list[str], log=print) -> dict:
             "supersample": 1,
             "cap_rule": "the Deep tab's settle (deep-gallery-native settle, policy::settle), "
             "raised at every stage frame and each keyframe deeper to 32 periods of that "
-            "stage's copy, under cap::CEILING",
+            "stage's copy, under cap::EXPLICIT_CEILING",
             "frames": frames,
         },
         "video": VIDEO,

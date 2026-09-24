@@ -69,10 +69,10 @@
         2.3794033193463243e-35
       ],
       "first_order_miss": 4.187521691990756e-14,
-      "first_order_miss_of_offset": 0.0012749883190712828,
+      "first_order_miss_of_offset": 0.0012749883673423277,
       "size_over_product": 0.9998385953146308,
       "k": 3,
-      "cap_floor": 1000000
+      "cap_floor": 1048352
     },
     {
       "name": "copy 1·2",
@@ -82,12 +82,10 @@
       "size": 1.7930228018408486e-21,
       "arg_degrees": -199.90012912434986,
       "k": 0,
-      "cap_floor": 1000000
+      "cap_floor": 1048352
     }
   ],
-  "notes": [
-    "32 x 32761 = 1048352 passes the ceiling of 1000000, and the twin frame offers no copy that fits (Find minibrots' periods there: [32761, 37105, 40544, 40906, 41449, 45612, 59187]); ended on the twin's own copy at the ceiling, 30.5 periods"
-  ],
+  "notes": [],
   "fit": {
     "note": "The family's home view, from engine.wasm's plan.",
     "re": [-2.6, 2.6],
@@ -97,12 +95,12 @@
     "rule": "w_k = target_width * 2^k, k = 0 up to the first width that holds the home view",
     "grid": [1920, 1080],
     "supersample": 1,
-    "cap_rule": "the Deep tab's settle (deep-gallery-native settle, policy::settle), raised at every stage frame and each keyframe deeper to 32 periods of that stage's copy, under cap::CEILING",
+    "cap_rule": "the Deep tab's settle (deep-gallery-native settle, policy::settle), raised at every stage frame and each keyframe deeper to 32 periods of that stage's copy, under cap::EXPLICIT_CEILING",
     "frames": [
-      { "k": 0, "width": 3.331396073173065e-20, "maxiter": 1000000, "settled": 167088, "probe_mean": 79975, "escaped": 0.9818, "stage": "copy 1·2" },
-      { "k": 1, "width": 6.66279214634613e-20, "maxiter": 1000000, "settled": 164688, "probe_mean": 74124, "escaped": 0.9957 },
-      { "k": 2, "width": 1.332558429269226e-19, "maxiter": 1000000, "settled": 81144, "probe_mean": 59264, "escaped": 0.9314 },
-      { "k": 3, "width": 2.665116858538452e-19, "maxiter": 1000000, "settled": 79944, "probe_mean": 49366, "escaped": 0.9761, "stage": "twin 2" },
+      { "k": 0, "width": 3.331396073173065e-20, "maxiter": 1048352, "settled": 167088, "probe_mean": 79975, "escaped": 0.9818, "stage": "copy 1·2" },
+      { "k": 1, "width": 6.66279214634613e-20, "maxiter": 1048352, "settled": 164688, "probe_mean": 74124, "escaped": 0.9957 },
+      { "k": 2, "width": 1.332558429269226e-19, "maxiter": 1048352, "settled": 81144, "probe_mean": 59264, "escaped": 0.9314 },
+      { "k": 3, "width": 2.665116858538452e-19, "maxiter": 1048352, "settled": 79944, "probe_mean": 49366, "escaped": 0.9761, "stage": "twin 2" },
       { "k": 4, "width": 5.330233717076904e-19, "maxiter": 78744, "settled": 78744, "probe_mean": 43941, "escaped": 0.9887 },
       { "k": 5, "width": 1.0660467434153808e-18, "maxiter": 77544, "settled": 77544, "probe_mean": 41160, "escaped": 0.9952 },
       { "k": 6, "width": 2.1320934868307615e-18, "maxiter": 76344, "settled": 76344, "probe_mean": 39481, "escaped": 0.9944 },

@@ -184,7 +184,9 @@ test("n is the cap, written only where it is not the width's, and a v3 link neve
   // An older link did not have the key, and a reader of it is told so rather than served.
   assert.throws(() => parse(`v=3&${place}&n=32832`, ctx), /does not know: n/);
   assert.throws(() => parse(`v=${VERSION}&n=32.5`, ctx), /whole number/);
-  assert.throws(() => parse(`v=${VERSION}&n=2000000`, ctx), /between 50 and 1,000,000/);
+  // The explicit ceiling, two million, is the last cap a link may name (cap_split_ckpt145).
+  assert.equal(parse(`v=${VERSION}&n=2000000`, ctx).maxiter, 2_000_000);
+  assert.throws(() => parse(`v=${VERSION}&n=2000001`, ctx), /between 50 and 2,000,000/);
 });
 
 test("an older link's absent weight or opacity is the catalog's, and a v3 link's is left to derive", () => {

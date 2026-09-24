@@ -1533,7 +1533,7 @@ in both views (next section).
   | Same view at z = 0 | already centred on 0; a download |
   | Shallow mode | the frame is below `f64`, or its `c` is not exact in a double; a download |
   | Halve (Iterations) | the cap is at the kernel's floor; a download |
-  | Double (Iterations) | the cap is at the kernel's ceiling; a download |
+  | Double (Iterations) | the cap is at the explicit ceiling, two million; a download |
   | Render | the frame is refused (`refused()`) |
 
   A download is the one reason kept across the board: it is a file the reader asked for,
@@ -1595,7 +1595,7 @@ came back under `AUTO_PREVIEW_MS`** — provisional at 1.5 s.
 draws at the width's own cap with no escalation; only an explicit Render (and a download)
 probes. The reason is that the probe is not covered by the `AUTO_PREVIEW_MS` guard, which
 times the quarter *field* and nothing before it: the probe is a reference orbit and 2,304
-cells per rung, doubling to the 1,000,000 ceiling, and on a frame beside a parabolic point
+cells per rung, doubling to the automatic 1,000,000 ceiling, and on a frame beside a parabolic point
 — where the escape count grows like one over the square root of the distance — every rung
 is short of enough and the walk runs to the ceiling. A drag was enough to start that. A
 link opened is drawn the same way, at the cap it names (pinned) or at the width's; Render is
@@ -1994,7 +1994,7 @@ third of a busy frame runs out of iterations and is painted as interior when it 
 all along, and nothing on the page looks wrong. So a Render **probes the frame first** —
 2,304 of its own sample cells, cut across the pool like a band — and doubles the cap while
 samples are still dying at it with `|dz|` grown past the escape radius, under the same
-1,000,000 ceiling.
+1,000,000 ceiling — the **automatic** one, below.
 
 The rule, its threshold and the thirteen frames it was measured on are
 `perturb-wasm/README.md` §8; what is here is what the tab does with it.
@@ -2022,12 +2022,67 @@ The rule, its threshold and the thirteen frames it was measured on are
   have been painted as set.* Where the width's answer already drew the frame it says
   nothing, which is the honest thing and is what every shallow view and six of the thirteen
   measured frames get.
-- **And a frame can run out of ceiling.** At `cap::CEILING` — 1,000,000 — with more than
-  `FAULT_SHARE` of the probe still undecided, Details' stat line ends *at the ceiling: 14%
-  undecided* *(ckpt141; it was a sentence under the canvas, in the raise's shape, from Matt,
-  pre_closeout_website_ckpt140)*, beside the pass it is a fact about and only while the
-  frame is that frame. The limit itself is unchanged, there is no control for it and no
-  retry: the clause is the answer.
+- **And a frame can run out of ceiling.** At `cap::AUTOMATIC_CEILING` — 1,000,000 — with
+  more than `FAULT_SHARE` of the probe still undecided, Details' stat line ends *at the
+  ceiling: 14% undecided* *(ckpt141; it was a sentence under the canvas, in the raise's
+  shape, from Matt, pre_closeout_website_ckpt140)*, beside the pass it is a fact about and
+  only while the frame is that frame. The probe does not retry past it: the clause is the
+  answer, and Double is how a reader takes the frame further, to the explicit ceiling.
+
+#### Two ceilings: automatic 1e6, explicit 2e6 *(Matt, cap_split_ckpt145, 2026-09-23)*
+
+There used to be one ceiling, `cap::CEILING`, a million, and it bounded everything: the
+probe's doublings, the width policy, a typed `n`, Double, an opened minibrot and the link
+contract. The ruling that kept it at a million was about the first two — nothing the page
+does on its own may run away — and it was holding the rest back for no reason of theirs:
+the double descent's M₂, a period-32,761 copy, could only be opened at 30.5 of its periods.
+Now there are two, and **each has one spelling**:
+
+| | automatic, 1,000,000 | explicit, 2,000,000 |
+|---|---|---|
+| crate | `cap::AUTOMATIC_CEILING` | `cap::EXPLICIT_CEILING` |
+| `plan` JSON | `ceiling` | `explicit_ceiling` |
+| contract | — | `CAP_LIMIT` in `permalink.js`, re-exported by `deep-link.js` |
+| builder | — | `EXPLICIT_CEILING` in `deep_gallery.py`, imported by `descent.py` |
+| release writer next door | — | `CAP_LIMIT` in `curation/explorer_link.py` |
+
+**Automatic** is what the explorer chooses by itself: the width policy (`cap::for_width`),
+the fault-share probe (`policy::next_cap`, `policy::settle`) and a Find minibrots preview
+tile (`nuclei::tile_cap`), which is drawn unasked for every entry a search lists.
+**Explicit** is what somebody asks for on purpose: a typed `n` and an `n` in either
+contract's link (`readCap`), Halve and Double (`setCap` in `deep.js`), an opened minibrot's
+thirty-two periods (`nuclei::open_cap`), and a descent's and a gallery frame's pinned
+`period × periods` (`descent.py`, `deep_gallery.py`'s `cap_for`). A cap already past the
+automatic ceiling is never moved by the probe: `next_cap` hands it back unchanged, and a
+pinned cap is not probed anyway.
+
+`deep.test.mjs` holds `CAP_LIMIT` to `plan`'s `explicit_ceiling`, so the contract and the
+kernel cannot disagree about the number. **Neither contract changed version**: `n`'s range
+widened from 50–1,000,000 to 50–2,000,000, every link that read before reads the same, and
+the refusal is the same sentence with the new limit in it. A link past a million opened by
+an older page is refused out loud, never drawn at a different cap.
+
+**What bounds the explicit ceiling is memory, and it was measured** (`perturb.wasm` in
+node, `scratch/cap_split/memory.mjs`). A reference orbit is sixteen bytes a point, and
+**every worker holds its own copy** in its own wasm heap (`deep-worker.js`'s `orbit`),
+which never gives memory back:
+
+| cap | orbit | worker that computes it | each worker fed it | 8 workers | 16 workers |
+|--:|--:|--:|--:|--:|--:|
+| 1,000,000 | 15.3 MiB | 30.7 MiB | 15.3 MiB | ~153 MiB | ~275 MiB |
+| 2,000,000 | 30.5 MiB | 61.2 MiB | 30.6 MiB | ~306 MiB | ~550 MiB |
+
+The totals are one computing worker, the rest fed, and the page's own copy of the orbit
+(`#reference` keeps it to feed a worker that has none). The computing worker pays twice,
+for the orbit's working vector and the packed bytes it hands back. That is **about 290
+bytes per iteration at sixteen workers and 160 at eight**. No one worker is at risk: a
+wasm32 heap tops out at 4 GiB, which is a cap past a hundred million. The whole tab is
+the concern. A desktop tab over about 2 GiB is where browsers start killing it, and that
+is a cap of roughly 7.4 million at sixteen workers and 13 million at eight. A phone's tab
+budget of a gigabyte or less puts it nearer 3.7 million. Two million sits under all
+three. Only a preview tile names its period and stores one period of its orbit; an opened
+minibrot's frame names none, so M₂ opened at 1,048,352 stores every point, about 16 MiB a
+worker.
 
 ### Find minibrots *(deep_nearby_minibrots_ckpt138, 2026-09-20; named Nearby minibrots until explorer_shallow_deep_parity_ckpt144)*
 
@@ -2052,11 +2107,13 @@ about thirteen of its periods and a blob. Now:
 
 - **The cap is `renderer.openCap(period, width)`**, the crate's `nuclei::open_cap`:
   `OPEN_PERIODS` (32) periods of the copy's own nucleus, or the width policy where that
-  is more, under the million. It is written into the frame and so into the link as `n` —
+  is more, under the **explicit** ceiling, two million *(cap_split_ckpt145; it was the
+  million until then)*. It is written into the frame and so into the link as `n` —
   a `dv` link's as a `tile` cap, a shallow link's under permalink v4. Neither view runs the
   fault-share probe on it: the Deep tab never probes a non-width cap, and the shallow view
-  has no probe. ⚠ **The ceiling binds from period 31,250**, past which a copy gets fewer
-  than 32 periods, falling to eight at 125,000 — the same wall the tiles have.
+  has no probe. ⚠ **The ceiling binds from period 62,500**, past which a copy gets fewer
+  than 32 periods, falling to eight at 250,000. It bound from 31,250 under the single
+  ceiling. A tile is held to the automatic million and still hits its wall at 125,000.
 - **The frame puts the copy's body at about a quarter of the height.** It was
   `nuclei::TILE_BODIES` (12) sizes across, which gave 0.25 to 0.27 on the real-axis copies
   measured (six gave 0.59 to 0.61, ten 0.30 to 0.37, sixteen 0.19 to 0.20). Since
@@ -2209,7 +2266,7 @@ met. Measured through the page after the change: the committed `tangle 1e-22` li
 (`PORT=8014 node explorer/bench/hunt/probe-minibrots.mjs`).
 
 **Both walls land in the same place.** Eight periods of a nucleus past 125,000 is over the
-million-iteration ceiling, so those tiles cannot resolve either — and that is the same view
+automatic million-iteration ceiling a tile is held to, so those tiles cannot resolve either — and that is the same view
 depth, about 1e-30, at which a centre stops fitting in a link. Below it this feature finds
 minibrots it can neither draw nor address, and says so rather than pretending.
 
@@ -2321,7 +2378,9 @@ and a URL's escaping rule, neither of which has anything to do with how deep the
   once the module is up (`unsettle` re-asks it, because before that only the engine's
   policy is on the page and it stops at 67,000). `deep-link.test.mjs` holds both halves.
   **The shallow contract reads it too since its v4**, by the same `readCap` out of
-  `permalink.js`, so the key, its range and its refusals are one thing on both sides.
+  `permalink.js`, so the key, its range and its refusals are one thing on both sides. The
+  range is 50 to 2,000,000, the explicit ceiling *(cap_split_ckpt145; widened from a
+  million, and `dv` stayed 3 because every link that read before reads the same)*.
 - **`cx` and `cy`** are the Julia parameter, exact decimals, **both or neither**, and they
   are the shallow contract's own spelling of the same quantity — the `c` of `z² + c`, half
   of a dynamical location's identity. A second name for one number is how two readers of
@@ -4453,8 +4512,8 @@ explorer is allowed a second opinion. A URL is the only permanent thing this pag
 ### What version 4 changed, and why it is a 4 *(find_minibrots_cap2_ckpt145, 2026-09-23)*
 
 Version 4 gives a shallow view an **iteration cap**, `n`. It is the deep contract's key,
-spelled, ranged and read the same way — `CAP_KEY`, `CAP_FLOOR` (50), `CAP_LIMIT` (a
-million, `perturb.wasm`'s ceiling) and `readCap` live in `permalink.js` and `deep-link.js`
+spelled, ranged and read the same way — `CAP_KEY`, `CAP_FLOOR` (50), `CAP_LIMIT` (two
+million since cap_split_ckpt145, `perturb.wasm`'s explicit ceiling) and `readCap` live in `permalink.js` and `deep-link.js`
 imports them, so a refusal of `n=49` is word for word the same sentence on either side.
 
 - **Absent is the width policy**, which is what every link before v4 meant. A view holds
@@ -4618,7 +4677,9 @@ v · f · cx · cy · px · py · zx · zy · m · the mode's parameters · x ·
   an exact decimal centre. See *Deep* above. `w`
   must be positive. Omitted means the **family's own home view**, which is
   `Family::home_view()` and not a number this file holds.
-- **`n`** *(v4)* — the iteration cap, a whole number from 50 to 1,000,000. Omitted means
+- **`n`** *(v4)* — the iteration cap, a whole number from 50 to 2,000,000 (1,000,000 until
+  cap_split_ckpt145, widened without a version: every link that read then reads the
+  same). Omitted means
   the engine's width policy at `w`, and it is only written where the view's cap is not
   that. See *What version 4 changed*.
 - **`a`** — the aspect, written `across:down`, defaulting to `16:9`, each side between 1

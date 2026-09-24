@@ -77,8 +77,11 @@ THUMB = {"width": 316, "height": 178, "supersample": 2}
 #
 # Each is stated once here, and `builder/README.md` says why.
 
-#: The kernel's iteration ceiling, `perturb::cap::CEILING`.
-CEILING = 1_000_000
+#: The kernel's ceiling on a cap asked for deliberately, `perturb::cap::EXPLICIT_CEILING`
+#: (cap_split_ckpt145): a frame's `period × periods` is a pinned cap, not the probe's
+#: choice, so it is held here and never to the automatic million. `descent.py` reads it
+#: from here.
+EXPLICIT_CEILING = 2_000_000
 #: Periods of its own nucleus a framed minibrot's cap is raised to.
 MINIBROT_PERIODS = 32
 #: The same for a symmetry stage cut from a descent: the tab's own tile rule.
@@ -666,14 +669,14 @@ def frames() -> list[str]:
 def cap_for(frame: dict, resolution: tuple[int, int]) -> tuple[int, dict]:
     """The kernel's settled cap for this frame, raised to `periods` of its nucleus.
 
-    `max(settled, min(CEILING, period × periods))`: a framed minibrot and every
+    `max(settled, min(EXPLICIT_CEILING, period × periods))`: a framed minibrot and every
     nucleus continuation ask for `MINIBROT_PERIODS`, a descent's stage for
     `STAGE_PERIODS`, and a frame with no nucleus of its own takes the settled cap.
     """
     settled = _native("settle", res=f"{resolution[0]}x{resolution[1]}", **_frame_args(frame))
     cap = settled["maxiter"]
     if frame.get("period") and frame.get("periods"):
-        cap = max(cap, min(CEILING, frame["period"] * frame["periods"]))
+        cap = max(cap, min(EXPLICIT_CEILING, frame["period"] * frame["periods"]))
     return cap, settled
 
 

@@ -536,8 +536,14 @@ test("the two frames the cap policy has to separate are separated by the module"
 });
 
 test("the escalation cannot run away past the kernel's ceiling", { skip }, () => {
-  const ceiling = perturb.plan({ ...ANCHOR, schema: 1, resolution: [16, 9] }).ceiling;
+  const planned = perturb.plan({ ...ANCHOR, schema: 1, resolution: [16, 9] });
+  const ceiling = planned.ceiling;
   assert.equal(ceiling, 1_000_000);
+  // The explicit ceiling is the other one (cap_split_ckpt145): what a link, a typed cap,
+  // Halve and Double may reach, and the contract's `CAP_LIMIT` is that number.
+  assert.equal(planned.explicit_ceiling, 2_000_000);
+  assert.equal(planned.explicit_ceiling, deep.CAP_LIMIT);
+  assert.equal(perturb.nextCap(1_500_000), 1_500_000, "a cap past the automatic one is not moved");
   assert.equal(perturb.nextCap(ceiling), ceiling, "a cap at the ceiling does not move");
   assert.equal(perturb.nextCap(600_000), ceiling, "and one under it doubles into it");
   assert.equal(perturb.nextCap(93_600), 187_200);

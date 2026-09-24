@@ -159,11 +159,13 @@ impl Counts {
     }
 }
 
-/// The next cap to try, saturating at [`cap::CEILING`].
+/// The next cap to try, saturating at [`cap::AUTOMATIC_CEILING`]: the probe is the
+/// explorer choosing a cap by itself, so it is held to the automatic ceiling and never
+/// to the explicit one.
 pub fn next_cap(maxiter: u32) -> u32 {
     maxiter
         .saturating_mul(ESCALATION)
-        .min(cap::CEILING as u32)
+        .min(cap::AUTOMATIC_CEILING as u32)
         .max(maxiter)
 }
 
@@ -250,14 +252,14 @@ impl Settled {
 ///
 /// Opens at `spec.maxiter()` — the width policy's answer unless the spec named
 /// one — and doubles while more than [`FAULT_SHARE`] of the probe is the cap's
-/// fault, stopping at [`cap::CEILING`]. A spec that will not produce a reference
+/// fault, stopping at [`cap::AUTOMATIC_CEILING`]. A spec that will not produce a reference
 /// orbit gives back the kernel's own sentence.
 ///
 /// **The page does not call this**; it drives the same walk a rung at a time so
 /// that a reader can cancel between rungs and the probe can be spread over the
 /// pool. This is the same rule in one piece, for the native harness.
 pub fn settle(spec: &Spec, cols: u32, rows: u32) -> Result<Settled, String> {
-    let ceiling = cap::CEILING as u32;
+    let ceiling = cap::AUTOMATIC_CEILING as u32;
     let from = spec.maxiter();
     let mut maxiter = from.min(ceiling);
     let mut rungs: Vec<Counts> = Vec::new();

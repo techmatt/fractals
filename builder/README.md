@@ -908,10 +908,14 @@ are `D−1` of them. The numbers are `builder/deep-gallery-native`'s, and so `pe
   the steps, the first-order miss, and the found size over `|s_A|·|s_B|` (0.995 to 1.0002).
 - **A copy is framed by `frame`**, Find minibrots' rule natively: the preview tile at
   `copy_width`, eight periods deep, its body measured and set at a quarter of the height.
-- **The ceiling.** Where `32·p_A·p_B` passes `cap::CEILING`, the descent ends on the
-  lowest-period copy `find` offers in the twin frame that fits, and where none does it ends
-  on the twin's copy at the ceiling and the record's `notes` say so. Inside `M_A` every copy
-  is a multiple of `p_A`, so for `[A, A]` none fits once `p_A` passes 176.
+- **The ceiling.** A copy's 32 periods is a cap asked for deliberately, so it is held to
+  the kernel's explicit ceiling, two million (`cap::EXPLICIT_CEILING`, spelled here as
+  `deep_gallery.EXPLICIT_CEILING`; cap_split_ckpt145). Where `32·p_A·p_B` passes it, the
+  descent ends on the lowest-period copy `find` offers in the twin frame that fits, and
+  where none does it ends on the twin's copy at the ceiling and the record's `notes` say so.
+  Inside `M_A` every copy is a multiple of `p_A`, so for `[A, A]` none fits once `p_A`
+  passes 250 (176 under the single million-iteration ceiling). The favicon seat's M₂,
+  period 32,761, now opens at its full 1,048,352 and its `notes` are empty.
 
 **The record is `deep-zoom-descent`'s shape** with a few fields more: `chain`, `stages`
 (each stage's exact width, its nearest keyframe `k`, its copy, and for a twin the turn and

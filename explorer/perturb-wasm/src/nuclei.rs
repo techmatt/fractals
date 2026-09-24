@@ -110,12 +110,15 @@ pub const TILE_BODIES: f64 = 12.0;
 pub const TILE_PERIODS: u32 = 8;
 
 /// The cap a preview tile of a period-`p` nucleus is drawn at: whichever of the
-/// width policy and [`TILE_PERIODS`] periods is larger, under the ceiling.
+/// width policy and [`TILE_PERIODS`] periods is larger, under the **automatic**
+/// ceiling, [`crate::cap::AUTOMATIC_CEILING`]: a tile is drawn unasked, for every
+/// entry a search finds, so it is the explorer choosing a cap by itself. It binds
+/// from period 125,000.
 ///
 /// The width policy is still the floor because a *shallow* minibrot's period can
 /// be small enough that eight of them is less depth than the frame deserves.
 pub fn tile_cap(period: u32, width: f64) -> u32 {
-    periods_cap(period, TILE_PERIODS, width)
+    periods_cap(period, TILE_PERIODS, width, crate::cap::AUTOMATIC_CEILING)
 }
 
 /// How many periods of its own nucleus a minibrot is iterated for **once it is
@@ -132,21 +135,25 @@ pub fn tile_cap(period: u32, width: f64) -> u32 {
 pub const OPEN_PERIODS: u32 = 32;
 
 /// The cap an opened minibrot of period `p` is drawn at: whichever of the width
-/// policy and [`OPEN_PERIODS`] periods is larger, under the ceiling.
+/// policy and [`OPEN_PERIODS`] periods is larger, under the **explicit** ceiling,
+/// [`crate::cap::EXPLICIT_CEILING`] *(Matt, cap_split_ckpt145)*: a reader opens
+/// one entry on purpose, and the cap is written into its link as `n`.
 ///
-/// ⚠ **The ceiling binds from period 31,250.** Past it a copy is drawn at the
-/// million iterations [`crate::cap::CEILING`] allows, which is fewer than thirty-two
-/// of its periods and falls to eight — [`TILE_PERIODS`] — at period 125,000.
+/// ⚠ **The ceiling binds from period 62,500.** Past it a copy is drawn at the two
+/// million iterations the explicit ceiling allows, which is fewer than thirty-two
+/// of its periods and falls to eight — [`TILE_PERIODS`] — at period 250,000. Under
+/// the single million-iteration ceiling this replaced, it bound from 31,250, and
+/// the double descent's M₂ (period 32,761) opened at 30.5 periods.
 pub fn open_cap(period: u32, width: f64) -> u32 {
-    periods_cap(period, OPEN_PERIODS, width)
+    periods_cap(period, OPEN_PERIODS, width, crate::cap::EXPLICIT_CEILING)
 }
 
 /// The width policy or `periods` of a period-`p` nucleus, whichever is larger, under
-/// the ceiling.
-fn periods_cap(period: u32, periods: u32, width: f64) -> u32 {
+/// the ceiling the caller means.
+fn periods_cap(period: u32, periods: u32, width: f64, ceiling: f64) -> u32 {
     crate::cap::for_width(width)
         .max(period.saturating_mul(periods))
-        .min(crate::cap::CEILING as u32)
+        .min(ceiling as u32)
 }
 
 /// Newton steps a solve will take before giving up on a seed.
@@ -1179,6 +1186,21 @@ fn spread(index: u32, count: u32, span: u32) -> u32 {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// **A tile is held to the automatic ceiling and an opened copy to the explicit
+    /// one** *(cap_split_ckpt145)*, and each binds where its doc says. The case is
+    /// the double descent's M₂, period 32,761, which the single million-iteration
+    /// ceiling held to 30.5 periods.
+    #[test]
+    fn a_tile_and_an_opened_copy_have_different_ceilings() {
+        let width = 1e-20;
+        assert_eq!(open_cap(32_761, width), 1_048_352);
+        assert_eq!(tile_cap(32_761, width), 262_088);
+        assert_eq!(open_cap(62_500, width), 2_000_000);
+        assert_eq!(open_cap(70_000, width), 2_000_000);
+        assert_eq!(tile_cap(125_000, width), 1_000_000);
+        assert_eq!(tile_cap(130_000, width), 1_000_000);
+    }
 
     /// **The anchor is its own test, and neither number in it came from this
     /// code.** `tests/oracle.rs` and the crate README have said since

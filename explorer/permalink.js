@@ -429,11 +429,17 @@ export const COORDINATE_LIMIT = 64;
  *  its first version. One spelling and one reader for both — see "What version 4 changed". */
 export const CAP_KEY = "n";
 
-/** The most iterations a link may name: `perturb.wasm`'s own ceiling, a million. A link
- *  that named more would be asking for a frame that never finishes. It is the shallow
- *  view's ceiling too, which has none of its own once a cap is explicit — the engine's
- *  67,000 bounds its width policy and not a cap somebody names. */
-export const CAP_LIMIT = 1_000_000;
+/** The most iterations a link may name: `perturb.wasm`'s **explicit** ceiling,
+ *  `cap::EXPLICIT_CEILING`, two million *(Matt, cap_split_ckpt145)*. A link that named
+ *  more would be asking for a frame that never finishes. The same number bounds every
+ *  cap a reader asks for deliberately — a typed `n`, Halve and Double — in both views,
+ *  and it is the shallow view's ceiling too, which has none of its own once a cap is
+ *  explicit: the engine's 67,000 bounds its width policy and not a cap somebody names.
+ *  What the page chooses by itself is held to the kernel's automatic ceiling, a million,
+ *  which is `plan`'s `ceiling`; `deep.test.mjs` holds this to `plan`'s
+ *  `explicit_ceiling`. Widened from a million without a version: every link that read
+ *  before reads the same. */
+export const CAP_LIMIT = 2_000_000;
 
 /** The fewest. Below this there is no picture, only the disc. */
 export const CAP_FLOOR = 50;

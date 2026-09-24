@@ -79,7 +79,7 @@ pub const DELTA_ULPS: f64 = 4.0;
 /// The engine's own depth policy, continued past the point where it gives up.
 ///
 /// `maxiter::for_width` is `BASE · (1 + PER_OCTAVE · log₂(HOME_WIDTH / width))`
-/// clamped to `[FLOOR, CEILING]`, and its `CEILING` of 67,000 saturates at a
+/// clamped to `[FLOOR, CEILING]`, and the engine's `CEILING` of 67,000 saturates at a
 /// width of about 4.7e-16. That is fine for a renderer that refuses to go deeper
 /// and wrong for one that does: every perturbation-depth view would be flattened
 /// to the same cap, and a frame at 1e-28 would be a black disc.
@@ -99,15 +99,31 @@ pub mod cap {
     pub const PER_OCTAVE: f64 = 0.30;
     /// The engine's `FLOOR`.
     pub const FLOOR: f64 = 200.0;
-    /// **This crate's own ceiling, and it stays at a million by Matt's ruling.**
-    /// The engine's is 67,000 and exists to stop a raised base being re-clipped;
-    /// this one bounds how far a frame may ask. The width formula alone reaches it
-    /// only at about 1e-227 — it gives 48,551 at 2e-11 and 117,518 at 1e-28 — but
-    /// the probe's doublings ([`policy::next_cap`]) do reach it, and it binds on
-    /// the degree-6 near-parabolic body frames, which are still a fifth the cap's
-    /// fault here. The limit is kept and the page says where it binds, rather than
-    /// being raised (`README.md` §10).
-    pub const CEILING: f64 = 1_000_000.0;
+    /// **The ceiling on every cap the explorer chooses by itself, and it stays at a
+    /// million by Matt's ruling.** The engine's is 67,000 and exists to stop a
+    /// raised base being re-clipped; this one bounds how far the page may go
+    /// unasked — the width policy below, the probe's doublings
+    /// ([`policy::next_cap`]) and a preview tile ([`nuclei::tile_cap`]). The width
+    /// formula alone reaches it only at about 1e-227 — it gives 48,551 at 2e-11
+    /// and 117,518 at 1e-28 — but the doublings do reach it, and it binds on the
+    /// degree-6 near-parabolic body frames, which are still a fifth the cap's fault
+    /// here. The limit is kept and the page says where it binds, rather than being
+    /// raised (`README.md` §10).
+    ///
+    /// **One of two ceilings** *(Matt, cap_split_ckpt145)*: nothing automatic may
+    /// run away, so this one stays where it was, and a cap somebody asks for
+    /// deliberately is held to [`EXPLICIT_CEILING`] instead.
+    pub const AUTOMATIC_CEILING: f64 = 1_000_000.0;
+
+    /// **The ceiling on a cap somebody asks for**, twice the automatic one *(Matt,
+    /// cap_split_ckpt145)*: a typed `n` or one in a link (`permalink.js`'s
+    /// `CAP_LIMIT` is this number, and `deep.test.mjs` holds the two together),
+    /// Halve and Double, an opened minibrot's thirty-two periods
+    /// ([`nuclei::open_cap`]) and a descent's pinned caps (`builder/descent.py`).
+    /// None of those is a loop the page runs on its own, so none of them can run
+    /// away; what bounds them is the reference orbit, sixteen bytes a point and
+    /// one copy per worker (`README.md` §10 has the measurement).
+    pub const EXPLICIT_CEILING: f64 = 2_000_000.0;
 
     /// The iteration cap for a view of the given plane width.
     pub fn for_width(width: f64) -> u32 {
@@ -116,7 +132,7 @@ pub mod cap {
         }
         let octaves = (HOME_WIDTH / width).log2();
         let raw = BASE * (1.0 + PER_OCTAVE * octaves);
-        raw.clamp(FLOOR, CEILING) as u32
+        raw.clamp(FLOOR, AUTOMATIC_CEILING) as u32
     }
 }
 
@@ -613,7 +629,9 @@ pub fn unpack_reference(bytes: &[u8]) -> Option<Reference> {
 ///
 /// Returns a buffer whose first four bytes are the UTF-8 length, little-endian —
 /// `engine-wasm`'s convention, so a page that already speaks to one module
-/// speaks to this one.
+/// speaks to this one. `ceiling` is [`cap::AUTOMATIC_CEILING`] and
+/// `explicit_ceiling` [`cap::EXPLICIT_CEILING`], so that a test can hold the
+/// link contract's `CAP_LIMIT` to this crate rather than to a copy of it.
 #[unsafe(no_mangle)]
 pub extern "C" fn plan(spec_ptr: *const u8, spec_len: usize) -> *mut u8 {
     let read = text(spec_ptr, spec_len)
@@ -650,7 +668,7 @@ pub extern "C" fn plan(spec_ptr: *const u8, spec_len: usize) -> *mut u8 {
                 r#"{{"ok":true,"maxiter":{},"limbs":{},"fraction_bits":{},"#,
                 r#""sample_width":{},"sample_height":{},"interior":{},"#,
                 r#""julia":{},"anchor":"{}","degree":{},"delta_ulps":{},"#,
-                r#""reference_bytes":{},"ceiling":{}}}"#
+                r#""reference_bytes":{},"ceiling":{},"explicit_ceiling":{}}}"#
             ),
             spec.maxiter(),
             spec.limbs(),
@@ -675,7 +693,8 @@ pub extern "C" fn plan(spec_ptr: *const u8, spec_len: usize) -> *mut u8 {
                     Some(period) => period as usize,
                     None => spec.maxiter() as usize + 1 + spec.entry(),
                 },
-            cap::CEILING as u32,
+            cap::AUTOMATIC_CEILING as u32,
+            cap::EXPLICIT_CEILING as u32,
         )
     }))
 }
@@ -1097,7 +1116,7 @@ pub extern "C" fn fault_share() -> f64 {
 }
 
 /// The next cap to try after one that did not resolve the frame, saturating at
-/// [`cap::CEILING`]. [`policy::next_cap`].
+/// [`cap::AUTOMATIC_CEILING`]. [`policy::next_cap`].
 #[unsafe(no_mangle)]
 pub extern "C" fn next_cap(maxiter: u32) -> u32 {
     policy::next_cap(maxiter)
@@ -1199,7 +1218,7 @@ mod tests {
         // Past the engine's ceiling this one keeps going.
         assert!(cap::for_width(1e-16) > 67_000);
         assert_eq!(cap::for_width(1e-28), 117_518);
-        assert_eq!(cap::for_width(1e-300), cap::CEILING as u32);
+        assert_eq!(cap::for_width(1e-300), cap::AUTOMATIC_CEILING as u32);
         assert_eq!(cap::for_width(1e30), cap::FLOOR as u32);
     }
 

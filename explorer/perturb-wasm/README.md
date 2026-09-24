@@ -119,7 +119,8 @@ tests/measure.rs   what the frames cost and where the rules settle — every
 - **The width's own cap is the engine's shape without the engine's ceiling.**
   `maxiter::for_width` saturates at 67,000 by a width of about 4.7e-16, which
   would flatten every perturbation-depth view to one cap. The shape is restated
-  here and only `CEILING` moves, to 1,000,000. Touching
+  here and only the ceiling moves, to 1,000,000 — `cap::AUTOMATIC_CEILING`, one of
+  the crate's two ceilings since cap_split_ckpt145 (§8). Touching
   `maxiter::for_width` itself was never an option: six callers read it and a
   wider ceiling there moves the cap of every shallow picture the project has.
 - **There is no skip table, and §6 is why.** Bivariate linear approximation was
@@ -849,10 +850,34 @@ the width's answer is in force and nowhere else: a cap a reader typed, and a cap
 link carries, are drawn exactly as asked. That distinction already existed on the
 page as `pinnedCap` and needed no new control.
 
-**And a frame can run out of ceiling.** The walk stops at `cap::CEILING`, a
-million, and `Settled::at_ceiling` says the frame is still the cap's fault there.
+**And a frame can run out of ceiling.** The walk stops at `cap::AUTOMATIC_CEILING`,
+a million, and `Settled::at_ceiling` says the frame is still the cap's fault there.
 None of the thirteen reaches it. What a page does with that is a sentence, not a
 retry.
+
+#### Two ceilings *(Matt, cap_split_ckpt145, 2026-09-23)*
+
+There was one ceiling, `cap::CEILING`, and there are two now, each spelled once:
+
+- **`cap::AUTOMATIC_CEILING`, 1,000,000**: every cap the explorer chooses by itself.
+  That is `cap::for_width`'s clamp, `policy::next_cap` and `policy::settle` (this walk),
+  and `nuclei::tile_cap`, since a preview tile is drawn unasked. It is the old ruling
+  unchanged, and `plan` reports it as `ceiling`.
+- **`cap::EXPLICIT_CEILING`, 2,000,000**: every cap somebody asks for on purpose. That is
+  `nuclei::open_cap`, the link contracts' `n` (`CAP_LIMIT` in `permalink.js`), Halve and
+  Double and a typed cap on the page, and the builder's pinned `period × periods`
+  (`deep_gallery.py`, `descent.py`). `plan` reports it as `explicit_ceiling`, and
+  `deep.test.mjs` holds `CAP_LIMIT` to it.
+
+`next_cap` of a cap already past the automatic ceiling returns that cap: the probe never
+lowers a cap somebody asked for, and never raises one either.
+
+What bounds the explicit one is the reference orbit's memory. It is sixteen bytes a point,
+**one copy per worker**, and a wasm heap never gives memory back. Measured on the
+committed module: 15.3 MiB at 1e6 and 30.5 MiB at 2e6 per worker it is fed to, twice
+that in the worker that computes it, about 550 MiB for the whole pool at sixteen workers
+and 2e6. `explorer/README.md` *Two ceilings* has the table and where a browser tab would
+start to be at risk.
 
 ### 9. The minibrots in and around a view *(deep_nearby_minibrots_ckpt138, 2026-09-20)*
 
@@ -941,7 +966,8 @@ The table above is a 316-pixel tile's escaped share, and at that size eight read
 The frame a reader opens from the list is the viewer's own, several times the
 pixels, and there a copy at about thirteen of its periods was an all-black blob.
 `OPEN_PERIODS` is 32 and `open_cap` (exported beside `tile_cap`) is that or the
-width policy, under the ceiling — which binds from period 31,250. The tile keeps
+width policy, under the **explicit** ceiling — which binds from period 62,500 (31,250
+under the single million-iteration ceiling, before cap_split_ckpt145). The tile keeps
 its eight because it is drawn unasked. **And both are framed at `TILE_BODIES` =
 12**, not 6: the size estimate is a copy's scale rather than its extent, and a copy
 is about two of its own sizes tall, so at six its body filled 0.59–0.61 of a 16:9
@@ -972,7 +998,7 @@ timed at 80×45 and scaled to 316×178, wasm's 1.05× and the pool's 4.7×.
 
 **Two walls, and they land in the same place.** A `dv` centre is capped at 64
 characters, so a tile below about 1e-54 cannot be spelled; and 8 periods of a
-nucleus past 125,000 is over the million-iteration ceiling, so its tile cannot be
+nucleus past 125,000 is over the automatic million-iteration ceiling, so its tile cannot be
 resolved either. The `tangle 1e-40` and `tangle 1e-54` tiles come back **100%
 interior at the ceiling** — black, and not fixable under it. Both walls sit at a
 view of roughly 1e-30, which is where this feature stops having anything to offer.
@@ -1107,7 +1133,9 @@ undecided* on such a frame (`explorer/README.md`). At three and five `body 1e-22
 the ceiling and resolves there, at 4.5% and 6.2%. These are the first frames a reader can
 reach that the ceiling binds on, and **it stays at a million by Matt's ruling**: the limit
 is kept and the tab says where it binds, rather than being raised. The doc comment on
-`cap::CEILING` in `src/lib.rs` says the same *(deep_small_fixes_ckpt142)*.
+`cap::AUTOMATIC_CEILING` in `src/lib.rs` says the same *(deep_small_fixes_ckpt142; the
+constant was `cap::CEILING` until cap_split_ckpt145)*. A reader can still take such a
+frame to two million with Double, which is the explicit ceiling (§8).
 
 **The bar and the share** (`FAULT_EXPONENT` from 8 to 24, `FAULT_SHARE` from 5% to 15%),
 twenty-five rules a frame:

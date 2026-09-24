@@ -285,7 +285,7 @@ fn the_bar_and_the_share_sit_on_a_plateau() {
     const BARS: &[f64] = &[8.0, 12.0, 16.0, 20.0, 24.0];
     const SHARES: &[f64] = &[0.05, 0.08, 0.10, 0.12, 0.15];
     const MOST_RUNGS: usize = 6;
-    let ceiling = cap::CEILING as u32;
+    let ceiling = cap::AUTOMATIC_CEILING as u32;
     print!("\n| frame |");
     for bar in BARS {
         for share in SHARES {
@@ -556,7 +556,7 @@ fn what_a_preview_tile_needs() {
             ("32 periods", 32 * nucleus.period),
         ];
         for (name, wanted) in rules {
-            let maxiter = wanted.min(cap::CEILING as u32);
+            let maxiter = wanted.min(cap::AUTOMATIC_CEILING as u32);
             let tile = Spec {
                 center_re: nucleus.c_re.to_decimal(digits),
                 center_im: nucleus.c_im.to_decimal(digits),
@@ -839,7 +839,7 @@ fn what_a_copy_frame_holds() {
                     maxiter: Some(
                         (nucleus.period * periods)
                             .max(cap::for_width(tile_width))
-                            .min(cap::CEILING as u32),
+                            .min(cap::EXPLICIT_CEILING as u32),
                     ),
                     reference: None,
                     period: Some(nucleus.period),

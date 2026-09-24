@@ -66,7 +66,9 @@ test("a link that names no cap opens at the width's and writes none until one is
 
 test("a cap outside the kernel's range is refused by name", () => {
   assert.throws(() => deep.parse("?dv=1&n=0&p=inferno", context), /iteration cap/);
-  assert.throws(() => deep.parse("?dv=1&n=2000000&p=inferno", context), /iteration cap/);
+  assert.throws(() => deep.parse("?dv=1&n=2000001&p=inferno", context), /iteration cap/);
+  // The explicit ceiling itself reads, in this contract as in the shallow one.
+  assert.equal(deep.parse("?dv=1&n=2000000&p=inferno", context).maxiter, 2_000_000);
   assert.throws(() => deep.parse("?dv=1&n=12.5&p=inferno", context), /whole number/);
 });
 
@@ -187,7 +189,8 @@ test("the shallow contract moved once, and reads n by this contract's rule", () 
   assert.throws(() => link.parse("?v=3&n=48551", shallow), /a key this page does not know: n/);
   assert.equal(link.parse("?v=4&n=48551", shallow).maxiter, 48551);
   // The same refusals, word for word, on either side.
-  for (const bad of ["49", "1000001", "1e5", "-3"]) {
+  assert.equal(link.parse("?v=4&n=2000000", shallow).maxiter, 2_000_000);
+  for (const bad of ["49", "2000001", "1e5", "-3"]) {
     const said = (() => {
       try {
         deep.parse(`?dv=3&n=${bad}`, context);
