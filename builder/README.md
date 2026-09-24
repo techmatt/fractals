@@ -35,6 +35,8 @@ python -m builder picks [ID ...] [--place] [--replace]
 python -m builder deep [ID ...] [--place] [--replace]
                             draw the figures of the Deep zoom page through the Deep tab's
                             own contract, kernel and shading
+python -m builder start [ID ...] [--place] [--replace]
+                            draw the figures of the Start here page
 python -m builder front [ID ...] [--place] [--replace]
                             draw the front page's picture, index-hero, one spec panel
 python -m builder pipeline [ID ...] [--run R] [--place] [--replace]
@@ -269,6 +271,28 @@ row said before these pages existed.
 Such a page carries the rail like a gallery does, with no current entry, and `check`
 holds it to today's rail. `sections.HANGING` is what makes it hold: there is nothing to
 derive the list from, because a page cannot ask to be checked and be believed.
+
+## The start page is above the contents, not in them
+
+*(start_here_ckpt146.)* `start-here.html` is the page a reader new to the project is sent
+to: the project in a few paragraphs, told as how it came about, with a picture for each
+stage. It sits at the site's root beside the front page, because `article/` holds exactly
+the twelve sections, and its registry spelling is `./start-here.html`, the same rule
+`./index.html` follows. `sections.START` names it and `sections.rail` puts it above the
+rail's title as a list of one, named by its `<h1>` and opened to its own `<h2>`s when it is
+the current page, exactly as a section is; it has no `sections.jsonl` row, no done marker
+and no place in the reading order. The rail is not shown below the breakpoint, so the front
+page's lead links to it too.
+
+Its figures are `builder/start.py`, `python -m builder start`. **Every picture on it is new
+to the site**: the seats, candidates and walk nodes behind them were drawn from places
+`builder.frames` says no figure already stands on. `start-families`, `start-gallery` and
+`start-pink-gallery` are seats named in `picks` on their rows, a seeded draw over the
+`final139_*` general, magenta and rose collections; `start-modes` is two locations of the
+candidate ledger, each as the neutral frame and then four real candidates there in smooth,
+tia, threads and stripe, named as candidate keys in `rows`; `start-walk` is one descent of
+`overnight_harvest_ckpt123` frozen in the module, a plane walk to a minibrot and then the
+walk the twin channel started in that point's Julia set. `start-video` is a pending slot.
 
 ## The contents rail is derived, never kept
 

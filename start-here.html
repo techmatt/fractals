@@ -1,0 +1,349 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="assets/icons/favicon.ico" sizes="16x16 32x32 48x48">
+<link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
+<link rel="manifest" href="assets/icons/site.webmanifest">
+<title>Start here — Making Fractal Wallpapers</title>
+<link rel="stylesheet" href="assets/css/site.css">
+</head>
+<body>
+<nav class="topbar">
+  <div class="topbar-inner">
+    <a class="topbar-site" href="index.html">Making Fractal Wallpapers</a>
+    <span class="topbar-links"><a href="galleries/index.html">Galleries</a><a href="https://github.com/techmatt/fractal-website">GitHub</a><a href="https://techmatt.github.io/">Matt Fisher</a></span>
+  </div>
+</nav>
+
+<div class="page">
+<!-- contents-rail:start — written by builder/. Run `python -m builder build`. -->
+<nav class="contents-rail" aria-label="Contents">
+  <ul class="rail-start">
+    <li class="rail-current"><a href="start-here.html" aria-current="page">Start here</a>
+      <ol class="rail-headings">
+        <li><a href="#fractal-explorer">Fractal explorer</a></li>
+        <li><a href="#deep-zoom">Deep zoom</a></li>
+        <li><a href="#future-work">Future work</a></li>
+      </ol>
+    </li>
+  </ul>
+  <p class="rail-title"><a href="index.html">Contents</a></p>
+  <ol class="rail-sections">
+    <li><a href="article/overview.html">Overview</a> <span class="done" role="img" aria-label="written">✓</span></li>
+    <li><a href="article/escape-time-fractals.html">Escape-time fractals</a> <span class="done" role="img" aria-label="written">✓</span></li>
+    <li><a href="article/rendering-fundamentals.html">Rendering fundamentals</a> <span class="done" role="img" aria-label="written">✓</span></li>
+    <li><a href="article/rendering-modes.html">Rendering modes</a> <span class="done" role="img" aria-label="written">✓</span></li>
+    <li><a href="article/finding-good-locations.html">Finding good locations</a> <span class="done" role="img" aria-label="written">✓</span></li>
+    <li><a href="article/training-judges.html">Training judges</a> <span class="done" role="img" aria-label="written">✓</span></li>
+    <li><a href="article/color-palettes.html">Color palettes</a> <span class="done" role="img" aria-label="written">✓</span></li>
+    <li><a href="article/finding-good-wallpapers.html">Finding good wallpapers</a> <span class="done" role="img" aria-label="written">✓</span></li>
+    <li><a href="article/gallery-curation.html">Gallery curation</a> <span class="done" role="img" aria-label="written">✓</span></li>
+    <li><a href="article/full-pipeline.html">Full pipeline</a> <span class="done" role="img" aria-label="written">✓</span></li>
+    <li><a href="article/fractal-atlases.html">Fractal atlases</a> <span class="done" role="img" aria-label="written">✓</span></li>
+    <li><a href="article/deep-zoom.html">Deep zoom</a> <span class="done" role="img" aria-label="written">✓</span></li>
+  </ol>
+  <ul class="rail-links">
+    <li><a href="explorer/index.html">Fractal explorer</a></li>
+    <li><a href="https://github.com/techmatt/fractal-wallpapers">fractal-wallpapers on GitHub</a></li>
+  </ul>
+</nav>
+<!-- contents-rail:end -->
+
+<div class="page-body">
+
+<header class="masthead">
+  <h1>Start here</h1>
+</header>
+
+<main>
+  <section class="prose">
+    <p>This project started, indirectly, after many years of the same fractal wallpapers
+    rotating on my desktop. My three-year-old daughter enjoyed looking at them, but after a
+    detailed examination of the collection, it turned out she only liked about five
+    specific pictures, pink and sometimes blue fractals, out of the 500 or so I had. A
+    Google search for "pink fractals" was surprisingly barren of good options.</p>
+
+    <p>That got me thinking about a more general task: can we procedurally generate a
+    diverse set of beautiful fractals, subject to constraints like color, shape, or
+    rendering style? Classification was one of the first big successes of modern
+    convolutional networks, and given enough training data, a network can approximately
+    answer "how good is this wallpaper, on a scale of 1 to 4?" That became the first
+    version of the
+    <a href="https://github.com/techmatt/fractal-wallpapers">fractal-wallpapers</a>
+    project. Here is a terse outline.</p>
+
+      <figure class="figure figure-split" data-figure="start-families">
+        <div class="figure-panels" style="--figure-across: 3">
+        <div class="figure-panel">
+          <a class="figure-open" href="explorer/index.html?v=4&amp;x=-0.7577846085784616&amp;y=0.07285453899335967&amp;w=0.000003084453714171638&amp;p=torque-25" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="assets/images/figures/start-families-1.webp" width="422" height="237" alt="A wallpaper drawn in smooth, in the Mandelbrot family."><span class="figure-open-mark" aria-hidden="true">↗</span></a>
+          <p class="figure-label">Mandelbrot<span class="figure-note">z² + c</span></p>
+        </div>
+        <div class="figure-panel">
+          <a class="figure-open" href="explorer/index.html?v=4&amp;f=julia&amp;cx=-1.2517612129804818&amp;cy=0.038979112285470574&amp;m=stripe&amp;x=0.20884211629708604&amp;y=-0.028085595653465526&amp;w=0.00024171084334600836&amp;p=house-of-ivory-25" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="assets/images/figures/start-families-2.webp" width="422" height="237" alt="A wallpaper drawn in stripe average, in the Julia family."><span class="figure-open-mark" aria-hidden="true">↗</span></a>
+          <p class="figure-label">Julia<span class="figure-note">z² + c</span></p>
+        </div>
+        <div class="figure-panel">
+          <a class="figure-open" href="explorer/index.html?v=4&amp;f=multibrot3&amp;m=tia&amp;x=-0.09176863883942699&amp;y=0.770124607444161&amp;w=0.000000006288175533627499&amp;p=Coal%20Amber&amp;phase=0.096785" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="assets/images/figures/start-families-3.webp" width="422" height="237" alt="A wallpaper drawn in triangle-inequality average, in the Multibrot d = 3 family."><span class="figure-open-mark" aria-hidden="true">↗</span></a>
+          <p class="figure-label">Multibrot d = 3<span class="figure-note">z³ + c</span></p>
+        </div>
+        <div class="figure-panel">
+          <a class="figure-open" href="explorer/index.html?v=4&amp;f=julia3&amp;cx=0.4169190761394084&amp;cy=0.006933824661843332&amp;m=threads&amp;x=-0.049060015317693086&amp;y=0.024623459861647413&amp;w=0.12394898682290723&amp;p=Petrol%20Boundary&amp;phase=0.867618" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="assets/images/figures/start-families-4.webp" width="422" height="237" alt="A wallpaper drawn in cross trap over smooth, in the Julia d = 3 family."><span class="figure-open-mark" aria-hidden="true">↗</span></a>
+          <p class="figure-label">Julia d = 3<span class="figure-note">z³ + c</span></p>
+        </div>
+        <div class="figure-panel">
+          <a class="figure-open" href="explorer/index.html?v=4&amp;f=multibrot4&amp;m=tia&amp;x=0.31901414308930354&amp;y=0.7493287459684727&amp;w=0.000009924309157790258&amp;p=Nebula%20Veil" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="assets/images/figures/start-families-5.webp" width="422" height="237" alt="A wallpaper drawn in triangle-inequality average, in the Multibrot d = 4 family."><span class="figure-open-mark" aria-hidden="true">↗</span></a>
+          <p class="figure-label">Multibrot d = 4<span class="figure-note">z⁴ + c</span></p>
+        </div>
+        <div class="figure-panel">
+          <a class="figure-open" href="explorer/index.html?v=4&amp;f=julia4&amp;cx=0.34013234043060414&amp;cy=0.9314381720832728&amp;m=stripe&amp;x=-0.025171144414625396&amp;y=-0.019531249999999993&amp;w=1.0034997461674355&amp;p=Coal%20%26%20Malachite&amp;phase=0.137635" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="assets/images/figures/start-families-6.webp" width="422" height="237" alt="A wallpaper drawn in stripe average, in the Julia d = 4 family."><span class="figure-open-mark" aria-hidden="true">↗</span></a>
+          <p class="figure-label">Julia d = 4<span class="figure-note">z⁴ + c</span></p>
+        </div>
+        <div class="figure-panel">
+          <a class="figure-open" href="explorer/index.html?v=4&amp;f=multibrot5&amp;x=0.6966618852546167&amp;y=0.24237953192294687&amp;w=0.0000009442043863406553&amp;p=sad-eyes-25&amp;level=band_autolevel/v1:0.39821761679938417,0.9910172230934599,1.0520905250243024,0.3008176686683185,0.9910172230934599" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="assets/images/figures/start-families-7.webp" width="422" height="237" alt="A wallpaper drawn in smooth, in the Multibrot d = 5 family."><span class="figure-open-mark" aria-hidden="true">↗</span></a>
+          <p class="figure-label">Multibrot d = 5<span class="figure-note">z⁵ + c</span></p>
+        </div>
+        <div class="figure-panel">
+          <a class="figure-open" href="explorer/index.html?v=4&amp;f=julia5&amp;cx=0.5917238367137598&amp;cy=0.020812175438918692&amp;m=threads&amp;x=-0.34531274854111904&amp;y=-0.552305206712552&amp;w=0.1867490789744869&amp;p=Terminal%20Flare" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="assets/images/figures/start-families-8.webp" width="422" height="237" alt="A wallpaper drawn in cross trap over smooth, in the Julia d = 5 family."><span class="figure-open-mark" aria-hidden="true">↗</span></a>
+          <p class="figure-label">Julia d = 5<span class="figure-note">z⁵ + c</span></p>
+        </div>
+        <div class="figure-panel">
+          <a class="figure-open" href="explorer/index.html?v=4&amp;f=phoenix&amp;cx=-0.7903675443707822&amp;cy=-0.46059628853008105&amp;px=-0.07072481292971435&amp;py=-0.43908467679287494&amp;zx=0.0&amp;zy=0.0&amp;m=direct_trap_lines&amp;opacity=0.45&amp;x=-0.8475217631306413&amp;y=0.04446787554256711&amp;w=0.3827587642618578&amp;p=Oxblood%2C%20Amber%2C%20Teal" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="assets/images/figures/start-families-9.webp" width="422" height="237" alt="A wallpaper drawn in line trap, in the Phoenix family."><span class="figure-open-mark" aria-hidden="true">↗</span></a>
+          <p class="figure-label">Phoenix<span class="figure-note">z² + c + p·z₋₁</span></p>
+        </div>
+        </div>
+      </figure>
+
+    <p>First, pick a starting
+    <a href="article/escape-time-fractals.html#the-projects-families">escape-time fractal</a>.</p>
+
+      <figure class="figure figure-split" data-figure="start-walk">
+        <div class="figure-panels" style="--figure-across: 3">
+        <div class="figure-panel">
+          <a class="figure-open" href="explorer/index.html?v=4&amp;f=multibrot5&amp;x=0.64772441057660679437835345159946391&amp;y=0.79958643911529491469312485601892427&amp;w=0.014003207864659872&amp;p=twilight_shifted" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="assets/images/figures/start-walk-1.webp" width="422" height="237" alt="Step 1 of one descent, in the Multibrot d = 5 family, drawn in one neutral palette." loading="lazy"><span class="figure-open-mark" aria-hidden="true">↗</span></a>
+          <p class="figure-label">1. start at the boundary</p>
+        </div>
+        <div class="figure-panel">
+          <a class="figure-open" href="explorer/index.html?v=4&amp;f=multibrot5&amp;x=0.63961646701407355514917967935072030&amp;y=0.80151544692150116231700805519388370&amp;w=0.00015081973101883472&amp;p=twilight_shifted" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="assets/images/figures/start-walk-2.webp" width="422" height="237" alt="Step 2 of one descent, in the Multibrot d = 5 family, drawn in one neutral palette." loading="lazy"><span class="figure-open-mark" aria-hidden="true">↗</span></a>
+          <p class="figure-label">2. find a nearby minibrot</p>
+        </div>
+        <div class="figure-panel">
+          <a class="figure-open" href="explorer/index.html?v=4&amp;f=multibrot5&amp;x=0.6396478567167911&amp;y=0.8014732252520101&amp;w=0.00006260019458830486&amp;p=twilight_shifted" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="assets/images/figures/start-walk-3.webp" width="422" height="237" alt="Step 3 of one descent, in the Multibrot d = 5 family, drawn in one neutral palette." loading="lazy"><span class="figure-open-mark" aria-hidden="true">↗</span></a>
+          <p class="figure-label">3. descend</p>
+        </div>
+        <div class="figure-panel">
+          <a class="figure-open" href="explorer/index.html?v=4&amp;f=julia5&amp;cx=0.6396478567167911&amp;cy=0.8014732252520101&amp;x=0.0&amp;y=0.0&amp;w=3.0&amp;p=twilight_shifted" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="assets/images/figures/start-walk-4.webp" width="422" height="237" alt="Step 4 of one descent, in the Julia d = 5 family, drawn in one neutral palette." loading="lazy"><span class="figure-open-mark" aria-hidden="true">↗</span></a>
+          <p class="figure-label">4. switch to its Julia set</p>
+        </div>
+        <div class="figure-panel">
+          <a class="figure-open" href="explorer/index.html?v=4&amp;f=julia5&amp;cx=0.6396478567167911&amp;cy=0.8014732252520101&amp;x=0.40882936760407346&amp;y=-0.19514354203728235&amp;w=0.4386329180089233&amp;p=twilight_shifted" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="assets/images/figures/start-walk-5.webp" width="422" height="237" alt="Step 5 of one descent, in the Julia d = 5 family, drawn in one neutral palette." loading="lazy"><span class="figure-open-mark" aria-hidden="true">↗</span></a>
+          <p class="figure-label">5. descend</p>
+        </div>
+        <div class="figure-panel">
+          <a class="figure-open" href="explorer/index.html?v=4&amp;f=julia5&amp;cx=0.6396478567167911&amp;cy=0.8014732252520101&amp;x=0.42071628484331147&amp;y=-0.1969184752598213&amp;w=0.17794212908189785&amp;p=twilight_shifted" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="assets/images/figures/start-walk-6.webp" width="422" height="237" alt="Step 6 of one descent, in the Julia d = 5 family, drawn in one neutral palette." loading="lazy"><span class="figure-open-mark" aria-hidden="true">↗</span></a>
+          <p class="figure-label">6. descend</p>
+        </div>
+        </div>
+      </figure>
+
+    <p>Then, starting at a point on the boundary, walk deeper, guided by a
+    <a href="article/training-judges.html#what-the-judge-sees">location judge</a> trained to
+    estimate how beautiful the geometry is at each location. Maneuvers like "switch to the
+    Julia set for this point and descend it from the top" or "find a nearby minibrot" turn
+    out to be very useful for finding good locations.</p>
+
+      <figure class="figure figure-split" data-figure="start-modes">
+        <div class="figure-panels" style="--figure-across: 5">
+        <div class="figure-panel">
+          <a class="figure-open" href="explorer/index.html?v=4&amp;f=multibrot4&amp;x=0.3402052928800089&amp;y=0.9313932490298805&amp;w=0.000000025258699229909393&amp;p=twilight_shifted" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="assets/images/figures/start-modes-1.webp" width="248" height="140" alt="A location in the Multibrot d = 4 family, drawn in one neutral palette." loading="lazy"><span class="figure-open-mark" aria-hidden="true">↗</span></a>
+          <p class="figure-label">the location</p>
+        </div>
+        <div class="figure-panel">
+          <a class="figure-open" href="explorer/index.html?v=4&amp;f=multibrot4&amp;x=0.3402052928800089&amp;y=0.9313932490298805&amp;w=0.000000025258699229909393&amp;p=Cobalt%20%26%20Coal" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="assets/images/figures/start-modes-2.webp" width="248" height="140" alt="The same location, drawn in smooth." loading="lazy"><span class="figure-open-mark" aria-hidden="true">↗</span></a>
+          <p class="figure-label">smooth</p>
+        </div>
+        <div class="figure-panel">
+          <a class="figure-open" href="explorer/index.html?v=4&amp;f=multibrot4&amp;m=tia&amp;x=0.3402052928800089&amp;y=0.9313932490298805&amp;w=0.000000025258699229909393&amp;p=Fuchsia%20%26%20Acid" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="assets/images/figures/start-modes-3.webp" width="248" height="140" alt="The same location, drawn in triangle-inequality average." loading="lazy"><span class="figure-open-mark" aria-hidden="true">↗</span></a>
+          <p class="figure-label">tia</p>
+        </div>
+        <div class="figure-panel">
+          <a class="figure-open" href="explorer/index.html?v=4&amp;f=multibrot4&amp;m=threads&amp;x=0.3402052928800089&amp;y=0.9313932490298805&amp;w=0.000000025258699229909393&amp;p=Coal%20Rose&amp;phase=0.287555" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="assets/images/figures/start-modes-4.webp" width="248" height="140" alt="The same location, drawn in cross trap over smooth." loading="lazy"><span class="figure-open-mark" aria-hidden="true">↗</span></a>
+          <p class="figure-label">threads</p>
+        </div>
+        <div class="figure-panel">
+          <a class="figure-open" href="explorer/index.html?v=4&amp;f=multibrot4&amp;m=stripe&amp;x=0.3402052928800089&amp;y=0.9313932490298805&amp;w=0.000000025258699229909393&amp;p=dolphin-dance-25" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="assets/images/figures/start-modes-5.webp" width="248" height="140" alt="The same location, drawn in stripe average." loading="lazy"><span class="figure-open-mark" aria-hidden="true">↗</span></a>
+          <p class="figure-label">stripe</p>
+        </div>
+        <div class="figure-panel">
+          <a class="figure-open" href="explorer/index.html?v=4&amp;f=julia5&amp;cx=-0.6247793182311258&amp;cy=0.5269223010238306&amp;x=-0.00597708261748047&amp;y=-0.03297481991473979&amp;w=0.05217139275158359&amp;p=twilight_shifted" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="assets/images/figures/start-modes-6.webp" width="248" height="140" alt="A location in the Julia d = 5 family, drawn in one neutral palette." loading="lazy"><span class="figure-open-mark" aria-hidden="true">↗</span></a>
+          <p class="figure-label">the location</p>
+        </div>
+        <div class="figure-panel">
+          <a class="figure-open" href="explorer/index.html?v=4&amp;f=julia5&amp;cx=-0.6247793182311258&amp;cy=0.5269223010238306&amp;x=-0.00597708261748047&amp;y=-0.03297481991473979&amp;w=0.05217139275158359&amp;p=Ultraviolet%20Siren" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="assets/images/figures/start-modes-7.webp" width="248" height="140" alt="The same location, drawn in smooth." loading="lazy"><span class="figure-open-mark" aria-hidden="true">↗</span></a>
+          <p class="figure-label">smooth</p>
+        </div>
+        <div class="figure-panel">
+          <a class="figure-open" href="explorer/index.html?v=4&amp;f=julia5&amp;cx=-0.6247793182311258&amp;cy=0.5269223010238306&amp;m=tia&amp;x=-0.00597708261748047&amp;y=-0.03297481991473979&amp;w=0.05217139275158359&amp;p=Formica%20Neon" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="assets/images/figures/start-modes-8.webp" width="248" height="140" alt="The same location, drawn in triangle-inequality average." loading="lazy"><span class="figure-open-mark" aria-hidden="true">↗</span></a>
+          <p class="figure-label">tia</p>
+        </div>
+        <div class="figure-panel">
+          <a class="figure-open" href="explorer/index.html?v=4&amp;f=julia5&amp;cx=-0.6247793182311258&amp;cy=0.5269223010238306&amp;m=threads&amp;x=-0.00597708261748047&amp;y=-0.03297481991473979&amp;w=0.05217139275158359&amp;p=Reliquary" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="assets/images/figures/start-modes-9.webp" width="248" height="140" alt="The same location, drawn in cross trap over smooth." loading="lazy"><span class="figure-open-mark" aria-hidden="true">↗</span></a>
+          <p class="figure-label">threads</p>
+        </div>
+        <div class="figure-panel">
+          <a class="figure-open" href="explorer/index.html?v=4&amp;f=julia5&amp;cx=-0.6247793182311258&amp;cy=0.5269223010238306&amp;m=stripe&amp;x=-0.00597708261748047&amp;y=-0.03297481991473979&amp;w=0.05217139275158359&amp;p=Ash%20Rose%20Vault" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="assets/images/figures/start-modes-10.webp" width="248" height="140" alt="The same location, drawn in stripe average." loading="lazy"><span class="figure-open-mark" aria-hidden="true">↗</span></a>
+          <p class="figure-label">stripe</p>
+        </div>
+        </div>
+      </figure>
+
+    <p>At each location, search across
+    <a href="article/rendering-modes.html">palettes and rendering modes</a> for the most
+    beautiful wallpapers, according to a
+    <a href="article/training-judges.html#the-rating-scale">judge trained on explicit
+    labels</a>.</p>
+
+      <figure class="figure figure-split" data-figure="start-gallery">
+        <div class="figure-panels" style="--figure-across: 4">
+        <div class="figure-panel">
+          <a class="figure-open" href="explorer/index.html?v=4&amp;f=multibrot4&amp;m=smooth_curvature&amp;weight=0.85&amp;x=0.4459976924560836&amp;y=0.6592844059044933&amp;w=0.00000001797421104651014&amp;p=skyroads-25&amp;phase=0.090742" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="assets/images/figures/start-gallery-1.webp" width="314" height="177" alt="A wallpaper drawn in curvature over smooth, in the Multibrot d = 4 family." loading="lazy"><span class="figure-open-mark" aria-hidden="true">↗</span></a>
+        </div>
+        <div class="figure-panel">
+          <a class="figure-open" href="explorer/index.html?v=4&amp;f=julia5&amp;cx=-0.5179353900867049&amp;cy=0.6474217897258434&amp;m=stripe&amp;x=0.007898823378467638&amp;y=0.5320036565617665&amp;w=0.12627263085048454&amp;p=Signal%20Triad" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="assets/images/figures/start-gallery-2.webp" width="314" height="177" alt="A wallpaper drawn in stripe average, in the Julia d = 5 family." loading="lazy"><span class="figure-open-mark" aria-hidden="true">↗</span></a>
+        </div>
+        <div class="figure-panel">
+          <a class="figure-open" href="explorer/index.html?v=4&amp;f=multibrot4&amp;m=direct_trap_lines&amp;opacity=0.45&amp;x=0.3082171329517965&amp;y=0.8770227603254163&amp;w=0.000008089825427644573&amp;p=visionary-spires-25" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="assets/images/figures/start-gallery-3.webp" width="314" height="177" alt="A wallpaper drawn in line trap, in the Multibrot d = 4 family." loading="lazy"><span class="figure-open-mark" aria-hidden="true">↗</span></a>
+        </div>
+        <div class="figure-panel">
+          <a class="figure-open" href="explorer/index.html?v=4&amp;f=multibrot5&amp;m=tia&amp;x=0.6660388037360246&amp;y=0.7827861167183537&amp;w=0.00000003280375063298567&amp;p=fractal_flowers_abstract_104352_2560x1600&amp;phase=0.527551" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="assets/images/figures/start-gallery-4.webp" width="314" height="177" alt="A wallpaper drawn in triangle-inequality average, in the Multibrot d = 5 family." loading="lazy"><span class="figure-open-mark" aria-hidden="true">↗</span></a>
+        </div>
+        <div class="figure-panel">
+          <a class="figure-open" href="explorer/index.html?v=4&amp;f=julia5&amp;cx=-0.6226382469365616&amp;cy=-0.5135943327134359&amp;m=tia&amp;x=-0.4594051839812635&amp;y=-0.6351268639903627&amp;w=0.009490086420936366&amp;p=Rose%20Quartz%20Deep&amp;phase=0.153579" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="assets/images/figures/start-gallery-5.webp" width="314" height="177" alt="A wallpaper drawn in triangle-inequality average, in the Julia d = 5 family." loading="lazy"><span class="figure-open-mark" aria-hidden="true">↗</span></a>
+        </div>
+        <div class="figure-panel">
+          <a class="figure-open" href="explorer/index.html?v=4&amp;f=julia&amp;cx=-1.2517612129804818&amp;cy=0.038979112285470574&amp;m=stripe&amp;x=0.2086081492876959&amp;y=-0.028239538708394737&amp;w=0.012377003412320361&amp;p=Ash%20Rose%20Vault" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="assets/images/figures/start-gallery-6.webp" width="314" height="177" alt="A wallpaper drawn in stripe average, in the Julia family." loading="lazy"><span class="figure-open-mark" aria-hidden="true">↗</span></a>
+        </div>
+        <div class="figure-panel">
+          <a class="figure-open" href="explorer/index.html?v=4&amp;f=julia3&amp;cx=-0.1914639130015472&amp;cy=-1.0527513723190611&amp;m=itinerary&amp;x=-0.16494820247236744&amp;y=0.07177331376553057&amp;w=0.028656007390771183&amp;p=YlOrRd&amp;mirror=1" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="assets/images/figures/start-gallery-7.webp" width="314" height="177" alt="A wallpaper drawn in orbit itinerary, in the Julia d = 3 family." loading="lazy"><span class="figure-open-mark" aria-hidden="true">↗</span></a>
+        </div>
+        <div class="figure-panel">
+          <a class="figure-open" href="explorer/index.html?v=4&amp;f=julia4&amp;cx=-0.8000969197766781&amp;cy=0.07666925698290561&amp;m=direct_trap_lines&amp;opacity=0.45&amp;x=0.22001223855503393&amp;y=-0.40120975569736694&amp;w=0.03606008979794664&amp;p=wallhaven_wallhaven-8xz1mk" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="assets/images/figures/start-gallery-8.webp" width="314" height="177" alt="A wallpaper drawn in line trap, in the Julia d = 4 family." loading="lazy"><span class="figure-open-mark" aria-hidden="true">↗</span></a>
+        </div>
+        <div class="figure-panel">
+          <a class="figure-open" href="explorer/index.html?v=4&amp;x=-0.08007340115987503&amp;y=-0.6510559194743473&amp;w=0.000009070800059275909&amp;p=Pale%20Triad" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="assets/images/figures/start-gallery-9.webp" width="314" height="177" alt="A wallpaper drawn in smooth, in the Mandelbrot family." loading="lazy"><span class="figure-open-mark" aria-hidden="true">↗</span></a>
+        </div>
+        <div class="figure-panel">
+          <a class="figure-open" href="explorer/index.html?v=4&amp;f=julia&amp;cx=-0.7488551646997019&amp;cy=-0.13572339871672048&amp;m=itinerary&amp;x=0.006327307409788454&amp;y=0.007944434325775962&amp;w=0.13011310881931&amp;p=Orchid%20Deep" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="assets/images/figures/start-gallery-10.webp" width="314" height="177" alt="A wallpaper drawn in orbit itinerary, in the Julia family." loading="lazy"><span class="figure-open-mark" aria-hidden="true">↗</span></a>
+        </div>
+        <div class="figure-panel">
+          <a class="figure-open" href="explorer/index.html?v=4&amp;m=threads&amp;x=-0.081468207187750655174112304174881857&amp;y=-0.65094442116673916363842649261281065&amp;w=9.86967843296e-08&amp;p=Split%20Lime&amp;phase=0.33343" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="assets/images/figures/start-gallery-11.webp" width="314" height="177" alt="A wallpaper drawn in cross trap over smooth, in the Mandelbrot family." loading="lazy"><span class="figure-open-mark" aria-hidden="true">↗</span></a>
+        </div>
+        <div class="figure-panel">
+          <a class="figure-open" href="explorer/index.html?v=4&amp;f=julia3&amp;cx=0.1913606104683651875088144844&amp;cy=1.053062736780250645290760882&amp;m=curvature&amp;x=-0.03431493245262361&amp;y=-0.1448670492555549&amp;w=0.09305304579932648&amp;p=fractal_abstraction_lines_130499_2560x1600" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="assets/images/figures/start-gallery-12.webp" width="314" height="177" alt="A wallpaper drawn in curvature, in the Julia d = 3 family." loading="lazy"><span class="figure-open-mark" aria-hidden="true">↗</span></a>
+        </div>
+        </div>
+      </figure>
+
+    <p>Finally, <a href="article/gallery-curation.html">curate a gallery</a> of a given size
+    or property from all the candidates, aiming for diversity across many axes: color,
+    geometry, palette, rendering mode, and a cap on how many spirals get in.</p>
+
+      <figure class="figure figure-split" data-figure="start-pink-gallery">
+        <div class="figure-panels" style="--figure-across: 4">
+        <div class="figure-panel">
+          <a class="figure-open" href="explorer/index.html?v=4&amp;f=julia&amp;cx=-0.7713889686976524&amp;cy=-0.10762203592208013&amp;x=0.11102576965378058&amp;y=-0.0333636340134997&amp;w=0.10151836946928129&amp;p=Deep%20Rose%20Vault&amp;level=band_autolevel/v1:0,0.8090336203165326,1.0746334667166162,0,0.8629886965307019" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="assets/images/figures/start-pink-gallery-1.webp" width="314" height="177" alt="A wallpaper drawn in smooth, in the Julia family." loading="lazy"><span class="figure-open-mark" aria-hidden="true">↗</span></a>
+        </div>
+        <div class="figure-panel">
+          <a class="figure-open" href="explorer/index.html?v=4&amp;f=julia&amp;cx=-0.75996368077170076099417263906900666&amp;cy=-0.084814678665208914936944066584369941&amp;x=-0.7183589525041424&amp;y=-0.19420978277322912&amp;w=0.0000015681249404766493&amp;p=triglandal&amp;phase=0.328298" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="assets/images/figures/start-pink-gallery-2.webp" width="314" height="177" alt="A wallpaper drawn in smooth, in the Julia family." loading="lazy"><span class="figure-open-mark" aria-hidden="true">↗</span></a>
+        </div>
+        <div class="figure-panel">
+          <a class="figure-open" href="explorer/index.html?v=4&amp;f=julia4&amp;cx=-0.06430641987476975575313406499&amp;cy=0.7209441921123154326985876724&amp;m=stripe&amp;x=0.23340742594908287&amp;y=-0.3176356730947257&amp;w=0.08158918966320766&amp;p=curlv&amp;phase=0.550446" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="assets/images/figures/start-pink-gallery-3.webp" width="314" height="177" alt="A wallpaper drawn in stripe average, in the Julia d = 4 family." loading="lazy"><span class="figure-open-mark" aria-hidden="true">↗</span></a>
+        </div>
+        <div class="figure-panel">
+          <a class="figure-open" href="explorer/index.html?v=4&amp;f=julia3&amp;cx=-0.16210057386973728&amp;cy=1.0941505289780586&amp;m=stripe&amp;x=0.02039615273947157&amp;y=-0.17830726334801097&amp;w=0.8245856300386263&amp;p=Nightbloom%20Signal&amp;phase=0.290948" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="assets/images/figures/start-pink-gallery-4.webp" width="314" height="177" alt="A wallpaper drawn in stripe average, in the Julia d = 3 family." loading="lazy"><span class="figure-open-mark" aria-hidden="true">↗</span></a>
+        </div>
+        <div class="figure-panel">
+          <a class="figure-open" href="explorer/index.html?v=4&amp;m=smooth_mean_angle&amp;weight=0.85&amp;x=-0.8034886620324753&amp;y=0.18325559833816926&amp;w=0.0000040798268822631505&amp;p=Orchid%20Furnace" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="assets/images/figures/start-pink-gallery-5.webp" width="314" height="177" alt="A wallpaper drawn in trap spread angle over smooth, in the Mandelbrot family." loading="lazy"><span class="figure-open-mark" aria-hidden="true">↗</span></a>
+        </div>
+        <div class="figure-panel">
+          <a class="figure-open" href="explorer/index.html?v=4&amp;m=tia&amp;x=-0.06405840898444143&amp;y=0.663202643765092&amp;w=0.0000008659648679928753&amp;p=Rose%20Quartz%20Vault&amp;phase=0.713313" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="assets/images/figures/start-pink-gallery-6.webp" width="314" height="177" alt="A wallpaper drawn in triangle-inequality average, in the Mandelbrot family." loading="lazy"><span class="figure-open-mark" aria-hidden="true">↗</span></a>
+        </div>
+        <div class="figure-panel">
+          <a class="figure-open" href="explorer/index.html?v=4&amp;f=julia5&amp;cx=-0.7827852027862652&amp;cy=0.666037775899293&amp;m=tia&amp;x=0.04288382585041761&amp;y=0.16535480460240962&amp;w=0.0472854418198274&amp;p=Pale%20Fire%20Rose" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="assets/images/figures/start-pink-gallery-7.webp" width="314" height="177" alt="A wallpaper drawn in triangle-inequality average, in the Julia d = 5 family." loading="lazy"><span class="figure-open-mark" aria-hidden="true">↗</span></a>
+        </div>
+        <div class="figure-panel">
+          <a class="figure-open" href="explorer/index.html?v=4&amp;f=julia3&amp;cx=0.1913606104683651875088144844&amp;cy=1.053062736780250645290760882&amp;x=-0.1256044975070956&amp;y=-0.14770462053734848&amp;w=0.13583062407821417&amp;p=Furnace%20Rose" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="assets/images/figures/start-pink-gallery-8.webp" width="314" height="177" alt="A wallpaper drawn in smooth, in the Julia d = 3 family." loading="lazy"><span class="figure-open-mark" aria-hidden="true">↗</span></a>
+        </div>
+        <div class="figure-panel">
+          <a class="figure-open" href="explorer/index.html?v=4&amp;f=julia4&amp;cx=0.5892868129848539&amp;cy=-0.06436059516070483&amp;m=stripe&amp;x=0.6962949743195137&amp;y=-0.25726817803403484&amp;w=0.35978720025326627&amp;p=PuRd&amp;mirror=1" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="assets/images/figures/start-pink-gallery-9.webp" width="314" height="177" alt="A wallpaper drawn in stripe average, in the Julia d = 4 family." loading="lazy"><span class="figure-open-mark" aria-hidden="true">↗</span></a>
+        </div>
+        <div class="figure-panel">
+          <a class="figure-open" href="explorer/index.html?v=4&amp;f=julia4&amp;cx=-0.06430641987476975575313406499&amp;cy=0.7209441921123154326985876724&amp;m=stripe&amp;x=0.6226779862620914&amp;y=-0.0731798910777187&amp;w=0.009340752060090433&amp;p=Rose%20Against%20Cobalt&amp;phase=0.828785" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="assets/images/figures/start-pink-gallery-10.webp" width="314" height="177" alt="A wallpaper drawn in stripe average, in the Julia d = 4 family." loading="lazy"><span class="figure-open-mark" aria-hidden="true">↗</span></a>
+        </div>
+        <div class="figure-panel">
+          <a class="figure-open" href="explorer/index.html?v=4&amp;f=julia&amp;cx=-0.07772292710279927&amp;cy=0.6494776166180645&amp;m=tia&amp;x=0.118985416363623&amp;y=-0.0018654519447171697&amp;w=0.4583634881324797&amp;p=wallhaven_wallhaven-6d3zz6&amp;phase=0.46006" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="assets/images/figures/start-pink-gallery-11.webp" width="314" height="177" alt="A wallpaper drawn in triangle-inequality average, in the Julia family." loading="lazy"><span class="figure-open-mark" aria-hidden="true">↗</span></a>
+        </div>
+        <div class="figure-panel">
+          <a class="figure-open" href="explorer/index.html?v=4&amp;f=julia&amp;cx=-0.7486548983277147&amp;cy=0.045059269407464055&amp;m=direct_trap_lines&amp;opacity=0.45&amp;x=0.3398518219692163&amp;y=0.13371963925801084&amp;w=0.09513192936320286&amp;p=wallhaven_wallhaven-kwg7v6" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="assets/images/figures/start-pink-gallery-12.webp" width="314" height="177" alt="A wallpaper drawn in line trap, in the Julia family." loading="lazy"><span class="figure-open-mark" aria-hidden="true">↗</span></a>
+        </div>
+        </div>
+      </figure>
+
+    <p>And here is the final gallery, as chosen by my daughter.</p>
+
+    <h2 id="fractal-explorer">Fractal explorer</h2>
+
+    <p>Once I was reasonably happy with the gallery, I thought about putting it online as a
+    simple zip of wallpapers. But the Rust code behind fractal-wallpapers carried over to
+    the web almost directly, as what is now the
+    <a href="explorer/index.html">fractal explorer</a>. It was delightful to move around and
+    explore the areas around the wallpaper locations, and that motivated a more polished
+    writeup and interface than "here's a zip of 1,000 fractal wallpapers."</p>
+
+    <h2 id="deep-zoom">Deep zoom</h2>
+
+    <p>Originally, I wasn't planning to handle anything beyond 64-bit floating point. The
+    whole point of the gallery is that the search is automatic and fast, so it can try a
+    vast number of locations and keep the best. But some of the most beautiful fractal
+    artwork lives in the deepest parts of these fractals. So although most of the gallery
+    sits in the shallow regions, I eventually extended the renderer to
+    <a href="article/deep-zoom.html">work much deeper</a>, though not as deep as dedicated
+    deep-zoom renderers like <a href="https://mathr.co.uk/kf/kf.html">Kalles Fraktaler</a>
+    and <a href="https://mathr.co.uk/web/fraktaler.html">Fraktaler 3</a>. Along the way I
+    learned a lot of fractal mathematics, including properties that are directly useful for
+    fractal artwork, like the
+    <a href="article/deep-zoom.html#automatic-minibrot-descents">minibrot twins behind
+    automatic descents</a> and
+    <a href="article/deep-zoom.html#julia-sets-inside-the-mandelbrot-set">Tan Lei's
+    similarity between the Mandelbrot and Julia sets</a>. Videos that zoom into a location
+    are also a great way to explore the detail around it:</p>
+
+      <figure class="figure figure-pending" data-figure="start-video">
+        <p class="pending"><span class="pending-label">Figure pending</span>A video that zooms into one location, to come.</p>
+      </figure>
+
+    <h2 id="future-work">Future work</h2>
+
+    <p>If there are features you'd like, or bugs to report, open an issue on GitHub:
+    <a href="https://github.com/techmatt/fractal-website">fractal-website</a> for the
+    explorer and this site, and
+    <a href="https://github.com/techmatt/fractal-wallpapers">fractal-wallpapers</a> for the
+    wallpaper pipeline. I haven't worked out how to take gallery submissions yet, but every
+    link on this site should work and be freely shareable.</p>
+  </section>
+
+  <nav class="section-nav">
+    <p><a href="index.html">Contents</a>
+    · Next: <a href="article/overview.html">Overview</a></p>
+  </nav>
+</main>
+
+<footer>
+  <p><a href="https://techmatt.github.io/">Matt Fisher</a>
+  · <a href="https://github.com/techmatt/fractal-wallpapers">fractal-wallpapers</a> · MIT</p>
+</footer>
+</div>
+</div>
+</body>
+</html>

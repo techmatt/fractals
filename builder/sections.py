@@ -163,6 +163,7 @@ def rail(page: Path, sections: list[Section]) -> str:
     home = attribute(relative_href(page, SITE_INDEX))
     lines = [
         '<nav class="contents-rail" aria-label="Contents">',
+        *_start(page),
         f'  <p class="rail-title"><a href="{home}">Contents</a></p>',
         '  <ol class="rail-sections">',
     ]
@@ -187,6 +188,45 @@ def rail(page: Path, sections: list[Section]) -> str:
     lines.extend(_offsite(page))
     lines.append("</nav>")
     return "\n".join(lines)
+
+
+#: The page a reader new to the project is sent to first *(start_here_ckpt146)*. It sits in
+#: the rail above the contents and is not one of them: it is an outline of the whole
+#: project in a few paragraphs, told as how it came about, and the twelve sections are the
+#: article that outline points into. So it is not in `sections.jsonl`, carries no done
+#: marker and no place in the reading order, and lives at the site's root beside the front
+#: page rather than in `article/`, which holds exactly the twelve.
+START = SITE_ROOT / "start-here.html"
+
+
+def _start(page: Path) -> list[str]:
+    """The rail's first entry: the start page, open to its own headings when it is current.
+
+    Named and opened exactly as a section is — its `<h1>` and its prose `<h2>`s — so a
+    renamed heading moves here on the next `build` the way a section's does.
+    """
+    if not START.is_file():
+        return []
+    start_html = read_page(START)
+    here = page.resolve() == START.resolve()
+    href = attribute(relative_href(page, START))
+    current = ' aria-current="page"' if here else ""
+    item = ' class="rail-current"' if here else ""
+    entry = f'    <li{item}><a href="{href}"{current}>{text(title_of(start_html, START.name))}</a>'
+    headings = headings_of(start_html) if here else ()
+    lines = ['  <ul class="rail-start">']
+    if not headings:
+        lines.append(f"{entry}</li>")
+    else:
+        lines.append(entry)
+        lines.append('      <ol class="rail-headings">')
+        for heading in headings:
+            lines.append(
+                f'        <li><a href="#{attribute(heading.id)}">{text(heading.title)}</a></li>'
+            )
+        lines.extend(["      </ol>", "    </li>"])
+    lines.append("  </ul>")
+    return lines
 
 
 #: What the rail carries under the twelve sections: the page that runs the engine, and the
@@ -231,7 +271,7 @@ HANGING = ("palettes/make-your-own.html",)
 
 
 def hand_written(sections: list[Section]) -> list[Path]:
-    """The pages a person writes and the builder only reaches into: index, the sections,
-    and the pages that hang off one."""
+    """The pages a person writes and the builder only reaches into: index, the start page,
+    the sections, and the pages that hang off one."""
     hanging = [SITE_ROOT / page for page in HANGING]
-    return [SITE_INDEX, *(section.path for section in sections), *hanging]
+    return [SITE_INDEX, START, *(section.path for section in sections), *hanging]

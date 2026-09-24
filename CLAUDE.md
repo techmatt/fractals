@@ -219,7 +219,7 @@ keeps the mechanics. **Every apply round ends by distilling that round's general
   of its own, needs its own per-panel view before its figure can be split.
 - **A figure's id opens with its page's prefix** — `overview-`, `escape-`, `render-`,
   `modes-`, `locations-`, `judges-`, `palette-`, `wallpapers-`, `gallery-`, `pipeline-`,
-  `atlas-`, `deep-` — so a slug says where it
+  `atlas-`, `deep-`, `start-` — so a slug says where it
   lives before anything looks it up. One prefix to a page and one page to a prefix, with
   the single carve-out that a page hanging off a section shares that section's prefix:
   `palette-generator-batch` sits on `palettes/make-your-own.html`. The front page's one
@@ -357,7 +357,7 @@ keeps the mechanics. **Every apply round ends by distilling that round's general
   So a maker is a module in `builder/` with an entry in its own `SHEETS`, `MAKERS` or
   `DIAGRAMS` table and a subcommand that draws it by figure id — `families`,
   `fundamentals`, `overview`, `diagram`, `locations`, `judges`, `palettes`, `pool`,
-  `picks`, `curation`, `growth`, `pipeline`, `atlas`, `front`, `deep`. `scratch/` stays what it is for: the probes, sweeps and contact
+  `picks`, `curation`, `growth`, `pipeline`, `atlas`, `front`, `deep`, `start`. `scratch/` stays what it is for: the probes, sweeps and contact
   sheets that *found* a choice. Once a choice is made, the program that acts on it is
   committed. **All 61 of them are, as of 2026-09-06**, and a row naming a path under
   `scratch/` is now a bug rather than a legacy.
@@ -446,6 +446,8 @@ keeps the mechanics. **Every apply round ends by distilling that round's general
 
 ```
 index.html      the article's front page and table of contents
+start-here.html the page a new reader is sent to first: the project in a few paragraphs,
+                in the rail above the contents and not one of them
 article/        one page per section, in reading order
 palettes/       the two pages that hang off Color palettes without being sections:
                 the palette library, generated from library.jsonl beside it; and the
@@ -499,7 +501,10 @@ page and the rail has no current entry on it, which is what the gallery pages al
 which sections are `"status": "written"`; a rail entry's name is the page's own `<h1>`,
 and the entries that open under the current page are that page's prose `<h2>`s. Its title
 is the way back to the front page, and under the twelve sections it carries the two links
-that leave the article — the explorer and the code *(Matt, 2026-08-21)*. A prose
+that leave the article — the explorer and the code *(Matt, 2026-08-21)*. Above the title
+sits one entry that is not a section, **Start here** *(start_here_ckpt146)*:
+`start-here.html`, at the root beside the front page, named and opened like a section but
+in no `sections.jsonl` row and with no done marker. A prose
 `<h2>` also gets the id its rail entry links to, spelled from its own words by rule —
 a fragment is a permanent URL. `python -m builder build` writes the rail between two
 marker comments; `check`'s `contents` check re-derives the rail, the heading ids and the

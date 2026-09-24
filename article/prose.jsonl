@@ -11,3 +11,4 @@
 {"schema": 1, "kind": "prose", "page": "full-pipeline.html", "file": "Full pipeline v3.md"}
 {"schema": 1, "kind": "prose", "page": "deep-zoom.html", "file": "Deep zoom v3.md"}
 {"schema": 1, "kind": "prose", "page": "fractal-atlases.html", "file": "Fractal atlases v1.md", "divergences": [{"master": "## Fractal atlases\n\nAny interesting", "page": "Any interesting", "why": "the master opens its body with the page's own title as a heading; the page carries that title as its <h1> in the masthead, and an <h2> repeating it under the <h1> would be a rail entry pointing at the top of the page it is on"}]}
+{"schema": 1, "kind": "prose", "page": "./start-here.html", "file": "Start here v1.md"}

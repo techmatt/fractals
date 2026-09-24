@@ -50,6 +50,9 @@ are the builder's:
   every prose `<h2>`, which is derived from the heading's own words. `python -m builder
   build` writes both; nothing between the markers is worth typing.
 
+One page is not a section and not in this directory: `../start-here.html`, the page a new
+reader is sent to first, which the rail lists above the contents rather than among them.
+
 Two pages hang off **Color palettes** without being sections of their own, and they live
 in `../palettes/` rather than here: `all-palettes.html`, which the builder generates —
 every palette in the library as a strip, grouped the way the section groups them — and

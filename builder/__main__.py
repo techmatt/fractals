@@ -13,7 +13,7 @@ published tentative record next door as a staged gallery — a record and its pi
 no page made from them. `import`,
 `deep-gallery` bakes the Deep tab's gallery tiles from its register, and runs the stages
 that found the first set.
-`prose`, `review`, `explorer`, `locations`, `judges`, `picks`, `seats`, `phoenix-points`,
+`prose`, `review`, `explorer`, `locations`, `judges`, `picks`, `start`, `seats`, `phoenix-points`,
 `deep-gallery`, `growth` and `pipeline` are the
 commands that reach outside the repository — for a full-size original, for the approved
 prose, for the Drive-synced review folder, and for the engine, the records and the
@@ -59,6 +59,7 @@ from . import review as review_module
 from . import seats as seats_module
 from . import sections as sections_module
 from . import serve as serve_module
+from . import start as start_module
 from . import walk as walk_module
 from .paths import FIGURE_IMAGES_DIR, IMAGES_DIR, SITE_ROOT
 
@@ -461,6 +462,17 @@ def _parser() -> argparse.ArgumentParser:
         "--place", action="store_true", help="land the picture and fill its registry row"
     )
     fronted.add_argument(
+        "--replace", action="store_true", help="land a redraw of a figure already on the page"
+    )
+
+    started = commands.add_parser("start", help="draw the figures of the Start here page")
+    started.add_argument(
+        "id", nargs="*", choices=[[], *sorted(start_module.MAKERS)], help="the figure's id"
+    )
+    started.add_argument(
+        "--place", action="store_true", help="land each panel and fill its registry row"
+    )
+    started.add_argument(
         "--replace", action="store_true", help="land a redraw of a figure already on the page"
     )
 
@@ -1280,6 +1292,19 @@ def _do_front(options: argparse.Namespace) -> int:
     return 0
 
 
+def _do_start(options: argparse.Namespace) -> int:
+    """Draw the Start here page's figures, and optionally land them. All split."""
+    for identifier in options.id or list(start_module.MAKERS):
+        _land_split(
+            identifier,
+            start_module.draw(identifier),
+            start_module,
+            replace=options.replace,
+            landing=bool(options.place or options.replace),
+        )
+    return 0
+
+
 def _do_icons() -> int:
     """Record the icon's recipe row, then draw every file of the icon set from it."""
     for path in icons.draw():
@@ -1528,6 +1553,8 @@ def main(argv: list[str] | None = None) -> int:
             return _do_fundamentals(options)
         if options.command == "front":
             return _do_front(options)
+        if options.command == "start":
+            return _do_start(options)
         if options.command == "icons":
             return _do_icons()
         if options.command == "deep":
@@ -1577,6 +1604,7 @@ def main(argv: list[str] | None = None) -> int:
         prose_module.ProseError,
         review_module.ReviewError,
         walk_module.WalkError,
+        start_module.StartError,
         OSError,
     ) as error:
         print(f"error: {error}", file=sys.stderr)
