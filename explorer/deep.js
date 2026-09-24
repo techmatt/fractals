@@ -1797,12 +1797,15 @@ export function mount(host) {
 
   // ----------------------------------------------------------------- the controls
 
+  /** Pin the cap at `value`, held to the kernel's floor and ceiling. Says whether the view
+   *  moved, which is what `recapping` restarts a pass on. */
   function setCap(value) {
     const wanted = Math.round(value);
     const held = Math.max(deepLink.CAP_FLOOR, Math.min(deepLink.CAP_LIMIT, wanted));
-    if (held === view.maxiter && pinned()) return;
+    if (held === view.maxiter && pinned()) return false;
     view = { ...view, maxiter: held, capFrom: "reader" };
     moved();
+    return true;
   }
 
   // ------------------------------------------------------------------ Details
@@ -1970,9 +1973,13 @@ export function mount(host) {
       els.bar.title = "";
     }
     els.auto.checked = autoRender;
+    // **Iterations fades for its limits and a download, never for a pass** *(Matt,
+    // iter_buttons_live_ckpt145)*: a press during one restarts it at the new cap
+    // (`recapping`, below).
+    const downloading = running?.upto === "download";
     els.cap.value = String(view.maxiter);
-    els.capUp.disabled = committed || view.maxiter >= deepLink.CAP_LIMIT;
-    els.capDown.disabled = committed || view.maxiter <= deepLink.CAP_FLOOR;
+    els.capUp.disabled = downloading || view.maxiter >= deepLink.CAP_LIMIT;
+    els.capDown.disabled = downloading || view.maxiter <= deepLink.CAP_FLOOR;
     syncDetails();
 
     // **A navigation button fades only for a reason of its own** *(Matt,
@@ -1981,7 +1988,6 @@ export function mount(host) {
     // press during a pass cancels it and acts (`interrupting`, below), the way Cancel stops
     // one. What is left is the button's own reason, and a download, which is a file the
     // reader asked for and may be minutes of work that one press would throw away.
-    const downloading = running?.upto === "download";
     const julia = view.julia !== null;
     els.julia.textContent = julia ? "Back to the Mandelbrot set (j)" : "Julia at this c (j)";
     els.julia.disabled = downloading;
@@ -2161,25 +2167,70 @@ export function mount(host) {
 
   els.auto.addEventListener("change", () => setAuto(els.auto.checked));
 
-  els.capUp.addEventListener("click", () => setCap(view.maxiter * CAP_STEP));
-  els.capDown.addEventListener("click", () => setCap(view.maxiter / CAP_STEP));
-  els.cap.addEventListener("change", () => {
-    const wanted = Number(els.cap.value);
-    if (Number.isFinite(wanted)) setCap(wanted);
-    els.cap.value = String(view.maxiter);
-  });
-  els.policy.addEventListener("click", () => {
-    const wanted = policyCap(view.w.value);
-    const changed = wanted !== view.maxiter;
-    view = { ...view, maxiter: wanted, capFrom: "width" };
-    if (changed) {
-      moved();
-    } else {
-      // The same number, but no longer anybody's choice: the link drops its `n`.
-      host.settle();
-      syncControls();
-    }
-  });
+  /**
+   * A cap control, pressed while a pass runs: the pass stops and starts again at the new
+   * cap *(Matt, iter_buttons_live_ckpt145)*. Seeing mid-pass that the cap is too low is
+   * exactly when a reader wants to raise it, and Halve and Double used to fade for the
+   * whole of a pass the reader started. The pass comes back as what it was — a Render as
+   * a Render, an auto pass as an auto pass, so Cancel still goes back where it would have —
+   * and never through the settle timer, which draws nothing with Auto-render off.
+   *
+   * **Restarted, not continued.** The kernel hands back an escape count per sample and
+   * keeps no orbit state, so a pixel that had not escaped by the old cap has to be iterated
+   * from zero at the new one; carrying `z` and its derivative across a pass would be an
+   * export `perturb-wasm` does not have. What a restart can reuse is the reference orbit
+   * the pool holds, which survives a cancel: once it has landed, a restart draws off it
+   * for as long as the new cap is within the iterations it was run to (`#reaches` in
+   * `deep-render.js`), which Halve always is and Double usually is.
+   *
+   * A download is never taken this way, and a minibrot search is left to `moved()`, which
+   * treats it as any change to the frame: the search settles a cap of its own and draws
+   * nothing at this one.
+   */
+  function recapping(act) {
+    return () => {
+      if (running?.upto === "download") return;
+      const was = running;
+      if (!act() || was === null || was.upto === "minibrots") return;
+      stop();
+      disarm();
+      render(was.upto, { auto: was.auto });
+    };
+  }
+
+  els.capUp.addEventListener(
+    "click",
+    recapping(() => setCap(view.maxiter * CAP_STEP)),
+  );
+  els.capDown.addEventListener(
+    "click",
+    recapping(() => setCap(view.maxiter / CAP_STEP)),
+  );
+  els.cap.addEventListener(
+    "change",
+    recapping(() => {
+      const wanted = Number(els.cap.value);
+      const changed = Number.isFinite(wanted) && setCap(wanted);
+      els.cap.value = String(view.maxiter);
+      return changed;
+    }),
+  );
+  els.policy.addEventListener(
+    "click",
+    recapping(() => {
+      const wanted = policyCap(view.w.value);
+      const changed = wanted !== view.maxiter;
+      view = { ...view, maxiter: wanted, capFrom: "width" };
+      if (changed) {
+        moved();
+      } else {
+        // The same number, but no longer anybody's choice: the link drops its `n`.
+        host.settle();
+        syncControls();
+      }
+      return changed;
+    }),
+  );
 
   /**
    * A navigation button, pressed while a pass runs: the pass stops and the button acts

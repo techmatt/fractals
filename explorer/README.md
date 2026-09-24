@@ -1529,12 +1529,26 @@ in both views (next section).
   | Julia at this c / Back to the Mandelbrot set (j) | a download |
   | Same view at z = 0 | already centred on 0; a download |
   | Shallow mode | the frame is below `f64`, or its `c` is not exact in a double; a download |
-  | Halve, Double (Iterations) | a pass the reader started is running; the cap is at its limit or floor |
+  | Halve (Iterations) | the cap is at the kernel's floor; a download |
+  | Double (Iterations) | the cap is at the kernel's ceiling; a download |
   | Render | the frame is refused (`refused()`) |
 
   A download is the one reason kept across the board: it is a file the reader asked for,
-  and it can be minutes of work that one press would throw away. The Iterations buttons
-  were left as they were, because the brief covers Navigation.
+  and it can be minutes of work that one press would throw away.
+- **Iterations interrupts too** *(Matt, iter_buttons_live_ckpt145)*. Halve and Double used
+  to fade for as long as a pass the reader started ran, and mid-pass is exactly when a
+  reader sees the cap is too low. A press during a pass now stops it and starts it again
+  at the new cap (`recapping` in `deep.js`), as what it was: a Render comes back as a
+  Render and an auto pass as an auto pass, so Cancel still goes back where it would have.
+  The cap box and *From the width* take the same route. A minibrot search is not
+  restarted, since it draws nothing at the cap; the change is left to `moved()` like any
+  other. **It restarts rather than continuing**: the kernel returns an escape count per
+  sample and keeps no `z` or derivative to carry into a longer pass, and exporting them is
+  a `perturb-wasm` change. The reference orbit the pool holds does survive the cancel, and
+  a restart draws off it wherever the new cap is within what it was run to (measured on
+  `tangle 1e-22`: both a Halve and a Double mid-pass came back *orbit (kept)*). The shallow view has
+  no iteration control (its cap is derived from the width), so there is nothing there to
+  apply the rule to.
 
 The left panel keeps the tab's one sentence and, since
 deep_gallery_build_ckpt144, the gallery under it (*The gallery*, below), always open since
