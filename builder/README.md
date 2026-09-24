@@ -903,20 +903,22 @@ in plain doubles on purpose: an engine spec with `allow_unresolvable_in_f64` (th
 colouring so the two differ in arithmetic alone. It is a `spec` panel, and `links.py`
 refuses it as `deep`, which is true: the explorer refuses that frame.
 
-**Colouring is `scale=absolute` throughout**, the percentile stretch being what flattens a
-deep frame. The page's own Deep-tab link colours at `lambda=0&period=0.25`, and the figures
+**Colouring is `scale=absolute` throughout but one panel**, the percentile stretch being
+what flattens a deep frame. The page's own Deep-tab link colours at `lambda=0&period=0.25`, and the figures
 whose counts run to tens rather than thousands use `period=0.5`, which bands less.
-`deep-shallow-and-deep` is drawn in the colouring its deep frame's link was given in
-(Coalglow, with a phase), and the map is read off each figure's frames, so a figure in
-another map writes that map's name after `colormap`. One figure uses one colouring, so a
-colour is one escape count across a strip. Measured on the
+`deep-shallow-and-deep` is drawn in Coalglow, and the map is read off each figure's frames,
+so a figure in another map writes that map's name after `colormap`. One figure uses one
+colouring, so a colour is one escape count across a strip, **with one exception**: both of
+`deep-shallow-and-deep`'s links are Matt's as he gave them, and its shallow half carries a
+colouring of its own on the leveled scale *(PLACE_deep_zoom_v3_ckpt145)*, so across that
+pair a colour is not one escape count. Measured on the
 f64 figure at the widths f64 still resolves: the engine's colouring and the tab's shade of
 the perturbation field agree pixel for pixel by eye, so the pair is a fair comparison.
 
 Landing is the standard split landing plus one step. A new figure needs a `pending` row
 whose block is on the page, then `deep <id> --place`, then `links --write`, then
-`figure <id> --heal`, the order *Still hand-done* names. Five figures, 19 panels, 2.75 MB
-at 2×2 samples; the three drawn in deep_zoom_edits_ckpt145 took 177 s together on this
+`figure <id> --heal`, the order *Still hand-done* names. Four figures, 16 panels, 2.55 MB
+at 2×2 samples, since `deep-seahorse-valley` left the page *(PLACE_deep_zoom_v3_ckpt145)*; the three drawn in deep_zoom_edits_ckpt145 took 177 s together on this
 machine.
 
 **`deep-misiurewicz-pairs` is aligned by derivation, not by fit.** At a Misiurewicz point

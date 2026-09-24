@@ -40,11 +40,13 @@ the Deep tab would draw the right-hand picture instead.
 
 ## Colouring
 
-Every panel is `scale=absolute`: the frame's own percentile stretch spends the palette on a
-few percent of a deep frame's range (the prose says so, and the figure after the video is
-about it). `lambda` and `period` are chosen per figure and written into the link, which is
-where the recipe records them. Panels of one strip share one colouring, so that one colour
-means one escape count across the strip, the way the video's frames do.
+Every panel but one is `scale=absolute`: the frame's own percentile stretch spends the
+palette on a few percent of a deep frame's range (the prose says so, and the figure after
+the video is about it). The one is the shallow half of `deep-shallow-and-deep`, whose link
+is Matt's as he gave it, on the leveled scale. `lambda` and `period` are chosen per figure
+and written into the link, which is where the recipe records them. Panels of one strip
+share one colouring, so that one colour means one escape count across the strip, the way
+the video's frames do; that pair is the one exception.
 """
 
 from __future__ import annotations
@@ -181,9 +183,12 @@ THREADS = ("-0.782601984654748", "0.15006989511782523", "1.2860948266974178e-9")
 NUCLEUS_972 = ("-0.782601984826695942254944884344", "0.15006989282157889324981067557")
 
 #: The deep frame of `deep-shallow-and-deep`, and its colouring, exactly as Matt gave the
-#: link (deep_zoom_edits_ckpt145). The shallow frame shares its centre and its colouring.
+#: link (deep_zoom_edits_ckpt145). The shallow frame shares its centre, and since
+#: PLACE_deep_zoom_v3_ckpt145 its whole link is Matt's too: its own cap and its own
+#: colouring, on the leveled scale, so the pair no longer shares one colouring.
 KNOT = ("-0.7493705324700378557700614606921816", "0.0414726670681690448763936935919414")
 COALGLOW = "p=Coalglow&phase=0.617&scale=absolute&lambda=0.04&period=0.596"
+SHALLOW = "n=53737&p=Coalglow&gamma=0.559&cycles=2&phase=0.645&lambda=0.04&period=0.596"
 
 #: The video's keyframe k2: a double still places a pixel along the imaginary axis here and
 #: no longer does along the real one, so the f64 picture breaks up and is still recognizable.
@@ -383,12 +388,12 @@ FIGURES = {
             Frame(
                 *KNOT,
                 "1e-12",
-                COALGLOW,
+                SHALLOW,
                 "Shallow",
                 note=_wide("1e-12"),
-                alt="A frame at the same center 10⁻¹² wide: broad smooth bands of pale orange "
-                "crossed by thin chains of filigree, the center on a small knot where two of them "
-                "meet.",
+                alt="A frame at the same center 10⁻¹² wide: two spirals joined in an S by chains "
+                "of cream and orange filigree over broad smooth fields of dark red and black, the "
+                "center on a small four-armed knot where the chains meet.",
             ),
             Frame(
                 *KNOT,
@@ -404,9 +409,9 @@ FIGURES = {
         2,
         (960, 540),
         2,
-        "the deep frame deep_zoom_edits_ckpt145 names, 2.3e-17 wide, and the same centre "
-        "zoomed out to 1e-12, the first width going out at which the neighbourhood of the "
-        "centre reads as smooth bands",
+        "the deep frame deep_zoom_edits_ckpt145 names, 2.3e-17 wide, and the shallow frame "
+        "PLACE_deep_zoom_v3_ckpt145 names, the same centre 1e-12 wide in a colouring of its "
+        "own",
     ),
     "deep-descent-rungs": Figure(
         (
@@ -468,41 +473,6 @@ FIGURES = {
         "the S4 descent chain of the wallpaper project's minibrot examples, periods 1, 2, "
         "27, 54 and 972, ending on the place of the threads candidate ca42a73543b6c213",
     ),
-    "deep-seahorse-valley": Figure(
-        (
-            Frame(
-                *TARGET,
-                "0.02",
-                FINE,
-                "The cleft",
-                note="width 0.02",
-                alt="The seahorse valley: a narrow cleft between two black bodies, banded in "
-                "orange and blue and lined with small bulbs.",
-            ),
-            Frame(
-                *TARGET,
-                "0.004",
-                FINE,
-                "The wall",
-                note="width 0.004",
-                alt="One wall of the valley close up: bulbs and curled shapes along the edge "
-                "of the main cardioid.",
-            ),
-            Frame(
-                *TARGET,
-                "0.0009",
-                FINE,
-                "Spiral and seahorse",
-                note="width 0.0009",
-                alt="A double spiral of tight rings at upper left and a seahorse's curled "
-                "tail below it.",
-            ),
-        ),
-        3,
-        (800, 450),
-        2,
-        "the video's target at three widths inside its first decades",
-    ),
     "deep-misiurewicz-pairs": Figure(
         tuple(frame for point in MISIUREWICZ for frame in _pair(point, COARSE)),
         2,
@@ -532,11 +502,6 @@ WORDS = {
         "Six steps down one descent, each frame centered on the next component in a chain "
         "nested one inside the next. Filigree from each copy appears in regions that were "
         "smooth one step earlier.",
-    ),
-    "deep-seahorse-valley": (
-        "Three frames down the seahorse valley along the video's path.",
-        "The seahorse valley along the video's path: the cleft, the double spiral on one "
-        "side and the seahorses on the other.",
     ),
     "deep-misiurewicz-pairs": (
         "Three pairs of zooms, each the Mandelbrot set and a Julia set at one Misiurewicz point.",
@@ -575,7 +540,8 @@ def draw(identifier: str) -> Split:
     _DRAWN[identifier] = drawn
     lines = [
         f"builder.deep_figures:draw — {figure.about}. Every panel {width}x{height}, "
-        f"supersample {ss}, drawn in colormap {_map(figure)} under scale absolute. A Deep-tab "
+        f"supersample {ss}, drawn in colormap {_map(figure)} under the scale each panel's "
+        "line names. A Deep-tab "
         "panel is its link, held in article/figure-recipes.jsonl under deep|<figure id>#<panel>: "
         "its field drawn by zoom_fields.mjs on the committed perturb.wasm and coloured by "
         "deep_gallery_shade.mjs through engine.wasm, exactly as the Deep tab draws the link.",
@@ -625,10 +591,10 @@ def _colour_words(colour: str) -> str:
     """The palette pass in words, map first: `palette` and never `colormap`, which the
     figure's header line spends once."""
     parts = _parts(colour)
-    phase = f"phase {parts['phase']}, " if "phase" in parts else ""
+    shade = "".join(f"{key} {parts[key]}, " for key in ("gamma", "cycles", "phase") if key in parts)
     return (
-        f"{parts['p']} {phase}scale {parts['scale']}, lambda {parts['lambda']}, "
-        f"period {parts['period']}"
+        f"{parts['p']} {shade}scale {parts.get('scale', 'leveled')}, "
+        f"lambda {parts['lambda']}, period {parts['period']}"
     )
 
 

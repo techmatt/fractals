@@ -36,10 +36,12 @@
     <li class="rail-current"><a href="deep-zoom.html" aria-current="page">Deep zoom</a> <span class="done" role="img" aria-label="written">✓</span>
       <ol class="rail-headings">
         <li><a href="#what-depth-adds-to-a-picture">What depth adds to a picture</a></li>
-        <li><a href="#satellite-copies-and-the-seahorse-valley">Satellite copies and the seahorse valley</a></li>
+        <li><a href="#minibrot-descents">Minibrot descents</a></li>
         <li><a href="#julia-sets-inside-the-mandelbrot-set">Julia sets inside the Mandelbrot set</a></li>
         <li><a href="#how-a-deep-frame-is-computed">How a deep frame is computed</a></li>
-        <li><a href="#a-gallery-of-deep-frames">A gallery of deep frames</a></li>
+        <li><a href="#deep-zoom-rendering-speed">Deep zoom rendering speed</a></li>
+        <li><a href="#automatic-minibrot-descents">Automatic minibrot descents</a></li>
+        <li><a href="#the-deep-gallery">The deep gallery</a></li>
       </ol>
     </li>
   </ol>
@@ -123,13 +125,17 @@
 
     <p>With some deliberate choices guiding the descent, deeper parts of the Mandelbrot set
     and related fractals produce much richer detail and pattern in regions that look plain
-    and smooth at shallower depths. The figure below compares a shallow frame with a deep
-    frame inside it.</p>
+    and smooth at shallower depths. In the original Mandelbrot set, the smooth rendering
+    approach often leaves large areas with only a smooth gradient. For most of the gallery I
+    used alternative rendering modes (especially threads and tia) to add detail to these
+    regions, but it's also possible to find extremely deep areas of these fractals that
+    contain beautiful fractal richness where the shallower levels would be smooth. The
+    figure below compares a shallow frame with a deep frame inside it.</p>
 
       <figure class="figure figure-split" data-figure="deep-shallow-and-deep">
         <div class="figure-panels" style="--figure-across: 2">
         <div class="figure-panel">
-          <a class="figure-open" href="../explorer/index.html?dv=3&amp;x=-0.7493705324700378557700614606921816&amp;y=0.0414726670681690448763936935919414&amp;w=1e-12&amp;n=53737&amp;p=Coalglow&amp;phase=0.617&amp;scale=absolute&amp;lambda=0.04&amp;period=0.596" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/deep-shallow-and-deep-1.webp" width="960" height="540" alt="A frame at the same center 10⁻¹² wide: broad smooth bands of pale orange crossed by thin chains of filigree, the center on a small knot where two of them meet." loading="lazy"><span class="figure-open-mark" aria-hidden="true">↗</span></a>
+          <a class="figure-open" href="../explorer/index.html?dv=3&amp;x=-0.7493705324700378557700614606921816&amp;y=0.0414726670681690448763936935919414&amp;w=1e-12&amp;n=53737&amp;p=Coalglow&amp;gamma=0.559&amp;cycles=2&amp;phase=0.645&amp;lambda=0.04&amp;period=0.596" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/deep-shallow-and-deep-1.webp" width="960" height="540" alt="A frame at the same center 10⁻¹² wide: two spirals joined in an S by chains of cream and orange filigree over broad smooth fields of dark red and black, the center on a small four-armed knot where the chains meet." loading="lazy"><span class="figure-open-mark" aria-hidden="true">↗</span></a>
           <p class="figure-label">Shallow<span class="figure-note">width 10⁻¹²</span></p>
         </div>
         <div class="figure-panel">
@@ -140,11 +146,12 @@
         <figcaption>A shallow frame (left) and a deep frame inside it (right): a region that is smooth at the shallow depth fills with detail further down.</figcaption>
       </figure>
 
+    <h2 id="minibrot-descents">Minibrot descents</h2>
+
     <p>Small copies of the set, minibrots, lie all along the boundary: every filament passes
     infinitely many of them, at every depth, smaller and more numerous the further down you
-    go. From outside, a copy looks like a small
-    black body with the familiar bulbs and hairs. A frame that zooms into the copy's neighborhood sees more than
-    that. It finds the copy's own seahorse valleys and spirals laid over the structure it was
+    go. From outside, a copy looks like a small black body with the familiar bulbs and hairs.
+    A frame that zooms into the copy's neighborhood sees more than that. It finds the copy's own seahorse valleys and spirals laid over the structure it was
     already in, so a region that looked smooth from further out fills with filigree. The
     figure below follows one descent of this kind, six steps down a chain of components
     nested one inside the next. Each step frames the next component in the chain, and the
@@ -178,37 +185,6 @@
         </div>
         </div>
         <figcaption>Six steps down one descent, each frame centered on the next component in a chain nested one inside the next. Filigree from each copy appears in regions that were smooth one step earlier.</figcaption>
-      </figure>
-
-    <h2 id="satellite-copies-and-the-seahorse-valley">Satellite copies and the seahorse valley</h2>
-
-    <p>The narrow gap between the main cardioid and the large disk to its left is the
-    <i>seahorse valley</i>, named for the curled shapes that line it. Wikipedia's
-    <a href="https://en.wikipedia.org/wiki/Mandelbrot_set#Image_gallery_of_a_zoom_sequence">zoom-sequence
-    gallery</a> walks down it: double spirals on one side, seahorses on the other, and at the heart of the pattern a small distorted copy of the set, which it
-    calls a satellite. Around a satellite the seahorse tails form rings, and the number of
-    tails in each ring grows in powers of two, so the rings have two-, four- and eight-fold
-    symmetry. The video's path is a second instance of the
-    same walk. It enters the valley, passes its double spiral, reaches a copy, and then
-    repeats the sequence inside that copy's own seahorse valley, several decades deeper. The
-    stills below are taken from that path.</p>
-
-      <figure class="figure figure-split" data-figure="deep-seahorse-valley">
-        <div class="figure-panels" style="--figure-across: 3">
-        <div class="figure-panel">
-          <a class="figure-open" href="../explorer/index.html?dv=3&amp;x=-0.74937053247003823168823992075369&amp;y=0.041472667068168900034718746387049&amp;w=0.02&amp;n=12674&amp;p=glowdon&amp;scale=absolute&amp;lambda=0&amp;period=0.25" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/deep-seahorse-valley-1.webp" width="800" height="450" alt="The seahorse valley: a narrow cleft between two black bodies, banded in orange and blue and lined with small bulbs." loading="lazy"><span class="figure-open-mark" aria-hidden="true">↗</span></a>
-          <p class="figure-label">The cleft<span class="figure-note">width 0.02</span></p>
-        </div>
-        <div class="figure-panel">
-          <a class="figure-open" href="../explorer/index.html?dv=3&amp;x=-0.74937053247003823168823992075369&amp;y=0.041472667068168900034718746387049&amp;w=0.004&amp;n=15460&amp;p=glowdon&amp;scale=absolute&amp;lambda=0&amp;period=0.25" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/deep-seahorse-valley-2.webp" width="800" height="450" alt="One wall of the valley close up: bulbs and curled shapes along the edge of the main cardioid." loading="lazy"><span class="figure-open-mark" aria-hidden="true">↗</span></a>
-          <p class="figure-label">The wall<span class="figure-note">width 0.004</span></p>
-        </div>
-        <div class="figure-panel">
-          <a class="figure-open" href="../explorer/index.html?dv=3&amp;x=-0.74937053247003823168823992075369&amp;y=0.041472667068168900034718746387049&amp;w=0.0009&amp;n=18043&amp;p=glowdon&amp;scale=absolute&amp;lambda=0&amp;period=0.25" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/deep-seahorse-valley-3.webp" width="800" height="450" alt="A double spiral of tight rings at upper left and a seahorse's curled tail below it." loading="lazy"><span class="figure-open-mark" aria-hidden="true">↗</span></a>
-          <p class="figure-label">Spiral and seahorse<span class="figure-note">width 0.0009</span></p>
-        </div>
-        </div>
-        <figcaption>The seahorse valley along the video's path: the cleft, the double spiral on one side and the seahorses on the other.</figcaption>
       </figure>
 
     <h2 id="julia-sets-inside-the-mandelbrot-set">Julia sets inside the Mandelbrot set</h2>
@@ -257,8 +233,9 @@
 
     <h2 id="how-a-deep-frame-is-computed">How a deep frame is computed</h2>
 
-    <p>The Deep tab computes one orbit at high precision, the <i>reference orbit</i>, for the
-    center of the frame, using fixed-point arithmetic with as many bits as the frame's width
+    <p>The deep tab in the <a href="../explorer/index.html?panel=deep">fractal explorer</a>
+    computes one orbit at high precision, the <i>reference orbit</i>, for the center of the
+    frame, using fixed-point arithmetic with as many bits as the frame's width
     requires. Every pixel then iterates only its small offset from that orbit. Write a
     pixel's orbit as z<sub>n</sub> = Z<sub>n</sub> + δ<sub>n</sub>, where Z<sub>n</sub> is
     the reference orbit, and let Δc be the pixel's offset in parameter. For
@@ -275,25 +252,28 @@
     <p>The reference orbit is only a good anchor while a pixel's orbit stays near it. When
     the full value Z<sub>n</sub> + δ<sub>n</sub> passes closer to zero than δ<sub>n</sub>
     itself, the offset has become the larger quantity and precision starts to drain away.
-    The fix used here is <i>rebasing</i>, due to Zhuoran on fractalforums.org. At that step
-    the pixel takes its whole current value as a new offset and restarts from the beginning
-    of the same reference orbit. With rebasing, one reference orbit serves the entire frame.
-    The tab draws the multibrot families up to degree six, on both the parameter and
-    dynamical planes, in the smooth rendering. Its iteration cap follows the same depth rule
-    as the rest of the engine, up to a ceiling of a million, and a probe raises it when too
-    many samples reach it. In practice it works down to widths of about
-    10<sup>−30</sup> close to a minibrot, where the ceiling on iterations runs out first, and
-    to about 10<sup>−50</sup> elsewhere, where a coordinate outgrows the 64 characters its
-    link can carry. Renderers that also extend the exponent range of their offsets go
-    hundreds of decades deeper.</p>
+    The fix used here is <i>rebasing</i>, due to
+    <a href="https://fractalforums.org/fractal-mathematics-and-new-theories/28/another-solution-to-perturbation-glitches/4360">Zhuoran
+    on fractalforums.org</a>. At that step the pixel takes its whole current value as a new
+    offset and restarts from the beginning of the same reference orbit. With rebasing, one
+    reference orbit serves the entire frame. The fractal explorer draws the multibrot
+    families up to degree six, on both the parameter and dynamical planes, using the smooth
+    rendering mode. Its iteration cap follows the same depth rule as the rest of the engine,
+    up to a ceiling of a million, and a probe raises it when too many samples reach it. In
+    practice it works down to widths of about 10<sup>−30</sup> close to a minibrot, where
+    the ceiling on iterations runs out. Renderers that also extend the exponent range of
+    their offsets go hundreds of decades deeper.</p>
 
-    <p>The tab runs on the CPU, in WebAssembly, across the browser's worker threads. On one
+    <h2 id="deep-zoom-rendering-speed">Deep zoom rendering speed</h2>
+
+    <p>The fractal explorer renders deep frames on the CPU, in WebAssembly, across the
+    browser's worker threads. On one
     six-core desktop, the video's final frame takes about 15 seconds at 1280 by 720 with one
     sample per pixel, averaging about fifteen thousand iterations a sample. On the same
     machine, <a href="https://mathr.co.uk/web/fraktaler.html">Fraktaler 3</a>, a mature
     open-source deep-zoom renderer, takes about 50 seconds on the CPU with its acceleration
     on and about 100 without it. Compared like for like (CPU, doubles, plain perturbation),
-    the tab does about seven times as many iterations per second. The likely reason is
+    the fractal explorer does about seven times as many iterations per second. The likely reason is
     specialization rather than a better algorithm: Fraktaler 3 interprets general formulas
     and tracks derivatives at every step, while this kernel runs one fixed update. The two
     agree on more than 99.7% of pixels.</p>
@@ -301,44 +281,42 @@
     <p>GPUs are clearly faster at this kind of independent per-pixel work. On the same
     machine Fraktaler 3's GPU path draws the frame in under 3 seconds, in single precision.
     Consumer GPUs are slow at doubles, and in double precision the same GPU roughly ties the
-    tab's CPU kernel, which is why the fast GPU renderers work in single precision with
-    extended-exponent tricks. This project kept rendering on the CPU for portability, and
+    fractal explorer's CPU kernel, which is why the fast GPU renderers work in single
+    precision with extended-exponent tricks. This project kept rendering on the CPU for portability, and
     used the GPU only to evaluate its neural networks.</p>
 
     <p>Deep-zoom renderers usually add
     <a href="https://mathr.co.uk/blog/2022-02-21_deep_zoom_theory_and_practice_again.html">bilinear
     approximation</a>, which skips many iterations at once by applying a precomputed linear
-    map. The tab does not use it, and the reason is worth knowing for anyone building one.
-    On frames with visible structure, the kind a reader opens, it bought well under a factor
-    of three. At every tolerance tried it also moved escape counts, and on some frames it
-    moved the boundary of the interior, so the pictures stopped matching what the engine
+    map. The fractal explorer does not use it, and the reason is worth knowing for anyone
+    building one. On frames with visible structure, the kind a reader opens, it ranged from
+    slightly slower than plain perturbation to about 2.6 times faster. At every tolerance
+    tried it also moved escape counts, and on some frames it moved the boundary of the interior, so the pictures stopped matching what the engine
     draws. It paid off handsomely only on frames that were almost entirely interior.
     Fraktaler 3 shows the same pattern on the video's final frame: its approximation buys a
     factor of about 1.3 to 2 and moves a fifth of the pixels by more than one
     iteration.</p>
 
-    <h2 id="a-gallery-of-deep-frames">A gallery of deep frames</h2>
+    <h2 id="automatic-minibrot-descents">Automatic minibrot descents</h2>
 
-    <p>The Deep tab carries a small <a href="../explorer/index.html?panel=deep:gallery">gallery</a> of
-    frames found this way. The first set came from a rough search. It starts in two places:
-    the video's own final frame, recentred on the small copies found near its end, and
-    places the location search had already found inside a small copy of the set. From each
-    it descends: at every step it searches the view for the nuclei of smaller copies, takes
-    the largest that is clearly smaller than the last, and frames it. The views between one
-    copy and the next supply the frames of two-, four- and eight-fold symmetry, and zooming
-    into the busiest parts of earlier frames supplies most of the spirals and seahorses. The
-    Julia-plane frames map a
-    familiar parameter into a deep copy, through the copy's own scale and rotation, and draw
-    the Julia set there. A Claude Code session narrowed about 140 low-resolution previews to
-    65, and I picked the gallery's first 31 from those by eye.</p>
+    <p>Descents like the one in the video can be automated. The neighborhood of a minibrot
+    is a small, turned copy of the whole set, so every place in the set has a twin inside
+    every minibrot, smaller and slightly distorted. Start from a frame centered on a
+    minibrot, and the descent can continue to the twin of any location inside it, then to a
+    twin inside that twin's own minibrot, nested as deep as the arithmetic allows. With two
+    frames A and B, each centered on a minibrot, there are four two-step descents: A then A,
+    A then B, B then A, and B then B. The figure below shows A and B, and then all four.
+    Each twin appears turned, because the copy it sits in is turned.</p>
 
-    <p>The search is rough because searching here is expensive. A candidate for the wallpaper
-    pipeline is cheap to render and is screened by a trained judge. A deep frame takes tens
-    of seconds to minutes even at a modest size, and nothing judges it. A search that renders
-    broadly and filters afterward cannot afford that breadth at these depths, so a better
-    deep search would need to know more precisely where it is going before it spends a
-    render: which copies to descend into, and where around them the interesting structure
-    lies.</p>
+      <figure class="figure-placeholder" data-placeholder="deep-descent-pairs">
+        <p class="placeholder-well"><span class="pending-label">Figure placeholder</span>deep-descent-pairs</p>
+        <figcaption>Two frames, A and B (top), each centered on a minibrot, and the four two-step descents built from them: A then A, A then B, B then A, and B then B.</figcaption>
+      </figure>
+
+    <h2 id="the-deep-gallery">The deep gallery</h2>
+
+    <p>The Deep tab of the fractal explorer carries a small
+    <a href="../explorer/index.html?panel=deep:gallery">gallery</a> of deep frames.</p>
 
     <p>Every figure on this page links to its frame in the explorer, the deep ones in the
     <a href="../explorer/index.html?dv=3&amp;x=-0.74937053247003823168823992075369&amp;y=0.041472667068168900034718746387049&amp;w=3.4869054402668363e-15&amp;p=glowdon&amp;scale=absolute&amp;lambda=0&amp;period=0.25">Deep
