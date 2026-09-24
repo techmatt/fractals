@@ -38,7 +38,20 @@
     <li><a href="fractal-atlases.html">Fractal atlases</a> <span class="done" role="img" aria-label="written">✓</span></li>
     <li><a href="deep-zoom.html">Deep zoom</a> <span class="done" role="img" aria-label="written">✓</span></li>
     <li><a href="other-artistic-techniques.html">Other artistic techniques</a> <span class="done" role="img" aria-label="written">✓</span></li>
-    <li class="rail-current"><a href="cool-math.html" aria-current="page">Cool math</a></li>
+    <li class="rail-current"><a href="cool-math.html" aria-current="page">Cool math</a> <span class="done" role="img" aria-label="written">✓</span>
+      <ol class="rail-headings">
+        <li><a href="#connected-or-dust">Connected or dust</a></li>
+        <li><a href="#one-attracting-cycle">One attracting cycle</a></li>
+        <li><a href="#the-mandelbrot-set-is-connected">The Mandelbrot set is connected</a></li>
+        <li><a href="#copies-everywhere">Copies everywhere</a></li>
+        <li><a href="#embedded-julia-sets">Embedded Julia sets</a></li>
+        <li><a href="#tan-leis-similarity">Tan Lei's similarity</a></li>
+        <li><a href="#names-for-places">Names for places</a></li>
+        <li><a href="#a-distance-you-can-compute">A distance you can compute</a></li>
+        <li><a href="#a-boundary-as-thick-as-the-plane">A boundary as thick as the plane</a></li>
+        <li><a href="#pi-in-the-mandelbrot-set">Pi in the Mandelbrot set</a></li>
+      </ol>
+    </li>
   </ol>
   <ul class="rail-links">
     <li><a href="../explorer/index.html">Fractal explorer</a></li>
@@ -55,8 +68,103 @@
 </header>
 
 <main>
-  <section class="intro">
-    <p><em>This section is not written yet.</em></p>
+  <section class="prose">
+    <p>The mathematics behind these fractals runs deep, and I'm not at a level where I can
+    follow the proofs of most of the results below. But it's a fun area, because so many of
+    the theorems turn directly into tools for making pictures. This page lists some of my
+    favorites, a few sentences each, with pointers for anyone who wants the real thing.</p>
+
+    <h2 id="connected-or-dust">Connected or dust</h2>
+
+    <p>The <a href="https://en.wikipedia.org/wiki/Mandelbrot_set">Mandelbrot set</a> is
+    exactly the set of parameters c whose Julia sets are connected. Outside it, the Julia set
+    shatters into a Cantor set of disconnected dust. Fatou and Julia showed around 1919 that
+    it all comes down to one orbit, the orbit of zero, the map's <i>critical point</i>: if
+    that orbit stays bounded, the Julia set is connected. That is why the Mandelbrot set is
+    drawn by iterating from zero, and the same holds for every multibrot.</p>
+
+    <h2 id="one-attracting-cycle">One attracting cycle</h2>
+
+    <p>Fatou also proved that every <i>attracting cycle</i> pulls in a critical point. The
+    maps here have only one critical point, so each has at most one attracting cycle, and
+    following the orbit of zero will find it. The fractal explorer uses this directly: on a
+    Julia plane it finds the attracting cycle from the orbit of zero, then stops iterating
+    any point that has provably fallen into it, which makes the interior of a Julia set
+    almost free to draw in the render modes that leave it flat.</p>
+
+    <h2 id="the-mandelbrot-set-is-connected">The Mandelbrot set is connected</h2>
+
+    <p>Douady and Hubbard proved in 1982 that the Mandelbrot set is connected: every island
+    that looks separate is joined to the main body by filaments too thin to see. Whether it
+    is also <em>locally</em> connected is still open, as the
+    <a href="https://en.wikipedia.org/wiki/Mandelbrot_set#Local_connectivity">MLC
+    conjecture</a>. A proof would give a complete combinatorial description of the set's
+    shape.</p>
+
+    <h2 id="copies-everywhere">Copies everywhere</h2>
+
+    <p>The minibrots are not just similar to the whole set. Douady and Hubbard's theory of
+    <a href="https://mrob.com/pub/muency/tuning.html">renormalization</a> shows that each is
+    a genuine copy, distorted only slightly, and that copies sit arbitrarily close to every
+    point of the boundary. This is the fact behind the
+    <a href="deep-zoom.html#automatic-minibrot-descents">automatic minibrot descents</a>,
+    and it is why a patient search can find a good picture almost anywhere.</p>
+
+    <h2 id="embedded-julia-sets">Embedded Julia sets</h2>
+
+    <p>Near a minibrot deep in a zoom, the decorations often arrange themselves into what
+    look like whole Julia sets. They are Julia sets, in a sense: the zoom path to that
+    minibrot fixes a parameter, and the surrounding structure echoes that parameter's Julia
+    set. Deep-zoom artists steer toward them on purpose
+    (<a href="https://mrob.com/pub/muency/embeddedjuliaset.html">Munafo's entry</a> has
+    more).</p>
+
+    <h2 id="tan-leis-similarity">Tan Lei's similarity</h2>
+
+    <p>At a <a href="https://en.wikipedia.org/wiki/Misiurewicz_point">Misiurewicz point</a>,
+    where the orbit of zero lands on a repelling cycle, the Mandelbrot set zoomed in at c
+    becomes identical, in the limit, to the Julia set for c zoomed in at the same point, up
+    to a scale and a turn. <a href="https://doi.org/10.1007/BF02098448">Tan Lei proved it in
+    1990</a>. Misiurewicz points are dense in the boundary, so this is true at a dense set of
+    places. The <a href="deep-zoom.html#julia-sets-inside-the-mandelbrot-set">deep zoom
+    page</a> shows it at three of them.</p>
+
+    <h2 id="names-for-places">Names for places</h2>
+
+    <p>Every point of the boundary can be named. <i>External rays</i> come in from infinity
+    at each angle, and a ray at a rational angle lands at a specific point: periodic angles
+    land at the roots of components, and preperiodic ones at Misiurewicz points.
+    <a href="https://mrob.com/pub/muency/internaladdress.html">Angled internal
+    addresses</a>, due to Lau and Schleicher, name each component by the chain of periods on
+    the way to it from the main cardioid.</p>
+
+    <h2 id="a-distance-you-can-compute">A distance you can compute</h2>
+
+    <p>Carrying the derivative of the orbit alongside the orbit gives an estimate of how far
+    a pixel is from the set, and the
+    <a href="https://en.wikipedia.org/wiki/Koebe_quarter_theorem">Koebe quarter theorem</a>
+    guarantees the estimate is right to within a factor of four. That is enough to draw the
+    thinnest filaments at a consistent width, and it is the basis of the slope shading on
+    the
+    <a href="other-artistic-techniques.html#distance-estimates-and-slope-shading">Other
+    artistic techniques</a> page.</p>
+
+    <h2 id="a-boundary-as-thick-as-the-plane">A boundary as thick as the plane</h2>
+
+    <p>Shishikura proved in 1998 that the boundary of the Mandelbrot set has
+    <a href="https://en.wikipedia.org/wiki/Hausdorff_dimension">Hausdorff dimension</a> 2,
+    the largest a curve in the plane can have. The boundary is so wrinkled that, by this
+    measure, it is as large as a filled region. The area of the set itself is known only
+    numerically, about 1.5066.</p>
+
+    <h2 id="pi-in-the-mandelbrot-set">Pi in the Mandelbrot set</h2>
+
+    <p>In 1991 Dave Boll noticed that at c = −0.75 + εi, the neck between the main cardioid
+    and the period-2 bulb, the number of iterations before escape times ε approaches π as ε
+    shrinks. The same happens at the cusp, c = 1/4 + ε, with the square root of ε
+    (<a href="https://en.wikipedia.org/wiki/Mandelbrot_set#Pi_in_the_Mandelbrot_set">Wikipedia</a>
+    has both). It is a small example of why pictures near these points need so many
+    iterations.</p>
   </section>
 
   <nav class="section-nav">
