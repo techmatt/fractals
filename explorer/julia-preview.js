@@ -312,8 +312,14 @@ export function mount(host) {
     } finally {
       drawing = false;
       // A move that landed while this was drawing is owed a picture — the newest one,
-      // the way `live` owes a slider its latest value.
-      if (on && wanted !== null && timer === 0) timer = setTimeout(settled, SETTLE_MS);
+      // the way `live` owes a slider its latest value. **Only a move that landed**: `at()`
+      // hands over a fresh object per move, so `wanted` still being `at` means the pointer
+      // has not moved since this draw began, and drawing it again would draw the picture
+      // already up. It used to, about nine times a second for as long as the pointer rested
+      // on the plane (profiling_pass_ckpt146).
+      if (on && wanted !== null && wanted !== at && timer === 0) {
+        timer = setTimeout(settled, SETTLE_MS);
+      }
     }
   }
 
