@@ -103,6 +103,12 @@ was raise, and every check after it went unrun.
   reports it — `grep` cannot, and confidently names a clean tree dirty — and this is that
   sweep, with the assertion that it returned rows at all, because a parse that silently
   yields nothing is a guard that passes everything.
+- **icons** — every page the site serves declares the site's icon, with exactly the links
+  `builder.icons.head` spells from that page, and the files those links name are the set:
+  the `.ico` holds 16, 32 and 48, each PNG is its own size, the manifest is what the
+  builder writes, and the recipe store holds the row the set is drawn from. A page that
+  declares nothing is a page a browser asks the origin root about, which under a
+  project-Pages subpath is a 404 in every visitor's console.
 - **explorer** — every figure and every gallery tile is in the explorer link registry,
   as a link or as a stated reason there is none, and every link the registry holds is
   the one the page carries. Whether a link *parses* is asked of the permalink contract
@@ -144,6 +150,7 @@ from . import (
     explorer,
     figures,
     galleries,
+    icons,
     images,
     links,
     pages,
@@ -1176,6 +1183,7 @@ def run_all() -> Report:
             "vocabulary": vocabulary.sweep(),
             "dashes": dashes.sweep(),
             "endings": check_endings(),
+            "icons": icons.problems(),
         },
         skips(),
     )

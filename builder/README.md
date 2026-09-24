@@ -706,6 +706,54 @@ configured. A palette entering the library next door costs one `--library` and o
   visible reason. `git ls-files --eol` is the only detector — `grep` cannot do it in Git
   Bash here, where a CR-at-end-of-line pattern matches every line of a pure-LF file — and
   the check asserts the sweep returned rows before believing that it found none.
+- **icons** — every page the site serves declares the site's icon, with exactly the lines
+  `icons.head` spells from that page, and `assets/icons/` is the set those lines name: the
+  `.ico` holds 16, 32 and 48, each PNG is its own size, the manifest is what the builder
+  writes, and the recipe store holds the `icon` row. Runs on a bare clone; the PNG sizes
+  are the one half that wants Pillow.
+
+## The site's icon
+
+*(favicon_wire_ckpt145.)* `python -m builder icons` records the icon's recipe and draws the
+icon set from it; `builder/icons.py` is the module. Matt picked the icon off a contact sheet
+of forty square crops (favicon_sheet_ckpt145, **F08**, the sheet itself under ignored
+`scratch/favicon/`): gallery seat `20260922T014052Z|dff7e280effc3aa3`, a Multibrot d = 3
+frame in tia and `along-the-starry-way-25`, cropped to the centred square as tall as the
+seat's frame.
+
+**The recipe is one row of `article/figure-recipes.jsonl`**, kind `icon`, stamp `icon`, key
+`site`: the seat, the **crop link** (the shallow link that draws exactly the square, with
+`n` pinned because the seat's cap is not what the depth policy gives the narrower frame),
+the seat's own link, the crop's width, and the master's size and sampling. `icons` writes
+that row, then draws from it: the seat's ledger recipe through `picks.panel_spec`, coloured
+exactly as a seat panel is, with the width replaced by the row's and the resolution made
+1024 square at supersample 3. Every size is a Lanczos reduction of that one master:
+`favicon.ico` (16, 32, 48 as PNG payloads), `apple-touch-icon.png` (180), `icon-192.png`,
+`icon-512.png`, and `site.webmanifest` naming the last two. About 25 s, most of it
+resolving the seat. The files are tracked; the master is in the render cache.
+
+**Every served page declares it, and the lines are the builder's.** `icons.head(page)` is
+three `<link>`s spelled relative to the page. A generated page gets them from
+`pages._shell`; every other page `paths.site_pages` finds, the explorer, the atlas frame
+and the judges bench included, gets them from `build`, which replaces the run of icon
+links in its `<head>` the way it replaces the rail between its markers. A new page starts
+with `<link rel="icon" href="data:,">` on a line of its own and the next `build` fills it
+in. There is no `/favicon.ico` at the origin root and cannot be one: the site is a
+project-Pages subpath, and a page that declared nothing would send every browser there
+for a 404.
+
+**The Galleries page opens on the picture the icon came from.** `galleries-icon-source` is
+a one-panel seat figure registered on `galleries/index.html`, drawn by
+`picks.galleries_icon_source`, which refuses a row whose pick is not `icons.SEAT`, so the
+page and the icon cannot come to name different wallpapers. It is the first registry
+figure on a **generated** page: `pages.gallery_index` derives the block from the registry
+the same way `check` does, so a caption edit is a registry edit and a `build`, and the
+landing is `picks <id> --place`, then `links --write`, then `build`. Its prefix is
+`galleries-`, because `gallery-` is Gallery curation's.
+
+**Re-picking** is an edit to `icons.SEAT` (and to `CROP`, the side as a share of the frame
+height), the same edit to the figure row's `picks`, then `icons`, `picks
+galleries-icon-source --replace`, `links --write` and `build`.
 
 ## Prose has a master, and a page is held to it
 

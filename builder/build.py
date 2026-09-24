@@ -7,7 +7,7 @@ over unchanged inputs reports nothing.
 
 from pathlib import Path
 
-from . import galleries, images, pages, sections
+from . import galleries, icons, images, pages, sections
 from .paths import SITE_ROOT
 
 
@@ -77,8 +77,28 @@ def build(*, thumbnails: bool = True) -> list[str]:
         for gallery in loaded:
             changed.extend(_thumbs(gallery))
     changed.extend(_hand_written(article))
-    for path, html in pages.generated_pages(loaded, article).items():
+    generated = pages.generated_pages(loaded, article)
+    for path, html in generated.items():
         written = _write_page(path, html)
+        if written:
+            changed.append(written)
+    changed.extend(_icon_links(set(generated)))
+    return changed
+
+
+def _icon_links(generated: set[Path]) -> list[str]:
+    """The icon links in every served page's `<head>` that the builder does not generate.
+
+    Every page declares the icon, and the lines are `builder.icons`'s rather than each
+    page's: a generated page gets them from its shell, and every other page, the
+    explorer and the atlas frame included, gets them here, the way a hand-written page gets
+    its rail. Nothing else in such a page is touched.
+    """
+    changed = []
+    for path in icons.served_pages():
+        if path in generated:
+            continue
+        written = _write_page(path, icons.with_icons(path, sections.read_page(path)))
         if written:
             changed.append(written)
     return changed

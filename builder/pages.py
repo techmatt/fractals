@@ -8,7 +8,7 @@ check rather than a coin toss.
 
 from pathlib import Path
 
-from . import figures, links
+from . import figures, icons, links
 from . import palettes as palettes_module
 from . import sections as sections_module
 from .escape import attribute, text
@@ -79,7 +79,9 @@ def topbar(home: str, galleries_index: str) -> str:
     )
 
 
-def _shell(*, title: str, css: str, bar: str, rail: str, header: str, blocks: list[str]) -> str:
+def _shell(
+    *, page: Path, title: str, css: str, bar: str, rail: str, header: str, blocks: list[str]
+) -> str:
     """The shape every page has: the site bar, the contents rail, the column beside it.
 
     A gallery is not an article section, so no entry in the rail is the current one
@@ -95,15 +97,12 @@ def _shell(*, title: str, css: str, bar: str, rail: str, header: str, blocks: li
                 GENERATED_NOTICE,
                 '<meta charset="utf-8">',
                 '<meta name="viewport" content="width=device-width, initial-scale=1">',
-                # **An empty data URL, and the same string on every page.** A browser asks
-                # every origin for `/favicon.ico` unbidden, and under a project-Pages
-                # subpath this site cannot answer at the origin root at all, so every page
-                # load logged a 404 (`explorer_bug_hunt_ckpt138`, finding 8). Declaring an
-                # icon is what stops the ask. It is `data:,` rather than a picture because
-                # a real one is a crop of a wallpaper, and which crop is Matt's to pick
-                # under the tile rule — this takes the 404 away without picking for him,
-                # and a chosen icon is a one-line change here and on each written page.
-                '<link rel="icon" href="data:,">',
+                # **The site's icon, declared on every page** *(favicon_wire_ckpt145)*. A
+                # browser asks every origin for `/favicon.ico` unbidden, and under a
+                # project-Pages subpath this site cannot answer at the origin root, so a page
+                # that declares nothing logs a 404. `builder.icons` owns the lines and spells
+                # them from the page; the hand-written pages get the same lines from `build`.
+                icons.head(page),
                 f"<title>{text(title)}</title>",
                 f'<link rel="stylesheet" href="{css}">',
                 "</head>",
@@ -212,6 +211,7 @@ def gallery_page(gallery: Gallery, sections: list[sections_module.Section]) -> s
         )
 
     return _shell(
+        page=page,
         title=f"{gallery.title} — Making Fractal Wallpapers",
         css=css,
         bar=topbar(article, index_path()),
@@ -251,7 +251,17 @@ def gallery_index(galleries: list[Gallery], sections: list[sections_module.Secti
     intro.append(f'    <p><a href="{attribute(article)}">Back to the article</a></p>')
     intro.append("  </section>")
 
-    blocks = ["\n".join(intro)]
+    # The page opens on a picture *(favicon_wire_ckpt145)*: every registry figure whose row
+    # names this page, derived here exactly as `check` derives it, because a generated page
+    # has no hand to paste a block and `pages` holds the whole file to this function.
+    name = figures.page_name(page)
+    opened = links.opened(page)
+    opening = [
+        figures.markup(figure, opened)
+        for figure in figures.load_all().values()
+        if figure.page == name and figure.on_page
+    ]
+    blocks = [*opening, "\n".join(intro)]
     if galleries:
         tiles = []
         for gallery in galleries:
@@ -274,6 +284,7 @@ def gallery_index(galleries: list[Gallery], sections: list[sections_module.Secti
         blocks.append(_grid(tiles))
 
     return _shell(
+        page=page,
         title="Galleries — Making Fractal Wallpapers",
         css=css,
         bar=topbar(article, index_path()),
@@ -323,6 +334,7 @@ def library_page(sections: list[sections_module.Section]) -> str:
         blocks.append(NEWLINE.join(lines))
 
     return _shell(
+        page=page,
         title=f"{palettes_module.LIBRARY_TITLE} — {SITE_TITLE}",
         css=relative_href(page, SITE_ROOT / "assets" / "css" / "site.css"),
         bar=topbar(

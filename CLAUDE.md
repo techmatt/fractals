@@ -218,7 +218,10 @@ keeps the mechanics. **Every apply round ends by distilling that round's general
   the single carve-out that a page hanging off a section shares that section's prefix:
   `palette-generator-batch` sits on `palettes/make-your-own.html`. The front page's one
   picture is `index-hero`, on a row whose page is spelled `./index.html` — the slash a
-  bare name at the root lacks — and it is the one figure with no caption. `deep-zoom`'s
+  bare name at the root lacks — and it is the one figure with no caption. The Galleries
+  page's one picture is `galleries-icon-source`, on `galleries/index.html`: `galleries-`,
+  because `gallery-` is Gallery curation's, and it is the one registry figure on a page the
+  builder generates rather than one a person writes. `deep-zoom`'s
   prefix is `deep-`. The prose never uses that slug: a
   reference from the text is **positional** (*the figure below*), because this site
   numbers no figures and anchors none.
@@ -446,7 +449,7 @@ explorer/       the one page that runs code — the engine in wasm, and its link
 atlas/          the atlas: the frame the explorer's Atlas tab mounts, over a per-partition
                 record `builder/atlas.py` holds to shape, and a redirect at the address
                 the standalone page had until 2026-09-21
-assets/         css/ and images/ — web-res only
+assets/         css/, images/ — web-res only — and icons/, the site's icon set
 builder/        the Python page generator
 docs/           how this repository's workflows are run — the page-review loop
 scratch/        the probes and contact sheets a choice was found with, reports,
@@ -677,7 +680,7 @@ being drawn as the plain Julia set underneath it.
 After touching placed prose, `python -m builder prose <page>` as well — see **Where prose
 comes from** above for what it holds together and why one edit has several sites.
 
-`builder check` is read-only, and it runs twenty named checks. It resolves every
+`builder check` is read-only, and it runs twenty-one named checks. It resolves every
 internal link, refuses root-absolute and bare-directory hrefs, regenerates the gallery
 HTML and compares it byte for byte with what is committed, holds every figure block to
 its registry row, holds every made figure to being a block a redraw could land on —
@@ -697,7 +700,8 @@ named here because the rule it holds is `writing-guidance.md`'s rather than this
 and sweeps
 `git ls-files --eol` for a tracked file that has drifted to CRLF on disk — that is
 `endings`, and it is named here because it is the one drift `git status` and `git diff`
-both report as nothing. It also
+both report as nothing — and holds every served page to declaring the site's icon with the
+links `builder/icons.py` spells, which is `icons`. It also
 prints one note — never a failure — about the committed wasm module, described in
 `explorer/README.md`. The same commands run in CI
 (`.github/workflows/checks.yml`), which is a check and not a deploy dependency.

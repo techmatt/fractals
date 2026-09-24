@@ -54,6 +54,13 @@ keyed `<figure id>#<panel>` under the stamp `deep`, whose recipe is the canonica
 link the panel was drawn from, the grid and the supersample. Nothing next door stands behind
 one — the link is the whole of it — so these rows are written by `builder.deep_figures`
 when it lands a figure, rewritten when it redraws one, and never touched by `--fill`.
+
+## The site's icon
+
+A fourth, `icon` *(favicon_wire_ckpt145)*: one row, stamp `icon`, key `site`, holding the
+seat the icon is cropped from, the crop link and the crop's width, and the master it is
+drawn at. It is not a figure and no figure cites it, so `--fill` never touches it either;
+`builder.icons` writes it and draws the icon set from it.
 """
 
 from __future__ import annotations
@@ -69,7 +76,7 @@ RECIPES = ARTICLE_DIR / "figure-recipes.jsonl"
 
 #: What a row's `kind` may say: a seat of a recorded tentative gallery, or a bare row of
 #: the candidate ledger that was never seated.
-SEAT, CANDIDATE, DEEP = "seat", "candidate", "deep"
+SEAT, CANDIDATE, DEEP, ICON = "seat", "candidate", "deep", "icon"
 
 #: What a candidate row writes where a seat row writes its stamp. The same word
 #: `picks.CANDIDATE_STAMP` spells, and spelled out rather than left empty so a provenance
@@ -109,7 +116,7 @@ def load_all(path: Path | None = None) -> dict[str, Held]:
     held: dict[str, Held] = {}
     for row in records.read(path):
         kind = row.kind
-        if kind not in (SEAT, CANDIDATE, DEEP):
+        if kind not in (SEAT, CANDIDATE, DEEP, ICON):
             raise RecipeError(f"{row.where}: {kind!r} is not a kind this store carries")
         recipe = row.optional_mapping("recipe")
         if recipe is None:
@@ -264,11 +271,13 @@ def summary() -> list[str]:
     held = load_all()
     seated = sum(1 for one in held.values() if one.kind == SEAT)
     deep = sum(1 for one in held.values() if one.kind == DEEP)
+    icons = sum(1 for one in held.values() if one.kind == ICON)
     unseated = sum(1 for one in held.values() if one.kind == SEAT and not one.seat)
     stamps = sorted({one.stamp for one in held.values() if one.kind == SEAT})
     lines = [
         f"{RECIPES.name}: {len(held)} rows — {seated} seats over {len(stamps)} recorded "
-        f"galleries, {len(held) - seated - deep} bare candidates, {deep} deep panels",
+        f"galleries, {len(held) - seated - deep - icons} bare candidates, {deep} deep panels, "
+        f"{icons} icon",
     ]
     if unseated:
         lines.append(f"  {unseated} carry a recipe and no seat row: the record was never tracked")
@@ -303,3 +312,20 @@ def keep_deep(rows: dict[str, dict]) -> None:
             read="drawn here by builder.deep_figures: the link is the whole recipe",
         )
     write_all(kept)
+
+
+def keep_icon(row: dict) -> None:
+    """Land or rewrite the icon's row, which is the whole of its recipe; every other row
+    keeps its place."""
+    held = load_all()
+    one = Held(
+        stamp=row["stamp"],
+        key=row["key"],
+        kind=ICON,
+        recipe=row["recipe"],
+        source=row.get("source") or {},
+        seat={},
+        read=row["read"],
+    )
+    held[one.identifier] = one
+    write_all(held)

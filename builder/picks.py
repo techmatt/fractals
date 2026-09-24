@@ -1032,6 +1032,44 @@ def gallery_output() -> Split:
     )
 
 
+# ------------------------------------------------------------ the Galleries page's picture
+
+#: What the Galleries page opens on: the wallpaper the site's icon is cropped from, whole.
+ICON_SOURCE = "galleries-icon-source"
+
+#: Why this seat, which the resolution cannot say for itself.
+ICON_SOURCE_DRAW = (
+    "Which seat is the icon's: Matt picked the icon off a contact sheet of forty square "
+    "crops (favicon_sheet_ckpt145, F08), and this is the seat that crop was taken from, "
+    "at its own whole frame. builder.icons holds the crop, and its row in "
+    "article/figure-recipes.jsonl names this same seat.",
+)
+
+
+def galleries_icon_source() -> Split:
+    """The Galleries page's opening picture: one seat, the whole frame, no label.
+
+    The seat is the one `builder.icons` crops the site's icon from, and the row names it
+    in `picks` like any figure of this module; a maker that read it off `icons.SEAT`
+    instead would be a second place the pick lives. So the two are held equal here.
+    """
+    from . import icons
+
+    wanted = picks_of(ICON_SOURCE)
+    if wanted != [icons.SEAT]:
+        raise PickError(
+            f"{ICON_SOURCE} is the seat the icon is cropped from, {icons.SEAT}, and its row "
+            f"names {', '.join(wanted) or 'none'}"
+        )
+    resolved = resolve(wanted)
+    made, size = seat_panels(ICON_SOURCE, resolved, 1, "icon-source")
+    return Split(
+        made,
+        provenance(resolved, size, columns=1, chosen=ICON_SOURCE_DRAW, composed=False),
+        1,
+    )
+
+
 # ------------------------------------------------------------------- minibrots in a row
 
 #: Three across, one down, and no lettering at all. The figure's whole claim is that the
@@ -1755,6 +1793,7 @@ MAKERS = {
     "modes-gallery": modes_gallery,
     "gallery-output": gallery_output,
     "locations-minibrot-examples": minibrot_examples,
+    ICON_SOURCE: galleries_icon_source,
     **{identifier: _pair(identifier) for identifier in MODE_FIGURES},
 }
 

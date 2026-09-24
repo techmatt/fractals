@@ -34,6 +34,7 @@ from . import (
     figures,
     front,
     fundamentals,
+    icons,
     images,
     links,
     overview,
@@ -442,6 +443,8 @@ def _parser() -> argparse.ArgumentParser:
     fronted.add_argument(
         "--replace", action="store_true", help="land a redraw of a figure already on the page"
     )
+
+    commands.add_parser("icons", help="record the site's icon recipe and draw the icon set from it")
 
     framed = commands.add_parser("overview", help="draw a figure of the Overview page")
     framed.add_argument(
@@ -1255,6 +1258,15 @@ def _do_front(options: argparse.Namespace) -> int:
     return 0
 
 
+def _do_icons() -> int:
+    """Record the icon's recipe row, then draw every file of the icon set from it."""
+    for path in icons.draw():
+        size = path.stat().st_size / 1024
+        print(f"wrote {path.relative_to(SITE_ROOT).as_posix()}  ({size:.1f} KB)")
+    print("recorded icon|site in figure-recipes.jsonl; run `build` to declare it on every page")
+    return 0
+
+
 def _do_prose(options: argparse.Namespace) -> int:
     """Hold each placed page to its approved master, word for word."""
     masters = prose_module.load_all()
@@ -1494,6 +1506,8 @@ def main(argv: list[str] | None = None) -> int:
             return _do_fundamentals(options)
         if options.command == "front":
             return _do_front(options)
+        if options.command == "icons":
+            return _do_icons()
         if options.command == "deep":
             return _do_deep(options)
         if options.command == "overview":
@@ -1524,6 +1538,7 @@ def main(argv: list[str] | None = None) -> int:
         growth_module.GrowthError,
         pipeline_module.PipelineError,
         picks_module.PickError,
+        icons.IconError,
         picker_module.PickerError,
         seats_module.SeatError,
         phoenix_points_module.PhoenixPointsError,
