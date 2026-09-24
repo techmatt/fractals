@@ -41,6 +41,7 @@
         <li><a href="#how-a-deep-frame-is-computed">How a deep frame is computed</a></li>
         <li><a href="#deep-zoom-rendering-speed">Deep zoom rendering speed</a></li>
         <li><a href="#automatic-minibrot-descents">Automatic minibrot descents</a></li>
+        <li><a href="#the-multibrots">The multibrots</a></li>
         <li><a href="#the-deep-gallery">The deep gallery</a></li>
       </ol>
     </li>
@@ -290,7 +291,7 @@
     approximation</a>, which skips many iterations at once by applying a precomputed linear
     map. The fractal explorer does not use it, and the reason is worth knowing for anyone
     building one. On frames with visible structure, the kind a reader opens, it ranged from
-    slightly slower than plain perturbation to about 2.6 times faster. At every tolerance
+    about 20% slower than plain perturbation to about 2.6 times faster. At every tolerance
     tried it also moved escape counts, and on some frames it moved the boundary of the interior, so the pictures stopped matching what the engine
     draws. It paid off handsomely only on frames that were almost entirely interior.
     Fraktaler 3 shows the same pattern on the video's final frame: its approximation buys a
@@ -302,8 +303,9 @@
     <p>Descents like the one in the video can be automated. The neighborhood of a minibrot
     is a small, turned copy of the whole set, so every place in the set has a twin inside
     every minibrot, smaller and slightly distorted. Start from a frame centered on a
-    minibrot, and the descent can continue to the twin of any location inside it, then to a
-    twin inside that twin's own minibrot, nested as deep as the arithmetic allows. With two
+    minibrot, and the descent can continue to the twin of any other frame centered on a
+    minibrot, then to a twin inside that twin's own minibrot, nested until the iteration cap
+    runs out, since the periods multiply at every step. With two
     frames A and B, each centered on a minibrot, there are four two-step descents: A then A,
     A then B, B then A, and B then B. The figure below shows A and B, and then all four.
     Each twin appears turned, because the copy it sits in is turned.</p>
@@ -336,6 +338,18 @@
         </div>
         </div>
         <figcaption>Two frames, A and B (top), each centered on a minibrot, and the four two-step descents built from them: A then A, A then B, B then A, and B then B.</figcaption>
+      </figure>
+
+      <figure class="figure-placeholder" data-placeholder="deep-descent-video">
+        <p class="placeholder-well"><span class="pending-label">Figure placeholder</span>deep-descent-video</p>
+        <figcaption>A double descent into the minibrot at the center of this site's icon.</figcaption>
+      </figure>
+
+    <h2 id="the-multibrots">The multibrots</h2>
+
+      <figure class="figure-placeholder" data-placeholder="deep-multibrots">
+        <p class="placeholder-well"><span class="pending-label">Figure placeholder</span>deep-multibrots</p>
+        <figcaption>Placeholder: deep frames on the higher-degree multibrots.</figcaption>
       </figure>
 
     <h2 id="the-deep-gallery">The deep gallery</h2>
