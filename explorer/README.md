@@ -3914,6 +3914,58 @@ mandelbrot `smooth_trap_circle` 1.47 s, and the worst seen, julia5 `threads` at 
 was main-thread and pool-independent at 150–500 ms when that was read, and is neither now:
 see *The shade over the pool* below.
 
+### The interior, answered without iterating *(profiling_pass_ckpt146, 2026-09-24)*
+
+⚠ **The per-family and per-mode tables above predate this, and their Mandelbrot and
+Multibrot rows are no longer this module.** The engine now answers a sample inside the
+main cardioid or the period-2 bulb, and at degrees three to six a disk inside the main
+component, without iterating — where every field of the pass reads an escape, which is
+`smooth`, `tia`, `stripe`, `curvature`, `threads`, `smooth_stripe` and `smooth_curvature`
+here. The engine's own README has the rule and the margin; what matters on this side is
+that **it is zero behaviour, measured**: 170 frames × the page's modes through the old
+and the new module, field lanes and shaded pictures identical, besides the pipeline's
+own 360 renders and 504 edge frames. The traps, the lattice, `itinerary` and the angle
+modes read the orbit of an interior point and are not touched. The direct trap's own loop
+took the family table in the same change (1.24x to 1.32x on the four traps here).
+
+**One thread, 1280x720, each at its home view** (`bench/modes.mjs` with the modules
+alternated for the mandelbrot rows; `bench/families.mjs`, which sweeps one module and then
+the other, for the rest — so read those under this machine's 30%):
+
+| | before | after | x |
+| --- | --- | --- | --- |
+| mandelbrot `smooth` | 1 629 ms | **305 ms** | 5.3 |
+| mandelbrot `tia` | 6 563 ms | **746 ms** | 8.8 |
+| mandelbrot `stripe` | 18 640 ms | **2 101 ms** | 8.9 |
+| mandelbrot `threads` | 7 062 ms | **870 ms** | 8.1 |
+| mandelbrot `curvature` | 7 119 ms | **1 307 ms** | 5.4 |
+| multibrot3 `smooth` | 1 978 ms | **1 496 ms** | 1.3 |
+| multibrot4 `smooth` | 4 539 ms | **2 949 ms** | 1.5 |
+| multibrot5 `smooth` | 10 143 ms | **5 830 ms** | 1.7 |
+| multibrot6 `smooth` | 8 373 ms | **4 370 ms** | 1.9 |
+| julia, julia3–6, phoenix, the Phoenix plane | — | — | 1.00 |
+
+**In the page**, 884×496 on twelve workers, `page.mjs ladder` alternated old and new
+module over four rounds, medians, time to the finished picture:
+
+| view | before | after | x |
+| --- | --- | --- | --- |
+| `home` | 1 022 ms | **726 ms** | 1.4 |
+| `spike` | 3 406 ms | **862 ms** | 4.0 |
+| `interior` | 9 275 ms | **663 ms** | 14.0 |
+| `stripe` | 7 862 ms | **1 518 ms** | 5.2 |
+| `trap` (`direct_trap_ring`) | 5 303 ms | **4 744 ms** | 1.1 |
+| `julia`, the control | 716 ms | 744 ms | 1.0 |
+
+**What is dear now is the dynamical planes of degree three to six.** julia6 at its home
+is 24 s on one thread and 22 s through the pool in `itinerary`, and julia3, julia4 and
+julia6 at their shipped `c` have an attracting fixed point (`|λ|` 0.81, 0.90, 0.53), so
+most of that is interior running to the cap of 4 000. A disk about the fixed point is
+inside the basin, but it is 0.02 to 0.09 across and catches under 1% of a home frame
+when tested at the pixel; catching the orbit *entering* it is the fix, and that is a test
+inside the iteration, which is an engine seam this pass was not sent for. It is in the
+report's proposals with that estimate.
+
 ### Where a page's time goes *(explorer_perf_audit_ckpt136, 2026-09-19)*
 
 884x496, which is what a 1600x1000 window gives the canvas; 12 logical cores over 6

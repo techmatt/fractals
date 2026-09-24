@@ -320,6 +320,12 @@ ENGINE_CHANGES = [
     "byte-identical, the engine fingerprint unmoved (5d97e76bb16be71d), engine tests 229 "
     "unmoved; the Mandelbrot anchor at 1600x900 ss4 24.4 s to 1.86 s, Julia and Phoenix "
     "anchors within noise.",
+    "field::sweep_row extends that skip to Multibrot degrees three to six: a sample inside "
+    "|c| < d^(-1/(d-1)) (1 - 1/d), less the same margin, is inside the main component and is "
+    "answered the same way. Inside the existing function body, no signature added or moved; "
+    "profiling_pass_ckpt146. 360 pipeline renders and 504 edge frames at each degree's "
+    "touching points and rim byte-identical, the fingerprint unmoved, engine tests 229 "
+    "unmoved; multibrot home views 1.28x (d=3) to 1.93x (d=6) natively.",
 ]
 
 _RUSTC_VERSION = re.compile(r"^rustc (\S+ \([0-9a-f]+ \d{4}-\d{2}-\d{2}\))")
