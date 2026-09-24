@@ -85,6 +85,12 @@ was raise, and every check after it went unrun.
   control that has to fail. `agreement.py` says why it exists: 28 slots once opened at a
   texture weight none of them was drawn at, with every structural test green. The pixel
   half is a named skip without the staged thumbnails, `palettes.bin` or Pillow.
+- **coloring** — `renders.wallpaper_coloring` still gives, for every seat recipe the
+  committed collection records name, exactly what the wallpaper project's
+  `engine_spec.coloring_of` gives, dict for dict, and refuses exactly what it refuses. The
+  site's function is a copy of that one and has drifted once: its composite
+  `texture_weight` branch was missing and every screened recipe carrying a weight was
+  refused here. Needs the checkout, and is a named skip without it.
 - **theme** — the well colours a drawn figure is made of are the stylesheet's own. They
   have to be transcribed, because Pillow cannot read CSS; this is what keeps a restyle
   from moving the well and leaving every diagram drawn against the old one.
@@ -146,6 +152,7 @@ from urllib.parse import unquote, urldefrag
 
 from . import (
     agreement,
+    coloring,
     dashes,
     explorer,
     figures,
@@ -161,6 +168,7 @@ from . import (
     recipes,
     records,
     renders,
+    seats,
     sections,
     stamps,
     theme,
@@ -972,6 +980,20 @@ def check_library() -> list[str]:
         return [f"library.jsonl: the configured checkout could not be read — {error}"]
 
 
+def check_coloring() -> list[str]:
+    """The site's copy of the wallpaper coloring against the original, on every seat.
+
+    `builder/coloring.py` says what it asks and why. Nothing here without the checkout, and
+    a configured one that cannot answer is reported rather than raised, as `library` does.
+    """
+    if not figures.stores_available():
+        return []
+    try:
+        return coloring.problems()
+    except (renders.EngineError, picks.PickError, seats.SeatError, OSError) as error:
+        return [f"the seats' colorings could not be asked about — {error}"]
+
+
 #: The working-tree endings that are drift. `git ls-files --eol` writes each tracked file
 #: as `i/<eol> w/<eol> attr/<attrs>`, a tab, then the path; `i/` is what the index holds
 #: and `w/` is what is on disk. A binary file reads `-text` on both sides and is never a
@@ -1102,6 +1124,14 @@ def skips() -> tuple[Skip, ...]:
                 whole=True,
             )
         )
+        found.append(
+            Skip(
+                "coloring",
+                "the site's wallpaper coloring against coloring_of on every seat",
+                NO_CHECKOUT,
+                whole=True,
+            )
+        )
         # Half: the base half reads two files of this repository.
         found.append(
             Skip(
@@ -1173,6 +1203,7 @@ def run_all() -> Report:
             "agreement": agreement.problems(),
             "bake": check_bake(),
             "stamps": stamps.problems(with_checkout=figures.stores_available()),
+            "coloring": check_coloring(),
             # Every gallery here, staged or not: a staged record has no page, and its
             # files are held to it exactly as any other gallery's are once they are landed.
             "assets": check_assets(galleries.load_every()),

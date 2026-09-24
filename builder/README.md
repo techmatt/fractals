@@ -8,12 +8,13 @@ Python. A build is done here and reviewed in a diff.
 ```
 python -m builder build     regenerate gallery pages, the gallery index, thumbnails,
                             and the contents rail every page carries
-python -m builder check     twenty named checks: links, page sync, contents, figure
+python -m builder check     twenty-two named checks: links, page sync, contents, figure
                             blocks, seat panels, landings, one location to one figure,
                             explorer links, the atlas record, each atlas link against
-                            its picture, the explorer's bake, embedded links, assets,
-                            the palette record, prose, the editorial pointer, theme,
-                            banned vocabulary, em-dashes, line endings
+                            its picture, the explorer's bake, embedded links, the
+                            wallpaper coloring, assets, the palette record, prose, the
+                            editorial pointer, theme, banned vocabulary, em-dashes, line
+                            endings, the site's icon
 python -m builder figure ID print a figure's markup block, to paste into an article page
 python -m builder figures [--all]   what is still to make, grouped by page
 python -m builder figures --place ID SRC [--crop l,t,r,b] [--max-width N] [--lossless]
@@ -695,6 +696,16 @@ configured. A palette entering the library next door costs one `--library` and o
   full sweep that set the tolerance is in `atlas/README.md`. The pixel half is a named skip
   without the staged thumbnails, `explorer/palettes.bin` or Pillow; the members half runs
   on a clone.
+- **coloring** — `renders.wallpaper_coloring` is a copy of the wallpaper project's
+  `engine_spec.coloring_of`, and this holds the copy to the original: for every seat recipe
+  the committed collection records name — the `seated-candidates` header's collections,
+  6,299 distinct seats, each resolved through `picks.resolve` — the two give the same
+  coloring dict for dict, and refuse the same recipes. It exists because the copy drifted
+  once: the composite `texture_weight` branch was missing here, and every screened recipe
+  carrying its own weight was refused on this side with every check green. Tested by
+  construction on a scratch copy with that branch dropped, which it reported on all 415
+  seats that carry a weight. `builder/coloring.py` is the module; about 15 s, most of it the
+  resolve. Needs the checkout, and is a named skip without it.
 - **assets** — every image the metadata names exists at its stated size, every
   thumbnail is current, and no orphan file is left in a gallery directory.
 - **library** — `palettes/library.jsonl` still says what the wallpaper project's own

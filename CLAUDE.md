@@ -695,7 +695,7 @@ being drawn as the plain Julia set underneath it.
 After touching placed prose, `python -m builder prose <page>` as well — see **Where prose
 comes from** above for what it holds together and why one edit has several sites.
 
-`builder check` is read-only, and it runs twenty-one named checks. It resolves every
+`builder check` is read-only, and it runs twenty-two named checks. It resolves every
 internal link, refuses root-absolute and bare-directory hrefs, regenerates the gallery
 HTML and compares it byte for byte with what is committed, holds every figure block to
 its registry row, holds every made figure to being a block a redraw could land on —
@@ -715,7 +715,8 @@ named here because the rule it holds is `writing-guidance.md`'s rather than this
 and sweeps
 `git ls-files --eol` for a tracked file that has drifted to CRLF on disk — that is
 `endings`, and it is named here because it is the one drift `git status` and `git diff`
-both report as nothing — and holds every served page to declaring the site's icon with the
+both report as nothing — holds the site's copy of the wallpaper coloring to next door's
+`coloring_of` on every seat the collection records name, which is `coloring` — and holds every served page to declaring the site's icon with the
 links `builder/icons.py` spells, which is `icons`. It also
 prints one note — never a failure — about the committed wasm module, described in
 `explorer/README.md`. The same commands run in CI
@@ -723,10 +724,11 @@ prints one note — never a failure — about the committed wasm module, describ
 
 **Every check runs on a bare clone, and what cannot run says so by name.** CI clones this
 repository alone, so a check that needs the wallpapers checkout is a check CI never makes.
-Five of them want it — the next-door half of `stamps`, which holds the release writer's
+Six of them want it — the next-door half of `stamps`, which holds the release writer's
 links to the explorer's own; `library`, which holds `palettes/library.jsonl` to the palette
 library next door; `bake`, which rebakes the explorer's modules; `seats`, which holds a
-panel to the picture its gallery ships; and the source-key half of `figures` — and
+panel to the picture its gallery ships; `coloring`, which holds the site's wallpaper
+coloring to the one next door; and the source-key half of `figures` — and
 without it each reports a **named skip**: `skipped` rather than `ok`
 on its own line, and counted in the exit summary. Pillow's absence is the same shape, for pixel sizes. Never a crash before the
 other checks, and never a silent pass. *(This is a rule because it was broken: `check`
@@ -739,8 +741,9 @@ lands any missing strip.
 **Which is why a checkpoint runs `check` here, not in CI.** A green CI says every check
 that a bare clone can ask came back clean; it says nothing about the palette record, the
 explorer's generated modules, whether a seat panel is still the picture its gallery
-ships, whether the release writer still spells the explorer's links, or a single one of
-the source keys a figure cites, because those five questions were skipped by name. Before a prompt is called done, run
+ships, whether the release writer still spells the explorer's links, whether the site
+still colors a wallpaper the way the project does, or a single one of
+the source keys a figure cites, because those six questions were skipped by name. Before a prompt is called done, run
 `python -m builder check` on this machine with the checkout configured and read the skip
 count in the exit summary — a run that reports skips is a run that answered part of the
 question.

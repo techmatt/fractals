@@ -125,10 +125,11 @@
     picture may be dominant in two colors or in none.</p>
 
     <p>Each color cell then gets an <i>allowance</i>: roughly three times its even share of
-    the gallery, so that a color can be over-represented but not by much, and the same rule one
-    level up for hue families. The rounding is generous on purpose. An allowance is a ceiling
-    and never a quota: nothing is obliged to reach it, and a color the pool cannot supply
-    simply does not appear.</p>
+    the gallery, so that a color can be well over-represented but cannot take over the
+    collection, and the same rule one level up for hue families. The rounding is generous on
+    purpose. An allowance is a ceiling and never a quota: nothing is obliged to reach it.
+    Under each color there is also a small floor, about one seat in fifty, so the solve tries
+    to give every color some presence, and a color the pool cannot supply goes short of it.</p>
 
     <p>One more count guards against a subtler repetition. Near-duplicate palettes in the
     library are grouped, and a group may take only about one seat in every forty. Two
@@ -230,9 +231,10 @@
 
     <p>That is a deliberate position rather than an oversight, and it is provisional.
     Enforcing a mix directly is easy; knowing what mix is worth enforcing is not, and a
-    constraint added before there is evidence for it would lock in a guess. So the plan is to
-    keep mining, watch what emerges across families, planes, minibrots, modes and colors, and
-    add an explicit rule for any axis where the balance does not hold up on its own.</p>
+    constraint added before there is evidence for it would lock in a guess. So the approach is
+    to watch what emerges across families, planes and minibrots, and add an explicit rule only
+    for an axis where the balance does not hold up on its own, as modes and colors already
+    have.</p>
 
     <h2 id="what-comes-up-short">What comes up short</h2>
 

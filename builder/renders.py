@@ -1061,6 +1061,11 @@ FINISHED_HEADS = ("smooth_render", "strange_render")
 #: opens when the pixel is z₀. The wallpaper project's verdict of 2026-08-17.
 ITINERARY = "itinerary"
 Z1 = "z1"
+#: The windows a mode names for itself, which the plane does not move — next door's
+#: `engine_spec.NAMED_STARTS`. `tail_itinerary` carries `"start": "tail"`, which never reads
+#: z₀, so it is one coloring on both planes; writing `z1` over it would draw the head mode
+#: under the tail mode's name.
+NAMED_STARTS = frozenset({"tail"})
 
 #: Which plane a family is on — the wallpaper project's `engine.DYNAMICAL_KINDS` and
 #: `PARAMETER_KINDS`. `fractional_multibrot` is deliberately in neither: it is render-only
@@ -1170,9 +1175,8 @@ def wallpaper_coloring(row: dict, catalog: dict[str, dict] | None = None) -> dic
 
     This mirrors `fractal_wallpapers.engine_spec.coloring_of`, which is library code
     with no command-line door, and it is the only piece of that project's policy this
-    repository restates. It is held to the original by rendering a row at its own geometry
-    and comparing the picture against the corpus crop the judge was trained on — see
-    `scratch/verify_wallpaper_recipe.py` and the provenance of `locations-style-spectrum`.
+    repository restates. `builder check`'s `coloring` holds it to the original on every seat
+    the collection records name, dict for dict (`builder/coloring.py`).
     """
     known = catalog if catalog is not None else mode_catalog()
     mode = row["mode"]
@@ -1212,7 +1216,8 @@ def _open_the_address(coloring: dict, family: dict) -> dict:
 
     On a dynamical plane the z₀ address spells its leading symbol from the pixel's own
     angular sector, which draws a hard wedge seam along the axes; z₁ opens the address one
-    step in. On a parameter plane z₀ = 0 for every pixel and the engine refuses `z1`.
+    step in. On a parameter plane z₀ = 0 for every pixel and the engine refuses `z1`. A
+    window the catalog named is left as it arrived: see [`NAMED_STARTS`].
     """
     kind = (family or {}).get("kind")
     if kind not in DYNAMICAL_KINDS and kind not in PARAMETER_KINDS:
@@ -1220,7 +1225,7 @@ def _open_the_address(coloring: dict, family: dict) -> dict:
     if kind not in DYNAMICAL_KINDS:
         return coloring
     for field in _coloring_fields(coloring):
-        if field.get("kind") == ITINERARY:
+        if field.get("kind") == ITINERARY and field.get("start") not in NAMED_STARTS:
             field["start"] = Z1
     return coloring
 

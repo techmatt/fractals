@@ -171,6 +171,9 @@ TARGET = ("-0.74937053247003823168823992075369", "0.0414726670681689000347187463
 #: frames whose counts are tens rather than tens of thousands.
 FINE = "p=glowdon&scale=absolute&lambda=0&period=0.25"
 COARSE = "p=glowdon&scale=absolute&lambda=0&period=0.5"
+#: `deep-descent-rungs` in its own map: the coarse pass in Chalcedony, Matt's pick off the
+#: sheet (small_fixes_ckpt146).
+RUNGS = COARSE.replace("p=glowdon", "p=Chalcedony")
 
 #: The period-27 copy of the S4 descent in the wallpaper project's
 #: `artifacts/discovery/minibrot_examples.jsonl`, re-solved by Newton to 30 places, and its
@@ -616,7 +619,7 @@ FIGURES = {
                 "-0.5",
                 "0",
                 "3",
-                COARSE,
+                RUNGS,
                 "Whole set",
                 note="width 3",
                 alt="The whole Mandelbrot set, black on banded color.",
@@ -624,7 +627,7 @@ FIGURES = {
             Frame(
                 *NUCLEUS_27,
                 "0.05",
-                COARSE,
+                RUNGS,
                 "Seahorse valley",
                 note="width 0.05",
                 alt="The seahorse valley between the main cardioid and the large disk, "
@@ -633,7 +636,7 @@ FIGURES = {
             Frame(
                 *NUCLEUS_27,
                 "1.94e-5",
-                COARSE,
+                RUNGS,
                 "Period 27",
                 note=_wide("1.94e-5"),
                 alt="A small copy of period 27, a black speck ringed with filigree.",
@@ -641,7 +644,7 @@ FIGURES = {
             Frame(
                 *NUCLEUS_54,
                 "2e-6",
-                COARSE,
+                RUNGS,
                 "Period 54",
                 note=_wide("2e-6"),
                 alt="The copy's own large disk, of period 54, with the filigree around it.",
@@ -649,7 +652,7 @@ FIGURES = {
             Frame(
                 *NUCLEUS_972,
                 "5e-8",
-                COARSE,
+                RUNGS,
                 "Period 972",
                 note=_wide("5e-8"),
                 alt="The edge of the period-54 disk, lined with its tiny satellite bulbs, the one "
@@ -657,11 +660,11 @@ FIGURES = {
             ),
             Frame(
                 *THREADS,
-                COARSE,
+                RUNGS,
                 "Last step",
                 note=_wide(THREADS[2]),
                 alt="The last frame, about a billionth wide: a tiny copy among dense spirals "
-                "in orange and blue.",
+                "in purple and blue.",
             ),
         ),
         2,
