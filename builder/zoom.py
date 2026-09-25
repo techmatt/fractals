@@ -46,6 +46,10 @@ MAPPINGS = ("linear", "log", "power")
 #: The record this run reads: `RECORD` unless `--record` names another, such as an
 #: automatic descent's (`builder/descent.py`).
 _record_path = RECORD
+#: The record's variant this run draws, or None for its own keyframes and video. A variant
+#: (`variants.<name>` in the record) keeps every width and colour and changes the grid, the
+#: caps, the video's size and rate, and its speed.
+_variant: str | None = None
 
 
 def zoom_dir(name: str | None = None) -> Path:
@@ -59,7 +63,36 @@ def zoom_dir(name: str | None = None) -> Path:
 
 
 def read_record() -> dict:
-    return json.loads(_record_path.read_text(encoding="utf-8"))
+    """The record, with the variant this run draws laid over its keyframes and video."""
+    record = json.loads(_record_path.read_text(encoding="utf-8"))
+    if _variant is None:
+        return record
+    variant = record.get("variants", {}).get(_variant)
+    if variant is None:
+        raise SystemExit(f"{record['name']} has no variant {_variant}")
+    caps = {f["k"]: f["maxiter"] for f in variant.get("frames", [])}
+    frames = record["keyframes"]["frames"]
+    record["keyframes"] = dict(
+        record["keyframes"],
+        grid=variant["grid"],
+        supersample=variant.get("supersample", 1),
+        frames=[dict(f, maxiter=caps.get(f["k"], f["maxiter"])) for f in frames],
+    )
+    video = dict(record["video"], **variant.get("video", {}))
+    # The same path and easing, faster: every time in the schedule divided alike.
+    speedup = video.pop("speedup", 1)
+    for key in ("seconds_per_halving", "hold_start", "hold_end", "ease_seconds"):
+        video[key] = video[key] / speedup
+    record["video"] = video
+    record["variant"] = _variant
+    return record
+
+
+def variant_dir(record: dict) -> Path:
+    """Where this run's fields and colourings live: the record's directory, or the variant's
+    own directory inside it."""
+    base = zoom_dir(record["name"])
+    return base / record["variant"] if record.get("variant") else base
 
 
 def tag(k: int) -> str:
@@ -69,7 +102,7 @@ def tag(k: int) -> str:
 def read_field(record: dict, k: int) -> np.ndarray:
     cols, rows = record["keyframes"]["grid"]
     ss = record["keyframes"]["supersample"]
-    path = zoom_dir(record["name"]) / "fields" / f"{tag(k)}.f64"
+    path = variant_dir(record) / "fields" / f"{tag(k)}.f64"
     return np.fromfile(path, dtype="<f8").reshape(rows * ss, cols * ss)
 
 
@@ -147,13 +180,15 @@ def _colour_one(job: tuple) -> str:
     return out.name
 
 
-def colour_all(record: dict, m: dict, workers: int) -> Path:
-    out_dir = zoom_dir(record["name"]) / "colour" / mapping_name(m)
+def colour_all(record: dict, m: dict, workers: int, only: list[int] | None = None) -> Path:
+    out_dir = variant_dir(record) / "colour" / mapping_name(m)
     out_dir.mkdir(parents=True, exist_ok=True)
     (out_dir / "mapping.json").write_text(json.dumps(m, indent=2) + "\n", encoding="utf-8")
     palette_table(m)  # lifted once here, not raced by the pool
     jobs = [
-        (record, f["k"], m, out_dir / f"{tag(f['k'])}.png") for f in record["keyframes"]["frames"]
+        (record, f["k"], m, out_dir / f"{tag(f['k'])}.png")
+        for f in record["keyframes"]["frames"]
+        if only is None or f["k"] in only
     ]
     started = time.perf_counter()
     with ProcessPoolExecutor(workers) as pool:
@@ -316,19 +351,40 @@ def ffmpeg_exe() -> str:
     return imageio_ffmpeg.get_ffmpeg_exe()
 
 
-def encode(record: dict, directory: Path, out: Path, crf: int, preset: str) -> None:
+def still(record: dict, directory: Path, s: float, out: Path) -> None:
+    """The one frame `s` halvings down, as a PNG: what a before-and-after pair is made of."""
+    video = record["video"]
+    frame = composite(Keyframes(directory, record), s, tuple(video["resolution"]), video["feather"])
+    out.parent.mkdir(parents=True, exist_ok=True)
+    Image.fromarray(frame).save(out)
+    print(out)
+
+
+def encode(
+    record: dict,
+    directory: Path,
+    out: Path,
+    crf: int,
+    preset: str,
+    span: tuple[float, float] | None = None,
+) -> None:
+    """Composite every frame of the schedule, or only those whose `s` lies in `span`, and
+    encode them: libx264, High profile, 4:2:0, BT.709, at the given CRF and preset."""
     video = record["video"]
     size = tuple(video["resolution"])
     frames = Keyframes(directory, record)
     plan = schedule(record)
+    if span is not None:
+        plan = [s for s in plan if span[0] <= s <= span[1]]
     out.parent.mkdir(parents=True, exist_ok=True)
     command = [
         ffmpeg_exe(), "-y", "-loglevel", "error",
         "-f", "rawvideo", "-pix_fmt", "rgb24", "-s", f"{size[0]}x{size[1]}",
         "-r", str(video["fps"]), "-i", "-",
         "-c:v", "libx264", "-preset", preset, "-crf", str(crf), "-tune", "film",
-        "-pix_fmt", "yuv420p", "-colorspace", "bt709", "-color_primaries", "bt709",
-        "-color_trc", "bt709", "-movflags", "+faststart", str(out),
+        "-profile:v", "high", "-pix_fmt", "yuv420p",
+        "-colorspace", "bt709", "-color_primaries", "bt709", "-color_trc", "bt709",
+        "-movflags", "+faststart", str(out),
     ]  # fmt: skip
     started = time.perf_counter()
     with subprocess.Popen(command, stdin=subprocess.PIPE) as encoder:
@@ -357,9 +413,10 @@ def main(argv: list[str] | None = None) -> None:
     parser.add_argument(
         "--record", type=Path, help="a keyframe record other than the deep zoom video's"
     )
+    parser.add_argument("--variant", help="one of the record's variants, such as 4k60")
     sub = parser.add_subparsers(dest="command", required=True)
     sub.add_parser("stats", help="nu and band widths per keyframe")
-    for name in ("colour", "sheet", "encode", "video"):
+    for name in ("colour", "sheet", "encode", "video", "still"):
         p = sub.add_parser(name)
         p.add_argument("--mapping", choices=MAPPINGS, required=True)
         p.add_argument("--L", type=float, help="the cycle length, in units of g")
@@ -373,27 +430,37 @@ def main(argv: list[str] | None = None) -> None:
         p.add_argument("--preset", default="slow")
         p.add_argument("--out", type=Path, help="encode: the MP4's path")
         p.add_argument("--keys", default="51,45,38,30,24,20,12,4,0", help="sheet: keyframes")
+        p.add_argument("--only", help="colour: these keyframes alone, as k,k,k")
+        p.add_argument("--span", help="encode: only the frames from s0 to s1 halvings, as s0,s1")
+        p.add_argument("--s", type=float, help="still: the frame this many halvings down")
     args = parser.parse_args(argv)
-    global _record_path
+    global _record_path, _variant
     if args.record is not None:
         _record_path = args.record.resolve()
+    _variant = args.variant
     record = read_record()
     if args.command == "stats":
         stats(record)
         return
     m = mapping_of(record, args)
-    directory = zoom_dir(record["name"]) / "colour" / mapping_name(m)
+    directory = variant_dir(record) / "colour" / mapping_name(m)
     if args.command == "sheet":
         sheet(record, m, [int(k) for k in args.keys.split(",")])
         return
+    only = [int(k) for k in args.only.split(",")] if args.only else None
     if args.command in ("colour", "video"):
-        directory = colour_all(record, m, args.workers)
+        directory = colour_all(record, m, args.workers, only)
+    suffix = f"_{record['variant']}" if record.get("variant") else ""
+    if args.command == "still":
+        name = f"{record['name']}_{mapping_name(m)}{suffix}_s{args.s:g}.png"
+        still(record, directory, args.s, args.out or variant_dir(record) / "stills" / name)
     if args.command in ("encode", "video"):
         if not directory.exists():
             raise SystemExit(f"{directory} is not coloured yet: run colour first")
-        video = zoom_dir(record["name"]) / "video"
-        out = args.out or video / f"{record['name']}_{mapping_name(m)}.mp4"
-        encode(record, directory, out, args.crf, args.preset)
+        video = variant_dir(record) / "video"
+        out = args.out or video / f"{record['name']}_{mapping_name(m)}{suffix}.mp4"
+        span = tuple(float(v) for v in args.span.split(",")) if args.span else None
+        encode(record, directory, out, args.crf, args.preset, span)
 
 
 if __name__ == "__main__":

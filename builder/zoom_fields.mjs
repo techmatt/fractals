@@ -15,6 +15,13 @@
 //   ... --record <path>                        any of the above on another record, such as
 //                                              an automatic descent's (`descent.py`); its
 //                                              caps are that command's, so no `--caps`
+//   ... --variant <name>                       the fields of one of the record's `variants`
+//                                              — the same descent at its own grid and
+//                                              caps, under `<zoom dir>/<name>/fields/`
+//   node builder/zoom_fields.mjs --variant <name> --undercap
+//                                              every keyframe probed sparsely at the explicit
+//                                              ceiling, and the variant's caps set from what
+//                                              escaped above the old ones (`capRule`)
 //
 // Fields land in `artifacts/deep-zoom/fields/` (or `FRACTAL_WEBSITE_ZOOM_DIR`/fields), one
 // `k<NN>.f64` and one `k<NN>.json` each. The `.f64` is written under a temporary name and
@@ -54,7 +61,29 @@ export function zoomDir() {
   return fileURLToPath(new URL(`artifacts/${dir}/`, ROOT));
 }
 
-const fieldsDir = () => `${zoomDir()}/fields`;
+/** The variant `--variant` names, or null for the record's own keyframes. */
+const VARIANT = (() => {
+  const at = process.argv.indexOf("--variant");
+  return at >= 0 ? process.argv[at + 1] : null;
+})();
+
+/** The record's keyframes as this run draws them: its own, or with a variant's grid and caps
+ *  laid over them. A variant keeps every width, so it is the same descent at another size. */
+function keyframesOf(record) {
+  if (!VARIANT) return record.keyframes;
+  const variant = record.variants?.[VARIANT];
+  if (!variant) throw new Error(`the record has no variant ${VARIANT}`);
+  const caps = new Map((variant.frames ?? []).map((f) => [f.k, f.maxiter]));
+  return {
+    ...record.keyframes,
+    grid: variant.grid,
+    supersample: variant.supersample ?? 1,
+    frames: record.keyframes.frames.map((f) => ({ ...f, maxiter: caps.get(f.k) ?? f.maxiter })),
+  };
+}
+
+const variantDir = () => (VARIANT ? `${zoomDir()}/${VARIANT}` : zoomDir());
+const fieldsDir = () => `${variantDir()}/fields`;
 const tag = (k) => `k${String(k).padStart(2, "0")}`;
 
 function readRecord() {
@@ -72,15 +101,15 @@ function writeRecord(record) {
   writeFileSync(RECORD, `${text}\n`);
 }
 
-function baseSpec(record, width) {
+function baseSpec(record, width, keyframes = record.keyframes) {
   const spec = {
     schema: 1,
     center_re: record.center_re,
     center_im: record.center_im,
     width,
-    resolution: record.keyframes.grid,
+    resolution: keyframes.grid,
   };
-  if (record.keyframes.supersample > 1) spec.supersample = record.keyframes.supersample;
+  if (keyframes.supersample > 1) spec.supersample = keyframes.supersample;
   if (record.degree !== 2) spec.degree = record.degree;
   return spec;
 }
@@ -158,12 +187,12 @@ async function caps() {
   console.log(`estimated field time ${(estimate / 60).toFixed(1)} min`);
 }
 
-async function render(p, record, frame, threads) {
-  const spec = { ...baseSpec(record, frame.width), maxiter: frame.maxiter };
+async function render(p, record, frame, threads, keyframes = record.keyframes) {
+  const spec = { ...baseSpec(record, frame.width, keyframes), maxiter: frame.maxiter };
   const { field, seconds } = await renderSpec(p, spec, threads, tag(frame.k));
   const out = field;
-  const [cols, rows] = record.keyframes.grid;
-  const ss = record.keyframes.supersample;
+  const [cols, rows] = keyframes.grid;
+  const ss = keyframes.supersample;
   let interior = 0;
   let sum = 0;
   let low = Infinity;
@@ -233,7 +262,8 @@ export async function renderSpec(p, spec, threads, name = "frame") {
 
 async function fields(only) {
   const record = readRecord();
-  const frames = record.keyframes.frames;
+  const keyframes = keyframesOf(record);
+  const frames = keyframes.frames;
   if (frames.length === 0) throw new Error("the record has no keyframes yet: run --caps first");
   mkdirSync(fieldsDir(), { recursive: true });
   const p = await load();
@@ -250,7 +280,7 @@ async function fields(only) {
         continue;
       }
     }
-    const { field, meta } = await render(p, record, frame, threads);
+    const { field, meta } = await render(p, record, frame, threads, keyframes);
     writeFileSync(`${path}.f64.part`, Buffer.from(field.buffer));
     renameSync(`${path}.f64.part`, `${path}.f64`);
     writeFileSync(`${path}.json`, `${JSON.stringify(meta, null, 2)}\n`);
@@ -260,6 +290,83 @@ async function fields(only) {
         `elapsed=${((performance.now() - started) / 60000).toFixed(1)}min`,
     );
   }
+}
+
+/** A variant's caps, from a sparse field of every keyframe drawn at the explicit ceiling.
+ *
+ *  A sample that escapes there with `nu` above a cap is one that cap paints black while it is
+ *  exterior: the flicker, since the neighbouring keyframe's cap is different. What is still
+ *  `NaN` at the ceiling is counted as interior. The rule, `capRule`, reads the escaped counts
+ *  alone: `need` is the smallest cap that leaves no more than `share` of the probe black for
+ *  want of iterations, the cap is `headroom` times that and never below the record's own, and
+ *  it is carried down the descent so that no keyframe's cap is under a shallower one's. The
+ *  ceiling bounds all of it. */
+async function undercap() {
+  const record = readRecord();
+  const variant = record.variants?.[VARIANT];
+  if (!variant) throw new Error("--undercap needs --variant <name>");
+  const [cols, rows] = variant.probe;
+  const p = await load();
+  const ceiling = p.plan({ ...baseSpec(record, record.target_width), resolution: [cols, rows] })
+    .explicit_ceiling;
+  const dir = `${variantDir()}/undercap`;
+  mkdirSync(dir, { recursive: true });
+  const threads = cpus().length;
+  const started = performance.now();
+  const measured = [];
+  for (const frame of record.keyframes.frames) {
+    const path = `${dir}/${tag(frame.k)}`;
+    let field;
+    let seconds = null;
+    const held = existsSync(`${path}.json`) ? JSON.parse(readFileSync(`${path}.json`, "utf8")) : null;
+    if (held && held.maxiter === ceiling && held.grid.join() === `${cols},${rows}` && existsSync(`${path}.f64`)) {
+      const bytes = readFileSync(`${path}.f64`);
+      field = new Float64Array(bytes.buffer, bytes.byteOffset, bytes.byteLength / 8);
+      seconds = held.seconds;
+    } else {
+      const spec = { ...baseSpec(record, frame.width), resolution: [cols, rows], maxiter: ceiling };
+      ({ field, seconds } = await renderSpec(p, spec, threads, tag(frame.k)));
+      seconds = Math.round(seconds * 10) / 10;
+      writeFileSync(`${path}.f64`, Buffer.from(field.buffer));
+      writeFileSync(`${path}.json`, `${JSON.stringify({ k: frame.k, maxiter: ceiling, grid: [cols, rows], seconds })}\n`);
+      console.log(`${tag(frame.k)} probed in ${seconds}s, elapsed ${((performance.now() - started) / 60000).toFixed(1)}min`);
+    }
+    const escaped = Array.from(field).filter((v) => !Number.isNaN(v)).sort((a, b) => b - a);
+    measured.push({ frame, escaped, samples: field.length, seconds });
+  }
+  const caps = capRule(measured, variant.cap, ceiling);
+  const over = (m, cap) => m.escaped.filter((v) => v > cap).length / m.samples;
+  variant.frames = measured.map((m, i) => ({
+    k: m.frame.k,
+    maxiter: caps[i].maxiter,
+    need: caps[i].need,
+    was: m.frame.maxiter,
+    black_was: +over(m, m.frame.maxiter).toExponential(2),
+    black: +over(m, caps[i].maxiter).toExponential(2),
+    interior: +(1 - m.escaped.length / m.samples).toFixed(4),
+    nu_max: m.escaped.length ? Math.round(m.escaped[0]) : null,
+  }));
+  variant.probe_ceiling = ceiling;
+  writeRecord(record);
+  for (const f of variant.frames) {
+    console.log(
+      `${tag(f.k)} was=${f.was} need=${f.need} cap=${f.maxiter} black ${f.black_was} -> ${f.black} ` +
+        `interior=${(100 * f.interior).toFixed(2)}% nu_max=${f.nu_max}`,
+    );
+  }
+}
+
+/** The rule `undercap` sets a variant's caps by, over the keyframes in the record's order
+ *  (deepest first). */
+export function capRule(measured, { share, headroom }, ceiling) {
+  const out = measured.map((m) => {
+    const allowed = Math.floor(share * m.samples);
+    const need = m.escaped.length > allowed ? Math.ceil(m.escaped[allowed]) : 0;
+    return { need, maxiter: Math.min(ceiling, Math.max(m.frame.maxiter, Math.ceil(headroom * need))) };
+  });
+  // Home is last: carry the largest cap seen so far down towards the target.
+  for (let i = out.length - 2; i >= 0; i--) out[i].maxiter = Math.max(out[i].maxiter, out[i + 1].maxiter);
+  return out;
 }
 
 /** Keyframe `k`'s 2x2 blocks against keyframe `k+1`'s central half: the block of four finer
@@ -336,7 +443,8 @@ if (!isMainThread) {
   const args = process.argv.slice(2);
   const at = args.indexOf("--only");
   const only = at >= 0 ? args[at + 1].split(",").map(Number) : null;
-  if (args.includes("--caps")) await caps();
+  if (args.includes("--undercap")) await undercap();
+  else if (args.includes("--caps")) await caps();
   else if (args.includes("--agree")) agree();
   else await fields(only);
 }

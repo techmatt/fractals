@@ -980,6 +980,38 @@ times finer, 13.5 bands per e-fold of `nu` everywhere. The chosen cut is the rec
 e-fold, so the bands thin as `nu` falls — about 2 per e-fold at the deep end and 0.5 at the
 home view — which calms the opening without a depth-dependent colouring, since it is still
 one function of `nu`.
+**A variant is the same descent drawn again at another size** *(double_descent_4k_ckpt148)*.
+`variants.<name>` in the record keeps every width, the centre, the mode, the colouring, the
+path and the easing, and lays its own grid, caps, video size and rate, and a `speedup` that
+divides every time in the schedule, over them. Its fields, colourings and stills land in
+`artifacts/<name>/<variant>/` and its MP4 is `…/<variant>/video/<record>_<mapping>_<variant>.mp4`.
+`4k60` is the YouTube master: fields at 7680×4320, so that a 3840×2160 frame is area-filtered
+down 1–2× exactly as the 960×540 cut is from 1920×1080, at 60 fps and 1.27 times faster
+(108.0 s to 85.0 s).
+
+```
+node builder/zoom_fields.mjs --record builder/data/double-descent.keyframes.json --variant 4k60 --undercap
+node builder/zoom_fields.mjs --record builder/data/double-descent.keyframes.json --variant 4k60 [--only k,k]
+python builder/zoom.py --record builder/data/double-descent.keyframes.json --variant 4k60 video --mapping power
+python builder/zoom.py --record … [--variant 4k60] still --mapping power --s 44.3    # one frame, a PNG
+python builder/zoom.py --record … --variant 4k60 encode --mapping power --span 44,46  # a segment
+```
+
+**A variant's caps are measured, not settled.** The Deep tab's settle stops at a tenth of a
+64×36 probe still the cap's fault, which is right for a page and wrong for a film: the base
+record's caps rise and fall along the descent (k25 428,352, k26 52,344, k27 102,288), and a
+pixel one keyframe paints black the next paints in colour, which is the flicker. `--undercap`
+draws every keyframe at 480×270 at `cap::EXPLICIT_CEILING` into `<variant>/undercap/` (about
+ten minutes) and reads what escaped above each cap. The rule (`capRule`): `need` is the
+smallest cap leaving no more than `cap.share` of the probe black while exterior, the cap is
+`cap.headroom` times that and never under the record's own, and it is carried down the
+descent so that no keyframe's cap is under a shallower one's; the ceiling bounds it. Each
+frame of the variant records `was`, `need`, the cap, and the black-while-exterior share at
+both. **The deep half of the favicon descent needs the ceiling itself**: from k22 to k32,
+around copy 1's body, samples escape as late as 1.99 million, so k00–k32 all draw at two
+million and the ending opens M₂ at 61 periods rather than 32. `python -m builder descent`
+rewrites the record whole and drops `variants`.
+
 `deep-descent-pairs` colours a twin the other way round: its counts are about `p_A` times
 its source's, so under `lambda=0` it is its source shifted by `ln p_A`, and taking that off
 the phase puts the twin in its source's colours.
