@@ -208,20 +208,19 @@
       <li><strong>Palette.</strong> Near-duplicate palettes are grouped, and a group may take
       only about one seat in forty. Two maps that differ only in a shade make two wallpapers a
       viewer reads as one.</li>
-      <li><strong>Rendering mode.</strong> Every mode except smooth has a floor of seats, so the
-      modes that are harder to score well do not fall out of the collection. Threads is capped
-      at a fifth of the gallery, after one gallery gave it more than seven times its share of
-      the pool.</li>
+      <li><strong>Rendering mode.</strong> Every mode has a floor and a ceiling of seats, so
+      the modes that are harder to score well do not fall out of the collection, and the modes
+      that are easy to score do not dominate everything.</li>
       <li><strong>Spirals.</strong> Spirals are capped at a tenth of the gallery. Without the
       cap, they would take far more of it.</li>
-      <li><strong>Family and plane.</strong> Although I think diversity here is important too,
-      the solve turned out to end up with a fairly healthy distribution on its own, so I didn't
-      need to add this constraint.</li>
+      <li><strong>Family and plane.</strong> We want to show a diverse set of results across
+      fractal families. It turned out the solve already had a good distribution here, so I
+      didn't end up adding explicit constraints.</li>
     </ul>
 
       <figure class="figure" data-figure="gallery-twins">
         <img src="../assets/images/figures/gallery-twins.webp" width="1316" height="1350" alt="Three pairs of wallpapers, one pair to a row, each pair labeled with the distance between them: the first refused as near-duplicates, the second seated with the smallest distance in the gallery, and the third two ordinary wallpapers." loading="lazy">
-        <figcaption>Three pairs at increasing distance under the twin measure. The first is a picture the pass refused and the seat it was too close to; the second is the closest pair the finished gallery holds, admitted by four ten-thousandths of the threshold; the third is what two ordinary wallpapers measure.</figcaption>
+        <figcaption>Three pairs at increasing distance under the twin measure. The first is two pictures deemed far too close; only one is allowed into the gallery. The second is the closest pair the finished gallery holds, so it's deemed just different enough to be allowed. The third is what two ordinary wallpapers measure.</figcaption>
       </figure>
 
     <h2 id="what-the-solve-optimizes">What the solve optimizes</h2>
@@ -247,7 +246,7 @@
       <figure class="figure figure-split" data-figure="gallery-output">
         <div class="figure-panels" style="--figure-across: 6">
         <div class="figure-panel">
-          <a class="figure-open" href="../explorer/index.html?v=4&amp;f=multibrot4&amp;m=stripe&amp;x=0.4463730490973118&amp;y=0.6581827896361206&amp;w=0.00000020629279822204377&amp;p=wallhaven_wallhaven-398e39" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/gallery-output-1.webp" width="205" height="115" alt="A wallpaper drawn in stripe average, in the Multibrot d = 4 family." loading="lazy"><span class="figure-open-mark" aria-hidden="true">↗</span></a>
+          <a class="figure-open" href="../explorer/index.html?v=4&amp;f=multibrot4&amp;m=stripe&amp;x=0.4463730490973118&amp;y=0.6581827896361206&amp;w=0.00000020629279822204377&amp;p=Copper%20Tide" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/gallery-output-1.webp" width="205" height="115" alt="A wallpaper drawn in stripe average, in the Multibrot d = 4 family." loading="lazy"><span class="figure-open-mark" aria-hidden="true">↗</span></a>
           <p class="figure-label">Multibrot d = 4</p>
         </div>
         <div class="figure-panel">

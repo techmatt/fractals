@@ -105,7 +105,7 @@ from __future__ import annotations
 
 import json
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 
 from . import figures as figures_module
@@ -233,6 +233,10 @@ class Pick:
     #: The curve this site measured for a seat whose run kept none — the recipe store's
     #: `tone`, and `None` everywhere a run's record answers.
     tone: dict | None = None
+    #: Where a figure keeps this seat's place and swaps its map: the recipe store's
+    #: `recolor` row's `source`, and `recipe` above is that row's recipe. `None` for a
+    #: seat drawn as it was seated.
+    recolor: dict | None = None
 
     @property
     def alias(self) -> str:
@@ -1021,12 +1025,21 @@ def seat_panels(
     what the panel records is which of them this picture came out of, so that a figure
     mixing seats with renders of its own — the family sheets do — is a row a link
     derivation can read panel by panel.
+
+    A recolored pick is the one panel here that is not its seat: it is drawn from the
+    recipe store's `recolor` row with no tone curve, and it hands back that recipe as its
+    `spec` rather than the seat, so its link opens the map it was drawn in.
     """
     size = panels(columns)
     catalog = renders.mode_catalog()
     made = []
     for index, pick in enumerate(resolved, start=1):
-        picture = panel(pick, f"{name}-{index}-{pick.alias}", catalog)
+        if pick.recolor:
+            untouched = Levelling(UNTOUCHED, RECOLORED_WHERE, None)
+            spec = panel_spec(pick, catalog, levelling=untouched)
+            picture = cache().produce(f"{name}-{index}-{pick.alias}-recolor", "render", spec).path
+        else:
+            picture = panel(pick, f"{name}-{index}-{pick.alias}", catalog)
         destination = sheets.save(
             sheets.fitted(picture, size), panel_path(identifier, index), quiet=True
         )
@@ -1036,10 +1049,58 @@ def seat_panels(
                 alt=panel_alt(pick),
                 label=label(pick) if label else None,
                 note=note(pick) if note else None,
-                seat=pick.identifier,
+                spec=recolor_spec(pick) if pick.recolor else None,
+                seat=None if pick.recolor else pick.identifier,
             )
         )
     return made, size
+
+
+#: What a recolored panel's levelling says it is: nothing the run recorded answers for a
+#: map the run never drew in, and the operator was never run on it.
+RECOLORED_WHERE = "recolored here"
+
+
+def recolored(identifier: str, resolved: list[Pick]) -> list[Pick]:
+    """The picks with any panel the recipe store recolors swapped for its recolored self.
+
+    The row names the seat it was taken from, and a row whose seat is not the pick at its
+    panel is a refusal: a re-pick that left a recolor behind would otherwise draw one
+    seat's place in a map chosen for another.
+    """
+    from . import recipes
+
+    found = list(resolved)
+    for index, held in sorted(recipes.recolors(identifier).items()):
+        if not 1 <= index <= len(found):
+            raise PickError(f"{held.identifier}: {identifier} has no panel {index}")
+        base = found[index - 1]
+        if held.source.get("seat") != base.identifier:
+            raise PickError(
+                f"{held.identifier} recolors {held.source.get('seat')}, and panel {index} of "
+                f"{identifier} is {base.identifier} — re-point or remove the recolor row"
+            )
+        found[index - 1] = replace(
+            base, recipe=held.recipe, recolor={**held.source, "row": held.identifier}
+        )
+    return found
+
+
+def recolor_spec(pick: Pick) -> dict:
+    """A recolored panel's record: the recipe it was drawn from, in a panel spec's shape."""
+    recipe = pick.recipe
+    spec = {
+        "family": recipe["family"],
+        "viewport": recipe["viewport"],
+        "mode": recipe["mode"],
+        "curve": recipe["curve"],
+        "colormap": recipe["colormap"],
+        "palette": recipe["palette"],
+        "maxiter": recipe["maxiter"],
+    }
+    if recipe.get("mode_params"):
+        spec["mode_params"] = recipe["mode_params"]
+    return spec
 
 
 def gallery_hook() -> Split:
@@ -1132,7 +1193,7 @@ def gallery_output() -> Split:
             f"{identifier} is {OUTPUT_COLUMNS}x{OUTPUT_ROWS} and its row names "
             f"{len(wanted)} pick(s)"
         )
-    resolved = resolve(wanted)
+    resolved = recolored(identifier, resolve(wanted))
     made, size = seat_panels(
         identifier,
         resolved,
@@ -1883,12 +1944,28 @@ def frame_line(pick: Pick, *, representative: bool) -> str:
     rather than six gradients the explorer is asked to carry.
     """
     recipe = pick.recipe
-    return (
+    line = (
         f"{family_name(pick.family)}, {mode_words(pick.mode)}: gallery seat "
         f"{pick.stamp}{PICK_SEPARATOR}{pick.key}, alias {pick.alias}, seat "
         f"{pick.seat.get('seat')}, partition {pick.seat.get('partition')} — "
         f"{recipe_words(pick, representative=representative)}. The candidate the seat stands "
         f"on was drawn at regime {recipe['regime']} and scored P(>=4) {pick.seat.get('p_ge4')}."
+    )
+    if pick.recolor:
+        line += " " + recolor_words(pick)
+    return line
+
+
+def recolor_words(pick: Pick) -> str:
+    """Why one panel's map is not its seat's, in the recipe store's own terms."""
+    told = pick.recolor or {}
+    return (
+        f"Recolored: the seat's place, view, mode and cap are kept and its map "
+        f"{told.get('replaced')} is not; {pick.recipe['colormap']} was drawn at random, "
+        f"seed {told.get('seed')}, from the {told.get('pool')} maps of the library whose "
+        f"dominant codebook cell is {told.get('cell')} ({told.get('rule')}). Drawn with no "
+        "tone curve, because the autolevel operator never ran on this map, and recorded in "
+        f"article/figure-recipes.jsonl as {told.get('row')}."
     )
 
 
@@ -2040,10 +2117,16 @@ def provenance(
         f"{size[0]}x{size[1]} {landed}; the stored 640x360 thumbnail a seat points at "
         f"is the picture the judges were shown and is not a source here. Nothing about the "
         f"coloring is this figure's choice: mode, mode settings, curve, map, the whole "
-        f"palette pass and the cap all come off the ledger's recipe. Stamp"
+        f"palette pass and the cap all come off the ledger's recipe"
+        + (
+            ", except the map of a panel whose line says it was recolored"
+            if any(pick.recolor for pick in picks)
+            else ""
+        )
+        + f". Stamp"
         f"{'s' if len(stamped) > 1 else ''} {', '.join(stamped)}; panels in reading order, "
         f"{columns} across.",
-        autolevel_line(picks),
+        autolevel_line([pick for pick in picks if not pick.recolor]),
         *chosen,
     ]
     lines += [frame_line(pick, representative=index == 0) for index, pick in enumerate(picks)]
@@ -2103,7 +2186,23 @@ def sources(identifier: str) -> list[dict]:
         # Pool candidates and never seats, so the kind says so and the key is bare.
         return [{"kind": figures_module.CANDIDATE, "keys": [split(one)[1] for one in keys]}]
     if identifier not in MODE_FIGURES:
-        return [{"kind": figures_module.GALLERY_SEAT, "keys": keys}]
+        # A recolored panel keeps its seat's place and not its pixels, so its key is said
+        # apart as `recipe_changed` and `seats` holds only the rest to the gallery.
+        from . import recipes
+
+        changed = {one.source.get("seat") for one in recipes.recolors(identifier).values()}
+        kept = [key for key in keys if key not in changed]
+        found = [{"kind": figures_module.GALLERY_SEAT, "keys": kept}] if kept else []
+        moved = [key for key in keys if key in changed]
+        if moved:
+            found.append(
+                {
+                    "kind": figures_module.GALLERY_SEAT,
+                    "keys": moved,
+                    "drawn": figures_module.RECIPE_CHANGED,
+                }
+            )
+        return found
     found = []
     if keys:
         found += [

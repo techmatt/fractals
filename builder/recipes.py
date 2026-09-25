@@ -67,6 +67,16 @@ A fourth, `icon` *(favicon_wire_ckpt145)*: one row, stamp `icon`, key `site`, ho
 seat the icon is cropped from, the crop link and the crop's width, and the master it is
 drawn at. It is not a figure and no figure cites it, so `--fill` never touches it either;
 `builder.icons` writes it and draws the icon set from it.
+
+## Recolored panels
+
+A fifth, `recolor` *(gallery_curation_edits_ckpt149)*: one row per panel of a picks figure
+that keeps a seat's place, view and mode and swaps its map, keyed `<figure id>#<panel>`
+under the stamp `recolor`. The recipe is the seat's ledger recipe whole with the map
+replaced and the autolevel stamp dropped — the operator never ran on the new map — and
+`source` names the seat it was taken from, the map it replaced, and how the new one was
+drawn. It is the only copy of that choice, so the maker reads it and `--fill` never touches
+it; the row is written once, by hand, when the choice is made.
 """
 
 from __future__ import annotations
@@ -82,7 +92,7 @@ RECIPES = ARTICLE_DIR / "figure-recipes.jsonl"
 
 #: What a row's `kind` may say: a seat of a recorded tentative gallery, or a bare row of
 #: the candidate ledger that was never seated.
-SEAT, CANDIDATE, DEEP, ICON = "seat", "candidate", "deep", "icon"
+SEAT, CANDIDATE, DEEP, ICON, RECOLOR = "seat", "candidate", "deep", "icon", "recolor"
 
 #: What a candidate row writes where a seat row writes its stamp. The same word
 #: `picks.CANDIDATE_STAMP` spells, and spelled out rather than left empty so a provenance
@@ -125,7 +135,7 @@ def load_all(path: Path | None = None) -> dict[str, Held]:
     held: dict[str, Held] = {}
     for row in records.read(path):
         kind = row.kind
-        if kind not in (SEAT, CANDIDATE, DEEP, ICON):
+        if kind not in (SEAT, CANDIDATE, DEEP, ICON, RECOLOR):
             raise RecipeError(f"{row.where}: {kind!r} is not a kind this store carries")
         recipe = row.optional_mapping("recipe")
         if recipe is None:
@@ -284,12 +294,14 @@ def summary() -> list[str]:
     seated = sum(1 for one in held.values() if one.kind == SEAT)
     deep = sum(1 for one in held.values() if one.kind == DEEP)
     icons = sum(1 for one in held.values() if one.kind == ICON)
+    recolored = sum(1 for one in held.values() if one.kind == RECOLOR)
     unseated = sum(1 for one in held.values() if one.kind == SEAT and not one.seat)
     stamps = sorted({one.stamp for one in held.values() if one.kind == SEAT})
+    bare = len(held) - seated - deep - icons - recolored
     lines = [
         f"{RECIPES.name}: {len(held)} rows — {seated} seats over {len(stamps)} recorded "
-        f"galleries, {len(held) - seated - deep - icons} bare candidates, {deep} deep panels, "
-        f"{icons} icon",
+        f"galleries, {bare} bare candidates, {deep} deep panels, {recolored} recolored "
+        f"panels, {icons} icon",
     ]
     if unseated:
         lines.append(f"  {unseated} carry a recipe and no seat row: the record was never tracked")
@@ -324,6 +336,20 @@ def keep_deep(rows: dict[str, dict]) -> None:
             read="drawn here by builder.deep_figures: the link is the whole recipe",
         )
     write_all(kept)
+
+
+def recolors(figure_id: str) -> dict[int, Held]:
+    """One figure's recolored panels, by the 1-based panel each row is keyed to."""
+    found = {}
+    for one in load_all().values():
+        if one.kind != RECOLOR:
+            continue
+        figure, _, panel = one.key.partition("#")
+        if figure == figure_id:
+            if not panel.isdigit():
+                raise RecipeError(f"{one.identifier}: a recolor row is keyed <figure id>#<panel>")
+            found[int(panel)] = one
+    return found
 
 
 def keep_icon(row: dict) -> None:

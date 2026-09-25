@@ -247,7 +247,7 @@
 {"schema": 1, "kind": "link", "id": "figure:gallery-top-scored#23", "link": "v=4&m=stripe&x=-0.7805499512544434&y=-0.13537654404503693&w=0.000002452468020859394&p=ocean&mirror=1", "from": "seat candidate|a5b3f3c175ec4b00"}
 {"schema": 1, "kind": "link", "id": "figure:gallery-top-scored#24", "link": "v=4&f=multibrot3&m=smooth_mean_angle&weight=0.85&x=0.12127650690666367&y=0.79976067775163&w=9.346671098311972e-06&p=Mint%20Field%2C%20Teal%20Well&phase=0.263003", "from": "seat candidate|f67331d63bda9d7e"}
 {"schema": 1, "kind": "link", "id": "figure:gallery-twins", "no_link": "incomplete_provenance", "why": "no colormap is written down"}
-{"schema": 1, "kind": "link", "id": "figure:gallery-output#1", "link": "v=4&f=multibrot4&m=stripe&x=0.4463730490973118&y=0.6581827896361206&w=0.00000020629279822204377&p=wallhaven_wallhaven-398e39", "from": "seat 20260902T164622Z|4d82475030b0cd30"}
+{"schema": 1, "kind": "link", "id": "figure:gallery-output#1", "link": "v=4&f=multibrot4&m=stripe&x=0.4463730490973118&y=0.6581827896361206&w=0.00000020629279822204377&p=Copper%20Tide", "from": "spec"}
 {"schema": 1, "kind": "link", "id": "figure:gallery-output#2", "link": "v=4&f=julia&cx=-1.2517612129804818&cy=0.038979112285470574&m=stripe&x=-0.037380050511487004&y=0.07328054808613507&w=0.015074529254237856&p=wallhaven_wallhaven-398e39", "from": "seat 20260902T164622Z|b1723082b1a2be11"}
 {"schema": 1, "kind": "link", "id": "figure:gallery-output#3", "no_link": "not_exposed", "why": "there is no render mode called exp_smoothing."}
 {"schema": 1, "kind": "link", "id": "figure:gallery-output#4", "link": "v=4&f=multibrot4&m=threads&x=0.4461993740803327&y=0.6589114954757453&w=0.00000006810338005823267&p=Petrol%20Monolith", "from": "seat 20260902T164622Z|949eb7ff101c0e65"}
