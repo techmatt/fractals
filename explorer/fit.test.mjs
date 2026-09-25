@@ -140,3 +140,45 @@ test("fit reads lane 0 of a field, and nothing past it", () => {
   const lane0 = fit.fit({ values: values.slice(0, width * height), width, height }, LEVELED);
   assert.deepEqual(found, lane0);
 });
+
+// ------------------------------------------------------------------- the arrival refit
+
+test("the arrival refit fires once, on the first finished picture of its frame", () => {
+  const refit = new fit.ArrivalRefit();
+  assert.equal(refit.due("a", true), false, "nothing armed, nothing due");
+  refit.arm("a", false);
+  assert.equal(refit.armed, true);
+  assert.equal(refit.due("a", false), false, "a coarse stage of the frame waits");
+  assert.equal(refit.due("a", true), true, "the finished stage is due");
+  assert.equal(refit.armed, false);
+  assert.equal(refit.due("a", true), false, "a later stage of that frame never refits");
+});
+
+test("an arrival fit taken off the finished picture arms nothing", () => {
+  const refit = new fit.ArrivalRefit();
+  refit.arm("a", true);
+  assert.equal(refit.armed, false);
+  assert.equal(refit.due("a", true), false);
+});
+
+test("a touched palette control takes the refit away", () => {
+  const refit = new fit.ArrivalRefit();
+  refit.arm("a", false);
+  refit.disarm();
+  assert.equal(refit.due("a", true), false);
+});
+
+test("another frame takes it away, even one that comes back to the armed frame", () => {
+  const refit = new fit.ArrivalRefit();
+  refit.arm("a", false);
+  assert.equal(refit.due("b", false), false);
+  assert.equal(refit.armed, false);
+  assert.equal(refit.due("a", true), false, "back on the arrival frame is a later frame");
+});
+
+test("a new arrival re-arms on its own frame", () => {
+  const refit = new fit.ArrivalRefit();
+  refit.arm("a", false);
+  refit.arm("b", false);
+  assert.equal(refit.due("b", true), true);
+});

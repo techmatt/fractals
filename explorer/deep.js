@@ -241,6 +241,10 @@ export function mount(host) {
 
   /** The view the picture on screen is of, once one has been drawn. */
   let drawn = null;
+  /** Whether the picture up is a full pass — the frame drawn to the end at the canvas's own
+   *  size — rather than the quarter pass. Meaningful only while `drawn` is set; it is what
+   *  `showsFinished` reads for the arrival refit *(site_audit_ckpt147)*. */
+  let drawnFull = false;
   /** The view the gestures have moved to. Equal to `drawn` when nothing is pending. */
   let view = deepLink.fresh(context);
   /** The last picture drawn, as a canvas, and the view it was of. */
@@ -492,6 +496,7 @@ export function mount(host) {
     }
     view = to.capFrom === entry.view.capFrom ? entry.view : { ...entry.view, capFrom: to.capFrom };
     drawn = view;
+    drawnFull = entry.full;
     stale = { canvas: entry.canvas, view };
     // Only a full picture is one a download at the canvas's size can save.
     finished = entry.image;
@@ -828,6 +833,7 @@ export function mount(host) {
           host.onColour();
         }
         drawn = target;
+        drawnFull = stage.name === "full";
         keep(shaded.image, target);
         // What this stage cost, for the Download row's estimate. A cached field's
         // `elapsed` is the cost it was measured at, which is still the cost of that
@@ -1237,6 +1243,7 @@ export function mount(host) {
     // end in its new colour: what a download at the canvas's size saves, and what Cancel and
     // a step back return to. Of a frame the reader has left, it is only the picture up.
     const full = stage.width === grid.width && stage.height === grid.height;
+    drawnFull = full;
     if (current && full) {
       finished = shaded.image;
       finishedSamples = 1;
@@ -2462,6 +2469,22 @@ export function mount(host) {
      *  is still the last one's. */
     showsView() {
       return drawn !== null && deepLink.fieldKey(drawn, 1, 1) === deepLink.fieldKey(view, 1, 1);
+    },
+    /** Whether the picture up is that frame's full pass — its final stage, drawn to the end —
+     *  and not the quarter pass that lands first *(site_audit_ckpt147)*. The arrival fit is
+     *  taken off whichever lands first, and taken once more when this turns true. */
+    showsFinished() {
+      return (
+        drawnFull &&
+        drawn !== null &&
+        deepLink.fieldKey(drawn, 1, 1) === deepLink.fieldKey(view, 1, 1)
+      );
+    },
+    /** The place the tab stands on — its set, its centre and its width, and not its cap — as
+     *  one string. The arrival refit waits on a place: a cap the probe or the reader moves
+     *  is still this frame being drawn to the end, and a pan or a zoom is another frame. */
+    place() {
+      return deepLink.fieldKey({ ...view, maxiter: 0 }, 1, 1);
     },
 
     show() {

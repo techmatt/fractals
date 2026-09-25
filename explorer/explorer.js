@@ -690,6 +690,10 @@ function tintedShape() {
  * cache is for — so the two sides differ in what follows the write and not in the write.
  */
 function tint(changes, { moved = true, moving = false } = {}) {
+  // Every palette control ends here, and a colour the reader turned is theirs: the Deep
+  // tab's arrival refit, if one is waiting, goes (`arrival`). The page's own fits re-arm it
+  // after this where they mean to.
+  arrival.disarm();
   changes = levelledFor(changes, tinting());
   if (deep !== null && deep.owns()) {
     deep.tint(changes);
@@ -1827,13 +1831,27 @@ function remember() {
   if (view === null) return;
   const query = currentQuery();
   const key = keyOf(query);
+  // Only the refit's own picture takes the arrival's place. A reader's action that settles
+  // inside the debounce after a refit — a pan, a map — is a picture of its own, and pushes.
+  const replacing = refitOf !== null && refitOf.to === key ? refitOf.of : null;
+  refitOf = null;
   if (restoring !== null) {
     if (key === restoring) restoring = null;
     return;
   }
   const opts = anchor !== null && anchor.at === key ? anchor.opts : {};
-  trail.commit(key, { query, opts });
+  trail.commit(key, { query, opts }, { replacing });
 }
+
+/**
+ * `{ of, to }` from the Deep tab's arrival refit until the next commit, and `null` otherwise
+ * *(site_audit_ckpt147)*: `of` is the key of the picture the refit finishes and `to` the key
+ * of the refitted one. The refit is the arrival's fit taken again, which the reader did not
+ * ask for as a step of its own, so its picture takes the arrival's entry rather than pushing
+ * a second one — one Ctrl+Z goes back past both, and the entry's link is the refitted
+ * recipe, as Copy link's is. A commit of any other key is an ordinary one.
+ */
+let refitOf = null;
 
 /**
  * Put an entry back on the screen, through the same door that opened it.
@@ -1848,6 +1866,7 @@ function restore(entry) {
   restoring = keyOf(query);
   // A step back puts a picture back as it was drawn, colour and all, and fits nothing.
   fitWanted = false;
+  arrival.disarm();
   if (link.isDeep(`?${query}`)) {
     deepOpening = true;
     showPanel("deep");
@@ -2274,6 +2293,9 @@ function setShade(key, text, { moving = false } = {}) {
     syncShade();
     return;
   }
+  // A control the reader touched, even to the value it had or to one the contract refuses:
+  // the Deep tab's arrival refit goes before either early return below, not only in `tint`.
+  arrival.disarm();
   const subject = tinting();
   // A slider fires `change` on release after `input` has already set the same value.
   if (shade.spelling(subject.shade, key) === text) return;
@@ -2375,10 +2397,13 @@ function shownField() {
  * colour at the frame's median instead was tried and dropped: taken off a recipe that was
  * noise, it turned the palette by an arbitrary amount and put a non-cyclic map's seam in the
  * middle of the picture. Each value goes through the contract's own reader.
+ *
+ * `from` is the recipe fitted *from*, where it is not `subject`'s own: the arrival refit
+ * fits to the Leveled recipe the arrival fitted to, so it is the same fit taken again.
  */
-function fitted(subject) {
-  const absolute = subject.shade.scale === "absolute";
-  const target = absolute ? { ...subject.shade, lambda: 1, phase: 0 } : subject.shade;
+function fitted(subject, from = subject) {
+  const absolute = from.shade.scale === "absolute";
+  const target = absolute ? { ...from.shade, lambda: 1, phase: 0 } : from.shade;
   const found = fitting.fit(shownField(), target, subject.mode ?? "smooth");
   if (found === null) return null;
   let next = { ...subject.shade, scale: "absolute" };
@@ -2429,6 +2454,7 @@ let fitWanted = false;
 /** A deep link just opened: its colour is fitted unless it states `scale`. An explicit
  *  `scale=leveled` is respected like `scale=absolute`. */
 function fitUnlessStated(query) {
+  arrival.disarm();
   fitWanted = !new URLSearchParams(query).has("scale");
   landFit();
 }
@@ -2446,6 +2472,41 @@ function landFit() {
   fitWanted = false;
   holding = null;
   tint({ shade: next });
+  // After the tint, which disarms: this fit is the page's, and it may want finishing.
+  arrivalFrom = subject;
+  arrival.arm(deep.place(), deep.showsFinished());
+}
+
+/**
+ * **The arrival fit, taken once more off the finished frame** *(Matt, site_audit_ckpt147)*.
+ *
+ * `landFit` fits off the first stage that lands, the quarter pass, and at `fitting.PASSES`
+ * turns that is visibly not the fit of the finished frame: on the proof frame, a Fit pressed
+ * once the full pass had landed turned the palette 0.37 of a turn. So when the full pass of
+ * the arrival's own place lands, the same fit — to the same Leveled recipe — is taken off it
+ * and the picture recoloured. Nothing re-iterates. `fitting.ArrivalRefit` holds when: once,
+ * and never after the reader has touched a palette control (`tint`, the Autolevel box, Hold
+ * look, a step back) or the tab has gone to another frame. Its picture takes the arrival's
+ * place in the way back (`refitOf`).
+ */
+const arrival = new fitting.ArrivalRefit();
+/** The Leveled view the arrival fitted to, which is what the refit fits to again. */
+let arrivalFrom = null;
+
+function landRefit() {
+  if (!arrival.armed || !deepOwns()) return;
+  if (!arrival.due(deep.place(), deep.showsFinished())) return;
+  const from = arrivalFrom;
+  arrivalFrom = null;
+  const subject = deep.view();
+  if (from === null || subject.shade.scale !== "absolute") return;
+  const next = fitted(subject, from);
+  if (next === null) return;
+  const of = keyOf(currentQuery());
+  holding = null;
+  tint({ shade: next });
+  // The tint writes the deep view at once, so the link here is the refitted picture's.
+  refitOf = { of, to: keyOf(currentQuery()) };
 }
 
 fitButton.addEventListener("click", pressFit);
@@ -2818,6 +2879,9 @@ function openAny(query, opts = {}) {
   deepOpening = true;
   showPanel("deep");
   startDeep().then(() => {
+    // Before the open, whose settle is synchronous where the link's frame is already held:
+    // a refit waiting on the frame the link names must not fire on the link's picture.
+    arrival.disarm();
     deep?.open(query);
     fitUnlessStated(query);
   });
@@ -3083,6 +3147,7 @@ function showPanel(asked) {
       // A frame carried in on a Leveled colour comes in fitted to Absolute
       // *(absolute_fit_ckpt147)*, once its first stage lands; an Absolute one keeps its own.
       if (!deepOpening && deep?.enter(carryable()) && deep.view().shade.scale !== "absolute") {
+        arrival.disarm();
         fitWanted = true;
         landFit();
       }
@@ -3090,8 +3155,10 @@ function showPanel(asked) {
       syncShade();
     });
   } else if (deep !== null) {
-    // Leaving keeps whatever scale is set, Absolute included; a fit still waiting goes.
+    // Leaving keeps whatever scale is set, Absolute included; a fit still waiting goes, and
+    // so does a refit, since coming back is a later frame.
     fitWanted = false;
+    arrival.disarm();
     deep.hide();
     syncShade();
     const shallow = walk === null || showing !== "walk";
@@ -3646,10 +3713,12 @@ async function mountDeep() {
       shading: () => renderer.shading,
       say,
       showState,
-      // Every stage that lands settles, which is where a fit waiting on the frame is taken.
+      // Every stage that lands settles, which is where a fit waiting on the frame is taken,
+      // and where the arrival's fit is taken again once the frame is finished.
       settle: () => {
         settle();
         landFit();
+        landRefit();
       },
       // A deep view is always one the reader made, so the curve is measured whenever the
       // box is ticked. There is no stored half here: nothing arrives from a run.
@@ -4727,6 +4796,7 @@ function pickPalette(name) {
 // picture up, so it draws nothing; a hold starts afresh from whatever the recipe is then.
 holdToggle.addEventListener("change", () => {
   holding = null;
+  arrival.disarm();
 });
 
 levelToggle.addEventListener("change", () => {
@@ -4735,6 +4805,9 @@ levelToggle.addEventListener("change", () => {
     return;
   }
   levelOn = levelToggle.checked;
+  // A palette control, so the Deep tab's arrival refit goes; the deep branch below does not
+  // pass through `tint`.
+  arrival.disarm();
   // A view that arrived with no curve has none to give back, so ticking it on is asking for
   // one to be measured: the view is `derived` from here, the way it would be after a move.
   if (levelOn && levelling === "stored" && storedCurve === null) levelling = "derived";
@@ -5035,7 +5108,7 @@ async function main() {
   }
 
   document.getElementById("provenance").textContent =
-    `${PROVENANCE.count} palettes and ${IDENTITIES.size} production render modes, baked from ` +
+    `${PROVENANCE.count} palettes and ${IDENTITIES.size} render modes, taken from ` +
     `fractal-wallpapers ${PROVENANCE.wallpapers_commit.slice(0, 12)} on ${PROVENANCE.baked}.`;
 
   clearNotice();

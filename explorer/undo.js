@@ -59,8 +59,19 @@ export class Trail {
    *
    * A refresh keeps the cursor and keeps everything ahead of it, because nothing happened:
    * the same picture said its link again, more completely than the first time.
+   *
+   * **`replacing` is the key of a picture this one finishes** *(site_audit_ckpt147)*: where
+   * the cursor is on that picture, this one takes its place under its own key, and returns
+   * `"refreshed"` too. It is for a change the page made to a picture the reader did not ask
+   * for separately — the Deep tab's arrival fit, taken again off the finished frame — so a
+   * step back goes past both at once. Where the cursor is on anything else, the picture
+   * being finished never got an entry of its own, and this is an ordinary commit.
    */
-  commit(key, entry) {
+  commit(key, entry, { replacing = null } = {}) {
+    if (replacing !== null && this.at >= 0 && this.entries[this.at].key === replacing) {
+      this.entries[this.at] = { key, entry };
+      return "refreshed";
+    }
     if (this.at >= 0 && this.entries[this.at].key === key) {
       this.entries[this.at] = { key, entry };
       return "refreshed";

@@ -197,3 +197,60 @@ export function fitSorted(sorted, shade, mode = null) {
 export function fit(field, shade, mode = null) {
   return fitSorted(samples(field), shade, mode);
 }
+
+/**
+ * **The arrival refit: one more fit, once, off the finished frame** *(Matt, site_audit_ckpt147)*.
+ *
+ * Coming into the Deep tab on a Leveled colour fits Absolute off the first stage that lands,
+ * the quarter pass, so the reader is not shown Absolute at whatever Period the recipe had.
+ * At `PASSES` turns a quarter pass's percentiles are not the finished frame's closely enough:
+ * on the proof frame the fit off the full pass turned the palette by 0.37 of a turn. So when
+ * the full pass of the same frame lands, the fit is taken again, which is a recolour and
+ * never a re-iteration. It is the arrival's fit finishing, and nothing else refits:
+ *
+ * - it is armed only by an arrival fit taken off a picture short of the finished one;
+ * - it fires at most once, on the first finished picture of that frame, and never again;
+ * - a palette control the reader touches in between takes it away, because the colour is
+ *   theirs from then on;
+ * - so does any other frame — a pan, a zoom, a link, leaving the tab — even one that comes
+ *   back to this frame, which is a later frame and is left alone like every later frame.
+ *
+ * A frame is whatever string the page names it by; this compares them and keeps no picture.
+ */
+export class ArrivalRefit {
+  constructor() {
+    /** The frame the refit is waiting on, or `null` where none is armed. */
+    this.frame = null;
+  }
+
+  get armed() {
+    return this.frame !== null;
+  }
+
+  /** An arrival fit just landed on `frame`. Armed only where the picture it was taken off
+   *  was short of the finished one: a fit off the finished picture is already the answer. */
+  arm(frame, finished) {
+    this.frame = finished ? null : frame;
+  }
+
+  /** The reader touched the colour, or the tab went somewhere else: nothing is waiting. */
+  disarm() {
+    this.frame = null;
+  }
+
+  /**
+   * A picture settled, of `frame`, finished or not. `true` exactly once: on the first
+   * finished picture of the frame the refit was armed on, which disarms it. A picture of any
+   * other frame disarms it and says `false`.
+   */
+  due(frame, finished) {
+    if (this.frame === null) return false;
+    if (frame !== this.frame) {
+      this.frame = null;
+      return false;
+    }
+    if (!finished) return false;
+    this.frame = null;
+    return true;
+  }
+}

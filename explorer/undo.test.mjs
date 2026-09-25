@@ -90,3 +90,24 @@ test("the cap is a few hundred pictures", () => {
   assert.equal(trail.entries.length, MAX);
   assert.equal(trail.entries[0].key, "k10");
 });
+
+test("a picture that finishes the one under the cursor takes its place", () => {
+  const trail = new Trail();
+  trail.commit("shallow", { query: "shallow", opts: {} });
+  trail.commit("arrived", { query: "arrived", opts: {} });
+  // The Deep tab's arrival fit taken again off the finished frame: a new key, one entry.
+  const said = trail.commit("refit", { query: "refit", opts: {} }, { replacing: "arrived" });
+  assert.equal(said, "refreshed");
+  assert.deepEqual(links(trail), ["shallow", "refit"]);
+  assert.equal(trail.currentKey, "refit");
+  assert.equal(trail.back().query, "shallow", "one step back goes past both");
+});
+
+test("replacing a picture that never got an entry is an ordinary commit", () => {
+  const trail = new Trail();
+  trail.commit("shallow", { query: "shallow", opts: {} });
+  // The arrival settled and was refitted inside one debounce: it was never committed.
+  const said = trail.commit("refit", { query: "refit", opts: {} }, { replacing: "arrived" });
+  assert.equal(said, "pushed");
+  assert.deepEqual(links(trail), ["shallow", "refit"]);
+});

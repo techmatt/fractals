@@ -2372,7 +2372,26 @@ while the panel is hidden.
   `scale`, comes in on Absolute with Lambda, Period and Phase fitted, which is busier than
   the Leveled picture it replaces (*Fit*, under the recipe's controls below). **The switch waits for the fit**: the first stage of the frame
   is drawn under Leveled, and when it lands `landFit` fits off it and recolours. Nothing is
-  re-iterated. Two things are left alone: a colour that is already Absolute, and a link
+  re-iterated. **And the fit is taken once more off the finished frame** *(Matt,
+  site_audit_ckpt147)*. A quarter pass's percentiles are close to the full pass's, but at
+  seven passes close is not enough: on the proof frame a Fit pressed on the finished picture
+  turned the palette 0.37 of a turn. So when the full pass of the arrival's place lands
+  (`deep.showsFinished()`: the picture up is that frame's full stage, not its quarter),
+  `landRefit` fits again, to the same Leveled recipe the arrival fitted to, and recolours.
+  Measured on the proof frame at a 776-wide canvas: phase 0.3678 and period 0.1383 on
+  arrival, 0.7978 and 0.1391 twelve seconds later. It happens at most once
+  (`fit.js`'s `ArrivalRefit`, held by `fit.test.mjs`). Any palette control the reader
+  touches in between cancels it: a map, the scale, Fit, Lambda, Period, Phase, Cycles,
+  Reset, Autolevel, Hold look, or a step back. So does any other frame, meaning a pan, a
+  zoom, a link, or leaving the tab, even a frame that comes back to this one. Later stages
+  and later frames never refit by themselves. A place is the set, the centre and the width,
+  and the cap is not part of it, so a cap moved by the probe or by hand before the full
+  pass lands is still this frame being finished. **The refit has no undo entry of its
+  own.** Its picture replaces the arrival's entry in the way back (`undo.js`'s `commit`
+  with `replacing`), so one Ctrl+Z goes back past both. Only the refitted picture's own link
+  replaces it: a pan or a map that settles inside the debounce after the refit is a commit
+  of its own and pushes. The address bar, Copy link and Save
+  write the refitted recipe. Two things are left alone: a colour that is already Absolute, and a link
   that states `scale` either way, so an explicit `scale=leveled` opens Leveled. A tab that
   is come back to on its own frame keeps whatever scale the reader left it at, and a step
   back (Ctrl+Z) puts a picture back as it was drawn and fits nothing. **One consequence:**
