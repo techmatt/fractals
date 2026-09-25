@@ -272,7 +272,6 @@
 {"schema": 1, "kind": "link", "id": "figure:gallery-output#23", "no_link": "not_exposed", "why": "there is no render mode called exp_smoothing."}
 {"schema": 1, "kind": "link", "id": "figure:gallery-output#24", "no_link": "not_exposed", "why": "there is no render mode called exp_smoothing."}
 {"schema": 1, "kind": "link", "id": "figure:pipeline-overview", "no_link": "drawn", "why": "a drawn diagram or chart, with no engine render behind it to reopen"}
-{"schema": 1, "kind": "link", "id": "figure:pipeline-yield-decay", "no_link": "drawn", "why": "a drawn diagram or chart, with no engine render behind it to reopen"}
 {"schema": 1, "kind": "link", "id": "figure:pipeline-growth", "no_link": "drawn", "why": "a drawn diagram or chart, with no engine render behind it to reopen"}
 {"schema": 1, "kind": "link", "id": "figure:index-hero#1", "link": "v=4&f=julia4&cx=0.44637678855595264&cy=0.6581861161102234&x=-0.0006944498037232774&y=-0.007170259608518661&w=0.644829668143998&p=glowdon&phase=0.053", "from": "spec"}
 {"schema": 1, "kind": "link", "id": "figure:deep-f64-and-perturbation#1", "no_link": "deep", "why": "the frame is past the wall f64 coordinates stop resolving, and the explorer refuses it in the engine's own words rather than drawing the arithmetic"}

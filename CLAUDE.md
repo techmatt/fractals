@@ -179,10 +179,10 @@ keeps the mechanics. **Every apply round ends by distilling that round's general
 - **And which figures look wrong is his to say, not something the repo tracks.** Whether a
   picture reads badly is the same judgement as picking the tile, so a session does not
   open a backlog of it: no `TODO` about how a picture looks, no list of suspect figures in
-  a record, no standing item in `docs/page-review.md`. The one `TODO` the tree does carry,
-  on `full-pipeline.html`, is the other kind — a number to re-verify against a run that
-  does not exist yet, which is a fact somebody can check rather than a taste somebody has
-  to have. What the repo tracks instead is what a machine
+  a record, no standing item in `docs/page-review.md`. A `TODO` the tree may carry is the
+  other kind — a number to re-verify against a run that does not exist yet, which is a fact
+  somebody can check rather than a taste somebody has to have; the last one, on
+  `full-pipeline.html`, went with the passage it annotated in v4. What the repo tracks instead is what a machine
   can decide — a `stale_when` that names an event, a `held_reason` that names what is
   blocked, a `draft` note that says what re-bakes it, a `reuse_reason` a collision made
   necessary — each of which fails or fires on its own. Where a figure pass leaves

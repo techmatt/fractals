@@ -36,12 +36,9 @@
     <li><a href="gallery-curation.html">Gallery curation</a></li>
     <li class="rail-current"><a href="full-pipeline.html" aria-current="page">Full pipeline</a>
       <ol class="rail-headings">
-        <li><a href="#finding-locations">Finding locations</a></li>
-        <li><a href="#finding-wallpapers">Finding wallpapers</a></li>
-        <li><a href="#curating-a-gallery">Curating a gallery</a></li>
-        <li><a href="#how-the-parts-run-together">How the parts run together</a></li>
-        <li><a href="#choosing-colors-for-a-collection">Choosing colors for a collection</a></li>
-        <li><a href="#future-developments">Future developments</a></li>
+        <li><a href="#the-loop">The loop</a></li>
+        <li><a href="#what-more-work-buys">What more work buys</a></li>
+        <li><a href="#future-work">Future work</a></li>
       </ol>
     </li>
     <li><a href="fractal-atlases.html">Fractal atlases</a></li>
@@ -66,203 +63,80 @@
 
 <main>
   <section class="prose">
-    <p>The pipeline has three parts, and every page before this one described one of
-    them. <a href="finding-good-locations.html">Finding good locations</a> is a guided
-    walk through each fractal family, hunting for locations (a family, a center in the
-    complex plane, a width) with nothing yet said about color.
-    <a href="finding-good-wallpapers.html">Finding good wallpapers</a> is mining:
-    returning to those locations and drawing each one many ways, in many rendering modes
-    and palettes, with every judged picture kept.
-    <a href="gallery-curation.html">Gallery curation</a> is the solve: one pass that
-    chooses a whole gallery out of every picture ever mined. Two stores connect the parts
-    (a pool of locations that only ever grows, and a pool of candidate pictures that only
-    ever grows), and this page is about how the three run together: not once, in order,
-    but as a loop whose last step tells the first two what to do next.</p>
+    <p>The pipeline has three parts, and each page before this one described one of them.
+    <a href="finding-good-locations.html">Finding good locations</a> walks each fractal
+    family and keeps the places the location judge rates likely to be good.
+    <a href="finding-good-wallpapers.html">Finding good wallpapers</a> mines those places,
+    drawing each one many ways across rendering modes and palettes and keeping the best few
+    per place and mode. <a href="gallery-curation.html">Gallery curation</a> solves for a
+    whole gallery out of every picture ever mined. Between the parts sit two pools, one of
+    locations and one of candidate pictures, and both only ever grow. This page is about
+    how the three run together: not once, in order, but as a loop.</p>
 
       <figure class="figure" data-figure="pipeline-overview">
         <img src="../assets/images/figures/pipeline-overview.png" width="1316" height="418" alt="A row of five plates: find locations, the location pool, find wallpapers, the candidate pool, curate a gallery, with arrows running left to right between them. Under the last plate is the solve's shortfall readout, and one heavier arrow runs out of it, back along its own lane and up into find wallpapers.">
-        <figcaption>The three parts, and the two stores between them. Locations accumulate in one pool and judged pictures in the other, and neither is ever pruned. The arrow back is what makes this a loop rather than a sequence: what the solve could not seat is what the next mine reads.</figcaption>
+        <figcaption>The three parts, and the two stores between them. Locations accumulate in one pool and the best few pictures per place and mode in the other, and both only ever grow. The arrow back is what makes this a loop rather than a sequence: what the solve could not seat decides whether to mine again.</figcaption>
       </figure>
 
-    <h2 id="finding-locations">Finding locations</h2>
+    <h2 id="the-loop">The loop</h2>
 
-    <p>A run is the unit of work: the walk applied to every family at once under a fixed
-    budget, expanding its frontier batch by batch, scoring every frame with the location
-    judge, and admitting the frames it rates likely to be at least good on the four-point
-    scale. How much of a run each partition gets follows a declared mix (the proportions
-    I want the finished collection to hold, weighted toward the standard Mandelbrot set
-    and its Julia sets), steered toward whichever partitions are furthest below their
-    share. Every admitted location joins the location pool. Nothing in that pool is ever
-    pruned; a later run can only add to it.</p>
+    <p>Mining is where nearly all the rendering time goes. The solve is cheap next to it
+    (minutes against hours), so it is re-run whenever anything changes (a retrained judge,
+    a new size, or a color theme), always over the whole candidate pool. Only the seated
+    pictures are ever rendered at wallpaper resolution.</p>
 
-    <p>What a run is trying to do is find new ground, and the thing that works against it
-    is its own success. The neighborhood where the walk has found one good frame is where
-    the next one is cheapest, so a search that followed cost alone would spend itself on
-    variations of one valley, and every later run, reading the same costs, would do it
-    again. Each run writes a ledger of the ground it covered and what came of it, every
-    later run loads every earlier ledger, and against that map crowded neighborhoods are
-    moved down the queue rather than refused. Part of every batch is reserved for roots no
-    run has touched, which matters because the location judge learned its taste from what
-    the search had already found and rates unfamiliar ground below the finds it eventually
-    leads to.</p>
+    <p>What ties the parts together is what the solve reports when it comes up short: for
+    every mode floor it could not fill, what was available and which rule refused it. The
+    policy built on that is simple on purpose. Mine until the candidate pool looks healthy
+    across palettes, modes, locations, and families; solve at the size wanted; if the
+    gallery comes up short, or looks thin to the eye, mine longer and solve again. There is
+    no computed allocation of mining time.</p>
 
-    <p>Yield still falls as a run goes on. In one measured run it fell roughly eightfold
-    from the first quarter to the last, and the figure below shows where the later
-    admissions came from. Past a point, more search in the same neighborhoods buys less
-    however the batches are split, and the remedy is new ground rather than a better split:
-    new families, new seeds, and the reframing channel that
-    <a href="finding-good-locations.html">finding good locations</a> ends on.</p>
+    <h2 id="what-more-work-buys">What more work buys</h2>
 
-    <!-- TODO: the measured run had the proven channel off; re-verify the figure and the
-    rough number against a channel-on run's records when one exists. -->
+    <p>The obvious fix for a short mode is to mine that mode. It does move seats into that
+    mode, but out of others, because each location seats one wallpaper: a place seated in
+    one short mode is a place no longer available to another, and the gallery's total
+    shortfall does not move. What a gallery is really short of is places where the modes
+    it lacks have been tried, and the way to get more of those is to try every mode
+    everywhere. Targeted mining, at one mode, one color, or one family, is for a targeted
+    gallery.</p>
 
-      <figure class="figure" data-figure="pipeline-yield-decay">
-        <img src="../assets/images/figures/pipeline-yield-decay.png" width="1316" height="630" alt="A stacked area chart of admissions per batch over one run of the search, smoothed, with one band per partition and a legend naming the nine. The stack falls steeply through the first half of the run and runs low and spiky to the end; under the axis, four brackets give the raw admissions per batch over each quarter of the run." loading="lazy">
-        <figcaption>How a run's yield falls as it goes. The first quarter of this run admitted roughly eight times as much per batch as the last, and the stack says which partitions the later admissions came from. The remedy for that tail is new ground rather than a different split of the batches.</figcaption>
-      </figure>
+    <p>Search has the opposite problem. The neighborhood where the walk found one good
+    frame is where the next one is cheapest to find, so a search that followed cost alone
+    would spend itself on one valley. Every run records the ground it covered, later runs
+    move crowded neighborhoods down the queue, and part of every batch goes to ground where
+    no run has yet found anything. That reserve matters because the location judge learned
+    its taste from what the search had already found, and it underrates unfamiliar
+    ground.</p>
 
-    <p>A run admits and judges; it never draws a wallpaper and never chooses one. What it
-    passes forward is ground.</p>
-
-    <h2 id="finding-wallpapers">Finding wallpapers</h2>
-
-    <p>A location is a place, not a picture, and the same place can be striking in one
-    rendering mode and dull in the next. Mining returns to the location pool and buys more
-    looks. At each location it visits, a mine computes the field, works through a few
-    dozen candidates across modes and palettes, scores each with the wallpaper judge, and
-    keeps the best few per location and mode. What accumulates is the candidate pool:
-    every judged picture from every mine, growing across all of them, with a picture kept
-    if and only if its record is.</p>
-
-    <p>Mining is where most of the project's rendering time goes, and what a look costs
-    depends on how the mode draws. A mode that reads one scalar field can reuse that field
-    and be recolored for almost nothing; the composite modes and the direct traps have to
-    be drawn in full every time, and a candidate in one costs several times a candidate in
-    the other. That is a price, not a ranking. A mine draws its modes uniformly over the
-    whole roster, so most of its time goes to the expensive kinds, which are also the
-    ones a gallery is most often short of.</p>
-
-    <p>Like a run, a mine plans everything before the first picture is drawn and reads no
-    score partway through. The candidate pool's rows mean the same thing whenever they
-    were made, which is what lets the solve treat all of them as one population.</p>
-
-    <h2 id="curating-a-gallery">Curating a gallery</h2>
-
-    <p>The solve is the only place in the pipeline where a selection is made, and it makes
-    that selection over the whole candidate pool: everything every mine has ever
-    contributed, never the work of whichever mine finished last.
-    <a href="gallery-curation.html">Gallery curation</a> lays out its rules one at a time;
-    at a glance: a candidate is eligible at even odds or better of being rated good;
-    locations that are the same place to the eye are collapsed (about one in five of
-    them, on the current pool), and a location seats at most one wallpaper; each color
-    cell has an allowance of roughly twice its even share, and a group of near-identical
-    palettes may take about one seat in forty; each rendering mode is owed a floor of
-    seats, the floors summing to half the gallery; and the set is built greedily, then
-    improved by swaps, against four goals in strict order: fill the seats, meet the
-    floors, raise the worst picture, and only then raise the whole. A seat the pool cannot
-    fill under those rules stays empty. Only the seated pictures are rendered at wallpaper
-    resolution, the most expensive step in the pipeline, spent on the gallery alone.</p>
-
-    <p>The solve is cheap next to the mining that filled its pool (minutes against hours),
-    so it is re-run freely. A retrained judge, a changed floor, a different size, or a
-    color the gallery is asked for produces a new gallery over the same pool, with the old
-    one kept as a record.</p>
-
-    <h2 id="how-the-parts-run-together">How the parts run together</h2>
-
-    <p>The three parts do not run once in order. Locations are found and mined whenever
-    there is budget for it, and the solve runs whenever a gallery is wanted; what ties
-    them together is what the solve reports when it comes up short. For every floor it
-    could not fill it records what was available, which rule refused the pictures that
-    were, and which locations could have fed it. That readout is what a mine reads next,
-    and one level up it is the whole scheduling policy of the project.</p>
-
-    <p>The policy is simple on purpose. Mine until the candidate pool looks healthy across
-    palettes, modes, locations, and families; solve at whatever size is wanted; if the
-    gallery comes up short, or looks thin to the eye, mine longer and solve again. There
-    is no fixed split of mining time between modes and no allocation computed from the
-    shortfall. A general mine draws its modes uniformly over the whole roster, and the
-    next solve says whether that was enough.</p>
-
-    <p>Two measurements decided that. A mine aimed at one short mode does move seats:
-    into that mode and out of others, because a location seats at most one wallpaper, so a
-    place seated in one short mode is a place no longer available to another. The
-    gallery's total shortfall does not move at all. And a cheap mine of the field modes
-    alone opens new locations without moving a single floor, because the modes that are
-    short are the expensive ones, and a new location serves a floor only where that mode
-    was attempted. What a gallery is short of, in the end, is places where the expensive
-    modes have been tried, and the way to get more of them is to try them everywhere.
-    Targeted mining (at one mode, one color, one family) is for a targeted gallery, not
-    for the collection.</p>
-
-    <p>How much more mining is worth once a gallery of a given size can be filled is
-    measured by re-solving the pool at random fractions of itself. The figure below draws
-    the seated median at three gallery sizes against the mining behind the pool. Seats
-    stop being bought early; quality keeps being bought at every doubling measured so
-    far.</p>
+    <p>Once a gallery of a given size can be filled, more mining still buys quality.
+    Re-solving the pool at random fractions of itself shows it: seats stop being bought
+    early, but seated quality keeps rising at every doubling measured.</p>
 
       <figure class="figure" data-figure="pipeline-growth">
         <img src="../assets/images/figures/pipeline-growth.png" width="1316" height="810" alt="Two line charts sharing one logarithmic axis of mining effort, in attempts, from about three thousand to about a hundred and seventy-seven thousand. The upper chart plots the seated gallery's median ranking score, a score fitted from the location and wallpaper judges' scores, the kind of rendering mode, and how much of the picture is empty; the lower plots the tenth percentile of the same seats. Each carries one line per gallery size (fifty, one hundred, two hundred) with a band around it showing the spread of three random draws. Every line rises from left to right, and the smaller galleries sit above the larger ones throughout." loading="lazy">
         <figcaption><span class="figure-draft">Draft</span> The candidate pool re-solved over random fractions of the mining that made it, three draws at each fraction and three gallery sizes. Seats stop being bought early: fifty seats fill at every fraction measured, and two hundred from a quarter of the mining upward. Quality keeps being bought at every doubling so far, and the weakest seats gain the most of it. A hollow marker is a fraction whose draws could not fill the gallery.</figcaption>
       </figure>
 
-    <h2 id="choosing-colors-for-a-collection">Choosing colors for a collection</h2>
+    <h2 id="future-work">Future work</h2>
 
-    <p>Left to quality alone, a gallery inherits its colors from the candidate pool, and
-    the pool is far from even: a gallery chosen with nothing constraining its colors lands
-    many times heavier on its commonest hue family than on its rarest, because some hues
-    are easy for a fractal's values to reach through the palette library and some are not.
-    Twenty wallpapers in the same three hues is a worse set than twenty spread across the
-    spectrum, however good each is alone.</p>
+    <p>The judges stand in for one person's eye. Retrain them on someone else's ratings and
+    the same pools yield a different collection, with none of the machinery around them
+    changed. That is the most direct way another artist could make this pipeline
+    theirs.</p>
 
-    <p>So the solve carries color allowances beside the quality bar: the ceilings
-    <a href="gallery-curation.html">gallery curation</a> describes, read off each picture's
-    own dominant colors rather than off its palette, since a palette colors only what the
-    field reaches. An allowance is a ceiling and never a quota. A color the pool cannot
-    supply does not appear, and the bar always outranks the allowance: a color the gallery
-    is short of is never a reason to seat a picture that could not earn its seat
-    otherwise.</p>
+    <p>A location's frame is decided once, when it is found, and nothing afterward moves
+    the camera. How much of a good picture is the place, and how much is where the edges
+    were drawn, is still open.</p>
 
-    <p>The same machinery runs the other way. A gallery can be
-    <a href="../explorer/index.html?panel=gallery&amp;collection=blue">asked for a color</a> rather
-    than capped on it: the pool restricted to pictures dominant in that color, the
-    palette-group ceiling loosened so the theme has room, and pictures told apart by their
-    geometry alone, since under a theme every picture's colors are alike by construction.
-    The solve then chooses from the same candidate pool by the same four goals. What
-    changes is which pictures are worth seating, not what any of them looks like.</p>
+    <p>Palette and picture are chosen independently: a palette is laid over a field, and
+    nothing about it responds to the structure it colors. A coloring that took its cue from
+    the field is the improvement I would most like to see.</p>
 
-    <h2 id="future-developments">Future developments</h2>
-
-    <p>Nothing here is finished, and most of what would improve it is not more
-    compute.</p>
-
-    <p>The judges stand in for one person's eye. Retrain them on someone else's ratings
-    and the same pools yield a different collection. That is the most direct way another
-    artist could make this pipeline theirs, and none of the machinery around the judges
-    would have to change.</p>
-
-    <p>Exploration is the next lever. New families, new ways of proposing candidate
-    regions, and above all a search that is better at recognizing ground it has no taste
-    for yet: the location judge learned its preferences from what the search had already
-    found, so it is least reliable exactly where the novelty is, and the reserved share of
-    each batch is a blunt correction for that rather than a solution to it.</p>
-
-    <p>Framing has room. A location's frame is decided once, when it is found (the walk's
-    ladder sizes a frame outward around a minibrot and the judge picks a rung), and
-    nothing after that moves the camera. How much of a good picture is the region, and how
-    much is where the edges were drawn, is genuinely open, and the pipeline has no step
-    that asks.</p>
-
-    <p>Palette and image are still chosen somewhat independently: a palette is laid over a
-    picture, but no palette responds to the structure it is coloring. A coloring that took
-    its cue from the field itself is the improvement I would most like to see.</p>
-
-    <p>And all of these pictures sit within the reach of double precision. What lies below
-    that floor is a different search with different machinery, and it is the subject of
-    <a href="deep-zoom.html">deep zoom rendering</a>.</p>
-
-    <p>Where in each family the location pool's finds actually lie (and where they do not)
-    is the subject of <a href="fractal-atlases.html">fractal atlases</a>.</p>
+    <p>Everything here sits within double precision. What lies below it is the subject of
+    <a href="deep-zoom.html">Deep zoom rendering</a>, and where in each family the found
+    locations lie is the subject of <a href="fractal-atlases.html">Fractal atlases</a>.</p>
   </section>
 
   <nav class="section-nav">
