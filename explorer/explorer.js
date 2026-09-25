@@ -2347,7 +2347,8 @@ function shownField() {
 //
 // **Absolute sizes nothing to the frame, and Fit is what sizes it** *(Matt,
 // absolute_fit_ckpt147)*. Lambda, Period and Phase are chosen off the picture on the screen
-// so that Absolute lays the palette across its pixels roughly as Leveled would (`fit.js` has
+// so that Absolute runs the palette across its pixels `fitting.PASSES` times over Leveled's
+// stretch, a busier look than Leveled's one pass *(Matt, fit_busier_ckpt147)* (`fit.js` has
 // the fit and why it leans to the log), and then they hold still: the fit never runs on a
 // zoom or a pan, because a look that holds while the frame moves is the whole point of the
 // scale. Three things run it — the switch from Leveled, the Fit button (`f`), and coming into
@@ -2364,12 +2365,13 @@ function shownField() {
  * where there is nothing to fit to: no picture yet, a direct trap, or a field of one value.
  *
  * **From Leveled** it fits to the picture that was up — the recipe's own Lambda, Gamma,
- * Cycles, Phase and Transfer — so the switch changes the look as little as it can.
+ * Cycles, Phase and Transfer — so the switch keeps Leveled's shape and phase and changes
+ * only how many times the palette runs across the stretch.
  * **Under Absolute** Lambda and Phase are Absolute's own, and reading them as Leveled's would
  * fit to a different target at every press: so the target is Leveled as the engine draws it
  * — Lambda 1 and Phase 0, with the recipe's own Gamma, Cycles and Transfer, which Absolute
  * keeps hidden and does not touch. A second press on the same frame changes nothing, and the
- * ends of the palette land where Leveled lands them, at the ends of the stretch. Keeping the
+ * palette's start lands where Leveled lands it, at the bottom of the stretch. Keeping the
  * colour at the frame's median instead was tried and dropped: taken off a recipe that was
  * noise, it turned the palette by an arbitrary amount and put a non-cyclic map's seam in the
  * middle of the picture. Each value goes through the contract's own reader.

@@ -1,10 +1,11 @@
 // Fit, held to its promises. `node --test explorer/fit.test.mjs`.
 //
-// A fit is three numbers chosen so that Absolute lays the palette across a frame the way
-// Leveled does. What is worth testing is that sentence measured — where each quantile of a
-// frame lands, under both scales — and the things a reader leans on: that the numbers are
-// ones the contract writes, that a frame with nothing in it is no fit rather than a wrong
-// one, and that the fit leans to the log where the log is as good.
+// A fit is three numbers chosen so that Absolute runs the palette `PASSES` times across the
+// stretch Leveled measures, in the compression that matches Leveled's shape. What is worth
+// testing is that sentence measured — the turns between the stretch's ends, and where each
+// quantile of a frame lands under both scales — and the things a reader leans on: that the
+// numbers are ones the contract writes, that a frame with nothing in it is no fit rather
+// than a wrong one, and that the fit leans to the log where the log is as good.
 
 import assert from "node:assert/strict";
 import test from "node:test";
@@ -37,24 +38,37 @@ function absoluteTurn(recipe, nu) {
   return compress(nu, recipe.lambda) / recipe.period + recipe.phase;
 }
 
-/** The root-mean-square gap in turns between the two, over the frame's own quantiles, with
- *  the fit's free whole turn taken out. */
-function gap(sorted, recipe) {
-  const diffs = [];
-  for (let at = 0; at < 1000; at += 1) {
-    const nu = sorted[Math.floor(((at + 0.5) / 1000) * sorted.length)];
-    diffs.push(absoluteTurn(recipe, nu) - leveledTurn(sorted, nu));
-  }
-  const mean = diffs.reduce((a, b) => a + b) / diffs.length;
-  const shift = Math.round(mean);
-  return Math.sqrt(diffs.reduce((sum, d) => sum + (d - shift) ** 2, 0) / diffs.length);
+/** The turns a recipe lays between the stretch's two ends. */
+function span(sorted, recipe) {
+  const at = (p) => sorted[Math.round((p / 100) * (sorted.length - 1))];
+  return absoluteTurn(recipe, at(fit.CLIP_HIGH)) - absoluteTurn(recipe, at(fit.CLIP_LOW));
 }
 
-test("a fit lays the palette across the frame the way Leveled does, to a tenth of a turn", () => {
+test("a fit runs the palette PASSES times across the stretch, bottom end at the phase", () => {
   for (const sorted of [DEEP, SHALLOW]) {
     const found = fit.fitSorted(sorted, LEVELED);
     assert.ok(found !== null);
-    assert.ok(gap(sorted, found) < 0.1, `gap ${gap(sorted, found)}`);
+    // To the rounding of a four-figure period.
+    assert.ok(Math.abs(span(sorted, found) / fit.PASSES - 1) < 1e-3, `span ${span(sorted, found)}`);
+    const bottom = absoluteTurn(found, sorted[Math.round((fit.CLIP_LOW / 100) * (sorted.length - 1))]);
+    const off = bottom - Math.round(bottom);
+    assert.ok(Math.abs(off) < 1e-3, `bottom lands ${off} off a whole turn`);
+  }
+});
+
+test("its λ is Leveled's shape: the best line in that λ is within a tenth of a turn", () => {
+  for (const sorted of [DEEP, SHALLOW]) {
+    const found = fit.fitSorted(sorted, LEVELED);
+    assert.ok(found.miss < 0.1, `miss ${found.miss}`);
+    // And the miss is the line's, measured here: the least-squares line in the chosen λ.
+    const nus = Array.from({ length: 1000 }, (_, at) => sorted[Math.floor(((at + 0.5) / 1000) * sorted.length)]);
+    const x = nus.map((nu) => compress(nu, found.lambda));
+    const t = nus.map((nu) => leveledTurn(sorted, nu));
+    const mean = (a) => a.reduce((sum, v) => sum + v) / a.length;
+    const [xm, tm] = [mean(x), mean(t)];
+    const slope = mean(x.map((v, at) => (v - xm) * (t[at] - tm))) / mean(x.map((v) => (v - xm) ** 2));
+    const miss = Math.sqrt(mean(x.map((v, at) => (tm + slope * (v - xm) - t[at]) ** 2)));
+    assert.ok(Math.abs(miss - found.miss) < 1e-9);
   }
 });
 
@@ -88,14 +102,13 @@ test("the log is chosen only where it is as good as the best line to within the 
   assert.ok(found.miss < 0.01 + fit.LAMBDA_SLACK);
 });
 
-test("cycles are Leveled's to match: three cycles fit three turns across the stretch", () => {
-  // Not a third of the one-cycle period at the same λ: the slack is in turns of colour, and
-  // three cycles put the log three times as far from Leveled, so λ may move as well.
-  const at = (p) => SHALLOW[Math.round((p / 100) * (SHALLOW.length - 1))];
+test("Leveled's cycles do not move the pass count", () => {
+  // They may move λ — the slack is in turns of colour, and three cycles put the log three
+  // times as far from Leveled — but the busyness is `PASSES`, whatever Leveled's was.
   for (const cycles of [1, 3]) {
     const found = fit.fitSorted(SHALLOW, { ...LEVELED, cycles });
-    const span = absoluteTurn(found, at(fit.CLIP_HIGH)) - absoluteTurn(found, at(fit.CLIP_LOW));
-    assert.ok(Math.abs(span / cycles - 1) < 0.2, `${cycles} cycles span ${span}`);
+    const turns = span(SHALLOW, found);
+    assert.ok(Math.abs(turns / fit.PASSES - 1) < 1e-3, `${cycles} cycles span ${turns}`);
   }
 });
 

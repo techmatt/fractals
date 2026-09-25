@@ -652,9 +652,9 @@ here has one. `screensaver.test.mjs` holds the screensaver's pure parts: the int
 table, the overrun rule, the learned correction and the bag it draws from. `hold.test.mjs`
 holds Hold look's re-solve: a held Lambda or Period keeps the band density and the colour
 at the reference value to the written rounding, and a drag back and forth comes home.
-`fit.test.mjs` holds Fit: the absolute recipe it chooses lays a frame's quantiles within a
-tenth of a turn of where Leveled lays them, in numbers the contract writes, leaning to the
-log only where the log is as good. `bands.test.mjs` is the pool held to the committed wasm: a band is a range
+`fit.test.mjs` holds Fit: the absolute recipe it chooses runs the palette `PASSES` times
+across Leveled's stretch, in a `λ` whose line is within a tenth of a turn of Leveled's
+shape, in numbers the contract writes, leaning to the log only where the log is as good. `bands.test.mjs` is the pool held to the committed wasm: a band is a range
 of output rows, so the pool decides where the frame is cut and never what is in it, and
 the sizes it cuts at are the reader's machine's. It draws the anchor a few times over and
 takes a few seconds. `atlas.test.mjs` holds the atlas record to the same contract, and

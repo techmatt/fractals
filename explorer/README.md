@@ -2369,8 +2369,8 @@ while the panel is hidden.
   under Leveled refits the palette at every frame, and where Absolute's recipe is least
   likely to suit: at a `ν` of eighty-five thousand, `period=1` cycles the palette every
   iteration. So a frame carried in from the viewer, or a deep link that does not say
-  `scale`, comes in on Absolute with Lambda, Period and Phase fitted (*Fit*, under the
-  recipe's controls below). **The switch waits for the fit**: the first stage of the frame
+  `scale`, comes in on Absolute with Lambda, Period and Phase fitted, which is busier than
+  the Leveled picture it replaces (*Fit*, under the recipe's controls below). **The switch waits for the fit**: the first stage of the frame
   is drawn under Leveled, and when it lands `landFit` fits off it and recolours. Nothing is
   re-iterated. Two things are left alone: a colour that is already Absolute, and a link
   that states `scale` either way, so an explicit `scale=leveled` opens Leveled. A tab that
@@ -5244,8 +5244,10 @@ recipe** group. What is worth writing down is the shape rather than the widgets:
 - **Fit** *(Matt, absolute_fit_ckpt147)*. Absolute sizes nothing to the frame, so a recipe
   that suits one frame is noise or one flat colour on the next. Matt hit this entering Deep
   from a gallery place and switching to Absolute: at about 85k iterations, `period=1` cycles
-  the palette every iteration. A fit chooses Lambda, Period and Phase so that Absolute lays
-  the palette across the frame on the screen the way Leveled would, and then they hold still.
+  the palette every iteration. A fit chooses Lambda, Period and Phase off the stretch Leveled
+  measures on the frame on the screen, **aiming busier than Leveled** *(Matt,
+  fit_busier_ckpt147)*: `PASSES` (7) turns of the palette across that stretch, where Leveled
+  lays about one. Then they hold still.
   - **Three things run it, and nothing else.** The switch from Leveled to Absolute; the
     **Fit (f)** button, between the switch and Phase and shown under Absolute alone; and
     coming into the Deep tab on a Leveled colour (*Getting in and out*, under Deep). **It never
@@ -5253,15 +5255,22 @@ recipe** group. What is worth writing down is the shape rather than the widgets:
     for, so the look holds until the next Fit. What it writes is three ordinary values in
     their own keys, and a link and Save carry them as they always have. The contracts did
     not change.
-  - **What is matched** (`fit.js`, held by `fit.test.mjs`). Leveled puts an exterior
+  - **Two questions, answered apart** (`fit.js`, held by `fit.test.mjs`). Lambda is the
+    shape, and is chosen by matching Leveled, below. Period is the busyness, and is `PASSES`:
+    the line in the chosen `λ` is scaled so the 0.5th and 99.5th percentiles lie `PASSES`
+    turns apart, whatever Leveled's Cycles. Phase puts the bottom of the stretch at the
+    recipe's phase, where Leveled puts it. `PASSES` is one constant in `fit.js`, and changing
+    it is the whole of making fits busier or calmer.
+  - **What Lambda matches.** Leveled puts an exterior
     sample at `cycles · C(p)^gamma + phase` turns, where `p` is its position between the 0.5th
     and 99.5th percentiles of the compressed field, clamped (its rank, under the rank
     transfer) and `C` is the mode's curve (`trap_circle`'s log, the straight line for every
     other base). Absolute puts it at `T_λ(ν)/period + phase`, a straight line in `T_λ(ν)`. For
     each `λ` from 0 to 1 in steps of 0.05, that line is fitted by least squares to Leveled's
-    turn at 1,000 equal-rank quantiles of lane 0, so every pixel counts once. Period is written at four
-    figures and Phase at four places, as Hold look writes them. It cannot be exact, since
-    Leveled clamps its tails and Absolute keeps cycling through them.
+    turn at 1,000 equal-rank quantiles of lane 0, so every pixel counts once, and that
+    line's slope is then set aside for `PASSES`. Period is written at four figures and Phase
+    at four places, as Hold look writes them. It cannot be exact, since Leveled clamps its
+    tails and Absolute keeps cycling through them.
   - **It leans to the log** (`LAMBDA_SLACK`, 0.03 turn). Measured on the proof frame, six
     shallow gallery seats and 30 of the 31 deep gallery tiles, every `λ` matches Leveled to within
     a tenth of a turn RMS and most to within three hundredths, so least squares alone picks
@@ -5277,8 +5286,8 @@ recipe** group. What is worth writing down is the shape rather than the widgets:
     are Absolute's own, and reading them as Leveled's would give a new target at every press.
     So the target is Leveled as the engine draws it: Lambda 1 and Phase 0, with the recipe's
     own Gamma, Cycles and Transfer, which Absolute hides and keeps. A second press on the same
-    frame changes nothing (measured on the proof frame), and the palette's ends land at the
-    ends of the stretch, as Leveled's do. A refit therefore resets a phase the reader turned.
+    frame changes nothing (measured on the proof frame), and the palette's start lands at the
+    bottom of the stretch, as Leveled's does. A refit therefore resets a phase the reader turned.
     Keeping the colour at `ν_m` instead was tried first and dropped: taken off a recipe that
     was noise, it turned the palette by an arbitrary amount, and on a map that is not cyclic
     that put the seam in the middle of the picture.
@@ -5289,11 +5298,13 @@ recipe** group. What is worth writing down is the shape rather than the widgets:
   - **With nothing to fit** (no picture yet, a direct trap, a frame all one value, or all
     interior), the switch still switches and keeps the numbers it had, and a press of Fit
     says under the picture that there is nothing to fit to.
-  - **It is roughly one pass of the palette across the bulk**, because that is what Leveled
-    shows at one cycle: 0.6 to 0.9 of a turn between the stretch's ends at `λ` 0. On the
-    proof frame it is `λ` 0 and a period of about 1.1. Matt's hand-tuned deep tiles are
-    deliberately busier, at 3 to 12 turns (period about 0.5 at `λ` 0). A reader who wants
-    that sets Cycles under Leveled before switching, or turns Period down after a fit.
+  - **Why seven.** The first fit (absolute_fit_ckpt147) matched Leveled's period too, and
+    that is roughly one pass across the bulk — 0.6 to 0.9 of a turn between the stretch's
+    ends at `λ` 0, a period of about 1.1 on the proof frame — which read as calm and flat
+    beside Matt's hand-tuned deep tiles at 2 to 12 turns. Seven sits inside that range.
+    Because the pass count no longer follows Leveled, Cycles under Leveled can move `λ`
+    but not how busy the fit is; a reader who wants it busier or calmer turns Period after
+    a fit.
 - **The count of what is set is the reset button's state.** Engine defaults is disabled
   at zero and reads *Engine defaults (3)* otherwise; there is no separate counter.
 - **Autolevel is disabled only where the operator has nothing to say** — a direct trap or

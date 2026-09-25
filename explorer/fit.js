@@ -5,9 +5,16 @@
 // the engine's Box–Cox (`hold.compress`) — so a recipe that suits one frame is noise or one
 // flat colour on another: at a deep `ν` of eighty-five thousand, `period=1` cycles the
 // palette every iteration. Leveled is the frame sizing itself, and a fit is the absolute
-// recipe that lays the palette across this frame's pixels the way Leveled would.
+// recipe sized off the same stretch Leveled measures — but busier than Leveled, at `PASSES`
+// turns of the palette across it where Leveled lays about one.
 //
-// **What is matched is where each pixel lands in the gradient, averaged over the pixels.**
+// **Two questions, answered separately.** Which compression — `λ` — is the shape question,
+// and it is answered by matching Leveled, below. How many bands — the period — is a taste,
+// and it is `PASSES`: the line at the chosen `λ` is scaled so the stretch's two ends, the
+// 0.5th and 99.5th percentiles, lie `PASSES` turns apart, and its phase puts the bottom end
+// where Leveled puts it, at the recipe's own phase.
+//
+// **What `λ` matches is where each pixel lands in the gradient, averaged over the pixels.**
 // Leveled places a value at `cycles · C(p)^gamma + phase` turns, with `p` its stretched
 // position, clamped to `[0, 1]` between the 0.5th and 99.5th percentiles of the compressed
 // field (or its rank, under the rank transfer), and `C` the mode's curve. Absolute places it
@@ -22,8 +29,8 @@
 // boundary, while a smaller `λ` folds that tail back in.
 //
 // It cannot be exact, because Leveled is fitted to a frame's ranks and Absolute is not
-// fitted to anything; what it gives is the same stretch of the palette over roughly the same
-// pixels, as one recipe that then holds still while the frame moves.
+// fitted to anything; what it gives is Leveled's spread of the palette over roughly the same
+// pixels, repeated `PASSES` times, as one recipe that then holds still while the frame moves.
 
 import { FLOOR, PERIOD_FIGURES, PHASE_PLACES, REFERENCE_SAMPLES, compress } from "./hold.js";
 
@@ -31,6 +38,14 @@ import { FLOOR, PERIOD_FIGURES, PHASE_PLACES, REFERENCE_SAMPLES, compress } from
  *  two ends of the gradient — `CLIP_LOW` and `CLIP_HIGH` in the engine's `coloring.rs`. */
 export const CLIP_LOW = 0.5;
 export const CLIP_HIGH = 99.5;
+
+/**
+ * **How many times a fit runs the palette across the stretch** *(Matt, fit_busier_ckpt147)*:
+ * the turns between the frame's 0.5th and 99.5th percentiles, whatever Leveled's Cycles.
+ * Leveled lays about one, which reads as calm and flat on a deep frame; Matt's hand-tuned
+ * deep tiles run 2 to 12. Change this and nothing else to make fits busier or calmer.
+ */
+export const PASSES = 7;
 
 /** How many quantiles the line is fitted at: equal steps of rank, so the fit weighs every
  *  pixel alike and a frame of any size is the same size of problem. */
@@ -158,10 +173,21 @@ export function fitSorted(sorted, shade, mode = null) {
   const least = Math.min(...lines.map((line) => line.miss));
   const best = lines.find((line) => line.miss <= least + LAMBDA_SLACK);
 
+  // The line's slope is Leveled's; its period is `PASSES` turns across the stretch. Where
+  // the stretch has no width — nearly the whole frame one value — the fitted line's own
+  // reach across the quantiles stands in for it.
+  const x = (nu) => compress(nu, best.lambda);
+  let bottom = x(percentile(sorted, CLIP_LOW));
+  let reach = x(percentile(sorted, CLIP_HIGH)) - bottom;
+  if (!(reach > 0)) {
+    bottom = x(nus[0]);
+    reach = x(nus[QUANTILES - 1]) - bottom;
+  }
   // Written as a reader would write them, and the phase solved after the period is rounded,
-  // so the line's middle lands where the fit put it rather than where the rounding moved it.
-  const period = Number((1 / best.slope).toPrecision(PERIOD_FIGURES));
-  const turns = targetMean - best.xMean / period + shade.phase;
+  // so the stretch's bottom lands at the recipe's phase, as Leveled lands it, rather than
+  // where the rounding moved it.
+  const period = Number((reach / PASSES).toPrecision(PERIOD_FIGURES));
+  const turns = shade.phase - bottom / period;
   let phase = Number((turns - Math.floor(turns)).toFixed(PHASE_PLACES));
   if (phase >= 1) phase = 0;
   return { lambda: best.lambda, period, phase, miss: best.miss };
