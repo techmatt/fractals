@@ -26,24 +26,25 @@
   </div>
   <p class="rail-title"><a href="index.html">Contents</a></p>
   <ol class="rail-sections">
-    <li><a href="article/overview.html">Overview</a> <span class="done" role="img" aria-label="written">✓</span></li>
-    <li><a href="article/escape-time-fractals.html">Escape-time fractals</a> <span class="done" role="img" aria-label="written">✓</span></li>
-    <li><a href="article/rendering-fundamentals.html">Rendering fundamentals</a> <span class="done" role="img" aria-label="written">✓</span></li>
-    <li><a href="article/rendering-modes.html">Rendering modes</a> <span class="done" role="img" aria-label="written">✓</span></li>
-    <li><a href="article/finding-good-locations.html">Finding good locations</a> <span class="done" role="img" aria-label="written">✓</span></li>
-    <li><a href="article/training-judges.html">Training judges</a> <span class="done" role="img" aria-label="written">✓</span></li>
-    <li><a href="article/color-palettes.html">Color palettes</a> <span class="done" role="img" aria-label="written">✓</span></li>
-    <li><a href="article/finding-good-wallpapers.html">Finding good wallpapers</a> <span class="done" role="img" aria-label="written">✓</span></li>
-    <li><a href="article/gallery-curation.html">Gallery curation</a> <span class="done" role="img" aria-label="written">✓</span></li>
-    <li><a href="article/full-pipeline.html">Full pipeline</a> <span class="done" role="img" aria-label="written">✓</span></li>
-    <li><a href="article/fractal-atlases.html">Fractal atlases</a> <span class="done" role="img" aria-label="written">✓</span></li>
-    <li><a href="article/deep-zoom.html">Deep zoom rendering</a> <span class="done" role="img" aria-label="written">✓</span></li>
-    <li><a href="article/other-artistic-techniques.html">Other artistic techniques</a> <span class="done" role="img" aria-label="written">✓</span></li>
-    <li><a href="article/fractal-math.html">Fractal math</a> <span class="done" role="img" aria-label="written">✓</span></li>
+    <li><a href="article/overview.html">Overview</a></li>
+    <li><a href="article/escape-time-fractals.html">Escape-time fractals</a></li>
+    <li><a href="article/rendering-fundamentals.html">Rendering fundamentals</a></li>
+    <li><a href="article/rendering-modes.html">Rendering modes</a></li>
+    <li><a href="article/finding-good-locations.html">Finding good locations</a></li>
+    <li><a href="article/training-judges.html">Training judges</a></li>
+    <li><a href="article/color-palettes.html">Color palettes</a></li>
+    <li><a href="article/finding-good-wallpapers.html">Finding good wallpapers</a></li>
+    <li><a href="article/gallery-curation.html">Gallery curation</a></li>
+    <li><a href="article/full-pipeline.html">Full pipeline</a></li>
+    <li><a href="article/fractal-atlases.html">Fractal atlases</a></li>
+    <li><a href="article/deep-zoom.html">Deep zoom rendering</a></li>
+    <li><a href="article/other-artistic-techniques.html">Other artistic techniques</a></li>
+    <li><a href="article/fractal-math.html">Fractal math</a></li>
   </ol>
   <ul class="rail-links">
     <li><a href="explorer/index.html">Fractal explorer</a></li>
     <li><a href="https://github.com/techmatt/fractal-wallpapers">fractal-wallpapers on GitHub</a></li>
+    <li><a href="https://github.com/techmatt/fractal-website">fractal-website on GitHub</a></li>
   </ul>
 </nav>
 <!-- contents-rail:end -->
@@ -64,76 +65,81 @@
       </figure>
 
   <section class="intro">
-    <p>This site is about rendering escape-time fractals quickly, searching the complex
-    plane for the views worth rendering, and training small models to judge what comes back.
-    The article is being written section by section. Completed sections are marked below;
-    the rest show the outline. The code is in
-    <a href="https://github.com/techmatt/fractal-wallpapers">fractal-wallpapers</a>, and
-    finished wallpapers are in the <a href="galleries/index.html">galleries</a>.</p>
+    <p>This site is about rendering escape-time fractals quickly, and about automatically
+    searching these fractals for locations, and ways to render them, that make a rich
+    collection of beautiful fractal wallpapers. A feature-rich
+    <a href="explorer/index.html">fractal explorer</a> lets you browse the wallpaper
+    galleries, explore their local neighborhoods, and navigate to new and potentially very
+    deep areas of each fractal.</p>
 
-    <p>New here? <a href="start-here.html">Start here</a> for a short outline of the whole
-    project.</p>
+    <p>The core rendering code is in
+    <a href="https://github.com/techmatt/fractal-wallpapers">fractal-wallpapers</a>, the
+    explorer code lives in
+    <a href="https://github.com/techmatt/fractal-website">fractal-website</a>, and finished
+    wallpapers are in the <a href="galleries/index.html">galleries</a>.</p>
+
+    <p><a href="start-here.html">Start here</a> for a short outline of the whole project.</p>
   </section>
 
   <section class="contents">
     <h2>Contents</h2>
     <ol class="toc">
       <li>
-        <h3><a href="article/overview.html">Overview</a> <span class="done" role="img" aria-label="written">✓</span></h3>
+        <h3><a href="article/overview.html">Overview</a></h3>
         <p>The three parts the pipeline is organized around: finding locations worth
         drawing, drawing and judging many candidate wallpapers at each one, and curating a
         gallery out of everything that has accumulated.</p>
       </li>
       <li>
-        <h3><a href="article/escape-time-fractals.html">Escape-time fractals</a> <span class="done" role="img" aria-label="written">✓</span></h3>
+        <h3><a href="article/escape-time-fractals.html">Escape-time fractals</a></h3>
         <p>The mathematics every picture on this site comes from: iterating a short
         formula on the complex plane, the escape time that comes out of it, the four
         families the project draws (Mandelbrot, the multibrots, Julia and Phoenix), and
         the coordinates that name one exact view inside one of them.</p>
       </li>
       <li>
-        <h3><a href="article/rendering-fundamentals.html">Rendering fundamentals</a> <span class="done" role="img" aria-label="written">✓</span></h3>
+        <h3><a href="article/rendering-fundamentals.html">Rendering fundamentals</a></h3>
         <p>Turning a grid of integer escape counts into an image: the smooth escape
         count that removes the banding, what the iteration cap and the sample count each
         decide, and fitting the palette's range to the frame rather than to the
         arithmetic.</p>
       </li>
       <li>
-        <h3><a href="article/rendering-modes.html">Rendering modes</a> <span class="done" role="img" aria-label="written">✓</span></h3>
+        <h3><a href="article/rendering-modes.html">Rendering modes</a></h3>
         <p>The catalog of rendering modes: the recipes that reduce an orbit to a
         value other than its escape time. Covers the modes measured along the orbit's
         path, the orbit traps, the ways two renderings are blended into one, and the
         modes that paint directly while the iteration is still running.</p>
       </li>
       <li>
-        <h3><a href="article/finding-good-locations.html">Finding good locations</a> <span class="done" role="img" aria-label="written">✓</span></h3>
+        <h3><a href="article/finding-good-locations.html">Finding good locations</a></h3>
         <p>The search for views worth rendering: what separates a good location from
         a mediocre one, the structural gates that reject most candidates cheaply, and the
         guided walk that descends toward the miniature copies of the set and reframes what
         it finds.</p>
       </li>
       <li>
-        <h3><a href="article/training-judges.html">Training judges</a> <span class="done" role="img" aria-label="written">✓</span></h3>
+        <h3><a href="article/training-judges.html">Training judges</a></h3>
         <p>The three small networks the pipeline judges with: one scoring a location,
         one scoring a finished render, one picking a palette. Covers the four-point rating
         scale they are trained on, what each judge is shown, the network designs and
         training recipes, and how a score becomes a decision.</p>
       </li>
       <li>
-        <h3><a href="article/color-palettes.html">Color palettes</a> <span class="done" role="img" aria-label="written">✓</span></h3>
+        <h3><a href="article/color-palettes.html">Color palettes</a></h3>
         <p>Color as a step of its own, over a field that is already computed: where
         the project's nine hundred palettes came from, how one is applied to a stored
         field, why diversity has to be built into the library, and how a finished
         picture's tone is leveled against wallpapers that already work.</p>
       </li>
       <li>
-        <h3><a href="article/finding-good-wallpapers.html">Finding good wallpapers</a> <span class="done" role="img" aria-label="written">✓</span></h3>
+        <h3><a href="article/finding-good-wallpapers.html">Finding good wallpapers</a></h3>
         <p>At each location the pipeline has found, drawing many candidate wallpapers
         across rendering modes and palettes, and scoring each with a judge trained on my
         ratings.</p>
       </li>
       <li>
-        <h3><a href="article/gallery-curation.html">Gallery curation</a> <span class="done" role="img" aria-label="written">✓</span></h3>
+        <h3><a href="article/gallery-curation.html">Gallery curation</a></h3>
         <p>Curation happens in two steps, and the second is the one that decides the
         gallery. A quality bar decides only what is eligible: within each
         rendering mode, a picture enters the pool if the render judge places it above a
@@ -145,29 +151,29 @@
         seats little, and some rendering modes do not appear in the gallery at all.</p>
       </li>
       <li>
-        <h3><a href="article/full-pipeline.html">Full pipeline</a> <span class="done" role="img" aria-label="written">✓</span></h3>
+        <h3><a href="article/full-pipeline.html">Full pipeline</a></h3>
         <p>The three parts as one loop, and the two growing stores that connect them:
         what each part is for, how a gallery's shortfall tells the next mine what to look
         for, and where the pipeline could go next.</p>
       </li>
       <li>
-        <h3><a href="article/fractal-atlases.html">Fractal atlases</a> <span class="done" role="img" aria-label="written">✓</span></h3>
+        <h3><a href="article/fractal-atlases.html">Fractal atlases</a></h3>
         <p>Where in each fractal family the pipeline has found locations worth a
         wallpaper, drawn as a map of the family with its finds marked, each mark opening
         at the view it stands for.</p>
       </li>
       <li>
-        <h3><a href="article/deep-zoom.html">Deep zoom rendering</a> <span class="done" role="img" aria-label="written">✓</span></h3>
+        <h3><a href="article/deep-zoom.html">Deep zoom rendering</a></h3>
         <p>Where double precision gives out, what lies past it, and how the explorer's
         Deep tab draws frames beyond it by perturbation.</p>
       </li>
       <li>
-        <h3><a href="article/other-artistic-techniques.html">Other artistic techniques</a> <span class="done" role="img" aria-label="written">✓</span></h3>
+        <h3><a href="article/other-artistic-techniques.html">Other artistic techniques</a></h3>
         <p>Techniques other fractal artists use that this project doesn't: Julia morphing,
         exponential-map zooms, slope shading, and more.</p>
       </li>
       <li>
-        <h3><a href="article/fractal-math.html">Fractal math</a> <span class="done" role="img" aria-label="written">✓</span></h3>
+        <h3><a href="article/fractal-math.html">Fractal math</a></h3>
         <p>Theorems and facts about these fractals that turn directly into tools for
         making pictures.</p>
       </li>

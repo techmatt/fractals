@@ -25,8 +25,6 @@ WRITTEN = "written"
 RAIL_START = "<!-- contents-rail:start — written by builder/. Run `python -m builder build`. -->"
 RAIL_END = "<!-- contents-rail:end -->"
 
-DONE = '<span class="done" role="img" aria-label="written">✓</span>'
-
 #: A page's prose: everything between the opening tag and the **first** `</section>`
 #: after it. Nothing inside a prose block may open a `section` of its own, or this stops
 #: there and the page loses every heading past that point — which a split figure's bands
@@ -154,7 +152,7 @@ def load_all() -> list[Section]:
 
 def rail(page: Path, sections: list[Section]) -> str:
     """The rail as one page carries it: fourteen sections, this page's own headings open,
-    and under them the two places a reader leaves the article for.
+    and under them the places a reader leaves the article for.
 
     The title is the way back to the front page. It was the one word in the rail that
     named a destination and did not go there, and a reader deep in section six has no
@@ -170,10 +168,9 @@ def rail(page: Path, sections: list[Section]) -> str:
     for section in sections:
         here = page.resolve() == section.path.resolve()
         current = ' aria-current="page"' if here else ""
-        marker = f" {DONE}" if section.written else ""
         href = attribute(relative_href(page, section.path))
         item = ' class="rail-current"' if here else ""
-        entry = f'    <li{item}><a href="{href}"{current}>{text(section.title)}</a>{marker}'
+        entry = f'    <li{item}><a href="{href}"{current}>{text(section.title)}</a>'
         if not (here and section.headings):
             lines.append(f"{entry}</li>")
             continue
@@ -193,8 +190,8 @@ def rail(page: Path, sections: list[Section]) -> str:
 #: The page a reader new to the project is sent to first *(start_here_ckpt146)*. It sits in
 #: the rail above the contents and is not one of them: it is an outline of the whole
 #: project in a few paragraphs, told as how it came about, and the fourteen sections are the
-#: article that outline points into. So it is not in `sections.jsonl`, carries no done
-#: marker and no place in the reading order, and lives at the site's root beside the front
+#: article that outline points into. So it is not in `sections.jsonl`, has no place in
+#: the reading order, and lives at the site's root beside the front
 #: page rather than in `article/`, which holds exactly the fourteen.
 START = SITE_ROOT / "start-here.html"
 
@@ -235,18 +232,20 @@ def _start(page: Path) -> list[str]:
     return lines
 
 
-#: What the rail carries under the fourteen sections: the page that runs the engine, and the
-#: code the article is about. Both are in the site bar too, and the bar is one line at
-#: the very top of a page the reader has scrolled away from — the rail is where a reader
-#: is looking when the question "can I try this myself?" arrives.
+#: What the rail carries under the fourteen sections: the page that runs the engine, the
+#: code the article is about, and this site's own code, which is the explorer's
+#: *(front_and_start_ckpt147)*. The bar has a way to each of them too, and the bar is one
+#: line at the very top of a page the reader has scrolled away from — the rail is where a
+#: reader is looking when the question "can I try this myself?" arrives.
 OFFSITE = (
     ("explorer/index.html", "Fractal explorer"),
     ("https://github.com/techmatt/fractal-wallpapers", "fractal-wallpapers on GitHub"),
+    ("https://github.com/techmatt/fractal-website", "fractal-website on GitHub"),
 )
 
 
 def _offsite(page: Path) -> list[str]:
-    """The two links under the sections, each spelled from the page that carries it."""
+    """The links under the sections, each spelled from the page that carries it."""
     lines = ['  <ul class="rail-links">']
     for target, name in OFFSITE:
         href = target if "//" in target else relative_href(page, SITE_ROOT / target)

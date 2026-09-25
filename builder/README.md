@@ -281,7 +281,7 @@ stage. It sits at the site's root beside the front page, because `article/` hold
 the fourteen sections, and its registry spelling is `./start-here.html`, the same rule
 `./index.html` follows. `sections.START` names it and `sections.rail` puts it above the
 rail's title as a list of one, named by its `<h1>` and opened to its own `<h2>`s when it is
-the current page, exactly as a section is; it has no `sections.jsonl` row, no done marker
+the current page, exactly as a section is; it has no `sections.jsonl` row
 and no place in the reading order. The rail is not shown below the breakpoint, so the front
 page's lead links to it too.
 
@@ -307,9 +307,10 @@ between them and gives each prose `<h2>` the id its rail entry links to, derived
 heading's own words; `check` re-derives both and compares. A fragment is a permanent URL,
 so it is spelled by rule rather than by hand.
 
-The front page's contents list is prose and stays hand-written, so its done markers are
-typed rather than generated — and held to `sections.jsonl` by `check`, which is what
-keeps the flag living in one place.
+The front page's contents list is prose and stays hand-written, and `check` holds it to
+having an entry for every section in `sections.jsonl`. Neither it nor the rail marks which
+sections are written any more *(front_and_start_ckpt147)*: all fourteen are, and the flag
+stays in `sections.jsonl` with nothing on a page showing it.
 
 ## Figures are a registry, not a generator
 

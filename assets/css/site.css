@@ -211,11 +211,6 @@ body {
 }
 .rail-links li { margin: 0 0 0.45rem; }
 
-/* A section that is written, marked in the rail and in the front page's contents. What
-   is marked comes from sections.jsonl either way — the rail is generated from it and
-   the front page's markers are held to it by `builder check`. */
-.done { font-size: 0.75em; color: var(--ink-dim); }
-
 .masthead { padding: 1.8rem 0 1.2rem; border-bottom: 1px solid var(--rule); }
 
 /* Wikipedia's metrics, heading by heading: the scale, the line-height, and the tight

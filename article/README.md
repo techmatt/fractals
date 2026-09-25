@@ -14,11 +14,9 @@ training-judges.html              deep-zoom.html
                                   fractal-math.html
 ```
 
-The first twelve are written; `other-artistic-techniques.html` and `fractal-math.html` are
-placeholders. `sections.jsonl` is what says so. A placeholder is the slug, the heading, the
-section navigation and an `intro` section of one sentence saying it is not written yet
-(an older stub also said what the section would be about, and carried whatever figures
-its prose would be built around). A page
+All fourteen are written, and `sections.jsonl` is what says so. A section that is not
+written yet is a placeholder: the slug, the heading, the section navigation and an `intro`
+section of one sentence saying it is not written yet. A page
 that has been written loses that `intro`, and its prose lives in
 `<section class="prose">`. **No page carries a standfirst** — the ruling in
 `writing-guidance.md` cut the device site-wide, and a page opens on its lead.
@@ -29,10 +27,8 @@ teaches.
 
 Three conventions the written pages follow:
 
-- **First mention gets the italic.** The first time the article introduces a piece of its
-  own vocabulary — *pipeline*, *location*, *escape time*, *palette*, a mode name — that
-  mention is wrapped in `<i>`, Wikipedia's words-as-words style. Once across the whole
-  article in reading order, not once per page, and `<em>` stays reserved for emphasis.
+- **No italics for emphasis or to introduce a term.** A first mention is set in roman like
+  every other; italics are kept for math variables, titles of works and quoted material.
   `CLAUDE.md` carries the full rule.
 - **First mention gets the link.** The first time a page names a topic it does not itself
   teach — the complex plane, Ultra Fractal, a Mandelbulb — that mention carries an outside
@@ -62,8 +58,8 @@ every palette in the library as a strip, grouped the way the section groups them
 A registry names either of them with its slash: `palettes/make-your-own.html`.
 
 Three registries live here, one per thing a page is held to. `sections.jsonl` gives the
-fourteen pages their reading order and marks the ones that are written — the flag behind the
-done marker in the rail and on the front page. A new page goes in that file, or the rail
+fourteen pages their reading order and marks the ones that are written, which nothing on
+the page shows any longer. A new page goes in that file, or the rail
 will not know about it and `check` will say so. `prose.jsonl` names the approved master a
 placed page is held to. `figures.jsonl` holds one row per figure: its words, its status,
 the maker that redraws it, the records its pictures came out of, and the prose provenance

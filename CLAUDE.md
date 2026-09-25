@@ -498,21 +498,23 @@ page and the rail has no current entry on it, which is what the gallery pages al
 **The rail is derived, never typed.** `article/sections.jsonl` gives the reading order and
 which sections are `"status": "written"`; a rail entry's name is the page's own `<h1>`,
 and the entries that open under the current page are that page's prose `<h2>`s. Its title
-is the way back to the front page, and under the fourteen sections it carries the two links
-that leave the article — the explorer and the code *(Matt, 2026-08-21)*. Above the title
+is the way back to the front page, and under the fourteen sections it carries the links
+that leave the article — the explorer and the code *(Matt, 2026-08-21)*, and this site's
+own code under it *(front_and_start_ckpt147)*. No entry marks a section written: the ✓ came
+off the rail and the front page together, and the flag stays in `sections.jsonl`. Above the title
 sits one group that is not a section, **Start here** *(start_here_ckpt146; a group since
 start_here_v2_ckpt147)*: a heading set like *Contents*, spelled by `sections.START_NAME`
 and linking to `start-here.html`, whose `<h1>` is the same two words *(since
 start_here_heading_ckpt147)*. On that page the group lists its four prose `<h2>`s as plain
 entries at one level; everywhere else it is the heading alone, which is when a section
 opens onto its headings too. The page sits at the root beside the front page, in no
-`sections.jsonl` row and with no done marker. A prose
+`sections.jsonl` row. A prose
 `<h2>` also gets the id its rail entry links to, spelled from its own words by rule —
 a fragment is a permanent URL. `python -m builder build` writes the rail between two
-marker comments; `check`'s `contents` check re-derives the rail, the heading ids and the
-front page's typed done-markers, and fails on any drift. That check is tamper-tested: a
-renamed rail entry, a hand-edited heading id and a deleted done marker each produced
-exactly one problem and exit 1.
+marker comments; `check`'s `contents` check re-derives the rail and the heading ids,
+holds the front page's typed contents list to having an entry per section, and fails on
+any drift. That check is tamper-tested: a renamed rail entry and a hand-edited heading id
+each produced exactly one problem and exit 1.
 
 **Two repositories are linked from every page, and each link says which.** The site bar's
 *GitHub* is this repository (`pages.SITE_REPO`), because a bar link named after the site is

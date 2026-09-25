@@ -617,24 +617,21 @@ def check_contents(article: list[sections.Section]) -> list[str]:
 
 
 def _index_markers(article: list[sections.Section]) -> list[str]:
-    """The front page's contents list marks what `sections.jsonl` calls written.
+    """The front page's contents list has an entry for every section.
 
-    The rail is generated; these markers are typed, because they sit inside prose the
-    builder does not touch. So the flag still lives in one place and drifting from it is a
-    failing check rather than something a reader notices. An entry is one `<h3>` on one
-    line — the same shape the contents list has always had, and what makes the marker
-    findable without parsing the page.
+    The rail is generated; this list is typed, because it sits inside prose the builder
+    does not touch, so a section added to `sections.jsonl` and not to the list is a failing
+    check rather than something a reader notices. An entry is one `<h3>` on one line — the
+    same shape the contents list has always had, and what makes it findable without parsing
+    the page. It used to carry a mark for a written section, as the rail did; both went
+    when every section was written *(front_and_start_ckpt147)*.
     """
     problems = []
     lines = _read(SITE_INDEX).splitlines()
     for section in article:
         href = f'href="article/{section.page}"'
-        entry = next((line for line in lines if "<h3>" in line and href in line), None)
-        if entry is None:
+        if not any("<h3>" in line and href in line for line in lines):
             problems.append(f"index.html: no one-line <h3> entry in the contents links {href}")
-        elif (sections.DONE in entry) != section.written:
-            wanted = "carry the done marker" if section.written else "not be marked done"
-            problems.append(f"index.html: the {section.title} entry should {wanted}")
     return problems
 
 
