@@ -4,8 +4,8 @@ A tutorial on making fractal wallpapers worth keeping: how an escape-time fracta
 drawn, how a search finds views worth looking at, how those views get their color, and how
 a judge trained on somebody's taste picks between the thousands of pictures that come out.
 It is an article about a working pipeline rather than about the mathematics, so every
-claim in it stands on pictures that pipeline actually made, and the galleries are there to
-be argued with.
+claim in it stands on pictures that pipeline actually made, and the finished wallpapers are
+there to be argued with.
 
 **Read it at [techmatt.github.io/fractal-website](https://techmatt.github.io/fractal-website/).**
 

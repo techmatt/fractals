@@ -1255,7 +1255,7 @@ def three_bands() -> Split:
                     ),
                     panel_path(BANDS_ID, len(made) + 1),
                 ),
-                alt=f"A finished wallpaper from the galleries, in the {pick.mode} rendering.",
+                alt=f"A finished wallpaper from a curated gallery, in the {pick.mode} rendering.",
                 seat=pick.identifier,
                 band=(
                     {

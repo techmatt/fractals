@@ -544,7 +544,7 @@ export async function mount(host, options = {}) {
     plateImage.alt = partition.dots.length
       ? `The ${partition.title} plane in gray, ${partition.dots.length} marks on it where ` +
         "the search has kept a place."
-      : `The ${partition.title} plane in gray, with no marks on it yet.`;
+      : `The ${partition.title} plane in gray, with no marks on it.`;
   }
 
   /**

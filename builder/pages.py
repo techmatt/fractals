@@ -241,12 +241,13 @@ def gallery_index(galleries: list[Gallery], sections: list[sections_module.Secti
             "full size is a release download.</p>"
         )
     else:
-        # The register with nothing in it yet. It says what is coming and stops there:
+        # The register with nothing in it. It says what the page is and stops there:
         # a date would be a promise and a count would be a number nobody has, and both
         # are the kind of thing a reader is entitled to hold the page to.
         intro.append(
-            "    <p>The finished wallpapers are still to come. They will be web-res on "
-            "the page, and full size will be a release download.</p>"
+            "    <p>The finished wallpapers are collected here in packs, to download at "
+            "full resolution. Each pack's page shows its pictures at web resolution, and "
+            "the full-size files are release downloads.</p>"
         )
     intro.append(f'    <p><a href="{attribute(article)}">Back to the article</a></p>')
     intro.append("  </section>")

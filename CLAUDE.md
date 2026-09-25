@@ -2,8 +2,8 @@
 
 This repository is the public site for the fractal wallpapers project: the article —
 a tutorial on rendering escape-time fractals, finding views worth keeping, and
-training judges to pick between them — plus the galleries of finished work that make
-the case the article is arguing. It is served by GitHub Pages at
+training judges to pick between them — plus the finished wallpapers that make the case
+the article is arguing, in the explorer's Gallery tab and as downloadable wallpaper packs. It is served by GitHub Pages at
 `https://techmatt.github.io/fractal-website/`.
 
 The companion code repository is `C:\Code\fractal-wallpapers`. The article links into it
