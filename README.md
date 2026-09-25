@@ -15,7 +15,7 @@ be argued with.
   renderer the wallpapers were drawn with, running in the browser. Pan and zoom any family
   the article covers, in any of its rendering modes, under any of a thousand palettes, and
   copy a link to whatever is on screen. Most pictures in the article open straight into it.
-- **[The galleries](https://techmatt.github.io/fractal-website/galleries/index.html)** —
+- **[The wallpaper packs](https://techmatt.github.io/fractal-website/wallpaper-packs/index.html)** —
   the finished wallpapers. What a page shows is web-res; full-size files are to ship as
   release assets rather than in this repository's history.
 

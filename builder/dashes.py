@@ -61,7 +61,7 @@ EM_DASH = "—"
 #: `index.html` cannot be addressed the way a registry row addresses a page — a bare name
 #: is an article section, so `carrier_path` would read it as `article/index.html` — which
 #: is why the front page is named by its path here and labelled by hand.
-EXTRA_PAGES = ("./start-here.html", "palettes/make-your-own.html", "galleries/index.html")
+EXTRA_PAGES = ("./start-here.html", "palettes/make-your-own.html", "wallpaper-packs/index.html")
 
 #: How many words of context a quoted offender carries on each side. Enough to find the
 #: sentence in the page, short enough that ten of them are still a list somebody reads.

@@ -71,7 +71,7 @@ def topbar(home: str, galleries_index: str) -> str:
             '  <div class="topbar-inner">',
             f'    <a class="topbar-site" href="{attribute(home)}">{text(SITE_TITLE)}</a>',
             '    <span class="topbar-links"><a href="'
-            f'{attribute(galleries_index)}">Galleries</a><a href="{SITE_REPO}">GitHub</a>'
+            f'{attribute(galleries_index)}">Wallpaper packs</a><a href="{SITE_REPO}">GitHub</a>'
             f'<a href="{AUTHOR_SITE}">Matt Fisher</a></span>',
             "  </div>",
             "</nav>",
@@ -177,7 +177,7 @@ def gallery_page(gallery: Gallery, sections: list[sections_module.Section]) -> s
     css = relative_href(page, SITE_ROOT / "assets" / "css" / "site.css")
     article = relative_href(page, SITE_ROOT / "index.html")
 
-    header = _masthead(f'<a href="{index_path()}">Galleries</a>', gallery.title)
+    header = _masthead(f'<a href="{index_path()}">Wallpaper packs</a>', gallery.title)
 
     intro = ['  <section class="intro">', f"    <p>{text(gallery.blurb)}</p>"]
     if gallery.note:
@@ -186,7 +186,7 @@ def gallery_page(gallery: Gallery, sections: list[sections_module.Section]) -> s
         intro.append(
             f'    <p>Full size: <a href="{attribute(gallery.release)}">release downloads</a>.</p>'
         )
-    intro.append(f'    <p><a href="{index_path()}">All galleries</a></p>')
+    intro.append(f'    <p><a href="{index_path()}">All wallpaper packs</a></p>')
     intro.append("  </section>")
 
     reopened = links.opened(page)
@@ -232,7 +232,7 @@ def gallery_index(galleries: list[Gallery], sections: list[sections_module.Secti
     css = relative_href(page, SITE_ROOT / "assets" / "css" / "site.css")
     article = relative_href(page, SITE_ROOT / "index.html")
 
-    header = _masthead(None, "Galleries")
+    header = _masthead(None, "Wallpaper packs")
 
     intro = ['  <section class="intro">']
     if galleries:
@@ -285,7 +285,7 @@ def gallery_index(galleries: list[Gallery], sections: list[sections_module.Secti
 
     return _shell(
         page=page,
-        title="Galleries — Making Fractal Wallpapers",
+        title="Wallpaper packs — Making Fractal Wallpapers",
         css=css,
         bar=topbar(article, index_path()),
         rail=sections_module.block(page, sections),

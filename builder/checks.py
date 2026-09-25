@@ -12,8 +12,8 @@ was raise, and every check after it went unrun.
   and none is root-absolute. The site is served from `/fractal-website/`, so a rooted
   href works locally and breaks only in production: exactly the bug that survives
   review. A link to a bare directory fails too, because a page in this repo has to open
-  from the filesystem and `file:///…/galleries/` is a directory listing.
-- **pages** — the committed HTML under `galleries/` is byte-identical to what the
+  from the filesystem and `file:///…/wallpaper-packs/` is a directory listing.
+- **pages** — the committed HTML under `wallpaper-packs/` is byte-identical to what the
   builder produces from today's metadata. What is committed is what is served, so the
   commit is the thing worth checking.
 - **figures** — every figure block on an article page matches its registry row exactly,

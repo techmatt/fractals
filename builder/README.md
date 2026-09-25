@@ -104,8 +104,8 @@ assets/images/galleries/<slug>/
     gallery.jsonl     one header record, then one record per image, in page order
     <image>.jpg       the web-res image the page links to
     thumbs/<image>.jpg  generated
-galleries/<slug>.html   generated
-galleries/index.html    generated, one cover tile per gallery
+wallpaper-packs/<slug>.html   generated
+wallpaper-packs/index.html    generated, one cover tile per gallery
 ```
 
 The directory name is the slug and the slug is a permanent URL, so it answers to the
@@ -125,8 +125,8 @@ this builder does not read is an error, not a guess.
 ## A gallery may be staged, and then nothing is generated from it
 
 A header record saying `"staged": true` means **the record and its pictures exist, and no
-page is made from them**. There is no `galleries/<slug>.html`, no cover tile on
-`galleries/index.html`, and no row in `explorer/links.jsonl` — a staged gallery is not
+page is made from them**. There is no `wallpaper-packs/<slug>.html`, no cover tile on
+`wallpaper-packs/index.html`, and no row in `explorer/links.jsonl` — a staged gallery is not
 somewhere a reader arrives, so there is nothing for a link to sit in the corner of. What
 reads one is code that wants the *record*: the explorer's gallery panel, which is handed a
 thousand seats and the permalink each of them opens at.
@@ -634,10 +634,10 @@ configured. A palette entering the library next door costs one `--library` and o
 - **links** — every internal `href` and `src` on every page resolves, and none is
   root-absolute. The site is served from `/fractal-website/`, so a rooted href works
   locally and breaks only in production. A link to a bare directory fails too: a page
-  here has to open from the filesystem, where `galleries/` is a directory listing.
-- **pages** — the committed HTML the builder owns — `galleries/`, and the palette
+  here has to open from the filesystem, where `wallpaper-packs/` is a directory listing.
+- **pages** — the committed HTML the builder owns — `wallpaper-packs/`, and the palette
   library page — is byte-identical to what the builder produces now, and no page under
-  `galleries/` is unaccounted for.
+  `wallpaper-packs/` is unaccounted for.
 - **contents** — every hand-written page carries today's rail, every prose heading carries
   the id its words give it, every article page is listed in `sections.jsonl`, and the
   front page marks the same sections done that the registry calls written.
@@ -786,8 +786,8 @@ in. There is no `/favicon.ico` at the origin root and cannot be one: the site is
 project-Pages subpath, and a page that declared nothing would send every browser there
 for a 404.
 
-**The Galleries page opens on the picture the icon came from.** `galleries-icon-source` is
-a one-panel seat figure registered on `galleries/index.html`, drawn by
+**The Wallpaper packs page opens on the picture the icon came from.** `galleries-icon-source` is
+a one-panel seat figure registered on `wallpaper-packs/index.html`, drawn by
 `picks.galleries_icon_source`, which refuses a row whose pick is not `icons.SEAT`, so the
 page and the icon cannot come to name different wallpapers. It is the first registry
 figure on a **generated** page: `pages.gallery_index` derives the block from the registry

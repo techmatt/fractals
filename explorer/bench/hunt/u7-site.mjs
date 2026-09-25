@@ -22,7 +22,7 @@ const rows = [];
 const PAGES = [
   "",
   ...readdirSync(new URL("../../../article/", import.meta.url)).filter((f) => f.endsWith(".html")).map((f) => `article/${f}`),
-  "galleries/",
+  "wallpaper-packs/",
   "palettes/all-palettes.html",
   "palettes/make-your-own.html",
   "explorer/",
