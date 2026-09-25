@@ -354,14 +354,16 @@ def modes() -> Split:
         f"from its own ledger recipe at {picks_module.PANEL_RENDER[0]}x"
         f"{picks_module.PANEL_RENDER[1]} supersample {picks_module.PANEL_SUPERSAMPLE} and "
         "fitted.",
-        "Which locations and candidates: the candidate ledger streamed once for every "
-        "location the pool drew in all four modes (11,473 of them, 2026-09-24), those whose "
-        "place any figure already stands on dropped, then ranked by the weakest of the four "
-        "modes' best render-judge P(>=4) from scores.jsonl; per mode the best-scored "
-        "candidate whose recipe frame is the location's own and whose tone curve is on its "
-        "run's record, by scratch/start/modes_pick.py. The two rows are the first "
-        "parameter-plane location and the first Julia location that came out of that "
-        "ranking. Nothing here was chosen for how it looks.",
+        "Which locations and candidates: Matt picked both rows off a contact sheet of 30 "
+        "(start_modes_sheet_ckpt147). The sheet's rows were every location a kept record "
+        "seats (the twenty final139_* solves and final140_general2000), less any place or "
+        "seat key another figure already stood on, that the candidate ledger drew in all "
+        "four modes; per mode the candidate with the best fine-head p_fine(>=4) from "
+        "pool_scores.jsonl whose recipe frame is the location's own and whose tone curve is "
+        "on its run's record, by scratch/start_modes_sheet/pick.py. Thirty locations cleared "
+        "that, and the sheet showed all of them. Row 1 is sheet row 2, the place general "
+        "20260922T012627Z|1004570ab7a4ff18 seats; row 2 is sheet row 3, the place "
+        "20260922T012627Z|460117ee01aee127 seats.",
     ]
     everything = []
     for index, keys in enumerate(rows, start=1):
