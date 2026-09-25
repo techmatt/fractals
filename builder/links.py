@@ -393,11 +393,23 @@ def _deep_recipes() -> dict[str, dict]:
 
 
 def _claimed_seats(figure: figures.Figure) -> set[str]:
-    """The seats this row says were drawn at their own recipe, and so may be linked."""
+    """The seats this row says were drawn at their own recipe, and so may be linked.
+
+    A pool candidate a panel names as `candidate|<key>` is claimed by its `candidate`
+    source. That kind carries no `drawn`, because a candidate has only the one recipe to be
+    drawn at: `gallery-top-scored` is the figure whose panels are candidates rather than seats.
+    """
+    from . import picks
+
     return {
         key
         for source in figure.sources
         if source.kind == figures.GALLERY_SEAT and source.drawn == figures.OWN_RECIPE
+        for key in source.keys
+    } | {
+        f"{picks.CANDIDATE_STAMP}{picks.PICK_SEPARATOR}{key}"
+        for source in figure.sources
+        if source.kind == figures.CANDIDATE
         for key in source.keys
     }
 

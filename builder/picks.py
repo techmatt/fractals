@@ -507,7 +507,15 @@ def run_stamp(pick: Pick) -> Levelling:
     See the module docstring: a `depth` run records only whether the operator acted, so a
     seat it acted on is `acted_unrecoverable` and no render of the recipe is that seat's
     picture.
+
+    A run of a kind `RUN_RECORDS` does not name — a rotation, a label migration — is asked
+    of the wallpaper project's own reader instead, the one `builder/seats.py` reads a
+    gallery tile's curve through. Only those kinds: every kind named here keeps the answer
+    it always gave, so no figure already drawn changes colour or link by this.
     """
+    kind = _run_kind(pick)
+    if kind is not None and kind not in RUN_RECORDS:
+        return _project_stamp(pick, kind)
     where, named = run_record(pick)
     present = [(path, match) for path, match in named if path.is_file()]
     if not present:
@@ -525,6 +533,59 @@ def run_stamp(pick: Pick) -> Levelling:
         f"has a row for {filename}, so nothing says whether the autolevel operator acted on "
         "the picture the gallery ships"
     )
+
+
+def _run_kind(pick: Pick) -> str | None:
+    """The run kind a pick's picture sits under, or `None` where it is not a run's."""
+    parts = [part for part in str(pick.source.get("picture") or "").split("/") if part]
+    if len(parts) < 5 or parts[1] != "curation":
+        return None
+    return parts[2]
+
+
+#: The project reader's answers, by recipe key, so a figure asks it once a process. `None`
+#: is an answer too: nothing on record holds a stamp for that key.
+_PROJECT_STAMPS: dict[str, dict | None] = {}
+
+
+def project_stamps(resolved: list[Pick]) -> None:
+    """Ask the project's reader for every pick of a kind this module does not read, at once.
+
+    One subprocess for a figure rather than one per panel, because the import is most of
+    what it costs. `run_stamp` asks for any pick this did not reach.
+    """
+    from . import seats
+
+    asked = [
+        pick
+        for pick in resolved
+        if pick.key not in _PROJECT_STAMPS and _run_kind(pick) not in (None, *RUN_RECORDS)
+    ]
+    if not asked:
+        return
+    found = seats.stamps_of(asked)
+    for pick in asked:
+        _PROJECT_STAMPS[pick.key] = found.get(pick.key)
+
+
+def _project_stamp(pick: Pick, kind: str) -> Levelling:
+    """One pick's levelling, as the wallpaper project's own reader and its backfill say."""
+    project_stamps([pick])
+    stamp = _PROJECT_STAMPS.get(pick.key)
+    run = str(pick.source.get("picture")).split("/")[3]
+    where = f"{kind}/{run}"
+    if pick.recipe.get("autolevel") is None:
+        return Levelling(UNTOUCHED, where, None)
+    if stamp is None:
+        # Nothing says whether the operator acted, so no render of the recipe is known to
+        # be the picture; the stored one is.
+        return Levelling(UNRECOVERABLE, where, None)
+    if not stamp.get("acted"):
+        return Levelling(UNTOUCHED, where, stamp)
+    curve = stamp.get("curve") or {}
+    if not curve.get("applies") or curve.get("identity"):
+        return Levelling(UNRECOVERABLE, where, stamp)
+    return Levelling(REPLAYED, where, stamp)
 
 
 def _stamp_in(pick: Pick, where: str, path: Path, match: str) -> Levelling | None:
@@ -1029,6 +1090,138 @@ def gallery_output() -> Split:
         made,
         provenance(resolved, size, columns=OUTPUT_COLUMNS, chosen=OUTPUT_DRAW, composed=False),
         OUTPUT_COLUMNS,
+    )
+
+
+# ------------------------------------------------------------ what the judge alone would seat
+
+#: The pool's top twenty-four by the gallery judge, taken strictly, six across and four
+#: down. The claim is what a gallery would be with no curation rule at all, so the panels
+#: are candidates of the pool and never seats — a seat is already a rule's answer.
+TOP_SCORED = "gallery-top-scored"
+TOP_COLUMNS = 6
+TOP_ROWS = 4
+
+#: How the twenty-four were arrived at, which the resolution cannot say for itself. The
+#: ranking is frozen on the row, in `picks` and `p_fine`, because it costs the whole pool
+#: to take and the pool is not this repository's to load at draw time.
+TOP_DRAW = (
+    "Which twenty-four: the pool `final139_general` was solved over, taken the way the "
+    "solve takes it and read on 2026-09-25 against the live ledger — "
+    "`curation.solve.pool()` (518,436 candidates after the mode policy, the human "
+    "rejections and vetoes), then `solve.at_fine_bar` at that record's own "
+    "`config.fine_bar` of 0.030242 on the gallery judge's column (19,197 candidates over "
+    "8,940 places, the record's own counts to the row), then `headroom.clearing` under each "
+    "mode's own bar (19,197, a no-op on this pool). Every row of that ranked by p_fine, the "
+    "fine head's P(>=4) as the k=3 `twelve_sheets_drop_high_asymmetric_auc_ge4_more_k3` "
+    "ensemble mean reads it, descending, ties by recipe key, and the first twenty-four "
+    "taken. No curation rule was applied: no neutral pre-selection, no one seat per place "
+    "or cluster, no twin test, no mode, palette-group, spiral or colour cap. The "
+    "twenty-fifth reads 0.978604.",
+)
+
+
+def top_scores(identifier: str = TOP_SCORED) -> list[float]:
+    """The p_fine each panel was ranked on, in the row's order, off the row itself."""
+    figure = figures_module.load_all().get(identifier)
+    if figure is None or figure.recipe is None:
+        raise PickError(f"{identifier} is not in the figure registry")
+    scores = figure.recipe.args.get("p_fine")
+    if not isinstance(scores, list) or not all(isinstance(one, float) for one in scores):
+        raise PickError(f"{identifier}: `p_fine` is the list of scores its picks were ranked on")
+    return list(scores)
+
+
+def top_scored() -> Split:
+    """`gallery-top-scored` — the twenty-four candidates the gallery judge rates highest.
+
+    Rank order, left to right and then down, and nothing else: the figure is what a
+    gallery would look like if the judge's order were the whole of curation, so the
+    repetition in it is the point and nothing here may thin it. Each panel is a pool
+    candidate named on the row as `candidate|<recipe key>`, drawn at its own ledger recipe
+    through the tone curve its run recorded, and linked from that recipe whole.
+    """
+    wanted = picks_of(TOP_SCORED)
+    scores = top_scores()
+    if len(wanted) != TOP_COLUMNS * TOP_ROWS or len(scores) != len(wanted):
+        raise PickError(
+            f"{TOP_SCORED} is {TOP_COLUMNS}x{TOP_ROWS} and its row names {len(wanted)} "
+            f"pick(s) and {len(scores)} score(s)"
+        )
+    if scores != sorted(scores, reverse=True):
+        raise PickError(f"{TOP_SCORED}: its picks are in rank order, and its scores are not")
+    if any(split(one)[0] != CANDIDATE_STAMP for one in wanted):
+        raise PickError(f"{TOP_SCORED}: every panel is a pool candidate, {CANDIDATE_STAMP}|<key>")
+    resolved = resolve(wanted)
+    project_stamps(resolved)
+    size = panels(TOP_COLUMNS)
+    catalog = renders.mode_catalog()
+    made: list[Made] = []
+    levellings: list[Levelling] = []
+    for index, pick in enumerate(resolved, start=1):
+        # The stored picture where no render of the recipe is known to be it: the same
+        # choice `panel_or_seat` makes for a seat, and its link is refused for the same
+        # reason by `links._panel_level`.
+        picture, levelling = panel_or_seat(pick, f"top-scored-{index}-{pick.alias}", catalog)
+        levellings.append(levelling)
+        made.append(
+            Made(
+                sheets.save(
+                    sheets.fitted(picture, size), panel_path(TOP_SCORED, index), quiet=True
+                ),
+                alt=panel_alt(pick),
+                label=family_name(pick.family),
+                seat=pick.identifier,
+            )
+        )
+    lines = [
+        f"builder.picks — every panel is a candidate of the curation pool, never seated by "
+        f"anything this figure asked, named on this row as `{CANDIDATE_STAMP}"
+        f"{PICK_SEPARATOR}<recipe key>` and resolved from article/figure-recipes.jsonl, "
+        f"which holds the candidate ledger's row for it. Rendered fresh through the engine "
+        f"at {PANEL_RENDER[0]}x{PANEL_RENDER[1]}, supersample {PANEL_SUPERSAMPLE}, then "
+        f"fitted to {size[0]}x{size[1]} and landed one file a panel. Nothing about the "
+        f"coloring is this figure's choice: mode, mode settings, curve, map, the whole "
+        f"palette pass and the cap all come off the ledger's recipe. Panels in rank order, "
+        f"{TOP_COLUMNS} across.",
+        _top_tone_line(resolved, levellings),
+        *TOP_DRAW,
+    ]
+    for rank, (pick, score, levelling) in enumerate(
+        zip(resolved, scores, levellings, strict=True), start=1
+    ):
+        line = (
+            f"Rank {rank}, p_fine {score:.6f}. {family_name(pick.family)}, "
+            f"{mode_words(pick.mode)}: pool candidate {pick.key} — "
+            f"{recipe_words(pick, representative=rank == 1)}. Drawn at regime "
+            f"{pick.recipe['regime']}; tone read off {levelling.where}, {levelling.way}."
+        )
+        if levelling.way == UNRECOVERABLE:
+            line += f" Copied rather than redrawn: {pick.source.get('picture')}."
+        lines.append(line)
+    return Split(made, lines, TOP_COLUMNS)
+
+
+def _top_tone_line(resolved: list[Pick], levellings: list[Levelling]) -> str:
+    """What the autolevel operator did to the twenty-four, and which records say so."""
+    by_way: dict[str, list[str]] = {}
+    for pick, levelling in zip(resolved, levellings, strict=True):
+        by_way.setdefault(levelling.way, []).append(pick.alias)
+    copied = by_way.get(UNRECOVERABLE, [])
+    return (
+        "Tone: every candidate here was made with band_autolevel/v1 switched on. Each "
+        "panel's curve is read from its run's own record where this module reads that kind "
+        "of run (depth, hunt, mine, reframe_draw, remode, runs), and otherwise from the "
+        "wallpaper project's own reader, `curation.stamps.for_rows` over the backfill "
+        "overlay, which is where a rotation or a label-migration row is answered. "
+        f"Replayed through the curve the record keeps: "
+        f"{', '.join(by_way.get(REPLAYED, [])) or 'none'}. Untouched, the engine's own render: "
+        f"{len(by_way.get(UNTOUCHED, []))}. Copied as the stored 640x360 supersample 2 "
+        f"picture the judge scored, and carrying no explorer link, because no record holds a "
+        f"curve for them and a render of the recipe is not known to be the picture: "
+        f"{', '.join(copied) or 'none'}. A depth run records that the operator acted and "
+        "drops the coefficients; a rotation run before 2026-09-16 recorded neither, and "
+        "where the backfill has no row for one, nothing says whether the operator acted."
     )
 
 
@@ -1636,6 +1829,18 @@ def frame_line(pick: Pick, *, representative: bool) -> str:
     rather than six gradients the explorer is asked to carry.
     """
     recipe = pick.recipe
+    return (
+        f"{family_name(pick.family)}, {mode_words(pick.mode)}: gallery seat "
+        f"{pick.stamp}{PICK_SEPARATOR}{pick.key}, alias {pick.alias}, seat "
+        f"{pick.seat.get('seat')}, partition {pick.seat.get('partition')} — "
+        f"{recipe_words(pick, representative=representative)}. The candidate the seat stands "
+        f"on was drawn at regime {recipe['regime']} and scored P(>=4) {pick.seat.get('p_ge4')}."
+    )
+
+
+def recipe_words(pick: Pick, *, representative: bool) -> str:
+    """Everything it takes to draw one pick's picture again, as one clause of a line."""
+    recipe = pick.recipe
     family = recipe["family"]
     viewport = recipe["viewport"]
     kind = family.get("kind")
@@ -1648,16 +1853,12 @@ def frame_line(pick: Pick, *, representative: bool) -> str:
     map_word = "colormap" if representative else "palette"
     palette = recipe["palette"]
     return (
-        f"{family_name(family)}, {mode_words(pick.mode)}: gallery seat "
-        f"{pick.stamp}{PICK_SEPARATOR}{pick.key}, alias {pick.alias}, seat "
-        f"{pick.seat.get('seat')}, partition {pick.seat.get('partition')} — {named}, "
-        f"centre {viewport['center_re']} + {viewport['center_im']}i, "
+        f"{named}, centre {viewport['center_re']} + {viewport['center_im']}i, "
         f"width {viewport['width']}, mode {recipe['mode']}"
         + (f" {json.dumps(recipe['mode_params'])}" if recipe.get("mode_params") else "")
         + f", curve {recipe['curve']}, {map_word} {recipe['colormap']}, "
         f"mirror {flag(palette.get('mirror'))}, cap {recipe['maxiter']}, no crop beyond "
-        f"the sheet's; {shade_words(palette)}. The candidate the seat stands on was drawn "
-        f"at regime {recipe['regime']} and scored P(>=4) {pick.seat.get('p_ge4')}."
+        f"the sheet's; {shade_words(palette)}"
     )
 
 
@@ -1792,6 +1993,7 @@ MAKERS = {
     "overview-gallery-hook": gallery_hook,
     "modes-gallery": modes_gallery,
     "gallery-output": gallery_output,
+    TOP_SCORED: top_scored,
     "locations-minibrot-examples": minibrot_examples,
     ICON_SOURCE: galleries_icon_source,
     **{identifier: _pair(identifier) for identifier in MODE_FIGURES},
@@ -1817,6 +2019,9 @@ def sources(identifier: str) -> list[dict]:
     figures inside the check.
     """
     keys = picks_of(identifier)
+    if identifier == TOP_SCORED:
+        # Pool candidates and never seats, so the kind says so and the key is bare.
+        return [{"kind": figures_module.CANDIDATE, "keys": [split(one)[1] for one in keys]}]
     if identifier not in MODE_FIGURES:
         return [{"kind": figures_module.GALLERY_SEAT, "keys": keys}]
     found = []
@@ -1847,6 +2052,8 @@ def recipe(identifier: str) -> dict:
     released = released_of(identifier) if identifier in MODE_FIGURES else []
     if released:
         args["released"] = released
+    if identifier == TOP_SCORED:
+        args["p_fine"] = top_scores(identifier)
     return {"maker": f"{__name__}:{MAKERS[identifier].__name__}", "args": args}
 
 
