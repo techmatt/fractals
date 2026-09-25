@@ -109,7 +109,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from . import figures as figures_module
-from . import records, renders, sheets
+from . import images, records, renders, sheets
 from .locations import SHEET_WIDTH, Drawn, Made, Split, panel_path, panels, sheet_path
 
 #: Where a recorded tentative gallery lives under the wallpaper project's tree, and what
@@ -230,6 +230,9 @@ class Pick:
     #: and `provenance.candidate`, and the `picture` that run wrote. It is what
     #: `run_stamp` addresses the run's record by, and what `seat_picture` opens.
     source: dict
+    #: The curve this site measured for a seat whose run kept none — the recipe store's
+    #: `tone`, and `None` everywhere a run's record answers.
+    tone: dict | None = None
 
     @property
     def alias(self) -> str:
@@ -393,6 +396,7 @@ def _pick_for(identifier: str, stored: dict, fresh: dict[str, Pick]) -> Pick:
         seat=dict(held.seat),
         recipe=held.recipe,
         source=dict(held.source),
+        tone=held.tone,
     )
 
 
@@ -512,7 +516,23 @@ def run_stamp(pick: Pick) -> Levelling:
     of the wallpaper project's own reader instead, the one `builder/seats.py` reads a
     gallery tile's curve through. Only those kinds: every kind named here keeps the answer
     it always gave, so no figure already drawn changes colour or link by this.
+
+    **Where the run kept only the fact, a curve this site measured answers instead** — the
+    recipe store's `tone`, held on the one row it was measured for. Never ahead of the run:
+    a pick whose run answers keeps that answer whether or not a `tone` is beside it.
     """
+    levelling = _run_levelling(pick)
+    if levelling.way == UNRECOVERABLE and pick.tone:
+        return Levelling(
+            REPLAYED,
+            f"{levelling.where} (re-measured here on {pick.tone['measured_on']})",
+            pick.tone["stamp"],
+        )
+    return levelling
+
+
+def _run_levelling(pick: Pick) -> Levelling:
+    """`run_stamp`'s answer from the run's records alone."""
     kind = _run_kind(pick)
     if kind is not None and kind not in RUN_RECORDS:
         return _project_stamp(pick, kind)
@@ -750,6 +770,40 @@ def panel_or_seat(pick: Pick, name: str, catalog: dict[str, dict]) -> tuple[Path
         return seat_picture(pick), levelling
     return cache().produce(name, "render", panel_spec(pick, catalog, levelling=levelling)).path, (
         levelling
+    )
+
+
+def remeasured_line(pick: Pick, levelling: Levelling, catalog: dict[str, dict]) -> str:
+    """Why one panel is drawn through a curve this site measured, and how near it lands.
+
+    Measured at draw time rather than written down, the way `seats` measures it: the recipe
+    at the seat's own regime through the same curve, against the picture the gallery ships.
+    """
+    shipped = seat_picture(pick)
+    drawn = (
+        cache()
+        .produce(
+            f"remeasured-{pick.key[:8]}",
+            "render",
+            panel_spec(
+                pick,
+                catalog,
+                resolution=images.dimensions(shipped),
+                supersample=2,
+                levelling=levelling,
+            ),
+        )
+        .path
+    )
+    curve = levelling.stamp["curve"]
+    return (
+        f"{pick.alias} is drawn through a tone curve measured here on "
+        f"{pick.tone['measured_on']}, not the one its run acted with: {pick.tone['why']}. "
+        f"Measured off {pick.tone['at']}: black point {curve['black_pt']:.4f}, white point "
+        f"{curve['white_pt']:.4f}, exponent {curve['exponent']:.4f}, output ends "
+        f"{curve['out_ends'][0]:.4f} to {curve['out_ends'][1]:.4f}. Drawn through it at "
+        f"that regime, the recipe lands {images.mean_abs_difference(shipped, drawn):.2f} of "
+        f"255 from {pick.seat.get('picture')}, the picture the gallery ships."
     )
 
 
@@ -1862,6 +1916,11 @@ def recipe_words(pick: Pick, *, representative: bool) -> str:
     )
 
 
+def remeasured(levelling: Levelling) -> bool:
+    """Whether a replayed levelling is `run_stamp`'s answer from a site-measured `tone`."""
+    return levelling.way == REPLAYED and " (re-measured here on " in levelling.where
+
+
 def autolevel_line(picks: list[Pick], levellings: dict[str, Levelling] | None = None) -> str:
     """What the operator did to the pictures Matt picked off, and what a panel here is."""
     stamped = sorted(
@@ -1880,6 +1939,10 @@ def autolevel_line(picks: list[Pick], levellings: dict[str, Levelling] | None = 
     )
     levellings = levellings or {pick.identifier: run_stamp(pick) for pick in picks}
     replayed = [pick for pick in picks if levellings[pick.identifier].way == REPLAYED]
+    # A curve this site measured is replayed the same way and is not the run's own, so it
+    # is told apart rather than folded into the sentence that says it never happens.
+    measured = [pick for pick in replayed if remeasured(levellings[pick.identifier])]
+    replayed = [pick for pick in replayed if pick not in measured]
     copied = [pick for pick in picks if levellings[pick.identifier].way == UNRECOVERABLE]
     where = sorted({levellings[pick.identifier].where for pick in picks})
 
@@ -1907,13 +1970,30 @@ def autolevel_line(picks: list[Pick], levellings: dict[str, Levelling] | None = 
             + ("it says so" if len(copied) == 1 else "each says so")
             + "."
         )
-    if not replayed and not copied:
+    if measured:
+        told.append(
+            ("It also acted on " if told else "It acted on ")
+            + ", ".join(
+                f"{pick.alias} (black point "
+                f"{levellings[pick.identifier].stamp['curve']['black_pt']:.4f}, white point "
+                f"{levellings[pick.identifier].stamp['curve']['white_pt']:.4f})"
+                for pick in measured
+            )
+            + ", whose run recorded the fact and not the curve, so that curve is the "
+            "operator's own rule measured again here, on the recipe drawn at its regime "
+            "through the unlevelled map, and kept in article/figure-recipes.jsonl as `tone`. "
+            + ("That panel is" if len(measured) == 1 else "Those panels are")
+            + " drawn through it and linked with it, and "
+            + ("its" if len(measured) == 1 else "each")
+            + " line gives how far the result is from the picture the gallery ships."
+        )
+    if not replayed and not copied and not measured:
         told.append(
             "It acted on none of them, which by that operator's rule means it returned each "
             "base render untouched, so every panel here is the engine's own render of the "
             "recipe."
         )
-    elif len(replayed) + len(copied) < len(picks):
+    elif len(replayed) + len(copied) + len(measured) < len(picks):
         told.append("It left the rest exactly alone, and those are the engine's own render.")
 
     return (

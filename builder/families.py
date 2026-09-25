@@ -654,32 +654,25 @@ FAMILIES_PROVENANCE = (
     "family's whole-set view with two marked points on it, then a finished wallpaper of "
     "the Julia set each mark produces. The five whole-set views are the engine's own "
     "derived home views, rendered at supersample 3, mode smooth, in the map named on each "
-    "line. The ten Julia panels are seats of recorded tentative galleries, named on "
-    "this row as <stamp>|<recipe key> and resolved from "
-    "artifacts/curation/tentative/<stamp>/gallery.jsonl for the seat and the candidate "
-    "ledger for the recipe (article/figure-recipes.jsonl holds both since those records "
-    "went); each is rendered fresh through the engine at 1280x720, "
-    "supersample 3, and fitted to the panel. Nothing about their coloring is this figure's "
-    "choice — mode, curve, map, palette pass and cap all come off the ledger's "
-    "recipe; what this figure chooses is which seats are eligible, and it admits only "
-    "seats drawn in smooth that the render judge scored P(>=4) 0.5 or better, so that the "
-    "one thing varying down the sheet is the family. The two panels of a row are drawn "
-    "from hue families the gallery record itself keeps apart, and the plane's own map is a "
-    "third. The degree-6 row's two seats are off the cyan collection's record "
-    "(20260922T013657Z), and they are the only degree-6 Julia seats in any of the "
-    "twenty-one recorded galleries whose ledger recipe is smooth and scores 0.5: a third, "
-    "d70c928f5417e54a, is seated as smooth in its gallery rows and its recipe draws it in "
-    "itinerary, so it is not one. Those two stand in the cyan and azure hue families, "
-    "which the record keeps apart. The Phoenix row is unchanged: two label-store rows "
-    "scored 4 by hand, drawn the "
-    "way a Julia set is, because that family has no parameter plane to mark."
+    "line. The ten Julia panels are seats Matt picked by alias on 2026-09-25 "
+    "(escape_families_ckpt148), two to a degree, each alias checked to be a unique prefix "
+    "among the seats of the twenty-one recorded galleries and to sit on its row's plane. "
+    "They are named on this row as <stamp>|<recipe key> and resolved from "
+    "article/figure-recipes.jsonl, which holds the seat row and the ledger recipe for each; "
+    "each is rendered fresh through the engine at 1280x720, supersample 3, and fitted to "
+    "the panel. Nothing about their coloring is this figure's choice — mode, mode "
+    "settings, curve, map, palette pass and cap all come off the ledger's recipe, so the "
+    "mode changes from panel to panel with the picks and each panel's own line names it. "
+    "The first of a row's two picks is the cyan mark and the second the rose. The Phoenix "
+    "row is unchanged: two label-store rows scored 4 by hand, drawn the way a Julia set "
+    "is, because that family has no parameter plane to mark."
 )
 
 
 def family_planes() -> Split:
     """The parameter and dynamical planes the project draws, and the provenance it earns.
 
-    The one maker here that returns its own provenance, because its eight Julia panels are
+    The one maker here that returns its own provenance, because its ten Julia panels are
     gallery seats: what drew them is the ledger's recipe rather than anything written in
     this file, so those lines have to be read off the picks at draw time.
 
@@ -701,6 +694,7 @@ def family_planes() -> Split:
             f"{identifier} wants {2 * len(FAMILY_ROWS)} picks and its row names {len(wanted)}"
         )
     resolved = picks.resolve(wanted)
+    picks.project_stamps(resolved)
     catalog = renders.mode_catalog()
 
     made: list[Made] = []
@@ -773,6 +767,8 @@ def family_planes() -> Split:
                 )
             )
             provenance.append(picks.frame_line(pick, representative=False))
+            if picks.remeasured(levelling):
+                provenance.append(picks.remeasured_line(pick, levelling, catalog))
             if levelling.way == picks.UNRECOVERABLE:
                 provenance.append(picks.unrecoverable_line(pick, levelling))
 
@@ -834,7 +830,7 @@ SHEETS = {
 def recipe(identifier: str) -> dict:
     """The registry recipe for a sheet here: the maker, and whatever picks the row names.
 
-    `escape-families` is the one sheet with arguments — the eight gallery seats its Julia
+    `escape-families` is the one sheet with arguments — the ten gallery seats its Julia
     panels are — and they stay the row's, the way every other picks-driven figure's do.
     A landing that rewrote them from here would be a second list of the same thing.
     """

@@ -35,6 +35,12 @@ to be drawn again.
 * `read` — where the two halves were recovered from, in a clause, because two of these
   rows have a recipe and no seat at all and the record should say so rather than look
   complete.
+* `tone` — on one kind of row only: a seat the autolevel operator acted on whose run kept
+  the fact and not the curve. Where Matt wants such a panel drawn and linked anyway
+  *(escape_families_ckpt148, 2026-09-25)*, the curve is measured again on this side, off
+  the recipe drawn at the seat's own regime through the unlevelled map, and written here
+  with the day it was measured. It is a second reading of the operator rather than the
+  run's, and `picks.run_stamp` answers from it only where the run's own record cannot.
 
 ## Filling it
 
@@ -102,6 +108,9 @@ class Held:
     source: dict
     seat: dict
     read: str
+    #: A tone curve this site measured, for a seat whose run kept none. See the module
+    #: docstring's `tone`; `None` on every row the run's own record answers for.
+    tone: dict | None = None
 
     @property
     def identifier(self) -> str:
@@ -129,6 +138,7 @@ def load_all(path: Path | None = None) -> dict[str, Held]:
             source=row.fields.get("source") or {},
             seat=row.fields.get("seat") or {},
             read=row.text("read"),
+            tone=row.fields.get("tone"),
         )
         if one.identifier in held:
             raise RecipeError(f"{row.where}: {one.identifier} is in this store twice")
@@ -155,6 +165,8 @@ def _row(one: Held) -> dict:
     }
     if one.seat:
         row["seat"] = one.seat
+    if one.tone:
+        row["tone"] = one.tone
     return row
 
 
