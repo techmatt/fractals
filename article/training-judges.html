@@ -72,7 +72,8 @@
     method, but they are two different networks fitted to two different collections of
     ratings, and they act at different points. A third, smaller network chooses palettes rather than rating
     quality; it is trained by a different method and is covered in
-    <a href="color-palettes.html">color palettes</a>.</p>
+    <a href="color-palettes.html">color palettes</a>. A fourth, the gallery judge, only orders
+    pictures that have already cleared the wallpaper judge's bar, and is covered below.</p>
 
     <h2 id="the-rating-scale">The rating scale</h2>
 
@@ -151,7 +152,7 @@
     specific to the problem is the ordered target, the way the pictures are prepared, and the
     discipline about what a score means once the network has been retrained.</p>
 
-    <p>The two judges do not use the same one. The location judge takes a medium variant,
+    <p>The location judge and the wallpaper judge do not use the same one. The location judge takes a medium variant,
     pretrained at a larger input size and on a larger slice of ImageNet, on the order of ten
     million parameters. The wallpaper judge takes a substantially smaller variant, well under
     half that. Capacity was settled by measurement in both cases and the two answers differ.
@@ -173,7 +174,7 @@
     of the results are read downstream: P(≥3), the chance a picture would be rated at least
     good, and P(≥4), the chance it would be rated exceptional.</p>
 
-    <p>The rest of the recipe is ordinary, and the two judges no longer share it. The location
+    <p>The rest of the recipe is ordinary, and the location and wallpaper judges no longer share it. The location
     judge runs a forty-epoch cosine schedule. The wallpaper judge stops early against a
     twenty-epoch ceiling, and the run that ships stopped before reaching it. Both fit
     comfortably on one ordinary GPU. Beyond the palettes described above, the location judge's
@@ -238,13 +239,13 @@
     left unfilled rather than padded (<a href="gallery-curation.html">gallery curation</a>).
     Above that bar the judge is a gate with no order inside its own top: it says a picture is
     worth keeping, and says nothing about which of two keepers is better. The ordering that
-    seats a gallery therefore comes from a second network trained for that question alone, on
+    seats a gallery therefore comes from a second network, the gallery judge, trained for that question alone, on
     ratings made of pictures that had already cleared the bar. It orders only what is above
     the bar, and is deliberately kept out of the decision to delete a candidate, because a bad
     ordering at a seat costs a slot while a bad ordering at a deletion costs the picture. That
-    ordering could not be read off the first judge's own internal representation: reusing
+    ordering could not be read off the wallpaper judge's own internal representation: reusing
     those features and learning only a new output layer
-    performed at chance on the question, and only retraining the whole network recovered it.
+    performed at chance on the question, and only training a whole new network recovered it.
     Whatever separates a keeper from a non-keeper is not what separates a good keeper from a
     great one. What makes a gallery out of a pool is
     <a href="gallery-curation.html">gallery curation</a>'s subject.</p>

@@ -349,7 +349,7 @@ def attempt_steps() -> Drawn:
         draw,
         sheets.PAD,
         y,
-        "Thirty-two colourings of that same field — the palette judge's pick outlined",
+        "Thirty-two colorings of that same field, the palette judge's pick outlined",
     )
     y += head
     for index, name in enumerate(names):
