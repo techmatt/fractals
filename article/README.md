@@ -11,10 +11,10 @@ rendering-modes.html              full-pipeline.html
 finding-good-locations.html       fractal-atlases.html
 training-judges.html              deep-zoom.html
                                   other-artistic-techniques.html
-                                  cool-math.html
+                                  fractal-math.html
 ```
 
-The first twelve are written; `other-artistic-techniques.html` and `cool-math.html` are
+The first twelve are written; `other-artistic-techniques.html` and `fractal-math.html` are
 placeholders. `sections.jsonl` is what says so. A placeholder is the slug, the heading, the
 section navigation and an `intro` section of one sentence saying it is not written yet
 (an older stub also said what the section would be about, and carried whatever figures
