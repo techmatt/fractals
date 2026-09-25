@@ -216,7 +216,7 @@ is local and no clone has it, so this list is the tracked record of the set:
 | `explorer/palettes.bin`, every map's control points | 1.04 MB | `python -m builder explorer --palettes-only` |
 | `explorer/palettes-swatch.png`, to look at | 0.3 MB | the same |
 | every plane's atlas slot pictures, `assets/images/atlas/<plane>-*.webp` | 1,464 files, 27.5 MB | `python -m builder atlas --ingest` |
-| `explorer/deep-gallery/*.webp`, the Deep tab's gallery tiles, one a register row | 31 files, 0.39 MB (2026-09-23) | `python -m builder deep-gallery thumbs` |
+| `explorer/deep-gallery/*.webp`, the Deep tab's gallery tiles, one a register row | 33 files, 0.42 MB (2026-09-25) | `python -m builder deep-gallery thumbs` |
 | `explorer/judges/`, the ORT runtime and the render judge (the fine head is no longer placed, pre_closeout_website_ckpt140) | 33.8 MB | `python -m builder walk` |
 
 **`palettes.bin` is not optional.** The tracked tree alone never draws a first frame: served
