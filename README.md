@@ -1,5 +1,16 @@
 # Making Fractal Wallpapers
 
+This builds the fractal wallpapers site: an article on how the collection was made, an
+explorer for finding pictures of your own, and the wallpaper packs. The pipeline that chose
+the wallpapers, and the engine that draws them, live in fractal-wallpapers. Most visitors
+want one of the links below.
+
+- **Wallpapers to download:** [Wallpaper packs](https://techmatt.github.io/fractal-website/wallpaper-packs/)
+- **Exploring for yourself:** [The fractal explorer](https://techmatt.github.io/fractal-website/explorer/)
+- **How it was made:** [The article, starting here](https://techmatt.github.io/fractal-website/start-here.html)
+- **The pipeline and engine code:** [fractal-wallpapers](https://github.com/techmatt/fractal-wallpapers)
+- **The site's code** (explorer, article, builder): you are here; read on.
+
 A tutorial on making fractal wallpapers worth keeping: how an escape-time fractal is
 drawn, how a search finds views worth looking at, how those views get their color, and how
 a judge trained on somebody's taste picks between the thousands of pictures that come out.
@@ -7,21 +18,11 @@ It is an article about a working pipeline rather than about the mathematics, so 
 claim in it stands on pictures that pipeline actually made, and the finished wallpapers are
 there to be argued with.
 
-**Read it at [techmatt.github.io/fractal-website](https://techmatt.github.io/fractal-website/).**
-
-- **[The article](https://techmatt.github.io/fractal-website/)** — fourteen sections in
-  reading order, from what a fractal is through to the whole pipeline end to end.
-- **[The explorer](https://techmatt.github.io/fractal-website/explorer/)** — the same
-  renderer the wallpapers were drawn with, running in the browser. Pan and zoom any family
-  the article covers, in any of its rendering modes, under any of a thousand palettes, and
-  copy a link to whatever is on screen. Most pictures in the article open straight into it.
-- **[The wallpaper packs](https://techmatt.github.io/fractal-website/wallpaper-packs/index.html)** —
-  the finished wallpapers. What a page shows is web-res; full-size files are to ship as
-  release assets rather than in this repository's history.
-
-The pipeline that found, rendered and judged all of it is a separate project:
-**[techmatt/fractal-wallpapers](https://github.com/techmatt/fractal-wallpapers)**. The
-article links into it section by section, at the code each part is about.
+The explorer is the same renderer the wallpapers were drawn with, running in the browser:
+pan and zoom any family the article covers, in any of its rendering modes, under any of a
+thousand palettes, and copy a link to whatever is on screen. Most pictures in the article
+open straight into it. The article links into fractal-wallpapers section by section, at the
+code each part is about.
 
 ## Reading it locally
 
