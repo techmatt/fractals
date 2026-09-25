@@ -105,12 +105,12 @@
         <figcaption>One location as it is rated: the same frame in the neutral palette, and in a vivid one. The rating answers for the geometry the two share rather than for either picture.</figcaption>
       </figure>
 
-    <p>The ratings were gathered iteratively: rate a batch, retrain, use the new judge to
-    find more material, and rate that. This selects the corpus as much as it grows it. Later
-    examples are largely the harvest of earlier judges, so the ratings over-represent the
-    kinds of place and picture those judges already liked. Batches drawn deliberately against
-    that pull, aimed at under-seen modes, colors, and score bands, reduce the effect without
-    removing it.</p>
+    <p>The ratings were gathered iteratively: rate a batch, retrain, use the new judge
+    to find more material, and rate that. That shapes which examples end up in the
+    corpus as much as it adds to it. Later examples are largely the harvest of earlier
+    judges, so the ratings over-represent the kinds of place and picture those judges
+    already liked. Batches drawn deliberately against that pull, aimed at under-seen
+    modes, colors, and score bands, reduce the effect without removing it.</p>
 
     <h2 id="what-the-judge-sees">What the judge sees</h2>
 
@@ -134,67 +134,65 @@
         <figcaption>One location at three sizes, drawn to scale. The smallest is what the walk scores, and the largest is what a person rated.</figcaption>
       </figure>
 
-    <p>The wallpaper judge scores the picture that was drawn to be judged, its mode, its settings,
-    and its palette, at 640 by 360, stretched from there to the network's input. Nothing is
-    judged at wallpaper size; a full-resolution render is what a passing score buys. One judge
-    covers the plain smooth rendering and every other mode in the catalog
-    <a href="rendering-modes.html">rendering modes</a> describes. The two kinds keep separate
-    collections of ratings and separate bars downstream, but the judging is one network
-    trained on both at once. Sharing the ratings is what earns that: it helps the scarcer of
-    the two collections, and giving each kind its own classifier on top of the shared network
-    bought nothing.</p>
+    <p>The wallpaper judge scores the picture that was drawn to be judged, its mode, its
+    settings, and its palette, at 640 by 360, stretched from there to the network's
+    input. Nothing is judged at wallpaper size; a full-resolution render is what a
+    passing score buys. One judge covers the plain smooth rendering and every other mode
+    in the catalog <a href="rendering-modes.html">rendering modes</a> describes. The two
+    kinds keep separate collections of ratings and separate bars downstream, but the
+    judging is one network trained on both at once. I went with one network because
+    sharing the ratings helps the scarcer of the two collections, and when I tried
+    giving each kind its own classifier on top of the shared network, it bought
+    nothing.</p>
 
     <h2 id="network-design-and-training">Network design and training</h2>
 
     <p>Each judge is a <a href="https://arxiv.org/abs/2404.10518">MobileNetV4</a>
-    convolutional network pretrained on ImageNet, with its classifier replaced and the whole
-    network then fine-tuned on the ratings. This is standard transfer learning. What is
-    specific to the problem is the ordered target, the way the pictures are prepared, and the
-    discipline about what a score means once the network has been retrained.</p>
+    convolutional network pretrained on ImageNet, with its classifier replaced and the
+    whole network then fine-tuned on the ratings. This is standard transfer learning.
+    The parts specific to this problem are the ordered target, how the pictures are
+    prepared, and being careful about what a score means after the network is
+    retrained.</p>
 
-    <p>The location judge and the wallpaper judge do not use the same one. The location judge takes a medium variant,
-    pretrained at a larger input size and on a larger slice of ImageNet, on the order of ten
-    million parameters. The wallpaper judge takes a substantially smaller variant, well under
-    half that. Capacity was settled by measurement in both cases and the two answers differ.
-    For locations, larger convolutional and transformer networks bought nothing over the
-    medium. For finished renders the pressure runs the other way: the ratings of the
-    non-smooth modes are the scarcer collection, and a larger network fed on them arrives
-    overconfident, which the smaller one avoids without giving up discrimination. There is no
-    general rule here that smaller is better, only two questions with different amounts of
+    <p>The location judge and the wallpaper judge do not use the same one. The location
+    judge takes a medium variant, pretrained at a larger input size and on a larger
+    slice of ImageNet, on the order of ten million parameters. The wallpaper judge takes
+    a substantially smaller variant, well under half that. I picked the size by
+    measuring in both cases, and the two answers came out different. For locations,
+    larger convolutional and transformer networks bought nothing over the medium. For
+    finished renders the pressure runs the other way: the ratings of the non-smooth
+    modes are the scarcer collection, and a larger network fed on them arrives
+    overconfident, which the smaller one avoids without giving up discrimination. So
+    smaller isn't better in general; the two questions just have different amounts of
     data behind them.</p>
 
-    <p>A four-point rating is ordered, not categorical: a 3 is closer to a 4 than a 1 is, and
-    an ordinary classifier throws that ordering away. Keeping it is the one place the recipe
-    is fitted to this problem rather than taken off the shelf. The judges are trained by
-    <a href="https://arxiv.org/abs/2111.08851">ordinal regression</a>. The network answers
-    three questions, each conditional on the one before: is this at least a 2, and given that,
-    is it at least a 3, and given that, is it at least a 4. Multiplying along the chain turns
-    those conditional answers into unconditional ones, and the product is what keeps them
-    consistent, since nothing can come out more likely to be a 4 than to be at least a 3. Two
-    of the results are read downstream: P(≥3), the chance a picture would be rated at least
-    good, and P(≥4), the chance it would be rated exceptional.</p>
+    <p>A four-point rating is ordered, not categorical: a 3 is closer to a 4 than a 1
+    is, and an ordinary classifier throws that ordering away. Keeping that ordering is
+    the one place where I fitted the recipe to this problem instead of taking it off the
+    shelf. The judges are trained by <a href="https://arxiv.org/abs/2111.08851">ordinal
+    regression</a>. The network answers three questions, each conditional on the one
+    before: is this at least a 2, and given that, is it at least a 3, and given that, is
+    it at least a 4. Multiplying along the chain turns those conditional answers into
+    unconditional ones, and the product is what keeps them consistent, since nothing can
+    come out more likely to be a 4 than to be at least a 3. Two of the results are read
+    downstream: P(≥3), the chance a picture would be rated at least good, and P(≥4), the
+    chance it would be rated exceptional.</p>
 
-    <p>The rest of the recipe is ordinary, and the location and wallpaper judges no longer share it. The location
-    judge runs a forty-epoch cosine schedule. The wallpaper judge stops early against a
-    twenty-epoch ceiling, and the run that ships stopped before reaching it. Both fit
-    comfortably on one ordinary GPU. Beyond the palettes described above, the location judge's
-    augmentation is the variation that is real at deployment: small border crops, flips,
-    re-encoding around the quality its renders are cached at, and brightness and contrast
-    changes of a few percent. The wallpaper judge gets crops and flips and nothing else, because
-    for it the coloring is part of what is being rated, and any change to the color edits the
-    question.</p>
+    <p>I don't vary the color when training the wallpaper judge the way I do for the
+    location judge, because for it the coloring is part of what's being rated, and
+    changing the color would change the question.</p>
 
     <h2 id="evaluating-a-judge">Evaluating a judge</h2>
 
-    <p>A judge's ratings come from one person, so the test is whether it agrees with that
-    person on pictures it has never seen. Sets kept for that purpose are held out by
-    neighborhood rather than by frame, since nearby frames are near-duplicates and a judge
-    could otherwise pass by memorizing a location's neighbor, and they are kept out of
-    training entirely. What such a set can answer is narrower than it looks: one assembled
-    around a particular cut can measure that cut and not another, and one that has been shown
-    the judge's own answer cannot measure the judge at all. Separating the good from the bad
-    and ordering the very best are also different questions, and a judge that has done the
-    first is not thereby good at the second.</p>
+    <p>The judges learn my ratings, so what I check is whether a judge agrees with me on
+    pictures it has never seen. I hold those pictures out by neighborhood rather than by
+    frame, because nearby frames are near-duplicates and a judge could otherwise pass by
+    memorizing a location's neighbor, and I keep them out of training entirely. A
+    held-out set only answers some questions, though. One built around a particular cut
+    can measure that cut and not another, and one that has been shown the judge's own
+    answer can't measure the judge at all. And a judge that separates the good from the
+    bad isn't necessarily good at ordering the very best, which is a different
+    question.</p>
 
     <h2 id="from-a-score-to-a-decision">From a score to a decision</h2>
 
@@ -214,14 +212,14 @@
         <figcaption>One family, one frame per outcome the location judge's score decides. Below the expansion bar the frame is refused; between the two bars the walk may explore through it but records nothing; above the admission bar it is booked as a find; above the exceptional bar it counts as exceptional when supply is balanced.</figcaption>
       </figure>
 
-    <p>Each was set once, and after every retrain the three are restated by volume:
-    over a fixed reference pool of tens of thousands of locations, the new threshold is the
-    score on the new judge that passes the same fraction of the pool as the old threshold
-    passed on the old judge. The restatement reads no ratings, which is what makes it a
-    restatement and not a recalibration. It preserves how much flows, not which frames:
-    between a tenth and a seventh of the pool changes sides at each cut while the fraction
-    passing stays where it was, and where a keeper starts on the new scale is left exactly as
-    open as it was before.</p>
+    <p>Each was set once, and after every retrain the three are restated by volume: over
+    a fixed reference pool of tens of thousands of locations, the new threshold is the
+    score on the new judge that passes the same fraction of the pool as the old
+    threshold passed on the old judge. The restatement doesn't read any ratings, so it's
+    a restatement, not a recalibration. It keeps the same amount flowing through, not
+    the same frames: between a tenth and a seventh of the pool changes sides at each cut
+    while the fraction passing stays where it was. Where a keeper starts on the new
+    scale is exactly as open a question as it was before.</p>
 
     <p>The wallpaper judge's bars are fitted rather than restated, one per kind, because the two
     collections of ratings have different base rates and the same number can sit above what
@@ -234,43 +232,44 @@
     rather than refusing. Each is stamped with the exact judge it was fitted against, and is
     never applied to a judge it was not fitted on.</p>
 
-    <p>Neither bar decides where the gallery is chosen. Eligibility there is a flat one half
-    on P(≥4), a round number rather than a fitted one, and a slot with no picture over it is
-    left unfilled rather than padded (<a href="gallery-curation.html">gallery curation</a>).
-    Above that bar the judge is a gate with no order inside its own top: it says a picture is
-    worth keeping, and says nothing about which of two keepers is better. The ordering that
-    seats a gallery therefore comes from a second network, the gallery judge, trained for that question alone, on
-    ratings made of pictures that had already cleared the bar. It orders only what is above
-    the bar, and is deliberately kept out of the decision to delete a candidate, because a bad
-    ordering at a seat costs a slot while a bad ordering at a deletion costs the picture. That
-    ordering could not be read off the wallpaper judge's own internal representation: reusing
-    those features and learning only a new output layer
-    performed at chance on the question, and only training a whole new network recovered it.
-    Whatever separates a keeper from a non-keeper is not what separates a good keeper from a
-    great one. What makes a gallery out of a pool is
-    <a href="gallery-curation.html">gallery curation</a>'s subject.</p>
+    <p>Neither bar decides where the gallery is chosen. Eligibility there is a flat one
+    half on P(≥4), a round number rather than a fitted one, and a slot with no picture
+    over it is left unfilled rather than padded (<a href="gallery-curation.html">gallery
+    curation</a>). Above that bar the judge works as a gate: it says a picture is worth
+    keeping, but not which of two keepers is better. The ordering that seats a gallery
+    therefore comes from a second network, the gallery judge, trained for that question
+    alone, on ratings made of pictures that had already cleared the bar. It orders only
+    what is above the bar, and is deliberately kept out of the decision to delete a
+    candidate, because a bad ordering at a seat costs a slot while a bad ordering at a
+    deletion costs the picture. That ordering could not be read off the wallpaper
+    judge's own internal representation: reusing those features and learning only a new
+    output layer performed at chance on the question, and only training a whole new
+    network recovered it. So what the judge learned about telling keepers from
+    non-keepers doesn't tell a good keeper from a great one. What makes a gallery out of
+    a pool is <a href="gallery-curation.html">gallery curation</a>'s subject.</p>
 
     <h2 id="generalization-and-its-limits">Generalization and its limits</h2>
 
-    <p>The aim of a judge is not to memorize the neighborhoods that have already been rated
-    but to learn what makes a frame good, in composition, framing, density, and a more general
-    sense of aesthetics, well enough to recognize it somewhere new. The judges do this to a
-    useful degree and the search depends on it. How well they do it is harder to establish
-    than it looks, because a high score on material the same judge selected is the judge
-    agreeing with itself; only ratings made by a person on that new material settle the
-    question.</p>
+    <p>I want a judge to learn what makes a frame good, in composition, framing,
+    density, and a more general sense of aesthetics, well enough to recognize it
+    somewhere new, and not just memorize the neighborhoods I've already rated. The
+    judges do this well enough to be useful, and the search depends on it. It's hard to
+    measure how well, though, because a high score on material the same judge picked out
+    is just the judge agreeing with itself. Only my ratings of that new material settle
+    it.</p>
 
-    <p>The limits follow from how the ratings were gathered. A judge trained on the harvest of
-    its predecessors is surest about the regions the search has already visited and least sure
-    about the rest, and if its taste drifts toward what it has already seen, the search
-    narrows onto ground the corpus already covers. The project pushes back at several points
-    rather than assuming the loop closes on its own: the walk reserves a share of every batch
-    for untouched roots (<a href="finding-good-locations.html#the-walk">finding good
-    locations</a>, Prioritize), and batches of pictures to rate are drawn on purpose at
-    under-seen modes, colors, and score bands. Those help, and what comes out is still a
-    selected population rather than a sample of what the fractals could produce. The judges
-    are best read as instruments tied to one person's ratings and to one score scale, rather
-    than as measures of whether a fractal is beautiful.</p>
+    <p>The limits come from how I gathered the ratings. A judge trained on what earlier
+    judges found is surest about the regions the search has already visited and least
+    sure about the rest, and if its taste drifts toward what it has already seen, the
+    search narrows onto ground the corpus already covers. I push back on this at several
+    points instead of assuming the loop sorts itself out: the walk reserves a share of
+    every batch for untouched roots
+    (<a href="finding-good-locations.html#the-walk">finding good locations</a>,
+    Prioritize), and I draw batches of pictures to rate on purpose from under-seen
+    modes, colors, and score bands. Those help, but what comes out is still a selected
+    population rather than a sample of what the fractals could produce. I think of the
+    judges as instruments tied to my ratings and to one score scale, rather than as
+    measures of whether a fractal is beautiful.</p>
   </section>
 
   <nav class="section-nav">

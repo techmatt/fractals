@@ -66,14 +66,15 @@
 
 <main>
   <section class="prose">
-    <p><a href="finding-good-locations.html">Finding good locations</a> ends with a stock of
-    rated frames, none of them yet drawn as anything a person would want on a screen. A
-    location is not a wallpaper. It is a place, and the same place can be beautiful in one
-    rendering mode and dull in another, striking in one palette and muddy in the next. Turning
-    a stock of places into a stock of pictures is its own problem, and it is where most of the
-    project's rendering time goes. Mining draws on more than the search admitted: any location
-    the judge is not confident is junk can be tried, because that judge is a prior on where to
-    look rather than a verdict on the picture.</p>
+    <p><a href="finding-good-locations.html">Finding good locations</a> ends with a
+    stock of rated frames, none of them yet drawn as anything a person would want on a
+    screen. But a location isn't a wallpaper yet. The same place can be beautiful in one
+    rendering mode and dull in another, striking in one palette and muddy in the next.
+    Turning a stock of places into a stock of pictures is its own problem, and it is
+    where most of the project's rendering time goes. When I mine, I don't limit myself
+    to what the search admitted: I can try any location the location judge isn't
+    confident is junk, because I treat that judge as a hint about where to look, not a
+    verdict on the picture.</p>
 
       <figure class="figure figure-split" data-figure="wallpapers-three-bands">
         <div class="figure-panels figure-staged" style="--figure-across: 8">
@@ -208,12 +209,12 @@
     palette, the judge's scores, and the small picture itself. Everything else on this page is
     about which candidates to make.</p>
 
-    <p>One economy shapes the whole thing. For the modes that read a single scalar field, the
-    field can be computed once and then colored many times over, so a second look at the same
-    place in the same mode costs a coloring rather than a render, and even autolevel's second
-    pass is another coloring. The composite modes, the direct traps, and the mode that shifts
-    where each sample reads in the map build their pictures differently and have to be drawn
-    in full each time.</p>
+    <p>One cost saving shapes all of this. For the modes that read a single scalar
+    field, the field can be computed once and then colored many times over, so a second
+    look at the same place in the same mode costs a coloring rather than a render, and
+    even autolevel's second pass is another coloring. The composite modes, the direct
+    traps, and the mode that shifts where each sample reads in the map build their
+    pictures differently and have to be drawn in full each time.</p>
 
       <figure class="figure" data-figure="wallpapers-attempt">
         <a class="figure-open" href="../explorer/index.html?v=4&amp;m=smooth_mean_angle&amp;weight=0.85&amp;x=-0.7894061466838949&amp;y=-0.16437809352996482&amp;w=0.0027914350318908217&amp;p=Forge%20Sweep" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/wallpapers-attempt.webp" width="1316" height="1336" alt="One location through one attempt: its smooth field as plain lightness beside the same location in the rendering mode the attempt drew, then a block of thirty-two colorings of that field with the chosen one outlined, and last the small render that is judged." loading="lazy"><span class="figure-open-mark" aria-hidden="true">↗</span></a>
@@ -229,10 +230,10 @@
     rest are deleted, so what builds up over time is coverage: more places, tried in more
     ways, rather than a larger and larger heap.</p>
 
-    <p>Keeping the pool separate from the mining that fills it is what makes this work. A
-    place found once is found for good, and a mine never has to justify itself by what it
-    ships. It is adding to a store rather than putting a collection together, which leaves it
-    free to spend a whole session on a single question.</p>
+    <p>I keep the pool separate from the mining that fills it. That way a place found
+    once is found for good, and a mine never has to justify itself by what it ships. It
+    is adding to a store rather than putting a collection together, which leaves it free
+    to spend a whole session on a single question.</p>
 
     <h2 id="breadth-and-depth">Breadth and depth</h2>
 
@@ -362,15 +363,15 @@
 
     <h2 id="where-the-budget-goes">Where the budget goes</h2>
 
-    <p>Mining time is finite, and how it is spent decides what the collection can contain. The
-    rule is simple: mine until the pool holds what a gallery needs, and let the gallery say
-    when it does not. A general mine draws its modes uniformly over the whole roster, and most
-    of its time goes to the modes that must be drawn in full, because they are most of the
-    roster and each costs several times what a recoloring does. They are also the ones a
-    gallery is most often short of. When a gallery is chosen and comes up short, the shortfall
-    names the modes, colors, and families it lacked
-    (<a href="gallery-curation.html">gallery curation</a>), and the answer is to mine longer,
-    not to mine differently.</p>
+    <p>Mining time is finite, and how I spend it decides what the collection can
+    contain. I mine until the pool holds what a gallery needs, and let the gallery tell
+    me when it doesn't. A general mine draws its modes uniformly over the whole roster,
+    and most of its time goes to the modes that must be drawn in full, because they are
+    most of the roster and each costs several times what a recoloring does. They are
+    also the ones a gallery is most often short of. When I choose a gallery and it comes
+    up short, the shortfall names the modes, colors, and families it lacked
+    (<a href="gallery-curation.html">gallery curation</a>), and I mine longer rather
+    than mining differently.</p>
 
     <h2 id="keeping-only-what-earns-its-place">Keeping only what earns its place</h2>
 
@@ -382,19 +383,19 @@
 
     <h2 id="how-candidates-are-ranked">How candidates are ranked</h2>
 
-    <p>Ranking candidates within a location needs one number, and no single judge's output is
-    that number. The wallpaper judge's score at its top threshold is the obvious candidate and is
-    not enough on its own: as <a href="training-judges.html">training judges</a> described, it
-    does not have much resolution left among the good ones.</p>
+    <p>To rank candidates within a location I need one number, and no single judge's
+    output gives me that. The wallpaper judge's score at its top threshold comes
+    closest, but as <a href="training-judges.html">training judges</a> described, it
+    doesn't have much resolution left among the good ones.</p>
 
-    <p>So the prune ranks on a fitted combination: the location judge's own opinion of the
-    place, the wallpaper judge at both of its thresholds, and a measure of how much of the frame
-    is dead flat space. It is an ordering device rather than a bar. Its advantage over the
-    wallpaper judge alone was real when it was fitted and has not survived the label corpus
-    tripling: refitted today it buys nothing over the top-threshold score, because the judge
-    improved underneath it. It stays as the prune's order, and newer ranking ideas, the gallery judge among them, are tried
-    first in gallery selection, which can be taken again, rather than in a prune that
-    deletes.</p>
+    <p>So the prune ranks on a fitted combination: the location judge's own opinion of
+    the place, the wallpaper judge at both of its thresholds, and a measure of how much
+    of the frame is dead flat space. I use it to order candidates, not as a bar. When I
+    fitted it, it beat the wallpaper judge alone, but that advantage didn't survive the
+    label corpus tripling: refitted today it adds nothing over the top-threshold score,
+    because the judge itself got better. It stays as the prune's order, and newer
+    ranking ideas, the gallery judge among them, are tried first in gallery selection,
+    which can be taken again, rather than in a prune that deletes.</p>
 
     <p>The pictures that make it through all of this are the pool that
     <a href="gallery-curation.html">gallery curation</a> chooses from.</p>

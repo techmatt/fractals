@@ -57,17 +57,19 @@
 
 <main>
   <section class="prose">
-    <p>The 375 authored palettes in the library were written by Claude from a technical
-    description of the problem. The palette prompt is short enough to read and specific
-    enough to run: it says what "dramatic" means in measurable terms, spreads each batch
-    across a set of structural templates so the batch is not twenty versions of one idea,
-    and ends with a schema. Paste it into a Claude conversation, set the four lines at the
-    top (batch size, mood family, complexity band, value key), and you get a JSON array
-    of palettes, each stop in <a href="https://en.wikipedia.org/wiki/Oklab_color_space">OKLCH</a>. Run the
-    validator on the result. It checks the mechanical rules: the loop closes, the number of
-    stops fits the complexity band, the bright band is feathered rather than cut, a hard
-    edge carries only a small step, a big hue jump routes through black or white. A
-    validated batch dropped into data/palettes/ is a palette like any other.</p>
+    <p>I had Claude write the 375 authored palettes in the library from a technical
+    description of the problem. The palette prompt is short, and it's specific: it says
+    what "dramatic" means in measurable terms, spreads each batch across a set of
+    structural templates so the batch isn't twenty versions of one idea, and ends with a
+    schema. Paste it into a Claude conversation, set the four lines at the top (batch
+    size, mood family, complexity band, value key), and you get a JSON array of
+    palettes, each stop in
+    <a href="https://en.wikipedia.org/wiki/Oklab_color_space">OKLCH</a>. Run the
+    validator on the result. It checks the mechanical rules: the loop closes, the number
+    of stops fits the complexity band, the bright band is feathered rather than cut, a
+    hard edge carries only a small step, a big hue jump routes through black or white.
+    Once a batch validates, you can drop it into data/palettes/ and its palettes work
+    like any others.</p>
 
     <ul>
       <li>The palette prompt: data/palettes/generator_prompt.md (v3.1)</li>

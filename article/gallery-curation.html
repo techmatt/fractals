@@ -225,13 +225,14 @@
 
     <h2 id="what-the-solve-optimizes">What the solve optimizes</h2>
 
-    <p>Among the galleries that satisfy every rule, the solve prefers, in strict order: filling
-    every seat, meeting the mode floors, making the worst picture as good as possible, and only
-    then making the whole gallery as good as possible. The third goal is the one worth
-    dwelling on. A gallery is looked at one wallpaper at a time, so its weakest member
-    describes it better than its average, and optimizing the average would happily trade one
-    mediocre picture for a wonderful one and a bad one. Nothing is ever padded: a seat the pool
-    cannot fill under the rules stays empty.</p>
+    <p>Among the galleries that satisfy every rule, the solve prefers, in strict order:
+    filling every seat, meeting the mode floors, making the worst picture as good as
+    possible, and only then making the whole gallery as good as possible. I put the
+    worst picture ahead of the whole gallery because people look at a gallery one
+    wallpaper at a time, so its weakest picture says more about it than its average.
+    Optimizing the average would happily trade one mediocre picture for a wonderful one
+    and a bad one. If the pool can't fill a seat under the rules, I leave it empty
+    rather than padding the gallery.</p>
 
     <p>The algorithm itself is simple. It first seats greedily: whatever the gallery is obliged
     to hold is seated first, scarcest first, and the rest is filled by walking the eligible

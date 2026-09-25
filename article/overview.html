@@ -88,23 +88,27 @@
       </figure>
 
     <p>For many years my desktop background cycled through
-    <a href="https://en.wikipedia.org/wiki/Fractal">fractal</a> wallpapers gathered from around
-    the internet. Seeing the same ones over and over grew repetitive, and my daughter was
-    fascinated specifically by dark pink fractals, so I built
-    <a href="https://github.com/techmatt/fractal-wallpapers">fractal-wallpapers</a>, a program
-    to find, color, and stylize new ones automatically. Producing a finished fractal wallpaper
-    involves several artistic choices: picking a location, selecting and aligning palettes,
-    stylizing, and layering post-processing. That work is usually done by hand, in tools like
+    <a href="https://en.wikipedia.org/wiki/Fractal">fractal</a> wallpapers gathered from
+    around the internet. Seeing the same ones over and over grew repetitive, and my
+    daughter was fascinated specifically by dark pink fractals, so I built
+    <a href="https://github.com/techmatt/fractal-wallpapers">fractal-wallpapers</a>, a
+    program to find, color, and stylize new ones automatically. Producing a finished
+    fractal wallpaper involves several artistic choices: picking a location, selecting
+    and aligning palettes, stylizing, and layering post-processing. That work is usually
+    done by hand, in tools like
     <a href="https://en.wikipedia.org/wiki/Ultra_Fractal">UltraFractal</a> or
-    <a href="https://www.chaoticafractals.com/">Chaotica</a>. This project doesn't try to match
-    that level of hand-tuned artistry on any single image. The goal is a system that continually
-    produces wallpapers I would want to use, spanning a wide range of structures, fractal
-    families, color styles, and rendering effects. Computing the fractal itself is only a
-    small part of that. The system also has to decide where to point the camera, how to turn
-    what it sees into an image, and which of the results are worth keeping. Everything here
-    lives in the flat complex plane: two-dimensional
-    <a href="escape-time-fractals.html">escape-time fractals</a>, the most popular of which is
-    the famous <a href="https://en.wikipedia.org/wiki/Mandelbrot_set">Mandelbrot set</a>. Other
+    <a href="https://www.chaoticafractals.com/">Chaotica</a>. I'm not trying to match
+    that level of hand-tuned artistry on any single image. The goal is a system that
+    continually produces wallpapers I would want to use, spanning a wide range of
+    structures, fractal families, color styles, and rendering effects. Computing the
+    fractal itself is only a small part of that. The system also has to decide where to
+    point the camera, how to turn what it sees into an image, and which of the results
+    are worth keeping.</p>
+
+    <p>Everything here lives in the flat complex plane: two-dimensional
+    <a href="escape-time-fractals.html">escape-time fractals</a>, the most popular of
+    which is the famous
+    <a href="https://en.wikipedia.org/wiki/Mandelbrot_set">Mandelbrot set</a>. Other
     beautiful fractal worlds are outside its scope, among them the 3D
     <a href="https://en.wikipedia.org/wiki/Mandelbulb">Mandelbulb</a>,
     <a href="https://en.wikipedia.org/wiki/Fractal_flame">fractal flames</a>, and
@@ -114,10 +118,11 @@
     <a href="../explorer/index.html">fractal explorer</a> at exactly the view you are looking
     at.</p>
 
-    <p>The system is organized around three decisions. Which location to render: a
-    fractal family, its constants, and a frame in the complex plane. Which rendering mode and
-    which palette to use there. And which of the finished candidates belong in the
-    gallery. Each decision is one part of a pipeline, and each part feeds the next:</p>
+    <p>I organized the system around three decisions. Which location to render: a
+    fractal family, its constants, and a frame in the complex plane. Which rendering
+    mode and which palette to use there. And which of the finished candidates belong in
+    the gallery. Each decision is one part of a pipeline, and each part feeds the
+    next:</p>
 
       <figure class="figure figure-split" data-figure="overview-pipeline">
         <div class="figure-panels figure-staged" style="--figure-across: 3">
@@ -179,12 +184,13 @@
         <figcaption>Pipeline overview. A guided walk proposes locations, which the location judge scores. Admitted locations are rendered under many rendering mode and palette combinations with automatic tone balancing, and the wallpaper judge scores the resulting images. Gallery curation then chooses a diverse set of wallpapers out of the candidate pool.</figcaption>
       </figure>
 
-    <p><a href="finding-good-locations.html">Finding good locations</a>: a guided walk through
-    each fractal family descends toward structure and away from both emptiness and pure chaos. A
-    small <a href="https://en.wikipedia.org/wiki/Neural_network_%28machine_learning%29">neural
-    network</a> trained to predict my ratings of location quality scores each candidate as the
-    walk goes. What it keeps is a growing pool of locations, each recorded as a frame in the
-    complex plane and nothing more: no colors yet, no style
+    <p><a href="finding-good-locations.html">Finding good locations</a>: a guided walk
+    through each fractal family descends toward structure and away from both emptiness
+    and pure chaos. A small
+    <a href="https://en.wikipedia.org/wiki/Neural_network_%28machine_learning%29">neural
+    network</a> trained to predict my ratings of location quality scores each candidate
+    as the walk goes. The walk keeps the good ones in a growing pool of locations. Each
+    one is just a frame in the complex plane, with no colors or style yet
     (<a href="training-judges.html">training judges</a>).</p>
 
     <p><a href="finding-good-wallpapers.html">Finding good wallpapers</a>: each location in the
@@ -201,18 +207,17 @@
     pictures are collapsed, no single family of color crowds out the rest, and each rendering
     mode gets a minimum share of the gallery when the pool can supply it.</p>
 
-    <p>Two ideas run through all three parts. The neural networks (the judges) stand in
-    for my taste at every point where a machine has to decide whether something is good; I rated
-    by my own wallpaper preferences, and fine-tuning toward other tastes would be
-    straightforward. And the useful state is cumulative: the location pool only grows, and each
-    location keeps its strongest candidate renders, so curation can always be re-run over
-    everything accumulated so far.</p>
+    <p>Two ideas run through all three parts. Anywhere the system has to decide whether
+    something is good, it asks one of the neural networks, which I call judges, and
+    they're trained to stand in for my taste. The other is that the work accumulates.
+    The location pool only grows, and each location keeps its strongest candidate
+    renders, so I can always re-run curation over everything collected so far.</p>
 
-    <p>The whole system (search, rendering, training, curation) was built to run unattended on a
-    single desktop machine with one ordinary GPU. Every candidate the pipeline judges is drawn
-    small; a wallpaper that ships is rendered again at full size, with several samples to a
-    pixel, so the collection can be regenerated at any resolution without repeating the
-    search.</p>
+    <p>I built the whole system (search, rendering, training, and curation) to run
+    unattended on a single desktop machine with one ordinary GPU. The pipeline judges
+    every candidate at a small size. When a wallpaper makes it into a release, I render
+    it again at full size with several samples per pixel, so I can regenerate the
+    collection at any resolution without repeating the search.</p>
 
     <p>Everything here is backed by a working open-source repository,
     <a href="https://github.com/techmatt/fractal-wallpapers">fractal-wallpapers</a>, and every

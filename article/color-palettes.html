@@ -65,38 +65,38 @@
 <main>
   <section class="prose">
     <p>Finding a good location is slow; coloring it is fast, at least for the modes that
-    read one scalar field. For each pixel the renderer computes a field: the smooth escape
-    value from <a href="rendering-fundamentals.html">rendering fundamentals</a>, or whatever
-    the rendering mode measures. That is where nearly all the work goes. Where a mode reads
-    one field the field can be kept, and every palette tried on it is a lookup over the same
-    array; a composite or a direct trap has no single field to keep and pays for a whole
-    render each time. The pipeline chooses each location's palettes with a trained palette
-    judge, and it asks the question on the cheap half deliberately: the 32 candidates it
-    ranks are always recolorings of that location's smooth field, whatever mode the
-    wallpaper is eventually drawn in. One iteration pass per location instead of
-    thirty-two, and the judge is shown the kind of picture it was trained on; the palette it
-    picks then colors whatever mode the attempt actually draws.</p>
+    read one scalar field. For each pixel the renderer computes a field: the smooth
+    escape value from <a href="rendering-fundamentals.html">rendering fundamentals</a>,
+    or whatever the rendering mode measures. That is where nearly all the work goes. For
+    a mode that reads one field, I can keep the field, and every palette I try on it is
+    just a lookup over the same array. A composite or a direct trap has no single field
+    to keep, so every palette costs a whole render. I choose each location's palettes
+    with a trained palette judge: the 32 candidates it ranks are always recolorings of
+    that location's smooth field, whatever mode the wallpaper ends up drawn in. That
+    costs one iteration pass per location instead of thirty-two, and the judge sees the
+    kind of picture it was trained on. The palette it picks then colors whatever mode
+    the attempt actually draws.</p>
 
       <figure class="figure" data-figure="palette-locations">
         <a class="figure-open" href="../explorer/index.html?v=4&amp;x=0.36589157992999566&amp;y=0.3142062593823041&amp;w=0.0005254752858165241&amp;p=Amber%20Highlands" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/palette-locations.webp" width="1316" height="828" alt="Three fractal locations down, three palettes across: nine renders in a grid, with a gradient strip above each column."><span class="figure-open-mark" aria-hidden="true">↗</span></a>
         <figcaption>Three locations, three palettes. Each row is one stored smooth field recolored down the columns, and the strip above a column is the palette that column is drawn in.</figcaption>
       </figure>
 
-    <p>A palette is a short list of stops: positions from 0 to 1, each with a color.
-    The engine fills in between the stops by linear interpolation in
-    <a href="https://en.wikipedia.org/wiki/Oklab_color_space">OKLab</a> and bakes the result
-    into a table of 4,096 colors, which a render reads through the recipe below. OKLab is a
-    color space arranged so that distance in its coordinates roughly tracks how different
-    two colors look, which is what makes a blend through it cleaner than the same blend in
-    RGB: blue to yellow in ordinary RGB passes through a dull gray-brown, because the
-    midpoint of the coordinates is not the midpoint of what you see. A cyclic palette
-    ends with the color it began with, so when a render sweeps the table more than once
-    there is no seam where it starts again. A sequential palette has two different
-    ends, and repeating one slams the last color against the first. Folding is the
-    fix: the palette is baked as an out-and-back, forward and then backward, so it meets
-    itself. Folding bakes a different table rather than reading the same one differently,
-    and it is not a choice a render makes: the library records each palette as cyclic or
-    sequential and the fold follows.</p>
+    <p>A palette is a short list of stops: positions from 0 to 1, each with a color. The
+    engine fills in between the stops by linear interpolation in
+    <a href="https://en.wikipedia.org/wiki/Oklab_color_space">OKLab</a> and bakes the
+    result into a table of 4,096 colors, which a render reads through the recipe below.
+    OKLab is a color space arranged so that distance in its coordinates roughly tracks
+    how different two colors look, which is what makes a blend through it cleaner than
+    the same blend in RGB: blue to yellow in ordinary RGB passes through a dull
+    gray-brown, because the midpoint of the coordinates is not the midpoint of what you
+    see. A cyclic palette ends with the color it began with, so when a render sweeps the
+    table more than once there is no seam where it starts again. A sequential palette
+    has two different ends, and repeating one slams the last color against the first. To
+    fix that, I fold the palette: it's baked as an out-and-back, forward and then
+    backward, so it meets itself. Folding bakes a different table rather than reading
+    the same one differently. The library records each palette as cyclic or sequential,
+    and the sequential ones get folded.</p>
 
     <h2 id="where-the-palettes-came-from">Where the palettes came from</h2>
 
@@ -118,15 +118,15 @@
     The prompt runs as-is in Claude; see
     <a href="../palettes/make-your-own.html">make your own palettes</a>.</p>
 
-    <p>Two hundred of the authored palettes were written to a second aim. Sorting a finished
-    wallpaper into fifty-two named colors (twelve hues at two lightnesses and two chromas,
-    plus four neutrals) says which colors the collection reaches, and the answer was: very
-    few. Most pictures concentrate their area on a small handful of the fifty-two, and a
-    whole band of them (greens, limes, teals, cyans, and the dark yellows) went almost
-    unrepresented, so I aimed a batch there. Every one of the forty-eight colored cells now
-    has at least one palette that can make it the dominant color of a picture on at least
-    one reference field. The figure below shows one palette from each family the palette
-    prompt names.</p>
+    <p>Two hundred of the authored palettes were written to a second aim. I sorted
+    finished wallpapers into fifty-two named colors (twelve hues at two lightnesses and
+    two chromas, plus four neutrals) to see which colors the collection reaches, and it
+    reached very few. Most pictures concentrate their area on a small handful of the
+    fifty-two, and a whole band of them (greens, limes, teals, cyans, and the dark
+    yellows) went almost unrepresented, so I aimed a batch there. Every one of the
+    forty-eight colored cells now has at least one palette that can make it the dominant
+    color of a picture on at least one reference field. The figure below shows one
+    palette from each family the palette prompt names.</p>
 
       <figure class="figure" data-figure="palette-moods">
         <img src="../assets/images/figures/palette-moods.webp" width="1316" height="1082" alt="Twenty-three gradient strips, one per mood family the palette prompt names, each labeled with its family and the palette shown." loading="lazy">
@@ -166,35 +166,37 @@
         <figcaption>One location under twelve palettes drawn at random from the pool, and the one the palette judge scores highest of them.</figcaption>
       </figure>
 
-    <p>To make that call automatically, the pipeline trains a palette judge for exactly this
+    <p>To make that call automatically, I trained a palette judge for exactly this
     question. It has the smallest job of the four judges: given one location and 32
-    recolorings of its smooth field, pick one. The candidates vary by palette and by nothing
-    else: the same field at gamma 1, one cycle, phase 0. The judge sees the rendered frame
-    only, never a description of the palette, and it is trained only on the differences
-    inside one set, so its scores mean nothing across locations (models/palette/).</p>
+    recolorings of its smooth field, pick one. The candidates vary by palette and by
+    nothing else: the same field at gamma 1, one cycle, phase 0. The judge sees the
+    rendered frame only, never a description of the palette, and it is trained only on
+    the differences inside one set, so its scores mean nothing across locations
+    (models/palette/).</p>
 
     <h2 id="why-diversity-has-to-be-built-in">Why diversity has to be built in</h2>
 
-    <p>A pipeline that selects for quality converges on a theme. The palettes that score
-    best on the most locations resemble one another, and without a counterweight the best
-    wallpapers become variations on one color idea that happens to transfer well. I find
-    fire- and ice-themed palettes are close to universal across locations and families, and
-    left alone the pipeline would find that too.</p>
+    <p>If a pipeline only selects for quality, its results converge on a theme. The
+    palettes that score best on the most locations resemble one another, and without a
+    counterweight the best wallpapers become variations on one color idea that happens
+    to transfer well. I find fire- and ice-themed palettes are close to universal across
+    locations and families, and left alone the pipeline would find that too.</p>
 
-    <p>The counterweight is in how a candidate set is built. Each palette gets a descriptor:
-    the ramp as a render spends it, folded if sequential, sampled at 32 evenly spaced colors,
-    and written in OKLab, which is 96 numbers per palette. The set for a location is a
-    neighborhood in that space: one anchor palette and its 31 nearest neighbors, so
-    the judge always chooses among palettes that belong together rather than among 32
-    unrelated ones. Palettes near enough to be the same choice are grouped, and a run stands
-    one member of each; that grouping is cut on a second and more careful distance than the
-    96 numbers, against my own same-or-different calls on a few dozen pairs, and it means
-    treat these as one choice rather than no wallpaper could tell them apart. Anchors are
-    drawn without replacement, so none anchors twice until every one has anchored once, and
-    two locations in one release are asked about different regions of palette space.
-    <a href="gallery-curation.html">Gallery curation</a> later caps how many seats one of
-    those groups can take, though at the sizes tried so far it has had almost nothing to
-    refuse.</p>
+    <p>I build the counterweight into how a candidate set is put together. Each palette
+    gets a descriptor: the ramp as a render spends it, folded if sequential, sampled at
+    32 evenly spaced colors, and written in OKLab, which is 96 numbers per palette. The
+    set for a location is a neighborhood in that space: one anchor palette and its 31
+    nearest neighbors, so the judge always chooses among palettes that belong together
+    rather than among 32 unrelated ones. I group palettes that are near enough to be the
+    same choice, and a run uses one member of each group. The grouping uses a second,
+    more careful distance than the 96 numbers, with the cutoff set against my own
+    same-or-different calls on a few dozen pairs, and a group means these count as one
+    choice, not that no wallpaper could tell them apart. Anchors are drawn without
+    replacement, so none anchors twice until every one has anchored once, and two
+    locations in one release are asked about different regions of palette space.
+    <a href="gallery-curation.html">Gallery curation</a> later caps how many seats one
+    of those groups can take, though at the sizes tried so far it has had almost nothing
+    to refuse.</p>
 
       <figure class="figure" data-figure="palette-neighborhood">
         <a class="figure-open" href="../explorer/index.html?v=4&amp;x=-0.7482800116735308&amp;y=-0.13563763985784028&amp;w=0.0007193954637897842&amp;p=Rust%20to%20Plum" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/palette-neighborhood.webp" width="1316" height="964" alt="Two blocks of thirty-two small renders of one location: the judge's ranked candidate set above, and thirty-two uniformly drawn palettes below." loading="lazy"><span class="figure-open-mark" aria-hidden="true">↗</span></a>
@@ -203,22 +205,23 @@
 
     <h2 id="autolevel">Autolevel</h2>
 
-    <p>A palette that sits well on one location can land too dark, too light, or too flat on
-    another. Autolevel corrects for that after the pick. It measures three things about the
-    finished picture, all of them robust percentiles rather than extremes: a black point
-    read over its near-neutral pixels, a white point, and the median lightness of everything
-    that is not black. Those go against a band derived from 48 finished wallpapers I had
-    already accepted (data/coloring/levels_band.json). Inside the band it does nothing at
-    all. Outside it, it bends the palette's own stops along a lightness curve that does not
-    reorder them, and draws the picture again through the bent palette: the three statistics
-    move toward their bands, while pure black and pure white stay where they are. Across the
-    tracked releases it has acted on about four in ten of the renders it applies to. It
-    applies where the palette's tone is the picture's tone, which is the plain field
-    colorings and the composites: not the direct traps, whose tone belongs to their flat
-    ground, and not itinerary, which reads a different place in the ramp at every sample, so
-    bending the palette would move each sample by an amount that depends on where its
-    texture had sent it. Where the mode keeps a field the second draw is only another
-    recoloring of it; a composite pays for the whole render twice.</p>
+    <p>A palette that sits well on one location can land too dark, too light, or too
+    flat on another. Autolevel corrects for that after the pick. It measures three
+    things about the finished picture, all of them robust percentiles rather than
+    extremes: a black point read over its near-neutral pixels, a white point, and the
+    median lightness of everything that is not black. Those go against a band derived
+    from 48 finished wallpapers I had already accepted (data/coloring/levels_band.json).
+    Inside the band it does nothing at all. Outside it, it bends the palette's own stops
+    along a lightness curve that does not reorder them, and draws the picture again
+    through the bent palette: the three statistics move toward their bands, while pure
+    black and pure white stay where they are. Across the tracked releases it has acted
+    on about four in ten of the renders it applies to. It only runs where the palette's
+    tone is the picture's tone, which means the plain field colorings and the
+    composites. It skips the direct traps, whose tone comes from their flat ground, and
+    itinerary, which reads a different place in the ramp at every sample, so bending the
+    palette would move each sample by an amount that depends on where its texture had
+    sent it. When the mode keeps a field, the second draw is just another recoloring of
+    it, but a composite has to pay for the whole render twice.</p>
 
       <figure class="figure" data-figure="palette-autolevel">
         <a class="figure-open" href="../explorer/index.html?v=4&amp;x=-0.800778181691469&amp;y=0.18229482640825037&amp;w=0.0003856391990486722&amp;p=wheelance" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/palette-autolevel.webp" width="1316" height="874" alt="Two kept wallpapers, one above the other, each drawn twice: as the chosen palette rendered it, and after the autolevel operator moved its tone." loading="lazy"><span class="figure-open-mark" aria-hidden="true">↗</span></a>

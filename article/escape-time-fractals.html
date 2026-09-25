@@ -71,9 +71,9 @@
     <p>Every fractal rendered by
     <a href="https://github.com/techmatt/fractal-wallpapers">fractal-wallpapers</a> is a
     two-dimensional escape-time fractal. The renderer draws the Mandelbrot and degree-3
-    through degree-6 multibrot parameter planes, the Julia dynamical planes those degrees
-    define, and the Phoenix recurrence. This page covers what those objects are, and how one
-    exact view inside one of them is pinned down.</p>
+    through degree-6 multibrot parameter planes, the Julia dynamical planes those
+    degrees define, and the Phoenix recurrence. On this page I go over what those
+    objects are, and how I pin down one exact view inside one of them.</p>
 
       <figure class="figure figure-split" data-figure="escape-families">
         <div class="figure-panels" style="--figure-across: 3">
@@ -195,15 +195,15 @@
     comes out is a dark interior wrapped in a halo of escape times that carries all of the
     visible structure.</p>
 
-    <p>The remarkable part is where the detail comes from. Deep inside the set, nothing
-    escapes; far outside, everything escapes in a few steps and the image is a bland
-    gradient. Near the boundary, though, the tiniest nudge to c can flip a point between the
-    two fates, and the escape time varies wildly at every scale a renderer can reach. Zoom in
-    along the boundary and structure keeps arriving: spirals, filament tangles, and in many
-    places miniature copies of the full set. That boundary zone is where this project spends
-    its effort, and the search half of the pipeline
-    (<a href="finding-good-locations.html">finding good locations</a>) exists to navigate
-    it.</p>
+    <p>What's remarkable is where all that detail comes from. Deep inside the set,
+    nothing escapes; far outside, everything escapes in a few steps and the image is a
+    bland gradient. Near the boundary, though, the tiniest nudge to c can flip a point
+    between the two fates, and the escape time varies wildly at every scale a renderer
+    can reach. Zoom in along the boundary and structure keeps arriving: spirals,
+    filament tangles, and in many places miniature copies of the full set. That boundary
+    zone is where this project spends its effort, and the search half of the pipeline
+    (<a href="finding-good-locations.html">finding good locations</a>) exists to
+    navigate it.</p>
 
       <figure class="figure figure-split" data-figure="escape-zoom-strip">
         <div class="figure-panels" style="--figure-across: 3">
@@ -263,12 +263,12 @@
     neighborhood in a parameter plane, the c values there are recycled as seeds for the
     matching Julia search.</p>
 
-    <p>The blob-versus-dust split is not a matter of degree, it is a sharp theorem. For the
-    quadratic family the filled Julia set, and equivalently its boundary, is connected
-    exactly when c lies in the Mandelbrot set, and it shatters the moment c leaves. The
-    Mandelbrot set can therefore be defined as the
-    <a href="https://en.wikipedia.org/wiki/Connectedness_locus">connectedness locus</a> of
-    the quadratic family.</p>
+    <p>There's a theorem behind the blob-versus-dust split, and the cutoff is sharp. For
+    the quadratic family the filled Julia set, and equivalently its boundary, is
+    connected exactly when c lies in the Mandelbrot set, and it shatters the moment c
+    leaves. The Mandelbrot set can therefore be defined as the
+    <a href="https://en.wikipedia.org/wiki/Connectedness_locus">connectedness locus</a>
+    of the quadratic family.</p>
 
       <figure class="figure figure-split" data-figure="escape-julia-map">
         <div class="figure-panels" style="--figure-across: 4">
@@ -298,16 +298,18 @@
 
     <h2 id="multibrot-sets">Multibrot sets</h2>
 
-    <p>Nothing about the loop is specific to squaring. Replacing the square with a higher
-    integer power gives the
+    <p>Nothing about the loop is specific to squaring. If you replace the square with a
+    higher integer power, you get the
     <a href="https://en.wikipedia.org/wiki/Multibrot_set">multibrot sets</a>,
-    z<sub>n+1</sub> = z<sub>n</sub><sup>d</sup> + c. The parameter plane picks up rotational
-    symmetry the classic set does not have, one fold fewer than the degree: degree 3 renders
-    two-fold, degree 4 three-fold, degree 5 four-fold, and degree 6 five-fold. Each degree has
-    its own Julia planes
-    too, made exactly the same way as before, and those are d-fold rather than one fold
-    fewer, for a different reason: rotating the starting point by a d-th root of unity leaves
-    the first iterate untouched, so the two orbits coincide from there on.</p>
+    z<sub>n+1</sub> = z<sub>n</sub><sup>d</sup> + c. The higher powers give the
+    parameter plane a rotational symmetry the classic set doesn't have, and the number
+    of folds is one less than the degree. So degree 3 renders two-fold, degree 4
+    three-fold, degree 5 four-fold, and degree 6 five-fold. Each degree also has its own
+    Julia planes, made exactly the same way as before, and those come out d-fold, one
+    more fold than the parameter plane. Here's why: if you rotate a starting point by a
+    d-th root of unity, raising it to the d-th power undoes the rotation. So the rotated
+    point and the original land on the same first iterate, and their two orbits match
+    from there on.</p>
 
       <figure class="figure figure-split" data-figure="escape-multibrot-degrees">
         <div class="figure-panels" style="--figure-across: 5">
@@ -343,15 +345,16 @@
     as well, and down there it is not interpolating between anything: z<sup>1.8</sup> + c is
     a set of its own.</p>
 
-    <p>Non-integer powers come at a price. Raising a complex number to a fractional power
-    goes through the complex logarithm, which has no single consistent value, so the rule
-    becomes single-valued only once a branch is chosen. This renderer uses the principal
-    branch, whose cut lies along the negative real axis, and the chosen value jumps across
-    that cut. The pictures therefore carry sharp seams wherever an iterate crosses it. That
-    seam is not an artifact to be smoothed away: it is what a fractional degree is on a
-    single-valued branch, and a different branch moves it rather than removing it. I find the
-    discontinuities jarring, so fractional degrees are render-only. The renderer draws them; the
-    explorer and the wallpaper search do not.</p>
+    <p>Non-integer powers cause a problem, though. Raising a complex number to a
+    fractional power goes through the complex logarithm, which has no single consistent
+    value, so the rule becomes single-valued only once a branch is chosen. This renderer
+    uses the principal branch, whose cut lies along the negative real axis, and the
+    chosen value jumps across that cut. The pictures therefore carry sharp seams
+    wherever an iterate crosses it. The seam isn't an artifact I could smooth away. It
+    comes with using a single-valued branch at a fractional degree, and picking a
+    different branch would move it rather than remove it. I find the discontinuities
+    jarring, so I made fractional degrees render-only. The renderer can draw them, but I
+    left them out of the explorer and the wallpaper search.</p>
 
       <figure class="figure figure-split" data-figure="escape-fractional-degrees">
         <div class="figure-panels" style="--figure-across: 3">
@@ -393,19 +396,20 @@
       <svg xmlns="http://www.w3.org/2000/svg" width="22.989ex" height="2.576ex" viewBox="0 -883.9 10161 1138.7" role="img" aria-label="z sub n plus 1 equals z sub n squared plus c plus p times z sub n minus 1"><g stroke="currentColor" fill="currentColor" stroke-width="0" transform="scale(1,-1)"><g><g><g><path d="M162 92L145 90C193 137 230 171 255 194L351 283C374 304 398 330 421 359C452 397 467 420 467 428C467 437 462 442 452 442C445 442 439 438 434 429C409 388 386 368 364 368C342 368 326 386 317 398C293 427 269 442 246 442C220 442 193 430 165 404C137 378 123 352 123 326C123 316 128 311 139 311C146 311 152 316 156 325C167 354 194 368 235 368C249 368 269 363 296 354C320 345 343 340 364 339C308 284 265 244 234 217L145 134C130 119 111 99 90 74C59 35 43 12 43 3C43-6 48-11 59-11C65-11 71-6 78 4C103 43 130 63 158 63C174 63 192 51 212 26C232 1 255-11 278-11C312-11 346 7 382 42C418 77 436 111 436 144C436 153 431 158 420 158C413 158 407 153 402 143C387 100 344 63 288 63C264 63 186 92 162 92Z"></path></g><g transform="translate(498,-150) scale(0.707)"><g><path d="M537 137C514 58 481 18 440 18C427 18 420 28 420 47C420 61 426 84 438 115C478 224 498 296 498 333C498 403 451 442 381 442C322 442 271 416 230 363C222 407 187 442 136 442C80 442 58 390 44 345C34 313 29 294 29 287C29 278 34 273 45 273C50 273 53 274 56 276C61 285 64 292 65 299C83 375 106 413 133 413C151 413 160 399 160 371C160 358 155 331 144 290L87 63C84 50 78 24 78 19C78-1 89-11 111-11C130-11 144-1 151 19C153 24 159 49 170 92L191 181L221 295C232 318 249 341 270 365C299 397 335 413 378 413C411 413 427 391 427 348C427 310 406 234 363 120C356 102 353 87 353 74C353 25 390-11 438-11C482-11 517 14 542 64C561 104 571 131 571 144C571 153 566 158 555 158C552 158 537 149 537 137Z"></path></g><g transform="translate(600,0)"><path d="M698 274L413 274L413 559C413 575 405 583 389 583C373 583 365 575 365 559L365 274L80 274C64 274 56 266 56 250C56 234 64 226 80 226L365 226L365-59C365-75 373-83 389-83C405-83 413-75 413-59L413 226L698 226C714 226 722 234 722 250C722 263 711 274 698 274Z"></path></g><g transform="translate(1378,0)"><path d="M269 666C228 624 168 603 89 603L89 564C141 564 184 572 217 588L217 82C217 64 213 52 204 47C195 42 170 39 130 39L95 39L95 0C120 2 174 3 257 3C340 3 394 2 419 0L419 39L384 39C343 39 318 42 310 47C302 52 297 64 297 82L297 636C297 660 295 666 269 666Z"></path></g></g></g><g transform="translate(2153.7,0)"><path d="M698 367L80 367C64 367 56 359 56 344C56 329 64 321 80 321L698 321C714 321 722 329 722 344C722 356 711 367 698 367M698 179L80 179C64 179 56 171 56 156C56 141 64 133 80 133L698 133C714 133 722 141 722 156C722 169 711 179 698 179Z"></path></g><g transform="translate(3209.5,0)"><g><g><path d="M162 92L145 90C193 137 230 171 255 194L351 283C374 304 398 330 421 359C452 397 467 420 467 428C467 437 462 442 452 442C445 442 439 438 434 429C409 388 386 368 364 368C342 368 326 386 317 398C293 427 269 442 246 442C220 442 193 430 165 404C137 378 123 352 123 326C123 316 128 311 139 311C146 311 152 316 156 325C167 354 194 368 235 368C249 368 269 363 296 354C320 345 343 340 364 339C308 284 265 244 234 217L145 134C130 119 111 99 90 74C59 35 43 12 43 3C43-6 48-11 59-11C65-11 71-6 78 4C103 43 130 63 158 63C174 63 192 51 212 26C232 1 255-11 278-11C312-11 346 7 382 42C418 77 436 111 436 144C436 153 431 158 420 158C413 158 407 153 402 143C387 100 344 63 288 63C264 63 186 92 162 92Z"></path></g><g transform="translate(550.1,413) scale(0.707)"><path d="M237 666C186 666 143 648 106 612C69 576 50 534 50 483C50 449 75 424 106 424C136 424 161 450 161 480C161 513 137 536 105 536C102 536 100 536 98 535C117 584 161 627 224 627C306 627 352 556 352 470C352 403 318 331 250 255L62 43C49 28 50 29 50 0L421 0L450 180L417 180C409 129 402 100 396 91C391 86 361 84 306 84L139 84L236 179C304 243 390 312 419 365C439 400 449 435 449 470C449 588 357 666 237 666Z"></path></g><g transform="translate(498,-247) scale(0.707)"><path d="M537 137C514 58 481 18 440 18C427 18 420 28 420 47C420 61 426 84 438 115C478 224 498 296 498 333C498 403 451 442 381 442C322 442 271 416 230 363C222 407 187 442 136 442C80 442 58 390 44 345C34 313 29 294 29 287C29 278 34 273 45 273C50 273 53 274 56 276C61 285 64 292 65 299C83 375 106 413 133 413C151 413 160 399 160 371C160 358 155 331 144 290L87 63C84 50 78 24 78 19C78-1 89-11 111-11C130-11 144-1 151 19C153 24 159 49 170 92L191 181L221 295C232 318 249 341 270 365C299 397 335 413 378 413C411 413 427 391 427 348C427 310 406 234 363 120C356 102 353 87 353 74C353 25 390-11 438-11C482-11 517 14 542 64C561 104 571 131 571 144C571 153 566 158 555 158C552 158 537 149 537 137Z"></path></g></g><g transform="translate(1194.5,0)"><path d="M698 274L413 274L413 559C413 575 405 583 389 583C373 583 365 575 365 559L365 274L80 274C64 274 56 266 56 250C56 234 64 226 80 226L365 226L365-59C365-75 373-83 389-83C405-83 413-75 413-59L413 226L698 226C714 226 722 234 722 250C722 263 711 274 698 274Z"></path></g><g transform="translate(2194.7,0)"><path d="M328 325C328 300 341 287 368 287C404 287 427 318 427 354C427 410 368 442 308 442C239 442 176 412 122 353C68 294 41 229 41 159C41 61 106-11 204-11C257-11 304 2 345 27C379 48 404 69 420 90C427 99 430 106 430 109C430 120 425 126 414 126C409 126 404 122 398 114C365 70 324 42 277 30C246 22 223 18 206 18C149 18 121 53 121 122C121 184 150 274 174 317C198 361 249 413 308 413C346 413 372 402 386 381C355 378 328 358 328 325Z"></path></g><g transform="translate(2849.9,0)"><path d="M698 274L413 274L413 559C413 575 405 583 389 583C373 583 365 575 365 559L365 274L80 274C64 274 56 266 56 250C56 234 64 226 80 226L365 226L365-59C365-75 373-83 389-83C405-83 413-75 413-59L413 226L698 226C714 226 722 234 722 250C722 263 711 274 698 274Z"></path></g><g transform="translate(3850.2,0)"><g><path d="M355 442C311 442 269 419 228 373C217 419 186 442 137 442C96 442 66 409 45 344C35 311 30 292 30 286C30 277 35 272 46 272C51 272 54 273 57 275C62 284 65 291 66 298C84 374 107 412 134 412C152 412 161 398 161 371C161 356 159 339 154 321L44-118C35-151 34-155-5-155C-23-155-32-163-32-178C-32-189-26-194-15-194C0-194 52-191 67-191C86-191 146-194 165-194C180-194 187-186 187-170C187-160 178-155 159-155C141-155 114-156 114-144C114-131 155 26 159 43C179 6 209-13 249-13C314-13 371 20 421 87C467 148 490 213 490 280C490 367 438 442 355 442M352 412C391 412 411 382 411 323C411 296 405 260 394 215C371 128 342 71 307 42C286 25 267 16 248 16C219 16 199 29 188 56C179 77 174 92 174 100L225 309C230 331 248 354 276 377C304 400 329 412 352 412Z"></path></g><g transform="translate(725.2,0)"><path d="M192 250C192 279 168 303 139 303C110 303 86 279 86 250C86 221 110 197 139 197C168 197 192 221 192 250Z"></path></g><g transform="translate(1225.4,0)"><g><path d="M162 92L145 90C193 137 230 171 255 194L351 283C374 304 398 330 421 359C452 397 467 420 467 428C467 437 462 442 452 442C445 442 439 438 434 429C409 388 386 368 364 368C342 368 326 386 317 398C293 427 269 442 246 442C220 442 193 430 165 404C137 378 123 352 123 326C123 316 128 311 139 311C146 311 152 316 156 325C167 354 194 368 235 368C249 368 269 363 296 354C320 345 343 340 364 339C308 284 265 244 234 217L145 134C130 119 111 99 90 74C59 35 43 12 43 3C43-6 48-11 59-11C65-11 71-6 78 4C103 43 130 63 158 63C174 63 192 51 212 26C232 1 255-11 278-11C312-11 346 7 382 42C418 77 436 111 436 144C436 153 431 158 420 158C413 158 407 153 402 143C387 100 344 63 288 63C264 63 186 92 162 92Z"></path></g><g transform="translate(498,-150) scale(0.707)"><g><path d="M537 137C514 58 481 18 440 18C427 18 420 28 420 47C420 61 426 84 438 115C478 224 498 296 498 333C498 403 451 442 381 442C322 442 271 416 230 363C222 407 187 442 136 442C80 442 58 390 44 345C34 313 29 294 29 287C29 278 34 273 45 273C50 273 53 274 56 276C61 285 64 292 65 299C83 375 106 413 133 413C151 413 160 399 160 371C160 358 155 331 144 290L87 63C84 50 78 24 78 19C78-1 89-11 111-11C130-11 144-1 151 19C153 24 159 49 170 92L191 181L221 295C232 318 249 341 270 365C299 397 335 413 378 413C411 413 427 391 427 348C427 310 406 234 363 120C356 102 353 87 353 74C353 25 390-11 438-11C482-11 517 14 542 64C561 104 571 131 571 144C571 153 566 158 555 158C552 158 537 149 537 137Z"></path></g><g transform="translate(600,0)"><path d="M698 270L80 270C64 270 56 263 56 250C56 237 64 230 80 230L698 230C714 230 722 237 722 250C722 262 710 270 698 270Z"></path></g><g transform="translate(1378,0)"><path d="M269 666C228 624 168 603 89 603L89 564C141 564 184 572 217 588L217 82C217 64 213 52 204 47C195 42 170 39 130 39L95 39L95 0C120 2 174 3 257 3C340 3 394 2 419 0L419 39L384 39C343 39 318 42 310 47C302 52 297 64 297 82L297 636C297 660 295 666 269 666Z"></path></g></g></g></g></g></g></g></svg>
     </div>
 
-    <p>where the new constant p sets how strongly the past feeds back into each step. Orbits
-    are steered by where they just were, and the renders grow the feathery, plume-like
-    structures the family is known for. A phoenix image is drawn the way a Julia set is: fix
-    the constants, let each pixel be a starting z. There is no separate "phoenix Julia"
-    variant, because the family is already that kind of picture.</p>
+    <p>where the new constant p sets how strongly the past feeds back into each step.
+    Orbits are steered by where they just were, and the renders grow the feathery,
+    plume-like structures the family is known for. A phoenix image is drawn the way a
+    Julia set is: fix the constants, let each pixel be a starting z. So I don't have a
+    separate "phoenix Julia" variant, since the family already works that way.</p>
 
     <p>The classic render uses one celebrated pair of constants found by
-    <a href="https://doi.org/10.1109/31.1825">Shigehiro Ushiki in 1988</a>, and this project
-    renders <a href="../explorer/index.html?panel=phoenix">other values of c and p</a> as well. One detail the formula hides: the very first
-    step has no previous value to reach back to, so z<sub>−1</sub>, the value before the
-    orbit began, needs a seed of its own, quietly a third constant alongside c and p. The
-    classic picture seeds it at zero, and a nonzero seed gives a different set even when c
-    and p stay fixed, and this project varies that seed too.</p>
+    <a href="https://doi.org/10.1109/31.1825">Shigehiro Ushiki in 1988</a>, and this
+    project renders <a href="../explorer/index.html?panel=phoenix">other values of c and
+    p</a> as well. The formula doesn't show it, but the very first step has no previous
+    value to reach back to, so z<sub>−1</sub>, the value before the orbit began, needs
+    its own seed, which is effectively a third constant alongside c and p. The classic
+    picture seeds it at zero. A nonzero seed gives a different set even when c and p
+    stay fixed, and I vary that seed too.</p>
 
       <figure class="figure figure-split" data-figure="escape-phoenix">
         <div class="figure-panels" style="--figure-across: 2">
@@ -439,17 +443,17 @@
 
     <h2 id="the-projects-families">The project's families</h2>
 
-    <p>Altogether, the wallpapers here come from the Mandelbrot set and its Julia sets, the
-    multibrot sets of degrees 3 through 6 and their Julia sets, and Phoenix. These vary
-    enormously in how easily they give up good images: some produce striking material almost
-    anywhere along the boundary, others need real hunting. The search therefore tracks each
-    family's supply separately, so that the easiest family to photograph does not quietly
-    consume the whole search effort; how that works is covered in
-    <a href="finding-good-locations.html">finding good locations</a>.
-    <a href="gallery-curation.html">Gallery curation</a> then chooses from the mixed pool of
-    candidates without a family quota of its own, because its diversity rules act on
-    locations, visual similarity, color, and rendering mode rather than on fractal
-    family.</p>
+    <p>Altogether, the wallpapers here come from the Mandelbrot set and its Julia sets,
+    the multibrot sets of degrees 3 through 6 and their Julia sets, and Phoenix. These
+    vary enormously in how easily they give up good images: some produce striking
+    material almost anywhere along the boundary, others need real hunting. Because of
+    that, I track each family's supply separately during the search, so the easiest
+    family to photograph doesn't quietly eat up the whole search effort.
+    <a href="finding-good-locations.html">Finding good locations</a> covers how that
+    works. <a href="gallery-curation.html">Gallery curation</a> then chooses from the
+    mixed pool of candidates without a family quota of its own, because its diversity
+    rules act on locations, visual similarity, color, and rendering mode rather than on
+    fractal family.</p>
 
     <h2 id="locations">Locations</h2>
 

@@ -72,19 +72,19 @@
 
     <h2 id="julia-morphing-and-inflection">Julia morphing and inflection</h2>
 
-    <p>Deep-zoom artists often steer slightly off-center on the way down to a minibrot. Each
-    off-center choice is doubled into the decorations around the next copy, so a sequence of
-    choices sculpts a pattern: stacked shapes, trees, X shapes, and "evolutions" of one shape
-    into another. The
+    <p>Deep-zoom artists often steer slightly off-center on the way down to a minibrot.
+    Each off-center choice is doubled into the decorations around the next copy, so a
+    sequence of choices sculpts a pattern: stacked shapes, trees, X shapes, and
+    "evolutions" of one shape into another. The
     <a href="https://en.wikibooks.org/wiki/Fractals/Iterations_in_the_complex_plane/sculpt">wikibooks
     page on sculpting</a> collects the vocabulary, and Claude Heiland-Allen's
-    <a href="https://2025.algorithmicpattern.org/proceedings/CVCS8B/paper.html">Patterns in
-    Inflected Julia Sets</a> analyzes it. The real thing lives at enormous depth, but
-    inflection reproduces the same doubling at shallow cost, by warping the plane
-    around a chosen point before iterating. Heiland-Allen's
-    <a href="https://mathr.co.uk/web/inflector-gadget.html">Inflector Gadget</a> does this in
-    the browser, one click per step. I built an inflection tab for the fractal explorer, and
-    it worked, but I didn't like the results enough to keep it.</p>
+    <a href="https://2025.algorithmicpattern.org/proceedings/CVCS8B/paper.html">Patterns
+    in Inflected Julia Sets</a> analyzes it. Doing this for real takes enormous depth,
+    but inflection gets the same doubling cheaply, by warping the plane around a chosen
+    point before iterating. Heiland-Allen's
+    <a href="https://mathr.co.uk/web/inflector-gadget.html">Inflector Gadget</a> does
+    this in the browser, one click per step. I built an inflection tab for the fractal
+    explorer, and it worked, but I didn't like the results enough to keep it.</p>
 
     <h2 id="jumping-to-minibrots">Jumping to minibrots</h2>
 
@@ -97,14 +97,14 @@
 
     <h2 id="exponential-map-zooms">Exponential-map zooms</h2>
 
-    <p>A whole zoom can be drawn as one long strip in log-polar coordinates, where every step
-    deeper is the same distance along the strip. The frames of a zoom video are then cut out
-    of the strip, so no point is computed twice. Robert Munafo's
+    <p>A whole zoom can be drawn as one long strip in log-polar coordinates, where every
+    step deeper is the same distance along the strip. The frames of a zoom video are
+    then cut out of the strip, so no point is computed twice. Robert Munafo's
     <a href="https://mrob.com/pub/muency/exponentialmap.html">exponential map</a> entry
     explains the transform, and
-    <a href="https://www.youtube.com/watch?v=h3BA4mKYtv8">this video</a> shows a zoom made
-    this way. This project's zoom videos instead compute a field at every halving of the
-    width.</p>
+    <a href="https://www.youtube.com/watch?v=h3BA4mKYtv8">this video</a> shows a zoom
+    made this way. For my zoom videos, I compute a field at every halving of the width
+    instead.</p>
 
     <h2 id="distance-estimates-and-slope-shading">Distance estimates and slope shading</h2>
 

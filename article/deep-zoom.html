@@ -155,16 +155,17 @@
 
     <h2 id="minibrot-descents">Minibrot descents</h2>
 
-    <p>Small copies of the set, minibrots, lie all along the boundary: every filament passes
-    infinitely many of them, at every depth, smaller and more numerous the further down you
-    go. From outside, a copy looks like a small black body with the familiar bulbs and hairs.
-    A frame that zooms into the copy's neighborhood sees more than that. It finds the copy's own seahorse valleys and spirals laid over the structure it was
-    already in, so a region that looked smooth from further out fills with filigree. Close to
-    a copy, that filigree often arranges into what look like whole Julia sets, the
-    embedded Julia sets that deep-zoom artists steer toward. The
-    figure below follows one descent of this kind, six steps down a chain of components
-    nested one inside the next. Each step frames the next component in the chain, and the
-    last frame is about a billionth of the complex plane wide.</p>
+    <p>Small copies of the set, minibrots, lie all along the boundary: every filament
+    passes infinitely many of them, at every depth, smaller and more numerous the
+    further down you go. From outside, a copy looks like a small black body with the
+    familiar bulbs and hairs. If you zoom into the copy's neighborhood, you see more
+    than that. The copy's own seahorse valleys and spirals are laid over the structure
+    you were already in, so a region that looked smooth from further out fills with
+    filigree. Close to a copy, that filigree often arranges into what look like whole
+    Julia sets, the embedded Julia sets that deep-zoom artists steer toward. The figure
+    below follows one descent of this kind, six steps down a chain of components nested
+    one inside the next. Each step frames the next component in the chain, and the last
+    frame is about a billionth of the complex plane wide.</p>
 
       <figure class="figure figure-split" data-figure="deep-descent-rungs">
         <div class="figure-panels" style="--figure-across: 2">
@@ -200,11 +201,12 @@
 
     <p>Every parameter of the Mandelbrot set has its own
     <a href="https://en.wikipedia.org/wiki/Julia_set">Julia set</a>, the starting points
-    whose orbits stay bounded under that parameter's map. Is it worth zooming deep into a
-    Julia set? Mostly not. The map carries a small piece of its Julia set onto a larger piece
-    of the same set, so a Julia set repeats itself at every scale, and a deep zoom mostly
-    finds shapes it has already shown. The Mandelbrot set is different, because each of its
-    points is a different parameter, so a deeper frame keeps meeting new Julia sets.</p>
+    whose orbits stay bounded under that parameter's map. Zooming deep into a Julia set
+    mostly isn't worth it. The map carries a small piece of its Julia set onto a larger
+    piece of the same set, so a Julia set repeats itself at every scale, and a deep zoom
+    mostly finds shapes it has already shown. The Mandelbrot set is different, because
+    each of its points is a different parameter, so a deeper frame keeps meeting new
+    Julia sets.</p>
 
     <p>The two meet at the
     <a href="https://en.wikipedia.org/wiki/Misiurewicz_point">Misiurewicz points</a>,
@@ -259,13 +261,14 @@
         <figcaption>Three Misiurewicz points: one shallow on the Mandelbrot set (top) and two deep on the multibrots. Each row shows the whole Julia set for the point's parameter (left), that Julia set zoomed in at the point (middle), and the parameter plane zoomed in at the same point (right). The two zooms agree up to a fixed scale and rotation.</figcaption>
       </figure>
 
-    <p>The left column answers the question from the other side. At a deep parameter, the
-    whole Julia set is a thin, plain branching curve, hard to tell apart from its
-    neighbors' (at a Misiurewicz point it has no interior at all). What is particular to that
-    parameter is packed into a region about as small as the zoom that found it. So a deep
-    Julia zoom pays off at one place, the parameter's own point, and what it finds there is
-    the Mandelbrot set's picture of the same place. The fractal explorer's Julia preview
-    shows the Julia set for the parameter under the pointer.</p>
+    <p>The left column of the figure shows the whole Julia set for each parameter. At a
+    deep parameter, the whole Julia set is a thin, plain branching curve that's hard to
+    tell apart from its neighbors' (at a Misiurewicz point it has no interior at all).
+    The part that's particular to that parameter is packed into a region about as small
+    as the zoom that found it. So a deep Julia zoom is only worth doing at the
+    parameter's own point, and there you find the same picture the Mandelbrot set shows
+    at that point. The fractal explorer's Julia preview shows the Julia set for the
+    parameter under the pointer.</p>
 
     <h2 id="how-a-deep-frame-is-computed">How a deep frame is computed</h2>
 
@@ -287,65 +290,67 @@
     <a href="https://mathr.co.uk/web/deep-zoom.html">perturbation</a>, and it is how every
     modern deep-zoom renderer works.</p>
 
-    <p>The reference orbit is only a good anchor while a pixel's orbit stays near it. When
-    the full value Z<sub>n</sub> + δ<sub>n</sub> passes closer to zero than δ<sub>n</sub>
-    itself, the offset has become the larger quantity and precision starts to drain away.
-    The fix used here is rebasing, due to
+    <p>The reference orbit is only a good anchor while a pixel's orbit stays near it.
+    When the full value Z<sub>n</sub> + δ<sub>n</sub> passes closer to zero than
+    δ<sub>n</sub> itself, the offset has become the larger quantity and precision starts
+    to drain away. To fix this I use rebasing, which comes from
     <a href="https://fractalforums.org/fractal-mathematics-and-new-theories/28/another-solution-to-perturbation-glitches/4360">Zhuoran
-    on fractalforums.org</a>. At that step the pixel takes its whole current value as a new
-    offset and restarts from the beginning of the same reference orbit. With rebasing, one
-    reference orbit serves the entire frame. The fractal explorer draws the multibrot
-    families up to degree six, on both the parameter and dynamical planes, using the smooth
-    rendering mode. Its iteration cap follows the same depth rule as the rest of the engine,
-    up to a ceiling of a million, and a probe raises it when too many samples reach it. In
-    practice it works down to widths of about 10<sup>−30</sup> close to a minibrot, where
-    the ceiling on iterations runs out. Renderers that also extend the exponent range of
-    their offsets go hundreds of decades deeper.</p>
+    on fractalforums.org</a>. At that step the pixel takes its whole current value as a
+    new offset and restarts from the beginning of the same reference orbit. With
+    rebasing, one reference orbit serves the entire frame. The fractal explorer draws
+    the multibrot families up to degree six, on both the parameter and dynamical planes,
+    using the smooth rendering mode. Its iteration cap follows the same depth rule as
+    the rest of the engine, up to a ceiling of a million, and a probe raises it when too
+    many samples reach it. In practice it works down to widths of about 10<sup>−30</sup>
+    close to a minibrot, where the ceiling on iterations runs out. Renderers that also
+    extend the exponent range of their offsets go hundreds of decades deeper.</p>
 
     <h2 id="rendering-speed">Rendering speed</h2>
 
     <p>The fractal explorer renders deep frames on the CPU, in WebAssembly, across the
-    browser's worker threads. On one
-    six-core desktop, the video's final frame takes about 15 seconds at 1280 by 720 with one
-    sample per pixel, averaging about fifteen thousand iterations a sample. On the same
-    machine, <a href="https://mathr.co.uk/web/fraktaler.html">Fraktaler 3</a>, a mature
-    open-source deep-zoom renderer, takes about 50 seconds on the CPU with its acceleration
-    on and about 100 without it. Compared like for like (CPU, doubles, plain perturbation),
-    the fractal explorer does about seven times as many iterations per second. The likely reason is
-    specialization rather than a better algorithm: Fraktaler 3 interprets general formulas
-    and tracks derivatives at every step, while this kernel runs one fixed update. The two
-    agree on more than 99.7% of pixels.</p>
+    browser's worker threads. On one six-core desktop, the video's final frame takes
+    about 15 seconds at 1280 by 720 with one sample per pixel, averaging about fifteen
+    thousand iterations a sample. On the same machine,
+    <a href="https://mathr.co.uk/web/fraktaler.html">Fraktaler 3</a>, a mature
+    open-source deep-zoom renderer, takes about 50 seconds on the CPU with its
+    acceleration on and about 100 without it. Compared like for like (CPU, doubles,
+    plain perturbation), the fractal explorer does about seven times as many iterations
+    per second. I think the reason is specialization rather than a better algorithm:
+    Fraktaler 3 interprets general formulas and tracks derivatives at every step, while
+    my kernel runs one fixed update. The two agree on more than 99.7% of pixels.</p>
 
     <p>GPUs are clearly faster at this kind of independent per-pixel work. On the same
-    machine Fraktaler 3's GPU path draws the frame in under 3 seconds, in single precision.
-    Consumer GPUs are slow at doubles, and in double precision the same GPU roughly ties the
-    fractal explorer's CPU kernel, which is why the fast GPU renderers work in single
-    precision with extended-exponent tricks. This project kept rendering on the CPU for portability, and
-    used the GPU only to evaluate its neural networks.</p>
+    machine Fraktaler 3's GPU path draws the frame in under 3 seconds, in single
+    precision. Consumer GPUs are slow at doubles, and in double precision the same GPU
+    roughly ties the fractal explorer's CPU kernel, which is why the fast GPU renderers
+    work in single precision with extended-exponent tricks. I kept rendering on the CPU
+    for portability, and only used the GPU to evaluate the neural networks.</p>
 
     <p>Deep-zoom renderers usually add
     <a href="https://mathr.co.uk/blog/2022-02-21_deep_zoom_theory_and_practice_again.html">bilinear
-    approximation</a>, which skips many iterations at once by applying a precomputed linear
-    map. The fractal explorer does not use it, and the reason is worth knowing for anyone
-    building one. On frames with visible structure it ranged from
-    about 20% slower than plain perturbation to about 2.6 times faster. At every tolerance
-    tried it also moved escape counts, and on some frames it moved the boundary of the interior, so the pictures stopped matching what the engine
-    draws. It paid off handsomely only on frames that were almost entirely interior.
-    Fraktaler 3 shows the same pattern on the video's final frame: its approximation buys a
-    factor of about 1.3 to 2 and moves a fifth of the pixels by more than one
-    iteration.</p>
+    approximation</a>, which skips many iterations at once by applying a precomputed
+    linear map. I built it into the fractal explorer and then took it back out, because
+    on the frames worth looking at it wasn't much faster, and it changed the picture. On
+    frames with visible structure it ranged from about 20% slower than plain
+    perturbation to about 2.6 times faster. At every tolerance tried it also moved
+    escape counts, and on some frames it moved the boundary of the interior, so the
+    pictures stopped matching what the engine draws. It paid off handsomely only on
+    frames that were almost entirely interior. Fraktaler 3 shows the same pattern on the
+    video's final frame: its approximation buys a factor of about 1.3 to 2 and moves a
+    fifth of the pixels by more than one iteration.</p>
 
     <h2 id="automatic-minibrot-descents">Automatic minibrot descents</h2>
 
-    <p>Descents like the one in the video can be automated. The neighborhood of a minibrot
-    is a small, turned copy of the whole set, so every place in the set has a twin inside
-    every minibrot, smaller and slightly distorted. Start from a frame centered on a
-    minibrot, and the descent can continue to the twin of any other frame centered on a
-    minibrot, then to a twin inside that twin's own minibrot, nested until the iteration cap
-    runs out, since the periods multiply at every step. With two
-    frames A and B, each centered on a minibrot, there are four two-step descents: A then A,
-    A then B, B then A, and B then B. The figure below shows A and B, and then all four.
-    Each twin appears turned, because the copy it sits in is turned.</p>
+    <p>Descents like the one in the video can be automated. The neighborhood of a
+    minibrot is a small, turned copy of the whole set, so every place in the set has a
+    twin inside every minibrot, smaller and slightly distorted. If you start from a
+    frame centered on a minibrot, the descent can continue to the twin of any other
+    frame centered on a minibrot, and then to a twin inside that twin's own minibrot.
+    The nesting can keep going until the iteration cap runs out, since the periods
+    multiply at every step. With two frames A and B, each centered on a minibrot, there
+    are four two-step descents: A then A, A then B, B then A, and B then B. The figure
+    below shows A and B, and then all four. Each twin appears turned, because the copy
+    it sits in is turned.</p>
 
       <figure class="figure figure-split" data-figure="deep-descent-pairs">
         <div class="figure-panels" style="--figure-across: 2">
