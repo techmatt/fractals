@@ -86,95 +86,97 @@
     <ol class="toc">
       <li>
         <h3><a href="article/overview.html">Overview</a></h3>
-        <p>The three parts the pipeline is organized around: finding locations worth
-        drawing, drawing and judging many candidate wallpapers at each one, and curating a
-        gallery out of everything that has accumulated.</p>
+        <p>The project is a pipeline with three parts: find locations worth drawing,
+        draw and judge many candidate wallpapers at each one, and curate a gallery
+        from everything found. Here, we walk through all three at a high level before
+        later sections take each one in turn.</p>
       </li>
       <li>
         <h3><a href="article/escape-time-fractals.html">Escape-time fractals</a></h3>
-        <p>The mathematics every picture on this site comes from: iterating a short
-        formula on the complex plane, the escape time that comes out of it, the four
-        families the project draws (Mandelbrot, the multibrots, Julia and Phoenix), and
-        the coordinates that name one exact view inside one of them.</p>
+        <p>Every picture on this site comes from iterating a short formula on the
+        complex plane and counting how long each point takes to escape. Here, we
+        introduce the four families the project draws (the Mandelbrot set, the
+        multibrots, Julia sets and Phoenix) and how a single view inside one of them
+        is named.</p>
       </li>
       <li>
         <h3><a href="article/rendering-fundamentals.html">Rendering fundamentals</a></h3>
-        <p>Turning a grid of integer escape counts into an image: the smooth escape
-        count that removes the banding, what the iteration cap and the sample count each
-        decide, and fitting the palette's range to the frame rather than to the
-        arithmetic.</p>
+        <p>A fractal starts as a grid of integer escape counts, and coloring those
+        directly gives visible bands. Here, we show how the smooth escape count
+        avoids the step-wise field that integer counts produce, what the iteration
+        cap and the sample count each control, and how the palette's range is fitted
+        to each frame.</p>
       </li>
       <li>
         <h3><a href="article/rendering-modes.html">Rendering modes</a></h3>
-        <p>The catalog of rendering modes: the recipes that reduce an orbit to a
-        value other than its escape time. Covers the modes measured along the orbit's
-        path, the orbit traps, the ways two renderings are blended into one, and the
-        modes that paint directly while the iteration is still running.</p>
+        <p>The escape count is only one thing you can measure about an orbit. This
+        section catalogs the rendering modes the project uses: measurements taken
+        along the orbit's path, orbit traps, blends of two renderings, and modes that
+        paint directly while the iteration runs.</p>
       </li>
       <li>
         <h3><a href="article/finding-good-locations.html">Finding good locations</a></h3>
-        <p>The search for views worth rendering: what separates a good location from
-        a mediocre one, the structural gates that reject most candidates cheaply, and the
-        guided walk that descends toward the miniature copies of the set and reframes what
-        it finds.</p>
+        <p>Most views of a fractal make a mediocre wallpaper. Here, we show how the
+        search finds the good ones: cheap structural tests that reject most
+        candidates, and a guided walk that descends toward miniature copies of the
+        set and reframes what it finds.</p>
       </li>
       <li>
         <h3><a href="article/training-judges.html">Training judges</a></h3>
-        <p>The three small networks the pipeline judges with: one scoring a location,
-        one scoring a finished render, one picking a palette. Covers the four-point rating
-        scale they are trained on, what each judge is shown, the network designs and
-        training recipes, and how a score becomes a decision.</p>
+        <p>Deciding what looks good is the job of three small networks trained on my
+        ratings: one scores a location, one scores a finished render, and one picks a
+        palette. Here, we show the four-point scale they learn from, what each judge
+        sees, and how each network is designed and trained.</p>
       </li>
       <li>
         <h3><a href="article/color-palettes.html">Color palettes</a></h3>
-        <p>Color as a step of its own, over a field that is already computed: where
-        the project's nine hundred palettes came from, how one is applied to a stored
-        field, why diversity has to be built into the library, and how a finished
-        picture's tone is leveled against wallpapers that already work.</p>
+        <p>Color palettes are a core mechanism for rendering escape-time fractals. Here,
+        we show how we created a diverse set of about 900 dramatic color palettes,
+        and how we apply them to the fields from rendering modes to give many options
+        for coloring each wallpaper.</p>
       </li>
       <li>
         <h3><a href="article/finding-good-wallpapers.html">Finding good wallpapers</a></h3>
-        <p>At each location the pipeline has found, drawing many candidate wallpapers
-        across rendering modes and palettes, and scoring each with a judge trained on my
-        ratings.</p>
+        <p>A good location still has to be drawn well. Here, we show how the pipeline
+        draws many candidate wallpapers at each location, across rendering modes and
+        palettes, and keeps the ones a judge trained on my ratings scores highest.</p>
       </li>
       <li>
         <h3><a href="article/gallery-curation.html">Gallery curation</a></h3>
-        <p>Curation happens in two steps, and the second is the one that decides the
-        gallery. A quality bar decides only what is eligible: within each
-        rendering mode, a picture enters the pool if the render judge places it above a
-        fixed threshold. Which thousand of those hang together is then decided over the
-        whole set at once rather than picture by picture, under one seat per location, a
-        distinctness test against everything already seated, ceilings that stop any one
-        color, palette or rendering mode from dominating, and floors that ask each mode
-        for a share. The bar outranks the floors: a mode with little above the threshold
-        seats little, and some rendering modes do not appear in the gallery at all.</p>
+        <p>The thousand highest-scoring pictures would make a poor gallery, full of
+        near-duplicates in the same few colors. Here, we show how a gallery is chosen
+        as a whole from everything above a quality bar, with one picture per
+        location, a test that keeps near-duplicates out, and limits that stop any one
+        color, palette or rendering mode from dominating.</p>
       </li>
       <li>
         <h3><a href="article/full-pipeline.html">Full pipeline</a></h3>
-        <p>The three parts as one loop, and the two growing stores that connect them:
-        what each part is for, how a gallery's shortfall tells the next mine what to look
+        <p>The three parts are really one loop. Here, we show how they connect through
+        two growing stores, how a gallery's gaps tell the next search what to look
         for, and where the pipeline could go next.</p>
       </li>
       <li>
         <h3><a href="article/fractal-atlases.html">Fractal atlases</a></h3>
-        <p>Where in each fractal family the pipeline has found locations worth a
-        wallpaper, drawn as a map of the family with its finds marked, each mark opening
-        at the view it stands for.</p>
+        <p>Each fractal family is a big place, and the good wallpapers are scattered
+        across it. Here, we map each family with the locations the pipeline found
+        marked on it, and each mark opens the explorer at the view it stands for.</p>
       </li>
       <li>
         <h3><a href="article/deep-zoom.html">Deep zoom rendering</a></h3>
-        <p>Where double precision gives out, what lies past it, and how the explorer's
-        Deep tab draws frames beyond it by perturbation.</p>
+        <p>Past a certain depth, ordinary double-precision arithmetic can no longer tell
+        neighboring pixels apart. Here, we show what lies past that point and how the
+        explorer's Deep tab draws it anyway, using perturbation.</p>
       </li>
       <li>
         <h3><a href="article/other-artistic-techniques.html">Other artistic techniques</a></h3>
-        <p>Techniques other fractal artists use that this project doesn't: Julia morphing,
-        exponential-map zooms, slope shading, and more.</p>
+        <p>Fractal artists use many techniques this project doesn't. This section
+        surveys some of them, including Julia morphing, exponential-map zooms and
+        slope shading.</p>
       </li>
       <li>
         <h3><a href="article/fractal-math.html">Fractal math</a></h3>
-        <p>Theorems and facts about these fractals that turn directly into tools for
+        <p>A lot of beautiful mathematics sits behind these fractals. Here, we collect
+        some favorite results, especially the ones that turn directly into tools for
         making pictures.</p>
       </li>
     </ol>
@@ -182,14 +184,15 @@
 
   <section class="galleries-teaser">
     <h2>Galleries</h2>
-    <p><a href="galleries/index.html">The finished wallpapers</a>: web-res on the page,
-    full-size as release downloads.</p>
+    <p><a href="galleries/index.html">The finished wallpapers</a>, viewable on the page and
+    downloadable at full size.</p>
   </section>
 
   <section class="galleries-teaser">
     <h2>Explorer</h2>
-    <p><a href="explorer/index.html">Draw the Mandelbrot set yourself</a>: the same renderer
-    these wallpapers are made with, running in the browser. Every view has a link.</p>
+    <p><a href="explorer/index.html">Draw these fractals yourself</a>, with the same renderer
+    the wallpapers were made with, running in your browser. Every view has a shareable
+    link.</p>
   </section>
 </main>
 
