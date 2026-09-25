@@ -8,13 +8,13 @@ Python. A build is done here and reviewed in a diff.
 ```
 python -m builder build     regenerate gallery pages, the gallery index, thumbnails,
                             and the contents rail every page carries
-python -m builder check     twenty-two named checks: links, page sync, contents, figure
+python -m builder check     twenty-three named checks: links, page sync, contents, figure
                             blocks, seat panels, landings, one location to one figure,
                             explorer links, the atlas record, each atlas link against
                             its picture, the explorer's bake, embedded links, the
                             wallpaper coloring, assets, the palette record, prose, the
                             editorial pointer, theme, banned vocabulary, em-dashes, line
-                            endings, the site's icon
+                            endings, the site's icon, display formulas
 python -m builder figure ID print a figure's markup block, to paste into an article page
 python -m builder figures [--all]   what is still to make, grouped by page
 python -m builder figures --place ID SRC [--crop l,t,r,b] [--max-width N] [--lossless]
@@ -58,6 +58,8 @@ python -m builder links [--write]   derive every picture's explorer link from it
                             provenance, or the reason it has none
 python -m builder serve [--port N]  preview the committed tree at http://localhost:8000/
 python -m builder prose [PAGE ...]  hold a placed page to the document it was placed from
+python -m builder formulas [--fetch]   typeset every display formula from its TeX as
+                            inline SVG; --fetch downloads the pinned MathJax first
 python -m builder review PAGE [--read [--full]] [--consume] [--force] [--list]
                             build the doc a page is reviewed in, or read one back
 python -m builder import SRC DEST [--crop l,t,r,b] [--max-width N]
@@ -755,6 +757,11 @@ configured. A palette entering the library next door costs one `--library` and o
   `.ico` holds 16, 32 and 48, each PNG is its own size, the manifest is what the builder
   writes, and the recipe store holds the `icon` row. Runs on a bare clone; the PNG sizes
   are the one half that wants Pillow.
+- **formulas** — every display formula is a formula block (TeX on the `<div>`, one SVG
+  inside with `role="img"`, a spoken reading, `currentColor` and no `<text>`), and no
+  `<pre class="formula">` is left. Where node and the pinned MathJax are here, every SVG is
+  also held byte for byte to a fresh typesetting of its TeX, which takes a few seconds; a
+  bare clone has not fetched MathJax, and that half is a named skip there.
 
 ## The site's icon
 
@@ -811,6 +818,17 @@ disagreement about a page that is fine. Percent-encode the parenthesis in the ma
 `article/prose.jsonl` says which master belongs to which page, and may
 record *sanctioned divergences*: the master's words, the page's words, and why the page
 is deliberately different. A page with no row is one whose HTML is its own master.
+
+**A display formula is TeX, on both sides.** Anything set off on a line of its own is a
+`$$ … $$` block in the master, on its own line, and on the page it is
+`<div class="formula" data-tex="…">` with the same TeX; `python -m builder formulas` typesets
+every such block into the inline SVG it carries, so placing one is writing the empty
+`<div>` and running that. Both sides reduce a formula to `$$ TeX $$`, so `prose` compares
+the source and never the picture, and a formula is set aside before the markdown markers
+come out, because TeX is made of them. **Inline mathematics stays HTML**: c,
+z<sub>0</sub>, ε in running text are `<sub>`, `<sup>` and Unicode on both sides, as
+before. `formulas.py` says why the renderer is MathJax fetched into `artifacts/` rather
+than anything installed, and what the picture is held to.
 
 `review.py` is the other half: `python -m builder review <page>` writes a `.docx` of the
 page's prose as served, plus its figure captions by slug, into the synced `review/`

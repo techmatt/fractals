@@ -121,7 +121,10 @@ whitespace**; comparing raw bytes across the HTML/markdown boundary means nothin
 table is the one structure with a rule of its own: a master spells it
 `[TABLE: a | b | c]` / rows / `[/TABLE]`, the head comes out on both sides because a
 `<th>`'s words are the page's own, and the cells compare with a space between them so
-that a wrong number cannot hide inside a right one.
+that a wrong number cannot hide inside a right one. A **display formula** is the other
+*(display_math_ckpt149)*: `$$ TeX $$` on its own line in the master, a
+`<div class="formula" data-tex="…">` on the page that `python -m builder formulas`
+typesets into inline SVG, and the TeX is what is compared. Inline math stays HTML.
 
 ## Reviewing a page
 
@@ -705,7 +708,7 @@ being drawn as the plain Julia set underneath it.
 After touching placed prose, `python -m builder prose <page>` as well — see **Where prose
 comes from** above for what it holds together and why one edit has several sites.
 
-`builder check` is read-only, and it runs twenty-two named checks. It resolves every
+`builder check` is read-only, and it runs twenty-three named checks. It resolves every
 internal link, refuses root-absolute and bare-directory hrefs, regenerates the gallery
 HTML and compares it byte for byte with what is committed, holds every figure block to
 its registry row, holds every made figure to being a block a redraw could land on —

@@ -62,6 +62,19 @@ _MARKDOWN_LINK = re.compile(r"\[([^\]]+)\]\([^)]*\)")
 _WIKI_LINK = re.compile(r"\[([^\]]+)\]")
 _INLINE_TAG = re.compile(r"</?(?:i|em|b|strong|code|sub|sup)>")
 
+#: A display formula. On the page it is a block whose `data-tex` is the source and whose
+#: SVG is output; in the master it is `$$ … $$`. Both reduce to `$$ TeX $$`, so what is
+#: compared is the TeX, token for token, and never a path of the picture.
+_PAGE_FORMULA = re.compile(r'<div class="formula" data-tex="([^"]*)">.*?</div>', re.S)
+_MASTER_FORMULA = re.compile(r"\$\$(.+?)\$\$", re.S)
+_HELD = "\x00{}\x00"
+_HELD_BACK = re.compile(r"\x00(\d+)\x00")
+
+
+def formula_words(tex: str) -> str:
+    """A formula as both sides reduce it: its TeX, fenced, with whitespace collapsed."""
+    return f" $$ {' '.join(tex.split())} $$ "
+
 
 class ProseError(Exception):
     """A master could not be found, or the page and the master disagree."""
@@ -190,7 +203,12 @@ def words_of_page(page_html: str) -> str:
 
 
 def _reduced(body: str) -> str:
-    """The reduction itself: figures, comments and table heads out, then every tag."""
+    """The reduction itself: figures, comments and table heads out, then every tag.
+
+    A formula block goes to its TeX first. The attribute is still escaped at that point,
+    so a `<` in the TeX cannot read as a tag; the unescape at the end restores it.
+    """
+    body = _PAGE_FORMULA.sub(lambda found: formula_words(found.group(1)), body)
     body = _FIGURE.sub("", body)
     body = _COMMENT.sub("", body)
     body = _THEAD.sub("", body)
@@ -239,7 +257,20 @@ def words_of_master(text: str, divergences: tuple[Divergence, ...] = ()) -> str:
     standing note to whoever places it — *this number wants re-checking against a run
     nobody has made yet* — is carried across to the page as a comment on purpose, and it
     is prose on neither side.
+
+    Its display formulas are TeX, spelled `$$ … $$` on a line of their own; inline
+    mathematics stays HTML as above. A formula is set aside before any of the reduction
+    and put back after, because TeX is made of exactly the characters it drops as
+    markdown: `\\left[` would lose its bracket to the link rule, and a `*` or a `#` would
+    simply vanish.
     """
+    held: list[str] = []
+
+    def hold(found: re.Match[str]) -> str:
+        held.append(formula_words(found.group(1)))
+        return _HELD.format(len(held) - 1)
+
+    text = _MASTER_FORMULA.sub(hold, text)
     text = _MASTER_TITLE.sub("", text, count=1)
     text = _MASTER_EDITORIAL.sub("", text)
     text = _MASTER_COMMENT.sub("", text)
@@ -253,6 +284,7 @@ def words_of_master(text: str, divergences: tuple[Divergence, ...] = ()) -> str:
     text = _WIKI_LINK.sub(r"\1", text)
     text = _INLINE_TAG.sub("", text)
     text = text.replace("*", "").replace("`", "").replace("#", "")
+    text = _HELD_BACK.sub(lambda found: held[int(found.group(1))], text)
     return " ".join(text.split())
 
 
@@ -370,6 +402,12 @@ class _Reader(HTMLParser):
         if self._depth:
             if tag == "figcaption":
                 self._caption = []
+            return
+        if tag == "div" and ("class", "formula") in attrs:
+            # A display formula is reviewed as the TeX it is typeset from; its SVG has no
+            # words to read and no data to hand the parser.
+            tex = dict(attrs).get("data-tex") or ""
+            self.blocks.append(Block(CODE, formula_words(tex).strip()))
             return
         if tag == "a" and self._kind is not None:
             self._href, self._anchor = dict(attrs).get("href"), []

@@ -32,6 +32,7 @@ from . import (
     diagrams,
     families,
     figures,
+    formulas,
     front,
     fundamentals,
     icons,
@@ -584,6 +585,15 @@ def _parser() -> argparse.ArgumentParser:
         "page",
         nargs="*",
         help="which pages to check; every page with a registered master by default",
+    )
+
+    typeset = commands.add_parser(
+        "formulas", help="typeset every display formula on the site from its TeX, as inline SVG"
+    )
+    typeset.add_argument(
+        "--fetch",
+        action="store_true",
+        help="download the pinned MathJax into artifacts/ first, if it is not there",
     )
 
     marked = commands.add_parser("review", help="build the doc a page is reviewed in, or read it")
@@ -1319,6 +1329,16 @@ def _do_icons() -> int:
     return 0
 
 
+def _do_formulas(options: argparse.Namespace) -> int:
+    """Typeset every formula block on the site from the TeX it carries."""
+    if options.fetch:
+        for line in formulas.fetch():
+            print(line)
+    for line in formulas.write():
+        print(line)
+    return 0
+
+
 def _do_prose(options: argparse.Namespace) -> int:
     """Hold each placed page to its approved master, word for word."""
     masters = prose_module.load_all()
@@ -1573,6 +1593,8 @@ def main(argv: list[str] | None = None) -> int:
             return _do_prose(options)
         if options.command == "review":
             return _do_review(options)
+        if options.command == "formulas":
+            return _do_formulas(options)
         if options.command == "atlas":
             return _do_atlas(options)
         if options.command == "seats":
@@ -1610,6 +1632,7 @@ def main(argv: list[str] | None = None) -> int:
         pool_module.PoolError,
         curation_module.CurationError,
         prose_module.ProseError,
+        formulas.FormulaError,
         review_module.ReviewError,
         walk_module.WalkError,
         start_module.StartError,

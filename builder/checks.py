@@ -115,6 +115,11 @@ was raise, and every check after it went unrun.
   builder writes, and the recipe store holds the row the set is drawn from. A page that
   declares nothing is a page a browser asks the origin root about, which under a
   project-Pages subpath is a 404 in every visitor's console.
+- **formulas** — every display formula is a formula block: TeX on the `<div>`, one inline
+  SVG inside it with a role, a spoken reading, `currentColor` and no `<text>`, and no
+  `<pre class="formula">` left anywhere. Where node and the pinned MathJax are here, every
+  SVG is also held byte for byte to a fresh typesetting of its TeX; elsewhere that half is
+  a named skip. `formulas.py` says why the renderer is fetched rather than installed.
 - **explorer** — every figure and every gallery tile is in the explorer link registry,
   as a link or as a stated reason there is none, and every link the registry holds is
   the one the page carries. Whether a link *parses* is asked of the permalink contract
@@ -156,6 +161,7 @@ from . import (
     dashes,
     explorer,
     figures,
+    formulas,
     galleries,
     icons,
     images,
@@ -1168,6 +1174,10 @@ def skips() -> tuple[Skip, ...]:
                 NO_STAGED_PICTURES,
             )
         )
+    untypeset = formulas.unaskable()
+    if untypeset is not None:
+        # Half: the shape half reads the pages, which a clone has.
+        found.append(Skip("formulas", "every formula's SVG against a fresh typesetting", untypeset))
     unaskable = agreement.pixels_unaskable()
     if unaskable is not None:
         # Half: the members half reads the record and the contract, which a clone has.
@@ -1212,6 +1222,7 @@ def run_all() -> Report:
             "dashes": dashes.sweep(),
             "endings": check_endings(),
             "icons": icons.problems(),
+            "formulas": formulas.problems(with_renderer=formulas.unaskable() is None),
         },
         skips(),
     )
