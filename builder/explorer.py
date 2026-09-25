@@ -338,6 +338,16 @@ ENGINE_CHANGES = [
     "fingerprint unmoved (5d97e76bb16be71d / cbd9bc03a0f33e1c); engine tests 229 unmoved plus "
     "two new; the three anchors at 1600x900 ss4 alternated x5: Julia 1.04x, Phoenix 0.99x, "
     "Mandelbrot 1.77x; julia3/4/6 homes 17x to 44x natively in smooth.",
+    "iterate::Interior::REPEAT, iterate::Symbols::rolls_exactly and "
+    "field::FieldSpec::is_final_at_a_repeat are new: the exact repeat now also stops a pass "
+    "whose fields read a statistic it makes final (the circle and cross traps, the lattice's "
+    "extremes and every reduction off them, a full head address, and a tail address whose "
+    "roll is exact, stepped round to the cap's phase of the cycle), never the disk; means "
+    "keep iterating. wallpapers interior_seam_orbit_modes_ckpt147 was sent for the seam. "
+    "540 pipeline renders and 3,312 edge frames byte-identical through `fractal-wallpapers "
+    "identity`; the fingerprint unmoved (5d97e76bb16be71d / cbd9bc03a0f33e1c); engine tests "
+    "unmoved plus three new; the three anchors 0.99x to 1.01x; itinerary at the Mandelbrot "
+    "anchor 11.05 s to 1.17 s natively, julia6 homes 19x to 31x in the orbit modes.",
 ]
 
 _RUSTC_VERSION = re.compile(r"^rustc (\S+ \([0-9a-f]+ \d{4}-\d{2}-\d{2}\))")

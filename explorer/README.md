@@ -4011,6 +4011,18 @@ when tested at the pixel; catching the orbit *entering* it is the fix, and that 
 inside the iteration, which is an engine seam this pass was not sent for. It is in the
 report's proposals with that estimate.
 
+**The orbit modes stop at a repeat now too** *(wallpapers interior_seam_orbit_modes_ckpt147,
+2026-09-24)*. The engine's exact-repeat test, which already stopped the escape-only modes,
+now also stops a pass whose statistic a repeat makes final: the circle trap, the lattice's
+extremes (`gaussian_int`, `smooth_angle_min`), a full head address (`itinerary`) and the
+tail address (`tail_itinerary`). `smooth_mean_angle` reads a mean and the direct traps
+composite per iterate, so both still run to the cap. The engine's README has the rule.
+Zero behaviour here: the old and the new module drew identical field lanes and shaded
+pictures on 289 frames × 17 modes (`scratch/interior146/wasmhash.mjs`), besides the
+pipeline's 540 renders and 3,312 edge frames. Natively, `itinerary` at the Mandelbrot anchor
+went from 11.05 s to 1.17 s and julia6 at the shipped `c` from 8.41 s to 0.29 s. The page
+itself was not re-timed.
+
 ### Where a page's time goes *(explorer_perf_audit_ckpt136, 2026-09-19)*
 
 884x496, which is what a 1600x1000 window gives the canvas; 12 logical cores over 6
