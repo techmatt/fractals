@@ -194,7 +194,7 @@ def _frame_args(frame: dict) -> dict:
     options = {
         "re": frame["re"],
         "im": frame["im"],
-        "w": float(f"{float(frame['w']):.4g}"),
+        "w": float(frame["w"]),
         "deg": frame.get("deg", 2),
     }
     if frame.get("jre") is not None:

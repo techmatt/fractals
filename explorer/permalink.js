@@ -682,11 +682,16 @@ export function levelUnder(shade, level) {
  * contract that had been renamed would go on working until the day somebody sent a
  * link, which is the worst moment to find out.
  *
- * The other four are the screensaver's *(gallery_screensaver_ckpt141)*, written only
- * while `panel=screensaver`: `every` is its interval, and `collection`, `modes` and `hue`
- * are the gallery's own dropdown and chips, which are what it draws its pictures from.
- * They choose which picture comes *next*, never how the one named here is drawn, which
- * is what keeps them furniture.
+ * `collection` is the Gallery tab's dropdown *(preclose_website_ckpt148)*:
+ * `panel=gallery&collection=<name>` opens that tab on that collection, and the page writes
+ * it while the tab shows one other than the general gallery. The names are the gallery
+ * header's own, and one it does not carry lands on the general gallery.
+ *
+ * The other three are the screensaver's *(gallery_screensaver_ckpt141)*, written only
+ * while `panel=screensaver`, which writes `collection` too: `every` is its interval, and
+ * `modes` and `hue` are the gallery's chips, which with the collection are what it draws
+ * its pictures from. They choose which picture comes *next*, never how the one named
+ * here is drawn, which is what keeps them furniture.
  */
 export const UI_KEYS = new Set(["panel", "every", "collection", "modes", "hue"]);
 

@@ -1764,12 +1764,22 @@ function settle({ remember = true } = {}) {
   settleTimer = setTimeout(() => {
     // Whichever contract the picture belongs to — see `currentQuery` — so the address
     // bar is always a link that reopens exactly what is being looked at.
-    const picture = currentQuery();
-    const furniture = showing === DEFAULT_PANEL ? "" : `&panel=${encodeURIComponent(showing)}`;
-    history.replaceState(null, "", `?${picture}${furniture}`);
+    readdress();
     syncSave();
   }, 0);
   if (remember) rememberLater();
+}
+
+/** The address bar: the picture, then the panel, then the Gallery tab's collection where
+ *  that tab is showing one other than the general gallery. */
+function readdress() {
+  const picture = currentQuery();
+  let furniture = showing === DEFAULT_PANEL ? "" : `&panel=${encodeURIComponent(showing)}`;
+  const collection = tiles?.population().collection ?? gallery.GENERAL;
+  if (showing === "gallery" && collection !== gallery.GENERAL) {
+    furniture += `&collection=${encodeURIComponent(collection)}`;
+  }
+  history.replaceState(null, "", `?${picture}${furniture}`);
 }
 
 // ------------------------------------------------------------------- the way back
@@ -5253,10 +5263,24 @@ async function main() {
   document
     .getElementById("gallery-screensaver")
     .addEventListener("click", () => enterScreensaver());
+  // The collection chosen is written into the address bar as it is chosen, so the address
+  // reopens the Gallery tab where it was. Deferred a tick because this listener is added
+  // before the panel's own, which is what sets the collection `readdress` reads.
+  document.getElementById("gallery-collection").addEventListener("change", () => {
+    if (!saver.active) setTimeout(readdress, 0);
+  });
   tiles
     .start(record)
     .then(async () => {
-      if (!saverAsked) return;
+      // `panel=gallery&collection=…` opens the Gallery tab on that collection. A name the
+      // header does not carry lands on the general gallery, the way an unknown panel does.
+      if (!saverAsked) {
+        if (asked.has("collection")) {
+          await tiles.apply({ collection: asked.get("collection") });
+          readdress();
+        }
+        return;
+      }
       // The collection and chips the link names are put up on the panel first, so the
       // screensaver draws from exactly what the Gallery tab then shows.
       await tiles.apply({

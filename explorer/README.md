@@ -516,6 +516,17 @@ the canonical string of a view — what Copy link copies — is the picture alon
 keep that from becoming a contract by the back door: a UI key never refuses a link, and a
 UI key never decides what is drawn.
 
+**`collection` is a UI key too** *(preclose_website_ckpt148)*.
+`?panel=gallery&collection=<name>` opens the Gallery tab on that collection, where the name
+is one the gallery header carries: `general`, `general_2000`, a hue family (`rose`, `red`,
+`orange`, `yellow`, `lime`, `green`, `teal`, `cyan`, `azure`, `blue`, `purple`,
+`magenta`), or a mode. It is the screensaver's key with the screensaver's parsing, and a
+name the header does not carry lands on the general gallery, the way an unknown panel
+lands on the default. The address bar writes it while the Gallery tab shows a collection
+other than the general gallery, so a reload reopens the tab where it was. The article links
+to two: Full pipeline's "asked for a color" opens `blue`, and Start here's "final darker
+pink gallery" opens `magenta`.
+
 ### The screensaver *(gallery_screensaver_ckpt141, 2026-09-22)*
 
 **One button in, Esc out.** *Screensaver* sits beside the Collection dropdown and shows

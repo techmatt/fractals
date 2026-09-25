@@ -331,14 +331,15 @@
     against the ratings it was trained on, so a row is a machine's estimate of my taste and
     not my taste itself. Even so, most of these modes spend most of their attempts at a one
     or a two, and some, like curvature, need roughly 30 attempts to find one strong result.
-    That is the reason to try several modes at every location and keep whatever survives. The
+    Modes with a lower base quality get a longer search, so that each still has enough strong
+    candidates in the ledger for the galleries to draw on. That is the reason to try several modes at every location and keep whatever survives. The
     last two columns are what an attempt costs: the engine time to render one candidate at
     the size the judge scores (640×360, supersampled 2×) and to render a finished wallpaper
     at full size (2560×1440, supersampled 4×).</p>
 
     <table>
       <thead>
-        <tr><th>mode</th><th>1</th><th>2</th><th>3</th><th>4</th><th>candidates</th><th>candidate render</th><th>wallpaper render</th></tr>
+        <tr><th>mode</th><th>q1</th><th>q2</th><th>q3</th><th>q4</th><th>candidates</th><th>candidate render</th><th>wallpaper render</th></tr>
       </thead>
       <tbody>
         <tr><td>smooth</td><td>2%</td><td>15%</td><td>57%</td><td>26%</td><td>30,747</td><td>0.7s</td><td>43.5s</td></tr>
