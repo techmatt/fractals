@@ -1070,7 +1070,15 @@ colouring so the two differ in arithmetic alone. It is a `spec` panel, and `link
 refuses it as `deep`, which is true: the explorer refuses that frame.
 
 **Colouring is `scale=absolute` throughout but one panel**, the percentile stretch being
-what flattens a deep frame. The page's own Deep-tab link colours at `lambda=0&period=0.25`, and the figures
+what flattens a deep frame. The page's opening figure, `deep-f64-and-perturbation`, is
+coloured off Matt's link: Porcelain Field at `phase=0.41&lambda=0&period=0.295`
+*(deep_opening_palette_ckpt150)*, and the f64 panel carries the phase into its engine spec
+like the rest of the pass. `deep-final-colorings` is Matt's four links over one frame, and
+its Leveled panel carries no link: the contract spells Leveled by naming no `scale`, and the
+page fits a deep link that names none to Absolute on arrival, so `links.py` refuses a deep
+recipe without `scale` as `not_exposed`. That took the link off `deep-shallow-and-deep`'s
+shallow half as well, which had been opening at a refit (phase 0.9957, period 0.05667
+Absolute) rather than at the picture. The figures
 whose counts run to tens rather than thousands use `period=0.5`, which bands less.
 `deep-shallow-and-deep` is drawn in Coalglow, and the map is read off each figure's frames,
 so a figure in another map writes that map's name after `colormap`. One figure uses one
@@ -1084,9 +1092,9 @@ the perturbation field agree pixel for pixel by eye, so the pair is a fair compa
 
 Landing is the standard split landing plus one step. A new figure needs a `pending` row
 whose block is on the page, then `deep <id> --place`, then `links --write`, then
-`figure <id> --heal`, the order *Still hand-done* names. Five figures, 25 panels, 4.15 MB
-at 2×2 samples, since `deep-misiurewicz-pairs` went to three rows of three
-*(deep_misiurewicz_ckpt146)*; the three drawn in deep_zoom_edits_ckpt145 took 177 s together on this
+`figure <id> --heal`, the order *Still hand-done* names. Six figures, 29 panels, since
+`deep-final-colorings` landed four colourings of the video's final frame
+*(deep_opening_palette_ckpt150)*, which took 140 s; the three drawn in deep_zoom_edits_ckpt145 took 177 s together on this
 machine, `deep-descent-pairs`' six took 53 s, and `deep-misiurewicz-pairs`' nine took 23 s.
 A redraw with `--replace` leaves the row's `caption` and `alt` as they were: a new caption
 in `WORDS` goes onto the row by hand, then `figure <id> --heal`.

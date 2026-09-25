@@ -166,10 +166,34 @@ def draw_link(link: str, width: int, height: int, supersample: int, name: str) -
 #: The deep zoom video's target, from `data/deep-zoom-descent.keyframes.json`.
 TARGET = ("-0.74937053247003823168823992075369", "0.041472667068168900034718746387049")
 
-#: Two colourings, each one `scale=absolute` function of the smooth count. The finer
-#: period is the one the page's own Deep-tab link carries; the coarser one bands less on
-#: frames whose counts are tens rather than tens of thousands.
-FINE = "p=glowdon&scale=absolute&lambda=0&period=0.25"
+#: The opening figure's colouring, off Matt's explorer link (deep_opening_palette_ckpt150),
+#: as the explorer's own parser reads it back: `Porcelain Field` is the map's own name.
+OPENING = "p=Porcelain%20Field&phase=0.41&scale=absolute&lambda=0&period=0.295"
+#: The video's final frame and its cap, and the four colourings `deep-final-colorings` lays
+#: over its field, each exactly Matt's link as the explorer's parser reads it back
+#: (deep_opening_palette_ckpt150 addendum 1). The second names no `scale`, so it is leveled.
+FINAL = "3.4869054402668363e-15"
+FINAL_COLOURINGS = (
+    ("Final frame", "n=63534&p=glowdon&scale=absolute&lambda=0&period=0.25"),
+    ("Leveled", "n=63534&p=glowdon&lambda=0&period=2.14"),
+    ("Higher period", "n=63534&p=glowdon&scale=absolute&lambda=0&period=0.794"),
+    (
+        "Palette switch",
+        "n=63534&p=fractal_abstraction_lines_130499_2560x1600&scale=absolute&lambda=0&period=0.575",
+    ),
+)
+FINAL_ALTS = {
+    "Final frame": "The video's final frame: a spiral wound from dense filigree, banded many "
+    "times over in blue, orange, and pale green.",
+    "Leveled": "The same frame on the leveled scale: the spiral in dark red and orange over "
+    "broad fields that run from deep blue to pale yellow.",
+    "Higher period": "The same frame at a longer period: fewer, wider bands, so the spiral "
+    "reads as orange and yellow arms over blue.",
+    "Palette switch": "The same frame and pass in a palette of blues: the spiral in pale "
+    "lavender and white over deep blue.",
+}
+#: The coarse pass, one `scale=absolute` function of the smooth count at period 0.5, which
+#: bands less on frames whose counts are tens rather than tens of thousands.
 COARSE = "p=glowdon&scale=absolute&lambda=0&period=0.5"
 #: `deep-descent-rungs` in its own map: the coarse pass in Chalcedony, Matt's pick off the
 #: sheet (small_fixes_ckpt146).
@@ -562,7 +586,7 @@ FIGURES = {
             Frame(
                 *TARGET,
                 K2,
-                FINE,
+                OPENING,
                 "Double precision",
                 f64=True,
                 alt="The frame computed in double precision: horizontal bars and flat blocks "
@@ -572,16 +596,27 @@ FIGURES = {
             Frame(
                 *TARGET,
                 K2,
-                FINE,
+                OPENING,
                 "Perturbation",
                 alt="The same frame computed by perturbation: fine spirals and filigree in "
-                "blue, orange and pale green, sharp down to the pixel.",
+                "navy, blue, and white, sharp down to the pixel.",
             ),
         ),
         2,
         (960, 540),
         2,
         "the video's target at its keyframe k2, 1.4e-14 wide",
+    ),
+    "deep-final-colorings": Figure(
+        tuple(
+            Frame(*TARGET, FINAL, colour, label, alt=FINAL_ALTS[label])
+            for label, colour in FINAL_COLOURINGS
+        ),
+        2,
+        (960, 540),
+        2,
+        "the video's final frame, 3.5e-15 wide at cap 63534, under four colourings of its "
+        "field; the links are FINAL_COLOURINGS'",
     ),
     "deep-shallow-and-deep": Figure(
         (
@@ -704,6 +739,11 @@ WORDS = {
         "into flat blocks because neighboring pixels round to the same coordinate, and "
         "computed by perturbation (right).",
     ),
+    "deep-final-colorings": (
+        "The video's final frame four times over: its absolute coloring, the leveled "
+        "scale, a longer period, and another palette.",
+        "The video's final frame under several colorings of the same field.",
+    ),
     "deep-shallow-and-deep": (
         "A shallow frame and a deep frame at its center.",
         "A shallow frame (left) and a deep frame inside it (right): a region that is smooth "
@@ -725,10 +765,10 @@ WORDS = {
         "Three rows at three Misiurewicz points, each the whole Julia set, that Julia set "
         "zoomed in at the point, and the parameter plane zoomed in at the same point.",
         "Three Misiurewicz points: one shallow on the Mandelbrot set (top) and two deep on "
-        "the multibrots. Each row shows the whole Julia set for the point's parameter "
-        "(left), that Julia set zoomed in at the point (middle), and the parameter plane "
-        "zoomed in at the same point (right). The two zooms agree up to a fixed scale and "
-        "rotation.",
+        "the degree-3 and degree-4 multibrots. Each row shows the whole Julia set for the "
+        "point's c (left), that Julia set zoomed in at the point (middle), and that row's "
+        "Mandelbrot or multibrot set zoomed in at the same point (right). The two zooms "
+        "agree up to a fixed scale and rotation.",
     ),
 }
 
@@ -774,7 +814,10 @@ def draw(identifier: str) -> Split:
             cap = next(iter(drawn.values())).maxiter
             spec = _f64_spec(frame, cap)
             full = dict(spec, resolution=[width, height], supersample=ss)
-            out = renders.default_cache_root() / "deep-f64" / f"{identifier}_{width}x{height}.png"
+            # `renders.render` skips on the path alone, so the path carries the spec: a
+            # recolour keyed on the grid alone came back in the old map.
+            key = hashlib.sha256(json.dumps(full, sort_keys=True).encode("utf-8")).hexdigest()
+            out = renders.default_cache_root() / "deep-f64" / f"{identifier}_{key[:16]}.png"
             target.write_bytes(Path(renders.render(full, out)).read_bytes())
             made.append(Made(target, frame.alt, label=frame.label, note=frame.note, spec=spec))
             lines.append(
@@ -833,12 +876,14 @@ def _maps(figure: Figure) -> str:
 def _f64_spec(frame: Frame, cap: int) -> dict:
     """The engine render spec an f64 panel is drawn from, colouring spelled as the link's."""
     parts = _parts(frame.colour)
+    phase = {"phase": float(parts["phase"])} if "phase" in parts else {}
     return {
         "family": {"kind": "mandelbrot"},
         "viewport": {"center_re": frame.x, "center_im": frame.y, "width": frame.w},
         "mode": "smooth",
         "colormap": parts["p"],
         "palette": {
+            **phase,
             "scale": parts["scale"],
             "lambda": float(parts["lambda"]),
             "period": float(parts["period"]),

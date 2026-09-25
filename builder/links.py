@@ -48,6 +48,7 @@ import re
 import subprocess
 from dataclasses import dataclass
 from pathlib import Path
+from urllib.parse import parse_qs
 
 from . import figures, galleries, records
 from .paths import SITE_ROOT, relative_href
@@ -349,6 +350,20 @@ def _panel_links(
                         identifier,
                         "incomplete_provenance",
                         f"figure-recipes.jsonl holds no {panel.deep}",
+                    )
+                )
+                continue
+            # **A Leveled deep picture has no link that reopens it** (deep_opening_palette_
+            # ckpt150). The contract spells Leveled by saying no `scale`, and the page fits a
+            # deep link that says none to Absolute on arrival (`fitUnlessStated`), so the
+            # link would open a picture the panel is not.
+            if "scale" not in parse_qs(recipe["link"]):
+                found.append(
+                    _refused(
+                        identifier,
+                        "not_exposed",
+                        "the picture is Leveled, and the explorer fits a deep link that "
+                        "names no scale to Absolute on arrival",
                     )
                 )
                 continue
