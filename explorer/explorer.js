@@ -34,6 +34,7 @@
 import * as link from "./permalink.js";
 import * as shade from "./shade.js";
 import * as hold from "./hold.js";
+import * as fitting from "./fit.js";
 import * as modeParams from "./params.js";
 import { CONSTANTS as ANCHORS, MODES as IDENTITIES, SETTLED } from "./catalog.js";
 import { DEFAULT_PALETTE, PALETTES, PROVENANCE } from "./palettes.js";
@@ -233,6 +234,8 @@ const levelGroup = document.getElementById("level-group");
 const levelToggle = document.getElementById("level-toggle");
 const holdGroup = document.getElementById("hold-group");
 const holdToggle = document.getElementById("hold-toggle");
+const fitGroup = document.getElementById("fit-group");
+const fitButton = document.getElementById("shade-fit");
 /** Named here and not only at the mount, because a download has to grey it: it used to be
  *  swept with the shade bar it sat in, and beside Julia here there is no sweep over it
  *  *(explorer_controls_ckpt140)*. */
@@ -1843,6 +1846,8 @@ function remember() {
 function restore(entry) {
   const { query, opts } = entry;
   restoring = keyOf(query);
+  // A step back puts a picture back as it was drawn, colour and all, and fits nothing.
+  fitWanted = false;
   if (link.isDeep(`?${query}`)) {
     deepOpening = true;
     showPanel("deep");
@@ -2236,6 +2241,9 @@ function buildShade() {
   // the one number both scales turn, so it keeps its place whichever is chosen and the
   // scale's own controls follow it. The contract's order is `SHADE_KEYS`'s and is not this.
   shadeWidgets.get("scale").group.after(shadeWidgets.get("phase").group);
+  // Fit sits against the switch, before Phase, in both tabs: it is the switch's own
+  // question asked again of the frame on the screen. See `pressFit`.
+  shadeWidgets.get("scale").group.after(fitGroup);
   // Autolevel is written in the page rather than built here and closes the row: it is a
   // setting a reader turns rather than a key a link carries. The Julia preview was the
   // other one until it moved beside Julia here *(explorer_controls_ckpt140)*, which is
@@ -2271,7 +2279,8 @@ function setShade(key, text, { moving = false } = {}) {
   if (shade.spelling(subject.shade, key) === text) return;
   let next;
   try {
-    next = held(subject, key, shade.withKey(subject.shade, key, text));
+    const moved = shade.withKey(subject.shade, key, text);
+    next = key === "scale" ? switched(subject, moved) : held(subject, key, moved);
   } catch (error) {
     say(error.message);
     syncShade();
@@ -2334,6 +2343,110 @@ function held(subject, key, next) {
 function shownField() {
   return deep !== null && deep.owns() ? deep.shownField() : drawnField;
 }
+// ------------------------------------------------------------------- the fit
+//
+// **Absolute sizes nothing to the frame, and Fit is what sizes it** *(Matt,
+// absolute_fit_ckpt147)*. Lambda, Period and Phase are chosen off the picture on the screen
+// so that Absolute lays the palette across its pixels roughly as Leveled would (`fit.js` has
+// the fit and why it leans to the log), and then they hold still: the fit never runs on a
+// zoom or a pan, because a look that holds while the frame moves is the whole point of the
+// scale. Three things run it — the switch from Leveled, the Fit button (`f`), and coming into
+// the Deep tab on a Leveled colour — and all three write ordinary `lambda`, `period` and
+// `phase`, which a link and Save carry as they always have.
+//
+// **With Hold look** the two divide the work: Fit re-anchors the look to the frame on the
+// screen, and Hold look keeps that look while Lambda or Period is moved by hand. A fit moves
+// the recipe as a link or a reset does, so the hold's anchor is re-taken from the fitted
+// recipe at the next move of either. Fit does not read the box, and the box does not stop it.
+
+/**
+ * `subject`'s recipe under the absolute scale, fitted to the picture on the screen, or `null`
+ * where there is nothing to fit to: no picture yet, a direct trap, or a field of one value.
+ *
+ * **From Leveled** it fits to the picture that was up — the recipe's own Lambda, Gamma,
+ * Cycles, Phase and Transfer — so the switch changes the look as little as it can.
+ * **Under Absolute** Lambda and Phase are Absolute's own, and reading them as Leveled's would
+ * fit to a different target at every press: so the target is Leveled as the engine draws it
+ * — Lambda 1 and Phase 0, with the recipe's own Gamma, Cycles and Transfer, which Absolute
+ * keeps hidden and does not touch. A second press on the same frame changes nothing, and the
+ * ends of the palette land where Leveled lands them, at the ends of the stretch. Keeping the
+ * colour at the frame's median instead was tried and dropped: taken off a recipe that was
+ * noise, it turned the palette by an arbitrary amount and put a non-cyclic map's seam in the
+ * middle of the picture. Each value goes through the contract's own reader.
+ */
+function fitted(subject) {
+  const absolute = subject.shade.scale === "absolute";
+  const target = absolute ? { ...subject.shade, lambda: 1, phase: 0 } : subject.shade;
+  const found = fitting.fit(shownField(), target, subject.mode ?? "smooth");
+  if (found === null) return null;
+  let next = { ...subject.shade, scale: "absolute" };
+  for (const key of ["lambda", "period", "phase"]) next = shade.withKey(next, key, String(found[key]));
+  return next;
+}
+
+/** `next`, a scale just switched, with the fit applied where the switch is from Leveled to
+ *  Absolute and there is a picture to fit. A switch the reader made settles any fit that was
+ *  still waiting on a frame. */
+function switched(subject, next) {
+  fitWanted = false;
+  if (next.scale !== "absolute" || subject.shade.scale === "absolute") return next;
+  const fit = fitted(subject);
+  if (fit === null) return next;
+  holding = null;
+  return fit;
+}
+
+/** The Fit button and `f`: Absolute refitted to the frame on the screen. Under Leveled it is
+ *  the switch, which fits. */
+function pressFit() {
+  if (locked()) return;
+  const subject = tinting();
+  if (subject.shade.scale !== "absolute") {
+    setShade("scale", "absolute");
+    return;
+  }
+  fitWanted = false;
+  const next = fitted(subject);
+  if (next === null) {
+    say("There is no picture here to fit the palette to yet.");
+    return;
+  }
+  holding = null;
+  tint({ shade: next });
+}
+
+/**
+ * Whether the Deep tab is waiting on its first picture of a frame to switch a Leveled colour
+ * to a fitted Absolute one. Set where the tab is come into on a frame — carried from the
+ * viewer, or a deep link that does not say `scale` — and taken by `landFit` when that frame's
+ * first stage lands. The switch waits for the fit rather than going ahead of it, so the first
+ * quarter pass shows Leveled and not Absolute at whatever Period the recipe had.
+ */
+let fitWanted = false;
+
+/** A deep link just opened: its colour is fitted unless it states `scale`. An explicit
+ *  `scale=leveled` is respected like `scale=absolute`. */
+function fitUnlessStated(query) {
+  fitWanted = !new URLSearchParams(query).has("scale");
+  landFit();
+}
+
+/** Take a waiting fit off the Deep tab's picture, if that picture is of its frame now. */
+function landFit() {
+  if (!fitWanted || !deepOwns() || !deep.showsView()) return;
+  const subject = deep.view();
+  if (subject.shade.scale === "absolute") {
+    fitWanted = false;
+    return;
+  }
+  const next = fitted(subject);
+  if (next === null) return;
+  fitWanted = false;
+  holding = null;
+  tint({ shade: next });
+}
+
+fitButton.addEventListener("click", pressFit);
 
 /** Show what the recipe now says, in every control that carries a piece of it. */
 function syncShade() {
@@ -2534,6 +2647,9 @@ function syncLevel() {
   // *(palette_hold_ckpt145)*. Its tick is UI state and is kept either way.
   holdGroup.hidden = tinting().shade.scale !== "absolute";
   holdToggle.disabled = busy;
+  // Fit is Absolute's too: under Leveled the switch is the fit, and `f` presses it.
+  fitGroup.hidden = tinting().shade.scale !== "absolute";
+  fitButton.disabled = busy;
 }
 
 /**
@@ -2699,7 +2815,10 @@ function openAny(query, opts = {}) {
   if (!link.isDeep(`?${query}`)) return openLink(query, opts);
   deepOpening = true;
   showPanel("deep");
-  startDeep().then(() => deep?.open(query));
+  startDeep().then(() => {
+    deep?.open(query);
+    fitUnlessStated(query);
+  });
   return true;
 }
 
@@ -2959,11 +3078,18 @@ function showPanel(asked) {
     startDeep().then(() => {
       if (showing !== "deep") return;
       deep?.show();
-      if (!deepOpening) deep?.enter(carryable());
+      // A frame carried in on a Leveled colour comes in fitted to Absolute
+      // *(absolute_fit_ckpt147)*, once its first stage lands; an Absolute one keeps its own.
+      if (!deepOpening && deep?.enter(carryable()) && deep.view().shade.scale !== "absolute") {
+        fitWanted = true;
+        landFit();
+      }
       deepOpening = false;
       syncShade();
     });
   } else if (deep !== null) {
+    // Leaving keeps whatever scale is set, Absolute included; a fit still waiting goes.
+    fitWanted = false;
     deep.hide();
     syncShade();
     const shallow = walk === null || showing !== "walk";
@@ -3518,7 +3644,11 @@ async function mountDeep() {
       shading: () => renderer.shading,
       say,
       showState,
-      settle,
+      // Every stage that lands settles, which is where a fit waiting on the frame is taken.
+      settle: () => {
+        settle();
+        landFit();
+      },
       // A deep view is always one the reader made, so the curve is measured whenever the
       // box is ticked. There is no stored half here: nothing arrives from a run.
       deriving: () => autolevels(deep.view()),
@@ -4542,6 +4672,10 @@ const TOGGLE_KEYS = {
   p: randomPalette,
   h: randomPhase,
   b: toggleBox,
+  // Both tabs, one row: the shade row is the same controls whichever view owns the canvas.
+  // The screensaver's own `f` is fullscreen, and only while it is up, when it takes every
+  // key before this listener sees one.
+  f: pressFit,
 };
 
 /** A new mode keeps the place and drops the parameters, because they belonged to
@@ -4993,6 +5127,7 @@ async function main() {
     await startDeep();
     deep?.open(saving.queryOf(arriving));
     showPanel("deep");
+    fitUnlessStated(saving.queryOf(arriving));
   } else {
     showPanel(asked.get("panel") ?? DEFAULT_PANEL);
     rebuild();

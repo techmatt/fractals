@@ -394,7 +394,7 @@ when a pass finishes measuring. It is `keyOf` over the view's own query, and **t
 keys its entries the same way** — see *The way back*, which needs the same identity over a
 deep link as well, which is why the reduction reads a query rather than a view.
 
-**`r`, `j`, `p`, `h` and `b`** — `TOGGLE_KEYS`, and the whole of what this page binds
+**`r`, `j`, `p`, `h`, `b` and `f`** — `TOGGLE_KEYS`, and the whole of what this page binds
 besides the arrows, `+`/`-` and Ctrl+Z/Y. They are bare letters, never take Ctrl, Alt or
 Meta, and work with focus
 on a button — the button just pressed, most often. **Ctrl/Cmd is spelled on the row's own
@@ -402,6 +402,15 @@ tooltip**, by the two keys that have no button at all *(explorer_undo_redo_ckpt1
 those are the one thing on this row that is a shortcut rather than chrome — which is also
 why they are the one pair whose key is not on a label. That is deliberate: the row is
 what a reader can see, and anything more on it would be clutter.
+
+**`f` is *Fit (f)***, on the Palette section's shade row rather than this one *(Matt,
+absolute_fit_ckpt147)*: Absolute's Lambda, Period and Phase fitted to the picture on the
+screen (*Fit*, under the recipe's controls below). The row is one set of controls for
+both tabs, so the key does the same thing in both. Under Leveled, where the button is
+hidden, the key presses the switch to Absolute, which fits. It was chosen as the one
+letter that says what it does and binds nothing here. The screensaver's `f` (fullscreen)
+is not a conflict: the screensaver takes every key in the capture phase while it is up,
+and this listener never sees one.
 
 **The mark is painted onto the screen and never into `frame`** — the crosshair and the
 landing mark are one glyph, four arms stroked dark-under-light so that neither disappears
@@ -2355,6 +2364,23 @@ while the panel is hidden.
   canvas is empty until something of this tab's own is drawn** — never the shallow picture
   it was entered over, nor a frame a link replaced. The screen is one sample a pixel
   whatever route came in (*The screen is one sample a pixel*, above).
+- **Entering switches a Leveled colour to a fitted Absolute one** *(Matt,
+  absolute_fit_ckpt147)*. A deep frame is exactly where Absolute is wanted, since a zoom
+  under Leveled refits the palette at every frame, and where Absolute's recipe is least
+  likely to suit: at a `ν` of eighty-five thousand, `period=1` cycles the palette every
+  iteration. So a frame carried in from the viewer, or a deep link that does not say
+  `scale`, comes in on Absolute with Lambda, Period and Phase fitted (*Fit*, under the
+  recipe's controls below). **The switch waits for the fit**: the first stage of the frame
+  is drawn under Leveled, and when it lands `landFit` fits off it and recolours. Nothing is
+  re-iterated. Two things are left alone: a colour that is already Absolute, and a link
+  that states `scale` either way, so an explicit `scale=leveled` opens Leveled. A tab that
+  is come back to on its own frame keeps whatever scale the reader left it at, and a step
+  back (Ctrl+Z) puts a picture back as it was drawn and fits nothing. **One consequence:**
+  Leveled is the default and a link omits a default, so Copy link and Save on a Leveled deep
+  picture write no `scale`, and reopening that link fits it to Absolute. The contract did
+  not move, and a link written as `scale=leveled` still opens Leveled.
+  **Coming out keeps whatever scale is set**: *Shallow mode* carries the colour across
+  untouched, and Absolute stays Absolute.
 - **Zooming back out is fine at any depth.** *Shallow mode* carries the view where
   `f64` can still resolve it and says why not where it cannot — the module's own question,
   not a width written down here. A Julia view has a second way to fail it, and the refusal
@@ -5153,7 +5179,8 @@ recipe** group. What is worth writing down is the shape rather than the widgets:
 - **Scale is a switch, and it swaps the row** *(palette_modes_ckpt143)*. *Leveled |
   Absolute* opens the shade row, two halves of one pill, the way the Render mode select
   decides which of a mode's parameters are shown: under Leveled the row is Phase, Gamma,
-  Cycles, Transfer and Lambda; under Absolute it is Phase, Lambda and Period, and Gamma,
+  Cycles, Transfer and Lambda; under Absolute it is Fit, Phase, Lambda, Period and Hold
+  look (*Fit* and *Hold look* below; the switch from Leveled fits), and Gamma,
   Cycles and Transfer are hidden and kept, so switching back finds them as they were.
   **Phase comes straight after the switch in both** *(Matt, palette_absolute_tidy_ckpt144)*,
   because it is the one control the two scales share; the row's order is the page's, and
@@ -5214,6 +5241,59 @@ recipe** group. What is worth writing down is the shape rather than the widgets:
     the first picture, or under a direct trap — the controls behave as unheld.
   - **Hidden under Leveled**, rather than shown inert: the stretch already refits the scale
     to every frame, so there is nothing for it to hold there. Its tick is kept.
+- **Fit** *(Matt, absolute_fit_ckpt147)*. Absolute sizes nothing to the frame, so a recipe
+  that suits one frame is noise or one flat colour on the next. Matt hit this entering Deep
+  from a gallery place and switching to Absolute: at about 85k iterations, `period=1` cycles
+  the palette every iteration. A fit chooses Lambda, Period and Phase so that Absolute lays
+  the palette across the frame on the screen the way Leveled would, and then they hold still.
+  - **Three things run it, and nothing else.** The switch from Leveled to Absolute; the
+    **Fit (f)** button, between the switch and Phase and shown under Absolute alone; and
+    coming into the Deep tab on a Leveled colour (*Getting in and out*, under Deep). **It never
+    runs on a zoom or a pan.** Holding the numbers while the frame moves is what Absolute is
+    for, so the look holds until the next Fit. What it writes is three ordinary values in
+    their own keys, and a link and Save carry them as they always have. The contracts did
+    not change.
+  - **What is matched** (`fit.js`, held by `fit.test.mjs`). Leveled puts an exterior
+    sample at `cycles · C(p)^gamma + phase` turns, where `p` is its position between the 0.5th
+    and 99.5th percentiles of the compressed field, clamped (its rank, under the rank
+    transfer) and `C` is the mode's curve (`trap_circle`'s log, the straight line for every
+    other base). Absolute puts it at `T_λ(ν)/period + phase`, a straight line in `T_λ(ν)`. For
+    each `λ` from 0 to 1 in steps of 0.05, that line is fitted by least squares to Leveled's
+    turn at 1,000 equal-rank quantiles of lane 0, so every pixel counts once. Period is written at four
+    figures and Phase at four places, as Hold look writes them. It cannot be exact, since
+    Leveled clamps its tails and Absolute keeps cycling through them.
+  - **It leans to the log** (`LAMBDA_SLACK`, 0.03 turn). Measured on the proof frame, six
+    shallow gallery seats and 30 of the 31 deep gallery tiles, every `λ` matches Leveled to within
+    a tenth of a turn RMS and most to within three hundredths, so least squares alone picks
+    `λ` on differences nobody can see. What does differ is the next zoom: zooming in
+    multiplies the escape counts, and under the log a multiplied `ν` only moves the phase,
+    while under `λ = 1` it multiplies the bands. So the fit takes the smallest `λ` within the
+    slack of the best line. The proof frame and 26 of the 30 deep tiles came out at `λ` 0.
+    The other four came out at 0.1 to 0.6, and their bulk spans more than a decade of `ν`.
+    The shallow seats came out at 0 to 0.5. The slack is in turns of colour, so more Cycles under Leveled put the log
+    farther from it and can move the fit off 0.
+  - **What it fits to.** Switching from Leveled, it fits to the picture that was up, with the
+    recipe's own Lambda, Gamma, Cycles, Phase and Transfer. Under Absolute, Lambda and Phase
+    are Absolute's own, and reading them as Leveled's would give a new target at every press.
+    So the target is Leveled as the engine draws it: Lambda 1 and Phase 0, with the recipe's
+    own Gamma, Cycles and Transfer, which Absolute hides and keeps. A second press on the same
+    frame changes nothing (measured on the proof frame), and the palette's ends land at the
+    ends of the stretch, as Leveled's do. A refit therefore resets a phase the reader turned.
+    Keeping the colour at `ν_m` instead was tried first and dropped: taken off a recipe that
+    was noise, it turned the palette by an arbitrary amount, and on a map that is not cyclic
+    that put the seam in the middle of the picture.
+  - **With Hold look.** Fit re-anchors the look to the frame on the screen, and Hold look
+    keeps that look while Lambda or Period is moved by hand. A fit moves the recipe the way a
+    link or a reset does, so the hold's anchor is taken again from the fitted recipe at the
+    next move of either. Fit does not read the box, and the box does not stop it.
+  - **With nothing to fit** (no picture yet, a direct trap, a frame all one value, or all
+    interior), the switch still switches and keeps the numbers it had, and a press of Fit
+    says under the picture that there is nothing to fit to.
+  - **It is roughly one pass of the palette across the bulk**, because that is what Leveled
+    shows at one cycle: 0.6 to 0.9 of a turn between the stretch's ends at `λ` 0. On the
+    proof frame it is `λ` 0 and a period of about 1.1. Matt's hand-tuned deep tiles are
+    deliberately busier, at 3 to 12 turns (period about 0.5 at `λ` 0). A reader who wants
+    that sets Cycles under Leveled before switching, or turns Period down after a fit.
 - **The count of what is set is the reset button's state.** Engine defaults is disabled
   at zero and reads *Engine defaults (3)* otherwise; there is no separate counter.
 - **Autolevel is disabled only where the operator has nothing to say** — a direct trap or

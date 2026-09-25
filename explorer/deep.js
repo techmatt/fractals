@@ -2193,12 +2193,18 @@ export function mount(host) {
    * and the frame is carried over: its coordinates are already exact decimal text, so
    * nothing is lost crossing the floor. Anywhere else the tab opens at the last deep view
    * it had, or at the Mandelbrot home, and says which families deep draws.
+   *
+   * Returns whether a frame was carried in, which is when the page switches a Leveled
+   * colour to a fitted Absolute one *(absolute_fit_ckpt147)*: a tab come back to on its own
+   * frame keeps whatever scale the reader left it at.
    */
   function enter(from) {
     warn();
+    let arrived = false;
     if (from !== null) {
       const carried = carry(from);
       if (carried !== null) {
+        arrived = true;
         view = carried;
         drawn = null;
         stale = null;
@@ -2226,6 +2232,7 @@ export function mount(host) {
     if (autoRender && running === null && pending() && refused() === null) {
       render("screen", { auto: true });
     }
+    return arrived;
   }
 
   /** A shallow view as a deep one, where it is a frame this tab can take. */
@@ -2448,6 +2455,13 @@ export function mount(host) {
       const stage = keptStage(drawn);
       if (stage === undefined) return null;
       return fields.get(deepLink.fieldKey(drawn, stage.width, stage.height, stage.supersample));
+    },
+    /** Whether the picture up is of the frame the tab is standing on — its set, its place
+     *  and its cap — which is when a fit waiting on the frame may be taken off it
+     *  *(absolute_fit_ckpt147)*. Before the first stage of a new frame lands, the picture up
+     *  is still the last one's. */
+    showsView() {
+      return drawn !== null && deepLink.fieldKey(drawn, 1, 1) === deepLink.fieldKey(view, 1, 1);
     },
 
     show() {
