@@ -200,7 +200,7 @@
     <a href="color-palettes.html">color palettes</a> is built over that field and the palette
     judge picks one of them. The rendering mode being tried then draws the picture through
     the chosen palette, as <a href="rendering-modes.html">rendering modes</a> described, at
-    that size with two-by-two supersampling, and the render judge scores it. Only the plain
+    that size with two-by-two supersampling, and the wallpaper judge scores it. Only the plain
     field modes read the same field the palette was chosen on, so the palette is usually
     picked on one picture and spent on another.</p>
 
@@ -217,7 +217,7 @@
 
       <figure class="figure" data-figure="wallpapers-attempt">
         <a class="figure-open" href="../explorer/index.html?v=4&amp;m=smooth_mean_angle&amp;weight=0.85&amp;x=-0.7894061466838949&amp;y=-0.16437809352996482&amp;w=0.0027914350318908217&amp;p=Forge%20Sweep" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/wallpapers-attempt.webp" width="1316" height="1336" alt="One location through one attempt: its smooth field as plain lightness beside the same location in the rendering mode the attempt drew, then a block of thirty-two colorings of that field with the chosen one outlined, and last the small render that is judged." loading="lazy"><span class="figure-open-mark" aria-hidden="true">↗</span></a>
-        <figcaption>One location through one attempt. The palette judge compares thirty-two colorings of the location's smooth field and the outlined one is its pick; the mode beside it is what the picture will be drawn in. The last panel is the picture the render judge scores.</figcaption>
+        <figcaption>One location through one attempt. The palette judge compares thirty-two colorings of the location's smooth field and the outlined one is its pick; the mode beside it is what the picture will be drawn in. The last panel is the picture the wallpaper judge scores.</figcaption>
       </figure>
 
     <h2 id="the-pool">The pool</h2>
@@ -357,7 +357,7 @@
           </div>
           </div>
         </div>
-        <figcaption>One visit to one location, in five of the seven modes it drew. A mine that reaches a place cycles through modes and tries a few palettes in each; none of these five has a scalar field to reuse, so every picture here was drawn in full, and the visit's forty-four attempts took 42 seconds in all. Under each picture is the render judge's score and the fitted rank the pool orders on, and the outlined ones are the ones the pool still holds.</figcaption>
+        <figcaption>One visit to one location, in five of the seven modes it drew. A mine that reaches a place cycles through modes and tries a few palettes in each; none of these five has a scalar field to reuse, so every picture here was drawn in full, and the visit's forty-four attempts took 42 seconds in all. Under each picture is the wallpaper judge's score and the fitted rank the pool orders on, and the outlined ones are the ones the pool still holds.</figcaption>
       </figure>
 
     <h2 id="where-the-budget-goes">Where the budget goes</h2>
@@ -383,14 +383,14 @@
     <h2 id="how-candidates-are-ranked">How candidates are ranked</h2>
 
     <p>Ranking candidates within a location needs one number, and no single judge's output is
-    that number. The render judge's score at its top threshold is the obvious candidate and is
+    that number. The wallpaper judge's score at its top threshold is the obvious candidate and is
     not enough on its own: as <a href="training-judges.html">training judges</a> described, it
     does not have much resolution left among the good ones.</p>
 
     <p>So the prune ranks on a fitted combination: the location judge's own opinion of the
-    place, the render judge at both of its thresholds, and a measure of how much of the frame
+    place, the wallpaper judge at both of its thresholds, and a measure of how much of the frame
     is dead flat space. It is an ordering device rather than a bar. Its advantage over the
-    render judge alone was real when it was fitted and has not survived the label corpus
+    wallpaper judge alone was real when it was fitted and has not survived the label corpus
     tripling: refitted today it buys nothing over the top-threshold score, because the judge
     improved underneath it. It stays as the prune's order, and newer ranking ideas are tried
     first in gallery selection, which can be taken again, rather than in a prune that

@@ -367,7 +367,7 @@ def attempt_steps() -> Drawn:
     y += rows * (cell + sheets.PAD)
 
     x = (SHEET_WIDTH - wide[0]) // 2
-    heading(draw, x, y, "The picture the render judge scores: that mode, through that map")
+    heading(draw, x, y, "The picture the wallpaper judge scores: that mode, through that map")
     y += head
     sheets.paste(sheet, judged, (x, y), wide)
     under(draw, (x, y), wide, [f"{recipe['mode']} through {recipe['colormap']}"])

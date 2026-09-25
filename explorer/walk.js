@@ -1203,7 +1203,7 @@ export function mount(host) {
     }
     // Paused while the renderer was starting: nothing is downloaded until Start again.
     if (scorer !== null || judgeless || state !== "loading") return;
-    const named ={ runtime: "the judge runtime", gate: "the render judge" };
+    const named ={ runtime: "the judge runtime", gate: "the wallpaper judge" };
     const { signal, shown, done } = downloading(named.runtime);
     try {
       scorer = await judges.load((what, got, of) => shown(got, of, named[what]), signal);

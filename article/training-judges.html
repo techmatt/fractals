@@ -67,7 +67,7 @@
 <main>
   <section class="prose">
     <p>Two learned judges supply the pipeline's quality scores. The location judge rates a
-    place before any color is chosen, and the render judge rates a finished candidate
+    place before any color is chosen, and the wallpaper judge rates a finished candidate
     picture. They answer on the same four-point scale and are trained by the same general
     method, but they are two different networks fitted to two different collections of
     ratings, and they act at different points. A third, smaller network chooses palettes rather than rating
@@ -133,7 +133,7 @@
         <figcaption>One location at three sizes, drawn to scale. The smallest is what the walk scores, and the largest is what a person rated.</figcaption>
       </figure>
 
-    <p>The render judge scores the picture that was drawn to be judged, its mode, its settings,
+    <p>The wallpaper judge scores the picture that was drawn to be judged, its mode, its settings,
     and its palette, at 640 by 360, stretched from there to the network's input. Nothing is
     judged at wallpaper size; a full-resolution render is what a passing score buys. One judge
     covers the plain smooth rendering and every other mode in the catalog
@@ -153,7 +153,7 @@
 
     <p>The two judges do not use the same one. The location judge takes a medium variant,
     pretrained at a larger input size and on a larger slice of ImageNet, on the order of ten
-    million parameters. The render judge takes a substantially smaller variant, well under
+    million parameters. The wallpaper judge takes a substantially smaller variant, well under
     half that. Capacity was settled by measurement in both cases and the two answers differ.
     For locations, larger convolutional and transformer networks bought nothing over the
     medium. For finished renders the pressure runs the other way: the ratings of the
@@ -174,12 +174,12 @@
     good, and P(≥4), the chance it would be rated exceptional.</p>
 
     <p>The rest of the recipe is ordinary, and the two judges no longer share it. The location
-    judge runs a forty-epoch cosine schedule. The render judge stops early against a
+    judge runs a forty-epoch cosine schedule. The wallpaper judge stops early against a
     twenty-epoch ceiling, and the run that ships stopped before reaching it. Both fit
     comfortably on one ordinary GPU. Beyond the palettes described above, the location judge's
     augmentation is the variation that is real at deployment: small border crops, flips,
     re-encoding around the quality its renders are cached at, and brightness and contrast
-    changes of a few percent. The render judge gets crops and flips and nothing else, because
+    changes of a few percent. The wallpaper judge gets crops and flips and nothing else, because
     for it the coloring is part of what is being rated, and any change to the color edits the
     question.</p>
 
@@ -222,7 +222,7 @@
     passing stays where it was, and where a keeper starts on the new scale is left exactly as
     open as it was before.</p>
 
-    <p>The render judge's bars are fitted rather than restated, one per kind, because the two
+    <p>The wallpaper judge's bars are fitted rather than restated, one per kind, because the two
     collections of ratings have different base rates and the same number can sit above what
     one supports and below what the other does. Each is fitted from its own kind's ratings: a
     monotone curve through the rated pictures gives the keeper rate as a function of the

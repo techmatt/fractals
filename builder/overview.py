@@ -75,7 +75,7 @@ STAGES = (
     (
         "2 · Render them beautifully",
         "One frame is drawn many ways: several modes, and a neighborhood of palettes.",
-        ("the mode roster · 32 palettes a location", "render judge"),
+        ("the mode roster · 32 palettes a location", "wallpaper judge"),
         (1,),
     ),
     (
