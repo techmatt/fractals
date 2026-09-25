@@ -108,7 +108,7 @@
     find more material, and rate that. This selects the corpus as much as it grows it. Later
     examples are largely the harvest of earlier judges, so the ratings over-represent the
     kinds of place and picture those judges already liked. Batches drawn deliberately against
-    that pull, aimed at under-seen modes, colors and score bands, reduce the effect without
+    that pull, aimed at under-seen modes, colors, and score bands, reduce the effect without
     removing it.</p>
 
     <h2 id="what-the-judge-sees">What the judge sees</h2>
@@ -123,7 +123,7 @@
     <p>Training also varies the palette, which deployment does not. Each rated location is
     cached as a fan of small renders: one is pinned to the neutral palette the judge will be
     given in production, and the rest draw a palette at random from a tracked pool, alongside
-    small crops, shifts and quality changes. A further set of palettes is held out of that
+    small crops, shifts, and quality changes. A further set of palettes is held out of that
     pool entirely, so a finished judge can be read on colorings it has never seen. The aim is
     not a judge blind to color but one that does not mistake a palette for the thing being
     rated: a location score is supposed to be about the place.</p>
@@ -133,7 +133,7 @@
         <figcaption>One location at three sizes, drawn to scale. The smallest is what the walk scores, and the largest is what a person rated.</figcaption>
       </figure>
 
-    <p>The render judge scores the picture that was drawn to be judged, its mode, its settings
+    <p>The render judge scores the picture that was drawn to be judged, its mode, its settings,
     and its palette, at 640 by 360, stretched from there to the network's input. Nothing is
     judged at wallpaper size; a full-resolution render is what a passing score buys. One judge
     covers the plain smooth rendering and every other mode in the catalog
@@ -252,7 +252,7 @@
     <h2 id="generalization-and-its-limits">Generalization and its limits</h2>
 
     <p>The aim of a judge is not to memorize the neighborhoods that have already been rated
-    but to learn what makes a frame good, in composition, framing, density and a more general
+    but to learn what makes a frame good, in composition, framing, density, and a more general
     sense of aesthetics, well enough to recognize it somewhere new. The judges do this to a
     useful degree and the search depends on it. How well they do it is harder to establish
     than it looks, because a high score on material the same judge selected is the judge
@@ -266,7 +266,7 @@
     rather than assuming the loop closes on its own: the walk reserves a share of every batch
     for untouched roots (<a href="finding-good-locations.html#the-walk">finding good
     locations</a>, Prioritize), and batches of pictures to rate are drawn on purpose at
-    under-seen modes, colors and score bands. Those help, and what comes out is still a
+    under-seen modes, colors, and score bands. Those help, and what comes out is still a
     selected population rather than a sample of what the fractals could produce. The judges
     are best read as instruments tied to one person's ratings and to one score scale, rather
     than as measures of whether a fractal is beautiful.</p>

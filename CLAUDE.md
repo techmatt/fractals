@@ -83,6 +83,11 @@ the synced drive is the authority for everything else the prose is held to.
   landed. That covers prose, captions, the explorer's text and the prose masters alike: a
   master spells none of it with `*`. Anything else keeps an italic only where its
   sentence genuinely misreads without one, and a prompt that keeps one names it.
+- **The Oxford comma, always** *(Matt, 2026-09-25, prose_micro_edits_ckpt148)*. In every
+  list of three or more, a comma comes before the final "and" or "or": in prose, captions,
+  alt text, and blurbs, and in the masters that hold them. It is prose's rule and never
+  code's, so an identifier, a link's text and a record's own name stay as they are spelled.
+  Nothing enforces it, which is why it is written down.
 
 ## Where prose comes from
 
