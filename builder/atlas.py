@@ -1728,7 +1728,7 @@ PLATE_MARGIN = 1.10
 PLATE_SUPERSAMPLE = 2
 
 #: What a partition says while its plane has no marks on it yet.
-NO_MARKS_YET = "the plane itself, with no places kept on it yet: the search has not run here"
+NO_MARKS_YET = "the plane itself, with no places kept on it: the search has not run here"
 
 #: The width a neighborhood plate is drawn at, for a plane that has no dots to draw one
 #: for yet. The Mandelbrot partition's own value is kept where it already has one.
