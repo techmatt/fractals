@@ -1075,20 +1075,24 @@ BANDS_MINE_RULE = (
 )
 
 #: How the bottom band's eight were arrived at. The rig is under ignored `scratch/`, so
-#: this is where the rule survives. Re-drawn over final139_general on 2026-09-26
-#: (publishing_fixes_ckpt152), the 2026-09-05 draw's gallery being gone next door.
+#: this is where the rule survives. The band is Matt's mix of two draws *(2026-09-26,
+#: publishing_revert_ckpt152)*: a re-draw over final139_general was laid beside the
+#: 2026-09-05 draw place by place, and he kept four places of each.
 BANDS_SEAT_RULE = (
-    "Which eight is a seeded shuffle of that gallery's whole seating — "
+    "Which eight is Matt's mix of two seeded draws, chosen by him place by place on "
+    "2026-09-26. Panels 22, 23, 27 and 29 come from the 2026-09-26 draw — "
     "scratch/three_bands/pick_seats_final139.py, seed 20260926, over final139_general "
-    "(20260922T012627Z) — taking the first that clear one spread rule and four refusals. "
-    "The spread: no two of the eight share a partition, a "
-    "rendering mode or a dominant hue family, which is the diversity of family, color and "
-    "mode this band is for, made a rule rather than a taste. The refusals: a seat standing "
-    "on a location another figure already stands on, a seat in a mode the solve retired, "
-    "a seat whose run recorded that the autolevel operator acted without recording the "
-    "curve it acted with, and a seat whose "
-    "redraw does not come back as the picture the gallery ships. Nothing here was chosen "
-    "for how it looks."
+    "(20260922T012627Z) — and panels 24, 25, 26 and 28 from the 2026-09-05 draw — "
+    "scratch/three_bands/pick_seats.py, seed 20260905, over 20260904T233233Z; each panel "
+    "stands where its own draw put it. Each draw took the first seats of a shuffle of its "
+    "gallery's whole seating that cleared its refusals: a seat standing on a location "
+    "another figure already stood on, a seat whose run recorded that the autolevel "
+    "operator acted without recording the curve it acted with, and a seat whose redraw "
+    "does not come back as the picture the gallery ships; the 2026-09-26 draw also "
+    "refused a seat in a mode the solve retired. The mix holds no spread rule: panels 22 "
+    "and 26 share a partition and a rendering mode, 24 and 27 a partition, 25 and 29 a "
+    "partition, and 23 and 28 a dominant hue family. No draw chose for how a picture "
+    "looks; which draw each place keeps is Matt's choice."
 )
 
 
@@ -1343,12 +1347,19 @@ def _bands_provenance(admitted, marked_at, mined, seated, sizes) -> list[str]:
     lines += [_bands_candidate_line(pick) for pick in mined]
     stamps = sorted({pick.stamp for pick in seated})
     lines += [
-        f"Band 3 — eight seats of a recorded tentative gallery, named on this row by their "
+        f"Band 3 — eight seats of "
+        f"{'a recorded tentative gallery' if len(stamps) == 1 else 'recorded tentative galleries'}"
+        f", named on this row by their "
         f"own `<stamp>{picks_module.PICK_SEPARATOR}<recipe key>` and resolved from "
         f"artifacts/curation/tentative/<stamp>/{picks_module.SEATS_NAME} for the seat and "
-        f"the candidate ledger for the recipe. Stamp"
-        f"{'s' if len(stamps) > 1 else ''} {', '.join(stamps)}, a gallery recorded next "
-        f"door and not tracked there; the seat and recipe behind each panel are held in "
+        f"the candidate ledger for the recipe. "
+        + (
+            f"Stamp {stamps[0]}, a gallery recorded next door and not tracked there"
+            if len(stamps) == 1
+            else f"Stamps {', '.join(stamps)}, galleries recorded next door, none of them "
+            f"tracked there and not all of them still kept"
+        )
+        + "; the seat and recipe behind each panel are held in "
         f"article/figure-recipes.jsonl, so the band survives a re-base of the artifacts "
         f"tree. Drawn the way band 2's four "
         f"are and fitted to {large[0]}x{large[1]}, {BANDS_SEATED_COLUMNS} across. Nothing "

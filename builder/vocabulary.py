@@ -26,11 +26,12 @@ itself a hit. The compiled patterns are unaffected.
 The mode the Rendering modes v2 placement took off the site is banned in reader-facing
 text by ruling — it is named nowhere a reader can see it, which is why it is not spelled
 in this file either. It is not on the list below, because the list is a sweep over tracked
-text and tracked text still spells it where a record needs it: no figure stands on the
-mode any more *(2026-09-26)*, but the recovered recipes of retired picks in
+text and tracked text still spells it where a record needs it: two figures,
+`overview-pipeline` and `gallery-output`, stand on panels drawn in it, and a reader meets
+those as smooth because `builder/picks.py`'s `MODE_WORDS` words the mode that way
+*(Matt, 2026-09-26)*. Their `provenance` recipe clauses, the recovered recipes in
 `article/figure-recipes.jsonl`, the Deep gallery's descent record, the wasm crate's
-inflection table and `builder/picks.py`'s `MODE_WORDS` all name it, and a sweep would
-forbid them. Pruning those and banning the name is a decision of its own;
+inflection table and `MODE_WORDS`' own key all name it, and a sweep would forbid them.
 `docs/page-review.md` records the state.
 
 One banned word is deliberately **not** here. `writing-guidance.md` bans **colormap** in

@@ -195,11 +195,17 @@ RECIPE_AGREEMENT = "mean absolute difference 3.0-5.5 of 255, codec floor 1.4-2.8
 #: record of how a picture still on the site was made must be able to spell what drew it.
 #: So a wording lives here for as long as a figure stands on the mode, and which modes the
 #: article *offers* is `MODES_ROSTER` and `explorer/modes.jsonl`, neither of which is this.
+#:
+#: **And the wording is "smooth"** *(Matt, 2026-09-26, publishing_revert_ckpt152)*. Its
+#: pictures are the same as smooth's, so it is not a separate mode worth naming to a reader:
+#: `gallery-output` and `overview-pipeline` stand on panels drawn in it, and their alt text
+#: and provenance leads say smooth. A record's recipe clause still spells the engine's own
+#: `mode exp_smoothing`, because that is what draws the picture again.
 MODE_WORDS = {
     "smooth": "smooth",
     "tia": "triangle-inequality average",
     "stripe": "stripe average",
-    "exp_smoothing": "exponential smoothing",
+    "exp_smoothing": "smooth",
     "curvature": "curvature",
     "smooth_curvature": "curvature over smooth",
     "smooth_stripe": "stripe over smooth",
@@ -975,28 +981,15 @@ OUTPUT_ROWS = 4
 #: How the twenty-four were arrived at, which the resolution cannot say for itself.
 OUTPUT_DRAW = (
     "Which seats stand for the pass is a seeded shuffle of its whole seating — "
-    "scratch/curation/pick_output.py, seed 20260926, over final139_general "
-    "(20260922T012627Z) — taking the first that clear four rejections: a seat another "
-    "figure already stands on, by key and by frame, the other figures re-picked in the "
-    "same prompt included; a seat whose run recorded that the autolevel operator acted "
-    "without recording the curve; a mode the solve retired; and the caps that keep one "
-    "draw from being a picture of itself rather than of the pass — at most four tiles of "
-    "one rendering mode, three of one hue family, four of one partition. Nothing here was "
-    "chosen for how it looks.",
-    "The spread that came back: nine of the thirteen modes the pass seats, ten of its "
-    "twelve partitions, and ten of its twelve hue families.",
-)
-
-#: How the hook's six were arrived at, which the resolution cannot say for itself.
-HOOK_DRAW = (
-    "Which six is a seeded shuffle of the pass's whole seating — "
-    "scratch/overview/pick_hook.py, seed 20260926, over final139_general "
-    "(20260922T012627Z) — taking the first three smooth seats and the first three in "
-    "three different other modes that clear gallery-output's rejections, each of the six "
-    "in its own partition and hue family and no family label on more than two panels. "
-    "Panel 2, 8aa0a380, is kept rather than drawn: it was Matt's pick before the re-pick "
-    "and is seated in this pass, and its repetition with gallery-top-scored is his, which "
-    "that row's reuse_reason names. Nothing else here was chosen for how it looks.",
+    "scratch/curation/pick_output.py, seed 20260903 — taking the first that clear four "
+    "rejections: a seat another figure already stands on, by key and by frame; a seat "
+    "whose run recorded that the autolevel operator acted without recording the curve; "
+    "and the caps that keep one draw from being a picture of itself rather than of the "
+    "pass — at most four tiles of one rendering mode, three of one hue family, four of "
+    "one partition. Nothing here was chosen for how it looks.",
+    "The spread that came back: eleven of the pass's fourteen modes, nine partitions, "
+    "and all twelve hue families plus one picture the reading finds dominant in no "
+    "color at all.",
 )
 
 
@@ -1149,7 +1142,7 @@ def gallery_hook() -> Split:
         label=lambda pick: family_name(pick.family),
         note=lambda pick: family_formula(pick.family),
     )
-    return Split(made, provenance(resolved, size, chosen=HOOK_DRAW, composed=False), HOOK_COLUMNS)
+    return Split(made, provenance(resolved, size, composed=False), HOOK_COLUMNS)
 
 
 def modes_gallery() -> Split:
@@ -2273,8 +2266,8 @@ def provenance(
     """The registry lines for a sheet of picks: the composition, then one line per panel.
 
     `chosen` is where a figure says how its seats were arrived at, which is the one thing
-    the resolution above cannot say for itself — the hook's six and the modes roster's
-    thirteen are seeded random draws, each with the seats Matt kept by hand named.
+    the resolution above cannot say for itself — the hook's six are Matt's, and the modes
+    roster's thirteen are a seeded random draw.
 
     `composed` is false for a **split** figure, whose panels are separate files rather
     than tiles of one sheet. The record says which, because a redraw of one is not a
