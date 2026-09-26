@@ -634,6 +634,52 @@ The heap was not: 3.7 MB to 7.8 MB and still rising, about 23 KB a picture, and 
 snapshots put the whole of it on `stops.js`'s memo of every map ever built, one a picture.
 That memo keeps 64 now, and the same run levels at 5.2–5.3 MB from its fifth minute.
 
+### Browse *(explorer_browse_ckpt153, 2026-09-26)*
+
+**The gallery across the whole window, for a visitor who came to look.** *Browse* sits
+beside *Screensaver* and has no key. It opens a layer over the studio on what the Gallery
+tab is showing, its collection and its two chip rows, and from then on keeps its own
+choices: the narrow panel is not changed by anything done here, and stays as uncluttered
+as it was. `browse.js` owns the layer.
+
+**The grid** is the tracked tiles at the size they are drawn at, 316 px, with no text, in
+as many columns as the window holds, lazy and built a chunk at a time as the panel's are.
+Above it are the same Collection dropdown and five chip rows: *Render mode* and *Color
+family* (or *Also contains*, inside a colour collection) under the panel's own rules, and
+three rows only Browse carries. *Fractal family* reads each seat's `f` off its link and
+names it by rule (`familyName`: Mandelbrot, Cubic Multibrot, Quartic Julia, Phoenix).
+*Centered on a minibrot* and *Spiral* are `centered` and `spiral` on the seat record,
+which `python -m builder seats` carries from the tentative record next door: `centered`
+where the walk found the location at a nucleus, `spiral` where a person called it one.
+The chip row, the tally and the dropdown are `gallery.js`'s own exports, so both surfaces
+draw them one way, and a collection either has fetched is one fetch for both.
+
+**The preview** is one picture, fit to the window and at most `PREVIEW_MAX` (1600) pixels
+wide, drawn at most 1600 device pixels across whatever the screen's density. The tile goes
+up at once, scaled to the box, so there is never an empty frame; then the seat's link is
+drawn through the explorer's renderer in the viewer's three stages (a quarter-resolution
+field, one sample a pixel, then `FINAL_SUPERSAMPLE` each way), each replacing the last,
+with a small render bar under it spanned by samples as the Render bar is. The derived
+parameters a link leaves out are taken once, by `download.derivedView`, which `pictureOf`
+is now built on. Its controls are **Open in explorer**, **← →** to step through the
+current filtered order (stopping at the ends), and **Esc** back to the grid; a click on
+the mat around the picture is Esc too. Esc on the grid, or *Back to explorer*, leaves.
+
+**Every step and every close cancels the picture in flight**: the pool's `cancel`, the
+colouring worker's `stop`, and a generation that drops whatever a cancelled stage still
+hands back. The pool is Browse's own, made on the way in and stopped on the way out, so
+the viewer's pass is never cancelled from here and the viewer is untouched until **Open in
+explorer**, which hands the row to the same `openLink` a narrow tile calls: the tile
+marked, Reset to seat anchored on it, and one entry on the way back. Browse writes no
+address and is no key of any link.
+
+**Measured** by `bench/hunt/u9-browse.mjs` (1600×1100, headless Chrome, twelve threads):
+twenty → presses as fast as CDP sends them started twenty renders, cancelled nineteen
+mid-draw, and settled on the twentieth neighbour with the bar final; a close 60 ms into a
+render cancelled it and nothing settled after; workers stood at 14 before Browse, 26
+inside it, and 14 after leaving, and Open in explorer left the address on the seat's link
+with Ctrl+Z back to the view Browse was opened over.
+
 ## The box tool *(Matt, explorer_box_zoom_and_download_row_ckpt140, 2026-09-22)*
 
 `b`, or `Box (b)` at the left of the Download row's toggles. **Click the center, move away

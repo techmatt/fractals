@@ -47,6 +47,11 @@ const SLUG = "seated-candidates";
 /** Where that directory sits, relative to this module. */
 const DIRECTORY = `../assets/images/galleries/${SLUG}/`;
 
+/** A seat's tile, as a URL: the one picture the directory holds of it. */
+export function tileURL(seat, base) {
+  return new URL(`${DIRECTORY}${seat.file}`, base).href;
+}
+
 /** The collection the panel opens on, which is the published gallery. */
 export const GENERAL = "general";
 
@@ -59,11 +64,11 @@ const AXIS_LABELS = { family: "Color family", mode: "Render mode" };
 
 /** The axis a collection cut on one hue family is named by, which is the one the hue chips
  *  change their question inside. */
-const FAMILY_AXIS = "family";
+export const FAMILY_AXIS = "family";
 
 /** What the hue row is called when it tallies which family leads each picture, and what it
  *  is called when it tallies which families are merely in one. */
-const HUE_HEADS = { dominant: "Color family", contains: "Also contains" };
+export const HUE_HEADS = { dominant: "Color family", contains: "Also contains" };
 
 /**
  * Whether this browser lets a stylesheet draw a `<select>` and its drop-down, which is
@@ -91,7 +96,7 @@ const DRAWN = typeof CSS !== "undefined" && CSS.supports("appearance", "base-sel
  * cut on one. A name the wheel does not carry would draw no colour at all, which is the
  * honest failure — there is no thirteenth swatch to invent.
  */
-function hueDot(value) {
+export function hueDot(value) {
   const dot = document.createElement("span");
   dot.className = "hue";
   const color = colorOf(value);
@@ -171,6 +176,34 @@ async function seatsOf(base, collection) {
   return seats;
 }
 
+/**
+ * Each collection's rows once asked for, by name: a promise, so two quick choices of one
+ * collection are one fetch. **Module-wide** *(explorer_browse_ckpt153)*, because the panel
+ * and Browse show the same collections, and a collection one of them has shown is one the
+ * other opens without asking again.
+ */
+const fetched = new Map();
+
+/** Who is told when a collection's rows first arrive — the page's seat index. */
+const arrivals = new Set();
+
+/** A collection's seats, fetched the first time anybody asks and kept. A failure is
+ *  forgotten again, so that choosing the collection later asks again. */
+export function seatsOnce(base, collection) {
+  const named = collection.name;
+  if (!fetched.has(named)) {
+    const rows = seatsOf(base, collection);
+    fetched.set(named, rows);
+    rows.then(
+      (seats) => {
+        for (const heard of arrivals) heard(seats, named);
+      },
+      () => fetched.delete(named),
+    );
+  }
+  return fetched.get(named);
+}
+
 /** One collection's seats, in its own presentation order. Sorted here rather than trusted
  *  to the file, so the field is what is read. */
 export function membersOf(seats, name) {
@@ -189,11 +222,15 @@ export function membersOf(seats, name) {
  * — the seats holding no value of the field — and pinning it once had the hue row opening
  * on *unfiled 4*. No seat is filed under no hue any more *(2026-09-19)*, and the mode row
  * still names its own absence, so the distinction is kept rather than collapsed.
+ *
+ * `field` is a row's key, or a function reading a value off a row where the value is not a
+ * key of its own — Browse's fractal family, which is the link's.
  */
-function tally(seats, field, first = undefined) {
+export function tally(seats, field, first = undefined) {
+  const read = typeof field === "function" ? field : (seat) => seat[field];
   const held = new Map();
   for (const seat of seats) {
-    const value = seat[field] ?? null;
+    const value = read(seat) ?? null;
     held.set(value, (held.get(value) ?? 0) + 1);
   }
   return [...held].sort(
@@ -202,6 +239,124 @@ function tally(seats, field, first = undefined) {
       b[1] - a[1] ||
       String(a[0]).localeCompare(String(b[0])),
   );
+}
+
+/**
+ * How many seats contain each family other than the one this collection was cut on,
+ * most first, which is what the row means where a collection has a hue of its own.
+ *
+ * A seat stands under every chip its picture carries, so the counts are not a partition
+ * of the collection and are not meant to be read as one; what the record calls contained
+ * is a low bar it names, and `seats.py` says which and why.
+ */
+export function presence(seats, except) {
+  const held = new Map();
+  for (const seat of seats) {
+    for (const name of seat.hues ?? []) {
+      if (name === except) continue;
+      held.set(name, (held.get(name) ?? 0) + 1);
+    }
+  }
+  return [...held].sort((a, b) => b[1] - a[1] || String(a[0]).localeCompare(String(b[0])));
+}
+
+/**
+ * One row of chips, each a value and its count, pressing into `set`.
+ *
+ * `swatches` marks the color family row, which is also single-choice: choosing a family
+ * lets go of any other, and choosing the one already held clears the row. Any other row
+ * stays a union of whatever is pressed.
+ *
+ * `label` is what a row calls the seats that hold no value of its field, and a row that
+ * passes none is saying there are none. The hue row is the second kind since every seat
+ * gained a family *(2026-09-19)*, so a `null` there is a record that has gone back on that,
+ * and it throws rather than putting the word `null` in front of a reader. `name` says what
+ * a value is called where it is not its own word — Browse's family and yes-or-no rows.
+ */
+export function chipRow(host, counts, set, onChange, { field, label = null, swatches = false, name = null }) {
+  host.replaceChildren();
+  const chips = [];
+  for (const [value, count] of counts) {
+    if (value === null && label === null) {
+      throw new Error(`${SLUG}: ${count} seat(s) hold no ${field}, and this row names none`);
+    }
+    const chip = document.createElement("button");
+    chip.type = "button";
+    chip.className = "chip";
+    chip.setAttribute("aria-pressed", String(set.has(value)));
+    // A hue chip wears its family's own colour, ahead of its name, and so does the
+    // dropdown entry for that family's own gallery: one dot, `hueDot` above.
+    if (swatches) chip.append(hueDot(value));
+    chip.append(value === null ? label : (name?.(value) ?? value));
+    const tally = document.createElement("span");
+    tally.className = "count";
+    tally.textContent = count;
+    chip.append(tally);
+    chip.addEventListener("click", () => {
+      if (set.has(value)) set.delete(value);
+      else {
+        if (swatches) set.clear();
+        set.add(value);
+      }
+      for (const [other, held] of chips) other.setAttribute("aria-pressed", String(set.has(held)));
+      onChange();
+    });
+    chips.push([chip, value]);
+    host.append(chip);
+  }
+}
+
+/**
+ * The Collection dropdown, from the header's own list and in its order. A dropdown rather
+ * than a chip row, because the chips below it filter and this chooses what is being
+ * filtered: the palette picker's hue chips already mean "narrow this list", and a
+ * collection is not that.
+ */
+export function collectionOptions(collection, collections) {
+  collection.replaceChildren();
+  // Base appearance draws the closed control from this button, and what it puts in it is
+  // a clone of the chosen option — the dot with it, so the control shows the colour it
+  // is showing a gallery of. A browser drawing its own control never sees this.
+  if (DRAWN) {
+    const shown = document.createElement("button");
+    shown.type = "button";
+    shown.append(document.createElement("selectedcontent"));
+    collection.append(shown);
+  }
+  const groups = new Map();
+  for (const one of collections) {
+    const option = document.createElement("option");
+    option.value = one.name;
+    const count = one.seats;
+    // A collection cut on one family wears that family's dot — the same span, the same
+    // colour and the same source as the chip that filters on it, so the dropdown and the
+    // row below it agree about what green looks like. The general gallery and the modes
+    // are not colours and get none.
+    if (one.axis === FAMILY_AXIS) option.append(hueDot(one.name));
+    option.append(
+      one.axis === GENERAL_AXIS ? `General gallery · ${count}` : `${one.name} · ${count}`,
+    );
+    const label = AXIS_LABELS[one.axis];
+    if (label === undefined) {
+      collection.append(option);
+      continue;
+    }
+    if (!groups.has(label)) {
+      const group = document.createElement("optgroup");
+      // The heading is spelled twice and each browser reads one of them: the `label`
+      // attribute is what a browser drawing its own drop-down shows, and base appearance
+      // shows none of it and renders a `<legend>` child instead.
+      group.label = label;
+      if (DRAWN) {
+        const heading = document.createElement("legend");
+        heading.textContent = label;
+        group.append(heading);
+      }
+      groups.set(label, group);
+      collection.append(group);
+    }
+    groups.get(label).append(option);
+  }
 }
 
 /**
@@ -224,9 +379,7 @@ export function install({
   saveMark = null,
   onSeats = () => {},
 }) {
-  /** Each collection's rows once asked for, by name: a promise, so two quick choices of
-   *  one collection are one fetch. */
-  const fetched = new Map();
+  arrivals.add(onSeats);
   /** Which choice is the latest, so a slow fetch cannot put up a collection since left. */
   let asked = 0;
   let collections = [];
@@ -332,7 +485,7 @@ export function install({
     picture.decoding = "async";
     picture.width = seat.width;
     picture.height = seat.height;
-    picture.dataset.src = new URL(`${DIRECTORY}${seat.file}`, base).href;
+    picture.dataset.src = tileURL(seat, base);
     picture.alt = seat.alt ?? "";
     // The record commits and the pictures do not, so a tree can hold one without the
     // other: the record written, `seats` never run here. A grid of broken images is a
@@ -402,65 +555,9 @@ export function install({
     if (at < showing.length) setTimeout(more, 0);
   }
 
-  /** `swatches` marks the color family row, which is also single-choice: choosing a family
-   *  lets go of any other, and choosing the one already held clears the row. A mode row
-   *  stays a union of whatever is pressed.
-   *
-   *  `label` is what a row calls the seats that hold no value of its field, and a row that
-   *  passes none is saying there are none. The hue row is the second kind since every seat
-   *  gained a family *(2026-09-19)*, so a `null` there is a record that has gone back on
-   *  that, and it throws rather than putting the word `null` in front of a reader. */
+  /** A chip row over one of `wanted`'s sets, which refills the grid — `chipRow`. */
   function chipsInto(host, field, counts, label = null, swatches = false) {
-    host.replaceChildren();
-    const chips = [];
-    for (const [value, count] of counts) {
-      if (value === null && label === null) {
-        throw new Error(`${SLUG}: ${count} seat(s) hold no ${field}, and this row names none`);
-      }
-      const chip = document.createElement("button");
-      chip.type = "button";
-      chip.className = "chip";
-      chip.setAttribute("aria-pressed", String(wanted[field].has(value)));
-      // A hue chip wears its family's own colour, ahead of its name, and so does the
-      // dropdown entry for that family's own gallery: one dot, `hueDot` above.
-      if (swatches) chip.append(hueDot(value));
-      chip.append(value === null ? label : value);
-      const tally = document.createElement("span");
-      tally.className = "count";
-      tally.textContent = count;
-      chip.append(tally);
-      chip.addEventListener("click", () => {
-        const set = wanted[field];
-        if (set.has(value)) set.delete(value);
-        else {
-          if (swatches) set.clear();
-          set.add(value);
-        }
-        for (const [other, held] of chips) other.setAttribute("aria-pressed", String(set.has(held)));
-        fill();
-      });
-      chips.push([chip, value]);
-      host.append(chip);
-    }
-  }
-
-  /**
-   * How many seats contain each family other than the one this collection was cut on,
-   * most first, which is what the row means where a collection has a hue of its own.
-   *
-   * A seat stands under every chip its picture carries, so the counts are not a partition
-   * of the collection and are not meant to be read as one; what the record calls contained
-   * is a low bar it names, and `seats.py` says which and why.
-   */
-  function presence(seats, except) {
-    const held = new Map();
-    for (const seat of seats) {
-      for (const name of seat.hues ?? []) {
-        if (name === except) continue;
-        held.set(name, (held.get(name) ?? 0) + 1);
-      }
-    }
-    return [...held].sort((a, b) => b[1] - a[1] || String(a[0]).localeCompare(String(b[0])));
+    chipRow(host, counts, wanted[field], fill, { field, label, swatches });
   }
 
   /**
@@ -478,19 +575,9 @@ export function install({
     collection.value = chosen;
     const mine = ++asked;
     const one = collections.find((each) => each.name === chosen);
-    const named = chosen;
-    if (!fetched.has(named)) {
-      const rows = seatsOf(base, one);
-      fetched.set(named, rows);
-      // Forgotten again if it fails, so that choosing it later asks again.
-      rows.then(
-        (seats) => onSeats(seats, named),
-        () => fetched.delete(named),
-      );
-    }
     let seats;
     try {
-      seats = await fetched.get(chosen);
+      seats = await seatsOnce(base, one);
     } catch (error) {
       if (mine !== asked) return;
       console.warn(`the ${chosen} collection could not be read`, error);
@@ -524,57 +611,9 @@ export function install({
     fill();
   }
 
-  /**
-   * The dropdown, from the header's own list and in its order. A dropdown rather than a
-   * chip row, because the chips below it filter and this chooses what is being filtered:
-   * the palette picker's hue chips already mean "narrow this list", and a collection is
-   * not that.
-   */
+  /** The dropdown, from the header's own list and in its order — `collectionOptions`. */
   function options() {
-    collection.replaceChildren();
-    // Base appearance draws the closed control from this button, and what it puts in it is
-    // a clone of the chosen option — the dot with it, so the control shows the colour it
-    // is showing a gallery of. A browser drawing its own control never sees this.
-    if (DRAWN) {
-      const shown = document.createElement("button");
-      shown.type = "button";
-      shown.append(document.createElement("selectedcontent"));
-      collection.append(shown);
-    }
-    const groups = new Map();
-    for (const one of collections) {
-      const option = document.createElement("option");
-      option.value = one.name;
-      const count = one.seats;
-      // A collection cut on one family wears that family's dot — the same span, the same
-      // colour and the same source as the chip that filters on it, so the dropdown and the
-      // row below it agree about what green looks like. The general gallery and the modes
-      // are not colours and get none.
-      if (one.axis === FAMILY_AXIS) option.append(hueDot(one.name));
-      option.append(
-        one.axis === GENERAL_AXIS ? `General gallery · ${count}` : `${one.name} · ${count}`,
-      );
-      const label = AXIS_LABELS[one.axis];
-      if (label === undefined) {
-        collection.append(option);
-        continue;
-      }
-      if (!groups.has(label)) {
-        const group = document.createElement("optgroup");
-        // The heading is spelled twice and each browser reads one of them: the `label`
-        // attribute is what a browser drawing its own drop-down shows, and base appearance
-        // shows none of it and renders a `<legend>` child instead.
-        group.label = label;
-        if (DRAWN) {
-          const heading = document.createElement("legend");
-          heading.textContent = label;
-          group.append(heading);
-        }
-        groups.set(label, group);
-        collection.append(group);
-      }
-      groups.get(label).append(option);
-    }
+    collectionOptions(collection, collections);
   }
 
   return {
@@ -608,6 +647,10 @@ export function install({
         hue: [...wanted.hue][0] ?? null,
         seats: [...showing],
       };
+    },
+    /** The header's collections, once `start` has read them — what Browse's dropdown lists. */
+    get collections() {
+      return collections;
     },
     /** Show a collection with these chips pressed — what a screensaver link carries. */
     apply({ collection: name = GENERAL, modes: pressed = [], hue = null } = {}) {

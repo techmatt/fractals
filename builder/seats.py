@@ -669,6 +669,11 @@ def _row(
         "mode": mode,
         "hue": hue,
         "hues": hues,
+        # The two place verdicts the tentative record carries, which Browse filters on and
+        # the narrow panel does not: whether the walk found this location at a nucleus,
+        # and whether a person called it a spiral. Both are the first seating record's.
+        "centered": seat.get("centered") is True,
+        "spiral": seat.get("spiral") is True,
         "palette": str(recipe["colormap"]),
         "link": answer["link"],
         "gap": "; ".join(gaps) or None,
@@ -741,7 +746,10 @@ def header(rows: list[dict]) -> dict:
             "is every family holding at least "
             f"{HUE_PRESENT} of that picture's colour, largest first, read off the picture "
             "the record ships through palettes.dominance with the neutrals dropped, which "
-            "is what the panel's chips inside a color collection tally. The "
+            "is what the panel's chips inside a color collection tally. centered and "
+            "spiral are that first record's own place verdicts, carried as it holds them: "
+            "centered where the walk found the location at a nucleus, spiral where a person "
+            "called it one. The "
             "recipe every link is built from comes from the candidate ledger by a streamed "
             "lookup; the tone curve a link carries in its level key comes from the run that "
             "drew the candidate. A link is emitted by explorer/permalink.js through "

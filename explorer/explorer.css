@@ -255,6 +255,88 @@
 .screensaver-controls button:disabled { opacity: 0.6; }
 .screensaver-note:empty { display: none; }
 
+/* **Browse takes the whole page too** *(explorer_browse_ckpt153)*, over the studio as the
+   screensaver does, but it is a well rather than black: it is the gallery panel at the
+   window's size, the same dropdown, chips and tiles, and it keeps their furniture. The
+   tiles run at the size they are drawn at, in as many columns as fit. */
+.browse {
+  --browse-tile: 316px;
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  background: var(--well);
+  color: var(--well-ink);
+  font-family: var(--sans);
+}
+.browse[hidden] { display: none; }
+.browse-head {
+  flex: none;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem var(--gutter);
+  border-bottom: 1px solid var(--well-rule);
+}
+.browse-head .collection { margin: 0; }
+.browse-note { font-size: 0.75rem; color: var(--well-ink-dim); }
+.browse-head #browse-exit { margin-left: auto; }
+/* The five rows side by side where the window has room for them, and stacked where not:
+   each row is as wide as its chips, so the two yes-or-no rows share a line. Spelled with
+   both classes because `.filters`, below, is a column and would otherwise win. */
+.filters.browse-filters { flex-direction: row; flex-wrap: wrap; gap: 0.5rem 1.5rem; }
+.browse-filters .chip-group { flex: 1 1 auto; max-width: 100%; }
+.browse-tiles {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 0.75rem var(--gutter) 1.5rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(var(--browse-tile), 100%), var(--browse-tile)));
+  justify-content: center;
+  gap: 0.35rem;
+  align-content: start;
+  grid-auto-rows: max-content;
+  align-items: start;
+}
+
+/* The preview: one picture on the mat, fit to the window, and the bar under it. The tile
+   sits under the canvas at the canvas's size, so the first thing up is the picture's own
+   tile scaled, and each stage covers it. */
+.browse-preview {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 1rem var(--gutter);
+  background: rgb(0 0 0 / 0.92);
+}
+.browse-preview[hidden] { display: none; }
+.browse-stage { position: relative; flex: none; background: var(--well-pending); }
+.browse-under, .browse-picture {
+  position: absolute;
+  inset: 0;
+  display: block;
+}
+.browse-under { object-fit: cover; }
+.browse-picture[hidden] { display: none; }
+.browse-bar {
+  flex: none;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  font-size: 0.75rem;
+  color: var(--well-ink-dim);
+}
+
 /* **The dropdown draws itself here, so that a colour family's entry can wear its colour.**
    A native drop-down is the operating system's list and takes no markup inside an option,
    which left the one control that chooses a colour collection as the only place on the

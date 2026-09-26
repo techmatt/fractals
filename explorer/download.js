@@ -248,6 +248,21 @@ export async function pictureOf(
   height,
   { supersample = 1, onProgress, holder = {}, apart = true } = {},
 ) {
+  const drawn = await derivedView(renderer, view, width, height);
+  if (drawn === null) return null;
+  const field = await renderer.field(drawn, width, height, { supersample, onProgress });
+  if (field === null) return null;
+  if (!apart || field.shape.direct) return { image: renderer.shade(field, drawn).image, view: drawn };
+  const shaded = await shadeApart(renderer.module, field, drawn, holder);
+  return shaded === null ? null : { image: shaded.image, view: drawn };
+}
+
+/**
+ * The view a link draws at `width` × `height`, with whatever it leaves out derived as
+ * `pictureOf` says, or `null` where the render was cancelled. Lifted out of `pictureOf` so
+ * that Browse, which draws one view in three stages, derives it once *(explorer_browse_ckpt153)*.
+ */
+export async function derivedView(renderer, view, width, height) {
   const derived = DERIVED[view.mode];
   let drawn = view;
   if (derived === "opacity" && view.params?.opacity === undefined) {
@@ -265,11 +280,7 @@ export async function pictureOf(
     const measured = renderer.shade(once, view, { deriveWeight: true });
     if (measured.weight !== null) drawn = { ...view, params: { ...view.params, weight: measured.weight } };
   }
-  const field = await renderer.field(drawn, width, height, { supersample, onProgress });
-  if (field === null) return null;
-  if (!apart || field.shape.direct) return { image: renderer.shade(field, drawn).image, view: drawn };
-  const shaded = await shadeApart(renderer.module, field, drawn, holder);
-  return shaded === null ? null : { image: shaded.image, view: drawn };
+  return drawn;
 }
 
 /**

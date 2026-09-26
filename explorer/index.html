@@ -58,6 +58,8 @@
       <select id="gallery-collection" class="collection" aria-label="Collection"></select>
       <button type="button" id="gallery-screensaver" class="collection-action"
               title="Show this collection full screen, one picture after another">Screensaver</button>
+      <button type="button" id="gallery-browse" class="collection-action"
+              title="Look through this collection across the whole window">Browse</button>
     </div>
 
     <div class="tabpanel" id="panel-gallery" role="tabpanel" aria-labelledby="tab-gallery">
@@ -469,6 +471,50 @@
     <button type="button" id="screensaver-fullscreen" aria-pressed="false">Full screen</button>
     <button type="button" id="screensaver-exit">Exit (Esc)</button>
     <span class="screensaver-note" id="screensaver-note" role="status"></span>
+  </div>
+</div>
+
+<!-- Browse (explorer_browse_ckpt153): the gallery across the whole window, over the studio
+     the way the screensaver is. The grid, then a preview over it; `browse.js` fills both. -->
+<div class="browse" id="browse" role="dialog" aria-modal="true" aria-label="Browse the gallery" hidden>
+  <div class="browse-head">
+    <select id="browse-collection" class="collection" aria-label="Collection"></select>
+    <span class="browse-note" id="browse-note" role="status"></span>
+    <button type="button" id="browse-exit" class="collection-action">Back to explorer (Esc)</button>
+  </div>
+  <div class="filters browse-filters">
+    <div class="chip-group">
+      <div class="section-head"><h2 id="head-browse-modes">Render mode</h2></div>
+      <div class="chips" id="browse-modes" role="group" aria-labelledby="head-browse-modes"></div>
+    </div>
+    <div class="chip-group">
+      <div class="section-head"><h2 id="head-browse-hues">Color family</h2></div>
+      <div class="chips" id="browse-hues" role="group" aria-labelledby="head-browse-hues"></div>
+    </div>
+    <div class="chip-group">
+      <div class="section-head"><h2 id="head-browse-families">Fractal family</h2></div>
+      <div class="chips" id="browse-families" role="group" aria-labelledby="head-browse-families"></div>
+    </div>
+    <div class="chip-group">
+      <div class="section-head"><h2 id="head-browse-centered">Centered on a minibrot</h2></div>
+      <div class="chips" id="browse-centered" role="group" aria-labelledby="head-browse-centered"></div>
+    </div>
+    <div class="chip-group">
+      <div class="section-head"><h2 id="head-browse-spiral">Spiral</h2></div>
+      <div class="chips" id="browse-spiral" role="group" aria-labelledby="head-browse-spiral"></div>
+    </div>
+  </div>
+  <div class="browse-tiles" id="browse-tiles"></div>
+  <div class="browse-preview" id="browse-preview" hidden>
+    <div class="browse-stage" id="browse-stage">
+      <img class="browse-under" id="browse-under" alt="">
+      <canvas class="browse-picture" id="browse-picture" aria-hidden="true" hidden></canvas>
+    </div>
+    <div class="browse-bar">
+      <span class="render-state" id="browse-state" data-state="final" aria-hidden="true"><span class="render-fill"></span></span>
+      <button type="button" id="browse-open" class="collection-action">Open in explorer</button>
+      <span class="browse-keys">← → to step · Esc for the grid</span>
+    </div>
   </div>
 </div>
 

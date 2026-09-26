@@ -159,6 +159,12 @@ share — and a seat whose picture reads no colour at all is a `SeatError` rathe
 quiet `null`. This is presentation: nothing next door moves, and the dominance rule the
 record was written under is untouched.
 
+**Two place verdicts ride along** *(explorer_browse_ckpt153)*: `centered` and `spiral`,
+copied as they stand on the first tentative record that seats the row, for Browse's two
+yes-or-no chip rows. The record already joins both at write time, `centered` from the walk
+ledgers (found at a nucleus) and `spiral` from the attribute store, so no new read was
+needed; every seat of the twenty-one records carried a boolean for each when they landed.
+
 The pictures were untracked until deploy_staged_assets_ckpt152 (2026-09-26) and are
 committed beside the record now, so a clone has both and **assets** holds every tile to its
 record. The check keeps a third machine state from the staged days, beside the missing

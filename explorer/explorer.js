@@ -45,6 +45,7 @@ import * as gallery from "./gallery.js";
 import * as saving from "./saved.js";
 import * as juliaPreview from "./julia-preview.js";
 import * as screensaver from "./screensaver.js";
+import * as browse from "./browse.js";
 import { Trail } from "./undo.js";
 import { heldOut, stopOf } from "./outermost.js";
 import {
@@ -3057,7 +3058,7 @@ function saverFurniture(every) {
  * passes none and the first picture is drawn from the shelf like every other.
  */
 function enterScreensaver({ every = null, first = null } = {}) {
-  if (saver === null || tiles === null || saver.active || locked()) return;
+  if (saver === null || tiles === null || saver.active || browser?.active || locked()) return;
   const population = tiles.population();
   if (population.seats.length === 0 && first === null) {
     say("The gallery shows nothing with these filters.");
@@ -3081,6 +3082,42 @@ function leaveScreensaver(seat) {
   resize();
   const opts = seat?.key ? { gap: seat.gap, key: seat.key, what: "this wallpaper" } : {};
   if (seat === null || !openLink(seat.link, opts)) draw();
+}
+
+// ------------------------------------------------------------------- Browse
+//
+// The gallery across the whole window *(explorer_browse_ckpt153)*. `browse.js` owns the
+// layer, its grid, its preview and a pool of its own; what is here is what it is handed on
+// the way in and the viewer it gives back. Unlike the screensaver it cancels nothing of the
+// viewer's on the way in: the viewer is untouched until a picture is opened from it.
+
+let browser = null;
+
+/** Open Browse on whatever the Gallery tab is showing. */
+function enterBrowse() {
+  if (browser === null || tiles === null || browser.active || saver?.active || locked()) return;
+  if (tiles.collections.length === 0) return;
+  juliaCard?.hide();
+  studio.inert = true;
+  document.querySelector(".studio-bar").inert = true;
+  const { collection, modes, hue } = tiles.population();
+  browser.enter({ collections: tiles.collections, collection, modes, hue });
+}
+
+/** Browse let go, with a picture to open or without one. With one, the viewer opens it
+ *  exactly as a tile in the narrow panel does — the same call, so the same anchor for Reset
+ *  to seat and the same entry on the way back. */
+function leaveBrowse(row = null) {
+  studio.inert = false;
+  document.querySelector(".studio-bar").inert = false;
+  if (row === null) {
+    // A window resized while Browse was up is a viewer still at the old size.
+    relayout();
+    return;
+  }
+  showPanel("gallery");
+  resize();
+  if (!openLink(row.link, { gap: row.gap, key: row.key, what: "this wallpaper" })) draw();
 }
 
 // ------------------------------------------------------------------- the panels
@@ -3148,6 +3185,7 @@ function showPanel(asked) {
   // means nothing while the atlas is showing.
   document.getElementById("gallery-collection").hidden = showing !== "gallery";
   document.getElementById("gallery-screensaver").hidden = showing !== "gallery";
+  document.getElementById("gallery-browse").hidden = showing !== "gallery";
   if (showing === "atlas") {
     startAtlas();
     syncPlane();
@@ -4991,7 +5029,7 @@ function relayout() {
   resizing = setTimeout(() => {
     // Nobody is looking at the viewer under the screensaver, and it catches up on the way
     // out — see `leaveScreensaver`.
-    if (busy || saver?.active) return;
+    if (busy || saver?.active || browser?.active) return;
     if (!resize()) return;
     if (deepOwns()) deep.resized();
     else if (walkLayers !== null) paintWalk();
@@ -5029,6 +5067,7 @@ function giveBack() {
     () => juliaCard?.stop(),
     () => phoenixTab?.stop(),
     () => saver?.stop(),
+    () => browser?.stop(),
     () => renderer?.stop(),
   ];
   for (const ask of asked) {
@@ -5316,6 +5355,39 @@ async function main() {
   document
     .getElementById("gallery-screensaver")
     .addEventListener("click", () => enterScreensaver());
+  const at = (id) => document.getElementById(id);
+  browser = browse.install({
+    layer: at("browse"),
+    collection: at("browse-collection"),
+    rows: {
+      mode: at("browse-modes"),
+      hue: at("browse-hues"),
+      hueHead: at("head-browse-hues"),
+      family: at("browse-families"),
+      centered: at("browse-centered"),
+      spiral: at("browse-spiral"),
+    },
+    tiles: at("browse-tiles"),
+    note: at("browse-note"),
+    exitButton: at("browse-exit"),
+    preview: at("browse-preview"),
+    stage: at("browse-stage"),
+    under: at("browse-under"),
+    canvas: at("browse-picture"),
+    state: at("browse-state"),
+    openButton: at("browse-open"),
+    // Its own pool over the module already compiled, as the screensaver's is: nothing the
+    // viewer does cancels a preview, and nothing a preview does cancels the viewer.
+    pool: () => Renderer.over(renderer.module, renderer.workerCount),
+    parse: (query) => link.parse(`?${query}`, contract),
+    derive: download.derivedView,
+    finalSupersample: FINAL_SUPERSAMPLE,
+    firstMode: MODE_FIRST,
+    base: import.meta.url,
+    onOpen: (row) => leaveBrowse(row),
+    onLeave: () => leaveBrowse(),
+  });
+  at("gallery-browse").addEventListener("click", () => enterBrowse());
   // The collection chosen is written into the address bar as it is chosen, so the address
   // reopens the Gallery tab where it was. Deferred a tick because this listener is added
   // before the panel's own, which is what sets the collection `readdress` reads.
