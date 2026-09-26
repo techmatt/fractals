@@ -118,12 +118,8 @@ PROSE: tuple[tuple[str, str], ...] = (
     ("figure", "packs-hero"),
     (
         "p",
-        "These are the finished wallpapers: 2560×1440 JPEGs, zipped by gallery. Each "
-        "picture carries its explorer link in its metadata, so if you like one you can "
-        "open it in the explorer and keep going from there.",
-    ),
-    (
-        "p",
+        "These are the finished wallpapers: 2560×1440 JPEGs, zipped by gallery. Every one "
+        "was found and rendered with the search and rendering methods this site describes. "
         "They're free to use under "
         '<a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>. If you share '
         "them, credit Matt Fisher.",
@@ -140,8 +136,7 @@ PROSE: tuple[tuple[str, str], ...] = (
     ("h2", "The main gallery"),
     (
         "p",
-        "All thousand pictures, in three downloads so no single file is too large. The first "
-        "part has the ones my friends liked best.",
+        "All thousand pictures, in three downloads so no single file is too large.",
     ),
     ("pack", GENERAL),
     ("h2", "Color galleries"),
