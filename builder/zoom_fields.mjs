@@ -18,10 +18,13 @@
 //   ... --variant <name>                       the fields of one of the record's `variants`
 //                                              — the same descent at its own grid and
 //                                              caps, under `<zoom dir>/<name>/fields/`
-//   node builder/zoom_fields.mjs --variant <name> --undercap
+//   node builder/zoom_fields.mjs [--variant <name>] --undercap
 //                                              every keyframe probed sparsely at the explicit
-//                                              ceiling, and the variant's caps set from what
-//                                              escaped above the old ones (`capRule`)
+//                                              ceiling, and the caps set from what escaped
+//                                              above the old ones (`capRule`): the variant's,
+//                                              or the record's own where it carries the rule,
+//                                              as every record `descent.py` writes does; the
+//                                              fields run it first where it has not been run
 //
 // Fields land in `artifacts/deep-zoom/fields/` (or `FRACTAL_WEBSITE_ZOOM_DIR`/fields), one
 // `k<NN>.f64` and one `k<NN>.json` each. The `.f64` is written under a temporary name and
@@ -69,7 +72,7 @@ const VARIANT = (() => {
 
 /** The record's keyframes as this run draws them: its own, or with a variant's grid and caps
  *  laid over them. A variant keeps every width, so it is the same descent at another size. */
-function keyframesOf(record) {
+export function keyframesOf(record) {
   if (!VARIANT) return record.keyframes;
   const variant = record.variants?.[VARIANT];
   if (!variant) throw new Error(`the record has no variant ${VARIANT}`);
@@ -261,6 +264,13 @@ export async function renderSpec(p, spec, threads, name = "frame") {
 }
 
 async function fields(only) {
+  // A cap rule nobody has measured yet is measured first: a new video's caps are the rule's
+  // by default, and its preview draws at the same caps as the video it previews.
+  const owner = capOwner(readRecord());
+  if (owner && owner.rule.probe_ceiling === undefined) {
+    console.log(`caps not yet measured: probing into ${owner.dir}/undercap first`);
+    await undercap();
+  }
   const record = readRecord();
   const keyframes = keyframesOf(record);
   const frames = keyframes.frames;
@@ -292,7 +302,19 @@ async function fields(only) {
   }
 }
 
-/** A variant's caps, from a sparse field of every keyframe drawn at the explicit ceiling.
+/** Whose caps the measured rule sets for this run: the variant's, where `--variant` names one
+ *  that carries a `cap`, and otherwise the record's own keyframes where they carry one — every
+ *  record `builder/descent.py` writes does, so a new video is measured without being asked.
+ *  Null where neither does: the record's caps are then the ones it was written with. */
+function capOwner(record) {
+  const variant = VARIANT ? record.variants?.[VARIANT] : null;
+  if (variant?.cap) return { rule: variant, dir: variantDir() };
+  if (record.keyframes.cap) return { rule: record.keyframes, dir: zoomDir() };
+  return null;
+}
+
+/** A record's or a variant's caps, from a sparse field of every keyframe drawn at the
+ *  explicit ceiling.
  *
  *  A sample that escapes there with `nu` above a cap is one that cap paints black while it is
  *  exterior: the flicker, since the neighbouring keyframe's cap is different. What is still
@@ -300,21 +322,26 @@ async function fields(only) {
  *  alone: `need` is the smallest cap that leaves no more than `share` of the probe black for
  *  want of iterations, the cap is `headroom` times that and never below the record's own, and
  *  it is carried down the descent so that no keyframe's cap is under a shallower one's. The
- *  ceiling bounds all of it. */
+ *  ceiling bounds all of it. The record's own cap is its settled one, kept as `was` once the
+ *  rule has written over a keyframe's `maxiter`, so a second measurement lands where the first
+ *  did. */
 async function undercap() {
   const record = readRecord();
-  const variant = record.variants?.[VARIANT];
-  if (!variant) throw new Error("--undercap needs --variant <name>");
-  const [cols, rows] = variant.probe;
+  const owner = capOwner(record);
+  if (!owner) throw new Error("--undercap needs a record or a --variant that carries a cap rule");
+  const { rule } = owner;
+  const own = rule === record.keyframes;
+  const [cols, rows] = rule.probe;
   const p = await load();
   const ceiling = p.plan({ ...baseSpec(record, record.target_width), resolution: [cols, rows] })
     .explicit_ceiling;
-  const dir = `${variantDir()}/undercap`;
+  const dir = `${owner.dir}/undercap`;
   mkdirSync(dir, { recursive: true });
   const threads = cpus().length;
   const started = performance.now();
   const measured = [];
-  for (const frame of record.keyframes.frames) {
+  for (const drawn of record.keyframes.frames) {
+    const frame = { ...drawn, maxiter: drawn.was ?? drawn.maxiter };
     const path = `${dir}/${tag(frame.k)}`;
     let field;
     let seconds = null;
@@ -334,9 +361,9 @@ async function undercap() {
     const escaped = Array.from(field).filter((v) => !Number.isNaN(v)).sort((a, b) => b - a);
     measured.push({ frame, escaped, samples: field.length, seconds });
   }
-  const caps = capRule(measured, variant.cap, ceiling);
+  const caps = capRule(measured, rule.cap, ceiling);
   const over = (m, cap) => m.escaped.filter((v) => v > cap).length / m.samples;
-  variant.frames = measured.map((m, i) => ({
+  const found = measured.map((m, i) => ({
     k: m.frame.k,
     maxiter: caps[i].maxiter,
     need: caps[i].need,
@@ -346,9 +373,14 @@ async function undercap() {
     interior: +(1 - m.escaped.length / m.samples).toFixed(4),
     nu_max: m.escaped.length ? Math.round(m.escaped[0]) : null,
   }));
-  variant.probe_ceiling = ceiling;
+  // A variant lists its caps beside the record's keyframes; the record's own are written into
+  // its keyframes, whose width, settle and stage stay as `descent` wrote them.
+  rule.frames = own
+    ? record.keyframes.frames.map((f, i) => ({ ...f, ...found[i] }))
+    : found;
+  rule.probe_ceiling = ceiling;
   writeRecord(record);
-  for (const f of variant.frames) {
+  for (const f of found) {
     console.log(
       `${tag(f.k)} was=${f.was} need=${f.need} cap=${f.maxiter} black ${f.black_was} -> ${f.black} ` +
         `interior=${(100 * f.interior).toFixed(2)}% nu_max=${f.nu_max}`,

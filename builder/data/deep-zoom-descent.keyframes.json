@@ -73,6 +73,10 @@
       { "k": 51, "width": 7.85181302073094, "maxiter": 2334, "probe_mean": 16, "escaped": 0.9557 }
     ]
   },
+  "encode": {
+    "crf": 14,
+    "note": "Made at CRF 14, the encode default before video_defaults_ckpt151, so a re-encode reproduces its master."
+  },
   "video": {
     "resolution": [1920, 1080],
     "fps": 60,

@@ -20,6 +20,9 @@ The palette is the engine's own, lifted once by `zoom_palette.mjs`; the interior
     python builder/zoom.py sheet --mapping log       a contact sheet of chosen keyframes
     python builder/zoom.py encode --mapping log      composite and encode that mapping
     python builder/zoom.py video --mapping log       colour, then encode
+
+The encode is `ENCODE` unless the record says otherwise; `--crf` and `--preset` override it
+for one run.
 """
 
 from __future__ import annotations
@@ -41,6 +44,11 @@ HERE = Path(__file__).resolve().parent
 RECORD = HERE / "data" / "deep-zoom-descent.keyframes.json"
 TABLE_SIZE = 65536
 MAPPINGS = ("linear", "log", "power")
+#: The encode every video gets unless its record, its variant or a flag says otherwise: the
+#: double-descent `4k60` master's (double_descent_4k_ckpt148), taken as the baseline by
+#: video_defaults_ckpt151. The profile, the 4:2:0 and the BT.709 tags are in `encode_command`
+#: and are not a choice.
+ENCODE = {"crf": 12, "preset": "slow", "tune": "film"}
 
 
 #: The record this run reads: `RECORD` unless `--record` names another, such as an
@@ -78,6 +86,8 @@ def read_record() -> dict:
         supersample=variant.get("supersample", 1),
         frames=[dict(f, maxiter=caps.get(f["k"], f["maxiter"])) for f in frames],
     )
+    if "encode" in variant:
+        record["encode"] = dict(record.get("encode", {}), **variant["encode"])
     video = dict(record["video"], **variant.get("video", {}))
     # The same path and easing, faster: every time in the schedule divided alike.
     speedup = video.pop("speedup", 1)
@@ -360,28 +370,31 @@ def still(record: dict, directory: Path, s: float, out: Path) -> None:
     print(out)
 
 
-def encode(
-    record: dict,
-    directory: Path,
-    out: Path,
-    crf: int,
-    preset: str,
-    span: tuple[float, float] | None = None,
-) -> None:
-    """Composite every frame of the schedule, or only those whose `s` lies in `span`, and
-    encode them: libx264, High profile, 4:2:0, BT.709, at the given CRF and preset."""
+def encode_of(record: dict, crf: int | None = None, preset: str | None = None) -> dict:
+    """`ENCODE`, with the record's `encode` (a variant's laid over it) and any flag given laid
+    over that. The two videos made before the baseline pin the CRF they were made at."""
+    chosen = dict(ENCODE, **record.get("encode", {}))
+    if crf is not None:
+        chosen["crf"] = crf
+    if preset is not None:
+        chosen["preset"] = preset
+    return chosen
+
+
+def encode_command(
+    record: dict, out: Path, crf: int | None = None, preset: str | None = None
+) -> list[str]:
+    """The ffmpeg command that takes raw RGB frames on stdin and writes `out`: libx264, High
+    profile, 4:2:0, full BT.709 tags, at the CRF, preset and tune `encode_of` settles on."""
     video = record["video"]
-    size = tuple(video["resolution"])
-    frames = Keyframes(directory, record)
-    plan = schedule(record)
-    if span is not None:
-        plan = [s for s in plan if span[0] <= s <= span[1]]
-    out.parent.mkdir(parents=True, exist_ok=True)
-    command = [
+    size = video["resolution"]
+    chosen = encode_of(record, crf, preset)
+    return [
         ffmpeg_exe(), "-y", "-loglevel", "error",
         "-f", "rawvideo", "-pix_fmt", "rgb24", "-s", f"{size[0]}x{size[1]}",
         "-r", str(video["fps"]), "-i", "-",
-        "-c:v", "libx264", "-preset", preset, "-crf", str(crf), "-tune", "film",
+        "-c:v", "libx264", "-preset", chosen["preset"], "-crf", str(chosen["crf"]),
+        "-tune", chosen["tune"],
         "-profile:v", "high", "-pix_fmt", "yuv420p",
         # the -color_* flags alone tag only the matrix; the primaries and transfer reach the
         # stream's VUI through x264's own parameters
@@ -389,6 +402,26 @@ def encode(
         "-colorspace", "bt709", "-color_primaries", "bt709", "-color_trc", "bt709",
         "-movflags", "+faststart", str(out),
     ]  # fmt: skip
+
+
+def encode(
+    record: dict,
+    directory: Path,
+    out: Path,
+    crf: int | None = None,
+    preset: str | None = None,
+    span: tuple[float, float] | None = None,
+) -> None:
+    """Composite every frame of the schedule, or only those whose `s` lies in `span`, and
+    encode them with `encode_command`."""
+    video = record["video"]
+    size = tuple(video["resolution"])
+    frames = Keyframes(directory, record)
+    plan = schedule(record)
+    if span is not None:
+        plan = [s for s in plan if span[0] <= s <= span[1]]
+    out.parent.mkdir(parents=True, exist_ok=True)
+    command = encode_command(record, out, crf, preset)
     started = time.perf_counter()
     with subprocess.Popen(command, stdin=subprocess.PIPE) as encoder:
         for i, s in enumerate(plan):
@@ -416,7 +449,7 @@ def main(argv: list[str] | None = None) -> None:
     parser.add_argument(
         "--record", type=Path, help="a keyframe record other than the deep zoom video's"
     )
-    parser.add_argument("--variant", help="one of the record's variants, such as 4k60")
+    parser.add_argument("--variant", help="one of the record's variants, such as 4k60 or preview")
     sub = parser.add_subparsers(dest="command", required=True)
     sub.add_parser("stats", help="nu and band widths per keyframe")
     for name in ("colour", "sheet", "encode", "video", "still"):
@@ -429,8 +462,8 @@ def main(argv: list[str] | None = None) -> None:
         p.add_argument("--mirror", action="store_true")
         p.add_argument("--reverse", action="store_true")
         p.add_argument("--workers", type=int, default=6, help="colouring processes")
-        p.add_argument("--crf", type=int, default=14)
-        p.add_argument("--preset", default="slow")
+        p.add_argument("--crf", type=int, help="encode: over the record's (baseline 12)")
+        p.add_argument("--preset", help="encode: over the record's (baseline slow)")
         p.add_argument("--out", type=Path, help="encode: the MP4's path")
         p.add_argument("--keys", default="51,45,38,30,24,20,12,4,0", help="sheet: keyframes")
         p.add_argument("--only", help="colour: these keyframes alone, as k,k,k")

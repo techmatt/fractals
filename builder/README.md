@@ -1043,6 +1043,42 @@ around copy 1's body, samples escape as late as 1.99 million, so k00–k32 all d
 million and the ending opens M₂ at 61 periods rather than 32. `python -m builder descent`
 rewrites the record whole and drops `variants`.
 
+**A new video gets the 4k60 master's choices without naming a variant** *(video_defaults_ckpt151)*.
+What `4k60` proved on the favicon seat is now the baseline, and every record `descent` writes
+carries it in its base:
+
+- **Size and filter:** fields at 7680×4320 for a 3840×2160 video at 60 fps, supersample 1, so
+  a frame is area-filtered down 1–2× exactly as `4k60`'s were (`descent.py`'s `GRID`, `VIDEO`).
+- **Caps by the measured rule, on by default:** the keyframes carry `probe` (480×270) and
+  `cap` (`share` 1e-5, `headroom` 2). `zoom_fields.mjs` runs `--undercap` on the base before it
+  draws a field the first time, so each keyframe is probed at `cap::EXPLICIT_CEILING` and its
+  cap is set to 2×`need`. It is never below the settled cap, which stays as `was`. The caps
+  never fall as the descent deepens, and they stop at the ceiling. Running the rule a second
+  time lands where the first did.
+- **Encode:** libx264, High, CRF 12, preset slow, tune film, yuv420p, and the BT.709 primaries,
+  transfer and matrix through `-x264-params`. That is `zoom.py`'s `ENCODE`. A record's
+  `encode`, then a variant's, then `--crf`/`--preset` override it.
+  `deep-zoom-descent` and `double-descent`'s base pin CRF 14, the default they were made at,
+  and `4k60` pins its 12, so re-encoding any existing video reproduces its settings.
+  None of them is re-rendered.
+- **Per video:** speed (`seconds_per_halving`, holds, easing, or a variant's `speedup`) and
+  the path.
+
+**The preview is a variant every new record carries.** `variants.preview` is the same record
+at 1920×1080 fields and a 960×540 video, at the base's measured caps. That is a sixteenth of
+the field time, and it previews the video rather than a cheaper one:
+
+```
+python -m builder descent "<link>" --name <name>
+node builder/zoom_fields.mjs --record builder/data/<name>.keyframes.json --variant preview   # probes first
+python builder/zoom.py --record builder/data/<name>.keyframes.json --variant preview video --mapping power
+node builder/zoom_fields.mjs --record builder/data/<name>.keyframes.json                     # the 4K fields
+python builder/zoom.py --record builder/data/<name>.keyframes.json video --mapping power
+```
+
+⚠ **The base is now the big render.** At the favicon seat's depth, `4k60`'s fields were 18 GB
+and 25.8 h. Point `artifacts/<name>` at a larger disk before the fields start, as `4k60` did.
+
 `deep-descent-pairs` colours a twin the other way round: its counts are about `p_A` times
 its source's, so under `lambda=0` it is its source shifted by `ln p_A`, and taking that off
 the phase puts the twin in its source's colours.

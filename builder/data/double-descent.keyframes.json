@@ -168,6 +168,10 @@
       { "k": 68, "width": 9.832545723197521, "maxiter": 1944, "settled": 1944, "probe_mean": 10, "escaped": 0.967, "stage": "home" }
     ]
   },
+  "encode": {
+    "crf": 14,
+    "note": "Made at CRF 14, the encode default before video_defaults_ckpt151, so a re-encode reproduces its cut. The 4k60 master was made at 12, which is now the baseline."
+  },
   "video": {
     "resolution": [960, 540],
     "fps": 60,
@@ -213,6 +217,7 @@
         "fps": 60,
         "speedup": 1.27
       },
+      "encode": { "crf": 12 },
       "probe": [480, 270],
       "cap": {
         "share": 0.00001,

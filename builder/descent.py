@@ -83,11 +83,13 @@ HOME = {
     6: (-0.09, 4.3),
 }
 
-#: The field grid the movie's keyframes are drawn at, twice the video's own size, and the
-#: video: `deep-zoom-descent`'s timing at a first cut's resolution.
-GRID = (1920, 1080)
+#: The field grid the movie's keyframes are drawn at, twice the video's own size so that a
+#: frame is only ever area-filtered down, and the video: 3840x2160 at 60 fps, the double-descent
+#: `4k60` master's (double_descent_4k_ckpt148), made every new video's baseline by
+#: video_defaults_ckpt151. The timing is `deep-zoom-descent`'s; speed and path are per video.
+GRID = (7680, 4320)
 VIDEO = {
-    "resolution": [960, 540],
+    "resolution": [3840, 2160],
     "fps": 60,
     "seconds_per_halving": 1.5,
     "hold_start": 1,
@@ -98,6 +100,22 @@ VIDEO = {
     "way at the end.",
     "feather": 0.08,
     "feather_note": "The inner keyframe's edge fades over this share of its own width.",
+}
+#: The measured cap rule, `zoom_fields.mjs`'s `capRule`, as the `4k60` master ran it: every
+#: keyframe probed at this grid at `cap::EXPLICIT_CEILING`, and the cap `headroom` times the
+#: smallest one that leaves no more than `share` of the probe black while it is exterior.
+PROBE = (480, 270)
+CAP = {"share": 0.00001, "headroom": 2}
+#: The smaller render a new video carries beside itself: half the size each way, so a sixteenth
+#: of the samples and of the field time, at the same caps, so that it previews the video rather
+#: than a cheaper one.
+PREVIEW = {
+    "note": "A half-size preview of this record's video: the same widths, caps, path, speed "
+    "and colouring, at 1920x1080 fields and a 960x540 video. `zoom_fields.mjs --variant "
+    "preview` and `zoom.py --variant preview` draw it under `<zoom dir>/preview/`.",
+    "grid": [1920, 1080],
+    "supersample": 1,
+    "video": {"resolution": [960, 540]},
 }
 
 
@@ -465,10 +483,14 @@ def record(descent: dict, name: str, links: list[str], log=print) -> dict:
             "supersample": 1,
             "cap_rule": "the Deep tab's settle (deep-gallery-native settle, policy::settle), "
             "raised at every stage frame and each keyframe deeper to 32 periods of that "
-            "stage's copy, under cap::EXPLICIT_CEILING",
+            "stage's copy, under cap::EXPLICIT_CEILING; then, as the floor, measured by "
+            "zoom_fields.mjs's capRule over the probe (kept as `was`)",
+            "probe": list(PROBE),
+            "cap": dict(CAP),
             "frames": frames,
         },
-        "video": VIDEO,
+        "video": dict(VIDEO),
+        "variants": {"preview": json.loads(json.dumps(PREVIEW))},
         "colour": {
             "interior": [0, 0, 0],
             "note": "index = frac(g(nu) / L + phase). The log mapping's L and phase are Hold "
