@@ -81,7 +81,7 @@ is drawn at thirty-two of its own periods, and at the width's cap the same frame
 all-black blob, so the cap that decided the picture has to travel with its link. `n` is
 written only where it is not the width's. The same key let four figures that were refused
 only for a chosen cap be linked — `render-maxiter` at its 300, and three panels of
-`locations-style-spectrum` — which is the contract's own rule that a link is exact or absent.
+`locations-style-spectrum`, a figure deleted since (2026-09-25) — which is the contract's own rule that a link is exact or absent.
 **A mode parameter left alone is not emitted.** Its default lives in the engine's mode catalog,
 which is the same place the mode's identity lives, so a link that omits `density` is asking
 for "the stripe mode" rather than for "a stripe mode at 6" — and it should move if the

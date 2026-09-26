@@ -1021,37 +1021,6 @@ def _chain_provenance(root, chain, judged, rated, size) -> list[str]:
 
 # ------------------------------------------------------------------------ the label store
 
-#: The spectrum, most open to busiest, as picks into the two **finished-render** label
-#: stores — a store, a batch file and a line each. A row there is a picture rather than a
-#: place: it carries the family, the frame, the mode with its settings, the curve, the map
-#: and every knob of the palette pass, so a pick is a whole wallpaper and not a location
-#: somebody has to choose a coloring for. All six are Matt's own 4s, the top of that
-#: scale, drawn from a pool of 836.
-#:
-#: Chosen for six different partitions — all four families, both planes — and five
-#: different rendering modes, and ordered on how much of the frame carries detail: mean
-#: edge magnitude of the luminance at 512×288, over the pictures the judges' corpora
-#: already hold. The order is a measurement because the axis
-#: is the figure's whole subject; what the measurement does *not* decide, and the caption
-#: says so, is which of the six belongs on a desktop.
-SPECTRUM = (
-    ("smooth_render", "fresh_pool_draw", 313),
-    ("strange_render", "rare_palette", 508),
-    ("strange_render", "threads_promotion", 24),
-    ("strange_render", "rare_palette", 502),
-    ("strange_render", "rare_palette", 513),
-    ("strange_render", "mode_correction", 1024),
-)
-
-#: The verdict every pick has to carry. Asserted rather than trusted: four of these six
-#: were re-rated upward on 2026-08-18 and the addresses that read 3 are still in the file,
-#: so a pick is one edit away from captioning a picture with a score nobody holds.
-SPECTRUM_SCORE = 4
-
-#: What the edge measure read on each pick, in the same order — kept so the ordering can
-#: be checked without the archive disk the corpora live on.
-SPECTRUM_DENSITY = (0.032, 0.067, 0.087, 0.111, 0.152, 0.194)
-
 #: Three examples per rung of the four-point scale, all rated by hand, spread across
 #: families so no row reads as being about one fractal.
 #:
@@ -1095,123 +1064,6 @@ RUNGS = {
 #: the four-point scale and the page that evaluates a judge against it have to colour a
 #: 3 the same way, or the second one is teaching a different scale.
 RUNG_INK = theme_module.RATING_INK
-
-
-#: What a spectrum panel is rendered at before it is fitted into its cell. Three times
-#: the cell's width and three samples per pixel per axis: a wallpaper's fine texture is
-#: most of what makes it read as busy, and a render made at cell size never has it to
-#: lose. Nothing here needs wallpaper resolution — the sheet that ships is 1314 wide.
-SPECTRUM_RENDER = (1280, 720)
-SPECTRUM_SUPERSAMPLE = 3
-
-
-SPECTRUM_COLUMNS = 3
-
-
-def style_spectrum() -> Split:
-    """Six rated wallpapers in order of how full the frame is, with no verdict attached.
-
-    **Six pictures rather than one** *(figure_split_all_ckpt140, 2026-09-22)*. The step
-    numeral used to be stroked into the corner of each tile, which is the one piece of
-    lettering on this page a reader might want to read at a size the picture does not
-    choose; it is the panel's label now. Each panel is also a way into the explorer at
-    that wallpaper's own recipe — the figure's whole claim is that these six are one
-    scale, and the scale is easier to believe when a reader can go and stand in any of
-    them.
-    """
-    identifier = "locations-style-spectrum"
-    catalog = renders.mode_catalog()
-    picks = [renders.finished_row(*pick) for pick in SPECTRUM]
-    wrong = [row for row in picks if row["score"] != SPECTRUM_SCORE]
-    if wrong:
-        raise renders.EngineError(
-            "every panel of the spectrum is a picture rated "
-            f"{SPECTRUM_SCORE}, and "
-            + ", ".join(
-                f"{row['_head']}/{row['_batch']}.jsonl line {row['_line']} scores {row['score']}"
-                for row in wrong
-            )
-        )
-    size = panels(SPECTRUM_COLUMNS)
-    made = []
-    for index, row in enumerate(picks, start=1):
-        spec = renders.wallpaper_spec(
-            row,
-            resolution=SPECTRUM_RENDER,
-            supersample=SPECTRUM_SUPERSAMPLE,
-            catalog=catalog,
-        )
-        picture = cache().produce(f"spectrum-{index}", "render", spec)
-        made.append(
-            Made(
-                sheets.save(sheets.fitted(picture.path, size), panel_path(identifier, index)),
-                alt=(
-                    f"A finished {_family_name(row['family'])} wallpaper, step {index} of "
-                    f"{len(picks)} from the most open frame to the busiest."
-                ),
-                label=str(index),
-                spec=row_spec(row),
-            )
-        )
-    return Split(made, _spectrum_provenance(picks, size), SPECTRUM_COLUMNS)
-
-
-def row_spec(row: dict) -> dict:
-    """What one finished-render row's panel is, in the fields a link is derived from.
-
-    A finished-render row already carries everything: the family, the frame, the mode and
-    its settings, the curve the mode reads its field through, the map and the whole
-    palette pass, and the cap. What it does not carry is a *spelling* — the engine is
-    handed a `coloring` written out in full by `renders.wallpaper_spec`, and a link cannot
-    be derived from one of those, because a link names a mode. So this is the same picture
-    said the other way: the mode by its name, which is the form `builder/links.py` reads
-    and the form the article's own vocabulary uses.
-    """
-    return {
-        "family": row["family"],
-        "viewport": row["viewport"],
-        "mode": row["mode"],
-        "mode_params": row.get("mode_params") or {},
-        "curve": row.get("curve", "linear"),
-        "colormap": row["colormap"],
-        "palette": row.get("recipe") or {},
-        "maxiter": row["render"]["maxiter"],
-    }
-
-
-def _spectrum_provenance(picks: list[dict], size: tuple[int, int]) -> list[str]:
-    """One line per panel: everything it takes to draw that wallpaper again."""
-    lines = [
-        "Every panel is a row of a tracked finished-render label store, read by store, "
-        "file and line, and rendered fresh from that row's own recipe at "
-        f"{SPECTRUM_RENDER[0]}x{SPECTRUM_RENDER[1]}, supersample {SPECTRUM_SUPERSAMPLE}, "
-        f"then fitted to {size[0]}x{size[1]} in the sheet. Nothing about the coloring is "
-        "this figure's choice: mode, mode settings, curve, colormap, the whole palette "
-        "recipe and the cap all come off the row. The recipe this repository builds from a "
-        "row was checked against the picture the judges' corpora hold for the same row, at "
-        "the row's own geometry: all six reproduce it to within what re-compressing that "
-        "JPEG costs (mean absolute difference 1.1-9.3 of 255, codec floor 1.1-9.5).",
-    ]
-    for (head, batch, line), row, density in zip(SPECTRUM, picks, SPECTRUM_DENSITY, strict=True):
-        family = row["family"]
-        lines.append(
-            f"{head}/{batch}.jsonl line {line}: {_family_name(family)}"
-            + (f" c = {family['c'][0]} + {family['c'][1]}i" if "c" in family else "")
-            + (f", p = {family['p'][0]} + {family['p'][1]}i" if "p" in family else "")
-            + (
-                f", z_prev = {family['z_prev'][0]} + {family['z_prev'][1]}i"
-                if "z_prev" in family
-                else ""
-            )
-            + f", centre {row['viewport']['center_re']} + {row['viewport']['center_im']}i, "
-            f"width {row['viewport']['width']}, mode {row['mode']}"
-            + (f" {json.dumps(row['mode_params'])}" if row.get("mode_params") else "")
-            + f", curve {row['curve']}, colormap {row['colormap']}, palette "
-            f"{json.dumps(row['recipe'])}, cap {row['render']['maxiter']}, no crop beyond "
-            f"the sheet's; scored {row['score']} by hand on {row['recorded_at']}, origin "
-            f"{row['origin']}; edge measure {density}."
-        )
-    return lines
 
 
 RATING_COLUMNS = 3
@@ -2134,7 +1986,6 @@ def walk_descent() -> Drawn:
 #: Every figure this module draws, and what redraws it. The keys are registry ids, so
 #: `builder locations <id>` and a row's `recipe` name the same thing.
 MAKERS = {
-    "locations-style-spectrum": style_spectrum,
     "locations-rating-examples": rating_examples,
     "locations-random-samples": random_samples,
     "locations-foci-proposals": foci_proposals,

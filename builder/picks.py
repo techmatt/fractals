@@ -40,9 +40,9 @@ written from the records rather than from a printout somebody pasted.
 ## What is drawn
 
 The engine, at the figure's own geometry, from the recipe's own coloring —
-`renders.wallpaper_spec` is the bridge and it is the same one `locations-style-spectrum`
-crosses. The 640×360 thumbnails the record points at are the pictures the *judges* were
-shown; they are not a source for a figure, and nothing here opens one.
+`renders.wallpaper_spec` is the bridge. The 640×360 thumbnails the record points at are the
+pictures the *judges* were shown; they are not a source for a figure, and nothing here opens
+one.
 
 ## The autolevel curve, and the third read that finds it
 
@@ -109,7 +109,7 @@ from dataclasses import dataclass, replace
 from pathlib import Path
 
 from . import figures as figures_module
-from . import images, records, renders, sheets
+from . import images, records, renders, sheets, theme
 from .locations import SHEET_WIDTH, Drawn, Made, Split, panel_path, panels, sheet_path
 
 #: Where a recorded tentative gallery lives under the wallpaper project's tree, and what
@@ -158,9 +158,9 @@ PICK_SEPARATOR = "|"
 LF = "\n"
 
 #: What a panel is rendered at before it is fitted into its cell, and how many samples a
-#: pixel each axis. Three times the cell's width for the same reason
-#: `locations-style-spectrum` uses it: a wallpaper's fine texture is most of what makes
-#: it read as a wallpaper, and a render made at cell size never has it to lose.
+#: pixel each axis. Three times the cell's width because a wallpaper's fine texture is
+#: most of what makes it read as a wallpaper, and a render made at cell size never has it
+#: to lose.
 PANEL_RENDER = (1280, 720)
 PANEL_SUPERSAMPLE = 3
 
@@ -1378,44 +1378,241 @@ def galleries_icon_source() -> Split:
     )
 
 
-# ------------------------------------------------------------------- minibrots in a row
+# --------------------------------------------------------- minibrots under their whole sets
 
-#: Three across, one down, and no lettering at all. The figure's whole claim is that the
-#: small dark shape in each of these wallpapers is a copy of the set, so anything drawn
-#: over the picture is competing with the one thing the reader is being asked to look at.
+#: Three across, two down: each column is one minibrot, the whole set it sits in on top
+#: and the finished wallpaper below. No lettering; the one thing drawn into a picture is
+#: the ring on a whole set, because where the copy is on the plane is past the page's reach.
 MINIBROT_COLUMNS = 3
+
+#: The first column's wallpaper, which Matt gave as an explorer link rather than a seat
+#: *(minibrot_halo_figure_ckpt150, 2026-09-25)*. The link is its whole recipe: it names no
+#: cap, so the depth policy chooses one exactly as the explorer does, and every palette key
+#: it leaves out is the contract's default. Frozen here as the string he sent.
+MINIBROT_LINK = (
+    "v=4&f=multibrot5&m=tia&x=0.6661683356526621&y=0.7827352874280924"
+    "&w=0.00000004215007694817026&p=dolphin-dance-25&phase=0.44614"
+)
+
+#: The keys that link spells, and so the only ones `_link_record` reads. Anything else is a
+#: refusal rather than a key quietly dropped from the picture.
+MINIBROT_LINK_KEYS = frozenset({"v", "f", "m", "x", "y", "w", "p", "phase"})
+
+#: The palette pass a link leaves unsaid, as the contract defaults it.
+LINK_PALETTE = {
+    "gamma": 1.0,
+    "cycles": 1.0,
+    "phase": 0.0,
+    "reverse": False,
+    "mirror": False,
+    "transfer": {"kind": "value"},
+    "rolloff": {"kind": "none"},
+}
+
+#: The ring on a whole set, in the first mark ink, sized for the 422-wide panel it lands on.
+MINIBROT_RING = theme.MARK_INK[0]
 
 #: How the three were arrived at, for the row's own provenance.
 MINIBROT_DRAW = (
-    "Chosen by this session from the 1,000-seat tentative gallery, out of the 129 seats "
-    "on a parameter plane whose shipped picture carries one compact near-black region "
-    "wholly inside the frame — a copy's body rather than a lobe running off an edge — "
-    "measured on the seat's own thumbnail, narrowed to the ones whose run kept enough "
-    "of the autolevel stamp to be redrawn from the recipe, and then looked at. One seat "
-    "per plane and no two through the same rendering mode or hue family, so the row "
-    "varies in everything except the shape it is about.",
+    "Chosen by Matt (minibrot_halo_figure_ckpt150, 2026-09-25). The bottom row, left to "
+    "right: an explorer link he gave, drawn from the link as its whole recipe; then two "
+    "seats he named by alias prefix, each checked to be a unique prefix across the recorded "
+    "galleries. 2caea5a6 is only recipe key 2caea5a6b1da5357, seated in the rose collection "
+    "and in General · 2000 and not in the published record, and is named here by the rose "
+    "collection's stamp; b88eacf6 is only b88eacf62062bf25, seated in the published record. "
+    "The top row is each plane's home view as the engine derives it, drawn with the mode, "
+    "curve, map and palette pass of the wallpaper under it at the depth policy's cap, with "
+    "a ring drawn at the centre of the frame below, where each copy's body sits.",
 )
 
 
-def minibrot_examples() -> Split:
-    """Three finished wallpapers with a minibrot's body plainly in frame.
+def _link_record(link: str) -> dict:
+    """An explorer link as a panel record: the shape `links.spec_record` reads back."""
+    from urllib.parse import parse_qs
 
-    Split and still unlettered *(figure_split_all_ckpt140, 2026-09-22)*: there was
-    nothing drawn over these pictures to lift into HTML, and what the split buys is the
-    three ways into the explorer. A reader told that the small dark shape is a copy of
-    the whole set can now go and zoom into one.
+    fields = {key: values[-1] for key, values in parse_qs(link, strict_parsing=True).items()}
+    unread = set(fields) - MINIBROT_LINK_KEYS
+    if unread:
+        raise PickError(f"the minibrot link spells {', '.join(sorted(unread))}, which is not read")
+    named = fields.get("f", "mandelbrot")
+    degree = re.fullmatch(r"multibrot(\d+)", named)
+    if degree:
+        family = {"kind": "multibrot", "degree": int(degree.group(1))}
+    elif named == "mandelbrot":
+        family = {"kind": "mandelbrot"}
+    else:
+        raise PickError(f"the minibrot link's family {named!r} is not one this reads")
+    return {
+        "family": family,
+        "viewport": {"center_re": fields["x"], "center_im": fields["y"], "width": fields["w"]},
+        "mode": fields.get("m", "smooth"),
+        "curve": "linear",
+        "colormap": fields["p"],
+        "palette": dict(LINK_PALETTE, phase=float(fields.get("phase", 0.0))),
+    }
+
+
+def _seat_record(pick: Pick, viewport: dict) -> dict:
+    """A seat's coloring at another frame, with no cap, so the depth policy chooses it."""
+    record = recolor_spec(pick)
+    record["viewport"] = dict(viewport)
+    del record["maxiter"]
+    return record
+
+
+def _record_spec(record: dict, catalog: dict[str, dict]) -> dict:
+    """The engine spec that draws a panel record at this module's panel geometry."""
+    row = {
+        "family": record["family"],
+        "mode": record["mode"],
+        "mode_params": record.get("mode_params") or {},
+        "curve": record["curve"],
+    }
+    spec = {
+        "schema": 1,
+        "family": record["family"],
+        "viewport": record["viewport"],
+        "resolution": list(PANEL_RENDER),
+        "supersample": PANEL_SUPERSAMPLE,
+        "coloring": renders.wallpaper_coloring(row, catalog),
+        "palette": record["palette"],
+        "colormap": record["colormap"],
+    }
+    if "maxiter" in record:
+        spec["maxiter"] = record["maxiter"]
+    return spec
+
+
+def _record_line(head: str, record: dict, cap, *, representative: bool) -> str:
+    """One panel drawn from a record rather than a seat, in the words `frame_line` uses."""
+    family = record["family"]
+    viewport = record["viewport"]
+    named = f"family {family['kind']}"
+    if family["kind"] == "multibrot":
+        named += f", degree {family['degree']}"
+    map_word = "colormap" if representative else "palette"
+    return (
+        f"{head} — {named}, centre {viewport['center_re']} + {viewport['center_im']}i, "
+        f"width {viewport['width']}, mode {record['mode']}"
+        + (f" {json.dumps(record['mode_params'])}" if record.get("mode_params") else "")
+        + f", curve {record['curve']}, {map_word} {record['colormap']}, "
+        f"mirror {flag(record['palette'].get('mirror'))}, maxiter auto (the depth policy, "
+        f"which chose {cap}), {PANEL_RENDER[0]}x{PANEL_RENDER[1]}, supersample "
+        f"{PANEL_SUPERSAMPLE}, no crop beyond the sheet's; {shade_words(record['palette'])}"
+    )
+
+
+def minibrot_examples() -> Split:
+    """Three minibrots from finished wallpapers, under the whole set each one sits in.
+
+    **Two rows since minibrot_halo_figure_ckpt150** *(Matt, 2026-09-25)*. The bottom row is
+    the three wallpapers — an explorer link he gave, then two seats he named — and the top
+    row is each one's whole set at the family's home view, in that wallpaper's own coloring,
+    with a ring where the copy sits: at the home view it is far below a pixel, so the ring
+    is the only way to say where. The ring is pixels, and a top panel's record is the
+    picture without it, which is what its link opens.
     """
+    from PIL import ImageDraw
+
     identifier = "locations-minibrot-examples"
     wanted = picks_of(identifier)
-    if len(wanted) != MINIBROT_COLUMNS:
+    if len(wanted) != MINIBROT_COLUMNS - 1:
         raise PickError(
-            f"{identifier} is a row of {MINIBROT_COLUMNS} and its row names {len(wanted)} pick(s)"
+            f"{identifier} draws one link and {MINIBROT_COLUMNS - 1} seats, and its row "
+            f"names {len(wanted)} pick(s)"
         )
     resolved = resolve(wanted)
-    made, size = seat_panels(identifier, resolved, MINIBROT_COLUMNS, "minibrot")
+    for pick in resolved:
+        if run_stamp(pick).way != UNTOUCHED:
+            raise PickError(
+                f"{pick.identifier}: the autolevel operator acted on it, and a whole-set panel "
+                "in its coloring has no curve of its own to be drawn through"
+            )
+    catalog = renders.mode_catalog()
+    size = panels(MINIBROT_COLUMNS)
+    linked = _link_record(MINIBROT_LINK)
+    columns = [(linked, None)] + [(recolor_spec(pick), pick) for pick in resolved]
+
+    top: list[Made] = []
+    bottom: list[Made] = []
+    top_lines: list[str] = []
+    lines: list[str] = []
+    for index, (below, pick) in enumerate(columns, start=1):
+        family = below["family"]
+        home = renders.home_view(family)["viewport"]
+        whole = _seat_record(pick, home) if pick else dict(linked, viewport=dict(home))
+        drawn = cache().produce(f"minibrot-home-{index}", "render", _record_spec(whole, catalog))
+        tile = sheets.fitted(drawn.path, size)
+        centre = below["viewport"]
+        x, y = sheets.plane_point(
+            (float(centre["center_re"]), float(centre["center_im"])),
+            (0, 0, size[0], size[1]),
+            (float(home["center_re"]), float(home["center_im"])),
+            float(home["width"]),
+        )
+        sheets.ring(ImageDraw.Draw(tile), x, y, MINIBROT_RING)
+        name = family_name(family)
+        top.append(
+            Made(
+                sheets.save(tile, panel_path(identifier, index), quiet=True),
+                alt=(
+                    f"The whole {name} set in the same coloring as the wallpaper below it, "
+                    "with a small ring marking where that wallpaper's minibrot sits."
+                ),
+                spec=whole,
+            )
+        )
+        top_lines.append(
+            _record_line(
+                f"Panel {index}, the whole {name} set, the engine's home view",
+                whole,
+                drawn.echo.get("maxiter"),
+                representative=index == 1,
+            )
+        )
+
+        words = mode_words(below["mode"])
+        alt = (
+            f"A finished wallpaper in the {name} family, drawn in {words}, with a small dark "
+            "minibrot at its center and the dense structure of its halo around it."
+        )
+        slot = panel_path(identifier, MINIBROT_COLUMNS + index)
+        if pick is None:
+            drawn = cache().produce("minibrot-link", "render", _record_spec(linked, catalog))
+            saved = sheets.save(sheets.fitted(drawn.path, size), slot, quiet=True)
+            bottom.append(Made(saved, alt=alt, spec=linked))
+            lines.append(
+                _record_line(
+                    f"Panel {MINIBROT_COLUMNS + index}, {name}, {words}: the explorer link "
+                    f"{MINIBROT_LINK}, drawn as its whole recipe",
+                    linked,
+                    drawn.echo.get("maxiter"),
+                    representative=False,
+                )
+            )
+        else:
+            picture = panel(pick, f"minibrot-{index}-{pick.alias}", catalog)
+            saved = sheets.save(sheets.fitted(picture, size), slot, quiet=True)
+            bottom.append(Made(saved, alt=alt, seat=pick.identifier))
+            lines.append(
+                f"Panel {MINIBROT_COLUMNS + index}, " + frame_line(pick, representative=False)
+            )
+
+    head = (
+        "builder.picks:minibrot_examples — six panels, three across and two down, landed one "
+        "file a panel, this figure being split rather than composited. Every picture is "
+        f"rendered fresh through the engine at {PANEL_RENDER[0]}x{PANEL_RENDER[1]}, "
+        f"supersample {PANEL_SUPERSAMPLE}, and fitted to {size[0]}x{size[1]}. The bottom "
+        "row's seats are named on this row as <stamp>|<recipe key> and resolved from "
+        "article/figure-recipes.jsonl, and nothing about their coloring is this figure's "
+        "choice: mode, mode settings, curve, map, palette pass and cap all come off the "
+        "ledger's recipe. The ring on each top panel is drawn in after the fit, radius 13 "
+        "in the first mark ink over a dark under-stroke, at the centre of the frame below "
+        "as the panel's own geometry places it."
+    )
     return Split(
-        made,
-        provenance(resolved, size, columns=MINIBROT_COLUMNS, chosen=MINIBROT_DRAW, composed=False),
+        top + bottom,
+        [head, autolevel_line(resolved), *MINIBROT_DRAW, *top_lines, *lines],
         MINIBROT_COLUMNS,
     )
 
