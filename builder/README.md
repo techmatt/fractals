@@ -9,13 +9,15 @@ Python. A build is done here and reviewed in a diff.
 python -m builder build     regenerate gallery pages, the gallery index, thumbnails,
                             the contents rail every page carries, and the short
                             links under go/ from go/redirects.jsonl
-python -m builder check     twenty-four named checks: links, page sync, contents, figure
+python -m builder check     twenty-five named checks: links, page sync, contents, figure
                             blocks, seat panels, landings, one location to one figure,
                             explorer links, the atlas record, each atlas link against
                             its picture, the explorer's bake, embedded links, the
                             wallpaper coloring, assets, the palette record, prose, the
                             editorial pointer, theme, banned vocabulary, em-dashes, line
-                            endings, the site's icon, display formulas, short links
+                            endings, the site's icon, display formulas, short links,
+                            the wallpaper packs record
+python -m builder packs [--import]  the Wallpaper packs record, or import it from next door
 python -m builder figure ID print a figure's markup block, to paste into an article page
 python -m builder figures [--all]   what is still to make, grouped by page
 python -m builder figures --place ID SRC [--crop l,t,r,b] [--max-width N] [--lossless]
@@ -664,6 +666,39 @@ strip the page is missing under `assets/images/palettes/` and rewrites the recor
 the `library` check is what holds the record to that library where a checkout is
 configured. A palette entering the library next door costs one `--library` and one
 `build` on this side.
+
+## The Wallpaper packs page has a record, and its prose is placed in the builder
+
+`wallpaper-packs/index.html` is generated, and since packs_page_ckpt153 it is a placed
+master: `builder/packs.py`'s `PROSE` is `Wallpaper packs v1.md`, registered in
+`article/prose.jsonl` and held to the master by `python -m builder prose
+wallpaper-packs/index.html`, so a prose edit touches that constant and the master and
+nothing else. Each `[PACK <name>]` marker becomes a block with a title, five Gallery tab
+tiles (each linked into the explorer unless its seat row carries a `gap`), one download
+button per zip, and, except for the three best packs, a small "View this gallery in the
+explorer" line.
+
+What the blocks are made of is `wallpaper-packs/packs.jsonl`: per pack, its zip files
+with their picture counts and sizes, and the five seats it shows. The rank order the best
+packs are cut from is a seeded shuffle next door (the votes will replace it with an order
+file), and no record here can derive it, so `python -m builder packs --import` asks
+`curation/packs.py`'s `plan()` in that project's interpreter and writes the record.
+It needs two untracked settings, `full_set_root` and `packs_root` in `local.toml`
+(`FRACTAL_WEBSITE_FULL_SET` and `FRACTAL_WEBSITE_PACKS`). The download links are
+`https://github.com/techmatt/fractals/releases/latest/download/<file>`, which 404 until
+the zips are uploaded.
+
+**A rebuild after the packs are built fills the sizes in.** Until `packs_root` holds a
+`packs.json`, no download line shows a size and none says one is coming. Once
+`curate packs build` has written the zips, `python -m builder packs --import` then
+`python -m builder build` adds "1.14 GB" and the rest, with no prose change. The same two
+commands pick up the friends' vote order once the packs are rebuilt with `--order`, because
+a complete built zip's own order wins over the plan's seeded default. The `packs` check fails
+on zips that were built and not imported, wherever the checkout and the full set are
+configured.
+
+Any repetition on this page is allowed *(Matt, packs_page_ckpt153)*: none of these blocks
+is a registry figure, so `locations` never reads them.
 
 ## What `check` checks
 

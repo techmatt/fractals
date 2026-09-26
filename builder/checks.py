@@ -149,6 +149,12 @@ was raise, and every check after it went unrun.
   accepts, asked of `permalink.js` or `deep-link.js` by `go.mjs` the way the page's door
   would ask, and every page under `go/` is byte for byte what the register writes, with
   none standing where no row names one. `go.py` says what a short link is.
+- **packs** — the Wallpaper packs record answers the page's prose: one row per `[PACK]`
+  marker and no other, each pack's counts its collection's size, each of its five pictures
+  a Gallery tab seat whose tile is on disk, and a colour or general pack's five that
+  collection's opening. Where the checkout and the full set are here, the record is also
+  what `packs --import` would write today, so zips built and not imported fail here; a
+  named skip elsewhere. `packs.py` says why the record is imported rather than derived.
 """
 
 import json
@@ -171,6 +177,7 @@ from . import (
     icons,
     images,
     links,
+    packs,
     pages,
     palettes,
     picker,
@@ -1179,6 +1186,13 @@ def skips() -> tuple[Skip, ...]:
                 NO_STAGED_PICTURES,
             )
         )
+    unpacked = packs.unaskable()
+    if unpacked is not None:
+        # Half: the record against the prose and the Gallery tab's record reads this
+        # repository alone.
+        found.append(
+            Skip("packs", "the packs record against what next door answers today", unpacked)
+        )
     untypeset = formulas.unaskable()
     if untypeset is not None:
         # Half: the shape half reads the pages, which a clone has.
@@ -1229,6 +1243,7 @@ def run_all() -> Report:
             "icons": icons.problems(),
             "formulas": formulas.problems(with_renderer=formulas.unaskable() is None),
             "go": go.problems(),
+            "packs": packs.problems(with_checkout=figures.stores_available()),
         },
         skips(),
     )

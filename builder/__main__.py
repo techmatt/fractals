@@ -49,6 +49,7 @@ from . import explorer as explorer_module
 from . import growth as growth_module
 from . import judges as judges_module
 from . import locations as locations_module
+from . import packs as packs_module
 from . import palettes as palettes_module
 from . import phoenix_points as phoenix_points_module
 from . import picker as picker_module
@@ -554,6 +555,16 @@ def _parser() -> argparse.ArgumentParser:
         "--records-only",
         action="store_true",
         help="rewrite gallery.jsonl alone; leave the tiles as they are",
+    )
+
+    packed = commands.add_parser(
+        "packs", help="report the Wallpaper packs record, or import it from next door"
+    )
+    packed.add_argument(
+        "--import",
+        dest="import_",
+        action="store_true",
+        help="rewrite wallpaper-packs/packs.jsonl from packs.plan() and packs.json; then build",
     )
 
     commands.add_parser(
@@ -1480,6 +1491,23 @@ def _do_seats(options: argparse.Namespace) -> int:
     return 0
 
 
+def _do_packs(options: argparse.Namespace) -> int:
+    """Say what the packs record holds, or rewrite it from the project next door."""
+    if options.import_:
+        why = packs_module.unaskable()
+        if why is not None:
+            print(f"error: cannot import the packs: {why}", file=sys.stderr)
+            return 1
+        print(f"wrote {packs_module.write(packs_module.derive()).relative_to(SITE_ROOT)}")
+    header, loaded = packs_module.load()
+    print(f"order from: {header.get('order_from')}")
+    for name, pack in loaded.items():
+        for one in pack.files:
+            size = "no size yet" if one.bytes is None else packs_module.size(one.bytes)
+            print(f"  {name:<9} {one.file}: {one.pictures} pictures, {size}")
+    return 0
+
+
 def _do_phoenix_points() -> int:
     """Write `explorer/phoenix-points.json` and land its thumbnails beside it."""
     for line in phoenix_points_module.write():
@@ -1615,6 +1643,8 @@ def main(argv: list[str] | None = None) -> int:
             return _do_atlas(options)
         if options.command == "seats":
             return _do_seats(options)
+        if options.command == "packs":
+            return _do_packs(options)
         if options.command == "phoenix-points":
             return _do_phoenix_points()
         if options.command == "deep-gallery":
@@ -1652,6 +1682,7 @@ def main(argv: list[str] | None = None) -> int:
         review_module.ReviewError,
         walk_module.WalkError,
         start_module.StartError,
+        packs_module.PacksError,
         OSError,
     ) as error:
         print(f"error: {error}", file=sys.stderr)

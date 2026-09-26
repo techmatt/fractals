@@ -722,7 +722,7 @@ being drawn as the plain Julia set underneath it.
 After touching placed prose, `python -m builder prose <page>` as well — see **Where prose
 comes from** above for what it holds together and why one edit has several sites.
 
-`builder check` is read-only, and it runs twenty-four named checks. It resolves every
+`builder check` is read-only, and it runs twenty-five named checks. It resolves every
 internal link, refuses root-absolute and bare-directory hrefs, regenerates the gallery
 HTML and compares it byte for byte with what is committed, holds every figure block to
 its registry row, holds every made figure to being a block a redraw could land on —
@@ -746,7 +746,8 @@ both report as nothing — holds the site's copy of the wallpaper coloring to ne
 `coloring_of` on every seat the collection records name, which is `coloring` — and holds every served page to declaring the site's icon with the
 links `builder/icons.py` spells, which is `icons`, and every short link under
 `go/` to a target the explorer's own reader accepts and to the page its register row
-writes, which is `go`. It also
+writes, which is `go` — and holds the Wallpaper packs record to the page's `[PACK]`
+markers and to what the project next door answers, which is `packs`. It also
 prints one note — never a failure — about the committed wasm module, described in
 `explorer/README.md`. The same commands run in CI
 (`.github/workflows/checks.yml`), which is a check and not a deploy dependency, on Linux,

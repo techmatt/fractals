@@ -8,7 +8,7 @@ check rather than a coin toss.
 
 from pathlib import Path
 
-from . import figures, icons, links
+from . import figures, icons, links, packs
 from . import palettes as palettes_module
 from . import sections as sections_module
 from .escape import attribute, text
@@ -222,47 +222,25 @@ def gallery_page(gallery: Gallery, sections: list[sections_module.Section]) -> s
 
 
 def gallery_index(galleries: list[Gallery], sections: list[sections_module.Section]) -> str:
-    """The HTML for the gallery index: one cover tile per gallery.
-
-    With no galleries it is the register standing empty, which is a page the site
-    genuinely has: the front page and the site bar both link here, so this has to be
-    somewhere a reader can arrive rather than a page that is missing.
-    """
+    """The HTML for the Wallpaper packs page: its prose and packs, then a cover tile per
+    publishable gallery, of which there are none today."""
     page = GALLERIES_DIR / "index.html"
     css = relative_href(page, SITE_ROOT / "assets" / "css" / "site.css")
     article = relative_href(page, SITE_ROOT / "index.html")
 
     header = _masthead(None, "Wallpaper packs")
 
-    intro = ['  <section class="intro">']
-    if galleries:
-        intro.append(
-            "    <p>Images on these pages are web-res. Anything a reader would want at "
-            "full size is a release download.</p>"
-        )
-    else:
-        # The register with nothing in it. It says what the page is and stops there:
-        # a date would be a promise and a count would be a number nobody has, and both
-        # are the kind of thing a reader is entitled to hold the page to.
-        intro.append(
-            "    <p>The finished wallpapers are collected here in packs, to download at "
-            "full resolution. Each pack's page shows its pictures at web resolution, and "
-            "the full-size files are release downloads.</p>"
-        )
-    intro.append(f'    <p><a href="{attribute(article)}">Back to the article</a></p>')
-    intro.append("  </section>")
-
-    # The page opens on a picture *(favicon_wire_ckpt145)*: every registry figure whose row
-    # names this page, derived here exactly as `check` derives it, because a generated page
-    # has no hand to paste a block and `pages` holds the whole file to this function.
-    name = figures.page_name(page)
+    # The page is its placed master *(packs_page_ckpt153)*: `builder/packs.py` holds the
+    # prose and the record, and each marker becomes the block it names. A figure marker is
+    # the registry's block, derived here exactly as `check` derives it, because a generated
+    # page has no hand to paste a block and `pages` holds the whole file to this function.
+    registry = figures.load_all()
     opened = links.opened(page)
-    opening = [
-        figures.markup(figure, opened)
-        for figure in figures.load_all().values()
-        if figure.page == name and figure.on_page
+    blocks = [
+        packs.prose_section(
+            page, lambda identifier: figures.markup(registry[identifier], opened), article
+        )
     ]
-    blocks = [*opening, "\n".join(intro)]
     if galleries:
         tiles = []
         for gallery in galleries:

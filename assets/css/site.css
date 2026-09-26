@@ -676,6 +676,41 @@ a:hover { color: var(--ink); }
   line-height: 1.25rem;
 }
 
+/* A wallpaper pack (packs_page_ckpt153): its name, five of its pictures, and the zip.
+   The download is the thing on this page a reader came for, so it is a filled button in
+   the well's own link colour, and nothing else in the well looks like one. The explorer
+   line under it is a small plain link in the quiet ink, so it reads as an aside. */
+.pack-title {
+  margin: 0 0 0.5rem;
+  color: var(--well-ink);
+  font-size: 1.0625rem;
+  font-weight: 600;
+}
+.pack-downloads {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0.85rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+.pack-downloads li { margin: 0; }
+.figure a.pack-download {
+  display: inline-block;
+  padding: 0.55rem 1.1rem;
+  border-radius: 0.3rem;
+  background: var(--well-link);
+  color: var(--well);
+  font-size: 1.0625rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+.figure a.pack-download:hover,
+.figure a.pack-download:focus-visible { background: var(--well-ink); color: var(--well); }
+.pack-explore { margin: 0.6rem 0 0; font-size: 0.875rem; }
+.figure .pack-explore a { color: var(--well-ink-dim); }
+.figure .pack-explore a:hover { color: var(--well-ink); }
+
 /* A figure registered before its picture exists. Prose gets written before pictures get
    made, so the well stays where it will be and says what will fill it — a dashed hole
    the page owns up to, rather than a broken image or a silent gap. */

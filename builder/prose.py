@@ -54,7 +54,9 @@ _TITLE = re.compile(r"<h1[^>]*>(.*?)</h1>", re.S)
 _MASTER_TITLE = re.compile(r"^# .*?\n")
 _MASTER_EDITORIAL = re.compile(r"<editorial,.*?>\n", re.S)
 _MASTER_COMMENT = re.compile(r"<!--.*?-->", re.S)
-_MASTER_FIGURE = re.compile(r"^\[FIGURE:.*?\]$", re.M)
+# `[FIGURE: id]`, `[FIGURE id]`, and `[PACK name]`, which the Wallpaper packs master
+# places the way the others place a figure.
+_MASTER_FIGURE = re.compile(r"^\[(?:FIGURE:?|PACK) ?.*?\]$", re.M)
 _MASTER_TABLE = re.compile(r"^\[TABLE:[^\]]*\]\n(.*?)^\[/TABLE\]$", re.S | re.M)
 _MASTER_PENDING = re.compile(r"\[PENDING —.*?\]", re.S)
 _MASTER_BULLET = re.compile(r"^- ", re.M)
