@@ -15,7 +15,9 @@ Three of the five drawn figures stand on records next door and name them on thei
 registry rows, the way `builder.picks` does: a re-pick is an edit to the row followed by
 `python -m builder start <id> --replace`. The walk is frozen here instead, as the ledger
 nodes it was read from, because a descent is a path through one ledger rather than a list
-of independent picks. `start-video` is a YouTube player, and nothing here draws it.
+of independent picks. `start-video` is a YouTube player, and nothing here draws it; what
+is drawn here is the pair of linked pictures under it, each the explorer's arrival at one
+of the video's short links (`video_links`).
 
 These are placeholders Matt adjusts. The seats were drawn by a seeded shuffle, not chosen
 for how they look, and each row's provenance says so; `start-pink-gallery` in particular
@@ -25,20 +27,23 @@ stands in for his daughter's own picks.
 from __future__ import annotations
 
 import json
+import subprocess
+from urllib.parse import parse_qs
 
+from . import deep_figures, go, links, records, renders, sheets
 from . import families as families_module
 from . import figures as figures_module
-from . import links, records, renders, sheets
 from . import picks as picks_module
 from .locations import Made, Split, neutral_spec, panel_path, panels
 
 #: Which figure is drawn by what, in page order.
-FAMILIES, WALK, MODES, GALLERY, PINK = (
+FAMILIES, WALK, MODES, GALLERY, PINK, VIDEO = (
     "start-families",
     "start-walk",
     "start-modes",
     "start-gallery",
     "start-pink-gallery",
+    "start-video",
 )
 
 #: The base sets, one picture each, whole at the engine's home view with nothing marked on
@@ -431,6 +436,124 @@ def modes() -> Split:
     return Split(made, lines, len(MODE_ROW) + 1)
 
 
+# ------------------------------------------------------------- the pictures under the video
+
+#: The pictures under the double-descent player, in page order: the short link each one
+#: opens, by its name in `go/redirects.jsonl`, and the label under it, which is also its
+#: alt. The register is the one place a target is written; the maker reads it at draw time
+#: and the row's recipe keeps what it read, which `check`'s `go` holds to the register.
+VIDEO_LINKS = (("favicon-mid", "Midway"), ("favicon-end", "Final frame"))
+
+#: Half the article's column at twice the density, 16:9. Two across, stacking when narrow.
+VIDEO_PANEL = (864, 486)
+VIDEO_COLUMNS = 2
+
+#: `render-link`'s own default for the shallow picture, and the Deep figures' for the deep
+#: one: the deep picture is a perturbation render at a cap of two million, and four samples
+#: a pixel is the most any deep figure on this site spends.
+SHALLOW_SUPERSAMPLE = 3
+DEEP_SUPERSAMPLE = 2
+
+
+def _targets() -> dict[str, str]:
+    """Each short link's explorer query, as the register writes it today."""
+    held = {redirect.name: redirect.query for redirect in go.load()}
+    missing = [name for name, _ in VIDEO_LINKS if name not in held]
+    if missing:
+        raise StartError(f"go/redirects.jsonl has no {', '.join(missing)}")
+    return {name: held[name] for name, _ in VIDEO_LINKS}
+
+
+def _render_link(query: str, destination) -> dict:
+    """A shallow explorer link drawn by the engine alone, exactly as the explorer reads it."""
+    root = renders.wallpapers_root()
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    out = subprocess.run(
+        [
+            str(renders.engine_binary()),
+            "render-link",
+            "--link",
+            query,
+            "--size",
+            f"{VIDEO_PANEL[0]}x{VIDEO_PANEL[1]}",
+            "--ss",
+            str(SHALLOW_SUPERSAMPLE),
+            "--out",
+            str(destination),
+            "--data",
+            str(root / "data"),
+        ],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+    )
+    if out.returncode != 0:
+        raise StartError(f"render-link failed:\n{out.stderr[-3000:]}")
+    return json.loads(out.stdout)
+
+
+def _link_words(query: str) -> str:
+    """A link's place and colouring as a provenance line spells them."""
+    fields = {key: values[0] for key, values in parse_qs(query).items()}
+    degree = fields["f"].removeprefix("multibrot")
+    return (
+        f"multibrot degree {degree}, centre {fields['x']} + {fields['y']}i, width "
+        f"{fields['w']}, mode smooth, {{map}} {fields['p']}, phase {fields['phase']}, scale "
+        f"{fields['scale']}, lambda {fields['lambda']}, period {fields['period']}"
+    )
+
+
+def video_links() -> Split:
+    """The two pictures under the video: its midpoint and its final frame, each linked.
+
+    Each is what the explorer draws on arriving at its short link. The midpoint is a
+    shallow link, drawn by `fractal-engine render-link`, which reads the explorer's own
+    keys — `scale`, `lambda` and `period` among them — and draws the view the page would.
+    The final frame is a deep link, drawn the way the Deep tab draws one, through
+    `deep_figures.draw_link`: the video's own fields are coloured by `builder/zoom.py`'s
+    power mapping rather than by the tab's shader, so a frame of the video is not the
+    picture the link opens.
+    """
+    targets = _targets()
+    size = VIDEO_PANEL
+    made: list[Made] = []
+    lines = [
+        f"builder.start:video_links — {len(VIDEO_LINKS)} panels at {size[0]}x{size[1]}, "
+        f"{VIDEO_COLUMNS} across, landed one file a panel under the double-descent player: "
+        "each is what the explorer draws on arriving at its short link, whose target this "
+        "row's recipe records and `check`'s go holds to go/redirects.jsonl.",
+    ]
+    for index, (name, label) in enumerate(VIDEO_LINKS, start=1):
+        query = targets[name]
+        words = _link_words(query).replace("{map}", "colormap" if index == 1 else "palette")
+        if query.startswith("dv="):
+            drawn = deep_figures.draw_link(query, *size, DEEP_SUPERSAMPLE, f"{VIDEO}-{name}")
+            picture = drawn.path
+            how = (
+                f"cap {drawn.maxiter}; drawn by builder.deep_figures.draw_link — "
+                "deep_figures.mjs on the committed perturb.wasm, shaded by "
+                f"deep_gallery_shade.mjs through engine.wasm — at {size[0]}x{size[1]} "
+                f"supersample {DEEP_SUPERSAMPLE}, {drawn.seconds:.0f} s"
+            )
+        else:
+            picture = panel_path(VIDEO, index).with_name(f"{VIDEO}-{name}-link.png")
+            report = _render_link(query, picture)
+            how = (
+                f"cap {report['maxiter']} (the depth policy); drawn by `fractal-engine "
+                f"render-link` at {size[0]}x{size[1]} supersample {SHALLOW_SUPERSAMPLE}"
+            )
+        made.append(
+            Made(
+                sheets.save(sheets.fitted(picture, size), panel_path(VIDEO, index), quiet=True),
+                alt=label,
+                label=label,
+                go=name,
+            )
+        )
+        lines.append(f"{label}, go/{name}: {words}; {how}.")
+    return Split(made, lines, VIDEO_COLUMNS)
+
+
 # ----------------------------------------------------------------------- the interface
 
 
@@ -440,6 +563,7 @@ MAKERS = {
     MODES: modes,
     GALLERY: gallery,
     PINK: pink_gallery,
+    VIDEO: video_links,
 }
 
 #: The figures whose panels are gallery seats named in `picks`.
@@ -447,7 +571,7 @@ SEATED = (GALLERY, PINK)
 
 
 def sources(identifier: str) -> list[dict]:
-    if identifier == FAMILIES:
+    if identifier in (FAMILIES, VIDEO):
         return [{"kind": figures_module.SYNTHETIC, "keys": []}]
     if identifier in SEATED:
         return [{"kind": figures_module.GALLERY_SEAT, "keys": picks_module.picks_of(identifier)}]
@@ -463,7 +587,11 @@ def sources(identifier: str) -> list[dict]:
 def recipe(identifier: str) -> dict:
     if identifier not in MAKERS:
         raise records.RecordError(f"{identifier} is not drawn by {__name__}")
-    args = {} if identifier in (WALK, FAMILIES) else _args(identifier)
+    if identifier == VIDEO:
+        # The targets the pictures were drawn at, which the register may later move.
+        args = {"links": _targets()}
+    else:
+        args = {} if identifier in (WALK, FAMILIES) else _args(identifier)
     return {"maker": f"{__name__}:{MAKERS[identifier].__name__}", "args": args}
 
 

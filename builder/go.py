@@ -183,4 +183,33 @@ def problems() -> list[str]:
     for path in sorted(GO_DIR.rglob("*")):
         if path.is_file() and path != REGISTER and path not in expected:
             found.append(f"{path.relative_to(SITE_ROOT).as_posix()}: no register row writes this")
+    return found + _drawn_at(redirects)
+
+
+def _drawn_at(redirects: list[Redirect]) -> list[str]:
+    """Every picture that links through a short link was drawn at the target it links to.
+
+    A picture under a video's player opens its short link, so the link is the register's
+    and the picture is the figure's, and the two are free to drift: a moved redirect would
+    leave the picture showing somewhere the click no longer goes. The figure's recipe keeps
+    each target as it was drawn, under `links`, and this holds that to the register.
+    Imported here rather than at the top, because the figures read this module's names.
+    """
+    from . import figures
+
+    targets = {redirect.name: redirect.query for redirect in redirects}
+    found = []
+    for figure in figures.load_all().values():
+        drawn = (figure.recipe.args.get("links") if figure.recipe else None) or {}
+        for panel in figure.panels:
+            if panel.go is None:
+                continue
+            if panel.go not in targets:
+                found.append(f"{figure.id}: a panel links to go/{panel.go}, which no row names")
+            elif drawn.get(panel.go) != targets[panel.go]:
+                found.append(
+                    f"{figure.id}: its go/{panel.go} picture was drawn at a target the register "
+                    f"no longer names — redraw it with `python -m builder start {figure.id} "
+                    "--replace`"
+                )
     return found

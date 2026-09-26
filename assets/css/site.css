@@ -719,6 +719,9 @@ a:hover { color: var(--ink); }
   aspect-ratio: 16 / 9;
   border: 0;
 }
+/* The linked pictures under the player (start_video_links_ckpt152) are a split figure's
+   grid, set off from the player by the grid's own gap. */
+.figure-video iframe + .figure-panels { margin-top: var(--figure-gap); }
 
 /* A slot held open before its figure is even registered: the slug its row will carry and
    the draft caption, on a 16:9 well. Placed prose is reviewed on the site before a figure

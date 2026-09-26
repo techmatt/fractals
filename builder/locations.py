@@ -376,6 +376,8 @@ class Made:
     band: dict | None = None
     #: A deep panel's key in `article/figure-recipes.jsonl` (`builder/deep_figures.py`).
     deep: str | None = None
+    #: The short link a picture under a video's player opens (`builder/figures.py`).
+    go: str | None = None
 
 
 @dataclass(frozen=True)

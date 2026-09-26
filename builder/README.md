@@ -302,7 +302,10 @@ candidate ledger, each as the neutral frame and then four real candidates there 
 tia, threads and stripe, named as candidate keys in `rows`; `start-walk` is one descent of
 `overnight_harvest_ckpt123` frozen in the module, a plane walk to a minibrot and then the
 walk the twin channel started in that point's Julia set. `start-video` is the
-double-descent video, embedded from YouTube.
+double-descent video, embedded from YouTube, and `start` draws the two linked pictures
+under its player (`video_links`): the explorer's arrival at `go/favicon-mid/` and
+`go/favicon-end/`, the first by `fractal-engine render-link` and the second, a deep link,
+by `deep_figures.draw_link`, the Deep tab's own renderer and shader.
 
 ## The contents rail is derived, never kept
 
@@ -366,6 +369,13 @@ Fractal atlases is the one live row, mounted by `atlas/embed.js`. **A row may be
 `video`** *(start_video_embed_ckpt152)*, the same shape with a YouTube id in place of a
 piece: no file, size, panels or link row, and a block that is one lazy
 `youtube-nocookie.com` `<iframe>` titled by the row's `alt`. `start-video` is the one.
+**A video may carry linked pictures under its player** *(start_video_links_ckpt152)*: its
+row then says `panels` and `columns` as a split row does, every panel names a short link
+in `go` and links to `go/<name>/index.html`, and the grid stacks when the column narrows.
+The register stays the one place a target is written. The row's `recipe` keeps, under
+`links`, the target each picture was drawn at, and `check`'s `go` fails when the register
+has moved on from it, so a redirect edit asks for a redraw rather than leaving a picture
+of somewhere the click no longer goes.
 Every page on this site is a draft and none of them says so; this status is
 the narrower claim, that a reader who copied a number off this picture would be copying
 something with a shelf life. Prose gets written before pictures get made, and a

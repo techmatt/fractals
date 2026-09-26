@@ -1088,6 +1088,8 @@ def _land_split(identifier: str, drawn, maker, *, replace: bool, landing: bool) 
             row["band"] = panel.band
         if panel.deep:
             row["deep"] = panel.deep
+        if panel.go:
+            row["go"] = panel.go
         rows.append(row)
     placed = figures.place(
         identifier,

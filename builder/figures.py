@@ -43,6 +43,13 @@ file, size or panels. Its block is one `<iframe>` from `youtube-nocookie.com`, l
 16:9, whose `title` is the row's `alt`, since that is the player's accessible name. The
 site hosts no video of its own: a video is somebody else's player, and the site's own
 markup carries no script for it.
+
+**A video may carry linked pictures under its player** *(start_video_links_ckpt152)*: its
+row then says `panels` and `columns` as a split figure's does, and every panel names a
+short link in `go`, a row of `go/redirects.jsonl`, which is what the picture links to.
+The register stays the one place the target is written; the row's recipe keeps the target
+each picture was drawn at, and `check`'s `go` holds the two equal, so a redirect that
+moves takes its picture out of date loudly rather than in silence.
 """
 
 import importlib
@@ -51,7 +58,7 @@ import re
 from dataclasses import dataclass
 from pathlib import Path
 
-from . import records
+from . import go, records
 from .escape import attribute, text
 from .paths import FIGURE_IMAGES_DIR, FIGURE_REGISTRY, SITE_ROOT, carrier_path, relative_href
 
@@ -168,7 +175,6 @@ VIDEO_EMBED = "https://www.youtube-nocookie.com/embed/"
 #: A YouTube id: eleven characters of the URL-safe alphabet. Anything else is a pasted URL
 #: or a typo, and would derive a player that shows an error.
 _VIDEO_ID = re.compile(r"[A-Za-z0-9_-]{11}")
-
 #: The kinds that carry keys at all. A `synthetic` or `none` row naming one is a row
 #: claiming a record it does not have.
 KEYED_KINDS = (RUN_ROW, LOCATION, GALLERY_SEAT, CANDIDATE)
@@ -337,6 +343,9 @@ class Panel:
     #: Deep-tab link it was drawn from and the grid, which is all a deep panel is. See
     #: `builder/deep_figures.py`.
     deep: str | None = None
+    #: The short link a picture under a video's player opens, by its name in
+    #: `go/redirects.jsonl`. See the module docstring.
+    go: str | None = None
 
     @property
     def path(self):
@@ -482,7 +491,8 @@ class Figure:
         One entry for a composited figure and one per panel for a split one, so a caller
         that only wants to know whether the pictures are there and are the size the
         registry says does not have to know which shape it is holding. A live figure ships
-        none: what it shows is its piece's own record. Nor does a video, which YouTube hosts.
+        none: what it shows is its piece's own record. Nor does a video, which YouTube hosts,
+        beyond the pictures under its player, which are panels.
         """
         if self.split:
             return tuple(
@@ -651,16 +661,26 @@ def _live(figure: Figure) -> str:
 
 
 def _video(figure: Figure) -> str:
-    """A video figure's well: the player, and nothing of the site's own around it.
+    """A video figure's well: the player, and the linked pictures under it where it has any.
 
     Always lazy, even leading its page: a player is a frame of somebody else's page, and it
     is worth nothing before a reader has scrolled to it. The size is the stylesheet's, 16:9
-    at the width of the well, so the iframe carries no width or height of its own.
+    at the width of the well, so the iframe carries no width or height of its own. The
+    pictures are a split figure's grid, each linking to its short link rather than to a
+    link derived from a record, and they stack as the column narrows like any other grid.
     """
-    return (
+    player = (
         f'{INDENT}  <iframe src="{attribute(VIDEO_EMBED + figure.video)}" '
         f'title="{attribute(figure.alt)}" loading="lazy" allowfullscreen></iframe>'
     )
+    if not figure.split:
+        return player
+    return f"{player}\n{_panels(figure, {})}"
+
+
+def go_href(figure: Figure, panel: Panel) -> str:
+    """Where a picture under a video's player links: its short link's page, relatively."""
+    return relative_href(figure.page_path, go.GO_DIR / panel.go / go.PAGE)
 
 
 def _linked(picture: str, opened: str | None) -> str:
@@ -715,7 +735,8 @@ def _panels(figure: Figure, opened: dict[str, str]) -> str:
         ink = f' style="--panel-ink: {attribute(panel.ink)}"' if panel.ink else ""
         pad = INDENT + " " * depth
         lines.append(f'{pad}<div class="{" ".join(classes)}"{ink}>')
-        lines.append(f"{pad}  {_linked(picture, opened.get(panel_id(figure.id, index)))}")
+        target = go_href(figure, panel) if panel.go else opened.get(panel_id(figure.id, index))
+        lines.append(f"{pad}  {_linked(picture, target)}")
         if panel.label:
             lines.append(f'{pad}  <p class="figure-label">{_label(panel)}</p>')
         lines.append(f"{pad}</div>")
@@ -835,11 +856,20 @@ def _figure(row: records.Record, identifier: str) -> Figure:
                 f"{row.where}: a video figure is made or it is not on the page — "
                 f"it cannot be {status}"
             )
-        if panels or columns is not None or any(field is not None for field in asset):
+        if any(field is not None for field in asset):
             raise records.RecordError(
-                f"{row.where}: a video figure is hosted elsewhere, and names no file, size "
-                "or panels"
+                f"{row.where}: a video figure is hosted elsewhere, and names no file or size"
             )
+        if any(panel.go is None for panel in panels):
+            raise records.RecordError(
+                f"{row.where}: a picture under a video's player is a short link into the "
+                "explorer, and names it in go"
+            )
+    elif any(panel.go is not None for panel in panels):
+        raise records.RecordError(
+            f"{row.where}: go is for the pictures under a video's player; a figure's own "
+            "panel links from its record"
+        )
     if not made and (any(field is not None for field in asset) or panels):
         raise records.RecordError(
             f"{row.where}: a {status} figure names no file or size — the asset does not exist yet"
@@ -938,6 +968,7 @@ PANEL_FIELDS = (
     "ink",
     "band",
     "deep",
+    "go",
 )
 PANEL_REQUIRED = ("file", "width", "height", "alt")
 
@@ -971,7 +1002,7 @@ def _panel_rows(row: records.Record) -> tuple[Panel, ...]:
                 f"{row.where}: a panel names {', '.join(PANEL_REQUIRED)} — "
                 f"this one is missing {', '.join(missing)}"
             )
-        for name in ("file", "alt", "label", "seat", "deep"):
+        for name in ("file", "alt", "label", "seat", "deep", "go"):
             value = entry.get(name)
             if value is not None and (not isinstance(value, str) or not value.strip()):
                 raise records.RecordError(f"{row.where}: a panel's {name} is a non-empty string")
@@ -1008,9 +1039,15 @@ def _panel_rows(row: records.Record) -> tuple[Panel, ...]:
                 f"{row.where}: a panel's spec is the engine render spec its picture came "
                 "out of, and an engine render spec names a viewport"
             )
-        if sum(entry.get(name) is not None for name in ("spec", "seat", "deep")) > 1:
+        if sum(entry.get(name) is not None for name in ("spec", "seat", "deep", "go")) > 1:
             raise records.RecordError(
-                f"{row.where}: a panel is one record — a spec, a seat or a deep recipe"
+                f"{row.where}: a panel is one record — a spec, a seat, a deep recipe or a "
+                "short link"
+            )
+        if entry.get("go") is not None and not go.NAME.fullmatch(entry["go"]):
+            raise records.RecordError(
+                f"{row.where}: a panel's go is a short link's name, lowercase words joined "
+                "by hyphens"
             )
         held = {name: entry.get(name) for name in PANEL_FIELDS}
         held["wide"] = bool(held["wide"])
