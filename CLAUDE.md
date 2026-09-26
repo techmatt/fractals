@@ -230,8 +230,9 @@ keeps the mechanics. **Every apply round ends by distilling that round's general
   the single carve-out that a page hanging off a section shares that section's prefix:
   `palette-generator-batch` sits on `palettes/make-your-own.html`. The front page's one
   picture is `index-hero`, on a row whose page is spelled `./index.html` — the slash a
-  bare name at the root lacks — and it is the one figure with no caption. The Wallpaper
-  packs page's one picture is `galleries-icon-source`, on `wallpaper-packs/index.html`:
+  bare name at the root lacks — and it has no caption. The Wallpaper
+  packs page's one picture is `galleries-icon-source`, on `wallpaper-packs/index.html`,
+  the other figure with no caption *(website_sweep_ckpt150_addendum1)*:
   `galleries-`, the page's name when it landed, because `gallery-` is Gallery curation's, and it is the one registry figure on a page the
   builder generates rather than one a person writes. `deep-zoom`'s
   prefix is `deep-`. The prose never uses that slug: a
@@ -516,7 +517,10 @@ and linking to `start-here.html`, whose `<h1>` is the same two words *(since
 start_here_heading_ckpt147)*. On that page the group lists its four prose `<h2>`s as plain
 entries at one level; everywhere else it is the heading alone, which is when a section
 opens onto its headings too. The page sits at the root beside the front page, in no
-`sections.jsonl` row. A prose
+`sections.jsonl` row. Its peer sits under it, **Wallpaper packs** *(Matt,
+website_sweep_ckpt150_addendum1)*: a second group set the same way, spelled by
+`sections.PACKS_NAME` and linking to `wallpaper-packs/index.html`, always the heading
+alone. Both are a `rail-group`; the masthead's own link to the packs stays. A prose
 `<h2>` also gets the id its rail entry links to, spelled from its own words by rule —
 a fragment is a permanent URL. `python -m builder build` writes the rail between two
 marker comments; `check`'s `contents` check re-derives the rail and the heading ids,

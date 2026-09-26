@@ -20,8 +20,11 @@
 <div class="page">
 <!-- contents-rail:start — written by builder/. Run `python -m builder build`. -->
 <nav class="contents-rail" aria-label="Contents">
-  <div class="rail-start">
+  <div class="rail-group">
     <p class="rail-title"><a href="../start-here.html">Start here</a></p>
+  </div>
+  <div class="rail-group">
+    <p class="rail-title"><a href="../wallpaper-packs/index.html">Wallpaper packs</a></p>
   </div>
   <p class="rail-title"><a href="../index.html">Contents</a></p>
   <ol class="rail-sections">
@@ -43,7 +46,6 @@
         <li><a href="#julia-sets-inside-the-mandelbrot-set">Julia sets inside the Mandelbrot set</a></li>
         <li><a href="#how-a-deep-frame-is-computed">How a deep frame is computed</a></li>
         <li><a href="#rendering-speed">Rendering speed</a></li>
-        <li><a href="#automatic-minibrot-descents">Automatic minibrot descents</a></li>
         <li><a href="#the-multibrots">The multibrots</a></li>
         <li><a href="#the-deep-gallery">The deep gallery</a></li>
       </ol>
@@ -214,6 +216,52 @@
         <figcaption>Six steps down one descent, each frame centered on the next component in a chain nested one inside the next. Filigree from each copy appears in regions that were smooth one step earlier.</figcaption>
       </figure>
 
+    <p>Descents like the one in the video can be automated. The neighborhood of a
+    minibrot is a small, turned copy of the whole set, so every place in the set has a
+    twin inside every minibrot, smaller and slightly distorted. If you start from a
+    frame centered on a minibrot, the descent can continue to the twin of any other
+    frame centered on a minibrot, and then to a twin inside that twin's own minibrot.
+    The nesting can keep going until the iteration cap runs out, since the periods
+    multiply at every step. Nesting one minibrot inside another lets you choose what kind
+    of detail you get. Take two frames, A and B, each centered on a minibrot. Framing A
+    inside A's copy, B inside A's, A inside B's, or B inside B's gives four different
+    pictures from the same two places.</p>
+
+      <figure class="figure figure-split" data-figure="deep-descent-pairs">
+        <div class="figure-panels" style="--figure-across: 2">
+        <div class="figure-panel">
+          <a class="figure-open" href="../explorer/index.html?dv=3&amp;x=-0.048481003091324464&amp;y=0.671423098072995&amp;w=0.000004214533046626384&amp;n=27329&amp;p=glowdon&amp;scale=absolute&amp;lambda=0&amp;period=0.5" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/deep-descent-pairs-1.webp" width="960" height="540" alt="Spiral arms of filigree in blue, orange, and pale green winding round a center whose copy is too small to see." loading="lazy"><span class="figure-open-mark" aria-hidden="true">↗</span></a>
+          <p class="figure-label">A<span class="figure-note">period 28, width 4.2 × 10⁻⁶</span></p>
+        </div>
+        <div class="figure-panel">
+          <a class="figure-open" href="../explorer/index.html?dv=3&amp;x=-0.7965805906382233&amp;y=0.1836388307197798&amp;w=0.00014167356735746674&amp;n=21244&amp;p=glowdon&amp;scale=absolute&amp;lambda=0&amp;period=0.5" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/deep-descent-pairs-2.webp" width="960" height="540" alt="A small black copy of the set at the center of a cross of filigree, between broad smooth fields of blue." loading="lazy"><span class="figure-open-mark" aria-hidden="true">↗</span></a>
+          <p class="figure-label">B<span class="figure-note">period 18, width 1.4 × 10⁻⁴</span></p>
+        </div>
+        <div class="figure-panel">
+          <a class="figure-open" href="../explorer/index.html?dv=3&amp;x=-0.04848101781523578090590898720382084&amp;y=0.67142308149718838830534665356761823&amp;w=1.3876788125863967e-13&amp;n=57156&amp;p=glowdon&amp;phase=0.3356&amp;scale=absolute&amp;lambda=0&amp;period=0.5" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/deep-descent-pairs-3.webp" width="960" height="540" alt="A's spirals again, inside A's own copy and turned by 134 degrees, their smooth fields now grained with finer filigree." loading="lazy"><span class="figure-open-mark" aria-hidden="true">↗</span></a>
+          <p class="figure-label">A then A<span class="figure-note">period 784, width 1.4 × 10⁻¹³, turned 134°</span></p>
+        </div>
+        <div class="figure-panel">
+          <a class="figure-open" href="../explorer/index.html?dv=3&amp;x=-0.04848098911754255814904710902389903&amp;y=0.67142307507264977946066054203043301&amp;w=4.664749464542912e-12&amp;n=51071&amp;p=glowdon&amp;phase=0.3356&amp;scale=absolute&amp;lambda=0&amp;period=0.5" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/deep-descent-pairs-4.webp" width="960" height="540" alt="B's cross and its copy again, inside A's copy and turned by 134 degrees, the blue fields grained with finer filigree." loading="lazy"><span class="figure-open-mark" aria-hidden="true">↗</span></a>
+          <p class="figure-label">A then B<span class="figure-note">period 504, width 4.7 × 10⁻¹², turned 134°</span></p>
+        </div>
+        <div class="figure-panel">
+          <a class="figure-open" href="../explorer/index.html?dv=3&amp;x=-0.79658390622656352414119250317177613&amp;y=0.18364103042075131818520349951684389&amp;w=2.487866381089557e-11&amp;n=48173&amp;p=glowdon&amp;phase=0.2193&amp;scale=absolute&amp;lambda=0&amp;period=0.5" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/deep-descent-pairs-5.webp" width="960" height="540" alt="A's spirals again, inside B's copy and turned by 52 degrees, with finer filigree grained through the smooth fields." loading="lazy"><span class="figure-open-mark" aria-hidden="true">↗</span></a>
+          <p class="figure-label">B then A<span class="figure-note">period 504, width 2.5 × 10⁻¹¹, turned 52°</span></p>
+        </div>
+        <div class="figure-panel">
+          <a class="figure-open" href="../explorer/index.html?dv=3&amp;x=-0.79658432800273572645421705275026704&amp;y=0.18363575208568885608713189736359006&amp;w=8.363083203246127e-10&amp;n=42088&amp;p=glowdon&amp;phase=0.2193&amp;scale=absolute&amp;lambda=0&amp;period=0.5" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/deep-descent-pairs-6.webp" width="960" height="540" alt="B's cross and copy again, inside B's own copy and turned by 52 degrees, its fields grained with finer filigree." loading="lazy"><span class="figure-open-mark" aria-hidden="true">↗</span></a>
+          <p class="figure-label">B then B<span class="figure-note">period 324, width 8.4 × 10⁻¹⁰, turned 52°</span></p>
+        </div>
+        </div>
+        <figcaption>Two frames, A and B (top), and the four ways to nest one inside the other (bottom).</figcaption>
+      </figure>
+
+      <figure class="figure-placeholder" data-placeholder="deep-descent-video">
+        <p class="placeholder-well"><span class="pending-label">Figure placeholder</span>deep-descent-video</p>
+        <figcaption>A double descent into the minibrot at the center of this site's icon.</figcaption>
+      </figure>
+
     <h2 id="julia-sets-inside-the-mandelbrot-set">Julia sets inside the Mandelbrot set</h2>
 
     <p>Every parameter of the Mandelbrot set has its own
@@ -355,54 +403,6 @@
     frames that were almost entirely interior. Fraktaler 3 shows the same pattern on the
     video's final frame: its approximation buys a factor of about 1.3 to 2 and moves a
     fifth of the pixels by more than one iteration.</p>
-
-    <h2 id="automatic-minibrot-descents">Automatic minibrot descents</h2>
-
-    <p>Descents like the one in the video can be automated. The neighborhood of a
-    minibrot is a small, turned copy of the whole set, so every place in the set has a
-    twin inside every minibrot, smaller and slightly distorted. If you start from a
-    frame centered on a minibrot, the descent can continue to the twin of any other
-    frame centered on a minibrot, and then to a twin inside that twin's own minibrot.
-    The nesting can keep going until the iteration cap runs out, since the periods
-    multiply at every step. With two frames A and B, each centered on a minibrot, there
-    are four two-step descents: A then A, A then B, B then A, and B then B. The figure
-    below shows A and B, and then all four. Each twin appears turned, because the copy
-    it sits in is turned.</p>
-
-      <figure class="figure figure-split" data-figure="deep-descent-pairs">
-        <div class="figure-panels" style="--figure-across: 2">
-        <div class="figure-panel">
-          <a class="figure-open" href="../explorer/index.html?dv=3&amp;x=-0.048481003091324464&amp;y=0.671423098072995&amp;w=0.000004214533046626384&amp;n=27329&amp;p=glowdon&amp;scale=absolute&amp;lambda=0&amp;period=0.5" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/deep-descent-pairs-1.webp" width="960" height="540" alt="Spiral arms of filigree in blue, orange, and pale green winding round a center whose copy is too small to see." loading="lazy"><span class="figure-open-mark" aria-hidden="true">↗</span></a>
-          <p class="figure-label">A<span class="figure-note">period 28, width 4.2 × 10⁻⁶</span></p>
-        </div>
-        <div class="figure-panel">
-          <a class="figure-open" href="../explorer/index.html?dv=3&amp;x=-0.7965805906382233&amp;y=0.1836388307197798&amp;w=0.00014167356735746674&amp;n=21244&amp;p=glowdon&amp;scale=absolute&amp;lambda=0&amp;period=0.5" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/deep-descent-pairs-2.webp" width="960" height="540" alt="A small black copy of the set at the center of a cross of filigree, between broad smooth fields of blue." loading="lazy"><span class="figure-open-mark" aria-hidden="true">↗</span></a>
-          <p class="figure-label">B<span class="figure-note">period 18, width 1.4 × 10⁻⁴</span></p>
-        </div>
-        <div class="figure-panel">
-          <a class="figure-open" href="../explorer/index.html?dv=3&amp;x=-0.04848101781523578090590898720382084&amp;y=0.67142308149718838830534665356761823&amp;w=1.3876788125863967e-13&amp;n=57156&amp;p=glowdon&amp;phase=0.3356&amp;scale=absolute&amp;lambda=0&amp;period=0.5" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/deep-descent-pairs-3.webp" width="960" height="540" alt="A's spirals again, inside A's own copy and turned by 134 degrees, their smooth fields now grained with finer filigree." loading="lazy"><span class="figure-open-mark" aria-hidden="true">↗</span></a>
-          <p class="figure-label">A then A<span class="figure-note">period 784, width 1.4 × 10⁻¹³, turned 134°</span></p>
-        </div>
-        <div class="figure-panel">
-          <a class="figure-open" href="../explorer/index.html?dv=3&amp;x=-0.04848098911754255814904710902389903&amp;y=0.67142307507264977946066054203043301&amp;w=4.664749464542912e-12&amp;n=51071&amp;p=glowdon&amp;phase=0.3356&amp;scale=absolute&amp;lambda=0&amp;period=0.5" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/deep-descent-pairs-4.webp" width="960" height="540" alt="B's cross and its copy again, inside A's copy and turned by 134 degrees, the blue fields grained with finer filigree." loading="lazy"><span class="figure-open-mark" aria-hidden="true">↗</span></a>
-          <p class="figure-label">A then B<span class="figure-note">period 504, width 4.7 × 10⁻¹², turned 134°</span></p>
-        </div>
-        <div class="figure-panel">
-          <a class="figure-open" href="../explorer/index.html?dv=3&amp;x=-0.79658390622656352414119250317177613&amp;y=0.18364103042075131818520349951684389&amp;w=2.487866381089557e-11&amp;n=48173&amp;p=glowdon&amp;phase=0.2193&amp;scale=absolute&amp;lambda=0&amp;period=0.5" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/deep-descent-pairs-5.webp" width="960" height="540" alt="A's spirals again, inside B's copy and turned by 52 degrees, with finer filigree grained through the smooth fields." loading="lazy"><span class="figure-open-mark" aria-hidden="true">↗</span></a>
-          <p class="figure-label">B then A<span class="figure-note">period 504, width 2.5 × 10⁻¹¹, turned 52°</span></p>
-        </div>
-        <div class="figure-panel">
-          <a class="figure-open" href="../explorer/index.html?dv=3&amp;x=-0.79658432800273572645421705275026704&amp;y=0.18363575208568885608713189736359006&amp;w=8.363083203246127e-10&amp;n=42088&amp;p=glowdon&amp;phase=0.2193&amp;scale=absolute&amp;lambda=0&amp;period=0.5" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/deep-descent-pairs-6.webp" width="960" height="540" alt="B's cross and copy again, inside B's own copy and turned by 52 degrees, its fields grained with finer filigree." loading="lazy"><span class="figure-open-mark" aria-hidden="true">↗</span></a>
-          <p class="figure-label">B then B<span class="figure-note">period 324, width 8.4 × 10⁻¹⁰, turned 52°</span></p>
-        </div>
-        </div>
-        <figcaption>Two frames, A and B (top), each centered on a minibrot, and the four two-step descents built from them: A then A, A then B, B then A, and B then B.</figcaption>
-      </figure>
-
-      <figure class="figure-placeholder" data-placeholder="deep-descent-video">
-        <p class="placeholder-well"><span class="pending-label">Figure placeholder</span>deep-descent-video</p>
-        <figcaption>A double descent into the minibrot at the center of this site's icon.</figcaption>
-      </figure>
 
     <h2 id="the-multibrots">The multibrots</h2>
 

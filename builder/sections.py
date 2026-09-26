@@ -151,8 +151,9 @@ def load_all() -> list[Section]:
 
 
 def rail(page: Path, sections: list[Section]) -> str:
-    """The rail as one page carries it: fourteen sections, this page's own headings open,
-    and under them the places a reader leaves the article for.
+    """The rail as one page carries it: the two groups above the contents, fourteen
+    sections with this page's own headings open, and under them the places a reader leaves
+    the article for.
 
     The title is the way back to the front page. It was the one word in the rail that
     named a destination and did not go there, and a reader deep in section six has no
@@ -162,6 +163,7 @@ def rail(page: Path, sections: list[Section]) -> str:
     lines = [
         '<nav class="contents-rail" aria-label="Contents">',
         *_start(page),
+        *_packs(page),
         f'  <p class="rail-title"><a href="{home}">Contents</a></p>',
         '  <ol class="rail-sections">',
     ]
@@ -217,7 +219,7 @@ def _start(page: Path) -> list[str]:
     href = attribute(relative_href(page, START))
     current = ' aria-current="page"' if here else ""
     lines = [
-        '  <div class="rail-start">',
+        '  <div class="rail-group">',
         f'    <p class="rail-title"><a href="{href}"{current}>{text(START_NAME)}</a></p>',
     ]
     headings = headings_of(start_html) if here else ()
@@ -230,6 +232,27 @@ def _start(page: Path) -> list[str]:
         lines.append("    </ul>")
     lines.append("  </div>")
     return lines
+
+
+#: The finished wallpapers, downloadable at full size *(website_sweep_ckpt150_addendum1,
+#: Matt)*. A peer of the start page rather than a section, so it is the rail's second group,
+#: set the way *Start here* is, between that group and the contents. The masthead keeps its
+#: own link to the same page. The page is generated, and has no prose headings to open.
+PACKS = SITE_ROOT / "wallpaper-packs" / "index.html"
+PACKS_NAME = "Wallpaper packs"
+
+
+def _packs(page: Path) -> list[str]:
+    """The rail's second group: its heading alone, a link to the wallpaper packs."""
+    if not PACKS.is_file():
+        return []
+    href = attribute(relative_href(page, PACKS))
+    current = ' aria-current="page"' if page.resolve() == PACKS.resolve() else ""
+    return [
+        '  <div class="rail-group">',
+        f'    <p class="rail-title"><a href="{href}"{current}>{text(PACKS_NAME)}</a></p>',
+        "  </div>",
+    ]
 
 
 #: What the rail carries under the fourteen sections: the page that runs the engine, the
