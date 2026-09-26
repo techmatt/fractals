@@ -9,6 +9,13 @@ explorer for finding pictures of your own or interacting with the existing galle
 - **The pipeline and engine code:** [fractal-wallpapers](https://github.com/techmatt/fractal-wallpapers)
 - **The site's code** (explorer, article, builder): you are here; read on.
 
+<p align="center">
+  <a href="https://techmatt.github.io/fractals/explorer/index.html?v=4&f=julia&cx=-1.2583366697573282&cy=-0.03810995140056672&m=smooth_mean_angle&weight=0.55&x=-0.0939167613435858&y=-0.2012267774092059&w=0.17345963982562132&p=skyroads-blue-25&phase=0.788175"><img src="examples/julia_smooth_mean_angle.jpg" width="24%" alt="Julia set, trap spread angle over smooth, Cobalt Obsidian palette"></a>
+  <a href="https://techmatt.github.io/fractals/explorer/index.html?v=4&x=-0.056703850480536507&y=0.6689946803923973&w=0.0000000021132721900905024&p=Petal%20Dusk&phase=0.046639&level=band_autolevel/v1:0.2958367414372542,0.8390717419257583,1.1785094930375575,0.2958367414372542,0.8629886965307019"><img src="examples/mandelbrot_smooth.jpg" width="24%" alt="Mandelbrot set, smooth, Petal Dusk palette"></a>
+  <a href="https://techmatt.github.io/fractals/explorer/index.html?v=4&f=julia&cx=-1.2517612129804818&cy=0.038979112285470574&m=stripe&x=0.190964531525442&y=-0.027508345978564743&w=0.13834453039497419&p=Emerald%20Ingot"><img src="examples/julia_stripe.jpg" width="24%" alt="Julia set, stripe average, Emerald Ingot palette"></a>
+  <a href="https://techmatt.github.io/fractals/explorer/index.html?v=4&f=julia4&cx=0.4892207660373146&cy=-0.6507282511501382&m=threads&x=-0.1599467583852486&y=-0.6348190856721863&w=0.01057422759599882&p=abstract-wallpaper-backgrounds-hd&phase=0.827208"><img src="examples/julia_multibrot4_threads.jpg" width="24%" alt="Quartic Julia set, cross trap over smooth, Amber Sea palette"></a>
+</p>
+
 A tutorial on making fractal wallpapers worth keeping: how an escape-time fractal is
 drawn, how a search finds views worth looking at, how those views get their color, and how
 a judge trained on somebody's taste picks between the thousands of pictures that come out.
