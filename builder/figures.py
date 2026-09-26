@@ -653,6 +653,8 @@ def _panels(figure: Figure, opened: dict[str, str]) -> str:
     lazy = "" if leads_its_page(figure) else ' loading="lazy"'
     staged = any(panel.band for panel in figure.panels)
     outer = "figure-panels figure-staged" if staged else "figure-panels"
+    if any(panel.band and panel.band.get("pool") for panel in figure.panels):
+        outer += " figure-flow"
     lines = [f'{INDENT}  <div class="{outer}" style="--figure-across: {figure.columns}">']
     depth = 4 if staged else 2
     open_stage = False
@@ -700,9 +702,24 @@ def _label(panel: Panel) -> str:
 
 
 def _band(band: dict, default_columns: int | None) -> list[str]:
-    """One band's hand-off, heading and the section its panels stand in."""
+    """One band's hand-off, heading and the section its panels stand in.
+
+    A band may open with the **pool** the stage before it filled *(place_full_pipeline_v6)*:
+    a narrow column of its own between two stages, a title and what it holds, which is the
+    shape `pipeline-overview` is. A figure with one reads left to right above the rail's
+    breakpoint and stacks below it, which is the stylesheet's business, and the hand-off
+    glyphs are the stylesheet's too, since which way they point depends on which of the two
+    it is.
+    """
     lines = []
-    if band.get("arrow"):
+    pool = band.get("pool")
+    if pool:
+        lines.append(f'{INDENT}    <div class="figure-pool">')
+        lines.append(f'{INDENT}      <p class="figure-pool-title">{text(pool["title"])}</p>')
+        if pool.get("note"):
+            lines.append(f'{INDENT}      <p class="figure-pool-note">{text(pool["note"])}</p>')
+        lines.append(f"{INDENT}    </div>")
+    elif band.get("arrow"):
         lines.append(f'{INDENT}    <p class="figure-arrow" aria-hidden="true">{ARROW}</p>')
     across = band.get("columns") or default_columns
     # A `div` and deliberately not a `section`: the contents rail reads a page's prose as
@@ -862,8 +879,9 @@ PANEL_REQUIRED = ("file", "width", "height", "alt")
 
 #: What a band may say. `title` is required; `note` is the sentence under it, `blocks`
 #: the chips beside it, `columns` how many panels that band runs across, and `arrow` the
-#: hand-off from the band before.
-BAND_FIELDS = ("title", "note", "blocks", "columns", "arrow")
+#: hand-off from the band before. `pool` is the store the stage before filled, drawn
+#: between the two in place of the arrow: a title and a note.
+BAND_FIELDS = ("title", "note", "blocks", "columns", "arrow", "pool")
 
 
 def _panel_rows(row: records.Record) -> tuple[Panel, ...]:
@@ -957,6 +975,17 @@ def _band_fields(row: records.Record, band) -> None:
     for block in band.get("blocks") or []:
         if not isinstance(block, dict) or not isinstance(block.get("text"), str):
             raise records.RecordError(f"{row.where}: a band's block is an object with text")
+    pool = band.get("pool")
+    if pool is not None and (
+        not isinstance(pool, dict)
+        or set(pool) - {"title", "note"}
+        or not isinstance(pool.get("title"), str)
+        or not pool["title"].strip()
+        or not isinstance(pool.get("note", ""), str)
+    ):
+        raise records.RecordError(
+            f"{row.where}: a band's pool is an object with a title and, optionally, a note"
+        )
 
 
 def _caption_link(row: records.Record) -> tuple[str, str] | None:

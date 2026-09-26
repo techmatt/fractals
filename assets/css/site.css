@@ -69,6 +69,9 @@
      inside a band: a sheet drew a clear hand-off there and three grids run together
      without one. */
   --figure-band-gap: 1.25rem;
+  /* The width of the store a flow figure draws between two stages, above the breakpoint:
+     narrow, because a store holds rather than does, and wide enough for a count. */
+  --figure-pool: 7.5rem;
   /* What marks a judge in a stage's boxes. The same ink a mark on a picture uses — the
      first of `builder/theme.py`'s four — because a reader meets it as one colour. */
   --figure-judge: #ffc43d;
@@ -107,6 +110,21 @@ body {
     max-height: calc(100vh - 3rem);
     overflow-y: auto;
   }
+  /* A flow figure reads left to right once the rail is shown, which is when the column
+     is wide enough for three stages and two stores side by side; below it the same
+     markup stacks. Each stage takes an equal share and runs its own count across. */
+  /* Two classes, because the grid rules for a figure's panels come later in this file and
+     one class would lose to them on source order. */
+  .figure-staged.figure-flow { display: flex; align-items: stretch; gap: var(--figure-gap); }
+  .figure-flow > .figure-stage {
+    flex: 1 1 0;
+    min-width: 0;
+    align-content: start;
+    grid-template-columns: repeat(var(--figure-across), minmax(0, 1fr));
+  }
+  .figure-flow > .figure-pool { flex: 0 0 var(--figure-pool); padding: 0.5rem 0.4rem; }
+  .figure-flow > .figure-pool::before,
+  .figure-flow > .figure-pool::after { content: "→" / ""; }
 }
 
 /* The site bar: one text-height line, the same on every page. It is a way back to the
@@ -494,6 +512,30 @@ a:hover { color: var(--ink); }
    column. The gap between bands is larger than the gap inside one: the sheets drew a
    clear hand-off there, and without it three grids read as one. */
 .figure-staged { grid-template-columns: 1fr; gap: var(--figure-band-gap); }
+/* The store between two stages of a flow figure: a title and what it holds, set as quiet
+   furniture on the pending tone so it reads as a thing the stages hand to rather than a
+   stage of its own. The hand-offs either side are glyphs with empty alternative text, and
+   they point down here and across above the breakpoint. */
+.figure-pool {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.2rem;
+  padding: 0.4rem 0.75rem;
+  border: 1px solid var(--well-rule);
+  background: var(--well-pending);
+  text-align: center;
+}
+.figure-pool::before,
+.figure-pool::after {
+  content: "↓" / "";
+  font-size: 1.25rem;
+  line-height: 1;
+  color: var(--well-ink-dim);
+}
+.figure-pool-title { margin: 0; font-size: 0.875rem; font-weight: 600; color: var(--well-ink); }
+.figure-pool-note { margin: 0; font-size: 0.8125rem; line-height: 1.35; color: var(--well-ink-dim); }
+
 /* A band's heading: what the band is, then what it does, then the boxes that say what
    it is made of. One flex row that wraps, with the boxes pushed to the far end — the
    sheets drew them down the right-hand side, and `margin-left: auto` is what keeps them

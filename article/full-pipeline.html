@@ -36,9 +36,7 @@
     <li><a href="gallery-curation.html">Gallery curation</a></li>
     <li class="rail-current"><a href="full-pipeline.html" aria-current="page">Full pipeline</a>
       <ol class="rail-headings">
-        <li><a href="#the-loop">The loop</a></li>
-        <li><a href="#what-more-work-buys">What more work buys</a></li>
-        <li><a href="#future-work">Future work</a></li>
+        <li><a href="#how-i-ran-it">How I ran it</a></li>
       </ol>
     </li>
     <li><a href="fractal-atlases.html">Fractal atlases</a></li>
@@ -63,83 +61,171 @@
 
 <main>
   <section class="prose">
-    <p>The pipeline has three parts, and each of the pages before this one covered one of
-    them. <a href="finding-good-locations.html">Finding good locations</a> walks each
-    fractal family and keeps the places the location judge thinks are likely to be good.
-    <a href="finding-good-wallpapers.html">Finding good wallpapers</a> mines those places,
-    drawing each one lots of ways across rendering modes and palettes and keeping the best
-    few per place and mode. <a href="gallery-curation.html">Gallery curation</a> picks a
-    whole gallery out of every picture that's ever been mined. In between sit two pools,
-    one of locations and one of candidate pictures, and both only ever grow. This page is
-    about how the three parts work together.</p>
+    <p>The pipeline has three parts, each covered on its own page.
+    <a href="finding-good-locations.html">Finding good locations</a> walks each fractal
+    family and keeps the places the location judge thinks are likely to be good.
+    <a href="finding-good-wallpapers.html">Finding good wallpapers</a> draws each of those
+    places many ways, across rendering modes and palettes, and keeps the best few.
+    <a href="gallery-curation.html">Gallery curation</a> picks whole galleries out of
+    everything mined so far. Between them sit two pools, one of locations and one of
+    candidate pictures, and both only ever grow.</p>
 
-      <figure class="figure" data-figure="pipeline-overview">
-        <img src="../assets/images/figures/pipeline-overview.png" width="1316" height="418" alt="A row of five plates: find locations, the location pool, find wallpapers, the candidate pool, curate a gallery, with arrows running left to right between them. Under the last plate is the solve's shortfall readout, and one heavier arrow runs out of it, back along its own lane and up into find wallpapers.">
-        <figcaption>The three parts, and the two stores between them. Locations accumulate in one pool and the best few pictures per place and mode in the other, and both only ever grow. The arrow back is what makes this a loop rather than a sequence: what the solve could not seat decides whether to mine again.</figcaption>
+      <figure class="figure figure-split" data-figure="pipeline-overview">
+        <div class="figure-panels figure-staged figure-flow" style="--figure-across: 2">
+          <div class="figure-stage" style="--figure-across: 2">
+            <header class="figure-band">
+              <p class="figure-band-title">Finding locations</p>
+              <p class="figure-band-note">about 570,000 places walked</p>
+            </header>
+          <div class="figure-panel">
+            <a class="figure-open" href="../explorer/index.html?v=4&amp;x=-0.7615162392610482&amp;y=-0.08414957644162076&amp;w=0.00008291055705832784&amp;p=twilight_shifted" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/pipeline-overview-1.webp" width="205" height="115" alt="A location the walk found, drawn in one neutral palette."><span class="figure-open-mark" aria-hidden="true">↗</span></a>
+          </div>
+          <div class="figure-panel">
+            <a class="figure-open" href="../explorer/index.html?v=4&amp;f=multibrot4&amp;x=0.3188434890090886&amp;y=0.7499067136220382&amp;w=0.0000006372409911921963&amp;p=twilight_shifted" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/pipeline-overview-2.webp" width="205" height="115" alt="A location the walk found, drawn in one neutral palette."><span class="figure-open-mark" aria-hidden="true">↗</span></a>
+          </div>
+          <div class="figure-panel">
+            <a class="figure-open" href="../explorer/index.html?v=4&amp;f=julia&amp;cx=-1.2540170796954613&amp;cy=-0.07161459637319667&amp;x=1.0260537537530683&amp;y=0.012353802700281968&amp;w=0.42785331816873823&amp;p=twilight_shifted" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/pipeline-overview-3.webp" width="205" height="115" alt="A location the walk found, drawn in one neutral palette."><span class="figure-open-mark" aria-hidden="true">↗</span></a>
+          </div>
+          <div class="figure-panel">
+            <a class="figure-open" href="../explorer/index.html?v=4&amp;f=multibrot3&amp;x=-0.09178972220162517&amp;y=0.7700985884478573&amp;w=0.000000007761276897158087&amp;p=twilight_shifted" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/pipeline-overview-4.webp" width="205" height="115" alt="A location the walk found, drawn in one neutral palette."><span class="figure-open-mark" aria-hidden="true">↗</span></a>
+          </div>
+          </div>
+          <div class="figure-pool">
+            <p class="figure-pool-title">Location pool</p>
+            <p class="figure-pool-note">about 81,000 locations</p>
+          </div>
+          <div class="figure-stage" style="--figure-across: 2">
+            <header class="figure-band">
+              <p class="figure-band-title">Finding wallpapers</p>
+              <p class="figure-band-note">about 570,000 candidates mined</p>
+            </header>
+          <div class="figure-panel">
+            <a class="figure-open" href="../explorer/index.html?v=4&amp;x=-0.7615162392610482&amp;y=-0.08414957644162076&amp;w=0.00008291055705832784&amp;p=Ink%20%26%20Fuchsia%20Flare" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/pipeline-overview-5.webp" width="205" height="115" alt="A candidate mined at the same location, in smooth."><span class="figure-open-mark" aria-hidden="true">↗</span></a>
+          </div>
+          <div class="figure-panel">
+            <img src="../assets/images/figures/pipeline-overview-6.webp" width="205" height="115" alt="A candidate mined at the same location, in stripe over smooth.">
+          </div>
+          <div class="figure-panel">
+            <a class="figure-open" href="../explorer/index.html?v=4&amp;f=julia&amp;cx=-1.2540170796954613&amp;cy=-0.07161459637319667&amp;m=tia&amp;x=1.0260537537530683&amp;y=0.012353802700281968&amp;w=0.42785331816873823&amp;p=Pale%20Fire%20Rose" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/pipeline-overview-7.webp" width="205" height="115" alt="A candidate mined at the same location, in triangle-inequality average."><span class="figure-open-mark" aria-hidden="true">↗</span></a>
+          </div>
+          <div class="figure-panel">
+            <a class="figure-open" href="../explorer/index.html?v=4&amp;f=multibrot3&amp;m=itinerary&amp;x=-0.09178972220162517&amp;y=0.7700985884478573&amp;w=0.000000007761276897158087&amp;p=RdBu&amp;phase=0.210758&amp;mirror=1" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/pipeline-overview-8.webp" width="205" height="115" alt="A candidate mined at the same location, in orbit itinerary."><span class="figure-open-mark" aria-hidden="true">↗</span></a>
+          </div>
+          </div>
+          <div class="figure-pool">
+            <p class="figure-pool-title">Candidate pool</p>
+            <p class="figure-pool-note">about 520,000 candidates, 19,000 passing the judges</p>
+          </div>
+          <div class="figure-stage" style="--figure-across: 2">
+            <header class="figure-band">
+              <p class="figure-band-title">Gallery curation</p>
+              <p class="figure-band-note">1,000 seats in the general gallery, 8,000 across the 19 collections</p>
+            </header>
+          <div class="figure-panel">
+            <a class="figure-open" href="../explorer/index.html?v=4&amp;m=stripe&amp;x=-0.7615162392610482&amp;y=-0.08414957644162076&amp;w=0.00008291055705832784&amp;p=fractal_abstraction_lines_130499_2560x1600&amp;phase=0.505072" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/pipeline-overview-9.webp" width="205" height="115" alt="The wallpaper the general gallery seated at the same location, in stripe average."><span class="figure-open-mark" aria-hidden="true">↗</span></a>
+          </div>
+          <div class="figure-panel">
+            <a class="figure-open" href="../explorer/index.html?v=4&amp;f=multibrot4&amp;m=tia&amp;x=0.3188434890090886&amp;y=0.7499067136220382&amp;w=0.0000006372409911921963&amp;p=Mesa%20Noon&amp;phase=0.107068" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/pipeline-overview-10.webp" width="205" height="115" alt="The wallpaper the general gallery seated at the same location, in triangle-inequality average."><span class="figure-open-mark" aria-hidden="true">↗</span></a>
+          </div>
+          <div class="figure-panel">
+            <a class="figure-open" href="../explorer/index.html?v=4&amp;f=julia&amp;cx=-1.2540170796954613&amp;cy=-0.07161459637319667&amp;m=direct_trap_screen&amp;opacity=0.15&amp;x=1.0260537537530683&amp;y=0.012353802700281968&amp;w=0.42785331816873823&amp;p=gist_heat&amp;mirror=1" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/pipeline-overview-11.webp" width="205" height="115" alt="The wallpaper the general gallery seated at the same location, in screened trap."><span class="figure-open-mark" aria-hidden="true">↗</span></a>
+          </div>
+          <div class="figure-panel">
+            <a class="figure-open" href="../explorer/index.html?v=4&amp;f=multibrot3&amp;x=-0.09178972220162517&amp;y=0.7700985884478573&amp;w=0.000000007761276897158087&amp;p=cmr.redshift&amp;mirror=1" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/pipeline-overview-12.webp" width="205" height="115" alt="The wallpaper the general gallery seated at the same location, in smooth."><span class="figure-open-mark" aria-hidden="true">↗</span></a>
+          </div>
+          </div>
+        </div>
+        <figcaption>The three parts of the pipeline and the two pools between them, with rounded counts.</figcaption>
       </figure>
 
-    <h2 id="the-loop">The loop</h2>
+    <h2 id="how-i-ran-it">How I ran it</h2>
 
-    <p>Almost all of the rendering time goes into mining. The solve is cheap by comparison
-    (minutes rather than hours), so I re-run it whenever something changes, like a
-    retrained judge, a new gallery size, or a color theme, and it always works over the
-    whole candidate pool. Only the pictures that end up seated get rendered at full
-    wallpaper resolution.</p>
+    <p>Over several weeks I cycled between three tasks: finding new locations, finding
+    better wallpaper candidates at the locations I had, and running quick solves to see how
+    complete and balanced the galleries were across the axes I cared about. Whenever I
+    noticed a deficiency, I aimed the next task at filling it.</p>
 
-    <p>The loop between the parts is loose on purpose. I mine until the candidate pool
-    looks healthy across palettes, modes, locations, and families, then solve at whatever
-    size I want. If the gallery comes up short, or just looks thin, I mine longer and solve
-    again. The solve makes this easy: for every mode floor it can't fill, it reports what
-    was available and which rule turned it down, so it's clear what the next round of
-    mining should go after. I don't try to compute an exact split of mining time from
-    that.</p>
+    <p>Color was the most interesting case. Some color classes just don't make great
+    wallpapers, and the pool showed it. So I added more palettes in those colors, relabeled
+    pictures that used them to retrain the wallpaper and gallery judges once I had enough,
+    and then ran targeted mining that hunted for locations and palettes the retrained judges
+    scored well. The chart below shows how often each main hue passes the judges, and the
+    figure after it shows the five best and five worst shades.</p>
 
-    <h2 id="what-more-work-buys">What more work buys</h2>
+      <figure class="figure" data-figure="pipeline-hue-shares">
+        <img src="../assets/images/figures/pipeline-hue-shares.png" width="1316" height="552" alt="A bar chart with one bar for each of the twelve main hues, rose through magenta, each bar drawn in its own hue. A bar's height is the share of that hue's candidates that pass the judges, and the small number above it is how many candidates were drawn in that hue." loading="lazy">
+        <figcaption>How often candidates in each main hue pass the judges. The small number on each bar is how many candidates were drawn in that hue.</figcaption>
+      </figure>
 
-    <p>When a gallery was short of one mode, I tried mining more of that mode. It did add
-    seats in that mode, but it took them from other modes, because each location only gets
-    one wallpaper, and the gallery as a whole ended up no fuller. What actually helps is
-    having more places where every mode has been tried. So I mine every mode everywhere,
-    and save targeted mining (one mode, one color, or one family) for targeted
-    galleries.</p>
+      <figure class="figure figure-split" data-figure="pipeline-hue-extremes">
+        <div class="figure-panels figure-staged" style="--figure-across: 5">
+          <div class="figure-stage" style="--figure-across: 5">
+            <header class="figure-band">
+              <p class="figure-band-title">Most often</p>
+            </header>
+          <div class="figure-panel">
+            <a class="figure-open" href="../explorer/index.html?v=4&amp;f=phoenix&amp;cx=-0.5266783574752247&amp;cy=-0.652322729101436&amp;px=-0.28353182998131243&amp;py=-0.02545285599096059&amp;zx=-0.10324356398202189&amp;zy=0.43684294503006016&amp;m=smooth_mean_angle&amp;weight=0.85&amp;x=0.3982970955162623&amp;y=0.5492040193988719&amp;w=0.2838617155845553&amp;p=consequences-25&amp;phase=0.102695" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/pipeline-hue-extremes-1.webp" width="248" height="140" alt="The best-scoring candidate whose dominant shade is dark vivid red: trap spread angle over smooth, in the Phoenix family." loading="lazy"><span class="figure-open-mark" aria-hidden="true">↗</span></a>
+            <p class="figure-label">dark vivid red<span class="figure-note">9.9% pass</span></p>
+          </div>
+          <div class="figure-panel">
+            <a class="figure-open" href="../explorer/index.html?v=4&amp;f=multibrot5&amp;m=stripe&amp;x=0.634459618909244&amp;y=0.5224450022659477&amp;w=0.00004706277587543971&amp;p=Rose%20Against%20Cobalt" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/pipeline-hue-extremes-2.webp" width="248" height="140" alt="The best-scoring candidate whose dominant shade is dark vivid rose: stripe average, in the Multibrot d = 5 family." loading="lazy"><span class="figure-open-mark" aria-hidden="true">↗</span></a>
+            <p class="figure-label">dark vivid rose<span class="figure-note">8.6% pass</span></p>
+          </div>
+          <div class="figure-panel">
+            <a class="figure-open" href="../explorer/index.html?v=4&amp;f=julia&amp;cx=-1.2517612129804818&amp;cy=0.038979112285470574&amp;m=stripe&amp;x=0.20846646786333498&amp;y=-0.02748151182902571&amp;w=0.013376388330489515&amp;p=no-mans-land-25" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/pipeline-hue-extremes-3.webp" width="248" height="140" alt="The best-scoring candidate whose dominant shade is dark vivid orange: stripe average, in the Julia family." loading="lazy"><span class="figure-open-mark" aria-hidden="true">↗</span></a>
+            <p class="figure-label">dark vivid orange<span class="figure-note">7.4% pass</span></p>
+          </div>
+          <div class="figure-panel">
+            <a class="figure-open" href="../explorer/index.html?v=4&amp;f=multibrot4&amp;m=tia&amp;x=0.3402052928800089&amp;y=0.9313932490298805&amp;w=0.000000025258699229909393&amp;p=visions-25&amp;phase=0.314738" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/pipeline-hue-extremes-4.webp" width="248" height="140" alt="The best-scoring candidate whose dominant shade is dark vivid purple: triangle-inequality average, in the Multibrot d = 4 family." loading="lazy"><span class="figure-open-mark" aria-hidden="true">↗</span></a>
+            <p class="figure-label">dark vivid purple<span class="figure-note">7.3% pass</span></p>
+          </div>
+          <div class="figure-panel">
+            <a class="figure-open" href="../explorer/index.html?v=4&amp;f=multibrot4&amp;m=smooth_curvature&amp;weight=0.85&amp;x=0.3406823823523507&amp;y=0.9315854919065768&amp;w=0.00000007871298435783809&amp;p=Orchid%20Furnace" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/pipeline-hue-extremes-5.webp" width="248" height="140" alt="The best-scoring candidate whose dominant shade is dark vivid magenta: curvature over smooth, in the Multibrot d = 4 family." loading="lazy"><span class="figure-open-mark" aria-hidden="true">↗</span></a>
+            <p class="figure-label">dark vivid magenta<span class="figure-note">6.7% pass</span></p>
+          </div>
+          </div>
+          <div class="figure-stage" style="--figure-across: 5">
+            <header class="figure-band">
+              <p class="figure-band-title">Least often</p>
+            </header>
+          <div class="figure-panel">
+            <a class="figure-open" href="../explorer/index.html?v=4&amp;f=julia4&amp;cx=0.3478159771066696445843051953&amp;cy=0.7161333128565870948379406732&amp;m=threads&amp;x=0.012869330306267829&amp;y=-0.04273612422369369&amp;w=0.14836426422203697&amp;p=Jungle%20Floor&amp;phase=0.406863" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/pipeline-hue-extremes-6.webp" width="248" height="140" alt="The best-scoring candidate whose dominant shade is light vivid lime: cross trap over smooth, in the Julia d = 4 family." loading="lazy"><span class="figure-open-mark" aria-hidden="true">↗</span></a>
+            <p class="figure-label">light vivid lime<span class="figure-note">0.7% pass</span></p>
+          </div>
+          <div class="figure-panel">
+            <a class="figure-open" href="../explorer/index.html?v=4&amp;f=multibrot5&amp;m=tia&amp;x=0.6344755332553289&amp;y=0.5224381146307765&amp;w=0.00001442626707973919&amp;p=dynamo-25&amp;phase=0.666645" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/pipeline-hue-extremes-7.webp" width="248" height="140" alt="The best-scoring candidate whose dominant shade is light muted lime: triangle-inequality average, in the Multibrot d = 5 family." loading="lazy"><span class="figure-open-mark" aria-hidden="true">↗</span></a>
+            <p class="figure-label">light muted lime<span class="figure-note">0.7% pass</span></p>
+          </div>
+          <div class="figure-panel">
+            <a class="figure-open" href="../explorer/index.html?v=4&amp;f=phoenix&amp;cx=-1.0479499534367431&amp;cy=-0.1688615514905796&amp;px=-0.1886190984187288&amp;py=-0.14037204127519995&amp;zx=0.07933411397102327&amp;zy=0.02930384783956974&amp;m=stripe&amp;x=-1.1755260624448935&amp;y=0.009513562915531569&amp;w=0.1568969439294155&amp;n=1138&amp;p=cmr.savanna&amp;phase=0.500183&amp;mirror=1" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/pipeline-hue-extremes-8.webp" width="248" height="140" alt="The best-scoring candidate whose dominant shade is dark vivid lime: stripe average, in the Phoenix family." loading="lazy"><span class="figure-open-mark" aria-hidden="true">↗</span></a>
+            <p class="figure-label">dark vivid lime<span class="figure-note">0.9% pass</span></p>
+          </div>
+          <div class="figure-panel">
+            <img src="../assets/images/figures/pipeline-hue-extremes-9.webp" width="248" height="140" alt="The best-scoring candidate whose dominant shade is dark muted lime: trap spread angle over smooth, in the Julia family." loading="lazy">
+            <p class="figure-label">dark muted lime<span class="figure-note">1.3% pass</span></p>
+          </div>
+          <div class="figure-panel">
+            <a class="figure-open" href="../explorer/index.html?v=4&amp;f=julia&amp;cx=-0.7488551646997019&amp;cy=-0.13572339871672048&amp;m=stripe&amp;x=-0.590419289707305&amp;y=-0.11523430726348469&amp;w=0.6295218798370616&amp;n=3000&amp;p=of-strange-design-25&amp;phase=0.999159" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/pipeline-hue-extremes-10.webp" width="248" height="140" alt="The best-scoring candidate whose dominant shade is light vivid green: stripe average, in the Julia family." loading="lazy"><span class="figure-open-mark" aria-hidden="true">↗</span></a>
+            <p class="figure-label">light vivid green<span class="figure-note">1.5% pass</span></p>
+          </div>
+          </div>
+        </div>
+        <figcaption>The five shades whose candidates pass the judges most often (top) and least often (bottom), each shown by its best-scoring picture.</figcaption>
+      </figure>
 
-    <p>The location search runs into a different problem. Once the walk finds one good
-    frame, the easiest place to find the next one is right next to it, so left alone it
-    would spend all its time in one valley. To avoid that, each run records the ground it
-    covered, later runs push crowded neighborhoods further back in the queue, and part of
-    every batch goes to ground where no run has found anything yet. That last part matters
-    because the location judge learned its taste from what the search had already found,
-    so it tends to underrate places that look unfamiliar.</p>
-
-    <p>Once there's enough in the pool to fill a gallery of a given size, more mining still
-    improves it. I checked this by re-solving the pool at random fractions of its size:
-    the seats fill early, but the quality of what's seated keeps going up at every doubling
-    I measured.</p>
+    <p>More mining kept paying off even after a gallery could be filled. Re-solving the pool
+    at a range of sizes, the seats fill by a quarter of the pool, and the quality of what's
+    seated rises at every doubling after that.</p>
 
       <figure class="figure" data-figure="pipeline-growth">
-        <img src="../assets/images/figures/pipeline-growth.png" width="1316" height="810" alt="Two line charts sharing one logarithmic axis of mining effort, in attempts, from about three thousand to about a hundred and seventy-seven thousand. The upper chart plots the seated gallery's median ranking score, a score fitted from the location and wallpaper judges' scores, the kind of rendering mode, and how much of the picture is empty; the lower plots the tenth percentile of the same seats. Each carries one line per gallery size (fifty, one hundred, two hundred) with a band around it showing the spread of three random draws. Every line rises from left to right, and the smaller galleries sit above the larger ones throughout." loading="lazy">
-        <figcaption><span class="figure-draft">Draft</span> The candidate pool re-solved over random fractions of the mining that made it, three draws at each fraction and three gallery sizes. Seats stop being bought early: fifty seats fill at every fraction measured, and two hundred from a quarter of the mining upward. Quality keeps being bought at every doubling so far, and the weakest seats gain the most of it. A hollow marker is a fraction whose draws could not fill the gallery.</figcaption>
+        <img src="../assets/images/figures/pipeline-growth.png" width="1316" height="668" alt="A box-and-whisker chart of the gallery judge's scores over the seats of a 1,000-seat gallery, at seven fractions of the pool from one sixty-fourth to the whole. The seats filled climb from 183 to 978 over the first four fractions, and the boxes sit level there, with a median near 0.18. From a quarter of the pool on, all 1,000 seats fill, and the box rises at each doubling, to a median near 0.59 over the whole pool." loading="lazy">
+        <figcaption>The gallery judge's scores over the seated pictures, re-solving the pool cut to each fraction of its size. The number above each box is how many seats filled.</figcaption>
       </figure>
-
-    <h2 id="future-work">Future work</h2>
-
-    <p>The judges stand in for my eye. If someone retrained them on their own ratings, the
-    same pools would give a different collection, without changing any of the machinery
-    around them. That's the most direct way another artist could make this pipeline their
-    own.</p>
-
-    <p>A location's framing is decided once, when it's found, and nothing afterward moves
-    the camera. I don't know how much of a good picture comes from the place and how much
-    from where the edges happen to fall, and it would be interesting to find out.</p>
-
-    <p>Palette and picture are chosen independently: a palette gets laid over the field,
-    and nothing about it responds to the structure underneath. A coloring that took its cue
-    from the field itself is the improvement I'd most like to see.</p>
 
     <p>Everything here stays within double precision. Going below that is the subject of
     <a href="deep-zoom.html">Deep zoom rendering</a>, and
     <a href="fractal-atlases.html">Fractal atlases</a> shows where in each family the
-    locations actually ended up.</p>
+    locations ended up.</p>
   </section>
 
   <nav class="section-nav">

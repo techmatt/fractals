@@ -343,7 +343,7 @@ def _parser() -> argparse.ArgumentParser:
     )
 
     grown = commands.add_parser(
-        "growth", help="draw the growth figure, from the curation growth instrument next door"
+        "growth", help="draw the charts read off the pool study: growth and hue shares"
     )
     grown.add_argument(
         "id",
@@ -354,7 +354,7 @@ def _parser() -> argparse.ArgumentParser:
     )
     grown.add_argument(
         "--stamp",
-        help="which stamped growth run to bake from; the latest by default",
+        help="which pool study to bake from; the latest whole one by default",
     )
     grown.add_argument(
         "--place",
@@ -368,7 +368,7 @@ def _parser() -> argparse.ArgumentParser:
     )
 
     charted = commands.add_parser(
-        "pipeline", help="draw the full-pipeline charts read off a run's own walk ledger"
+        "pipeline", help="draw the Full pipeline figures drawn as panels: overview, hue extremes"
     )
     charted.add_argument(
         "id",
@@ -379,7 +379,11 @@ def _parser() -> argparse.ArgumentParser:
     )
     charted.add_argument(
         "--run",
-        help=f"which run's walk ledger to read; {pipeline_module.RUN} by default",
+        help=f"the retired yield chart only: which run's walk ledger; {pipeline_module.RUN}",
+    )
+    charted.add_argument(
+        "--stamp",
+        help="which pool study the panel figures read; the latest whole one by default",
     )
     charted.add_argument(
         "--place",
@@ -1107,13 +1111,10 @@ def _land_split(identifier: str, drawn, maker, *, replace: bool, landing: bool) 
 
 
 def _do_growth(options: argparse.Namespace) -> int:
-    """Bake the growth figure, and optionally land it — as a draft, mark and all.
+    """Bake the charts read off the pool study, and optionally land them.
 
-    The same two steps every other maker takes, with two differences that are the
-    figure's own. The sheet lands as a **PNG**: it is drawn art rather than a render, and
-    JPEG rings every hairline of a chart. And it lands at `draft` rather than `placed`,
-    because the ladder behind it stops at the sizes this pool can seat and the numbers
-    move the next time the instrument is run.
+    The same two steps every other maker takes, and the sheet lands as a **PNG**: it is
+    drawn art rather than a render, and a lossy codec rings every hairline of a chart.
     """
     for identifier in options.id or sorted(growth_module.MAKERS):
         drawn = growth_module.MAKERS[identifier](options.stamp)
@@ -1170,13 +1171,22 @@ def _do_curation(options: argparse.Namespace) -> int:
 
 
 def _do_pipeline(options: argparse.Namespace) -> int:
-    """Bake a full-pipeline chart, and optionally land it.
+    """Draw the Full pipeline figures that are panels, and optionally land them.
 
-    A PNG for the same reason `growth` lands one: it is drawn art rather than a render,
-    and JPEG rings every hairline of a chart.
+    Both are split and land through `_land_split`. The retired yield chart is still drawn
+    by name, and lands as a PNG for the reason `growth`'s charts do.
     """
-    for identifier in options.id or sorted(pipeline_module.MAKERS):
-        drawn = pipeline_module.draw(identifier, options.run)
+    for identifier in options.id or sorted(pipeline_module.LANDED):
+        drawn = pipeline_module.draw(identifier, options.run, options.stamp)
+        if isinstance(drawn, locations_module.Split):
+            _land_split(
+                identifier,
+                drawn,
+                pipeline_module,
+                replace=options.replace,
+                landing=bool(options.place or options.replace),
+            )
+            continue
         print(f"wrote {drawn.path.relative_to(SITE_ROOT).as_posix()}")
         if not (options.place or options.replace):
             continue

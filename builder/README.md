@@ -338,11 +338,16 @@ point at which somebody can still act on it. **`draft`** is made and on its page
 it says what re-bakes it in `note`, which is also what its caption's small `Draft` mark
 points at — and the note is required rather than encouraged: a draft row without one is a
 failing check, and `--place` refuses to land a draft that has nothing to say about its own
-shelf life. One row is a draft today: `pipeline-growth`, which `python -m builder growth`
-re-bakes from the curation growth instrument's own stamped record next door. `atlas-places`
-was the other until `atlas_live_ckpt146` retired it for the live panel; its maker in
-`builder/atlas.py` is left in place and has no row to land on. `check` prints one note per
-draft, which is the list rather than this sentence.
+shelf life. No row is a draft today. `pipeline-growth` was the last, until
+place_full_pipeline_v6_ckpt150 re-baked it over the closed pool from the **pool study**:
+`builder/pool_study.py`, run with the wallpaper project's own interpreter, re-solves the
+pool in memory through `solve.solve(candidates=…)` and writes every answer under this
+repository's ignored `artifacts/pool-study/<stamp>/`, and `python -m builder growth` draws
+that figure and `pipeline-hue-shares` from it. The study holds the pool, so it is one
+pool-holding process and never runs beside a wallpapers merge or another solve.
+`atlas-places` was a draft until `atlas_live_ckpt146` retired it for the live panel; its
+maker in `builder/atlas.py` is left in place and has no row to land on. `check` prints one
+note per draft, which is the list rather than this sentence.
 
 **A row may be `live`** *(atlas_live_ckpt146)*: a piece of the site running in the page
 rather than a picture of it. `"live": "atlas"` names the piece from `figures.py`'s `LIVE`,
@@ -427,6 +432,14 @@ only way a stage three across can sit above one four across — a grid has one c
 and a sheet had none. The element is a `div` and not a `section`: `check`'s `contents`
 reads a page's prose as everything up to the first `</section>`, and a band that closed one
 took seven of a page's eight rail entries with it for exactly one commit.
+
+**A band may open with a pool** *(place_full_pipeline_v6_ckpt150)*: `pool` is
+`{title, note}`, the store the stage before filled, drawn as a narrow column between the two
+stages in place of the arrow. A figure with one is a **flow**: its stages stand left to
+right once the rail is shown and stack below that breakpoint, which is `site.css`'s
+`.figure-flow` inside the one media query the rail already owns, so the breakpoint is not
+written twice. `pipeline-overview` is the one flow figure, its counts are the pools' and
+stages' notes, and they are page text rather than pixels.
 
 **The grid's arrangement is the composite's, and that is a stylesheet rule.** The markup
 passes one thing in, `--figure-across`, which is a count; `site.css` works the floor out
