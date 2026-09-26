@@ -817,6 +817,8 @@ def _do_figures(options: argparse.Namespace) -> int:
                 size = f"{len(figure.panels)}x {one.width}x{one.height}"
             elif figure.live is not None:
                 size = f"live {figure.live}"
+            elif figure.video is not None:
+                size = f"video {figure.video}"
             else:
                 size = f"{figure.width}x{figure.height}"
             recipe = figure.recipe.maker if figure.recipe else "no recipe"

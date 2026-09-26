@@ -36,6 +36,13 @@ block is a well holding the row's `alt` and a link to where the piece lives on i
 and one module script that mounts the piece over that well. A page that cannot run the
 script (scripting off, or opened from disk, where a browser refuses a module) keeps the
 well as it was written, which is the same honesty a pending row's well has.
+
+**A figure may be a video** *(start_video_embed_ckpt152)*: a YouTube player rather than a
+picture. Such a row says `video`, the video's YouTube id, and like a live row carries no
+file, size or panels. Its block is one `<iframe>` from `youtube-nocookie.com`, lazy and
+16:9, whose `title` is the row's `alt`, since that is the player's accessible name. The
+site hosts no video of its own: a video is somebody else's player, and the site's own
+markup carries no script for it.
 """
 
 import importlib
@@ -153,6 +160,14 @@ LIVE = {
         words="Open the atlas in the fractal explorer",
     ),
 }
+
+#: Where a video figure's player comes from: the privacy-enhanced host, which sets no
+#: cookie until the reader presses play.
+VIDEO_EMBED = "https://www.youtube-nocookie.com/embed/"
+
+#: A YouTube id: eleven characters of the URL-safe alphabet. Anything else is a pasted URL
+#: or a typo, and would derive a player that shows an error.
+_VIDEO_ID = re.compile(r"[A-Za-z0-9_-]{11}")
 
 #: The kinds that carry keys at all. A `synthetic` or `none` row naming one is a row
 #: claiming a record it does not have.
@@ -354,6 +369,13 @@ class Figure:
     columns: int | None = None
     #: The piece a live figure mounts, by its name in `LIVE`; `None` for a picture.
     live: str | None = None
+    #: A video figure's YouTube id; `None` for anything else.
+    video: str | None = None
+
+    @property
+    def embedded(self) -> bool:
+        """Whether this figure is something that runs in its well rather than a raster."""
+        return self.live is not None or self.video is not None
 
     @property
     def split(self) -> bool:
@@ -420,8 +442,8 @@ class Figure:
 
     @property
     def pending(self) -> bool:
-        """True while the picture is planned but not yet made. A live figure never is."""
-        return self.file is None and not self.panels and self.live is None
+        """True while the picture is planned but not yet made. A live or video one never is."""
+        return self.file is None and not self.panels and not self.embedded
 
     @property
     def held(self) -> bool:
@@ -460,13 +482,13 @@ class Figure:
         One entry for a composited figure and one per panel for a split one, so a caller
         that only wants to know whether the pictures are there and are the size the
         registry says does not have to know which shape it is holding. A live figure ships
-        none: what it shows is its piece's own record.
+        none: what it shows is its piece's own record. Nor does a video, which YouTube hosts.
         """
         if self.split:
             return tuple(
                 (panel.file, panel.path, panel.width, panel.height) for panel in self.panels
             )
-        if self.pending or self.live is not None:
+        if self.pending or self.embedded:
             return ()
         return ((self.file, self.path, self.width, self.height),)
 
@@ -504,8 +526,12 @@ def markup(figure: Figure, opened: dict[str, str] | None = None) -> str:
         classes.append("figure-split")
     if figure.live is not None:
         classes.append("figure-live")
+    if figure.video is not None:
+        classes.append("figure-video")
     if figure.live is not None:
         well = _live(figure)
+    elif figure.video is not None:
+        well = _video(figure)
     elif figure.split:
         well = _panels(figure, links_by_id)
     else:
@@ -621,6 +647,19 @@ def _live(figure: Figure) -> str:
             f"{INDENT}  </div>",
             f'{INDENT}  <script type="module" src="{attribute(module)}"></script>',
         ]
+    )
+
+
+def _video(figure: Figure) -> str:
+    """A video figure's well: the player, and nothing of the site's own around it.
+
+    Always lazy, even leading its page: a player is a frame of somebody else's page, and it
+    is worth nothing before a reader has scrolled to it. The size is the stylesheet's, 16:9
+    at the width of the well, so the iframe carries no width or height of its own.
+    """
+    return (
+        f'{INDENT}  <iframe src="{attribute(VIDEO_EMBED + figure.video)}" '
+        f'title="{attribute(figure.alt)}" loading="lazy" allowfullscreen></iframe>'
     )
 
 
@@ -783,6 +822,24 @@ def _figure(row: records.Record, identifier: str) -> Figure:
                 f"{row.where}: a live figure is a piece that runs, and names no file, size "
                 "or panels"
             )
+    video = row.optional_text("video")
+    if video is not None:
+        if not _VIDEO_ID.fullmatch(video):
+            raise records.RecordError(
+                f"{row.where}: video {video!r} — a video is its YouTube id, eleven characters"
+            )
+        if live is not None:
+            raise records.RecordError(f"{row.where}: a figure is live or a video, not both")
+        if not made:
+            raise records.RecordError(
+                f"{row.where}: a video figure is made or it is not on the page — "
+                f"it cannot be {status}"
+            )
+        if panels or columns is not None or any(field is not None for field in asset):
+            raise records.RecordError(
+                f"{row.where}: a video figure is hosted elsewhere, and names no file, size "
+                "or panels"
+            )
     if not made and (any(field is not None for field in asset) or panels):
         raise records.RecordError(
             f"{row.where}: a {status} figure names no file or size — the asset does not exist yet"
@@ -798,7 +855,13 @@ def _figure(row: records.Record, identifier: str) -> Figure:
         )
     if columns is not None and not panels:
         raise records.RecordError(f"{row.where}: columns is the width of a grid, and there is none")
-    if made and not panels and live is None and any(field is None for field in asset):
+    if (
+        made
+        and not panels
+        and live is None
+        and video is None
+        and any(field is None for field in asset)
+    ):
         raise records.RecordError(f"{row.where}: a {status} figure needs file, width and height")
     held_reason = row.optional_text("held_reason")
     if status == HELD and held_reason is None:
@@ -840,6 +903,7 @@ def _figure(row: records.Record, identifier: str) -> Figure:
         panels=panels,
         columns=columns,
         live=live,
+        video=video,
     )
 
 
@@ -1147,6 +1211,7 @@ KEY_ORDER = (
     "reuse_reason",
     "note",
     "live",
+    "video",
     "file",
     "width",
     "height",

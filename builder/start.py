@@ -15,7 +15,7 @@ Three of the five drawn figures stand on records next door and name them on thei
 registry rows, the way `builder.picks` does: a re-pick is an edit to the row followed by
 `python -m builder start <id> --replace`. The walk is frozen here instead, as the ledger
 nodes it was read from, because a descent is a path through one ledger rather than a list
-of independent picks. `start-video` is a slot and nothing draws it.
+of independent picks. `start-video` is a YouTube player, and nothing here draws it.
 
 These are placeholders Matt adjusts. The seats were drawn by a seeded shuffle, not chosen
 for how they look, and each row's provenance says so; `start-pink-gallery` in particular

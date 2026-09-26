@@ -555,7 +555,10 @@ What a figure is made of:
   `FIGURE_SUFFIX` is where the format is named, and no maker spells it.
 - **A diagram is PNG**, and **an animation is an APNG** — which also carries a `.png`
   extension and sits in the **same plain `<img>` block** as everything else. No video
-  element, no script, no second markup path.
+  element, no script, no second markup path. **A video is not the site's to host**
+  *(start_video_embed_ckpt152)*: a registry row that says `video` names a YouTube id and
+  derives one `youtube-nocookie.com` `<iframe>`, lazy and 16:9, carrying no script of the
+  site's own. `start-video` on Start here is the one.
 - **A figure's caption is the caption and nothing else** *(Matt, 2026-08-21, replacing
   the credit rule)*. It used to end with two sentences that were not about the picture: a
   credit saying the engine drew it, identical under every render on the site, and the way

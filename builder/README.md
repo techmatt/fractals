@@ -299,7 +299,8 @@ to the site**: the seats, candidates and walk nodes behind them were drawn from 
 candidate ledger, each as the neutral frame and then four real candidates there in smooth,
 tia, threads and stripe, named as candidate keys in `rows`; `start-walk` is one descent of
 `overnight_harvest_ckpt123` frozen in the module, a plane walk to a minibrot and then the
-walk the twin channel started in that point's Julia set. `start-video` is a pending slot.
+walk the twin channel started in that point's Julia set. `start-video` is the
+double-descent video, embedded from YouTube.
 
 ## The contents rail is derived, never kept
 
@@ -359,7 +360,11 @@ and the row carries no file, size or panels, and no link row, because every mark
 piece builds its own link. The block is a well holding the row's `alt` and a link to the
 piece's own page, plus one `<script type="module">` that mounts the piece over the well.
 Opened from disk or with scripting off, the well is what a reader gets. `atlas-live` on
-Fractal atlases is the one live row, mounted by `atlas/embed.js`. Every page on this site is a draft and none of them says so; this status is
+Fractal atlases is the one live row, mounted by `atlas/embed.js`. **A row may be a
+`video`** *(start_video_embed_ckpt152)*, the same shape with a YouTube id in place of a
+piece: no file, size, panels or link row, and a block that is one lazy
+`youtube-nocookie.com` `<iframe>` titled by the row's `alt`. `start-video` is the one.
+Every page on this site is a draft and none of them says so; this status is
 the narrower claim, that a reader who copied a number off this picture would be copying
 something with a shelf life. Prose gets written before pictures get made, and a
 page that says what is coming beats a broken image or a silent gap; `figures` lists what

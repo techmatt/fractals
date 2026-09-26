@@ -711,6 +711,15 @@ a:hover { color: var(--ink); }
    and wins on order alone; this says so rather than leaning on it. */
 .figure-live .frame img { height: 100%; }
 
+/* A video figure: a YouTube player (start_video_embed_ckpt152), the width of the well and
+   16:9, so the markup carries no size of its own and the player scales with the column. */
+.figure-video iframe {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border: 0;
+}
+
 /* A slot held open before its figure is even registered: the slug its row will carry and
    the draft caption, on a 16:9 well. Placed prose is reviewed on the site before a figure
    round draws anything, and this is how that page shows where the figures go. It is not a

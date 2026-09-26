@@ -193,7 +193,7 @@ def picture_ids() -> list[str]:
     """
     found = []
     for identifier, figure in figures.load_all().items():
-        if not figure.on_page or figure.live is not None:
+        if not figure.on_page or figure.embedded:
             continue
         if figure.split:
             found.extend(
@@ -223,7 +223,7 @@ def derive() -> list[Link]:
 
     for identifier, figure in figures.load_all().items():
         key = f"figure:{identifier}"
-        if not figure.on_page or figure.live is not None:
+        if not figure.on_page or figure.embedded:
             continue
         if figure.pending:
             wanted.append(_refused(key, "incomplete_provenance", "the picture is not made yet"))
