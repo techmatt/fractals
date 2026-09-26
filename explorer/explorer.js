@@ -3381,6 +3381,7 @@ function makeSaved() {
   saved.subscribe(() => {
     saving.remark(saved);
     syncSave();
+    browser?.redress();
   });
   // Another tab of this page wrote the list: this one reads it again.
   window.addEventListener("storage", (event) => {
@@ -5433,6 +5434,13 @@ async function main() {
     canvas: at("browse-picture"),
     state: at("browse-state"),
     openButton: at("browse-open"),
+    saveButton: at("browse-save"),
+    // The narrow panel's mark, and the list the page keeps: a save in Browse is a save.
+    saveMark: (row) => saving.mark(saved, canonicalOf(row.link)),
+    saving: {
+      has: (row) => saved.has(canonicalOf(row.link)),
+      toggle: (row) => saved.toggle(row.link),
+    },
     // Its own pool over the module already compiled, as the screensaver's is: nothing the
     // viewer does cancels a preview, and nothing a preview does cancels the viewer.
     pool: () => Renderer.over(renderer.module, renderer.workerCount),

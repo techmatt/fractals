@@ -678,6 +678,18 @@ grid, the collection's, `?panel=gallery&collection=<name>`; outside Browse, the 
 always. The status line is under the layer, so in Browse the button itself says *Copied*
 for a moment.
 
+**It saves** *(browse_chrome_ckpt153_addendum1)*, because friends curate favourites here and
+send them with Saved's *Copy links*. Each grid tile carries the narrow panel's own bookmark
+mark in the same `.tile-cell`, keyed by the same canonical link in `data-key`: hollow on
+hover or focus, filled and always shown once saved, and pressing it again removes the
+picture. The preview has a **Save** button beside *Open in explorer* that toggles the
+previewed seat and reads *Save* or *Saved*, per picture as ← → step. Both store the seat's
+own link through `Saved.toggle`, never the preview's size or stage, so a friend's list maps
+back to seats by exact match. The page's one `remark` dresses every mark, and
+`browser.redress()` dresses the preview's button, on any change to the list, so a save in
+Browse shows at once on the narrow panel and in Saved, from another tab too, and the other
+way round.
+
 **Every step and every close cancels the picture in flight**: the pool's `cancel`, the
 colouring worker's `stop`, and a generation that drops whatever a cancelled stage still
 hands back. The pool is Browse's own, made on the way in and stopped on the way out, so

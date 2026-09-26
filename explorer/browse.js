@@ -116,8 +116,9 @@ export function previewSize(aspect, room, ratio = 1) {
  */
 export function install(host) {
   const { layer, collection, rows, tiles, note, exitButton } = host;
-  const { preview, stage, under, canvas, state, openButton } = host;
+  const { preview, stage, under, canvas, state, openButton, saveButton } = host;
   const { pool, parse, derive, finalSupersample, base, onOpen, onLeave } = host;
+  const { saveMark, saving } = host;
   const spans = stageSpans(finalSupersample);
 
   let active = false;
@@ -192,7 +193,22 @@ export function install(host) {
     picture.addEventListener("load", () => tile.classList.add("is-ready"), { once: true });
     tile.append(picture);
     tile.addEventListener("click", () => show(index));
-    return tile;
+    // The narrow panel's own mark in the narrow panel's own cell *(browse_chrome_ckpt153
+    // addendum)*: the same canonical key in `data-key`, so the page's one `remark` dresses
+    // both grids and Saved whichever of them, or another tab, changed the list.
+    const cell = document.createElement("div");
+    cell.className = "tile-cell";
+    cell.append(tile, saveMark(seat));
+    return cell;
+  }
+
+  /** The preview's Save button, worn for the seat it is on, as a mark would wear it. */
+  function dressSave() {
+    const seat = at >= 0 ? showing[at] : null;
+    const on = seat !== null && saving.has(seat);
+    saveButton.setAttribute("aria-pressed", String(on));
+    saveButton.textContent = on ? "Saved" : "Save";
+    saveButton.title = on ? "Press to remove it from Saved." : "Keep this picture on the Saved tab.";
   }
 
   /** Show what the chips leave, a window's worth at once and the rest a task at a time. */
@@ -397,6 +413,7 @@ export function install(host) {
     canvas.hidden = true;
     preview.hidden = false;
     preview.dataset.key = seat.key;
+    dressSave();
     openButton.focus({ preventScroll: true });
     render(seat);
   }
@@ -486,6 +503,11 @@ export function install(host) {
   collection.addEventListener("change", () => choose(collection.value));
   exitButton.addEventListener("click", exit);
   openButton.addEventListener("click", open);
+  // The seat's own link, never the preview's size or stage: `toggle` canonicalizes it
+  // exactly as the tile's mark does, so a friend's list maps back to seats by match.
+  saveButton.addEventListener("click", () => {
+    if (at >= 0) saving.toggle(showing[at]);
+  });
   // A click on the mat around the picture is a way back to the grid, as Esc is.
   preview.addEventListener("click", (event) => {
     if (event.target === preview) closePreview();
@@ -513,6 +535,10 @@ export function install(host) {
      *  the collection either way. */
     onScreen() {
       return { seat: active && at >= 0 ? showing[at] : null, collection: chosen };
+    },
+    /** The list changed, here or elsewhere: the grid's marks are `remark`'s, this is the rest. */
+    redress() {
+      if (active && at >= 0) dressSave();
     },
   };
 }

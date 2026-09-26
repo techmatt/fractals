@@ -109,7 +109,7 @@ say("U9: Browse");
 await page.open(`?${HOME}`, { settle: 1500 });
 await page.settled(120);
 await until(`document.querySelectorAll('#gallery-tiles .tile').length > 0`);
-const baseline = (await page.metrics()).workers;
+let baseline = (await page.metrics()).workers;
 // The address the page settles on, which is the link canonicalised to the current version.
 const home = (await page.state()).url;
 
@@ -256,11 +256,15 @@ await check("Esc on the grid leaves Browse and gives its pool back", async () =>
   await key("Escape");
   await sleep(1200);
   const up = await browseUp();
-  // The least of three samples, for the reason Open in explorer's check gives below.
+  // Drained, not instant: one worker can still be counted for a while after Browse is
+  // left, and after this run's twenty cancelled renders and a close mid-render it was about
+  // ten seconds (measured: 15 for ~9 s after leaving, then 14 and flat through 15 s more;
+  // without that load, about two). Which worker it is was not identified. So the count has
+  // fifteen seconds to come back, and a worker that stays past them is a leak.
   let workers = Infinity;
-  for (let i = 0; i < 3; i++) {
+  for (let i = 0; i < 30 && workers > baseline; i++) {
     workers = Math.min(workers, (await page.metrics()).workers);
-    await sleep(700);
+    await sleep(500);
   }
   if (up) note("exit", "Browse is still up");
   if (workers > baseline) note("exit", `workers ${baseline} before Browse, ${inside} in it, ${workers} after`);
@@ -306,6 +310,115 @@ await check("a tab leaves Browse onto that tab", async () => {
   await page.ev(`document.getElementById('tab-gallery').click()`);
   await sleep(500);
   return { up, selected, shown, picture: picture?.split("?")[1] === home };
+});
+
+// ----------------------------------------------------------- saving from Browse
+// *(browse_chrome_ckpt153_addendum1)*: one seat saved by its grid mark and one by the
+// preview's Save, each seen on the narrow panel's mark, on the Saved tab and in its Copy
+// links by the seat's exact link; then both unsaved from Browse and both surfaces clear.
+
+const SAVED_KEY = "fractal-website.explorer.saved";
+const storedLinks = () =>
+  page.ev(`(() => { try { return (JSON.parse(localStorage.getItem(${JSON.stringify(SAVED_KEY)}))?.items ?? []).map((i) => i.link); } catch { return []; } })()`);
+const narrowPressed = (key) =>
+  page.ev(`document.querySelector('#gallery-tiles .tile[data-key="${key}"]')?.parentElement.querySelector('.save-mark')?.getAttribute('aria-pressed') ?? null`);
+const browseMark = (i) => `document.querySelectorAll('#browse-tiles .tile-cell')[${i}].querySelector('.save-mark')`;
+const savedShows = (link) =>
+  page.ev(`[...document.querySelectorAll('#panel-saved .saved-tile')].some((t) => t.dataset.key === ${JSON.stringify(link)})`);
+let pair = null;
+
+async function openSavedTab() {
+  await page.ev(`document.getElementById('tab-saved').click()`);
+  await until(`document.querySelectorAll('#panel-saved .saved-tile').length > 0 || document.getElementById('saved-copy')?.getBoundingClientRect().width > 0`);
+  await sleep(500);
+}
+
+await check("save from the grid and from a preview", async () => {
+  await page.ev(`document.getElementById('gallery-browse').click()`);
+  await until(`document.querySelectorAll('#browse-tiles .tile-cell .save-mark').length > 10`);
+  const keys = await page.ev(`[7, 8, 9].map((i) => document.querySelectorAll('#browse-tiles .tile')[i].dataset.key)`);
+  const links = [await seatLink(keys[0]), await seatLink(keys[1])];
+  pair = { keys, links };
+  // A profile that kept a save from an earlier run starts this one clean.
+  for (const i of [7, 8]) {
+    if ((await page.ev(`${browseMark(i)}.getAttribute('aria-pressed')`)) === "true") await page.ev(`${browseMark(i)}.click()`);
+  }
+  await page.ev(`${browseMark(7)}.click()`);
+  const grid = await page.ev(`${browseMark(7)}.getAttribute('aria-pressed')`);
+  if (grid !== "true") note("save", "the grid mark did not press");
+  await page.ev(`document.querySelectorAll('#browse-tiles .tile')[8].click()`);
+  await sleep(200);
+  const before = await page.ev(`document.getElementById('browse-save').textContent`);
+  await page.ev(`document.getElementById('browse-save').click()`);
+  const after = await page.ev(`({ text: document.getElementById('browse-save').textContent, pressed: document.getElementById('browse-save').getAttribute('aria-pressed') })`);
+  if (before !== "Save" || after.text !== "Saved" || after.pressed !== "true") note("save", `preview Save ${before} → ${JSON.stringify(after)}`);
+  // The mark under the preview pressed with it, and ← → keep the state per picture.
+  const underMark = await page.ev(`${browseMark(8)}.getAttribute('aria-pressed')`);
+  await key("ArrowRight");
+  const next = await page.ev(`document.getElementById('browse-save').textContent`);
+  await key("ArrowLeft");
+  const back = await page.ev(`document.getElementById('browse-save').textContent`);
+  if (underMark !== "true" || next !== "Save" || back !== "Saved") note("save", `mark ${underMark}, → ${next}, ← ${back}`);
+  await key("Escape");
+  await sleep(300);
+  const stored = await storedLinks();
+  const exact = links.every((l) => stored.includes(l));
+  if (!exact) note("save", `stored ${JSON.stringify(stored).slice(0, 200)} lacks a seat's exact link`);
+  const narrow = [await narrowPressed(keys[0]), await narrowPressed(keys[1])];
+  if (narrow.some((p) => p !== "true")) note("save", `the narrow panel's marks read ${narrow}`);
+  // The Saved tab: a tab leaves Browse onto it.
+  await openSavedTab();
+  const shown = [await savedShows(links[0]), await savedShows(links[1])];
+  if (shown.some((s) => !s)) note("save", `the Saved tab shows ${shown}`);
+  await page.ev(`(() => {
+    globalThis.__copied = null;
+    navigator.clipboard.writeText = async (text) => { globalThis.__copied = text; };
+    document.getElementById('saved-copy').click();
+  })()`);
+  await sleep(200);
+  const lines = String(await page.ev(`globalThis.__copied`)).split("\n").map((l) => l.split("?")[1]).filter(Boolean);
+  const copiedExact = links.every((l) => lines.includes(l));
+  if (!copiedExact) note("save", `Copy links lacks a seat's exact link: ${lines.slice(0, 4).join(" | ").slice(0, 200)}`);
+  await page.ev(`document.getElementById('tab-gallery').click()`);
+  await sleep(300);
+  return { grid, preview: after.text, underMark, next, back, exact, narrow, shown, copiedExact, lines: lines.length };
+});
+
+await check("unsave from Browse clears both surfaces", async () => {
+  const { links, keys } = pair;
+  await page.ev(`document.getElementById('gallery-browse').click()`);
+  await until(`document.querySelectorAll('#browse-tiles .tile-cell .save-mark').length > 10`);
+  const marked = await page.ev(`${browseMark(7)}.getAttribute('aria-pressed')`);
+  if (marked !== "true") note("unsave", "a saved seat's mark was not pressed on the way back into Browse");
+  await page.ev(`${browseMark(7)}.click()`);
+  await page.ev(`document.querySelectorAll('#browse-tiles .tile')[8].click()`);
+  await sleep(200);
+  const on = await page.ev(`document.getElementById('browse-save').textContent`);
+  await page.ev(`document.getElementById('browse-save').click()`);
+  const off = await page.ev(`document.getElementById('browse-save').textContent`);
+  if (on !== "Saved" || off !== "Save") note("unsave", `preview Save ${on} → ${off}`);
+  await key("Escape");
+  await sleep(200);
+  const marks = [await page.ev(`${browseMark(7)}.getAttribute('aria-pressed')`), await page.ev(`${browseMark(8)}.getAttribute('aria-pressed')`)];
+  const stored = await storedLinks();
+  const narrow = [await narrowPressed(keys[0]), await narrowPressed(keys[1])];
+  await openSavedTab();
+  const shown = [await savedShows(links[0]), await savedShows(links[1])];
+  if (marks.some((p) => p !== "false")) note("unsave", `Browse marks read ${marks}`);
+  if (links.some((l) => stored.includes(l))) note("unsave", "a seat is still stored");
+  if (narrow.some((p) => p !== "false")) note("unsave", `the narrow panel's marks read ${narrow}`);
+  if (shown.some(Boolean)) note("unsave", `the Saved tab still shows ${shown}`);
+  await page.ev(`document.getElementById('tab-gallery').click()`);
+  await sleep(300);
+  // The Saved tab keeps a thumbnail pool of its own once it has drawn, hidden or not
+  // (`saved-panel.js`), so the worker count Browse is held to is taken again here.
+  const was = baseline;
+  baseline = Infinity;
+  for (let i = 0; i < 3; i++) {
+    await sleep(700);
+    baseline = Math.min(baseline, (await page.metrics()).workers);
+  }
+  return { marks, narrow, shown, stored: stored.length, workers: { was, now: baseline } };
 });
 
 await check("Open in explorer", async () => {
