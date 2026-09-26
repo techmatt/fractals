@@ -223,6 +223,51 @@ pub fn sweep_row(
     }
 }
 
+/// One row of a direct trap's probe, each orbit started through the pre-map.
+///
+/// The engine's [`fractal_engine::derive::probe_row`] with its one substitution: every
+/// pixel is the engine's own [`fractal_engine::derive::probe_pixel`], handed the point
+/// [`crate::start_at`] gives rather than the viewport's. Only this build has a pre-map to
+/// give, so only this build needs the loop.
+#[allow(clippy::too_many_arguments)]
+pub fn probe_row(
+    painter: &fractal_engine::direct_trap::Painter,
+    coloring: &fractal_engine::coloring::Coloring,
+    view: &Viewport,
+    family: &Family,
+    maxiter: u32,
+    colormap: &fractal_engine::colormap::Colormap,
+    inflections: &crate::Inflections,
+    row: u32,
+    out: &mut Vec<u8>,
+) {
+    let fractal_engine::coloring::Coloring::Direct {
+        shape,
+        trap_radius,
+        merge,
+        transform,
+        ..
+    } = coloring
+    else {
+        return;
+    };
+    for col in 0..view.sample_width() {
+        let (hits, load) = fractal_engine::derive::probe_pixel(
+            painter,
+            *shape,
+            *trap_radius,
+            *merge,
+            *transform,
+            family,
+            crate::start_at(inflections, view.sample_point(col, row)),
+            maxiter,
+            colormap,
+        );
+        out.extend_from_slice(&(hits as f32).to_le_bytes());
+        out.extend_from_slice(&(load as f32).to_le_bytes());
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

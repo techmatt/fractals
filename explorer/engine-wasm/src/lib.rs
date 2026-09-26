@@ -66,14 +66,12 @@ use fractal_engine::field::{self, Channels, Exact, Field, FieldSpec};
 use fractal_engine::iterate::Wants;
 use fractal_engine::spec::{FamilySpec, ViewportSpec};
 use fractal_engine::viewport::Viewport;
-use fractal_engine::{maxiter, mode, resample};
+use fractal_engine::{autolevel, derive, maxiter, mode, resample};
 use num_complex::Complex;
 use serde::Deserialize;
 
-mod derive;
 #[cfg(feature = "inflection")]
 mod inflect;
-mod level;
 
 /// The inflection points a plan carries, and **nothing at all in the shipped build**.
 ///
@@ -147,7 +145,7 @@ struct Spec {
     /// stops. Absent means no curve is replayed: either the operator did not act, or
     /// the caller is [`shade_level`] asking to measure one — see [`level`].
     #[serde(default)]
-    autolevel: Option<level::Curve>,
+    autolevel: Option<autolevel::Curve>,
     /// Iterations per sample, where the caller wants a cap other than the engine's
     /// depth policy. **A probe's knob and never a picture's**: the walk panel asks
     /// for 256 on the 64×36 straddle probe, which is what the sampler's own
@@ -211,7 +209,7 @@ struct Plan {
     replays: bool,
     /// The curve it carried, kept so that [`curve_stops`] can hand a caller the stops
     /// this plan's own map was baked from rather than making it send the curve back.
-    curve: Option<level::Curve>,
+    curve: Option<autolevel::Curve>,
     /// The fields this coloring reads, in the order this module stores them: base
     /// first, texture second. Empty for a direct trap, which reads none.
     lanes: Vec<Layer>,
@@ -305,7 +303,7 @@ fn resolve(text: &str) -> Result<Plan, String> {
         Coloring::Composite { texture_weight, .. } => Some(*texture_weight),
         _ => None,
     };
-    let coloring = tune(&spec.mode, settled, &spec.params)?;
+    let coloring = mode::tune(&spec.mode, settled, &spec.params)?;
     coloring.validate()?;
     spec.palette.validate()?;
     coloring.agrees_with(&spec.palette)?;
@@ -326,7 +324,7 @@ fn resolve(text: &str) -> Result<Plan, String> {
                 "{} does not act on this mode: the operator reads a finished picture's tone \
                  and only a field coloring or a composite is measured that way, so there is \
                  no curve for {} to replay",
-                level::OPERATOR,
+                autolevel::OPERATOR,
                 spec.mode
             ));
         }
@@ -337,7 +335,7 @@ fn resolve(text: &str) -> Result<Plan, String> {
             let curved;
             let stops: &[(f64, [u8; 3])] = match &spec.autolevel {
                 Some(curve) => {
-                    curved = level::curved_stops(&map.stops, curve);
+                    curved = autolevel::curved_stops(&map.stops, curve);
                     &curved
                 }
                 None => &map.stops,
@@ -444,144 +442,6 @@ fn lanes_of(coloring: &Coloring) -> Vec<Layer> {
     }
 }
 
-/// Apply the mode's own parameters to the coloring the catalog resolved.
-///
-/// **A parameter is a number `mode::resolve` writes down for that mode**, and
-/// nothing else. The *shape* of the coloring is the mode's identity — which field,
-/// which blend, which trap shape, which start color — and moving any of those
-/// would put a different picture on the screen under the first one's name, so none
-/// of them is reachable here at all. What is left is the settled constants: how
-/// dense the stripes are, how wide the threads kernel is, how much of a texture is
-/// let through, how close a trap has to come.
-///
-/// A key the mode has no room for is an error. There is no default to fall back to
-/// that would not be a lie about what the reader asked for.
-fn tune(
-    name: &str,
-    mut coloring: Coloring,
-    params: &BTreeMap<String, f64>,
-) -> Result<Coloring, String> {
-    for (key, &value) in params {
-        if !value.is_finite() {
-            return Err(format!("{key} has to be a number, got {value}"));
-        }
-        set(name, &mut coloring, key, value)?;
-    }
-    Ok(coloring)
-}
-
-fn set(name: &str, coloring: &mut Coloring, key: &str, value: f64) -> Result<(), String> {
-    // The knobs the coloring itself carries: how a pair is mixed, how far an
-    // address pushes, how a trap paints.
-    match (key, &mut *coloring) {
-        ("weight", Coloring::Composite { texture_weight, .. }) => {
-            *texture_weight = value;
-            return Ok(());
-        }
-        ("shift", Coloring::Modulate { shift, .. }) => {
-            *shift = value;
-            return Ok(());
-        }
-        ("threshold", Coloring::Direct { threshold, .. }) => {
-            *threshold = Some(value);
-            return Ok(());
-        }
-        ("opacity", Coloring::Direct { opacity, .. }) => {
-            *opacity = value;
-            return Ok(());
-        }
-        ("radius", Coloring::Direct { trap_radius, .. }) => {
-            *trap_radius = value;
-            return Ok(());
-        }
-        _ => {}
-    }
-    // The knobs the mode's own field carries. The *characteristic* field: a plain
-    // field mode has one, and a composite's is its texture — the smooth base is
-    // shared by every composite and has no constants of its own, so there is
-    // nothing there to name.
-    if let Some(field) = characteristic_field(coloring) {
-        match (key, field) {
-            ("density", FieldSpec::Stripe { density }) => {
-                *density = value;
-                return Ok(());
-            }
-            ("radius", FieldSpec::TrapCircle { radius }) => {
-                *radius = value;
-                return Ok(());
-            }
-            ("sigma", FieldSpec::Threads { sigma }) => {
-                *sigma = value;
-                return Ok(());
-            }
-            _ => {}
-        }
-    }
-    Err(format!("the {name} mode has no {key} parameter"))
-}
-
-/// What the parameters of this coloring currently are, by the name [`set`] takes.
-///
-/// The page reads this to seed its controls, so the number under a slider is the
-/// catalog's own settled value rather than a copy of it kept in JavaScript. It is
-/// the read half of [`set`] and is written beside it for the same reason a getter
-/// sits beside its setter: the pair is one fact about each mode, and splitting them
-/// across two files is how one of them gets a knob the other has never heard of.
-fn params_of(coloring: &Coloring) -> BTreeMap<&'static str, f64> {
-    let mut params = BTreeMap::new();
-    match coloring {
-        Coloring::Composite { texture_weight, .. } => {
-            params.insert("weight", *texture_weight);
-        }
-        Coloring::Modulate { shift, .. } => {
-            params.insert("shift", *shift);
-        }
-        Coloring::Direct {
-            shape,
-            trap_radius,
-            threshold,
-            opacity,
-            ..
-        } => {
-            params.insert("radius", *trap_radius);
-            // Absent means the shape's own calibrated distance, which is a number
-            // the engine holds and the page would otherwise have to guess at.
-            params.insert(
-                "threshold",
-                threshold.unwrap_or_else(|| shape.default_threshold()),
-            );
-            params.insert("opacity", *opacity);
-        }
-        Coloring::Field { .. } => {}
-    }
-    // The characteristic field is the last one the coloring reads: the only one a
-    // plain field mode has, and the texture of a pair — which is the same rule
-    // `characteristic_field` applies to write it.
-    match coloring.fields().last() {
-        Some(FieldSpec::Stripe { density }) => {
-            params.insert("density", *density);
-        }
-        Some(FieldSpec::TrapCircle { radius }) => {
-            params.insert("radius", *radius);
-        }
-        Some(FieldSpec::Threads { sigma }) => {
-            params.insert("sigma", *sigma);
-        }
-        _ => {}
-    }
-    params
-}
-
-fn characteristic_field(coloring: &mut Coloring) -> Option<&mut FieldSpec> {
-    match coloring {
-        Coloring::Field { field, .. } => Some(field),
-        Coloring::Composite { texture, .. } | Coloring::Modulate { texture, .. } => {
-            Some(&mut texture.field)
-        }
-        Coloring::Direct { .. } => None,
-    }
-}
-
 // -------------------------------------------------------------------- the exports
 
 /// What this spec implies, or why it cannot be drawn, as JSON.
@@ -604,7 +464,7 @@ pub extern "C" fn plan(spec_ptr: *const u8, spec_len: usize) -> *mut u8 {
             "exact": plan.exact,
             "direct": plan.direct(),
             "levels": plan.levels(),
-            "params": params_of(&plan.coloring),
+            "params": mode::params_of(&plan.coloring),
             "resolution_ulps": plan.view.resolution_ulps(),
         }),
         Err(why) => serde_json::json!({"ok": false, "why": why}),
@@ -895,7 +755,7 @@ const DERIVE_LEVEL: u32 = 1;
 const DERIVE_WEIGHT: u32 = 2;
 
 /// The header: whether the curve acts, and its five numbers (zeros where there is none).
-fn level_header(acts: bool, curve: Option<level::Curve>) -> Vec<u8> {
+fn level_header(acts: bool, curve: Option<autolevel::Curve>) -> Vec<u8> {
     let mut out = Vec::with_capacity(SHADE_HEADER);
     out.extend_from_slice(&[u8::from(acts), 0, 0, 0, 0, 0, 0, 0]);
     match curve {
@@ -932,8 +792,8 @@ fn level_header(acts: bool, curve: Option<level::Curve>) -> Vec<u8> {
 ///   [`derive::weight`]'s. The weight comes back in the header, so the page can show it
 ///   and a link can carry it.
 /// - **`DERIVE_LEVEL`**, on a coloring the operator acts on: the finished picture is
-///   measured ([`level::derive`]); where the curve acts, the map's own stops go through
-///   [`level::curved_stops`], are baked again exactly as [`resolve`] bakes a replayed
+///   measured ([`autolevel::derive`]); where the curve acts, the map's own stops go through
+///   [`autolevel::curved_stops`], are baked again exactly as [`resolve`] bakes a replayed
 ///   curve, and the same fields are coloured through them. The first picture is dropped
 ///   before the second is made. The weight goes first, because the picture the tone is
 ///   measured on is the one drawn at it.
@@ -988,9 +848,9 @@ pub extern "C" fn shade_level(
 
     let mut acted = None;
     if derive != 0 && plan.levels() {
-        if let Some(curve) = level::derive(&rgb, 3) {
+        if let Some(curve) = autolevel::derive(&rgb, 3) {
             let (kind, stops) = plan.source.as_ref().expect("a colormap keeps its stops");
-            let curved = level::curved_stops(stops, &curve);
+            let curved = autolevel::curved_stops(stops, &curve);
             let Ok(levelled) =
                 Colormap::from_stops_baked(COLORMAP_NAME, *kind, &curved, plan.palette.bake)
             else {
@@ -1309,11 +1169,13 @@ pub extern "C" fn derive_level(rgba_ptr: *const u8, rgba_len: usize) -> *mut u8 
         return std::ptr::null_mut();
     }
     let raw = unsafe { std::slice::from_raw_parts(rgba_ptr, rgba_len) };
-    release(match level::derive_curve(&level::tone_stats(raw, 4)) {
-        level::Decision::Acts(curve) => level_header(true, Some(curve)),
-        level::Decision::Identity(curve) => level_header(false, Some(curve)),
-        level::Decision::Degenerate => level_header(false, None),
-    })
+    release(
+        match autolevel::derive_curve(&autolevel::tone_stats(raw, 4)) {
+            autolevel::Decision::Acts(curve) => level_header(true, Some(curve)),
+            autolevel::Decision::Identity(curve) => level_header(false, Some(curve)),
+            autolevel::Decision::Degenerate => level_header(false, None),
+        },
+    )
 }
 
 /// A colormap spec as the page sends one: the kind, and the stops.
@@ -1332,7 +1194,7 @@ fn map_of(kind: Kind, stops: &[(f64, [u8; 3])]) -> serde_json::Value {
 /// **The curve acts on the map and never on the picture, so it is worth exactly one
 /// application.** It used to be worth two or twelve: the page redrew a 512-pixel
 /// palette strip through the same map and the same curve on the main thread, and a
-/// shade split over the pool would have had every band replay it — [`level::curved_stops`]
+/// shade split over the pool would have had every band replay it — [`autolevel::curved_stops`]
 /// densifies the ramp and pulls each stop's chroma back into sRGB by a bisection with
 /// a bisection inside it, which is per stop and is hundreds of milliseconds on a map
 /// with hundreds. Curved once here, the stops go into the band specs, into the strip,
@@ -1342,7 +1204,7 @@ fn map_of(kind: Kind, stops: &[(f64, [u8; 3])]) -> serde_json::Value {
 ///
 /// * **`rgba_len` of zero** — the curve the spec carries, replayed. That is a gallery
 ///   seat or a pasted link: the measurement was made by the run that recorded it.
-/// * **a picture** — measured off it ([`level::derive`]), the way [`shade_level`] does.
+/// * **a picture** — measured off it ([`autolevel::derive`]), the way [`shade_level`] does.
 ///   A spec that already replays a curve is refused, because that picture is levelled
 ///   already and measuring it would level it twice.
 ///
@@ -1382,20 +1244,20 @@ pub extern "C" fn curve_stops(
                     return Err("the picture is not whole pixels".into());
                 }
                 let raw = unsafe { std::slice::from_raw_parts(rgba_ptr, rgba_len) };
-                level::derive(raw, 4)
+                autolevel::derive(raw, 4)
             };
             Ok(match measured {
                 Some(curve) => serde_json::json!({
                     "ok": true,
                     "acts": true,
                     "curve": {
-                        "operator": level::OPERATOR,
+                        "operator": autolevel::OPERATOR,
                         "black_pt": curve.black_pt,
                         "white_pt": curve.white_pt,
                         "exponent": curve.exponent,
                         "out_ends": curve.out_ends,
                     },
-                    "colormap": map_of(*kind, &level::curved_stops(stops, &curve)),
+                    "colormap": map_of(*kind, &autolevel::curved_stops(stops, &curve)),
                 }),
                 None => serde_json::json!({
                     "ok": true, "acts": false, "curve": null, "colormap": map_of(*kind, stops),
@@ -1456,7 +1318,21 @@ pub extern "C" fn probe_band(
     let mut out =
         Vec::with_capacity((row_end - row_start) as usize * plan.view.out_width as usize * 8);
     for row in row_start..row_end {
+        // The engine's probe starts each orbit at the viewport's own point, which is
+        // the pre-map's identity, so only the paged-out build needs a row of its own.
+        #[cfg(not(feature = "inflection"))]
         derive::probe_row(
+            &painter,
+            &plan.coloring,
+            &plan.view,
+            &plan.family,
+            plan.maxiter,
+            colormap,
+            row,
+            &mut out,
+        );
+        #[cfg(feature = "inflection")]
+        inflect::probe_row(
             &painter,
             &plan.coloring,
             &plan.view,

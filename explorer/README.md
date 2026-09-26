@@ -4644,7 +4644,7 @@ from the view in front of it. `permalink.js`'s `DERIVED` names them.
   measures the **roughness** first: the mean absolute difference of the stretched texture
   between neighbouring samples one output pixel apart, over pixels where the base has a
   value. Then it draws at `weight = 0.0197 / roughness`, held to `[0.05, 0.85]`
-  (`engine-wasm/src/derive.rs`).
+  (`fractal_engine::derive`, which the crate imports).
 - **A trap's opacity** (`direct_trap_screen`, `_multiply`, `_lines`). A trap has no field,
   so before anything is painted the pool runs `probe_band` over a 160-wide grid. It counts
   each pixel's near misses and their **load**, `Σ (1 − key) · S` (screen) or
@@ -5023,8 +5023,9 @@ operator and crosses beside them, and the module curves the stops before it bake
 It is on the **colour** side of the field cache for the same reason every shade key is:
 the operator moves a ramp and cannot move a sample.
 
-**The curve is replayed by the wasm, not by the page.** `explorer/engine-wasm/src/level.rs`
-is the second half of the operator — densify, the piecewise curve, the chroma cap's
+**The curve is replayed by the wasm, not by the page.** `fractal_engine::autolevel`, which
+the crate imports and which was `explorer/engine-wasm/src/level.rs` until
+engine_wasm_import_ckpt151, is the second half of the operator — densify, the piecewise curve, the chroma cap's
 walk-back, the gamut pull-back — and every colour conversion in it goes through
 `fractal_engine::colormap`'s own public `srgb_to_linear`, `linear_to_srgb`,
 `linear_srgb_to_oklab` and `oklab_to_linear_srgb`. The Python side keeps one copy of
@@ -5182,7 +5183,8 @@ size and measures a derived view again on the frame it draws, because the curve 
 measurement of a frame by design; *As shown* at two samples saves the screen's picture,
 curve and all.
 
-**Pinned, three ways.** `cargo test` in the crate:
+**Pinned, three ways.** `cargo test` in the engine crate next door, which reads this
+crate's two fixtures in place (these tests lived here until engine_wasm_import_ckpt151):
 
 - `the_derivation_is_the_operator` — `level-derive-cases.json`: ten backfill rows chosen
   to reach every branch of `derive_curve` (a guarded black, the exponent clamped at each
@@ -5575,6 +5577,39 @@ for 128. Measured, 300 requests at once, three runs: the old server refused 126,
 them, the new one none. Run the units serially anyway; `bench/hunt/lib.mjs` carries the eight
 other false alarms that each cost a verification.
 
+## The operator is the engine's *(engine_wasm_import_ckpt151, 2026-09-26)*
+
+The crate used to carry its own copies of three things the engine now has:
+`band_autolevel/v1` (`level.rs`), the derived weight and opacity (`derive.rs`), and a
+mode's parameters (`tune`, `set` and `params_of` in `lib.rs`). render_link_ckpt148 copied
+all three into `fractal-engine` as `autolevel`, `derive` and `mode::tune`. The crate now
+imports them and its copies are gone. Nothing next door changed for it: the API was
+already public and matched, and the engine's fingerprint is unmoved.
+
+- **The one difference is the paged-out pre-map.** The engine's `derive::probe_row` has
+  no inflections argument. The shipped build calls it, and the `inflection` build calls
+  `inflect::probe_row`, a loop over the engine's own `probe_pixel` that feeds it the
+  point `start_at` gives.
+- **The fixtures stay beside this crate.** `level-cases.json` and
+  `level-derive-cases.json` have exactly one copy, here. The engine's tests read them in
+  place, `level.test.mjs` reads the second, and `make-derive-cases.py` writes it. So
+  deleting them would leave the engine's tests skipping by name and this site's suite
+  red.
+- **Measured, old module against new:** field lanes and shaded pictures identical over
+  the Mandelbrot and Julia homes × 17 modes (`scratch/interior146/wasmhash.mjs`'s
+  battery), and 416 levelled ramps identical: every tenth library map through
+  `curves.mjs`'s four curves, plus the four `level-cases.json` pairs. The module grew by
+  13 KB, 910,166 to 923,567 bytes.
+- ⚠ **This module is baked with rustc 1.96.0, not stable, and a rebake on stable is not
+  neutral.** Stable moved to 1.98.1 on this machine on 2026-09-25. The same source built
+  with 1.98.1 draws the same pictures, but the field pass is slower on the Mandelbrot
+  home at 1280x720: `tia` 3.5x, `gaussian_int` 3.0x, `smooth_angle_min` 2.9x,
+  `smooth_mean_angle` 2.7x, and `smooth` 1.23x. Its `tia` lanes also differ by one f32
+  unit of last place on up to 52 samples a frame, which the 8-bit shade absorbs. The old
+  crate built with 1.98.1 does the same, so the cause is the toolchain rather than the
+  import. The bake was run as `RUSTUP_TOOLCHAIN=1.96.0 python -m builder explorer`, and
+  the manifest's `rustc` records it.
+
 ## Rebuilding
 
 ```
@@ -5585,7 +5620,10 @@ python -m builder links --write            # the link registry, from figure prov
 ```
 
 Needs the sibling checkout, `cargo`, and the `wasm32-unknown-unknown` target
-(`rustup target add wasm32-unknown-unknown`). `engine-wasm/target/` is gitignored — it is
+(`rustup target add wasm32-unknown-unknown`). ⚠ Read the manifest's `rustc` before a
+rebake. The module was last baked with 1.96.0 because 1.98.1 draws the heavy modes two
+to three and a half times slower (*The operator is the engine's*, above).
+`RUSTUP_TOOLCHAIN=<version>` in front of the command picks the toolchain. `engine-wasm/target/` is gitignored — it is
 the several hundred megabytes cargo needs to produce a 718 KB file.
 
 **The bare command rebuilds the wasm every time, and that is why `--palettes-only`
