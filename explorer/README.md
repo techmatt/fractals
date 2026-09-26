@@ -153,7 +153,7 @@ deep-fx.js            exact decimal coordinates, BigInt fixed point
 deep-link.js          the deep link contract, its own beside the shallow one
 deep-gallery.js       the Deep tab's gallery: the register read, grouped and tiled
 deep-gallery.jsonl    its register: a subject and a deep link a row, `builder deep-gallery`
-deep-gallery/         UNTRACKED: a tile a row, `python -m builder deep-gallery thumbs`
+deep-gallery/         a tile a row, `python -m builder deep-gallery thumbs`
 phoenix.js            the Phoenix tab: the Phoenix plane drawn live, and a click into its sets
 phoenix-points.json   the tab's starting points and its one style, `builder phoenix-points`; tiles in phoenix-points/
 paged-inflection/     PAGED: the Inflection tab, out of the working set — see below
@@ -165,7 +165,7 @@ zip.js                a stored (uncompressed) zip writer, for Download all
 stamp.js              a picture's own link, written into the file and read back out
 judges.js             the render judge in onnxruntime-web, loaded on the first Start
 resize.mjs            PIL's bicubic resize, ported byte for byte: what a judge reads
-judges/               UNTRACKED: the two ONNX judges and the runtime, `builder walk`
+judges/               the render judge and the ORT runtime, `builder walk`
 permalink.js          the link contract — parse, validate, canonicalize
 params.js             a mode parameter's control: its word, its slider's travel, the mapping
 permalink.test.mjs    58 tests, `node --test explorer/permalink.test.mjs`
@@ -188,7 +188,7 @@ palette-names.json    every map's display name and whether a person wrote it, by
 popular.json          the picker's Popular 24, and why each map passed over was passed over
 stops.js              the blob's reader: a map's control points, by name
 palettes.js           generated: the index — name to kind, offer, random, offset, count
-palettes.bin          generated and UNTRACKED: every map's control points, sRGB8
+palettes.bin          generated: every map's control points, sRGB8
 palettes-swatch.png   generated and UNTRACKED: a row of gradient per map, to look at
 catalog.js            generated: the offered modes, their curves, the anchors' constants
 links.jsonl           generated: every figure and tile, as a link here or a reason not
@@ -1370,8 +1370,8 @@ contract has no key for it and nothing a link opens sets it.
 - Where the runtime cannot load, the walk runs on the screen alone, picks among survivors
   at random, and says so on its status line.
 
-**The assets are untracked.** `explorer/judges/` is named in `.git/info/exclude` and filled
-by
+**The assets are tracked** *(since deploy_staged_assets_ckpt152)*. `explorer/judges/` is
+filled by
 
 ```
 python -m builder walk                      # from tools/judges-lab
@@ -1389,8 +1389,6 @@ That copies about 34 MB:
 - `render.fp16w.onnx` (5.1 MB), from the lab's `models/`. A `fine.onnx` an older placement
   left is removed.
 - `ort.min.mjs` and the JSEP glue and binary (28.3 MB), from its `node_modules`.
-
-Until Matt says deploy, Pages serves a Walk tab that runs on the screen alone.
 
 **Nothing persists unless it is saved.** A found tile is a blob URL and a permalink that
 writes the weight or opacity in force. Clicking one opens it through `openLink` and detaches
@@ -2364,8 +2362,8 @@ while the panel is hidden.
 - **The tiles are baked, not drawn here**: `python -m builder deep-gallery thumbs`, one
   316×178 WebP a row in `deep-gallery/`, named by the 64-bit FNV-1a of the row's link —
   `tileName` here and `fnv` in the builder, held to one known value by the suite. They are
-  staged, untracked, until deploy; without them the gallery shows empty wells that still
-  open their frames.
+  tracked since deploy_staged_assets_ckpt152; without them the gallery shows empty wells
+  that still open their frames.
 - **`panel=deep:gallery` opens the tab**, the form the article links with:
   `../explorer/?panel=deep:gallery`. It used to unfold the gallery as well; with nothing to
   unfold it reads like any other panel suffix, and like the atlas's plane it is not written
@@ -3077,9 +3075,10 @@ drawing when a reader asks for rose. It conditions the **draw** and filters noth
 walk narrowed to teal paints in maps that make teal often, and the picture it finds does
 not have to be teal.
 
-**The blob and the swatch are untracked.** They are the one library-sized thing here and
-what is committed is the index that addresses them; both are in `.git/info/exclude` and
-`python -m builder explorer --palettes-only` writes them. `builder check`'s `bake` holds
+**The blob is tracked and the swatch is not** *(since deploy_staged_assets_ckpt152)*.
+The blob is the one library-sized thing here and is committed beside the index that
+addresses it; the swatch is for a person, nothing serves it, and it stays in
+`.git/info/exclude`. `python -m builder explorer --palettes-only` writes both. `builder check`'s `bake` holds
 the blob on disk to a rebake of it byte for byte, and says so by name when it is missing.
 The swatch is a row of gradient per map in index order, 1,024 wide, each column one of
 the map's own stops taken whole — a picture of the file for a person, not the shading

@@ -555,10 +555,6 @@ Matt's to raise; a prompt that fixes one strikes its line.
   the coloring and nothing advances it until the picture lands.
 - **The walk's candidates row scrolls each new tile into view**, so the kept tile can end
   up off to the left.
-- **Deploy preparation** *(Matt: preparing, not deploying)*: the staged set in
-  `builder/README.md`'s *What is staged* goes in at deploy. The judges reach Pages as release
-  assets fetched at deploy time, the way the wallpaper project ships its weights, and never
-  through git.
 - **No picture a visitor takes off this site carries an embedded link** — to be decided at
   deploy preparation, not before. The explorer stamps every picture it hands over
   (`explorer/README.md`, *Every downloaded picture carries its own link*), and nothing else

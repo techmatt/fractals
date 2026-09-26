@@ -829,11 +829,14 @@ Each prompt in this project ends the same way:
   confirmation. This repo carries images, so the aggregate half of that gate is the
   one that will bite: check the total added size of an image drop before staging it,
   not after.
-- **Staged, not deployed: no gallery-sized or library-sized commit until Matt says deploy.**
-  Such files land in the working tree untracked and are named in `.git/info/exclude`, the
-  record beside them commits, and `builder/README.md`'s *What is staged* lists the set,
-  since that exclude file is local to this machine. A push before deploy serves a site
-  missing them; nothing is live, so that is expected rather than a break.
+- **The gallery and library assets are tracked** *(Matt, deploy_staged_assets_ckpt152,
+  2026-09-26, lifting the staging rule)*. The Gallery tab's tiles, the atlas slot
+  pictures, the Deep tab's tiles, `explorer/palettes.bin` and the Walk tab's judges are
+  committed beside the records that name them, so what Pages serves is what the local
+  build serves. **A re-solve, a re-ingest or a rebake now shows up as a tracked diff**, and
+  it is committed like any other: it is subject to the 20 MB gate above, and a tile the
+  record stops naming is a deletion to commit, not a file to forget. `builder/README.md`'s
+  *What was staged* has the set and its sizes.
 - **Prompts never land in the repo.** They live in
   `C:\Code\fractal-drive-sync\prompts\`; a working copy in this directory stays
   untracked.

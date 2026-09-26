@@ -49,7 +49,7 @@ python -m builder seats [--records-only]
                             land the general gallery and the nineteen collections next
                             door as one staged gallery: the record and a tile per seat
 python -m builder deep-gallery thumbs   draw a tile for each row of the Deep tab's
-                            gallery register that has none (staged, untracked); the
+                            gallery register that has none (tracked); the
                             other stages are the search that found the first set
 python -m builder phoenix-points   choose the Phoenix tab's starting points from the
                             staged gallery's Phoenix seats; draw each whole set's tile and
@@ -155,12 +155,14 @@ share — and a seat whose picture reads no colour at all is a `SeatError` rathe
 quiet `null`. This is presentation: nothing next door moves, and the dominance rule the
 record was written under is untouched.
 
-The pictures are untracked, the record commits. So the **assets** check has a third
-machine state to report beside the missing checkout and the missing Pillow: a staged
-gallery whose directory holds none of the pictures its record names is a **named skip**,
-not a pass and not a failure. One picture present means the command has run, and then the
-whole gallery is held to its record exactly as a publishable one is — a half-landed
-directory is a real problem and reads as one.
+The pictures were untracked until deploy_staged_assets_ckpt152 (2026-09-26) and are
+committed beside the record now, so a clone has both and **assets** holds every tile to its
+record. The check keeps a third machine state from the staged days, beside the missing
+checkout and the missing Pillow: a staged gallery whose directory holds none of the
+pictures its record names is a **named skip**, not a pass and not a failure, which on a
+clone of this tree no longer happens. One picture present means the command has run, and
+then the whole gallery is held to its record exactly as a publishable one is — a
+half-landed directory is a real problem and reads as one.
 
 `seated-candidates` is the first, and `builder/seats.py` is what fills it: twenty-one
 tentative records, the general n=1000 solve, the same solve at n=2000
@@ -205,30 +207,31 @@ with `explorer/` after it, and the hosting choice is not made: moving it is one 
 `pages.py`, one in `explorer/stamp.js` and one in `curation/explorer_link.py`, and `stamps`
 fails until all three agree.
 
-## What is staged, and goes in at deploy
+## What was staged, and is tracked since the deploy
 
-`CLAUDE.md`'s staging rule keeps gallery- and library-sized files out of history until Matt
-says deploy. They sit in the working tree untracked, named in `.git/info/exclude`. That file
-is local and no clone has it, so this list is the tracked record of the set:
+Until deploy_staged_assets_ckpt152 (2026-09-26), `CLAUDE.md` kept gallery- and library-sized
+files out of history until Matt said deploy: they sat in the working tree untracked, named in
+`.git/info/exclude`. He lifted that rule, and the set went in as one commit. **A re-solve, a
+re-ingest or a rebake is a tracked diff now**: the command that writes a file below rewrites
+it in place, and what it writes is committed like any other change, under the 20 MB gate.
 
-| what | size (2026-09-21) | written by |
+| what | size (2026-09-26) | written by |
 | --- | --- | --- |
-| `assets/images/galleries/seated-candidates/*.webp`, one tile a seat | 6,299 files, 62.8 MB (2026-09-22) | `python -m builder seats` |
+| `assets/images/galleries/seated-candidates/*.webp`, one tile a seat | 6,299 files, 62.85 MB | `python -m builder seats` |
 | `explorer/palettes.bin`, every map's control points | 1.04 MB | `python -m builder explorer --palettes-only` |
-| `explorer/palettes-swatch.png`, to look at | 0.3 MB | the same |
-| every plane's atlas slot pictures, `assets/images/atlas/<plane>-*.webp` | 1,464 files, 27.5 MB | `python -m builder atlas --ingest` |
-| `explorer/deep-gallery/*.webp`, the Deep tab's gallery tiles, one a register row | 33 files, 0.42 MB (2026-09-25) | `python -m builder deep-gallery thumbs` |
-| `explorer/judges/`, the ORT runtime and the render judge (the fine head is no longer placed, pre_closeout_website_ckpt140) | 33.8 MB | `python -m builder walk` |
+| every plane's atlas slot pictures, `assets/images/atlas/<plane>-*.webp` | 1,464 files, 27.47 MB | `python -m builder atlas --ingest` |
+| `explorer/deep-gallery/*.webp`, the Deep tab's gallery tiles, one a register row | 33 files, 0.42 MB | `python -m builder deep-gallery thumbs` |
+| `explorer/judges/`, the ORT runtime and the render judge (the fine head is no longer placed, pre_closeout_website_ckpt140) | 4 files, 33.83 MB | `python -m builder walk` |
 
-**`palettes.bin` is not optional.** The tracked tree alone never draws a first frame: served
-without the blob, the explorer's first fetch is a 404 and the canvas stays empty. Until a
-deploy, a push to Pages shows the atlas marks over empty slots, a gallery panel without
-tiles and a Walk tab running on the screen alone.
+**`palettes.bin` is not optional.** Served without the blob, the explorer's first fetch is a
+404 and the canvas stays empty, which is what Pages served until the deploy.
 
-The slot pictures were JPEG at 78 with no chroma subsampling until
-`website_webp_and_atlas_deprecate` (2026-09-21) re-encoded all 1,464 as WebP at 70, from the
-maker's own thumbnails rather than from the shipped JPEGs. The `.jpg` patterns stay in
-`.git/info/exclude` so a tree still holding the old copies cannot stage them by accident.
+**Two things stay untracked on purpose.** `explorer/palettes-swatch.png` is written beside
+the blob to look at and nothing serves it (`picker.js` says why it does not use it), so it is
+still named in `.git/info/exclude`. And so are the patterns that name what an older landing
+left behind — the gallery's 640 px `.jpg` copies and `thumbs/`, the atlas's `.jpg` slot
+pictures from before `website_webp_and_atlas_deprecate` (2026-09-21) re-encoded all 1,464 as
+WebP at 70 — so a tree still holding them cannot stage them by accident.
 
 **The Phoenix tab's starting points are chosen from this gallery and drawn here**
 *(phoenix_named_points_ckpt141; drawn rather than copied since

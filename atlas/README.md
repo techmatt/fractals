@@ -125,15 +125,14 @@ constant transcribed, the way `builder/theme.py` transcribes the well colors, an
 the maker's own 0.25**: its places are frames on the pinned slice, its first slot is a
 neighborhood of that slice, and there is no *back* that lands there.
 
-**Every plane's slot pictures are staged, not deployed.** `pictures` on the partition row is
-`staged` for all six since `site_rebase_ckpt132` (2026-09-19), which rebuilt every plane from
-a pinned general record and untracked Mandelbrot's slot pictures rather
-than re-committing them; the pictures are listed in `.git/info/exclude` and the record
-commits. The six plates stay tracked: a plate is drawn from the engine's home view and not
-from a record, so a rebuild leaves them as they are. Until the pictures are deployed, the
-served frame shows the marks over empty slots. A clone has none of the files,
-and `check` and `atlas.test.mjs` each report that as a named skip. One staged picture
-present means the ingest has run, and then the whole plane is held to its record.
+**Every plane's slot pictures are tracked.** `pictures` on the partition row was `staged` for
+all six from `site_rebase_ckpt132` (2026-09-19) until deploy_staged_assets_ckpt152
+(2026-09-26), which committed the pictures and set it back to `tracked`; the ingest keeps
+whatever the row already says, so a re-ingest is a tracked diff of the pictures it redraws.
+The six plates were tracked throughout: a plate is drawn from the engine's home view and not
+from a record, so a rebuild leaves them as they are. `staged` stays a value the record may
+hold, and a staged plane with none of its files is still the named skip in `check` and
+`atlas.test.mjs`; no plane is staged now.
 
 **A slot picture is WebP, and it is the one place on this site where 4:2:0 is accepted**
 *(website_webp_and_atlas_deprecate, 2026-09-21)*. All 1,464 of them were JPEG at 78 with no
