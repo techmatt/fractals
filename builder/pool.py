@@ -1075,15 +1075,18 @@ BANDS_MINE_RULE = (
 )
 
 #: How the bottom band's eight were arrived at. The rig is under ignored `scratch/`, so
-#: this is where the rule survives.
+#: this is where the rule survives. Re-drawn over final139_general on 2026-09-26
+#: (publishing_fixes_ckpt152), the 2026-09-05 draw's gallery being gone next door.
 BANDS_SEAT_RULE = (
     "Which eight is a seeded shuffle of that gallery's whole seating — "
-    "scratch/three_bands/pick_seats.py, seed 20260905 — taking the first that clear one "
-    "spread rule and three refusals. The spread: no two of the eight share a partition, a "
+    "scratch/three_bands/pick_seats_final139.py, seed 20260926, over final139_general "
+    "(20260922T012627Z) — taking the first that clear one spread rule and four refusals. "
+    "The spread: no two of the eight share a partition, a "
     "rendering mode or a dominant hue family, which is the diversity of family, color and "
     "mode this band is for, made a rule rather than a taste. The refusals: a seat standing "
-    "on a location another figure already stands on, a seat whose run recorded that the "
-    "autolevel operator acted without recording the curve it acted with, and a seat whose "
+    "on a location another figure already stands on, a seat in a mode the solve retired, "
+    "a seat whose run recorded that the autolevel operator acted without recording the "
+    "curve it acted with, and a seat whose "
     "redraw does not come back as the picture the gallery ships. Nothing here was chosen "
     "for how it looks."
 )
@@ -1344,9 +1347,10 @@ def _bands_provenance(admitted, marked_at, mined, seated, sizes) -> list[str]:
         f"own `<stamp>{picks_module.PICK_SEPARATOR}<recipe key>` and resolved from "
         f"artifacts/curation/tentative/<stamp>/{picks_module.SEATS_NAME} for the seat and "
         f"the candidate ledger for the recipe. Stamp"
-        f"{'s' if len(stamps) > 1 else ''} {', '.join(stamps)}, a gallery **committed** "
-        f"next door rather than one merely recorded on this machine, so the record behind "
-        f"this band survives a re-base of the artifacts tree. Drawn the way band 2's four "
+        f"{'s' if len(stamps) > 1 else ''} {', '.join(stamps)}, a gallery recorded next "
+        f"door and not tracked there; the seat and recipe behind each panel are held in "
+        f"article/figure-recipes.jsonl, so the band survives a re-base of the artifacts "
+        f"tree. Drawn the way band 2's four "
         f"are and fitted to {large[0]}x{large[1]}, {BANDS_SEATED_COLUMNS} across. Nothing "
         f"is written on them: the band's subject is what a gallery looks like, and a label "
         f"under each would make it a table of them instead.",

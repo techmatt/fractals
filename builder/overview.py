@@ -6,7 +6,7 @@ in `CLAUDE.md` that a figure's maker is tracked.
     python -m builder overview overview-pipeline
 
 One location is followed through all three stages, which is the figure's whole subject:
-`a693d6c7` is the first pick of stage one, the whole of stage two, and the first pick of
+`72b1680f` is the first pick of stage one, the whole of stage two, and the first pick of
 stage three, and that recurrence is the only reason the three bands are about one project
 rather than three.
 
@@ -40,9 +40,10 @@ SHADE_SEED = 20260902
 
 #: The four maps stage two lays the followed frame out in, in reading order: the map the
 #: run kept, then the three the seeded draw took from the authored maps of the colorize
-#: pool. Frozen off the figure's own provenance.
+#: pool. Frozen off the figure's own provenance; the first was re-pointed with the
+#: followed seat on 2026-09-26 (publishing_fixes_ckpt152).
 SHADES = (
-    "cmr.prinsenvlag",
+    "Ember Terracotta",
     "Green, Gold, Magenta",
     "Sulphur & Plum",
     "Mist Field, Ink Well",
@@ -51,7 +52,7 @@ SHADES = (
 #: Whether each of those is folded, as the record says it was. Derived from the library at
 #: draw time and checked against this, so a map changing kind next door is a refusal rather
 #: than a figure that quietly redraws.
-FOLDED = (True, False, False, False)
+FOLDED = (False, False, False, False)
 
 #: What the sheet was composed at, and so what one panel of a band is across. The
 #: lettering metrics the sheet needed — the title's size, the leading, the boxes and the

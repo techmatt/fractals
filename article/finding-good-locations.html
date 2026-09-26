@@ -81,8 +81,7 @@
 
     <p>There's no geometric definition of a good location. It's an aesthetic call, and the
     pipeline's working definition is my own taste. I rate locations on a four-point scale,
-    from junk to exceptional wallpaper material. Each rating looks at several differently
-    colored renders of the same place, because what I'm rating is the geometry: could this
+    from junk to exceptional wallpaper material. Each rating looks at two differently colored renders of the same place, because what I'm rating is the geometry: could this
     place make a good wallpaper across the modes and palettes available to it? Those ratings
     train the location judge, a small network that predicts the same scale
     (<a href="training-judges.html">training judges</a>). Here are a few examples from each
@@ -376,8 +375,7 @@
 
     <p>The Mandelbrot-Julia connection pays a second dividend. An admitted parameter-plane
     location's center c is a Julia constant, and a Julia set inherits the character of where
-    its c sits. The Julia families of degree 3 to 6 have no pool of constants of their own, so
-    the center of an admitted plane location of the same degree becomes one of their roots.
+    its c sits. For the Julia families of degree 2 to 6, the center of an admitted plane location of the same degree becomes one of their roots; only degree 2 also has a pool of constants of its own.
     That's the twin channel. A new twin is skipped if its c is within 0.032 of one already
     accepted. I measured the near-duplicate rate across five decades of separation and found
     no knee, so the radius is just how much near-duplication I'm willing to pay for.</p>

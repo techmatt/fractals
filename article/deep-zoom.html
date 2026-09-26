@@ -153,7 +153,7 @@
     and related fractals produce much richer detail and patterns in regions that look plain
     and smooth at shallower depths. In the shallow parts of the Mandelbrot set, the smooth rendering
     approach often leaves large areas with only a smooth gradient. For most of the gallery I
-    used alternative rendering modes (especially threads and tia) to add detail to these
+    used alternative rendering modes (especially tia and stripe) to add detail to these
     regions, but it's also possible to find extremely deep areas of these fractals that
     contain beautiful fractal richness where the shallower levels would be smooth. The
     figure below compares a shallow frame with a deep frame inside it.</p>
@@ -357,7 +357,7 @@
     rebasing, one reference orbit serves the entire frame. The fractal explorer draws
     the multibrot families up to degree six, on both the parameter and dynamical planes,
     using the smooth rendering mode. Its iteration cap follows the same depth rule as
-    the rest of the engine, up to a ceiling of a million, and a probe raises it when too
+    the rest of the engine, up to a ceiling of a million, or two million when you set the count yourself, and a probe raises it when too
     many samples reach it. In practice it works down to widths of about 10<sup>−30</sup>
     close to a minibrot, where the ceiling on iterations runs out. Renderers that also
     extend the exponent range of their offsets go hundreds of decades deeper.</p>

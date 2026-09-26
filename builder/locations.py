@@ -1508,6 +1508,21 @@ HIGHLY_RATED = (
     ("harvest_refresh", 387),
 )
 
+#: Panels whose walk-ledger row was scored by a location head that has since retired, with
+#: the serving head's own read of the same frame, frozen off the wallpaper project's
+#: `artifacts/curation/supply_scores.jsonl` (the row keyed by that ledger and node id). The
+#: supply currency's cuts are restated against the serving head, so a class asked of a
+#: retired head's numbers is the wrong question; this is what the figure classes the panel
+#: on instead *(publishing_fixes_ckpt152, 2026-09-26)*. `score` is P(>=3) and
+#: `score_great` P(>=4), the two the ledger row carries under those names.
+SERVING_READS = {
+    ("mandelbrot_sourcing", 308): {
+        "score": 0.9999589186786693,
+        "score_great": 0.9999334980874196,
+        "scorer": "location:f8f805119a0f",
+    },
+}
+
 RATED_COLUMNS = 4
 
 
@@ -1555,7 +1570,9 @@ def highly_rated() -> Split:
     held = {name: node_rows(name, wanted) for name, wanted in by_ledger.items()}
     picks = [held[name][node_id] for name, node_id in HIGHLY_RATED]
 
-    verdict = renders.location_classes(picks)
+    verdict = renders.location_classes(
+        [SERVING_READS.get(address, row) for address, row in zip(HIGHLY_RATED, picks, strict=True)]
+    )
     wrong = [
         f"{name}/walk.jsonl node {node_id} is a class {found}"
         for (name, node_id), found in zip(HIGHLY_RATED, verdict["classes"], strict=True)
@@ -1629,9 +1646,22 @@ def _highly_rated_provenance(picks: list[dict], size, verdict: dict) -> list[str
             f"width {row['viewport']['width']}, maxiter {row.get('maxiter')}; at depth "
             f"{row.get('depth')}, fate {row.get('fate')}, scored {row['score']:.6f} with "
             f"P(top class) {row['score_great']:.6f} at regime {row.get('score_regime')} "
-            f"by {row.get('scorer')}."
+            f"by {row.get('scorer')}." + _serving_clause((name, node_id))
         )
     return lines
+
+
+def _serving_clause(address: tuple[str, int]) -> str:
+    """What the serving head reads for a panel whose ledger row a retired head scored."""
+    read = SERVING_READS.get(address)
+    if read is None:
+        return ""
+    return (
+        f" That head is retired; the serving head {read['scorer']} reads the same frame "
+        f"{read['score']:.6f} with P(top class) {read['score_great']:.6f} "
+        "(artifacts/curation/supply_scores.jsonl next door), and that read is what classes "
+        "this panel."
+    )
 
 
 # ------------------------------------------------------------------ the walk descent
@@ -1776,7 +1806,7 @@ def _descent_wallpapers() -> list[dict]:
 
 
 def _descent_scores() -> dict[str, dict]:
-    """What the finished-render head said about each of the four, off the ledger.
+    """What the wallpaper judge said about each of the four, off the ledger.
 
     A streamed read of the score sidecar, kept to the current block. The whole file is
     read rather than stopped early: a later row supersedes an earlier one for the same
@@ -1858,7 +1888,7 @@ def _finished_provenance(finished: list[dict], verdicts: dict) -> list[str]:
             f"{recipe_row['maxiter']}, drawn at {picks.PANEL_RENDER[0]}x"
             f"{picks.PANEL_RENDER[1]} supersample {picks.PANEL_SUPERSAMPLE} and fitted to "
             f"the cell; autolevel {made['levelling'].way} ({made['levelling'].where}); the "
-            f"finished-render head {verdict['head']} reads it P(>=4) "
+            "wallpaper judge reads it P(>=4) "
             f"{float(verdict['p_ge4']):.6f} at {verdict['regime']} under judge artifact "
             f"{verdict['judge_artifact'][:8]}."
         )

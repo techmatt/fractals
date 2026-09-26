@@ -975,15 +975,28 @@ OUTPUT_ROWS = 4
 #: How the twenty-four were arrived at, which the resolution cannot say for itself.
 OUTPUT_DRAW = (
     "Which seats stand for the pass is a seeded shuffle of its whole seating — "
-    "scratch/curation/pick_output.py, seed 20260903 — taking the first that clear four "
-    "rejections: a seat another figure already stands on, by key and by frame; a seat "
-    "whose run recorded that the autolevel operator acted without recording the curve; "
-    "and the caps that keep one draw from being a picture of itself rather than of the "
-    "pass — at most four tiles of one rendering mode, three of one hue family, four of "
-    "one partition. Nothing here was chosen for how it looks.",
-    "The spread that came back: eleven of the pass's fourteen modes, nine partitions, "
-    "and all twelve hue families plus one picture the reading finds dominant in no "
-    "color at all.",
+    "scratch/curation/pick_output.py, seed 20260926, over final139_general "
+    "(20260922T012627Z) — taking the first that clear four rejections: a seat another "
+    "figure already stands on, by key and by frame, the other figures re-picked in the "
+    "same prompt included; a seat whose run recorded that the autolevel operator acted "
+    "without recording the curve; a mode the solve retired; and the caps that keep one "
+    "draw from being a picture of itself rather than of the pass — at most four tiles of "
+    "one rendering mode, three of one hue family, four of one partition. Nothing here was "
+    "chosen for how it looks.",
+    "The spread that came back: nine of the thirteen modes the pass seats, ten of its "
+    "twelve partitions, and ten of its twelve hue families.",
+)
+
+#: How the hook's six were arrived at, which the resolution cannot say for itself.
+HOOK_DRAW = (
+    "Which six is a seeded shuffle of the pass's whole seating — "
+    "scratch/overview/pick_hook.py, seed 20260926, over final139_general "
+    "(20260922T012627Z) — taking the first three smooth seats and the first three in "
+    "three different other modes that clear gallery-output's rejections, each of the six "
+    "in its own partition and hue family and no family label on more than two panels. "
+    "Panel 2, 8aa0a380, is kept rather than drawn: it was Matt's pick before the re-pick "
+    "and is seated in this pass, and its repetition with gallery-top-scored is his, which "
+    "that row's reuse_reason names. Nothing else here was chosen for how it looks.",
 )
 
 
@@ -1136,7 +1149,7 @@ def gallery_hook() -> Split:
         label=lambda pick: family_name(pick.family),
         note=lambda pick: family_formula(pick.family),
     )
-    return Split(made, provenance(resolved, size, composed=False), HOOK_COLUMNS)
+    return Split(made, provenance(resolved, size, chosen=HOOK_DRAW, composed=False), HOOK_COLUMNS)
 
 
 def modes_gallery() -> Split:
@@ -1418,8 +1431,14 @@ MINIBROT_DRAW = (
     "right: an explorer link he gave, drawn from the link as its whole recipe; then two "
     "seats he named by alias prefix, each checked to be a unique prefix across the recorded "
     "galleries. 2caea5a6 is only recipe key 2caea5a6b1da5357, seated in the rose collection "
-    "and in General · 2000 and not in the published record, and is named here by the rose "
-    "collection's stamp; b88eacf6 is only b88eacf62062bf25, seated in the published record. "
+    "(20260922T012745Z, seat 155) and in General · 2000 (20260922T220551Z, seat 1141) and "
+    "not in the general gallery, and is named here by the rose collection's stamp; b88eacf6 "
+    "is only b88eacf62062bf25, seated in the general gallery (20260922T012627Z, the "
+    "final139_general solve, seat 230) and also in the green and smooth collections and "
+    "General · 2000. Nothing next door is published. The link is not a seat Matt named, but "
+    "it spells one seat's recipe exactly: recipe key 30cbb88b32f4c287, seat 544 of the "
+    "general gallery, cap 35301 included, also seated in the tia collection and "
+    "General · 2000. "
     "The top row is each plane's home view as the engine derives it, drawn with the mode, "
     "curve, map and palette pass of the wallpaper under it at the depth policy's cap, with "
     "a ring drawn at the centre of the frame below, where each copy's body sits.",
@@ -2292,8 +2311,8 @@ def provenance(
     """The registry lines for a sheet of picks: the composition, then one line per panel.
 
     `chosen` is where a figure says how its seats were arrived at, which is the one thing
-    the resolution above cannot say for itself — the hook's six are Matt's, and the modes
-    roster's thirteen are a seeded random draw.
+    the resolution above cannot say for itself — the hook's six and the modes roster's
+    thirteen are seeded random draws, each with the seats Matt kept by hand named.
 
     `composed` is false for a **split** figure, whose panels are separate files rather
     than tiles of one sheet. The record says which, because a redraw of one is not a
