@@ -197,10 +197,9 @@
     <p>At a supersampling factor s the engine evaluates and colors the whole image on a
     grid s times wider and s times taller, so there are s<sup>2</sup> orbits behind
     every output pixel, and then reduces that image to the target size. The reduction is
-    the part that actually removes the aliasing, and it is not a per-pixel average.
-    Adding up each output pixel's own subsamples ignores everything just outside the
-    pixel, so a filament crossing a pixel boundary contributes to one side and not the
-    other, and that aliases too. The engine reduces with a Lanczos-3 filter scaled to
+    the part that actually removes the aliasing. A plain average of each output pixel's
+    own subsamples would ignore everything just outside the pixel, so a filament crossing
+    a pixel boundary would land on one side and not the other, and that aliases too. The engine reduces with a Lanczos-3 filter scaled to
     the reduction, which reaches three output pixels either way rather than three source
     samples, and it filters in linear light and converts to 8-bit color only at the very
     end, because averaging gamma-encoded values darkens every edge in the picture. The
