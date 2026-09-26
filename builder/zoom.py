@@ -383,6 +383,9 @@ def encode(
         "-r", str(video["fps"]), "-i", "-",
         "-c:v", "libx264", "-preset", preset, "-crf", str(crf), "-tune", "film",
         "-profile:v", "high", "-pix_fmt", "yuv420p",
+        # the -color_* flags alone tag only the matrix; the primaries and transfer reach the
+        # stream's VUI through x264's own parameters
+        "-x264-params", "colorprim=bt709:transfer=bt709:colormatrix=bt709",
         "-colorspace", "bt709", "-color_primaries", "bt709", "-color_trc", "bt709",
         "-movflags", "+faststart", str(out),
     ]  # fmt: skip
