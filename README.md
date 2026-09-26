@@ -33,7 +33,26 @@ python -m builder serve
 ```
 
 Then open `http://localhost:8000/index.html`. That builds nothing and writes nothing — it
-puts the committed tree on localhost exactly as GitHub Pages serves it.
+puts the committed tree on localhost exactly as GitHub Pages serves it. Serving needs only
+Python 3; spell it `python3` on macOS or Linux outside a virtualenv.
+
+## Installing
+
+The same steps on Windows, macOS and Linux, and CI runs them on all three. Python 3.13 for
+the builder and its checks, and Node 22 or later for the explorer's test suites, which need
+nothing installed beyond Node itself.
+
+```
+python3 -m venv .venv                  # `python` on Windows
+source .venv/bin/activate              # Windows: .venv\Scripts\activate
+python -m pip install -r builder/requirements.txt
+python -m builder check
+```
+
+Rust matters only if you rebuild the explorer's wasm modules, which are committed: the
+toolchain their manifests record (`explorer/engine.manifest.json`'s `rustc`, 1.96.0 today)
+with `rustup target add wasm32-unknown-unknown`. `explorer/engine-wasm` also wants a
+`fractal-wallpapers` checkout beside this one, and says so if it is missing.
 
 ---
 
@@ -42,9 +61,9 @@ puts the committed tree on localhost exactly as GitHub Pages serves it.
 Plain static HTML and CSS, no framework, no bundler, no npm. **What is committed is what
 is served**: `builder/` is a local Python program that writes the gallery pages, the
 contents rail and the figure blocks, and its output is committed — Pages serves the commit
-and never runs Python. `python -m builder check` is eighteen named checks over the
+and never runs Python. `python -m builder check` is twenty-four named checks over the
 committed tree: that every internal link resolves, that the generated HTML is what the
-builder would produce, that every figure block matches its registry row, and fifteen more.
+builder would produce, that every figure block matches its registry row, and twenty-one more.
 
 - [`builder/README.md`](builder/README.md) — every command, and what each check holds.
 - [`explorer/README.md`](explorer/README.md) — the one page that runs code: the wasm

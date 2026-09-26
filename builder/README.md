@@ -71,7 +71,9 @@ that is a rule and it stays true — but Chrome does not keep a zoom level for `
 so a preview opened from disk resets to 100% at every click. Over localhost the whole
 site is one origin and the zoom holds. It serves the committed bytes and builds nothing.
 
-Install what it needs with `pip install -r builder/requirements.txt`.
+Install what it needs with `python -m pip install -r builder/requirements.txt`, in a
+virtualenv on any of the three platforms (the Installing section of the top-level README). CI runs
+`check` on Linux, macOS and Windows.
 
 **`check` runs on a bare clone.** Every check it makes runs against this repository and
 nothing else — that is the whole contract, because CI clones this repository alone and

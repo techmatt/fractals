@@ -1,25 +1,30 @@
-# Checks the committed tree. Deliberately not a dependency of `pages.yml`: the site is
-# served from the commit, so a red check here means the next commit needs work, never
-# that the live site is down.
+# Checks the committed tree on Linux, macOS and Windows. Deliberately not a dependency of
+# `pages.yml`: the site is served from the commit, so a red check here means the next commit
+# needs work, never that the live site is down.
 #
-# `python -m builder check` regenerates every page the builder owns from today's metadata
-# and compares it byte for byte with what is committed — the sync check that keeps
-# "committed output" from quietly meaning "output from some earlier version of the
-# builder". It writes nothing.
+# Three platforms because the claim is that anybody who clones this repository can install
+# and run it, and the install is the README's (ci_matrix_ckpt152). Every step runs under
+# bash on all three, so a step is one spelling rather than three.
 #
-# This job is a bare clone: the wallpaper project is not here and never will be, and
-# `FRACTAL_WALLPAPERS_ROOT` is set empty to say so rather than leave it to the absence of
-# an untracked `local.toml`. Every check runs anyway; the four that want that checkout —
-# `library`, `bake`, `seats`, and the source-key half of `figures` — report a named skip. A red on this step therefore means a check failed. It has meant
-# something else once: `check` built the palette library page straight off the checkout,
-# so this step raised before the first check and stayed red for a reason that was about
-# this runner and not about the site.
+# `checks` is a bare clone: what a person who cloned only this repository can do. `python -m
+# builder check` regenerates every page the builder owns and compares it byte for byte with
+# what is committed; it writes nothing. The wallpaper project is not here, and
+# `FRACTAL_WALLPAPERS_ROOT` is set empty to say so rather than leave it to the absence of an
+# untracked `local.toml`. Every check runs anyway; the six that want that checkout — the
+# next-door half of `stamps`, `library`, `bake`, `seats`, `coloring` and the source-key half
+# of `figures` — report a named skip, so a red on that step means a check failed.
 #
-# The node steps run the explorer's own tests with node's own test runner — the permalink
-# contract, and the pool's claim that a band is a range of output rows however many
-# workers cut the frame. Nothing is installed for either: there is no package.json here
-# and there is not going to be one. The second one instantiates the committed wasm and
-# draws the anchor at 320x180 four times over, which is a few seconds.
+# The node suites run on node's own runner with nothing installed: there is no package.json
+# here and there is not going to be one. Several instantiate the committed wasm modules.
+#
+# `crates` proves the three Rust crates compile, on the toolchain the manifests record
+# rather than on stable (explorer/README.md has why 1.98.1 is not neutral). It is the one
+# job that is not a bare clone: `engine-wasm` depends on the wallpapers engine by path, so
+# that repository is checked out beside this one at the commit `engine.manifest.json`
+# names. It never replaces a committed `.wasm`. It records each built module's hash beside
+# the committed one and asserts nothing about them, because the committed modules carry
+# the source paths of the Windows machine that built them (`C:\Code\...`, `src\fx.rs`) and
+# no other machine writes those bytes. `wasm-hashes` lays the three platforms side by side.
 
 name: checks
 
@@ -32,20 +37,29 @@ on:
 permissions:
   contents: read
 
+defaults:
+  run:
+    shell: bash
+
 jobs:
   checks:
-    runs-on: ubuntu-latest
+    name: checks (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.13"
-      - run: pip install -r builder/requirements.txt
+      - run: python -m pip install -r builder/requirements.txt
       - name: ruff lint
-        run: ruff check .
+        run: python -m ruff check .
       - name: ruff format
-        run: ruff format --check .
-      - name: links, page sync, figure blocks, image assets
+        run: python -m ruff format --check .
+      - name: builder check, on a bare clone
         env:
           # Empty is a statement: this machine has no wallpapers checkout. See above.
           FRACTAL_WALLPAPERS_ROOT: ""
@@ -53,29 +67,95 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
-      - name: the explorer's permalink contract
-        run: node --test explorer/permalink.test.mjs
-      - name: the pool's bands, against the committed module
-        run: node --test explorer/bands.test.mjs
-      - name: the tone operator's measure half, against the committed module
-        run: node --test explorer/level.test.mjs
-      - name: a mode's derived parameters, against the committed module
-        run: node --test explorer/derive.test.mjs
-      - name: the atlas record, and the map its dots are drawn through
-        run: node --test atlas/atlas.test.mjs
-      - name: the palette blob's reader, against the layout the bake writes
-        run: node --test explorer/stops.test.mjs
-      - name: the Saved tab's list, the way back, and the zip Download all writes
-        run: node --test explorer/saved.test.mjs explorer/undo.test.mjs explorer/zip.test.mjs
-      - name: the link a downloaded picture carries, and the picture not moving
-        run: node --test explorer/stamp.test.mjs
-      - name: the Deep tab's exact coordinates, and its own link contract
-        run: node --test explorer/deep-fx.test.mjs explorer/deep-link.test.mjs
-      - name: where the two kernels meet, against both committed modules
-        run: node --test explorer/deep.test.mjs
-      - name: the screensaver's intervals, fitting ladder, correction and bag
-        run: node --test explorer/screensaver.test.mjs
-      - name: Hold look's re-solve of Lambda and Period, and its reference value
-        run: node --test explorer/hold.test.mjs
-      - name: Fit, the absolute scale sized to the frame the way Leveled sizes it
-        run: node --test explorer/fit.test.mjs
+      # CLAUDE.md's second line, verbatim, so the suite list lives in one spelling here.
+      - name: the sixteen JavaScript suites
+        run: >-
+          node --test explorer/permalink.test.mjs explorer/bands.test.mjs
+          explorer/level.test.mjs explorer/derive.test.mjs explorer/stops.test.mjs
+          explorer/saved.test.mjs explorer/undo.test.mjs explorer/zip.test.mjs
+          explorer/stamp.test.mjs explorer/deep-fx.test.mjs explorer/deep-link.test.mjs
+          explorer/deep.test.mjs explorer/screensaver.test.mjs explorer/hold.test.mjs
+          explorer/fit.test.mjs atlas/atlas.test.mjs
+
+  crates:
+    name: crates (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    steps:
+      # Two siblings under the workspace, which is the layout `engine-wasm`'s path
+      # dependency (`../../../fractal-wallpapers/engine`) and its `build.rs` expect.
+      - uses: actions/checkout@v4
+        with:
+          path: fractal-website
+      - name: the wallpapers commit the committed engine.wasm was built from
+        id: pin
+        run: |
+          commit=$(node -p "require('./fractal-website/explorer/engine.manifest.json').wallpapers_commit")
+          rustc=$(node -p "require('./fractal-website/explorer/engine.manifest.json').rustc.split(' ')[0]")
+          echo "commit=$commit" >> "$GITHUB_OUTPUT"
+          echo "rustc=$rustc" >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@v4
+        with:
+          repository: techmatt/fractal-wallpapers
+          ref: ${{ steps.pin.outputs.commit }}
+          path: fractal-wallpapers
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ steps.pin.outputs.rustc }}
+          targets: wasm32-unknown-unknown
+          components: rustfmt
+      - name: rustfmt, all three crates
+        working-directory: fractal-website
+        run: |
+          (cd explorer/perturb-wasm && cargo fmt --check)
+          (cd explorer/engine-wasm && cargo fmt --check)
+          (cd builder/deep-gallery-native && cargo fmt --check)
+      - name: build engine-wasm
+        working-directory: fractal-website/explorer/engine-wasm
+        run: cargo build --release --target wasm32-unknown-unknown
+      - name: build perturb-wasm
+        working-directory: fractal-website/explorer/perturb-wasm
+        run: cargo build --release --target wasm32-unknown-unknown
+      - name: build the native Deep gallery maker
+        working-directory: fractal-website/builder/deep-gallery-native
+        run: cargo build --release
+      # Read-only against the tree: the built modules stay under target/.
+      - name: built wasm beside committed wasm
+        working-directory: fractal-website
+        run: |
+          out="$RUNNER_TEMP/wasm-hashes-${{ matrix.os }}.txt"
+          for pair in \
+            "engine.wasm explorer/engine.wasm explorer/engine-wasm/target/wasm32-unknown-unknown/release/explorer_engine_wasm.wasm" \
+            "perturb.wasm explorer/perturb.wasm explorer/perturb-wasm/target/wasm32-unknown-unknown/release/perturb.wasm"; do
+            set -- $pair
+            node -e '
+              const fs = require("fs"), crypto = require("crypto");
+              const h = (p) => { const b = fs.readFileSync(p); return [crypto.createHash("sha256").update(b).digest("hex").slice(0, 16), b.length]; };
+              const [name, committed, built] = process.argv.slice(1);
+              const [ch, cn] = h(committed), [bh, bn] = h(built);
+              console.log(`${process.env.OS_NAME} ${name} committed ${ch} ${cn} built ${bh} ${bn} ${ch === bh ? "identical" : "differs"}`);
+            ' "$1" "$2" "$3" | tee -a "$out"
+          done
+          { echo '```'; cat "$out"; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+        env:
+          OS_NAME: ${{ matrix.os }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: wasm-hashes-${{ matrix.os }}
+          path: ${{ runner.temp }}/wasm-hashes-${{ matrix.os }}.txt
+
+  wasm-hashes:
+    needs: crates
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: wasm-hashes-*
+          merge-multiple: true
+      - name: the three platforms side by side
+        run: |
+          { echo '```'; cat wasm-hashes-*.txt | sort -k2,2 -k1,1; echo '```'; } | tee -a "$GITHUB_STEP_SUMMARY"

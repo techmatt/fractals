@@ -745,7 +745,10 @@ links `builder/icons.py` spells, which is `icons`, and every short link under
 writes, which is `go`. It also
 prints one note — never a failure — about the committed wasm module, described in
 `explorer/README.md`. The same commands run in CI
-(`.github/workflows/checks.yml`), which is a check and not a deploy dependency.
+(`.github/workflows/checks.yml`), which is a check and not a deploy dependency, on Linux,
+macOS and Windows *(ci_matrix_ckpt152)*, with a `crates` job that builds the three Rust
+crates on the manifests' toolchain and reports each built wasm's hash beside the committed
+one without asserting it.
 
 **Every check runs on a bare clone, and what cannot run says so by name.** CI clones this
 repository alone, so a check that needs the wallpapers checkout is a check CI never makes.
