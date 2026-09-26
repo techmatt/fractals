@@ -459,7 +459,9 @@ def _parser() -> argparse.ArgumentParser:
         "--stills", metavar="NAME", help="the stage frames on one labelled sheet, in artifacts/"
     )
 
-    fronted = commands.add_parser("front", help="draw the front page's picture")
+    fronted = commands.add_parser(
+        "front", help="draw the front page's and the Wallpaper packs page's pictures"
+    )
     fronted.add_argument(
         "id", nargs="*", choices=[[], *sorted(front.SHEETS)], help="the figure's id"
     )

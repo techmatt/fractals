@@ -827,18 +827,22 @@ in. There is no `/favicon.ico` at the origin root and cannot be one: the site is
 project-Pages subpath, and a page that declared nothing would send every browser there
 for a 404.
 
-**The Wallpaper packs page opens on the picture the icon came from.** `galleries-icon-source` is
-a one-panel seat figure registered on `wallpaper-packs/index.html`, drawn by
-`picks.galleries_icon_source`, which refuses a row whose pick is not `icons.SEAT`, so the
-page and the icon cannot come to name different wallpapers. It is the first registry
-figure on a **generated** page: `pages.gallery_index` derives the block from the registry
-the same way `check` does, so a caption edit is a registry edit and a `build`, and the
-landing is `picks <id> --place`, then `links --write`, then `build`. Its prefix is
-`galleries-`, because `gallery-` is Gallery curation's.
-
 **Re-picking** is an edit to `icons.SEAT` (and to `CROP`, the side as a share of the frame
-height), the same edit to the figure row's `picks`, then `icons`, `picks
-galleries-icon-source --replace`, `links --write` and `build`.
+height), then `icons` and `build`. The icon's seat is also the target of `go/favicon-mid`,
+the Midway picture under the Start here video, which is the seat's own link as
+`explorer_link.query_of` spells it; a re-pick that should move that too is an edit to the
+register and `start start-video --replace`.
+
+**The Wallpaper packs page opens on `packs-hero`** *(packs_image_and_mid_ckpt152)*, a
+one-panel figure drawn by `front.packs_hero` from an explorer link Matt gave, through
+`fractal-engine render-link`. It used to be the wallpaper the icon is cropped from, and
+is no longer tied to the icon. The link spells a gallery seat exactly, so the panel names
+that seat and its link comes off it. It is the one registry figure on a **generated**
+page: `pages.gallery_index` derives the block from the registry the same way `check`
+does, so an edit is a registry edit and a `build`, and a redraw is `front packs-hero
+--replace`, then `links --write`, then `build`. ⚠ `leads_its_page` reads the page on disk,
+so a build that renames the figure writes it `loading="lazy"` the first time, because the
+old id still leads the old page; a second `build` settles it.
 
 ## Prose has a master, and a page is held to it
 

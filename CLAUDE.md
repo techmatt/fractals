@@ -225,15 +225,15 @@ keeps the mechanics. **Every apply round ends by distilling that round's general
   of its own, needs its own per-panel view before its figure can be split.
 - **A figure's id opens with its page's prefix** — `overview-`, `escape-`, `render-`,
   `modes-`, `locations-`, `judges-`, `palette-`, `wallpapers-`, `gallery-`, `pipeline-`,
-  `atlas-`, `deep-`, `start-` — so a slug says where it
+  `atlas-`, `deep-`, `start-`, `packs-` — so a slug says where it
   lives before anything looks it up. One prefix to a page and one page to a prefix, with
   the single carve-out that a page hanging off a section shares that section's prefix:
   `palette-generator-batch` sits on `palettes/make-your-own.html`. The front page's one
   picture is `index-hero`, on a row whose page is spelled `./index.html` — the slash a
   bare name at the root lacks — and it has no caption. The Wallpaper
-  packs page's one picture is `galleries-icon-source`, on `wallpaper-packs/index.html`,
-  the other figure with no caption *(website_sweep_ckpt150_addendum1)*:
-  `galleries-`, the page's name when it landed, because `gallery-` is Gallery curation's, and it is the one registry figure on a page the
+  packs page's one picture is `packs-hero`, on `wallpaper-packs/index.html`, the other
+  figure with no caption *(packs_image_and_mid_ckpt152, replacing `galleries-icon-source`)*:
+  `packs-` is that page's prefix, and it is the one registry figure on a page the
   builder generates rather than one a person writes. `deep-zoom`'s
   prefix is `deep-`. The prose never uses that slug: a
   reference from the text is **positional** (*the figure below*), because this site

@@ -259,6 +259,40 @@ def render(spec: dict, out: Path, **extra) -> Path:
     return out
 
 
+def render_link(query: str, out: Path, size: tuple[int, int], supersample: int) -> dict:
+    """A shallow explorer link drawn by the engine alone, exactly as the explorer reads it.
+
+    `fractal-engine render-link` reads the contract's own keys — a derived weight, `scale`,
+    `lambda` and `period` among them — so a figure given as a link is drawn from the link
+    rather than from a spec somebody transcribed out of it. Its echo is returned.
+    """
+    out = Path(out)
+    out.parent.mkdir(parents=True, exist_ok=True)
+    completed = subprocess.run(
+        [
+            str(engine_binary()),
+            "render-link",
+            "--link",
+            query,
+            "--size",
+            f"{size[0]}x{size[1]}",
+            "--ss",
+            str(supersample),
+            "--out",
+            str(out),
+            "--data",
+            str(wallpapers_root() / "data"),
+        ],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        check=False,
+    )
+    if completed.returncode != 0:
+        raise EngineError(f"engine render-link failed:\n{completed.stderr[-3000:]}")
+    return json.loads(completed.stdout)
+
+
 def dump_field(spec: dict, stem: Path, **extra) -> tuple[Path, dict]:
     """Dump the raw escape field beside its record, skipped where the record is there.
 

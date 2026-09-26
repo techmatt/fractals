@@ -27,7 +27,6 @@ stands in for his daughter's own picks.
 from __future__ import annotations
 
 import json
-import subprocess
 from urllib.parse import parse_qs
 
 from . import deep_figures, go, links, records, renders, sheets
@@ -464,42 +463,22 @@ def _targets() -> dict[str, str]:
     return {name: held[name] for name, _ in VIDEO_LINKS}
 
 
-def _render_link(query: str, destination) -> dict:
-    """A shallow explorer link drawn by the engine alone, exactly as the explorer reads it."""
-    root = renders.wallpapers_root()
-    destination.parent.mkdir(parents=True, exist_ok=True)
-    out = subprocess.run(
-        [
-            str(renders.engine_binary()),
-            "render-link",
-            "--link",
-            query,
-            "--size",
-            f"{VIDEO_PANEL[0]}x{VIDEO_PANEL[1]}",
-            "--ss",
-            str(SHALLOW_SUPERSAMPLE),
-            "--out",
-            str(destination),
-            "--data",
-            str(root / "data"),
-        ],
-        capture_output=True,
-        text=True,
-        encoding="utf-8",
-    )
-    if out.returncode != 0:
-        raise StartError(f"render-link failed:\n{out.stderr[-3000:]}")
-    return json.loads(out.stdout)
+#: The palette keys a link may spell after its map, in the order a provenance line gives them.
+LINK_SHADE_KEYS = ("phase", "scale", "lambda", "period")
 
 
 def _link_words(query: str) -> str:
-    """A link's place and colouring as a provenance line spells them."""
+    """A link's place and colouring as a provenance line spells them.
+
+    Only what the link says: a mode it leaves out is the contract's first, smooth, and a
+    palette key it leaves out is the contract's default and is not written here either.
+    """
     fields = {key: values[0] for key, values in parse_qs(query).items()}
     degree = fields["f"].removeprefix("multibrot")
+    shade = "".join(f", {key} {fields[key]}" for key in LINK_SHADE_KEYS if key in fields)
     return (
         f"multibrot degree {degree}, centre {fields['x']} + {fields['y']}i, width "
-        f"{fields['w']}, mode smooth, {{map}} {fields['p']}, phase {fields['phase']}, scale "
-        f"{fields['scale']}, lambda {fields['lambda']}, period {fields['period']}"
+        f"{fields['w']}, mode {fields.get('m', 'smooth')}, {{map}} {fields['p']}{shade}"
     )
 
 
@@ -537,7 +516,7 @@ def video_links() -> Split:
             )
         else:
             picture = panel_path(VIDEO, index).with_name(f"{VIDEO}-{name}-link.png")
-            report = _render_link(query, picture)
+            report = renders.render_link(query, picture, size, SHALLOW_SUPERSAMPLE)
             how = (
                 f"cap {report['maxiter']} (the depth policy); drawn by `fractal-engine "
                 f"render-link` at {size[0]}x{size[1]} supersample {SHALLOW_SUPERSAMPLE}"
