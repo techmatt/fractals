@@ -145,6 +145,10 @@ was raise, and every check after it went unrun.
   as `emit.mjs` does, byte for byte, and embeds a PNG and a JPEG into exactly the bytes
   `stamp.js` does, pixels unmoved. `stamps.py` says why a second author of the contract
   exists at all. About half a minute, most of it reading the thousand recipes.
+- **go** — every short link in `go/redirects.jsonl` has a target the explorer's own reader
+  accepts, asked of `permalink.js` or `deep-link.js` by `go.mjs` the way the page's door
+  would ask, and every page under `go/` is byte for byte what the register writes, with
+  none standing where no row names one. `go.py` says what a short link is.
 """
 
 import json
@@ -163,6 +167,7 @@ from . import (
     figures,
     formulas,
     galleries,
+    go,
     icons,
     images,
     links,
@@ -1223,6 +1228,7 @@ def run_all() -> Report:
             "endings": check_endings(),
             "icons": icons.problems(),
             "formulas": formulas.problems(with_renderer=formulas.unaskable() is None),
+            "go": go.problems(),
         },
         skips(),
     )

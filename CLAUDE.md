@@ -465,6 +465,9 @@ atlas/          the atlas: the frame the explorer's Atlas tab and Fractal atlase
                 figure both mount, over a per-partition record `builder/atlas.py` holds
                 to shape, and a redirect at the address the standalone page had until
                 2026-09-21
+go/             short links into the explorer, go/<name>/ for a video description:
+                one row of redirects.jsonl each, a page `build` writes from it, and
+                in neither the rail nor the contents
 assets/         css/, images/ — web-res only — and icons/, the site's icon set
 builder/        the Python page generator
 docs/           how this repository's workflows are run — the page-review loop
@@ -712,7 +715,7 @@ being drawn as the plain Julia set underneath it.
 After touching placed prose, `python -m builder prose <page>` as well — see **Where prose
 comes from** above for what it holds together and why one edit has several sites.
 
-`builder check` is read-only, and it runs twenty-three named checks. It resolves every
+`builder check` is read-only, and it runs twenty-four named checks. It resolves every
 internal link, refuses root-absolute and bare-directory hrefs, regenerates the gallery
 HTML and compares it byte for byte with what is committed, holds every figure block to
 its registry row, holds every made figure to being a block a redraw could land on —
@@ -734,7 +737,9 @@ and sweeps
 `endings`, and it is named here because it is the one drift `git status` and `git diff`
 both report as nothing — holds the site's copy of the wallpaper coloring to next door's
 `coloring_of` on every seat the collection records name, which is `coloring` — and holds every served page to declaring the site's icon with the
-links `builder/icons.py` spells, which is `icons`. It also
+links `builder/icons.py` spells, which is `icons`, and every short link under
+`go/` to a target the explorer's own reader accepts and to the page its register row
+writes, which is `go`. It also
 prints one note — never a failure — about the committed wasm module, described in
 `explorer/README.md`. The same commands run in CI
 (`.github/workflows/checks.yml`), which is a check and not a deploy dependency.

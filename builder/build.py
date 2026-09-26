@@ -7,7 +7,7 @@ over unchanged inputs reports nothing.
 
 from pathlib import Path
 
-from . import galleries, icons, images, pages, sections
+from . import galleries, go, icons, images, pages, sections
 from .paths import SITE_ROOT
 
 
@@ -78,6 +78,9 @@ def build(*, thumbnails: bool = True) -> list[str]:
             changed.extend(_thumbs(gallery))
     changed.extend(_hand_written(article))
     generated = pages.generated_pages(loaded, article)
+    # The short links under `go/`, which `check` holds by name as **go** rather than as
+    # **pages**, because their other half is whether the explorer accepts the target.
+    generated.update(go.pages())
     for path, html in generated.items():
         written = _write_page(path, html)
         if written:
