@@ -819,6 +819,7 @@ Each prompt in this project ends the same way:
   the work is on `main` — no branches, no PRs, no waiting for approval, in this repo as
   in every repo of this project. The only exception is a very good reason not to, and
   that reason belongs in the report.
+- **Commit with a pathspec (`git commit -- <paths>`), never a bare `git commit` after staging**, because another prompt may have staged files in the same index.
 - **No commit ≥20 MB** — single blob or aggregate — without Matt's explicit prior
   confirmation. This repo carries images, so the aggregate half of that gate is the
   one that will bite: check the total added size of an image drop before staging it,
