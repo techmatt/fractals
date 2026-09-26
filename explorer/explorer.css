@@ -271,6 +271,19 @@
   font-family: var(--sans);
 }
 .browse[hidden] { display: none; }
+/* **It keeps the chrome** *(browse_chrome_ckpt153)*: the layer starts under the bar, whose
+   bottom the page sets as `top`, and the panel's own header row is moved into its top, so
+   the tabs read Gallery with Browse pressed. Browse has its own Collection dropdown, so the
+   panel's and Screensaver stand aside; the row sits over the preview's mat, since it stays
+   live there too. */
+.browse > .side-head { position: relative; z-index: 3; background: var(--well); }
+.browse #gallery-collection, .browse #gallery-screensaver { display: none; }
+.browse #gallery-browse { margin-left: auto; }
+.collection-action[aria-pressed="true"] {
+  color: var(--well);
+  background: var(--well-ink);
+  border-color: var(--well-ink);
+}
 .browse-head {
   flex: none;
   display: flex;

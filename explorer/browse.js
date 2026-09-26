@@ -25,7 +25,8 @@
 // the row to the page exactly as a tile in the narrow panel does.
 //
 // **Browse is a way of looking, not a picture.** It writes no address and no link, and no
-// key of the permalink contract names it.
+// key of the permalink contract names it. It does say what it shows (`onScreen`), because
+// the page's Copy link copies what is on screen: a preview's seat, or the collection.
 
 import * as gallery from "./gallery.js";
 import { PREVIEW_DIVISOR, shadeApart } from "./render.js";
@@ -507,6 +508,11 @@ export function install(host) {
     },
     get active() {
       return active;
+    },
+    /** What is on screen, for Copy link: the previewed seat, or `null` on the grid, and
+     *  the collection either way. */
+    onScreen() {
+      return { seat: active && at >= 0 ? showing[at] : null, collection: chosen };
     },
   };
 }

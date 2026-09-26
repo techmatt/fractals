@@ -6,7 +6,9 @@
 // settle on the twentieth neighbour with every overtaken render cancelled and no worker
 // left over; a close mid-render cancels it; leaving Browse gives its pool back; and Open in
 // explorer puts that seat's link in the address bar, with the way back stepping to where
-// the viewer was.
+// the viewer was. And the chrome *(browse_chrome_ckpt153)*: the bar live over Browse and the
+// tab row in it, Browse pressed again and a tab each leaving it, and Copy link copying the
+// previewed seat's link, the collection's on the grid, and the picture outside Browse.
 //
 // usage: node explorer/bench/hunt/u9-browse.mjs [debugPort] [sitePort]
 import { record } from "../output.mjs";
@@ -60,6 +62,46 @@ const browseUp = () => page.ev(`!document.getElementById('browse').hidden`);
 const previewUp = () => page.ev(`!document.getElementById('browse-preview').hidden`);
 const witness = () => page.ev(`({ ...globalThis.__browse })`);
 const barState = () => page.ev(`document.getElementById('browse-state').dataset.state`);
+/** The page's chrome as Browse shows it: the bar live on top, the layer under it, and the
+ *  panel's header row inside the layer with Gallery selected and Browse pressed. */
+const chromeState = () =>
+  page.ev(`(() => {
+    const copy = document.getElementById('copy').getBoundingClientRect();
+    const hit = document.elementFromPoint(copy.left + copy.width / 2, copy.top + copy.height / 2);
+    const bar = document.querySelector('.studio-bar');
+    const layer = document.getElementById('browse').getBoundingClientRect();
+    const head = document.querySelector('#browse > .side-head');
+    const tabs = [...document.querySelectorAll('.tab')].filter((t) => t.getBoundingClientRect().width > 0);
+    return {
+      bar: hit?.id === 'copy' && !bar.inert,
+      below: Math.abs(layer.top - bar.getBoundingClientRect().bottom) < 1,
+      head: head !== null && head.getBoundingClientRect().height > 0,
+      tabs: tabs.length,
+      selected: tabs.find((t) => t.getAttribute('aria-selected') === 'true')?.dataset.panel ?? null,
+      pressed: document.getElementById('gallery-browse').getAttribute('aria-pressed'),
+      panelSelect: document.getElementById('gallery-collection').getBoundingClientRect().width > 0,
+    };
+  })()`);
+
+/** Press Copy link and read what it wrote: the clipboard is stubbed, since a headless
+ *  page has no one to grant it. */
+async function copied() {
+  await page.ev(`(() => {
+    globalThis.__copied = null;
+    navigator.clipboard.writeText = async (text) => { globalThis.__copied = text; };
+    document.getElementById('copy').click();
+  })()`);
+  await sleep(100);
+  return page.ev(`globalThis.__copied`);
+}
+
+/** A seat's link in the general collection's record. */
+const seatLink = (target) =>
+  page.ev(`(async () => {
+    const text = await (await fetch('../assets/images/galleries/seated-candidates/general.jsonl')).text();
+    return text.split('\\n').filter(Boolean).map(JSON.parse).find((r) => r.key === ${JSON.stringify(target)}).link;
+  })()`);
+
 const settledOn = (expected) =>
   until(`globalThis.__browse?.settled === ${JSON.stringify(expected)} && document.getElementById('browse-state').dataset.state === 'final'`, 480);
 
@@ -79,7 +121,14 @@ await check("the button opens Browse on the panel's collection", async () => {
   if (collection !== "general") note("enter", `opened on ${collection}`);
   const inert = await page.ev(`document.getElementById('studio').inert`);
   if (!inert) note("enter", "the studio is not inert under Browse");
-  return { tiles: await tileCount(), collection, inert };
+  const chrome = await chromeState();
+  if (!chrome.bar) note("chrome", "the bar's Copy link is not the thing on top at its own spot");
+  if (!chrome.below) note("chrome", "the layer does not start under the bar");
+  if (!chrome.head) note("chrome", "the tab row is not in Browse");
+  if (chrome.tabs !== 6 || chrome.selected !== "gallery") note("chrome", `tabs ${chrome.tabs}, selected ${chrome.selected}`);
+  if (chrome.pressed !== "true") note("chrome", "Browse is not pressed");
+  if (chrome.panelSelect) note("chrome", "the panel's own dropdown shows beside Browse's");
+  return { tiles: await tileCount(), collection, inert, chrome };
 });
 
 for (const collection of ["general", "blue"]) {
@@ -138,7 +187,13 @@ await check("back to general, and a preview", async () => {
   if (!done) note("preview", `did not settle on ${target}: ${JSON.stringify(await witness())}`);
   const box = await page.ev(`(() => { const c = document.getElementById('browse-picture'); return { css: c.getBoundingClientRect().width, grid: c.width, shown: !c.hidden }; })()`);
   if (box.css > 1600 || box.grid > 1600) note("preview", `wider than 1600: ${JSON.stringify(box)}`);
-  return { target, done, box, workers: (await page.metrics()).workers };
+  const chrome = await chromeState();
+  if (!chrome.bar || !chrome.head) note("preview", `the chrome is covered: ${JSON.stringify(chrome)}`);
+  // Copy link in a preview is the seat's link, the one Open in explorer loads.
+  const link = await seatLink(target);
+  const got = await copied();
+  if (got?.split("?")[1] !== link) note("copy", `a preview copied ${String(got).slice(0, 90)}, not ${link.slice(0, 90)}`);
+  return { target, done, box, copied: got?.split("?")[1] === link, workers: (await page.metrics()).workers };
 });
 
 await check("twenty steps right, fast", async () => {
@@ -175,19 +230,82 @@ await check("a close mid-render cancels it", async () => {
   return { drawing, cancelled: after.cancelled - before.cancelled, settled: after.settled };
 });
 
+await check("Copy link on the grid is the collection's", async () => {
+  const general = await copied();
+  const wantGeneral = "panel=gallery&collection=general";
+  if (general?.split("?")[1] !== wantGeneral) note("copy", `the grid copied ${general}`);
+  await page.ev(`(() => {
+    const s = document.getElementById('browse-collection');
+    s.value = 'blue';
+    s.dispatchEvent(new Event('change'));
+  })()`);
+  await until(`document.getElementById('browse-collection').value === 'blue' && document.querySelectorAll('#browse-tiles .tile').length > 0`);
+  const blue = await copied();
+  if (blue?.split("?")[1] !== "panel=gallery&collection=blue") note("copy", `blue's grid copied ${blue}`);
+  await page.ev(`(() => {
+    const s = document.getElementById('browse-collection');
+    s.value = 'general';
+    s.dispatchEvent(new Event('change'));
+  })()`);
+  await until(`document.getElementById('browse-collection').value === 'general' && document.querySelectorAll('#browse-tiles .tile').length > 0`);
+  return { general, blue };
+});
+
 await check("Esc on the grid leaves Browse and gives its pool back", async () => {
   const inside = (await page.metrics()).workers;
   await key("Escape");
   await sleep(1200);
   const up = await browseUp();
-  const workers = (await page.metrics()).workers;
+  // The least of three samples, for the reason Open in explorer's check gives below.
+  let workers = Infinity;
+  for (let i = 0; i < 3; i++) {
+    workers = Math.min(workers, (await page.metrics()).workers);
+    await sleep(700);
+  }
   if (up) note("exit", "Browse is still up");
   if (workers > baseline) note("exit", `workers ${baseline} before Browse, ${inside} in it, ${workers} after`);
   const inert = await page.ev(`document.getElementById('studio').inert`);
   if (inert) note("exit", "the studio is still inert");
   const url = (await page.state()).url;
   if (url !== home) note("exit", `the viewer moved: ${url.slice(0, 80)}`);
+  const pressed = await page.ev(`document.getElementById('gallery-browse').getAttribute('aria-pressed')`);
+  const headHome = await page.ev(`document.querySelector('.side > .side-head') !== null`);
+  if (pressed !== "false" || !headHome) note("exit", `Browse pressed ${pressed}, the row back in the panel ${headHome}`);
   return { baseline, inside, workers };
+});
+
+await check("Browse pressed again leaves it", async () => {
+  await page.ev(`document.getElementById('gallery-browse').click()`);
+  await until(`document.querySelectorAll('#browse-tiles .tile').length > 0`);
+  await page.ev(`document.getElementById('gallery-browse').click()`);
+  await sleep(600);
+  const up = await browseUp();
+  if (up) note("toggle", "Browse is still up");
+  const url = (await page.state()).url;
+  if (url !== home) note("toggle", `the viewer moved: ${url.slice(0, 80)}`);
+  return { up };
+});
+
+await check("a tab leaves Browse onto that tab", async () => {
+  await page.ev(`document.getElementById('gallery-browse').click()`);
+  await until(`document.querySelectorAll('#browse-tiles .tile').length > 0`);
+  // Gallery is what Browse already shows, so pressing it stays.
+  await page.ev(`document.getElementById('tab-gallery').click()`);
+  await sleep(300);
+  if (!(await browseUp())) note("tabs", "the Gallery tab left Browse");
+  await page.ev(`document.getElementById('tab-atlas').click()`);
+  await sleep(800);
+  const up = await browseUp();
+  const selected = await page.ev(`document.querySelector('.tab[aria-selected="true"]').dataset.panel`);
+  const shown = await page.ev(`!document.getElementById('panel-atlas').hidden`);
+  const inert = await page.ev(`document.getElementById('studio').inert`);
+  if (up || selected !== "atlas" || !shown || inert) note("tabs", `up ${up}, selected ${selected}, atlas shown ${shown}, inert ${inert}`);
+  // Outside Browse, Copy link is the picture, as it always was.
+  const picture = await copied();
+  if (picture?.split("?")[1] !== home) note("copy", `outside Browse it copied ${String(picture).slice(0, 90)}`);
+  await page.ev(`document.getElementById('tab-gallery').click()`);
+  await sleep(500);
+  return { up, selected, shown, picture: picture?.split("?")[1] === home };
 });
 
 await check("Open in explorer", async () => {
@@ -196,10 +314,7 @@ await check("Open in explorer", async () => {
   const target = await page.ev(`document.querySelectorAll('#browse-tiles .tile')[5].dataset.key`);
   await page.ev(`document.querySelectorAll('#browse-tiles .tile')[5].click()`);
   await sleep(400);
-  const link = await page.ev(`(async () => {
-    const text = await (await fetch('../assets/images/galleries/seated-candidates/general.jsonl')).text();
-    return text.split('\\n').filter(Boolean).map(JSON.parse).find((r) => r.key === ${JSON.stringify(target)}).link;
-  })()`);
+  const link = await seatLink(target);
   await page.ev(`document.getElementById('browse-open').click()`);
   await sleep(500);
   await page.settled(240);

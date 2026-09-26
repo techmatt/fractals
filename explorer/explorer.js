@@ -3090,8 +3090,23 @@ function leaveScreensaver(seat) {
 // layer, its grid, its preview and a pool of its own; what is here is what it is handed on
 // the way in and the viewer it gives back. Unlike the screensaver it cancels nothing of the
 // viewer's on the way in: the viewer is untouched until a picture is opened from it.
+//
+// **It keeps the page's chrome** *(Matt, browse_chrome_ckpt153)*: Browse is the Gallery tab
+// at the window's width, not a page of its own, so the bar stays live above it and the tab
+// row goes with it. The layer starts under the bar, and the panel's header row — the tabs,
+// with Gallery selected and Browse pressed — is moved into its top on the way in and put
+// back on the way out: the one row, not a copy of it. A tab pressed there leaves Browse onto
+// that tab, and Browse pressed again leaves it.
 
 let browser = null;
+const sideHead = document.querySelector(".side-head");
+const browseButton = document.getElementById("gallery-browse");
+
+/** Start the layer where the bar ends, which is not a length the stylesheet knows. */
+function placeBrowse() {
+  const bar = document.querySelector(".studio-bar");
+  document.getElementById("browse").style.top = `${bar.getBoundingClientRect().bottom}px`;
+}
 
 /** Open Browse on whatever the Gallery tab is showing. */
 function enterBrowse() {
@@ -3099,7 +3114,9 @@ function enterBrowse() {
   if (tiles.collections.length === 0) return;
   juliaCard?.hide();
   studio.inert = true;
-  document.querySelector(".studio-bar").inert = true;
+  document.getElementById("browse").prepend(sideHead);
+  browseButton.setAttribute("aria-pressed", "true");
+  placeBrowse();
   const { collection, modes, hue } = tiles.population();
   browser.enter({ collections: tiles.collections, collection, modes, hue });
 }
@@ -3109,8 +3126,11 @@ function enterBrowse() {
  *  to seat and the same entry on the way back. */
 function leaveBrowse(row = null) {
   studio.inert = false;
-  document.querySelector(".studio-bar").inert = false;
+  document.querySelector(".side").prepend(sideHead);
+  browseButton.setAttribute("aria-pressed", "false");
   if (row === null) {
+    // Moving the row dropped whatever focus was in it; Browse is where it was.
+    browseButton.focus({ preventScroll: true });
     // A window resized while Browse was up is a viewer still at the old size.
     relayout();
     return;
@@ -3895,7 +3915,16 @@ async function startAtlas() {
 }
 
 for (const tab of tabs) {
-  tab.addEventListener("click", () => showPanel(tab.dataset.panel));
+  tab.addEventListener("click", () => {
+    // In Browse the row is Browse's: Gallery is already what it is showing, and any other
+    // tab leaves it for that tab.
+    if (browser?.active) {
+      if (tab.dataset.panel === "gallery") return;
+      browser.exit();
+      tab.focus({ preventScroll: true });
+    }
+    showPanel(tab.dataset.panel);
+  });
 }
 
 // ------------------------------------------------------------------- the gestures
@@ -4941,11 +4970,39 @@ function permalink() {
   return url.toString();
 }
 
+/**
+ * What Copy link copies: what is on screen. In the studio that is the picture; in Browse it
+ * is the previewed seat's link, the one Open in explorer would load, or on the grid the
+ * collection's, `?panel=gallery&collection=<name>` *(browse_chrome_ckpt153)*.
+ */
+function linkOnScreen() {
+  const shown = browser?.active ? browser.onScreen() : null;
+  if (shown === null) return permalink();
+  const url = new URL(window.location.href);
+  url.search =
+    shown.seat !== null
+      ? `?${shown.seat.link}`
+      : `?panel=gallery&collection=${encodeURIComponent(shown.collection)}`;
+  url.hash = "";
+  return url.toString();
+}
+
+/** Copy link's own word, for a moment: in Browse the status line is under the layer. */
+let copyWordTimer = 0;
+function copiedOnButton() {
+  clearTimeout(copyWordTimer);
+  copyButton.textContent = "Copied";
+  copyWordTimer = setTimeout(() => {
+    copyButton.textContent = "Copy link";
+  }, 1500);
+}
+
 copyButton.addEventListener("click", async () => {
-  const url = permalink();
+  const url = linkOnScreen();
   try {
     await navigator.clipboard.writeText(url);
     say("Link copied.");
+    if (browser?.active) copiedOnButton();
   } catch {
     say(url);
   }
@@ -5387,7 +5444,13 @@ async function main() {
     onOpen: (row) => leaveBrowse(row),
     onLeave: () => leaveBrowse(),
   });
-  at("gallery-browse").addEventListener("click", () => enterBrowse());
+  at("gallery-browse").addEventListener("click", () => {
+    if (browser.active) browser.exit();
+    else enterBrowse();
+  });
+  window.addEventListener("resize", () => {
+    if (browser.active) placeBrowse();
+  });
   // The collection chosen is written into the address bar as it is chosen, so the address
   // reopens the Gallery tab where it was. Deferred a tick because this listener is added
   // before the panel's own, which is what sets the collection `readdress` reads.

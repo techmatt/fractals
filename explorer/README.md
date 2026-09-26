@@ -665,6 +665,19 @@ is now built on. Its controls are **Open in explorer**, **← →** to step thro
 current filtered order (stopping at the ends), and **Esc** back to the grid; a click on
 the mat around the picture is Esc too. Esc on the grid, or *Back to explorer*, leaves.
 
+**It keeps the page's chrome** *(Matt, browse_chrome_ckpt153)*: this view has no need to
+save screen space, so Browse is the Gallery tab at the window's width rather than a page of
+its own. The layer starts under the bar, which stays live (Copy link, Wallpaper packs,
+GitHub), and the panel's header row is moved into its top on the way in and put back on
+the way out: the tabs with Gallery selected, and *Browse* shown pressed (`aria-pressed`).
+The panel's own dropdown and *Screensaver* stand aside there, since Browse has a dropdown
+of its own. Pressing *Browse* again leaves; any other tab leaves Browse and opens that
+tab; Esc is as it was, preview first and then Browse. **Copy link copies what is on
+screen**: in a preview, the seat's link, which is what *Open in explorer* loads; on the
+grid, the collection's, `?panel=gallery&collection=<name>`; outside Browse, the picture as
+always. The status line is under the layer, so in Browse the button itself says *Copied*
+for a moment.
+
 **Every step and every close cancels the picture in flight**: the pool's `cancel`, the
 colouring worker's `stop`, and a generation that drops whatever a cancelled stage still
 hands back. The pool is Browse's own, made on the way in and stopped on the way out, so
