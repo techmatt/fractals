@@ -335,8 +335,15 @@ export function fresh(context) {
  * a double and a double cannot give it back. Here it is read into an exact decimal, so
  * writing it back as a plain decimal loses nothing at all — and one spelling per place is
  * what lets the Saved tab tell two links apart by comparing them.
+ *
+ * **And the scale is always written, `leveled` included** *(deep_leveled_link_and_recolour_
+ * ckpt150)*. A deep link that names no `scale` is fitted to Absolute when it is opened
+ * (`fitUnlessStated`, absolute_fit_ckpt147), so absent does not mean Leveled here the way it
+ * does in the shallow contract: it means "fit this on arrival". A view is a picture that is
+ * on the screen, so its link says which scale it is drawn on, and a Leveled deep view is a
+ * link that reopens Leveled. `scaleStated: false` is `canonicalize`'s alone — see there.
  */
-export function emit(view) {
+export function emit(view, { scaleStated = true } = {}) {
   const parts = [`${MARKER}=${VERSION}`];
   // **The family and the parameter come before the frame**, the way `f` does in the
   // shallow contract: they say which set is being drawn, and the centre and width are
@@ -356,7 +363,8 @@ export function emit(view) {
   parts.push(`p=${encode(view.palette)}`);
   for (const spec of SHADE_KEYS) {
     const value = view.shade[spec.key];
-    if (spec.same(value, spec.fallback)) continue;
+    const stated = spec.key === "scale" && scaleStated;
+    if (!stated && spec.same(value, spec.fallback)) continue;
     parts.push(`${spec.key}=${encode(spec.write(value))}`);
   }
   const level = levelUnder(view.shade, view.level ?? LEVEL_KEY.fallback);
@@ -366,9 +374,17 @@ export function emit(view) {
   return parts.join("&");
 }
 
-/** Parse and re-emit: the fixed point every deep link settles to. */
+/**
+ * Parse and re-emit: the fixed point every deep link settles to.
+ *
+ * **A link that names no `scale` keeps naming none.** It asks for the arrival fit, and a
+ * canonical form that wrote `scale=leveled` into it would be a different link — one that
+ * opens Leveled and fits nothing — so every such link ever written stays a fixed point and
+ * opens as it always did. A link that states either scale keeps stating it.
+ */
 export function canonicalize(search, context) {
-  return emit(parse(search, context));
+  const scaleStated = new URLSearchParams(stripLeadingQuestion(search)).has("scale");
+  return emit(parse(search, context), { scaleStated });
 }
 
 /**

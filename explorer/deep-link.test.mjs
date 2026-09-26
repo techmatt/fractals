@@ -97,7 +97,7 @@ test("the colour keys are the shallow contract's, in their existing spellings", 
   assert.equal(view.shade.reverse, true);
   assert.deepEqual(view.shade.transfer, { kind: "edge", weight: 0.5 });
   // And they come back spelled the way the shallow contract spells them.
-  assert.equal(deep.emit(view), query.replace("dv=1", "dv=3"));
+  assert.equal(deep.canonicalize(`?${query}`, context), query.replace("dv=1", "dv=3"));
 });
 
 test("a tone curve rides along under its own name", () => {
@@ -114,6 +114,27 @@ test("under the absolute scale the deep contract drops the curve too", () => {
   assert.equal(view.level, null);
   assert.doesNotMatch(deep.emit(view), /level=/);
   assert.match(deep.emit(view), /scale=absolute/);
+});
+
+test("a Leveled deep view writes its scale, and a link that names none keeps naming none", () => {
+  // deep_leveled_link_and_recolour_ckpt150: a deep link with no `scale` is fitted to
+  // Absolute on arrival, so a Leveled view's own link has to say Leveled to reopen it.
+  const stated = "dv=3&x=-0.5&y=0&w=2e-11&n=48551&p=inferno&scale=leveled&lambda=0&period=2.14";
+  const view = deep.parse(`?${stated}`, context);
+  assert.equal(view.shade.scale, "leveled");
+  assert.equal(deep.emit(view), stated);
+  assert.equal(deep.canonicalize(`?${stated}`, context), stated);
+  // Absent is the arrival fit's link, and stays one: every such link opens as it did.
+  const bare = stated.replace("&scale=leveled", "");
+  assert.equal(deep.canonicalize(`?${bare}`, context), bare);
+  assert.equal(deep.emit(deep.parse(`?${bare}`, context)), stated);
+  assert.equal(deep.emit(view, { scaleStated: false }), bare);
+  // Absolute is written either way, as it always was.
+  const absolute = stated.replace("leveled", "absolute");
+  assert.equal(deep.canonicalize(`?${absolute}`, context), absolute);
+  assert.equal(deep.emit(deep.parse(`?${absolute}`, context), { scaleStated: false }), absolute);
+  // The shallow contract did not move: `permalink.test.mjs`'s "the three scale keys ride a
+  // link only when set" still holds Leveled out of a shallow link.
 });
 
 test("a cyclic map is refused a fold, in the shallow contract's own words", () => {
@@ -208,7 +229,7 @@ test("the UI key rides on a deep link as it rides on a shallow one", () => {
   const view = deep.parse(`?${ANCHOR}&panel=deep`, context);
   assert.equal(view.palette, "inferno");
   // And is never emitted: the canonical string of a view is the picture alone.
-  assert.equal(deep.emit(view), ANCHOR.replace("dv=1", "dv=3"));
+  assert.equal(deep.emit(view), `${ANCHOR.replace("dv=1", "dv=3")}&scale=leveled`);
 });
 
 test("a fresh view is the home frame at the width's cap, and does not write it", () => {
@@ -217,7 +238,7 @@ test("a fresh view is the home frame at the width's cap, and does not write it",
   assert.equal(view.w.value, 3);
   assert.equal(view.maxiter, 4000);
   assert.equal(view.capFrom, "width");
-  assert.equal(deep.emit(view), "dv=3&x=-0.5&y=0&w=3&p=twilight_shifted");
+  assert.equal(deep.emit(view), "dv=3&x=-0.5&y=0&w=3&p=twilight_shifted&scale=leveled");
   assert.equal(view.degree, 2);
 });
 
@@ -240,8 +261,9 @@ test("the cap is written once it is settled, and a link that names one opens pin
   assert.equal(bare.capFrom, "width");
   assert.equal(bare.maxiter, 48551);
   // Both round-trip: the absent key comes back absent, the named one named.
-  assert.equal(deep.emit(bare), ANCHOR.replace("dv=1", "dv=3").replace("&n=48551", ""));
-  assert.equal(deep.emit(named), ANCHOR.replace("dv=1", "dv=3"));
+  const canonical = (search) => deep.canonicalize(`?${search}`, context);
+  assert.equal(canonical(ANCHOR.replace("&n=48551", "")), ANCHOR.replace("dv=1", "dv=3").replace("&n=48551", ""));
+  assert.equal(canonical(ANCHOR), ANCHOR.replace("dv=1", "dv=3"));
 });
 
 test("a field key moves with the arithmetic and not with the colour", () => {
@@ -391,7 +413,7 @@ test("a julia family carries its degree and its parameter, in that order", () =>
   assert.equal(view.degree, 5);
   assert.equal(view.julia.x.text, "0.2");
   assert.equal(deep.familyOf(view), "julia5");
-  assert.equal(deep.emit(view), query);
+  assert.equal(deep.canonicalize(`?${query}`, context), query);
 });
 
 test("absent f is degree two on either plane, so a degree-2 link names no family", () => {

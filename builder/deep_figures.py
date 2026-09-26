@@ -171,11 +171,12 @@ TARGET = ("-0.74937053247003823168823992075369", "0.0414726670681689000347187463
 OPENING = "p=Porcelain%20Field&phase=0.41&scale=absolute&lambda=0&period=0.295"
 #: The video's final frame and its cap, and the four colourings `deep-final-colorings` lays
 #: over its field, each exactly Matt's link as the explorer's parser reads it back
-#: (deep_opening_palette_ckpt150 addendum 1). The second names no `scale`, so it is leveled.
+#: (deep_opening_palette_ckpt150 addendum 1). The second is leveled, and says so: a deep link
+#: that names no `scale` is fitted to Absolute on arrival (deep_leveled_link_and_recolour_ckpt150).
 FINAL = "3.4869054402668363e-15"
 FINAL_COLOURINGS = (
     ("Final frame", "n=63534&p=glowdon&scale=absolute&lambda=0&period=0.25"),
-    ("Leveled", "n=63534&p=glowdon&lambda=0&period=2.14"),
+    ("Leveled", "n=63534&p=glowdon&scale=leveled&lambda=0&period=2.14"),
     ("Higher period", "n=63534&p=glowdon&scale=absolute&lambda=0&period=0.794"),
     (
         "Palette switch",
@@ -219,7 +220,9 @@ NUCLEUS_972 = ("-0.782601984826695942254944884344", "0.1500698928215788932498106
 #: colouring, on the leveled scale, so the pair no longer shares one colouring.
 KNOT = ("-0.7493705324700378557700614606921816", "0.0414726670681690448763936935919414")
 COALGLOW = "p=Coalglow&phase=0.617&scale=absolute&lambda=0.04&period=0.596"
-SHALLOW = "n=53737&p=Coalglow&gamma=0.559&cycles=2&phase=0.645&lambda=0.04&period=0.596"
+SHALLOW = (
+    "n=53737&p=Coalglow&gamma=0.559&cycles=2&phase=0.645&scale=leveled&lambda=0.04&period=0.596"
+)
 
 #: The video's keyframe k2: a double still places a pixel along the imaginary axis here and
 #: no longer does along the real one, so the f64 picture breaks up and is still recognizable.

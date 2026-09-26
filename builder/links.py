@@ -353,17 +353,18 @@ def _panel_links(
                     )
                 )
                 continue
-            # **A Leveled deep picture has no link that reopens it** (deep_opening_palette_
-            # ckpt150). The contract spells Leveled by saying no `scale`, and the page fits a
-            # deep link that says none to Absolute on arrival (`fitUnlessStated`), so the
-            # link would open a picture the panel is not.
+            # **A deep recipe says its scale** (deep_leveled_link_and_recolour_ckpt150). The
+            # page fits a deep link that names none to Absolute on arrival
+            # (`fitUnlessStated`), so such a link opens a picture the panel is not. The deep
+            # contract writes `scale=leveled` for a Leveled view since then, and a maker that
+            # emits through it always says one; this refuses a row written before that.
             if "scale" not in parse_qs(recipe["link"]):
                 found.append(
                     _refused(
                         identifier,
                         "not_exposed",
-                        "the picture is Leveled, and the explorer fits a deep link that "
-                        "names no scale to Absolute on arrival",
+                        "the recipe names no scale, and the explorer fits a deep link that "
+                        "names none to Absolute on arrival",
                     )
                 )
                 continue

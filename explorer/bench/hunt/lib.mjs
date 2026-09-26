@@ -122,7 +122,10 @@ export class Page {
     for (let i = 0; i < 100 && !target; i++) {
       await sleep(200);
       try {
-        const list = await (await fetch(`http://127.0.0.1:${this.debug}/json`)).json();
+        // `localhost` and not `127.0.0.1`: Chrome on this machine binds the debugging port on
+        // `[::1]` alone some launches and not others, and an IPv4 ask then finds nothing and
+        // reads as a browser that never came up (deep_leveled_link_and_recolour_ckpt150).
+        const list = await (await fetch(`http://localhost:${this.debug}/json`)).json();
         target = list.find((t) => t.type === "page");
       } catch {}
     }

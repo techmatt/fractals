@@ -2403,7 +2403,7 @@ export function mount(host) {
     family: () => deepLink.familyOf(view),
     /** Whether the tab owns the viewer — whether the picture on screen is the deep one. */
     owns: () => shown && owns,
-    link: () => deepLink.emit(view),
+    link: (options) => deepLink.emit(view, options),
     /** `j` while this tab owns the viewer: the tab's own *Julia at this c*, or its way back,
      *  exactly as a click on it — and nothing where the button is disabled
      *  *(pre_closeout_website_ckpt140)*. */

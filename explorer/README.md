@@ -2383,7 +2383,16 @@ while the panel is hidden.
   `scale`, comes in on Absolute with Lambda, Period and Phase fitted, which is busier than
   the Leveled picture it replaces (*Fit*, under the recipe's controls below). **The switch waits for the fit**: the first stage of the frame
   is drawn under Leveled, and when it lands `landFit` fits off it and recolours. Nothing is
-  re-iterated. **And the fit is taken once more off the finished frame** *(Matt,
+  re-iterated. **A colour the reader sets before that stage lands cancels the fit**
+  *(deep_leveled_link_and_recolour_ckpt150)*, as it cancels the refit below: a map, the
+  scale, Fit, Lambda, Period, Phase, Reset or Autolevel. It used to land anyway and overwrite
+  a Phase, Period or Lambda set in the meantime, or a click on Leveled, with the fitted
+  recipe. `bench/recolour-race.mjs` found it: on the unfixed page, all 24 trials that set one of those before the first stage landed lost it. A map
+  picked in that window survived, because the fit writes only the scale and the three
+  numbers. **And the controls hold still while a deep link is being mounted**: the studio is
+  up before `deep.js` has loaded, and a palette picked in that moment went to the viewer's
+  view and was forgotten when the link's own colour arrived. `locked` refuses every control
+  while `arriveDeep` runs, says *Opening the deep view…*, and resyncs them when it ends. **And the fit is taken once more off the finished frame** *(Matt,
   site_audit_ckpt147)*. A quarter pass's percentiles are close to the full pass's, but at
   seven passes close is not enough: on the proof frame a Fit pressed on the finished picture
   turned the palette 0.37 of a turn. So when the full pass of the arrival's place lands
@@ -2405,10 +2414,20 @@ while the panel is hidden.
   write the refitted recipe. Two things are left alone: a colour that is already Absolute, and a link
   that states `scale` either way, so an explicit `scale=leveled` opens Leveled. A tab that
   is come back to on its own frame keeps whatever scale the reader left it at, and a step
-  back (Ctrl+Z) puts a picture back as it was drawn and fits nothing. **One consequence:**
-  Leveled is the default and a link omits a default, so Copy link and Save on a Leveled deep
-  picture write no `scale`, and reopening that link fits it to Absolute. The contract did
-  not move, and a link written as `scale=leveled` still opens Leveled.
+  back (Ctrl+Z) puts a picture back as it was drawn and fits nothing. **So a deep link
+  always says its scale** *(Matt, deep_leveled_link_and_recolour_ckpt150)*. Leveled is the
+  shallow contract's default and a shallow link leaves it out, and until this checkpoint the
+  deep contract did the same, so Copy link and Save on a Leveled deep picture wrote no
+  `scale` and reopening that link fitted it to Absolute. Now `deep-link.js`'s `emit` writes
+  `scale=leveled` for a Leveled view, and the address bar, Copy link and Save all do.
+  `canonicalize` keeps a link that names no `scale` naming none, because that link means
+  "fit on arrival" and every one written before this still opens that way. So the one time
+  the page writes no `scale` is while a fit is still waiting on the first stage
+  (`currentQuery` passes `scaleStated: false` while `fitWanted`), when the Leveled on the
+  screen is not a picture anybody chose. **No version bump**: no link changes meaning. A
+  link with no `scale` is fitted as before, `scale=leveled` and `scale=absolute` open as
+  stated as before, and the only change is that `emit` writes a key it used to leave out.
+  The shallow contract is untouched.
   **Coming out keeps whatever scale is set**: *Shallow mode* carries the colour across
   untouched, and Absolute stays Absolute.
 - **Zooming back out is fine at any depth.** *Shallow mode* carries the view where
@@ -2630,14 +2649,16 @@ deep-fx.js         exact decimal coordinates, BigInt fixed point
 deep-link.js       the deep link contract — parse, emit, canonicalize, describe
 deep-gallery.js    the gallery under the tab's sentence, and deep-gallery.jsonl its register
 deep-fx.test.mjs   12 tests: the arithmetic is exact where a double is not
-deep-link.test.mjs 39 tests: the contract, the shallow one held to not moving, and the
+deep-link.test.mjs 41 tests: the contract, the shallow one held to not moving, and the
                    gallery register
 deep.test.mjs      17 tests: where the two modules meet, against both committed ones —
                    and the cap policy's seam, which fails the same way the rest of
                    this file does, by drawing a plausible picture
 bench/julia.mjs    what a Julia frame costs against the Mandelbrot frame at the same c
 bench/deep-stall.mjs  a colour change reaches the canvas through every pass, cancel and
-                   undo sequence that once lost one — the one bench file that asserts
+                   undo sequence that once lost one — one of two bench files that assert
+bench/recolour-race.mjs  the other: at rest, the canvas is a fresh load of the address
+                   bar, and a colour the reader set is still set, whenever it was set
 perturb.wasm       generated: the perturbation kernel, compiled
 perturb.manifest.json  generated: what perturb.wasm was built from
 perturb-wasm/      the crate that produces it

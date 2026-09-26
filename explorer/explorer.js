@@ -470,9 +470,34 @@ function holdCopy(on) {
 }
 
 function locked() {
+  // **A deep link on its way in holds every control still** *(deep_leveled_link_and_recolour_
+  // ckpt150)*. The studio is up while `deep.js` is fetched and mounted, and until the tab
+  // owns the canvas a control writes the viewer's view: a palette picked in that moment was
+  // drawn nowhere and forgotten when the link's own colour arrived. Quietly, because it is a
+  // few hundred milliseconds and the controls are resynced when it ends.
+  if (deepArriving) {
+    say("Opening the deep view…");
+    return true;
+  }
   if (!busy) return false;
   say("A download is rendering this view. Press its bar to cancel.");
   return true;
+}
+
+/** Whether a deep link is being carried to a tab that does not own the canvas yet. See
+ *  `locked`; `arriveDeep` is the only thing that sets it. */
+let deepArriving = false;
+
+/** Mount the Deep tab and then `open` a link into it, with the controls held until it has. */
+async function arriveDeep(open) {
+  deepArriving = true;
+  try {
+    await startDeep();
+    open();
+  } finally {
+    deepArriving = false;
+    syncShade();
+  }
 }
 
 /** Freeze or release every control that would change what is being drawn. */
@@ -692,8 +717,12 @@ function tintedShape() {
 function tint(changes, { moved = true, moving = false } = {}) {
   // Every palette control ends here, and a colour the reader turned is theirs: the Deep
   // tab's arrival refit, if one is waiting, goes (`arrival`). The page's own fits re-arm it
-  // after this where they mean to.
+  // after this where they mean to. **And so does an arrival fit still waiting on the first
+  // stage** *(deep_leveled_link_and_recolour_ckpt150)*: it used to land after a Phase, a
+  // Period or the switch to Leveled that the reader had set in the meantime and overwrite
+  // it. The page's own fits clear `fitWanted` before they get here.
   arrival.disarm();
+  fitWanted = false;
   changes = levelledFor(changes, tinting());
   if (deep !== null && deep.owns()) {
     deep.tint(changes);
@@ -1734,7 +1763,11 @@ function updateReadout() {
  * marker in front of it is what tells them apart again.
  */
 function currentQuery() {
-  if (deepOwns()) return deep.link();
+  // **A deep view waiting on its arrival fit is written as the link that asks for one**
+  // *(deep_leveled_link_and_recolour_ckpt150)*: no `scale`, which is what it arrived as or
+  // what carrying a Leveled frame in means. The Leveled on the screen until the first stage
+  // lands is not a picture anybody chose, and `scale=leveled` would reopen it unfitted.
+  if (deepOwns()) return deep.link({ scaleStated: !fitWanted });
   return link.emit(view, contract);
 }
 
@@ -1880,12 +1913,10 @@ function restore(entry) {
   if (link.isDeep(`?${query}`)) {
     deepOpening = true;
     showPanel("deep");
-    startDeep()
-      .then(() => deep?.open(query))
-      .catch((error) => {
-        restoring = null;
-        console.warn("a step back could not reopen a deep picture", error);
-      });
+    arriveDeep(() => deep?.open(query)).catch((error) => {
+      restoring = null;
+      console.warn("a step back could not reopen a deep picture", error);
+    });
     return true;
   }
   // Coming up out of the Deep tab: the tab keeps its own view and gives the viewer back,
@@ -2304,8 +2335,10 @@ function setShade(key, text, { moving = false } = {}) {
     return;
   }
   // A control the reader touched, even to the value it had or to one the contract refuses:
-  // the Deep tab's arrival refit goes before either early return below, not only in `tint`.
+  // the Deep tab's arrival refit and fit go before either early return below, not only in
+  // `tint`.
   arrival.disarm();
+  fitWanted = false;
   const subject = tinting();
   // A slider fires `change` on release after `input` has already set the same value.
   if (shade.spelling(subject.shade, key) === text) return;
@@ -2888,7 +2921,7 @@ function openAny(query, opts = {}) {
   if (!link.isDeep(`?${query}`)) return openLink(query, opts);
   deepOpening = true;
   showPanel("deep");
-  startDeep().then(() => {
+  arriveDeep(() => {
     // Before the open, whose settle is synchronous where the link's frame is already held:
     // a refit waiting on the frame the link names must not fire on the link's picture.
     arrival.disarm();
@@ -4815,9 +4848,10 @@ levelToggle.addEventListener("change", () => {
     return;
   }
   levelOn = levelToggle.checked;
-  // A palette control, so the Deep tab's arrival refit goes; the deep branch below does not
-  // pass through `tint`.
+  // A palette control, so the Deep tab's arrival refit and fit go; the deep branch below
+  // does not pass through `tint`.
   arrival.disarm();
+  fitWanted = false;
   // A view that arrived with no curve has none to give back, so ticking it on is asking for
   // one to be measured: the view is `derived` from here, the way it would be after a move.
   if (levelOn && levelling === "stored" && storedCurve === null) levelling = "derived";
@@ -5209,10 +5243,11 @@ async function main() {
     deepOpening = true;
     rebuild();
     resize();
-    await startDeep();
-    deep?.open(saving.queryOf(arriving));
-    showPanel("deep");
-    fitUnlessStated(saving.queryOf(arriving));
+    await arriveDeep(() => {
+      deep?.open(saving.queryOf(arriving));
+      showPanel("deep");
+      fitUnlessStated(saving.queryOf(arriving));
+    });
   } else {
     showPanel(asked.get("panel") ?? DEFAULT_PANEL);
     rebuild();

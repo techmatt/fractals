@@ -1073,12 +1073,15 @@ refuses it as `deep`, which is true: the explorer refuses that frame.
 what flattens a deep frame. The page's opening figure, `deep-f64-and-perturbation`, is
 coloured off Matt's link: Porcelain Field at `phase=0.41&lambda=0&period=0.295`
 *(deep_opening_palette_ckpt150)*, and the f64 panel carries the phase into its engine spec
-like the rest of the pass. `deep-final-colorings` is Matt's four links over one frame, and
-its Leveled panel carries no link: the contract spells Leveled by naming no `scale`, and the
-page fits a deep link that names none to Absolute on arrival, so `links.py` refuses a deep
-recipe without `scale` as `not_exposed`. That took the link off `deep-shallow-and-deep`'s
-shallow half as well, which had been opening at a refit (phase 0.9957, period 0.05667
-Absolute) rather than at the picture. The figures
+like the rest of the pass. `deep-final-colorings` is Matt's four links over one frame. The page fits a
+deep link that names no `scale` to Absolute on arrival, so for one checkpoint its Leveled
+panel, and `deep-shallow-and-deep`'s shallow half, carried no link: the contract spelled
+Leveled by leaving `scale` out, and the shallow half's link had been opening at a refit
+(phase 0.9957, period 0.05667, Absolute) rather than at the picture. Since
+deep_leveled_link_and_recolour_ckpt150 the deep contract writes `scale=leveled`, both
+recipes say it, and both links are back. `links.py` still refuses a deep recipe that names
+no `scale` as `not_exposed`, since such a link opens fitted, but a maker that emits through
+the contract can no longer write one. The figures
 whose counts run to tens rather than thousands use `period=0.5`, which bands less.
 `deep-shallow-and-deep` is drawn in Coalglow, and the map is read off each figure's frames,
 so a figure in another map writes that map's name after `colormap`. One figure uses one
