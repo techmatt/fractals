@@ -260,7 +260,8 @@ function contentBox(node) {
  *   a click on a mark calls `onPick({ dot, slot, query, palette })` for that mark's gallery
  *   slot and a click on a slot calls it for that slot, the frame navigates nowhere, and the
  *   slots are buttons rather than links so that they stay operable from the keyboard.
- *   Absent, each slot is an `<a href>` into the explorer at the view it shows, and a click
+ *   Absent, each slot is an `<a href>` into the explorer at the view it shows, with its
+ *   Atlas tab open on that view's plane, and a click
  *   on a mark goes where that mark's gallery slot goes.
  * - **`slotMark`** (default absent) — a page's own control over each slot, which the frame
  *   places and points and knows nothing else about *(saved_tab_ckpt131)*. Called once per
@@ -340,6 +341,9 @@ export async function mount(host, options = {}) {
   const frame = made("div", "frame");
   const strip = made("div", "strip");
   const explorer = new URL("../explorer/index.html", base);
+  // A link out of the atlas lands on the explorer's Atlas tab, and the view it opens says
+  // which plane. Only a navigating frame builds one: the studio's is its own Atlas tab.
+  const into = (query) => `${explorer}?${query}&panel=atlas`;
   const slots = new Map();
   const labelOf = (name) => partition.slot_labels[name] ?? GALLERY_LABEL;
   const mapOf = (name) => partition.slot_maps?.[name] ?? "";
@@ -433,7 +437,7 @@ export async function mount(host, options = {}) {
       }
       const { query, palette } = links.get(slot);
       mark?.show(query);
-      if (navigates) node.href = `${explorer}?${query}`;
+      if (navigates) node.href = into(query);
       node.title = titleOf(label, slot, palette, named);
       image.hidden = false;
       image.src = new URL(`../assets/images/atlas/${slot.file}`, base);
@@ -499,7 +503,7 @@ export async function mount(host, options = {}) {
         // place: the slot above it is that link, and a keyboard already reaches it.
         const slot = dot.slots.gallery;
         if (slot === undefined) return;
-        const href = `${explorer}?${links.get(slot).query}`;
+        const href = into(links.get(slot).query);
         if (event.ctrlKey || event.metaKey || event.shiftKey) {
           window.open(href, "_blank", "noopener");
         } else {
