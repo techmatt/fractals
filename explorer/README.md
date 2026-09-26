@@ -1958,16 +1958,47 @@ computed its own would compute it some fifty times a frame. `deep-worker.js` com
 buffer in its own heap, and every `band` after it uses the one that is there; a frame whose
 orbit is still good sends none, and a worker restarted by a cancel is fed it again.
 
-**It is kept while the new view is still within its reach**, and the test is conservative
-on purpose: the same limb count, a cap no larger, and the reference still inside the frame
-being drawn. The limb count is the one `plan` names for the frame, not the width's *(deep_degrees_ckpt140)*:
-a Julia frame at `z = 0` is computed at twice the view's bits, and an orbit keyed on the width's count
-would pass this test for a frame it is too shallow for. Recomputing costs fifteen to twenty-five milliseconds against a frame of
-seconds, so there is nothing to buy by being clever — and the gesture it does keep it for is
-the one that matters, a zoom in about a point near the middle, so a descent pays for one
-orbit rather than one a rung. At the anchor the orbit is **48,552 points at three limbs**,
-**776,848 bytes** on the boundary — `16 + 16·count`, `pack_reference`'s own layout, sixteen
-a point rather than the twelve the pairs need so that they land `f64` aligned.
+**The held orbit is a memo: it is kept only where a fresh load would compute the same one**
+*(deep_orbit_history_ckpt150)*. `sameOrbit` in `deep-render.js` asks three things: the same
+identity (`orbitKey`: the set, the degree, the limb count and the period), a cap no
+smaller, and a point that is the frame's own centre exactly, in decimal. A Julia orbit is
+of its parameter, which the key names, so a pan or a zoom inside a Julia view keeps it. The
+limb count is the one `plan` names for the frame, not the width's *(deep_degrees_ckpt140)*:
+a Julia frame at `z = 0` is computed at twice the view's bits, and an orbit keyed on the
+width's count would pass this test for a frame it is too shallow for.
+
+**A longer orbit at the same point is the identical picture, not a nearby one.** An orbit
+is computed step by step without reference to its cap, so one run further begins with the
+shorter one's points, and the kernel returns at the cap before it could read past it.
+`deep.test.mjs` holds that to the committed module byte for byte. That is what keeps a cap
+probe's orbit for the pass it settles, and a restart after Halve.
+
+**It used to be kept while its point was anywhere inside the new frame**, so that a zoom
+about a point near the middle paid for one orbit a descent. That made a deep picture depend
+on the path to it. After a deep link, leaving the tab and coming back carried the viewer's
+home frame in and drew it off the deep link's orbit (26,246 points, where the frame's own
+has 3,337), and a zoom drew off its parent's. Same address, different field: block MAD 0.01
+on the home frame and 0.31 on a zoom into the 1e-19 gallery frame, against a fresh load of
+each. **Neither field was wrong.** On the home frame both perturbation fields match `f64`
+alike (median 1.4e-7, p99 1.0e-6, about fifty boundary samples past 0.1 each). Below the
+`f64` floor, against the fixed-point oracle on a child of the video's final frame and one of
+the 1e-19 gallery frame, the kept reference and the frame's own are as close as each other
+(`perturb-wasm/README.md` §2c). They differ in the chaotic tail, a percent or two of the
+samples, which is f64 rounding taken down two different rebase paths. So the rule is
+determinism, and it is paid for in orbits:
+
+| frame | cap | orbit points | orbit (Node, one thread) |
+|---|--:|--:|--:|
+| the home frame the away sequence lands on | 3,336 | 3,337 | 1.8 ms |
+| the video's final frame, 3.5e-15 | 63,534 | 26,246 | 11.9 ms |
+| gallery, glowdon at 1e-19 | 200,416 | 200,417 | 139 ms |
+| gallery, 3e-21 | 398,432 | 398,433 | 277 ms |
+
+A zoom now pays for one of those a rung, which on this machine does not show above the
+pass: a zoom into the 1e-19 frame drew its quarter pass in 0.61 to 0.63 s against 0.63 to
+0.64 s when it kept the parent's orbit. At the anchor the orbit is **48,552 points at three
+limbs**, **776,848 bytes** on the boundary — `16 + 16·count`, `pack_reference`'s own layout,
+sixteen a point rather than the twelve the pairs need so that they land `f64` aligned.
 
 **Bands are cut to the explorer's own `BAND_TARGET_MS`, and the opening cut is two rows.**
 A cancel costs one band, so a band is how long the tab can ignore the reader; the viewer's
@@ -2392,7 +2423,13 @@ while the panel is hidden.
   numbers. **And the controls hold still while a deep link is being mounted**: the studio is
   up before `deep.js` has loaded, and a palette picked in that moment went to the viewer's
   view and was forgotten when the link's own colour arrived. `locked` refuses every control
-  while `arriveDeep` runs, says *Opening the deep view…*, and resyncs them when it ends. **And the fit is taken once more off the finished frame** *(Matt,
+  while `arriveDeep` runs, says *Opening the deep view…*, and resyncs them when it ends.
+  **And the viewer's pass stops when the tab takes the canvas** *(deep_orbit_history_ckpt150)*.
+  Leaving the tab starts a shallow pass, and a trip out and straight back comes in while it
+  runs. Its generation moved only for another shallow pass, so on a cold browser, where
+  that pass is slowest, it landed after the deep frame had drawn and put the viewer's own
+  picture on the canvas under the deep link: block MAD 70.7, the viewer's picture byte for
+  byte. `stopDrawing` ends it at the handover, with any live redraw it owed. **And the fit is taken once more off the finished frame** *(Matt,
   site_audit_ckpt147)*. A quarter pass's percentiles are close to the full pass's, but at
   seven passes close is not enough: on the proof frame a Fit pressed on the finished picture
   turned the palette 0.37 of a turn. So when the full pass of the arrival's place lands
@@ -2651,7 +2688,7 @@ deep-gallery.js    the gallery under the tab's sentence, and deep-gallery.jsonl 
 deep-fx.test.mjs   12 tests: the arithmetic is exact where a double is not
 deep-link.test.mjs 41 tests: the contract, the shallow one held to not moving, and the
                    gallery register
-deep.test.mjs      17 tests: where the two modules meet, against both committed ones —
+deep.test.mjs      27 tests: where the two modules meet, against both committed ones —
                    and the cap policy's seam, which fails the same way the rest of
                    this file does, by drawing a plausible picture
 bench/julia.mjs    what a Julia frame costs against the Mandelbrot frame at the same c
@@ -2659,6 +2696,7 @@ bench/deep-stall.mjs  a colour change reaches the canvas through every pass, can
                    undo sequence that once lost one — one of two bench files that assert
 bench/recolour-race.mjs  the other: at rest, the canvas is a fresh load of the address
                    bar, and a colour the reader set is still set, whenever it was set
+                   and whatever the tab drew before it
 perturb.wasm       generated: the perturbation kernel, compiled
 perturb.manifest.json  generated: what perturb.wasm was built from
 perturb-wasm/      the crate that produces it

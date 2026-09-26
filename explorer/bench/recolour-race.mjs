@@ -11,7 +11,7 @@
 // address on a fresh load, waits for rest again, and compares the two canvases: exactly,
 // and as block means where they are not exact, so a real miss is told apart from sampling.
 //
-//   node explorer/bench/recolour-race.mjs [--quick] [--away] [--at=<moment>] [--only=<a>,<b+c>] [scenario ...]
+//   node explorer/bench/recolour-race.mjs [--quick] [--at=<moment>] [--only=<a>,<b+c>] [scenario ...]
 //
 // The moments are the page's, never a clock's. A delay on a clock lands somewhere else on
 // a faster machine, or a busier one, which is how a race hides; a moment is read off the
@@ -94,11 +94,13 @@ const ACTIONS = {
   fit: key("f"),
   reset: click("#palette-reset"),
   hold: click("#hold-toggle"),
-  // Out to Saved and straight back to whichever tab was up. **Only with `--away`**: coming
-  // back to Deep carries the viewer's frame in, and the kept reference orbit draws that
-  // frame differently from a fresh load's own (block MAD 10.4 on the home frame, ckpt150).
-  // That is the field depending on history rather than a colour race, so it is not in the
-  // default run, which would otherwise be red on it every time.
+  // Out to Saved and straight back to whichever tab was up. Coming back to Deep carries the
+  // viewer's frame in, which found two ways a picture depended on history rather than on
+  // its link *(deep_orbit_history_ckpt150)*: the pool drew the carried frame off the deep
+  // link's reference orbit rather than the frame's own, and on a cold browser the pass
+  // leaving the tab started put the viewer's own picture over the deep one. It sat behind a
+  // `--away` flag while the first was a known finding; both are fixed, and it runs by
+  // default.
   away: `(() => {
     const up = document.querySelector('.tab[aria-selected="true"]');
     document.getElementById("tab-saved").click();
@@ -123,10 +125,7 @@ const KEPT = {
 };
 
 /** One colour change of each kind, alone; and the runs back to back. */
-const away = process.argv.includes("--away");
-const SINGLES = Object.keys(ACTIONS)
-  .filter((name) => away || name !== "away")
-  .map((name) => [name]);
+const SINGLES = Object.keys(ACTIONS).map((name) => [name]);
 const BURSTS = [
   ["pick", "phase", "pick2"],
   ["hold", "lambda", "pick"],
@@ -135,7 +134,8 @@ const BURSTS = [
   ["leveled", "pick", "absolute"],
   ["reset", "pick", "fit"],
   ["pick", "hold", "lambdaDrag", "hold", "periodDrag"],
-  ...(away ? [["pick", "away"], ["phase", "away", "pick2"]] : []),
+  ["pick", "away"],
+  ["phase", "away", "pick2"],
 ];
 
 // ------------------------------------------------------------------------ the moments

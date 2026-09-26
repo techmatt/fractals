@@ -1416,6 +1416,18 @@ async function draw() {
   }
 }
 
+/** Stop the viewer's pass where it stands and draw nothing more of it, a pending live
+ *  redraw included: another view has taken the canvas. */
+function stopDrawing() {
+  drawing += 1;
+  wantsLive = false;
+  renderer?.cancel();
+  colouring.stop?.();
+  colouring = {};
+  // A pass deriving a curve holds Copy until it lands, and this one never will.
+  holdCopy(false);
+}
+
 /** The pass that is running, while it is. `live` waits on it rather than cutting it off. */
 let inFlight = null;
 
@@ -3184,6 +3196,12 @@ function showPanel(asked) {
   // comes back only on the frame it was made at.
   if (showing === "deep") {
     if (status.querySelector(".say-action") !== null) say("");
+    // **The viewer's pass stops here, at the handover** *(deep_orbit_history_ckpt150)*.
+    // Leaving the tab starts one, and a trip out and straight back comes in while it runs;
+    // its generation only moves for another shallow pass, so it went on and put the
+    // viewer's picture over the deep one after the tab had drawn. Leaving again draws
+    // the viewer afresh, so nothing it had is owed.
+    stopDrawing();
     startDeep().then(() => {
       if (showing !== "deep") return;
       deep?.show();

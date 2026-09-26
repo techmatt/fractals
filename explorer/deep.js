@@ -2315,7 +2315,7 @@ export function mount(host) {
    * from zero at the new one; carrying `z` and its derivative across a pass would be an
    * export `perturb-wasm` does not have. What a restart can reuse is the reference orbit
    * the pool holds, which survives a cancel: once it has landed, a restart draws off it
-   * for as long as the new cap is within the iterations it was run to (`#reaches` in
+   * for as long as the new cap is within the iterations it was run to (`sameOrbit` in
    * `deep-render.js`), which Halve always is and Double usually is.
    *
    * A download is never taken this way, and a minibrot search is left to `moved()`, which

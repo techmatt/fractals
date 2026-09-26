@@ -291,8 +291,8 @@ export function anchorOf(view) {
 /**
  * What makes one reference orbit a different object from another, as a string.
  *
- * Not "where it is" — that is the reach test, and it is a distance rather than a
- * comparison. This is the part of an orbit that has to **match**, and every piece of it
+ * Not "where it is" — that is [`sameOrbit`]'s second question, asked of the point in
+ * decimal. This is the part of an orbit that has to **match**, and every piece of it
  * is a way a held orbit would be silently wrong for a frame rather than merely unhelpful:
  *
  * - **the limb count**, because the points were computed to that many and a deeper view
@@ -315,6 +315,49 @@ export function orbitKey(view, limbs, period = null) {
   const plane = view.julia ? `j:${view.julia.x.text},${view.julia.y.text}` : "m";
   const set = `${plane}^${view.degree ?? 2}`;
   return `${set}|${limbs}|${period ?? "-"}`;
+}
+
+/**
+ * Whether `held`, the orbit a pool holds, is the orbit a fresh load of this frame would
+ * compute.
+ *
+ * **The held orbit is a memo, and nothing else** *(deep_orbit_history_ckpt150)*. A deep
+ * picture is a function of its link, whatever the explorer drew before it, so the orbit
+ * is kept only where it is provably the one a fresh load would pick or draws the
+ * identical picture. Three things have to hold. **Its identity**, which is [`orbitKey`]
+ * — the limb count, the period, the set and the degree. **The cap**: the held orbit was
+ * run at least as far as this frame asks. That is the identical-picture case: an orbit
+ * is computed step by step without reference to its cap, so a longer one begins with
+ * the shorter one's points, and the kernel returns at the cap before it could read a
+ * point past it. And **the point**: the reference is this frame's own centre, exactly,
+ * in decimal.
+ *
+ * The point used to be anywhere inside the frame, so that a zoom about a point near the
+ * middle paid for one orbit a descent rather than one a rung. That made the picture
+ * depend on the path to it: the same address drew a different field after a zoom, or
+ * after leaving the tab and coming back, than it did on a fresh load. Neither field
+ * was wrong. Against `f64` on a shallow frame, and against the fixed-point oracle on
+ * two frames below it, the kept reference and the frame's own drew equally close to the
+ * truth, and they differed only in the chaotic tail, a percent or two of the samples
+ * that sit on the boundary. So what this buys back is determinism, and the price is an
+ * orbit per zoom (`explorer/README.md` has it measured).
+ */
+export function sameOrbit(held, view, limbs, period = null) {
+  if (held === null) return false;
+  // **Everything about the orbit that is its identity is one string**, which is what
+  // keeps this test honest as the kind grows: a new field of a reference — `julia` when
+  // the Julia case landed, `period` when a nucleus could be one — is a field of the key
+  // rather than a line somebody has to remember to add here.
+  if (held.key !== orbitKey(view, limbs, period)) return false;
+  if (held.maxiter < view.maxiter) return false;
+  // **A Julia frame's orbit does not depend on its frame at all.** It is the critical
+  // orbit of the parameter, which the key already names, so a pan or a zoom inside a
+  // Julia view is the orbit a fresh load would compute and never recomputes one.
+  if (view.julia !== null) return true;
+  // In decimal, and it has to be: two deep coordinates agree in every digit a double
+  // holds, so `Number(a) === Number(b)` would say the reference is at the centre
+  // wherever it actually is.
+  return fx.compare(view.x.dec, held.x.dec) === 0 && fx.compare(view.y.dec, held.y.dec) === 0;
 }
 
 /** One pool worker, instantiated and ready. */
@@ -976,44 +1019,9 @@ export class DeepRenderer {
     this.orbit = null;
   }
 
-  /**
-   * Whether the orbit the pool holds can still draw this frame.
-   *
-   * Three things have to hold, and each of them is a way the orbit would be wrong rather
-   * than merely unhelpful. **Its identity**, which is [`orbitKey`] — the limb count,
-   * because the orbit's points were computed to that many and a deeper view wants more
-   * precision than they carry; the period, because a periodic orbit is a different object
-   * rather than a shorter one; and which set it is the orbit of. **The cap**,
-   * because an orbit run to fewer iterations than the frame asks for would have the kernel
-   * rebasing its way through the difference. And **the reach**: the reference has to be
-   * inside the frame being drawn, which is the conservative reading of "still within its
-   * reach" and costs nothing to be conservative about.
-   *
-   * The gesture this keeps it for is the one that matters: a zoom in about a point near
-   * the middle of the frame stays inside the old frame, so a descent pays for one orbit
-   * rather than one per rung.
-   */
-  #reaches(view, limbs, aspect, period) {
-    const held = this.orbit;
-    if (held === null) return false;
-    // **Everything about the orbit that is its identity is one string**, which is what
-    // keeps this test honest as the kind grows: a new field of a reference — `julia` when
-    // the Julia case landed, `period` when a nucleus could be one — is a field of the key
-    // rather than a line somebody has to remember to add here.
-    if (held.key !== orbitKey(view, limbs, period)) return false;
-    if (held.maxiter < view.maxiter) return false;
-    // **A Julia frame's orbit does not depend on its frame at all.** It is the
-    // critical orbit of the parameter, so the reach test is only "the same
-    // parameter, computed deeply enough and far enough" — and a pan or a zoom
-    // inside a Julia view never recomputes one.
-    if (view.julia !== null) return true;
-    // In decimal, and it has to be: two deep coordinates agree in every digit a double
-    // holds, so `Number(a) - Number(b)` is exactly zero and would say the reference is at
-    // the centre wherever it actually is.
-    const across = Math.abs(fx.difference(view.x.dec, held.x.dec));
-    const down = Math.abs(fx.difference(view.y.dec, held.y.dec));
-    const half = view.w.value / 2;
-    return across <= half && down <= half * aspect;
+  /** Whether the held orbit is the one this frame would compute: [`sameOrbit`]. */
+  #holds(view, limbs, period) {
+    return sameOrbit(this.orbit, view, limbs, period);
   }
 
   /**
@@ -1036,9 +1044,9 @@ export class DeepRenderer {
     // needs. The kernel decides the count; this reads it.
     const planned = this.plan(deepSpecOf(view, width, height, { supersample, period }));
     const limbs = planned.ok ? planned.limbs : this.limbs(view.w.value, width * supersample);
-    if (this.#reaches(view, limbs, height / width, period)) {
-      return { x: this.orbit.x.text, y: this.orbit.y.text, kept: true };
-    }
+    // Named by the view's own spelling, so the spec is the one a fresh load writes: the
+    // held point is the same number, and may have been spelled with another digit count.
+    if (this.#holds(view, limbs, period)) return { x: view.x.text, y: view.y.text, kept: true };
 
     // The reference is the view's own centre. For an ordinary frame that is the best point
     // available; for a preview tile it is the nucleus the search solved, and the centre
@@ -1059,8 +1067,8 @@ export class DeepRenderer {
       x: view.x,
       y: view.y,
       // What this orbit *is* — the set, the parameter, the limbs, the period — as the one
-      // string `#reaches` compares. Where it is stays `x` and `y`, because that is a
-      // distance and not a comparison.
+      // string `sameOrbit` compares. Where it is stays `x` and `y`, the point it asks
+      // about second.
       key: orbitKey(view, limbs, period),
       // The parameter this orbit is the critical orbit of, as text. `null` on the
       // Mandelbrot side, where the orbit is of the frame's own reference point. In the

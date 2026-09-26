@@ -348,6 +348,31 @@ mask sample for sample and about the smooth count to a median relative 1e-6. Two
 kernels sharing no code and agreeing about a picture is the strongest statement
 available about the recurrence, the entry index and the geometry at once.
 
+### 2c. A reference somewhere else in the frame *(deep_orbit_history_ckpt150, 2026-09-25)*
+
+The page's pool used to keep an orbit whose point was anywhere inside the next frame, so the
+same frame could be drawn off its own centre on a fresh load and off a parent's centre after
+a zoom. Which of the two is right was asked of this oracle, with a scratch crate on the
+crate's public API (nothing here moved). Each frame is a child at half its parent's width,
+centred 0.2 of the parent's width across and −0.1 down, so the parent's centre is inside
+it. The tile is 64×36 and the interior switch is on, as the page draws.
+
+| child of | width | cap | orbit points, own / kept | vs oracle: median Δ own / kept | Δ > 0.1, own / kept | mask | rebases a sample, own / kept |
+|---|--:|--:|--:|--:|--:|--:|--:|
+| the video's final frame | 1.74e-15 | 63,534 | 27,258 / 26,246 | 1.7e-10 / 2.1e-10 | 37 / 36 | 0 / 0 | 11.6 / 11.9 |
+| the glowdon gallery frame | 5e-20 | 200,416 | 30,727 / 200,417 | 4.4e-11 / 5.5e-11 | 25 / 30 | 0 / 0 | 11.0 / 11.3 |
+
+**Neither reference is wrong, and neither is better.** Both agree with the oracle to the
+same median, both keep the mask, and both have the same chaotic tail, a percent or two of
+the samples, where a boundary sample amplifies the last bit of whatever path it took. Kept
+against own, only 101 and 440 of 2,304 samples are bit-equal, and 43 and 31 differ past 0.1:
+the two are the same picture to the eye, and not the same bytes. The home frame
+`-0.77 + 0i` at width 4.4, drawn off the deep centre above, says the same against `f64`: both
+at median 1.4e-7 and p99 1.0e-6, with 49 samples past 0.1 off its own centre and 52 off
+the deep one. So the page now keeps an
+orbit only where it is the one a fresh load would compute (`sameOrbit` in
+`explorer/deep-render.js`), which is a rule for determinism rather than for accuracy.
+
 ### 3. The interior switch
 
 `dz_n = ∏ 2·z_k` is the derivative of the `n`-fold map along the orbit: it decays

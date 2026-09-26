@@ -26,8 +26,9 @@ import { existsSync } from "node:fs";
 
 import { load as loadEngine, RAMP } from "./bench/engine.mjs";
 import { load as loadPerturb } from "./bench/perturb.mjs";
-import { BODY_TARGET, bodyShare, shadeSpecOf, deepSpecOf, orbitKey } from "./deep-render.js";
+import { BODY_TARGET, bodyShare, shadeSpecOf, deepSpecOf, orbitKey, sameOrbit } from "./deep-render.js";
 import * as deep from "./deep-link.js";
+import * as fx from "./deep-fx.js";
 
 const MODULE = new URL("./perturb.wasm", import.meta.url);
 const missing = !existsSync(MODULE);
@@ -562,8 +563,8 @@ test("an orbit's identity is the set, the depth and the period", () => {
   const mandelbrot = { x: at(ANCHOR.center_re), y: at(ANCHOR.center_im), julia: null };
   const julia = { ...mandelbrot, julia: { x: at("0"), y: at("1") } };
 
-  // Where it is is not in it: a pan is still the same orbit, and the reach test is what
-  // decides whether it reaches.
+  // Where it is is not in it: a pan is still the same set, and `sameOrbit` asks about the
+  // point separately, in decimal.
   assert.equal(
     orbitKey(mandelbrot, 3),
     orbitKey({ ...mandelbrot, x: at("-0.7"), y: at("0.1") }, 3),
@@ -577,6 +578,50 @@ test("an orbit's identity is the set, the depth and the period", () => {
   assert.notEqual(orbitKey(julia, 3), orbitKey({ ...julia, julia: { x: at("0"), y: at("0.9") } }, 3));
   // And two periods are two orbits, not a long one and a short one.
   assert.notEqual(orbitKey(mandelbrot, 3, 2838), orbitKey(mandelbrot, 3, 94776));
+});
+
+test("a held orbit is kept only where a fresh load would compute the same one", () => {
+  // *(deep_orbit_history_ckpt150)* A deep picture is a function of its link. The pool used
+  // to keep any orbit whose point was inside the new frame, which drew the same address
+  // differently after a zoom, or after leaving the tab and coming back, than on a fresh load.
+  const at = (text) => ({ text, dec: fx.parse(text) });
+  const view = (x, y, maxiter = 5000, julia = null) => ({ x: at(x), y: at(y), julia, maxiter });
+  const held = (of, limbs = 3) => ({ ...of, key: orbitKey(of, limbs) });
+  const here = view("-0.7493705324700382316882399", "0.0414726670681689000347187");
+
+  assert.equal(sameOrbit(null, here, 3), false);
+  assert.equal(sameOrbit(held(here), here, 3), true);
+  // The same number spelled with more digits is the same point.
+  assert.equal(sameOrbit(held(here), view("-0.74937053247003823168823990", "0.04147266706816890003471870"), 3), true);
+  // A point a hair off, and still well inside any frame about it, is not.
+  assert.equal(sameOrbit(held(here), view("-0.7493705324700382316882398", "0.0414726670681689000347187"), 3), false);
+  // A longer orbit at the same point draws the identical picture; a shorter one does not.
+  assert.equal(sameOrbit(held(view(here.x.text, here.y.text, 20000)), here, 3), true);
+  assert.equal(sameOrbit(held(view(here.x.text, here.y.text, 4999)), here, 3), false);
+  // Its identity still has to match.
+  assert.equal(sameOrbit(held(here, 4), here, 3), false);
+  // A Julia orbit is of its parameter, so a pan inside the view keeps it.
+  const c = { x: at("0"), y: at("1") };
+  assert.equal(sameOrbit(held(view("0", "1", 5000, c)), view("0.1", "0.9", 5000, c), 3), true);
+});
+
+test("an orbit run past the cap draws the bytes the frame's own orbit draws", { skip }, () => {
+  // What makes a longer held orbit a memo rather than a different reference: it begins
+  // with the shorter one's points, and the kernel returns at the cap before reading past
+  // it. The centre here is interior, so the two orbits are the cap and four times it long.
+  const spec = {
+    schema: 1,
+    center_re: "-0.77",
+    center_im: "0",
+    width: 4.4,
+    resolution: [48, 27],
+    maxiter: 500,
+  };
+  const own = perturb.reference(spec);
+  const longer = perturb.reference({ ...spec, maxiter: 2000 });
+  assert.equal(new DataView(own.buffer).getUint32(0, true), 501);
+  assert.equal(new DataView(longer.buffer).getUint32(0, true), 2001);
+  assert.deepEqual(perturb.band(spec, longer, 0, 27), perturb.band(spec, own, 0, 27));
 });
 
 // ------------------------------------------------------------ degrees three to six
