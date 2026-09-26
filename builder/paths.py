@@ -51,7 +51,7 @@ def site_pages() -> list[Path]:
 def relative_href(from_page: Path, target: Path) -> str:
     """A relative, POSIX-style href from the page that carries it to the file it names.
 
-    Project Pages serve this site from `/fractal-website/`, so a root-absolute href
+    Project Pages serve this site from `/fractals/`, so a root-absolute href
     works locally and breaks in production. Every link the builder emits comes from
     here, which is why it cannot emit one.
     """

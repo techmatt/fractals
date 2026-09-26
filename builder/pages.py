@@ -35,13 +35,13 @@ CODE_REPO = "https://github.com/techmatt/fractal-wallpapers"
 #: they were reading is built landed in a renderer instead. The pipeline is still one click
 #: away — the contents rail carries it, the footer carries it, and the article names it
 #: wherever it talks about the code that drew the pictures.
-SITE_REPO = "https://github.com/techmatt/fractal-website"
+SITE_REPO = "https://github.com/techmatt/fractals"
 
 AUTHOR_SITE = "https://techmatt.github.io/"
 
 #: Where the committed tree is served. The site itself never spells it — every href is
 #: relative — and it exists for what leaves the site: a review doc's links resolve here.
-SITE_URL = "https://techmatt.github.io/fractal-website/"
+SITE_URL = "https://techmatt.github.io/fractals/"
 
 FOOTER = f"""<footer>
   <p><a href="{AUTHOR_SITE}">Matt Fisher</a>

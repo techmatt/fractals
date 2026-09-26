@@ -9,7 +9,7 @@ library page straight off the checkout, so the first thing it did on a machine w
 was raise, and every check after it went unrun.
 
 - **links** — every internal href and src on every page resolves to a file that exists,
-  and none is root-absolute. The site is served from `/fractal-website/`, so a rooted
+  and none is root-absolute. The site is served from `/fractals/`, so a rooted
   href works locally and breaks only in production: exactly the bug that survives
   review. A link to a bare directory fails too, because a page in this repo has to open
   from the filesystem and `file:///…/wallpaper-packs/` is a directory listing.
@@ -247,7 +247,7 @@ def _link_problem(page: Path, attribute: str, value: str) -> str | None:
     if raw.startswith("#") or raw.startswith("//") or _SCHEME.match(raw):
         return None
     if raw.startswith("/"):
-        return f"root-absolute {attribute}={raw!r} — breaks under the /fractal-website/ subpath"
+        return f"root-absolute {attribute}={raw!r} — breaks under the /fractals/ subpath"
     target, _ = urldefrag(raw)
     target = unquote(target.split("?", 1)[0])
     if not target:

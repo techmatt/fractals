@@ -70,7 +70,7 @@ export const COMMENT_LIMIT = 0xffff - 2;
  * wallpaper project's `curation/explorer_link.py` to both. The hosting choice is not
  * final; when it moves, this line and `SITE_URL` move together and the check says so.
  */
-export const EXPLORER_URL = "https://techmatt.github.io/fractal-website/explorer/";
+export const EXPLORER_URL = "https://techmatt.github.io/fractals/explorer/";
 
 /** The PNG keyword an XMP packet travels under, by the XMP specification. */
 export const XMP_KEYWORD = "XML:com.adobe.xmp";

@@ -4,7 +4,7 @@ This repository is the public site for the fractal wallpapers project: the artic
 a tutorial on rendering escape-time fractals, finding views worth keeping, and
 training judges to pick between them — plus the finished wallpapers that make the case
 the article is arguing, in the explorer's Gallery tab and as downloadable wallpaper packs. It is served by GitHub Pages at
-`https://techmatt.github.io/fractal-website/`.
+`https://techmatt.github.io/fractals/`.
 
 The companion code repository is `C:\Code\fractal-wallpapers`. The article links into it
 per section; nothing is copied across without being rewritten to read as prose.
@@ -437,7 +437,7 @@ keeps the mechanics. **Every apply round ends by distilling that round's general
   way wherever it appears, the same carve-out the naming rule and the clock ban both
   make for a name. Nothing enforces this, which is why it is written down.
 - **Relative links, always.** The site lives under a project-Pages subpath
-  (`/fractal-website/`), so a root-absolute `/assets/...` href is broken in
+  (`/fractals/`), so a root-absolute `/assets/...` href is broken in
   production and fine locally — the worst kind of bug. Every internal href and src is
   relative to the page that carries it.
 - **`.gitignore` keeps its shape**: `scratch/` and `artifacts/` (runtime output),

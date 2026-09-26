@@ -126,7 +126,7 @@ test("an import reads an export, a JSON list, and pasted lines of links", () => 
 
   assert.deepEqual(parseImport('["?f=a", {"link": "f=b"}, 3]').map((entry) => entry.link), ["f=a", "f=b", ""]);
   const pasted = parseImport(
-    "https://techmatt.github.io/fractal-website/explorer/?f=m&x=1#top\n\n  ?f=j\r\nf=p&y=2 ",
+    "https://techmatt.github.io/fractals/explorer/?f=m&x=1#top\n\n  ?f=j\r\nf=p&y=2 ",
   );
   assert.deepEqual(pasted.map((entry) => entry.link), ["f=m&x=1", "f=j", "f=p&y=2"]);
   assert.deepEqual(parseImport("   "), []);

@@ -263,7 +263,7 @@ def _packs(page: Path) -> list[str]:
 OFFSITE = (
     ("explorer/index.html", "Fractal explorer"),
     ("https://github.com/techmatt/fractal-wallpapers", "fractal-wallpapers on GitHub"),
-    ("https://github.com/techmatt/fractal-website", "fractal-website on GitHub"),
+    ("https://github.com/techmatt/fractals", "fractal-website on GitHub"),
 )
 
 

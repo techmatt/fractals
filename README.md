@@ -3,9 +3,9 @@
 This builds the fractal wallpapers site: an article on how the collection was made, an
 explorer for finding pictures of your own or interacting with the existing gallery pictures, and the wallpaper packs. The pipeline that generated the wallpapers, and the engine that draws them, live in [fractal-wallpapers](https://github.com/techmatt/fractal-wallpapers). Most visitors want one of the links below.
 
-- **Wallpapers to download:** [Wallpaper packs](https://techmatt.github.io/fractal-website/wallpaper-packs/)
-- **Exploring for yourself:** [The fractal explorer](https://techmatt.github.io/fractal-website/explorer/)
-- **How it was made:** [The article, starting here](https://techmatt.github.io/fractal-website/start-here.html)
+- **Wallpapers to download:** [Wallpaper packs](https://techmatt.github.io/fractals/wallpaper-packs/)
+- **Exploring for yourself:** [The fractal explorer](https://techmatt.github.io/fractals/explorer/)
+- **How it was made:** [The article, starting here](https://techmatt.github.io/fractals/start-here.html)
 - **The pipeline and engine code:** [fractal-wallpapers](https://github.com/techmatt/fractal-wallpapers)
 - **The site's code** (explorer, article, builder): you are here; read on.
 

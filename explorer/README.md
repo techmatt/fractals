@@ -3730,7 +3730,7 @@ takes, and a picture's link then goes through the same import and gets the same 
 ### And the same link, absolute, where ordinary tools look *(embedded_links_ckpt145, 2026-09-23)*
 
 The tag is this page's own and nothing else reads it, so a file carries the link a second
-time, whole, as an address: `EXPLORER_URL` — `https://techmatt.github.io/fractal-website/explorer/`,
+time, whole, as an address: `EXPLORER_URL` — `https://techmatt.github.io/fractals/explorer/`,
 which is `builder/pages.py`'s `SITE_URL` with `explorer/` after it — then `?` and the
 query. The hosting choice is not made; that constant is the one place this page spells a
 host, and `builder check`'s `stamps` holds it to `SITE_URL`.

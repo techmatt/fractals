@@ -647,7 +647,7 @@ configured. A palette entering the library next door costs one `--library` and o
 ## What `check` checks
 
 - **links** — every internal `href` and `src` on every page resolves, and none is
-  root-absolute. The site is served from `/fractal-website/`, so a rooted href works
+  root-absolute. The site is served from `/fractals/`, so a rooted href works
   locally and breaks only in production. A link to a bare directory fails too: a page
   here has to open from the filesystem, where `wallpaper-packs/` is a directory listing.
 - **pages** — the committed HTML the builder owns — `wallpaper-packs/`, and the palette
