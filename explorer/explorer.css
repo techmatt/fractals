@@ -272,30 +272,24 @@
 }
 .browse[hidden] { display: none; }
 /* **It keeps the chrome** *(browse_chrome_ckpt153)*: the layer starts under the bar, whose
-   bottom the page sets as `top`, and the panel's own header row is moved into its top, so
-   the tabs read Gallery with Browse pressed. Browse has its own Collection dropdown, so the
-   panel's and Screensaver stand aside; the row sits over the preview's mat, since it stays
-   live there too. */
+   bottom the page sets as `top`, and the panel's own header row is moved into its top.
+   **It is Browse's one header row** *(browse_header_ckpt153)*: the tabs, Browse's own
+   Collection dropdown, and on the right Screensaver and the one way out, which stands where
+   Browse stood. Browse's three live in the row and are shown only while it is here; the
+   panel's dropdown and Browse itself stand aside. The row sits over the preview's mat,
+   since it stays live there too. */
 .browse > .side-head { position: relative; z-index: 3; background: var(--well); }
-.browse #gallery-collection, .browse #gallery-screensaver { display: none; }
-.browse #gallery-browse { margin-left: auto; }
+.side > .side-head > .browse-only { display: none; }
+.browse #gallery-collection, .browse #gallery-browse { display: none; }
+.browse #browse-collection { margin: 0; }
+.browse #gallery-screensaver { margin-left: auto; }
 .collection-action[aria-pressed="true"] {
   color: var(--well);
   background: var(--well-ink);
   border-color: var(--well-ink);
 }
-.browse-head {
-  flex: none;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem var(--gutter);
-  border-bottom: 1px solid var(--well-rule);
-}
-.browse-head .collection { margin: 0; }
 .browse-note { font-size: 0.75rem; color: var(--well-ink-dim); }
-.browse-head #browse-exit { margin-left: auto; }
+.browse-note:empty { display: none; }
 /* The five rows side by side where the window has room for them, and stacked where not:
    each row is as wide as its chips, so the two yes-or-no rows share a line. Spelled with
    both classes because `.filters`, below, is a column and would otherwise win. */

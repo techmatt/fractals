@@ -277,6 +277,10 @@ export function install(host) {
       const has = (field, value) => counts[field].some(([held]) => held === value);
       for (const value of preset.modes ?? []) if (has("mode", value)) wanted.mode.add(value);
       if (preset.hue && has("hue", preset.hue)) wanted.hue.add(preset.hue);
+      // Browse's own three, which only a way back into Browse carries (from the screensaver).
+      for (const field of ["family", "centered", "spiral"]) {
+        for (const value of preset[field] ?? []) if (has(field, value)) wanted[field].add(value);
+      }
     }
     const row = (field, options) => gallery.chipRow(rows[field], counts[field], wanted[field], fill, { field, ...options });
     row("mode", { label: "no render mode" });
@@ -471,7 +475,7 @@ export function install(host) {
   }
 
   /** Come in on what the narrow panel is showing: its collection and its two chip rows. */
-  async function enter({ collections: listed, collection: name, modes = [], hue = null }) {
+  async function enter({ collections: listed, collection: name, modes = [], hue = null, ...own }) {
     if (active) return false;
     active = true;
     collections = listed;
@@ -484,7 +488,7 @@ export function install(host) {
     preview.hidden = true;
     at = -1;
     layer.hidden = false;
-    await choose(name, { modes, hue });
+    await choose(name, { modes, hue, ...own });
     if (active) collection.focus({ preventScroll: true });
     return true;
   }
@@ -555,6 +559,19 @@ export function install(host) {
      *  the collection either way. */
     onScreen() {
       return { seat: active && at >= 0 ? showing[at] : null, collection: chosen };
+    },
+    /** The collection and every chip pressed, in `enter`'s own shape, so the page can come
+     *  back to exactly this: the screensaver started from Browse returns here. */
+    filters() {
+      const pressed = (field) => [...wanted[field]];
+      return {
+        collection: chosen,
+        modes: pressed("mode"),
+        hue: pressed("hue")[0] ?? null,
+        family: pressed("family"),
+        centered: pressed("centered"),
+        spiral: pressed("spiral"),
+      };
     },
     /** The list changed, here or elsewhere: the grid's marks are `remark`'s, this is the rest. */
     redress() {

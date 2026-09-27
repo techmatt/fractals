@@ -7,8 +7,9 @@
 // left over; a close mid-render cancels it; leaving Browse gives its pool back; and Open in
 // explorer puts that seat's link in the address bar, with the way back stepping to where
 // the viewer was. And the chrome *(browse_chrome_ckpt153)*: the bar live over Browse and the
-// tab row in it, Browse pressed again and a tab each leaving it, and Copy link copying the
-// previewed seat's link, the collection's on the grid, and the picture outside Browse.
+// tab row in it, and Copy link copying the previewed seat's link, the collection's on the
+// grid, and the picture outside Browse. And the header *(browse_header_ckpt153)*: one row
+// with nothing empty in it, Screensaver from Browse coming back to Browse, and the one exit.
 //
 // usage: node explorer/bench/hunt/u9-browse.mjs [debugPort] [sitePort]
 import { record } from "../output.mjs";
@@ -63,7 +64,8 @@ const previewUp = () => page.ev(`!document.getElementById('browse-preview').hidd
 const witness = () => page.ev(`({ ...globalThis.__browse })`);
 const barState = () => page.ev(`document.getElementById('browse-state').dataset.state`);
 /** The page's chrome as Browse shows it: the bar live on top, the layer under it, and the
- *  panel's header row inside the layer with Gallery selected and Browse pressed. */
+ *  panel's header row inside the layer with Gallery selected, and it the only header:
+ *  one line of visible controls in order, none of them empty, and one way out. */
 const chromeState = () =>
   page.ev(`(() => {
     const copy = document.getElementById('copy').getBoundingClientRect();
@@ -78,7 +80,21 @@ const chromeState = () =>
       head: head !== null && head.getBoundingClientRect().height > 0,
       tabs: tabs.length,
       selected: tabs.find((t) => t.getAttribute('aria-selected') === 'true')?.dataset.panel ?? null,
-      pressed: document.getElementById('gallery-browse').getAttribute('aria-pressed'),
+      row: (() => {
+        if (head === null) return null;
+        const box = (e) => e.getBoundingClientRect();
+        const shown = [...head.children].filter((e) => box(e).width > 0);
+        const middles = shown.map((e) => Math.round(box(e).top + box(e).height / 2));
+        return {
+          ids: shown.map((e) => e.id || e.className),
+          oneLine: Math.max(...middles) - Math.min(...middles) <= 2,
+          empty: shown.filter((e) => e.textContent.trim() === '' || box(e).height === 0).map((e) => e.id || e.className),
+          inOrder: shown.map((e) => box(e).left).every((x, i, all) => i === 0 || x > all[i - 1]),
+          exit: document.getElementById('browse-exit').textContent.trim(),
+          // Nothing between the row and the chip rows: the second header row is gone.
+          next: head.nextElementSibling?.className ?? null,
+        };
+      })(),
       panelSelect: document.getElementById('gallery-collection').getBoundingClientRect().width > 0,
     };
   })()`);
@@ -126,7 +142,12 @@ await check("the button opens Browse on the panel's collection", async () => {
   if (!chrome.below) note("chrome", "the layer does not start under the bar");
   if (!chrome.head) note("chrome", "the tab row is not in Browse");
   if (chrome.tabs !== 6 || chrome.selected !== "gallery") note("chrome", `tabs ${chrome.tabs}, selected ${chrome.selected}`);
-  if (chrome.pressed !== "true") note("chrome", "Browse is not pressed");
+  const want = ["tabs", "browse-collection", "gallery-screensaver", "browse-exit"];
+  const row = chrome.row;
+  if (row === null || JSON.stringify(row.ids) !== JSON.stringify(want)) note("header", `the row shows ${JSON.stringify(row?.ids)}`);
+  else if (!row.oneLine || !row.inOrder || row.empty.length > 0) note("header", `not one clean row: ${JSON.stringify(row)}`);
+  if (row?.exit !== "Back to explorer (Esc)") note("header", `the exit reads ${row?.exit}`);
+  if (!String(row?.next).includes("browse-filters")) note("header", `under the row: ${row?.next}`);
   if (chrome.panelSelect) note("chrome", "the panel's own dropdown shows beside Browse's");
   return { tiles: await tileCount(), collection, inert, chrome };
 });
@@ -316,22 +337,24 @@ await check("Esc on the grid leaves Browse and gives its pool back", async () =>
   if (inert) note("exit", "the studio is still inert");
   const url = (await page.state()).url;
   if (url !== home) note("exit", `the viewer moved: ${url.slice(0, 80)}`);
-  const pressed = await page.ev(`document.getElementById('gallery-browse').getAttribute('aria-pressed')`);
   const headHome = await page.ev(`document.querySelector('.side > .side-head') !== null`);
-  if (pressed !== "false" || !headHome) note("exit", `Browse pressed ${pressed}, the row back in the panel ${headHome}`);
+  // Back in the panel, the row is the panel's again: Browse's three are gone from it.
+  const narrow = await page.ev(`[...document.querySelector('.side-head').children].filter((e) => e.getBoundingClientRect().width > 0).map((e) => e.id || e.className)`);
+  const wantNarrow = ["tabs", "gallery-collection", "gallery-screensaver", "gallery-browse"];
+  if (!headHome || JSON.stringify(narrow) !== JSON.stringify(wantNarrow)) note("exit", `the row back in the panel ${headHome}, showing ${JSON.stringify(narrow)}`);
   return { baseline, inside, workers };
 });
 
-await check("Browse pressed again leaves it", async () => {
+await check("Back to explorer leaves Browse", async () => {
   await page.ev(`document.getElementById('gallery-browse').click()`);
   await until(`document.querySelectorAll('#browse-tiles .tile').length > 0`);
-  await page.ev(`document.getElementById('gallery-browse').click()`);
+  await page.ev(`document.getElementById('browse-exit').click()`);
   await sleep(600);
   const up = await browseUp();
-  if (up) note("toggle", "Browse is still up");
+  if (up) note("back", "Browse is still up");
   const url = (await page.state()).url;
-  if (url !== home) note("toggle", `the viewer moved: ${url.slice(0, 80)}`);
-  return { up };
+  if (url !== home) note("back", `the viewer moved: ${url.slice(0, 80)}`);
+  return { up, focused: await page.ev(`document.activeElement?.id`) };
 });
 
 await check("a tab leaves Browse onto that tab", async () => {
@@ -511,6 +534,51 @@ await check("Open in explorer", async () => {
   }
   if (workers > baseline) note("open", `workers ${baseline} before, ${workers} after`);
   return { target, url: url.slice(0, 80), marked, seat, back: back.slice(0, 50), forward: forward.slice(0, 50), live, workers };
+});
+
+// Last, because it leaves the narrow panel on Browse's collection, as a screensaver does.
+// Screensaver from Browse: it plays Browse's collection with its mode chip, the way the
+// narrow panel's would, and when it ends Browse is back on that collection and its chips.
+await check("Screensaver from Browse comes back to Browse", async () => {
+  await page.ev(`document.getElementById('gallery-browse').click()`);
+  await until(`document.querySelectorAll('#browse-tiles .tile').length > 0`);
+  await page.ev(`(() => {
+    const s = document.getElementById('browse-collection');
+    s.value = 'blue';
+    s.dispatchEvent(new Event('change'));
+  })()`);
+  await sleep(1000);
+  await page.ev(`document.querySelector('#browse-modes .chip').click()`);
+  await page.ev(`document.querySelector('#browse-families .chip').click()`);
+  await sleep(300);
+  const shown = await tileCount();
+  await page.ev(`document.getElementById('gallery-screensaver').click()`);
+  const running = await until(`!document.getElementById('screensaver').hidden`, 40);
+  if (!running) note("saver", "the screensaver did not start from Browse");
+  // The address is written when its first picture is up.
+  await until(`location.search.includes('panel=screensaver')`, 80);
+  const address = (await page.state()).url;
+  if (!address.includes("panel=screensaver") || !address.includes("collection=blue") || !address.includes("modes=")) note("saver", `its address ${address.slice(0, 160)}`);
+  if (await browseUp()) note("saver", "Browse is still up over the screensaver");
+  await key("Escape");
+  const back = await until(`!document.getElementById('browse').hidden && document.querySelectorAll('#browse-tiles .tile').length > 0`, 40);
+  if (!back) note("saver", "the screensaver did not come back to Browse");
+  await sleep(500);
+  const after = await page.ev(`({
+    collection: document.getElementById('browse-collection').value,
+    mode: document.querySelector('#browse-modes .chip[aria-pressed="true"]') !== null,
+    family: document.querySelector('#browse-families .chip[aria-pressed="true"]') !== null,
+    saver: !document.getElementById('screensaver').hidden,
+    head: document.querySelector('#browse > .side-head') !== null,
+  })`);
+  const tiles = await tileCount();
+  if (after.collection !== "blue" || !after.mode || !after.family || tiles !== shown) note("saver", `back on ${JSON.stringify(after)}, ${tiles} tiles, not ${shown}`);
+  if (after.saver || !after.head) note("saver", `after: ${JSON.stringify(after)}`);
+  // And the one way out still leaves it.
+  await key("Escape");
+  await sleep(600);
+  if (await browseUp()) note("saver", "Esc did not leave Browse after the screensaver");
+  return { shown, running, address: address.slice(0, 140), back, after, tiles };
 });
 
 record("hunt-u9.json", { rows, findings });

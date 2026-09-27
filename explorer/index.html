@@ -56,10 +56,14 @@
                 aria-controls="panel-saved" aria-selected="false">Saved</button>
       </div>
       <select id="gallery-collection" class="collection" aria-label="Collection"></select>
+      <!-- Browse's own three, shown only while this row is in Browse (browse_header_ckpt153). -->
+      <select id="browse-collection" class="collection browse-only" aria-label="Collection"></select>
+      <span class="browse-note browse-only" id="browse-note" role="status"></span>
       <button type="button" id="gallery-screensaver" class="collection-action"
               title="Show this collection full screen, one picture after another">Screensaver</button>
-      <button type="button" id="gallery-browse" class="collection-action" aria-pressed="false"
+      <button type="button" id="gallery-browse" class="collection-action"
               title="Look through this collection across the whole window">Browse</button>
+      <button type="button" id="browse-exit" class="collection-action browse-only">Back to explorer (Esc)</button>
     </div>
 
     <div class="tabpanel" id="panel-gallery" role="tabpanel" aria-labelledby="tab-gallery">
@@ -475,13 +479,9 @@
 </div>
 
 <!-- Browse (explorer_browse_ckpt153): the gallery across the whole window, over the studio
-     the way the screensaver is. The grid, then a preview over it; `browse.js` fills both. -->
+     the way the screensaver is. The grid, then a preview over it; `browse.js` fills both.
+     Its header is the panel's own row, moved in on the way in. -->
 <div class="browse" id="browse" role="dialog" aria-modal="true" aria-label="Browse the gallery" hidden>
-  <div class="browse-head">
-    <select id="browse-collection" class="collection" aria-label="Collection"></select>
-    <span class="browse-note" id="browse-note" role="status"></span>
-    <button type="button" id="browse-exit" class="collection-action">Back to explorer (Esc)</button>
-  </div>
   <div class="filters browse-filters">
     <div class="chip-group">
       <div class="section-head"><h2 id="head-browse-modes">Render mode</h2></div>

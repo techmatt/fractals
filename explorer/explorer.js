@@ -3082,6 +3082,10 @@ function leaveScreensaver(seat) {
   resize();
   const opts = seat?.key ? { gap: seat.gap, key: seat.key, what: "this wallpaper" } : {};
   if (seat === null || !openLink(seat.link, opts)) draw();
+  // Started from Browse, it ends in Browse, over that viewer: Back leaves onto it.
+  const held = saverFromBrowse;
+  saverFromBrowse = null;
+  if (held !== null) enterBrowse(held);
 }
 
 // ------------------------------------------------------------------- Browse
@@ -3094,9 +3098,10 @@ function leaveScreensaver(seat) {
 // **It keeps the page's chrome** *(Matt, browse_chrome_ckpt153)*: Browse is the Gallery tab
 // at the window's width, not a page of its own, so the bar stays live above it and the tab
 // row goes with it. The layer starts under the bar, and the panel's header row — the tabs,
-// with Gallery selected and Browse pressed — is moved into its top on the way in and put
-// back on the way out: the one row, not a copy of it. A tab pressed there leaves Browse onto
-// that tab, and Browse pressed again leaves it.
+// with Gallery selected — is moved into its top on the way in and put back on the way out:
+// the one row, not a copy of it. A tab pressed there leaves Browse onto that tab. In Browse
+// the row is Browse's only header *(browse_header_ckpt153)*: its dropdown, Screensaver, and
+// Back to explorer where Browse stood.
 
 let browser = null;
 const sideHead = document.querySelector(".side-head");
@@ -3108,26 +3113,57 @@ function placeBrowse() {
   document.getElementById("browse").style.top = `${bar.getBoundingClientRect().bottom}px`;
 }
 
-/** Open Browse on whatever the Gallery tab is showing. */
-function enterBrowse() {
+/** Where the screensaver goes back to when it was started from Browse: Browse's collection
+ *  and every chip it had pressed, or `null` when it was started from the narrow panel. */
+let saverFromBrowse = null;
+
+/** Open Browse on whatever the Gallery tab is showing, or on `held`, a Browse the
+ *  screensaver is handing back. */
+function enterBrowse(held = null) {
   if (browser === null || tiles === null || browser.active || saver?.active || locked()) return;
   if (tiles.collections.length === 0) return;
   juliaCard?.hide();
   studio.inert = true;
   document.getElementById("browse").prepend(sideHead);
-  browseButton.setAttribute("aria-pressed", "true");
   placeBrowse();
   const { collection, modes, hue } = tiles.population();
-  browser.enter({ collections: tiles.collections, collection, modes, hue });
+  browser.enter({ collections: tiles.collections, ...(held ?? { collection, modes, hue }) });
+}
+
+/** The row goes back to the panel and the studio is live again: the part of leaving that
+ *  every way out shares. */
+function returnRow() {
+  studio.inert = false;
+  document.querySelector(".side").prepend(sideHead);
+}
+
+/**
+ * Screensaver, pressed in Browse *(browse_header_ckpt153)*: the narrow panel's own way in,
+ * on Browse's collection. The panel is put on that collection with Browse's mode and colour
+ * chips, which are the two a screensaver link can say, so what plays and the address it
+ * writes are the panel's; Browse's own three rows do not narrow it. When it ends, the page
+ * takes the viewer back as it always does and Browse comes up again as it was.
+ */
+async function screensaverInBrowse() {
+  if (!browser.active || saver === null) return;
+  const held = browser.filters();
+  await tiles.apply({ collection: held.collection, modes: held.modes.filter((m) => m !== null), hue: held.hue });
+  if (!browser.active || tiles.population().seats.length === 0) return;
+  browser.stop();
+  returnRow();
+  saverFromBrowse = held;
+  enterScreensaver();
+  if (!saver.active) {
+    saverFromBrowse = null;
+    enterBrowse(held);
+  }
 }
 
 /** Browse let go, with a picture to open or without one. With one, the viewer opens it
  *  exactly as a tile in the narrow panel does — the same call, so the same anchor for Reset
  *  to seat and the same entry on the way back. */
 function leaveBrowse(row = null) {
-  studio.inert = false;
-  document.querySelector(".side").prepend(sideHead);
-  browseButton.setAttribute("aria-pressed", "false");
+  returnRow();
   if (row === null) {
     // Moving the row dropped whatever focus was in it; Browse is where it was.
     browseButton.focus({ preventScroll: true });
@@ -5412,7 +5448,7 @@ async function main() {
   });
   document
     .getElementById("gallery-screensaver")
-    .addEventListener("click", () => enterScreensaver());
+    .addEventListener("click", () => (browser?.active ? screensaverInBrowse() : enterScreensaver()));
   const at = (id) => document.getElementById(id);
   browser = browse.install({
     layer: at("browse"),
@@ -5452,10 +5488,7 @@ async function main() {
     onOpen: (row) => leaveBrowse(row),
     onLeave: () => leaveBrowse(),
   });
-  at("gallery-browse").addEventListener("click", () => {
-    if (browser.active) browser.exit();
-    else enterBrowse();
-  });
+  at("gallery-browse").addEventListener("click", () => enterBrowse());
   window.addEventListener("resize", () => {
     if (browser.active) placeBrowse();
   });

@@ -672,9 +672,17 @@ the mat around the picture is Esc too. Esc on the grid, or *Back to explorer*, l
 save screen space, so Browse is the Gallery tab at the window's width rather than a page of
 its own. The layer starts under the bar, which stays live (Copy link, Wallpaper packs,
 GitHub), and the panel's header row is moved into its top on the way in and put back on
-the way out: the tabs with Gallery selected, and *Browse* shown pressed (`aria-pressed`).
-The panel's own dropdown and *Screensaver* stand aside there, since Browse has a dropdown
-of its own. Pressing *Browse* again leaves; any other tab leaves Browse and opens that
+the way out. **That row is Browse's one header** *(Matt, browse_header_ckpt153)*: the tabs
+with Gallery selected, Browse's own Collection dropdown, and on the right *Screensaver* and
+one *Back to explorer (Esc)*, which stands where *Browse* stood. Browse's dropdown, its
+filter count and its exit live in the row as `.browse-only` and show only while the row is
+in Browse; the panel's dropdown and *Browse* stand aside there. Before this, Browse had a
+second row of its own (`.browse-head`) holding its dropdown and exit, and *Browse* sat
+pressed in the tab row as a second way out. **Screensaver in Browse** puts the narrow
+panel on Browse's collection with its mode and colour chips (the two a screensaver link
+can say) and starts the screensaver the panel's own way. Browse's three own rows do not
+narrow it. When it ends, the viewer takes the last picture back as always and Browse comes
+up over it on the same collection and chips. Any other tab leaves Browse and opens that
 tab; Esc is as it was, preview first and then Browse. **Copy link copies what is on
 screen**: in a preview, the seat's link, which is what *Open in explorer* loads; on the
 grid, the collection's, `?panel=gallery&collection=<name>`; outside Browse, the picture as
