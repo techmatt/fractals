@@ -50,6 +50,12 @@ short link in `go`, a row of `go/redirects.jsonl`, which is what the picture lin
 The register stays the one place the target is written; the row's recipe keeps the target
 each picture was drawn at, and `check`'s `go` holds the two equal, so a redirect that
 moves takes its picture out of date loudly rather than in silence.
+
+**The pictures may land before the player** *(publish_prep_ckpt154)*: a row whose panels
+are all short links and that names no `video` is a video whose player is not up yet
+(`Figure.awaiting_video`). Its well holds a 16:9 place saying so, with the row's `alt`,
+and the pictures under it; naming the video later swaps the place for the player and
+touches nothing else. `deep-zoom-video` on Deep zoom is the first.
 """
 
 import importlib
@@ -384,13 +390,27 @@ class Figure:
     columns: int | None = None
     #: The piece a live figure mounts, by its name in `LIVE`; `None` for a picture.
     live: str | None = None
-    #: A video figure's YouTube id; `None` for anything else.
+    #: A video figure's YouTube id; `None` for anything else, and for a video whose player
+    #: is not up yet (`awaiting_video`).
     video: str | None = None
+
+    @property
+    def awaiting_video(self) -> bool:
+        """A video figure whose pictures are made and whose player is not up yet.
+
+        Its panels are all short links, which only a video's pictures are, so the row is a
+        video's without naming one; its well holds the player's place until it does.
+        """
+        return (
+            self.video is None
+            and bool(self.panels)
+            and all(panel.go is not None for panel in self.panels)
+        )
 
     @property
     def embedded(self) -> bool:
         """Whether this figure is something that runs in its well rather than a raster."""
-        return self.live is not None or self.video is not None
+        return self.live is not None or self.video is not None or self.awaiting_video
 
     @property
     def split(self) -> bool:
@@ -544,11 +564,11 @@ def markup(figure: Figure, opened: dict[str, str] | None = None) -> str:
         classes.append("figure-split")
     if figure.live is not None:
         classes.append("figure-live")
-    if figure.video is not None:
+    if figure.video is not None or figure.awaiting_video:
         classes.append("figure-video")
     if figure.live is not None:
         well = _live(figure)
-    elif figure.video is not None:
+    elif figure.video is not None or figure.awaiting_video:
         well = _video(figure)
     elif figure.split:
         well = _panels(figure, links_by_id)
@@ -677,10 +697,19 @@ def _video(figure: Figure) -> str:
     pictures are a split figure's grid, each linking to its short link rather than to a
     link derived from a record, and they stack as the column narrows like any other grid.
     """
-    player = (
-        f'{INDENT}  <iframe src="{attribute(VIDEO_EMBED + figure.video)}" '
-        f'title="{attribute(figure.alt)}" loading="lazy" allowfullscreen></iframe>'
-    )
+    if figure.video is None:
+        # The player's place, held at its size until the row names the video: the row's
+        # alt says what will play there, the way a pending figure's well says what will
+        # fill it.
+        player = (
+            f'{INDENT}  <p class="video-pending"><span class="pending-label">Video pending'
+            f"</span>{text(figure.alt)}</p>"
+        )
+    else:
+        player = (
+            f'{INDENT}  <iframe src="{attribute(VIDEO_EMBED + figure.video)}" '
+            f'title="{attribute(figure.alt)}" loading="lazy" allowfullscreen></iframe>'
+        )
     if not figure.split:
         return player
     return f"{player}\n{_panels(figure, {})}"
@@ -885,7 +914,10 @@ def _figure(row: records.Record, identifier: str) -> Figure:
                 f"{row.where}: a picture under a video's player is a short link into the "
                 "explorer, and names it in go"
             )
-    elif any(panel.go is not None for panel in panels):
+    elif any(panel.go is not None for panel in panels) and not all(
+        panel.go is not None for panel in panels
+    ):
+        # All of them is a video's pictures landed before its player: `awaiting_video`.
         raise records.RecordError(
             f"{row.where}: go is for the pictures under a video's player; a figure's own "
             "panel links from its record"

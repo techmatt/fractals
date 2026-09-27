@@ -762,7 +762,24 @@ a:hover { color: var(--ink); }
 }
 /* The linked pictures under the player (start_video_links_ckpt152) are a split figure's
    grid, set off from the player by the grid's own gap. */
-.figure-video iframe + .figure-panels { margin-top: var(--figure-gap); }
+.figure-video iframe + .figure-panels,
+.figure-video .video-pending + .figure-panels { margin-top: var(--figure-gap); }
+/* A video whose pictures landed before its player (publish_prep_ckpt154): the player's
+   place, 16:9 and dashed like a pending well, until the row names the video. */
+.figure-video .video-pending {
+  aspect-ratio: 16 / 9;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  padding: 0 1.5rem;
+  border: 1px dashed var(--well-pending);
+  text-align: center;
+  font-size: 0.9375rem;
+  line-height: 1.5;
+  color: var(--well-ink-dim);
+}
 
 /* A slot held open before its figure is even registered: the slug its row will carry and
    the draft caption, on a 16:9 well. Placed prose is reviewed on the site before a figure

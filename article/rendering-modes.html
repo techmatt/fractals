@@ -312,38 +312,38 @@
     across the four quality tiers from <a href="training-judges.html">training judges</a>,
     counting only locations whose smooth rendering it rates a three or better, so every row
     starts from geometry that works. These are the judge's scores, not mine, since nobody
-    has looked at a hundred thousand pictures, and the judge runs optimistic compared to my
-    ratings. Even so, most modes spend most of their attempts at a one or a two, and some,
+    has looked at three hundred thousand pictures, and the judge runs optimistic compared
+    to my ratings. Even so, most modes spend most of their attempts at a one or a two, and some,
     like curvature, need about 30 attempts to find one strong result. Modes with a lower
     hit rate get a longer search, so each still leaves enough strong candidates for the
     galleries. The last two columns are what an attempt costs: the engine time to render
     one candidate at the size the judge scores (640×360, supersampled 2×) and a finished
-    wallpaper at full size (2560×1440, supersampled 4×).</p>
+    wallpaper at full size (2560×1440, supersampled 3×).</p>
 
     <table>
       <thead>
         <tr><th>mode</th><th>q1</th><th>q2</th><th>q3</th><th>q4</th><th>candidates</th><th>candidate render</th><th>wallpaper render</th></tr>
       </thead>
       <tbody>
-        <tr><td>smooth</td><td>2%</td><td>15%</td><td>57%</td><td>26%</td><td>30,747</td><td>0.7s</td><td>43.5s</td></tr>
-        <tr><td>tia</td><td>9%</td><td>33%</td><td>44%</td><td>14%</td><td>10,437</td><td>0.6s</td><td>41.1s</td></tr>
-        <tr><td>stripe</td><td>19%</td><td>32%</td><td>35%</td><td>14%</td><td>10,564</td><td>1.2s</td><td>1m15s</td></tr>
-        <tr><td>curvature</td><td>48%</td><td>36%</td><td>13%</td><td>3%</td><td>12,080</td><td>0.9s</td><td>56.9s</td></tr>
-        <tr><td>smooth_stripe</td><td>18%</td><td>30%</td><td>39%</td><td>13%</td><td>2,872</td><td>7.2s</td><td>7m41s</td></tr>
-        <tr><td>smooth_curvature</td><td>29%</td><td>38%</td><td>27%</td><td>6%</td><td>3,745</td><td>4.6s</td><td>4m57s</td></tr>
-        <tr><td>smooth_mean_angle</td><td>46%</td><td>33%</td><td>16%</td><td>5%</td><td>4,556</td><td>5.3s</td><td>5m37s</td></tr>
-        <tr><td>smooth_angle_min</td><td>39%</td><td>34%</td><td>21%</td><td>6%</td><td>4,402</td><td>5.0s</td><td>5m21s</td></tr>
-        <tr><td>threads</td><td>5%</td><td>22%</td><td>50%</td><td>23%</td><td>2,870</td><td>3.3s</td><td>3m34s</td></tr>
-        <tr><td>itinerary</td><td>8%</td><td>35%</td><td>44%</td><td>13%</td><td>1,648</td><td>2.4s</td><td>2m32s</td></tr>
-        <tr><td>direct_trap_screen</td><td>31%</td><td>44%</td><td>19%</td><td>6%</td><td>5,149</td><td>1.4s</td><td>1m30s</td></tr>
-        <tr><td>direct_trap_multiply</td><td>34%</td><td>25%</td><td>34%</td><td>7%</td><td>8,421</td><td>2.0s</td><td>2m06s</td></tr>
-        <tr><td>direct_trap_lines</td><td>31%</td><td>47%</td><td>18%</td><td>4%</td><td>5,071</td><td>1.3s</td><td>1m23s</td></tr>
+        <tr><td>smooth</td><td>3%</td><td>15%</td><td>54%</td><td>28%</td><td>56,264</td><td>0.5s</td><td>27.7s</td></tr>
+        <tr><td>tia</td><td>8%</td><td>29%</td><td>45%</td><td>18%</td><td>62,418</td><td>0.8s</td><td>57.3s</td></tr>
+        <tr><td>stripe</td><td>17%</td><td>28%</td><td>37%</td><td>18%</td><td>56,757</td><td>1.4s</td><td>2m56s</td></tr>
+        <tr><td>curvature</td><td>49%</td><td>35%</td><td>13%</td><td>3%</td><td>18,737</td><td>1.1s</td><td>1m42s</td></tr>
+        <tr><td>smooth_stripe</td><td>15%</td><td>29%</td><td>41%</td><td>15%</td><td>12,870</td><td>6.2s</td><td>3m06s</td></tr>
+        <tr><td>smooth_curvature</td><td>28%</td><td>38%</td><td>27%</td><td>7%</td><td>11,913</td><td>4.5s</td><td>1m14s</td></tr>
+        <tr><td>smooth_mean_angle</td><td>39%</td><td>33%</td><td>19%</td><td>9%</td><td>14,883</td><td>5.1s</td><td>2m25s</td></tr>
+        <tr><td>smooth_angle_min</td><td>35%</td><td>33%</td><td>24%</td><td>8%</td><td>14,340</td><td>4.9s</td><td>2m43s</td></tr>
+        <tr><td>threads</td><td>5%</td><td>24%</td><td>49%</td><td>22%</td><td>12,274</td><td>3.0s</td><td>51.5s</td></tr>
+        <tr><td>itinerary</td><td>8%</td><td>33%</td><td>45%</td><td>14%</td><td>12,998</td><td>3.3s</td><td>1m43s</td></tr>
+        <tr><td>direct_trap_screen</td><td>33%</td><td>42%</td><td>19%</td><td>6%</td><td>12,261</td><td>1.4s</td><td>1m22s</td></tr>
+        <tr><td>direct_trap_multiply</td><td>40%</td><td>25%</td><td>29%</td><td>6%</td><td>23,716</td><td>2.0s</td><td>19.5s</td></tr>
+        <tr><td>direct_trap_lines</td><td>33%</td><td>45%</td><td>18%</td><td>4%</td><td>13,402</td><td>1.3s</td><td>54.0s</td></tr>
       </tbody>
     </table>
 
     <p class="table-note">The candidate column is a mean over the candidates each row
-    counts, and the wallpaper column is a placeholder scaled from it by the sample count,
-    pending a measurement. Times are for a single desktop CPU.</p>
+    counts, and the wallpaper column is a mean over the finished wallpapers rendered in
+    that mode. Times are for a single desktop CPU.</p>
 
     <h2 id="beyond-this-catalog">Beyond this catalog</h2>
 

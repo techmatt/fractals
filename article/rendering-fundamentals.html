@@ -203,13 +203,13 @@
     the reduction, which reaches three output pixels either way rather than three source
     samples, and it filters in linear light and converts to 8-bit color only at the very
     end, because averaging gamma-encoded values darkens every edge in the picture. The
-    production setting is s = 4, so sixteen orbits stand behind each finished pixel.
+    production setting is s = 3, so nine orbits stand behind each finished pixel.
     Orbit work grows with s<sup>2</sup>, which makes this one of the expensive quality
     settings.</p>
 
       <figure class="figure" data-figure="render-supersample">
-        <a class="figure-open" href="../explorer/index.html?v=4&amp;f=multibrot3&amp;x=-0.0693668444165554&amp;y=0.7786163029308374&amp;w=5.6412438043129286e-08&amp;p=Teal%20Against%20Coral" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/render-supersample.webp" width="1316" height="417" alt="A deep degree-3 multibrot frame in teal and coral at one sample per pixel beside sixteen, both enlarged so that single pixels are visible." loading="lazy"><span class="figure-open-mark" aria-hidden="true">↗</span></a>
-        <figcaption>The same crop at one sample per pixel and at the production setting of 4, which evaluates a 4 by 4 supersampled grid and then reduces it with the Lanczos filter. Both panels are enlarged to twice size so single pixels stay visible. The single-sample render aliases thin filaments into broken speckle; the supersampled one holds the arms and the spiral's beads together.</figcaption>
+        <a class="figure-open" href="../explorer/index.html?v=4&amp;f=multibrot3&amp;x=-0.0693668444165554&amp;y=0.7786163029308374&amp;w=5.6412438043129286e-08&amp;p=Teal%20Against%20Coral" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/render-supersample.webp" width="1316" height="417" alt="A deep degree-3 multibrot frame in teal and coral at one sample per pixel beside nine, both enlarged so that single pixels are visible." loading="lazy"><span class="figure-open-mark" aria-hidden="true">↗</span></a>
+        <figcaption>The same crop at one sample per pixel and at the production setting of 3, which evaluates a 3 by 3 supersampled grid and then reduces it with the Lanczos filter. Both panels are enlarged to twice size so single pixels stay visible. The single-sample render aliases thin filaments into broken speckle; the supersampled one holds the arms and the spiral's beads together.</figcaption>
       </figure>
 
     <h2 id="dynamic-range">Dynamic range</h2>

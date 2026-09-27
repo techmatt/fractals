@@ -101,7 +101,9 @@ FILAMENTS = {
         "width": "5.6412438043129286e-08",
     },
 }
-PRODUCTION_SS = 4
+#: The shipped wallpaper's supersample: 2560x1440 at 3x3 samples a pixel, which is
+#: `curation.full_set.REGIME` next door (ss4 until ckpt 148).
+PRODUCTION_SS = 3
 
 #: A11's own map, not this figure's old one. The sheet drew the tile as the picture that
 #: was rated — the row's mode, curve, palette recipe and colormap — so a pair redrawn in
@@ -309,7 +311,7 @@ def maxiter(destination: Path) -> tuple[tuple[int, int], list[str]]:
 
 
 def supersample(destination: Path) -> tuple[tuple[int, int], list[str]]:
-    """One frame at one sample a pixel and at the pipeline's sixteen."""
+    """One frame at one sample a pixel and at the shipped wallpaper's nine."""
     from PIL import Image
 
     small = (PANEL[0] // 2, PANEL[1] // 2)
@@ -347,7 +349,8 @@ def supersample(destination: Path) -> tuple[tuple[int, int], list[str]]:
             f"{view['center_im']}i, width {view['width']}, {small[0]}x{small[1]}, "
             f"supersample {samples}"
             + (
-                " (16 samples a pixel, curation.run.RELEASE_SUPERSAMPLE)"
+                f" ({samples * samples} samples a pixel, the shipped wallpaper's setting, "
+                "curation.full_set.REGIME)"
                 if samples == PRODUCTION_SS
                 else ""
             )

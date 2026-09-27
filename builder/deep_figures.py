@@ -171,27 +171,34 @@ TARGET = ("-0.74937053247003823168823992075369", "0.0414726670681689000347187463
 OPENING = "p=Porcelain%20Field&phase=0.41&scale=absolute&lambda=0&period=0.295"
 #: The video's final frame and its cap, and the four colourings `deep-final-colorings` lays
 #: over its field, each exactly Matt's link as the explorer's parser reads it back
-#: (deep_opening_palette_ckpt150 addendum 1). The second is leveled, and says so: a deep link
+#: (deep_opening_palette_ckpt150 addendum 1). The first is leveled, and says so: a deep link
 #: that names no `scale` is fitted to Absolute on arrival (deep_leveled_link_and_recolour_ckpt150).
+#: The frame's own colouring, `FINAL_FRAME`, was the figure's first panel until
+#: publish_prep_ckpt154 and is the video's Final frame link now, `go/seahorse-end`; the
+#: fourth panel, Another palette, is that prompt's.
 FINAL = "3.4869054402668363e-15"
+FINAL_FRAME = "n=63534&p=glowdon&scale=absolute&lambda=0&period=0.25"
 FINAL_COLOURINGS = (
-    ("Final frame", "n=63534&p=glowdon&scale=absolute&lambda=0&period=0.25"),
     ("Leveled", "n=63534&p=glowdon&scale=leveled&lambda=0&period=2.14"),
     ("Higher period", "n=63534&p=glowdon&scale=absolute&lambda=0&period=0.794"),
     (
         "Palette switch",
         "n=63534&p=fractal_abstraction_lines_130499_2560x1600&scale=absolute&lambda=0&period=0.575",
     ),
+    (
+        "Another palette",
+        "n=63534&p=Verdant%20Ascent&phase=0.846&scale=absolute&lambda=0&period=0.525",
+    ),
 )
 FINAL_ALTS = {
-    "Final frame": "The video's final frame: a spiral wound from dense filigree, banded many "
-    "times over in blue, orange, and pale green.",
-    "Leveled": "The same frame on the leveled scale: the spiral in dark red and orange over "
-    "broad fields that run from deep blue to pale yellow.",
+    "Leveled": "The video's final frame on the leveled scale: the spiral in dark red and "
+    "orange over broad fields that run from deep blue to pale yellow.",
     "Higher period": "The same frame at a longer period: fewer, wider bands, so the spiral "
     "reads as orange and yellow arms over blue.",
     "Palette switch": "The same frame and pass in a palette of blues: the spiral in pale "
     "lavender and white over deep blue.",
+    "Another palette": "The same frame in a palette of greens: the spiral in pale green and "
+    "white over dark green, flecked with fine points of light.",
 }
 #: The coarse pass, one `scale=absolute` function of the smooth count at period 0.5, which
 #: bands less on frames whose counts are tens rather than tens of thousands.
@@ -781,8 +788,9 @@ FIGURES = {
         (960, 540),
         2,
         "the video's final frame, 3.5e-15 wide at cap 63534, under four colourings of its "
-        "field; the links are FINAL_COLOURINGS'",
-        maps="the second for the last panel alone",
+        "field other than its own, which is the video's Final frame link; the links are "
+        "FINAL_COLOURINGS'",
+        maps="the first for the first two panels and one each for the last two",
     ),
     "deep-shallow-and-deep": Figure(
         (
@@ -918,9 +926,9 @@ WORDS = {
         "computed by perturbation (right).",
     ),
     "deep-final-colorings": (
-        "The video's final frame four times over: its absolute coloring, the leveled "
-        "scale, a longer period, and another palette.",
-        "The video's final frame under several colorings of the same field.",
+        "The video's final frame four times over: the leveled scale, a longer period, and "
+        "two other palettes.",
+        "The video's final frame under four more colorings of the same field.",
     ),
     "deep-shallow-and-deep": (
         "A shallow frame and a deep frame at its center.",
@@ -959,6 +967,17 @@ WORDS = {
     ),
 }
 
+#: The two pictures under the Deep zoom video's player, the same form as Start here's
+#: double descent (`start.linked_pictures`): the short link each opens, by its name in
+#: `go/redirects.jsonl`, and the label under it. The midpoint is Matt's shallow link and the
+#: final frame is `FINAL_FRAME` at the video's target (publish_prep_ckpt154). The player
+#: itself is not up yet, so the row names no `video` (`figures.Figure.awaiting_video`).
+VIDEO = "deep-zoom-video"
+VIDEO_LINKS = (("seahorse-mid", "Midway"), ("seahorse-end", "Final frame"))
+
+#: Every figure this module draws: the frames, then the video's pictures.
+IDS = (*FIGURES, VIDEO)
+
 #: What each figure's deep panels were drawn as, between `draw` and `keep`.
 _DRAWN: dict[str, dict[int, Drawn]] = {}
 
@@ -975,8 +994,10 @@ def draw(identifier: str) -> Split:
     The deep panels are drawn first, because an f64 panel is drawn at its perturbation
     twin's settled cap: the two pictures then differ in the arithmetic and nothing else.
     """
-    from . import renders
+    from . import renders, start
 
+    if identifier == VIDEO:
+        return start.linked_pictures(VIDEO, VIDEO_LINKS, "the Deep zoom video's player")
     figure = FIGURES[identifier]
     width, height = figure.size
     ss = figure.supersample
@@ -1096,6 +1117,9 @@ def keep(identifier: str) -> None:
     """Write one figure's deep rows into `article/figure-recipes.jsonl`, as it is landed."""
     from . import recipes
 
+    if identifier == VIDEO:
+        # Its pictures are short links, and what they were drawn at is the row's recipe.
+        return
     figure = FIGURES[identifier]
     recipes.keep_deep(
         {
@@ -1111,6 +1135,14 @@ def keep(identifier: str) -> None:
 
 
 def recipe(identifier: str) -> dict:
-    if identifier not in FIGURES:
+    if identifier not in IDS:
         raise DeepFigureError(f"{identifier} is not drawn by builder.deep_figures")
+    if identifier == VIDEO:
+        from . import start
+
+        # The targets the pictures were drawn at, which the register may later move.
+        return {
+            "maker": f"{__name__}:draw",
+            "args": {"id": identifier, "links": start._targets(VIDEO_LINKS)},
+        }
     return {"maker": f"{__name__}:draw", "args": {"id": identifier}}

@@ -445,7 +445,7 @@ def _parser() -> argparse.ArgumentParser:
     deeper.add_argument(
         "id",
         nargs="*",
-        choices=[[], *sorted(deep_figures_module.FIGURES)],
+        choices=[[], *sorted(deep_figures_module.IDS)],
         help="the figure's id",
     )
     deeper.add_argument(
@@ -1416,7 +1416,7 @@ def _do_deep(options: argparse.Namespace) -> int:
     row is filled, because that store is where the panel's recipe — and so its link — lives.
     """
     landing = bool(options.place or options.replace)
-    for identifier in options.id or list(deep_figures_module.FIGURES):
+    for identifier in options.id or list(deep_figures_module.IDS):
         drawn = deep_figures_module.draw(identifier)
         if landing:
             deep_figures_module.keep(identifier)

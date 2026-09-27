@@ -454,13 +454,13 @@ SHALLOW_SUPERSAMPLE = 3
 DEEP_SUPERSAMPLE = 2
 
 
-def _targets() -> dict[str, str]:
+def _targets(named=VIDEO_LINKS) -> dict[str, str]:
     """Each short link's explorer query, as the register writes it today."""
     held = {redirect.name: redirect.query for redirect in go.load()}
-    missing = [name for name, _ in VIDEO_LINKS if name not in held]
+    missing = [name for name, _ in named if name not in held]
     if missing:
         raise StartError(f"go/redirects.jsonl has no {', '.join(missing)}")
-    return {name: held[name] for name, _ in VIDEO_LINKS}
+    return {name: held[name] for name, _ in named}
 
 
 #: The palette keys a link may spell after its map, in the order a provenance line gives them.
@@ -474,16 +474,23 @@ def _link_words(query: str) -> str:
     palette key it leaves out is the contract's default and is not written here either.
     """
     fields = {key: values[0] for key, values in parse_qs(query).items()}
-    degree = fields["f"].removeprefix("multibrot")
+    # A link that names no family is the contract's first, the Mandelbrot set.
+    family = fields.get("f")
+    family = f"multibrot degree {family.removeprefix('multibrot')}" if family else "mandelbrot"
     shade = "".join(f", {key} {fields[key]}" for key in LINK_SHADE_KEYS if key in fields)
     return (
-        f"multibrot degree {degree}, centre {fields['x']} + {fields['y']}i, width "
+        f"{family}, centre {fields['x']} + {fields['y']}i, width "
         f"{fields['w']}, mode {fields.get('m', 'smooth')}, {{map}} {fields['p']}{shade}"
     )
 
 
 def video_links() -> Split:
-    """The two pictures under the video: its midpoint and its final frame, each linked.
+    """The two pictures under the double-descent video, by `linked_pictures`."""
+    return linked_pictures(VIDEO, VIDEO_LINKS, "the double-descent player")
+
+
+def linked_pictures(identifier: str, named, under: str) -> Split:
+    """The pictures under a video: its midpoint and its final frame, each linked.
 
     Each is what the explorer draws on arriving at its short link. The midpoint is a
     shallow link, drawn by `fractal-engine render-link`, which reads the explorer's own
@@ -493,20 +500,20 @@ def video_links() -> Split:
     power mapping rather than by the tab's shader, so a frame of the video is not the
     picture the link opens.
     """
-    targets = _targets()
+    targets = _targets(named)
     size = VIDEO_PANEL
     made: list[Made] = []
     lines = [
-        f"builder.start:video_links — {len(VIDEO_LINKS)} panels at {size[0]}x{size[1]}, "
-        f"{VIDEO_COLUMNS} across, landed one file a panel under the double-descent player: "
+        f"builder.start:linked_pictures — {len(named)} panels at {size[0]}x{size[1]}, "
+        f"{VIDEO_COLUMNS} across, landed one file a panel under {under}: "
         "each is what the explorer draws on arriving at its short link, whose target this "
         "row's recipe records and `check`'s go holds to go/redirects.jsonl.",
     ]
-    for index, (name, label) in enumerate(VIDEO_LINKS, start=1):
+    for index, (name, label) in enumerate(named, start=1):
         query = targets[name]
         words = _link_words(query).replace("{map}", "colormap" if index == 1 else "palette")
         if query.startswith("dv="):
-            drawn = deep_figures.draw_link(query, *size, DEEP_SUPERSAMPLE, f"{VIDEO}-{name}")
+            drawn = deep_figures.draw_link(query, *size, DEEP_SUPERSAMPLE, f"{identifier}-{name}")
             picture = drawn.path
             how = (
                 f"cap {drawn.maxiter}; drawn by builder.deep_figures.draw_link — "
@@ -515,15 +522,19 @@ def video_links() -> Split:
                 f"supersample {DEEP_SUPERSAMPLE}, {drawn.seconds:.0f} s"
             )
         else:
-            picture = panel_path(VIDEO, index).with_name(f"{VIDEO}-{name}-link.png")
+            picture = panel_path(identifier, index).with_name(f"{identifier}-{name}-link.png")
             report = renders.render_link(query, picture, size, SHALLOW_SUPERSAMPLE)
             how = (
-                f"cap {report['maxiter']} (the depth policy); drawn by `fractal-engine "
+                f"cap {report['maxiter']} "
+                f"({'named by the link' if '&n=' in query else 'the depth policy'}); "
+                "drawn by `fractal-engine "
                 f"render-link` at {size[0]}x{size[1]} supersample {SHALLOW_SUPERSAMPLE}"
             )
         made.append(
             Made(
-                sheets.save(sheets.fitted(picture, size), panel_path(VIDEO, index), quiet=True),
+                sheets.save(
+                    sheets.fitted(picture, size), panel_path(identifier, index), quiet=True
+                ),
                 alt=label,
                 label=label,
                 go=name,
