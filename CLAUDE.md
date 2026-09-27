@@ -203,7 +203,7 @@ keeps the mechanics. **Every apply round ends by distilling that round's general
   its own; `builder/README.md` has the mechanics. **A panel may be blank**
   *(deep_multibrots_gallery_ckpt154)*: `"blank": true`, a size and a label and nothing else,
   a cell the arrangement asks for and no frame fills yet, with no picture, no record and no
-  link. `deep-multibrots` holds one open. **The arrangement and the pixels do not
+  link. `deep-multibrots` held the first and none is open now. **The arrangement and the pixels do not
   change**: a panel is exactly the tile the sheet pasted, which is a thing to measure
   against the lossless composite in `artifacts/` rather than to assert.
 

@@ -626,18 +626,15 @@ def _row(point: Misiurewicz) -> tuple[Frame, Frame, Frame]:
 # ------------------------------------------------------------------------- the multibrots
 #
 # One row to a degree, and each row a pair (deep_multibrots_pairs_ckpt154): a location on
-# the parameter plane on the left, and on the right the Julia set for that location's c,
-# zoomed in close to the same point. Every panel is a link taken whole and every one is also
-# a Deep-gallery row. A right panel's `cx`, `cy` is its left panel's centre spelled digit for
-# digit, except in degree 6, whose pair came from the gallery before this rule and whose c
-# sits 0.04 of the left frame's width from that frame's centre. Degree 5 has no Julia frame
-# yet and holds its cell open rather than borrowing one. The frames repeat gallery rows on
+# the parameter plane on the left, and on the right a view of the Julia set for that
+# location's c. Every panel is a link taken whole and every one is also a Deep-gallery row.
+# A right panel's `cx`, `cy` is its left panel's centre spelled digit for digit, except in
+# degree 5, whose c sits 0.16 of the left frame's width from that frame's centre and whose
+# Julia frame is taken near 0 rather than at c (deep_multibrots_final_rows_ckpt154, which
+# filled the last open cell). The frames repeat gallery rows on
 # purpose, which is why the figure carries no reuse claim for them: the no-reuse rule is
 # about figures, and none of these is on another figure. Matt replaces panels as he finds
 # better ones, and a replacement is an edit to this table and a redraw.
-
-#: What a held-open Julia cell says under itself.
-NO_JULIA = "no Julia frame yet"
 
 MULTIBROTS = (
     (
@@ -713,27 +710,36 @@ MULTIBROTS = (
             "A small black copy of the degree-5 multibrot in a pentagonal frame of filigree, "
             "with spirals around it in blue and white.",
         ),
-        _blank("Degree 5 Julia set", NO_JULIA),
+        # Matt's link, and gallery row 48 (Filigree).
+        _linked(
+            "dv=3&f=julia5&cx=0.66616831546320803226979394142613758"
+            "&cy=0.782735297907992585741603133271278035&x=0.000086251923016585676"
+            "&y=-0.0000281573646113747857&w=0.007250744942350984&n=1765050"
+            "&p=dolphin-dance-25&phase=0.9468&scale=absolute&lambda=0&period=0.355",
+            "Degree 5 Julia set",
+            "The degree-5 Julia set for that point: rings of pale blue filigree around dark "
+            "blue pools, with spirals at the sides.",
+        ),
     ),
     (
-        # Gallery row 16 (Symmetry stages): the copy the Julia frame beside it is taken at.
+        # Matt's link, and gallery row 46 (Filigree).
         _linked(
-            "dv=3&f=multibrot6&x=0.73131792188824408972301565&y=0.387113729318409700562983327"
-            "&w=1.64e-20&n=84771&p=visions-25&phase=0.836&scale=absolute&period=205",
+            "dv=3&f=multibrot6&x=0.49658334569439628088727026928269"
+            "&y=0.6263473553589279955374786658973&w=3.630112798928236e-14&n=1365408&p=Reds"
+            "&phase=0.617&mirror=1&scale=absolute&lambda=0&period=0.417",
             "Degree 6",
-            "A small copy of the degree-6 multibrot inside rings of filigree and smaller "
-            "copies, in violet.",
+            "Spiraling arms of red and white filigree dotted with tiny black copies, around a "
+            "pale center.",
         ),
-        # Gallery row 20 (Embedded Julia sets).
+        # Matt's link, and gallery row 47 (Symmetry stages).
         _linked(
-            "dv=3&f=julia6&cx=0.731317921888244089723623346751"
-            "&cy=0.387113729318409700562713089968&x=0.731317921888244089723034008353"
-            "&y=0.387113729318409700563659204364&w=6.67e-21&n=86329"
-            "&p=fractal_flowers_abstract_104352_2560x1600&phase=0.343&scale=absolute"
-            "&lambda=0&period=1.01",
+            "dv=3&f=julia6&cx=0.49658334569439628088727026928269"
+            "&cy=0.6263473553589279955374786658973&x=0.49658334569439628088727026928269"
+            "&y=0.6263473553589279955374786658973&w=3.630112798928236e-14&n=1365408&p=Reds"
+            "&phase=0.617&mirror=1&scale=absolute&lambda=0&period=0.417",
             "Degree 6 Julia set",
-            "A deep frame of a degree-6 Julia set: a lobed blot of filigree dotted with "
-            "black islands, edged in bright blue on gold.",
+            "The degree-6 Julia set for that point, at the same center and width: a six-armed "
+            "star of red and white filigree.",
         ),
     ),
 )
@@ -894,11 +900,10 @@ FIGURES = {
         (960, 540),
         2,
         "one row to a degree, the Mandelbrot set and then the multibrots of degrees 3 to "
-        "6, each row a location on the parameter plane left and the Julia set for that "
-        "location's c right, zoomed in close to the same point, each panel a Deep-tab link "
-        "taken whole with its own colouring and cap; degree 5 has no Julia frame yet and "
-        "holds its cell open. The links are MULTIBROTS', each a Deep-gallery row named in "
-        "the comment beside it there",
+        "6, each row a location on the parameter plane left and a view of the Julia set for "
+        "that location's c right, each panel a Deep-tab link taken whole with its own "
+        "colouring and cap. The links are MULTIBROTS', each a Deep-gallery row named in the "
+        "comment beside it there",
         maps="one to a panel",
     ),
 }
@@ -945,11 +950,12 @@ WORDS = {
     ),
     "deep-multibrots": (
         "Five rows of deep frames, one for each degree from 2 to 6: a location on the "
-        "parameter plane, and beside it the Julia set for that location's c, for every "
-        "degree but 5.",
+        "parameter plane, and beside it a view of the Julia set for that location's c.",
         "Deep locations on the Mandelbrot set and the degree-3 to degree-6 multibrots (top "
-        "to bottom). Each row shows a location on the parameter plane (left) and the Julia "
-        "set for that location's c, zoomed in close to the same point (right).",
+        "to bottom). Each row shows a location on the parameter plane (left) and a view of "
+        "the Julia set for that location's c (right). The neighborhoods look alike, much as "
+        "they do at the Misiurewicz points above, but these are not Misiurewicz points, and "
+        "the two sides do not match exactly.",
     ),
 }
 
