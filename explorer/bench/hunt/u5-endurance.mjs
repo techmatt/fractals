@@ -83,11 +83,17 @@ say(`U5: ${ACTIONS} in-page actions`);
   // Twenty walks and fifteen deep passes, each started and cancelled, in the same document.
   say("  walks and deep passes, started and cancelled");
   await page.ev(`document.getElementById('tab-walk').click()`);
+  let afterFirstWalk = null;
   for (let i = 0; i < 20; i++) {
     await page.ev(`document.getElementById('walk-start').click()`);
     await sleep(400 + (i % 5) * 300);
     await page.ev(`(() => { const b = document.getElementById('walk-start'); if (b.textContent !== 'Start') b.click(); })()`);
     await sleep(200);
+    if (i === 0) {
+      await sleep(1500);
+      afterFirstWalk = await page.metrics();
+      samples.push({ at: "after 1 walk", ...afterFirstWalk });
+    }
   }
   const afterWalks = await page.metrics();
   samples.push({ at: "after 20 walks", ...afterWalks });
@@ -105,7 +111,21 @@ say(`U5: ${ACTIONS} in-page actions`);
   // document whose visible content is one canvas and a few panels.
   if (grewListeners > 2000) findings.push({ name: "endurance", why: `listeners grew by ${grewListeners} over ${ACTIONS} actions` });
   if (grewNodes > 20000) findings.push({ name: "endurance", why: `DOM nodes grew by ${grewNodes} over ${ACTIONS} actions` });
-  if (grewWorkers > 4) findings.push({ name: "endurance", why: `worker count grew by ${grewWorkers} (${first.workers} -> ${last.workers})` });
+  // **Workers are held to a plateau, not to a number** *(preclose_website_ckpt153)*. Every
+  // pool on the page is by design and sized to the machine — the viewer's, the Deep tab's,
+  // Saved's thumbnails and the walk's own two, each started the first time it is wanted and
+  // kept — so a 2-core box reads 4 -> 9 and a 12-core one 14 -> 35 over the same session, and
+  // an absolute bound calls either a leak. By action 100 every tab in the mix has been
+  // shown and every pool the actions can start has started; a leak is a count that goes on
+  // climbing after that, or one that climbs with each walk after the first.
+  const plateau = samples.find((s) => s.at === 100);
+  const actionsEnd = samples.find((s) => s.at === ACTIONS);
+  if (plateau && actionsEnd && actionsEnd.workers > plateau.workers) {
+    findings.push({ name: "endurance", why: `workers went on growing after every pool had started: ${plateau.workers} at 100 actions, ${actionsEnd.workers} at ${ACTIONS} (${JSON.stringify(actionsEnd.scripts)})` });
+  }
+  if (afterFirstWalk && afterWalks.workers > afterFirstWalk.workers) {
+    findings.push({ name: "endurance", why: `workers grew with each walk: ${afterFirstWalk.workers} after one, ${afterWalks.workers} after twenty (${JSON.stringify(afterWalks.scripts)})` });
+  }
   if (grewHeap > 400) findings.push({ name: "endurance", why: `heap grew by ${grewHeap.toFixed(0)} MB after a forced collection` });
   const said = page.drain();
   if (said.length) findings.push({ name: "endurance", why: `console: ${said.join(" | ").slice(0, 400)}` });

@@ -6,6 +6,8 @@
 // canvas with a settled dot is the failure this unit exists to catch.
 //
 // usage: node explorer/bench/hunt/u6-math.mjs [debugPort]
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 import { record } from "../output.mjs";
 import { Page, SITE, say, sleep } from "./lib.mjs";
 import { FAMILIES, MODES } from "../../permalink.js";
@@ -14,6 +16,30 @@ const debug = Number(process.argv[2] ?? 9460);
 const page = await new Page({ debug, port: SITE }).start();
 const findings = [];
 const rows = [];
+
+/**
+ * The narrowest frame `f64` still draws at `(x, y)` on a `width`×`height` grid: the page's own
+ * floor, asked of the committed `engine.wasm` the way `render.js`'s `resolves` asks it.
+ *
+ * **Why it is derived and not written down** *(preclose_website_ckpt153)*. The floor is a
+ * number of ulps between neighbouring samples, so the width it lands at moves with the
+ * grid. The first run spelled "a hair above the floor" as `w=1e-13`, which on the 908-wide
+ * canvas this harness gets is under one ulp — a quarter of the floor's width — so all
+ * three of its floor frames were refused as designed and read as blank canvases.
+ */
+function floorWidth(x, y, width, height) {
+  const bytes = readFileSync(fileURLToPath(new URL("../../engine.wasm", import.meta.url)));
+  const engine = new WebAssembly.Instance(new WebAssembly.Module(bytes), {}).exports;
+  const floor = engine.resolution_ulps_floor();
+  let lo = 1e-20;
+  let hi = 1;
+  for (let i = 0; i < 200; i++) {
+    const mid = Math.sqrt(lo * hi);
+    if (engine.resolution_ulps(x, y, mid, width, height) >= floor) hi = mid;
+    else lo = mid;
+  }
+  return hi;
+}
 
 /** Is there a picture here, and is it more than one flat colour? */
 const painted = () => page.ev(`(() => {
@@ -29,7 +55,10 @@ const painted = () => page.ev(`(() => {
   return { drawn: true, colours: seen.size, opaque, w: c.width, h: c.height };
 })()`);
 
-async function look(name, query, { expectFlat = false, settle = 1200 } = {}) {
+/** The sentence `explorer.js` says at the `f64` wall, alone or ahead of the Deep offer. */
+const WALL = "This is as deep as this renderer can zoom here.";
+
+async function look(name, query, { expectFlat = false, settle = 1200, walled = null } = {}) {
   const row = { name };
   try {
     const answered = await page.open(`?${query}`, { settle });
@@ -43,13 +72,21 @@ async function look(name, query, { expectFlat = false, settle = 1200 } = {}) {
       const s = await page.state();
       const p = await painted();
       Object.assign(row, p, { dot: s.dot, stats: s.stats?.slice(0, 60), status: s.status?.slice(0, 80) });
-      // The failure this unit is for: the page says it is finished and there is nothing
-      // on the canvas and nothing in the line under it.
-      if (s.dot !== "rendering" && p.drawn && p.colours === 1 && !expectFlat && !s.status) {
-        findings.push({ name, why: `one flat colour and nothing said (dot ${s.dot}, ${p.w}x${p.h})` });
+      const atWall = (s.status ?? "").startsWith(WALL);
+      if (walled === true) {
+        // Past the floor the refusal *is* the answer: the wall sentence, with the Deep offer
+        // on the two sets Deep draws, over a canvas left empty on purpose.
+        if (!atWall) findings.push({ name, why: `past the f64 floor with no wall sentence (status: ${s.status || "none"})` });
+      } else {
+        if (walled === false && atWall) findings.push({ name, why: "refused at the wall above the f64 floor" });
+        // The failure this unit is for: the page says it is finished and there is nothing
+        // on the canvas and nothing in the line under it.
+        if (s.dot !== "rendering" && p.drawn && p.colours === 1 && !expectFlat && (!s.status || walled === false)) {
+          findings.push({ name, why: `one flat colour (dot ${s.dot}, ${p.w}x${p.h}, said ${JSON.stringify(s.status ?? "")})` });
+        }
+        if (p.drawn && p.opaque === 0) findings.push({ name, why: "the canvas is fully transparent" });
       }
       if (!p.drawn) findings.push({ name, why: "no canvas at all" });
-      if (p.drawn && p.opaque === 0) findings.push({ name, why: "the canvas is fully transparent" });
     }
   } catch (e) {
     row.threw = String(e.message).slice(0, 160);
@@ -88,9 +125,20 @@ say("U6: all interior, all exterior, and the f64 floor");
 await look("all interior", "v=3&f=mandelbrot&x=-0.2&y=0&w=0.05&p=twilight_shifted", { expectFlat: true });
 await look("all exterior", "v=3&f=mandelbrot&x=3&y=3&w=0.5&p=twilight_shifted", { expectFlat: true });
 await look("far outside", "v=3&f=mandelbrot&x=1000&y=1000&w=10&p=twilight_shifted", { expectFlat: true });
-await look("a hair above the f64 floor", "v=3&f=mandelbrot&x=-0.743643887037151&y=0.13182590420533&w=1e-13&p=twilight_shifted");
-await look("at the f64 floor", "v=3&f=mandelbrot&x=-0.743643887037151&y=0.13182590420533&w=1e-15&p=twilight_shifted");
-await look("past the f64 floor", "v=3&f=mandelbrot&x=-0.743643887037151&y=0.13182590420533&w=1e-18&p=twilight_shifted");
+{
+  // The floor on the grid this page actually has, read off its canvas at the home view.
+  const [x, y] = [-0.743643887037151, 0.13182590420533];
+  await page.open("?v=3&f=mandelbrot&x=-0.5&y=0&w=3&p=twilight_shifted", { settle: 600 });
+  const grid = await page.ev(`(() => { const c = document.getElementById('canvas'); return [c.width, c.height]; })()`);
+  page.drain();
+  const floor = floorWidth(x, y, grid[0], grid[1]);
+  rows.push({ name: "the f64 floor here", grid, floor });
+  say(`  the floor on ${grid[0]}x${grid[1]} at this centre: w=${floor.toPrecision(6)}`);
+  const at = (w) => `v=3&f=mandelbrot&x=${x}&y=${y}&w=${w.toPrecision(6)}&p=twilight_shifted`;
+  await look("a hair above the f64 floor", at(floor * 1.05), { walled: false });
+  await look("at the f64 floor", at(floor * 0.95), { walled: true });
+  await look("past the f64 floor", at(floor / 1000), { walled: true });
+}
 
 say("U6: extreme aspects");
 await look("1:10000", "v=3&f=mandelbrot&x=-0.5&y=0&w=3&a=1:10000&p=twilight_shifted");

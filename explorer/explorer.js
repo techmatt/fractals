@@ -3457,6 +3457,13 @@ function showPanel(asked) {
     if (was === "deep" && shallow && carryable() !== null && offeredAt === frameOf(view)) {
       offerDeep();
     }
+  } else if (was === "deep" && (walk === null || showing !== "walk")) {
+    // **Left before the tab had mounted** *(preclose_website_ckpt153)*. Going in stopped the
+    // viewer's pass at the handover, and the mount is still in flight, so there is no tab to
+    // hide and nothing to give the viewer back — but the pass it stopped is owed. Without
+    // this a trip into Deep and straight out left the canvas half drawn under a line still
+    // saying "iterating", for good: U2's "tabs churned under a slow mode".
+    draw();
   }
   settle();
 }
@@ -3738,6 +3745,8 @@ async function startWalk() {
       planeName,
       juliaOf: JULIA_OF,
       follow: followWalk,
+      // A pause before the walk's first picture: the viewer's own view, drawn again.
+      redraw: () => draw(),
       showWalk,
       showCells: (cells) => showOverlay(cells === null ? null : { family: view.family, cells }),
       open: (query, what) => openLink(query, { what }),

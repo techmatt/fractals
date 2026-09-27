@@ -87,6 +87,10 @@ const EXPLAINED = [
   // The browser asks every origin for this unbidden and the site ships none. Filtered
   // so it does not drown every unit; it is in the report as its own small finding.
   /favicon\.ico/,
+  // Chrome's own line when a *script* assigns an unparseable string to a number input's
+  // `value`, which the junk-typing cases in U2 and U6 do by design. A reader's keystrokes
+  // never reach the page that way, so it is the harness talking (preclose_website_ckpt153).
+  /^log\(rendering\/warning\): The specified value ".*" cannot be parsed, or is out of range\.$/,
 ];
 
 /** A page under the harness: the browser, the connection, and the witness log. */
@@ -317,9 +321,17 @@ export class Page {
     const out = await this.send("Performance.getMetrics");
     const m = Object.fromEntries((out.result?.metrics ?? []).map((x) => [x.name, x.value]));
     let workers = 0;
+    // By script as well as in all: a pool is one script at a fixed count, so a count read
+    // this way says which pool grew rather than only that something did.
+    const scripts = {};
     try {
       const t = await this.send("Target.getTargets");
-      workers = (t.result?.targetInfos ?? []).filter((x) => x.type.includes("worker")).length;
+      const found = (t.result?.targetInfos ?? []).filter((x) => x.type.includes("worker"));
+      workers = found.length;
+      for (const x of found) {
+        const name = String(x.url).split("?")[0].split("/").pop() || x.type;
+        scripts[name] = (scripts[name] ?? 0) + 1;
+      }
     } catch {}
     return {
       heapMB: +(m.JSHeapUsedSize / 1048576).toFixed(1),
@@ -327,6 +339,7 @@ export class Page {
       listeners: m.JSEventListeners,
       documents: m.Documents,
       workers,
+      scripts,
     };
   }
 

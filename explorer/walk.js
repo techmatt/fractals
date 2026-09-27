@@ -1413,6 +1413,12 @@ export function mount(host) {
    *  by the viewer's renderer at full quality. */
   function unframe() {
     if (shown !== null) host.follow(shown.view);
+    // **A walk paused before it showed anything hands back the viewer's own view**
+    // *(preclose_website_ckpt153)*. There is no frame of the walk's to widen, but the viewer
+    // may still be owed a picture: a trip through the Deep tab in the walk's first second
+    // stopped its pass, and with nothing drawing it again the dot sat on "rendering" for
+    // good after Pause — U2's "a walk started and the tab left immediately".
+    else host.redraw();
   }
 
   /** A step's time, filed under its own name and again under the stage it ran in. */
