@@ -62,6 +62,7 @@ from . import seats as seats_module
 from . import sections as sections_module
 from . import serve as serve_module
 from . import start as start_module
+from . import votes as votes_module
 from . import walk as walk_module
 from .paths import FIGURE_IMAGES_DIR, IMAGES_DIR, SITE_ROOT
 
@@ -566,6 +567,22 @@ def _parser() -> argparse.ArgumentParser:
         action="store_true",
         help="rewrite wallpaper-packs/packs.jsonl from packs.plan() and packs.json; then build",
     )
+
+    voted = commands.add_parser(
+        "votes", help="friends' picks: ingest a list of links, count them, or order the packs"
+    )
+    votes_verbs = voted.add_subparsers(dest="verb", required=True)
+    ingested = votes_verbs.add_parser("ingest", help="append one friend's links to the store")
+    ingested.add_argument("name", help="the friend, stored lowercased")
+    ingested.add_argument(
+        "--from", dest="source", type=Path, required=True, help="a file holding the pasted links"
+    )
+    votes_verbs.add_parser("status", help="picks per friend")
+    votes_verbs.add_parser("view", help="rewrite the local page of everyone's picks")
+    ordered = votes_verbs.add_parser(
+        "export-order", help="the general thousand by likes, for `curate packs build --order`"
+    )
+    ordered.add_argument("--out", type=Path, required=True, help="the order file to write")
 
     commands.add_parser(
         "phoenix-points",
@@ -1508,6 +1525,22 @@ def _do_packs(options: argparse.Namespace) -> int:
     return 0
 
 
+def _do_votes(options: argparse.Namespace) -> int:
+    """Friends' votes, in the store outside this repository."""
+    if options.verb == "ingest":
+        lines = votes_module.ingest(options.name, options.source.read_text(encoding="utf-8"))
+    elif options.verb == "status":
+        lines = votes_module.status()
+    elif options.verb == "view":
+        votes_module.view()
+        lines = [f"page: {votes_module.served_url()} (under `python -m builder serve`)"]
+    else:
+        lines = votes_module.export_order(options.out)
+    for line in lines:
+        print(line)
+    return 0
+
+
 def _do_phoenix_points() -> int:
     """Write `explorer/phoenix-points.json` and land its thumbnails beside it."""
     for line in phoenix_points_module.write():
@@ -1645,6 +1678,8 @@ def main(argv: list[str] | None = None) -> int:
             return _do_seats(options)
         if options.command == "packs":
             return _do_packs(options)
+        if options.command == "votes":
+            return _do_votes(options)
         if options.command == "phoenix-points":
             return _do_phoenix_points()
         if options.command == "deep-gallery":
@@ -1683,6 +1718,7 @@ def main(argv: list[str] | None = None) -> int:
         walk_module.WalkError,
         start_module.StartError,
         packs_module.PacksError,
+        votes_module.VotesError,
         OSError,
     ) as error:
         print(f"error: {error}", file=sys.stderr)

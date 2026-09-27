@@ -710,6 +710,52 @@ configured.
 Any repetition on this page is allowed *(Matt, packs_page_ckpt153)*: none of these blocks
 is a registry figure, so `locations` never reads them.
 
+## Friends' votes live outside the repository, and make the packs' order
+
+Friends send lists of explorer links, each one a favourite with no score
+*(friend_votes_ingest_ckpt154)*. `builder/votes.py` keeps them, and **nothing it writes
+enters this repository**, because the repository is public and a friend's name is not.
+
+```
+python -m builder votes ingest NAME --from FILE   append one friend's links, say what matched
+python -m builder votes status                    picks per friend
+python -m builder votes view                      rewrite the local page of everyone's picks
+python -m builder votes export-order --out FILE   the general thousand by likes, for --order
+```
+
+- **The store** is `votes/events.jsonl` under `drive_sync_root`, the same setting
+  `prose` reads (`FRACTAL_DRIVE_SYNC_ROOT`). `FRACTAL_WEBSITE_VOTES_STORE` names a whole
+  other file, which is how the tests stay off the real one. It is **append-only**: one row
+  per ingest, `{schema, friend, at, links}`, where `friend` is lowercased, `at` is UTC, and
+  each link is `{link, key}` or `{link, reason, detail}` with the raw link verbatim.
+  `append` is the only write, and a file that does not end in a newline is refused rather
+  than repaired. A friend's selection is derived as the union of their keys, so sending a
+  link twice is one like, and a like count is a count of friends.
+- **The match** is `votes.mjs`, which reads the paste the way the Saved tab's import does
+  (`saved.js`'s `parseImport` and `queryOf`, so a Saved export file works too). It takes
+  whole URLs on the site or `localhost`, `explorer/?…`, bare queries, and `go/<name>/`
+  through `go/redirects.jsonl`, and skips the words around them. It parses each link with
+  `permalink.js` and compares `emit`'s spelling with `level` taken off against every seat
+  in `seated-candidates/all.jsonl`. **`level` is ignored** because it derives from the rest
+  of the recipe, and about 1,500 gallery links gained it in gallery_tone_backfill_ckpt154.
+  Everything else is exact. A link that matches nothing is stored with one of four reasons:
+  `not a wallpaper`, `collection link` (Browse's grid), `deep view`, or `unparseable`.
+- **The page** is `artifacts/votes/index.html`, served by `builder serve` at
+  `/artifacts/votes/` and walked by no check. It shows a tile per liked seat with a chip
+  for each friend who liked it, sorted by likes and filterable by friend and by
+  collection, and lists the unmatched links per friend at the foot. Every ingest rewrites it.
+- **The order** is `export-order`. It writes one recipe key a line for exactly the 1,000
+  seats of `final139_general` (`seats.STAMP`), because next door's `packs.read_order`
+  refuses a file that misses one. Seats are sorted by likes, and ties go in the order of
+  `packs.seeded(…, packs.SEED)` over the membership's own general order, which is not
+  the Gallery tab's presentation order. That is why the ranking is computed in that
+  project's interpreter. With no votes the file is the seeded default key for key. The
+  written file is held to `packs.read_order` before the command reports success. Likes
+  outside the thousand are ignored.
+
+`python -m unittest builder.test_votes` holds the store to the above against a temporary
+directory, and fails if the real store moved while it ran.
+
 ## What `check` checks
 
 - **links** — every internal `href` and `src` on every page resolves, and none is

@@ -785,6 +785,14 @@ questions were skipped by name. Before a prompt is called done, run
 count in the exit summary — a run that reports skips is a run that answered part of the
 question.
 
+## Friends' votes
+
+**"ingest NAME <links>" means: save the pasted text to a file under `scratch/`, run
+`python -m builder votes ingest NAME --from <that file>`, and reply with its summary.**
+The store is `votes/events.jsonl` under the Drive-synced folder
+(`C:\Code\fractal-drive-sync\votes\` on this machine), outside this public repository
+and append-only. `builder/README.md` has the rest.
+
 ## Staging a prompt
 
 **"stage `<prompt>.md`" means prepare it, not run it** *(Matt, 2026-09-02)*. It exists so
