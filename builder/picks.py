@@ -530,9 +530,17 @@ def run_stamp(pick: Pick) -> Levelling:
     **Where the run kept only the fact, a curve this site measured answers instead** — the
     recipe store's `tone`, held on the one row it was measured for. Never ahead of the run:
     a pick whose run answers keeps that answer whether or not a `tone` is beside it.
+
+    **A backfill is not the run** *(gallery_tone_backfill_ckpt154)*. The project's reader
+    answers with its sidecar's re-derivation where the run wrote nothing, and a `tone`
+    beside one is the measurement this row's picture was drawn with, so the `tone` keeps
+    answering: letting the sidecar in would move a link under a picture that did not move.
     """
+    from .seats import REDERIVED
+
     levelling = _run_levelling(pick)
-    if levelling.way == UNRECOVERABLE and pick.tone:
+    rederived = ((levelling.stamp or {}).get("provenance") or {}).get("curve") == REDERIVED
+    if pick.tone and (levelling.way == UNRECOVERABLE or rederived):
         return Levelling(
             REPLAYED,
             f"{levelling.where} (re-measured here on {pick.tone['measured_on']})",

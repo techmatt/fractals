@@ -239,6 +239,11 @@ BLURB = (
 #: differently would be a value the contract refuses rather than a curve it misread.
 OPERATOR = "band_autolevel/v1"
 
+#: What a backfill row's `provenance.curve` says: re-derived from a base drawn later,
+#: rather than recorded by the run that drew the picture. That project's
+#: `curation.backfill.REDERIVED`, spelled here because the stamps arrive as JSON.
+REDERIVED = "rederived"
+
 #: What the permalink contract spells the tone curve's key. Named here only so a count of
 #: how many links carry one can be taken off the links themselves; the key is emitted by
 #: `explorer/permalink.js` and never by anything on this side.
@@ -455,6 +460,12 @@ def stamps_of(resolved: list[picks.Pick]) -> dict[str, dict]:
     backfill, in one call. The kinds that draw by attempt are read here, grouped so each
     record file — tens of megabytes — is opened once. A seat nothing answers for is
     simply absent, which is what `tone` reads as a gap.
+
+    **A record beats a re-derivation** *(gallery_tone_backfill_ckpt154)*. That reader
+    prefers the backfill overlay, and it cannot see the attempt records, so a seat of
+    theirs that a `--record all` sweep re-derived would come back with the sweep's curve
+    over the one its run wrote down. Where the overlay's answer is `REDERIVED` and the
+    attempt record holds a stamp, the record's stamp is the one kept.
     """
     runs = {pick.key: str(pick.source.get("run") or _stored(pick)[1]) for pick in resolved}
     found: dict[str, dict] = _program(
@@ -464,7 +475,9 @@ def stamps_of(resolved: list[picks.Pick]) -> dict[str, dict]:
     wanted: dict[tuple[str, str], dict[str, str]] = {}
     for pick in resolved:
         kind, run = _stored(pick)
-        if pick.key in found or kind not in PICTURE_RECORDS:
+        if kind not in PICTURE_RECORDS:
+            continue
+        if pick.key in found and not _rederived(found[pick.key]):
             continue
         wanted.setdefault((kind, run), {})[_filename(pick)] = pick.key
     for (kind, run), looking in wanted.items():
@@ -479,9 +492,19 @@ def stamps_of(resolved: list[picks.Pick]) -> dict[str, dict]:
                     row = json.loads(line)
                     address = str(row.get("picture") or "").replace("\\", "/")
                     address = address.rsplit("/", 1)[-1]
-                    if address in looking:
-                        found[looking[address]] = row.get("autolevel") or {}
+                    if address not in looking:
+                        continue
+                    key = looking[address]
+                    recorded = row.get("autolevel") or {}
+                    # An empty stamp is no record, so it never displaces a re-derivation.
+                    if key not in found or recorded:
+                        found[key] = recorded
     return found
+
+
+def _rederived(stamp: dict) -> bool:
+    """Whether a stamp is a backfill's re-derivation rather than what a run recorded."""
+    return ((stamp.get("provenance") or {}).get("curve")) == REDERIVED
 
 
 def hues_of(seats: list[tuple[str, dict]]) -> dict[str, list[str]]:
