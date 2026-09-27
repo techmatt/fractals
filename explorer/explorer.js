@@ -1926,14 +1926,10 @@ function rememberLater() {
  * and a gallery tile's `key`, its `gap` and the words for it survive into the entry with no
  * second list to keep in step. Anywhere else — a pan, a palette, a mode — there were none.
  */
-function remember() {
+function remember({ replacing = null } = {}) {
   if (view === null) return;
   const query = currentQuery();
   const key = keyOf(query);
-  // Only the refit's own picture takes the arrival's place. A reader's action that settles
-  // inside the debounce after a refit — a pan, a map — is a picture of its own, and pushes.
-  const replacing = refitOf !== null && refitOf.to === key ? refitOf.of : null;
-  refitOf = null;
   if (restoring !== null) {
     if (key === restoring) restoring = null;
     return;
@@ -1943,14 +1939,25 @@ function remember() {
 }
 
 /**
- * `{ of, to }` from the Deep tab's arrival refit until the next commit, and `null` otherwise
- * *(site_audit_ckpt147)*: `of` is the key of the picture the refit finishes and `to` the key
- * of the refitted one. The refit is the arrival's fit taken again, which the reader did not
- * ask for as a step of its own, so its picture takes the arrival's entry rather than pushing
- * a second one — one Ctrl+Z goes back past both, and the entry's link is the refitted
- * recipe, as Copy link's is. A commit of any other key is an ordinary one.
+ * Commit the picture the page just made out of `of`, at once and in `of`'s place
+ * *(site_audit_ckpt147; preclose_website_ckpt153)*.
+ *
+ * For the Deep tab's two fits, the arrival's and its refit off the finished frame: neither
+ * is a step the reader asked for, so each takes the entry of the picture it finishes rather
+ * than pushing a second one, and one Ctrl+Z goes back past the lot. The entry's link is the
+ * fitted recipe, as Copy link's is. Where `of` never got an entry of its own this is an
+ * ordinary commit.
+ *
+ * **At once, and not on the debounce.** It used to be a note the next `remember` read, and a
+ * reader who left the tab inside `REMEMBER_MS` of the refit — the fit lands with the full
+ * pass, so the moment the picture looks done — had the leave's settle take the timer: the
+ * refitted picture never became an entry, the way back kept the quarter-pass fit under it,
+ * and Ctrl+Z out of the viewer opened a deep view nobody had been shown. The timer the tint
+ * armed still fires, finds the same key under the cursor, and refreshes.
  */
-let refitOf = null;
+function rememberInPlaceOf(of) {
+  remember({ replacing: of });
+}
 
 /**
  * Put an entry back on the screen, through the same door that opened it.
@@ -2568,9 +2575,12 @@ function landFit() {
   }
   const next = fitted(subject);
   if (next === null) return;
+  const of = keyOf(currentQuery());
   fitWanted = false;
   holding = null;
   tint({ shade: next });
+  // The Leveled quarter pass it fitted is not a picture of its own in the way back.
+  rememberInPlaceOf(of);
   // After the tint, which disarms: this fit is the page's, and it may want finishing.
   arrivalFrom = subject;
   arrival.arm(deep.place(), deep.showsFinished());
@@ -2586,7 +2596,7 @@ function landFit() {
  * and the picture recoloured. Nothing re-iterates. `fitting.ArrivalRefit` holds when: once,
  * and never after the reader has touched a palette control (`tint`, the Autolevel box, Hold
  * look, a step back) or the tab has gone to another frame. Its picture takes the arrival's
- * place in the way back (`refitOf`).
+ * place in the way back (`rememberInPlaceOf`).
  */
 const arrival = new fitting.ArrivalRefit();
 /** The Leveled view the arrival fitted to, which is what the refit fits to again. */
@@ -2605,7 +2615,7 @@ function landRefit() {
   holding = null;
   tint({ shade: next });
   // The tint writes the deep view at once, so the link here is the refitted picture's.
-  refitOf = { of, to: keyOf(currentQuery()) };
+  rememberInPlaceOf(of);
 }
 
 fitButton.addEventListener("click", pressFit);

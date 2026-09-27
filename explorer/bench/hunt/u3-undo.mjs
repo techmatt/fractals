@@ -139,6 +139,42 @@ say("U3: across the shallow/deep contract");
   say(`  out of deep: ${c.url.slice(0, 60)} | back: ${d.url.slice(0, 60)}`);
 }
 
+// The same trip, patiently: the arrival's fit and its refit off the finished frame have both
+// landed before the reader leaves, so the way back is exactly two rungs — the fitted deep
+// picture and the viewer's — and each must come back as link *and* raster, both ways. The
+// hurried case above is the one that found the refit's picture lost to the leave's settle
+// (preclose_website_ckpt153); this one holds the rungs to their pictures.
+say("U3: across the shallow/deep contract, patiently");
+{
+  const name = "shallow -> deep -> shallow, settled";
+  await page.open(`?${DEEP}`, { settle: 1800 });
+  await page.settled(240);
+  await sleep(3000);
+  const b = await shot();
+  await page.ev(`document.getElementById('deep-back')?.click()`);
+  await sleep(2000);
+  const c = await shot();
+  const rungs = [];
+  for (const [step, want] of [[back, b], [back, b], [forward, c], [forward, c]]) {
+    await step();
+    await sleep(1800);
+    const now = await shot();
+    rungs.push({ url: now.url.slice(0, 70), tab: now.tab });
+    if (now.url !== want.url) {
+      findings.push({ name, why: `rung ${rungs.length} landed on ${now.url.slice(0, 70)}, wanted ${want.url.slice(0, 70)}` });
+      break;
+    }
+    if (want.hash && now.hash && want.hash !== now.hash) {
+      findings.push({ name, why: `rung ${rungs.length} put the link back but not the picture` });
+      break;
+    }
+  }
+  const said = page.drain();
+  if (said.length) findings.push({ name, why: `console: ${said.join(" | ").slice(0, 300)}` });
+  rows.push({ name, rungs });
+  say(`  ${rungs.length} rungs, ${findings.filter((f) => f.name === name).length} findings`);
+}
+
 // A running walk. The rule under test is that a walk's own pictures do not each become a
 // rung, and that a step back during one does not leave the walk half-owning the canvas.
 say("U3: during a walk");
