@@ -2,8 +2,10 @@
 //
 //   node builder/screenshot.mjs <json job>
 //
-// The job is `{url, selector, out, width, height, scale}`: open `url` in a headless Chrome
-// on a throwaway profile, wait until the explorer is up and at rest, and write the PNG of
+// The job is `{url, selector, out, width, height, scale, clicks}`: open `url` in a headless
+// Chrome on a throwaway profile, wait until the explorer is up and at rest, click each of
+// `clicks` in order (a selector each, pressed through the page so its own handlers run),
+// wait for rest again, and write the PNG of
 // `selector`'s box, `scale` device pixels to a CSS pixel, to `out`. `builder/screenshots.py`
 // is the only caller and serves the tree it points at.
 //
@@ -40,6 +42,19 @@ try {
     await sleep(450);
     if (!(await page.until(REST, { within: 120000, every: 50 }))) {
       throw new Error(`${job.url} did not come to rest within two minutes`);
+    }
+  }
+  for (const selector of job.clicks ?? []) {
+    const clicked = await page.evaluate(`(() => {
+      const it = document.querySelector(${JSON.stringify(selector)});
+      if (!it) return false;
+      it.click();
+      return true;
+    })()`);
+    if (!clicked) throw new Error(`${selector} is not on ${job.url}, so it cannot be clicked`);
+    await sleep(450);
+    if (!(await page.until(REST, { within: 120000, every: 50 }))) {
+      throw new Error(`${job.url} did not come to rest after clicking ${selector}`);
     }
   }
   const box = await page.evaluate(`(() => {

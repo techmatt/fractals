@@ -48,6 +48,9 @@ class Shot:
     about: str
     query: str
     selector: str
+    #: Controls clicked through the page before the shot, in order, each by its selector:
+    #: what a reader would press, so the page's own handlers run and nothing is a default.
+    clicks: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -57,12 +60,16 @@ class Drawn:
 
 
 def dive_block() -> Shot:
-    """The Deep tab's Dive block as a first visit shows it: the sentence at its defaults,
-    both boxes unticked, on the Mandelbrot plane at the tab's opening view."""
+    """The Deep tab's Dive block: the sentence at its defaults, on the Mandelbrot plane at the
+    tab's opening view, with New coloring on arrival ticked through the page for the shot and
+    Keep diving left unticked (Matt, dive_defaults_ckpt154). The box is off by default; it is
+    ticked here because the figure shows what a dive can do, not what a first visit sees."""
     return Shot(
-        about="the Dive block of the explorer's Deep tab, as a first visit shows it",
+        about="the Dive block of the explorer's Deep tab at its default sentence, with New "
+        "coloring on arrival ticked by a click on the page and Keep diving unticked",
         query="?panel=deep",
         selector="#dive",
+        clicks=("#dive-color",),
     )
 
 
@@ -105,6 +112,7 @@ def draw(identifier: str) -> Drawn:
         "width": WIDTH,
         "height": HEIGHT,
         "scale": SCALE,
+        "clicks": list(shot.clicks),
     }
     server, thread = _served(PORT)
     try:
@@ -120,7 +128,9 @@ def draw(identifier: str) -> Drawn:
         f"no render: a screenshot of {shot.about}. builder.screenshots:{maker} "
         "serves the committed tree and builder/screenshot.mjs photographs "
         f"explorer/index.html{shot.query} over CDP in headless Chrome, a {WIDTH}x{HEIGHT} "
-        f"window at device scale {SCALE}, clipped to {shot.selector} once the page is at "
+        f"window at device scale {SCALE}, "
+        + (f"clicking {', '.join(shot.clicks)} through the page, then " if shot.clicks else "")
+        + f"clipped to {shot.selector} once the page is at "
         "rest; `python -m builder screenshot "
         f"{identifier} --replace` takes it again",
     )

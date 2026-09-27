@@ -2545,6 +2545,11 @@ At the top of the tab's left panel, one sentence whose two blanks are dropdowns,
 > Find a minibrot near [this view | a random wallpaper] and dive to [its center | halfway in
 > | this view inside it | a random wallpaper inside it] **Go**
 
+**It opens as *Find a minibrot near a random wallpaper and dive to this view inside it*** *(Matt,
+dive_defaults_ckpt154)*: the two defaults are the options `index.html` marks `selected`, so a
+first press lands somewhere new at a wallpaper's own framing rather than a step down from
+wherever the tab happens to be. Neither blank is remembered.
+
 Under it, **New coloring on arrival**, off by default and remembered by this browser
 (`explorer.deep-dive-coloring`); then one bar, Cancel, and a status line. A press is Find
 minibrots' own search, a rung, a landing, and a pass of where it landed, and what lands is an
