@@ -1,5 +1,5 @@
-// The screensaver's pure parts: the interval table, the overrun rule, the correction and
-// the bag. The part that needs a page is driven by hand and measured in the README.
+// The screensaver's pure parts: the interval table, the overrun rule, the correction, the
+// bag and the stand-in order. The part that needs a page is driven by hand and measured in the README.
 
 import assert from "node:assert/strict";
 import test from "node:test";
@@ -14,6 +14,8 @@ import {
   fullscreenKey,
   overrunLimit,
   sizeFor,
+  STAND_INS,
+  standInOf,
   SUPERSAMPLE,
 } from "./screensaver.js";
 
@@ -95,4 +97,13 @@ test("the full-screen hint names the key this platform's browser uses", () => {
   assert.equal(fullscreenKey("Linux x86_64"), "F11");
   assert.equal(fullscreenKey("MacIntel"), "⌃⌘F");
   assert.equal(fullscreenKey("macOS"), "⌃⌘F");
+});
+
+test("the first picture's stand-in is its tile, then the viewer, then the home view", () => {
+  assert.deepEqual(STAND_INS, ["tile", "viewer", "home"]);
+  assert.equal(standInOf({ tile: true, viewer: true, home: true }), "tile");
+  assert.equal(standInOf({ tile: false, viewer: true, home: true }), "viewer");
+  assert.equal(standInOf({ viewer: false, home: true }), "home");
+  // Nothing ready is the one case that is black, and it lasts until the home view decodes.
+  assert.equal(standInOf({}), null);
 });

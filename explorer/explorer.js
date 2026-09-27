@@ -3145,6 +3145,17 @@ function enterScreensaver({ every = null, first = null } = {}) {
   saver.enter(population.seats, { every, first });
 }
 
+/** A seat's tile, for the screensaver to stand in with. A picture a screensaver link
+ *  names carries no row of its own, so its tile is the row whose link is the same picture,
+ *  where the collection has one. */
+function saverTileOf(seat) {
+  if (seat.file) return gallery.tileURL(seat, import.meta.url);
+  const wanted = canonicalOf(seat.link);
+  if (wanted === null) return null;
+  const row = saverFilters?.seats.find((one) => canonicalOf(one.link) === wanted);
+  return row ? gallery.tileURL(row, import.meta.url) : null;
+}
+
 /** The screensaver let go: the viewer comes back on the last picture it showed, as a
  *  tile would open it, so that picture can be saved or downloaded. */
 function leaveScreensaver(seat) {
@@ -5589,6 +5600,13 @@ async function main() {
     pictureOf: download.pictureOf,
     address: (seat, every) => history.replaceState(null, "", `?${seat.link}&${saverFurniture(every)}`),
     leave: leaveScreensaver,
+    // What stands in for the first picture until it is drawn *(screensaver_first_frame_ckpt154)*.
+    viewer: canvas,
+    tileOf: saverTileOf,
+    // ⚠ A figure's panel, and nothing checks this URL: a rename of `start-families`' panels
+    // takes the last stand-in with it, and the screensaver opens black again on a page
+    // nothing has been drawn on. It is the Mandelbrot set at its home view.
+    home: new URL("../assets/images/figures/start-families-1.webp", import.meta.url).href,
   });
   document
     .getElementById("gallery-screensaver")

@@ -169,7 +169,8 @@ judges/               the render judge and the ORT runtime, `builder walk`
 permalink.js          the link contract — parse, validate, canonicalize
 params.js             a mode parameter's control: its word, its slider's travel, the mapping
 permalink.test.mjs    58 tests, `node --test explorer/permalink.test.mjs`
-screensaver.test.mjs  8 tests: the intervals, the samples, the overrun rule, the correction, the bag
+screensaver.test.mjs  9 tests: the intervals, the samples, the overrun rule, the correction, the bag,
+                      the stand-in order
 bands.test.mjs        3 tests: the pool cuts the frame, never what is in it
 level.test.mjs        7 tests: the module's tone measurement, and a derived curve replays
 derive.test.mjs       6 tests: a derived weight replays, a derived opacity lands where it says
@@ -563,6 +564,23 @@ the page gets no pointer events then. The bar used to stay while it was `:hover`
 the bar up for the rest of the run. Tabbing into a faded bar brings it back. The select and
 its options are drawn in the well's colors: transparent over light ink put pale text on the
 operating system's white option list. None of the options was ever `disabled`.
+
+**It never shows black** *(screensaver_first_frame_ckpt154)*. The layer used to come up
+empty and stay black until the first picture was whole, which on a slow seat looked like a
+bug. Now the first frame is a stand-in, the best picture already at hand, and the first
+render fades in over it as every later picture does. The order is `STAND_INS`: the opening
+seat's own tile (a screensaver link's picture finds its tile by canonical link among the
+seats the chips leave); the viewer's canvas, stretched to the layer, where anything is drawn
+on it; and the Mandelbrot set at its home view, `start-families-1.webp`, fetched when the page
+starts. What is ready goes up at once with no fade from black, and the tile replaces it when
+it decodes. The tile and the home view are stretched to the seat's aspect, so the render
+lands on the box they fill. The opening seat is drawn from the bag on entry for this, so the
+stand-in is of the picture that follows it. ⚠ Nothing checks that figure's URL: renaming
+`start-families`' panels removes the last stand-in. Later changes needed nothing, because a
+picture comes down only after the next has faded in over it. Measured in headless Chrome at
+1600×1100 under 4× and 6× CPU throttling, recording every animation frame from entry: no
+black frame on entry from the button, from Browse, from a link naming a seat, a link naming
+only the panel, a link naming a picture no seat is, or across twenty seconds of *Fastest*.
 
 **Full screen is a button** *(Matt, 2026-09-22)*: *Full screen (F11)* asks the browser's
 Fullscreen API for the layer, which a click is allowed to, and so does `F` inside the

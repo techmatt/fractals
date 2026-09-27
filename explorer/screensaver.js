@@ -22,8 +22,14 @@
 // of that list scales every price after it. Without it, the overrun rule skipped exactly
 // the deep seats it was priced wrongest on.
 //
-// The pure parts — the interval table, the correction and the bag — are exported and
-// tested on their own; `install` is the part that needs a page.
+// **It never shows black** *(screensaver_first_frame_ckpt154)*. The layer used to come up
+// empty and stay so until the first picture was whole, which on a slow seat reads as a bug.
+// So from its first frame it shows a stand-in, the best picture already at hand
+// (`STAND_INS`), and the first render fades in over it as any later picture does. Later
+// changes needed nothing: a picture comes down only once the next one has faded in over it.
+//
+// The pure parts — the interval table, the correction, the bag and the stand-in order —
+// are exported and tested on their own; `install` is the part that needs a page.
 
 /** How long the cross-fade from one picture to the next takes. */
 export const SCREENSAVER_FADE_MS = 500;
@@ -174,6 +180,53 @@ export class Bag {
   }
 }
 
+/**
+ * What stands in for the first picture until it is drawn, best first: the seat's own tile,
+ * which is that picture small; the viewer's canvas, which is at least what was on screen;
+ * and the Mandelbrot set at its home view, which the page always has.
+ */
+export const STAND_INS = ["tile", "viewer", "home"];
+
+/** The best stand-in of those `ready` says are ready, or `null` where none is. */
+export function standInOf(ready) {
+  return STAND_INS.find((name) => ready[name]) ?? null;
+}
+
+/**
+ * Whether a picture has anything in it: drawn down to a few pixels, is any of them not
+ * black. A viewer nothing has been drawn on yet is black, and so is a picture that has not
+ * decoded, and neither is worth standing in for the black it would replace.
+ */
+function blank(source, width, height) {
+  if (!(width > 0) || !(height > 0)) return true;
+  const probe = document.createElement("canvas");
+  probe.width = 8;
+  probe.height = 8;
+  const context = probe.getContext("2d", { willReadFrequently: true });
+  try {
+    context.drawImage(source, 0, 0, 8, 8);
+    const { data } = context.getImageData(0, 0, 8, 8);
+    for (let i = 0; i < data.length; i += 4) {
+      if (data[i] + data[i + 1] + data[i + 2] > 6) return false;
+    }
+  } catch {
+    // A picture that cannot be read back is taken as having something in it.
+    return false;
+  }
+  return true;
+}
+
+/** A picture by its URL, decoded, or `null` where it will not load. */
+function loaded(url) {
+  const image = new Image();
+  image.decoding = "async";
+  image.src = url;
+  return image.decode().then(
+    () => image,
+    () => null,
+  );
+}
+
 function stored(key) {
   try {
     return window.localStorage.getItem(key);
@@ -198,11 +251,17 @@ function store(key, value) {
  * cancel a picture by generation), `parse` for a seat's link, `estimate` and `pictureOf`
  * from the Download row, `address(seat, every)` to put a picture's link in the address
  * bar, and `leave(seat)` for the page to take its viewer back with the last seat shown.
+ * For the stand-in: `viewer`, the viewer's canvas; `tileOf(seat)`, a seat's tile as a URL
+ * or `null`; and `home`, the URL of the Mandelbrot set at its home view.
  */
 export function install(host) {
   const { layer, canvases, controls, everyPicker, pauseButton, exitButton, note } = host;
   const { fullscreenButton } = host;
   const { pool, parse, estimate, pictureOf, address, leave } = host;
+  const { viewer, tileOf } = host;
+  // Asked for once, now, so that it is decoded long before any entry needs it.
+  let home = null;
+  const homeLoaded = loaded(host.home).then((image) => (home = image));
 
   for (const canvas of canvases) canvas.style.transition = `opacity ${SCREENSAVER_FADE_MS}ms linear`;
   for (const one of EVERY) {
@@ -393,6 +452,64 @@ export function install(host) {
   }
 
   /**
+   * Put a stand-in for `seat` up at once, on the canvas the first picture fades in over.
+   *
+   * What is ready now goes up now, with no fade in from black; the seat's tile goes over it
+   * when it has decoded, since it is the only stand-in that is the picture itself, and the
+   * home view waits for its own decode where nothing else was ready. The tile and the home
+   * view are stretched to the seat's aspect, so the first render lands on the box they
+   * fill; the viewer is stretched to the layer's. Each stays at its own resolution and the
+   * layer scales it.
+   */
+  function standIn(seat, mine) {
+    const screen = screenPixels();
+    let aspect = { across: screen.width, down: screen.height };
+    try {
+      aspect = parse(seat.link).aspect;
+    } catch {
+      // A link that does not parse is skipped when it is rendered; until then, the screen.
+    }
+    const canvas = canvases[top];
+    let standing = null;
+    const put = (name, source, shape) => {
+      const size = sizeFor(shape, source.width, source.height);
+      canvas.width = size.width;
+      canvas.height = size.height;
+      const context = canvas.getContext("2d", { alpha: false });
+      context.imageSmoothingQuality = "high";
+      context.drawImage(source, 0, 0, size.width, size.height);
+      place(canvas);
+      if (!canvas.classList.contains("is-up")) {
+        canvas.style.transition = "none";
+        canvas.classList.add("is-up");
+        void canvas.offsetWidth;
+        canvas.style.transition = `opacity ${SCREENSAVER_FADE_MS}ms linear`;
+      }
+      standing = name;
+      log("stand-in", { name, size: `${size.width}x${size.height}` });
+    };
+    // Still standing in: the run is this one and no picture has been presented over it.
+    const open = () => mine === run && shown === null;
+    const url = tileOf(seat);
+    const now = standInOf({
+      viewer: viewer !== null && !blank(viewer, viewer.width, viewer.height),
+      home: home !== null,
+    });
+    if (now === "viewer") put("viewer", viewer, { across: screen.width, down: screen.height });
+    else if (now === "home") put("home", home, aspect);
+    else {
+      homeLoaded.then(() => {
+        if (open() && standing === null && home !== null) put("home", home, aspect);
+      });
+    }
+    if (url !== null) {
+      loaded(url).then((image) => {
+        if (open() && image !== null) put("tile", image, aspect);
+      });
+    }
+  }
+
+  /**
    * Render one seat at the screen's size and `SUPERSAMPLE`, or say why it was skipped.
    * Returns `{ seat, image }`, `{ skip }`, or `null` where the run ended under it.
    */
@@ -553,6 +670,10 @@ export function install(host) {
     sayFullscreen();
     holdAwake();
     log("enter", { seats: seats.length, every, factor: +correction.factor().toFixed(2) });
+    // The opening seat is drawn from the bag here rather than in `prepare`, so that what
+    // stands in for it is of the same picture.
+    const opening = first ?? bag.next();
+    standIn(opening, mine);
     try {
       renderer = await pool();
     } catch (error) {
@@ -565,7 +686,7 @@ export function install(host) {
       renderer = null;
       return false;
     }
-    loop(mine, first);
+    loop(mine, opening);
     return true;
   }
 
