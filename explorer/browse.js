@@ -14,8 +14,10 @@
 // once, scaled to the preview's box, so there is never an empty frame; then the explorer's
 // own renderer draws the seat's link in the viewer's three stages — a quarter-resolution
 // field, one sample a pixel, then `FINAL_SUPERSAMPLE` each way — each replacing the last,
-// with the Render bar's small cousin under it. The box fits the window and stops at
-// `PREVIEW_MAX` pixels wide, which bounds what a stage costs on a large screen.
+// with the Render bar's small cousin under it. The box takes `PREVIEW_SHARE` of the layer's
+// width and height, whichever binds first, and the grid under it follows the screen's
+// pixels up to `PREVIEW_GRID_MAX` across, which bounds what a stage costs on a 4K or 2x
+// screen *(browse_preview_size_ckpt153: the stages are fast, so the picture is big)*.
 //
 // **Every step and every close cancels the picture in flight**, through the pool's own
 // `cancel` and the colouring worker's `stop`, and a generation counter drops whatever a
@@ -32,8 +34,12 @@ import * as gallery from "./gallery.js";
 import { PREVIEW_DIVISOR, shadeApart } from "./render.js";
 import { sizeFor } from "./screensaver.js";
 
-/** The widest a preview is drawn, in pixels. */
-export const PREVIEW_MAX = 1600;
+/** The share of the layer's width and height a preview's picture may take, whichever
+ *  binds first: what is left is the tab row, the bar under the picture and a margin. */
+export const PREVIEW_SHARE = 0.85;
+
+/** The widest a preview's grid is drawn, in device pixels. */
+export const PREVIEW_GRID_MAX = 2560;
 
 /** How many tiles the first task builds, and how many each task after it adds. A window
  *  of 316-pixel tiles shows about thirty; the rest are built a task at a time, as the
@@ -93,14 +99,19 @@ export function stageSpans(finalSupersample) {
 /**
  * The preview's box in CSS pixels and the grid it is drawn at in device pixels.
  *
- * The box is the seat's own aspect, as large as the room allows and no wider than
- * `PREVIEW_MAX`. The grid is the box at the screen's pixel ratio, held to `PREVIEW_MAX`
- * across as well, so a high-density screen costs what a plain one does; and it is in
- * multiples of `PREVIEW_DIVISOR`, as the viewer's is, so the quarter stage is a whole grid.
+ * The box is the seat's own aspect, within `PREVIEW_SHARE` of the layer each way and
+ * within the room the preview has, so the bar under it and the tab row over it stay on
+ * screen. The grid is the box at the screen's pixel ratio, held to `PREVIEW_GRID_MAX`
+ * across; and it is in multiples of `PREVIEW_DIVISOR`, as the viewer's is, so the quarter
+ * stage is a whole grid. The cap is a multiple of the divisor, so rounding never passes it.
  */
-export function previewSize(aspect, room, ratio = 1) {
-  const box = sizeFor(aspect, Math.min(PREVIEW_MAX, room.width), room.height);
-  const scale = Math.min(ratio, PREVIEW_MAX / box.width);
+export function previewSize(aspect, layer, room, ratio = 1) {
+  const box = sizeFor(
+    aspect,
+    Math.min(layer.width * PREVIEW_SHARE, room.width),
+    Math.min(layer.height * PREVIEW_SHARE, room.height),
+  );
+  const scale = Math.min(ratio, PREVIEW_GRID_MAX / box.width);
   const step = (value) => Math.max(PREVIEW_DIVISOR, Math.round(value / PREVIEW_DIVISOR) * PREVIEW_DIVISOR);
   return { box, grid: { width: step(box.width * scale), height: step(box.height * scale) } };
 }
@@ -144,7 +155,7 @@ export function install(host) {
   const wanted = { mode: new Set(), hue: new Set(), family: new Set(), centered: new Set(), spiral: new Set() };
 
   /** What a harness reads: renders begun and cancelled, and where the last one settled. */
-  const witness = { started: 0, cancelled: 0, settled: null, stage: null, pool: 0 };
+  const witness = { started: 0, cancelled: 0, settled: null, stage: null, pool: 0, box: null, grid: null, took: [] };
   globalThis.__browse = witness;
 
   function matches(seat) {
@@ -301,8 +312,11 @@ export function install(host) {
     holder = {};
   }
 
-  /** The room the preview may take: the layer less the bar under the picture. */
+  /** The room the preview may take: the layer under the tab row, less the bar under the
+   *  picture. The preview starts where the row ends, so the picture centres in what is seen. */
   function room() {
+    const head = layer.querySelector(".side-head");
+    preview.style.top = head === null ? "" : `${head.offsetTop + head.offsetHeight}px`;
     const bar = preview.querySelector(".browse-bar");
     const style = getComputedStyle(preview);
     const padX = parseFloat(style.paddingLeft) + parseFloat(style.paddingRight);
@@ -360,7 +374,11 @@ export function install(host) {
       drawing = false;
       return;
     }
-    const { box, grid } = previewSize(view.aspect, room(), window.devicePixelRatio || 1);
+    const whole = { width: layer.clientWidth, height: layer.clientHeight };
+    const { box, grid } = previewSize(view.aspect, whole, room(), window.devicePixelRatio || 1);
+    witness.box = box;
+    witness.grid = grid;
+    witness.took = [];
     place(box);
     try {
       const pooled = await renderer;
@@ -377,6 +395,7 @@ export function install(host) {
         const { from, width } = spans[index];
         showProgress(from);
         if (index === 2) showState("sharpening");
+        const began = performance.now();
         const field = await pooled.field(drawn, step.size.width, step.size.height, {
           supersample: step.supersample,
           onProgress: (done) => {
@@ -387,6 +406,7 @@ export function install(host) {
         const image = step.apart ? await coloured(pooled, field, drawn, mine) : pooled.shade(field, drawn).image;
         if (image === null || mine !== generation) return;
         paint(image, grid);
+        witness.took[index] = Math.round(performance.now() - began);
         witness.stage = index;
       }
       showState("final");

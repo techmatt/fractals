@@ -186,7 +186,7 @@ await check("back to general, and a preview", async () => {
   const done = await settledOn(target);
   if (!done) note("preview", `did not settle on ${target}: ${JSON.stringify(await witness())}`);
   const box = await page.ev(`(() => { const c = document.getElementById('browse-picture'); return { css: c.getBoundingClientRect().width, grid: c.width, shown: !c.hidden }; })()`);
-  if (box.css > 1600 || box.grid > 1600) note("preview", `wider than 1600: ${JSON.stringify(box)}`);
+  if (box.grid > 2560) note("preview", `a grid wider than 2560: ${JSON.stringify(box)}`);
   const chrome = await chromeState();
   if (!chrome.bar || !chrome.head) note("preview", `the chrome is covered: ${JSON.stringify(chrome)}`);
   // Copy link in a preview is the seat's link, the one Open in explorer loads.
@@ -195,6 +195,50 @@ await check("back to general, and a preview", async () => {
   if (got?.split("?")[1] !== link) note("copy", `a preview copied ${String(got).slice(0, 90)}, not ${link.slice(0, 90)}`);
   return { target, done, box, copied: got?.split("?")[1] === link, workers: (await page.metrics()).workers };
 });
+
+// The preview's size *(browse_preview_size_ckpt153)*: within 85% of the layer each way, at
+// the seat's aspect, with the tab row above it and the bar under it on screen, and a grid
+// that follows the device pixels to 2560 across and no further. The 2x case is the cap's.
+// An override that moves only the pixel ratio, or nothing, fires no `resize`, so one is sent:
+// what is under test is the size a redraw chooses, not whether the browser announces it.
+async function metrics(width, height, deviceScaleFactor = 1) {
+  await page.send("Emulation.setDeviceMetricsOverride", { width, height, deviceScaleFactor, mobile: false });
+  await page.ev(`window.dispatchEvent(new Event('resize'))`);
+}
+for (const [width, height, ratio] of [[1600, 1100, 1], [2560, 1440, 1], [2560, 1440, 2]]) {
+  await check(`the preview at ${width}x${height} at ${ratio}x`, async () => {
+    const started = (await witness()).started;
+    const on = await page.ev(`document.getElementById('browse-preview').dataset.key`);
+    await metrics(width, height, ratio);
+    const redrawn = await until(`globalThis.__browse.started > ${started}`, 40);
+    if (!redrawn) note("size", `${width}x${height}: no redraw on resize`);
+    await settledOn(on);
+    const got = await page.ev(`(() => {
+      const r = (id) => { const b = document.getElementById(id).getBoundingClientRect(); return { top: b.top, bottom: b.bottom, width: b.width, height: b.height }; };
+      const head = document.querySelector('#browse > .side-head').getBoundingClientRect();
+      const bar = document.querySelector('.browse-bar').getBoundingClientRect();
+      const c = document.getElementById('browse-picture');
+      const w = globalThis.__browse;
+      return { layer: r('browse'), picture: r('browse-picture'), headBottom: head.bottom, barBottom: bar.bottom,
+        grid: { width: c.width, height: c.height }, box: w.box, took: w.took, inner: innerHeight };
+    })()`);
+    const { layer, picture, grid } = got;
+    const share = { width: picture.width / layer.width, height: picture.height / layer.height };
+    if (share.width > 0.851 || share.height > 0.851) note("size", `${width}x${height}: over 85% ${JSON.stringify(share)}`);
+    if (Math.max(share.width, share.height) < 0.8) note("size", `${width}x${height}: neither side binds ${JSON.stringify(share)}`);
+    const aspect = Math.abs(picture.width / picture.height - grid.width / grid.height);
+    if (aspect > 0.01) note("size", `${width}x${height}: the grid's aspect is not the box's`);
+    if (got.headBottom > picture.top) note("size", `${width}x${height}: the tab row covers the picture`);
+    if (got.barBottom > got.inner) note("size", `${width}x${height}: the bar is off screen`);
+    if (grid.width > 2560) note("size", `${width}x${height}: a grid ${grid.width} wide`);
+    if (ratio > 1 && picture.width * ratio > 2560 && grid.width !== 2560) note("size", `${width}x${height}@${ratio}: grid ${grid.width}, not capped at 2560`);
+    return { share, box: got.box, grid, finalMs: got.took[2], took: got.took };
+  });
+}
+const before = (await witness()).started;
+await metrics(1600, 1100, 1);
+await until(`globalThis.__browse.started > ${before}`, 40);
+await settledOn(await page.ev(`document.getElementById('browse-preview').dataset.key`));
 
 await check("twenty steps right, fast", async () => {
   const before = await witness();

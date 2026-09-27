@@ -654,8 +654,11 @@ where the walk found the location at a nucleus, `spiral` where a person called i
 The chip row, the tally and the dropdown are `gallery.js`'s own exports, so both surfaces
 draw them one way, and a collection either has fetched is one fetch for both.
 
-**The preview** is one picture, fit to the window and at most `PREVIEW_MAX` (1600) pixels
-wide, drawn at most 1600 device pixels across whatever the screen's density. The tile goes
+**The preview** is one picture, within `PREVIEW_SHARE` (85%) of the layer's width and
+height, whichever binds first, and within the room under the tab row less the bar under it,
+so both stay on screen *(browse_preview_size_ckpt153, Matt: the stages are fast, so the
+picture is big)*. Its grid follows the screen's device pixels up to `PREVIEW_GRID_MAX`
+(2560) across, so a 4K or 2× screen draws at most 2560 wide. The tile goes
 up at once, scaled to the box, so there is never an empty frame; then the seat's link is
 drawn through the explorer's renderer in the viewer's three stages (a quarter-resolution
 field, one sample a pixel, then `FINAL_SUPERSAMPLE` each way), each replacing the last,
