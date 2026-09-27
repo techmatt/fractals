@@ -625,18 +625,19 @@ def _row(point: Misiurewicz) -> tuple[Frame, Frame, Frame]:
 
 # ------------------------------------------------------------------------- the multibrots
 #
-# One row to a degree, parameter plane and then Julia plane (deep_multibrots_gallery_
-# ckpt154). Each panel is a link taken whole, and each comes from the first source that has
-# one, in the brief's order: Matt's own links, which are also Deep-gallery rows since that
-# prompt; then the Deep gallery; then the dive candidates' sheet, which no panel needed. A
-# degree whose Julia plane the gallery has no deep frame for holds its cell open rather than
-# borrowing an embedded Julia set from the parameter plane. The frames repeat gallery rows
-# on purpose, which is why the figure carries no reuse claim for them: the no-reuse rule is
+# One row to a degree, and each row a pair (deep_multibrots_pairs_ckpt154): a location on
+# the parameter plane on the left, and on the right the Julia set for that location's c,
+# zoomed in close to the same point. Every panel is a link taken whole and every one is also
+# a Deep-gallery row. A right panel's `cx`, `cy` is its left panel's centre spelled digit for
+# digit, except in degree 6, whose pair came from the gallery before this rule and whose c
+# sits 0.04 of the left frame's width from that frame's centre. Degree 5 has no Julia frame
+# yet and holds its cell open rather than borrowing one. The frames repeat gallery rows on
+# purpose, which is why the figure carries no reuse claim for them: the no-reuse rule is
 # about figures, and none of these is on another figure. Matt replaces panels as he finds
 # better ones, and a replacement is an edit to this table and a redraw.
 
 #: What a held-open Julia cell says under itself.
-NO_JULIA = "no deep frame yet"
+NO_JULIA = "no Julia frame yet"
 
 MULTIBROTS = (
     (
@@ -649,14 +650,15 @@ MULTIBROTS = (
             "A tiny copy of the Mandelbrot set at the center of a pinwheel of spiral arms in "
             "magenta, violet, and pale blue.",
         ),
-        # Gallery row 19 (Embedded Julia sets).
+        # Matt's link, and gallery row 45 (Symmetry stages).
         _linked(
-            "dv=3&cx=-0.749370532470036478513037742&cy=0.041472667068168544344087907"
-            "&x=-0.749370532470036479016511828&y=0.041472667068168544958065569&w=4.74e-18"
-            "&n=599688&p=Brass%20Tide&phase=0.658&scale=absolute&lambda=0.15&period=5.91",
+            "dv=3&cx=-0.77552241446268734437207&cy=-0.12995613474704090823188"
+            "&x=-0.775522414462686291736175223972636&y=-0.12995613474704156048830064524403"
+            "&w=1.0476272026932324e-13&n=1012170&p=carried-away-25&phase=0.3323"
+            "&scale=absolute&lambda=0&period=0.295",
             "Julia set",
-            "A deep frame of a Julia set: a long diamond of black islands and filigree edged "
-            "in gold and cream, on dark teal.",
+            "The Julia set for that point, zoomed in close to it: a four-armed pinwheel of "
+            "spirals in violet and magenta around a small black island.",
         ),
     ),
     (
@@ -669,7 +671,16 @@ MULTIBROTS = (
             "A small black copy of the degree-3 multibrot in a ring of gold filigree, with "
             "branching arms on amber.",
         ),
-        _blank("Degree 3 Julia set", NO_JULIA),
+        # Matt's link, and gallery row 43 (Spirals and seahorses).
+        _linked(
+            "dv=3&f=julia3&cx=0.15900762390528316041934&cy=1.08826091712682204649985"
+            "&x=0.1590076239053360302256466115021&y=1.088260917126819240286910894453632"
+            "&w=4.587102537913604e-14&n=1239788&p=scattering-25&phase=0.3034&scale=absolute"
+            "&period=3550",
+            "Degree 3 Julia set",
+            "The degree-3 Julia set for that point, zoomed in close to it: two large spirals "
+            "of gold filigree on amber and brown.",
+        ),
     ),
     (
         # Matt's link, and gallery row 36 (Symmetry stages).
@@ -681,17 +692,26 @@ MULTIBROTS = (
             "A small black copy of the degree-4 multibrot at the center of spiral arms of "
             "filigree in green and white.",
         ),
-        _blank("Degree 4 Julia set", NO_JULIA),
+        # Matt's link, and gallery row 44 (Filigree).
+        _linked(
+            "dv=3&f=julia4&cx=0.5083915086801963955211&cy=0.6503769802361925397409"
+            "&x=0.50839150868150646175466574305506&y=0.65037698023628680100690871973694"
+            "&w=1.2665591191544339e-12&n=1620000&p=BuGn&phase=0.976&mirror=1&scale=absolute"
+            "&lambda=0&period=0.2008",
+            "Degree 4 Julia set",
+            "The degree-4 Julia set for that point, zoomed in close to it: pinwheels of green "
+            "and white filigree around a tiny black island.",
+        ),
     ),
     (
-        # Gallery row 15 (Symmetry stages), the gallery's one degree-5 frame.
+        # Matt's link, and gallery row 41 (Framed minibrots).
         _linked(
-            "dv=3&f=multibrot5&x=0.220832608733647834044122991&y=0.709617739665916382844629932"
-            "&w=3.6e-20&n=83410&p=Aurora%20Curtain&phase=0.699&scale=absolute&lambda=0"
-            "&period=0.28",
+            "dv=3&f=multibrot5&x=0.66616831546320803136979759&y=0.78273529790799258570424766"
+            "&w=5.7066758941766176e-18&n=1765050&p=dolphin-dance-25&phase=0.2716"
+            "&scale=absolute&lambda=0&period=0.2065",
             "Degree 5",
-            "A small copy of the degree-5 multibrot at the center of a star of smaller "
-            "copies, in green and blue.",
+            "A small black copy of the degree-5 multibrot in a pentagonal frame of filigree, "
+            "with spirals around it in blue and white.",
         ),
         _blank("Degree 5 Julia set", NO_JULIA),
     ),
@@ -874,11 +894,11 @@ FIGURES = {
         (960, 540),
         2,
         "one row to a degree, the Mandelbrot set and then the multibrots of degrees 3 to "
-        "6, the parameter plane left and a Julia plane of that degree right, each panel a "
-        "Deep-tab link taken whole with its own colouring and cap; a degree with no deep "
-        "Julia-plane frame in the Deep gallery holds its cell open. The links are "
-        "MULTIBROTS', and the source that filled each is the comment beside it there: "
-        "Matt's own links for degrees 2 to 4, Deep-gallery rows for the rest",
+        "6, each row a location on the parameter plane left and the Julia set for that "
+        "location's c right, zoomed in close to the same point, each panel a Deep-tab link "
+        "taken whole with its own colouring and cap; degree 5 has no Julia frame yet and "
+        "holds its cell open. The links are MULTIBROTS', each a Deep-gallery row named in "
+        "the comment beside it there",
         maps="one to a panel",
     ),
 }
@@ -924,11 +944,12 @@ WORDS = {
         "agree up to a fixed scale and rotation.",
     ),
     "deep-multibrots": (
-        "Five rows of deep frames, one for each degree from 2 to 6: the parameter plane, "
-        "and beside it a Julia set of that degree for degrees 2 and 6.",
-        "Deep frames on the Mandelbrot set and the multibrots of degrees 3 to 6, one degree "
-        "to a row: the parameter plane on the left, and on the right a Julia set of the same "
-        "degree where the Deep gallery has a deep frame of one.",
+        "Five rows of deep frames, one for each degree from 2 to 6: a location on the "
+        "parameter plane, and beside it the Julia set for that location's c, for every "
+        "degree but 5.",
+        "Deep locations on the Mandelbrot set and the degree-3 to degree-6 multibrots (top "
+        "to bottom). Each row shows a location on the parameter plane (left) and the Julia "
+        "set for that location's c, zoomed in close to the same point (right).",
     ),
 }
 

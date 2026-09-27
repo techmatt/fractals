@@ -238,7 +238,7 @@ it in place, and what it writes is committed like any other change, under the 20
 | `assets/images/galleries/seated-candidates/*.webp`, one tile a seat | 6,299 files, 62.85 MB | `python -m builder seats` |
 | `explorer/palettes.bin`, every map's control points | 1.04 MB | `python -m builder explorer --palettes-only` |
 | every plane's atlas slot pictures, `assets/images/atlas/<plane>-*.webp` | 1,464 files, 27.47 MB | `python -m builder atlas --ingest` |
-| `explorer/deep-gallery/*.webp`, the Deep tab's gallery tiles, one a register row | 40 files, 0.51 MB (2026-09-27) | `python -m builder deep-gallery thumbs` |
+| `explorer/deep-gallery/*.webp`, the Deep tab's gallery tiles, one a register row | 45 files, 0.58 MB (2026-09-27) | `python -m builder deep-gallery thumbs` |
 | `explorer/judges/`, the ORT runtime and the render judge (the fine head is no longer placed, pre_closeout_website_ckpt140) | 4 files, 33.83 MB | `python -m builder walk` |
 
 **`palettes.bin` is not optional.** Served without the blob, the explorer's first fetch is a
@@ -445,9 +445,9 @@ panel's shape (`.figure-blank`, `site.css`) with its label under it; `rasters` s
 no check looks for a file, and `links.py` skips it without renumbering, so the panel after a
 blank is still `figure:<id>#<its cell>` and a blank has no `links.jsonl` row at all rather
 than a refusal. A maker says one with `locations.Made(None, None, …, blank=(w, h))`, and the
-landing writes the row without encoding anything. `deep-multibrots` is the first: the Julia
-cells of the degrees the Deep gallery has no deep Julia-plane frame for, held open until
-Matt fills them.
+landing writes the row without encoding anything. `deep-multibrots` is the first: it held
+three Julia cells open until Matt sent their frames, and since deep_multibrots_pairs_ckpt154
+holds one, degree 5's.
 
 Either way the record describes the **un-annotated** picture wherever the maker letters or
 marks the tile, because a way into the explorer is a way into the place and not into the
@@ -1283,8 +1283,8 @@ colouring, so a colour is one escape count across a strip, **with four exception
 map of its own. `deep-misiurewicz-pairs` uses one map to a row (below), and both of
 `deep-shallow-and-deep`'s links are Matt's as he gave them, and its shallow half carries a
 colouring of its own on the leveled scale *(PLACE_deep_zoom_v3_ckpt145)*, so across that
-pair a colour is not one escape count. And `deep-multibrots` is Matt's links and Deep-gallery
-rows taken whole, one colouring **to a panel** (`Figure.maps`), because each panel is a
+pair a colour is not one escape count. And `deep-multibrots` is Matt's links, each also a Deep-gallery
+row, taken whole, one colouring **to a panel** (`Figure.maps`), because each panel is a
 frame somebody chose in its own colours and the figure is about the places, not about
 comparing counts across them. Measured on the
 f64 figure at the widths f64 still resolves: the engine's colouring and the tab's shade of
@@ -1292,9 +1292,11 @@ the perturbation field agree pixel for pixel by eye, so the pair is a fair compa
 
 Landing is the standard split landing plus one step. A new figure needs a `pending` row
 whose block is on the page, then `deep <id> --place`, then `links --write`, then
-`figure <id> --heal`, the order *Still hand-done* names. Seven figures, 36 drawn panels
-and three blank ones, since `deep-multibrots` landed *(deep_multibrots_gallery_ckpt154)*: its
-seven took 8 min 47 s at below-normal priority, the caps being 83k to 1.62M. It was six and 29 from
+`figure <id> --heal`, the order *Still hand-done* names. Seven figures, 38 drawn panels
+and one blank one, since `deep-multibrots` was redrawn as pairs
+*(deep_multibrots_pairs_ckpt154)*: its nine took 1 min 54 s at below-normal priority, five of
+them unchanged and back byte for byte. When it landed *(deep_multibrots_gallery_ckpt154)*
+with three blank cells, its seven took 8 min 47 s, the caps being 83k to 1.62M. It was six and 29 from
 when `deep-final-colorings` landed four colourings of the video's final frame
 *(deep_opening_palette_ckpt150)*, which took 140 s; the three drawn in deep_zoom_edits_ckpt145 took 177 s together on this
 machine, `deep-descent-pairs`' six took 53 s, and `deep-misiurewicz-pairs`' nine took 23 s.
