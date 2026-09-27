@@ -42,10 +42,11 @@ because a plate cropped tighter spells one distance with a bigger number — and
 partition's rather than the atlas's because the maker thins every plane at twelve pixels of
 *its own* base, so the distance on the plane differs from one plane to the next.
 
-`pictures` is `tracked` or `staged`. A staged plane's slot pictures are untracked and
-listed in `.git/info/exclude`, the way the staged gallery's are: the record commits and the
-pictures wait for a deploy. A clone has the record and none of the files, which `check`
-reports as a named skip rather than as a broken page or a pass.
+`pictures` is `tracked` or `staged`. A staged plane's slot pictures were kept out of
+history until a deploy, and a clone had the record and none of the files, which `check`
+reports as a named skip rather than as a broken page or a pass. Every plane is `tracked`
+since deploy_staged_assets_ckpt152 lifted that rule; the state stays for a plane that is
+ever staged again.
 
 `atlas/<partition>.jsonl` carries one **`dot`** row per place:
 
@@ -150,7 +151,7 @@ SLOTS = ("mandelbrot", "julia", "gallery")
 #: never both.
 PLANES = ("mandelbrot", "julia")
 
-#: Whether a plane's slot pictures are committed, or untracked and waiting for a deploy.
+#: Whether a plane's slot pictures are committed, or kept out of history until a deploy.
 PICTURES = ("tracked", "staged")
 
 #: What became of a gallery picture's tone curve: untouched, recorded, or not recorded.
@@ -751,10 +752,10 @@ def problems() -> list[str]:
 def staged_without_pictures() -> list[Partition]:
     """The staged planes whose slot pictures this machine does not have, for `check`'s skips.
 
-    Never a failure: the pictures are untracked by design, so a clone holds the record and
-    none of the files. One picture present means the ingest has run here, and then the whole
-    plane is held to its record exactly as a tracked one is — a half-landed plane is a real
-    problem and says so.
+    Never a failure: a staged plane's pictures are kept out of history by design, so a clone
+    holds the record and none of the files. One picture present means the ingest has run
+    here, and then the whole plane is held to its record exactly as a tracked one is — a
+    half-landed plane is a real problem and says so.
     """
     try:
         atlas = load_all()

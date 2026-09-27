@@ -41,9 +41,9 @@ const engine = new WebAssembly.Instance(
   {},
 ).exports;
 
-// The gradients live in `explorer/palettes.bin`, which is untracked — a megabyte of
-// control points, where what is committed is the index that addresses them. A clone that
-// has not baked it, which is every CI run, still holds the frame claim below; it just
+// The gradients live in `explorer/palettes.bin`, a megabyte of control points committed
+// beside the index that addresses them since deploy_staged_assets_ckpt152. A tree without
+// it still holds the frame claim below; it just
 // asks for the spec without a colormap in it. The flag says which happened rather than
 // leaving a weaker test looking like the same test.
 const BLOB = fileURLToPath(new URL("../explorer/palettes.bin", HERE));
@@ -94,8 +94,8 @@ const everySlot = partitions.flatMap((partition) =>
   ),
 );
 
-/** A staged plane's slot pictures are untracked, so a clone has the record and none of the
- *  files. One of them present means the ingest ran here, and then all of them are held. */
+/** A staged plane's slot pictures stay out of history until a deploy, so a clone has the
+ *  record and none of the files (every plane is tracked today). One of them present means the ingest ran here, and then all of them are held. */
 const unlanded = (partition) =>
   partition.pictures === "staged" &&
   !partition.dots.some((dot) =>

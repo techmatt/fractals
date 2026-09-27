@@ -757,11 +757,14 @@ one without asserting it.
 
 **Every check runs on a bare clone, and what cannot run says so by name.** CI clones this
 repository alone, so a check that needs the wallpapers checkout is a check CI never makes.
-Six of them want it — the next-door half of `stamps`, which holds the release writer's
+Seven of them want it — the next-door half of `stamps`, which holds the release writer's
 links to the explorer's own; `library`, which holds `palettes/library.jsonl` to the palette
 library next door; `bake`, which rebakes the explorer's modules; `seats`, which holds a
 panel to the picture its gallery ships; `coloring`, which holds the site's wallpaper
-coloring to the one next door; and the source-key half of `figures` — and
+coloring to the one next door; the source-key half of `figures`; and the next-door half of
+`packs`, which holds the Wallpaper packs record to what the project answers today and needs
+**the full set as well as the checkout** (`full_set_root` in `local.toml`, and there on
+disk) — and
 without it each reports a **named skip**: `skipped` rather than `ok`
 on its own line, and counted in the exit summary. Pillow's absence is the same shape, for pixel sizes. Never a crash before the
 other checks, and never a silent pass. *(This is a rule because it was broken: `check`
@@ -775,8 +778,9 @@ lands any missing strip.
 that a bare clone can ask came back clean; it says nothing about the palette record, the
 explorer's generated modules, whether a seat panel is still the picture its gallery
 ships, whether the release writer still spells the explorer's links, whether the site
-still colors a wallpaper the way the project does, or a single one of
-the source keys a figure cites, because those six questions were skipped by name. Before a prompt is called done, run
+still colors a wallpaper the way the project does, whether the packs record is still what
+the project answers, or a single one of the source keys a figure cites, because those seven
+questions were skipped by name. Before a prompt is called done, run
 `python -m builder check` on this machine with the checkout configured and read the skip
 count in the exit summary — a run that reports skips is a run that answered part of the
 question.

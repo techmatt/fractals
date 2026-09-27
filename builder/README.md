@@ -212,7 +212,11 @@ The two writers are the explorer's downloads and the release writer next door
 comes through, the phase-3 2560×1440 ss4 pass included). The second spells the permalink
 in Python, which `emit.mjs` says should not happen, so `check`'s **stamps** holds it to the
 contract: every seat of the general collection spelled both ways to the same string, and
-one PNG and one JPG embedded both ways to the same bytes. The base both use is `SITE_URL`
+one PNG and one JPG embedded both ways to the same bytes. **A third writer is held the same
+way** *(preclose_website_ckpt153)*: `fractal-engine render-link`, whose `embed.rs` ports
+`embed_link` to Rust. The check draws the sample link with the checkout's release binary as
+it stands, 48×27 at one sample a pixel, as a PNG and a JPG; each, its fields stripped, must
+come back byte for byte from `embed_link` and from `stamp.js`. Nothing is built for it. The base both use is `SITE_URL`
 with `explorer/` after it, and the hosting choice is not made: moving it is one line in
 `pages.py`, one in `explorer/stamp.js` and one in `curation/explorer_link.py`, and `stamps`
 fails until all three agree.

@@ -13,10 +13,10 @@ recipes only where a config box was ticked, the box went with `explorer_controls
 and the 5.1 MB it downloaded is no longer placed. `RETIRED` removes it from a tree that
 still holds it.
 
-Nothing here is committed. The model is 5.1 MB and barely compresses, and the
-runtime's 28 MB of wasm is 6.7 MB gzipped on the wire, so they stay out of history the
-way the palette blob and the gallery tiles do:
-`.git/info/exclude` names `explorer/judges/`, and this command is what fills it. A tree
+What this places is committed *(deploy_staged_assets_ckpt152)*. The model is 5.1 MB and
+barely compresses, and the runtime's 28 MB of wasm is 6.7 MB gzipped on the wire; they sat
+out of history with the palette blob and the gallery tiles until that deploy, and a
+re-place is a tracked diff under the 20 MB gate now. A tree
 without them still serves a Walk tab, which runs on the screen gates alone and says so in
 its console.
 

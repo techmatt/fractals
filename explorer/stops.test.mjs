@@ -48,7 +48,7 @@ test("the index names the layout this reader reads", () => {
   assert.equal(PROVENANCE.blob.layout, "planar-delta");
 });
 
-// The blob is untracked, so a bare clone has the index and not the gradients.
+// The blob is committed beside the index; the skip is for a tree that has lost it.
 const BLOB = fileURLToPath(new URL("./palettes.bin", import.meta.url));
 test("the blob on disk is the one the index was baked against", { skip: !existsSync(BLOB) && "palettes.bin is not baked here" }, () => {
   const bytes = new Uint8Array(readFileSync(BLOB));

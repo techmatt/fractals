@@ -125,8 +125,9 @@ from .renders import EngineError, wallpapers_root
 #: Where the explorer's committed artifacts live.
 EXPLORER_DIR = SITE_ROOT / "explorer"
 PALETTES_MODULE = EXPLORER_DIR / "palettes.js"
-#: The control points themselves. Untracked: a megabyte of binary is the one thing here
-#: that is library-sized, and what is committed is the index that addresses it.
+#: The control points themselves: a megabyte of binary, the one thing here that is
+#: library-sized, committed beside the index that addresses it since
+#: deploy_staged_assets_ckpt152.
 PALETTES_BLOB = EXPLORER_DIR / "palettes.bin"
 #: How the blob lays a map's colours out; `stops.js` refuses an index naming another.
 BLOB_LAYOUT = "planar-delta"
@@ -1548,9 +1549,7 @@ def bake(*, palettes_only: bool = False) -> list[str]:
         f"({made.offered} offered, {made.random} a random pick may draw, {made.families} with "
         f"a hue family), default {made.chosen}"
     )
-    written.append(
-        f"{PALETTES_BLOB.relative_to(SITE_ROOT).as_posix()}  {len(made.blob):,} bytes, untracked"
-    )
+    written.append(f"{PALETTES_BLOB.relative_to(SITE_ROOT).as_posix()}  {len(made.blob):,} bytes")
     if PALETTES_SWATCH.is_file():
         written.append(
             f"{PALETTES_SWATCH.relative_to(SITE_ROOT).as_posix()}  "

@@ -5553,10 +5553,9 @@ async function main() {
     if (!saverAsked) draw();
   }
 
-  // The gallery is the last thing started and the only one allowed to fail quietly: its
-  // pictures are untracked until this is deployed, so a clone has the record and no
-  // images, and that is a panel with a sentence in it rather than a page that will not
-  // open.
+  // The gallery is the last thing started and the only one allowed to fail quietly: a
+  // tree holding its record and not its pictures is a panel with a sentence in it rather
+  // than a page that will not open.
   tiles = gallery.install({
     base: import.meta.url,
     collection: document.getElementById("gallery-collection"),

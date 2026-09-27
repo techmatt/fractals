@@ -27,7 +27,7 @@
 // headers that would let it share memory. Where the runtime cannot load at all, `load`
 // throws and the walk runs on the screen gates alone.
 //
-// The assets are untracked and placed by `python -m builder walk`; see explorer/README.md.
+// The assets are committed and placed by `python -m builder walk`; see explorer/README.md.
 
 import { resizeBicubic, toTensorData } from "./resize.mjs";
 

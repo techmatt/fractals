@@ -20,7 +20,7 @@
 // Nothing on the page reads either.
 //
 // **A judgeless run is not a reading of this tab.** The judges are 5.1 MB of ONNX and 28 MB
-// of runtime, untracked, placed by `python -m builder walk`; without them the walk picks at
+// of runtime, committed, placed by `python -m builder walk`; without them the walk picks at
 // random among what the screen passes, which is a different program. `gate` timings are the
 // test — a coin flip is not timed — and a run that took none says so and is thrown away.
 

@@ -27,10 +27,10 @@
 // interleaved form and each map occupies the same span, so the index addresses it
 // unchanged; `install` undoes it once and `stopsOf` reads `r g b` as it always did.
 //
-// **The blob is untracked.** It is the one library-sized thing the explorer needs, and
-// what is committed is the index that addresses it; `python -m builder explorer
-// --palettes-only` writes it. A clone that has not baked it gets the sentence below
-// rather than a page that draws nothing for no stated reason.
+// **The blob is committed beside its index** *(deploy_staged_assets_ckpt152)*. It is the one
+// library-sized thing the explorer needs, and `python -m builder explorer --palettes-only`
+// rewrites both. A tree without it gets the sentence below rather than a page that draws
+// nothing for no stated reason.
 
 import { PALETTES, PROVENANCE } from "./palettes.js";
 
@@ -114,10 +114,9 @@ export async function fetchStops(url) {
   const response = await fetch(url);
   if (!response.ok) {
     throw new Error(
-      `${PROVENANCE.blob.file} is not there (${response.status}). It is untracked — the ` +
-        "gradients are a megabyte of binary and what is committed is the index that " +
-        "addresses them — so a fresh clone bakes it with `python -m builder explorer " +
-        "--palettes-only`.",
+      `${PROVENANCE.blob.file} is not there (${response.status}). It is committed beside ` +
+        "the index that addresses it, and `python -m builder explorer --palettes-only` " +
+        "bakes it again.",
     );
   }
   const bytes = new Uint8Array(await response.arrayBuffer());

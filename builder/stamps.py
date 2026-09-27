@@ -1,11 +1,13 @@
 """Whether a file's embedded link is the contract's link, whichever repository wrote it.
 
 Every full-size picture this project writes carries the explorer link that draws it again
-*(embedded_links_ckpt145)*: a download from the explorer, stamped by `explorer/stamp.js`,
-and a release render next door, stamped by `fractal-wallpapers`' `curation/embed_link.py`
-with a link its `curation/explorer_link.py` spells. That last one is a second author of the
-permalink contract, which `builder/emit.mjs` says in so many words should not exist — it
-does because the release writer cannot ask node — and this is what keeps it honest.
+*(embedded_links_ckpt145)*: a download from the explorer, stamped by `explorer/stamp.js`;
+a release render next door, stamped by `fractal-wallpapers`' `curation/embed_link.py`
+with a link its `curation/explorer_link.py` spells; and a picture `fractal-engine
+render-link` draws from a link, stamped by the engine's port of `embed_link`. The release
+writer is a second author of the permalink contract, which `builder/emit.mjs` says in so
+many words should not exist — it does because the release writer cannot ask node — and
+this is what keeps it, and the engine's copy of its embedder, honest.
 
 Three halves:
 
@@ -20,7 +22,13 @@ Three halves:
   the refusal is what is held.
 * **bytes**, the same condition: one PNG and one JPEG, drawn next door with Pillow,
   embedded by both writers with one link, and the two files held equal byte for byte — and
-  each decoded, before and after, to the same pixels.
+  each decoded, before and after, to the same pixels. **And a third writer**
+  *(preclose_website_ckpt153)*: `fractal-engine render-link`, whose `engine/src/embed.rs` is
+  a Rust port of `embed_link`. It draws the same link as a 48×27 PNG and JPEG with the
+  checkout's release binary as it stands — nothing is built — and each file, its fields
+  taken out by `embed_link.strip`, is embedded again by `embed_link` and by `stamp.js`, and
+  both must give back the engine's file byte for byte. A binary older than its source is
+  checked as it is, which is what `renders.py` draws with too.
 
 A thousand seats are read the way `builder/seats.py` reads them — the candidate ledger
 streamed for the recipes and the run records for the stamps — and that is most of this
@@ -96,8 +104,29 @@ for kind, options in (("png", {"format": "PNG"}), ("jpeg", {"format": "JPEG", "q
         "stripped_is_raw": embed_link.strip(embedded) == raw,
         "link_in": embed_link.link_in(embedded),
     }
-print(json.dumps({"base": explorer_link.EXPLORER_URL, "spelled": spelled, "files": files}))
+engined = {}
+for kind, held in ask["engine"].items():
+    drawn = base64.b64decode(held)
+    raw = embed_link.strip(drawn)
+    engined[kind] = {
+        "raw": base64.b64encode(raw).decode(),
+        "same_as_embed_link": embed_link.embed(raw, ask["query"]) == drawn,
+        "same_pixels": Image.open(io.BytesIO(raw)).convert("RGB").tobytes() == Image.open(
+            io.BytesIO(drawn)
+        ).convert("RGB").tobytes(),
+        "link_in": embed_link.link_in(drawn),
+    }
+print(json.dumps(
+    {"base": explorer_link.EXPLORER_URL, "spelled": spelled, "files": files, "engined": engined}
+))
 """
+
+#: Where `fractal-engine render-link` draws the sample, under the ignored runtime tree.
+ENGINE_SAMPLES = SITE_ROOT / "artifacts" / "stamps"
+
+#: The sample's size for the engine half: big enough to be a picture, small enough to cost
+#: nothing. One sample a pixel, so the draw is the link's and not a resample's.
+ENGINE_SIZE = (48, 27)
 
 #: The link both writers embed in the bytes half. A real one, as a seat spells it.
 SAMPLE_QUERY = (
@@ -162,9 +191,19 @@ def _next_door(base: str | None) -> list[str]:
         views[pick.key] = view
     emitted = links.emit(views)
 
+    engined = {}
+    for kind, suffix in (("png", ".png"), ("jpeg", ".jpg")):
+        out = ENGINE_SAMPLES / f"render-link{suffix}"
+        try:
+            renders.render_link(SAMPLE_QUERY, out, ENGINE_SIZE, 1)
+        except renders.EngineError as error:
+            return [f"fractal-engine render-link could not draw the sample {kind}: {error}"]
+        engined[kind] = base64.b64encode(out.read_bytes()).decode()
+
     ask = {
         "rows": {pick.key: {"recipe": pick.recipe, "level": levels[pick.key]} for pick in resolved},
         "query": SAMPLE_QUERY,
+        "engine": engined,
     }
     answer = seats._program(PROGRAM, "spelling the seats' links next door", ask=ask)
 
@@ -207,11 +246,12 @@ def _next_door(base: str | None) -> list[str]:
             )
 
     files = answer["files"]
+    drawn = answer["engined"]
+    raws = {kind: held["raw"] for kind, held in files.items()}
+    raws.update({f"engine-{kind}": held["raw"] for kind, held in drawn.items()})
     completed = subprocess.run(
         ["node", "--input-type=module", "-e", EMBED_JS],
-        input=json.dumps(
-            {"query": SAMPLE_QUERY, "files": {kind: held["raw"] for kind, held in files.items()}}
-        ),
+        input=json.dumps({"query": SAMPLE_QUERY, "files": raws}),
         capture_output=True,
         text=True,
         encoding="utf-8",
@@ -234,6 +274,18 @@ def _next_door(base: str | None) -> list[str]:
             found.append(f"a {kind} with embed_link's fields taken back out is not the original")
         if held["link_in"] != SAMPLE_QUERY:
             found.append(f"a {kind} embed_link wrote reads back as {held['link_in']}")
+    for kind, held in drawn.items():
+        engine_file = ENGINE_SAMPLES / f"render-link.{'png' if kind == 'png' else 'jpg'}"
+        if held["link_in"] != SAMPLE_QUERY:
+            found.append(f"a {kind} render-link wrote reads back as {held['link_in']}")
+        if not held["same_as_embed_link"]:
+            found.append(
+                f"a {kind} render-link wrote is not what embed_link makes of its own picture"
+            )
+        if base64.b64decode(here[f"engine-{kind}"]) != engine_file.read_bytes():
+            found.append(f"a {kind} render-link wrote is not what stamp.js makes of its picture")
+        if not held["same_pixels"]:
+            found.append(f"a {kind} render-link wrote decodes differently with its fields out")
     return found
 
 

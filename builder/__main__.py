@@ -586,7 +586,7 @@ def _parser() -> argparse.ArgumentParser:
     )
 
     commands.add_parser(
-        "walk", help="place the explorer Walk tab's render judge and runtime (untracked)"
+        "walk", help="place the explorer Walk tab's render judge and runtime (tracked)"
     )
 
     served = commands.add_parser("serve", help="preview the committed tree over localhost")
@@ -1579,7 +1579,7 @@ def _do_walk(options: argparse.Namespace) -> int:
     landed = walk_module.place()
     for path, size in landed:
         print(f"placed {path.relative_to(SITE_ROOT).as_posix()}  {size:,} bytes")
-    print(f"{sum(size for _, size in landed):,} bytes, untracked (.git/info/exclude)")
+    print(f"{sum(size for _, size in landed):,} bytes, tracked: commit what moved")
     return 0
 
 

@@ -20,8 +20,10 @@ So this asks the question itself, in two halves:
   is the ckpt141 defect on purpose, and which has to land outside the tolerance — a pixel
   half that cannot tell that link from the right one has stopped checking anything.
 
-The pixel half needs three things a bare clone lacks, and says which by name: the staged
-thumbnails, the untracked `explorer/palettes.bin`, and Pillow. The members half needs none.
+The pixel half needs three things, and says which by name where one is missing: the
+thumbnails, `explorer/palettes.bin`, and Pillow. The first two are committed
+*(deploy_staged_assets_ckpt152)*, so on a clone it is Pillow alone. The members half needs
+none.
 """
 
 from __future__ import annotations
@@ -80,7 +82,7 @@ def pixels_unaskable() -> str | None:
     if not images.available():
         return "Pillow is not installed here"
     if not explorer.PALETTES_BLOB.is_file():
-        return "explorer/palettes.bin is untracked and has not been baked here"
+        return "explorer/palettes.bin is not here"
     planes = {where.split("/")[0] for where in SAMPLE}
     if any(partition.name in planes for partition in atlas.staged_without_pictures()):
         return "the sample's thumbnails are staged and have not been landed on this machine"

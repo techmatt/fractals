@@ -2,7 +2,8 @@
 
 Every one of them read-only, and every one of them runs on a clone with nothing beside
 it. Three things a clone need not have are wanted here — the wallpaper project's
-checkout, Pillow, and a staged gallery's untracked pictures — and what a check does
+checkout, Pillow, and a staged gallery's pictures, which stay out of history until a
+deploy — and what a check does
 without one is report a **named skip**: which check, which half of it, and why. Never a
 crash before the other checks, and never a silent pass. `check` used to build the palette
 library page straight off the checkout, so the first thing it did on a machine without one
@@ -56,8 +57,9 @@ was raise, and every check after it went unrun.
 - **assets** — every image the metadata names exists at the size it claims, every
   thumbnail is current, and no orphan file is left in a gallery directory. A **staged**
   gallery is held to the same things once its pictures are here, bar the thumbnail — its
-  picture is already the explorer panel's tile — and is a named skip where they are not:
-  they are untracked by design, so a clone has the record alone.
+  picture is already the explorer panel's tile — and is a named skip where they are not.
+  The one gallery here is committed whole since deploy_staged_assets_ckpt152, so on this
+  tree that skip does not come up.
 - **prose** — every row of `article/prose.jsonl` names a page that is in the article and
   is written. The master itself lives in the Drive-synced working folder, which is not
   in a clone and never in CI, so what is checked here is the registry and not the
@@ -656,8 +658,9 @@ def _index_markers(article: list[sections.Section]) -> list[str]:
 def staged_without_pictures(gallery: galleries.Gallery) -> bool:
     """Whether a staged gallery's directory holds none of the pictures its record names.
 
-    A staged gallery's pictures are untracked by design — thousands of tiles are tens of
-    megabytes, and what commits is the record. So on a clone, and on any machine where
+    A staged gallery's pictures stay out of history until a deploy, and what commits is
+    the record (the one gallery here has been committed whole since
+    deploy_staged_assets_ckpt152). So on a clone, and on any machine where
     `python -m builder seats` has not been run, the directory is the record alone, and
     that is a check this machine cannot ask rather than a site that is broken. One or more
     pictures present means the command has run and the whole gallery is checked exactly as
@@ -886,18 +889,18 @@ def _bake_problems() -> list[str]:
 def _blob_problems(baked: bytes) -> list[str]:
     """The control points on disk against the ones this bake makes of them.
 
-    **Absent is a problem and not a skip.** The blob is untracked, so a fresh clone of
-    this repository has the index and not the gradients — but this check only runs where
-    the wallpapers checkout is configured, and on such a machine the blob is one command
-    away. A page whose index addresses a file that is not there draws nothing, and saying
-    so here is cheaper than finding out in a browser.
+    **Absent is a problem and not a skip.** The blob is committed beside its index
+    *(deploy_staged_assets_ckpt152)*, so a tree without it has lost a file, and on a machine
+    with the wallpapers checkout it is one command away. A page whose index addresses a file
+    that is not there draws nothing, and saying so here is cheaper than finding out in a
+    browser.
     """
     where = _shown(explorer.PALETTES_BLOB)
     if not explorer.PALETTES_BLOB.is_file():
         return [
             f"{where}: the index in {_shown(explorer.PALETTES_MODULE)} addresses it and it is "
-            "not here. `python -m builder explorer --palettes-only` writes it; it is untracked "
-            "on purpose, so a clone has to bake it."
+            "not here. It is committed, and `python -m builder explorer --palettes-only` writes "
+            "it again."
         ]
     committed = explorer.PALETTES_BLOB.read_bytes()
     if committed == baked:
@@ -1067,10 +1070,10 @@ NO_CHECKOUT = "the fractal-wallpapers checkout is not configured here"
 NO_PILLOW = "Pillow is not installed here"
 
 #: The third state of the machine that stops a check asking its question. A staged
-#: gallery's pictures are untracked on purpose, so a clone has the record and none of the
-#: files it names — which is not the site being wrong, and must not read as the check
+#: gallery's pictures stay out of history until a deploy, so a clone has the record and
+#: none of the files it names — which is not the site being wrong, and must not read as the check
 #: having passed either.
-NO_STAGED_PICTURES = "its pictures are untracked and have not been landed on this machine"
+NO_STAGED_PICTURES = "its pictures are staged and have not been landed on this machine"
 
 
 @dataclass(frozen=True)

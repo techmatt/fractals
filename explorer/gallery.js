@@ -34,10 +34,10 @@
 // still maps every collection it stands in to its place there. A picture shared by two
 // collections is one tile URL, so it is one download however often it is shown.
 //
-// **The record is committed and the pictures are not.** They are tens of megabytes of
-// tiles and stay out of git history until this is deployed, so a clone has the record and
-// no images. That is a panel that says what is missing, not a page that fails to start:
-// the viewer is the page, and the gallery is one of two things the side panel can show.
+// **The record and the pictures are both committed** *(deploy_staged_assets_ckpt152)*, so a
+// clone has both. A directory that holds the record and not the tiles is still a panel that
+// says what is missing, not a page that fails to start: the viewer is the page, and the
+// gallery is one of two things the side panel can show.
 
 import { colorOf } from "./hues.js";
 

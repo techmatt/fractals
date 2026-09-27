@@ -10,9 +10,10 @@
 # builder check` regenerates every page the builder owns and compares it byte for byte with
 # what is committed; it writes nothing. The wallpaper project is not here, and
 # `FRACTAL_WALLPAPERS_ROOT` is set empty to say so rather than leave it to the absence of an
-# untracked `local.toml`. Every check runs anyway; the six that want that checkout — the
-# next-door half of `stamps`, `library`, `bake`, `seats`, `coloring` and the source-key half
-# of `figures` — report a named skip, so a red on that step means a check failed.
+# untracked `local.toml`. Every check runs anyway; the seven that want that checkout — the
+# next-door half of `stamps`, `library`, `bake`, `seats`, `coloring`, the source-key half
+# of `figures`, and the next-door half of `packs`, which wants the full set as well — report
+# a named skip, so a red on that step means a check failed.
 #
 # The node suites run on node's own runner with nothing installed: there is no package.json
 # here and there is not going to be one. Several instantiate the committed wasm modules.

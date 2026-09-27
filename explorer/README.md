@@ -3951,7 +3951,7 @@ repeatable, a pair of them says nothing, and the question "is this too long, and
 of it is" only exists over dozens. It presses Start, waits for a given number of walks to
 finish, and reads `__walk` whole: steps per walk, milliseconds per rung and per painted
 candidate, and every step's time bucketed by kind and by stage. **A judgeless run is not a
-reading of this tab** — without the untracked judges the walk picks at random among what the
+reading of this tab** — without the judges `python -m builder walk` places the walk picks at random among what the
 screen passes, which is a different program — so it checks that gate timings were taken and
 says so when they were not. A run that gives up on a wedged walk still records the ones
 before it.

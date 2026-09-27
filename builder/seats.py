@@ -795,8 +795,7 @@ def header(rows: list[dict]) -> dict:
             "gap says in one clause what it cannot carry: a tone curve the run did not record, "
             "a curve a mode's identity fixes, or an iteration cap the depth policy answers "
             "differently. file is a tile-sized WebP drawn from the picture the record ships "
-            "and is the only size this gallery holds; it is untracked, and this record is "
-            "what commits."
+            "and is the only size this gallery holds; it is committed beside this record."
         ),
     }
 
@@ -902,9 +901,9 @@ def prune(rows: list[dict]) -> int:
     **A repoint leaves nothing behind** *(explorer_slim_ckpt131_addendum2)*. A collection
     re-solved under a new stamp seats some pictures the old one did not and drops some it
     did, and the dropped seats' tiles used to stay in the directory until `check`'s orphan
-    sweep named them. They are untracked and made from records next door, so a tile
-    nothing names is nothing but a stale file. Only tiles go: the records are written by
-    `write`, which clears its own.
+    sweep named them. They are made from records next door, so a tile nothing names is
+    nothing but a stale file, and its removal is a deletion to commit. Only tiles go: the
+    records are written by `write`, which clears its own.
     """
     named = {row["file"] for row in rows}
     gone = 0
