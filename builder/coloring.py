@@ -55,6 +55,9 @@ def seat_identifiers() -> dict[str, str]:
     header = json.loads(header_line)
     found: dict[str, str] = {}
     for collection in header["collections"]:
+        # The union has no stamp of its own, and every seat of it is a seat of one that does.
+        if collection["stamp"] is None:
+            continue
         for line in (gallery / collection["file"]).read_text(encoding="utf-8").split("\n"):
             if line.strip():
                 key = json.loads(line)["key"]

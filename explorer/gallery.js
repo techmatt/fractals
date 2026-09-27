@@ -59,6 +59,10 @@ export const GENERAL = "general";
  *  the dropdown, ungrouped, and says its size rather than its name. */
 const GENERAL_AXIS = "general";
 
+/** Every other collection at once, each seat once *(gallery_all_ckpt153)*. A general
+ *  gallery, listed after the other two, and its option says *all* where theirs say a size. */
+const ALL = "all";
+
 /** What the dropdown groups each axis under. The general collections stand alone. */
 const AXIS_LABELS = { family: "Color family", mode: "Render mode" };
 
@@ -334,7 +338,9 @@ export function collectionOptions(collection, collections) {
     // are not colours and get none.
     if (one.axis === FAMILY_AXIS) option.append(hueDot(one.name));
     option.append(
-      one.axis === GENERAL_AXIS ? `General gallery · ${count}` : `${one.name} · ${count}`,
+      one.axis === GENERAL_AXIS
+        ? `General gallery · ${one.name === ALL ? "all" : count}`
+        : `${one.name} · ${count}`,
     );
     const label = AXIS_LABELS[one.axis];
     if (label === undefined) {

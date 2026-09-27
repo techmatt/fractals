@@ -132,6 +132,13 @@ GENERAL = "general"
 #: solve found moves neither the Mode select nor a trap mode's default.
 GENERAL_2000 = "general_2000"
 
+#: Every other collection at once, each seat once *(Matt, gallery_all_ckpt153)*: *General
+#: gallery · all*, listed right after the n=2000 one and never the default. It is no solve
+#: and has no stamp, so it is not in `COLLECTIONS`; its presentation order is
+#: `curation.page_order`'s rule run over the union itself, so it does not read as the
+#: collections laid end to end. A re-stage rebuilds it with the rest.
+ALL = "all"
+
 #: Every collection the panel offers, in the order its dropdown lists them, and the stamp
 #: each one is read from.
 #:
@@ -189,7 +196,16 @@ SOLVE_NAMES = {GENERAL_2000: "final140_general2000"}
 
 #: Which collections are the general gallery at some size: they stand at the top of the
 #: dropdown, ungrouped, and read *General gallery · n*.
-GENERAL_COLLECTIONS = frozenset({GENERAL, GENERAL_2000})
+GENERAL_COLLECTIONS = frozenset({GENERAL, GENERAL_2000, ALL})
+
+
+def offered() -> list[str]:
+    """Every collection the dropdown lists, in its order: the solves, with `ALL` placed
+    right after the last general gallery."""
+    names = [name for name, _ in COLLECTIONS]
+    after = max(at for at, name in enumerate(names) if name in GENERAL_COLLECTIONS)
+    return [*names[: after + 1], ALL, *names[after + 1 :]]
+
 
 #: Which of those are a mode, so the header can say which axis each was cut on. The rest
 #: after the general one are hue families.
@@ -256,19 +272,31 @@ print(json.dumps(stamps.for_rows(rows, backfill.read())))
 #: the basis it was taken on, for every stamp named. Keys rather than indices, so the
 #: answer does not depend on the two sides reading the rows in the same order; one process
 #: for all of them, because the import is most of the cost.
+#:
+#: The union of every stamp named is ordered too, under `""`, by the same rule over its
+#: own rows: each key once, as the first stamp named seats it. That one is about a hundred
+#: seconds for six thousand seats, since the rule is quadratic, and it is the most of what
+#: this program costs.
 ORDER_PROGRAM = """
 import json, sys
 
 from fractal_wallpapers.curation import page_order, tentative
 
-answer = {}
-for stamp in sys.argv[1:]:
-    rows = tentative.read_rows(stamp)
+def ordered(rows):
     vectors = page_order.vectors_for(rows)
-    answer[stamp] = {
+    return {
         "basis": page_order.basis(vectors),
         "keys": [rows[at]["key"] for at in page_order.order(rows, vectors)],
     }
+
+answer = {}
+union = {}
+for stamp in sys.argv[1:]:
+    rows = tentative.read_rows(stamp)
+    answer[stamp] = ordered(rows)
+    for row in rows:
+        union.setdefault(row["key"], row)
+answer[""] = ordered(list(union.values()))
 print(json.dumps(answer))
 """
 
@@ -492,9 +520,11 @@ def presentation_orders() -> dict[str, tuple[list[str], str]]:
     basis, by collection name.
 
     Asked once a process: `derive` orders the rows by it and `header` says each basis.
+    `ALL` is among them, ordered over the union of the others.
     """
     stamps = {name: _collection_stamp(name, stamp) for name, stamp in COLLECTIONS}
     answer = _program(ORDER_PROGRAM, "reading the presentation orders", *stamps.values())
+    stamps[ALL] = ""
     return {
         name: ([str(key) for key in answer[stamp]["keys"]], str(answer[stamp]["basis"]))
         for name, stamp in stamps.items()
@@ -584,6 +614,11 @@ def union() -> tuple[list[tuple[str, dict]], dict[str, dict[str, int]]]:
         for position, key in enumerate(keys):
             seen.setdefault(key, (stamp, rows[key]))
             places.setdefault(key, {})[name] = position
+    keys, _ = orders[ALL]
+    if set(keys) != set(seen) or len(keys) != len(seen):
+        raise SeatError(f"the {ALL} collection's presentation order is not the union's")
+    for position, key in enumerate(keys):
+        places[key][ALL] = position
     return list(seen.values()), places
 
 
@@ -692,7 +727,8 @@ def header(rows: list[dict]) -> dict:
     """
     orders = presentation_orders()
     published = set(_program(PUBLISHED_PROGRAM, "reading the published stamps"))
-    held = {name: 0 for name, _ in COLLECTIONS}
+    stamps: dict[str, str | None] = dict(COLLECTIONS)
+    held = {name: 0 for name in offered()}
     for row in rows:
         for name in row["collections"]:
             held[name] += 1
@@ -711,13 +747,13 @@ def header(rows: list[dict]) -> dict:
                 else "mode"
                 if name in MODE_COLLECTIONS
                 else "family",
-                "stamp": stamp,
-                "published": stamp in published,
+                "stamp": stamps.get(name),
+                "published": stamps.get(name) in published,
                 "seats": held[name],
                 "ordered_on": orders[name][1],
                 "file": collection_file(name),
             }
-            for name, stamp in COLLECTIONS
+            for name in offered()
         ],
         "modes": modes_published(rows),
         "seats": len(rows),
@@ -736,7 +772,9 @@ def header(rows: list[dict]) -> dict:
             "record's presentation order, the permutation its own page opens on, whose basis "
             "ordered_on names. This header is the whole of gallery.jsonl: each collection's "
             "rows are in the file its entry names, in that collection's presentation order, "
-            "so a seat in several collections is a row in each. modes is every mode the "
+            "so a seat in several collections is a row in each. all is no record of its "
+            "own and carries no stamp: it is every other collection's seats once each, in "
+            "the order curation.page_order gives that union itself. modes is every mode the "
             "general collection seats. "
             "The seat's mode and hue family come from the first record that seats it, and "
             "where that record files the seat under no family — its picture is dominant in "
@@ -814,7 +852,7 @@ def write(rows: list[dict], head: dict | None = None) -> list[Path]:
     where = directory()
     where.mkdir(parents=True, exist_ok=True)
     written = [_write_rows(metadata_path(), [head or header(rows)])]
-    for name, _ in COLLECTIONS:
+    for name in offered():
         members = sorted(
             (row for row in rows if name in row["collections"]),
             key=lambda row: row["collections"][name],
@@ -888,13 +926,15 @@ def land(*, records_only: bool = False) -> list[str]:
         f"wrote {paths[0].relative_to(SITE_ROOT).as_posix()} and {len(paths) - 1} collection "
         f"file(s)  {len(rows)} seat(s)"
     )
-    held = {name: 0 for name, _ in COLLECTIONS}
+    held = {name: 0 for name in offered()}
     inside = dict(held)
     for row in rows:
         for name in row["collections"]:
             held[name] += 1
             inside[name] += GENERAL in row["collections"]
-    for name, stamp in COLLECTIONS:
+    stamps = dict(COLLECTIONS)
+    for name in offered():
+        stamp = stamps.get(name, "(the union)     ")
         told.append(f"  {name:<8} {stamp}  {held[name]} seat(s), {inside[name]} in {GENERAL}")
     levelled = sum(1 for row in rows if f"&{LEVEL_KEY}=" in row["link"])
     gapped = [row for row in rows if row["gap"]]

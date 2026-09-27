@@ -10,6 +10,8 @@
 // tab row in it, and Copy link copying the previewed seat's link, the collection's on the
 // grid, and the picture outside Browse. And the header *(browse_header_ckpt153)*: one row
 // with nothing empty in it, Screensaver from Browse coming back to Browse, and the one exit.
+// And the union *(gallery_all_ckpt153)*: General gallery · all in the narrow panel and in
+// Browse, each chip row on it, and one of its pictures previewed.
 //
 // usage: node explorer/bench/hunt/u9-browse.mjs [debugPort] [sitePort]
 import { record } from "../output.mjs";
@@ -377,6 +379,108 @@ await check("a tab leaves Browse onto that tab", async () => {
   await page.ev(`document.getElementById('tab-gallery').click()`);
   await sleep(500);
   return { up, selected, shown, picture: picture?.split("?")[1] === home };
+});
+
+// ----------------------------------------------------------- the union
+// *(gallery_all_ckpt153)*: General gallery · all, listed right after the n=2000 one, opened
+// in the narrow panel and then in Browse, filtered on every chip row, and one picture
+// previewed. It is a general gallery, so its hue row reads Color family.
+
+const ALL_FILE = "../assets/images/galleries/seated-candidates/all.jsonl";
+const allHeader = () =>
+  page.ev(`(async () => {
+    const text = await (await fetch('../assets/images/galleries/seated-candidates/gallery.jsonl')).text();
+    return JSON.parse(text.split('\\n')[0]).collections.find((c) => c.name === 'all') ?? null;
+  })()`);
+/** Until a chip row tallies to the whole union: the old collection's chips and tiles stay up
+ *  while its 3.8 MB of rows arrive, so a tile count alone says nothing about which is shown. */
+const unionShown = (row, seats) =>
+  until(`[...document.querySelectorAll('#${row} .chip')].reduce((t, c) => t + Number(c.textContent.match(/(\\d+)$/)?.[1] ?? 0), 0) === ${seats}`);
+const choose = (id, name) =>
+  page.ev(`(() => {
+    const s = document.getElementById(${JSON.stringify(id)});
+    s.value = ${JSON.stringify(name)};
+    s.dispatchEvent(new Event('change'));
+  })()`);
+
+await check("the union in the narrow panel", async () => {
+  const entry = await allHeader();
+  if (entry === null) throw new Error("the header carries no all collection");
+  await choose("gallery-collection", "all");
+  const up = await unionShown("gallery-modes", entry.seats);
+  if (!up) note("all narrow", "the union's chips never came up");
+  const listed = await page.ev(`[...document.getElementById('gallery-collection').options].map((o) => [o.value, o.textContent.trim()])`);
+  const at = listed.findIndex(([value]) => value === "all");
+  if (at < 0 || listed[at - 1]?.[0] !== "general_2000") note("all narrow", `listed at ${at}, after ${listed[at - 1]?.[0]}`);
+  if (listed[at]?.[1] !== "General gallery · all") note("all narrow", `the option reads ${listed[at]?.[1]}`);
+  if (listed[0]?.[0] !== "general") note("all narrow", `the dropdown opens on ${listed[0]?.[0]}`);
+  const head = await page.ev(`document.getElementById('head-gallery-hues').textContent`);
+  if (head !== "Color family") note("all narrow", `the hue row reads ${head}`);
+  const address = await page.ev(`location.search`);
+  if (!address.includes("collection=all")) note("all narrow", `the address is ${address}`);
+  // Filtered on the first mode chip: the note counts what it leaves.
+  const chip = await page.ev(`document.querySelector('#gallery-modes .chip').textContent`);
+  await page.ev(`document.querySelector('#gallery-modes .chip').click()`);
+  await sleep(250);
+  const said = await page.ev(`document.getElementById('gallery-note').textContent`);
+  if (Number(said.match(/^(\d+) of/)?.[1]) !== Number(chip.match(/(\d+)$/)[1])) note("all narrow", `chip ${chip}, note "${said}"`);
+  if (Number(said.match(/of (\d+)/)?.[1]) !== entry.seats) note("all narrow", `note "${said}", the union holds ${entry.seats}`);
+  await page.ev(`document.querySelector('#gallery-modes .chip').click()`);
+  await sleep(250);
+  return { seats: entry.seats, at, option: listed[at]?.[1], head, chip, said };
+});
+
+await check("the union in Browse, filtered, and a preview", async () => {
+  const entry = await allHeader();
+  await page.ev(`document.getElementById('gallery-browse').click()`);
+  await until(`document.querySelectorAll('#browse-tiles .tile').length > 0`);
+  const collection = await page.ev(`document.getElementById('browse-collection').value`);
+  if (collection !== "all") note("all browse", `Browse opened on ${collection}`);
+  if (!(await unionShown("browse-modes", entry.seats))) note("all browse", "the union's chips never came up");
+  const head = await page.ev(`document.getElementById('head-browse-hues').textContent`);
+  if (head !== "Color family") note("all browse", `the hue row reads ${head}`);
+  const out = { collection, head, rows: {} };
+  for (const id of ROWS) {
+    const chips = await page.ev(`[...document.querySelectorAll('#${id} .chip')].map((c) => c.textContent)`);
+    if (!chips.length) {
+      note(`all ${id}`, "the row has no chips");
+      continue;
+    }
+    const sum = chips.reduce((total, text) => total + Number(text.match(/(\d+)$/)[1]), 0);
+    if (sum !== entry.seats) note(`all ${id}`, `counts add to ${sum}, not ${entry.seats}`);
+    await page.ev(`document.querySelector('#${id} .chip').click()`);
+    await until(`document.getElementById('browse-note').textContent !== ''`, 20, 100);
+    const said = await page.ev(`document.getElementById('browse-note').textContent`);
+    const first = Number(chips[0].match(/(\d+)$/)[1]);
+    if (Number(said.match(/^(\d+) of/)?.[1] ?? -1) !== first) note(`all ${id}`, `chip says ${first}, the note says "${said}"`);
+    await page.ev(`document.querySelector('#${id} .chip').click()`);
+    await sleep(250);
+    out.rows[id] = { chips: chips.length, first: chips[0] };
+  }
+  const grid = await copied();
+  if (grid?.split("?")[1] !== "panel=gallery&collection=all") note("all browse", `the grid copied ${grid}`);
+  // One picture previewed, and its link is the seat's own in the union's record.
+  const target = await page.ev(`document.querySelectorAll('#browse-tiles .tile')[3].dataset.key`);
+  await page.ev(`document.querySelectorAll('#browse-tiles .tile')[3].click()`);
+  const done = await settledOn(target);
+  if (!done) note("all browse", `the preview did not settle on ${target}`);
+  const link = await page.ev(`(async () => {
+    const text = await (await fetch(${JSON.stringify(ALL_FILE)})).text();
+    return text.split('\\n').filter(Boolean).map(JSON.parse).find((r) => r.key === ${JSON.stringify(target)}).link;
+  })()`);
+  const got = await copied();
+  if (got?.split("?")[1] !== link) note("all browse", `the preview copied ${String(got).slice(0, 90)}`);
+  await key("Escape");
+  await sleep(300);
+  await choose("browse-collection", "general");
+  await until(`document.getElementById('browse-collection').value === 'general' && document.querySelectorAll('#browse-tiles .tile').length > 0`);
+  await key("Escape");
+  await sleep(600);
+  if (await browseUp()) note("all browse", "Browse is still up");
+  await choose("gallery-collection", "general");
+  await until(`document.getElementById('gallery-collection').value === 'general'`);
+  await sleep(300);
+  return { ...out, target, done, copied: got?.split("?")[1] === link };
 });
 
 // ----------------------------------------------------------- saving from Browse

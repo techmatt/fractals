@@ -239,7 +239,16 @@ gallery · 2000* is the `final140_general2000` solve, stamp `20260922T220551Z`, 
 under *General gallery · 1000* and ungrouped with it; 1000 stays the default the panel
 opens on, and the Render mode select's roster and the trap defaults stay the 1000's. Both
 are `axis: "general"` in the header, which is what the label is read off, and the optgroups
-below them read *Color family* and *Render mode*. Render mode chips add up; a hue family chip is one at a time, and pressing
+below them read *Color family* and *Render mode*.
+
+**And a third, the union** *(Matt, gallery_all_ckpt153)*. *General gallery · all* is every
+other collection at once, each seat once, listed right after *General gallery · 2000* and
+opened by `?panel=gallery&collection=all`. It is no solve and its header entry has no
+stamp: `builder/seats.py` builds it from the other twenty-one when it stages them, and
+orders it by `curation.page_order`'s rule run over the union itself rather than laying the
+collections end to end. It is `axis: "general"`, so its hue row reads *Color family*, and
+its option says *all* where the other two say a size. It adds no picture: every seat of it
+already has its tile. Render mode chips add up; a hue family chip is one at a time, and pressing
 it again clears it. **The hue row is the wheel's twelve and nothing else**
 *(2026-09-19)*: it used to open on *unfiled 4*, the seats the dominance rule found
 dominant in no family, and a chip named after a threshold is no answer to a reader
@@ -518,7 +527,7 @@ UI key never decides what is drawn.
 
 **`collection` is a UI key too** *(preclose_website_ckpt148)*.
 `?panel=gallery&collection=<name>` opens the Gallery tab on that collection, where the name
-is one the gallery header carries: `general`, `general_2000`, a hue family (`rose`, `red`,
+is one the gallery header carries: `general`, `general_2000`, `all`, a hue family (`rose`, `red`,
 `orange`, `yellow`, `lime`, `green`, `teal`, `cyan`, `azure`, `blue`, `purple`,
 `magenta`), or a mode. It is the screensaver's key with the screensaver's parsing, and a
 name the header does not carry lands on the general gallery, the way an unknown panel

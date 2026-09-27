@@ -150,7 +150,8 @@ def _scores(candidates: dict[str, dict]) -> dict[str, float]:
     wanted: dict[str, set[str]] = {}
     for key, row in candidates.items():
         for name in row["collections"]:
-            wanted.setdefault(name, set()).add(key)
+            if name in stamps:
+                wanted.setdefault(name, set()).add(key)
     best: dict[str, float] = {}
     for name, keys in wanted.items():
         try:
@@ -235,7 +236,7 @@ def _entry(seat: Seat) -> dict:
         "c": [c_re, c_im],
         "key": row["key"],
         "p_ge4": seat.p_ge4,
-        "collections": sorted(row["collections"]),
+        "collections": sorted(name for name in row["collections"] if name != seats.ALL),
     }
 
 
