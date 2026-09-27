@@ -319,6 +319,10 @@ function bothNamesOf(name) {
  *  the select for as long as that view is up. */
 let offeredModes = null;
 
+/** The gallery's header once it has arrived, or `null`: which collections there are and the
+ *  file each is in. The Dive block's random wallpaper draws from its `all`. */
+let galleryRecord = null;
+
 /** Where the tone curve in force comes from: `stored` or `derived`.
  *
  *  **A view that arrives replays what it arrived with.** A gallery seat, an atlas mark or
@@ -4014,6 +4018,13 @@ async function mountDeep() {
         minibrotNote: at("minibrot-note"),
         root: at("deep-root"),
         back: at("deep-back"),
+        diveFrom: at("dive-from"),
+        diveTo: at("dive-to"),
+        diveGo: at("dive-go"),
+        diveColor: at("dive-color"),
+        diveBar: at("dive-bar"),
+        diveCancel: at("dive-cancel"),
+        diveStatus: at("dive-status"),
       },
       context: deepContext,
       grid: () => grid,
@@ -4034,6 +4045,8 @@ async function mountDeep() {
       resolves: resolvesShallow,
       leave: leaveDeep,
       onSearch: syncMinibrots,
+      randomSeat,
+      newColoring,
       onColour: () => {
         palettes?.show(deep.view().palette);
         syncShade();
@@ -4611,6 +4624,7 @@ const wholeButton = document.getElementById("view-whole");
 const juliaButton = document.getElementById("view-julia");
 const randomPaletteButton = document.getElementById("view-palette");
 const randomPhaseButton = document.getElementById("view-phase");
+const newColoringButton = document.getElementById("view-coloring");
 
 /**
  * Each button's key, as the label wears it *(explorer_ui_text_ckpt139)*.
@@ -4712,7 +4726,9 @@ function syncToggles() {
   }
   juliaButton.disabled = busy || !hasJulia;
 
-  for (const button of [randomPaletteButton, randomPhaseButton]) button.disabled = busy;
+  for (const button of [randomPaletteButton, randomPhaseButton, newColoringButton]) {
+    button.disabled = busy;
+  }
 
   // The tool zooms the viewer, and the Deep tab's viewer is the same canvas — so it is
   // live in both, and greyed only while a download owns the pool.
@@ -5027,6 +5043,7 @@ minibrotsButton.addEventListener("click", findMinibrots);
 juliaButton.addEventListener("click", () => toggleJulia());
 randomPaletteButton.addEventListener("click", randomPalette);
 randomPhaseButton.addEventListener("click", randomPhase);
+newColoringButton.addEventListener("click", () => newColoring());
 
 /** While Julia here is under the pointer or holding the focus, the view's centre is
  *  marked: `here` is then a point on the picture rather than a word on a button. A Julia
@@ -5063,6 +5080,9 @@ const TOGGLE_KEYS = {
   j: () => (deepOwns() ? deep.pressJulia() : toggleJulia({ atCursor: true })),
   p: randomPalette,
   h: randomPhase,
+  n: () => newColoring(),
+  // The Dive block's Go, and only while the Deep tab owns the viewer: the block is its panel's.
+  g: () => (deepOwns() ? deep.pressGo() : undefined),
   b: toggleBox,
   // Both tabs, one row: the shade row is the same controls whichever view owns the canvas.
   // The screensaver's own `f` is fullscreen, and only while it is up, when it takes every
@@ -5099,18 +5119,128 @@ modePicker.addEventListener("change", () => {
 });
 
 /** A map, picked out of the strip. The recipe travels with the reader, except where
- *  the new map refuses a piece of it. */
+ *  the new map refuses a piece of it, and in Deep where it asks for a fold. */
 function pickPalette(name) {
   if (locked()) return;
   const subject = tinting();
+  const mirror = mirrorFor(name, subject.shade.mirror);
   const changes = { palette: name };
-  // A cyclic map cannot be folded, so a recipe that arrived folded is dropped
-  // rather than carried onto a map it is refused on.
-  if (subject.shade.mirror && PALETTES.get(name).cyclic) {
-    changes.shade = { ...subject.shade, mirror: false };
-  }
+  if (mirror !== subject.shade.mirror) changes.shade = { ...subject.shade, mirror };
   palettes.show(name);
   tint(changes);
+}
+
+/**
+ * Whether a recipe moving onto `name` is mirrored, from `was`.
+ *
+ * **A cyclic map is never folded**, so a recipe that arrived folded is unfolded rather than
+ * carried onto a map it is refused on. **In Deep, a map that is not cyclic is always folded**
+ * *(Matt, deep_dive_block_ckpt154)*: a deep frame is drawn on the Absolute scale, which runs
+ * the palette round and round, and an open map run round has a seam at every turn; folded,
+ * each turn comes back the way it went. That covers every way a palette changes there: a
+ * pick, Random palette, New coloring and a dive's New coloring on arrival. The shallow view
+ * keeps the reader's own setting.
+ */
+function mirrorFor(name, was) {
+  if (PALETTES.get(name).cyclic) return false;
+  return deepOwns() ? true : was;
+}
+
+/**
+ * **New coloring** *(deep_dive_block_ckpt154)*: a palette from the ones the gallery seated
+ * twice or more, on the Absolute scale, sized to the picture up. `perturb-wasm`'s
+ * `dive::coloring` is the rule: the cycles between 1.5 and 6, the λ smoothness test over
+ * `{0, 0.15, 0.3, 0.5, 0.75, 1}` with the period the field's 3rd-to-97th-percentile range of
+ * `g` over those cycles, and one of the λs that stays smooth. This page draws the palette and
+ * a phase. It is an Absolute rule, so in the shallow view it switches the scale to Absolute.
+ *
+ * `inPlace` is the Dive block's New coloring on arrival: the landing's picture recoloured
+ * before the reader has stepped anywhere, so it takes the landing's entry in the way back
+ * rather than pushing one of its own, and a press of Go stays one step.
+ */
+async function newColoring({ inPlace = false } = {}) {
+  if (locked()) return;
+  const subject = tinting();
+  const field = shownField();
+  if (field === null || field === undefined) {
+    say("There is no picture here to color yet.");
+    return;
+  }
+  const drawable = [...PALETTES]
+    .filter(([name, map]) => map.random && name !== subject.palette)
+    .map(([name]) => name);
+  if (drawable.length === 0) return;
+  const name = drawable[Math.floor(Math.random() * drawable.length)];
+  let rule;
+  try {
+    colourRule ??= await import("./deep-render.js");
+    rule = await colourRule.coloringRule(field, Math.random(), Math.random());
+  } catch (error) {
+    say(String(error.message ?? error));
+    return;
+  }
+  if (!rule.ok) {
+    say(rule.why);
+    return;
+  }
+  // The picture may have moved while the rule was asked, and a colour sized to another
+  // picture is not this one's.
+  if (shownField() !== field || tinting().palette !== subject.palette) return;
+  let next = { ...tinting().shade, scale: "absolute" };
+  for (const [key, value] of [
+    ["lambda", rule.lambda],
+    ["period", rule.period],
+    ["phase", Number(Math.random().toFixed(3))],
+  ]) {
+    next = shade.withKey(next, key, String(value));
+  }
+  next = { ...next, mirror: mirrorFor(name, next.mirror) };
+  holding = null;
+  const of = inPlace ? keyOf(currentQuery()) : null;
+  palettes.show(name);
+  tint({ palette: name, shade: next });
+  if (of !== null) rememberInPlaceOf(of);
+}
+
+/** `deep-render.js`, once New coloring has asked its rule: what `giveBack` stops the rule's
+ *  worker through. */
+let colourRule = null;
+
+/** The `all` collection's seats by plane, the first time the Dive block asks: a promise of
+ *  `Map<family, [{ key, view }]>`, each seat's link read by the contract once. */
+let seatPlanes = null;
+
+/**
+ * **A random wallpaper of `family`** *(deep_dive_block_ckpt154)*: any seat of the gallery's
+ * `all` collection on that plane, whatever the Gallery tab is showing; the Dive block draws
+ * from every seat, not from a selection. `{ key, view }`, or `null` where there is none.
+ */
+async function randomSeat(family) {
+  const all = galleryRecord?.collections.find((one) => one.name === "all");
+  if (all === undefined) return null;
+  seatPlanes ??= gallery.seatsOnce(import.meta.url, all).then((seats) => {
+    const planes = new Map();
+    for (const seat of seats) {
+      let read;
+      try {
+        read = link.parse(`?${seat.link}`, contract);
+      } catch {
+        continue;
+      }
+      if (!planes.has(read.family)) planes.set(read.family, []);
+      planes.get(read.family).push({ key: seat.key, view: read });
+    }
+    return planes;
+  });
+  let planes;
+  try {
+    planes = await seatPlanes;
+  } catch {
+    seatPlanes = null;
+    return null;
+  }
+  const seats = planes.get(family) ?? [];
+  return seats.length === 0 ? null : seats[Math.floor(Math.random() * seats.length)];
 }
 
 // Hold look changes what the next move of Lambda or Period means and nothing about the
@@ -5312,6 +5442,7 @@ window.addEventListener("resize", relayout);
 function giveBack() {
   const asked = [
     () => deep?.close(),
+    () => colourRule?.stopColoring(),
     () => walk?.stop(),
     () => savedPanel?.stop(),
     () => juliaCard?.stop(),
@@ -5380,6 +5511,7 @@ async function main() {
   // The published gallery's modes, and not every collection's: a collection may seat a
   // mode the general gallery does not, and the select's roster is the published one's.
   if (!(record instanceof Error) && Array.isArray(record.modes)) offeredModes = record.modes;
+  if (!(record instanceof Error)) galleryRecord = record;
 
   contract = {
     home: homeOf,
@@ -5603,10 +5735,10 @@ async function main() {
     // What stands in for the first picture until it is drawn *(screensaver_first_frame_ckpt154)*.
     viewer: canvas,
     tileOf: saverTileOf,
-    // ⚠ A figure's panel, and nothing checks this URL: a rename of `start-families`' panels
-    // takes the last stand-in with it, and the screensaver opens black again on a page
-    // nothing has been drawn on. It is the Mandelbrot set at its home view.
-    home: new URL("../assets/images/figures/start-families-1.webp", import.meta.url).href,
+    // The Mandelbrot set at its home view, the explorer's own copy *(deep_dive_block_ckpt154)*:
+    // it was a figure's panel, `start-families-1.webp`, and a rename of that figure would
+    // have taken the last stand-in with it and opened the screensaver black again.
+    home: new URL("./screensaver-home.webp", import.meta.url).href,
   });
   document
     .getElementById("gallery-screensaver")

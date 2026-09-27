@@ -431,9 +431,7 @@ export class DeepRenderer {
   }
 
   static async start(url, engineShading, wanted) {
-    const response = await fetch(url);
-    if (!response.ok) throw new Error(`${url}: ${response.status} ${response.statusText}`);
-    const module = await WebAssembly.compile(await response.arrayBuffer());
+    const module = await compiled(url);
     // The module's one import, and on this thread there is nobody to tell: the planner
     // answers `plan` and the policy's constants, all of which are microseconds.
     const planner = new WebAssembly.Instance(module, PLANNER_IMPORTS).exports;
@@ -555,6 +553,59 @@ export class DeepRenderer {
     return this.#with(JSON.stringify(spec), (pointer, length) =>
       this.#take(this.planner.plan(pointer, length)),
     );
+  }
+
+  /**
+   * **The rung rule** *(deep_dive_block_ckpt154)*: which of a search's entries the Dive block
+   * lands on, `perturb-wasm`'s `dive::pick`. Microseconds, so the planner's.
+   *
+   * `found` is the search's list, largest first, each with `x`, `y`, `period`, `sizeLog2`
+   * and `kind`; `rungs` the dive's earlier copies, the same shape. Every offset is taken from
+   * `view`'s centre in decimal, which is the only way two deep centres differ at all.
+   * Resolves `{ index }`, or `{ index: null, refusal, period, need }`.
+   */
+  pick(view, found, rungs, count) {
+    const off = (one, axis) => fx.difference(one[axis].dec, view[axis].dec);
+    const request = {
+      width: view.w.value,
+      degree: view.degree ?? 2,
+      count,
+      periods: found.map((one) => one.period),
+      off_re: found.map((one) => off(one, "x")),
+      off_im: found.map((one) => off(one, "y")),
+      size_log2: found.map((one) => one.sizeLog2),
+      copy: found.map((one) => (one.kind === "bulb" ? 0 : 1)),
+      rung_re: rungs.map((one) => off(one, "x")),
+      rung_im: rungs.map((one) => off(one, "y")),
+      rung_size_log2: rungs.map((one) => one.sizeLog2),
+    };
+    return this.#with(JSON.stringify(request), (pointer, length) =>
+      this.#take(this.planner.dive_pick(pointer, length)),
+    );
+  }
+
+  /**
+   * **A landing** *(deep_dive_block_ckpt154)*: `perturb-wasm`'s `dive_land`, on a worker,
+   * because a mapped landing's shooting is up to a couple of seconds. `null` where the pool
+   * moved on while it ran, which is what a cancelled request means everywhere here.
+   */
+  async land(request, { onProgress } = {}) {
+    const generation = this.generation;
+    const slot = this.slots.find((each) => each.busy === null) ?? this.slots[0];
+    if (slot.busy !== null) this.cancel();
+    const reply = await this.#send(
+      slot,
+      { kind: "land", request: JSON.stringify(request) },
+      { onProgress },
+    );
+    if (generation !== this.generation) return null;
+    return reply?.landing ?? null;
+  }
+
+  /** How many of its copy's periods a landing asks for: `"center"` thirty-two, `"halfway"`
+   *  eight — the crate's `dive::Landing::count`, asked rather than restated. */
+  landingPeriods(landing) {
+    return this.planner.landing_periods(landing === "center" ? 0 : 1);
   }
 
   /** The kernel's cap policy — the engine's shape, with the engine's ceiling lifted. */
@@ -1274,3 +1325,80 @@ export class DeepRenderer {
  *  (`perturb-wasm/src/progress.rs`), and the planner never makes a call long enough to
  *  have anything to report. */
 const PLANNER_IMPORTS = { env: { progress() {} } };
+
+/** `perturb.wasm`, compiled once a page: the pool and New coloring's rule share the fetch.
+ *  A failure is forgotten, so a later press asks again. */
+let compiling = null;
+
+function compiled(url = new URL("./perturb.wasm", import.meta.url)) {
+  compiling ??= (async () => {
+    const response = await fetch(url);
+    if (!response.ok) throw new Error(`${url}: ${response.status} ${response.statusText}`);
+    return WebAssembly.compile(await response.arrayBuffer());
+  })().catch((error) => {
+    compiling = null;
+    throw error;
+  });
+  return compiling;
+}
+
+/** A worker of its own for New coloring, started the first time the rule is asked: the
+ *  shallow view asks it without starting the Deep tab's pool, and the rule's six passes over
+ *  every sample, half a second at 1136×639, stay off the page's thread. One request at a time
+ *  in flight is not assumed: replies are matched by id. */
+let colorer = null;
+let colourings = 0;
+const colouringsPending = new Map();
+
+function colouringWorker() {
+  colorer ??= compiled()
+    .then(spawn)
+    .then((worker) => {
+      worker.onmessage = (event) => {
+        const settle = colouringsPending.get(event.data.id);
+        if (settle === undefined || event.data.kind !== "coloring") return;
+        colouringsPending.delete(event.data.id);
+        settle(event.data.rule);
+      };
+      return worker;
+    })
+    .catch((error) => {
+      colorer = null;
+      throw error;
+    });
+  return colorer;
+}
+
+/**
+ * **New coloring's rule** *(deep_dive_block_ckpt154)*: `perturb-wasm`'s `coloring_rule`
+ * over lane 0 of `field` — the cycles `cyclesPick` draws, the λ smoothness test at that many
+ * turns across the field's 3rd to 97th percentile of `g`, and the acceptable λ `pick`
+ * chooses, both picks uniform in `[0, 1)`. Either tab's field: a deep one is one lane, and a
+ * shallow one's lane 0 is its base field, the value the absolute scale compresses. The field
+ * is copied, never taken. Resolves the module's answer, `{ ok, cycles, lambda, period,
+ * roughness, tried }` or `{ ok: false, why }`.
+ */
+/** The colouring worker given back, where it was ever started: the page's `pagehide`. */
+export function stopColoring() {
+  colorer?.then((worker) => worker.terminate(), () => {});
+  colorer = null;
+  for (const settle of colouringsPending.values()) settle({ ok: false, why: "the page is going" });
+  colouringsPending.clear();
+}
+
+export async function coloringRule(field, cyclesPick, pick) {
+  const worker = await colouringWorker();
+  const ss = field.supersample ?? 1;
+  const width = field.width * ss;
+  const height = field.height * ss;
+  const count = Math.min(field.values.length, width * height);
+  const values = Float64Array.from(field.values.subarray(0, count));
+  const id = ++colourings;
+  return new Promise((resolve) => {
+    colouringsPending.set(id, resolve);
+    worker.postMessage(
+      { kind: "coloring", id, values: values.buffer, count, width, height, cyclesPick, pick },
+      [values.buffer],
+    );
+  });
+}

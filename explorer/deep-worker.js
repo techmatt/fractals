@@ -192,6 +192,34 @@ function handle(message) {
     return;
   }
 
+  // **A dive's landing** *(deep_dive_block_ckpt154)*. It reads no orbit, and a mapped landing
+  // runs the twin's shooting — every return of the anchor, the copy's period at a time, a few
+  // times over — which at the periods the budget lets through is up to a couple of seconds.
+  // So it is a worker's, reporting a step of the shooting at a time, and a cancel ends it.
+  if (message.kind === "land") {
+    const landing = withText(message.request, (pointer, length) => take(wasm.dive_land(pointer, length)));
+    answer(message, { landing });
+    return;
+  }
+
+  // **New coloring's rule, off the page's thread** *(deep_dive_block_ckpt154)*: six Box–Cox
+  // passes over every sample of the picture up, half a second at 1136×639, which on the
+  // page's thread would be half a second of a frozen page. The field arrives transferred
+  // and is the caller's copy, so nothing the tab keeps is detached.
+  if (message.kind === "coloring") {
+    const bytes = new Uint8Array(message.values);
+    const pointer = wasm.alloc(bytes.length);
+    new Uint8Array(wasm.memory.buffer, pointer, bytes.length).set(bytes);
+    try {
+      const { count, width, height, cyclesPick, pick } = message;
+      const rule = take(wasm.coloring_rule(pointer, count, width, height, cyclesPick, pick));
+      answer(message, { rule });
+    } finally {
+      wasm.dealloc(pointer, bytes.length);
+    }
+    return;
+  }
+
   if (message.kind === "band") {
     const { spec, rowStart, rowEnd, bytes } = message;
     if (orbit === null) {

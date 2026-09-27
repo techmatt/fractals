@@ -38,6 +38,8 @@ src/policy.rs      the cap a frame asks for: what died at a cap, and whether
                    raising it would change the picture
 src/nuclei.rs      the minibrots in and around a view: atom domains, then a
                    high-precision Newton solve, then a size and a frame
+src/dive.rs        the Dive block: a copy's scale, the twin's shooting, the rung
+                   rule, the landings, the cap rule, and New coloring's rule (§11)
 src/json.rs        a reader for one flat JSON object
 src/progress.rs    the module's one import, env.progress: how far a long
                    call has got, told while it runs
@@ -1278,13 +1280,100 @@ them).
 The list now offers copies first and bulbs only where a view holds no copy;
 `explorer/README.md`'s *Find minibrots* has the numbers.
 
+### 11. The dive *(deep_dive_block_ckpt154, 2026-09-27)*
+
+`src/dive.rs` is the arithmetic of the Deep tab's Dive block and of New coloring, and
+`builder/deep-gallery-native` runs the same functions natively (`pick`, `land`,
+`coloring`), so a frame found either way is a link that opens identically.
+`explorer/README.md`'s *The Dive block* is what the page does with it. Four exports:
+
+| export | answers |
+| --- | --- |
+| `dive_pick(request)` | the rung rule over a search's copies, as parallel arrays |
+| `dive_land(request)` | a landing: centre as text, width, cap, turn, and the twin that placed it |
+| `landing_periods(kind)` | 32 for the centre, 8 for halfway, so the page asks rather than restates |
+| `coloring_rule(field, …)` | New coloring's cycles, λ and period over a field |
+
+**Moved, not rewritten.** `orient` (a copy's complex scale, `σ = d·l^{1/(D−1)}`), `segment`,
+`twin` and `body_share` came from the native tool, where the double descent and the
+gallery's copy-mapped frames were built on them; the tool now imports them. Two changes to
+`twin`, both measured:
+
+- **The shooting is eliminated backward.** It solved the bidiagonal system forward from
+  `δw₀ = 0`, and forward the chain grows like the product of the returns' multipliers: for
+  the period-998 nucleus nearest a 1e-10 seahorse-valley view, carried into the airship,
+  the chain was 1.5e16 and 2.4e19 by the first step, every `δw_k` was a difference of
+  numbers that size, and the second step carried a return out of the plane (*step does not
+  fit*). Backward from `δw_p = 0` the recursion divides by the multipliers, so it contracts:
+  the same twin, period 2,994, converged in six steps, 6.3e-4 down to 1.3e-38. The two
+  airship tests that moved with it pass unchanged.
+- **Nothing else**: the first-order guess, the seeds and the stopping rule are as they were.
+
+**A mapped landing is anchored, and scaled locally.** A whole-set view `(C, w)` lands at
+`twin + s·(C − c_B)`, `w·|s|` wide, where `c_B` is the nucleus nearest `C` (the page's own
+search round the view) and `twin` its copy inside `A`. Two measurements say why neither
+shortcut is enough:
+
+- **The first-order place `c_A + s_A·C` misses.** A seahorse-valley view 1e-5 wide lands
+  3,164 frames across and 1,039 down from its anchored place inside the airship, and about
+  1.1e5 by 1.6e5 frames inside a period-15 copy, where the first-order frame drew a single
+  flat colour.
+- **The copy's own scale is not the scale at the anchor.** `s = 1/σ_A` is the tuning map's
+  derivative at `A`'s nucleus; where the copy is shallow the map bends between there and the
+  anchor. On the period-15 copy the view came out 28% too large and turned 83° where it
+  should turn 21°. So `s` is `σ_B / σ_twin`, the two nuclei's own scales, which is the local
+  derivative to first order; of the `D − 1` branches the one nearest `s_A` is taken, being
+  the one continuous with the copy. The interior share of the source view and of both
+  landings, measured at 480×270, was 0.1273, 0.1274 and 0.1274.
+
+The frame is turned by `arg s` and the explorer draws no rotation, so the page says the turn
+rather than undoing it.
+
+**The rung rule** (`pick`) takes, of a search's copies largest first, the first that is a
+step down and whose landing fits. With earlier rungs, a step down is the gallery's: a body
+under an eighth of the last rung's (`RUNG_SHRINK`) and more than one and a half of each
+earlier rung's bodies away from it (`RUNG_APART`). With none, it is a copy whose
+`copy_width` is under half the view (`FRESH_SHARE`), so a view already framed on its copy
+steps into it. The gallery's period cap of 120,000 is gone: the budget is the cap now.
+Refusals name themselves: `no_copy`, `none_smaller`, and `over_budget` with the lowest
+period that was a step down and what its landing asked for.
+
+**The cap rule** (`cap_for`) is the width's own cap or `period × count`, whichever is more,
+and `fits` refuses a landing whose product passes `cap::EXPLICIT_CEILING` rather than
+drawing it short. The count is 32 for the centre (`nuclei::OPEN_PERIODS`), 8 halfway
+(`HALFWAY_PERIODS`, the tile's `TILE_PERIODS`), and a carried view's own cap, since that view
+carried into a period-`p` copy escapes after about `p` times its own counts. No probe runs:
+the product is the depth the landing asks for.
+
+**The colouring rule** is `deep_gallery.py`'s `choose`, ported: for each λ in `LAMBDAS`
+(0, 0.15, 0.3, 0.5, 0.75, 1) the period is the 3rd-to-97th-percentile range of the Box–Cox
+`g` over the cycles, to three figures (numpy's linear interpolation, by selection rather
+than a sort), and a λ passes where under `ROUGH` (4%) of neighbouring sample pairs are more
+than a quarter turn apart. Two things differ, both New coloring's: the cycles are drawn
+uniformly from 1.5 to 6, the span of the gallery's `CYCLES`, and the λ is one of those that
+pass at random rather than the one nearest a preferred λ, the gallery's preferred λ having
+been a rotation for variety itself. Both draws are uniform numbers the caller passes in, so
+a caller's randomness is two numbers it can record and the whole rule is here. `ν` is
+floored at the engine's `COMPRESSION_FLOOR` first, as the absolute scale floors it. It
+reads every neighbouring pair, which is 0.44 to 0.52 s at 1136×639 in node, so the page runs
+it on a worker.
+
+**What it cost.** The module is 313,157 bytes raw and 117,312 gzipped, from 237,983 and
+90,049 on the same rustc 1.96.0: 75,174 and 27,263 more, nearly all of it the fixed-point
+loops of `orient`, `segment` and `twin`, which were never in the module before, and the
+float functions they and the rule call (`powf`, `atan2`, `sin`, `cos`) that it did not carry.
+Selecting the two percentile ranks instead of sorting moved it by 309 bytes. The machine's
+default rustc is 1.98.1 now and builds this crate to 320,887 bytes; the committed module is
+built on 1.96.0, which is the toolchain CI pins from the engine's manifest, so a rebuild here
+is `RUSTUP_TOOLCHAIN=1.96.0 python -m builder explorer --perturb`.
+
 ## Running it
 
 ```text
 cargo fmt   --check                                    # the formatting, held: the
                                                        #   crate is rustfmt-clean and
                                                        #   stays that way
-cargo test  --release                                  # 70 unit tests and six
+cargo test  --release                                  # 80 unit tests and six
                                                        #   cheap pins, about a second
 cargo test  --release --test oracle -- --ignored --nocapture   # the ladders, ~30 s
 cargo test  --release --test probe  -- --ignored --nocapture   # the three-way probes
@@ -1330,7 +1419,7 @@ back byte for byte what the module before it produced, in 10.82 s against 10.83 
 | `crate` | `explorer/perturb-wasm` |
 | `dependencies` | `[]`, and it is written down because it is the design |
 | `rustc` | the compiler, with its commit and date |
-| `raw_bytes` / `gzip_bytes` | **199,293 raw, 78,382 gzipped** |
+| `raw_bytes` / `gzip_bytes` | **313,157 raw, 117,312 gzipped** *(deep_dive_block_ckpt154; §11)* |
 
 Two fields of `engine.manifest.json` are **absent** rather than empty:
 `engine_version`, because this crate does not link the engine, and
@@ -1345,8 +1434,9 @@ crate: `explorer_shade_pool_ckpt136` banded the shade.)
 
 **What a visitor downloads for it: nothing, unless they open the Deep tab.** The
 module and the tab's five modules are fetched on that tab's first open and never
-before. Against `engine.wasm`'s 231,149 gzipped, the 78,382 here is 34% more —
-paid only by a reader who asked for a renderer for everything below 1e-10.
+before. Against `engine.wasm`'s 251,917 gzipped, the 117,312 here is 47% of it —
+paid only by a reader who asked for a renderer for everything below 1e-10, or who
+pressed Find minibrots or New coloring in the shallow view, the two doors into it there.
 
 `core::fmt` is still most of the size and is still not chased: `plan` formats a
 JSON report and every refusal is a sentence, and the tab reads both. Trimming it

@@ -133,6 +133,40 @@
          the way the Gallery tab is (explorer_nav_layout_ckpt145); `panel=deep:gallery` still
          opens the tab, because the article links it. -->
     <div class="tabpanel" id="panel-deep" role="tabpanel" aria-labelledby="tab-deep" hidden>
+      <!-- The Dive block (deep_dive_block_ckpt154): one sentence whose two blanks are
+           dropdowns, and Go. A press searches, takes a rung, lands and draws, and what lands
+           is an ordinary deep link. The status line says where it came from; `deep.js`'s
+           *the dive* has the rest. -->
+      <section class="dive" id="dive" aria-labelledby="head-dive">
+        <div class="section-head"><h2 id="head-dive">Dive</h2></div>
+        <div class="bar dive-sentence">
+          <label for="dive-from">Find a minibrot near</label>
+          <select id="dive-from">
+            <option value="view">this view</option>
+            <option value="seat">a random wallpaper</option>
+          </select>
+          <label for="dive-to">and dive to</label>
+          <select id="dive-to">
+            <option value="center">its center</option>
+            <option value="halfway">halfway in</option>
+            <option value="view">this view inside it</option>
+            <option value="seat">a random wallpaper inside it</option>
+          </select>
+          <button type="button" class="deep-render dive-go" id="dive-go" aria-keyshortcuts="G">Go (g)</button>
+        </div>
+        <div class="bar dive-options">
+          <span class="group">
+            <label for="dive-color">New coloring on arrival</label>
+            <input type="checkbox" id="dive-color" class="flag"
+                   title="Each landing takes a New coloring as it arrives. Remembered on this browser.">
+          </span>
+        </div>
+        <div class="bar dive-progress">
+          <span class="deep-bar" id="dive-bar" aria-hidden="true"><span class="deep-bar-fill"></span></span>
+          <button type="button" id="dive-cancel" hidden>Cancel</button>
+        </div>
+        <p class="dive-status" id="dive-status" role="status" aria-live="polite"></p>
+      </section>
       <p class="side-note" id="deep-side-note">Zoom far past where ordinary rendering breaks
       down, into the Mandelbrot set, its higher-degree cousins and their Julia sets. Deep
       frames take longer to draw and are colored smooth only. Find minibrots finds
@@ -380,6 +414,8 @@
           <button type="button" class="head-action" id="palette-reset">Reset palette</button>
           <button type="button" class="head-action" id="view-palette" aria-keyshortcuts="P">Random palette (p)</button>
           <button type="button" class="head-action" id="view-phase" aria-keyshortcuts="H">Random phase (h)</button>
+          <button type="button" class="head-action" id="view-coloring" aria-keyshortcuts="N"
+                  title="A palette the gallery seated twice or more, on the Absolute scale: a Lambda whose bands stay smooth on this picture, a Period for 1.5 to 6 turns of the palette across it, and a random Phase.">New coloring (n)</button>
         </div>
         <canvas class="palette-final" id="palette-strip" width="512" height="1" role="img"
                 aria-label="The palette as this view applies it, from the lowest value to the highest"></canvas>

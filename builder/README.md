@@ -1323,6 +1323,28 @@ the tab itself. `deep_gallery_shade.mjs` reads the link with `deep-link.js`, bui
 with `deep-render.js`'s `shadeSpecOf` and shades it through the committed `engine.wasm`, so
 a tile is coloured exactly as its link colours it.
 
+**The method below is code in `perturb-wasm` now** *(deep_dive_block_ckpt154)*. The Deep tab's
+Dive block runs it — find a minibrot near a view, take a rung, land at its centre, halfway
+in, or with a whole-set view carried inside it — and `perturb-wasm/README.md` §11 is where
+it is argued. `orient`, `twin` and `body_share` moved from this crate into `perturb::dive`,
+and this crate imports them, so `orient`, `twin` and `frame` answer as they did. Three
+subcommands run the Dive block natively, the same functions the page calls:
+
+```
+deep-gallery-native pick  (find's args) --count N [--rungs "RE,IM,LOG2;…"]
+deep-gallery-native land  --landing center|halfway|mapped --re R --im I --period P --size-log2 S
+                          [--found-in W] [--vre VR --vim VI --vw VW --count N [--are … --aim … --aperiod Q]]
+deep-gallery-native coloring --field PATH --res WxH [--ss S] (--cycles-pick U | --cycles C) --pick U
+```
+
+`pick` is Find minibrots' list at the frame's settled cap and the rung the block takes from
+it; `land` is a landing as the link carries it; `coloring` is New coloring's cycles, λ and
+period over a field. ⚠ **`twin` eliminates its shooting backward now**, which is what lets a
+nucleus of period in the hundreds be anchored at all (§11 has the measurement). It moves no
+answer this tool has written, measured on the one that matters: the favicon seat's twin,
+period 32,761, re-solved lands on `double-descent`'s recorded centre to all 45 of its
+digits, in the same four steps to four figures.
+
 ### How the first set was found
 
 `builder/deep_gallery.py` holds the code, one stage a subcommand: `descend`, `frames`,

@@ -5,6 +5,8 @@
 //! plan(spec)                              -> JSON     what this spec implies, or why not
 //! reference_orbit(spec)                   -> f64 pairs one orbit, computed once per frame
 //! compute_band(spec, orbit, rows)         -> f64 lane  the smooth field, NaN for interior
+//! dive_pick(request) / dive_land(request) -> JSON     the Dive block's rung and landing
+//! coloring_rule(field, …)                 -> JSON     New coloring's λ, period, roughness
 //! ```
 //!
 //! **A separate crate and a separate module, on purpose.** `engine.wasm` is the
@@ -44,6 +46,7 @@ use crate::json::Value;
 use crate::kernel::Kernel;
 use crate::reference::Reference;
 
+pub mod dive;
 pub mod fx;
 pub mod json;
 pub mod kernel;
@@ -1003,6 +1006,285 @@ pub extern "C" fn classify_nucleus(request_ptr: *const u8, request_len: usize) -
             reading.solves,
             rooted,
             primitive,
+        )
+    }))
+}
+
+// ------------------------------------------------------------------------- the dive
+
+/// **The rung rule** *(deep_dive_block_ckpt154)*: which of a search's copies the Dive block
+/// lands on, [`dive::pick`].
+///
+/// Takes `{"width":w,"degree":d,"count":n,"periods":[…],"off_re":[…],"off_im":[…],
+/// "size_log2":[…],"copy":[1|0,…],"rung_re":[…],"rung_im":[…],"rung_size_log2":[…]}`, the
+/// found copies largest first as parallel arrays and the dive's earlier rungs likewise, every
+/// offset from the searched view's centre. Returns `{"ok":true,"index":i}`, or
+/// `{"ok":true,"index":null,"refusal":"no_copy"|"none_smaller"|"over_budget","period":p,
+/// "need":x}` — `period` and `need` naming, for a refusal on the budget, the lowest-period
+/// copy that was a step down and what its landing asked for.
+#[unsafe(no_mangle)]
+pub extern "C" fn dive_pick(request_ptr: *const u8, request_len: usize) -> *mut u8 {
+    const KNOWN: &[&str] = &[
+        "width",
+        "degree",
+        "count",
+        "periods",
+        "off_re",
+        "off_im",
+        "size_log2",
+        "copy",
+        "rung_re",
+        "rung_im",
+        "rung_size_log2",
+    ];
+    let read = text(request_ptr, request_len)
+        .ok_or_else(|| "the request is not UTF-8".to_string())
+        .and_then(|text| {
+            let object = json::object(&text).ok_or("the request is not a flat JSON object")?;
+            if let Some(name) = object.unknown(KNOWN) {
+                return Err(format!("the request carries no member named `{name}`"));
+            }
+            let number = |key: &str| match object.get(key) {
+                Some(json::Value::Num(value)) if value.is_finite() => Ok(*value),
+                _ => Err(format!("`{key}` is a finite number")),
+            };
+            let list = |key: &str| match object.get(key) {
+                Some(json::Value::Nums(values)) => Ok(values.clone()),
+                None => Ok(Vec::new()),
+                _ => Err(format!("`{key}` is an array of numbers")),
+            };
+            let degree = number("degree")? as u32;
+            if !kernel::DEGREES.contains(&degree) {
+                return Err("`degree` is a whole number from 2 to 6".to_string());
+            }
+            let (periods, off_re, off_im) = (list("periods")?, list("off_re")?, list("off_im")?);
+            let (sizes, copies) = (list("size_log2")?, list("copy")?);
+            let found: Vec<dive::Candidate> = (0..periods.len())
+                .map(|at| dive::Candidate {
+                    period: periods[at] as u32,
+                    off_re: off_re.get(at).copied().unwrap_or(f64::NAN),
+                    off_im: off_im.get(at).copied().unwrap_or(f64::NAN),
+                    size_log2: sizes.get(at).copied().unwrap_or(f64::NAN),
+                    copy: copies.get(at).copied().unwrap_or(0.0) != 0.0,
+                })
+                .collect();
+            let (r_re, r_im, r_size) =
+                (list("rung_re")?, list("rung_im")?, list("rung_size_log2")?);
+            let earlier: Vec<dive::Rung> = (0..r_re.len())
+                .map(|at| dive::Rung {
+                    off_re: r_re[at],
+                    off_im: r_im.get(at).copied().unwrap_or(f64::NAN),
+                    size_log2: r_size.get(at).copied().unwrap_or(f64::NAN),
+                })
+                .collect();
+            let count = number("count")? as u32;
+            Ok((
+                dive::pick(&found, number("width")?, degree, &earlier, count),
+                count,
+            ))
+        });
+    report(read.map(|(picked, count)| match picked {
+        Ok(index) => format!(r#"{{"ok":true,"index":{index}}}"#),
+        Err(refusal) => {
+            let (name, period) = match refusal {
+                dive::Refusal::NoCopy => ("no_copy", 0),
+                dive::Refusal::NoneSmaller => ("none_smaller", 0),
+                dive::Refusal::OverBudget { period } => ("over_budget", period),
+            };
+            format!(
+                r#"{{"ok":true,"index":null,"refusal":"{name}","period":{period},"need":{}}}"#,
+                dive::need(period, count)
+            )
+        }
+    }))
+}
+
+/// **A landing** *(deep_dive_block_ckpt154)*: [`dive::center`], [`dive::halfway`] or
+/// [`dive::mapped`], as the frame a `dv=3` link carries.
+///
+/// Takes `{"landing":"center"|"halfway"|"mapped","degree":d,"re":"…","im":"…","period":p,
+/// "size_log2":x}` for the copy, with `"found_in":w` for the halfway stage, and for a mapped
+/// view `"view_re":"…","view_im":"…","view_width":w,"count":n` and, where a nucleus near the
+/// view anchors it, `"anchor_re":"…","anchor_im":"…","anchor_period":q`. Returns
+/// `{"ok":true,"re":"…","im":"…","width":w,"cap":n,"turn":t,"twin_period":p|null,
+/// "twin_steps":[…]}`, or the refusal — a mapped landing whose `period × count` passes the
+/// explicit ceiling among them. **The mapped landing's shooting is seconds at the largest
+/// periods the budget lets through**, so the page asks a worker for it, never the planner.
+#[unsafe(no_mangle)]
+pub extern "C" fn dive_land(request_ptr: *const u8, request_len: usize) -> *mut u8 {
+    const KNOWN: &[&str] = &[
+        "landing",
+        "degree",
+        "re",
+        "im",
+        "period",
+        "size_log2",
+        "found_in",
+        "view_re",
+        "view_im",
+        "view_width",
+        "count",
+        "anchor_re",
+        "anchor_im",
+        "anchor_period",
+    ];
+    let read = text(request_ptr, request_len)
+        .ok_or_else(|| "the request is not UTF-8".to_string())
+        .and_then(|text| {
+            let object = json::object(&text).ok_or("the request is not a flat JSON object")?;
+            if let Some(name) = object.unknown(KNOWN) {
+                return Err(format!("the request carries no member named `{name}`"));
+            }
+            let number = |key: &str| match object.get(key) {
+                Some(json::Value::Num(value)) if value.is_finite() => Ok(*value),
+                _ => Err(format!("`{key}` is a finite number")),
+            };
+            let count_of = |key: &str| match object.get(key) {
+                Some(json::Value::Num(value)) if *value >= 1.0 && value.fract() == 0.0 => {
+                    Ok(*value as u32)
+                }
+                _ => Err(format!("`{key}` is a whole number of at least one")),
+            };
+            let string = |key: &str| match object.get(key) {
+                Some(json::Value::Str(value)) => Ok(value.clone()),
+                _ => Err(format!("`{key}` has to be a string")),
+            };
+            let degree = count_of("degree")?;
+            if !kernel::DEGREES.contains(&degree) {
+                return Err("`degree` is a whole number from 2 to 6".to_string());
+            }
+            let (re, im) = (string("re")?, string("im")?);
+            let period = count_of("period")?;
+            match string("landing")?.as_str() {
+                "center" => Ok(dive::center(&re, &im, period, number("size_log2")?, degree)),
+                "halfway" => Ok(dive::halfway(
+                    &re,
+                    &im,
+                    period,
+                    number("size_log2")?,
+                    degree,
+                    number("found_in")?,
+                )),
+                "mapped" => {
+                    let count = count_of("count")?;
+                    if !dive::fits(period, count) {
+                        return Err(format!(
+                            "a view drawn at {count} iterations, carried into a period-{period} \
+                             copy, asks for {} and the ceiling is {}",
+                            dive::need(period, count),
+                            cap::EXPLICIT_CEILING
+                        ));
+                    }
+                    let (v_re, v_im) = (string("view_re")?, string("view_im")?);
+                    let anchor = match object.get("anchor_re") {
+                        None => None,
+                        Some(_) => Some((
+                            string("anchor_re")?,
+                            string("anchor_im")?,
+                            count_of("anchor_period")?,
+                        )),
+                    };
+                    dive::mapped(
+                        (&re, &im, period),
+                        degree,
+                        (&v_re, &v_im, number("view_width")?, count),
+                        anchor
+                            .as_ref()
+                            .map(|(a, b, p)| (a.as_str(), b.as_str(), *p)),
+                    )
+                }
+                other => Err(format!("`{other}` is not a landing")),
+            }
+        });
+    report(read.map(|frame| {
+        let (twin_period, steps) = match &frame.twin {
+            Some((p, steps)) => (
+                p.to_string(),
+                steps
+                    .iter()
+                    .map(|s| format!("{:e}", finite(*s)))
+                    .collect::<Vec<_>>()
+                    .join(","),
+            ),
+            None => ("null".to_string(), String::new()),
+        };
+        format!(
+            concat!(
+                r#"{{"ok":true,"re":"{}","im":"{}","width":{:e},"cap":{},"turn":{},"#,
+                r#""twin_period":{},"twin_steps":[{}]}}"#
+            ),
+            frame.re,
+            frame.im,
+            frame.width,
+            frame.cap,
+            finite(frame.turn),
+            twin_period,
+            steps,
+        )
+    }))
+}
+
+/// How many of its copy's periods a landing is iterated for — `0` the centre, `1` the
+/// halfway stage — so the page's budget check asks rather than restates. A mapped landing's
+/// count is its view's own cap. See [`dive::Landing::count`].
+#[unsafe(no_mangle)]
+pub extern "C" fn landing_periods(kind: u32) -> u32 {
+    match kind {
+        0 => dive::Landing::Center.count(),
+        _ => dive::Landing::Halfway.count(),
+    }
+}
+
+/// **New coloring's rule** *(deep_dive_block_ckpt154)*: [`dive::coloring`] over a field at
+/// the cycles [`dive::cycles`] draws with `cycles_pick`, and the λ [`dive::choose`] takes with
+/// `pick` — both uniform in `[0, 1)`, drawn by the caller, so the whole rule is this crate's
+/// and a caller's randomness is two numbers it can record.
+///
+/// The field is `count` little-endian `f64`s, `width × height` of them read as the grid,
+/// `NaN` for the interior — lane 0 as either kernel lays it out. **Borrowed**, like an orbit.
+/// Returns `{"ok":true,"cycles":c,"lambda":λ,"period":P,"roughness":r,"tried":[{"lambda":…,"period":…,
+/// "roughness":…},…]}`, or a refusal where the field has too little exterior to measure.
+#[unsafe(no_mangle)]
+pub extern "C" fn coloring_rule(
+    values_ptr: *const u8,
+    count: usize,
+    width: u32,
+    height: u32,
+    cycles_pick: f64,
+    pick: f64,
+) -> *mut u8 {
+    let cycles = dive::cycles(cycles_pick);
+    let read = if values_ptr.is_null() {
+        Err("no field".to_string())
+    } else {
+        let bytes = unsafe { std::slice::from_raw_parts(values_ptr, count * 8) };
+        let values: Vec<f64> = bytes
+            .chunks_exact(8)
+            .map(|b| f64::from_le_bytes(b.try_into().unwrap()))
+            .collect();
+        dive::coloring(&values, width as usize, height as usize, cycles)
+            .ok_or_else(|| "this picture has too little outside the set to color by".to_string())
+    };
+    report(read.map(|tried| {
+        let chosen = dive::choose(&tried, pick);
+        let each: Vec<String> = tried
+            .iter()
+            .map(|t| {
+                format!(
+                    r#"{{"lambda":{},"period":{},"roughness":{}}}"#,
+                    t.lambda,
+                    finite(t.period),
+                    finite(t.roughness)
+                )
+            })
+            .collect();
+        format!(
+            r#"{{"ok":true,"cycles":{},"lambda":{},"period":{},"roughness":{},"tried":[{}]}}"#,
+            cycles,
+            chosen.lambda,
+            finite(chosen.period),
+            finite(chosen.roughness),
+            each.join(",")
         )
     }))
 }

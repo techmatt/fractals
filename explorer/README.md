@@ -353,6 +353,35 @@ row. What they change is the palette, so they sit with it:
 - **Random phase (h)** — to three decimals. It was `shift+p` until
   *explorer_controls_ckpt140*; this page had no other binding on `h`, so **nothing was
   rebound** to free it, and every key the page takes is now a bare lowercase letter.
+- **New coloring (n)** *(deep_dive_block_ckpt154)* — a whole colouring sized to the picture
+  up, in both views: a palette from the same 232, never the one on screen, on the
+  **Absolute** scale, so in the shallow view it switches the scale. The rule is the Deep
+  gallery's (`builder/README.md`, *How the first set was found*), moved into
+  `perturb-wasm`'s `dive::coloring` so the page and the native tool run one copy of it:
+  cycles drawn uniformly from 1.5 to 6; for each λ in {0, 0.15, 0.3, 0.5, 0.75, 1} the period
+  is the field's 3rd-to-97th-percentile range of `g` over those cycles, to three figures,
+  and the λ passes where under 4% of neighbouring samples are more than a quarter turn apart;
+  one of the λs that pass is taken at random, and failing all, the smoothest; the phase is
+  random to three decimals. The field is the picture up's own (the shallow view's lane 0, or
+  the Deep tab's kept field), so the press waits for nothing to be drawn. **The rule runs on
+  a worker of its own** (`coloringRule` in `deep-render.js`), started on the first press
+  from the module the Deep tab compiles, so the shallow view asks it without starting that
+  tab's pool and the first press in the shallow view is the one that fetches `perturb.wasm`
+  (117 KB gzipped). It has to be off the page's thread: six Box–Cox passes over every sample
+  measured 0.44 to 0.52 s at 1136×639 and 0.81 to 0.91 s at 1600×900 in node, and through
+  the worker the page's longest pause during a press measured 29 to 41 ms. `pagehide` gives
+  the worker back with the pools. `n` was unbound. A press is one step back like any other
+  colour change.
+
+**In Deep, a palette change onto an open map folds it** *(Matt, deep_dive_block_ckpt154)*.
+A deep frame is drawn on the Absolute scale, which runs the palette round and round, and an
+open map run round has a seam at every turn; folded, each turn comes back the way it went.
+So every way the palette changes there — a pick from the picker, Random palette, New coloring
+and the Dive block's New coloring on arrival — turns Mirror on where the new map is not
+cyclic (`mirrorFor` in `explorer.js`), and off where it is, which the contract already
+required. The shallow view keeps the reader's own Mirror. Measured over the served page:
+25 Random palette presses and 12 New coloring presses in Deep landed on 4 open maps, all four
+folded, and 33 cyclic ones, none folded.
 
 Inside a Julia set the third button is **Back to ⟨parent plane⟩** — `Back to Mandelbrot` —
 on every Julia set and not only one this tab opened: where this tab did, the parent view is
@@ -571,12 +600,13 @@ bug. Now the first frame is a stand-in, the best picture already at hand, and th
 render fades in over it as every later picture does. The order is `STAND_INS`: the opening
 seat's own tile (a screensaver link's picture finds its tile by canonical link among the
 seats the chips leave); the viewer's canvas, stretched to the layer, where anything is drawn
-on it; and the Mandelbrot set at its home view, `start-families-1.webp`, fetched when the page
+on it; and the Mandelbrot set at its home view, `screensaver-home.webp`, fetched when the page
 starts. What is ready goes up at once with no fade from black, and the tile replaces it when
 it decodes. The tile and the home view are stretched to the seat's aspect, so the render
 lands on the box they fill. The opening seat is drawn from the bag on entry for this, so the
-stand-in is of the picture that follows it. ⚠ Nothing checks that figure's URL: renaming
-`start-families`' panels removes the last stand-in. Later changes needed nothing, because a
+stand-in is of the picture that follows it. That picture is the explorer's own copy of
+`start-families`' first panel *(deep_dive_block_ckpt154)*, byte for byte, so renaming the
+figure cannot take the last stand-in with it. Later changes needed nothing, because a
 picture comes down only after the next has faded in over it. Measured in headless Chrome at
 1600×1100 under 4× and 6× CPU throttling, recording every animation frame from entry: no
 black frame on entry from the button, from Browse, from a link naming a seat, a link naming
@@ -1723,7 +1753,8 @@ in both views (next section).
 
 The left panel keeps the tab's one sentence and, since
 deep_gallery_build_ckpt144, the gallery under it (*The gallery*, below), always open since
-explorer_nav_layout_ckpt145.
+explorer_nav_layout_ckpt145. **The Dive block sits over both** *(deep_dive_block_ckpt154)*,
+because it too chooses which view is up (*The Dive block*, below).
 
 **The sentence is Matt's** *(explorer_deep_polish_ckpt142, 2026-09-22)*: *Zoom far past
 where ordinary rendering breaks down, into the Mandelbrot set, its higher-degree cousins and
@@ -2480,6 +2511,84 @@ met. Measured through the page after the change: the committed `tangle 1e-22` li
 automatic million-iteration ceiling a tile is held to, so those tiles cannot resolve either — and that is the same view
 depth, about 1e-30, at which a centre stops fitting in a link. Below it this feature finds
 minibrots it can neither draw nor address, and says so rather than pretending.
+
+### The Dive block *(deep_dive_block_ckpt154, 2026-09-27)*
+
+At the top of the tab's left panel, one sentence whose two blanks are dropdowns, and a button
+that wears its key:
+
+> Find a minibrot near [this view | a random wallpaper] and dive to [its center | halfway in
+> | this view inside it | a random wallpaper inside it] **Go (g)**
+
+Under it, **New coloring on arrival**, off by default and remembered by this browser
+(`explorer.deep-dive-coloring`); then one bar, Cancel, and a status line. A press is Find
+minibrots' own search, a rung, a landing, and a pass of where it landed, and what lands is an
+ordinary `dv=3` link with its cap pinned (`capFrom: "tile"`, *the minibrot's own* in
+Details), so it is a navigation like a gallery tile: one press is one step back. The method is
+`builder/README.md`'s *How the first set was found*; the arithmetic is `perturb-wasm`'s `dive`
+module, `perturb-wasm/README.md` §11, which the native tool runs too, so a frame found either
+way is a link that opens identically.
+
+- **The search** is Find minibrots' (`nucleiNear` in `deep.js`, which both now call): the cap
+  settled for the search alone, the domain walk, the solves, the copy-or-bulb reading, asking
+  for 12 entries of 24 solves where the list asks for 6 of 12, because the rung rule then
+  filters them.
+- **The rung** is `dive::pick`: of the copies found, largest first, the first that is a step
+  down and whose landing fits the explicit ceiling. From a place the dive itself landed on, a
+  step down is the gallery's rung rule: a body under an eighth of the last rung's and more
+  than one and a half bodies from every earlier rung, which is what keeps a view centred on
+  its copy from finding that copy again. From anywhere else it is a copy framed at under half
+  the view's width. A mapped landing hands on its depth and not its copy: it lands inside
+  that copy's neighbourhood on purpose, where every copy is within the distance that means
+  *that copy again*, so a press from it reads the view afresh (measured before the change:
+  a press from a carried wallpaper refused every copy round it; after it, *its center* from
+  one landed on the period-5,016 copy that had placed it, rung 2). So **pressing Go again with *this view* and *its center* keeps
+  descending**: measured from the Mandelbrot home, periods 15 and then 39, then *halfway in* to
+  a period-36 copy.
+- **The landings.** *Its center* is Find minibrots' framing, `nuclei::copy_width`, at 32
+  periods. *Halfway in* is the symmetry stage on the way down: centred on the copy, at the
+  geometric mean of that frame and the view the copy was found in, at 8 periods. *This view
+  inside it* and *a random wallpaper inside it* carry a whole-set view into the copy: placed
+  by the twin of the nucleus nearest the view's centre, solved by shooting, and scaled by the
+  local scale there (§11 has why the copy's own scale and the first-order place are not good
+  enough). The explorer draws no rotation, so a carried view arrives turned, and the status
+  line says by how much.
+- **The budget.** A landing asks for the copy's period times its count: 32, 8, or for a
+  carried view that view's own cap, since a view carried into a period-`p` copy escapes after
+  about `p` times its own counts (the ceiling trap the gallery's spirals fell into). Past
+  `cap::EXPLICIT_CEILING` the rung rule passes the copy over, and where no copy is left a press
+  says so. **A landing the budget refused at this place is greyed in the dropdown**, and so is
+  *this view inside it* wherever twice the view's cap passes the ceiling; the reason is the
+  status line, and Go is faded (`aria-disabled`, so its title says why). A mapped landing
+  whose copies are all past the budget **searches wider** before it gives up, 16 and then 256
+  times the view about the same centre, never past the set's outermost frame, since the lower
+  periods are the larger copies round it; the status line says it did. A press with an
+  earlier rung to step down from never widens.
+- **A random wallpaper** is any seat of the gallery's `all` collection on this view's plane,
+  whatever the Gallery tab is showing (`randomSeat` in `explorer.js`); its link is read once
+  for its frame and cap, and its colour is never used. A press that draws one retries up to
+  four times (`RANDOM_TRIES`) and then says so with the last reason.
+- **Planes.** The Mandelbrot set and the Multibrot sets of degrees 3 to 6. On a Julia plane
+  the dropdowns and Go are disabled and the status line says to go back to the parameter
+  plane first.
+- **The palette is the reader's on every jump** unless *New coloring on arrival* is ticked,
+  which takes New coloring (above, *Random palette and Random phase*) off the landing's
+  quarter pass before the full pass is shaded, so the full pass lands in it. That colour
+  takes the landing's own entry in the way back (`rememberInPlaceOf`), so a press is still
+  one Ctrl+Z; measured, one Ctrl+Z from a coloured landing is the frame before the press.
+- **The bar and Cancel cover the whole press**: the search is the first four tenths of the
+  bar, a mapped landing's search round its view and its shooting the next tenth, and the pass
+  the second half (`DIVE_SPANS`). Cancel stops whichever is running, and so does Render's
+  Cancel. **The status line states provenance and nothing of it enters the link**: the
+  plane, the copy's period and size, where it was found (this view or a wallpaper by its
+  key), the rung, the landing, the turn and the twin that placed it, and the cap.
+- **`g`** presses Go while the Deep tab owns the viewer; it was unbound.
+
+Measured on the served page at 1600×1100: *its center* from the home view in 0.8 s and from
+there in 3.4 s; *its center* near a random wallpaper in 2.0 s (a period-432 copy); a random
+wallpaper inside a copy near another in 8 to 11 s, two of three presses landing after one
+widening and the third saying why after four draws; three presses undone by three Ctrl+Z,
+each back to the frame before it.
 
 ### The gallery *(deep_gallery_build_ckpt144, 2026-09-23)*
 
@@ -5642,8 +5751,8 @@ documents that accumulates, and no amount of looking at one document shows it.
 
 So `explorer.js` listens for `pagehide` and asks every pool's owner for its workers back, in
 the order they cost: the deep pool, which holds an instance and a reference orbit per worker;
-the walk's renderer and its two screeners; the Saved tab's; the preview's; and the viewer's,
-which is the largest. `Renderer.stop`, `ShadeWorker.stop`, `Screeners.stop` and the three
+New coloring's one worker (`stopColoring`, deep_dive_block_ckpt154); the walk's renderer and
+its two screeners; the Saved tab's; the preview's; and the viewer's, which is the largest. `Renderer.stop`, `ShadeWorker.stop`, `Screeners.stop` and the three
 tabs' own are new; `DeepRenderer.stop` already existed and had no caller. One owner throwing
 does not keep the rest alive — there is no reader left to tell, so the console is the whole
 of the report.

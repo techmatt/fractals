@@ -1,9 +1,9 @@
 {
-  "built": "2026-09-24",
+  "built": "2026-09-27",
   "crate": "explorer/perturb-wasm",
   "dependencies": [],
-  "gzip_bytes": 90049,
-  "raw_bytes": 237983,
+  "gzip_bytes": 117312,
+  "raw_bytes": 313157,
   "rustc": "1.96.0 (ac68faa20 2026-05-25)",
   "schema": 1
 }

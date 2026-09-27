@@ -870,3 +870,138 @@ test("a copy framed at the fallback width holds its body near a quarter of the h
   const share = bodyShare(lanes, 160, 90);
   assert.ok(share !== null && Math.abs(share - BODY_TARGET) < 0.05, `share ${share}`);
 });
+
+/** An export that takes one JSON request and answers with a report, called the way
+ *  `deep-worker.js` and `deep-render.js` call them. */
+function ask(name, request) {
+  const { wasm } = perturb;
+  const raw = new TextEncoder().encode(JSON.stringify(request));
+  const pointer = wasm.alloc(raw.length);
+  new Uint8Array(wasm.memory.buffer, pointer, raw.length).set(raw);
+  const out = wasm[name](pointer, raw.length);
+  wasm.dealloc(pointer, raw.length);
+  const size = new DataView(wasm.memory.buffer).getUint32(out, true);
+  const text = new TextDecoder().decode(new Uint8Array(wasm.memory.buffer, out + 4, size));
+  wasm.dealloc(out, size + 4);
+  return JSON.parse(text);
+}
+
+const AIRSHIP = "-1.7548776662466927600495088963585286918946";
+
+test("a dive's landings are the crate's: the counts, the cap rule and the airship's twin", { skip }, () => {
+  assert.equal(perturb.wasm.landing_periods(0), 32);
+  assert.equal(perturb.wasm.landing_periods(1), 8);
+  // Centred on the anchor's copy at the fallback framing, thirty-two of its periods.
+  const size = 6.4775e-12;
+  const center = ask("dive_land", {
+    landing: "center",
+    degree: 2,
+    re: ANCHOR.center_re,
+    im: ANCHOR.center_im,
+    period: 2838,
+    size_log2: Math.log2(size),
+  });
+  assert.equal(center.ok, true, center.why);
+  assert.ok(Math.abs(center.width / perturb.wasm.copy_width(size, 2) - 1) < 1e-12);
+  assert.equal(center.cap, 2838 * 32);
+  // Halfway is the geometric mean of that frame and the view the copy was found in.
+  const foundIn = 1e-8;
+  const halfway = ask("dive_land", {
+    landing: "halfway",
+    degree: 2,
+    re: ANCHOR.center_re,
+    im: ANCHOR.center_im,
+    period: 2838,
+    size_log2: Math.log2(size),
+    found_in: foundIn,
+  });
+  assert.ok(Math.abs(halfway.width / Math.sqrt(center.width * foundIn) - 1) < 1e-12);
+  assert.equal(halfway.cap, Math.max(perturb.maxiter(halfway.width), 2838 * 8));
+  // The period-2 nucleus carried into the airship lands on the period-6 nucleus, found by
+  // shooting, at three periods of the airship per count.
+  const mapped = ask("dive_land", {
+    landing: "mapped",
+    degree: 2,
+    re: AIRSHIP,
+    im: "0",
+    period: 3,
+    size_log2: -8,
+    view_re: "-1",
+    view_im: "0",
+    view_width: 0.5,
+    count: 1000,
+    anchor_re: "-1",
+    anchor_im: "0",
+    anchor_period: 2,
+  });
+  assert.equal(mapped.ok, true, mapped.why);
+  assert.equal(mapped.twin_period, 6);
+  assert.equal(mapped.cap, Math.max(perturb.maxiter(mapped.width), 3000));
+  // Past the explicit ceiling it is refused, never drawn short.
+  const over = ask("dive_land", {
+    landing: "mapped",
+    degree: 2,
+    re: AIRSHIP,
+    im: "0",
+    period: 3,
+    size_log2: -8,
+    view_re: "-1",
+    view_im: "0",
+    view_width: 0.5,
+    count: 700_000,
+  });
+  assert.equal(over.ok, false);
+  assert.match(over.why, /ceiling/);
+});
+
+test("the rung rule steps down, skips a bulb and keeps to the budget", { skip }, () => {
+  const found = {
+    width: 1,
+    degree: 2,
+    periods: [10, 20, 100_000, 50_000],
+    off_re: [0, 0.3, 0.2, -0.2],
+    off_im: [0, 0, 0, 0],
+    size_log2: [-3, -8, -9, -10],
+    copy: [1, 0, 1, 1],
+  };
+  assert.deepEqual(ask("dive_pick", { ...found, count: 32 }), { ok: true, index: 3 });
+  assert.deepEqual(ask("dive_pick", { ...found, count: 8 }), { ok: true, index: 2 });
+  const rung = { rung_re: [-0.2], rung_im: [0], rung_size_log2: [-10] };
+  assert.equal(ask("dive_pick", { ...found, ...rung, count: 32 }).refusal, "none_smaller");
+  const over = ask("dive_pick", {
+    ...found,
+    periods: found.periods.slice(0, 3),
+    off_re: found.off_re.slice(0, 3),
+    off_im: found.off_im.slice(0, 3),
+    size_log2: found.size_log2.slice(0, 3),
+    copy: found.copy.slice(0, 3),
+    count: 32,
+  });
+  assert.deepEqual([over.refusal, over.period, over.need], ["over_budget", 100_000, 3_200_000]);
+});
+
+test("New coloring's rule is the crate's, over a field laid out as either tab lays it", { skip }, () => {
+  const { wasm } = perturb;
+  const [w, h] = [64, 36];
+  const values = new Float64Array(w * h).map((_, i) => 10 + (i % w) * 0.5);
+  values[5] = Number.NaN;
+  const bytes = new Uint8Array(values.buffer);
+  const pointer = wasm.alloc(bytes.length);
+  new Uint8Array(wasm.memory.buffer, pointer, bytes.length).set(bytes);
+  const out = wasm.coloring_rule(pointer, w * h, w, h, 0, 0.999);
+  wasm.dealloc(pointer, bytes.length);
+  const size = new DataView(wasm.memory.buffer).getUint32(out, true);
+  const rule = JSON.parse(new TextDecoder().decode(new Uint8Array(wasm.memory.buffer, out + 4, size)));
+  wasm.dealloc(out, size + 4);
+  assert.equal(rule.ok, true, rule.why);
+  // A cycles pick of zero is the range's low end, and every λ of a smooth ramp reads.
+  assert.equal(rule.cycles, 1.5);
+  assert.equal(rule.tried.length, 6);
+  assert.deepEqual(
+    rule.tried.map((one) => one.lambda),
+    [0, 0.15, 0.3, 0.5, 0.75, 1],
+  );
+  assert.equal(rule.lambda, 1);
+  // At λ = 1 the range is 30.5 counts, over one and a half turns, to three figures.
+  assert.equal(rule.period, 20.3);
+});

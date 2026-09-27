@@ -1915,6 +1915,29 @@ canvas.palette-final {
 .minibrot:disabled { cursor: default; opacity: 0.55; }
 .minibrot:disabled:hover { border-color: transparent; color: var(--well-ink-dim); }
 
+/* The Dive block *(deep_dive_block_ckpt154)*: at the top of the Deep tab's panel, over the
+   tab's sentence and its gallery, because it chooses which view is up — the studio's rule
+   for the left side. One sentence with its two blanks as dropdowns and Go at its end, the
+   New coloring box, and the one bar, Cancel and status line a press runs under. Go is the
+   Render button's accent: it is this block's one action. */
+.dive { flex: none; padding: 0.6rem var(--gutter) 0.55rem; }
+.dive .bar + .bar { margin-top: 0.35rem; }
+.dive-sentence { gap: 0.3rem 0.4rem; }
+.dive-sentence label { color: var(--well-ink); }
+.bar button.deep-render.dive-go { min-width: 0; padding: 0.2rem 0.9rem; }
+.bar button.deep-render.dive-go[aria-disabled="true"] { opacity: 0.45; cursor: not-allowed; }
+.dive-progress { gap: 0.5rem; min-height: 1.4rem; }
+.dive-progress .deep-bar { width: 8rem; }
+.dive-status {
+  margin: 0.3rem 0 0;
+  color: var(--well-ink-dim);
+  font-family: var(--sans);
+  font-size: 0.75rem;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+.dive-status:empty { display: none; }
+
 /* ------------------------------------------------------------ the Deep tab's gallery
 
    Under the tab's sentence *(deep_gallery_build_ckpt144)*, and always open, the way the

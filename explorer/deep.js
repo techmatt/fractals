@@ -179,6 +179,36 @@ const CAP_STEP = 2;
  */
 const MINIBROT_DEGREES = new Set([2, 3, 4, 5, 6]);
 
+/** How many random wallpapers one press of Go draws before it says none would do
+ *  *(deep_dive_block_ckpt154)*: a draw fails when no copy near it is a step down that fits
+ *  the ceiling, or its landing cannot be spelled, and a few tries turn most of those into a
+ *  landing without making a press that cannot succeed take minutes. */
+const RANDOM_TRIES = 4;
+
+/** How much wider than the view a mapped landing searches when the copies in the view are
+ *  all past the budget: the view, then sixteen times it, then 256, and never past the set's
+ *  outermost frame. */
+const WIDEN = [1, 16, 256];
+
+/**
+ * The Dive block's one bar, by the part of a press it is in: `[from, width]` of the bar.
+ * The search is most of what a press waits on before anything is drawn and has most of the
+ * first half, a mapped landing's own search round its view and its shooting the rest of it,
+ * and the pass that draws where it landed the second half.
+ */
+const DIVE_SPANS = {
+  probe: [0, 0.15],
+  search: [0.15, 0.25],
+  anchorProbe: [0.4, 0.03],
+  anchor: [0.43, 0.04],
+  land: [0.47, 0.03],
+  render: [0.5, 0.5],
+};
+
+/** Where *New coloring on arrival* is remembered: the viewer's, like Auto-render, and off
+ *  unless they ticked it. */
+const DIVE_COLOURING = "explorer.deep-dive-coloring";
+
 /** Where the cost warning records that it has been shown. Per session, so a reader who
  *  comes back tomorrow is told again and one who is exploring is not told twice. */
 const WARNED = "explorer.deep-warned";
@@ -678,6 +708,14 @@ export function mount(host) {
     els.bar.dataset.state = running.sharpening ? "sharpening" : "rendering";
     // Idle is a class and not `hidden`, so the spinner keeps its place on the Render row.
     els.spinner.classList.toggle("is-idle", !running.live);
+    // A dive's one bar and status line: its search, its landing, and then the pass that
+    // draws where it landed, each a share of the bar (`DIVE_SPANS`).
+    if (running.upto === "dive" || running.dive) {
+      const [from, width] = DIVE_SPANS[running.dive ? "render" : (running.divePhase ?? "probe")];
+      els.diveBar.style.setProperty("--done", String(from + width * (running.done ?? 0)));
+      els.diveBar.dataset.state = running.sharpening ? "sharpening" : "rendering";
+      els.diveStatus.textContent = els.progress.textContent;
+    }
   }
 
   /**
@@ -737,14 +775,15 @@ export function mount(host) {
    * what makes a slow frame watchable: the quarter pass is a sixteenth of the full one, so
    * there is something true on the canvas within a fraction of the wait.
    */
-  async function render(upto, { auto = false, probe = !auto } = {}) {
+  async function render(upto, { auto = false, probe = !auto, dive = false, onStage = null } = {}) {
     const generation = ++pass;
     const grid = host.grid();
     readLog();
     // **Before the await, not after it.** The pool takes a moment to start on the first
     // render of a session — a fetch, a compile and a worker apiece — and a Render button
     // that stayed pressable through it would start a second pass on a second press.
-    running = { upto, auto, stage: "starting", started: performance.now(), done: 0 };
+    // `dive` is a pass the Dive block started, whose bar and Cancel follow it too.
+    running = { upto, auto, dive, stage: "starting", started: performance.now(), done: 0 };
     finished = null;
     finishedSamples = 0;
     enterStage("starting", { live: false });
@@ -856,6 +895,12 @@ export function mount(host) {
         paint();
         host.settle();
         said(stage, field, shaded, cached, target);
+        // What a caller wants done once a stage is up — the Dive block's New coloring on
+        // arrival, off the quarter field — before the next stage is shaded in its colour.
+        if (onStage !== null) {
+          await onStage(stage);
+          if (generation !== pass) return;
+        }
       }
       log("finished", { upto });
       host.showState("final");
@@ -1686,7 +1731,6 @@ export function mount(host) {
     if (!MINIBROT_DEGREES.has(target.degree ?? 2)) return;
     const side = from === null ? "deep" : "shallow";
     const generation = ++pass;
-    const grid = host.grid();
     readLog();
     running = {
       upto: "minibrots",
@@ -1724,34 +1768,8 @@ export function mount(host) {
       // reader's picture and rewriting their link as a side effect of pressing a search
       // button would be the wrong trade. Where the cap is already settled this costs one
       // rung, because `settle` starts where it is and stops as soon as the fault share is
-      // met.
-      enterStage("probe");
-      activity("finding the cap to search at…", 0);
-      const floor = await deep.settle(target, grid.width, grid.height, {
-        supersample: 1,
-        onStep: (step) => {
-          if (generation !== pass) return;
-          activity(
-            `finding the cap to search at · trying ${count(step.cap)} · ${said_step(step)}`,
-            step.total > 0 ? step.done / step.total : null,
-          );
-        },
-      });
-      if (floor === null || generation !== pass) return;
-      const searched =
-        floor.maxiter > target.maxiter ? { ...target, maxiter: floor.maxiter } : target;
-      const looking =
-        searched === target ? "looking for nuclei" : `looking for nuclei to ${count(floor.maxiter)}`;
-      enterStage("searching");
-      activity(`${looking}…`, 0);
-      const found = await deep.nuclei(searched, grid.width, grid.height, {
-        supersample: 1,
-        tileSamples: TILE.width,
-        onStep: (step) => {
-          if (generation !== pass) return;
-          activity(`${looking} · ${said_step(step)}`, step.total > 0 ? step.done / step.total : null);
-        },
-      });
+      // met. `nucleiNear` is that search, and the Dive block's too.
+      const found = await nucleiNear(deep, target, generation);
       if (found === null || generation !== pass) return;
 
       if (found.length === 0) {
@@ -1830,6 +1848,50 @@ export function mount(host) {
       }
       host.onSearch?.();
     }
+  }
+
+  /**
+   * The minibrots in and around `target`, at a cap settled for the search alone — Find
+   * minibrots' search, and the Dive block's. `null` where a newer generation took over.
+   * `prefix` leads the Render line's words, and `phase` names the Dive block's share of its
+   * bar as the search moves from the probe to the walk.
+   */
+  async function nucleiNear(deep, target, generation, { prefix = "", phase = null, budget, want } = {}) {
+    const grid = host.grid();
+    const shareOf = (step) => (step.total > 0 ? step.done / step.total : null);
+    if (phase !== null) running.divePhase = phase.probe;
+    enterStage("probe");
+    activity(`${prefix}finding the cap to search at…`, 0);
+    const floor = await deep.settle(target, grid.width, grid.height, {
+      supersample: 1,
+      onStep: (step) => {
+        if (generation !== pass) return;
+        activity(
+          `${prefix}finding the cap to search at · trying ${count(step.cap)} · ${said_step(step)}`,
+          shareOf(step),
+        );
+      },
+    });
+    if (floor === null || generation !== pass) return null;
+    const searched =
+      floor.maxiter > target.maxiter ? { ...target, maxiter: floor.maxiter } : target;
+    const looking =
+      searched === target ? "looking for nuclei" : `looking for nuclei to ${count(floor.maxiter)}`;
+    if (phase !== null) running.divePhase = phase.search;
+    enterStage("searching");
+    activity(`${prefix}${looking}…`, 0);
+    const found = await deep.nuclei(searched, grid.width, grid.height, {
+      supersample: 1,
+      tileSamples: TILE.width,
+      ...(budget === undefined ? {} : { budget }),
+      ...(want === undefined ? {} : { want }),
+      onStep: (step) => {
+        if (generation !== pass) return;
+        activity(`${prefix}${looking} · ${said_step(step)}`, shareOf(step));
+      },
+    });
+    if (found === null || generation !== pass) return null;
+    return found;
   }
 
   /** Whether a `dv` link can carry this entry's frame — the same 64 characters every other
@@ -1912,6 +1974,426 @@ export function mount(host) {
     if (!(value > 0) || !Number.isFinite(value)) return "unknown";
     const decade = Math.floor(Math.log10(value));
     return `${(value / 10 ** decade).toFixed(1)}e${decade}`;
+  }
+
+  // ----------------------------------------------------------------- the dive
+  //
+  // **Find a minibrot near [this view | a random wallpaper] and dive to [its center | halfway
+  // in | this view inside it | a random wallpaper inside it]** *(deep_dive_block_ckpt154)*.
+  // One press is Find minibrots' search, the rung rule, a landing, and a pass of where it
+  // landed; `perturb-wasm`'s `dive` module is the arithmetic, and `builder/README.md`'s *How
+  // the first set was found* the method it formalises. What lands is an ordinary `dv=3` link
+  // with its cap pinned, so a press is a navigation like a gallery tile and one step back
+  // undoes it; the status line says where it came from, and nothing of that enters the link.
+
+  /**
+   * The copies this dive has landed on, how many rungs down it is, and the place it landed:
+   * `{ place, rungs, depth }`, or `null`. **A press from that place is the next rung of the
+   * same chain** — the rung rule holds the next copy to under an eighth of the last and away
+   * from every earlier one, which is what keeps a view centred on the copy it just landed on
+   * from finding that copy again. From anywhere else a press starts a chain of its own.
+   *
+   * **A mapped landing hands on its depth and not its copies.** It lands inside the copy's
+   * neighbourhood on purpose, so every copy round it is within the distance that means "that
+   * copy again", and a press from there refused every one of them. Its copy is not what the
+   * view is centred on, so the next press reads the view afresh.
+   */
+  let chain = null;
+  /** Landings the budget refused at one place, by option: `{ place, reasons }`. Greyed until
+   *  the view moves, with the sentence as the reason. */
+  let refusedAt = null;
+  /** What the Dive block's status line says at rest: the last press's provenance, or why it
+   *  did not land. */
+  let diveSaid = "";
+  /** Whether a landing takes a New coloring as it arrives. */
+  let diveColouring = storedFlag(DIVE_COLOURING);
+
+  /** The place a view stands on — its set, centre and width, and not its cap or colour. */
+  function placeOf(of) {
+    return deepLink.fieldKey({ ...of, maxiter: 0 }, 1, 1);
+  }
+
+  /** Why the Dive block cannot run on this view, or `null`. */
+  function diveBarred() {
+    if (view.julia !== null) {
+      return (
+        "Dive finds minibrots, which live on the Mandelbrot and Multibrot planes and not in a " +
+        "Julia set. Back to the Mandelbrot set (j) first."
+      );
+    }
+    if (!MINIBROT_DEGREES.has(view.degree ?? 2)) {
+      return "Dive works on the Mandelbrot set and the Multibrot sets of degrees 3 to 6.";
+    }
+    return null;
+  }
+
+  /** Why a landing is greyed for the view the reader is on, or `null`: the budget refused it
+   *  here already, or this view's own cap carried into even a period-2 copy passes the
+   *  ceiling. */
+  function landingBarred(option) {
+    const here = refusedAt !== null && refusedAt.place === placeOf(view) ? refusedAt.reasons : {};
+    if (here[option] !== undefined) return here[option];
+    if (option === "view" && 2 * view.maxiter > deepLink.CAP_LIMIT) {
+      return (
+        `This view is drawn at ${count(view.maxiter)} iterations, and carried into even a ` +
+        `period-2 copy it would ask for ${count(2 * view.maxiter)}, past the ` +
+        `${count(deepLink.CAP_LIMIT)} ceiling.`
+      );
+    }
+    return null;
+  }
+
+  /** What a landing is called in a sentence. */
+  function landingWords(to, seatB) {
+    if (to === "center") return "at its center";
+    if (to === "halfway") return "halfway in";
+    if (to === "view") return "with this view inside it";
+    return `with wallpaper ${seatB?.key ?? ""} inside it`;
+  }
+
+  /** Why no rung was taken, as the status line says it. */
+  function refusalSaid(picked, where, to) {
+    if (picked.refusal === "no_copy") return `No minibrot was found near ${where}.`;
+    if (picked.refusal === "none_smaller") {
+      return `No copy near ${where} is a step down from where the dive stands.`;
+    }
+    const landing = to === "center" ? "its center" : to === "halfway" ? "halfway in" : "that view";
+    return (
+      `The nearest copy a step down, period ${count(picked.period)}, needs ` +
+      `${count(picked.need)} iterations for ${landing}, past the ${count(deepLink.CAP_LIMIT)} ` +
+      "ceiling."
+    );
+  }
+
+  /** Of `list`, the nucleus nearest `of`'s centre in the larger coordinate, or `null`. */
+  function nearest(list, of) {
+    let best = null;
+    let apart = Infinity;
+    for (const one of list) {
+      const far = Math.max(
+        Math.abs(fx.difference(one.x.dec, of.x.dec)),
+        Math.abs(fx.difference(one.y.dec, of.y.dec)),
+      );
+      if (far < apart) {
+        best = one;
+        apart = far;
+      }
+    }
+    return best;
+  }
+
+  /** A random wallpaper of this plane, as a deep view with the geometry and cap its link
+   *  gives — the seat's colour is never used — or `null` where the gallery has none. */
+  async function seatOf(family) {
+    const seat = await host.randomSeat(family);
+    if (seat === null) return null;
+    const carried = carry(seat.view);
+    return carried === null ? null : { key: seat.key, view: carried };
+  }
+
+  /**
+   * One attempt at a press: find the copy, take the rung, land. Resolves `null` where a newer
+   * generation took over, `{ why, grey }` where nothing landed, and `{ frame, chain, said }`
+   * where it did.
+   */
+  async function diveOnce(deep, generation, from, to) {
+    const family = deepLink.familyOf(view);
+    const degree = view.degree ?? 2;
+    let seatA = null;
+    let near = view;
+    if (from === "seat") {
+      seatA = await seatOf(family);
+      if (generation !== pass) return null;
+      if (seatA === null) return { why: "No wallpaper in the gallery is on this plane." };
+      near = seatA.view;
+    }
+    let seatB = null;
+    let into = null;
+    if (to === "view") into = view;
+    if (to === "seat") {
+      seatB = await seatOf(family);
+      if (generation !== pass) return null;
+      if (seatB === null) return { why: "No wallpaper in the gallery is on this plane." };
+      into = seatB.view;
+    }
+    // A mapped landing's count is its view's own cap: that view carried into a period-`p`
+    // copy escapes after about `p` times its own counts.
+    const periods = into !== null ? into.maxiter : deep.landingPeriods(to);
+    if (into !== null && 2 * periods > deepLink.CAP_LIMIT) {
+      return {
+        why:
+          `Wallpaper ${seatB.key} is drawn at ${count(periods)} iterations, too many to carry ` +
+          "into any copy under the ceiling.",
+      };
+    }
+    let where = seatA === null ? "this view" : `wallpaper ${seatA.key}`;
+    const prefix = `near ${where} · `;
+    const continuing = seatA === null && chain !== null && chain.place === placeOf(view);
+    const rungs = continuing ? chain.rungs : [];
+    const depth = continuing ? chain.depth : 0;
+    // **A mapped landing looks further out before it gives up on the budget**: a view carried
+    // into a period-`p` copy needs `p` times its own cap, which near a wallpaper's own narrow
+    // frame is almost never there — its copies run to hundreds. The lower periods are the
+    // larger copies round it, so the search widens about the same centre, `WIDEN` times at a
+    // step, and says so. A press with an earlier rung to step down from never widens.
+    const widths = into !== null && rungs.length === 0 ? WIDEN : [1];
+    let found = null;
+    let searched = near;
+    let picked = null;
+    for (const factor of widths) {
+      const wide = near.w.value * factor;
+      if (factor > 1 && wide > outermost()?.w) break;
+      searched =
+        factor === 1
+          ? near
+          : { ...near, w: deepLink.widthOf(wide), maxiter: policyCap(wide), capFrom: "width" };
+      found = await nucleiNear(deep, searched, generation, {
+        prefix: factor === 1 ? prefix : `${prefix}${factor} times wider · `,
+        phase: { probe: "probe", search: "search" },
+        budget: 24,
+        want: 12,
+      });
+      if (found === null) return null;
+      picked = deep.pick(searched, found, rungs, periods);
+      if (!picked.ok) throw new Error(picked.why);
+      if (picked.refusal !== "over_budget") break;
+    }
+    if (picked.index === null) {
+      return {
+        why: refusalSaid(picked, where, to),
+        // The budget is this view's to fail only where the count is: a random wallpaper
+        // carried in may fit where this one did not.
+        grey: picked.refusal === "over_budget" && seatA === null && to !== "seat" ? to : null,
+      };
+    }
+    if (searched !== near) where += `, searched ${count(searched.w.value / near.w.value)} times wider`;
+    const copy = found[picked.index];
+    const base = {
+      degree,
+      re: copy.x.text,
+      im: copy.y.text,
+      period: copy.period,
+      size_log2: copy.sizeLog2,
+    };
+    let request;
+    if (to === "center") request = { landing: "center", ...base };
+    else if (to === "halfway") request = { landing: "halfway", ...base, found_in: near.w.value };
+    else {
+      // **Placed by a nucleus near the view**, whose copy inside this one the shooting finds
+      // exactly — the first-order place misses by the tuning's nonlinearity, which is
+      // thousands of frames once the view is narrow. The search just run is round that view
+      // already where the view is the one searched; anywhere else it is searched too.
+      let around = found;
+      if (into !== searched) {
+        around = await nucleiNear(deep, into, generation, {
+          prefix: `around ${seatB === null ? "this view" : `wallpaper ${seatB.key}`} · `,
+          phase: { probe: "anchorProbe", search: "anchor" },
+          budget: 24,
+          want: 12,
+        });
+        if (around === null) return null;
+      }
+      const anchor = nearest(around, into);
+      request = {
+        landing: "mapped",
+        ...base,
+        view_re: into.x.text,
+        view_im: into.y.text,
+        view_width: into.w.value,
+        count: periods,
+        ...(anchor === null
+          ? {}
+          : { anchor_re: anchor.x.text, anchor_im: anchor.y.text, anchor_period: anchor.period }),
+      };
+    }
+    running.divePhase = "land";
+    enterStage("landing");
+    activity(`${prefix}landing…`, 0);
+    const answer = await deep.land(request, {
+      onProgress: (done, total) => {
+        if (generation === pass) {
+          activity(`${prefix}placing it · shooting step ${done + 1}`, total > 0 ? done / total : null);
+        }
+      },
+    });
+    if (answer === null || generation !== pass) return null;
+    if (!answer.ok) return { why: answer.why };
+
+    // **An ordinary link, or nowhere**: the frame goes through the contract's own reader, so a
+    // centre past what a link can spell is refused here rather than landed on and stranded.
+    let frame;
+    try {
+      const x = fx.parse(answer.re);
+      const y = fx.parse(answer.im);
+      if (x === null || y === null) throw new Error("unreadable");
+      frame = {
+        version: deepLink.VERSION,
+        degree,
+        julia: null,
+        x: deepLink.coordinateOf(x),
+        y: deepLink.coordinateOf(y),
+        w: deepLink.widthOf(answer.width),
+        maxiter: answer.cap,
+        // The cap a copy's own period asks for, written into the link as a found minibrot's is.
+        capFrom: "tile",
+        aspect: view.aspect,
+        palette: view.palette,
+        shade: view.shade,
+        level: view.level,
+      };
+      deepLink.parse(`?${deepLink.emit(frame)}`, context);
+    } catch {
+      return { why: `The copy near ${where} lands deeper than a link can spell a center.` };
+    }
+    const plane = degree === 2 ? "Mandelbrot set" : `Multibrot ${degree}`;
+    const placed =
+      request.landing !== "mapped"
+        ? ""
+        : `, turned ${Math.round(answer.turn)}°, ` +
+          (answer.twin_period === null
+            ? "placed to first order"
+            : `placed by its period-${count(answer.twin_period)} twin`);
+    const said =
+      `${plane} · a period-${count(copy.period)} copy ${exponent(copy.size)} across near ` +
+      `${where}, rung ${depth + 1} · landed ${landingWords(to, seatB)}${placed} · ` +
+      `${count(answer.cap)} iterations.`;
+    const next = request.landing === "mapped" ? [] : [...rungs, copy];
+    return { frame, chain: { place: placeOf(frame), rungs: next, depth: depth + 1 }, said };
+  }
+
+  /**
+   * **Go.** Search, take the rung, land, draw — Cancel stops any of it, and what lands is a
+   * link the way back remembers as one step. The palette stays the reader's unless *New
+   * coloring on arrival* is ticked, which colours the landing off its quarter pass.
+   */
+  async function dive() {
+    if (diveBarred() !== null || running?.upto === "download") return;
+    const from = els.diveFrom.value;
+    const to = els.diveTo.value;
+    if (landingBarred(to) !== null) {
+      syncControls();
+      return;
+    }
+    if (running !== null) stop();
+    disarm();
+    const generation = ++pass;
+    readLog();
+    running = {
+      upto: "dive",
+      auto: false,
+      stage: "starting",
+      started: performance.now(),
+      done: 0,
+      divePhase: "probe",
+    };
+    enterStage("starting", { live: false });
+    activity("starting the deep renderer…", 0);
+    syncControls();
+    host.say("");
+    dropList();
+    let landed = null;
+    try {
+      const deep = await pool();
+      if (generation !== pass) return;
+      readLog();
+      unsettle();
+      const tries = from === "seat" || to === "seat" ? RANDOM_TRIES : 1;
+      let why = "";
+      for (let attempt = 1; attempt <= tries && landed === null; attempt++) {
+        const tried = await diveOnce(deep, generation, from, to);
+        if (tried === null || generation !== pass) return;
+        if (tried.frame !== undefined) {
+          landed = tried;
+        } else {
+          why = tried.why;
+          if (tried.grey) {
+            const place = placeOf(view);
+            const reasons = refusedAt?.place === place ? refusedAt.reasons : {};
+            refusedAt = { place, reasons: { ...reasons, [tried.grey]: tried.why } };
+          }
+        }
+      }
+      if (landed === null) {
+        diveSaid = tries > 1 ? `Tried ${tries} random wallpapers and none would do. ${why}` : why;
+      }
+    } catch (error) {
+      diveSaid = String(error.message ?? error);
+      console.error("the dive failed", { view: deepLink.emit(view) }, error);
+    } finally {
+      if (generation === pass && landed === null) {
+        running = null;
+        watch();
+        host.showState(drawn === null ? "stopped" : "final");
+        syncControls();
+      }
+    }
+    if (landed === null || generation !== pass) return;
+    chain = landed.chain;
+    diveSaid = landed.said;
+    arrive(landed.frame);
+  }
+
+  /** Put a landing up the way a link is put up, and draw it: the quarter pass, the full one,
+   *  and — where it is ticked — a New coloring off the quarter field before the full one is
+   *  shaded, so the full pass lands in it. */
+  function arrive(frame) {
+    cameFrom = null;
+    view = frame;
+    drawn = null;
+    stale = null;
+    settledAt = null;
+    clearMinibrots();
+    paint();
+    syncControls();
+    host.settle();
+    stat("");
+    host.showState("stopped");
+    const onStage = diveColouring
+      ? async (stage) => {
+          if (stage.name === "preview") await host.newColoring?.({ inPlace: true });
+        }
+      : null;
+    render("screen", { probe: false, dive: true, onStage });
+  }
+
+  /** The Dive block, synced to the view: what is greyed and why, the status line at rest,
+   *  and Cancel while a press is running. */
+  function syncDive() {
+    const barred = diveBarred();
+    const downloading = running?.upto === "download";
+    els.diveFrom.disabled = barred !== null || downloading;
+    els.diveTo.disabled = barred !== null || downloading;
+    for (const option of els.diveTo.options) option.disabled = landingBarred(option.value) !== null;
+    const reason = barred ?? landingBarred(els.diveTo.value);
+    // Faded and never natively disabled, as Shallow mode is: the title is the reason.
+    els.diveGo.setAttribute("aria-disabled", String(reason !== null || downloading));
+    els.diveGo.title = reason ?? "Search, land and draw. One step back undoes it.";
+    els.diveColor.checked = diveColouring;
+    const diving = running !== null && (running.upto === "dive" || running.dive === true);
+    els.diveCancel.hidden = !diving;
+    if (!diving) {
+      els.diveStatus.textContent = reason ?? diveSaid;
+      const there = chain !== null && chain.place === placeOf(view) && !pending();
+      els.diveBar.style.setProperty("--done", there ? "1" : "0");
+      els.diveBar.dataset.state = there ? "final" : "rendering";
+    }
+  }
+
+  function storedFlag(key) {
+    try {
+      return window.localStorage.getItem(key) === "on";
+    } catch {
+      return false;
+    }
+  }
+
+  function storeFlag(key, value) {
+    try {
+      if (value) window.localStorage.setItem(key, "on");
+      else window.localStorage.removeItem(key);
+    } catch {
+      /* A browser that stores nothing still has the box; it forgets it on a reload. */
+    }
   }
 
   // ----------------------------------------------------------------- the controls
@@ -2052,7 +2534,8 @@ export function mount(host) {
       running.auto &&
       leftBehind() !== null &&
       running.upto !== "download" &&
-      running.upto !== "minibrots"
+      running.upto !== "minibrots" &&
+      running.upto !== "dive"
     );
   }
 
@@ -2167,6 +2650,7 @@ export function mount(host) {
     } else {
       els.note.textContent = "";
     }
+    syncDive();
     if (shown && owns) host.onColour();
   }
 
@@ -2326,7 +2810,7 @@ export function mount(host) {
     return () => {
       if (running?.upto === "download") return;
       const was = running;
-      if (!act() || was === null || was.upto === "minibrots") return;
+      if (!act() || was === null || was.upto === "minibrots" || was.upto === "dive") return;
       stop();
       disarm();
       render(was.upto, { auto: was.auto });
@@ -2388,6 +2872,25 @@ export function mount(host) {
   );
   els.origin.addEventListener("click", interrupting(toOrigin));
   els.minibrots.addEventListener("click", interrupting(() => findMinibrots()));
+
+  // The Dive block. Go is faded rather than disabled where a landing is greyed, so its title
+  // says why; a press on it then does nothing but say so in the status line.
+  els.diveGo.addEventListener("click", () => {
+    if (els.diveGo.getAttribute("aria-disabled") === "true") return;
+    dive();
+  });
+  els.diveCancel.addEventListener("click", () => {
+    stop();
+    diveSaid = "Stopped.";
+    host.showState(drawn === null ? "stopped" : "final");
+    syncControls();
+  });
+  els.diveFrom.addEventListener("change", syncControls);
+  els.diveTo.addEventListener("change", syncControls);
+  els.diveColor.addEventListener("change", () => {
+    diveColouring = els.diveColor.checked;
+    storeFlag(DIVE_COLOURING, diveColouring);
+  });
   els.root.addEventListener("click", interrupting(toRoot));
   // Faded is not disabled here (see `syncControls`), so a press on a frame that cannot
   // cross still lands, and `host.leave` says why it will not go.
@@ -2413,6 +2916,10 @@ export function mount(host) {
     /** `r` while this tab owns the viewer: its own Root, as a click on it. */
     pressRoot() {
       if (!els.root.disabled) els.root.click();
+    },
+    /** `g` while this tab owns the viewer: the Dive block's Go, as a click on it. */
+    pressGo() {
+      els.diveGo.click();
     },
 
     // ------------------------------------------------ Find minibrots, for the viewer
