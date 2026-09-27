@@ -245,6 +245,9 @@ class Frame:
     f64: bool = False
     #: The degree of `z^d + c`; the link names a family only where it is not two.
     degree: int = 2
+    #: A cell held open with nothing drawn in it: `x`, `y`, `w` and `colour` are empty,
+    #: and the panel is a blank one (`figures.Panel.blank`), which carries no link.
+    blank: bool = False
 
     def link(self) -> str:
         f = ""
@@ -261,6 +264,43 @@ class Figure:
     size: tuple[int, int]
     supersample: int
     about: str
+    #: How a figure in several maps spends them, which the header line says after the
+    #: last one: a row's panels share one colouring, or each panel keeps its own.
+    maps: str = "one to a row"
+
+
+def _linked(link: str, label: str, alt: str, note: str | None = None) -> Frame:
+    """A panel that is a Deep-tab link as somebody wrote it, whole: its place, its family
+    and its colouring, cap included. `Frame.link` spells it back byte for byte, which
+    `draw` holds it to, so the figure draws exactly the frame the link opens."""
+    parts = link.split("&")
+    if parts[0] != "dv=3":
+        raise DeepFigureError(f"{link} is not a Deep-tab link")
+    keys = dict(part.split("=", 1) for part in parts[1:])
+    family = keys.get("f", "")
+    julia = (keys["cx"], keys["cy"]) if "cx" in keys else None
+    degree = int(family.removeprefix("julia").removeprefix("multibrot") or 2)
+    place = {"f", "cx", "cy", "x", "y", "w"}
+    colour = "&".join(part for part in parts[1:] if part.split("=", 1)[0] not in place)
+    frame = Frame(
+        keys["x"],
+        keys["y"],
+        keys["w"],
+        colour,
+        label,
+        alt,
+        note=note if note is not None else _wide(keys["w"]),
+        julia=julia,
+        degree=degree,
+    )
+    if frame.link() != link:
+        raise DeepFigureError(f"{link} does not spell back as itself: {frame.link()}")
+    return frame
+
+
+def _blank(label: str, note: str) -> Frame:
+    """A cell of the grid held open: nothing drawn, nothing linked."""
+    return Frame("", "", "", "", label, "", note=note, blank=True)
 
 
 def _width(text: str) -> str:
@@ -583,6 +623,102 @@ def _row(point: Misiurewicz) -> tuple[Frame, Frame, Frame]:
     )
 
 
+# ------------------------------------------------------------------------- the multibrots
+#
+# One row to a degree, parameter plane and then Julia plane (deep_multibrots_gallery_
+# ckpt154). Each panel is a link taken whole, and each comes from the first source that has
+# one, in the brief's order: Matt's own links, which are also Deep-gallery rows since that
+# prompt; then the Deep gallery; then the dive candidates' sheet, which no panel needed. A
+# degree whose Julia plane the gallery has no deep frame for holds its cell open rather than
+# borrowing an embedded Julia set from the parameter plane. The frames repeat gallery rows
+# on purpose, which is why the figure carries no reuse claim for them: the no-reuse rule is
+# about figures, and none of these is on another figure. Matt replaces panels as he finds
+# better ones, and a replacement is an edit to this table and a redraw.
+
+#: What a held-open Julia cell says under itself.
+NO_JULIA = "no deep frame yet"
+
+MULTIBROTS = (
+    (
+        # Matt's link, and gallery row 35 (Symmetry stages).
+        _linked(
+            "dv=3&x=-0.77552241446268734437207&y=-0.12995613474704090823188"
+            "&w=2.4063848086348906e-15&n=1012170&p=carried-away-25&phase=0.3323"
+            "&scale=absolute&lambda=0&period=0.295",
+            "Mandelbrot set",
+            "A tiny copy of the Mandelbrot set at the center of a pinwheel of spiral arms in "
+            "magenta, violet, and pale blue.",
+        ),
+        # Gallery row 19 (Embedded Julia sets).
+        _linked(
+            "dv=3&cx=-0.749370532470036478513037742&cy=0.041472667068168544344087907"
+            "&x=-0.749370532470036479016511828&y=0.041472667068168544958065569&w=4.74e-18"
+            "&n=599688&p=Brass%20Tide&phase=0.658&scale=absolute&lambda=0.15&period=5.91",
+            "Julia set",
+            "A deep frame of a Julia set: a long diamond of black islands and filigree edged "
+            "in gold and cream, on dark teal.",
+        ),
+    ),
+    (
+        # Matt's link, and gallery row 37 (Framed minibrots).
+        _linked(
+            "dv=3&f=multibrot3&x=0.15900762390528316041934&y=1.08826091712682204649985"
+            "&w=2.437158648656004e-15&n=1239788&p=scattering-25&phase=0.971&scale=absolute"
+            "&period=1880",
+            "Degree 3",
+            "A small black copy of the degree-3 multibrot in a ring of gold filigree, with "
+            "branching arms on amber.",
+        ),
+        _blank("Degree 3 Julia set", NO_JULIA),
+    ),
+    (
+        # Matt's link, and gallery row 36 (Symmetry stages).
+        _linked(
+            "dv=3&f=multibrot4&x=0.5083915086801963955211&y=0.6503769802361925397409"
+            "&w=3.8475073426030776e-14&n=1620000&p=BuGn&phase=0.976&mirror=1&scale=absolute"
+            "&lambda=0&period=0.2008",
+            "Degree 4",
+            "A small black copy of the degree-4 multibrot at the center of spiral arms of "
+            "filigree in green and white.",
+        ),
+        _blank("Degree 4 Julia set", NO_JULIA),
+    ),
+    (
+        # Gallery row 15 (Symmetry stages), the gallery's one degree-5 frame.
+        _linked(
+            "dv=3&f=multibrot5&x=0.220832608733647834044122991&y=0.709617739665916382844629932"
+            "&w=3.6e-20&n=83410&p=Aurora%20Curtain&phase=0.699&scale=absolute&lambda=0"
+            "&period=0.28",
+            "Degree 5",
+            "A small copy of the degree-5 multibrot at the center of a star of smaller "
+            "copies, in green and blue.",
+        ),
+        _blank("Degree 5 Julia set", NO_JULIA),
+    ),
+    (
+        # Gallery row 16 (Symmetry stages): the copy the Julia frame beside it is taken at.
+        _linked(
+            "dv=3&f=multibrot6&x=0.73131792188824408972301565&y=0.387113729318409700562983327"
+            "&w=1.64e-20&n=84771&p=visions-25&phase=0.836&scale=absolute&period=205",
+            "Degree 6",
+            "A small copy of the degree-6 multibrot inside rings of filigree and smaller "
+            "copies, in violet.",
+        ),
+        # Gallery row 20 (Embedded Julia sets).
+        _linked(
+            "dv=3&f=julia6&cx=0.731317921888244089723623346751"
+            "&cy=0.387113729318409700562713089968&x=0.731317921888244089723034008353"
+            "&y=0.387113729318409700563659204364&w=6.67e-21&n=86329"
+            "&p=fractal_flowers_abstract_104352_2560x1600&phase=0.343&scale=absolute"
+            "&lambda=0&period=1.01",
+            "Degree 6 Julia set",
+            "A deep frame of a degree-6 Julia set: a lobed blot of filigree dotted with "
+            "black islands, edged in bright blue on gold.",
+        ),
+    ),
+)
+
+
 FIGURES = {
     "deep-f64-and-perturbation": Figure(
         (
@@ -620,6 +756,7 @@ FIGURES = {
         2,
         "the video's final frame, 3.5e-15 wide at cap 63534, under four colourings of its "
         "field; the links are FINAL_COLOURINGS'",
+        maps="the second for the last panel alone",
     ),
     "deep-shallow-and-deep": Figure(
         (
@@ -731,6 +868,19 @@ FIGURES = {
         "zoomed in at c at Tan Lei's scale, and the parameter plane zoomed in at c; the "
         "constants are MISIUREWICZ's",
     ),
+    "deep-multibrots": Figure(
+        tuple(frame for row in MULTIBROTS for frame in row),
+        2,
+        (960, 540),
+        2,
+        "one row to a degree, the Mandelbrot set and then the multibrots of degrees 3 to "
+        "6, the parameter plane left and a Julia plane of that degree right, each panel a "
+        "Deep-tab link taken whole with its own colouring and cap; a degree with no deep "
+        "Julia-plane frame in the Deep gallery holds its cell open. The links are "
+        "MULTIBROTS', and the source that filled each is the comment beside it there: "
+        "Matt's own links for degrees 2 to 4, Deep-gallery rows for the rest",
+        maps="one to a panel",
+    ),
 }
 
 #: Each figure's words for its registry row: the whole-figure alt, and the caption, which
@@ -773,6 +923,13 @@ WORDS = {
         "Mandelbrot or multibrot set zoomed in at the same point (right). The two zooms "
         "agree up to a fixed scale and rotation.",
     ),
+    "deep-multibrots": (
+        "Five rows of deep frames, one for each degree from 2 to 6: the parameter plane, "
+        "and beside it a Julia set of that degree for degrees 2 and 6.",
+        "Deep frames on the Mandelbrot set and the multibrots of degrees 3 to 6, one degree "
+        "to a row: the parameter plane on the left, and on the right a Julia set of the same "
+        "degree where the Deep gallery has a deep frame of one.",
+    ),
 }
 
 #: What each figure's deep panels were drawn as, between `draw` and `keep`.
@@ -799,7 +956,7 @@ def draw(identifier: str) -> Split:
     drawn = {
         index: draw_link(frame.link(), width, height, ss, identifier)
         for index, frame in enumerate(figure.frames, start=1)
-        if not frame.f64
+        if not frame.f64 and not frame.blank
     }
     _DRAWN[identifier] = drawn
     lines = [
@@ -812,6 +969,13 @@ def draw(identifier: str) -> Split:
     ]
     made: list[Made] = []
     for index, frame in enumerate(figure.frames, start=1):
+        if frame.blank:
+            made.append(Made(None, None, label=frame.label, note=frame.note, blank=figure.size))
+            lines.append(
+                f"panel {index}, {frame.label}: blank, a cell held open with nothing drawn "
+                "in it and no link"
+            )
+            continue
         target = panel_path(identifier, index)
         if frame.f64:
             cap = next(iter(drawn.values())).maxiter
@@ -859,21 +1023,26 @@ def _colour_words(colour: str) -> str:
     """The palette pass in words, map first: `palette` and never `colormap`, which the
     figure's header line spends once."""
     parts = _parts(colour)
-    shade = "".join(f"{key} {parts[key]}, " for key in ("gamma", "cycles", "phase") if key in parts)
+    shade = "".join(
+        f"{key} {parts[key]}, " for key in ("gamma", "cycles", "phase", "mirror") if key in parts
+    )
+    # A link leaves out a key at its default, and the contract's default for both is 1.
     return (
         f"{parts['p']} {shade}scale {parts.get('scale', 'leveled')}, "
-        f"lambda {parts['lambda']}, period {parts['period']}"
+        f"lambda {parts.get('lambda', '1')}, period {parts.get('period', '1')}"
     )
 
 
 def _maps(figure: Figure) -> str:
     """The maps a figure is drawn in, each after the word `colormap`: one colouring to a
-    figure, so one map, except `deep-misiurewicz-pairs`, which has one to a row."""
-    names = list(dict.fromkeys(_parts(frame.colour)["p"] for frame in figure.frames))
+    figure, so one map, except where `Figure.maps` says how several are spent."""
+    names = list(
+        dict.fromkeys(_parts(frame.colour)["p"] for frame in figure.frames if not frame.blank)
+    )
     if len(names) == 1:
         return f"colormap {names[0]}"
     words = [f"colormap {name}" for name in names]
-    return f"{', '.join(words[:-1])} and {words[-1]}, one to a row,"
+    return f"{', '.join(words[:-1])} and {words[-1]}, {figure.maps},"
 
 
 def _f64_spec(frame: Frame, cap: int) -> dict:

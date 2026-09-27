@@ -196,8 +196,12 @@ def picture_ids() -> list[str]:
         if not figure.on_page or figure.embedded:
             continue
         if figure.split:
+            # A blank panel is a held-open cell with no picture in it, so nothing to open;
+            # the others keep their places, so a panel's id is its cell whatever is blank.
             found.extend(
-                figures.panel_id(identifier, index) for index in range(1, len(figure.panels) + 1)
+                figures.panel_id(identifier, index)
+                for index, panel in enumerate(figure.panels, start=1)
+                if not panel.blank
             )
         else:
             found.append(f"figure:{identifier}")
@@ -324,7 +328,13 @@ def _panel_links(
     """
     from . import picks
 
-    identifiers = [figures.panel_id(figure.id, index) for index in range(1, len(figure.panels) + 1)]
+    # A blank panel has no picture and so no link, and no row; see `picture_ids`.
+    pictured = [
+        (figures.panel_id(figure.id, index), panel)
+        for index, panel in enumerate(figure.panels, start=1)
+        if not panel.blank
+    ]
+    identifiers = [identifier for identifier, _ in pictured]
     claimed = _claimed_seats(figure)
     wanted = sorted({panel.seat for panel in figure.panels if panel.seat and panel.seat in claimed})
     try:
@@ -337,7 +347,7 @@ def _panel_links(
 
     found = []
     held = _deep_recipes() if any(panel.deep for panel in figure.panels) else {}
-    for identifier, panel in zip(identifiers, figure.panels, strict=True):
+    for identifier, panel in pictured:
         if panel.deep:
             # **A deep panel's link is its recipe, and is read rather than derived**
             # (deep_figures_ckpt145). The maker drew the picture from exactly this string,

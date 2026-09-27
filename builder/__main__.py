@@ -12,7 +12,8 @@ placed from, and `review` builds the doc a page is marked up in and reads it bac
 published tentative record next door as a staged gallery — a record and its pictures, with
 no page made from them. `import`,
 `deep-gallery` bakes the Deep tab's gallery tiles from its register, and runs the stages
-that found the first set.
+that found the first set. `dive-candidates` lands deep candidates by the Dive block's own
+rules and lays them out as a numbered sheet to pick a figure from.
 `prose`, `review`, `explorer`, `locations`, `judges`, `picks`, `start`, `seats`, `phoenix-points`,
 `deep-gallery`, `growth` and `pipeline` are the
 commands that reach outside the repository — for a full-size original, for the approved
@@ -45,6 +46,7 @@ from . import (
 from . import curation as curation_module
 from . import deep_figures as deep_figures_module
 from . import deep_gallery as deep_gallery_module
+from . import dive_candidates as dive_candidates_module
 from . import explorer as explorer_module
 from . import growth as growth_module
 from . import judges as judges_module
@@ -602,6 +604,45 @@ def _parser() -> argparse.ArgumentParser:
         "args", nargs="*", help="descend: DEGREE COUNT SEED EXTRA; preview: FRAMES NAME"
     )
 
+    dive = commands.add_parser(
+        "dive-candidates",
+        help="land deep candidates by the Dive block's rules and lay them out as a sheet",
+    )
+    dive.add_argument(
+        "--budget-s",
+        type=float,
+        default=dive_candidates_module.DEFAULT_BUDGET_S,
+        help="wall-clock seconds; no unit starts that is estimated to overrun it "
+        f"(default {dive_candidates_module.DEFAULT_BUDGET_S})",
+    )
+    dive.add_argument(
+        "--seed",
+        type=int,
+        default=dive_candidates_module.DEFAULT_SEED,
+        help=f"seeds every choice a unit makes (default {dive_candidates_module.DEFAULT_SEED})",
+    )
+    dive.add_argument(
+        "--out",
+        type=Path,
+        default=None,
+        help="the directory to write; relative to the site root "
+        f"(default {dive_candidates_module.DEFAULT_OUT.as_posix()})",
+    )
+    dive.add_argument(
+        "--sheet", action="store_true", help="only rebuild index.html from units.jsonl"
+    )
+    dive.add_argument(
+        "--resume",
+        action="store_true",
+        help="append to an existing units.jsonl, numbering on from its last unit",
+    )
+    dive.add_argument(
+        "--port",
+        type=int,
+        default=serve_module.DEFAULT_PORT,
+        help=f"the port the sheet's links open (default {serve_module.DEFAULT_PORT})",
+    )
+
     commands.add_parser(
         "walk", help="place the explorer Walk tab's render judge and runtime (tracked)"
     )
@@ -1094,11 +1135,21 @@ def _land_split(identifier: str, drawn, maker, *, replace: bool, landing: bool) 
     bytes, and a maker that wrote its own WebP would be a second encoder on the site.
     """
     for panel in drawn.panels:
-        print(f"wrote {panel.path.relative_to(SITE_ROOT).as_posix()}")
+        if panel.blank is None:
+            print(f"wrote {panel.path.relative_to(SITE_ROOT).as_posix()}")
     if not landing:
         return
     rows = []
     for index, panel in enumerate(drawn.panels, start=1):
+        if panel.blank is not None:
+            # A held-open cell: nothing to encode, and a panel with nothing but its size
+            # and its words (`figures.Panel.blank`).
+            width, height = panel.blank
+            row = {"width": width, "height": height, "label": panel.label, "blank": True}
+            if panel.note:
+                row["note"] = panel.note
+            rows.append(row)
+            continue
         destination = FIGURE_IMAGES_DIR / f"{identifier}-{index}{images.FIGURE_SUFFIX}"
         width, height = images.import_web_res(panel.path, destination)
         row = {"file": destination.name, "width": width, "height": height, "alt": panel.alt}
@@ -1136,7 +1187,10 @@ def _land_split(identifier: str, drawn, maker, *, replace: bool, landing: bool) 
         columns=drawn.columns,
         replace=replace,
     )
-    total = sum((FIGURE_IMAGES_DIR / row["file"]).stat().st_size for row in rows) / 1024
+    total = (
+        sum((FIGURE_IMAGES_DIR / row["file"]).stat().st_size for row in rows if "file" in row)
+        / 1024
+    )
     one = rows[0]
     print(
         f"  {len(rows)} panels  {one['width']}x{one['height']}  "
@@ -1684,6 +1738,10 @@ def main(argv: list[str] | None = None) -> int:
             return _do_phoenix_points()
         if options.command == "deep-gallery":
             return _do_deep_gallery(options)
+        if options.command == "dive-candidates":
+            for line in dive_candidates_module.main(options):
+                print(line)
+            return 0
         if options.command == "descent":
             from . import descent
 
@@ -1709,6 +1767,7 @@ def main(argv: list[str] | None = None) -> int:
         seats_module.SeatError,
         phoenix_points_module.PhoenixPointsError,
         deep_gallery_module.DeepGalleryError,
+        dive_candidates_module.DiveCandidatesError,
         links.LinkError,
         pool_module.PoolError,
         curation_module.CurationError,

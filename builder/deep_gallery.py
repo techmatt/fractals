@@ -168,8 +168,11 @@ class DeepGalleryError(Exception):
 # ------------------------------------------------------------------ the native path
 
 
-def _native(command: str, **options) -> dict:
-    """Run the native crate once; every answer is one JSON object on stdout."""
+def _native(command: str, *, timeout: float | None = None, **options) -> dict:
+    """Run the native crate once; every answer is one JSON object on stdout.
+
+    `timeout` is seconds, and past it `subprocess.TimeoutExpired` reaches the caller.
+    """
     exe = NATIVE.with_suffix(".exe") if sys.platform == "win32" else NATIVE
     if not exe.exists():
         built = subprocess.run(
@@ -184,7 +187,7 @@ def _native(command: str, **options) -> dict:
         argv.append(f"--{key}")
         if value is not True:
             argv.append(str(value))
-    out = subprocess.run(argv, capture_output=True, text=True)
+    out = subprocess.run(argv, capture_output=True, text=True, timeout=timeout)
     if out.returncode != 0:
         raise DeepGalleryError(f"{argv}: {out.stderr[-2000:]}")
     return json.loads(out.stdout)

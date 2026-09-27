@@ -359,8 +359,8 @@ class Made:
     a way into the place and not into the drawing over it.
     """
 
-    path: Path
-    alt: str
+    path: Path | None
+    alt: str | None
     label: str | None = None
     note: str | list[str] | None = None
     spec: dict | None = None
@@ -378,6 +378,9 @@ class Made:
     deep: str | None = None
     #: The short link a picture under a video's player opens (`builder/figures.py`).
     go: str | None = None
+    #: A cell held open with no picture in it, as the width and height it keeps: `path`
+    #: is `None` and nothing is encoded. The row gets a blank panel (`builder/figures.py`).
+    blank: tuple[int, int] | None = None
 
 
 @dataclass(frozen=True)

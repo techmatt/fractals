@@ -5081,8 +5081,6 @@ const TOGGLE_KEYS = {
   p: randomPalette,
   h: randomPhase,
   n: () => newColoring(),
-  // The Dive block's Go, and only while the Deep tab owns the viewer: the block is its panel's.
-  g: () => (deepOwns() ? deep.pressGo() : undefined),
   b: toggleBox,
   // Both tabs, one row: the shade row is the same controls whichever view owns the canvas.
   // The screensaver's own `f` is fullscreen, and only while it is up, when it takes every

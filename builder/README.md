@@ -53,6 +53,10 @@ python -m builder seats [--records-only]
 python -m builder deep-gallery thumbs   draw a tile for each row of the Deep tab's
                             gallery register that has none (tracked); the
                             other stages are the search that found the first set
+python -m builder dive-candidates [--budget-s S] [--seed N] [--out DIR] [--resume]
+                            [--sheet] [--port N]
+                            land deep candidates by the Dive block's own rules for a
+                            wall-clock budget, and lay them out as a numbered sheet
 python -m builder phoenix-points   choose the Phoenix tab's starting points from the
                             staged gallery's Phoenix seats; draw each whole set's tile and
                             its plane frame through the committed wasm; write the record
@@ -234,7 +238,7 @@ it in place, and what it writes is committed like any other change, under the 20
 | `assets/images/galleries/seated-candidates/*.webp`, one tile a seat | 6,299 files, 62.85 MB | `python -m builder seats` |
 | `explorer/palettes.bin`, every map's control points | 1.04 MB | `python -m builder explorer --palettes-only` |
 | every plane's atlas slot pictures, `assets/images/atlas/<plane>-*.webp` | 1,464 files, 27.47 MB | `python -m builder atlas --ingest` |
-| `explorer/deep-gallery/*.webp`, the Deep tab's gallery tiles, one a register row | 33 files, 0.42 MB | `python -m builder deep-gallery thumbs` |
+| `explorer/deep-gallery/*.webp`, the Deep tab's gallery tiles, one a register row | 40 files, 0.51 MB (2026-09-27) | `python -m builder deep-gallery thumbs` |
 | `explorer/judges/`, the ORT runtime and the render judge (the fine head is no longer placed, pre_closeout_website_ckpt140) | 4 files, 33.83 MB | `python -m builder walk` |
 
 **`palettes.bin` is not optional.** Served without the blob, the explorer's first fetch is a
@@ -432,6 +436,18 @@ policy would not choose are each a labelled panel with no link.
 eight gallery seats and two label-store rows, and a rule making the row pick one kind
 would leave one of them unlinkable. Fourteen of its fifteen link; the fifteenth is a seat
 whose run recorded that the tone operator acted and not the curve it acted with.
+
+**A panel may be blank** *(deep_multibrots_gallery_ckpt154)*: a cell the figure's
+arrangement asks for and no frame fills yet. It says `"blank": true`, its `width` and
+`height`, a `label` and optionally a `note`, and nothing else — no `file`, no `alt`, no
+record — and `_panel_rows` refuses one that says more. Its block is a dashed well of the
+panel's shape (`.figure-blank`, `site.css`) with its label under it; `rasters` skips it, so
+no check looks for a file, and `links.py` skips it without renumbering, so the panel after a
+blank is still `figure:<id>#<its cell>` and a blank has no `links.jsonl` row at all rather
+than a refusal. A maker says one with `locations.Made(None, None, …, blank=(w, h))`, and the
+landing writes the row without encoding anything. `deep-multibrots` is the first: the Julia
+cells of the degrees the Deep gallery has no deep Julia-plane frame for, held open until
+Matt fills them.
 
 Either way the record describes the **un-annotated** picture wherever the maker letters or
 marks the tile, because a way into the explorer is a way into the place and not into the
@@ -1250,18 +1266,24 @@ the contract can no longer write one. The figures
 whose counts run to tens rather than thousands use `period=0.5`, which bands less.
 `deep-shallow-and-deep` is drawn in Coalglow, and the map is read off each figure's frames,
 so a figure in another map writes that map's name after `colormap`. One figure uses one
-colouring, so a colour is one escape count across a strip, **with two exceptions**.
-`deep-misiurewicz-pairs` uses one map to a row (below), and both of
+colouring, so a colour is one escape count across a strip, **with four exceptions**.
+`deep-final-colorings` is four colourings of one field, which is its point, the last in a
+map of its own. `deep-misiurewicz-pairs` uses one map to a row (below), and both of
 `deep-shallow-and-deep`'s links are Matt's as he gave them, and its shallow half carries a
 colouring of its own on the leveled scale *(PLACE_deep_zoom_v3_ckpt145)*, so across that
-pair a colour is not one escape count. Measured on the
+pair a colour is not one escape count. And `deep-multibrots` is Matt's links and Deep-gallery
+rows taken whole, one colouring **to a panel** (`Figure.maps`), because each panel is a
+frame somebody chose in its own colours and the figure is about the places, not about
+comparing counts across them. Measured on the
 f64 figure at the widths f64 still resolves: the engine's colouring and the tab's shade of
 the perturbation field agree pixel for pixel by eye, so the pair is a fair comparison.
 
 Landing is the standard split landing plus one step. A new figure needs a `pending` row
 whose block is on the page, then `deep <id> --place`, then `links --write`, then
-`figure <id> --heal`, the order *Still hand-done* names. Six figures, 29 panels, since
-`deep-final-colorings` landed four colourings of the video's final frame
+`figure <id> --heal`, the order *Still hand-done* names. Seven figures, 36 drawn panels
+and three blank ones, since `deep-multibrots` landed *(deep_multibrots_gallery_ckpt154)*: its
+seven took 8 min 47 s at below-normal priority, the caps being 83k to 1.62M. It was six and 29 from
+when `deep-final-colorings` landed four colourings of the video's final frame
 *(deep_opening_palette_ckpt150)*, which took 140 s; the three drawn in deep_zoom_edits_ckpt145 took 177 s together on this
 machine, `deep-descent-pairs`' six took 53 s, and `deep-misiurewicz-pairs`' nine took 23 s.
 A redraw with `--replace` leaves the row's `caption` and `alt` as they were: a new caption
@@ -1312,8 +1334,9 @@ canonical spelling and prints the spelling to use. Then it draws a tile for ever
 has none and removes any tile no row names. Each tile is 316×178, drawn at 2×2 samples a
 pixel at the link's own cap, and saved as WebP at `TILE_WEBP_QUALITY`. It lands in
 `explorer/deep-gallery/`, named by the 64-bit FNV-1a hash of the row's link, which
-`deep-gallery.js` computes the same way. The tiles are staged rather than committed (see
-*What is staged*). The first 31 took 2 min 54 s and total 394 KB.
+`deep-gallery.js` computes the same way. The tiles are tracked, like every gallery asset since
+deploy_staged_assets_ckpt152 (see *What was staged, and is tracked since the deploy*). The
+first 31 took 2 min 54 s and total 394 KB.
 
 A tile's field comes from `builder/deep-gallery-native/`, a small crate that uses
 `explorer/perturb-wasm` as an rlib, so it runs the arithmetic `perturb.wasm` runs, on every
@@ -1344,6 +1367,83 @@ nucleus of period in the hundreds be anchored at all (§11 has the measurement).
 answer this tool has written, measured on the one that matters: the favicon seat's twin,
 period 32,761, re-solved lands on `double-descent`'s recorded centre to all 45 of its
 digits, in the same four steps to four figures.
+
+### Dive candidates
+
+*(deep_dive_block_ckpt154 wrote it in `scratch/`; deep_multibrots_gallery_ckpt154 moved it
+here once a figure came out of its sheet.)* `python -m builder dive-candidates`
+(`builder/dive_candidates.py`) presses those three subcommands the way `explorer/deep.js`'s
+`diveOnce` presses `perturb.wasm`, over and over, and lays what lands out as a numbered sheet
+to pick a figure from. So every candidate's link is one the Deep tab opens identically.
+
+**What a unit varies.** One unit is one landing, and one `random.Random(--seed)` makes every
+choice in it:
+
+- **the plane**: Mandelbrot 3, Multibrot 3, 4 and 5 2 each, Multibrot 6 1 (`PLANE_WEIGHT`);
+- **the start seat**: an image seat on that plane from the staged gallery's union record,
+  `assets/images/galleries/seated-candidates/all.jsonl` (3,119 of them in the first run),
+  carried in at its link's `n`, or at `perturb::cap::for_width` where the link names none;
+- **where the last press lands** (`to`, `LANDING_WEIGHT`): a random wallpaper carried inside
+  the copy .35, this view carried inside it .35, its center .15, halfway in .15;
+- **where its search starts** (`from`, `FROM_WEIGHT`): this view .6, another random seat .4;
+- **rungs first**: a center or halfway landing from this view first presses Go on its center
+  1 to 8 times (`PRE_RUNGS`), so that it lands below the `f64` floor rather than at a
+  wallpaper's own depth;
+- **the coloring**, a coin: New coloring, which is the native `coloring` rule at random picks,
+  one of the 232 maps Random palette may land on (the roster's `random`), and a random phase;
+  or the start seat's own palette and recipe, fitted to Absolute on the landed field as Fit
+  (f) fits it.
+
+The search is `pick` over a 1136×639 frame, a budget of 24 solves, 12 wanted. A mapped landing with
+no chain that the budget refuses is searched again 16× and 256× wider, while that stays at
+most 4 wide, and is anchored on the nucleus nearest the carried view's centre. A press that
+draws a random seat is tried 4 times before the unit is dropped. **One rule adapts**: a
+`from/to` route that lands at most 1 of its last 12 has its `to` weight halved, to a floor of
+.05, and says so in `choices.json`. It never fired in the first run.
+
+A landed frame is drawn natively at `FINAL`, 640×360 at 2×2 samples a pixel, and shaded by
+`dive_candidates_shade.mjs`: the link is `deep-link.js`'s, held to being a fixed point, and
+the picture is `engine.wasm`'s. `builder/deep_gallery_shade.mjs` cannot stand in for it; it
+has neither Fit nor the Deep tab's fold on an open map. The tile is WebP at quality 86.
+
+**Drop reasons**, the `dropped` of a unit's record:
+
+- `refused`: no copy to take (`why` carries the search's own word, `none_smaller`,
+  `no_copy`, or `over_budget` with the period and what it needs), a landing refused, a carried
+  view drawn at a cap over half of `EXPLICIT_CEILING`, a coordinate over 64 characters, a
+  render over 15 minutes, a link that failed, or an error;
+- `all-interior`: over 97% of the field is interior;
+- `blank`: the coloring rule refused the field, or the shaded tile's luminance spread is
+  under 4.
+
+**The budget.** `--budget-s` is wall-clock seconds, 10,800 (3 h) by default. A unit is
+estimated at 120 s until three have run and at the 90th percentile of the last 30 after, and
+no unit starts that the estimate says would overrun, so a budget under 120 s runs nothing.
+A run also stops after five units in a row raise (`ERRORS_IN_A_ROW`): an error never moves
+the estimate, so a failure that repeats, a crate that will not build, would otherwise spend
+the whole budget writing error records.
+Native calls time out at 600 s, and a mapped `land` and a `field` at 900 s. The run holds
+below-normal priority, which its children inherit. A seeded rerun repeats the choices and not
+the count: 240 s at seed 154 reproduced the first run's first 17 units field for field, link
+for link and tile byte for byte, and stopped there.
+
+**Outputs**, all under `--out` (default ignored `artifacts/dive-candidates/`; a relative path
+is read against the site root): `units.jsonl`, one record a unit, kept or dropped;
+`tiles/uNNNN.webp`, one a kept unit; `heartbeat.log`, a line every 15 minutes (each also
+printed, and each rebuilds the sheet); `choices.json`; and `index.html`, the kept tiles
+numbered in `units.jsonl`'s order and grouped by landing, each linking into the Deep tab on
+`localhost:--port`. `--sheet` rebuilds `index.html` from `units.jsonl` and nothing else.
+A tile's number is its place in that order, which is what a pick names, so a directory that
+already has a `units.jsonl` is refused unless `--resume` is given, which numbers on from its
+last `uNNNN` and seeds at `--seed` plus the units already there.
+
+**The first sheet stays in `scratch/deep_minibrot_candidates/`**: seed 154, 3 h, 957 units,
+817 kept (137 refused, 3 blank), 84 MB of tiles. Its tile numbers are the ones a figure's
+pick was named by. `--sheet` over a copy of its record numbers all 817 identically; only the
+title differs, which no longer spells the checkpoint. It needs Pillow, node and cargo, and it
+is no part of `build` or `check`. Its output is never committed. ⚠ The native crate is built
+when its binary is missing and never when it is stale, so after an edit to
+`perturb-wasm/src/dive.rs` run `cargo build --release` in `builder/deep-gallery-native` first.
 
 ### How the first set was found
 

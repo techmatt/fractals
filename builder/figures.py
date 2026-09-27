@@ -328,10 +328,10 @@ class Panel:
     four across, since a grid has one column count and a sheet had none.
     """
 
-    file: str
+    file: str | None
     width: int
     height: int
-    alt: str
+    alt: str | None
     label: str | list[str] | None = None
     note: str | list[str] | None = None
     spec: dict | None = None
@@ -346,10 +346,16 @@ class Panel:
     #: The short link a picture under a video's player opens, by its name in
     #: `go/redirects.jsonl`. See the module docstring.
     go: str | None = None
+    #: A cell of the grid held open with **no picture in it**: a place the figure's
+    #: arrangement asks for and no frame fills yet (deep_multibrots_gallery_ckpt154, the
+    #: degrees with no deep Julia-plane frame). It has a size and a label and nothing else —
+    #: no file, no record and so no link — and it is a dashed well the page owns up to,
+    #: the way a pending figure's is. `file` is `None` exactly when this is set.
+    blank: bool = False
 
     @property
     def path(self):
-        return FIGURE_IMAGES_DIR / self.file
+        return None if self.blank else FIGURE_IMAGES_DIR / self.file
 
 
 @dataclass(frozen=True)
@@ -496,7 +502,9 @@ class Figure:
         """
         if self.split:
             return tuple(
-                (panel.file, panel.path, panel.width, panel.height) for panel in self.panels
+                (panel.file, panel.path, panel.width, panel.height)
+                for panel in self.panels
+                if not panel.blank
             )
         if self.pending or self.embedded:
             return ()
@@ -723,6 +731,19 @@ def _panels(figure: Figure, opened: dict[str, str]) -> str:
                 lines.append(f"{INDENT}    </div>")
             lines.extend(_band(panel.band, figure.columns))
             open_stage = True
+        pad = INDENT + " " * depth
+        if panel.blank:
+            # A held-open cell: the panel's shape as a dashed well, and its label under it.
+            # The shape is the row's datum, the way a picture's width and height are.
+            lines.append(f'{pad}<div class="figure-panel">')
+            lines.append(
+                f'{pad}  <div class="figure-blank" '
+                f'style="aspect-ratio: {panel.width} / {panel.height}"></div>'
+            )
+            if panel.label:
+                lines.append(f'{pad}  <p class="figure-label">{_label(panel)}</p>')
+            lines.append(f"{pad}</div>")
+            continue
         picture = (
             f'<img src="{attribute(figure.panel_src(panel))}" width="{panel.width}" '
             f'height="{panel.height}" alt="{attribute(panel.alt)}"{lazy}>'
@@ -733,7 +754,6 @@ def _panels(figure: Figure, opened: dict[str, str]) -> str:
         if panel.ink:
             classes.append("figure-panel-marked")
         ink = f' style="--panel-ink: {attribute(panel.ink)}"' if panel.ink else ""
-        pad = INDENT + " " * depth
         lines.append(f'{pad}<div class="{" ".join(classes)}"{ink}>')
         target = go_href(figure, panel) if panel.go else opened.get(panel_id(figure.id, index))
         lines.append(f"{pad}  {_linked(picture, target)}")
@@ -969,8 +989,13 @@ PANEL_FIELDS = (
     "band",
     "deep",
     "go",
+    "blank",
 )
 PANEL_REQUIRED = ("file", "width", "height", "alt")
+#: What a blank panel must say, and what it may: a size and a label, and nothing that
+#: would be a picture or a record of one.
+BLANK_REQUIRED = ("width", "height", "label")
+BLANK_ALLOWED = ("width", "height", "label", "note", "blank")
 
 #: What a band may say. `title` is required; `note` is the sentence under it, `blocks`
 #: the chips beside it, `columns` how many panels that band runs across, and `arrow` the
@@ -996,7 +1021,23 @@ def _panel_rows(row: records.Record) -> tuple[Panel, ...]:
                 f"{row.where}: a panel is {', '.join(PANEL_FIELDS)}, "
                 f"not {', '.join(sorted(unknown))}"
             )
-        missing = [name for name in PANEL_REQUIRED if entry.get(name) is None]
+        if entry.get("blank") not in (None, True):
+            raise records.RecordError(f"{row.where}: a panel's blank is true or absent")
+        blank = entry.get("blank") is True
+        if blank:
+            extra = set(entry) - set(BLANK_ALLOWED)
+            if extra:
+                raise records.RecordError(
+                    f"{row.where}: a blank panel is a size and a label, and has no "
+                    f"{', '.join(sorted(extra))}"
+                )
+        required = BLANK_REQUIRED if blank else PANEL_REQUIRED
+        missing = [name for name in required if entry.get(name) is None]
+        if missing and blank:
+            raise records.RecordError(
+                f"{row.where}: a blank panel names {', '.join(BLANK_REQUIRED)} — "
+                f"this one is missing {', '.join(missing)}"
+            )
         if missing:
             raise records.RecordError(
                 f"{row.where}: a panel names {', '.join(PANEL_REQUIRED)} — "
@@ -1051,6 +1092,7 @@ def _panel_rows(row: records.Record) -> tuple[Panel, ...]:
             )
         held = {name: entry.get(name) for name in PANEL_FIELDS}
         held["wide"] = bool(held["wide"])
+        held["blank"] = blank
         found.append(Panel(**held))
     return tuple(found)
 

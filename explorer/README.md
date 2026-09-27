@@ -433,7 +433,7 @@ when a pass finishes measuring. It is `keyOf` over the view's own query, and **t
 keys its entries the same way** — see *The way back*, which needs the same identity over a
 deep link as well, which is why the reduction reads a query rather than a view.
 
-**`r`, `j`, `p`, `h`, `b` and `f`** — `TOGGLE_KEYS`, and the whole of what this page binds
+**`r`, `j`, `p`, `h`, `n`, `b` and `f`** — `TOGGLE_KEYS`, and the whole of what this page binds
 besides the arrows, `+`/`-` and Ctrl+Z/Y. They are bare letters, never take Ctrl, Alt or
 Meta, and work with focus
 on a button — the button just pressed, most often. **Ctrl/Cmd is spelled on the row's own
@@ -2514,11 +2514,10 @@ minibrots it can neither draw nor address, and says so rather than pretending.
 
 ### The Dive block *(deep_dive_block_ckpt154, 2026-09-27)*
 
-At the top of the tab's left panel, one sentence whose two blanks are dropdowns, and a button
-that wears its key:
+At the top of the tab's left panel, one sentence whose two blanks are dropdowns, and a button:
 
 > Find a minibrot near [this view | a random wallpaper] and dive to [its center | halfway in
-> | this view inside it | a random wallpaper inside it] **Go (g)**
+> | this view inside it | a random wallpaper inside it] **Go**
 
 Under it, **New coloring on arrival**, off by default and remembered by this browser
 (`explorer.deep-dive-coloring`); then one bar, Cancel, and a status line. A press is Find
@@ -2582,7 +2581,9 @@ way is a link that opens identically.
   Cancel. **The status line states provenance and nothing of it enters the link**: the
   plane, the copy's period and size, where it was found (this view or a wallpaper by its
   key), the rung, the landing, the turn and the twin that placed it, and the cap.
-- **`g`** presses Go while the Deep tab owns the viewer; it was unbound.
+- **Go has no key** *(Matt, deep_multibrots_gallery_ckpt154)*. It had `g` for its first
+  checkpoint; the binding, the button's `(g)` and its `aria-keyshortcuts` are gone, and `g` is
+  unbound again, so a stray press no longer starts a search.
 
 Measured on the served page at 1600×1100: *its center* from the home view in 0.8 s and from
 there in 3.4 s; *its center* near a random wallpaper in 2.0 s (a period-432 copy); a random

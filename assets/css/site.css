@@ -591,6 +591,11 @@ a:hover { color: var(--ink); }
    rather than a span, so it stays the full row through every reflow. */
 .figure-panel-wide { grid-column: 1 / -1; }
 
+/* A cell held open with no picture in it: the arrangement asks for a panel here and no
+   frame fills it yet. The dashed hole a pending figure is, at one panel's size, whose
+   shape arrives on the element because it is the row's datum. */
+.figure-blank { border: 1px dashed var(--well-pending); }
+
 /* A panel that answers to a mark drawn on another panel. The maker used to draw a frame
    of the mark's colour into the tile and letter the label in it; both are here now, and
    the colour arrives on the panel as `--panel-ink`, which is the figure's own datum. An

@@ -2917,10 +2917,6 @@ export function mount(host) {
     pressRoot() {
       if (!els.root.disabled) els.root.click();
     },
-    /** `g` while this tab owns the viewer: the Dive block's Go, as a click on it. */
-    pressGo() {
-      els.diveGo.click();
-    },
 
     // ------------------------------------------------ Find minibrots, for the viewer
 

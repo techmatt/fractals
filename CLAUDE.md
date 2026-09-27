@@ -200,7 +200,10 @@ keeps the mechanics. **Every apply round ends by distilling that round's general
   the figure whose meaning is the **juxtaposition itself** (a before-and-after pair, a grid
   whose two axes are the claim) or whose panel count makes individual links silly (a
   sixty-four-tile contact sheet). A split row carries `panels` and `columns` and no file of
-  its own; `builder/README.md` has the mechanics. **The arrangement and the pixels do not
+  its own; `builder/README.md` has the mechanics. **A panel may be blank**
+  *(deep_multibrots_gallery_ckpt154)*: `"blank": true`, a size and a label and nothing else,
+  a cell the arrangement asks for and no frame fills yet, with no picture, no record and no
+  link. `deep-multibrots` holds three open. **The arrangement and the pixels do not
   change**: a panel is exactly the tile the sheet pasted, which is a thing to measure
   against the lossless composite in `artifacts/` rather than to assert.
 
