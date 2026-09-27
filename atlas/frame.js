@@ -167,23 +167,19 @@ function typeset(node, text) {
 }
 
 /**
- * What one slot's tooltip says: what it is, how it was drawn, what its link cannot carry.
+ * What one slot's tooltip says: what it is, and how it was drawn.
  *
  * This is the whole of what the deleted captions carried that was about the picture. A
  * tooltip can be three lines or one without costing the frame a pixel, which is the point
- * of moving it here.
+ * of moving it here. **It says nothing about what the slot's link cannot carry** *(Matt,
+ * explorer_render_seams_ckpt153)*: the view a dot opens is the view, and that is all that
+ * matters to a reader. The record's `refused` and `gap` stay, for the checks that read them.
  */
-function titleOf(label, slot, palette, named) {
-  const lines = [
+function titleOf(label, slot, named) {
+  return [
     `${label}: ${slot.what ?? SOURCE[slot.source] ?? slot.source ?? "a render"}`,
     `${slot.mode} · ${named(slot.colormap)}`,
-  ];
-  if (slot.refused.length > 0) {
-    const fell = palette !== slot.colormap ? `; it opens in ${named(palette)}` : "";
-    lines.push(`The link cannot carry: ${slot.refused.join("; ")}${fell}.`);
-  }
-  if (slot.gap) lines.push(`Not recorded: ${slot.gap}.`);
-  return lines.join("\n");
+  ].join("\n");
 }
 
 /**
@@ -435,10 +431,10 @@ export async function mount(host, options = {}) {
         mark?.show(null);
         continue;
       }
-      const { query, palette } = links.get(slot);
+      const { query } = links.get(slot);
       mark?.show(query);
       if (navigates) node.href = into(query);
-      node.title = titleOf(label, slot, palette, named);
+      node.title = titleOf(label, slot, named);
       image.hidden = false;
       image.src = new URL(`../assets/images/atlas/${slot.file}`, base);
       image.alt = `${slot.mode} through ${named(slot.colormap)}, at the ${name} view of this place`;

@@ -194,7 +194,8 @@ follows is why it says it that way.
 - **A slot's `colormap` is what the picture was drawn through, not what its link will
   say.** The renderer next door knows a thousand maps and the explorer bakes a fraction of
   them, so a link whose map is not baked falls back to `DEFAULT_PALETTE` rather than
-  costing the link, and the slot's tooltip says which ones did. `refused` is the record's
+  costing the link. The slot's tooltip used to say which ones did, and says nothing about
+  the link since explorer_render_seams_ckpt153 (Matt: the view is the view). `refused` is the record's
   list of everything the recipe holds that a link has no key for: that map, a
   `band_autolevel/v1` pass whose curve was not recorded, a curve a mode's catalog does not
   give it, a fold a cyclic map refuses.
@@ -230,7 +231,7 @@ follows is why it says it that way.
   slot's `tone` is `clean`, `curved` or `lost`; a `curved` slot's `level` is the curve as
   the permalink's own `level` value, and `links.js` passes it through, so the seat opens
   levelled. A `lost` slot carries `autolevel band_autolevel/v1` in `refused` and a `gap`
-  saying what its run did not record, which the tooltip shows. `from` and `curve` are
+  saying what its run did not record, which no reader is shown. `from` and `curve` are
   notes: the run the row came out of, and the mode transform it was drawn at.
 - **Both halves of the search are on one plane.** A Julia location is a value of `c`, and
   `c` is a point of the Mandelbrot parameter plane, so a `julia:mandelbrot` place is drawn
@@ -265,8 +266,8 @@ down anywhere the other can see, so it is pinned by name, with the reason attach
 
 **The refusals.** The record says which links cannot carry everything, and the explorer's
 roster is what makes that true. A rebake that added a map the record calls unbakeable
-would leave a tooltip warning about a link that works; a rebake that dropped one would
-leave a link falling back in silence. `atlas.test.mjs` derives the refusals from the
+would leave the record naming a refusal the link does not make; a rebake that dropped one
+would leave a link falling back with the record saying it does not. `atlas.test.mjs` derives the refusals from the
 roster and holds the record to them in both directions.
 
 The second half of the same guard is that **one function builds every link**. `links.js`'s

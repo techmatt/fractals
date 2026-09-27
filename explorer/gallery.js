@@ -13,9 +13,9 @@
 // canonical permalink — built next door by `python -m builder seats`, through this page's
 // own `permalink.js` rather than a second URL writer — so opening a tile is parsing a
 // link, exactly as arriving on one is. Where the link cannot be the whole picture the row
-// says so in `gap`, and the page passes that sentence on rather than quietly drawing
-// something close. The tone curve lives on the run's record rather than in the recipe,
-// and the link carries it wherever a record holds one.
+// says so in `gap`, which Copy view's record keeps and the page does not show: the view is
+// the view *(Matt, explorer_render_seams_ckpt153)*. The tone curve lives on the run's record
+// rather than in the recipe, and the link carries it wherever a record holds one.
 //
 // **And the filters are a question asked of the collection.** The mode row tallies what
 // drew each picture wherever it stands, but the hue row changes what it is asking: in the
@@ -368,9 +368,10 @@ export function collectionOptions(collection, collections) {
 /**
  * Build the panel into the elements the page gives it.
  *
- * `onPick` is handed the whole row. What a row means — which of its fields is a link and
- * which is a sentence about what the link cannot carry — is the page's business and not
- * this module's, which knows only how to show pictures and which ones are being asked for.
+ * `onPick` is handed the whole row, and the tile's picture for the page to put up while it
+ * draws the row *(explorer_render_seams_ckpt153)*. What a row means — which of its fields is
+ * a link — is the page's business and not this module's, which knows only how to show
+ * pictures and which ones are being asked for.
  */
 export function install({
   base,
@@ -509,7 +510,7 @@ export function install({
       for (const other of tiles.querySelectorAll(".tile")) {
         other.classList.toggle("is-open", other.dataset.key === open);
       }
-      onPick(seat);
+      onPick(seat, picture);
     });
     if (saveMark === null) return tile;
     // A save mark is a button of its own, so it sits beside the tile rather than in it

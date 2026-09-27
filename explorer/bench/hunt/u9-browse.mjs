@@ -137,8 +137,18 @@ await check("the button opens Browse on the panel's collection", async () => {
   if (!up) note("enter", "no tiles in Browse");
   const collection = await page.ev(`document.getElementById('browse-collection').value`);
   if (collection !== "general") note("enter", `opened on ${collection}`);
-  const inert = await page.ev(`document.getElementById('studio').inert`);
-  if (!inert) note("enter", "the studio is not inert under Browse");
+  // Everything in the studio but the narrow grid is inert *(explorer_render_seams_ckpt153)*,
+  // and focus sent into the grid comes back to Browse. A headless page has no focus of its
+  // own, and fires no focus event without it, so focus is emulated for the one check.
+  await page.send("Emulation.setFocusEmulationEnabled", { enabled: true });
+  const inert = await page.ev(`(() => {
+    const viewer = document.querySelector('.viewer').inert;
+    const note = document.getElementById('gallery-note').inert;
+    document.querySelector('#gallery-tiles .tile')?.focus();
+    return { viewer, note, trapped: document.activeElement?.id === 'browse-collection' };
+  })()`);
+  await page.send("Emulation.setFocusEmulationEnabled", { enabled: false });
+  if (!inert.viewer || !inert.note || !inert.trapped) note("enter", `the studio is within reach under Browse: ${JSON.stringify(inert)}`);
   const chrome = await chromeState();
   if (!chrome.bar) note("chrome", "the bar's Copy link is not the thing on top at its own spot");
   if (!chrome.below) note("chrome", "the layer does not start under the bar");
@@ -335,7 +345,7 @@ await check("Esc on the grid leaves Browse and gives its pool back", async () =>
   }
   if (up) note("exit", "Browse is still up");
   if (workers > baseline) note("exit", `workers ${baseline} before Browse, ${inside} in it, ${workers} after`);
-  const inert = await page.ev(`document.getElementById('studio').inert`);
+  const inert = await page.ev(`document.getElementById('studio').inert || document.querySelector('.viewer').inert`);
   if (inert) note("exit", "the studio is still inert");
   const url = (await page.state()).url;
   if (url !== home) note("exit", `the viewer moved: ${url.slice(0, 80)}`);
@@ -371,7 +381,7 @@ await check("a tab leaves Browse onto that tab", async () => {
   const up = await browseUp();
   const selected = await page.ev(`document.querySelector('.tab[aria-selected="true"]').dataset.panel`);
   const shown = await page.ev(`!document.getElementById('panel-atlas').hidden`);
-  const inert = await page.ev(`document.getElementById('studio').inert`);
+  const inert = await page.ev(`document.getElementById('studio').inert || document.querySelector('.viewer').inert`);
   if (up || selected !== "atlas" || !shown || inert) note("tabs", `up ${up}, selected ${selected}, atlas shown ${shown}, inert ${inert}`);
   // Outside Browse, Copy link is the picture, as it always was.
   const picture = await copied();

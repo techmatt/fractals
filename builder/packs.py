@@ -41,9 +41,9 @@ record and the gallery's collections are, and a clone reads the answer.
 A picture links into the explorer at its seat row's own `link`, which the contract
 emitted when the gallery was landed. **A seat whose row carries a `gap` is shown and not
 linked**: that link opens near the picture rather than at it, and on this site a link
-that is nearly the picture is worse than none. The Gallery tab opens those anyway, with a
-sentence saying what differs, and it has somewhere to put that sentence where a page does
-not.
+that is nearly the picture is worse than none. The Gallery tab opens those anyway, where
+the view a tile opens is the view the reader explores (explorer_render_seams_ckpt153), and
+a page's figure is a claim about one picture.
 
 **Any repetition on this page is fine** *(Matt, packs_page_ckpt153)*: a pack's five are
 its own collection's opening, and the general gallery's first seat is also the cyan

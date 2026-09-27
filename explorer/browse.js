@@ -23,8 +23,11 @@
 // `cancel` and the colouring worker's `stop`, and a generation counter drops whatever a
 // cancelled stage still hands back. The pool is Browse's own, made on the way in and given
 // back on the way out, so the viewer's pool is never cancelled from here and nothing here
-// outlives the layer: the main viewer is untouched until **Open in explorer**, which hands
-// the row to the page exactly as a tile in the narrow panel does.
+// outlives the layer. The page stops the viewer's own pass on the way in and draws it again
+// on the way out where it is owed *(explorer_render_seams_ckpt153)*, so a preview never
+// shares the machine with it. **Open in explorer** hands the row to the page exactly as a
+// tile in the narrow panel does, with the preview's picture as far as it got, which the
+// viewer puts up at once and draws over.
 //
 // **Browse is a way of looking, not a picture.** It writes no address and no link, and no
 // key of the permalink contract names it. It does say what it shows (`onScreen`), because
@@ -122,8 +125,9 @@ export function previewSize(aspect, layer, room, ratio = 1) {
  * `host` is what it borrows from the page: the layer's elements; `pool()` for a renderer of
  * its own over the compiled module; `parse` for a seat's link; `derive` for the view a link
  * draws with its derived parameters taken, which is the Download row's; `finalSupersample`,
- * the viewer's; `base` for the tiles' URLs; and `onOpen(row)` and `onLeave()`, the page's
- * side of leaving with a picture and without one.
+ * the viewer's; `base` for the tiles' URLs; and `onOpen(row, picture)` and `onLeave()`, the
+ * page's side of leaving with a picture and without one — `picture` being the canvas or the
+ * image the preview was showing.
  */
 export function install(host) {
   const { layer, collection, rows, tiles, note, exitButton } = host;
@@ -493,7 +497,14 @@ export function install(host) {
     return true;
   }
 
-  /** Give everything back: the picture in flight, the pool, the layer. */
+  /**
+   * Give everything back: the picture in flight, the pool, the layer.
+   *
+   * The grid is taken down in a task of its own, after the layer is hidden: six thousand
+   * tiles are 37 ms to remove, and a close is followed at once by the viewer starting its
+   * pass, which should not wait on them *(explorer_render_seams_ckpt153)*. A way back in
+   * before that task runs fills the grid itself, so the task leaves an active one alone.
+   */
   function close() {
     cancel();
     at = -1;
@@ -502,12 +513,14 @@ export function install(host) {
     observer = null;
     filling += 1;
     asked += 1;
-    tiles.replaceChildren();
     const running = renderer;
     renderer = null;
     running?.then((pooled) => pooled.stop(), () => {});
     layer.hidden = true;
     active = false;
+    setTimeout(() => {
+      if (!active) tiles.replaceChildren();
+    }, 0);
   }
 
   function exit() {
@@ -516,11 +529,16 @@ export function install(host) {
     onLeave();
   }
 
+  /** Leave with the seat on screen, and the best picture of it there is: the preview's
+   *  canvas where a stage has landed, the tile under it where none has. `close` stops the
+   *  render and gives the pool back first, so the viewer's pass starts with nothing else
+   *  running; neither element is cleared by it. */
   function open() {
     if (!active || at < 0) return;
     const seat = showing[at];
+    const picture = canvas.hidden ? under : canvas;
     close();
-    onOpen(seat);
+    onOpen(seat, picture);
   }
 
   window.addEventListener("keydown", onKey, true);

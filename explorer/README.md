@@ -509,12 +509,17 @@ and a control writes one key of the current view and re-parses the whole string 
 what `retype` is for, and it is why a typed coordinate is refused with the same sentence
 a link's would be. There is no second path, which is what keeps the address bar honest.
 
-**What a link cannot carry is said under the canvas.** Every wallpaper the pool makes
+**What a link cannot carry is not said to the reader** *(Matt, explorer_render_seams_ckpt153:
+the view is the view, and that is all that matters to a reader)*. It used to be, under the
+canvas — *This view is close to this wallpaper but not exact. Details says what differs.* —
+with the record's clause in Details as *Not carried by this link: …*, and in an atlas slot's
+tooltip as *The link cannot carry: …* and *Not recorded: …*. All four are gone. A row's
+`gap` and a slot's `refused` stay on their records, and `gap` is still in Copy view's
+record as `not_carried`, which is text for whoever is reporting a bug rather than for a
+reader. Every wallpaper the pool makes
 goes through `band_autolevel/v1`, and the curve lives on the run's record rather than in
 the recipe: 291 of the thousand seats of `20260914T171846Z` carry one into their link, and
-the other 709 are pictures the operator left alone, so none opens with a curve missing. A
-seat whose run had written nothing down would open at the recipe with a sentence saying
-so. A view
+the other 709 are pictures the operator left alone, so none opens with a curve missing. A view
 that **arrived** replays exactly what its link carries, curve or no curve; the first view
 a reader **makes** — a pan, a zoom, any control — is measured on its own finished picture
 by the same operator, ported whole. See *`level`, and a gallery seat's own colour* below.
@@ -566,8 +571,8 @@ screensaver. The key in its label is the browser's own, **F11**, or **⌃⌘F** 
 button is disabled and still says the key. In the API's full screen the browser takes the
 first Esc to leave it and does not pass it on, so Esc twice exits. Leaving the screensaver
 leaves the full screen it asked for, and never the reader's own F11. Esc hands the viewer back on
-the Gallery tab at the last seat shown, opened the way its tile opens it, *not exact* line
-included, so it can be saved or downloaded.
+the Gallery tab at the last seat shown, opened the way its tile opens it, so it can be saved
+or downloaded.
 
 **The display stays awake while the layer is up** *(atlas_page_deprecate_and_wakelock_ckpt141)*:
 it holds a `screen` wake lock from entry to exit, asks again on `visibilitychange` because the
@@ -713,10 +718,39 @@ way round.
 **Every step and every close cancels the picture in flight**: the pool's `cancel`, the
 colouring worker's `stop`, and a generation that drops whatever a cancelled stage still
 hands back. The pool is Browse's own, made on the way in and stopped on the way out, so
-the viewer's pass is never cancelled from here and the viewer is untouched until **Open in
-explorer**, which hands the row to the same `openLink` a narrow tile calls: the tile
-marked, Reset to seat anchored on it, and one entry on the way back. Browse writes no
-address and is no key of any link.
+nothing Browse does cancels the viewer's pool. **Open in explorer** hands the row to the
+same `openLink` a narrow tile calls: the tile marked, Reset to seat anchored on it, and one
+entry on the way back. Browse writes no address and is no key of any link.
+
+**The seams with the viewer** *(explorer_render_seams_ckpt153)*. One user action is one
+render, and `bench/hunt/u10-seams.mjs` holds each to it through two witnesses, `__viewer`
+(every viewer pass: begun, overtaken, landed, and what called `draw`) and `__browse`:
+
+- **Entering Browse stops the viewer's pass**, as the screensaver does. It used to run on
+  underneath, which with Browse's pool made two twelve-worker pools on twelve threads —
+  27 workers live — and is the slowdown Matt saw after opening a link and pressing Browse.
+- **Leaving without a picture** draws the stopped pass again, once, if it had not landed or
+  the window was resized meanwhile, and leaves a landed viewer alone. Leaving onto the Deep
+  tab owes nothing, since Deep draws the viewer afresh when it gives it back.
+- **Leaving with a picture puts it up at once.** `open` hands `onOpen` the preview's canvas
+  if a stage has landed and the tile under it if not, and `openLink`'s `picture` option
+  (`cover`) stretches it to the viewer's canvas before the pass starts, so the canvas is
+  never the view being left. A narrow-panel tile now does the same with its own picture; it
+  used to leave the last view up until the quarter stage landed.
+- **The pass starts before the studio comes back.** Only the siblings on the path from the
+  narrow grid up to the studio are made inert (`holdStudio`), and a `focusin` on the studio
+  sends focus back to Browse: flipping `inert` on the whole studio restyled every narrow
+  tile, 180 ms each way with the union's 6,299 (28 with the general gallery's 1,000), and
+  `resize` paid for it synchronously before the pass could start. The grid is taken down in
+  a task after the layer is hidden, and `leaveBrowse` measures the canvas and dispatches the
+  pass before giving the row back.
+
+Measured on the same machine, Matt's Phoenix seat in `collection=all` (a fresh page load
+draws it in about 2.3 s): Open in explorer used to begin its pass about 320 ms after the
+click and land about 16–20% behind the same link opened fresh, and now begins it in about
+110 ms and lands with it: 2,496 ms against 2,486 fresh in the last run, and 2,157 against
+2,170 for a second Phoenix seat opened mid-preview (within 3% across runs). Browse's own
+way in went from 248 ms of main thread to 56.
 
 **Measured** by `bench/hunt/u9-browse.mjs` (1600×1100, headless Chrome, twelve threads):
 twenty → presses as fast as CDP sends them started twenty renders, cancelled nineteen
@@ -2480,8 +2514,8 @@ while the panel is hidden.
   link, a saved picture) clears it, and leaving puts it back only when the shallow view is
   still the frame it was offered at, which the tab leaves it on and *Shallow mode*
   does not. Coming out also clears whatever the Deep tab last said, because the two share
-  `#status`. The other shallow line under the picture, `#opened`, is hidden while Deep owns
-  the viewer and returns on its own.
+  `#status`. The other shallow line under the picture, `#opened`, was hidden while Deep
+  owned the viewer; it is gone since explorer_render_seams_ckpt153, with the sentence it held.
 - **A cost warning shows once per session**, on the first entry, in `sessionStorage`. It
   says what the tab costs and what Auto-render spends without being asked; it used to end
   *Nothing here draws until you press Render*, and that sentence went with the checkbox.
@@ -3045,7 +3079,7 @@ rather than measuring a new one.
 an undo is not an arrival — it is the reader taking back a move they made since. That is the
 only thing `openLink`'s `restoring` option changes, besides the sentence it hands the walk.
 Everything else it does is wanted, which is how stepping back onto a gallery tile puts the
-tile's mark and its *not exact* line back with the picture: the options a picture was opened
+tile's mark back with the picture: the options a picture was opened
 with come off the anchor at commit time, where the settled picture **is** the anchor's, so a
 tile's `key` and `gap` survive into the entry with no second list to keep in step.
 

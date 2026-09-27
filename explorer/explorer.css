@@ -1453,20 +1453,6 @@ summary.section-head:focus-visible { outline: 2px solid var(--well-link); outlin
 }
 .studio-bar button:hover { border-color: var(--well-ink-dim); color: var(--well-link); }
 
-/* What the picture that was opened could not carry: the tone curve a run never wrote
-   down, or a cap the depth policy answers differently. It sits under the canvas because
-   it is about the picture on the screen, and it goes the moment the reader moves. */
-.opened {
-  flex: none;
-  margin: 0.2rem var(--gutter) 0;
-  font-family: var(--sans);
-  font-size: 0.72rem;
-  line-height: 1.5;
-  color: var(--well-ink-dim);
-  max-width: var(--measure);
-}
-.opened:empty { display: none; }
-
 .help, .readout, .provenance {
   margin: 0.35rem 0 0;
   font-family: var(--sans);
@@ -1675,13 +1661,6 @@ canvas.palette-final {
 /* The panel holds the tab's one sentence and nothing else, so there is no rule above it to
    draw *(deep_caption_and_controls_right_ckpt141)*. */
 #deep-side-note { border-top: none; }
-
-/* And what the shallow view says under the picture is the shallow view's: the note about
-   which picture was opened is a claim about a view the Deep tab is not showing. It comes
-   back by itself on the way out, because the shallow view has not moved. The zoom stop's
-   offer shares `#status` with the Deep tab's own messages, so that one is cleared in
-   `showPanel` rather than hidden here. */
-.viewer.is-deep #opened { display: none; }
 
 /* The line over the controls holds a whole line of text while it is empty, not 1.2em: the
    probe's *Raised the cap* lands there during a pass, and the few pixels between the two

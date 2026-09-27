@@ -215,9 +215,7 @@ const studio = document.getElementById("studio");
 const stage = document.getElementById("stage");
 const status = document.getElementById("status");
 const stats = document.getElementById("stats");
-const opened = document.getElementById("opened");
 const readout = document.getElementById("readout");
-const differs = document.getElementById("differs");
 const familyPicker = document.getElementById("family");
 const modePicker = document.getElementById("mode");
 const constantStrip = document.getElementById("constants");
@@ -1330,6 +1328,44 @@ function flashMark(point) {
 
 let drawing = 0;
 
+/**
+ * What a harness reads about the viewer's passes *(explorer_render_seams_ckpt153)*: how many
+ * began, how many were overtaken before they landed, and a short log naming what started
+ * each — the function that called `draw`, or the line where that was an anonymous one — and
+ * how long it took to land. `browse.js`'s `__browse` is the same seam for the preview, and
+ * `bench/hunt/u9-browse.mjs` holds one user action to one render through the two of them.
+ * Nothing on the page reads it.
+ */
+const PASS_LOG_KEPT = 40;
+const passWitness = { started: 0, cancelled: 0, final: 0, stopped: 0, log: [] };
+globalThis.__viewer = passWitness;
+/** The log entry of the pass still drawing, or `null`. */
+let witnessed = null;
+/** What called `draw` for the pass about to start. */
+let trigger = null;
+
+function passBegins() {
+  passEnds("cancelled");
+  passWitness.started += 1;
+  witnessed = { trigger, at: Math.round(performance.now()), ended: null, ms: null };
+  passWitness.log.push(witnessed);
+  while (passWitness.log.length > PASS_LOG_KEPT) passWitness.log.shift();
+}
+
+function passEnds(how) {
+  if (witnessed === null) return;
+  witnessed.ended = how;
+  witnessed.ms = Math.round(performance.now() - witnessed.at);
+  passWitness[how] += 1;
+  witnessed = null;
+}
+
+/** The caller of `draw`, off the stack: a name, or where an anonymous callback stands. */
+function callerOf(stack) {
+  const line = String(stack ?? "").split("\n")[2] ?? "";
+  return /at (?:async )?([\w$.<>]+) \(/.exec(line)?.[1] ?? /:(\d+):\d+\)?$/.exec(line)?.[1] ?? "?";
+}
+
 /** The finished picture of the view on the screen — the last stage's, and only once it
  *  has landed. What a download at the screen's own size saves instead of drawing it
  *  again; cleared by every pass, because a picture of the view before is not this one. */
@@ -1401,6 +1437,7 @@ function measured() {
  * that froze the page for them would be a strip nobody could scroll.
  */
 async function draw() {
+  trigger = callerOf(new Error().stack);
   const running = drawPass();
   // `drawPass` bumps `drawing` before its first await, so this is the pass just started.
   const pass = drawing;
@@ -1409,7 +1446,11 @@ async function draw() {
     await running;
   } finally {
     if (inFlight === running) inFlight = null;
-    if (pass === drawing) holdCopy(false);
+    if (pass === drawing) {
+      holdCopy(false);
+      const state = renderState.dataset.state;
+      passEnds(state === "final" || state === "stopped" ? state : "cancelled");
+    }
     if (wantsLive) {
       wantsLive = false;
       draw();
@@ -1420,6 +1461,7 @@ async function draw() {
 /** Stop the viewer's pass where it stands and draw nothing more of it, a pending live
  *  redraw included: another view has taken the canvas. */
 function stopDrawing() {
+  passEnds("cancelled");
   drawing += 1;
   wantsLive = false;
   renderer?.cancel();
@@ -1464,6 +1506,7 @@ async function drawPass() {
   updateReadout();
   syncShade();
   const pass = ++drawing;
+  passBegins();
   // A pass that starts takes the pending live redraw with it: whatever a slider was
   // owed, this pass is drawing the view that slider left behind.
   wantsLive = false;
@@ -2827,27 +2870,32 @@ let seat = null;
 let anchor = null;
 
 /**
- * Open a picture from the left panel: its link is parsed, and what the link could not
- * carry is said where the picture is.
+ * Open a picture from the left panel: its link is parsed and drawn.
  *
  * A tile and a mark both arrive here, because both are the same thing — a permalink that
- * was derived from a record next door. What `gap` says is not this page's sentence: it
- * is the one the builder wrote when it found the run had kept no tone curve, or that the
- * cap the recipe pinned is not the cap the depth policy gives for that width. Saying it
- * is the difference between a picture and a picture that is nearly right.
+ * was derived from a record next door. **The page says nothing about how near the view is
+ * to the wallpaper it came from** *(Matt, explorer_render_seams_ckpt153)*: the view is the
+ * view, and that is all that matters to a reader. A row's `gap` — the builder's sentence
+ * about a tone curve a run never kept, or a cap the depth policy answers differently — is
+ * kept for Copy view's record and shown nowhere.
+ *
+ * **`picture` is what to put up while the pass draws** *(explorer_render_seams_ckpt153)*: the
+ * picture the reader clicked, stretched to the canvas, so the view opens on it rather than
+ * on the last one. It is not an option of the view, so it is not kept on the anchor.
  *
  * **`restoring` is a step back through it, and it changes exactly one thing**
  * *(explorer_undo_redo_ckpt137)*: the anchor does not move. Reset to seat goes back to what
  * *arrived*, and an undo is not an arrival — it is the reader taking back a move they made
  * since. Everything else here is wanted, and is what makes stepping back onto a gallery
- * tile put its mark and its *not exact* line back with the picture.
+ * tile put its mark back with the picture.
  *
  * Returns whether the picture was opened, which is what a step back reads to know its
  * cursor may move.
  */
-function openLink(query, opts = {}) {
+function openLink(query, given = {}) {
   if (locked()) return false;
-  const { gap = null, key = null, what = "this picture", restoring: stepping = false } = opts;
+  const { picture = null, ...opts } = given;
+  const { gap = null, key = null, restoring: stepping = false } = opts;
   let wanted;
   try {
     wanted = link.parse(`?${query}`, contract);
@@ -2859,21 +2907,36 @@ function openLink(query, opts = {}) {
   view = wanted;
   seat = key;
   // What arrived is what Reset to seat puts back, options and all, so a reset re-enters
-  // the picture exactly as opening it did — the tile marked, and the sentence about what
-  // the link could not carry back under the canvas.
+  // the picture exactly as opening it did, the tile marked.
   if (!stepping) anchor = { query, opts, at: pictureKey(view) };
   arrived();
   tiles?.mark(key);
   if (opts.from !== "saved") savedPanel?.unmark();
-  // The record's sentence names caps, curves and policies, which is Details' vocabulary;
-  // the line under the picture only says that there is a difference and where to read it.
-  opened.textContent = gap
-    ? `This view is close to ${what} but not exact. Details says what differs.`
-    : "";
-  differs.textContent = gap ? `Not carried by this link: ${gap}.` : "";
+  seatGap = gap;
   rebuild();
+  if (picture !== null) cover(picture);
   draw();
   return true;
+}
+
+/** The builder's sentence about what the opened seat's link does not carry, for Copy view's
+ *  record alone: the page shows it nowhere. `null` once the reader moves. */
+let seatGap = null;
+
+/**
+ * Put up a picture of the view about to be drawn, stretched to the canvas, before the pass
+ * that draws it *(explorer_render_seams_ckpt153)*: Browse's preview as far as it got, or a
+ * tile. The pass replaces it stage by stage, as it replaces the last view's picture, so the
+ * canvas is never blank and never the view the reader just left. The backing store is
+ * resized first: the view may have brought an aspect of its own.
+ */
+function cover(source) {
+  const across = source instanceof HTMLImageElement ? source.naturalWidth : source.width;
+  if (!across) return;
+  resize();
+  screen.imageSmoothingEnabled = true;
+  screen.drawImage(source, 0, 0, grid.width, grid.height);
+  frameScreen.drawImage(source, 0, 0, grid.width, grid.height);
 }
 
 /** A view just arrived from a link: it replays what it carries. See `levelling`. */
@@ -3022,11 +3085,10 @@ function indexSeats(rows, name) {
 
 /** Stop claiming the picture is the one that was opened. */
 function leaveSeat() {
-  if (seat === null && opened.textContent === "") return;
+  if (seat === null && seatGap === null) return;
   seat = null;
+  seatGap = null;
   tiles?.mark(null);
-  opened.textContent = "";
-  differs.textContent = "";
 }
 
 // ------------------------------------------------------------------- the screensaver
@@ -3080,7 +3142,7 @@ function leaveScreensaver(seat) {
   document.querySelector(".studio-bar").inert = false;
   showPanel("gallery");
   resize();
-  const opts = seat?.key ? { gap: seat.gap, key: seat.key, what: "this wallpaper" } : {};
+  const opts = seat?.key ? { gap: seat.gap, key: seat.key } : {};
   if (seat === null || !openLink(seat.link, opts)) draw();
   // Started from Browse, it ends in Browse, over that viewer: Back leaves onto it.
   const held = saverFromBrowse;
@@ -3092,8 +3154,14 @@ function leaveScreensaver(seat) {
 //
 // The gallery across the whole window *(explorer_browse_ckpt153)*. `browse.js` owns the
 // layer, its grid, its preview and a pool of its own; what is here is what it is handed on
-// the way in and the viewer it gives back. Unlike the screensaver it cancels nothing of the
-// viewer's on the way in: the viewer is untouched until a picture is opened from it.
+// the way in and the viewer it gives back.
+//
+// **The viewer's pass stops on the way in** *(explorer_render_seams_ckpt153)*, as it does for
+// the screensaver: nobody can see it under the layer, and a pass left running there was a
+// second pool's worth of threads contending with every preview — the slowdown Matt saw
+// after opening a link and pressing Browse. Leaving without a picture draws it again, once,
+// if it had not landed or the window moved under it; leaving with one draws that one, over
+// the preview's own picture, with Browse's pool already given back.
 //
 // **It keeps the page's chrome** *(Matt, browse_chrome_ckpt153)*: Browse is the Gallery tab
 // at the window's width, not a page of its own, so the bar stays live above it and the tab
@@ -3117,23 +3185,52 @@ function placeBrowse() {
  *  and every chip it had pressed, or `null` when it was started from the narrow panel. */
 let saverFromBrowse = null;
 
+/** Whether the viewer's pass was stopped by Browse before it landed, so leaving owes it. */
+let browseOwes = false;
+
 /** Open Browse on whatever the Gallery tab is showing, or on `held`, a Browse the
  *  screensaver is handing back. */
 function enterBrowse(held = null) {
   if (browser === null || tiles === null || browser.active || saver?.active || locked()) return;
   if (tiles.collections.length === 0) return;
   juliaCard?.hide();
-  studio.inert = true;
+  // The walk's own pictures are not a pass, and there is nothing of them to stop.
+  browseOwes = walkLayers === null && !["final", "stopped"].includes(renderState.dataset.state);
+  stopDrawing();
   document.getElementById("browse").prepend(sideHead);
+  holdStudio(true);
   placeBrowse();
   const { collection, modes, hue } = tiles.population();
   browser.enter({ collections: tiles.collections, ...(held ?? { collection, modes, hue }) });
 }
 
+/**
+ * Put the studio out of reach under Browse, or give it back.
+ *
+ * **Everything in it is made inert but the narrow panel's grid**
+ * *(explorer_render_seams_ckpt153)*. Inertness is inherited, so flipping it on the studio
+ * restyles every tile under it: 180 ms each way with the union's 6,299, which was most of
+ * what made Open in explorer slower than opening the same link fresh, and 200 ms of Browse's
+ * own way in. What is flipped instead is each sibling along the path from the grid up to the
+ * studio, a few dozen elements. The grid keeps its inertness as it is, so nothing restyles
+ * it; it is under the layer, where no pointer reaches it, and `focusin` below sends any focus
+ * that gets there back to Browse, so the keyboard cannot either.
+ */
+function holdStudio(on) {
+  const grid = document.getElementById("gallery-tiles");
+  for (let node = grid; node !== studio; node = node.parentElement) {
+    for (const sibling of node.parentElement.children) if (sibling !== node) sibling.inert = on;
+  }
+}
+
+studio.addEventListener("focusin", () => {
+  if (browser?.active) document.getElementById("browse-collection").focus({ preventScroll: true });
+});
+
 /** The row goes back to the panel and the studio is live again: the part of leaving that
  *  every way out shares. */
 function returnRow() {
-  studio.inert = false;
+  holdStudio(false);
   document.querySelector(".side").prepend(sideHead);
 }
 
@@ -3151,6 +3248,8 @@ async function screensaverInBrowse() {
   if (!browser.active || tiles.population().seats.length === 0) return;
   browser.stop();
   returnRow();
+  // The screensaver gives the viewer back drawn, so nothing is owed from here.
+  browseOwes = false;
   saverFromBrowse = held;
   enterScreensaver();
   if (!saver.active) {
@@ -3159,21 +3258,46 @@ async function screensaverInBrowse() {
   }
 }
 
-/** Browse let go, with a picture to open or without one. With one, the viewer opens it
- *  exactly as a tile in the narrow panel does — the same call, so the same anchor for Reset
- *  to seat and the same entry on the way back. */
-function leaveBrowse(row = null) {
-  returnRow();
-  if (row === null) {
-    // Moving the row dropped whatever focus was in it; Browse is where it was.
-    browseButton.focus({ preventScroll: true });
-    // A window resized while Browse was up is a viewer still at the old size.
-    relayout();
+/**
+ * Browse let go, with a picture to open or without one.
+ *
+ * With one, the viewer opens it exactly as a tile in the narrow panel does — the same call,
+ * so the same anchor for Reset to seat and the same entry on the way back — and `picture`,
+ * the preview as far as it got or the tile under it, is up on the canvas before the pass
+ * starts. Browse has given its pool back by now, so the pass has the machine to itself.
+ *
+ * Without one, the viewer Browse stopped is drawn again, once — if its pass had not landed,
+ * or if the window was resized while Browse was up and the canvas is the wrong size — and
+ * left alone otherwise.
+ *
+ * **The pass starts first, and the row and the studio come back after it**
+ * *(explorer_render_seams_ckpt153)*. Making the studio live again restyles every tile in the
+ * narrow panel — 180 ms with the union's 6,299, 28 with the general gallery's 1,000 — and
+ * `resize` measuring the page straight after paid for all of it before the pass could start:
+ * Open in explorer began its pass 320 ms after the click, where a narrow-panel tile begins
+ * one in 50. Where the tab row sits does not move the canvas, so the canvas is measured
+ * first, the pass dispatched, and the restyle is the browser's next frame, spent while the
+ * workers are inside their first bands.
+ */
+function leaveBrowse(row = null, picture = null) {
+  const owed = browseOwes;
+  browseOwes = false;
+  if (row !== null) {
+    showPanel("gallery");
+    resize();
+    if (!openLink(row.link, { gap: row.gap, key: row.key, picture })) draw();
+    returnRow();
     return;
   }
-  showPanel("gallery");
-  resize();
-  if (!openLink(row.link, { gap: row.gap, key: row.key, what: "this wallpaper" })) draw();
+  const moved = resize();
+  if (walkLayers !== null) {
+    if (moved) paintWalk();
+  } else if (moved || owed) {
+    draw();
+  }
+  returnRow();
+  // Moving the row dropped whatever focus was in it; Browse is where it was.
+  browseButton.focus({ preventScroll: true });
 }
 
 // ------------------------------------------------------------------- the panels
@@ -3466,7 +3590,7 @@ async function startSaved() {
       shownName,
       planeName,
       open: (query) => {
-        openAny(query, { what: "this saved picture", from: "saved" });
+        openAny(query, { from: "saved" });
       },
       // After Download all: the screen's own pass, if the first picture cut it short.
       settle: () => {
@@ -3521,9 +3645,8 @@ function interruptWalk(why) {
 function followWalk(next, cells = null) {
   view = next;
   seat = null;
+  seatGap = null;
   tiles?.mark(null);
-  opened.textContent = "";
-  differs.textContent = "";
   arrived();
   overlay = cells === null ? null : { family: view.family, cells };
   rebuild();
@@ -3540,9 +3663,8 @@ function followWalk(next, cells = null) {
 function showWalk(next, layers, cells = null) {
   view = next;
   seat = null;
+  seatGap = null;
   tiles?.mark(null);
-  opened.textContent = "";
-  differs.textContent = "";
   arrived();
   overlay = cells === null ? null : { family: view.family, cells };
   rebuild();
@@ -3939,7 +4061,7 @@ async function startAtlas() {
                 ? `, so it opens in ${bothNamesOf(palette)}`
                 : ""
             }`;
-        openLink(query, { gap, what: "this place" });
+        openLink(query, { gap });
       },
     });
     // The view may have moved plane while the record was being read.
@@ -3957,6 +4079,10 @@ for (const tab of tabs) {
     // tab leaves it for that tab.
     if (browser?.active) {
       if (tab.dataset.panel === "gallery") return;
+      // The Deep tab takes the canvas and draws the viewer afresh when it gives it back, so
+      // a pass Browse stopped is not owed on the way to it: drawn here, it would be stopped
+      // again a line later.
+      if (tab.dataset.panel === "deep") browseOwes = false;
       browser.exit();
       tab.focus({ preventScroll: true });
     }
@@ -4321,7 +4447,7 @@ stage.addEventListener("drop", (event) => {
   if (!draggingFiles(event)) return;
   event.preventDefault();
   if (locked()) return;
-  dropped(event.dataTransfer.files[0], (query) => openAny(query, { what: "this picture" }));
+  dropped(event.dataTransfer.files[0], (query) => openAny(query));
 });
 
 /** Form controls keep their own keys: the pickers are selects and the constants are
@@ -5088,7 +5214,7 @@ function viewRecord() {
       ...(levelling === "derived" ? { in_band: derivedInBand } : {}),
     },
     readout: readout.textContent,
-    not_carried: differs.textContent || null,
+    not_carried: seatGap,
     seat,
     provenance: { line: document.getElementById("provenance").textContent, ...PROVENANCE },
   };
@@ -5423,8 +5549,8 @@ async function main() {
     tiles: document.getElementById("gallery-tiles"),
     note: document.getElementById("gallery-note"),
     firstMode: MODE_FIRST,
-    onPick: (row) =>
-      openLink(row.link, { gap: row.gap, key: row.key, what: "this wallpaper" }),
+    // The tile's own picture goes up at once, and the pass draws over it.
+    onPick: (row, picture) => openLink(row.link, { gap: row.gap, key: row.key, picture }),
     saveMark: (row) => saving.mark(saved, canonicalOf(row.link)),
     onSeats: indexSeats,
   });
@@ -5485,7 +5611,7 @@ async function main() {
     finalSupersample: FINAL_SUPERSAMPLE,
     firstMode: MODE_FIRST,
     base: import.meta.url,
-    onOpen: (row) => leaveBrowse(row),
+    onOpen: (row, picture) => leaveBrowse(row, picture),
     onLeave: () => leaveBrowse(),
   });
   at("gallery-browse").addEventListener("click", () => enterBrowse());
