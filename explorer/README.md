@@ -807,6 +807,32 @@ render cancelled it and nothing settled after; workers stood at 14 before Browse
 inside it, and 14 after leaving, and Open in explorer left the address on the seat's link
 with Ctrl+Z back to the view Browse was opened over.
 
+### Dives *(keep_diving_ckpt154, 2026-09-27)*
+
+**This session's landings, as a collection.** Every landing of the Dive block, from Go or from
+Keep diving, joins **Dives**, which enters the Collection dropdown with the first landing and
+goes with a reload. Nothing of it is stored or written anywhere: it is not in the staged
+record, `builder check` never sees it, and a screensaver link cannot name it.
+
+- **Its rows are gallery rows** (`dives.js`'s `add`), newest first by the ordinary
+  presentation order. Each has a deep link where a seat has a shallow one, `smooth` as its
+  mode, and no hue and no spiral reading, so those two chip rows are empty on it
+  (`gallery.isSession`). *Centred on a minibrot* is yes for *its center* and *halfway in*,
+  and no for a carried view.
+- **Its pictures are the landing's own**, taken off the canvas when the landing's pass ends:
+  the full picture where it finished, the quarter one where it was stopped after that. A
+  landing stopped before anything of it was drawn joins nothing. There are two WebP blobs, a
+  316-px tile, which `tileURL` returns in place of a file, and the picture at up to
+  `PREVIEW_GRID_MAX` for Browse.
+- **In Browse a dive is shown, not drawn.** Browse's pool cannot draw a deep link, and the Deep
+  tab takes seconds to minutes over one, so the preview is the landing's own picture and the
+  bar is full at once. Open in explorer, and a tile in the narrow panel, open the link in the
+  Deep tab through `openAny`, the door a saved deep picture comes through, and it is drawn
+  again there.
+- **Save and Copy link are the ordinary ones**, keyed by the canonical link, which reads a
+  deep link. So a dive reaches Saved through the existing path, as a deep entry.
+- **The screensaver refuses Dives** and says why: its pool draws shallow links only.
+
 ## The box tool *(Matt, explorer_box_zoom_and_download_row_ckpt140, 2026-09-22)*
 
 `b`, or `Box (b)` at the left of the Download row's toggles. **Click the center, move away
@@ -2590,6 +2616,48 @@ there in 3.4 s; *its center* near a random wallpaper in 2.0 s (a period-432 copy
 wallpaper inside a copy near another in 8 to 11 s, two of three presses landing after one
 widening and the third saying why after four draws; three presses undone by three Ctrl+Z,
 each back to the frame before it.
+
+#### Keep diving *(keep_diving_ckpt154, 2026-09-27)*
+
+A box beside *New coloring on arrival*, with no key and not remembered: a page that starts
+searching the moment it opens is a surprise. While it is ticked it does what pressing Go over
+and over would do, and nothing else. **It varies nothing the reader did not leave open**: the
+sentence and the colour box are read afresh before every press, so *a random wallpaper* is
+drawn again on each one, and *this view* is wherever the last press landed, which is why
+*this view / its center* keeps descending. Ticking it during a press takes that press as its
+first rather than starting again, and Go is faded while it runs, with its title saying why.
+
+- **The main view follows every landing.** A press is what it runs, so the search, the
+  landing and the pass are the ones a press shows, on the canvas. Nothing runs out of sight:
+  leaving the Deep tab stops it (`hide`, `detach`).
+- **Each landing is held `HOLD_MS`, 2 s, once its full pass has landed**, and the status line
+  adds *Next dive in 2 s.* to the provenance. Two seconds is long enough to see what a press
+  drew, and short enough that a chain of ten is well under a minute when the passes are quick.
+  A landing whose full pass never finished is not held; it stops the loop.
+- **It stops**, unticks itself and says why in the status line: when the box is unticked, which
+  lets a press already running finish as the one it was; on Cancel, the Dive block's or
+  Render's; when the view moves, which is `moved()`, the one path every gesture and every
+  control that moves the frame goes through; when the sentence changes; when anything else
+  takes the tab over (a link, the way back, a tab, a plane change), which the press reads as
+  superseded, and which a hold catches as `pass` or the place having moved; and when a chain
+  runs out. **A chain runs out where the copy was this view's to find**: *No copy near this
+  view is a step down*, or no minibrot near it, or a landing the budget greys here, said as
+  *The chain ran out.* and the reason.
+- **A random draw that lands nowhere** has already retried as Go does (`RANDOM_TRIES`); the
+  loop then moves on to the next press with no hold. `DRY_PRESSES`, 3, such presses in a row
+  stop it and say so, and so does a plane with no wallpapers at all, which no redraw changes.
+  `loopStep` in `dives.js` is the whole of that rule, and `dives.test.mjs` holds it.
+- **Each landing is one step back**, exactly as a press of Go is.
+
+Measured on the served page at 1600×1100 (`scratch/keep_diving_probe.mjs`):
+- *this view / its center* from the Mandelbrot home landed six times, from 0.216 wide down to
+  6.4e-9, a landing every 2.4 to 5.4 s with the hold included. It then stopped on *The chain
+  ran out. No copy near this view is a step down from where the dive stands.* Six Ctrl+Z put
+  back the home view.
+- *a random wallpaper / its center* landed five times near five wallpapers, at widths from
+  6.3e-5 to 4.3e-12.
+- Unticking the box, Cancel, a pan, a changed landing and a tab switch each stopped it with
+  their own sentence.
 
 ### The gallery *(deep_gallery_build_ckpt144, 2026-09-23)*
 

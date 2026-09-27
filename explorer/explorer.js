@@ -46,6 +46,7 @@ import * as saving from "./saved.js";
 import * as juliaPreview from "./julia-preview.js";
 import * as screensaver from "./screensaver.js";
 import * as browse from "./browse.js";
+import * as dives from "./dives.js";
 import { Trail } from "./undo.js";
 import { heldOut, stopOf } from "./outermost.js";
 import {
@@ -3136,6 +3137,12 @@ function saverFurniture(every) {
 function enterScreensaver({ every = null, first = null } = {}) {
   if (saver === null || tiles === null || saver.active || browser?.active || locked()) return;
   const population = tiles.population();
+  // Dives is deep frames, which the screensaver's pool cannot draw, and a session's own,
+  // which a screensaver link could not name after a reload.
+  if (population.collection === dives.NAME) {
+    say("The screensaver plays the gallery's own collections, and Dives is this session's.");
+    return;
+  }
   if (population.seats.length === 0 && first === null) {
     say("The gallery shows nothing with these filters.");
     return;
@@ -3307,6 +3314,13 @@ async function screensaverInBrowse() {
 function leaveBrowse(row = null, picture = null) {
   const owed = browseOwes;
   browseOwes = false;
+  if (row !== null && row.deep) {
+    // A dive opens in the Deep tab, which draws it again: Browse only showed its picture.
+    returnRow();
+    resize();
+    openAny(row.link);
+    return;
+  }
   if (row !== null) {
     showPanel("gallery");
     resize();
@@ -4022,6 +4036,7 @@ async function mountDeep() {
         diveTo: at("dive-to"),
         diveGo: at("dive-go"),
         diveColor: at("dive-color"),
+        diveKeep: at("dive-keep"),
         diveBar: at("dive-bar"),
         diveCancel: at("dive-cancel"),
         diveStatus: at("dive-status"),
@@ -4047,6 +4062,7 @@ async function mountDeep() {
       onSearch: syncMinibrots,
       randomSeat,
       newColoring,
+      onLanded: addDive,
       onColour: () => {
         palettes?.show(deep.view().palette);
         syncShade();
@@ -5241,6 +5257,46 @@ async function randomSeat(family) {
   return seats.length === 0 ? null : seats[Math.floor(Math.random() * seats.length)];
 }
 
+/** This session's landings, as a collection of the Gallery tab: `null` until the first. */
+let diveCollection = null;
+
+/** A canvas scaled to `width` across, as a WebP blob's object URL. */
+function blobOf(source, width) {
+  const scaled = document.createElement("canvas");
+  scaled.width = Math.min(width, source.width);
+  scaled.height = Math.max(1, Math.round((source.height * scaled.width) / source.width));
+  const ink = scaled.getContext("2d", { alpha: false });
+  ink.imageSmoothingQuality = "high";
+  ink.drawImage(source, 0, 0, scaled.width, scaled.height);
+  return new Promise((resolve) =>
+    scaled.toBlob((blob) => resolve(blob === null ? null : URL.createObjectURL(blob)), "image/webp", 0.88),
+  );
+}
+
+/**
+ * **A landing joins Dives** *(keep_diving_ckpt154)*: the Dive block's, from Go or from Keep
+ * diving, with the picture the landing drew — a tile at the staged gallery's size and a
+ * picture for Browse's preview at the size Browse draws. The collection enters the dropdown
+ * with its first landing and lives in this page only: nothing of it is stored, and a reload
+ * is the end of it.
+ */
+async function addDive({ link: query, family, palette, canvas: drawnOn, said, landing }) {
+  if (tiles === null || tiles.collections.length === 0) return;
+  const [thumb, picture] = await Promise.all([
+    blobOf(drawnOn, dives.TILE_WIDTH),
+    blobOf(drawnOn, browse.PREVIEW_GRID_MAX),
+  ]);
+  if (thumb === null) return;
+  if (diveCollection === null) {
+    diveCollection = dives.collection();
+    tiles.collections.push(diveCollection);
+  }
+  const width = dives.TILE_WIDTH;
+  const height = Math.round((drawnOn.height * width) / drawnOn.width);
+  dives.add(diveCollection, { link: query, family, palette, landing, said, thumb, picture, width, height });
+  tiles.grew(dives.NAME);
+}
+
 // Hold look changes what the next move of Lambda or Period means and nothing about the
 // picture up, so it draws nothing; a hold starts afresh from whatever the recipe is then.
 holdToggle.addEventListener("change", () => {
@@ -5709,7 +5765,9 @@ async function main() {
     note: document.getElementById("gallery-note"),
     firstMode: MODE_FIRST,
     // The tile's own picture goes up at once, and the pass draws over it.
-    onPick: (row, picture) => openLink(row.link, { gap: row.gap, key: row.key, picture }),
+    // A dive's link is a deep one, and goes where a saved deep picture goes.
+    onPick: (row, picture) =>
+      row.deep ? openAny(row.link) : openLink(row.link, { gap: row.gap, key: row.key, picture }),
     saveMark: (row) => saving.mark(saved, canonicalOf(row.link)),
     onSeats: indexSeats,
   });

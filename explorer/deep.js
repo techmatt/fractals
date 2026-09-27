@@ -50,6 +50,7 @@
 import * as fx from "./deep-fx.js";
 import * as deepLink from "./deep-link.js";
 import { BODY_TARGET, DeepRenderer, bodyShare, deepSpecOf } from "./deep-render.js";
+import { HOLD_MS, loopStep } from "./dives.js";
 import { stopOf } from "./outermost.js";
 
 /**
@@ -1324,6 +1325,9 @@ export function mount(host) {
    * the old quarter-pass exception below and its old guard.
    */
   function moved() {
+    // Every change of frame comes through here, and Keep diving follows only its own
+    // landings: a reader who moved the view has taken it back.
+    endKeeping("Keep diving stopped: the view moved.");
     paint();
     clearMinibrots();
     host.settle();
@@ -2007,6 +2011,16 @@ export function mount(host) {
   let diveSaid = "";
   /** Whether a landing takes a New coloring as it arrives. */
   let diveColouring = storedFlag(DIVE_COLOURING);
+  /**
+   * **Keep diving** *(keep_diving_ckpt154)*: `{ timer, wake, holding }` while it is on, and
+   * `null`. The object is the loop's own generation — a loop that finds `keeping` is no
+   * longer the object it started with has been stopped, whatever else happened. Not
+   * remembered: a page that starts searching on its own the moment it opens is a surprise.
+   */
+  let keeping = null;
+  /** A press of Go still running, so that Keep diving ticked during it takes that press as
+   *  its first rather than cancelling it to start again. */
+  let pressing = null;
 
   /** The place a view stands on — its set, centre and width, and not its cap or colour. */
   function placeOf(of) {
@@ -2104,7 +2118,7 @@ export function mount(host) {
     if (from === "seat") {
       seatA = await seatOf(family);
       if (generation !== pass) return null;
-      if (seatA === null) return { why: "No wallpaper in the gallery is on this plane." };
+      if (seatA === null) return { why: "No wallpaper in the gallery is on this plane.", permanent: true };
       near = seatA.view;
     }
     let seatB = null;
@@ -2113,7 +2127,7 @@ export function mount(host) {
     if (to === "seat") {
       seatB = await seatOf(family);
       if (generation !== pass) return null;
-      if (seatB === null) return { why: "No wallpaper in the gallery is on this plane." };
+      if (seatB === null) return { why: "No wallpaper in the gallery is on this plane.", permanent: true };
       into = seatB.view;
     }
     // A mapped landing's count is its view's own cap: that view carried into a period-`p`
@@ -2161,6 +2175,7 @@ export function mount(host) {
     if (picked.index === null) {
       return {
         why: refusalSaid(picked, where, to),
+        refusal: picked.refusal,
         // The budget is this view's to fail only where the count is: a random wallpaper
         // carried in may fit where this one did not.
         grey: picked.refusal === "over_budget" && seatA === null && to !== "seat" ? to : null,
@@ -2267,12 +2282,14 @@ export function mount(host) {
    * coloring on arrival* is ticked, which colours the landing off its quarter pass.
    */
   async function dive() {
-    if (diveBarred() !== null || running?.upto === "download") return;
+    const barred = diveBarred() ?? (running?.upto === "download" ? "A download is running." : null);
+    if (barred !== null) return { barred };
     const from = els.diveFrom.value;
     const to = els.diveTo.value;
-    if (landingBarred(to) !== null) {
+    const greyed = landingBarred(to);
+    if (greyed !== null) {
       syncControls();
-      return;
+      return { barred: greyed };
     }
     if (running !== null) stop();
     disarm();
@@ -2292,20 +2309,26 @@ export function mount(host) {
     host.say("");
     dropList();
     let landed = null;
+    let outcome = SUPERSEDED;
     try {
       const deep = await pool();
-      if (generation !== pass) return;
+      if (generation !== pass) return SUPERSEDED;
       readLog();
       unsettle();
       const tries = from === "seat" || to === "seat" ? RANDOM_TRIES : 1;
       let why = "";
       for (let attempt = 1; attempt <= tries && landed === null; attempt++) {
         const tried = await diveOnce(deep, generation, from, to);
-        if (tried === null || generation !== pass) return;
+        if (tried === null || generation !== pass) return SUPERSEDED;
         if (tried.frame !== undefined) {
           landed = tried;
         } else {
           why = tried.why;
+          // Whether the next press may land where this one did not: a random wallpaper drawn
+          // again may, unless the plane has none or the copy near this view was the one
+          // that ran out.
+          const chainOut = from === "view" && ["none_smaller", "no_copy"].includes(tried.refusal);
+          outcome = { refused: tried.why, random: tries > 1 && !chainOut, permanent: tried.permanent === true };
           if (tried.grey) {
             const place = placeOf(view);
             const reasons = refusedAt?.place === place ? refusedAt.reasons : {};
@@ -2315,9 +2338,11 @@ export function mount(host) {
       }
       if (landed === null) {
         diveSaid = tries > 1 ? `Tried ${tries} random wallpapers and none would do. ${why}` : why;
+        outcome = { ...outcome, refused: diveSaid };
       }
     } catch (error) {
       diveSaid = String(error.message ?? error);
+      outcome = { error: diveSaid };
       console.error("the dive failed", { view: deepLink.emit(view) }, error);
     } finally {
       if (generation === pass && landed === null) {
@@ -2327,16 +2352,29 @@ export function mount(host) {
         syncControls();
       }
     }
-    if (landed === null || generation !== pass) return;
+    if (generation !== pass) return SUPERSEDED;
+    if (landed === null) return outcome;
     chain = landed.chain;
     diveSaid = landed.said;
-    arrive(landed.frame);
+    const complete = await arrive(landed.frame, landed.said, to);
+    return { landed: true, complete };
   }
 
-  /** Put a landing up the way a link is put up, and draw it: the quarter pass, the full one,
-   *  and — where it is ticked — a New coloring off the quarter field before the full one is
-   *  shaded, so the full pass lands in it. */
-  function arrive(frame) {
+  /** What a press answers where something else took the tab over before it was done. */
+  const SUPERSEDED = { superseded: true };
+
+  /**
+   * Put a landing up the way a link is put up, and draw it: the quarter pass, the full one,
+   * and — where it is ticked — a New coloring off the quarter field before the full one is
+   * shaded, so the full pass lands in it.
+   *
+   * Resolves once the pass has ended, however it ended, and says whether it drew the landing
+   * to the end. **Whatever of the landing reached the canvas joins Dives** *(keep_diving_ckpt154)*
+   * — the full picture where the pass finished, the quarter one where it was stopped after
+   * that — and a landing stopped before anything of it was shown joins nothing, because
+   * nobody saw it.
+   */
+  async function arrive(frame, said, landing) {
     cameFrom = null;
     view = frame;
     drawn = null;
@@ -2353,7 +2391,84 @@ export function mount(host) {
           if (stage.name === "preview") await host.newColoring?.({ inPlace: true });
         }
       : null;
-    render("screen", { probe: false, dive: true, onStage });
+    // `render` takes its generation before its first await, so `pass` just after the call
+    // is this pass's, and a pass still current when it resolves was not taken over.
+    const rendering = render("screen", { probe: false, dive: true, onStage });
+    const mine = pass;
+    await rendering;
+    const place = placeOf(frame);
+    if (stale !== null && placeOf(stale.view) === place) {
+      host.onLanded?.({
+        link: deepLink.emit(stale.view),
+        family: deepLink.familyOf(stale.view),
+        palette: stale.view.palette,
+        canvas: stale.canvas,
+        said,
+        landing,
+      });
+    }
+    return mine === pass && drawn !== null && drawnFull && placeOf(drawn) === place;
+  }
+
+  /** Go: one press, remembered while it runs so Keep diving can take it over. */
+  function press() {
+    const ongoing = dive();
+    pressing = ongoing;
+    ongoing.finally(() => {
+      if (pressing === ongoing) pressing = null;
+    });
+    return ongoing;
+  }
+
+  /**
+   * **Keep diving** *(keep_diving_ckpt154)*: press, draw the landing to the end, hold it
+   * `HOLD_MS`, press again — with the sentence and the colour box read afresh each time, and
+   * the main view following every landing, because a press is what it runs. `loopStep` in
+   * `dives.js` says what each press's answer means for the next.
+   *
+   * It stops on its own where a chain runs out or a press cannot start, and it is stopped by
+   * the box, Cancel, a change of view (`moved`, which every gesture and every control that
+   * moves the frame goes through) or of the sentence, and by anything else that takes the
+   * tab over — a link, the way back, another tab — which is a press superseded. A hold that
+   * a change landed in finds `pass` moved, or the place moved, and stops as well.
+   */
+  async function keepDiving() {
+    const mine = { timer: 0, wake: null, holding: false };
+    keeping = mine;
+    syncControls();
+    let dry = 0;
+    let first = pressing;
+    while (keeping === mine) {
+      const outcome = await (first ?? dive());
+      first = null;
+      if (keeping !== mine) return;
+      const next = loopStep(outcome, dry);
+      if (next.stop !== undefined) return endKeeping(next.stop);
+      dry = outcome.landed ? 0 : dry + 1;
+      if (!next.hold) continue;
+      const at = pass;
+      const place = placeOf(view);
+      mine.holding = true;
+      syncControls();
+      await new Promise((resolve) => {
+        mine.wake = resolve;
+        mine.timer = setTimeout(resolve, HOLD_MS);
+      });
+      mine.holding = false;
+      if (keeping !== mine) return;
+      if (pass !== at || placeOf(view) !== place) return endKeeping("Keep diving stopped: the view changed.");
+    }
+  }
+
+  /** Stop Keep diving where it is on, saying why, and untick the box. A press in flight is
+   *  left to finish, the way a press of Go would be; Cancel is what stops that. */
+  function endKeeping(said = null) {
+    if (keeping === null) return;
+    clearTimeout(keeping.timer);
+    keeping.wake?.();
+    keeping = null;
+    if (said !== null) diveSaid = said;
+    syncControls();
   }
 
   /** The Dive block, synced to the view: what is greyed and why, the status line at rest,
@@ -2365,14 +2480,20 @@ export function mount(host) {
     els.diveTo.disabled = barred !== null || downloading;
     for (const option of els.diveTo.options) option.disabled = landingBarred(option.value) !== null;
     const reason = barred ?? landingBarred(els.diveTo.value);
-    // Faded and never natively disabled, as Shallow mode is: the title is the reason.
-    els.diveGo.setAttribute("aria-disabled", String(reason !== null || downloading));
-    els.diveGo.title = reason ?? "Search, land and draw. One step back undoes it.";
+    // Faded and never natively disabled, as Shallow mode is: the title is the reason. While
+    // Keep diving is on it is the one pressing Go, and a second driver would race it.
+    els.diveGo.setAttribute("aria-disabled", String(reason !== null || downloading || keeping !== null));
+    els.diveGo.title =
+      keeping !== null
+        ? "Keep diving is pressing Go. Untick it, or Cancel, to press it yourself."
+        : (reason ?? "Search, land and draw. One step back undoes it.");
     els.diveColor.checked = diveColouring;
+    els.diveKeep.checked = keeping !== null;
     const diving = running !== null && (running.upto === "dive" || running.dive === true);
-    els.diveCancel.hidden = !diving;
+    els.diveCancel.hidden = !diving && keeping === null;
     if (!diving) {
-      els.diveStatus.textContent = reason ?? diveSaid;
+      const holding = keeping?.holding ? ` Next dive in ${HOLD_MS / 1000} s.` : "";
+      els.diveStatus.textContent = (reason ?? diveSaid) + holding;
       const there = chain !== null && chain.place === placeOf(view) && !pending();
       els.diveBar.style.setProperty("--done", there ? "1" : "0");
       els.diveBar.dataset.state = there ? "final" : "rendering";
@@ -2877,16 +2998,27 @@ export function mount(host) {
   // says why; a press on it then does nothing but say so in the status line.
   els.diveGo.addEventListener("click", () => {
     if (els.diveGo.getAttribute("aria-disabled") === "true") return;
-    dive();
+    press();
   });
   els.diveCancel.addEventListener("click", () => {
+    endKeeping();
     stop();
     diveSaid = "Stopped.";
     host.showState(drawn === null ? "stopped" : "final");
     syncControls();
   });
-  els.diveFrom.addEventListener("change", syncControls);
-  els.diveTo.addEventListener("change", syncControls);
+  // A changed sentence is a question Keep diving was not asked, so it stops; the press in
+  // flight finishes as the one it was.
+  const sentenceChanged = () => {
+    endKeeping("Keep diving stopped: the sentence changed.");
+    syncControls();
+  };
+  els.diveFrom.addEventListener("change", sentenceChanged);
+  els.diveTo.addEventListener("change", sentenceChanged);
+  els.diveKeep.addEventListener("change", () => {
+    if (els.diveKeep.checked && keeping === null) keepDiving();
+    else if (!els.diveKeep.checked) endKeeping();
+  });
   els.diveColor.addEventListener("change", () => {
     diveColouring = els.diveColor.checked;
     storeFlag(DIVE_COLOURING, diveColouring);
@@ -3003,6 +3135,8 @@ export function mount(host) {
       shown = false;
       owns = false;
       disarm();
+      // Keep diving follows its landings in the main view and never out of sight.
+      endKeeping("Keep diving stopped: the Deep tab was left.");
       // The viewer's own search runs on with the tab hidden, which is where it was started.
       if (running?.side !== "shallow") stop();
       if (minibrotSide === "deep") dropList();
@@ -3011,6 +3145,7 @@ export function mount(host) {
     detach() {
       owns = false;
       disarm();
+      endKeeping("Keep diving stopped: the viewer was taken for something else.");
       if (running?.side !== "shallow") stop();
       if (minibrotSide === "deep") dropList();
     },

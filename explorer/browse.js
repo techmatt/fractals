@@ -272,10 +272,14 @@ export function install(host) {
     members = gallery.membersOf(seats, chosen);
     const counts = {
       mode: gallery.tally(members, "mode", host.firstMode),
-      hue: cutOn === null ? gallery.tally(members, "hue") : gallery.presence(members, cutOn),
+      hue: gallery.isSession(one)
+        ? []
+        : cutOn === null
+          ? gallery.tally(members, "hue")
+          : gallery.presence(members, cutOn),
       family: gallery.tally(members, familyOf),
       centered: gallery.tally(members, "centered", true),
-      spiral: gallery.tally(members, "spiral", true),
+      spiral: gallery.isSession(one) ? [] : gallery.tally(members, "spiral", true),
     };
     if (preset !== null) {
       const has = (field, value) => counts[field].some(([held]) => held === value);
@@ -372,6 +376,21 @@ export function install(host) {
     witness.started += 1;
     witness.settled = null;
     witness.stage = null;
+    // **A dive is shown, not drawn** *(keep_diving_ckpt154)*. Its link is a deep one, which
+    // this pool cannot draw and the Deep tab takes seconds to minutes over, so the preview is
+    // the picture the landing itself drew, kept at the size it was drawn. Open in explorer
+    // draws it again, in the Deep tab.
+    if (seat.deep) {
+      const whole = { width: layer.clientWidth, height: layer.clientHeight };
+      const { box } = previewSize({ across: seat.width, down: seat.height }, whole, room(), 1);
+      place(box);
+      under.src = seat.picture ?? gallery.tileURL(seat, base);
+      showProgress(1);
+      showState("final");
+      witness.settled = seat.key;
+      drawing = false;
+      return;
+    }
     showState("rendering");
     let view;
     try {

@@ -69,14 +69,14 @@ jobs:
         with:
           node-version: "22"
       # CLAUDE.md's second line, verbatim, so the suite list lives in one spelling here.
-      - name: the sixteen JavaScript suites
+      - name: the seventeen JavaScript suites
         run: >-
           node --test explorer/permalink.test.mjs explorer/bands.test.mjs
           explorer/level.test.mjs explorer/derive.test.mjs explorer/stops.test.mjs
           explorer/saved.test.mjs explorer/undo.test.mjs explorer/zip.test.mjs
           explorer/stamp.test.mjs explorer/deep-fx.test.mjs explorer/deep-link.test.mjs
           explorer/deep.test.mjs explorer/screensaver.test.mjs explorer/hold.test.mjs
-          explorer/fit.test.mjs atlas/atlas.test.mjs
+          explorer/fit.test.mjs explorer/dives.test.mjs atlas/atlas.test.mjs
 
   crates:
     name: crates (${{ matrix.os }})

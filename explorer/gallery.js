@@ -47,9 +47,18 @@ const SLUG = "seated-candidates";
 /** Where that directory sits, relative to this module. */
 const DIRECTORY = `../assets/images/galleries/${SLUG}/`;
 
-/** A seat's tile, as a URL: the one picture the directory holds of it. */
+/** A seat's tile, as a URL: the one picture the directory holds of it, or — for a row of
+ *  a session collection, which has no file — the picture it carries in memory. */
 export function tileURL(seat, base) {
+  if (seat.thumb) return seat.thumb;
   return new URL(`${DIRECTORY}${seat.file}`, base).href;
+}
+
+/** Whether a collection is this session's rather than the staged record's: Dives
+ *  *(keep_diving_ckpt154)*, whose rows it carries and whose pictures are in memory. It
+ *  has no colour reading and no spiral reading, so the rows that ask for one are empty. */
+export function isSession(collection) {
+  return collection?.session === true;
 }
 
 /** The collection the panel opens on, which is the published gallery. */
@@ -194,6 +203,9 @@ const arrivals = new Set();
 /** A collection's seats, fetched the first time anybody asks and kept. A failure is
  *  forgotten again, so that choosing the collection later asks again. */
 export function seatsOnce(base, collection) {
+  // A session collection is its own rows, as they stand now: never fetched and never kept,
+  // because it grows while the page is open.
+  if (isSession(collection)) return Promise.resolve(collection.rows);
   const named = collection.name;
   if (!fetched.has(named)) {
     const rows = seatsOf(base, collection);
@@ -340,7 +352,7 @@ export function collectionOptions(collection, collections) {
     option.append(
       one.axis === GENERAL_AXIS
         ? `General gallery · ${one.name === ALL ? "all" : count}`
-        : `${one.name} · ${count}`,
+        : `${one.label ?? one.name} · ${count}`,
     );
     const label = AXIS_LABELS[one.axis];
     if (label === undefined) {
@@ -603,7 +615,7 @@ export function install({
     // chip was a threshold's name offered to a reader looking for a colour. The record
     // now gives every seat the family its own colour reading favours most, so the row is
     // the wheel and nothing else; `chipsInto` throws if a seat turns up without one.
-    const row = cutOn === null ? tally(members, "hue") : presence(members, cutOn);
+    const row = isSession(one) ? [] : cutOn === null ? tally(members, "hue") : presence(members, cutOn);
     // A screensaver link names chips as well as a collection; a chip this collection has
     // no row for is let go rather than kept, because it would show nothing at all.
     if (preset !== null) {
@@ -621,6 +633,7 @@ export function install({
   /** The dropdown, from the header's own list and in its order — `collectionOptions`. */
   function options() {
     collectionOptions(collection, collections);
+    collection.value = chosen;
   }
 
   return {
@@ -658,6 +671,12 @@ export function install({
     /** The header's collections, once `start` has read them — what Browse's dropdown lists. */
     get collections() {
       return collections;
+    },
+    /** A session collection grew or arrived: the dropdown says its new size, and the grid
+     *  shows the new row where that collection is the one chosen. */
+    grew(name) {
+      options();
+      if (chosen === name) choose(name);
     },
     /** Show a collection with these chips pressed — what a screensaver link carries. */
     apply({ collection: name = GENERAL, modes: pressed = [], hue = null } = {}) {
