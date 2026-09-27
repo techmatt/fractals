@@ -60,6 +60,7 @@ from . import pipeline as pipeline_module
 from . import pool as pool_module
 from . import prose as prose_module
 from . import review as review_module
+from . import screenshots as screenshots_module
 from . import seats as seats_module
 from . import sections as sections_module
 from . import serve as serve_module
@@ -402,6 +403,17 @@ def _parser() -> argparse.ArgumentParser:
 
     drawn = commands.add_parser("diagram", help="draw one of the figures that is not a render")
     drawn.add_argument("id", choices=sorted(diagrams.DIAGRAMS), help="the diagram's figure id")
+
+    shot = commands.add_parser(
+        "screenshot", help="photograph a piece of the explorer for a figure, over CDP"
+    )
+    shot.add_argument(
+        "id", choices=sorted(screenshots_module.MAKERS), help="the screenshot's figure id"
+    )
+    shot.add_argument("--place", action="store_true", help="land the picture and fill its row")
+    shot.add_argument(
+        "--replace", action="store_true", help="land a retake of a figure already on the page"
+    )
 
     sheeted = commands.add_parser(
         "families", help="draw a sheet of renders on the Escape-time fractals page"
@@ -1317,6 +1329,28 @@ def _do_diagram(identifier: str) -> int:
     return 0
 
 
+def _do_screenshot(options: argparse.Namespace) -> int:
+    """Photograph a piece of the site, and optionally land it, lossless, as PNG."""
+    drawn = screenshots_module.draw(options.id)
+    print(f"wrote {drawn.path.relative_to(SITE_ROOT).as_posix()}")
+    if not (options.place or options.replace):
+        return 0
+    destination = FIGURE_IMAGES_DIR / f"{options.id}.png"
+    width, height = images.import_web_res(drawn.path, destination)
+    placed = figures.place(
+        options.id,
+        destination.name,
+        width,
+        height,
+        provenance=list(drawn.provenance),
+        recipe=screenshots_module.recipe(options.id),
+        replace=options.replace,
+    )
+    size = destination.stat().st_size / 1024
+    print(f"  {destination.name}  {width}x{height}  ({size:.0f} KB) — {placed.page}")
+    return 0
+
+
 def _do_families(options: argparse.Namespace) -> int:
     """Draw the Escape-time fractals page's sheets, and optionally land them.
 
@@ -1706,6 +1740,8 @@ def main(argv: list[str] | None = None) -> int:
             return _do_pipeline(options)
         if options.command == "diagram":
             return _do_diagram(options.id)
+        if options.command == "screenshot":
+            return _do_screenshot(options)
         if options.command == "families":
             return _do_families(options)
         if options.command == "fundamentals":

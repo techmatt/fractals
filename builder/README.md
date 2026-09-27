@@ -617,6 +617,18 @@ and is not one — it is a composed sheet with four real renders in it, made by 
 ignored `scratch/`, which is what its `recipe` and its `sources` say. Every other figure
 asset arrived through `import`.
 
+**A screenshot is a figure of the site itself** *(deep_zoom_v4_place_ckpt154)*.
+`deep-dive-block` is the first: the Deep tab's Dive block. `screenshots.MAKERS` names it,
+and `python -m builder screenshot <id> [--place|--replace]` serves the committed tree on
+port 8431 for the length of the shot, so a preview on 8000 is neither needed nor touched.
+`screenshot.mjs` drives headless Chrome over CDP with `explorer/bench/cdp.mjs`'s client,
+waits for the page to be at rest, and clips to the element at device scale 2. Chrome's
+`--screenshot` is never used, because it shoots at load and photographs the boot notice.
+The picture lands as lossless PNG through `import_web_res`. The row's source is
+`synthetic`, its provenance line opens `no render:` (which is how `links` gives it the
+`drawn` refusal), and like `diagram` it is no part of `build` or `check`, for the same
+font reason.
+
 ## A curation pass writes itself down twice, and one half is rolling
 
 `curation.py` draws the figures of *Gallery curation*, which are readings of one solve

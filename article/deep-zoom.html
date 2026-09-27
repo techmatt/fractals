@@ -219,14 +219,27 @@
     <p>Descents like the one in the video can be composed by hand or automated. The
     neighborhood of a
     minibrot is a small, turned copy of the whole set, so every place in the set has a
-    twin inside every minibrot, smaller and slightly distorted. If you start from a
-    frame centered on a minibrot, the descent can continue to the twin of any other
-    frame centered on a minibrot, and then to a twin inside that twin's own minibrot.
-    The nesting can keep going until the iteration cap runs out, since the periods
-    multiply at every step. Nesting one minibrot inside another lets you choose what kind
-    of detail you get. Take two frames, A and B, each centered on a minibrot. Framing A
-    inside A's copy, B inside A's, A inside B's, or B inside B's gives four different
-    pictures from the same two places.</p>
+    twin inside every minibrot, smaller and slightly distorted. That means any frame can
+    be carried into any minibrot: find the minibrot, then find the frame's twin inside
+    it. Simply scaling and turning the frame by the minibrot's size and angle misses the
+    twin badly at any real depth, often by thousands of frame widths, so I solve for the
+    twin directly instead. The Dive block at the top of the fractal explorer's Deep tab
+    does all of this in one press. It reads as a sentence: find a minibrot near this view
+    or a random wallpaper, and dive to its center, halfway in, this view inside it, or a
+    random wallpaper inside it. Pressing it again keeps descending, and since the periods
+    multiply at every step, the nesting can keep going until the iteration cap runs out.
+    Keep diving repeats the dive until you stop it and collects every landing into a
+    temporary Dives collection that you can browse and save from.</p>
+
+      <figure class="figure" data-figure="deep-dive-block">
+        <img src="../assets/images/figures/deep-dive-block.png" width="1278" height="240" alt="The Dive block on the explorer's dark panel: the sentence “Find a minibrot near this view and dive to its center” with its two dropdowns and a Go button, and under it two unticked boxes, New coloring on arrival and Keep diving." loading="lazy">
+        <figcaption>The Dive block in the Deep tab.</figcaption>
+      </figure>
+
+    <p>Nesting one minibrot inside another lets you choose what kind of detail you get.
+    Take two frames, A and B, each centered on a minibrot. Framing A inside A's copy, B
+    inside A's, A inside B's, or B inside B's gives four different pictures from the same
+    two places.</p>
 
       <figure class="figure figure-split" data-figure="deep-descent-pairs">
         <div class="figure-panels" style="--figure-across: 2">
@@ -393,6 +406,10 @@
 
     <h2 id="the-multibrots">The multibrots</h2>
 
+    <p>The deep rendering techniques on this page work just as well on the multibrots and
+    their Julia sets. Their deep areas are full of rich detail, and learning to navigate
+    them well is a key part of making fractal artwork.</p>
+
       <figure class="figure figure-split" data-figure="deep-multibrots">
         <div class="figure-panels" style="--figure-across: 2">
         <div class="figure-panel">
@@ -436,7 +453,7 @@
           <p class="figure-label">Degree 6 Julia set<span class="figure-note">width 6.7 × 10⁻²¹</span></p>
         </div>
         </div>
-        <figcaption>Deep frames on the Mandelbrot set and the multibrots of degrees 3 to 6, one degree to a row: the parameter plane on the left, and on the right a Julia set of the same degree where the Deep gallery has a deep frame of one.</figcaption>
+        <figcaption>Deep frames on the Mandelbrot set and the degree-3 to degree-6 multibrots (top to bottom), on the parameter plane (left) and, where the Deep gallery has a deep frame of one, a Julia plane (right).</figcaption>
       </figure>
 
     <h2 id="the-deep-gallery">The deep gallery</h2>

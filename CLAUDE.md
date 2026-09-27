@@ -367,7 +367,7 @@ keeps the mechanics. **Every apply round ends by distilling that round's general
   So a maker is a module in `builder/` with an entry in its own `SHEETS`, `MAKERS` or
   `DIAGRAMS` table and a subcommand that draws it by figure id — `families`,
   `fundamentals`, `overview`, `diagram`, `locations`, `judges`, `palettes`, `pool`,
-  `picks`, `curation`, `growth`, `pipeline`, `atlas`, `front`, `deep`, `start`. `scratch/` stays what it is for: the probes, sweeps and contact
+  `picks`, `curation`, `growth`, `pipeline`, `atlas`, `front`, `deep`, `start`, `screenshot`. `scratch/` stays what it is for: the probes, sweeps and contact
   sheets that *found* a choice. Once a choice is made, the program that acts on it is
   committed. **All 61 of them are, as of 2026-09-06**, and a row naming a path under
   `scratch/` is now a bug rather than a legacy.
