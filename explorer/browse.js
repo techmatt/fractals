@@ -610,6 +610,22 @@ export function install(host) {
         spiral: pressed("spiral"),
       };
     },
+    /**
+     * A session collection grew or arrived *(keep_diving_anchor_ckpt154)*: the dropdown says
+     * its new size, and where it is the one shown the grid takes the new row with its chips
+     * and its scroll kept, and a preview that is up stays on the seat it shows.
+     */
+    async grew(name) {
+      if (!active) return;
+      gallery.collectionOptions(collection, collections);
+      collection.value = chosen;
+      if (chosen !== name) return;
+      const seat = at >= 0 ? showing[at] : null;
+      const scroll = tiles.scrollTop;
+      await choose(name, this.filters());
+      tiles.scrollTop = scroll;
+      if (seat !== null) at = showing.indexOf(seat);
+    },
     /** The list changed, here or elsewhere: the grid's marks are `remark`'s, this is the rest. */
     redress() {
       if (active && at >= 0) dressSave();

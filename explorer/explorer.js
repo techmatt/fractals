@@ -4063,6 +4063,7 @@ async function mountDeep() {
       randomSeat,
       newColoring,
       onLanded: addDive,
+      coloringFor,
       onColour: () => {
         palettes?.show(deep.view().palette);
         syncShade();
@@ -5180,27 +5181,43 @@ async function newColoring({ inPlace = false } = {}) {
     say("There is no picture here to color yet.");
     return;
   }
+  const drawn = await colouringOf(field, subject, deepOwns());
+  if (drawn.why !== undefined) {
+    say(drawn.why);
+    return;
+  }
+  if (drawn.palette === undefined) return;
+  // The picture may have moved while the rule was asked, and a colour sized to another
+  // picture is not this one's.
+  if (shownField() !== field || tinting().palette !== subject.palette) return;
+  holding = null;
+  const of = inPlace ? keyOf(currentQuery()) : null;
+  palettes.show(drawn.palette);
+  tint({ palette: drawn.palette, shade: drawn.shade });
+  if (of !== null) rememberInPlaceOf(of);
+}
+
+/**
+ * New coloring's draw for `field`, from `subject`'s colour, applied to nothing: `{ palette,
+ * shade }`, `{ why }` where the rule refused, or `{}` where there is no other palette to draw.
+ * `deepFrame` folds an open map, `mirrorFor`'s rule for Deep, where the caller cannot ask
+ * whose canvas it is.
+ */
+async function colouringOf(field, subject, deepFrame) {
   const drawable = [...PALETTES]
     .filter(([name, map]) => map.random && name !== subject.palette)
     .map(([name]) => name);
-  if (drawable.length === 0) return;
+  if (drawable.length === 0) return {};
   const name = drawable[Math.floor(Math.random() * drawable.length)];
   let rule;
   try {
     colourRule ??= await import("./deep-render.js");
     rule = await colourRule.coloringRule(field, Math.random(), Math.random());
   } catch (error) {
-    say(String(error.message ?? error));
-    return;
+    return { why: String(error.message ?? error) };
   }
-  if (!rule.ok) {
-    say(rule.why);
-    return;
-  }
-  // The picture may have moved while the rule was asked, and a colour sized to another
-  // picture is not this one's.
-  if (shownField() !== field || tinting().palette !== subject.palette) return;
-  let next = { ...tinting().shade, scale: "absolute" };
+  if (!rule.ok) return { why: rule.why };
+  let next = { ...subject.shade, scale: "absolute" };
   for (const [key, value] of [
     ["lambda", rule.lambda],
     ["period", rule.period],
@@ -5208,12 +5225,20 @@ async function newColoring({ inPlace = false } = {}) {
   ]) {
     next = shade.withKey(next, key, String(value));
   }
-  next = { ...next, mirror: mirrorFor(name, next.mirror) };
-  holding = null;
-  const of = inPlace ? keyOf(currentQuery()) : null;
-  palettes.show(name);
-  tint({ palette: name, shade: next });
-  if (of !== null) rememberInPlaceOf(of);
+  const mirror = PALETTES.get(name).cyclic ? false : deepFrame ? true : next.mirror;
+  return { palette: name, shade: { ...next, mirror } };
+}
+
+/**
+ * **A landing drawn off-screen takes New coloring on arrival for itself alone**
+ * *(keep_diving_anchor_ckpt154)*: the same draw off its quarter field, from the colour of the
+ * frame it landed in, handed back to the Deep tab rather than tinted onto the view. `null`
+ * where the rule refused, and the landing keeps its colour.
+ */
+async function coloringFor(field, frame) {
+  if (field == null) return null;
+  const drawn = await colouringOf(field, frame, true);
+  return drawn.palette === undefined ? null : drawn;
 }
 
 /** `deep-render.js`, once New coloring has asked its rule: what `giveBack` stops the rule's
@@ -5278,15 +5303,17 @@ function blobOf(source, width) {
  * diving, with the picture the landing drew — a tile at the staged gallery's size and a
  * picture for Browse's preview at the size Browse draws. The collection enters the dropdown
  * with its first landing and lives in this page only: nothing of it is stored, and a reload
- * is the end of it.
+ * is the end of it. Resolves the collection's size once the landing has joined, which is
+ * what Keep diving's status line counts *(keep_diving_anchor_ckpt154)*, or `null` where it
+ * could not join; the panel and an open Browse both show it grow.
  */
 async function addDive({ link: query, family, palette, canvas: drawnOn, said, landing }) {
-  if (tiles === null || tiles.collections.length === 0) return;
+  if (tiles === null || tiles.collections.length === 0) return null;
   const [thumb, picture] = await Promise.all([
     blobOf(drawnOn, dives.TILE_WIDTH),
     blobOf(drawnOn, browse.PREVIEW_GRID_MAX),
   ]);
-  if (thumb === null) return;
+  if (thumb === null) return null;
   if (diveCollection === null) {
     diveCollection = dives.collection();
     tiles.collections.push(diveCollection);
@@ -5295,6 +5322,8 @@ async function addDive({ link: query, family, palette, canvas: drawnOn, said, la
   const height = Math.round((drawnOn.height * width) / drawnOn.width);
   dives.add(diveCollection, { link: query, family, palette, landing, said, thumb, picture, width, height });
   tiles.grew(dives.NAME);
+  browser?.grew(dives.NAME);
+  return diveCollection.seats;
 }
 
 // Hold look changes what the next move of Lambda or Period means and nothing about the

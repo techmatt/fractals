@@ -821,7 +821,9 @@ record, `builder check` never sees it, and a screensaver link cannot name it.
   and no for a carried view.
 - **Its pictures are the landing's own**, taken off the canvas when the landing's pass ends:
   the full picture where it finished, the quarter one where it was stopped after that. A
-  landing stopped before anything of it was drawn joins nothing. There are two WebP blobs, a
+  landing stopped before anything of it was drawn joins nothing. A landing Keep diving draws
+  off-screen *(keep_diving_anchor_ckpt154)* is the same full pass into a canvas of its own,
+  and joins only once it is whole. There are two WebP blobs, a
   316-px tile, which `tileURL` returns in place of a file, and the picture at up to
   `PREVIEW_GRID_MAX` for Browse.
 - **In Browse a dive is shown, not drawn.** Browse's pool cannot draw a deep link, and the Deep
@@ -2625,44 +2627,86 @@ each back to the frame before it.
 #### Keep diving *(keep_diving_ckpt154, 2026-09-27)*
 
 A box beside *New coloring on arrival*, with no key and not remembered: a page that starts
-searching the moment it opens is a surprise. While it is ticked it does what pressing Go over
-and over would do, and nothing else. **It varies nothing the reader did not leave open**: the
-sentence and the colour box are read afresh before every press, so *a random wallpaper* is
-drawn again on each one, and *this view* is wherever the last press landed, which is why
-*this view / its center* keeps descending. Ticking it during a press takes that press as its
-first rather than starting again, and Go is faded while it runs, with its title saying why.
+searching the moment it opens is a surprise. While it is ticked it presses Go over and over.
+**It varies nothing the reader did not leave open**: the sentence and the colour box are read
+afresh before every press, so *a random wallpaper* is drawn again on each one. Go is faded
+while it runs, with its title saying why. `loopStep`, `chains` and `fixed` in `dives.js` are
+the rules with no page in them, and `dives.test.mjs` holds them.
 
-- **The main view follows every landing.** A press is what it runs, so the search, the
-  landing and the pass are the ones a press shows, on the canvas. Nothing runs out of sight:
-  leaving the Deep tab stops it (`hide`, `detach`).
-- **Each landing is held `HOLD_MS`, 2 s, once its full pass has landed**, and the status line
-  adds *Next dive in 2 s.* to the provenance. Two seconds is long enough to see what a press
-  drew, and short enough that a chain of ten is well under a minute when the passes are quick.
-  A landing whose full pass never finished is not held; it stops the loop.
+**_This view_ is frozen when the box is ticked** *(keep_diving_anchor_ckpt154)*. It used to
+re-read the last landing, so every dive carried an already-deep frame into another copy and
+any loop with *this view* in it chained deeper and deeper. Now the view on screen when the box
+is ticked is the loop's anchor, and every press reads it wherever the sentence says *this
+view*, in either dropdown. A Go already running when the box is ticked finishes as the Go it
+was, moving the view, and the anchor is the view it leaves.
+
+- **Two kinds of loop, by the sentence** (`chains`):
+  - **The descending loop, on screen**: *this view* and *its center* or *halfway in*. Each
+    press starts from the previous landing, which is the point of it, so the main view
+    follows every landing as a press of Go does, each held `HOLD_MS`, 2 s, once its full pass
+    has landed (*Next dive in 2 s.*), and each one step back.
+  - **Every other sentence, off-screen.** The main view stays on the frame it had when the
+    box was ticked; each landing is drawn out of sight, joins Dives, and adds no step to the
+    way back and nothing to the address. There is no hold, because there is nothing on screen
+    to hold: the next press starts as soon as the landing has joined. The Dive block's bar and
+    status line carry the loop's work, led by its count: *Dive 7 landed; Dives · 7. Dive 8:
+    looking for nuclei…*, where the first number is the loop's and the second the
+    collection's, which Go adds to as well. Opening a Dives tile is one step, as any link is.
+- **How a landing is drawn off-screen** (`landAside` in `deep.js`): **the same pass `render`
+  draws of a landing on screen**, which is the pass the Dives tiles were already taken from.
+  The quarter pass, with the interior switch on, reads the switch the full pass uses and is
+  what New coloring on arrival is sized off; the full pass is at the canvas's own size and one
+  sample a pixel; the full field is shaded into a canvas of its own and handed to `addDive`,
+  which scales it to the tile and the Browse picture exactly as before. So a tile is the same
+  picture whichever way its landing was drawn. The one thing skipped is shading the quarter
+  pass nobody sees. Nothing of the tab moves: not `view`, not the picture up, not the held
+  pictures or the field cache, which keeps the main view's own fields for its recolours.
+  **New coloring on arrival colours that landing alone**: `host.coloringFor` is New
+  coloring's draw (`colouringOf` in `explorer.js`) off the landing's quarter field, handed
+  back rather than tinted onto the view.
+- **_This view / this view_ lands in one place.** With the anchor frozen and the rung rule
+  deterministic, every press would draw the first landing again, so with the colour box off
+  the loop stops after one landing and says so (`fixed`). With it ticked, each press is that
+  landing in a new coloring: the search and both fields are kept from the first press, and
+  a repeat is a shade, 0.1 to 0.2 s.
+- **An off-screen loop runs on out of the tab**, so Dives can be watched filling: the Gallery
+  tab's list and an open Browse both take each landing as it joins (`tiles.grew`,
+  `browser.grew`, which keeps Browse's chips, its scroll and a preview that is up). The
+  descending loop still stops when the tab is left (`hide`, `detach`), because it follows its
+  landings on the canvas. Coming back into the tab carries the viewer's frame in, as it always
+  does, and where that is somewhere else the loop stops and says so.
 - **It stops**, unticks itself and says why in the status line: when the box is unticked, which
-  lets a press already running finish as the one it was; on Cancel, the Dive block's or
-  Render's; when the view moves, which is `moved()`, the one path every gesture and every
-  control that moves the frame goes through; when the sentence changes; when anything else
-  takes the tab over (a link, the way back, a tab, a plane change), which the press reads as
-  superseded, and which a hold catches as `pass` or the place having moved; and when a chain
-  runs out. **A chain runs out where the copy was this view's to find**: *No copy near this
+  lets a press already running finish as the one it was (and counts it); on Cancel, the Dive
+  block's or Render's; when the view moves, which is `moved()`, the one path every gesture
+  and every control that moves the frame goes through; when the sentence changes; when
+  anything else takes the tab over (a link, the way back, a plane change), which the press
+  reads as superseded; and when a chain runs out. **Since an off-screen loop never moves the
+  view, a moved view is always the reader's**; the loop also checks its anchor before each
+  press. **A chain runs out where the copy was this view's to find**: *No copy near this
   view is a step down*, or no minibrot near it, or a landing the budget greys here, said as
   *The chain ran out.* and the reason.
 - **A random draw that lands nowhere** has already retried as Go does (`RANDOM_TRIES`); the
   loop then moves on to the next press with no hold. `DRY_PRESSES`, 3, such presses in a row
   stop it and say so, and so does a plane with no wallpapers at all, which no redraw changes.
-  `loopStep` in `dives.js` is the whole of that rule, and `dives.test.mjs` holds it.
-- **Each landing is one step back**, exactly as a press of Go is.
 
-Measured on the served page at 1600×1100 (`scratch/keep_diving_probe.mjs`):
-- *this view / its center* from the Mandelbrot home landed six times, from 0.216 wide down to
-  6.4e-9, a landing every 2.4 to 5.4 s with the hold included. It then stopped on *The chain
-  ran out. No copy near this view is a step down from where the dive stands.* Six Ctrl+Z put
-  back the home view.
-- *a random wallpaper / its center* landed five times near five wallpapers, at widths from
-  6.3e-5 to 4.3e-12.
-- Unticking the box, Cancel, a pan, a changed landing and a tab switch each stopped it with
-  their own sentence.
+Measured on the served page at 1600×1100 (`scratch/keep_diving_anchor_probe.mjs`, with
+`Math.random` seeded so the previous commit's page and this one drew the same eight wallpapers
+and landed on the same frames):
+- *a random wallpaper / its center*, eight landings: **the landing pass is 0.82 s off-screen
+  against 0.84 s on screen** (quarter pass to landed, from the tab's own log; per frame
+  0.57 to 1.88 s, and within 7% of each other frame by frame). After the first, a landing
+  every 0.7 to 0.9 s, against 2.7 to 3.0 s on screen (and one of 5.3 s), which is the 2 s
+  hold on top of the same search and pass. The main view stayed at the home frame throughout.
+- *this view / its center* from the home view, on screen as before: six landings from 0.216
+  wide down to 6.4e-9, one every 2.5 to 5.0 s with the hold, then *The chain ran out.*; six
+  Ctrl+Z put back the home view.
+- *this view / this view*: one landing and the stop above; with New coloring on arrival, three
+  landings, the second and third 0.1 and 0.2 s after the one before.
+- A pan, then an off-screen loop of three landings, then one Ctrl+Z: back to the home view,
+  so the three landings added no step. From the Gallery tab and from Browse, the loop ran on
+  and both grew a tile a landing. Cancel, unticking, a changed sentence, a pan and coming back
+  into the tab each stopped it with their own sentence; leaving the tab stopped the descending
+  loop.
 
 ### The gallery *(deep_gallery_build_ckpt144, 2026-09-23)*
 

@@ -50,7 +50,7 @@
 import * as fx from "./deep-fx.js";
 import * as deepLink from "./deep-link.js";
 import { BODY_TARGET, DeepRenderer, bodyShare, deepSpecOf } from "./deep-render.js";
-import { HOLD_MS, loopStep } from "./dives.js";
+import { HOLD_MS, chains, fixed, landedSaid, loopStep } from "./dives.js";
 import { stopOf } from "./outermost.js";
 
 /**
@@ -715,7 +715,8 @@ export function mount(host) {
       const [from, width] = DIVE_SPANS[running.dive ? "render" : (running.divePhase ?? "probe")];
       els.diveBar.style.setProperty("--done", String(from + width * (running.done ?? 0)));
       els.diveBar.dataset.state = running.sharpening ? "sharpening" : "rendering";
-      els.diveStatus.textContent = els.progress.textContent;
+      // A loop drawing aside leads with its own count, since the main view says nothing of it.
+      els.diveStatus.textContent = (running.lead ?? "") + els.progress.textContent;
     }
   }
 
@@ -2012,8 +2013,8 @@ export function mount(host) {
   /** Whether a landing takes a New coloring as it arrives. */
   let diveColouring = storedFlag(DIVE_COLOURING);
   /**
-   * **Keep diving** *(keep_diving_ckpt154)*: `{ timer, wake, holding }` while it is on, and
-   * `null`. The object is the loop's own generation — a loop that finds `keeping` is no
+   * **Keep diving** *(keep_diving_ckpt154)*: `keepDiving`'s loop object while it is on — the
+   * hold's timer, the frozen `anchor`, whether it draws `aside`, its count — and `null`. The object is the loop's own generation — a loop that finds `keeping` is no
    * longer the object it started with has been stopped, whatever else happened. Not
    * remembered: a page that starts searching on its own the moment it opens is a surprise.
    */
@@ -2109,12 +2110,16 @@ export function mount(host) {
    * One attempt at a press: find the copy, take the rung, land. Resolves `null` where a newer
    * generation took over, `{ why, grey }` where nothing landed, and `{ frame, chain, said }`
    * where it did.
+   *
+   * `here` is what the sentence's *this view* means: the view, for Go and for the descending
+   * loop, and the view Keep diving was ticked on for every other loop
+   * *(keep_diving_anchor_ckpt154)*. The colour is always the view's as it stands.
    */
-  async function diveOnce(deep, generation, from, to) {
-    const family = deepLink.familyOf(view);
-    const degree = view.degree ?? 2;
+  async function diveOnce(deep, generation, from, to, here = view) {
+    const family = deepLink.familyOf(here);
+    const degree = here.degree ?? 2;
     let seatA = null;
-    let near = view;
+    let near = here;
     if (from === "seat") {
       seatA = await seatOf(family);
       if (generation !== pass) return null;
@@ -2123,7 +2128,7 @@ export function mount(host) {
     }
     let seatB = null;
     let into = null;
-    if (to === "view") into = view;
+    if (to === "view") into = here;
     if (to === "seat") {
       seatB = await seatOf(family);
       if (generation !== pass) return null;
@@ -2142,7 +2147,7 @@ export function mount(host) {
     }
     let where = seatA === null ? "this view" : `wallpaper ${seatA.key}`;
     const prefix = `near ${where} · `;
-    const continuing = seatA === null && chain !== null && chain.place === placeOf(view);
+    const continuing = seatA === null && chain !== null && chain.place === placeOf(here);
     const rungs = continuing ? chain.rungs : [];
     const depth = continuing ? chain.depth : 0;
     // **A mapped landing looks further out before it gives up on the budget**: a view carried
@@ -2251,7 +2256,7 @@ export function mount(host) {
         maxiter: answer.cap,
         // The cap a copy's own period asks for, written into the link as a found minibrot's is.
         capFrom: "tile",
-        aspect: view.aspect,
+        aspect: here.aspect,
         palette: view.palette,
         shade: view.shade,
         level: view.level,
@@ -2280,8 +2285,14 @@ export function mount(host) {
    * **Go.** Search, take the rung, land, draw — Cancel stops any of it, and what lands is a
    * link the way back remembers as one step. The palette stays the reader's unless *New
    * coloring on arrival* is ticked, which colours the landing off its quarter pass.
+   *
+   * `aside` is Keep diving's loop object where the loop draws off-screen
+   * *(keep_diving_anchor_ckpt154)*: the press reads *this view* as `aside.anchor`, lands
+   * through `landAside` rather than `arrive`, and leaves the view, the way back, the address
+   * and the main picture exactly as they were. It runs on with the tab hidden, so it touches
+   * nothing of the viewer's either.
    */
-  async function dive() {
+  async function dive({ aside = null } = {}) {
     const barred = diveBarred() ?? (running?.upto === "download" ? "A download is running." : null);
     if (barred !== null) return { barred };
     const from = els.diveFrom.value;
@@ -2292,12 +2303,14 @@ export function mount(host) {
       return { barred: greyed };
     }
     if (running !== null) stop();
-    disarm();
+    if (aside === null) disarm();
     const generation = ++pass;
     readLog();
     running = {
       upto: "dive",
       auto: false,
+      aside: aside !== null,
+      lead: aside === null ? null : aside.lead(),
       stage: "starting",
       started: performance.now(),
       done: 0,
@@ -2306,19 +2319,25 @@ export function mount(host) {
     enterStage("starting", { live: false });
     activity("starting the deep renderer…", 0);
     syncControls();
-    host.say("");
-    dropList();
+    if (aside === null) host.say("");
+    if (aside === null || minibrotSide === "deep") dropList();
     let landed = null;
     let outcome = SUPERSEDED;
     try {
       const deep = await pool();
       if (generation !== pass) return SUPERSEDED;
       readLog();
-      unsettle();
+      if (aside === null || owns) unsettle();
+      // *This view / this view* from a frozen view is one landing however often it is asked
+      // for, so a loop recoloring it asks once.
+      if (aside?.repeat != null) {
+        landed = aside.repeat.landed;
+        return await landAside(deep, generation, landed, to, aside);
+      }
       const tries = from === "seat" || to === "seat" ? RANDOM_TRIES : 1;
       let why = "";
       for (let attempt = 1; attempt <= tries && landed === null; attempt++) {
-        const tried = await diveOnce(deep, generation, from, to);
+        const tried = await diveOnce(deep, generation, from, to, aside?.anchor ?? view);
         if (tried === null || generation !== pass) return SUPERSEDED;
         if (tried.frame !== undefined) {
           landed = tried;
@@ -2340,20 +2359,26 @@ export function mount(host) {
         diveSaid = tries > 1 ? `Tried ${tries} random wallpapers and none would do. ${why}` : why;
         outcome = { ...outcome, refused: diveSaid };
       }
+      if (landed !== null && aside !== null) {
+        if (fixed(from, to)) aside.repeat = { landed, fields: null };
+        return await landAside(deep, generation, landed, to, aside);
+      }
     } catch (error) {
       diveSaid = String(error.message ?? error);
       outcome = { error: diveSaid };
       console.error("the dive failed", { view: deepLink.emit(view) }, error);
     } finally {
-      if (generation === pass && landed === null) {
+      // A press that landed on screen hands `running` to `arrive`'s pass; one that landed
+      // aside, or nowhere, ends here.
+      if (generation === pass && (landed === null || aside !== null)) {
         running = null;
         watch();
-        host.showState(drawn === null ? "stopped" : "final");
+        if (aside === null) host.showState(drawn === null ? "stopped" : "final");
         syncControls();
       }
     }
     if (generation !== pass) return SUPERSEDED;
-    if (landed === null) return outcome;
+    if (landed === null || aside !== null) return outcome;
     chain = landed.chain;
     diveSaid = landed.said;
     const complete = await arrive(landed.frame, landed.said, to);
@@ -2410,6 +2435,87 @@ export function mount(host) {
     return mine === pass && drawn !== null && drawnFull && placeOf(drawn) === place;
   }
 
+  /**
+   * **A landing drawn off-screen** *(keep_diving_anchor_ckpt154)*: the pass `render` would
+   * draw of it — the quarter pass, which reads the interior switch and is what *New coloring
+   * on arrival* is sized off, and the full pass at the canvas's own size and one sample a
+   * pixel — into a canvas of its own, which joins Dives exactly as an on-screen landing's
+   * does. So a tile of Dives is the same picture whichever way its landing was drawn, and the
+   * one thing skipped is shading the quarter pass nobody sees.
+   *
+   * Nothing of the tab moves: not `view`, `drawn`, the held pictures, the field cache or the
+   * address. The colour is the view's as it stands when the full pass is shaded, or the one
+   * New coloring draws for this landing alone through `host.coloringFor`, which tints
+   * nothing. Resolves `{ landed, complete, dives }` — the collection's size once it has
+   * joined — or `SUPERSEDED`.
+   */
+  async function landAside(deep, generation, landed, landing, aside) {
+    const grid = host.grid();
+    const stages = [
+      { name: "preview", width: grid.width / PREVIEW_DIVISOR, height: grid.height / PREVIEW_DIVISOR, supersample: 1 },
+      { name: "full", width: grid.width, height: grid.height, supersample: 1 },
+    ];
+    running.dive = true;
+    running.stages = stages;
+    const kept = aside.repeat?.fields ?? null;
+    const drawnFields = kept ?? {};
+    let interior = true;
+    for (const stage of stages) {
+      if (kept !== null) break;
+      const span = spanOf(stage);
+      running.sharpening = stage.name === "full";
+      enterStage(stage.name);
+      activity(`${said_stage(stage)}…`, span.from);
+      const field = await deep.field(landed.frame, stage.width, stage.height, {
+        supersample: 1,
+        interior: stage.name === "preview" ? true : interior,
+        onProgress: (done, elapsed) => {
+          if (generation === pass) report(stage, done, elapsed);
+        },
+        onStep: (step) => {
+          if (generation === pass) activity(`${said_stage(stage)} · ${said_step(step)}`, span.from);
+        },
+      });
+      if (field === null || generation !== pass) return SUPERSEDED;
+      if (stage.name === "preview") interior = switchFor(field);
+      drawnFields[stage.name] = field;
+    }
+    if (aside.repeat != null) aside.repeat.fields = drawnFields;
+    let frame = inColour(landed.frame);
+    if (diveColouring) {
+      enterStage("coloring", { live: false });
+      activity("choosing a new coloring…", 1);
+      const drawnColour = await host.coloringFor?.(drawnFields.preview, frame);
+      if (generation !== pass) return SUPERSEDED;
+      if (drawnColour != null) frame = { ...frame, ...drawnColour };
+    }
+    enterStage("coloring", { live: false });
+    activity(`${said_stage(stages[1])} · coloring`, 1);
+    const holder = {};
+    colouring = holder;
+    // A copy, because the shade takes the buffer, and a repeated landing shades it again.
+    const full = drawnFields.full;
+    const shaded = await deep.shade({ ...full, values: full.values.slice() }, frame, holder, {
+      derive: host.deriving(),
+    });
+    if (shaded === null || generation !== pass) return SUPERSEDED;
+    if (host.deriving()) frame = { ...frame, level: shaded.level };
+    log("landed aside", { reused: kept !== null });
+    const canvas = document.createElement("canvas");
+    canvas.width = shaded.image.width;
+    canvas.height = shaded.image.height;
+    canvas.getContext("2d").putImageData(shaded.image, 0, 0);
+    const dives = await host.onLanded?.({
+      link: deepLink.emit(frame),
+      family: deepLink.familyOf(frame),
+      palette: frame.palette,
+      canvas,
+      said: landed.said,
+      landing,
+    });
+    return { landed: true, complete: true, dives: dives ?? null };
+  }
+
   /** Go: one press, remembered while it runs so Keep diving can take it over. */
   function press() {
     const ongoing = dive();
@@ -2421,29 +2527,75 @@ export function mount(host) {
   }
 
   /**
-   * **Keep diving** *(keep_diving_ckpt154)*: press, draw the landing to the end, hold it
-   * `HOLD_MS`, press again — with the sentence and the colour box read afresh each time, and
-   * the main view following every landing, because a press is what it runs. `loopStep` in
-   * `dives.js` says what each press's answer means for the next.
+   * **Keep diving** *(keep_diving_ckpt154; anchored since keep_diving_anchor_ckpt154)*: press,
+   * land, press again, with the sentence and the colour box read afresh each time.
+   * `loopStep` in `dives.js` says what each press's answer means for the next.
+   *
+   * **_This view_ is frozen when the box is ticked** — `anchor`, the view then, or the one a
+   * Go already running leaves, since that press finishes as the Go it was. Every press reads
+   * it wherever the sentence says *this view*, draws its landing off-screen (`landAside`)
+   * and adds it to Dives, and the main view, the way back and the address stay put. **The
+   * descending loop is the exception** (`chains`): *this view* and *its center* or *halfway
+   * in* press from the last landing, on screen, each landing held `HOLD_MS` and one step
+   * back, as before.
    *
    * It stops on its own where a chain runs out or a press cannot start, and it is stopped by
    * the box, Cancel, a change of view (`moved`, which every gesture and every control that
    * moves the frame goes through) or of the sentence, and by anything else that takes the
-   * tab over — a link, the way back, another tab — which is a press superseded. A hold that
-   * a change landed in finds `pass` moved, or the place moved, and stops as well.
+   * tab over — a link, the way back — which is a press superseded. Since a loop drawing
+   * aside never moves the view, a moved view is always the reader's. A descending loop also
+   * stops on leaving the tab; one drawing aside runs on, so that Dives can be watched filling
+   * in the Gallery tab and Browse.
    */
   async function keepDiving() {
-    const mine = { timer: 0, wake: null, holding: false };
+    const mine = {
+      timer: 0,
+      wake: null,
+      holding: false,
+      anchor: null,
+      aside: !chains(els.diveFrom.value, els.diveTo.value),
+      landings: 0,
+      dives: null,
+      repeat: null,
+      /** What the status line leads with while a press of this loop runs. */
+      lead() {
+        const next = `Dive ${this.landings + 1}: `;
+        return this.landings === 0 ? next : `${landedSaid(this.landings, this.dives)} ${next}`;
+      },
+    };
     keeping = mine;
     syncControls();
     let dry = 0;
     let first = pressing;
     while (keeping === mine) {
-      const outcome = await (first ?? dive());
+      if (first === null) {
+        mine.anchor ??= view;
+        // A loop drawing aside stands on its anchor; a view that is somewhere else was moved.
+        if (mine.aside && placeOf(view) !== placeOf(mine.anchor)) {
+          return endKeeping("Keep diving stopped: the view moved.");
+        }
+      }
+      const aside = first === null && mine.aside;
+      const outcome = await (first ?? dive(aside ? { aside: mine } : {}));
       first = null;
-      if (keeping !== mine) return;
-      const next = loopStep(outcome, dry);
-      if (next.stop !== undefined) return endKeeping(next.stop);
+      if (keeping !== mine) {
+        // Unticked mid-press: the press finished as the one it was, and is counted.
+        if (aside && outcome.landed) {
+          diveSaid = `${landedSaid(mine.landings + 1, outcome.dives)} Keep diving stopped.`;
+          syncControls();
+        }
+        return;
+      }
+      const repeats = aside && fixed(els.diveFrom.value, els.diveTo.value) && !diveColouring;
+      const next = loopStep(outcome, dry, { aside, repeats });
+      if (outcome.landed && aside) {
+        mine.landings += 1;
+        mine.dives = outcome.dives;
+        diveSaid = landedSaid(mine.landings, mine.dives);
+      }
+      if (next.stop !== undefined) {
+        return endKeeping(outcome.landed && aside ? `${diveSaid} ${next.stop}` : next.stop);
+      }
       dry = outcome.landed ? 0 : dry + 1;
       if (!next.hold) continue;
       const at = pass;
@@ -2458,6 +2610,19 @@ export function mount(host) {
       if (keeping !== mine) return;
       if (pass !== at || placeOf(view) !== place) return endKeeping("Keep diving stopped: the view changed.");
     }
+  }
+
+  /**
+   * The tab giving up the canvas: what it was drawing stops, except the viewer's own search,
+   * which runs on where it was started, and **a Keep diving loop drawing aside**
+   * *(keep_diving_anchor_ckpt154)*, which draws nothing on the canvas and runs on so that
+   * Dives can be watched filling from the Gallery tab. A loop on screen follows its
+   * landings in the main view and never out of sight, so it stops, saying `said`.
+   */
+  function leaving(said) {
+    const aside = keeping?.aside === true && (running === null || running.aside === true);
+    if (!aside) endKeeping(said);
+    if (running?.side !== "shallow" && running?.aside !== true) stop();
   }
 
   /** Stop Keep diving where it is on, saying why, and untick the box. A press in flight is
@@ -2817,6 +2982,11 @@ export function mount(host) {
       const carried = carry(from);
       if (carried !== null) {
         arrived = true;
+        // A loop drawing aside runs on out of the tab, and the frame carried in on the way
+        // back is a move of the view like any other *(keep_diving_anchor_ckpt154)*.
+        if (placeOf(carried) !== placeOf(view)) {
+          endKeeping("Keep diving stopped: coming back into the tab brought the viewer's frame with it.");
+        }
         view = carried;
         drawn = null;
         stale = null;
@@ -3135,18 +3305,14 @@ export function mount(host) {
       shown = false;
       owns = false;
       disarm();
-      // Keep diving follows its landings in the main view and never out of sight.
-      endKeeping("Keep diving stopped: the Deep tab was left.");
-      // The viewer's own search runs on with the tab hidden, which is where it was started.
-      if (running?.side !== "shallow") stop();
+      leaving("Keep diving stopped: the Deep tab was left.");
       if (minibrotSide === "deep") dropList();
     },
     /** The reader took the viewer for something else; the tab keeps its view. */
     detach() {
       owns = false;
       disarm();
-      endKeeping("Keep diving stopped: the viewer was taken for something else.");
-      if (running?.side !== "shallow") stop();
+      leaving("Keep diving stopped: the viewer was taken for something else.");
       if (minibrotSide === "deep") dropList();
     },
     enter,
