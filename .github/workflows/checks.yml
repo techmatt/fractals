@@ -76,7 +76,7 @@ jobs:
           explorer/saved.test.mjs explorer/undo.test.mjs explorer/zip.test.mjs
           explorer/stamp.test.mjs explorer/deep-fx.test.mjs explorer/deep-link.test.mjs
           explorer/deep.test.mjs explorer/screensaver.test.mjs explorer/hold.test.mjs
-          explorer/fit.test.mjs explorer/dives.test.mjs atlas/atlas.test.mjs
+          explorer/fit.test.mjs explorer/dives.test.mjs explorer/aliasing.test.mjs atlas/atlas.test.mjs
 
   crates:
     name: crates (${{ matrix.os }})

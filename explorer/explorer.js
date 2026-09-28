@@ -38,7 +38,8 @@ import * as fitting from "./fit.js";
 import * as modeParams from "./params.js";
 import { CONSTANTS as ANCHORS, MODES as IDENTITIES, SETTLED } from "./catalog.js";
 import { DEFAULT_PALETTE, PALETTES, PROVENANCE } from "./palettes.js";
-import { fetchStops } from "./stops.js";
+import { fetchStops, stopsOf } from "./stops.js";
+import * as aliasing from "./aliasing.js";
 import * as download from "./download.js";
 import * as picker from "./picker.js";
 import * as gallery from "./gallery.js";
@@ -4057,6 +4058,7 @@ async function mountDeep() {
       openLink: (query) => openAny(query),
       newColoring,
       onLanded: addDive,
+      showDiveResults: () => diveResults?.show("results"),
       coloringFor,
       onColour: () => {
         palettes?.show(deep.view().palette);
@@ -5170,14 +5172,17 @@ function mirrorFor(name, was) {
 /**
  * **New coloring** *(deep_dive_block_ckpt154)*: a palette from the ones the gallery seated
  * twice or more, on the Absolute scale, sized to the picture up. `perturb-wasm`'s
- * `dive::coloring` is the rule: the cycles between 1.5 and 6, the λ smoothness test over
- * `{0, 0.15, 0.3, 0.5, 0.75, 1}` with the period the field's 3rd-to-97th-percentile range of
- * `g` over those cycles, and one of the λs that stays smooth. This page draws the palette and
- * a phase. It is an Absolute rule, so in the shallow view it switches the scale to Absolute.
+ * `dive::coloring` is the rule: the cycles between 1 and 4 *(1.5 to 6 until
+ * dive_mixture_ckpt154)*, the λ smoothness test over `{0, 0.15, 0.3, 0.5, 0.75, 1}` with the
+ * period the field's 3rd-to-97th-percentile range of `g` over those cycles, and one of the λs
+ * that stays smooth. This page draws the palette and a phase, and then `aliasing.js`'s guard
+ * lengthens the period where the colouring would read as static. It is an Absolute rule, so
+ * in the shallow view it switches the scale to Absolute.
  *
  * `inPlace` is the Dive block's New coloring on arrival: the landing's picture recoloured
  * before the reader has stepped anywhere, so it takes the landing's entry in the way back
- * rather than pushing one of its own, and a press of Go stays one step.
+ * rather than pushing one of its own, and a press of Go stays one step. Resolves `{ aliased }`
+ * — the guard's sentence where it lengthened the period — or nothing where it drew nothing.
  */
 async function newColoring({ inPlace = false } = {}) {
   if (locked()) return;
@@ -5201,6 +5206,7 @@ async function newColoring({ inPlace = false } = {}) {
   palettes.show(drawn.palette);
   tint({ palette: drawn.palette, shade: drawn.shade });
   if (of !== null) rememberInPlaceOf(of);
+  return { aliased: drawn.aliased };
 }
 
 /**
@@ -5224,15 +5230,28 @@ async function colouringOf(field, subject, deepFrame) {
   }
   if (!rule.ok) return { why: rule.why };
   let next = { ...subject.shade, scale: "absolute" };
+  const phase = Number(Math.random().toFixed(3));
+  const mirror = PALETTES.get(name).cyclic ? false : deepFrame ? true : next.mirror;
+  // **The aliasing guard** *(dive_mixture_ckpt154)*: the colouring laid over the field it was
+  // sized to, and its period lengthened where neighbouring pixels come out too far apart.
+  const guarded = aliasing.guard(
+    field,
+    { lambda: rule.lambda, period: rule.period, phase },
+    aliasing.tableOf(stopsOf(name), mirror),
+  );
   for (const [key, value] of [
     ["lambda", rule.lambda],
-    ["period", rule.period],
-    ["phase", Number(Math.random().toFixed(3))],
+    ["period", guarded.period],
+    ["phase", phase],
   ]) {
     next = shade.withKey(next, key, String(value));
   }
-  const mirror = PALETTES.get(name).cyclic ? false : deepFrame ? true : next.mirror;
-  return { palette: name, shade: { ...next, mirror } };
+  const aliased =
+    guarded.redraws === 0
+      ? ""
+      : `New coloring lengthened its period ${aliasing.STRETCH ** guarded.redraws} times against aliasing.`;
+  if (guarded.redraws > 0) console.info("New coloring's aliasing guard", guarded);
+  return { palette: name, shade: { ...next, mirror }, aliased };
 }
 
 /**
@@ -5310,13 +5329,13 @@ function blobOf(source, width) {
  * Resolves the list's size once it has joined, which is what Keep diving's status line
  * counts, or `null` where it could not join.
  */
-async function addDive({ link: query, canvas: drawnOn, said }) {
+async function addDive({ link: query, canvas: drawnOn, said, variant = null }) {
   if (diveResults === null) return null;
   const thumb = await blobOf(drawnOn, dives.TILE_WIDTH);
   if (thumb === null) return null;
-  const width = dives.TILE_WIDTH;
+  const width = Math.min(dives.TILE_WIDTH, drawnOn.width);
   const height = Math.round((drawnOn.height * width) / drawnOn.width);
-  return diveResults.add({ link: query, thumb, said, width, height });
+  return diveResults.add({ link: query, thumb, said, variant, width, height });
 }
 
 /** A link's address on the clipboard: this page with `query` as its search. */

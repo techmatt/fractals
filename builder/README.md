@@ -1417,6 +1417,17 @@ draws a random seat is tried 4 times before the unit is dropped. **One rule adap
 `from/to` route that lands at most 1 of its last 12 has its `to` weight halved, to a floor of
 .05, and says so in `choices.json`. It never fired in the first run.
 
+**The Dive block's defaults draw this mixture** *(dive_mixture_ckpt154)*: carry 70% (A into
+its own copy three tenths of that, the share `FROM_WEIGHT` gave "this view"), centre 15%,
+halfway 15%, and a descent of 1 to 8 rungs first for six in ten of those two.
+`explorer/README.md`'s *The landing mixture* has the page's side. The page lands the
+deepest copy reached where a descent's chain runs out; this run presses once more from there,
+which is refused every time, and is at least part of why its view-started centres kept 48 of
+83 and halfway points 54 of 94. Two things here did not move with it: the plane draw, which the page has no use for, and New coloring half the time,
+where the page defaults to always. Since the same prompt the native `coloring` rule draws
+its cycles from 1 to 4, so a rerun colours with the narrowed range; the aliasing guard is
+the page's (`explorer/aliasing.js`) and no part of this run.
+
 A landed frame is drawn natively at `FINAL`, 640×360 at 2×2 samples a pixel, and shaded by
 `dive_candidates_shade.mjs`: the link is `deep-link.js`'s, held to being a fixed point, and
 the picture is `engine.wasm`'s. `builder/deep_gallery_shade.mjs` cannot stand in for it; it

@@ -1003,14 +1003,15 @@ test("New coloring's rule is the crate's, over a field laid out as either tab la
   const rule = JSON.parse(new TextDecoder().decode(new Uint8Array(wasm.memory.buffer, out + 4, size)));
   wasm.dealloc(out, size + 4);
   assert.equal(rule.ok, true, rule.why);
-  // A cycles pick of zero is the range's low end, and every λ of a smooth ramp reads.
-  assert.equal(rule.cycles, 1.5);
+  // A cycles pick of zero is the range's low end — 1 since dive_mixture_ckpt154, 1.5 before
+  // — and every λ of a smooth ramp reads.
+  assert.equal(rule.cycles, 1);
   assert.equal(rule.tried.length, 6);
   assert.deepEqual(
     rule.tried.map((one) => one.lambda),
     [0, 0.15, 0.3, 0.5, 0.75, 1],
   );
   assert.equal(rule.lambda, 1);
-  // At λ = 1 the range is 30.5 counts, over one and a half turns, to three figures.
-  assert.equal(rule.period, 20.3);
+  // At λ = 1 the range is 30.5 counts, over one turn, to three figures.
+  assert.equal(rule.period, 30.5);
 });

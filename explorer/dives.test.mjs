@@ -1,7 +1,7 @@
 // The Dive block's rules and Dive results held to their promises: a chain that runs out
-// stops, a random draw that lands nowhere is drawn again a bounded number of times, anything
-// that takes the tab over stops it, Keep diving runs only where the next press can be another
-// picture, a pasted address is read down to its query, and Dive results is newest first and
+// stops, a random draw that lands nowhere is drawn again a bounded number of times, a press the
+// reader took the tab from is pressed again, Keep diving runs only where the next press can be
+// another picture, the landing mixture draws at the generator's shares, a pasted address is read down to its query, and Dive results is newest first and
 // gives its pictures back when cleared.
 //
 //   node --test explorer/dives.test.mjs
@@ -11,7 +11,11 @@ import { test } from "node:test";
 
 import {
   B_MODES,
+  CARRY_SELF,
+  DESCENT,
+  DESCEND_SHARE,
   DRY_PRESSES,
+  MIXTURE,
   HOLD_MS,
   Results,
   SAVE_COUNT,
@@ -22,7 +26,10 @@ import {
   landedSaid,
   live,
   loopStep,
+  mixes,
   queryIn,
+  variantOf,
+  variantWords,
 } from "./dives.js";
 
 const A = {
@@ -38,8 +45,8 @@ test("a landing drawn to the end is held and pressed again", () => {
   assert.ok(HOLD_MS > 0);
 });
 
-test("a landing stopped before its full pass stops the loop", () => {
-  assert.ok(loopStep({ landed: true, complete: false }).stop);
+test("a landing the reader moved off before its full pass is pressed again, without a hold", () => {
+  assert.deepEqual(loopStep({ landed: true, complete: false }), { go: true, hold: false });
 });
 
 test("a chain that runs out near this view stops, and says so", () => {
@@ -61,10 +68,10 @@ test("a plane with no wallpapers is permanent, random or not", () => {
   assert.ok(loopStep({ refused: "No wallpaper in the gallery is on this plane.", random: true, permanent: true }).stop);
 });
 
-test("a press that could not start, threw, or was taken over stops the loop", () => {
+test("a press that could not start or threw stops the loop; one the reader took over goes again", () => {
   assert.match(loopStep({ barred: "Dive works on the Mandelbrot set." }).stop, /Mandelbrot/);
   assert.match(loopStep({ error: "boom" }).stop, /boom/);
-  assert.ok(loopStep({ superseded: true }).stop);
+  assert.deepEqual(loopStep({ superseded: true }), { go: true, hold: false });
 });
 
 test("a loop drawing aside presses again at once, with no landing on screen to hold", () => {
@@ -87,14 +94,16 @@ test("only a live A with a centred landing descends", () => {
   assert.equal(chains(A.live, "save", B.none), false);
 });
 
-test("Keep diving runs where a slot is Random, or on the descent, and nowhere else", () => {
+test("Keep diving runs where a slot is Random, on the descent, or on the mixture, and nowhere else", () => {
   assert.equal(keepable(A.random, "save", B.none), true);
   assert.equal(keepable(A.random, "into", B.here), true);
   assert.equal(keepable(A.pinned, "into", B.random), true);
   assert.equal(keepable(A.live, "into", B.none), true);
+  assert.equal(keepable(A.live, "into", B.here), true, "the loop draws B's frame from the mixture");
+  assert.equal(keepable(A.paste, "into", B.paste), true);
   assert.equal(keepable(A.live, "save", B.none), false);
   assert.equal(keepable(A.paste, "into", B.none), false);
-  assert.equal(keepable(A.live, "into", B.here), false);
+  assert.equal(keepable(A.pinned, "halfway", B.random), false);
   assert.equal(draws(A.pinned, "halfway", B.random), false, "B's draw is unread off dive into");
   assert.equal(keepBarred(A.random, "into", B.none), null);
   assert.match(keepBarred(A.paste, "into", B.none), /Random/);
@@ -104,6 +113,62 @@ test("the status line after a round aside names the loop's count and the results
   assert.equal(landedSaid(7, 7), "Dive 7 landed; Dive results · 7.");
   assert.equal(landedSaid(3, 24, 8), "Round 3 saved 8; Dive results · 24.");
   assert.equal(landedSaid(1, null), "Dive 1 landed.");
+  assert.equal(landedSaid(2, 9, null, "A inside its copy"), "Dive 2 landed (A inside its copy); Dive results · 9.");
+});
+
+test("the mixture is B on Random every press, B on a frame only while looping, and never None", () => {
+  assert.equal(mixes("into", B.random), true);
+  assert.equal(mixes("into", B.here), false, "a single Go does exactly that one dive");
+  assert.equal(mixes("into", B.here, true), true);
+  assert.equal(mixes("into", B.paste, true), true);
+  assert.equal(mixes("into", B.none, true), false);
+  assert.equal(mixes("halfway", B.random, true), false);
+  assert.equal(mixes("save", B.random, true), false);
+});
+
+test("the mixture's shares are the generator's, and add to one", () => {
+  assert.ok(Math.abs(MIXTURE.carry + MIXTURE.center + MIXTURE.halfway - 1) < 1e-12);
+  assert.equal(MIXTURE.carry, 0.7);
+  assert.equal(CARRY_SELF, 0.3);
+  assert.equal(DESCEND_SHARE, 0.6);
+  assert.deepEqual(DESCENT, [1, 8]);
+});
+
+test("a draw lands each way at its share, and a descent goes one to eight rungs down", () => {
+  let seed = 3;
+  const random = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+  const counts = { self: 0, seat: 0, center: 0, halfway: 0, descended: 0, plain: 0 };
+  const n = 40000;
+  for (let i = 0; i < n; i++) {
+    const v = variantOf(B.random, random);
+    if (v.landing === "carry") counts[v.carry] += 1;
+    else {
+      counts[v.landing] += 1;
+      if (v.rungs === 0) counts.plain += 1;
+      else {
+        counts.descended += 1;
+        assert.ok(v.rungs >= 1 && v.rungs <= 8 && Number.isInteger(v.rungs));
+      }
+    }
+  }
+  const near = (got, want) => Math.abs(got / n - want) < 0.01;
+  assert.ok(near(counts.self, 0.7 * 0.3), `self ${counts.self}`);
+  assert.ok(near(counts.seat, 0.7 * 0.7), `seat ${counts.seat}`);
+  assert.ok(near(counts.center, 0.15) && near(counts.halfway, 0.15));
+  assert.ok(near(counts.descended, 0.3 * 0.6));
+  for (let i = 0; i < 200; i++) {
+    const v = variantOf(B.here, random);
+    if (v.landing === "carry") assert.equal(v.carry, "b", "B on a frame carries that frame");
+  }
+});
+
+test("a variant is named in words", () => {
+  assert.equal(variantWords({ landing: "carry", carry: "self", rungs: 0 }), "A inside its copy");
+  assert.equal(variantWords({ landing: "carry", carry: "seat", rungs: 0 }), "a random wallpaper inside its copy");
+  assert.equal(variantWords({ landing: "carry", carry: "b", rungs: 0 }), "B inside its copy");
+  assert.equal(variantWords({ landing: "center", carry: null, rungs: 3 }), "center, 3 rungs down");
+  assert.equal(variantWords({ landing: "halfway", carry: null, rungs: 5 }, 1), "halfway in, 1 rung down");
+  assert.equal(variantWords({ landing: "center", carry: null, rungs: 0 }), "center");
 });
 
 test("a pasted address is read down to its query", () => {

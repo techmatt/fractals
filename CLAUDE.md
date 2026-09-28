@@ -639,7 +639,7 @@ Three Windows cautions that have each cost a session already:
 
 ```
 python -m ruff check . && python -m ruff format --check . && python -m builder check
-node --test explorer/permalink.test.mjs explorer/bands.test.mjs explorer/level.test.mjs explorer/derive.test.mjs explorer/stops.test.mjs explorer/saved.test.mjs explorer/undo.test.mjs explorer/zip.test.mjs explorer/stamp.test.mjs explorer/deep-fx.test.mjs explorer/deep-link.test.mjs explorer/deep.test.mjs explorer/screensaver.test.mjs explorer/hold.test.mjs explorer/fit.test.mjs explorer/dives.test.mjs atlas/atlas.test.mjs
+node --test explorer/permalink.test.mjs explorer/bands.test.mjs explorer/level.test.mjs explorer/derive.test.mjs explorer/stops.test.mjs explorer/saved.test.mjs explorer/undo.test.mjs explorer/zip.test.mjs explorer/stamp.test.mjs explorer/deep-fx.test.mjs explorer/deep-link.test.mjs explorer/deep.test.mjs explorer/screensaver.test.mjs explorer/hold.test.mjs explorer/fit.test.mjs explorer/dives.test.mjs explorer/aliasing.test.mjs atlas/atlas.test.mjs
 (cd explorer/perturb-wasm && cargo fmt --check) && (cd explorer/engine-wasm && cargo fmt --check) && (cd builder/deep-gallery-native && cargo fmt --check)
 ```
 
@@ -670,7 +670,7 @@ rebuilt byte for byte too, so the insensitivity is the region's and not the hunk
 **Neither answer generalizes**, which is why both are written down: a formatting commit in
 either crate rebuilds its module and compares, and reports whichever it got.
 
-The second line is the seventeen JavaScript suites, on Node's own runner with nothing
+The second line is the eighteen JavaScript suites, on Node's own runner with nothing
 installed. `permalink.test.mjs` is the contract held to itself — a URL is the one
 permanent thing this site emits, and it is worth a test suite even though nothing else
 here has one. `screensaver.test.mjs` holds the screensaver's pure parts: the interval
@@ -681,9 +681,12 @@ at the reference value to the written rounding, and a drag back and forth comes 
 across Leveled's stretch, in a `λ` whose line is within a tenth of a turn of Leveled's
 shape, in numbers the contract writes, leaning to the log only where the log is as good.
 `dives.test.mjs` holds Keep diving's loop rule — a chain that runs out stops, a random draw
-that lands nowhere presses again a bounded number of times, anything that takes the tab over
-stops it — which slots let Keep diving run, how a pasted address is read, and Dive results
-to being newest first. `bands.test.mjs` is the pool held to the committed wasm: a band is a range
+that lands nowhere presses again a bounded number of times, a press the reader took the tab
+from is pressed again — which slots let Keep diving run, the landing mixture's shares, how a
+pasted address is read, and Dive results to being newest first. `aliasing.test.mjs` holds
+New coloring's aliasing guard: a smooth field keeps its period, a field whose neighbours sit
+a turn apart has it lengthened a bounded number of times, and a wide field is read at the
+quarter pass's spacing. `bands.test.mjs` is the pool held to the committed wasm: a band is a range
 of output rows, so the pool decides where the frame is cut and never what is in it, and
 the sizes it cuts at are the reader's machine's. It draws the anchor a few times over and
 takes a few seconds. `atlas.test.mjs` holds the atlas record to the same contract, and

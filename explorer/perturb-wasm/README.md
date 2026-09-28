@@ -1348,7 +1348,9 @@ the product is the depth the landing asks for.
 `g` over the cycles, to three figures (numpy's linear interpolation, by selection rather
 than a sort), and a λ passes where under `ROUGH` (4%) of neighbouring sample pairs are more
 than a quarter turn apart. Two things differ, both New coloring's: the cycles are drawn
-uniformly from 1.5 to 6, the span of the gallery's `CYCLES`, and the λ is one of those that
+uniformly from 1 to 4 (the span of the gallery's `CYCLES`, 1.5 to 6, until Matt narrowed it
+at dive_mixture_ckpt154; the page's aliasing guard, `explorer/aliasing.js`, then lengthens a
+period that reads as static), and the λ is one of those that
 pass at random rather than the one nearest a preferred λ, the gallery's preferred λ having
 been a rotation for variety itself. Both draws are uniform numbers the caller passes in, so
 a caller's randomness is two numbers it can record and the whole rule is here. `ν` is

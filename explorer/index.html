@@ -135,7 +135,9 @@
     <div class="tabpanel" id="panel-deep" role="tabpanel" aria-labelledby="tab-deep" hidden>
       <!-- The Dive block (deep_dive_block_ckpt154; two slots since dive_slots_ckpt154):
            Search for minibrots near [A], then [action], [B], Go. A slot is a thumbnail and
-           its mode buttons; B shows only for dive into. A press searches, takes a rung, lands
+           its mode buttons; B shows only for dive into. At the defaults (dive_mixture_ckpt154)
+           both slots are Random and Keep diving is ticked, so Go lands what the candidate
+           sheet did, over and over. A press searches, takes a rung, lands
            and draws, and every landing joins Dive results under the tab's gallery.
            `deep.js`'s *the dive* has the rest. -->
       <section class="dive" id="dive" aria-labelledby="head-dive">
@@ -148,11 +150,11 @@
               <span class="dive-thumb-said"></span>
             </button>
             <span class="dive-modes">
-              <button type="button" data-mode="here" aria-pressed="true"
+              <button type="button" data-mode="here" aria-pressed="false"
                       title="This view. It follows the view until you press Here, which pins it.">Here</button>
               <button type="button" data-mode="paste" aria-pressed="false"
                       title="An explorer link from the clipboard.">Paste</button>
-              <button type="button" data-mode="random" aria-pressed="false"
+              <button type="button" data-mode="random" aria-pressed="true"
                       title="A random wallpaper on this plane, drawn again on every press.">Random</button>
             </span>
             <input type="text" class="dive-paste" aria-label="Paste an explorer link for A"
@@ -170,14 +172,14 @@
               <span class="dive-thumb-said"></span>
             </button>
             <span class="dive-modes">
-              <button type="button" data-mode="none" aria-pressed="true"
+              <button type="button" data-mode="none" aria-pressed="false"
                       title="Nothing: land on the copy's center.">None</button>
               <button type="button" data-mode="here" aria-pressed="false"
                       title="This view, pinned, carried inside the copy.">Here</button>
               <button type="button" data-mode="paste" aria-pressed="false"
                       title="An explorer link from the clipboard, carried inside the copy.">Paste</button>
-              <button type="button" data-mode="random" aria-pressed="false"
-                      title="A random wallpaper on this plane, carried inside the copy.">Random</button>
+              <button type="button" data-mode="random" aria-pressed="true"
+                      title="A random draw each press: mostly a frame carried inside the copy (A itself, or a random wallpaper on this plane), and sometimes the copy's center or its symmetry point, a few rungs down.">Random</button>
             </span>
             <input type="text" class="dive-paste" aria-label="Paste an explorer link for B"
                    placeholder="Paste a link" hidden>
@@ -192,8 +194,8 @@
           </span>
           <span class="group">
             <label for="dive-keep">Keep diving</label>
-            <input type="checkbox" id="dive-keep" class="flag"
-                   title="Go again after each landing, with fresh draws, until a chain runs out or you stop it.">
+            <input type="checkbox" id="dive-keep" class="flag" checked
+                   title="Go dives over and over into Dive results, until you press Stop or leave the tab.">
           </span>
         </div>
         <div class="bar dive-progress">

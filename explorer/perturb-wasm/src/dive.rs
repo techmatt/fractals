@@ -696,9 +696,10 @@ pub const LAMBDAS: [f64; 6] = [0.0, 0.15, 0.3, 0.5, 0.75, 1.0];
 /// quarter turn apart. The gallery's `ROUGH`.
 pub const ROUGH: f64 = 0.04;
 
-/// The cycles New coloring draws its count from, uniformly: the range the gallery's
-/// `CYCLES` spanned.
-pub const CYCLES: (f64, f64) = (1.5, 6.0);
+/// The cycles New coloring draws its count from, uniformly. It was the gallery's `CYCLES`,
+/// 1.5 to 6, and narrowed to 1 to 4 *(Matt, dive_mixture_ckpt154)*: the busy end of that
+/// range was where a deep landing read as noise.
+pub const CYCLES: (f64, f64) = (1.0, 4.0);
 
 /// The cycles New coloring runs the palette across the field, from a uniform `u ∈ [0, 1)`.
 pub fn cycles(u: f64) -> f64 {

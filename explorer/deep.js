@@ -50,7 +50,20 @@
 import * as fx from "./deep-fx.js";
 import * as deepLink from "./deep-link.js";
 import { BODY_TARGET, DeepRenderer, bodyShare, deepSpecOf } from "./deep-render.js";
-import { HOLD_MS, SAVE_COUNT, chains, draws, keepBarred, landedSaid, loopStep, queryIn } from "./dives.js";
+import {
+  HOLD_MS,
+  SAVE_COUNT,
+  chains,
+  draws,
+  keepBarred,
+  keepable,
+  landedSaid,
+  loopStep,
+  mixes,
+  queryIn,
+  variantOf,
+  variantWords,
+} from "./dives.js";
 import { stopOf } from "./outermost.js";
 
 /**
@@ -206,8 +219,10 @@ const DIVE_SPANS = {
   render: [0.5, 0.5],
 };
 
-/** Where *New coloring on arrival* is remembered: the viewer's, like Auto-render, and off
- *  unless they ticked it. */
+/** Where *New coloring on arrival* is remembered: the viewer's, like Auto-render, and on
+ *  unless they unticked it *(dive_mixture_ckpt154; it was off unless ticked)*. The removal a
+ *  box unticked used to write reads as never having been touched, so a viewer who unticked
+ *  it before the default moved finds it ticked once. */
 const DIVE_COLOURING = "explorer.deep-dive-coloring";
 
 /** Where the cost warning records that it has been shown. Per session, so a reader who
@@ -1326,9 +1341,9 @@ export function mount(host) {
    * the old quarter-pass exception below and its old guard.
    */
   function moved() {
-    // Every change of frame comes through here, and Keep diving follows only its own
-    // landings: a reader who moved the view has taken it back.
-    endKeeping("Keep diving stopped: the view moved.");
+    // Every change of frame comes through here, and a descent Keep diving was following on
+    // screen lets go of the view and carries on off-screen (`detachKeeping`).
+    detachKeeping();
     paint();
     clearMinibrots();
     host.settle();
@@ -2019,13 +2034,20 @@ export function mount(host) {
    *  did not land. */
   let diveSaid = "";
   /** Whether a landing takes a New coloring as it arrives. */
-  let diveColouring = storedFlag(DIVE_COLOURING);
+  let diveColouring = storedFlag(DIVE_COLOURING, true);
+  /**
+   * **Whether Go keeps diving** *(dive_mixture_ckpt154)*: the box, ticked by default, and a
+   * setting rather than a start — Go is what starts a loop, and the box ticked during a press
+   * of Go already running takes that press as the loop's first. Not remembered: it is the
+   * page's default that Matt set, and a default a viewer cannot see move is not one.
+   */
+  let keepWanted = true;
   /**
    * **Keep diving** *(keep_diving_ckpt154)*: `keepDiving`'s loop object while it is on — the
-   * hold's timer, the frozen `anchor`, whether it draws `aside`, its count — and `null`. The
-   * object is the loop's own generation — a loop that finds `keeping` is no longer the object
-   * it started with has been stopped, whatever else happened. Not remembered: a page that
-   * starts searching on its own the moment it opens is a surprise.
+   * hold's timer, whether it has `detached` from the view and the `anchor` and `chain` it
+   * descends from once it has, the `last` landing it put on screen, its count — and `null`.
+   * The object is the loop's own generation — a loop that finds `keeping` is no longer the
+   * object it started with has been stopped, whatever else happened.
    */
   let keeping = null;
   /** A press of Go still running, so that Keep diving ticked during it takes that press as
@@ -2040,7 +2062,9 @@ export function mount(host) {
    * sync repaints only what changed. `pasting` is whether the paste field is open, because
    * the clipboard could not be read.
    */
-  const slots = { a: slotOf(els.diveA, "A", "here"), b: slotOf(els.diveB, "B", "none") };
+  // **Both on Random by default** *(dive_mixture_ckpt154)*: left alone, the block lands what
+  // the candidate sheet did.
+  const slots = { a: slotOf(els.diveA, "A", "random"), b: slotOf(els.diveB, "B", "random") };
 
   function slotOf(root, name, mode) {
     const thumb = root.querySelector(".dive-thumb");
@@ -2219,7 +2243,8 @@ export function mount(host) {
       return { near: seat.view, where: `wallpaper ${seat.key}`, random: true };
     }
     if (a.view !== null) return { near: a.view, where: slotWords(a), random: false };
-    return { near: here, where: "this view", random: false };
+    // A descent Keep diving carries on off-screen reads a live A as its own last landing.
+    return { near: here, where: here === view ? "this view" : "the loop's last landing", random: false };
   }
 
   /** The frame a landing answer names, as a view in this tab's colour, or `null` where its
@@ -2257,20 +2282,28 @@ export function mount(host) {
    * where nothing landed, and `{ frame, chain, said }` where it did.
    *
    * `a` and `b` are the slots as the press read them; `here` is what a live A means — the
-   * view, for Go and for the descending loop, and the view Keep diving was ticked on for
-   * every other loop *(keep_diving_anchor_ckpt154)*. The colour is always the view's.
+   * view, or the last landing of a descent Keep diving carries on with off-screen. The colour
+   * is always the view's. B's mode may also be `self`, which is the mixture's *A inside its
+   * copy*: the frame searched near is the frame carried.
+   *
+   * `from` is where to search where the caller has settled it already — a descent's last
+   * landing — and `chainIn` the chain a press from there continues, the tab's own by default.
+   * `lead` goes in front of the progress line's words.
    */
-  async function diveOnce(deep, generation, { a, action, b }, here = view) {
+  async function diveOnce(deep, generation, { a, action, b }, here = view, { from: given = null, chainIn = chain, lead = "" } = {}) {
     const family = deepLink.familyOf(here);
     const degree = here.degree ?? 2;
-    const from = await nearOf(a, family, generation, here);
+    const from = given ?? (await nearOf(a, family, generation, here));
     if (from === null) return null;
     if (from.near === undefined) return { why: from.why, permanent: from.permanent };
     const { near } = from;
     let where = from.where;
     let into = null;
     let intoWords = "";
-    if (action === "into" && b.mode === "random") {
+    if (action === "into" && b.mode === "self") {
+      into = near;
+      intoWords = "A";
+    } else if (action === "into" && b.mode === "random") {
       const seat = await seatOf(family);
       if (generation !== pass) return null;
       if (seat === null) return { why: "No wallpaper in the gallery is on this plane.", permanent: true };
@@ -2291,10 +2324,10 @@ export function mount(host) {
           "iterations, too many to carry into any copy under the ceiling.",
       };
     }
-    const prefix = `near ${where} · `;
-    const continuing = !from.random && chain !== null && chain.place === placeOf(near);
-    const rungs = continuing ? chain.rungs : [];
-    const depth = continuing ? chain.depth : 0;
+    const prefix = `${lead}near ${where} · `;
+    const continuing = !from.random && chainIn !== null && chainIn.place === placeOf(near);
+    const rungs = continuing ? chainIn.rungs : [];
+    const depth = continuing ? chainIn.depth : 0;
     // **A mapped landing looks further out before it gives up on the budget**: a view carried
     // into a period-`p` copy needs `p` times its own cap, which near a wallpaper's own narrow
     // frame is almost never there — its copies run to hundreds. The lower periods are the
@@ -2411,6 +2444,83 @@ export function mount(host) {
   }
 
   /**
+   * **One press of the landing mixture** *(dive_mixture_ckpt154)*: `variant` is `dives.js`'s
+   * draw. A carry is one `diveOnce` with B read as the draw says — B's own frame, A itself, or
+   * a random wallpaper. A centre or a halfway landing first presses Go on the copy's centre
+   * `variant.rungs` times, each press from the last landing and continuing its chain, as the
+   * candidate generator's did; a rung that finds nothing lands from where the descent got
+   * to, as the generator's did too. Resolves as `diveOnce` does, with `variant` — the words
+   * the landing is named by — on a landing, and never with a grey: a refusal after a random
+   * draw or a descent says nothing about the place A stands on.
+   */
+  async function mixedOnce(deep, generation, sentence, here, variant) {
+    const named = (tried, taken) => {
+      if (tried === null) return null;
+      if (tried.frame === undefined) return { ...tried, grey: null };
+      return { ...tried, variant: variantWords(variant, taken) };
+    };
+    if (variant.landing === "carry") {
+      const b =
+        variant.carry === "self"
+          ? { name: "B", mode: "self", view: null }
+          : variant.carry === "seat"
+            ? { name: "B", mode: "random", view: null }
+            : sentence.b;
+      return named(await diveOnce(deep, generation, { ...sentence, action: "into", b }, here), 0);
+    }
+    const none = { name: "B", mode: "none", view: null };
+    let from = await nearOf(sentence.a, deepLink.familyOf(here), generation, here);
+    if (from === null) return null;
+    if (from.near === undefined) return { why: from.why, permanent: from.permanent };
+    const origin = from.where;
+    let walked = null;
+    let taken = 0;
+    // The step before the last, so that the deepest copy reached can be landed on again.
+    let before = null;
+    let last = null;
+    for (let rung = 1; rung <= variant.rungs; rung++) {
+      const step = await diveOnce(deep, generation, { a: sentence.a, action: "into", b: none }, here, {
+        from,
+        chainIn: walked,
+        lead: `going down, rung ${rung} of ${variant.rungs} · `,
+      });
+      if (step === null) return null;
+      if (step.frame === undefined) break;
+      before = { from, chain: walked };
+      last = step;
+      walked = step.chain;
+      taken = rung;
+      from = { near: step.frame, where: `the copy ${taken} ${taken === 1 ? "rung" : "rungs"} down from ${origin}`, random: false };
+    }
+    const action = variant.landing === "center" ? "into" : "halfway";
+    const tried = await diveOnce(deep, generation, { a: sentence.a, action, b: none }, here, { from, chainIn: walked });
+    if (tried === null || tried.frame !== undefined || last === null) return named(tried, taken);
+    // **Where the chain runs out, the deepest copy reached is the landing**
+    // *(dive_mixture_ckpt154)*. The last press from there asks the question the descent has
+    // just been refused, so as the generator ran it that press failed every time a descent
+    // stopped short — which is most of the time it is drawn deep — and the landed share of
+    // centres and halfway points fell to half of what was drawn. The last rung's own centre
+    // landing is a centre one rung shallower; a halfway draw lands that copy halfway instead.
+    if (variant.landing === "center") return named(last, taken - 1);
+    const halfway = await diveOnce(deep, generation, { a: sentence.a, action, b: none }, here, {
+      from: before.from,
+      chainIn: before.chain,
+    });
+    return named(halfway?.frame === undefined ? tried : halfway, taken - 1);
+  }
+
+  /** What a press that is not the mixture's names its landing by. */
+  function plainWords(action, b) {
+    if (action === "halfway") return "halfway in";
+    return b.mode === "none" ? "center" : "B inside its copy";
+  }
+
+  /** A sentence's first word capitalized. */
+  function capital(text) {
+    return `${text[0].toUpperCase()}${text.slice(1)}`;
+  }
+
+  /**
    * **Save those minibrots** *(dive_slots_ckpt154)*: the copies near A, largest first, each
    * framed at its centre the way *dive into* with B on None frames one — `SAVE_COUNT` of
    * them, skipping a bulb, a copy past what a link can spell, and one whose landing is past
@@ -2475,7 +2585,7 @@ export function mount(host) {
         `${planeWords(here)[0].toUpperCase()}${planeWords(here).slice(1)} · a period-${count(copy.period)} ` +
         `copy ${exponent(copy.size)} across near ${from.where}, ${at + 1} of the ${copies.length} ` +
         `largest · framed at its center · ${count(answer.cap)} iterations.`;
-      landings.push({ frame, said });
+      landings.push({ frame, said, variant: `saved, ${at + 1} of ${copies.length}` });
     }
     if (landings.length === 0) return { why: `No copy near ${from.where} could be framed.${left}` };
     return { landings, where: from.where, random: from.random, left };
@@ -2488,12 +2598,16 @@ export function mount(host) {
    * those minibrots* moves nothing: its landings are drawn off-screen into Dive results.
    *
    * `aside` is Keep diving's loop object where the loop draws off-screen
-   * *(keep_diving_anchor_ckpt154)*: the press reads a live A as `aside.anchor`, lands through
-   * `landAside` rather than `arrive`, and leaves the view, the way back, the address and the
-   * main picture exactly as they were. It runs on with the tab hidden, so it touches nothing
-   * of the viewer's either.
+   * *(keep_diving_anchor_ckpt154)*: the press lands through `landAside` rather than `arrive`,
+   * and leaves the view, the way back, the address and the main picture exactly as they were.
+   * A descent that has `detached` from the view reads a live A as its own last landing,
+   * `aside.anchor`, and continues `aside.chain`. `looping` is whether Keep diving is pressing,
+   * which is when *dive into* with B on a frame draws from the mixture (`mixes`).
+   *
+   * Answers what `loopStep` reads, with `aside` — whether it drew off-screen — and `variant`,
+   * the words its landing is named by.
    */
-  async function dive({ aside = null } = {}) {
+  async function dive({ aside = null, looping = false } = {}) {
     const barred = pressBarred() ?? (running?.upto === "download" ? "A download is running." : null);
     if (barred !== null) {
       syncControls();
@@ -2530,8 +2644,12 @@ export function mount(host) {
     if (aside === null || minibrotSide === "deep") dropList();
     let landed = null;
     let outcome = SUPERSEDED;
-    const here = aside?.anchor ?? view;
-    const random = draws(shapeOf(slots.a), action, shapeOf(slots.b));
+    const detached = aside?.detached === true && chains(shapeOf(slots.a), action, shapeOf(slots.b));
+    const here = detached ? aside.anchor : view;
+    const chainIn = detached ? aside.chain : chain;
+    const mixed = mixes(action, sentence.b, looping);
+    const variant = mixed ? variantOf(sentence.b) : null;
+    const random = mixed || draws(shapeOf(slots.a), action, shapeOf(slots.b));
     try {
       const deep = await pool();
       if (generation !== pass) return SUPERSEDED;
@@ -2542,16 +2660,19 @@ export function mount(host) {
       for (let attempt = 1; attempt <= tries && landed === null; attempt++) {
         const tried = batch
           ? await saveOnce(deep, generation, sentence, here)
-          : await diveOnce(deep, generation, sentence, here);
+          : mixed
+            ? await mixedOnce(deep, generation, sentence, here, variant)
+            : await diveOnce(deep, generation, sentence, here, { chainIn });
         if (tried === null || generation !== pass) return SUPERSEDED;
         if (tried.frame !== undefined || tried.landings !== undefined) {
           landed = tried;
         } else {
           why = tried.why;
           // Whether the next press may land where this one did not: a random wallpaper drawn
-          // again may, unless the plane has none or the copy near a fixed place was the one
-          // that ran out.
-          const chainOut = sentence.a.mode !== "random" && ["none_smaller", "no_copy"].includes(tried.refusal);
+          // again may, and so may another draw from the mixture, unless the plane has none or
+          // the copy near a fixed place was the one that ran out.
+          const chainOut =
+            !mixed && sentence.a.mode !== "random" && ["none_smaller", "no_copy"].includes(tried.refusal);
           outcome = { refused: tried.why, random: random && !chainOut, permanent: tried.permanent === true };
           if (tried.grey) {
             const place = placeOfA(here);
@@ -2561,11 +2682,23 @@ export function mount(host) {
         }
       }
       if (landed === null) {
-        diveSaid = tries > 1 ? `Tried ${tries} random wallpapers and none would do. ${why}` : why;
+        const tried = mixed ? `Drew ${tries} times from the mixture and none landed.` : `Tried ${tries} random wallpapers and none would do.`;
+        diveSaid = tries > 1 ? `${tried} ${why}` : why;
         outcome = { ...outcome, refused: diveSaid };
       }
+      if (landed !== null && !batch) {
+        landed.variant ??= plainWords(action, sentence.b);
+        landed.said = `${capital(landed.variant)}: ${landed.said}`;
+      }
       if (landed !== null && batch) return await saveAside(deep, generation, landed, drawAside);
-      if (landed !== null && aside !== null) return await landAside(deep, generation, landed, aside);
+      if (landed !== null && aside !== null) {
+        // A detached descent goes on from here, off-screen, whatever the view does.
+        if (detached) {
+          aside.anchor = landed.frame;
+          aside.chain = landed.chain;
+        }
+        return await landAside(deep, generation, landed, aside);
+      }
     } catch (error) {
       diveSaid = String(error.message ?? error);
       outcome = { error: diveSaid };
@@ -2584,8 +2717,11 @@ export function mount(host) {
     if (landed === null || drawAside !== null) return outcome;
     chain = landed.chain;
     diveSaid = landed.said;
-    const complete = await arrive(landed.frame, landed.said);
-    return { landed: true, complete };
+    // What a descent following its landings on screen goes on from, should the reader take
+    // the view before the next press (`detachKeeping`).
+    if (looping && keeping !== null) keeping.last = { frame: landed.frame, chain: landed.chain };
+    const complete = await arrive(landed.frame, landed.said, landed.variant);
+    return { landed: true, complete, aside: false, variant: landed.variant };
   }
 
   /** What a press answers where something else took the tab over before it was done. */
@@ -2601,7 +2737,7 @@ export function mount(host) {
    * picture where the pass finished, the quarter one where it was stopped after that — and a
    * landing stopped before anything of it was shown joins nothing, because nobody saw it.
    */
-  async function arrive(frame, said) {
+  async function arrive(frame, said, variant = null) {
     cameFrom = null;
     view = frame;
     drawn = null;
@@ -2615,7 +2751,12 @@ export function mount(host) {
     host.showState("stopped");
     const onStage = diveColouring
       ? async (stage) => {
-          if (stage.name === "preview") await host.newColoring?.({ inPlace: true });
+          if (stage.name !== "preview") return;
+          const coloured = await host.newColoring?.({ inPlace: true });
+          if (coloured?.aliased) {
+            said = `${said} ${coloured.aliased}`;
+            diveSaid = said;
+          }
         }
       : null;
     // `render` takes its generation before its first await, so `pass` just after the call
@@ -2625,7 +2766,7 @@ export function mount(host) {
     await rendering;
     const place = placeOf(frame);
     if (stale !== null && placeOf(stale.view) === place) {
-      host.onLanded?.({ link: deepLink.emit(stale.view), canvas: stale.canvas, said });
+      host.onLanded?.({ link: deepLink.emit(stale.view), canvas: stale.canvas, said, variant });
     }
     return mine === pass && drawn !== null && drawnFull && placeOf(drawn) === place;
   }
@@ -2675,12 +2816,14 @@ export function mount(host) {
       drawnFields[stage.name] = field;
     }
     let frame = inColour(landed.frame);
+    let said = landed.said;
     if (diveColouring) {
       enterStage("coloring", { live: false });
       activity("choosing a new coloring…", 1);
       const drawnColour = await host.coloringFor?.(drawnFields.preview, frame);
       if (generation !== pass) return SUPERSEDED;
-      if (drawnColour != null) frame = { ...frame, ...drawnColour };
+      if (drawnColour != null) frame = { ...frame, palette: drawnColour.palette, shade: drawnColour.shade };
+      if (drawnColour?.aliased) said = `${said} ${drawnColour.aliased}`;
     }
     enterStage("coloring", { live: false });
     activity(`${said_stage(stages[1])} · coloring`, 1);
@@ -2694,8 +2837,9 @@ export function mount(host) {
     canvas.width = shaded.image.width;
     canvas.height = shaded.image.height;
     canvas.getContext("2d").putImageData(shaded.image, 0, 0);
-    const results = await host.onLanded?.({ link: deepLink.emit(frame), canvas, said: landed.said });
-    return { landed: true, complete: true, results: results ?? null };
+    const variant = landed.variant ?? null;
+    const results = await host.onLanded?.({ link: deepLink.emit(frame), canvas, said, variant });
+    return { landed: true, complete: true, results: results ?? null, aside: true, variant };
   }
 
   /** *Save those minibrots*' landings, each drawn off-screen into Dive results in turn, led
@@ -2714,7 +2858,7 @@ export function mount(host) {
     diveSaid =
       `Saved ${saved === 1 ? "one copy" : `the ${saved} largest copies`} near ${batch.where} to ` +
       "Dive results" + (results === null ? "." : `, which holds ${results}.`) + (batch.left ?? "");
-    return { landed: true, complete: true, results, saved: batch.landings.length };
+    return { landed: true, complete: true, results, saved: batch.landings.length, aside: true, variant: null };
   }
 
   /** Go: one press, remembered while it runs so Keep diving can take it over. */
@@ -2727,82 +2871,93 @@ export function mount(host) {
     return ongoing;
   }
 
+  /** How often a loop waiting for the tab looks again, in milliseconds. */
+  const IDLE_POLL_MS = 250;
+
   /**
-   * **Keep diving** *(keep_diving_ckpt154; anchored since keep_diving_anchor_ckpt154)*: press,
-   * land, press again, with fresh draws each time. `loopStep` in `dives.js` says what each
-   * press's answer means for the next, and `keepable` where it may run at all: a slot on
-   * Random, or the descent.
+   * **Keep diving** *(keep_diving_ckpt154; anchored since keep_diving_anchor_ckpt154; runs
+   * through the reader since dive_mixture_ckpt154)*: press, land, press again, with fresh draws
+   * each time. `loopStep` in `dives.js` says what each press's answer means for the next, and
+   * `keepable` where it may run at all. Go starts it where the box is ticked; the box ticked
+   * during a press of Go takes that press as the first.
    *
-   * **A live A is frozen when the box is ticked** — `anchor`, the view then, or the one a Go
-   * already running leaves, since that press finishes as the Go it was. Every press reads it
-   * as A, draws its landing off-screen (`landAside`) and adds it to Dive results, and the
-   * main view, the way back and the address stay put. **The descent is the exception**
-   * (`chains`): a live A and a centred landing press from the last landing, on screen, each
-   * landing held `HOLD_MS` and one step back.
+   * **Every press draws off-screen** (`landAside`) into Dive results, and the main view, the
+   * way back and the address stay put — except **the descent** (`chains`: A live and a
+   * centred landing), which presses from the last landing on screen, each landing held
+   * `HOLD_MS` and one step back, **until the reader takes the view**. Then it `detached`: it
+   * goes on descending off-screen from its own last landing, and the view is theirs.
    *
-   * It stops on its own where a chain runs out or a press cannot start, and it is stopped by
-   * the box, Cancel, a change of view (`moved`, which every gesture and every control that
-   * moves the frame goes through) or of the sentence, and by anything else that takes the
-   * tab over — a link, the way back — which is a press superseded. Since a loop drawing
-   * aside never moves the view, a moved view is always the reader's. A descending loop also
-   * stops on leaving the tab; one drawing aside runs on, so that Dive results can fill while
-   * the reader is elsewhere.
+   * **It stops only on Stop, or on leaving the Deep tab**, and on its own where a chain runs
+   * out, a press cannot start, or the sentence changes to one that would land in the same
+   * place every time. Moving the view, opening a tile or a link, a colour change, the slots
+   * and the action all leave it running: the slots and the action are read afresh at every
+   * press, and a press the reader took the tab from is pressed again once the tab is idle,
+   * because a loop never takes the pool from a pass the reader started.
    */
   async function keepDiving() {
-    const action = els.diveAction.value;
-    const batch = action === "save";
     const mine = {
       timer: 0,
       wake: null,
       holding: false,
+      waiting: false,
+      detached: false,
       anchor: null,
-      aside: !chains(shapeOf(slots.a), action, shapeOf(slots.b)),
+      chain: null,
+      /** The last landing a descent put on screen, which a detached one goes on from. */
+      last: { frame: view, chain },
       landings: 0,
       results: null,
       saved: null,
+      variant: null,
       /** What the status line leads with while a press of this loop runs. */
       lead() {
+        const batch = els.diveAction.value === "save";
         const next = `${batch ? "Round" : "Dive"} ${this.landings + 1}: `;
-        return this.landings === 0 ? next : `${landedSaid(this.landings, this.results, this.saved)} ${next}`;
+        return this.landings === 0 ? next : `${landedSaid(this.landings, this.results, this.saved, this.variant)} ${next}`;
       },
     };
     keeping = mine;
     syncControls();
     let dry = 0;
     let first = pressing;
+    // The press Go started the loop with goes at once, as a single Go would; every later one
+    // waits for the tab.
+    let fresh = true;
     while (keeping === mine) {
-      if (first === null) {
-        mine.anchor ??= view;
-        // A loop drawing aside stands on its anchor; a view that is somewhere else was moved.
-        if (mine.aside && placeOf(view) !== placeOf(mine.anchor)) {
-          return endKeeping("Keep diving stopped: the view moved.");
-        }
+      let outcome;
+      if (first !== null) {
+        outcome = await first;
+        first = null;
+        fresh = false;
+      } else {
+        if (!fresh && !(await idle(mine))) return;
+        fresh = false;
+        const barred = keepBarred(shapeOf(slots.a), els.diveAction.value, shapeOf(slots.b));
+        if (barred !== null) return endKeeping(`Keep diving stopped. ${barred}`);
+        const descending = chains(shapeOf(slots.a), els.diveAction.value, shapeOf(slots.b));
+        outcome = await dive({ aside: descending && !mine.detached ? null : mine, looping: true });
       }
-      const aside = first === null && mine.aside;
-      const outcome = await (first ?? dive(aside ? { aside: mine } : {}));
-      first = null;
       if (keeping !== mine) {
         // Unticked mid-press: the press finished as the one it was, and is counted.
-        if (aside && outcome.landed) {
-          diveSaid = `${landedSaid(mine.landings + 1, outcome.results, outcome.saved ?? null)} Keep diving stopped.`;
+        if (outcome.landed) {
+          diveSaid = `${landedSaid(mine.landings + 1, outcome.results, outcome.saved ?? null, outcome.variant)} Keep diving stopped.`;
           syncControls();
         }
         return;
       }
-      const next = loopStep(outcome, dry, { aside });
-      if (outcome.landed && aside) {
+      const next = loopStep(outcome, dry, { aside: outcome.aside === true });
+      if (outcome.landed) {
         mine.landings += 1;
-        mine.results = outcome.results;
+        mine.results = outcome.results ?? mine.results;
         mine.saved = outcome.saved ?? null;
-        diveSaid = landedSaid(mine.landings, mine.results, mine.saved);
+        mine.variant = outcome.variant ?? null;
+        if (outcome.aside) diveSaid = landedSaid(mine.landings, mine.results, mine.saved, mine.variant);
       }
       if (next.stop !== undefined) {
-        return endKeeping(outcome.landed && aside ? `${diveSaid} ${next.stop}` : next.stop);
+        return endKeeping(outcome.landed && outcome.aside ? `${diveSaid} ${next.stop}` : next.stop);
       }
-      dry = outcome.landed ? 0 : dry + 1;
-      if (!next.hold) continue;
-      const at = pass;
-      const place = placeOf(view);
+      dry = outcome.landed || outcome.superseded ? 0 : dry + 1;
+      if (!next.hold || mine.detached) continue;
       mine.holding = true;
       syncControls();
       await new Promise((resolve) => {
@@ -2810,26 +2965,62 @@ export function mount(host) {
         mine.timer = setTimeout(resolve, HOLD_MS);
       });
       mine.holding = false;
-      if (keeping !== mine) return;
-      if (pass !== at || placeOf(view) !== place) return endKeeping("Keep diving stopped: the view changed.");
     }
   }
 
   /**
-   * The tab giving up the canvas: what it was drawing stops, except the viewer's own search,
-   * which runs on where it was started, and **a Keep diving loop drawing aside**
-   * *(keep_diving_anchor_ckpt154)*, which draws nothing on the canvas and runs on. A loop on
-   * screen follows its landings in the main view and never out of sight, so it stops, saying
-   * `said`.
+   * Wait until nothing is running on the tab and no settled gesture is about to start a pass:
+   * a press takes the pool, and a pass the reader started is theirs. Resolves whether the loop
+   * is still on.
    */
-  function leaving(said) {
-    const aside = keeping?.aside === true && (running === null || running.aside === true);
-    if (!aside) endKeeping(said);
-    if (running?.side !== "shallow" && running?.aside !== true) stop();
+  async function idle(mine) {
+    while (keeping === mine && (running !== null || settleTimer !== 0)) {
+      if (!mine.waiting) {
+        mine.waiting = true;
+        syncControls();
+      }
+      await new Promise((resolve) => {
+        mine.wake = resolve;
+        mine.timer = setTimeout(resolve, IDLE_POLL_MS);
+      });
+    }
+    if (mine.waiting) {
+      mine.waiting = false;
+      syncControls();
+    }
+    return keeping === mine;
   }
 
-  /** Stop Keep diving where it is on, saying why, and untick the box. A press in flight is
-   *  left to finish, the way a press of Go would be; Cancel is what stops that. */
+  /**
+   * **The reader took the view** *(dive_mixture_ckpt154)*: a descent following its landings
+   * on screen lets go of it, and goes on off-screen from the last landing it put up — or from
+   * where it started, if none has landed yet. A loop that draws aside anyway goes on as it
+   * was. A hold in progress is cut short, since there is nothing on screen of the loop's to
+   * hold any more.
+   */
+  function detachKeeping() {
+    if (keeping === null || keeping.detached) return;
+    if (!chains(shapeOf(slots.a), els.diveAction.value, shapeOf(slots.b))) return;
+    keeping.detached = true;
+    keeping.anchor = keeping.last.frame;
+    keeping.chain = keeping.last.chain;
+    clearTimeout(keeping.timer);
+    keeping.wake?.();
+  }
+
+  /**
+   * The tab giving up the canvas: what it was drawing stops, except the viewer's own search,
+   * which runs on where it was started, and **Keep diving ends**, saying `said`
+   * *(dive_mixture_ckpt154; a loop drawing aside used to run on out of the tab)*.
+   */
+  function leaving(said) {
+    const diving = running !== null && (running.upto === "dive" || running.dive === true);
+    endKeeping(said);
+    if (running?.side !== "shallow" || diving) stop();
+  }
+
+  /** Stop Keep diving where it is on, saying why. A press in flight is left to finish, the
+   *  way a press of Go would be; Stop is what stops that. */
   function endKeeping(said = null) {
     if (keeping === null) return;
     clearTimeout(keeping.timer);
@@ -3013,22 +3204,30 @@ export function mount(host) {
     // Faded and never natively disabled, as Shallow mode is: the title is the reason. While
     // Keep diving is on it is the one pressing Go, and a second driver would race it.
     els.diveGo.setAttribute("aria-disabled", String(reason !== null || downloading || keeping !== null));
+    const keepReason = keepBarred(shapeOf(slots.a), action, shapeOf(slots.b));
     els.diveGo.title =
       keeping !== null
-        ? "Keep diving is pressing Go. Untick it, or Cancel, to press it yourself."
+        ? "Keep diving is pressing Go. Stop it to press Go yourself."
         : (reason ??
-          (action === "save"
-            ? "Search, and save the largest copies to Dive results. The view stays where it is."
-            : "Search, land and draw. One step back undoes it."));
+          (keepWanted && keepReason === null
+            ? "Keep diving: search and land, over and over, into Dive results, until you press Stop."
+            : action === "save"
+              ? "Search, and save the largest copies to Dive results. The view stays where it is."
+              : "Search, land and draw. One step back undoes it."));
     els.diveColor.checked = diveColouring;
-    els.diveKeep.checked = keeping !== null;
-    const keepReason = keepBarred(shapeOf(slots.a), action, shapeOf(slots.b));
+    els.diveKeep.checked = keepWanted;
     els.diveKeep.disabled = keeping === null && (keepReason !== null || barred !== null);
     els.diveKeep.title = keeping === null && keepReason !== null ? keepReason : els.diveKeep.dataset.said;
     const diving = running !== null && (running.upto === "dive" || running.dive === true);
     els.diveCancel.hidden = !diving && keeping === null;
+    els.diveCancel.textContent = keeping !== null ? "Stop" : "Cancel";
+    els.diveCancel.title = keeping !== null ? "Stop Keep diving, and the dive in flight." : "Stop this dive.";
     if (!diving) {
-      const holding = keeping?.holding ? ` Next dive in ${HOLD_MS / 1000} s.` : "";
+      const holding = keeping?.holding
+        ? ` Next dive in ${HOLD_MS / 1000} s.`
+        : keeping?.waiting
+          ? " Keep diving waits for the view to finish drawing."
+          : "";
       els.diveStatus.textContent = (reason ?? diveSaid) + holding;
       const there = chain !== null && chain.place === placeOf(view) && !pending();
       els.diveBar.style.setProperty("--done", there ? "1" : "0");
@@ -3092,7 +3291,6 @@ export function mount(host) {
           "A dive stays on one plane.",
       );
     }
-    endKeeping("Keep diving stopped: the sentence changed.");
     slot.mode = "paste";
     slot.view = frame;
     slot.picture = null;
@@ -3110,6 +3308,7 @@ export function mount(host) {
       return;
     }
     slot.pasting = false;
+    // A loop's next press reads the slots afresh, so a change here is its next dive's.
     if (mode === "here") {
       // A's Here follows the view, and a press on a live A pins it; a press on a pinned A
       // lets it follow again. B's Here always pins, since B has no live mode.
@@ -3124,22 +3323,22 @@ export function mount(host) {
     if (slot.view === null) slot.picture = null;
     slot.failed = null;
     slot.shows = undefined;
-    endKeeping("Keep diving stopped: the sentence changed.");
     syncControls();
   }
 
-  function storedFlag(key) {
+  /** A box the viewer ticked or unticked, or `fallback` where they have done neither. */
+  function storedFlag(key, fallback) {
     try {
-      return window.localStorage.getItem(key) === "on";
+      const stored = window.localStorage.getItem(key);
+      return stored === null ? fallback : stored === "on";
     } catch {
-      return false;
+      return fallback;
     }
   }
 
   function storeFlag(key, value) {
     try {
-      if (value) window.localStorage.setItem(key, "on");
-      else window.localStorage.removeItem(key);
+      window.localStorage.setItem(key, value ? "on" : "off");
     } catch {
       /* A browser that stores nothing still has the box; it forgets it on a reload. */
     }
@@ -3629,23 +3828,29 @@ export function mount(host) {
 
   // The Dive block. Go is faded rather than disabled where a landing is greyed, so its title
   // says why; a press on it then does nothing but say so in the status line.
+  // **Go puts Dive results up at once** *(dive_mixture_ckpt154)*, before anything has landed,
+  // and starts Keep diving where the box is ticked and the sentence can keep going.
   els.diveGo.addEventListener("click", () => {
     if (els.diveGo.getAttribute("aria-disabled") === "true") return;
-    press();
+    host.showDiveResults?.();
+    const action = els.diveAction.value;
+    if (keepWanted && keepable(shapeOf(slots.a), action, shapeOf(slots.b))) keepDiving();
+    else press();
   });
+  // Cancel while one press runs, and Stop while Keep diving does: the loop ends, and a press
+  // of it in flight is stopped. A pass of the reader's own that the loop is waiting on is
+  // theirs, and is left.
   els.diveCancel.addEventListener("click", () => {
+    const looping = keeping !== null;
+    const diving = running !== null && (running.upto === "dive" || running.dive === true);
     endKeeping();
-    stop();
-    diveSaid = "Stopped.";
+    if (diving) stop();
+    diveSaid = looping ? "Keep diving stopped." : "Stopped.";
     host.showState(drawn === null ? "stopped" : "final");
     syncControls();
   });
-  // A changed sentence is a question Keep diving was not asked, so it stops; the press in
-  // flight finishes as the one it was.
-  els.diveAction.addEventListener("change", () => {
-    endKeeping("Keep diving stopped: the sentence changed.");
-    syncControls();
-  });
+  // The action is read afresh at every press, so a loop running takes a new one at its next.
+  els.diveAction.addEventListener("change", () => syncControls());
   els.diveKeep.dataset.said = els.diveKeep.title;
   for (const slot of [slots.a, slots.b]) {
     for (const button of slot.els.modes) {
@@ -3673,9 +3878,17 @@ export function mount(host) {
       }
     });
   }
+  // The box is a setting. Ticked during a press of Go, it takes that press as a loop's first;
+  // unticked during a loop, it ends the loop once the press in flight has landed.
   els.diveKeep.addEventListener("change", () => {
-    if (els.diveKeep.checked && keeping === null) keepDiving();
-    else if (!els.diveKeep.checked) endKeeping();
+    keepWanted = els.diveKeep.checked;
+    const action = els.diveAction.value;
+    if (keepWanted && keeping === null && pressing !== null && keepable(shapeOf(slots.a), action, shapeOf(slots.b))) {
+      keepDiving();
+    } else if (!keepWanted && keeping !== null) {
+      endKeeping("Keep diving stops once this dive lands.");
+    }
+    syncControls();
   });
   els.diveColor.addEventListener("change", () => {
     diveColouring = els.diveColor.checked;
@@ -3824,6 +4037,8 @@ export function mount(host) {
       cameFrom = null;
       owns = true;
       warn();
+      // A link is the reader's move, and a descent Keep diving was following lets go.
+      detachKeeping();
       // **A frame already drawn is put back rather than drawn again**
       // *(explorer_deep_polish_ckpt142)*. This is the door a step back comes through, and
       // the palette change it undoes was a recolour: so the undo is one too. The field

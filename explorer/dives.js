@@ -20,13 +20,91 @@ import { firstQuery } from "./permalink.js";
  *  ten is a minute. A loop drawing off-screen has nothing on screen to hold. */
 export const HOLD_MS = 2000;
 
-/** How many presses in a row may draw random wallpapers and land nowhere before the loop
- *  says so and stops. Each press already retries its draw; this is what keeps a plane whose
- *  wallpapers all refuse from searching for ever. */
-export const DRY_PRESSES = 3;
+/** How many presses in a row may draw and land nowhere before the loop says so and stops.
+ *  Each press already retries its draw; this is what keeps a plane whose wallpapers all
+ *  refuse from searching for ever. It was 3 *(until dive_mixture_ckpt154)*, and the first
+ *  run at the defaults ended on its own inside ninety seconds with nothing else able to end
+ *  it: the mixture's descents refuse more often than a carry does, and a loop meant to run
+ *  until Stop should not end on a short run of poor draws. Ten presses is forty draws. */
+export const DRY_PRESSES = 10;
 
-/** The size a result's tile is kept at, which is the Deep gallery's own. */
-export const TILE_WIDTH = 316;
+/** The size a result's tile is kept at: two to a row of the panel, sharp on a 2x screen
+ *  *(dive_mixture_ckpt154; it was the Deep gallery's 316)*. */
+export const TILE_WIDTH = 640;
+
+/**
+ * **The landing mixture** *(dive_mixture_ckpt154)*: what `python -m builder dive-candidates`
+ * drew, which is the set of results Matt liked, as the share of presses that land each way.
+ * `carry` is a frame carried into the copy; `center` and `halfway` are the copy's centre and
+ * its symmetry point. The generator's `LANDING_WEIGHT` was seat 0.35 and view 0.35, and both
+ * of those are a frame carried in, so `carry` is their sum. Its route adaptation, which halves
+ * a route that stops landing, never fired in the run the sheet came from, so the weights are
+ * the ones it started with.
+ */
+export const MIXTURE = { carry: 0.7, center: 0.15, halfway: 0.15 };
+
+/**
+ * Where B is Random, the share of carried frames that are **A itself**, carried into its own
+ * nearby copy; the rest are another random wallpaper of the plane. The generator's "this view
+ * inside it" searched from the view 60% of the time (`FROM_WEIGHT`), which made it A carried
+ * into its own copy 0.35 × 0.6 = 21% of all presses, against 49% for another wallpaper: three
+ * tenths of the carries, not the half the brief remembered.
+ */
+export const CARRY_SELF = 0.3;
+
+/**
+ * **A centre or a halfway landing goes down first**, as the generator's did: this share of
+ * them press Go on the copy's centre a random `DESCENT` rungs deep before the last press,
+ * and the rest land from A directly. The generator descended only where the search ran from
+ * the view (`FROM_WEIGHT`'s 0.6) and started from a fresh random wallpaper otherwise, which
+ * is the same as no descent.
+ */
+export const DESCEND_SHARE = 0.6;
+export const DESCENT = [1, 8];
+
+/**
+ * Whether a press draws its landing from the mixture: *dive into* with B on Random, every
+ * press; and with B on a frame of its own (Here or Paste), every press Keep diving makes, so
+ * a loop sometimes lands on the centre or the halfway point instead. A single Go with B on a
+ * frame does exactly that one dive, and B on None is unchanged.
+ */
+export function mixes(action, b, looping = false) {
+  return action === "into" && (b.mode === "random" || (looping && b.mode !== "none"));
+}
+
+/**
+ * One draw from the mixture for B as it stands: `{ landing, carry, rungs }`. `landing` is
+ * `carry`, `center` or `halfway`; `carry` names the frame carried — `self` (A), `seat` (a random
+ * wallpaper) or `b` (B's own frame) — and is `null` otherwise; `rungs` is how far down a centre
+ * or halfway landing goes first. `random` is a uniform draw in `[0, 1)`, for the tests.
+ */
+export function variantOf(b, random = Math.random) {
+  const u = random();
+  if (u < MIXTURE.carry) {
+    const carry = b.mode !== "random" ? "b" : random() < CARRY_SELF ? "self" : "seat";
+    return { landing: "carry", carry, rungs: 0 };
+  }
+  const landing = u < MIXTURE.carry + MIXTURE.center ? "center" : "halfway";
+  const [low, high] = DESCENT;
+  const rungs = random() < DESCEND_SHARE ? low + Math.floor(random() * (high - low + 1)) : 0;
+  return { landing, carry: null, rungs };
+}
+
+/**
+ * **A variant in words**, as a result's tile and the status line name it: *A inside its copy*,
+ * *center, 3 rungs down*. `taken` is the rungs actually gone down, which a descent that ran
+ * out early makes fewer than it drew.
+ */
+export function variantWords(variant, taken = variant.rungs) {
+  if (variant.landing === "carry") {
+    if (variant.carry === "self") return "A inside its copy";
+    if (variant.carry === "seat") return "a random wallpaper inside its copy";
+    return "B inside its copy";
+  }
+  const head = variant.landing === "center" ? "center" : "halfway in";
+  if (taken === 0) return head;
+  return `${head}, ${taken} ${taken === 1 ? "rung" : "rungs"} down`;
+}
 
 /**
  * **How many copies _save those minibrots_ keeps** from one search: the largest, each framed
@@ -61,25 +139,29 @@ export function draws(a, action, b) {
 
 /**
  * Whether Keep diving may run: only where the next press can be another picture than this
- * one — a random draw, or the descent. Anything else would land on the same frame every time.
+ * one — a random draw, the descent, or the mixture, which *dive into* with B on a frame draws
+ * from while the loop runs. Anything else would land on the same frame every time.
  */
 export function keepable(a, action, b) {
-  return draws(a, action, b) || chains(a, action, b);
+  return draws(a, action, b) || chains(a, action, b) || mixes(action, b, true);
 }
 
 /** Why Keep diving is unavailable, as its title says it, or `null`. */
 export function keepBarred(a, action, b) {
   if (keepable(a, action, b)) return null;
   return (
-    "Keep diving needs something to change between dives: a slot on Random, or A on Here " +
-    "(following the view) with B on None, which descends."
+    "Keep diving needs something to change between dives: a slot on Random, dive into with " +
+    "B on a frame, or A on Here (following the view) with B on None, which descends."
   );
 }
 
 /** What the status line says once a loop drawing off-screen has landed a round: the loop's
- *  own count and the results', which Go adds to as well. `saved` is a batch's size. */
-export function landedSaid(landings, results, saved = null) {
-  const head = saved === null ? `Dive ${landings} landed` : `Round ${landings} saved ${saved}`;
+ *  own count and the results', which Go adds to as well. `saved` is a batch's size, and
+ *  `variant` the words of the mixture's draw, where the press made one. */
+export function landedSaid(landings, results, saved = null, variant = null) {
+  const head =
+    (saved === null ? `Dive ${landings} landed` : `Round ${landings} saved ${saved}`) +
+    (variant ? ` (${variant})` : "");
   return results == null ? `${head}.` : `${head}; Dive results · ${results}.`;
 }
 
@@ -88,20 +170,25 @@ export function landedSaid(landings, results, saved = null) {
  *
  * `outcome` is `deep.js`'s `dive()`: `{ landed, complete }` where it landed, `{ refused,
  * random, permanent }` where it did not, `{ barred }` where it could not start, `{ error }`
- * where it threw, and `{ superseded }` where something else took the tab over — a Cancel, a
- * link, the way back, a moved view. `dry` is how many presses in a row have landed nowhere
- * before this one. `aside` is whether the loop draws off-screen, which has no landing on
- * screen to hold.
+ * where it threw, and `{ superseded }` where something else took the tab over — a link, the
+ * way back, a moved view. `dry` is how many presses in a row have landed nowhere before this
+ * one. `aside` is whether the press drew off-screen, which has no landing on screen to hold.
  *
  * Answers `{ go: true, hold }` to press again, holding the landing first where there is one,
  * or `{ stop: sentence }`, which is what the status line says.
+ *
+ * **Only Stop and leaving the tab end a loop** *(dive_mixture_ckpt154)*, and both end it
+ * before its press answers, so neither reaches here. A press the reader took the tab from —
+ * a moved view, a tile opened, a pass of their own — is pressed again once the tab is idle,
+ * and so is a landing on screen they moved off before it was drawn to the end; the page has
+ * by then turned a descent that was following its landings into one drawing aside.
  */
 export function loopStep(outcome, dry = 0, { aside = false } = {}) {
-  if (outcome.superseded) return { stop: "Keep diving stopped." };
+  if (outcome.superseded) return { go: true, hold: false };
   if (outcome.barred !== undefined) return { stop: `Keep diving stopped. ${outcome.barred}` };
   if (outcome.error !== undefined) return { stop: `Keep diving stopped. ${outcome.error}` };
   if (outcome.landed) {
-    if (!outcome.complete) return { stop: "Keep diving stopped: the landing was not drawn to the end." };
+    if (!outcome.complete) return { go: true, hold: false };
     return { go: true, hold: !aside };
   }
   // **A chain runs out where the copy is this view's to find.** Near a random wallpaper, a
@@ -136,7 +223,8 @@ export function queryIn(text) {
 
 /**
  * **Dive results**: the landings of this session, newest first. A row is `{ key, link, thumb,
- * said, width, height }`, `thumb` an object URL the list owns and gives back at `clear`.
+ * said, variant, width, height }`, `thumb` an object URL the list owns and gives back at
+ * `clear`, and `variant` the words the tile names its landing by, or `null`.
  */
 export class Results {
   constructor(release = () => {}) {
@@ -150,9 +238,9 @@ export class Results {
   }
 
   /** Put a landing at the front, and hand back its row. */
-  add({ link, thumb, said, width, height }) {
+  add({ link, thumb, said, variant = null, width, height }) {
     this.made += 1;
-    const row = { key: `dive-${this.made}`, link, thumb, said, width, height };
+    const row = { key: `dive-${this.made}`, link, thumb, said, variant, width, height };
     this.rows.unshift(row);
     return row;
   }

@@ -7,8 +7,9 @@
 // Gallery tab, Browse and the screensaver alike. Here it is the Deep gallery's shape — a tile
 // a click opens through the door a deep link comes through — with the newest result in front.
 //
-// **A landing never switches the panel.** A result that lands while the Gallery is showing
-// moves the count on the switch and nothing else; the reader chooses which list is up.
+// **A landing never switches the panel; Go does** *(dive_mixture_ckpt154)*. A result that lands
+// while the Gallery is showing moves the count on the switch and nothing else, and a press of
+// Go puts Dive results up at once, before the first result, since that is where it will land.
 // Nothing of it is stored: a reload is the end of it, and Clear, which asks nothing, is the
 // end of it sooner.
 
@@ -19,8 +20,8 @@ import { Results } from "./dives.js";
  *
  * `open(link)` is the page's door for a deep link; `saveMark(link)` is a save mark pointed at
  * one; `copy(link)` puts a link's address on the clipboard and resolves whether it did.
- * Answers `{ add({ link, thumb, said, width, height }), size }`, `thumb` an object URL the
- * list takes over and gives back when it is cleared.
+ * Answers `{ show(which), add({ link, thumb, said, variant, width, height }), size }`, `thumb`
+ * an object URL the list takes over and gives back when it is cleared.
  */
 export function mount({ panel, showGallery, showResults, count, clear, grid, note, open, saveMark, copy }) {
   const results = new Results((thumb) => URL.revokeObjectURL(thumb));
@@ -58,6 +59,12 @@ export function mount({ panel, showGallery, showResults, count, clear, grid, not
     entry.title = row.said;
     entry.setAttribute("aria-label", row.said);
     entry.addEventListener("click", () => open(row.link));
+    // **The tile names how it landed** *(dive_mixture_ckpt154)*: the mixture's draw — *A
+    // inside its copy*, *center, 3 rungs down* — in words under the picture, and the whole
+    // provenance in its title.
+    const named = document.createElement("span");
+    named.className = "dive-variant";
+    named.textContent = row.variant ?? "";
     const copying = document.createElement("button");
     copying.type = "button";
     copying.className = "dive-copy";
@@ -72,7 +79,10 @@ export function mount({ panel, showGallery, showResults, count, clear, grid, not
         copying.textContent = "Copy link";
       }, 1500);
     });
-    cell.append(entry, saveMark(row.link), copying);
+    const foot = document.createElement("div");
+    foot.className = "dive-foot";
+    foot.append(named, copying);
+    cell.append(entry, saveMark(row.link), foot);
     return cell;
   }
 
@@ -86,6 +96,8 @@ export function mount({ panel, showGallery, showResults, count, clear, grid, not
   sync();
 
   return {
+    /** Put one list up, as its switch does: Go puts Dive results up at once. */
+    show,
     add(landing) {
       const row = results.add(landing);
       grid.prepend(tileOf(row));

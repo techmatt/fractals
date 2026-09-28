@@ -1956,7 +1956,11 @@ canvas.palette-final {
   overflow: hidden;
   cursor: pointer;
 }
+/* A thumbnail with no frame to go to is still a picture, and is never faded
+   *(dive_mixture_ckpt154)*: the bar's rule for a faded button read the Random slot's plate as
+   a greyed control. What is lit is the mode button, filled below. */
 .dive-thumb[aria-disabled="true"] { cursor: default; }
+.bar button.dive-thumb[aria-disabled="true"] { opacity: 1; }
 .dive-thumb:not([aria-disabled="true"]):hover { border-color: var(--well-ink); }
 .dive-thumb:focus-visible { outline: 2px solid var(--well-link); outline-offset: 1px; }
 .dive-thumb canvas, .dive-thumb img { display: block; width: 100%; height: 100%; object-fit: cover; }
@@ -1977,7 +1981,12 @@ canvas.palette-final {
 }
 .dive-modes { display: inline-flex; flex-direction: column; gap: 0.12rem; }
 .bar .dive-modes button { padding: 0 0.4rem; font-size: 0.7rem; line-height: 1.35; }
-.bar .dive-modes button[aria-pressed="true"] { color: var(--well-link); border-color: var(--well-link); }
+.bar .dive-modes button[aria-pressed="true"] {
+  color: var(--well);
+  background: var(--well-link);
+  border-color: var(--well-link);
+  font-weight: 600;
+}
 .bar .dive-modes button.is-barred { opacity: 0.45; }
 .dive-paste { flex: 1 0 100%; min-width: 0; font: inherit; font-size: 0.75rem; }
 
@@ -2049,9 +2058,23 @@ canvas.palette-final {
 .deep-gallery.is-results > #deep-gallery-grid,
 .deep-gallery.is-results > #deep-gallery-note { display: none; }
 #dive-results-note { padding: 0 var(--gutter); }
+/* **Two to a row** *(dive_mixture_ckpt154)*: a result is a picture to judge, and at the
+   gallery's three it was too small to judge. A narrow panel wraps them to one. */
+.deep-gallery-grid.dive-results { grid-template-columns: repeat(auto-fill, minmax(min(100%, 12rem), 1fr)); }
 .dive-result { display: flex; flex-direction: column; gap: 0.1rem; }
 .dive-result > .minibrot { width: 100%; }
+.dive-foot { display: flex; align-items: baseline; gap: 0.5rem; min-width: 0; }
+.dive-variant {
+  flex: 1 1 auto;
+  min-width: 0;
+  color: var(--well-ink);
+  font-size: 0.7rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .dive-copy {
+  flex: none;
   align-self: flex-start;
   padding: 0;
   border: none;

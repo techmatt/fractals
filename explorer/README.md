@@ -358,7 +358,8 @@ row. What they change is the palette, so they sit with it:
   **Absolute** scale, so in the shallow view it switches the scale. The rule is the Deep
   gallery's (`builder/README.md`, *How the first set was found*), moved into
   `perturb-wasm`'s `dive::coloring` so the page and the native tool run one copy of it:
-  cycles drawn uniformly from 1.5 to 6; for each λ in {0, 0.15, 0.3, 0.5, 0.75, 1} the period
+  cycles drawn uniformly from 1 to 4 (1.5 to 6 until *dive_mixture_ckpt154*, whose busy end
+  was where a deep landing read as noise); for each λ in {0, 0.15, 0.3, 0.5, 0.75, 1} the period
   is the field's 3rd-to-97th-percentile range of `g` over those cycles, to three figures,
   and the λ passes where under 4% of neighbouring samples are more than a quarter turn apart;
   one of the λs that pass is taken at random, and failing all, the smoothest; the phase is
@@ -372,6 +373,32 @@ row. What they change is the palette, so they sit with it:
   the worker the page's longest pause during a press measured 29 to 41 ms. `pagehide` gives
   the worker back with the pools. `n` was unbound. A press is one step back like any other
   colour change.
+
+  **Then the aliasing guard** *(dive_mixture_ckpt154, `aliasing.js`)*. The λ test passes a
+  colouring where few neighbouring samples are a quarter turn apart, and where every λ fails
+  it takes the smoothest anyway, which beside a deep copy can still be noise: the reported
+  case, `dv=3&x=-0.749433324936755643&y=0.04100993199510466&w=7.744744750665837e-10&n=1874986&p=chiaris-25&phase=0.67&scale=absolute&period=8280`
+  at λ = 1, reads as static. So the colouring chosen is laid over the field it was sized to,
+  the **mean colour difference between neighbouring pixels** is measured (8-bit levels,
+  averaged over red, green and blue, pairs with either pixel inside the set left out, a field
+  wider than 400 read at every `k`-th pixel so that the spacing is the quarter pass's), and
+  where it is **over 35** the period is doubled and measured again, **three times at most**.
+  The colour is the absolute scale's own placement looked up in the map's stops, folded where
+  the map is mirrored, interpolated in sRGB where the engine uses OKLab.
+
+  **35 was read off real frames**, the quarter passes (284×160, one sample a pixel) of 80
+  landings from the dive-candidates sheet and the reported case, each also drawn at the
+  canvas's 1136×639, and eight of them looked at. The reported case measures 48.2 and another
+  that reads as static 62.2; two that read as fine, with grain only in their filaments,
+  measured 23.1 and 30.1, and a smooth one 15.0. The 80 read from their own links spread from
+  15 to 62, and a line at 30 would have redrawn 74 of them. At 35, 98 of 243 New colourings the
+  rule drew on those fields were over it: 65 were doubled once, 28 twice and 5 three times,
+  and none was still over after. The reported case goes 48.2 → 40.2 → **32.4 at four times its
+  period** (33,200), where the spirals read as spirals, and stops there. The quarter pass and the full pass agree to
+  about two levels (46.2 at 1136 read at every third pixel, 48.2 at 284). It applies to every
+  New coloring — the button in either view and a dive's on arrival — and to nothing else: a
+  link that carries its own period is drawn as it says. A landing whose period the guard
+  lengthened says so in its status line and its Dive results title.
 
 **In Deep, a palette change onto an open map folds it** *(Matt, deep_dive_block_ckpt154)*.
 A deep frame is drawn on the Absolute scale, which runs the palette round and round, and an
@@ -2643,51 +2670,96 @@ reads both as not copies. Now plain Go from home lands on the period-48 copy at
 two nuclei were left out. The dive reads its search in rounds and stops once the rung rule's
 answer cannot change.
 
-#### Keep diving *(keep_diving_ckpt154, 2026-09-27; fresh draws since dive_slots_ckpt154)*
+#### The landing mixture *(dive_mixture_ckpt154, 2026-09-28)*
 
-A box beside *New coloring on arrival*, with no key and not remembered. While it is ticked it
-presses Go over and over with fresh draws. **It is enabled only where the next press can be
-another picture** (`keepable` in `dives.js`): a slot on Random that the action reads, or the
-descent — A live and a centred landing (*dive into* with B on None, or *zoom out to symmetry
-point*). Anywhere else every press would land on the first one's frame, so the box is
-disabled and its title says why; the old *this view / this view* loop, which recoloured one
-landing, went with it. Go is faded while the loop runs. `loopStep`, `chains` and `keepable` in
-`dives.js` are the rules with no page in them, and `dives.test.mjs` holds them.
+**At its defaults the block lands what `python -m builder dive-candidates` landed**, the sheet
+under `scratch/deep_minibrot_candidates/` that Matt liked: A on Random, *dive into*, B on
+Random, New coloring on arrival and Keep diving both ticked. Before this, Random + Random did
+one branch of that generator, a random wallpaper carried into a copy near another. Now a press
+of *dive into* **draws one variant** (`variantOf` in `dives.js`):
 
-- **A live A is frozen when the box is ticked** *(keep_diving_anchor_ckpt154)*: the view on
-  screen then is the loop's anchor, and every press reads it as A.
-- **Two kinds of loop** (`chains`):
-  - **The descent, on screen**: each press starts from the previous landing, and the main view
-    follows every landing as a press of Go does, each held `HOLD_MS`, 2 s, once its full pass
-    has landed (*Next dive in 2 s.*), and each one step back.
-  - **Every other loop, off-screen.** The main view stays on the frame it had when the box was
-    ticked; each landing is drawn out of sight, joins Dive results, and adds no step to the
-    way back and nothing to the address. There is no hold. The status line leads with the
-    loop's count and the list's: *Dive 7 landed; Dive results · 7. Dive 8: …*, or for *save
-    those minibrots*, which is a batch per round and redraws A's wallpaper each round, *Round
-    3 saved 8; Dive results · 24.*
+- **70%, a frame carried into the copy.** With B on Random that frame is **A itself** three
+  times in ten (*A inside its copy*) and another random wallpaper of the plane otherwise
+  (*a random wallpaper inside its copy*); with B on Here or Paste it is B's frame (*B inside its
+  copy*).
+- **15%, the copy's centre; 15%, halfway in** (the symmetry point).
+- **A centre or halfway draw goes down first** six times in ten: Go pressed on the copy's centre
+  a random 1 to 8 rungs deep, each press from the last landing, and the last press from there
+  (*center, 3 rungs down*). **Where the chain runs out, the deepest copy reached is the
+  landing**: its centre, or for a halfway draw that copy landed halfway, named by the rungs
+  actually gone down. The generator instead pressed once more from where the descent stopped,
+  which asks the question just refused and failed every time; in the first measured run here
+  that dropped the landed share of centres and halfway points to 10 of 80 against 30% drawn.
+
+**The generator's numbers, read from its source, and where the brief remembered otherwise.**
+`LANDING_WEIGHT` is seat 0.35, view 0.35, center 0.15, halfway 0.15; seat and view are both a
+frame carried in, so 70%. "This view inside it" carried the unit's start seat, and whether that
+was A itself depended on `FROM_WEIGHT` (view 0.6, seat 0.4): it searched near the start seat
+(A into its own copy) 21% of all presses, and near another seat 14%, beside the 35% that carried
+a fresh seat. So a carry is A itself **30%** of the time, not the half the brief had. The rung
+descent (`PRE_RUNGS`, 1 to 8) ran only where the search started from the view, 60%; from a
+seat it started at no depth, which is what `DESCEND_SHARE` keeps. The route adaptation that
+halves a failing route never fired in that run (its weights ended where they began). New
+coloring was on for half the units (`random() < 0.5`); the block's default is on for all. The
+generator also drew the plane (Mandelbrot 3 : Multibrot 3 to 5 2 each : Multibrot 6 1); the
+block dives on the plane it is on, so that has no counterpart.
+
+**When it applies** (`mixes`): with B on Random, every press, Go or Keep diving; with B on Here
+or Paste, only the presses Keep diving makes, so a single Go does exactly that one dive and a
+loop sometimes lands on the centre or the halfway point instead. B on None, *zoom out to
+symmetry point* and *save those minibrots* are unchanged. A refusal after a draw greys nothing
+and counts as a random draw, so the loop draws again.
+
+**Every landing names its variant**: under its Dive results tile, at the front of its status
+line (*Center, 3 rungs down: Multibrot 4 · …*), and in the loop's count (*Dive 7 landed (A inside
+its copy); Dive results · 7.*). A press outside the mixture names itself the same way: *center*,
+*halfway in*, *B inside its copy*, *saved, 3 of 8*.
+
+#### Keep diving *(keep_diving_ckpt154; runs through the reader since dive_mixture_ckpt154)*
+
+A box beside *New coloring on arrival*, **ticked by default** and not remembered. It is a
+setting, not a start: **Go starts the loop** where it is ticked, and the box ticked while a
+press of Go runs takes that press as the loop's first. It is enabled only where the next press
+can be another picture (`keepable` in `dives.js`): a slot on Random that the action reads, the
+mixture, or the descent — A live and a centred landing (*dive into* with B on None, or *zoom
+out to symmetry point*). Go is faded while the loop runs, and **Cancel reads Stop**.
+`loopStep`, `chains`, `mixes` and `keepable` in `dives.js` are the rules with no page in them,
+and `dives.test.mjs` holds them.
+
+- **Go puts Dive results up at once**, before the first result, loop or not.
+- **Every press draws off-screen** (`landAside`) into Dive results, and the main view, the way
+  back and the address stay put. **The descent is the exception**: each press starts from the
+  previous landing and the main view follows it as a press of Go does, each held `HOLD_MS`,
+  2 s, and each one step back — **until the reader navigates**. Then it lets go of the view
+  (`detachKeeping`, from `moved()` and a link's `open`) and goes on descending off-screen from
+  its own last landing, carrying its chain.
+- **It stops only on Stop or on leaving the Deep tab** — and on its own where a chain runs
+  out, a press cannot start, or the sentence changes to one that would land in the same place
+  every time. Moving the view, clicking a tile, changing the palette and the like leave it
+  running. **The slots and the action are read afresh at every press**, so a change takes
+  effect on the next dive. Unticking the box ends the loop once the press in flight lands.
+- **A loop never takes the pool from a pass the reader started.** Before each press after the
+  first it waits until nothing is running and no settled gesture is about to start a pass
+  (*Keep diving waits for the view to finish drawing.*); a press the reader took the tab from
+  is simply pressed again then.
 - **How a landing is drawn off-screen** (`landAside`): the same pass `render` draws of a
   landing on screen — the quarter pass, which reads the interior switch and is what New
   coloring on arrival is sized off, and the full pass at the canvas's own size and one sample
   a pixel — into a canvas of its own, handed to `addDive`. So a result is the same picture
-  whichever way its landing was drawn. Nothing of the tab moves.
-- **An off-screen loop runs on out of the tab**, so Dive results can fill while the reader is
-  elsewhere; the descent stops when the tab is left, because it follows its landings on the
-  canvas.
-- **It stops**, unticks itself and says why: when the box is unticked, which lets a press
-  already running finish (and counts it); on Cancel; when the view moves (`moved()`); when the
-  action or either slot changes; when anything else takes the tab over; and when a chain runs
-  out. **A chain runs out where the copy was a fixed place's to find**: no copy near it is a
-  step down, or no minibrot near it, or a landing the budget greys there.
+  whichever way its landing was drawn.
 - **A random draw that lands nowhere** has already retried (`RANDOM_TRIES`); the loop moves on
   with no hold, and `DRY_PRESSES`, 3, such presses in a row stop it, as does a plane with no
   wallpapers at all.
 
-Measured at keep_diving_anchor_ckpt154 (`scratch/keep_diving_anchor_probe.mjs`, seeded): the
-off-screen landing pass is 0.82 s against 0.84 s on screen, frame for frame within 7%; the
-descent from the home view ran six landings down to 6.4e-9 and six Ctrl+Z put back the home
-view. At dive_slots_ckpt154: A on Random, *dive into*, B on None, three landings off-screen
-in 4.2 s with the view unmoved; unticked mid-press, the press finished and was counted.
+Measured at dive_mixture_ckpt154, Keep diving at the defaults for 10.0 minutes on the served
+page in headless Chrome at 1600×1000: **112 landings, 11.2 a minute**, from 114 draws, of
+which 113 landed. By variant: a random wallpaper inside its copy 53, A inside its copy 30,
+halfway in 18, center 11 — carry 74%, against 70% drawn. New coloring's aliasing guard
+lengthened the period on 46 of them. An earlier 10-minute run, before a descent that ran out
+landed on the deepest copy it reached, made 80 landings at 7.9 a minute, 10 of them centres
+or halfway points. A descent on screen, the reader opening a gallery tile during its hold:
+the view stayed on the tile, and the loop landed two more off-screen from its own chain
+before that chain ran out. The results were two to a row, 284 px each in a 623 px panel.
 
 ### The gallery *(deep_gallery_build_ckpt144, 2026-09-23)*
 
@@ -2730,13 +2802,18 @@ carries its save mark (Saved's, keyed by the canonical link, so a result reaches
 deep entry) and a **Copy link** under it. `dive-results.js` is the panel and `Results` in
 `dives.js` the list.
 
-- **A landing never switches the panel.** One that lands while the Gallery is up moves the
-  count on the switch and nothing else.
+- **A landing never switches the panel; Go does** *(dive_mixture_ckpt154)*. One that lands
+  while the Gallery is up moves the count on the switch and nothing else, and a press of Go
+  puts Dive results up at once.
+- **Two to a row, and named** *(dive_mixture_ckpt154)*: the tiles fill the panel at least 12rem
+  wide, which is two across the panel at its usual width, and each carries its variant in
+  words beside Copy link, with the whole provenance in its title.
 - **It is gone on a reload**, and **Clear**, at the head's far end while the list is up,
   empties it at once with nothing asked; it gives each tile's picture back
   (`URL.revokeObjectURL`). Nothing of it is stored anywhere or seen by `builder check`.
 - **A tile is the landing's own picture**, taken off the canvas where the pass finished, or
-  off the canvas `landAside` drew it into, at 316 px as a WebP object URL (`addDive` in
+  off the canvas `landAside` drew it into, at 640 px as a WebP object URL (316 until
+  dive_mixture_ckpt154) (`addDive` in
   `explorer.js`).
 
 ### Getting in and out
