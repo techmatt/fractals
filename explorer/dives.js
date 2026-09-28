@@ -13,6 +13,8 @@
 // beside its Gallery. Nothing of it is written anywhere: a reload is the end of it, and Clear
 // is the end of it sooner.
 
+import { firstQuery } from "./permalink.js";
+
 /** How long a landing of the descending loop stays on screen, whole, before the next press
  *  starts: long enough to see the picture the press drew, and short enough that a chain of
  *  ten is a minute. A loop drawing off-screen has nothing on screen to hold. */
@@ -119,17 +121,17 @@ export function loopStep(outcome, dry = 0, { aside = false } = {}) {
  * **A pasted text as a link's query**, or `null`: the part after `?` of a whole explorer
  * address, or a query pasted bare, with any `#` fragment and surrounding space taken off.
  * Whether it is a link the page can read is the contract's to say, not this.
+ *
+ * **The first link and nothing after it**: the contract's `firstQuery`, the one reader of a
+ * pasted text, so a paste that carries one link twice reads as that link and not as a query
+ * naming its keys twice *(duplicate_key_links_ckpt154)*.
  */
 export function queryIn(text) {
-  let held = String(text ?? "").trim();
+  const held = String(text ?? "").trim();
   if (held === "") return null;
-  const hash = held.indexOf("#");
-  if (hash >= 0) held = held.slice(0, hash);
-  const mark = held.indexOf("?");
-  if (mark >= 0) held = held.slice(mark + 1);
-  else if (/^[a-z]+:\/\//i.test(held)) return null;
-  held = held.trim();
-  return held.includes("=") ? held : null;
+  if (!held.includes("?") && /^[a-z]+:\/\//i.test(held)) return null;
+  const query = firstQuery(held);
+  return query.includes("=") ? query : null;
 }
 
 /**

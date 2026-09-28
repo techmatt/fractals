@@ -5779,7 +5779,25 @@ recipe** group. What is worth writing down is the shape rather than the widgets:
 
 - **An unknown key is refused.** A typo that silently rendered the default view would look
   exactly like the link working.
-- **A key given twice is refused**, because there is no rule for which wins.
+- **A key given twice with one value is read; with two, it is refused**
+  *(duplicate_key_links_ckpt154)*. The same value twice names one picture, so refusing it
+  would refuse a link over its spelling; two values name two pictures and there is no rule
+  for which one was meant. Values compare decoded, and both contracts read a query through
+  `permalink.js`'s `readQuery`. It used to refuse every repeat as *"the link gives f twice,
+  and there is no rule for which wins"*, which is how it reached Matt: the Dive block's
+  Paste read a text carrying one link twice (a Markdown `[url](url)`, a title above its
+  URL) as one query, the second link's marker swallowed into the first link's last value.
+  `firstQuery` now reads the first link and stops where it ends, and Saved's import reads
+  a pasted token the same way.
+- **A refusal names a key in words, never by its letter** *(duplicate_key_links_ckpt154)*:
+  *"This link names two different fractals, so it can't be opened."* `KEY_WORDS` in
+  `permalink.js` is the one table, in the page's own words where a control has them, and a
+  key it does not know is quoted as it is spelled.
+- **A key is set on a query, never appended to one.** The address bar's panel and
+  collection, the screensaver's keys and a link out of the atlas all go through
+  `withKeys`, which drops any part already naming a key before writing it once and keeps
+  every other part byte for byte. `builder check`'s `repeats` holds every stored link to
+  naming each key once.
 - **Half of an identity is refused** *(pre_closeout_ckpt138)*. `cx`/`cy`, `px`/`py` and
   `zx`/`zy` are each two halves of one number, and a link carries both or neither; the
   sentence names the half that is missing. Filling the other from the anchor drew a set

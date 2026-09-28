@@ -21,6 +21,8 @@
 // against a storage shim; `mark` is the one function that builds an element, and only
 // when it is called.
 
+import { firstQuery } from "./permalink.js";
+
 /** The one key, spelled with the site's name because the github.io origin is shared by
  *  every project page under it. */
 export const KEY = "fractal-website.explorer.saved";
@@ -95,14 +97,10 @@ export function parseImport(text) {
 }
 
 /** The query of a link however it was written: a whole URL, `?…`, or the bare query. The
- *  fragment goes, because the explorer's links carry none. */
+ *  fragment goes, because the explorer's links carry none, and so does anything after the
+ *  link — the contract's `firstQuery`, so a token carrying one link twice is that link. */
 export function queryOf(text) {
-  let query = String(text).trim();
-  const hash = query.indexOf("#");
-  if (hash >= 0) query = query.slice(0, hash);
-  const mark = query.indexOf("?");
-  if (mark >= 0) query = query.slice(mark + 1);
-  return query;
+  return firstQuery(text);
 }
 
 /**

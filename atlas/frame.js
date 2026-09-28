@@ -32,6 +32,7 @@
 // into a canvas. That is also why a page carrying a frame has to be served — a browser
 // will not load a module, or a `.wasm`, over `file://`.
 
+import { withKeys } from "../explorer/permalink.js";
 import { contractOf, opened } from "./links.js";
 import { load } from "./record.js";
 
@@ -339,7 +340,8 @@ export async function mount(host, options = {}) {
   const explorer = new URL("../explorer/index.html", base);
   // A link out of the atlas lands on the explorer's Atlas tab, and the view it opens says
   // which plane. Only a navigating frame builds one: the studio's is its own Atlas tab.
-  const into = (query) => `${explorer}?${query}&panel=atlas`;
+  // Set, never appended *(duplicate_key_links_ckpt154)*: `withKeys` is the one door.
+  const into = (query) => `${explorer}?${withKeys(query, [["panel", "atlas"]])}`;
   const slots = new Map();
   const labelOf = (name) => partition.slot_labels[name] ?? GALLERY_LABEL;
   const mapOf = (name) => partition.slot_maps?.[name] ?? "";

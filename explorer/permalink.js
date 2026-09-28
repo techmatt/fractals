@@ -253,6 +253,16 @@ const CONSTANT_PAIRS = [
 /** Every paired key, so the pair table can be held to the key table. */
 const PAIRED_KEYS = new Set(CONSTANT_PAIRS.flatMap(([re, im]) => [re, im]));
 
+/** Each pair's number as a reader would name it, by its real half's key. */
+const PAIR_WORDS = { cx: "c", px: "the Phoenix coefficient p", zx: "the starting point z₋₁" };
+
+/** The numbers a family's link carries, in words: `c`, or `c, … and …`. */
+function constantWords(family) {
+  const named = CONSTANT_PAIRS.filter(([re]) => CONSTANTS[family].includes(re)).map(([re]) => PAIR_WORDS[re]);
+  if (named.length <= 2) return named.join(" and ");
+  return `${named.slice(0, -1).join(", ")}, and ${named.at(-1)}`;
+}
+
 /** A family's constants are pairs, and a link that names half of one is refused. */
 function both(params, family) {
   for (const key of CONSTANTS[family]) {
@@ -260,15 +270,15 @@ function both(params, family) {
       throw new PermalinkError(`${key} is a constant this contract does not know how to pair.`);
     }
   }
-  for (const [re, im, names] of CONSTANT_PAIRS) {
+  for (const [re, im] of CONSTANT_PAIRS) {
     if (!CONSTANTS[family].includes(re)) continue;
     const given = params.get(re) !== null ? re : params.get(im) !== null ? im : null;
     if (given === null) continue;
     const missing = given === re ? im : re;
     if (params.get(missing) !== null) continue;
     throw new PermalinkError(
-      `${re} and ${im} are the two halves of ${names}, so a link carries both or neither; ` +
-        `this one names ${given} and not ${missing}.`,
+      `This link gives the ${wordsFor(given)} and not the ${wordsFor(missing)}. The two are halves of ` +
+        `${PAIR_WORDS[re]}, so a link gives both or neither.`,
     );
   }
 }
@@ -324,10 +334,10 @@ export const NICHE_MODES = {
  * sentences are unchanged.
  */
 export const PARAMETERS = {
-  density: { check: (value) => value > 0, says: "positive" },
-  radius: { check: (value) => value > 0, says: "positive" },
-  sigma: { check: (value) => value > 0, says: "positive" },
-  threshold: { check: (value) => value > 0, says: "positive" },
+  density: { check: (value) => value > 0, says: "more than 0" },
+  radius: { check: (value) => value > 0, says: "more than 0" },
+  sigma: { check: (value) => value > 0, says: "more than 0" },
+  threshold: { check: (value) => value > 0, says: "more than 0" },
   weight: { check: (value) => value >= 0 && value <= 1, says: "between 0 and 1" },
   opacity: { check: (value) => value >= 0 && value <= 1, says: "between 0 and 1" },
   shift: { check: () => true, says: "a number" },
@@ -448,12 +458,12 @@ export const CAP_FLOOR = 50;
  *  for `deep-link.js`, which reads its `n` by exactly this rule. */
 export function readCap(text) {
   if (!/^\d+$/.test(text)) {
-    throw new PermalinkError(`${CAP_KEY} is the iteration cap and has to be a whole number; the link says ${text}.`);
+    throw new PermalinkError(`The iteration cap has to be a whole number, not ${text}.`);
   }
   const value = Number(text);
   if (value < CAP_FLOOR || value > CAP_LIMIT) {
     throw new PermalinkError(
-      `${CAP_KEY} is the iteration cap and is between ${CAP_FLOOR} and ${CAP_LIMIT.toLocaleString("en-US")}; the link says ${text}.`,
+      `The iteration cap has to be between ${CAP_FLOOR} and ${CAP_LIMIT.toLocaleString("en-US")}, not ${text}.`,
     );
   }
   return value;
@@ -474,6 +484,170 @@ export class PermalinkError extends Error {
 }
 
 /**
+ * What each key is called in a sentence a reader sees: the thing, and its plural.
+ *
+ * **A refusal names a key by what it means and never by its letter** *(duplicate_key_links_
+ * ckpt154)*. "The link gives f twice" means something to whoever wrote the contract and
+ * nothing to the reader holding the link; "two different fractals" is the same fact in the
+ * reader's words. The words are the page's own where the page has a control for the key —
+ * `params.js`'s labels, and the shade keys' names, which are their labels — so a sentence
+ * about a box names the box. Both contracts read this table: one key, one name.
+ */
+const KEY_WORDS = {
+  v: ["link version", "link versions"],
+  dv: ["Deep tab link version", "Deep tab link versions"],
+  f: ["fractal", "fractals"],
+  m: ["render mode", "render modes"],
+  x: ["horizontal position", "horizontal positions"],
+  y: ["vertical position", "vertical positions"],
+  w: ["width", "widths"],
+  n: ["iteration cap", "iteration caps"],
+  a: ["aspect ratio", "aspect ratios"],
+  p: ["palette", "palettes"],
+  level: ["tone curve", "tone curves"],
+  cx: ["real part of c", "real parts of c"],
+  cy: ["imaginary part of c", "imaginary parts of c"],
+  px: ["real part of the Phoenix coefficient p", "real parts of the Phoenix coefficient p"],
+  py: ["imaginary part of the Phoenix coefficient p", "imaginary parts of the Phoenix coefficient p"],
+  zx: ["real part of the starting point", "real parts of the starting point"],
+  zy: ["imaginary part of the starting point", "imaginary parts of the starting point"],
+  density: ["stripe density", "stripe densities"],
+  radius: ["trap radius", "trap radii"],
+  sigma: ["kernel width", "kernel widths"],
+  threshold: ["threshold", "thresholds"],
+  weight: ["texture weight", "texture weights"],
+  opacity: ["opacity", "opacities"],
+  shift: ["shift", "shifts"],
+  gamma: ["gamma", "gammas"],
+  cycles: ["number of cycles", "numbers of cycles"],
+  phase: ["phase", "phases"],
+  reverse: ["Reverse setting", "Reverse settings"],
+  mirror: ["Mirror setting", "Mirror settings"],
+  transfer: ["transfer", "transfers"],
+  rolloff: ["rolloff", "rolloffs"],
+  scale: ["scale", "scales"],
+  lambda: ["lambda", "lambdas"],
+  period: ["period", "periods"],
+  panel: ["panel", "panels"],
+  every: ["screensaver interval", "screensaver intervals"],
+  collection: ["gallery collection", "gallery collections"],
+  modes: ["mode filter", "mode filters"],
+  hue: ["hue filter", "hue filters"],
+};
+
+/** A key as a reader would say it: `"width"` for `w`. A key this table does not know is
+ *  quoted as it is spelled, which is the one case a letter is all there is to say. */
+export function wordsFor(key) {
+  return KEY_WORDS[key]?.[0] ?? `"${key}"`;
+}
+
+/** The same, plural: what a link naming two of them names two different ones of. */
+function pluralFor(key) {
+  return KEY_WORDS[key]?.[1] ?? `values for "${key}"`;
+}
+
+/** A list a reader is offered: `a or b`, and `a, b, or c` with the comma the site writes. */
+function either(names) {
+  if (names.length <= 2) return names.join(" or ");
+  return `${names.slice(0, -1).join(", ")}, or ${names.at(-1)}`;
+}
+
+/** Why a cyclic palette is not mirrored: both contracts' sentence, spelled once. */
+export function foldedCycle(palette) {
+  return (
+    `${palette} is a cyclic palette, so it can't be mirrored: folding it would halve the cycle ` +
+    "it was drawn to have. Mirror is the seam fix for a palette that has a seam."
+  );
+}
+
+/**
+ * A query's keys, with each named once: the one reader both contracts take a query through.
+ *
+ * **A key named twice with one value is read; a key named twice with two is refused**
+ * *(duplicate_key_links_ckpt154)*. The same value twice says one thing twice, and a link
+ * that arrived that way — a hand edit, a join somewhere upstream — still names exactly one
+ * picture, so refusing it would be refusing a link over its spelling. Two different values
+ * name two pictures, and there is no rule for which one the reader meant, so that link is
+ * refused in the reader's words. Values are compared decoded, the way the readers read them.
+ *
+ * Returns the `URLSearchParams`; `get` gives the first of a repeated key, which is every one.
+ */
+export function readQuery(search) {
+  const params = new URLSearchParams(stripLeadingQuestion(search));
+  const first = new Map();
+  for (const [key, value] of params) {
+    if (!first.has(key)) first.set(key, value);
+    else if (first.get(key) !== value) {
+      throw new PermalinkError(`This link names two different ${pluralFor(key)}, so it can't be opened.`);
+    }
+  }
+  return params;
+}
+
+/** The key a `key=value` part names, decoded the way `URLSearchParams` decodes it. */
+function keyOfPart(part) {
+  const equals = part.indexOf("=");
+  const raw = equals === -1 ? part : part.slice(0, equals);
+  try {
+    return decodeURIComponent(raw.replaceAll("+", " "));
+  } catch {
+    return raw;
+  }
+}
+
+/**
+ * A query with some keys **set**, never appended *(duplicate_key_links_ckpt154)*: every part
+ * already naming one of them is dropped and the new value written once at the end, and a
+ * `null` value drops the key without writing it. Every other part is kept byte for byte, so
+ * a picture's canonical spelling survives the furniture going on top of it.
+ *
+ * `entries` is `[[key, value], …]` with each value **already spelled** as the link will carry
+ * it — the caller's encoder, because the address bar's panel and the screensaver's chips each
+ * have a spelling of their own and this is not the place to move either one.
+ *
+ * The one door for putting a key onto a query that already has keys: the address bar's
+ * panel and collection, the screensaver's four keys, and a link out of the atlas.
+ */
+export function withKeys(query, entries) {
+  const setting = new Set(entries.map(([key]) => key));
+  const kept = stripLeadingQuestion(query)
+    .split("&")
+    .filter((part) => part !== "" && !setting.has(keyOfPart(part)));
+  for (const [key, value] of entries) {
+    if (value !== null && value !== undefined) kept.push(`${key}=${value}`);
+  }
+  return kept.join("&");
+}
+
+/**
+ * The query of the **first** link in a pasted text: a whole URL, `?…`, or the bare query,
+ * with the fragment gone, because the explorer's links carry none. `""` where the text holds
+ * nothing after a `?` and is not a bare query either.
+ *
+ * **The query ends where the link does** *(duplicate_key_links_ckpt154)*. This used to take
+ * everything after the first `?` to the end of the text, so a paste carrying one link twice —
+ * a Markdown `[url](url)`, a title above its URL, two links on two lines — arrived as one
+ * query in which the second link's `dv` or `v` was swallowed into the first link's last
+ * value, and its next key came round a second time: *"the link gives f twice"* on a
+ * Multibrot. So it stops at whitespace, at a character `encode` never leaves bare (`]`, `<`,
+ * `>`, `"`, a backtick), at a second `?`, and at a second `http://`, `https://` or `file://` — and a
+ * `)` that closes a bracket opened before the link is the bracket's and not the link's.
+ */
+export function firstQuery(text) {
+  let held = String(text ?? "").trim();
+  const hash = held.indexOf("#");
+  if (hash >= 0) held = held.slice(0, hash);
+  const mark = held.indexOf("?");
+  const before = mark >= 0 ? held.slice(0, mark) : "";
+  if (mark >= 0) held = held.slice(mark + 1);
+  const end = /[\s\]<>"`?]|(?:https?|file):\/\//i.exec(held);
+  if (end !== null) held = held.slice(0, end.index);
+  const opened = (before.match(/\(/g) ?? []).length - (before.match(/\)/g) ?? []).length;
+  if (opened > 0 && held.endsWith(")")) held = held.slice(0, -1);
+  return held;
+}
+
+/**
  * The two tagged shade values' vocabularies: a kind, and the one parameter it takes.
  *
  * Declared above the recipe rather than beside the readers, because the recipe names
@@ -484,9 +658,9 @@ const TRANSFERS = {
   value: {},
   edge: {
     parameter: "weight",
-    check: (value, text) => {
+    check: (value) => {
       if (!(value >= 0)) {
-        throw new PermalinkError(`the edge transfer's weight is at least 0; the link says ${text}.`);
+        throw new PermalinkError(`The edge transfer's weight has to be 0 or more, not ${number(value)}.`);
       }
     },
   },
@@ -497,9 +671,9 @@ const ROLLOFFS = {
   none: {},
   soft_knee: {
     parameter: "knee",
-    check: (value, text) => {
+    check: (value) => {
       if (!(value >= 0 && value < 1)) {
-        throw new PermalinkError(`the rolloff's knee is at least 0 and below 1; the link says ${text}.`);
+        throw new PermalinkError(`The soft knee rolloff's knee has to be at least 0 and below 1, not ${number(value)}.`);
       }
     },
   },
@@ -538,7 +712,7 @@ export const SHADE_KEYS = [
   {
     key: "gamma",
     control: "number",
-    read: (text) => positive(text, "gamma"),
+    read: (text) => positive(text, wordsFor("gamma")),
     write: (value) => number(value),
     fallback: 1,
     same: (a, b) => a === b,
@@ -546,7 +720,7 @@ export const SHADE_KEYS = [
   {
     key: "cycles",
     control: "number",
-    read: (text) => positive(text, "cycles"),
+    read: (text) => positive(text, wordsFor("cycles")),
     write: (value) => number(value),
     fallback: 1,
     same: (a, b) => a === b,
@@ -554,7 +728,7 @@ export const SHADE_KEYS = [
   {
     key: "phase",
     control: "number",
-    read: (text) => finite(text, "phase"),
+    read: (text) => finite(text, wordsFor("phase")),
     write: (value) => number(value),
     fallback: 0,
     same: (a, b) => a === b,
@@ -562,7 +736,7 @@ export const SHADE_KEYS = [
   {
     key: "reverse",
     control: "flag",
-    read: (text) => flag(text, "reverse"),
+    read: (text) => flag(text, wordsFor("reverse")),
     write: (value) => (value ? "1" : "0"),
     fallback: false,
     same: (a, b) => a === b,
@@ -570,7 +744,7 @@ export const SHADE_KEYS = [
   {
     key: "mirror",
     control: "flag",
-    read: (text) => flag(text, "mirror"),
+    read: (text) => flag(text, wordsFor("mirror")),
     write: (value) => (value ? "1" : "0"),
     fallback: false,
     same: (a, b) => a === b,
@@ -599,7 +773,7 @@ export const SHADE_KEYS = [
     key: "scale",
     control: "choice",
     table: SCALES,
-    read: (text) => choice(text, "scale", SCALES),
+    read: (text) => choice(text, wordsFor("scale"), SCALES),
     write: (value) => value,
     fallback: "leveled",
     same: (a, b) => a === b,
@@ -607,7 +781,7 @@ export const SHADE_KEYS = [
   {
     key: "lambda",
     control: "number",
-    read: (text) => unit(text, "lambda"),
+    read: (text) => unit(text, wordsFor("lambda")),
     write: (value) => number(value),
     fallback: 1,
     same: (a, b) => a === b,
@@ -615,7 +789,7 @@ export const SHADE_KEYS = [
   {
     key: "period",
     control: "number",
-    read: (text) => positive(text, "period"),
+    read: (text) => positive(text, wordsFor("period")),
     write: (value) => number(value),
     fallback: 1,
     same: (a, b) => a === b,
@@ -758,15 +932,8 @@ export function defaultShade() {
  * is what makes `p` checkable at all.
  */
 export function parse(search, context) {
-  const params = new URLSearchParams(stripLeadingQuestion(search));
-
-  const seen = new Set();
-  for (const key of params.keys()) {
-    if (seen.has(key)) {
-      throw new PermalinkError(`the link gives ${key} twice, and there is no rule for which wins.`);
-    }
-    seen.add(key);
-  }
+  const params = readQuery(search);
+  const seen = new Set(params.keys());
 
   // A link that says nothing about the picture is the home view, and a link that says
   // nothing about the picture but does open a panel is still the home view: a UI key
@@ -775,26 +942,29 @@ export function parse(search, context) {
 
   const version = params.get("v");
   if (version === null) {
-    throw new PermalinkError("the link carries no v, so there is no way to know which set of rules it was written against.");
+    throw new PermalinkError("This link doesn't say which version of the explorer wrote it, so it can't be opened.");
   }
   if (!READS.includes(Number(version)) || !/^\d+$/.test(version)) {
-    throw new PermalinkError(`this page speaks permalink v${VERSION} and the link says v=${version}. It was written for a version of this page that no longer exists, or for one that does not exist yet.`);
+    throw new PermalinkError(
+      `This link says it was written by version ${version} of the explorer, and this page reads ` +
+        `versions ${READS[0]} to ${VERSION}. It comes from a version that no longer exists, or one that does not exist yet.`,
+    );
   }
 
   const family = params.get("f") ?? FAMILIES[0];
   if (!FAMILIES.includes(family)) {
     if (family in RENDER_ONLY_FAMILIES) {
-      throw new PermalinkError(`${family} is not a view: ${RENDER_ONLY_FAMILIES[family]}.`);
+      throw new PermalinkError(`This link names ${family}, which can't be opened as a view: ${RENDER_ONLY_FAMILIES[family]}.`);
     }
-    throw new PermalinkError(`there is no family called ${family}.`);
+    throw new PermalinkError(`This link names a fractal the explorer doesn't know: ${family}.`);
   }
 
   const mode = params.get("m") ?? MODES[0];
   if (!MODES.includes(mode)) {
     if (mode in NICHE_MODES) {
-      throw new PermalinkError(`${mode} is not offered here: ${NICHE_MODES[mode]}.`);
+      throw new PermalinkError(`This link asks for ${mode}, which this page doesn't offer: ${NICHE_MODES[mode]}.`);
     }
-    throw new PermalinkError(`there is no render mode called ${mode}.`);
+    throw new PermalinkError(`This link names a render mode the explorer doesn't know: ${mode}.`);
   }
 
   const wanted = MODE_PARAMETERS[mode] ?? [];
@@ -806,16 +976,20 @@ export function parse(search, context) {
     // `n` arrived with v4, so an older link that spells it spells a key its own version
     // never had — the deep contract's rule for its `f`.
     if (key === CAP_KEY && Number(version) < 4) {
-      throw new PermalinkError(`the link carries a key this page does not know: ${key}. The iteration cap is a key from v=4 on.`);
+      throw new PermalinkError(
+        `This link names an iteration cap, and it says it was written by version ${version} of the explorer, ` +
+          "which had none. Links carry an iteration cap from version 4 on.",
+      );
     }
     if (known.has(key) || UI_KEYS.has(key)) continue;
     if (CONSTANT_KEYS.includes(key)) {
-      throw new PermalinkError(`${key} is a constant of a family this link does not name — ${family} has ${CONSTANTS[family].length === 0 ? "none" : CONSTANTS[family].join(" and ")}.`);
+      const has = CONSTANTS[family].length === 0 ? "no constants at all" : `only ${constantWords(family)}`;
+      throw new PermalinkError(`This link gives the ${wordsFor(key)}, which ${family} doesn't have: it has ${has}.`);
     }
     if (PARAMETER_KEYS.has(key)) {
-      throw new PermalinkError(`the ${mode} render mode has no ${key} parameter.`);
+      throw new PermalinkError(`The ${mode} render mode has no ${wordsFor(key)}, and this link gives it one.`);
     }
-    throw new PermalinkError(`the link carries a key this page does not know: ${key}.`);
+    throw new PermalinkError(`This link carries a setting the explorer doesn't recognize: ${wordsFor(key)}.`);
   }
 
   const constants = {};
@@ -833,7 +1007,7 @@ export function parse(search, context) {
   const y = coordinate(params.get("y"), "y") ?? home.y;
   const w = coordinate(params.get("w"), "w") ?? home.w;
   if (!(w.value > 0)) {
-    throw new PermalinkError(`w is the width of the view in the plane, so it has to be positive; the link says ${w.text}.`);
+    throw new PermalinkError(`The width has to be more than 0, not ${w.text}.`);
   }
 
   // Absent is the width policy's cap, which is what every link before v4 meant and what
@@ -845,16 +1019,16 @@ export function parse(search, context) {
 
   const palette = params.get("p") ?? context.defaultPalette;
   if (!context.palettes.has(palette)) {
-    throw new PermalinkError(`there is no palette called ${palette} among the ones this page carries.`);
+    throw new PermalinkError(`This link names a palette the explorer doesn't carry: ${palette}.`);
   }
 
   const values = {};
   for (const key of wanted) {
     const text = params.get(key);
     if (text === null) continue;
-    const value = finite(text, key);
+    const value = finite(text, wordsFor(key));
     if (!PARAMETERS[key].check(value)) {
-      throw new PermalinkError(`${key} has to be ${PARAMETERS[key].says}; the link says ${text}.`);
+      throw new PermalinkError(`The ${wordsFor(key)} has to be ${PARAMETERS[key].says}, not ${text}.`);
     }
     values[key] = value;
   }
@@ -868,7 +1042,7 @@ export function parse(search, context) {
     if (text !== null) shade[spec.key] = spec.read(text);
   }
   if (shade.mirror && context.palettes.get(palette).cyclic) {
-    throw new PermalinkError(`${palette} is cyclic, so folding it would halve the cycle it was drawn to have. Folding is the seam fix for a map that has a seam.`);
+    throw new PermalinkError(foldedCycle(palette));
   }
 
   // Whether this mode is one the operator acts on is the module's answer and not
@@ -1061,14 +1235,16 @@ function stripLeadingQuestion(search) {
 function coordinate(text, key) {
   if (text === null || text === undefined) return null;
   if (text.length > COORDINATE_LIMIT) {
-    throw new PermalinkError(`${key} is ${text.length} characters, and a coordinate is capped at ${COORDINATE_LIMIT}.`);
+    throw new PermalinkError(
+      `The ${wordsFor(key)} is ${text.length} characters long, and a coordinate can be at most ${COORDINATE_LIMIT}.`,
+    );
   }
   if (!DECIMAL.test(text)) {
-    throw new PermalinkError(`${key} has to be a decimal number, with or without an exponent; the link says ${text}.`);
+    throw new PermalinkError(`The ${wordsFor(key)} has to be a decimal number, like -0.75 or 1.5e-8, not ${text}.`);
   }
   const value = Number(text);
   if (!Number.isFinite(value)) {
-    throw new PermalinkError(`${key} is not a number this arithmetic can hold: ${text}.`);
+    throw new PermalinkError(`The ${wordsFor(key)} is too large a number to work with: ${text}.`);
   }
   return { text, value };
 }
@@ -1077,86 +1253,89 @@ function readAspect(text) {
   if (text === null) return { ...DEFAULT_ASPECT };
   const found = ASPECT.exec(text);
   if (!found) {
-    throw new PermalinkError(`a is the aspect, written across:down — the link says ${text}.`);
+    throw new PermalinkError(`The aspect ratio is written as width:height, like 16:9, not ${text}.`);
   }
   const across = Number(found[1]);
   const down = Number(found[2]);
   if (across < 1 || down < 1 || across > ASPECT_LIMIT || down > ASPECT_LIMIT) {
-    throw new PermalinkError(`an aspect's two sides are each between 1 and ${ASPECT_LIMIT}; the link says ${text}.`);
+    throw new PermalinkError(`Each side of the aspect ratio has to be between 1 and ${ASPECT_LIMIT}, not ${text}.`);
   }
   return { across, down };
 }
 
-function finite(text, key) {
+/** `words` is what the number is, as a reader would name it: `"gamma"`, never a key. */
+function finite(text, words) {
   if (!DECIMAL.test(text)) {
-    throw new PermalinkError(`${key} has to be a number; the link says ${text}.`);
+    throw new PermalinkError(`The ${words} has to be a number, not ${text}.`);
   }
   const value = Number(text);
   if (!Number.isFinite(value)) {
-    throw new PermalinkError(`${key} is not a number this arithmetic can hold: ${text}.`);
+    throw new PermalinkError(`The ${words} is too large a number to work with: ${text}.`);
   }
   return value;
 }
 
-function positive(text, key) {
-  const value = finite(text, key);
+function positive(text, words) {
+  const value = finite(text, words);
   if (!(value > 0)) {
-    throw new PermalinkError(`${key} has to be positive; the link says ${text}.`);
+    throw new PermalinkError(`The ${words} has to be more than 0, not ${text}.`);
   }
   return value;
 }
 
-function unit(text, key) {
-  const value = finite(text, key);
+function unit(text, words) {
+  const value = finite(text, words);
   if (!(value >= 0 && value <= 1)) {
-    throw new PermalinkError(`${key} is between 0 and 1; the link says ${text}.`);
+    throw new PermalinkError(`The ${words} has to be between 0 and 1, not ${text}.`);
   }
   return value;
 }
 
 /** One word out of a table of them, spelled exactly. */
-function choice(text, key, table) {
+function choice(text, words, table) {
   if (!Object.hasOwn(table, text)) {
-    throw new PermalinkError(`${key} is one of ${Object.keys(table).join(", ")}; the link says ${text}.`);
+    throw new PermalinkError(`The ${words} is ${either(Object.keys(table))}, not ${text}.`);
   }
   return text;
 }
 
-function flag(text, key) {
+function flag(text, words) {
   if (text !== "0" && text !== "1") {
-    throw new PermalinkError(`${key} is 0 or 1; the link says ${text}.`);
+    throw new PermalinkError(`The ${words} is 0 for off or 1 for on, not ${text}.`);
   }
   return text === "1";
 }
 
 /** `name` or `name:number` — one tagged value, the way the engine tags its own. */
-function tagged(text, key, table) {
+function tagged(text, words, table) {
   const colon = text.indexOf(":");
   const kind = colon === -1 ? text : text.slice(0, colon);
   const entry = table[kind];
   if (entry === undefined) {
-    throw new PermalinkError(`${key} is one of ${Object.keys(table).join(", ")}; the link says ${text}.`);
+    throw new PermalinkError(`The ${words} is ${either(Object.keys(table))}, not ${text}.`);
   }
   if (entry.parameter === undefined) {
     if (colon !== -1) {
-      throw new PermalinkError(`${key}=${kind} takes no value after it; the link says ${text}.`);
+      throw new PermalinkError(`The ${kind} ${words} takes no number after it, not ${text}.`);
     }
     return { kind };
   }
   if (colon === -1) {
-    throw new PermalinkError(`${key}=${kind} needs its ${entry.parameter} after a colon; the link says ${text}.`);
+    throw new PermalinkError(
+      `The ${kind} ${words} needs its ${entry.parameter} after a colon, like ${kind}:0.5, not ${text}.`,
+    );
   }
-  const value = finite(text.slice(colon + 1), `${key}'s ${entry.parameter}`);
-  entry.check(value, text);
+  const value = finite(text.slice(colon + 1), `${kind} ${words}'s ${entry.parameter}`);
+  entry.check(value);
   return { kind, [entry.parameter]: value };
 }
 
 function readTransfer(text) {
-  return tagged(text, "transfer", TRANSFERS);
+  return tagged(text, wordsFor("transfer"), TRANSFERS);
 }
 
 function readRolloff(text) {
-  return tagged(text, "rolloff", ROLLOFFS);
+  return tagged(text, wordsFor("rolloff"), ROLLOFFS);
 }
 
 function writeTagged(value) {
@@ -1183,22 +1362,30 @@ function readLevel(text) {
   const operator = colon === -1 ? text : text.slice(0, colon);
   const entry = OPERATORS[operator];
   if (entry === undefined) {
-    throw new PermalinkError(`level names ${operator}, and the operators this page can replay are ${Object.keys(OPERATORS).join(", ")}.`);
+    throw new PermalinkError(
+      `The tone curve names ${operator}, and this page can replay only ${either(Object.keys(OPERATORS))}.`,
+    );
   }
   if (colon === -1) {
-    throw new PermalinkError(`level=${operator} needs its ${entry.parameters.length} numbers after a colon, ${entry.parameters.join(", ")}; the link says ${text}.`);
+    throw new PermalinkError(
+      `The tone curve needs its ${entry.parameters.length} numbers after a colon (${entry.parameters.join(", ")}), not ${text}.`,
+    );
   }
   const parts = text.slice(colon + 1).split(",");
   if (parts.length !== entry.parameters.length) {
-    throw new PermalinkError(`${operator} takes ${entry.parameters.length} numbers — ${entry.parameters.join(", ")} — and the link gives ${parts.length}.`);
+    throw new PermalinkError(
+      `The tone curve takes ${entry.parameters.length} numbers (${entry.parameters.join(", ")}), and this gives ${parts.length}.`,
+    );
   }
-  const read = parts.map((part, at) => finite(part, `${operator}'s ${entry.parameters[at]}`));
+  const read = parts.map((part, at) => finite(part, `tone curve's ${entry.parameters[at]}`));
   const [black, white, exponent, low, high] = read;
   if (!(white > black)) {
-    throw new PermalinkError(`${operator}'s white point sits above its black point; the link says ${number(white)} above ${number(black)}.`);
+    throw new PermalinkError(
+      `The tone curve's white point has to sit above its black point, and here it is ${number(white)} against ${number(black)}.`,
+    );
   }
   if (!(exponent > 0)) {
-    throw new PermalinkError(`${operator}'s exponent is positive; the link says ${number(exponent)}.`);
+    throw new PermalinkError(`The tone curve's exponent has to be more than 0, not ${number(exponent)}.`);
   }
   return { operator, black_pt: black, white_pt: white, exponent, out_ends: [low, high] };
 }

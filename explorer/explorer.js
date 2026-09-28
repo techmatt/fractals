@@ -1867,13 +1867,13 @@ function settle({ remember = true } = {}) {
 /** The address bar: the picture, then the panel, then the Gallery tab's collection where
  *  that tab is showing one other than the general gallery. */
 function readdress() {
-  const picture = currentQuery();
-  let furniture = showing === DEFAULT_PANEL ? "" : `&panel=${encodeURIComponent(showing)}`;
   const collection = tiles?.population().collection ?? gallery.GENERAL;
-  if (showing === "gallery" && collection !== gallery.GENERAL) {
-    furniture += `&collection=${encodeURIComponent(collection)}`;
-  }
-  history.replaceState(null, "", `?${picture}${furniture}`);
+  // Set on top of the picture and never appended to it *(duplicate_key_links_ckpt154)*.
+  const address = link.withKeys(currentQuery(), [
+    ["panel", showing === DEFAULT_PANEL ? null : encodeURIComponent(showing)],
+    ["collection", showing === "gallery" && collection !== gallery.GENERAL ? encodeURIComponent(collection) : null],
+  ]);
+  history.replaceState(null, "", `?${address}`);
 }
 
 // ------------------------------------------------------------------- the way back
@@ -3118,14 +3118,17 @@ let saver = null;
 /** The collection and chips the running screensaver was started from, for its address. */
 let saverFilters = null;
 
-/** The four keys a screensaver link adds to a picture's own, from `saverFilters`. */
+/** The keys a screensaver link sets on a picture's own, from `saverFilters`, as the
+ *  `[key, value]` entries `withKeys` takes: set, never appended. */
 function saverFurniture(every) {
-  const parts = ["panel=screensaver", `every=${encodeURIComponent(every)}`];
   const { collection, modes, hue } = saverFilters;
-  if (collection !== gallery.GENERAL) parts.push(`collection=${encodeURIComponent(collection)}`);
-  if (modes.length > 0) parts.push(`modes=${modes.map(encodeURIComponent).join(",")}`);
-  if (hue !== null) parts.push(`hue=${encodeURIComponent(hue)}`);
-  return parts.join("&");
+  return [
+    ["panel", "screensaver"],
+    ["every", encodeURIComponent(every)],
+    ["collection", collection !== gallery.GENERAL ? encodeURIComponent(collection) : null],
+    ["modes", modes.length > 0 ? modes.map(encodeURIComponent).join(",") : null],
+    ["hue", hue !== null ? encodeURIComponent(hue) : null],
+  ];
 }
 
 /**
@@ -5341,7 +5344,7 @@ function readLink(query) {
     if (link.isDeep(`?${query}`)) return { deep: query };
     return { shallow: link.parse(`?${query}`, contract) };
   } catch (error) {
-    return { why: `That link does not read: ${error.message ?? error}` };
+    return { why: String(error.message ?? error) };
   }
 }
 
@@ -5842,7 +5845,7 @@ async function main() {
     parse: (query) => link.parse(`?${query}`, contract),
     estimate: download.estimate,
     pictureOf: download.pictureOf,
-    address: (seat, every) => history.replaceState(null, "", `?${seat.link}&${saverFurniture(every)}`),
+    address: (seat, every) => history.replaceState(null, "", `?${link.withKeys(seat.link, saverFurniture(every))}`),
     leave: leaveScreensaver,
     // What stands in for the first picture until it is drawn *(screensaver_first_frame_ckpt154)*.
     viewer: canvas,

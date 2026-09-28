@@ -45,9 +45,12 @@ import {
   defaultShade,
   encode,
   encodeCurve,
+  foldedCycle,
   levelUnder,
   readCap,
+  readQuery,
   shortest,
+  wordsFor,
 } from "./permalink.js";
 import * as fx from "./deep-fx.js";
 
@@ -173,24 +176,17 @@ const KNOWN = new Set([
  * `context.palettes` is the baked set, which is what makes `p` checkable at all.
  */
 export function parse(search, context) {
-  const params = new URLSearchParams(stripLeadingQuestion(search));
-
-  const seen = new Set();
-  for (const key of params.keys()) {
-    if (seen.has(key)) {
-      throw new PermalinkError(`the link gives ${key} twice, and there is no rule for which wins.`);
-    }
-    seen.add(key);
-  }
+  const params = readQuery(search);
+  const seen = new Set(params.keys());
 
   const version = params.get(MARKER);
   if (version === null) {
-    throw new PermalinkError("this is not a deep link: it carries no dv.");
+    throw new PermalinkError("This isn't a Deep tab link, so the Deep tab can't open it.");
   }
   if (!/^\d+$/.test(version) || !READS.includes(Number(version))) {
     throw new PermalinkError(
-      `this page speaks the deep contract v${VERSION} and the link says ${MARKER}=${version}. ` +
-        "It was written for a version of this tab that no longer exists, or for one that does not exist yet.",
+      `This link says it was written by version ${version} of the Deep tab, and this page reads ` +
+        `versions ${READS[0]} to ${VERSION}. It comes from a version that no longer exists, or one that does not exist yet.`,
     );
   }
 
@@ -198,10 +194,13 @@ export function parse(search, context) {
     // `f` arrived with v3, so an older link that spells it spells a key its own version
     // never had.
     if (key === "f" && Number(version) < 3) {
-      throw new PermalinkError(`the link carries a key the Deep tab does not know: ${key}.`);
+      throw new PermalinkError(
+        `This link names a fractal, and it says it was written by version ${version} of the Deep tab, ` +
+          "which drew only the Mandelbrot set and its Julia sets. Links name a fractal from version 3 on.",
+      );
     }
     if (KNOWN.has(key) || UI_KEYS.has(key)) continue;
-    throw new PermalinkError(`the link carries a key the Deep tab does not know: ${key}.`);
+    throw new PermalinkError(`This link carries a setting the Deep tab doesn't recognize: ${wordsFor(key)}.`);
   }
 
   const julia = juliaOf(params);
@@ -227,7 +226,7 @@ export function parse(search, context) {
 
   const palette = params.get("p") ?? context.defaultPalette;
   if (!context.palettes.has(palette)) {
-    throw new PermalinkError(`there is no palette called ${palette} among the ones this page carries.`);
+    throw new PermalinkError(`This link names a palette the explorer doesn't carry: ${palette}.`);
   }
 
   const shade = defaultShade();
@@ -236,10 +235,7 @@ export function parse(search, context) {
     if (text !== null) shade[spec.key] = spec.read(text);
   }
   if (shade.mirror && context.palettes.get(palette).cyclic) {
-    throw new PermalinkError(
-      `${palette} is cyclic, so folding it would halve the cycle it was drawn to have. ` +
-        "Folding is the seam fix for a map that has a seam.",
-    );
+    throw new PermalinkError(foldedCycle(palette));
   }
 
   const levelText = params.get(LEVEL_KEY.key);
@@ -260,15 +256,16 @@ function degreeOf(name, julia) {
   const family = FAMILIES.get(name);
   if (family === undefined) {
     throw new PermalinkError(
-      `f is the family, and the Deep tab draws ${[...FAMILIES.keys()].join(", ")}; the link says ${name}.`,
+      "The Deep tab draws the Mandelbrot set, the Multibrot sets of degrees 3 to 6, and their Julia sets, " +
+        `and this link names ${name}.`,
     );
   }
   if (family.julia && julia === null) {
-    throw new PermalinkError(`${name} is a Julia set, so the link has to say which one with cx and cy.`);
+    throw new PermalinkError(`This link names a Julia set, ${name}, and not which one: it has to give c, both its parts.`);
   }
   if (!family.julia && julia !== null) {
     throw new PermalinkError(
-      `${name} is a parameter plane, and cx and cy name a Julia set: say f=julia${family.degree === 2 ? "" : family.degree}, or leave the parameter out.`,
+      `This link names ${name} and also gives a value of c, which only a Julia set has, so it names two different fractals.`,
     );
   }
   return family.degree;
@@ -291,7 +288,8 @@ function juliaOf(params) {
   if (re === null && im === null) return null;
   if (re === null || im === null) {
     throw new PermalinkError(
-      "cx and cy are the two halves of one number — the c of z² + c — so a link carries both or neither.",
+      `This link gives the ${wordsFor(re === null ? "cy" : "cx")} and not the ${wordsFor(re === null ? "cx" : "cy")}. ` +
+        "The two are halves of the c of z² + c, so a link gives both or neither.",
     );
   }
   return { x: coordinate(re, "cx"), y: coordinate(im, "cy") };
@@ -456,15 +454,13 @@ function coordinate(text, key) {
   if (text === null || text === undefined) return null;
   if (text.length > COORDINATE_LIMIT) {
     throw new PermalinkError(
-      `${key} is ${text.length} characters, and a coordinate is capped at ${COORDINATE_LIMIT}. ` +
+      `The ${wordsFor(key)} is ${text.length} characters long, and a coordinate can be at most ${COORDINATE_LIMIT}. ` +
         "That is about as deep as a link can spell a place; the view itself can go further.",
     );
   }
   const dec = fx.parse(text);
   if (dec === null) {
-    throw new PermalinkError(
-      `${key} has to be a decimal number, with or without an exponent; the link says ${text}.`,
-    );
+    throw new PermalinkError(`The ${wordsFor(key)} has to be a decimal number, like -0.75 or 1.5e-8, not ${text}.`);
   }
   return { text: fx.text(dec), dec };
 }
@@ -501,14 +497,14 @@ export function exactInDouble(coordinate) {
  */
 function width(text) {
   if (typeof text !== "string" || text.length > COORDINATE_LIMIT) {
-    throw new PermalinkError(`w is the width of the view in the plane, and this is not one: ${text}.`);
+    throw new PermalinkError(`The width can be at most ${COORDINATE_LIMIT} characters long, and this is ${text}.`);
   }
   if (fx.parse(text) === null) {
-    throw new PermalinkError(`w has to be a decimal number; the link says ${text}.`);
+    throw new PermalinkError(`The width has to be a decimal number, like 1.5e-20, not ${text}.`);
   }
   const value = Number(text);
   if (!(value > 0) || !Number.isFinite(value)) {
-    throw new PermalinkError(`w is the width of the view in the plane, so it has to be positive; the link says ${text}.`);
+    throw new PermalinkError(`The width has to be more than 0, not ${text}.`);
   }
   return { text: shortest(value), value };
 }
@@ -522,12 +518,12 @@ function readAspect(text) {
   if (text === null) return { ...DEFAULT_ASPECT };
   const found = ASPECT.exec(text);
   if (!found) {
-    throw new PermalinkError(`a is the aspect, written across:down — the link says ${text}.`);
+    throw new PermalinkError(`The aspect ratio is written as width:height, like 16:9, not ${text}.`);
   }
   const across = Number(found[1]);
   const down = Number(found[2]);
   if (across < 1 || down < 1 || across > ASPECT_LIMIT || down > ASPECT_LIMIT) {
-    throw new PermalinkError(`an aspect's two sides are each between 1 and ${ASPECT_LIMIT}; the link says ${text}.`);
+    throw new PermalinkError(`Each side of the aspect ratio has to be between 1 and ${ASPECT_LIMIT}, not ${text}.`);
   }
   return { across, down };
 }

@@ -3077,7 +3077,7 @@ export function mount(host) {
     try {
       frame = read.deep !== undefined ? deepLink.parse(`?${read.deep}`, context) : carry(read.shallow);
     } catch (error) {
-      return refuse(`That link does not read: ${error.message ?? error}`);
+      return refuse(String(error.message ?? error));
     }
     if (frame === null) return refuse("That link is on a plane the Deep tab does not draw, and Dive does not search.");
     if (frame.julia !== null) {

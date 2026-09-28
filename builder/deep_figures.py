@@ -62,7 +62,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from urllib.parse import quote, unquote
 
-from . import images
+from . import images, repeats
 from .locations import Made, Split, panel_path
 from .paths import SITE_ROOT
 
@@ -261,7 +261,13 @@ class Frame:
         if self.degree != 2:
             f = f"f={'julia' if self.julia else 'multibrot'}{self.degree}&"
         c = f"cx={self.julia[0]}&cy={self.julia[1]}&" if self.julia else ""
-        return f"dv=3&{f}{c}x={self.x}&y={self.y}&w={self.w}&{self.colour}"
+        link = f"dv=3&{f}{c}x={self.x}&y={self.y}&w={self.w}&{self.colour}"
+        # The colour is joined on as a string, so a colour that names a place key, or a
+        # phase spliced into one that has a phase, would name it twice
+        # (duplicate_key_links_ckpt154). Refused here rather than written into a record.
+        if twice := repeats.repeated(link):
+            raise DeepFigureError(f"{link} names {', '.join(twice)} more than once")
+        return link
 
 
 @dataclass(frozen=True)

@@ -9,6 +9,7 @@ import assert from "node:assert/strict";
 
 import * as deep from "./deep-link.js";
 import * as link from "./permalink.js";
+import { queryIn } from "./dives.js";
 
 /** The page's context, as much of it as a contract needs. */
 const PALETTES = new Map([
@@ -73,18 +74,18 @@ test("a cap outside the kernel's range is refused by name", () => {
 });
 
 test("an unknown key is refused rather than ignored", () => {
-  assert.throws(() => deep.parse("?dv=1&p=inferno&m=stripe", context), /does not know: m/);
-  assert.throws(() => deep.parse("?dv=1&p=inferno&f=julia", context), /does not know: f/);
-  assert.throws(() => deep.parse("?dv=1&p=inferno&weight=0.5", context), /does not know: weight/);
+  assert.throws(() => deep.parse("?dv=1&p=inferno&m=stripe", context), /doesn't recognize: render mode/);
+  assert.throws(() => deep.parse("?dv=1&p=inferno&f=julia", context), /names a fractal.*version 1 of the Deep tab/);
+  assert.throws(() => deep.parse("?dv=1&p=inferno&weight=0.5", context), /doesn't recognize: texture weight/);
 });
 
 test("a key given twice is refused", () => {
-  assert.throws(() => deep.parse("?dv=1&p=inferno&w=1e-20&w=1e-21", context), /gives w twice/);
+  assert.throws(() => deep.parse("?dv=1&p=inferno&w=1e-20&w=1e-21", context), /names two different widths/);
 });
 
 test("a version this page does not speak is refused", () => {
-  assert.throws(() => deep.parse("?dv=4&p=inferno", context), /deep contract v3/);
-  assert.throws(() => deep.parse("?dv=x&p=inferno", context), /deep contract v3/);
+  assert.throws(() => deep.parse("?dv=4&p=inferno", context), /version \S+ of the Deep tab, and this page reads versions 1 to 3/);
+  assert.throws(() => deep.parse("?dv=x&p=inferno", context), /version \S+ of the Deep tab, and this page reads versions 1 to 3/);
 });
 
 test("the colour keys are the shallow contract's, in their existing spellings", () => {
@@ -146,17 +147,17 @@ test("a cyclic map is refused a fold, in the shallow contract's own words", () =
 
 test("a coordinate past the link's cap says so rather than being truncated", () => {
   const long = `0.${"1".repeat(70)}`;
-  assert.throws(() => deep.parse(`?dv=1&x=${long}&p=inferno`, context), /capped at 64/);
+  assert.throws(() => deep.parse(`?dv=1&x=${long}&p=inferno`, context), /can be at most 64/);
 });
 
 test("a width has to be a positive number", () => {
-  assert.throws(() => deep.parse("?dv=1&w=0&p=inferno", context), /has to be positive/);
-  assert.throws(() => deep.parse("?dv=1&w=-1e-9&p=inferno", context), /has to be positive/);
+  assert.throws(() => deep.parse("?dv=1&w=0&p=inferno", context), /has to be more than 0/);
+  assert.throws(() => deep.parse("?dv=1&w=-1e-9&p=inferno", context), /has to be more than 0/);
   assert.throws(() => deep.parse("?dv=1&w=wide&p=inferno", context), /decimal number/);
 });
 
 test("a palette this page does not carry is refused", () => {
-  assert.throws(() => deep.parse("?dv=1&p=nosuchmap", context), /no palette called nosuchmap/);
+  assert.throws(() => deep.parse("?dv=1&p=nosuchmap", context), /palette the explorer doesn't carry: nosuchmap/);
 });
 
 test("the marker is what dispatches, and each contract refuses the other's", () => {
@@ -180,11 +181,11 @@ test("the marker is what dispatches, and each contract refuses the other's", () 
   };
   // The shallow reader refuses a deep link, visibly and by its own first rule: a deep
   // link carries no `v`, so it is refused before any key of it is looked at.
-  assert.throws(() => link.parse(`?${ANCHOR}`, shallow), /carries no v/);
+  assert.throws(() => link.parse(`?${ANCHOR}`, shallow), /doesn't say which version/);
   // And were one to arrive carrying a `v` as well, the unknown-key sweep has the marker.
-  assert.throws(() => link.parse("?v=3&dv=1", shallow), /a key this page does not know: dv/);
+  assert.throws(() => link.parse("?v=3&dv=1", shallow), /doesn't recognize: Deep tab link version/);
   // And this one refuses a shallow link for want of the marker.
-  assert.throws(() => deep.parse("?v=3&p=inferno", context), /not a deep link/);
+  assert.throws(() => deep.parse("?v=3&p=inferno", context), /isn't a Deep tab link/);
 });
 
 test("the shallow contract moved once, and reads n by this contract's rule", () => {
@@ -207,7 +208,7 @@ test("the shallow contract moved once, and reads n by this contract's rule", () 
     settled: () => ({}),
   };
   // A v3 link never carried one, so one that does is refused rather than read.
-  assert.throws(() => link.parse("?v=3&n=48551", shallow), /a key this page does not know: n/);
+  assert.throws(() => link.parse("?v=3&n=48551", shallow), /names an iteration cap.*version 3/);
   assert.equal(link.parse("?v=4&n=48551", shallow).maxiter, 48551);
   // The same refusals, word for word, on either side.
   assert.equal(link.parse("?v=4&n=2000000", shallow).maxiter, 2_000_000);
@@ -351,11 +352,11 @@ test("a julia link is refused by the shallow contract, marker and all", () => {
   // the marker has to be what dispatches: a deep julia link pasted into the
   // shallow reader must be refused rather than drawn at a `c` rounded to a
   // double. It is refused at the first door, for carrying no `v` at all…
-  assert.throws(() => link.parse(`?${JULIA}`, shallow), /carries no v/);
+  assert.throws(() => link.parse(`?${JULIA}`, shallow), /doesn't say which version/);
   // …and at the second, if one were added to it.
   assert.throws(
     () => link.parse("?v=3&dv=2&cx=-0.5&cy=0.1&f=julia", shallow),
-    /does not know: dv/,
+    /doesn't recognize: Deep tab link version/,
   );
 });
 
@@ -384,8 +385,8 @@ test("the shallow and deep contracts both refuse iv and q", () => {
     constants: () => ({}),
     settled: () => ({}),
   };
-  assert.throws(() => link.parse("?v=3&iv=1", shallow), /does not know: iv/);
-  assert.throws(() => link.parse("?v=3&q=0.1,0.2", shallow), /does not know: q/);
+  assert.throws(() => link.parse("?v=3&iv=1", shallow), /doesn't recognize: "iv"/);
+  assert.throws(() => link.parse("?v=3&q=0.1,0.2", shallow), /doesn't recognize: "q"/);
   assert.throws(() => deep.parse(`?${ANCHOR}&iv=1`, context), /iv/);
   assert.throws(() => deep.parse(`?${ANCHOR}&q=0.1,0.2`, context), /q/);
 });
@@ -427,16 +428,16 @@ test("absent f is degree two on either plane, so a degree-2 link names no family
 });
 
 test("a family that contradicts the parameter is refused, and so is one it cannot draw", () => {
-  assert.throws(() => deep.parse("?dv=3&f=julia3&p=inferno", context), /cx and cy/);
+  assert.throws(() => deep.parse("?dv=3&f=julia3&p=inferno", context), /names a Julia set, julia3, and not which one/);
   assert.throws(
     () => deep.parse("?dv=3&f=multibrot4&cx=0.2&cy=0.1&p=inferno", context),
-    /parameter plane.*f=julia4/,
+    /names multibrot4 and also gives a value of c/,
   );
-  assert.throws(() => deep.parse("?dv=3&f=fractional_multibrot&p=inferno", context), /f is the family/);
-  assert.throws(() => deep.parse("?dv=3&f=multibrot7&p=inferno", context), /f is the family/);
-  assert.throws(() => deep.parse("?dv=3&f=burning_ship&p=inferno", context), /f is the family/);
+  assert.throws(() => deep.parse("?dv=3&f=fractional_multibrot&p=inferno", context), /The Deep tab draws the Mandelbrot set/);
+  assert.throws(() => deep.parse("?dv=3&f=multibrot7&p=inferno", context), /The Deep tab draws the Mandelbrot set/);
+  assert.throws(() => deep.parse("?dv=3&f=burning_ship&p=inferno", context), /The Deep tab draws the Mandelbrot set/);
   // And an older version never knew the key at all.
-  assert.throws(() => deep.parse("?dv=2&f=multibrot3&p=inferno", context), /does not know: f/);
+  assert.throws(() => deep.parse("?dv=2&f=multibrot3&p=inferno", context), /names a fractal.*version 2 of the Deep tab/);
 });
 
 test("the degree is part of what a field is, and part of what Saved says", () => {
@@ -518,4 +519,62 @@ test("a gallery row's tile is named as the builder names it, and subjects keep t
   assert.deepEqual([...grouped(rows).keys()], ["a", "b"]);
   assert.equal(grouped(rows).get("a").length, 2);
   assert.throws(() => rowsOf('{"subject": "a", "link": "dv=3", "n": 1}'));
+});
+
+// ------------------------------------------------------------ one key, named once
+//
+// duplicate_key_links_ckpt154. The sentence Matt met was this contract's: a Multibrot deep
+// link pasted into the Dive block twice over, read as one query naming `f` twice. Every
+// deep link this page writes names each key once, the furniture set on top of one stays
+// one of each, and a paste carrying one twice is read as the one.
+
+/** The keys a query names more than once. */
+function repeated(query) {
+  const keys = [...new URLSearchParams(query).keys()];
+  return [...new Set(keys.filter((key, at) => keys.indexOf(key) !== at))];
+}
+
+/** A deep view on every plane the tab draws, with a cap, an aspect, a scale and a curve. */
+function everyDeepView() {
+  const views = [];
+  for (const [name, family] of deep.FAMILIES) {
+    const c = family.julia ? "&cx=-0.74501772828532335842941892835857434&cy=0.149" : "";
+    const f = family.degree === 2 ? "" : `&f=${name}`;
+    views.push(deep.parse(`?dv=3${f}${c}&x=-0.1&y=0.2&w=1e-20&n=60000&a=21:9&p=inferno&scale=absolute&lambda=0.15`, context));
+    views.push(deep.parse(`?dv=3${f}${c}&w=1e-5&p=magma&level=band_autolevel/v1:0.45,0.98,1.41,0.45,0.98`, context));
+  }
+  return views;
+}
+
+test("the deep emit names each key once, and what it writes parses back to itself", () => {
+  for (const view of everyDeepView()) {
+    for (const scaleStated of [true, false]) {
+      const query = deep.emit(view, { scaleStated });
+      assert.deepEqual(repeated(query), [], query);
+      assert.equal(deep.canonicalize(`?${query}`, context), query);
+      // The address bar's panel, set on it twice, is one panel, and the picture is untouched.
+      const address = link.withKeys(link.withKeys(query, [["panel", "deep"]]), [["panel", "deep"]]);
+      assert.deepEqual(repeated(address), [], address);
+      assert.equal(deep.canonicalize(`?${address}`, context), query);
+    }
+  }
+});
+
+test("a Multibrot deep link pasted twice over reads as the one link", () => {
+  const query = deep.emit(everyDeepView().find((view) => view.degree === 3 && view.julia === null));
+  const url = `http://localhost:8000/explorer/?${query}`;
+  for (const text of [`[${url}](${url})`, `${url}\n${url}`, `${url}${url}`]) {
+    const read = queryIn(text);
+    assert.equal(read, query);
+    assert.equal(deep.emit(deep.parse(`?${read}`, context)), query);
+  }
+});
+
+test("a repeated key that says one thing is read, and one that says two is refused in words", () => {
+  const view = deep.parse("?dv=3&f=multibrot3&f=multibrot3&w=1e-20&p=inferno&w=1e-20", context);
+  assert.equal(view.degree, 3);
+  assert.throws(
+    () => deep.parse("?dv=3&f=multibrot3&f=multibrot4&p=inferno", context),
+    /^PermalinkError: This link names two different fractals, so it can't be opened\.$/,
+  );
 });

@@ -164,6 +164,12 @@ was raise, and every check after it went unrun.
   that seat's recipe and recorded tone curve. The wallpapers strip once carried a pin
   writer's spelling that dropped `mirror`, so its first thumbnail opened in another map;
   `readmes.py` has the story. A named skip for the next-door half.
+- **repeats** — every explorer link this repository stores names each key once: every
+  record a link is kept in, walked value by value, every served page's hrefs, and the
+  root README, with fractal-wallpapers' README too where the checkout is configured. The
+  readers take a key named twice with one value and refuse one named with two, so a
+  repeat in a record is a writer that appended where it should have set.
+  `repeats.py` has the story. A named skip for the next-door half.
 """
 
 import json
@@ -196,6 +202,7 @@ from . import (
     recipes,
     records,
     renders,
+    repeats,
     seats,
     sections,
     stamps,
@@ -1174,6 +1181,8 @@ def skips() -> tuple[Skip, ...]:
                 NO_CHECKOUT,
             )
         )
+        # Half: every record and page of this repository is read everywhere.
+        found.append(Skip("repeats", "the links in fractal-wallpapers' README", NO_CHECKOUT))
     if not images.available():
         found.append(Skip("figures", "each figure's size on disk", NO_PILLOW))
         found.append(Skip("assets", "each image's and each thumbnail's size on disk", NO_PILLOW))
@@ -1264,6 +1273,7 @@ def run_all() -> Report:
             "go": go.problems(),
             "packs": packs.problems(with_checkout=figures.stores_available()),
             "readmes": readmes.problems(with_checkout=figures.stores_available()),
+            "repeats": repeats.problems(with_checkout=figures.stores_available()),
         },
         skips(),
     )

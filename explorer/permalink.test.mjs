@@ -32,6 +32,7 @@ import {
   emit,
   FAMILIES,
   fieldKey,
+  firstQuery,
   fresh,
   LEVEL_KEY,
   MODE_PARAMETERS,
@@ -40,11 +41,15 @@ import {
   parse,
   PermalinkError,
   probeKey,
+  readQuery,
   settledParams,
   SHADE_KEYS,
   UI_KEYS,
   VERSION,
+  withKeys,
 } from "./permalink.js";
+import { queryIn } from "./dives.js";
+import { queryOf as savedQueryOf } from "./saved.js";
 import { CONSTANTS, CURVES, MODES as IDENTITIES, SETTLED } from "./catalog.js";
 import * as shade from "./shade.js";
 import * as modeParams from "./params.js";
@@ -148,7 +153,7 @@ test("a version 1 link still parses, and settles as the current version", () => 
   // And a version nobody has written yet is still refused rather than read hopefully.
   assert.throws(() => parse("v=5&x=0", CONTEXT), PermalinkError);
   assert.throws(() => parse("v=1.0&x=0", CONTEXT), PermalinkError);
-  assert.throws(() => parse("x=0&y=0", CONTEXT), /carries no v/);
+  assert.throws(() => parse("x=0&y=0", CONTEXT), /doesn't say which version/);
 });
 
 test("n is the cap, written only where it is not the width's, and a v3 link never carries one", () => {
@@ -182,7 +187,7 @@ test("n is the cap, written only where it is not the width's, and a v3 link neve
   );
 
   // An older link did not have the key, and a reader of it is told so rather than served.
-  assert.throws(() => parse(`v=3&${place}&n=32832`, ctx), /does not know: n/);
+  assert.throws(() => parse(`v=3&${place}&n=32832`, ctx), /names an iteration cap.*version 3/);
   assert.throws(() => parse(`v=${VERSION}&n=32.5`, ctx), /whole number/);
   // The explicit ceiling, two million, is the last cap a link may name (cap_split_ckpt145).
   assert.equal(parse(`v=${VERSION}&n=2000000`, ctx).maxiter, 2_000_000);
@@ -299,8 +304,8 @@ test("a constant is echoed verbatim, and belongs to the family that has one", ()
   const spelled =
     `v=${VERSION}&f=phoenix&cx=0.56670000000000000001&cy=-0.0e0&px=-0.5&py=0&zx=0&zy=0`;
   assert.equal(canonicalize(spelled, CONTEXT), `${spelled}&${HOUSE}`);
-  assert.throws(() => parse(`v=${VERSION}&cx=0.3`, CONTEXT), /mandelbrot has none/);
-  assert.throws(() => parse(`v=${VERSION}&f=julia&px=0.3`, CONTEXT), /julia has cx and cy/);
+  assert.throws(() => parse(`v=${VERSION}&cx=0.3`, CONTEXT), /which mandelbrot doesn't have: it has no constants at all/);
+  assert.throws(() => parse(`v=${VERSION}&f=julia&px=0.3`, CONTEXT), /which julia doesn't have: it has only c/);
   assert.throws(() => parse(`v=${VERSION}&f=julia&cx=0x10`, CONTEXT), /decimal number/);
 });
 
@@ -321,8 +326,8 @@ test("z₋₁ is a phoenix constant, and a link written before it existed still 
   assert.equal(view.constants.zy.value, -0.4506);
   assert.equal(emit(view, CONTEXT), `${memory}&${HOUSE}`);
 
-  assert.throws(() => parse(`v=${VERSION}&zx=0.3`, CONTEXT), /mandelbrot has none/);
-  assert.throws(() => parse(`v=${VERSION}&f=julia&zy=0.3`, CONTEXT), /julia has cx and cy/);
+  assert.throws(() => parse(`v=${VERSION}&zx=0.3`, CONTEXT), /which mandelbrot doesn't have: it has no constants at all/);
+  assert.throws(() => parse(`v=${VERSION}&f=julia&zy=0.3`, CONTEXT), /which julia doesn't have: it has only c/);
 });
 
 test("the Phoenix plane carries p and nothing else, and widened v3 rather than bumping it", () => {
@@ -345,11 +350,11 @@ test("the Phoenix plane carries p and nothing else, and widened v3 rather than b
   // Half of p is half an identity, as it is on the set.
   assert.throws(
     () => parse(`v=${VERSION}&f=phoenix_plane&px=-0.4`, CONTEXT),
-    /px and py .*names px and not py/s,
+    /gives the real part of the Phoenix coefficient p and not the imaginary part/,
   );
   // `c` is the pixel and `z₋₁` the origin by the plane's definition, so neither is a key.
-  assert.throws(() => parse(`v=${VERSION}&f=phoenix_plane&cx=0.3&cy=0`, CONTEXT), /phoenix_plane has px and py/);
-  assert.throws(() => parse(`v=${VERSION}&f=phoenix_plane&zx=0&zy=0`, CONTEXT), /phoenix_plane has px and py/);
+  assert.throws(() => parse(`v=${VERSION}&f=phoenix_plane&cx=0.3&cy=0`, CONTEXT), /which phoenix_plane doesn't have: it has only the Phoenix coefficient p/);
+  assert.throws(() => parse(`v=${VERSION}&f=phoenix_plane&zx=0&zy=0`, CONTEXT), /which phoenix_plane doesn't have: it has only the Phoenix coefficient p/);
 
   // And a bare Phoenix set is still the classic one it always was.
   const classic = parse(`v=${VERSION}&f=phoenix`, CONTEXT);
@@ -367,8 +372,8 @@ test("half an identity is refused, and the sentence names the half that is missi
   // be filled from the shipped anchor, so `cx` alone drew a c nobody chose and the
   // address bar canonicalized to it — a saved link naming a set that was never
   // picked, which is the one wrong this page cannot tell a reader about.
-  assert.throws(() => parse(`v=${VERSION}&f=julia&cx=-0.4`, CONTEXT), /names cx and not cy/);
-  assert.throws(() => parse(`v=${VERSION}&f=julia&cy=0.6`, CONTEXT), /names cy and not cx/);
+  assert.throws(() => parse(`v=${VERSION}&f=julia&cx=-0.4`, CONTEXT), /gives the real part of c and not the imaginary part of c/);
+  assert.throws(() => parse(`v=${VERSION}&f=julia&cy=0.6`, CONTEXT), /gives the imaginary part of c and not the real part of c/);
   assert.throws(() => parse(`v=${VERSION}&f=julia4&cx=-0.4`, CONTEXT), /both or neither/);
 
   // Each of phoenix's three pairs is its own identity, and names its own number.
@@ -376,11 +381,11 @@ test("half an identity is refused, and the sentence names the half that is missi
   assert.equal(canonicalize(whole, CONTEXT), `${whole}&${HOUSE}`);
   assert.throws(
     () => parse(`v=${VERSION}&f=phoenix&cx=0.5667&cy=0&px=-0.5&zx=0&zy=0`, CONTEXT),
-    /px and py .*memory coefficient p.*names px and not py/s,
+    /halves of the Phoenix coefficient p, so/,
   );
   assert.throws(
     () => parse(`v=${VERSION}&f=phoenix&cx=0.5667&cy=0&px=-0.5&py=0&zy=-0.45`, CONTEXT),
-    /zx and zy .*previous iterate.*names zy and not zx/s,
+    /gives the imaginary part of the starting point and not the real part.*halves of the starting point z₋₁/s,
   );
 
   // A frame coordinate has a stated default, so half a frame is not half an identity.
@@ -406,11 +411,11 @@ test("every constant this contract spells is half of a declared pair", () => {
 
 test("a mode's parameters are its own, and a mode with none refuses them all", () => {
   assert.deepEqual(parse(`v=${VERSION}&m=stripe&density=9`, CONTEXT).params, { density: 9 });
-  assert.throws(() => parse(`v=${VERSION}&density=9`, CONTEXT), /the smooth render mode has no density/);
-  assert.throws(() => parse(`v=${VERSION}&m=stripe&weight=0.5`, CONTEXT), /stripe render mode has no weight/);
-  assert.throws(() => parse(`v=${VERSION}&m=smooth_stripe&sigma=0.2`, CONTEXT), /has no sigma/);
-  assert.throws(() => parse(`v=${VERSION}&m=stripe&density=0`, CONTEXT), /has to be positive/);
-  assert.throws(() => parse(`v=${VERSION}&m=threads&weight=2`, CONTEXT), /between 0 and 1/);
+  assert.throws(() => parse(`v=${VERSION}&density=9`, CONTEXT), /The smooth render mode has no stripe density/);
+  assert.throws(() => parse(`v=${VERSION}&m=stripe&weight=0.5`, CONTEXT), /stripe render mode has no texture weight/);
+  assert.throws(() => parse(`v=${VERSION}&m=smooth_stripe&sigma=0.2`, CONTEXT), /has no kernel width/);
+  assert.throws(() => parse(`v=${VERSION}&m=stripe&density=0`, CONTEXT), /has to be more than 0/);
+  assert.throws(() => parse(`v=${VERSION}&m=threads&weight=2`, CONTEXT), /has to be between 0 and 1/);
 });
 
 test("a parameter nobody moved stays out of the link, so a retuned mode moves with it", () => {
@@ -495,31 +500,38 @@ test("a direct trap is keyed on its colour too, because it has no field to recol
 });
 
 test("an unknown key is refused", () => {
-  assert.throws(() => parse(`v=${VERSION}&zoom=3`, CONTEXT), /does not know: zoom/);
-  assert.throws(() => parse(`v=${VERSION}&pp=0.5`, CONTEXT), /does not know: pp/);
+  assert.throws(() => parse(`v=${VERSION}&zoom=3`, CONTEXT), /doesn't recognize: "zoom"/);
+  assert.throws(() => parse(`v=${VERSION}&pp=0.5`, CONTEXT), /doesn't recognize: "pp"/);
 });
 
 test("a family or a mode this page does not draw says which kind of no it is", () => {
-  assert.throws(() => parse(`v=${VERSION}&f=fractional_multibrot`, CONTEXT), /render-only/);
-  assert.throws(() => parse(`v=${VERSION}&f=burningship`, CONTEXT), /no family called burningship/);
-  assert.throws(() => parse(`v=${VERSION}&m=de`, CONTEXT), /niche render mode/);
-  assert.throws(() => parse(`v=${VERSION}&m=lighting`, CONTEXT), /no render mode called lighting/);
+  assert.throws(() => parse(`v=${VERSION}&f=fractional_multibrot`, CONTEXT), /can't be opened as a view: .*render-only/);
+  assert.throws(() => parse(`v=${VERSION}&f=burningship`, CONTEXT), /fractal the explorer doesn't know: burningship/);
+  assert.throws(() => parse(`v=${VERSION}&m=de`, CONTEXT), /which this page doesn't offer: .*niche render mode/);
+  assert.throws(() => parse(`v=${VERSION}&m=lighting`, CONTEXT), /render mode the explorer doesn't know: lighting/);
 });
 
 test("a coordinate is a decimal string, capped, and a width is positive", () => {
   assert.throws(() => parse(`v=${VERSION}&x=0x10`, CONTEXT), /decimal number/);
   assert.throws(() => parse(`v=${VERSION}&x=NaN`, CONTEXT), /decimal number/);
-  assert.throws(() => parse(`v=${VERSION}&x=0.${"1".repeat(70)}`, CONTEXT), /capped at 64/);
-  assert.throws(() => parse(`v=${VERSION}&w=0`, CONTEXT), /has to be positive/);
-  assert.throws(() => parse(`v=${VERSION}&w=-1`, CONTEXT), /has to be positive/);
+  assert.throws(() => parse(`v=${VERSION}&x=0.${"1".repeat(70)}`, CONTEXT), /can be at most 64/);
+  assert.throws(() => parse(`v=${VERSION}&w=0`, CONTEXT), /has to be more than 0/);
+  assert.throws(() => parse(`v=${VERSION}&w=-1`, CONTEXT), /has to be more than 0/);
 });
 
-test("the same key twice is refused, because there is no rule for which wins", () => {
-  assert.throws(() => parse(`v=${VERSION}&x=0&x=1`, CONTEXT), /twice/);
+test("the same key twice is read where it says one thing, and refused in words where it says two", () => {
+  // duplicate_key_links_ckpt154: the sentence names the key by what it is, never its letter.
+  assert.throws(() => parse(`v=${VERSION}&x=0&x=1`, CONTEXT), /^PermalinkError: This link names two different horizontal positions, so it can't be opened\.$/);
+  assert.throws(() => parse(`v=${VERSION}&f=julia&f=multibrot3`, CONTEXT), /two different fractals/);
+  const once = parse(`v=${VERSION}&f=multibrot3&x=0.1&p=${DEFAULT_PALETTE}`, CONTEXT);
+  const twice = parse(`v=${VERSION}&f=multibrot3&x=0.1&f=multibrot3&p=${DEFAULT_PALETTE}&x=0.1`, CONTEXT);
+  assert.equal(emit(twice, CONTEXT), emit(once, CONTEXT));
+  // Compared decoded, the way the reader reads them: two spellings of one value are one value.
+  assert.doesNotThrow(() => parse(`v=${VERSION}&a=21:9&a=21%3A9`, CONTEXT));
 });
 
 test("a palette outside the baked set is refused, and an unoffered one is not", () => {
-  assert.throws(() => parse(`v=${VERSION}&p=no_such_map`, CONTEXT), /no palette called no_such_map/);
+  assert.throws(() => parse(`v=${VERSION}&p=no_such_map`, CONTEXT), /palette the explorer doesn't carry: no_such_map/);
   assert.ok(PALETTES.has(DEFAULT_PALETTE));
   assert.equal(PALETTES.get(DEFAULT_PALETTE).offered, true);
   // The baked set is wider than the offered one: a map this site drew a figure in has
@@ -531,7 +543,7 @@ test("a palette outside the baked set is refused, and an unoffered one is not", 
 
 test("folding a cyclic map is refused, because there is no seam to fix", () => {
   assert.equal(PALETTES.get("twilight").cyclic, true);
-  assert.throws(() => parse(`v=${VERSION}&p=twilight&mirror=1`, CONTEXT), /halve the cycle/);
+  assert.throws(() => parse(`v=${VERSION}&p=twilight&mirror=1`, CONTEXT), /can't be mirrored: folding it would halve the cycle/);
   assert.equal(PALETTES.get("viridis").cyclic, false);
   assert.equal(
     canonicalize(`v=${VERSION}&p=viridis&mirror=1`, CONTEXT),
@@ -541,10 +553,10 @@ test("folding a cyclic map is refused, because there is no seam to fix", () => {
 
 test("a tagged shade value needs exactly the parameter its kind takes", () => {
   assert.throws(() => parse(`v=${VERSION}&transfer=edge`, CONTEXT), /needs its weight/);
-  assert.throws(() => parse(`v=${VERSION}&transfer=rank:2`, CONTEXT), /takes no value/);
-  assert.throws(() => parse(`v=${VERSION}&transfer=edge:-1`, CONTEXT), /at least 0/);
+  assert.throws(() => parse(`v=${VERSION}&transfer=rank:2`, CONTEXT), /takes no number after it/);
+  assert.throws(() => parse(`v=${VERSION}&transfer=edge:-1`, CONTEXT), /0 or more, not -1\./);
   assert.throws(() => parse(`v=${VERSION}&rolloff=soft_knee:1`, CONTEXT), /below 1/);
-  assert.throws(() => parse(`v=${VERSION}&rolloff=filmic`, CONTEXT), /none, soft_knee, reinhard, aces/);
+  assert.throws(() => parse(`v=${VERSION}&rolloff=filmic`, CONTEXT), /none, soft_knee, reinhard, or aces/);
 });
 
 // ------------------------------------------------------------ the recipe's controls
@@ -638,16 +650,16 @@ test("a control out of range is refused in the contract's own words", () => {
   // The control never phrases a refusal of its own: it hands the text to the contract
   // and shows the sentence a refused link would be shown.
   const view = parse(`v=${VERSION}&p=viridis`, CONTEXT);
-  assert.throws(() => shade.withKey(view.shade, "gamma", "0"), /gamma has to be positive/);
-  assert.throws(() => shade.withKey(view.shade, "cycles", "-1"), /cycles has to be positive/);
-  assert.throws(() => shade.withKey(view.shade, "phase", "over"), /phase has to be a number/);
-  assert.throws(() => shade.withKey(view.shade, "reverse", "2"), /reverse is 0 or 1/);
+  assert.throws(() => shade.withKey(view.shade, "gamma", "0"), /The gamma has to be more than 0/);
+  assert.throws(() => shade.withKey(view.shade, "cycles", "-1"), /The number of cycles has to be more than 0/);
+  assert.throws(() => shade.withKey(view.shade, "phase", "over"), /The phase has to be a number/);
+  assert.throws(() => shade.withKey(view.shade, "reverse", "2"), /The Reverse setting is 0 for off or 1 for on/);
   assert.throws(() => shade.withKey(view.shade, "transfer", "edge"), /needs its weight/);
   assert.throws(() => shade.withKey(view.shade, "rolloff", "soft_knee:1"), /below 1/);
-  assert.throws(() => shade.withKey(view.shade, "gamma", ""), /gamma has to be a number/);
-  assert.throws(() => shade.withKey(view.shade, "scale", "relative"), /scale is one of leveled, absolute/);
-  assert.throws(() => shade.withKey(view.shade, "lambda", "1.5"), /lambda is between 0 and 1/);
-  assert.throws(() => shade.withKey(view.shade, "period", "0"), /period has to be positive/);
+  assert.throws(() => shade.withKey(view.shade, "gamma", ""), /The gamma has to be a number/);
+  assert.throws(() => shade.withKey(view.shade, "scale", "relative"), /The scale is leveled or absolute/);
+  assert.throws(() => shade.withKey(view.shade, "lambda", "1.5"), /The lambda has to be between 0 and 1/);
+  assert.throws(() => shade.withKey(view.shade, "period", "0"), /The period has to be more than 0/);
   assert.throws(() => shade.withKey(view.shade, "sweep", "1"), /no shade key called sweep/);
 });
 
@@ -757,7 +769,7 @@ test("a view's centre spelled any way a link may spell it is a Julia constant", 
 
 test("an aspect is a shape, and both sides are bounded", () => {
   assert.equal(parse(`v=${VERSION}&a=4:3`, CONTEXT).aspect.down, 3);
-  assert.throws(() => parse(`v=${VERSION}&a=16x9`, CONTEXT), /across:down/);
+  assert.throws(() => parse(`v=${VERSION}&a=16x9`, CONTEXT), /written as width:height/);
   assert.throws(() => parse(`v=${VERSION}&a=0:9`, CONTEXT), /between 1 and 10000/);
 });
 
@@ -1030,4 +1042,97 @@ test("under the absolute scale a tone curve is read, then dropped from the link"
   );
   // Leveled keeps its curve exactly as before.
   assert.ok(emit(leveled, CONTEXT).endsWith(curve));
+});
+
+// ------------------------------------------------------------ one key, named once
+//
+// duplicate_key_links_ckpt154. "The link gives f twice" reached a reader through the Dive
+// block's Paste: a pasted text carrying one link twice was read as one query naming every
+// key of it twice. What is held here is every way this page writes or reads a query: the
+// contract's own emit, the keys the address bar, the screensaver and the atlas set on top
+// of a picture, and the reader of a pasted text. Each output names each key once and
+// parses back to the picture it came from.
+
+/** The keys a query names more than once. */
+function repeated(query) {
+  const keys = [...new URLSearchParams(query).keys()];
+  return [...new Set(keys.filter((key, at) => keys.indexOf(key) !== at))];
+}
+
+/** A view of every family under every mode, and the one that sets every key. */
+function everyView() {
+  const views = [parse(EVERYTHING, CONTEXT), parse(`${EVERYTHING}&level=${CURVE}`.replace("mirror=1&", ""), CONTEXT)];
+  for (const family of FAMILIES) for (const mode of MODES) views.push(fresh(family, mode, CONTEXT));
+  return views;
+}
+
+test("emit names each key once, and what it writes parses back to itself", () => {
+  for (const view of everyView()) {
+    const query = emit(view, CONTEXT);
+    assert.deepEqual(repeated(query), [], query);
+    assert.equal(canonicalize(query, CONTEXT), query);
+  }
+});
+
+test("the page's furniture is set on a picture, never appended, however often it is set", () => {
+  for (const view of everyView()) {
+    const query = emit(view, CONTEXT);
+    // The address bar, as `readdress` writes it, then again as the tab changes.
+    const gallery = withKeys(query, [["panel", "gallery"], ["collection", "hue-red"]]);
+    const atlas = withKeys(gallery, [["panel", encodeURIComponent("atlas:phoenix")], ["collection", null]]);
+    // The screensaver's keys, on a seat link that already carries a panel.
+    const saver = withKeys(gallery, [
+      ["panel", "screensaver"],
+      ["every", "30"],
+      ["collection", "hue-red"],
+      ["modes", ["smooth", "tia"].map(encodeURIComponent).join(",")],
+      ["hue", null],
+    ]);
+    // A link out of the atlas frame, onto a link that already opens the Atlas tab.
+    const out = withKeys(withKeys(query, [["panel", "atlas"]]), [["panel", "atlas"]]);
+    for (const address of [gallery, atlas, saver, out]) {
+      assert.deepEqual(repeated(address), [], address);
+      // The picture's own parts are kept byte for byte, so the address reopens it exactly.
+      assert.ok(address.startsWith(query), address);
+      assert.equal(emit(parse(address, CONTEXT), CONTEXT), query);
+    }
+    assert.equal(new URLSearchParams(atlas).get("panel"), "atlas:phoenix");
+    assert.equal(new URLSearchParams(atlas).has("collection"), false);
+    assert.equal(new URLSearchParams(saver).get("modes"), "smooth,tia");
+  }
+});
+
+test("a pasted text carrying one link twice reads as that link, by all three readers", () => {
+  const query = emit(parse(`v=${VERSION}&f=multibrot3&x=0.1&a=21:9&p=${DEFAULT_PALETTE}&level=${CURVE}`, CONTEXT), CONTEXT);
+  const url = `https://techmatt.github.io/fractals/explorer/?${query}`;
+  const pastes = [
+    `[${url}](${url})`,
+    `${url}\n${url}`,
+    `A view I liked\n${url}`,
+    `${url} ${url}`,
+    `${url}${url}`,
+    `${url}?${query}`,
+    `(${url})`,
+    `<${url}>`,
+    `"${url}"`,
+    `${url}#top`,
+    `?${query}`,
+    query,
+  ];
+  for (const text of pastes) {
+    for (const read of [firstQuery, queryIn, savedQueryOf]) {
+      assert.equal(read(text), query, `${read.name} of ${JSON.stringify(text)}`);
+    }
+  }
+  // What the old reader made of the first shape, for the record: the second link's `v` went
+  // into the first link's last value, and `f` came round twice.
+  const old = `${query}](${url})`;
+  assert.deepEqual(repeated(old)[0], "f");
+  assert.throws(() => parse(old, CONTEXT), /two different/);
+});
+
+test("readQuery reads a repeat that says one thing, and refuses one that says two", () => {
+  assert.equal(readQuery("v=4&p=x&p=x").get("p"), "x");
+  assert.throws(() => readQuery("v=4&m=tia&m=stripe"), /^PermalinkError: This link names two different render modes/);
+  assert.throws(() => readQuery("v=4&zoom=1&zoom=2"), /two different values for "zoom"/);
 });
