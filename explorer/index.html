@@ -133,25 +133,55 @@
          the way the Gallery tab is (explorer_nav_layout_ckpt145); `panel=deep:gallery` still
          opens the tab, because the article links it. -->
     <div class="tabpanel" id="panel-deep" role="tabpanel" aria-labelledby="tab-deep" hidden>
-      <!-- The Dive block (deep_dive_block_ckpt154): one sentence whose two blanks are
-           dropdowns, and Go. A press searches, takes a rung, lands and draws, and what lands
-           is an ordinary deep link. The status line says where it came from; `deep.js`'s
-           *the dive* has the rest. -->
+      <!-- The Dive block (deep_dive_block_ckpt154; two slots since dive_slots_ckpt154):
+           Search for minibrots near [A], then [action], [B], Go. A slot is a thumbnail and
+           its mode buttons; B shows only for dive into. A press searches, takes a rung, lands
+           and draws, and every landing joins Dive results under the tab's gallery.
+           `deep.js`'s *the dive* has the rest. -->
       <section class="dive" id="dive" aria-labelledby="head-dive">
         <div class="section-head"><h2 id="head-dive">Dive</h2></div>
         <div class="bar dive-sentence">
-          <label for="dive-from">Find a minibrot near</label>
-          <select id="dive-from">
-            <option value="view">this view</option>
-            <option value="seat" selected>a random wallpaper</option>
+          <span class="dive-words" id="dive-a-words">Search for minibrots near</span>
+          <div class="dive-slot" id="dive-a" role="group" aria-labelledby="dive-a-words">
+            <button type="button" class="dive-thumb" id="dive-a-thumb">
+              <canvas width="256" height="144"></canvas><img alt="" hidden>
+              <span class="dive-thumb-said"></span>
+            </button>
+            <span class="dive-modes">
+              <button type="button" data-mode="here" aria-pressed="true"
+                      title="This view. It follows the view until you press Here, which pins it.">Here</button>
+              <button type="button" data-mode="paste" aria-pressed="false"
+                      title="An explorer link from the clipboard.">Paste</button>
+              <button type="button" data-mode="random" aria-pressed="false"
+                      title="A random wallpaper on this plane, drawn again on every press.">Random</button>
+            </span>
+            <input type="text" class="dive-paste" aria-label="Paste an explorer link for A"
+                   placeholder="Paste a link" hidden>
+          </div>
+          <label for="dive-action">then</label>
+          <select id="dive-action">
+            <option value="into" selected>dive into</option>
+            <option value="halfway">zoom out to symmetry point</option>
+            <option value="save">save those minibrots</option>
           </select>
-          <label for="dive-to">and dive to</label>
-          <select id="dive-to">
-            <option value="center">its center</option>
-            <option value="halfway">halfway in</option>
-            <option value="view" selected>this view inside it</option>
-            <option value="seat">a random wallpaper inside it</option>
-          </select>
+          <div class="dive-slot" id="dive-b" role="group" aria-label="What to carry into the copy">
+            <button type="button" class="dive-thumb" id="dive-b-thumb">
+              <canvas width="256" height="144"></canvas><img alt="" hidden>
+              <span class="dive-thumb-said"></span>
+            </button>
+            <span class="dive-modes">
+              <button type="button" data-mode="none" aria-pressed="true"
+                      title="Nothing: land on the copy's center.">None</button>
+              <button type="button" data-mode="here" aria-pressed="false"
+                      title="This view, pinned, carried inside the copy.">Here</button>
+              <button type="button" data-mode="paste" aria-pressed="false"
+                      title="An explorer link from the clipboard, carried inside the copy.">Paste</button>
+              <button type="button" data-mode="random" aria-pressed="false"
+                      title="A random wallpaper on this plane, carried inside the copy.">Random</button>
+            </span>
+            <input type="text" class="dive-paste" aria-label="Paste an explorer link for B"
+                   placeholder="Paste a link" hidden>
+          </div>
           <button type="button" class="deep-render dive-go" id="dive-go">Go</button>
         </div>
         <div class="bar dive-options">
@@ -163,7 +193,7 @@
           <span class="group">
             <label for="dive-keep">Keep diving</label>
             <input type="checkbox" id="dive-keep" class="flag"
-                   title="Go again after each landing, with the sentence as it stands, until a chain runs out or you stop it.">
+                   title="Go again after each landing, with fresh draws, until a chain runs out or you stop it.">
           </span>
         </div>
         <div class="bar dive-progress">
@@ -177,11 +207,24 @@
       frames take longer to draw and are colored smooth only. Find minibrots finds
       tiny copies of the set worth diving into. For more, read
       <a href="../article/deep-zoom.html">Deep zoom rendering</a>.</p>
+      <!-- The lower panel shows one of two lists (dive_slots_ckpt154): the tab's gallery, or
+           Dive results, this session's landings, newest first. A landing never switches it. -->
       <div class="deep-gallery" id="deep-gallery">
-        <div class="section-head"><h2 id="head-deep-gallery">Gallery</h2></div>
+        <div class="section-head deep-lower-head">
+          <span class="deep-switch" role="group" aria-label="Show">
+            <button type="button" id="deep-show-gallery" aria-pressed="true">Gallery</button>
+            <button type="button" id="deep-show-results" aria-pressed="false">Dive results · <span
+                  id="dive-results-count">0</span></button>
+          </span>
+          <button type="button" id="dive-results-clear" hidden>Clear</button>
+        </div>
         <div class="deep-gallery-grid" id="deep-gallery-grid" role="group"
-             aria-labelledby="head-deep-gallery"></div>
+             aria-label="Gallery"></div>
         <p class="side-note" id="deep-gallery-note" hidden></p>
+        <div class="deep-gallery-grid dive-results" id="dive-results-grid" role="group"
+             aria-label="Dive results"></div>
+        <p class="side-note" id="dive-results-note" hidden>Nothing yet. Every dive lands here,
+        newest first, until the page is reloaded.</p>
       </div>
     </div>
 

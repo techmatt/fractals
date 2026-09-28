@@ -136,7 +136,7 @@ PROSE: tuple[tuple[str, str], ...] = (
     ("h2", "The main gallery"),
     (
         "p",
-        "All thousand pictures, in three downloads so no single file is too large.",
+        "All thousand pictures, the best 200 are in part 1.",
     ),
     ("pack", GENERAL),
     ("h2", "Color galleries"),

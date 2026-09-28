@@ -1938,6 +1938,49 @@ canvas.palette-final {
 }
 .dive-status:empty { display: none; }
 
+/* The two slots *(dive_slots_ckpt154)*: a thumbnail with its mode buttons stacked beside it,
+   the lit one the mode. The thumbnail is 16:9 like every picture in the well, with a word
+   across its foot saying what it holds; it is a button where it holds a frame to go to. */
+.dive-words { color: var(--well-ink); }
+.dive-slot { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 0.25rem 0.3rem; }
+.dive-slot[hidden] { display: none; }
+.dive-thumb {
+  position: relative;
+  flex: none;
+  width: 6.4rem;
+  aspect-ratio: 16 / 9;
+  padding: 0;
+  border: 1px solid var(--well-ink-dim);
+  border-radius: 2px;
+  background: var(--well-pending);
+  overflow: hidden;
+  cursor: pointer;
+}
+.dive-thumb[aria-disabled="true"] { cursor: default; }
+.dive-thumb:not([aria-disabled="true"]):hover { border-color: var(--well-ink); }
+.dive-thumb:focus-visible { outline: 2px solid var(--well-link); outline-offset: 1px; }
+.dive-thumb canvas, .dive-thumb img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.dive-thumb [hidden] { display: none; }
+.dive-thumb-said {
+  position: absolute;
+  inset: auto 0 0 0;
+  padding: 0.05rem 0.3rem;
+  background: rgb(0 0 0 / 0.6);
+  color: var(--well-ink);
+  font-family: var(--sans);
+  font-size: 0.65rem;
+  line-height: 1.3;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.dive-modes { display: inline-flex; flex-direction: column; gap: 0.12rem; }
+.bar .dive-modes button { padding: 0 0.4rem; font-size: 0.7rem; line-height: 1.35; }
+.bar .dive-modes button[aria-pressed="true"] { color: var(--well-link); border-color: var(--well-link); }
+.bar .dive-modes button.is-barred { opacity: 0.45; }
+.dive-paste { flex: 1 0 100%; min-width: 0; font: inherit; font-size: 0.75rem; }
+
 /* ------------------------------------------------------------ the Deep tab's gallery
 
    Under the tab's sentence *(deep_gallery_build_ckpt144)*, and always open, the way the
@@ -1978,6 +2021,48 @@ canvas.palette-final {
   color: var(--well-ink-dim);
 }
 .deep-gallery-subject:first-child { margin-top: 0; }
+/* The switch between the gallery and Dive results *(dive_slots_ckpt154)*: two buttons, the
+   lit one the list that is up, and Clear at the far end while Dive results is. The panel
+   carries `is-results` and the stylesheet shows the one list, so neither list's own code
+   has to know the other is there. */
+.deep-lower-head { display: flex; align-items: center; gap: 0.5rem; padding-block: 0.3rem; }
+.deep-switch { display: inline-flex; gap: 0.25rem; }
+.deep-lower-head button {
+  padding: 0.1rem 0.55rem;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  background: none;
+  color: var(--well-ink-dim);
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.deep-lower-head button:hover { color: var(--well-ink); }
+.deep-switch button[aria-pressed="true"] { color: var(--well-ink); border-color: var(--well-ink-dim); }
+.deep-lower-head button:focus-visible { outline: 2px solid var(--well-link); outline-offset: 1px; }
+#dive-results-count { font-variant-numeric: tabular-nums; }
+#dive-results-clear { margin-left: auto; font-weight: 400; }
+#dive-results-clear[hidden] { display: none; }
+.deep-gallery:not(.is-results) > .dive-results,
+.deep-gallery:not(.is-results) > #dive-results-note,
+.deep-gallery.is-results > #deep-gallery-grid,
+.deep-gallery.is-results > #deep-gallery-note { display: none; }
+#dive-results-note { padding: 0 var(--gutter); }
+.dive-result { display: flex; flex-direction: column; gap: 0.1rem; }
+.dive-result > .minibrot { width: 100%; }
+.dive-copy {
+  align-self: flex-start;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--well-ink-dim);
+  font: inherit;
+  font-size: 0.68rem;
+  cursor: pointer;
+}
+.dive-copy:hover { color: var(--well-link); }
+.dive-copy:focus-visible { outline: 2px solid var(--well-link); outline-offset: 1px; }
 .deep-gallery-tile .minibrot-tile { padding: 0; }
 .deep-gallery-tile .minibrot-tile img { display: block; width: 100%; height: auto; }
 

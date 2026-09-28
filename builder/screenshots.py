@@ -60,13 +60,14 @@ class Drawn:
 
 
 def dive_block() -> Shot:
-    """The Deep tab's Dive block: the sentence at its defaults, on the Mandelbrot plane at the
-    tab's opening view, with New coloring on arrival ticked through the page for the shot and
-    Keep diving left unticked (Matt, dive_defaults_ckpt154). The box is off by default; it is
-    ticked here because the figure shows what a dive can do, not what a first visit sees."""
+    """The Deep tab's Dive block at its defaults (dive_slots_ckpt154): A on Here, live, showing
+    the tab's opening view on the Mandelbrot plane; dive into; B on None. New coloring on
+    arrival is ticked through the page for the shot and Keep diving left unticked (Matt,
+    dive_defaults_ckpt154): the box is off by default, and ticked here because the figure
+    shows what a dive can do, not what a first visit sees."""
     return Shot(
-        about="the Dive block of the explorer's Deep tab at its default sentence, with New "
-        "coloring on arrival ticked by a click on the page and Keep diving unticked",
+        about="the Dive block of the explorer's Deep tab at its defaults, A live and B on None, "
+        "with New coloring on arrival ticked by a click on the page and Keep diving unticked",
         query="?panel=deep",
         selector="#dive",
         clicks=("#dive-color",),

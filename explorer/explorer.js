@@ -3137,12 +3137,6 @@ function saverFurniture(every) {
 function enterScreensaver({ every = null, first = null } = {}) {
   if (saver === null || tiles === null || saver.active || browser?.active || locked()) return;
   const population = tiles.population();
-  // Dives is deep frames, which the screensaver's pool cannot draw, and a session's own,
-  // which a screensaver link could not name after a reload.
-  if (population.collection === dives.NAME) {
-    say("The screensaver plays the gallery's own collections, and Dives is this session's.");
-    return;
-  }
   if (population.seats.length === 0 && first === null) {
     say("The gallery shows nothing with these filters.");
     return;
@@ -3314,13 +3308,6 @@ async function screensaverInBrowse() {
 function leaveBrowse(row = null, picture = null) {
   const owed = browseOwes;
   browseOwes = false;
-  if (row !== null && row.deep) {
-    // A dive opens in the Deep tab, which draws it again: Browse only showed its picture.
-    returnRow();
-    resize();
-    openAny(row.link);
-    return;
-  }
   if (row !== null) {
     showPanel("gallery");
     resize();
@@ -4032,8 +4019,9 @@ async function mountDeep() {
         minibrotNote: at("minibrot-note"),
         root: at("deep-root"),
         back: at("deep-back"),
-        diveFrom: at("dive-from"),
-        diveTo: at("dive-to"),
+        diveA: at("dive-a"),
+        diveB: at("dive-b"),
+        diveAction: at("dive-action"),
         diveGo: at("dive-go"),
         diveColor: at("dive-color"),
         diveKeep: at("dive-keep"),
@@ -4061,6 +4049,9 @@ async function mountDeep() {
       leave: leaveDeep,
       onSearch: syncMinibrots,
       randomSeat,
+      readLink,
+      plateOf,
+      openLink: (query) => openAny(query),
       newColoring,
       onLanded: addDive,
       coloringFor,
@@ -4071,12 +4062,24 @@ async function mountDeep() {
     });
     // The gallery under the tab's sentence: a tile is a deep link, through the door a saved
     // deep picture comes through.
-    const gallery = await import("./deep-gallery.js");
+    const [gallery, results] = await Promise.all([import("./deep-gallery.js"), import("./dive-results.js")]);
     gallery.mount({
       grid: at("deep-gallery-grid"),
       note: at("deep-gallery-note"),
       context: deepContext,
       open: (query) => openAny(query),
+    });
+    diveResults = results.mount({
+      panel: at("deep-gallery"),
+      showGallery: at("deep-show-gallery"),
+      showResults: at("deep-show-results"),
+      count: at("dive-results-count"),
+      clear: at("dive-results-clear"),
+      grid: at("dive-results-grid"),
+      note: at("dive-results-note"),
+      open: (query) => openAny(query),
+      saveMark: (query) => saving.mark(saved, canonicalOf(query)),
+      copy: copyQuery,
     });
     document.querySelector(".viewer").classList.toggle("is-deep", showing === "deep");
   } catch (error) {
@@ -5282,8 +5285,8 @@ async function randomSeat(family) {
   return seats.length === 0 ? null : seats[Math.floor(Math.random() * seats.length)];
 }
 
-/** This session's landings, as a collection of the Gallery tab: `null` until the first. */
-let diveCollection = null;
+/** Dive results, the Deep tab's list of this session's landings, once the tab is mounted. */
+let diveResults = null;
 
 /** A canvas scaled to `width` across, as a WebP blob's object URL. */
 function blobOf(source, width) {
@@ -5299,32 +5302,58 @@ function blobOf(source, width) {
 }
 
 /**
- * **A landing joins Dives** *(keep_diving_ckpt154)*: the Dive block's, from Go or from Keep
- * diving, with the picture the landing drew — a tile at the staged gallery's size and a
- * picture for Browse's preview at the size Browse draws. The collection enters the dropdown
- * with its first landing and lives in this page only: nothing of it is stored, and a reload
- * is the end of it. Resolves the collection's size once the landing has joined, which is
- * what Keep diving's status line counts *(keep_diving_anchor_ckpt154)*, or `null` where it
- * could not join; the panel and an open Browse both show it grow.
+ * **A landing joins Dive results** *(dive_slots_ckpt154)*: the Dive block's, from Go or from
+ * Keep diving, with the picture the landing drew as a tile at the Deep gallery's size.
+ * Resolves the list's size once it has joined, which is what Keep diving's status line
+ * counts, or `null` where it could not join.
  */
-async function addDive({ link: query, family, palette, canvas: drawnOn, said, landing }) {
-  if (tiles === null || tiles.collections.length === 0) return null;
-  const [thumb, picture] = await Promise.all([
-    blobOf(drawnOn, dives.TILE_WIDTH),
-    blobOf(drawnOn, browse.PREVIEW_GRID_MAX),
-  ]);
+async function addDive({ link: query, canvas: drawnOn, said }) {
+  if (diveResults === null) return null;
+  const thumb = await blobOf(drawnOn, dives.TILE_WIDTH);
   if (thumb === null) return null;
-  if (diveCollection === null) {
-    diveCollection = dives.collection();
-    tiles.collections.push(diveCollection);
-  }
   const width = dives.TILE_WIDTH;
   const height = Math.round((drawnOn.height * width) / drawnOn.width);
-  dives.add(diveCollection, { link: query, family, palette, landing, said, thumb, picture, width, height });
-  tiles.grew(dives.NAME);
-  browser?.grew(dives.NAME);
-  return diveCollection.seats;
+  return diveResults.add({ link: query, thumb, said, width, height });
 }
+
+/** A link's address on the clipboard: this page with `query` as its search. */
+async function copyQuery(query) {
+  const url = new URL(window.location.href);
+  url.search = `?${query}`;
+  url.hash = "";
+  try {
+    await navigator.clipboard.writeText(url.toString());
+    return true;
+  } catch {
+    say(url.toString());
+    return false;
+  }
+}
+
+/**
+ * **A pasted link, read for the Dive block** *(dive_slots_ckpt154)*: `{ deep }` for a deep
+ * link, `{ shallow }` for an ordinary one, or `{ why }` where the page cannot read it. Which
+ * plane it is on, and whether that plane dives, is the Dive block's to say.
+ */
+function readLink(query) {
+  if (link.isInflected(`?${query}`)) return { why: INFLECTION_PAGED };
+  try {
+    if (link.isDeep(`?${query}`)) return { deep: query };
+    return { shallow: link.parse(`?${query}`, contract) };
+  } catch (error) {
+    return { why: `That link does not read: ${error.message ?? error}` };
+  }
+}
+
+/** The Dive block's picture of a random place on `family`'s plane: its atlas plate, made
+ *  small by `python -m builder atlas --dive-plates`, or `null` for a plane with none. */
+function plateOf(family) {
+  if (!DIVE_PLATES.has(family)) return null;
+  return new URL(`./dive-plates/${family}.webp`, import.meta.url).href;
+}
+
+/** The planes `plateOf` has a picture for, which is every plane the Dive block searches. */
+const DIVE_PLATES = new Set(["mandelbrot", "multibrot3", "multibrot4", "multibrot5", "multibrot6"]);
 
 // Hold look changes what the next move of Lambda or Period means and nothing about the
 // picture up, so it draws nothing; a hold starts afresh from whatever the recipe is then.
@@ -5794,9 +5823,7 @@ async function main() {
     note: document.getElementById("gallery-note"),
     firstMode: MODE_FIRST,
     // The tile's own picture goes up at once, and the pass draws over it.
-    // A dive's link is a deep one, and goes where a saved deep picture goes.
-    onPick: (row, picture) =>
-      row.deep ? openAny(row.link) : openLink(row.link, { gap: row.gap, key: row.key, picture }),
+    onPick: (row, picture) => openLink(row.link, { gap: row.gap, key: row.key, picture }),
     saveMark: (row) => saving.mark(saved, canonicalOf(row.link)),
     onSeats: indexSeats,
   });

@@ -562,6 +562,11 @@ def _parser() -> argparse.ArgumentParser:
         action="store_true",
         help="land every plane chip's miniature from its committed plate",
     )
+    mapped.add_argument(
+        "--dive-plates",
+        action="store_true",
+        help="land the Dive block's slot picture of every dive plane from its committed plate",
+    )
 
     seated = commands.add_parser(
         "seats", help="land the gallery and its collections as one staged gallery"
@@ -1570,6 +1575,9 @@ def _do_atlas(options: argparse.Namespace) -> int:
             print(line)
     if options.plates or options.miniatures:
         for line in atlas_module.miniatures():
+            print(line)
+    if options.plates or options.dive_plates:
+        for line in atlas_module.dive_plates():
             print(line)
     if options.figure:
         for line in atlas_module.draw(options.figure):

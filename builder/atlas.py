@@ -2004,6 +2004,70 @@ def miniatures() -> list[str]:
     return lines
 
 
+#: The planes the Deep tab's Dive block searches, by partition name *(dive_slots_ckpt154)*:
+#: the Mandelbrot set and the Multibrots of degree 3 to 6, which is `deep.js`'s
+#: `MINIBROT_DEGREES`. A slot on *Random* shows its plane's plate, made small.
+DIVE_PLANES = ("mandelbrot", "multibrot3", "multibrot4", "multibrot5", "multibrot6")
+
+#: The Dive block's slot picture, in pixels: 16:9, twice the size the slot shows it at.
+DIVE_PLATE_SIZE = (256, 144)
+
+
+def dive_plate_path(partition: str) -> Path:
+    """Where one plane's slot picture lands. `explorer.js`'s `plateOf` spells the same name."""
+    return SITE_ROOT / "explorer" / "dive-plates" / f"{partition}.webp"
+
+
+def _dive_plate(plate: Path):
+    """One plate, as the Dive block's slot shows a random place on its plane.
+
+    The plate made small and nothing else: the set cropped to its extent the way the
+    miniature is, fitted to the slot's height, and set on the plate's own background colour,
+    so the slot reads as a picture of the plane rather than of any one place on it.
+    """
+    from PIL import Image
+
+    with Image.open(plate) as opened:
+        colour = opened.convert("RGB")
+    grey = colour.convert("L")
+    left, top, right, bottom = grey.point(lambda v: 255 if v > MINIATURE_FLOOR else 0).getbbox()
+    pad = max(right - left, bottom - top) * MINIATURE_PAD / 2
+    body = colour.crop(
+        (
+            round(max(0, left - pad)),
+            round(max(0, top - pad)),
+            round(min(colour.width, right + pad)),
+            round(min(colour.height, bottom + pad)),
+        )
+    )
+    across, down = DIVE_PLATE_SIZE
+    scale = min(across / body.width, down / body.height)
+    small = body.resize(
+        (round(body.width * scale), round(body.height * scale)), Image.Resampling.LANCZOS
+    )
+    sheet = Image.new("RGB", DIVE_PLATE_SIZE, colour.getpixel((0, 0)))
+    sheet.paste(small, ((across - small.width) // 2, (down - small.height) // 2))
+    return sheet
+
+
+def dive_plates() -> list[str]:
+    """Land the Dive block's slot picture for every dive plane, and say which had no plate."""
+    lines: list[str] = []
+    held = {partition.name: partition for partition in load_all().partitions}
+    for name in DIVE_PLANES:
+        partition = held.get(name)
+        if partition is None or not partition.plate.path.is_file():
+            lines.append(f"  {name}: no plate; the slot shows the plane's home view")
+            continue
+        destination = dive_plate_path(name)
+        images.save(_dive_plate(partition.plate.path), destination)
+        lines.append(
+            f"  {destination.relative_to(SITE_ROOT).as_posix()}  "
+            f"{DIVE_PLATE_SIZE[0]}x{DIVE_PLATE_SIZE[1]}  {destination.stat().st_size / 1e3:.1f} kB"
+        )
+    return lines
+
+
 def _miniatured(partition: Partition) -> list[str]:
     """Every plane's chip has its miniature, since a page may ask for it by rule."""
     path = miniature_path(partition.name)

@@ -682,7 +682,8 @@ across Leveled's stretch, in a `λ` whose line is within a tenth of a turn of Le
 shape, in numbers the contract writes, leaning to the log only where the log is as good.
 `dives.test.mjs` holds Keep diving's loop rule — a chain that runs out stops, a random draw
 that lands nowhere presses again a bounded number of times, anything that takes the tab over
-stops it — and Dives to being newest first through the gallery's own seams. `bands.test.mjs` is the pool held to the committed wasm: a band is a range
+stops it — which slots let Keep diving run, how a pasted address is read, and Dive results
+to being newest first. `bands.test.mjs` is the pool held to the committed wasm: a band is a range
 of output rows, so the pool decides where the frame is cut and never what is in it, and
 the sizes it cuts at are the reader's machine's. It draws the anchor a few times over and
 takes a few seconds. `atlas.test.mjs` holds the atlas record to the same contract, and

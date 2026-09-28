@@ -1,15 +1,37 @@
-// Keep diving's loop and the Dives collection held to their promises: a chain that runs out
+// The Dive block's rules and Dive results held to their promises: a chain that runs out
 // stops, a random draw that lands nowhere is drawn again a bounded number of times, anything
-// that takes the tab over stops it, and Dives is newest first, carries its own pictures, and
-// is shown through the gallery's own seams rather than a copy of them.
+// that takes the tab over stops it, Keep diving runs only where the next press can be another
+// picture, a pasted address is read down to its query, and Dive results is newest first and
+// gives its pictures back when cleared.
 //
 //   node --test explorer/dives.test.mjs
 
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { DRY_PRESSES, HOLD_MS, NAME, add, chains, collection, fixed, landedSaid, loopStep } from "./dives.js";
-import { isSession, membersOf, tileURL } from "./gallery.js";
+import {
+  B_MODES,
+  DRY_PRESSES,
+  HOLD_MS,
+  Results,
+  SAVE_COUNT,
+  chains,
+  draws,
+  keepBarred,
+  keepable,
+  landedSaid,
+  live,
+  loopStep,
+  queryIn,
+} from "./dives.js";
+
+const A = {
+  live: { mode: "here", pinned: false },
+  pinned: { mode: "here", pinned: true },
+  paste: { mode: "paste", pinned: false },
+  random: { mode: "random", pinned: false },
+};
+const B = Object.fromEntries(B_MODES.map((mode) => [mode, { mode }]));
 
 test("a landing drawn to the end is held and pressed again", () => {
   assert.deepEqual(loopStep({ landed: true, complete: true }), { go: true, hold: true });
@@ -45,79 +67,73 @@ test("a press that could not start, threw, or was taken over stops the loop", ()
   assert.ok(loopStep({ superseded: true }).stop);
 });
 
-test("only this view with a centred landing descends; every other sentence draws aside", () => {
-  assert.equal(chains("view", "center"), true);
-  assert.equal(chains("view", "halfway"), true);
-  for (const [from, to] of [["view", "view"], ["view", "seat"], ["seat", "center"], ["seat", "halfway"], ["seat", "view"], ["seat", "seat"]]) {
-    assert.equal(chains(from, to), false, `${from} / ${to}`);
-  }
-});
-
 test("a loop drawing aside presses again at once, with no landing on screen to hold", () => {
   assert.deepEqual(loopStep({ landed: true, complete: true }, 0, { aside: true }), { go: true, hold: false });
 });
 
-test("this view inside a copy near this view stops after one landing unless it is recolored", () => {
-  assert.equal(fixed("view", "view"), true);
-  assert.equal(fixed("seat", "view"), false);
-  assert.equal(fixed("view", "seat"), false);
-  const next = loopStep({ landed: true, complete: true }, 0, { aside: true, repeats: true });
-  assert.match(next.stop, /same place every time/);
+test("A is live only on Here before it is pinned", () => {
+  assert.equal(live(A.live), true);
+  assert.equal(live(A.pinned), false);
+  assert.equal(live(A.paste), false);
+  assert.equal(live(A.random), false);
 });
 
-test("the status line after a landing aside names the loop's count and the collection's", () => {
-  assert.equal(landedSaid(7, 7), "Dive 7 landed; Dives · 7.");
-  assert.equal(landedSaid(3, 9), "Dive 3 landed; Dives · 9.");
+test("only a live A with a centred landing descends", () => {
+  assert.equal(chains(A.live, "into", B.none), true);
+  assert.equal(chains(A.live, "halfway", B.none), true);
+  assert.equal(chains(A.live, "halfway", B.random), true, "B is not read by the symmetry point");
+  for (const b of ["here", "paste", "random"]) assert.equal(chains(A.live, "into", B[b]), false, b);
+  for (const a of ["pinned", "paste", "random"]) assert.equal(chains(A[a], "into", B.none), false, a);
+  assert.equal(chains(A.live, "save", B.none), false);
+});
+
+test("Keep diving runs where a slot is Random, or on the descent, and nowhere else", () => {
+  assert.equal(keepable(A.random, "save", B.none), true);
+  assert.equal(keepable(A.random, "into", B.here), true);
+  assert.equal(keepable(A.pinned, "into", B.random), true);
+  assert.equal(keepable(A.live, "into", B.none), true);
+  assert.equal(keepable(A.live, "save", B.none), false);
+  assert.equal(keepable(A.paste, "into", B.none), false);
+  assert.equal(keepable(A.live, "into", B.here), false);
+  assert.equal(draws(A.pinned, "halfway", B.random), false, "B's draw is unread off dive into");
+  assert.equal(keepBarred(A.random, "into", B.none), null);
+  assert.match(keepBarred(A.paste, "into", B.none), /Random/);
+});
+
+test("the status line after a round aside names the loop's count and the results'", () => {
+  assert.equal(landedSaid(7, 7), "Dive 7 landed; Dive results · 7.");
+  assert.equal(landedSaid(3, 24, 8), "Round 3 saved 8; Dive results · 24.");
   assert.equal(landedSaid(1, null), "Dive 1 landed.");
 });
 
-function landing(n) {
-  return {
-    link: `dv=3&x=-0.${n}&y=0.1&w=1e-12&n=1000&p=BuGn`,
-    family: "mandelbrot",
-    palette: "BuGn",
-    landing: n % 2 === 0 ? "center" : "view",
-    said: `landing ${n}`,
-    thumb: `blob:thumb-${n}`,
-    picture: `blob:picture-${n}`,
-    width: 316,
-    height: 178,
-  };
-}
-
-test("Dives is a session collection, empty until its first landing", () => {
-  const dives = collection();
-  assert.equal(dives.name, NAME);
-  assert.equal(dives.seats, 0);
-  assert.equal(isSession(dives), true);
-  assert.equal(isSession({ name: "general", axis: "general" }), false);
+test("a pasted address is read down to its query", () => {
+  const query = "dv=3&x=-0.75&y=0.1&w=1e-12&n=1000";
+  assert.equal(queryIn(`https://techmatt.github.io/fractals/explorer/?${query}`), query);
+  assert.equal(queryIn(`http://localhost:8000/explorer/index.html?${query}#top`), query);
+  assert.equal(queryIn(`  ?${query}\n`), query);
+  assert.equal(queryIn(query), query);
+  assert.equal(queryIn("https://techmatt.github.io/fractals/explorer/"), null);
+  assert.equal(queryIn("a sentence with no link in it"), null);
+  assert.equal(queryIn(""), null);
+  assert.equal(queryIn(null), null);
 });
 
-test("Dives is newest first, in the gallery's own presentation order", () => {
-  const dives = collection();
-  for (const n of [1, 2, 3]) add(dives, landing(n));
-  assert.equal(dives.seats, 3);
-  const order = membersOf(dives.rows, NAME).map((row) => row.said);
-  assert.deepEqual(order, ["landing 3", "landing 2", "landing 1"]);
-  assert.equal(new Set(dives.rows.map((row) => row.key)).size, 3);
+test("Dive results is newest first, and Clear gives every picture back", () => {
+  const released = [];
+  const results = new Results((thumb) => released.push(thumb));
+  for (const n of [1, 2, 3]) {
+    results.add({ link: `dv=3&x=0.${n}`, thumb: `blob:${n}`, said: `landing ${n}`, width: 316, height: 178 });
+  }
+  assert.equal(results.size, 3);
+  assert.deepEqual(results.rows.map((row) => row.said), ["landing 3", "landing 2", "landing 1"]);
+  assert.equal(new Set(results.rows.map((row) => row.key)).size, 3);
+  results.clear();
+  assert.equal(results.size, 0);
+  assert.deepEqual(released.sort(), ["blob:1", "blob:2", "blob:3"]);
+  const after = results.add({ link: "dv=3&x=0.4", thumb: "blob:4", said: "landing 4", width: 316, height: 178 });
+  assert.equal(after.key, "dive-4", "a key is never reused, even across a Clear");
 });
 
-test("a dive row is deep, carries its link as given, and is centred only on a centred landing", () => {
-  const dives = collection();
-  const centred = add(dives, landing(2));
-  const carried = add(dives, landing(3));
-  assert.equal(centred.deep, true);
-  assert.equal(centred.link, landing(2).link);
-  assert.equal(centred.centered, true);
-  assert.equal(carried.centered, false);
-  assert.equal(centred.hue, null);
-  assert.deepEqual(centred.hues, []);
-});
-
-test("a dive's tile is the picture it carries; a seat's is its file", () => {
-  const dives = collection();
-  const row = add(dives, landing(1));
-  assert.equal(tileURL(row, "http://localhost/explorer/"), "blob:thumb-1");
-  const seat = { file: "0123.webp" };
-  assert.match(tileURL(seat, "http://localhost/explorer/gallery.js"), /galleries\/seated-candidates\/0123\.webp$/);
+test("save those minibrots keeps about eight", () => {
+  assert.ok(SAVE_COUNT >= 6 && SAVE_COUNT <= 10);
 });

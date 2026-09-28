@@ -234,15 +234,17 @@
     it. Simply scaling and turning the frame by the minibrot's size and angle misses the
     twin badly at any real depth, often by thousands of frame widths, so I solve for the
     twin directly instead. The Dive block at the top of the fractal explorer's Deep tab
-    does all of this in one press. It reads as a sentence: find a minibrot near this view
-    or a random wallpaper, and dive to its center, halfway in, this view inside it, or a
-    random wallpaper inside it. Pressing it again keeps descending, and since the periods
-    multiply at every step, the nesting can keep going until the iteration cap runs out.
-    Keep diving repeats the dive until you stop it and collects every landing into a
-    temporary Dives collection that you can browse and save from.</p>
+    does all of this in one press. You choose where to search for minibrots (the current
+    view, a view you paste in, or a random wallpaper) and what to do with the ones it
+    finds: land on one, stop at its symmetry point, carry a second view inside it, or
+    collect the largest of them. Pressing it again from where it lands keeps descending,
+    and since the periods multiply at every step, the nesting can keep going until the
+    iteration cap runs out. Keep diving repeats the dive with fresh random draws until
+    you stop it, and every result collects in a Dive results list that you can browse
+    and save from.</p>
 
       <figure class="figure" data-figure="deep-dive-block">
-        <img src="../assets/images/figures/deep-dive-block.png" width="1278" height="240" alt="The Dive block on the explorer's dark panel: the sentence “Find a minibrot near a random wallpaper and dive to this view inside it” with its two dropdowns and a Go button, and under it two boxes, New coloring on arrival ticked and Keep diving unticked." loading="lazy">
+        <img src="../assets/images/figures/deep-dive-block.png" width="1278" height="458" alt="The Dive block on the explorer's dark panel: “Search for minibrots near” a small picture of the current view marked live, with Here lit and Paste and Random under it; “then dive into” in a dropdown; a second, empty picture marked its center, with None lit and Here, Paste, and Random under it; a Go button; and under them two boxes, New coloring on arrival ticked and Keep diving unticked." loading="lazy">
         <figcaption>The Dive block in the Deep tab.</figcaption>
       </figure>
 
