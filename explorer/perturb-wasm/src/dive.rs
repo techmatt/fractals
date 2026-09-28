@@ -633,8 +633,9 @@ pub fn mapped(
             ),
         ) {
             // The local scale at the anchor, `σ_B/σ_twin`, and not the copy's own `s`: the
-            // tuning map is only near-linear where the copy is deep, and on a period-15 copy the
-            // view came out 28% too large and turned 62° off. Both scales are the nuclei's own, so
+            // tuning map is only near-linear where the copy is deep; on the airship and a
+            // period-15 copy it is 1–8% off in size and up to 5° in turn (README §11). Both
+            // scales are the nuclei's own, so
             // the local map is exact to first order about the anchor; of the `D−1` branches the
             // one nearest `s` is the one continuous with the copy.
             let local = match (

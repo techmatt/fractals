@@ -2467,7 +2467,12 @@ its parent's edge.
   (tangle 1e-22) and 0.6 s at 205,000 (1e-54), three times the old reading. A dive reads in
   rounds of the pool and stops once the rung rule's answer is settled, which a refusal never
   is: at tangle 1e-54, where Go refuses on the budget, the press took 14.2 s against 9.1 s.
-  ⚠ **Degree six is where it is slow**: five roots, 2.6 to 5 s natively per copy at 1e-22.
+  Degree six was where it was slow, at five roots and 2.6 to 5 s natively per copy at 1e-22.
+  **Since classify_speed_ckpt155 the Newton passes run as perturbation around the nucleus's
+  own orbit**, which is 7× faster there (0.27 s a copy) and 5 to 8× in the module on the
+  degree-six dive frames. The large periods are 2 to 4× faster. A degree-two deep copy is
+  unchanged, since its root is finished in fixed point. The verdicts on the 189 nuclei
+  measured are the same, and `perturb-wasm/README.md` §12 *Perturbed roots* has the numbers.
   §12 of the crate README has the table.
 
 **A copy is framed by its measured body** *(Matt, find_minibrots_bulbs_ckpt145)*. The
@@ -5777,9 +5782,10 @@ recipe** group. What is worth writing down is the shape rather than the widgets:
   **Since period_slider_ckpt155 a held Lambda keeps the cycles, not the density at `ν_m`.**
   A moved Lambda brings Period with it whether or not the box is ticked, so that the cycles
   across the frame's spread hold (*The Period slider*, below), and the hold then solves
-  Phase alone for the colour at `ν_m`, which is `hold.resolve`'s Period case. The density
-  solve is still `hold.js`'s and still held by `hold.test.mjs`; the page no longer calls
-  it. On a frame whose bulk is narrow in `ν`, a deep one, the two periods agree closely.
+  Phase alone for the colour at `ν_m`. On a frame whose bulk is narrow in `ν`, a deep one,
+  the two periods agree closely. The density solve had no caller left and was deleted
+  with its tests at classify_speed_ckpt155: `hold.resolve(next, held)` solves Phase and
+  nothing else, and `hold.anchor` keeps `{ nu, colour }`.
   - **Nothing about the maths or a link changes.** The box is UI state, never enters a
     link, and unticked the controls are exactly what they were. The video's three mappings
     parse, canonicalize and shade the k00 field to the same SHA-256 with and without the

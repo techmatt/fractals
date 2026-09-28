@@ -3064,36 +3064,21 @@ export function mount(host) {
   }
 
   /**
-   * The home view of `family`'s plane, for a slot on Random where no plate was baked: the
-   * set's outermost frame, as the tab's own home names it.
+   * **A slot on Random shows its parameter plane's atlas plate, and only that**
+   * *(classify_speed_ckpt155_addendum1)*. Random is anywhere on the plane, not a view, so the
+   * picture is fixed: never drawn, never in the palette, and the same in both slots. On a
+   * Julia view it is the plane the block would dive on, the Mandelbrot or Multibrot plate of
+   * that degree. It used to fall back to drawing the plane's home view in the palette, which
+   * is what a Julia view (no `julia` plate) showed; a plane with no plate is a plain well.
    */
-  function homeOf(family) {
-    const home = context.deepHome(family);
-    const x = fx.parse(home.x);
-    const y = fx.parse(home.y);
-    if (x === null || y === null) return null;
-    const degree = family === "mandelbrot" ? 2 : Number(family.replace("multibrot", ""));
-    const width = Number(home.w);
-    return {
-      ...view,
-      degree,
-      julia: null,
-      x: deepLink.coordinateOf(x),
-      y: deepLink.coordinateOf(y),
-      w: deepLink.widthOf(width),
-      maxiter: policyCap(width),
-      capFrom: "width",
-    };
+  function randomPlate() {
+    return host.plateOf(deepLink.familyOf({ ...view, julia: null }));
   }
 
   /** The frame a slot's thumbnail is drawn of where no picture of it is at hand, or `null`. */
   function wantsDrawing(slot) {
     if (slot.picture !== null || slot.failed !== null) return null;
-    if (slot.view !== null) return slot.view;
-    if (slot.mode === "random" && host.plateOf(deepLink.familyOf(view)) === null) {
-      return homeOf(deepLink.familyOf(view));
-    }
-    return null;
+    return slot.view;
   }
 
   /** Whether a slot's thumbnail is being drawn, so that two syncs start one draw. */
@@ -3138,17 +3123,15 @@ export function mount(host) {
     const { thumb, img, said, modes, paste } = slot.els;
     for (const button of modes) button.setAttribute("aria-pressed", String(button.dataset.mode === slot.mode));
     paste.hidden = !slot.pasting;
-    const plate = slot.mode === "random" ? host.plateOf(deepLink.familyOf(view)) : null;
+    const plate = slot.mode === "random" ? randomPlate() : null;
     img.hidden = plate === null;
     if (plate !== null && img.getAttribute("src") !== plate) img.src = plate;
     slot.els.canvas.hidden = plate !== null;
     let source = null;
     let words;
     if (slot.mode === "none") words = "its center";
-    else if (slot.mode === "random") {
-      words = "random";
-      if (plate === null) source = slot.picture;
-    } else if (slot.view === null) {
+    else if (slot.mode === "random") words = "random";
+    else if (slot.view === null) {
       words = "live";
       source = stale?.canvas ?? null;
     } else {

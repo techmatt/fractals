@@ -7,18 +7,13 @@
 // that, or what a link says: a held move is a move of more than one key, written into the
 // same keys a link has always carried.
 //
-// Two things are held at one value of the field, the reference `ν_m`, the median escaped
-// value of the frame on the screen:
-//
-// - **the band density there**, `T′(ν_m)/period = ν_m^(λ−1)/period` turns per unit of `ν`;
-// - **the colour there**, `frac(T(ν_m)/period + phase)`.
-//
-// A move of Lambda re-solves Period for the first and Phase for the second; a move of Period
-// re-solves Phase alone; Phase is free. Both solves are exact in closed form — the density
-// is `ν_m^(λ−1)/period`, so the new period is `period · ν_m^(λ′−λ)` — and what they give up
-// is only the rounding the written numbers take (`PERIOD_FIGURES`, `PHASE_PLACES`). Away from
-// `ν_m` the picture moves as much as the new λ bends the field against the old one, which is
-// what a held Lambda is for.
+// What is held is **the colour at one value of the field**, the reference `ν_m`, the median
+// escaped value of the frame on the screen: `frac(T(ν_m)/period + phase)`. A move of Lambda
+// or Period re-solves Phase so that it stays; Phase is free. Period itself is the page's to
+// set — a moved Lambda brings it along to keep the cycles across the frame
+// (`period-range.js`, since period_slider_ckpt155, which retired the band-density solve that
+// used to live here). The solve is exact in closed form and gives up only the rounding the
+// written phase takes (`PHASE_PLACES`).
 
 /** The smallest value the engine reads a field value as: `f32::MIN_POSITIVE`, which is
  *  `COMPRESSION_FLOOR` in the engine's `coloring.rs`. */
@@ -30,8 +25,9 @@ export const FLOOR = 2 ** -126;
  *  the same. */
 export const REFERENCE_SAMPLES = 1 << 18;
 
-/** A held period is written at four significant figures: the density it holds is then
- *  right to a part in ten thousand, and a link does not carry seventeen digits of solve. */
+/** A solved period is written at four significant figures, right to a part in ten thousand,
+ *  so a link does not carry seventeen digits of solve. `fit.js` and `period-range.js` write
+ *  at it. */
 export const PERIOD_FIGURES = 4;
 
 /** A held phase is written at four places, a ten-thousandth of a turn. It is solved after
@@ -43,11 +39,6 @@ export const PHASE_PLACES = 4;
 export function compress(nu, lambda) {
   const value = Math.max(nu, FLOOR);
   return lambda === 0 ? Math.log(value) : (value ** lambda - 1) / lambda;
-}
-
-/** Turns per unit of `ν` at `nu`: the band density a recipe lays there. */
-export function density(nu, lambda, period) {
-  return Math.max(nu, FLOOR) ** (lambda - 1) / period;
 }
 
 /** Where in the gradient `nu` lands, in `[0, 1)`. */
@@ -92,7 +83,7 @@ export function reference(field) {
 }
 
 /**
- * What a hold keeps, measured off a recipe at `nu`: `{ nu, density, colour }`.
+ * What a hold keeps, measured off a recipe at `nu`: `{ nu, colour }`.
  *
  * Taken once when a hold starts and kept while it lasts, rather than re-measured off each
  * written recipe: the written numbers are rounded, and a drag re-measured off its own
@@ -100,31 +91,17 @@ export function reference(field) {
  * the hold, and whenever a new frame changes `nu`.
  */
 export function anchor(shade, nu) {
-  return {
-    nu,
-    density: density(nu, shade.lambda, shade.period),
-    colour: colourAt(nu, shade),
-  };
+  return { nu, colour: colourAt(nu, shade) };
 }
 
 /**
- * `next` — a recipe with `key` just moved to what its control says — with the other keys
- * re-solved so that `held` still holds. Lambda re-solves Period and Phase; Period re-solves
- * Phase; any other key is returned as it came.
+ * `next` — a recipe whose Lambda or Period just moved — with Phase re-solved so that the
+ * colour `held` names is still where it was. Lambda and Period are returned as they came.
  */
-export function resolve(next, key, held) {
-  if (key !== "lambda" && key !== "period") return next;
+export function resolve(next, held) {
   const { nu } = held;
-  const period =
-    key === "lambda"
-      ? figures(Math.max(nu, FLOOR) ** (next.lambda - 1) / held.density, PERIOD_FIGURES)
-      : next.period;
-  const phase = places(wrap(held.colour - compress(nu, next.lambda) / period), PHASE_PLACES);
-  return { ...next, period, phase: phase >= 1 ? 0 : phase };
-}
-
-function figures(value, count) {
-  return Number(value.toPrecision(count));
+  const phase = places(wrap(held.colour - compress(nu, next.lambda) / next.period), PHASE_PLACES);
+  return { ...next, phase: phase >= 1 ? 0 : phase };
 }
 
 function places(value, count) {

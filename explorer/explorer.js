@@ -2484,8 +2484,8 @@ function held(subject, key, next) {
     holding = { anchor: hold.anchor(subject.shade, nu), wrote: null };
   }
   // Period is where it goes already — the hand's, or the one Lambda keeps the cycles with —
-  // so the hold solves Phase alone, which is `hold.resolve`'s Period case whichever key moved.
-  const solved = hold.resolve(next, "period", holding.anchor);
+  // so the hold solves Phase alone, whichever key moved.
+  const solved = hold.resolve(next, holding.anchor);
   // Through the contract's own reader, like any other value a control writes.
   const checked = shade.withKey(solved, "phase", String(solved.phase));
   holding.wrote = holdSpelling(checked);

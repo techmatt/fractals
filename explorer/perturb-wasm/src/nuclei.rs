@@ -1059,16 +1059,31 @@ fn pass(
 
 /// At the nucleus: `b = dz_p/dc`, `A = ∏_{k=1}^{p−1} d·z_k^{d−1}` — the copy's multiplier
 /// product with the critical point left out, [`Step::window_log2`]'s `l` — and `z_p`.
-fn at_nucleus(c: &(Fx, Fx), period: u32, degree: u32) -> Option<(Wide, Wide, Wide)> {
+///
+/// `orbit`, where given, is filled with `z_0..=z_p` projected to `f64`: the reference the
+/// perturbed root solve ([`newton_perturbed`]) runs its passes against.
+fn at_nucleus(
+    c: &(Fx, Fx),
+    period: u32,
+    degree: u32,
+    mut orbit: Option<&mut Vec<(f64, f64)>>,
+) -> Option<(Wide, Wide, Wide)> {
     let n = c.0.n;
     let (mut z_re, mut z_im) = (Fx::zero(n), Fx::zero(n));
     let (mut b, mut product) = (Wide::ZERO, Wide::ONE);
     let slope = degree as f64;
     let bailout = bailout_sq(degree);
+    if let Some(orbit) = orbit.as_deref_mut() {
+        orbit.clear();
+        orbit.reserve(period as usize + 1);
+    }
     for k in 0..period {
         let (x, y) = (z_re.to_f64(), z_im.to_f64());
         if !(x * x + y * y <= bailout) {
             return None;
+        }
+        if let Some(orbit) = orbit.as_deref_mut() {
+            orbit.push((x, y));
         }
         let s1 = Wide::new(x, y).pow(degree - 1).scale(slope);
         b = s1.mul(b).add(Wide::ONE);
@@ -1077,7 +1092,11 @@ fn at_nucleus(c: &(Fx, Fx), period: u32, degree: u32) -> Option<(Wide, Wide, Wid
         }
         (z_re, z_im) = advance(&z_re, &z_im, &c.0, &c.1, degree);
     }
-    Some((b, product, Wide::new(z_re.to_f64(), z_im.to_f64())))
+    let z_p = (z_re.to_f64(), z_im.to_f64());
+    if let Some(orbit) = orbit {
+        orbit.push(z_p);
+    }
+    Some((b, product, Wide::new(z_p.0, z_p.1)))
 }
 
 /// The proper divisors of `p`, ascending.
@@ -1188,6 +1207,31 @@ fn unit_root(u: (f64, f64), k: u32) -> Option<(f64, f64)> {
 ///
 /// The parent is the smallest `q` either test finds, and `m = p/q`.
 pub fn classify(nucleus: &Nucleus, degree: u32) -> Reading {
+    classify_by(nucleus, degree, Solver::Perturbed)
+}
+
+/// Which root solve [`classify`] runs. [`Solver::Fx`] is the one that iterates every pass in
+/// the nucleus's fixed point; [`Solver::Perturbed`] runs the same Newton steps as offsets
+/// from the polished nucleus's own orbit, in `f64`, and falls back to the first per root
+/// wherever an offset cannot be trusted.
+#[doc(hidden)]
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum Solver {
+    Fx,
+    Perturbed,
+}
+
+/// Roots the perturbed solve handed back to the fixed-point one, and literal tests it read
+/// again in fixed point, since the process started: the experiment's own tally.
+#[doc(hidden)]
+pub static FALLBACKS: core::sync::atomic::AtomicU64 = core::sync::atomic::AtomicU64::new(0);
+#[doc(hidden)]
+pub static REREADS: core::sync::atomic::AtomicU64 = core::sync::atomic::AtomicU64::new(0);
+#[doc(hidden)]
+pub static DEEP: core::sync::atomic::AtomicU64 = core::sync::atomic::AtomicU64::new(0);
+#[doc(hidden)]
+#[doc(hidden)]
+pub fn classify_by(nucleus: &Nucleus, degree: u32, solver: Solver) -> Reading {
     let period = nucleus.period;
     let n = nucleus.c_re.n;
     let mut reading = Reading {
@@ -1208,8 +1252,10 @@ pub fn classify(nucleus: &Nucleus, degree: u32) -> Reading {
     // a nucleus goes somewhere else, which the two checks below catch. A deep nucleus arrives
     // converged and costs the one pass that says so.
     let given = (nucleus.c_re, nucleus.c_im);
+    let mut orbit = Vec::new();
+    let record = solver == Solver::Perturbed;
     reading.steps += period as u64;
-    let Some(first) = at_nucleus(&given, period, degree) else {
+    let Some(first) = at_nucleus(&given, period, degree, record.then_some(&mut orbit)) else {
         return unresolved(Unresolved::NotANucleus, reading);
     };
     let settled = |(b, product, z_p): (Wide, Wide, Wide)| {
@@ -1226,7 +1272,7 @@ pub fn classify(nucleus: &Nucleus, degree: u32) -> Reading {
         };
         let c0 = (polished.c_re, polished.c_im);
         reading.steps += period as u64;
-        let Some(again) = at_nucleus(&c0, period, degree) else {
+        let Some(again) = at_nucleus(&c0, period, degree, record.then_some(&mut orbit)) else {
             return unresolved(Unresolved::NotANucleus, reading);
         };
         (c0, again)
@@ -1273,6 +1319,17 @@ pub fn classify(nucleus: &Nucleus, degree: u32) -> Reading {
     let cusp = (1.0 / degree as f64).powf(1.0 / root_power);
     let divisors = divisors(period);
     let fixed = |value: f64| Fx::from_f64(value, n);
+    // The offsets a perturbed pass carries are plain `f64`, so the copy has to sit well
+    // inside a double's exponent; one past it is solved in fixed point throughout.
+    let perturbed = record && scale_log2 > PERTURBED_FLOOR_LOG2 && size_log2 > PERTURBED_FLOOR_LOG2;
+    let problem = Problem {
+        c0: &c0,
+        period,
+        degree,
+        size_log2,
+        divisors: &divisors,
+        n,
+    };
 
     let mut worst: Option<Unresolved> = None;
     for zeta in unity(degree - 1) {
@@ -1291,79 +1348,39 @@ pub fn classify(nucleus: &Nucleus, degree: u32) -> Reading {
         ) else {
             return unresolved(Unresolved::Singular, reading);
         };
-        let mut z = (zr, zi);
-        let mut c = (c0.0.add(&cr), c0.1.add(&ci));
+        let from_fx =
+            |steps: &mut u64| newton_fx(&problem, (zr, zi), (c0.0.add(&cr), c0.1.add(&ci)), steps);
 
-        // Newton on the pair, until `c` stops moving by more than [`ROOT_CONVERGED`] sizes.
-        // **Every pass also takes `|f^q(z) − z|` at the point it starts from**, `q` a proper
-        // divisor, by a cursor over the divisors — they arrive in order, so it is one compare
-        // a step. The pass that stops the solve started within a step of the root, so its
-        // distances are the root's, and no pass is spent on the literal test alone.
-        let mut near = vec![f64::INFINITY; divisors.len()];
-        let mut root = (z, c);
-        let mut converged = false;
-        let mut failed = None;
-        let mut previous = f64::INFINITY;
-        let mut regular = false;
-        for _ in 0..ROOT_MAX_STEPS {
-            reading.steps += period as u64;
-            let here = z;
-            let mut cursor = 0;
-            let read = &mut |k: u32, re: &Fx, im: &Fx| {
-                if divisors.get(cursor) == Some(&k) {
-                    let dx = re.sub(&here.0).to_f64();
-                    let dy = im.sub(&here.1).to_f64();
-                    near[cursor] = (dx * dx + dy * dy).sqrt();
-                    cursor += 1;
+        let solved = if perturbed {
+            match newton_perturbed(&problem, &orbit, z_start, c_start, &mut reading.steps) {
+                Solved::Root(root) => Ok(root),
+                Solved::Failed(why) => Err(why),
+                Solved::Glitch => {
+                    FALLBACKS.fetch_add(1, core::sync::atomic::Ordering::Relaxed);
+                    from_fx(&mut reading.steps)
                 }
-            };
-            let Some(taken) = pass(&z, &c, period, degree, read) else {
-                failed = Some(Unresolved::Escaped);
-                break;
-            };
-            let f = Wide::new(taken.z.0.sub(&z.0).to_f64(), taken.z.1.sub(&z.1).to_f64());
-            let off = taken.a.sub(Wide::ONE);
-            let det = off.mul(taken.g).sub(taken.b.mul(taken.e));
-            let (Some(dz), Some(dc)) = (
-                f.mul(taken.g).sub(taken.b.mul(off)).div(det),
-                off.mul(off).sub(f.mul(taken.e)).div(det),
-            ) else {
-                failed = Some(Unresolved::Singular);
-                break;
-            };
-            let (dz, dc_wide) = (dz.to_f64(), dc);
-            let dc = dc_wide.to_f64();
-            let (Some(zr), Some(zi), Some(cr), Some(ci)) =
-                (fixed(dz.0), fixed(dz.1), fixed(dc.0), fixed(dc.1))
-            else {
-                failed = Some(Unresolved::Wandered);
-                break;
-            };
-            root = (z, c);
-            z = (z.0.sub(&zr), z.1.sub(&zi));
-            c = (c.0.sub(&cr), c.1.sub(&ci));
-            let step = dc_wide.log2() - size_log2;
-            let quadratic = previous <= QUADRATIC.log2() && step <= previous + QUADRATIC.log2();
-            // A first step already under [`ROOT_CONVERGED`] — a deep copy, whose cusp the
-            // renormalization places to that — takes one pass more, which is what shows it
-            // regular: cheaper than the collapse test it saves.
-            if quadratic || (step <= ROOT_CONVERGED.log2() && previous.is_finite()) {
-                converged = true;
-                regular = quadratic;
-                break;
+                Solved::Deep => {
+                    DEEP.fetch_add(1, core::sync::atomic::Ordering::Relaxed);
+                    from_fx(&mut reading.steps)
+                }
             }
-            previous = step;
-        }
-        if let Some(why) = failed {
-            worst.get_or_insert(why);
-            continue;
-        }
-        let (z, c) = root;
+        } else {
+            from_fx(&mut reading.steps)
+        };
+        let mut root = match solved {
+            Ok(root) => root,
+            Err(why) => {
+                worst.get_or_insert(why);
+                continue;
+            }
+        };
+        let (z, c) = (root.z, root.c);
         let apart = Wide::new(c.0.sub(&c0.0).to_f64(), c.1.sub(&c0.1).to_f64());
         if apart.log2() > ROOT_NEAR.log2() + size_log2 {
             worst.get_or_insert(Unresolved::Wandered);
             continue;
         }
+        let scale = scale_log2.exp2();
 
         // **The collapse test's centroids, only where the root is not regular** — a
         // satellite's, or one that did not converge. Where Newton converged quadratically the
@@ -1372,14 +1389,35 @@ pub fn classify(nucleus: &Nucleus, degree: u32) -> Reading {
         // it, which at a highly composite period is more than a pass of the period itself.
         // Offsets from `z` are taken exactly and summed in `f64`, which holds them to sixteen
         // digits of the ring's own size.
+        //
+        // The same pass reads the literal test's distances again in fixed point where a
+        // perturbed solve took them and they do not clear the line by their rounding bound
+        // ([`Root::settled`]), and so does a pass of its own at a regular root in that case:
+        // what decides a reading is never a perturbed distance near the line.
         let mut sums = vec![(0.0f64, 0.0f64); divisors.len()];
-        if !regular {
+        let reread = !root.settled(COLLIDES_WITHIN * scale);
+        if !root.regular || reread {
+            if reread {
+                REREADS.fetch_add(1, core::sync::atomic::Ordering::Relaxed);
+            }
             reading.steps += period as u64;
+            let mut cursor = 0;
+            let near = &mut root.near;
+            let centroids = !root.regular;
             let read = &mut |k: u32, re: &Fx, im: &Fx| {
                 if k >= period {
                     return;
                 }
                 let mut offset = None;
+                if reread && divisors.get(cursor) == Some(&k) {
+                    let (dx, dy) = *offset
+                        .get_or_insert_with(|| (re.sub(&z.0).to_f64(), im.sub(&z.1).to_f64()));
+                    near[cursor] = (dx * dx + dy * dy).sqrt();
+                    cursor += 1;
+                }
+                if !centroids {
+                    return;
+                }
                 for (at, &q) in divisors.iter().enumerate() {
                     if k % q != 0 {
                         continue;
@@ -1395,11 +1433,11 @@ pub fn classify(nucleus: &Nucleus, degree: u32) -> Reading {
                 continue;
             }
         }
+        let regular = root.regular;
 
-        let scale = scale_log2.exp2();
         let collides = divisors
             .iter()
-            .zip(&near)
+            .zip(&root.near)
             .find(|&(_, &apart)| apart <= COLLIDES_WITHIN * scale)
             .map(|(&q, _)| q);
 
@@ -1444,7 +1482,7 @@ pub fn classify(nucleus: &Nucleus, degree: u32) -> Reading {
                 };
                 return reading;
             }
-            (None, None) if converged => {}
+            (None, None) if root.converged => {}
             (None, None) => {
                 worst.get_or_insert(Unresolved::Unconverged);
             }
@@ -1455,6 +1493,358 @@ pub fn classify(nucleus: &Nucleus, degree: u32) -> Reading {
         None => reading,
     }
 }
+
+/// `log₂` of the smallest copy scale and size the perturbed root solve takes: well inside
+/// an `f64`'s exponent, so an offset squared at degree six is still a number.
+const PERTURBED_FLOOR_LOG2: f64 = -900.0;
+
+/// What both root solves share: the nucleus, its period and degree, its size, the divisors
+/// the literal test reads, and the fixed point's limb count.
+struct Problem<'a> {
+    c0: &'a (Fx, Fx),
+    period: u32,
+    degree: u32,
+    size_log2: f64,
+    divisors: &'a [u32],
+    n: usize,
+}
+
+/// A root solve's answer: where it stopped, how, and the literal test's distances
+/// `|f^q(z) − z|` read at that point, one per divisor.
+struct Root {
+    z: (Fx, Fx),
+    c: (Fx, Fx),
+    converged: bool,
+    regular: bool,
+    near: Vec<f64>,
+    /// How far each distance may be off: zero where it was read in fixed point, and a bound
+    /// on the `f64` rounding where it was read off a perturbed pass.
+    slack: Vec<f64>,
+}
+
+impl Root {
+    /// Whether every distance is on one side of `line` by more than it may be off, so the
+    /// literal test reads the same whatever the rounding was.
+    fn settled(&self, line: f64) -> bool {
+        self.near
+            .iter()
+            .zip(&self.slack)
+            .all(|(&near, &slack)| slack == 0.0 || (near - line).abs() > slack)
+    }
+}
+
+enum Solved {
+    Root(Root),
+    Failed(Unresolved),
+    /// A perturbed pass lost the offset's precision; the root is solved in fixed point.
+    Glitch,
+    /// The cusp is a deep copy's, already converged, whose regularity only the fixed point
+    /// can show; the root is solved there.
+    Deep,
+}
+
+/// Newton on the pair, in fixed point, until `c` stops moving by more than
+/// [`ROOT_CONVERGED`] sizes. **Every pass also takes `|f^q(z) − z|` at the point it starts
+/// from**, `q` a proper divisor, by a cursor over the divisors — they arrive in order, so it
+/// is one compare a step. The pass that stops the solve started within a step of the root,
+/// so its distances are the root's, and no pass is spent on the literal test alone.
+fn newton_fx(
+    problem: &Problem,
+    mut z: (Fx, Fx),
+    mut c: (Fx, Fx),
+    steps: &mut u64,
+) -> Result<Root, Unresolved> {
+    let &Problem {
+        period,
+        degree,
+        size_log2,
+        divisors,
+        n,
+        ..
+    } = problem;
+    let fixed = |value: f64| Fx::from_f64(value, n);
+    let mut near = vec![f64::INFINITY; divisors.len()];
+    let slack = vec![0.0; divisors.len()];
+    let mut root = (z, c);
+    let mut previous = f64::INFINITY;
+    for _ in 0..ROOT_MAX_STEPS {
+        *steps += period as u64;
+        let here = z;
+        let mut cursor = 0;
+        let read = &mut |k: u32, re: &Fx, im: &Fx| {
+            if divisors.get(cursor) == Some(&k) {
+                let dx = re.sub(&here.0).to_f64();
+                let dy = im.sub(&here.1).to_f64();
+                near[cursor] = (dx * dx + dy * dy).sqrt();
+                cursor += 1;
+            }
+        };
+        let Some(taken) = pass(&z, &c, period, degree, read) else {
+            return Err(Unresolved::Escaped);
+        };
+        let f = Wide::new(taken.z.0.sub(&z.0).to_f64(), taken.z.1.sub(&z.1).to_f64());
+        let Some((dz, dc_wide)) = newton_system(f, &taken) else {
+            return Err(Unresolved::Singular);
+        };
+        let dz = dz.to_f64();
+        let dc = dc_wide.to_f64();
+        let (Some(zr), Some(zi), Some(cr), Some(ci)) =
+            (fixed(dz.0), fixed(dz.1), fixed(dc.0), fixed(dc.1))
+        else {
+            return Err(Unresolved::Wandered);
+        };
+        root = (z, c);
+        z = (z.0.sub(&zr), z.1.sub(&zi));
+        c = (c.0.sub(&cr), c.1.sub(&ci));
+        let step = dc_wide.log2() - size_log2;
+        if let Some(regular) = stopped(previous, step) {
+            return Ok(Root {
+                z: root.0,
+                c: root.1,
+                converged: true,
+                regular,
+                near,
+                slack,
+            });
+        }
+        previous = step;
+    }
+    Ok(Root {
+        z: root.0,
+        c: root.1,
+        converged: false,
+        regular: false,
+        near,
+        slack,
+    })
+}
+
+/// The Newton step on `f^p(z) − z = 0`, `(f^p)′(z) − 1 = 0` from one pass's residual `f` and
+/// derivatives: `(Δz, Δc)`, or `None` where the system is singular.
+fn newton_system(f: Wide, taken: &Pass) -> Option<(Wide, Wide)> {
+    let off = taken.a.sub(Wide::ONE);
+    let det = off.mul(taken.g).sub(taken.b.mul(taken.e));
+    Some((
+        f.mul(taken.g).sub(taken.b.mul(off)).div(det)?,
+        off.mul(off).sub(f.mul(taken.e)).div(det)?,
+    ))
+}
+
+/// Whether a root solve stops at this step, and if so whether the root showed itself
+/// regular.
+///
+/// A step under [`QUADRATIC`] of the one before it, itself under that share of the size, is
+/// quadratic convergence. A first step already under [`ROOT_CONVERGED`] — a deep copy, whose
+/// cusp the renormalization places to that — takes one pass more, which is what shows it
+/// regular: cheaper than the collapse test it saves.
+fn stopped(previous: f64, step: f64) -> Option<bool> {
+    let quadratic = previous <= QUADRATIC.log2() && step <= previous + QUADRATIC.log2();
+    if quadratic || (step <= ROOT_CONVERGED.log2() && previous.is_finite()) {
+        Some(quadratic)
+    } else {
+        None
+    }
+}
+
+/// How far below `|Z_k|` the perturbed orbit `Z_k + δ_k` may come before its offset is not
+/// trusted, squared: Pauldelbrot's criterion at a thousandth. Past it the sum has lost three
+/// digits to cancellation, and the root is solved in fixed point instead.
+const GLITCH_SQ: f64 = 1e-6;
+
+/// How far a distance read off a perturbed pass may be off, as a share of the magnitudes
+/// summed into it: a hundred million `f64` roundings, so a distance this near the literal
+/// test's line is read again in fixed point rather than trusted.
+const PERTURBED_SLACK: f64 = 1e-8;
+
+/// **The root solve as perturbation around the nucleus's own orbit** *(classify_speed_ckpt155)*.
+///
+/// The fixed-point solve's time is the fixed point itself: at degree six and five limbs, one
+/// step of `z ↦ z^d + c` in fixed point is 2.3 µs of a 2.5 µs pass step, and the derivatives
+/// the rest. Near the nucleus `c_0`, whose orbit `Z_k` the polish just took, a root's orbit is
+/// `z_k = Z_k + δ_k` with `δ_{k+1} = (Z_k + δ_k)^d − Z_k^d + Δc`, which the binomial writes
+/// with no cancellation and every term an `f64`: `δ_0` is the root's `z`, at the copy's scale
+/// `|s_z|`, and `Δc = c − c_0` at its size. The Newton system and every rule after it are the
+/// fixed-point solve's, on the same numbers to the `f64` rounding of the offsets.
+///
+/// Where `|Z_k + δ_k|` falls under a thousandth of `|Z_k|` the offset has lost its digits,
+/// and the root is handed to [`newton_fx`] from its cusp ([`Solved::Glitch`]). The literal
+/// test's distances come with a rounding bound, and a root whose distances do not clear the
+/// line by it is read again in fixed point by the caller.
+fn newton_perturbed(
+    problem: &Problem,
+    orbit: &[(f64, f64)],
+    z_start: (f64, f64),
+    c_start: (f64, f64),
+    steps: &mut u64,
+) -> Solved {
+    let &Problem {
+        c0,
+        period,
+        degree,
+        size_log2,
+        divisors,
+        n,
+    } = problem;
+    let fixed = |value: f64| Fx::from_f64(value, n);
+    let mut d0 = z_start;
+    let mut dc = c_start;
+    let mut near = vec![f64::INFINITY; divisors.len()];
+    let mut slack = vec![0.0; divisors.len()];
+    let mut root = (d0, dc);
+    let mut previous = f64::INFINITY;
+    let mut converged = false;
+    let mut regular = false;
+    for _ in 0..ROOT_MAX_STEPS {
+        *steps += period as u64;
+        let taken = match perturbed_pass(orbit, d0, dc, degree, divisors, &mut near, &mut slack) {
+            Ok(taken) => taken,
+            Err(solved) => return solved,
+        };
+        let Some((dz, dc_wide)) = newton_system(taken.f, &taken.pass) else {
+            return Solved::Failed(Unresolved::Singular);
+        };
+        let dz = dz.to_f64();
+        let step_c = dc_wide.to_f64();
+        if fixed(dz.0).is_none()
+            || fixed(dz.1).is_none()
+            || fixed(step_c.0).is_none()
+            || fixed(step_c.1).is_none()
+        {
+            return Solved::Failed(Unresolved::Wandered);
+        }
+        root = (d0, dc);
+        d0 = (d0.0 - dz.0, d0.1 - dz.1);
+        dc = (dc.0 - step_c.0, dc.1 - step_c.1);
+        let step = dc_wide.log2() - size_log2;
+        // **A first step already under [`ROOT_CONVERGED`] is a deep copy's cusp, and it is the
+        // fixed point's to finish.** What shows such a root regular is the next step falling
+        // quadratically, and a perturbed pass cannot see one: its offsets carry the orbit's
+        // own `f64` rounding, about `√p` of it, which at period 83,424 is 2⁻⁴⁵ of the size —
+        // the step it would have to fall from. Read as not regular, the root would pay the
+        // collapse test instead, more passes than the two the fixed point takes.
+        if !previous.is_finite() && step <= ROOT_CONVERGED.log2() {
+            return Solved::Deep;
+        }
+        if let Some(quadratic) = stopped(previous, step) {
+            converged = true;
+            regular = quadratic;
+            break;
+        }
+        previous = step;
+    }
+    let (d0, dc) = root;
+    let (Some(zr), Some(zi), Some(cr), Some(ci)) =
+        (fixed(d0.0), fixed(d0.1), fixed(dc.0), fixed(dc.1))
+    else {
+        return Solved::Failed(Unresolved::Wandered);
+    };
+    Solved::Root(Root {
+        z: (zr, zi),
+        c: (c0.0.add(&cr), c0.1.add(&ci)),
+        converged,
+        regular,
+        near,
+        slack,
+    })
+}
+
+struct PerturbedPass {
+    /// `f^p(z) − z`.
+    f: Wide,
+    /// Its derivatives; the pass's `z` is not read.
+    pass: Pass,
+}
+
+/// One perturbed pass of `f^p` from `Z_0 + δ_0` at `c_0 + Δc`, over the whole of `orbit`
+/// (`Z_0..=Z_p`): the residual, the four derivatives [`pass`] takes, and the literal test's
+/// distances with their rounding bounds.
+#[inline(never)]
+fn perturbed_pass(
+    orbit: &[(f64, f64)],
+    d0: (f64, f64),
+    dc: (f64, f64),
+    degree: u32,
+    divisors: &[u32],
+    near: &mut [f64],
+    slack: &mut [f64],
+) -> Result<PerturbedPass, Solved> {
+    let period = orbit.len() - 1;
+    let (mut a, mut b, mut e, mut g) = (Wide::ONE, Wide::ZERO, Wide::ZERO, Wide::ZERO);
+    let slope = degree as f64;
+    let bend = (degree * (degree - 1)) as f64;
+    let bailout = bailout_sq(degree);
+    let d = degree as usize;
+    let binomial = BINOMIAL[d];
+    let (mut dr, mut di) = d0;
+    let start = (d0.0 * d0.0 + d0.1 * d0.1).sqrt();
+    let mut cursor = 0;
+    for k in 1..=period {
+        let (zr, zi) = orbit[k - 1];
+        let (x, y) = (zr + dr, zi + di);
+        let r2 = x * x + y * y;
+        if !(r2 <= bailout) {
+            return Err(Solved::Failed(Unresolved::Escaped));
+        }
+        if k > 1 && r2 < GLITCH_SQ * (zr * zr + zi * zi) {
+            return Err(Solved::Glitch);
+        }
+        let under = Wide::new(x, y).pow(degree - 2);
+        let s1 = under.mul(Wide::new(x, y)).scale(slope);
+        let s2 = under.scale(bend);
+        let e_next = s2.mul(a).mul(a).add(s1.mul(e));
+        let g_next = s2.mul(a).mul(b).add(s1.mul(g));
+        a = s1.mul(a);
+        b = s1.mul(b).add(Wide::ONE);
+        e = e_next;
+        g = g_next;
+        // `(Z + δ)^d − Z^d = δ·Σ_{j=1}^{d} C(d, j) Z^{d−j} δ^{j−1}`, by Horner in `δ`.
+        let mut powers = [(1.0f64, 0.0f64); 7];
+        for j in 1..d {
+            let (pr, pi) = powers[j - 1];
+            powers[j] = (pr * zr - pi * zi, pr * zi + pi * zr);
+        }
+        let (mut hr, mut hi) = (1.0f64, 0.0f64);
+        for j in (1..d).rev() {
+            let (pr, pi) = powers[d - j];
+            let weight = binomial[j];
+            (hr, hi) = (
+                hr * dr - hi * di + weight * pr,
+                hr * di + hi * dr + weight * pi,
+            );
+        }
+        (dr, di) = (dr * hr - di * hi + dc.0, dr * hi + di * hr + dc.1);
+        if divisors.get(cursor) == Some(&(k as u32)) {
+            let (zr, zi) = orbit[k];
+            let (fx, fy) = (zr + dr - d0.0, zi + di - d0.1);
+            near[cursor] = (fx * fx + fy * fy).sqrt();
+            slack[cursor] =
+                PERTURBED_SLACK * ((zr * zr + zi * zi).sqrt() + (dr * dr + di * di).sqrt() + start);
+            cursor += 1;
+        }
+    }
+    let (zr, zi) = orbit[period];
+    Ok(PerturbedPass {
+        f: Wide::new(zr + dr - d0.0, zi + di - d0.1),
+        pass: Pass {
+            z: (Fx::zero(1), Fx::zero(1)),
+            a,
+            b,
+            e,
+            g,
+        },
+    })
+}
+
+/// `C(d, j)` for `d` up to six.
+const BINOMIAL: [[f64; 7]; 7] = [
+    [1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+    [1.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+    [1.0, 2.0, 1.0, 0.0, 0.0, 0.0, 0.0],
+    [1.0, 3.0, 3.0, 1.0, 0.0, 0.0, 0.0],
+    [1.0, 4.0, 6.0, 4.0, 1.0, 0.0, 0.0],
+    [1.0, 5.0, 10.0, 10.0, 5.0, 1.0, 0.0],
+    [1.0, 6.0, 15.0, 20.0, 15.0, 6.0, 1.0],
+];
 
 /// How many times a copy's body is its own size across, at each degree — what a
 /// frame of [`TILE_BODIES`] sizes is corrected by where the body cannot be measured.

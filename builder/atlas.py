@@ -2012,6 +2012,11 @@ DIVE_PLANES = ("mandelbrot", "multibrot3", "multibrot4", "multibrot5", "multibro
 #: The Dive block's slot picture, in pixels: 16:9, twice the size the slot shows it at.
 DIVE_PLATE_SIZE = (256, 144)
 
+#: The margin a slot picture leaves round the set, as a share of its larger extent: a
+#: third of the miniature's `MINIATURE_PAD`, so the set fills the slot's height rather than
+#: floating in it *(classify_speed_ckpt155_addendum1)*.
+DIVE_PLATE_PAD = 0.02
+
 
 def dive_plate_path(partition: str) -> Path:
     """Where one plane's slot picture lands. `explorer.js`'s `plateOf` spells the same name."""
@@ -2022,8 +2027,9 @@ def _dive_plate(plate: Path):
     """One plate, as the Dive block's slot shows a random place on its plane.
 
     The plate made small and nothing else: the set cropped to its extent the way the
-    miniature is, fitted to the slot's height, and set on the plate's own background colour,
-    so the slot reads as a picture of the plane rather than of any one place on it.
+    miniature is but with a narrower margin, `DIVE_PLATE_PAD`, fitted to the slot's height,
+    and set on the plate's own background colour, so the slot reads as a picture of the plane
+    rather than of any one place on it.
     """
     from PIL import Image
 
@@ -2031,7 +2037,7 @@ def _dive_plate(plate: Path):
         colour = opened.convert("RGB")
     grey = colour.convert("L")
     left, top, right, bottom = grey.point(lambda v: 255 if v > MINIATURE_FLOOR else 0).getbbox()
-    pad = max(right - left, bottom - top) * MINIATURE_PAD / 2
+    pad = max(right - left, bottom - top) * DIVE_PLATE_PAD / 2
     body = colour.crop(
         (
             round(max(0, left - pad)),

@@ -675,8 +675,8 @@ installed. `permalink.test.mjs` is the contract held to itself — a URL is the 
 permanent thing this site emits, and it is worth a test suite even though nothing else
 here has one. `screensaver.test.mjs` holds the screensaver's pure parts: the interval
 table, the overrun rule, the learned correction and the bag it draws from. `hold.test.mjs`
-holds Hold look's re-solve: a held Lambda or Period keeps the band density and the colour
-at the reference value to the written rounding, and a drag back and forth comes home.
+holds Hold look's re-solve: a held Lambda or Period keeps the colour at the reference value
+to the written rounding, and a drag back and forth comes home.
 `fit.test.mjs` holds Fit: the absolute recipe it chooses runs the palette `PASSES` times
 across Leveled's stretch, in a `λ` whose line is within a tenth of a turn of Leveled's
 shape, in numbers the contract writes, leaning to the log only where the log is as good.

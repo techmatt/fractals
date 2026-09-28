@@ -1310,19 +1310,32 @@ gallery's copy-mapped frames were built on them; the tool now imports them. Two 
 **A mapped landing is anchored, and scaled locally.** A whole-set view `(C, w)` lands at
 `twin + s·(C − c_B)`, `w·|s|` wide, where `c_B` is the nucleus nearest `C` (the page's own
 search round the view) and `twin` its copy inside `A`. Two measurements say why neither
-shortcut is enough:
+shortcut is enough. They were retaken on named nuclei at classify_speed_ckpt155
+(`scratch/classify_speed/twin_measure.py` and `twin_probe.py`). The view is the seahorse-valley
+point −0.7436438870371587 + 0.1318259042053119i, 1e-5 wide, and `B` is the period-78 nucleus
+the search finds nearest it. There are two copies: the airship, and the period-15 copy at
+0.40034805463804191822 + 0.14068263611691251718i, which the root test reads as a copy.
 
-- **The first-order place `c_A + s_A·C` misses.** A seahorse-valley view 1e-5 wide lands
-  3,164 frames across and 1,039 down from its anchored place inside the airship, and about
-  1.1e5 by 1.6e5 frames inside a period-15 copy, where the first-order frame drew a single
-  flat colour.
+- **The first-order place `c_A + s_A·C` misses.** Inside the airship it lands 3,391 frames
+  across and 1,980 down from the anchored place, and inside the period-15 copy 3,694 across
+  and 3,890 down, at 480×270.
 - **The copy's own scale is not the scale at the anchor.** `s = 1/σ_A` is the tuning map's
-  derivative at `A`'s nucleus; where the copy is shallow the map bends between there and the
-  anchor. On the period-15 copy the view came out 28% too large and turned 83° where it
-  should turn 21°. So `s` is `σ_B / σ_twin`, the two nuclei's own scales, which is the local
-  derivative to first order; of the `D − 1` branches the one nearest `s_A` is taken, being
-  the one continuous with the copy. The interior share of the source view and of both
-  landings, measured at 480×270, was 0.1273, 0.1274 and 0.1274.
+  derivative at `A`'s nucleus, and between there and the anchor the map bends. So `s` is
+  `σ_B / σ_twin`, the two nuclei's own scales, which is the local derivative to first order.
+  Of the `D − 1` branches, the one nearest `s_A` is taken, being the one continuous with the
+  copy. Over four seahorse-valley views `s_A` is 1.2–7.5% off the local scale in size on both
+  copies. In turn it is 0.6–2.8° off on the airship and 1.8–5.1° off on the period-15 copy:
+  at this view it turns −65.4°, where the local scale turns −70.3°. The interior share at
+  480×270 is 0.1458 for the source view, and 0.1280 and 0.1324 for the two landings. Each
+  landing is drawn at its landing's cap, the source at its own 1,000.
+- ⚠ **What this section used to say was measured on something that is not a copy.** Until
+  this retake it said "about 1.1e5 by 1.6e5 frames", "28% too large and turned 83° where it
+  should turn 21°", and shares of 0.1273 and 0.1274, all "inside a period-15 copy". No record
+  names that point, and the one period-15 "copy" of that week's records is the home view's
+  unconverged solve at −0.17771144 + 0.632926556i (§12), which is no nucleus. Its twin does
+  not converge today: all four views above fall back to first order. And a true period-15
+  copy's error is a tenth of the recorded one. The recorded interior shares belonged to a view
+  that is not recorded either, so they were not carried over.
 
 The frame is turned by `arg s` and the explorer draws no rotation, so the page says the turn
 rather than undoing it.
@@ -1378,10 +1391,12 @@ cycle point has a lower period `q | p`; a copy's root cycle point keeps period `
    solve stops at a view-sized tolerance, half a percent of the period-2,508 bulb at the home
    view). Refused as *not a nucleus* where `|z_p|` is over 1e-3 of the copy's `z` scale
    `|s_z| = |A|^{−1/(d−1)}`, or where the polish moved it more than a size.
-2. **Roots.** Newton on `f^p(z) = z`, `(f^p)′(z) = 1`, in the nucleus's fixed point, with
-   `∂/∂z`, `∂/∂c`, `∂²/∂z²` and `∂²/∂z∂c` carried as mantissa and exponent. It starts at the
-   cusp the renormalization gives, `w = d^{−1/(d−1)}ζ`, `C = w(1 − 1/d)`, so a deep copy's
-   first step is already under 1e-10 of its size.
+2. **Roots.** Newton on `f^p(z) = z`, `(f^p)′(z) = 1`, with `∂/∂z`, `∂/∂c`, `∂²/∂z²` and
+   `∂²/∂z∂c` carried as mantissa and exponent. It starts at the cusp the renormalization gives,
+   `w = d^{−1/(d−1)}ζ` and `C = w(1 − 1/d)`, so a deep copy's first step is already under 1e-10
+   of its size. Since classify_speed_ckpt155 the passes run **as perturbation around the
+   polished nucleus's own orbit** (*Perturbed roots*, below), and they fall back to the
+   nucleus's fixed point wherever that cannot be trusted.
 3. **Literal test at a regular root.** A copy's root is regular and converges quadratically
    (`QUADRATIC`); there `|f^q(z) − z|` under 1e-3 `|s_z|` for a proper divisor `q` is a
    collapse. On every copy measured the smallest is 1.5 `|s_z|` or more.
@@ -1402,8 +1417,8 @@ period 2,508 is a 57-bulb on period 44; "period 15" is not a nucleus (`|z₁₅|
 Newton lands on the period-3 nucleus 0.125 away). The old chain reading had also called the
 period-10 and period-28 doublings at the home view, and a degree-six 5-bulb, copies.
 
-**Cost**, native, per nucleus, this box under another prompt's load (solve = one Newton step
-at the period):
+**Cost when this landed**, native, per nucleus, this box under another prompt's load (solve =
+one Newton step at the period). *Perturbed roots*, below, has what it costs now:
 
 | frame | period | one solve step | old reading | root test |
 |---|--:|--:|--:|--:|
@@ -1412,7 +1427,7 @@ at the period):
 | tangle 1e-22, degree 6 | 62,608–93,912 | 0.15–0.23 s | — | 2.6–5.0 s (16–21 passes) |
 | home view | ≤ 2,508 | — | ms | ms; 0.03 s for the 2,508 bulb |
 
-⚠ **Degree six is where it becomes slow**: five roots at three passes each. What was done:
+⚠ **Degree six was where it became slow**: five roots at three passes each. What was done:
 the literal test rides the Newton passes (a cursor over the divisors, one compare a step),
 the collapse test runs only where the root is not regular, the polish only where the nucleus
 needs it, and a dive reads in rounds of the pool and stops once the rung rule is settled. On
@@ -1423,6 +1438,67 @@ saves nothing on the copies the cost is spent on, and none was measured to be sa
 **Module**: 346,064 bytes raw and 128,978 gzipped, from 313,157 and 117,312. `Wide`'s
 operations are `#[inline(never)]` (9.5 KB for 2–5% of speed) and `pass` takes a `dyn`
 callback rather than a generic one (11.5 KB).
+
+#### Perturbed roots *(classify_speed_ckpt155, 2026-09-28)*
+
+**Where the time went.** It went to the fixed point. One pass step at degree six and five
+limbs cost 2,520 ns: 2,265 ns of it was `z ↦ z^d + c` in fixed point (`cpow_fx`, twenty
+limb products a step), and 135 ns was the `Wide` derivative chain. At degree two and eight
+limbs the split is 779 of 894 ns. An `f64` binomial step, the perturbation's own arithmetic,
+is 30 ns and 12 ns. So the passes were worth moving off the fixed point, and nothing else
+was: the polish is one pass on every nucleus the dive reads, and the collapse test runs only
+on satellites.
+
+**The perturbed solve** (`newton_perturbed`). The nucleus's pass already takes its orbit
+`Z_0..Z_p`, and now it keeps it, as `f64`. A root's orbit is `Z_k + δ_k`, with
+`δ_{k+1} = (Z_k + δ_k)^d − Z_k^d + Δc` written as the binomial. That has no cancellation, and
+every term is an `f64`: `δ_0` is at the copy's scale and `Δc = c − c_0` at its size. The
+residual, the four derivatives, the Newton system, the stopping rule, and every test after
+the root are the fixed-point solve's, and so are the numbers, to the offsets' rounding. It
+hands a root to the fixed-point solve, from its cusp, in two cases:
+
+- **A glitch**: `|Z_k + δ_k|` under a thousandth of `|Z_k|`, which is Pauldelbrot's criterion.
+  No root in the frame set tripped it.
+- **A deep cusp**: a first step already under `ROOT_CONVERGED`. What shows such a root
+  regular is its next step falling quadratically, and a perturbed pass cannot see that step.
+  The offsets carry about `√p` of the orbit's own rounding, 2⁻⁴⁵ of the size at period
+  83,424, and that is the step the next one would have to fall from. Read as not regular,
+  the root would pay the collapse test instead. At these composite periods that test's
+  divisor cycles add up to about 1.9 periods, which made the degree-two tangles no faster
+  until the hand-off was there. Each of their 17 cusps goes to the fixed point now.
+
+A literal-test distance read off a perturbed pass comes with a rounding bound, `1e-8` of the
+magnitudes summed into it. A root whose distances do not clear the line by it is read again
+in fixed point, and none needed to be. The copies must sit inside a double's exponent
+(`2^-900`); a deeper one is solved in fixed point throughout. `classify_by` runs either solve,
+and `tests/classify_speed.rs` is the harness.
+
+**Measured, interleaved** (`tests/classify_speed.rs`, three rounds A B / B A, medians, native,
+while the fulls render held the box). There are 189 nuclei: the dive's own search, twelve
+solves and every distinct nucleus, over the three §12 tangle frames and 16 frames from
+`artifacts/dive-reference/` (six at degree six, five at large periods at degrees two to five,
+and five ordinary degree-two frames). **All 189 verdicts are the same** in both solves:
+copies, bulbs with their parent and `m`, and the unresolved with their reason.
+
+| frames | nuclei | fixed point | perturbed | speed-up |
+|---|--:|--:|--:|--:|
+| tangle 1e-22, degree 6 | 11 | 20.85 s | 2.94 s | 7.1× |
+| dive frames, degree 6, periods 730–20,904 | 67 | 9.80 s | 1.72 s | 5.2–6.1× |
+| dive frames, large periods, degrees 2–5 | 50 | 6.99 s | 2.47 s | 2.0–4.4× |
+| dive frames, degree 2, periods 48–28,296 | 44 | 0.47 s | 0.22 s | 1.5–2.4× |
+| tangle 1e-22 and 1e-54, degree 2 (deep cusps) | 17 | 4.68 s | 4.92 s | 0.9–1.0× |
+| **all** | 189 | 42.79 s | 12.29 s | **3.5×** |
+
+**In the module**, the page's own call (`classify_nucleus`, node, the module before and after,
+four nuclei a frame, interleaved), the result is 25.4 s against 7.4 s, or 3.4×. That is 8.3×
+on the degree-six tangle and 5.0–7.7× on the degree-six dive frames, 2.3–3.7× at the large
+periods, and 0.9× on the degree-two tangles. All 76 verdicts are the same.
+`scratch/classify_speed/` has the frame set's maker and the probes.
+
+**Module**: 356,608 bytes raw and 132,883 gzipped, on rustc 1.96.0, which is the pin CI
+reads. The module before this was 356,233 and 128,875, but it had been built on 1.98.1 by
+dive_mixture_ckpt154, against §11's rule. On 1.98.1 the change is 11,166 bytes raw and 4,101
+gzipped, nearly all of it the perturbed pass and the root solve that now exists twice.
 
 ## Running it
 
@@ -1438,6 +1514,8 @@ cargo test  --release --test measure -- --ignored --nocapture  # the cap sweep, 
                                                        #   policy, and the nucleus
                                                        #   search, ~12 min
 cargo test  --release --test descend -- --ignored --nocapture  # the frame finder, ~12 min
+cargo test  --release --test classify_speed -- --ignored --nocapture collect  # §12's frame set
+cargo test  --release --test classify_speed -- --ignored --nocapture bench    # both root solves, ~3 min
 # §10: every harness of measure.rs at another degree, and the finder there
 MEASURE_DEGREE=3 cargo test --release --test measure -- --ignored --nocapture
 DESCEND_DEGREE=3 cargo test --release --test descend -- --ignored --nocapture at_a_degree
@@ -1476,7 +1554,7 @@ back byte for byte what the module before it produced, in 10.82 s against 10.83 
 | `crate` | `explorer/perturb-wasm` |
 | `dependencies` | `[]`, and it is written down because it is the design |
 | `rustc` | the compiler, with its commit and date |
-| `raw_bytes` / `gzip_bytes` | **313,157 raw, 117,312 gzipped** *(deep_dive_block_ckpt154; §11)* |
+| `raw_bytes` / `gzip_bytes` | **356,608 raw, 132,883 gzipped** *(classify_speed_ckpt155; §12)* |
 
 Two fields of `engine.manifest.json` are **absent** rather than empty:
 `engine_version`, because this crate does not link the engine, and
@@ -1491,7 +1569,7 @@ crate: `explorer_shade_pool_ckpt136` banded the shade.)
 
 **What a visitor downloads for it: nothing, unless they open the Deep tab.** The
 module and the tab's five modules are fetched on that tab's first open and never
-before. Against `engine.wasm`'s 251,917 gzipped, the 117,312 here is 47% of it —
+before. Against `engine.wasm`'s 251,917 gzipped, the 132,883 here is 53% of it —
 paid only by a reader who asked for a renderer for everything below 1e-10, or who
 pressed Find minibrots or New coloring in the shallow view, the two doors into it there.
 
