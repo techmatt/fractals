@@ -1464,7 +1464,11 @@ A tile's number is its place in that order, which is what a pick names, so a dir
 already has a `units.jsonl` is refused unless `--resume` is given, which numbers on from its
 last `uNNNN` and seeds at `--seed` plus the units already there.
 
-**The first sheet stays in `scratch/deep_minibrot_candidates/`**: seed 154, 3 h, 957 units,
+**`artifacts/dive-reference/` is the reference the Dive block's default loop should roughly
+match**: the 3-hour candidate run is the target look, with the mixture sheet beside it. It is
+ignored and never committed.
+
+**The first sheet is `artifacts/dive-reference/deep_minibrot_candidates/`**: seed 154, 3 h, 957 units,
 817 kept (137 refused, 3 blank), 84 MB of tiles. Its tile numbers are the ones a figure's
 pick was named by. `--sheet` over a copy of its record numbers all 817 identically; only the
 title differs, which no longer spells the checkpoint. It needs Pillow, node and cargo, and it

@@ -124,6 +124,13 @@ PROSE: tuple[tuple[str, str], ...] = (
         '<a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>. If you share '
         "them, credit Matt Fisher.",
     ),
+    (
+        "p",
+        'If you want a different size, open any picture in <a href="../explorer/index.html">'
+        "the explorer</a> and download it at the resolution you need, or render it yourself "
+        'with the code in <a href="https://github.com/techmatt/fractal-wallpapers">'
+        "fractal-wallpapers</a>.",
+    ),
     ("h2", "The best of the main gallery"),
     (
         "p",

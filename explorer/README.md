@@ -2673,7 +2673,7 @@ answer cannot change.
 #### The landing mixture *(dive_mixture_ckpt154, 2026-09-28)*
 
 **At its defaults the block lands what `python -m builder dive-candidates` landed**, the sheet
-under `scratch/deep_minibrot_candidates/` that Matt liked: A on Random, *dive into*, B on
+under `artifacts/dive-reference/deep_minibrot_candidates/` that Matt liked: A on Random, *dive into*, B on
 Random, New coloring on arrival and Keep diving both ticked. Before this, Random + Random did
 one branch of that generator, a random wallpaper carried into a copy near another. Now a press
 of *dive into* **draws one variant** (`variantOf` in `dives.js`):
