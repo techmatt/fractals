@@ -157,6 +157,13 @@ was raise, and every check after it went unrun.
   collection's opening. Where the checkout and the full set are here, the record is also
   what `packs --import` would write today, so zips built and not imported fail here; a
   named skip elsewhere. `packs.py` says why the record is imported rather than derived.
+- **readmes** — every explorer link in this repository's root `README.md` parses under
+  `permalink.js` and is already its own canonical spelling. Where the checkout is
+  configured, the same of fractal-wallpapers' root `README.md`, and every strip thumbnail
+  whose `examples/README.md` row names a seat is held to the link the contract emits for
+  that seat's recipe and recorded tone curve. The wallpapers strip once carried a pin
+  writer's spelling that dropped `mirror`, so its first thumbnail opened in another map;
+  `readmes.py` has the story. A named skip for the next-door half.
 """
 
 import json
@@ -185,6 +192,7 @@ from . import (
     picker,
     picks,
     prose,
+    readmes,
     recipes,
     records,
     renders,
@@ -1158,6 +1166,14 @@ def skips() -> tuple[Skip, ...]:
                 NO_CHECKOUT,
             )
         )
+        # Half: this repository's README is parsed everywhere.
+        found.append(
+            Skip(
+                "readmes",
+                "fractal-wallpapers' README, and every strip seat's link against its recipe",
+                NO_CHECKOUT,
+            )
+        )
     if not images.available():
         found.append(Skip("figures", "each figure's size on disk", NO_PILLOW))
         found.append(Skip("assets", "each image's and each thumbnail's size on disk", NO_PILLOW))
@@ -1247,6 +1263,7 @@ def run_all() -> Report:
             "formulas": formulas.problems(with_renderer=formulas.unaskable() is None),
             "go": go.problems(),
             "packs": packs.problems(with_checkout=figures.stores_available()),
+            "readmes": readmes.problems(with_checkout=figures.stores_available()),
         },
         skips(),
     )

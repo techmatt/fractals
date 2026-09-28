@@ -9,12 +9,19 @@ says, with no re-framing or re-coloring, then scaled to 480x270 (Lanczos; JPEG q
 82, progressive, 4:2:0). That is the recipe fractal-wallpapers' own `examples/` uses. All
 four took the `render-link` route; none needed the explorer's Download.
 
-| file | family | render mode | palette |
-| --- | --- | --- | --- |
-| `julia_smooth_mean_angle.jpg` | julia | `smooth_mean_angle`, weight 0.55 | `skyroads-blue-25` (Cobalt Obsidian), phase 0.788175 |
-| `mandelbrot_smooth.jpg` | mandelbrot | `smooth`, band autolevel | Petal Dusk, phase 0.046639 |
-| `julia_stripe.jpg` | julia | `stripe` | Emerald Ingot |
-| `julia_multibrot4_threads.jpg` | julia (multibrot4) | `threads` | `abstract-wallpaper-backgrounds-hd` (Amber Sea), phase 0.827208 |
+| file | seat | family | render mode | palette |
+| --- | --- | --- | --- | --- |
+| `julia_smooth_mean_angle.jpg` | — (a link) | julia | `smooth_mean_angle`, weight 0.55 | `skyroads-blue-25` (Cobalt Obsidian), phase 0.788175 |
+| `mandelbrot_smooth.jpg` | `1b9befd3` | mandelbrot | `smooth`, band autolevel | Petal Dusk, phase 0.046639 |
+| `julia_stripe.jpg` | `9178ac7c` | julia | `stripe` | Emerald Ingot |
+| `julia_multibrot4_threads.jpg` | `276f2d8b` | julia (multibrot4) | `threads` | `abstract-wallpaper-backgrounds-hd` (Amber Sea), phase 0.827208 |
+
+A seat is a key of the general collection (`builder/seats.py`'s `STAMP`), and a seat's link
+is the one the gallery row carries: the contract's spelling of its recipe with the tone
+curve its run recorded. `builder check`'s `readmes` holds each linked thumbnail to that,
+and every link here to parsing as its own canonical spelling. The first is not a seat: it
+is seat `d5b857ae` recolored in `skyroads-blue-25`, drawn at the link's own cap, where the
+seat was drawn at 3,000 in `necromancer-25`.
 
 ## The links
 

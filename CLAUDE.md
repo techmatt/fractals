@@ -729,7 +729,7 @@ being drawn as the plain Julia set underneath it.
 After touching placed prose, `python -m builder prose <page>` as well — see **Where prose
 comes from** above for what it holds together and why one edit has several sites.
 
-`builder check` is read-only, and it runs twenty-five named checks. It resolves every
+`builder check` is read-only, and it runs twenty-six named checks. It resolves every
 internal link, refuses root-absolute and bare-directory hrefs, regenerates the gallery
 HTML and compares it byte for byte with what is committed, holds every figure block to
 its registry row, holds every made figure to being a block a redraw could land on —
@@ -754,7 +754,11 @@ both report as nothing — holds the site's copy of the wallpaper coloring to ne
 links `builder/icons.py` spells, which is `icons`, and every short link under
 `go/` to a target the explorer's own reader accepts and to the page its register row
 writes, which is `go` — and holds the Wallpaper packs record to the page's `[PACK]`
-markers and to what the project next door answers, which is `packs`. It also
+markers and to what the project next door answers, which is `packs` — and holds every
+explorer link in both repositories' root READMEs to parsing as its own canonical spelling,
+and each strip thumbnail that is a seat to the contract's link for that seat's recipe,
+which is `readmes`, named here because a hand-written README link is the one explorer link
+no build derives *(readme_links_complete_ckpt154)*. It also
 prints one note — never a failure — about the committed wasm module, described in
 `explorer/README.md`. The same commands run in CI
 (`.github/workflows/checks.yml`), which is a check and not a deploy dependency, on Linux,
@@ -764,8 +768,9 @@ one without asserting it.
 
 **Every check runs on a bare clone, and what cannot run says so by name.** CI clones this
 repository alone, so a check that needs the wallpapers checkout is a check CI never makes.
-Seven of them want it — the next-door half of `stamps`, which holds the release writer's
-links to the explorer's own; `library`, which holds `palettes/library.jsonl` to the palette
+Eight of them want it — the next-door half of `stamps`, which holds the release writer's
+links to the explorer's own; the next-door half of `readmes`, which reads the wallpapers
+README and resolves the strips' seats; `library`, which holds `palettes/library.jsonl` to the palette
 library next door; `bake`, which rebakes the explorer's modules; `seats`, which holds a
 panel to the picture its gallery ships; `coloring`, which holds the site's wallpaper
 coloring to the one next door; the source-key half of `figures`; and the next-door half of
@@ -784,9 +789,10 @@ lands any missing strip.
 **Which is why a checkpoint runs `check` here, not in CI.** A green CI says every check
 that a bare clone can ask came back clean; it says nothing about the palette record, the
 explorer's generated modules, whether a seat panel is still the picture its gallery
-ships, whether the release writer still spells the explorer's links, whether the site
+ships, whether the release writer still spells the explorer's links, whether a README
+thumbnail still opens its seat, whether the site
 still colors a wallpaper the way the project does, whether the packs record is still what
-the project answers, or a single one of the source keys a figure cites, because those seven
+the project answers, or a single one of the source keys a figure cites, because those eight
 questions were skipped by name. Before a prompt is called done, run
 `python -m builder check` on this machine with the checkout configured and read the skip
 count in the exit summary — a run that reports skips is a run that answered part of the
