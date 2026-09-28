@@ -302,8 +302,7 @@
     <p>The search for good locations (<a href="finding-good-locations.html">finding good
     locations</a>) only renders smooth. Every other mode enters in
     <a href="finding-good-wallpapers.html">finding good wallpapers</a>, when the pipeline
-    takes a found location and renders it once in smooth and twice in other modes, drawn
-    without replacement from the rest of the roster.</p>
+    takes a found location and renders it in several modes, drawn at random from the whole roster with none repeated, so no one mode takes all of that location's attempts.</p>
 
     <p>I search over modes rather than picking one and using it everywhere, because a mode
     that's great at one location can fail badly at the next, even when the geometry is
@@ -314,9 +313,7 @@
     starts from geometry that works. These are the judge's scores, not mine, since nobody
     has looked at three hundred thousand pictures, and the judge runs optimistic compared
     to my ratings. Even so, most modes spend most of their attempts at a one or a two, and some,
-    like curvature, need about 30 attempts to find one strong result. Modes with a lower
-    hit rate get a longer search, so each still leaves enough strong candidates for the
-    galleries. The last two columns are what an attempt costs: the engine time to render
+    like curvature, need about 30 attempts to find one strong result. I keep mining until even the modes with a lower hit rate leave enough strong candidates for the galleries. The last two columns are what an attempt costs: the engine time to render
     one candidate at the size the judge scores (640×360, supersampled 2×) and a finished
     wallpaper at full size (2560×1440, supersampled 3×).</p>
 

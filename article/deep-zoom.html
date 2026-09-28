@@ -128,7 +128,7 @@
     <p>Deep frames have wildly varying escape times, and getting a rendering that conveys
     their full range of detail often takes more exploration and parameter tweaking. The
     percentile stretch from <a href="rendering-fundamentals.html">rendering fundamentals</a>
-    spreads the palette evenly over each frame's own values. At extreme depths escape counts
+    spreads the palette linearly between each frame's own 0.5th and 99.5th percentiles. At extreme depths escape counts
     run into the tens of thousands, and the stretch leaves most of the picture inside a few
     percent of the palette. For deep frames an absolute scale generally works best: the
     smooth count passes through a logarithm or a power curve, and the palette then repeats
