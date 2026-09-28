@@ -1007,11 +1007,22 @@ test("the scale switch swaps which shade controls are shown, and keeps what it h
   assert.deepEqual(shown(view.shade), ["gamma", "cycles", "phase", "reverse", "mirror", "transfer", "scale", "lambda"]);
   assert.deepEqual(shown(absolute), ["phase", "reverse", "mirror", "scale", "lambda", "period"]);
   assert.equal(absolute.gamma, 1.5);
-  // Period's slider is decades, written at three figures.
+  // Period's slider travels in cycles over the frame's range, one cycle at the left and the
+  // aliasing limit at the right; a period past either end parks the thumb there, and every
+  // stop writes a period the contract takes.
   const period = shade.CONTROLS.find((control) => control.key === "period");
-  assert.equal(shade.sliderText(period, "2"), "100");
-  assert.equal(shade.sliderAt(period, "600"), Math.log10(600));
-  assert.equal(shade.sliderAt(period, "1e9"), 5);
+  const range = { sparse: 600, dense: 0.6 };
+  assert.equal(shade.sliderText(period, "0", range), "600");
+  assert.equal(shade.sliderText(period, String(period.slider.max), range), "0.6");
+  assert.equal(shade.sliderText(period, String(period.slider.max / 2), range), "18.97");
+  assert.equal(shade.sliderAt(period, "600", range), 0);
+  assert.equal(shade.sliderAt(period, "1e9", range), 0);
+  assert.equal(shade.sliderAt(period, "1e-9", range), period.slider.max);
+  for (let at = 0; at <= period.slider.max; at += 50) {
+    const text = shade.sliderText(period, String(at), range);
+    assert.equal(shade.spelling(shade.withKey(absolute, "period", text), "period"), text);
+    assert.ok(Math.abs(shade.sliderAt(period, text, range) - at) < 0.5, `period at ${at}`);
+  }
 });
 
 test("the three scale keys ride a link only when set, and never bump v", () => {

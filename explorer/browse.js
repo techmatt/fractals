@@ -256,6 +256,11 @@ export function install(host) {
     collection.value = chosen;
     const mine = ++asked;
     const one = collections.find((each) => each.name === chosen);
+    if (!gallery.seatsReady(one)) {
+      ++filling;
+      gallery.showLoading(tiles, Object.values(rows), one);
+      note.textContent = "";
+    }
     let seats;
     try {
       seats = await gallery.seatsOnce(base, one);

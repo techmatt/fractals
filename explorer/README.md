@@ -141,6 +141,7 @@ gallery.js            the left panel's grid: a staged gallery's record, filtered
 screensaver.js        the gallery's pictures one after another, full page, drawn live
 picker.js             the palette tab strip, and a gradient drawn per row
 shade.js              the recipe's controls, apart from the boxes they are drawn in
+period-range.js       the Period slider's travel, measured off the frame on the screen
 julia-preview.js      the Julia set of the point under the pointer, and the click into it
 download.js           the same render at a wallpaper's size, and what caps it
 render.js             the worker pool, the plan, the field passes, the shade
@@ -182,6 +183,8 @@ deep-fx.test.mjs      12 tests: the Deep tab's arithmetic is exact where a doubl
 deep-link.test.mjs    39 tests: the deep contract, the shallow one held to not moving,
                       and the gallery register held to the deep one
 deep.test.mjs         17 tests: where the two modules meet, against both committed ones
+period-range.test.mjs 7 tests: the travel's two ends mean what they say, a stage does not
+                      move it, and a Lambda move that keeps the cycles keeps the thumb
 palettes.jsonl        the roster palettes.js is baked from; 1,022 maps, 77 offered,
                       232 a random pick may draw
 modes.jsonl           the roster catalog.js is baked from: the 17 modes the picker offers
@@ -742,6 +745,18 @@ which `python -m builder seats` carries from the tentative record next door: `ce
 where the walk found the location at a nucleus, `spiral` where a person called it one.
 The chip row, the tally and the dropdown are `gallery.js`'s own exports, so both surfaces
 draw them one way, and a collection either has fetched is one fetch for both.
+
+**A collection still on its way says so, in both** *(period_slider_ckpt155)*. The larger
+records take a while on a slow line: `general-2000.jsonl` is 1.2 MB and `all.jsonl` 3.8 MB,
+against 0.6 MB for the default. Until one arrived, the grid went on showing the collection
+before it under the new name in the dropdown, or nothing at all on a first open. So where
+the chosen collection's rows are not here yet (`seatsReady`), `showLoading` puts one line
+where the grid is, *Loading 2,000 wallpapers…* (the count from the header), empties the
+chip rows, clears the count line, and stops any chunked fill still appending the old
+tiles; the fill that follows replaces all of it. A collection already fetched never shows
+the line, so switching between those does not flicker. Checked in the served page under a
+throttled line: the panel read the line with no chips while `general_2000` loaded, then
+its first 180 tiles and 13 chips.
 
 **The preview** is one picture, within `PREVIEW_SHARE` (85%) of the layer's width and
 height, whichever binds first, and within the room under the tab row less the bar under it,
@@ -5736,8 +5751,8 @@ recipe** group. What is worth writing down is the shape rather than the widgets:
   and the switch to Absolute drops the view's curve (`levelledFor`). Back on Leveled the box
   is as it was, and the draw measures the picture again, as after any other recipe change.
   Leveled's Autolevel is unchanged.
-  Lambda's slider runs 0 to 1 linearly; Period's runs in decades from 10⁻³ to 10⁵ and
-  writes three figures. **Under Absolute the strip is one cycle of the map from the
+  Lambda's slider runs 0 to 1 linearly; Period's travels in cycles across the frame between
+  ends measured off it (*The Period slider*, below). **Under Absolute the strip is one cycle of the map from the
   view's phase** — there is no frame's range for it to be a picture of, and one period
   of the field is one pass through the gradient. The compression is left out of the
   strip under both scales, for the transfer's reason: it acts before the strip's 0 to 1.
@@ -5758,8 +5773,13 @@ recipe** group. What is worth writing down is the shape rather than the widgets:
   in their own keys. Held, the same 0.01 step moves the average pixel 0.003 to 0.005 of a
   turn at the §Deep zoom target and 0.010 to 0.024 on a shallow frame, so the slider is a
   control of the picture's *shape* instead of a scramble. The sliders were not rescaled:
-  Lambda stays linear over 0 to 1 and Period in decades from 10⁻³ to 10⁵, as `shade.js`
-  says, with the measurement.
+  Lambda stays linear over 0 to 1, as `shade.js` says, with the measurement.
+  **Since period_slider_ckpt155 a held Lambda keeps the cycles, not the density at `ν_m`.**
+  A moved Lambda brings Period with it whether or not the box is ticked, so that the cycles
+  across the frame's spread hold (*The Period slider*, below), and the hold then solves
+  Phase alone for the colour at `ν_m`, which is `hold.resolve`'s Period case. The density
+  solve is still `hold.js`'s and still held by `hold.test.mjs`; the page no longer calls
+  it. On a frame whose bulk is narrow in `ν`, a deep one, the two periods agree closely.
   - **Nothing about the maths or a link changes.** The box is UI state, never enters a
     link, and unticked the controls are exactly what they were. The video's three mappings
     parse, canonicalize and shade the k00 field to the same SHA-256 with and without the
@@ -5842,6 +5862,66 @@ recipe** group. What is worth writing down is the shape rather than the widgets:
     Because the pass count no longer follows Leveled, Cycles under Leveled can move `λ`
     but not how busy the fit is; a reader who wants it busier or calmer turns Period after
     a fit.
+- **The Period slider travels in cycles across the frame** *(Matt, period_slider_ckpt155)*.
+  What the eye sees under Absolute is how far the palette turns from one pixel to the next,
+  the per-pixel change of `T_λ(ν)` over `period`, and that change runs over orders of
+  magnitude between frames, depths, caps and Lambdas. The slider was a decade slider over
+  raw `period`, 10⁻³ to 10⁵ at three figures, fixed and the same on every frame, so on any
+  one frame most of its travel was a flat colour or noise, and near the dense end one pixel
+  of travel was a different picture. Matt's pair: two deep frames at 0.166 (noise) and 37.2
+  (smooth), thumbs in nearly the same place. Nothing about it was frame-dependent, and Fit
+  wrote a period the slider then showed wherever that decade fell.
+  - **Its ends are the frame's.** `period-range.js` measures them off the field of the
+    picture up, lane 0, the same field Hold look and Fit read. The left end is **one cycle
+    across the frame's robust spread**, the 3rd to 97th percentile of `T_λ(ν)` (New
+    coloring's span). The right end is **the aliasing limit**, the period at which the median
+    change between neighbouring pixels is `DENSE_TURNS` of a turn. Between them the position
+    is `log(cycles)`, a thousand steps, so each step multiplies the bands by one factor. A
+    position writes its period at four figures. A travel is kept between one and six
+    decades long (`MIN_RATIO`, `MAX_RATIO`); most deep frames at the viewer's quarter pass
+    and some at full sit on the one-decade floor, which pushes the left end out below one
+    cycle, because their median neighbour change is already large against their spread.
+  - **`DENSE_TURNS` is a tenth of a turn, not the half the brief guessed.** At half a turn
+    the last two fifths of the travel were static on every frame tried: the change is skewed,
+    so by the time the median pair is half a palette apart most of the frame is past it.
+    Measured with the aliasing guard's own roughness (`aliasing.roughness`, its line for
+    static at 35) on five deep gallery frames and three shallow ones at 400 across, every one
+    crosses 35 with its median pair 0.07 to 0.12 of a turn apart. At a tenth, all eight read
+    **4 to 9 at the left end and 40 to 43 at the right**, so the travel means the same on
+    each: calm bands at the left, the first grain at the right. Contact sheets of both
+    settings were looked at by eye, and the served page's deep ends were looked at too.
+  - **Anchored per frame, never under the hand.** The travel is measured when a frame's
+    picture lands (a pan, a zoom, an arrival, a dive), again when a finer stage of the same
+    frame lands, and again when Lambda moves, since it is in Lambda's units. Never while the
+    Period slider is held (first `input` to `change`), and never for a Period or Phase edit,
+    which change neither the frame nor Lambda. The frame is `fieldKey` at 1×1 in each tab,
+    colour stripped, so a recolour's stages are the same frame. A quarter pass and a full
+    pass of one frame agreed to 3% of the travel on the deep frame and 1% on the shallow one,
+    because a stage's change is scaled to the canvas's width. Measuring is 12 to 16 ms of
+    main thread at a full pass (32k samples, 8k lattice points); at the quarter million
+    Hold look reads it was 60 to 130 ms.
+  - **The period is stored as it always was.** Links, videos, the deep v3 contract, Save and
+    Keep diving carry `period` in its own units, untouched. Navigation keeps the number, and
+    the thumb moves to where it now sits on the new frame's travel, parked at an end when
+    past one: on the home frame, zooming in six notches kept 0.04211 and took the thumb from
+    728 to 792. **Only the slider is clamped**: the box takes any positive period, the
+    aliased region included, and parks the thumb at the right end (0.001 on the home frame,
+    0.0166 on a deep one).
+  - **A moved Lambda brings Period with it, held or not**, so the cycles across the spread
+    hold: `period · spread(λ′) / spread(λ)` at four figures (`rescaled`), taken from where
+    the drag began so a drag back and forth comes home. The travel is then measured again in
+    the new units. The thumb holds to within the change in the travel's own length: 591 to
+    654 of 1,000 on the home frame from `λ` 1 to 0.3, 260 to 256 on a deep one from 0 to 1,
+    and 652 to 691 in the served page at `λ` 1 to 0.5. Phase is untouched by this;
+    Hold look, where ticked, still solves it.
+  - **Leveled has no Period**, so there is nothing to cover there: Period is shown under
+    Absolute alone, and Leveled's Cycles slider already moves in cycles across a stretch
+    Leveled measures on every frame itself. Both tabs share one shade row, so the Deep tab
+    has the same slider. Where there is no field (before the first picture, or a direct
+    trap), the travel is the old eight decades, reversed, as `FALLBACK`.
+  - **The right end is on the right**, so the thumb moves the way Leveled's Cycles does: more
+    bands to the right. That is the old slider's direction reversed. The label stays Period,
+    because it is named for the key the box writes; its tooltip says what the travel is.
 - **The count of what is set is the reset button's state.** Engine defaults is disabled
   at zero and reads *Engine defaults (3)* otherwise; there is no separate counter.
 - **Autolevel is disabled only where the operator has nothing to say** — a direct trap or

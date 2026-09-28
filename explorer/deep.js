@@ -3969,6 +3969,11 @@ export function mount(host) {
       if (stage === undefined) return null;
       return fields.get(deepLink.fieldKey(drawn, stage.width, stage.height, stage.supersample));
     },
+    /** What the picture up is a picture of — its set, its place and its cap — or `null`: the
+     *  frame the Period slider's travel is anchored to *(period_slider_ckpt155)*. */
+    shownFrame() {
+      return drawn === null ? null : deepLink.fieldKey(drawn, 1, 1);
+    },
     /** Whether the picture up is of the frame the tab is standing on — its set, its place
      *  and its cap — which is when a fit waiting on the frame may be taken off it
      *  *(absolute_fit_ckpt147)*. Before the first stage of a new frame lands, the picture up

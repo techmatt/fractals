@@ -35,6 +35,7 @@ import * as link from "./permalink.js";
 import * as shade from "./shade.js";
 import * as hold from "./hold.js";
 import * as fitting from "./fit.js";
+import * as travel from "./period-range.js";
 import * as modeParams from "./params.js";
 import { CONSTANTS as ANCHORS, MODES as IDENTITIES, SETTLED } from "./catalog.js";
 import { DEFAULT_PALETTE, PALETTES, PROVENANCE } from "./palettes.js";
@@ -160,7 +161,8 @@ const SHADE_TIPS = {
   mirror: "Plays the palette forward and then back, so it has no hard seam.",
   lambda:
     "Compresses the field before anything else: 1 leaves it as it is, 0 takes its log, and between the two is a power.",
-  period: "How much of the compressed field one pass through the palette covers.",
+  period:
+    "How much of the compressed field one pass through the palette covers. The slider runs from one pass across this picture to the edge of aliasing; the box takes any period.",
 };
 
 /** The two halves of the scale switch, as their tooltips say them. */
@@ -1383,6 +1385,10 @@ let finished = null;
  *  picture it describes is the one still up. */
 let drawnField = null;
 
+/** What `drawnField` is a field of — the view's geometry, with no colour in it — which is
+ *  the frame the Period slider's travel is anchored to (`anchorPeriod`). */
+let drawnFrame = null;
+
 /** The worker colouring the last stage, while it is. A pass that starts stops it. */
 let colouring = {};
 
@@ -1625,6 +1631,8 @@ async function drawPass() {
     // these lanes in the one call that colours them.
     const shadeFull = async (full) => {
       drawnField = full.shape.direct ? null : full;
+      drawnFrame = link.fieldKey(view, contract, 1, 1);
+      syncPeriod();
       if (full.shape.direct || derivingWeight) {
         const shaded = renderer.shade(full, view, { deriveWeight: derivingWeight });
         if (derivingWeight && shaded.weight !== null) {
@@ -1711,6 +1719,8 @@ async function drawPass() {
       : await renderer.shadePooled(field, view, colouring, { derive: deriving, key: finalKey });
     if (shaded === null || pass !== drawing) return;
     drawnField = shape.direct ? null : field;
+    drawnFrame = link.fieldKey(view, contract, 1, 1);
+    syncPeriod();
     // The curve the picture was drawn through is this pass's where it derived one, and
     // the view's where it replayed one — and the view has not been told about a derived
     // curve yet, which is why the level is named here rather than read off it.
@@ -2310,14 +2320,21 @@ function buildShade() {
         slider.max = control.slider.max;
         slider.step = control.slider.step ?? control.step;
         slider.setAttribute("aria-label", control.label);
+        // Period's travel is the frame's, and holds still under the hand: see `anchorPeriod`.
+        const cycles = control.slider.scale === "cycles";
         slider.addEventListener("input", () => {
+          if (cycles) periodDragging = true;
           if (!planOf(view).direct) {
-            setShade(control.key, shade.sliderText(control, slider.value), { moving: true });
+            setShade(control.key, shade.sliderText(control, slider.value, travelOf(control)), {
+              moving: true,
+            });
           }
         });
-        slider.addEventListener("change", () =>
-          setShade(control.key, shade.sliderText(control, slider.value)),
-        );
+        slider.addEventListener("change", () => {
+          const text = shade.sliderText(control, slider.value, travelOf(control));
+          if (cycles) periodDragging = false;
+          setShade(control.key, text);
+        });
         group.append(slider);
         held.slider = slider;
       }
@@ -2451,9 +2468,13 @@ function holdSpelling(recipe) {
  * carries is the re-solved numbers, in their own keys, as it would have carried typed ones.
  */
 function held(subject, key, next) {
-  if (!holdToggle.checked || subject.shade.scale !== "absolute") return next;
+  if (subject.shade.scale !== "absolute") return next;
   if (key !== "lambda" && key !== "period") return next;
-  const nu = hold.reference(shownField());
+  const field = shownField();
+  // Held or not, a moved Lambda brings Period with it — see `keptCycles`.
+  if (key === "lambda") next = keptCycles(subject, next, field);
+  if (!holdToggle.checked) return next;
+  const nu = hold.reference(field);
   if (nu === null) return next;
   if (
     holding === null ||
@@ -2462,15 +2483,102 @@ function held(subject, key, next) {
   ) {
     holding = { anchor: hold.anchor(subject.shade, nu), wrote: null };
   }
-  const solved = hold.resolve(next, key, holding.anchor);
+  // Period is where it goes already — the hand's, or the one Lambda keeps the cycles with —
+  // so the hold solves Phase alone, which is `hold.resolve`'s Period case whichever key moved.
+  const solved = hold.resolve(next, "period", holding.anchor);
   // Through the contract's own reader, like any other value a control writes.
-  const checked = shade.withKey(
-    shade.withKey(solved, "period", String(solved.period)),
-    "phase",
-    String(solved.phase),
-  );
+  const checked = shade.withKey(solved, "phase", String(solved.phase));
   holding.wrote = holdSpelling(checked);
   return checked;
+}
+
+/**
+ * What a Lambda move keeps the cycles from, and the Lambda and Period it last wrote:
+ * `{ from, frame, wrote }`, or `null`. Taken once and kept while the reader goes on moving
+ * Lambda, so a drag back and forth comes home rather than walking on its own rounding, and
+ * taken again where anything else moved the two or the frame changed.
+ */
+let cycling = null;
+
+/**
+ * `next`, a moved Lambda, with Period rescaled so that the palette runs across the frame's
+ * spread as many times as it did *(Matt, period_slider_ckpt155)*: the look survives a Lambda
+ * change, and the Period slider's travel, re-anchored in the new units, keeps its thumb where
+ * it was. `period-range.js`'s `rescaled` has the rule. Phase is left as it is; Hold look, where
+ * it is ticked, solves it afterwards. With no field to measure, `next` as it came.
+ */
+function keptCycles(subject, next, field) {
+  const frame = shownFrame();
+  if (field === null || field === undefined || frame === null) return next;
+  const spelled = (recipe) => `${shade.spelling(recipe, "lambda")}|${shade.spelling(recipe, "period")}`;
+  if (cycling === null || cycling.frame !== frame || cycling.wrote !== spelled(subject.shade)) {
+    cycling = { from: subject.shade, frame, wrote: null };
+  }
+  const period = travel.rescaled(field, cycling.from.period, cycling.from.lambda, next.lambda);
+  const moved = shade.withKey(next, "period", String(period));
+  cycling.wrote = spelled(moved);
+  return moved;
+}
+
+/** What the picture up is a picture of, in whichever tab owns it, or `null`: the frame the
+ *  Period slider's travel is anchored to. Its colour is no part of it. */
+function shownFrame() {
+  return deep !== null && deep.owns() ? deep.shownFrame() : drawnFrame;
+}
+
+/**
+ * The Period slider's travel, and the frame and Lambda it was measured for:
+ * `{ frame, lambda, resolution, range }`, or `null` where there is nothing to measure
+ * *(Matt, period_slider_ckpt155)*.
+ */
+let periodAnchor = null;
+
+/** Whether a hand is on the Period slider, between its first `input` and its `change`. */
+let periodDragging = false;
+
+/**
+ * **The travel is anchored per frame** *(Matt, period_slider_ckpt155)*. It is measured
+ * (`period-range.js`) when a frame's picture lands — after a pan, a zoom, an arrival, a dive —
+ * and again when Lambda moves, since the travel is in Lambda's units; a finer stage of the
+ * same frame landing refines it, so the quarter pass's travel gives way to the full pass's.
+ * **Never while the Period slider is under the hand, and never for a Period or Phase edit**:
+ * neither changes the frame or Lambda, and a recolour's stage is no finer than the one
+ * measured. A Fit and New coloring move Lambda where they move it, and are anchored then.
+ * The period itself is never touched here: navigation keeps it, and the thumb goes to where
+ * it now sits on the new frame's travel, parked at an end where it is past one.
+ */
+function anchorPeriod() {
+  if (periodDragging) return;
+  const field = shownField();
+  const frame = shownFrame();
+  if (field === null || field === undefined || frame === null) {
+    periodAnchor = null;
+    return;
+  }
+  const lambda = tinting().shade.lambda;
+  const resolution = field.width * (field.supersample ?? 1);
+  const was = periodAnchor;
+  if (was !== null && was.frame === frame && was.lambda === lambda && was.resolution >= resolution) {
+    return;
+  }
+  const range = travel.rangeOf(field, lambda, grid.width);
+  periodAnchor = range === null ? null : { frame, lambda, resolution, range };
+}
+
+/** The travel a slider sits on: the frame's, for Period, where there is one. */
+function travelOf(control) {
+  return control.slider?.scale === "cycles" ? (periodAnchor?.range ?? null) : null;
+}
+
+/** A frame's picture landed: the Period thumb goes where the period sits on its travel. */
+function syncPeriod() {
+  anchorPeriod();
+  const held = shadeWidgets.get("period");
+  if (held?.slider === undefined) return;
+  const control = shade.CONTROLS.find((each) => each.key === "period");
+  held.slider.value = String(
+    shade.sliderAt(control, shade.spelling(tinting().shade, "period"), travelOf(control)),
+  );
 }
 
 /** The field of the picture on the screen, in whichever tab owns it, or `null`. */
@@ -2629,6 +2737,7 @@ fitButton.addEventListener("click", pressFit);
 /** Show what the recipe now says, in every control that carries a piece of it. */
 function syncShade() {
   const subject = tinting();
+  anchorPeriod();
   for (const control of shade.CONTROLS) {
     const held = shadeWidgets.get(control.key);
     if (held === undefined) continue;
@@ -2644,7 +2753,7 @@ function syncShade() {
     } else if (control.control === "number") {
       held.box.value = text;
       // The box keeps the number the link said; the slider sits where `shade.js` puts it.
-      if (held.slider) held.slider.value = String(shade.sliderAt(control, text));
+      if (held.slider) held.slider.value = String(shade.sliderAt(control, text, travelOf(control)));
     } else {
       const said = shade.parts(text);
       held.menu.value = said.kind;
@@ -4045,6 +4154,7 @@ async function mountDeep() {
         settle();
         landFit();
         landRefit();
+        syncPeriod();
       },
       // A deep view is always one the reader made, so the curve is measured whenever the
       // box is ticked. There is no stored half here: nothing arrives from a run.

@@ -19,6 +19,7 @@
 // property rather than a hopeful one.
 
 import { SHADE_KEYS, defaultShade, shadeKey } from "./permalink.js";
+import * as travel from "./period-range.js";
 
 /**
  * How each key's box steps, and where a tagged kind opens.
@@ -68,10 +69,12 @@ import { SHADE_KEYS, defaultShade, shadeKey } from "./permalink.js";
  *
  * **Lambda's slider is linear over its whole range**, 0 to 1, because that range is the
  * contract's bound and both ends are the named cases: 1 the field as it is, 0 its log.
- * **Period's is a decade slider** from 10⁻³ to 10⁵, three significant figures like gamma's:
- * a period is a length along the compressed field, and which decade is right depends on
- * the compression — a log field runs a few units across a frame, a linear deep one tens
- * of thousands.
+ * **Period's travels in cycles across the frame** *(period_slider_ckpt155)*, and its ends are
+ * the frame's own: one cycle across the frame's spread at the left, the aliasing limit at the
+ * right, log in between (`period-range.js` measures both). So its `range` is handed in by the
+ * page rather than written here, and `sliderAt` and `sliderText` take it. It was a decade
+ * slider from 10⁻³ to 10⁵ until then, and on any one frame most of that was a flat colour or
+ * noise. The box still takes any positive period, and the link still carries the period.
  *
  * **Both were kept as they were when Hold look arrived** *(palette_hold_ckpt145)*, and the
  * reason is measured rather than argued. Unheld, one 0.01 step of Lambda moves the average
@@ -79,8 +82,7 @@ import { SHADE_KEYS, defaultShade, shadeKey } from "./permalink.js";
  * unrelated pictures differ by — and no scale on the slider cures that, because the jump is
  * the whole palette sliding at a deep `ν`. Held (`hold.js`), the same step moves it 0.003 to
  * 0.005 of a turn there and 0.010 to 0.024 on a shallow frame: small and visible, which is
- * what a linear 0 to 1 at one step a pixel of the 8rem slider gives. Period's decades
- * already covered the 0.05 to 1000 a held Lambda sweeps it across.
+ * what a linear 0 to 1 at one step a pixel of the 8rem slider gives.
  */
 const PRESENTATION = {
   gamma: { step: 0.05, slider: { min: -2, max: 2, step: 0.02, scale: "log" }, under: ["leveled"] },
@@ -94,7 +96,7 @@ const PRESENTATION = {
   lambda: { step: 0.05, slider: { min: 0, max: 1, step: 0.01, scale: "linear" } },
   period: {
     step: "any",
-    slider: { min: -3, max: 5, step: 0.01, scale: "decade" },
+    slider: { min: 0, max: travel.STEPS, step: 1, scale: "cycles" },
     under: ["absolute"],
   },
 };
@@ -159,14 +161,16 @@ export function withKey(shade, key, text) {
  * A `wrap` slider is phase's: the engine takes phase modulo one, so a link's 1.25 sits
  * where 0.25 does and the box keeps the number the link said. A `log` slider is gamma's,
  * and holds the power of two. A `linear` slider is cycles', and holds the number itself.
- * Either one parks a value past its travel at the end it passed.
+ * A `cycles` slider is period's, and sits on `range`, the frame's travel (`period-range.js`),
+ * or on its fallback where the page has no frame to hand it. Each parks a value past its
+ * travel at the end it passed.
  */
-export function sliderAt(control, text) {
+export function sliderAt(control, text, range = travel.FALLBACK) {
   const value = Number(text);
   const { min, max, scale } = control.slider;
   if (scale === "wrap") return ((value % 1) + 1) % 1;
-  const position =
-    scale === "log" ? Math.log2(value) : scale === "decade" ? Math.log10(value) : value;
+  if (scale === "cycles") return travel.positionOf(range ?? travel.FALLBACK, value);
+  const position = scale === "log" ? Math.log2(value) : value;
   return Math.min(max, Math.max(min, position));
 }
 
@@ -175,12 +179,15 @@ export function sliderAt(control, text) {
  *
  * A `log` position is written at three significant figures: a slider step is about one
  * and a half percent, so a fourth figure would be precision the hand did not ask for,
- * and the middle of the travel writes exactly `1`.
+ * and the middle of the travel writes exactly `1`. A `cycles` position is written as the
+ * period it stands for on `range`.
  */
-export function sliderText(control, position) {
+export function sliderText(control, position, range = travel.FALLBACK) {
   const value = Number(position);
   if (control.slider.scale === "log") return String(Number((2 ** value).toPrecision(3)));
-  if (control.slider.scale === "decade") return String(Number((10 ** value).toPrecision(3)));
+  if (control.slider.scale === "cycles") {
+    return String(travel.periodAt(range ?? travel.FALLBACK, value));
+  }
   return String(value);
 }
 

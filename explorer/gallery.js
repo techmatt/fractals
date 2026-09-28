@@ -191,6 +191,9 @@ const fetched = new Map();
 /** Who is told when a collection's rows first arrive — the page's seat index. */
 const arrivals = new Set();
 
+/** The collections whose rows have arrived, by name: what `seatsReady` answers. */
+const arrived = new Set();
+
 /** A collection's seats, fetched the first time anybody asks and kept. A failure is
  *  forgotten again, so that choosing the collection later asks again. */
 export function seatsOnce(base, collection) {
@@ -200,12 +203,37 @@ export function seatsOnce(base, collection) {
     fetched.set(named, rows);
     rows.then(
       (seats) => {
+        arrived.add(named);
         for (const heard of arrivals) heard(seats, named);
       },
       () => fetched.delete(named),
     );
   }
   return fetched.get(named);
+}
+
+/** Whether a collection's rows are already here, so that showing it waits on nothing. */
+export function seatsReady(collection) {
+  return collection !== undefined && arrived.has(collection.name);
+}
+
+/**
+ * **A collection still on its way says so** *(period_slider_ckpt155)*. The general
+ * collection at 2,000 is a 1.2 MB record and *all* is 3.8 MB, and until one arrived the grid
+ * went on showing the collection before it under the new name in the dropdown — or nothing
+ * at all, on a first open. So where a chosen collection's rows are not here yet, the grid is
+ * this one line and the chip rows are emptied, and the fill that follows replaces both. A
+ * collection already fetched never shows it, so choosing between those does not flicker.
+ */
+export function showLoading(tiles, chipHosts, collection) {
+  const line = document.createElement("p");
+  line.className = "tiles-loading";
+  line.setAttribute("role", "status");
+  const count = collection?.seats;
+  line.textContent =
+    typeof count === "number" ? `Loading ${count.toLocaleString("en-US")} wallpapers…` : "Loading…";
+  tiles.replaceChildren(line);
+  for (const host of chipHosts) host.replaceChildren();
 }
 
 /** One collection's seats, in its own presentation order. Sorted here rather than trusted
@@ -582,6 +610,11 @@ export function install({
     collection.value = chosen;
     const mine = ++asked;
     const one = collections.find((each) => each.name === chosen);
+    if (!seatsReady(one)) {
+      ++filling;
+      showLoading(tiles, [modes, hues], one);
+      note.textContent = "";
+    }
     let seats;
     try {
       seats = await seatsOnce(base, one);

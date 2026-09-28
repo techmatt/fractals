@@ -801,6 +801,16 @@ summary.section-head:focus-visible { outline: 2px solid var(--well-link); outlin
   color: var(--well-ink-dim);
 }
 .saved-empty[hidden] { display: none; }
+/* A collection whose rows are still on their way *(period_slider_ckpt155)*: one line where
+   the grid will be, set as Saved's empty line is, across every column of either grid. */
+.tiles-loading {
+  grid-column: 1 / -1;
+  margin: 0;
+  padding: 0.6rem 0;
+  font-family: var(--sans);
+  font-size: 0.8rem;
+  color: var(--well-ink-dim);
+}
 
 /* ----------------------------------------------------------------------- the atlas */
 
