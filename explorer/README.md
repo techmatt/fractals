@@ -2390,36 +2390,43 @@ copy, its bulbs**, labelled *bulb, period p on period q*, under a note that says
 copy in the view. A bulb is framed as before, at twelve of its own sizes, which shows it on
 its parent's edge.
 
-- **The reading is the wallpapers repository's, ported** (`discovery/minibrot.py`): the
-  record minima of `|z_k|` along the nucleus's orbit give the chain of components it sits
-  near; each is solved at its own period and kept where it lands within two of its own
-  sizes (`ENCLOSE_K`); the main body is prepended at period 1, size 1; and the chain is
-  split into `generations` by the bulb law, `size ≥ 2·sin(π/m)/(m²(d−1)) × size_parent / 3`
-  (`bulb_scale`, `BULB_SLACK`). A nucleus that would join the last generation is a bulb.
-  **Only chain entries whose period divides the nucleus's are solved**, which is the
-  cheap part: a bulb's parent always divides it, and what a non-dividing entry could do is
-  open a generation in between, which no case measured did.
-- ⚠ **The law alone calls the audit anchor a bulb**, an 86-bulb of a period-33
-  component. That repository measured it for `m` up to 11; at these depths `m` is in the
-  hundreds, the law falls as `1/m³`, and a third of it no longer separates a copy from a
-  bulb; the same goes for a period-69 and a period-72 copy on the antenna. So **at degree
-  two** a parent the law names is checked by a **root test**, which is this crate's own: a
-  `p/m` bulb hangs where the parent's cycle multiplier is `e^{2πip/m}` with `p` prime to
-  `m`, so the multiplier at the nucleus points within about `1/m²` of a turn of a
-  primitive `m`-th root (`nuclei::rooted`, `ROOTED_WITHIN` 0.1). Every bulb measured
-  reads 0 to 0.011, the four misnamed copies 1.31 to 149.
-- ⚠ **Above degree two the law is taken alone.** The cycle search the root test rests on
-  lands on another cycle there (`|λ|` of 1.8 to 2.0 on plain bulbs), so it is not asked.
-  The law named every degree-three-to-six bulb measured correctly, and that repository
-  measured it on all five planes; a high-`m` copy at those degrees would be offered as a
-  bulb, and none was seen. A first try, the nucleus's distance from the parent's boundary
-  in its own sizes, failed the same way: a plain degree-four 7-bulb read 25.9 against
-  copies at 29.6.
-- **It costs little.** A reading is a few solves at divisors of the nucleus's own period
-  plus one cycle search, which on the cases measured natively is milliseconds to 0.13 s
-  (period 34,056), beside a search of seconds. It adds 33.5 KB to `perturb.wasm` (11.2 KB
-  gzipped), almost all the fixed-point step at five degrees; `#[inline(never)]` on the
-  readings did not move it.
+- **The reading is the root test** *(dive_primitive_only_ckpt154, replacing the wallpapers
+  repository's bulb law over a chain of components, with a multiplier check at degree two,
+  that find_minibrots_bulbs_ckpt145 ported)*. A component of period `p` is a satellite if
+  and only if, at its root, the cycle point has a lower period `q` dividing `p`; a copy's
+  root cycle point still has period `p`, two `p`-cycles colliding at a cusp. So the reading
+  polishes the nucleus, solves for the root by Newton on the pair `f^p(z) = z`,
+  `(f^p)′(z) = 1` in the nucleus's own fixed point, starting at the cusp the renormalization
+  puts it at, and asks at the root whether `|f^q(z) − z|` is under a thousandth of the
+  component's `z` scale for any proper divisor `q`. At degree `d` a component has `d − 1`
+  roots, a copy's cusps or a satellite's root and its co-roots, and **every one is solved**;
+  a copy is a component none of whose roots collapses. `nuclei::classify` has the argument,
+  `perturb-wasm/README.md` §12 the measurements.
+- ⚠ **A satellite's root is singular, and the literal test cannot read it there.** Newton
+  converges on it linearly: `c` at about 0.35 a step, but the cycle point only as
+  `|Δc|^{1/m}`. The home view's period-2,508 bulb is a 57-bulb on period 44, and forty steps
+  in, with `c` good to 1e-20 of its size, its cycle point is still 0.87 of the scale from its
+  own image. So the same fact is read off the point the cycle collapses onto: the centroid of
+  the cycle point's `f^q`-orbit, which is `q`-periodic with a multiplier whose `m`-th power is
+  one, `m = p/q`. A satellite reads 1e-12 or less on both; the nearest copy reads 0.66.
+- **A reading that cannot be finished is not a copy.** A root that does not converge, lands
+  more than eight sizes from the nucleus, or escapes; a point that is not a nucleus at all.
+  It is kind `unresolved` with a reason. The list never offers one, the dive never lands on
+  one, the status line counts them (*One nucleus was left out: the root test could not read
+  it.*), and the tab's log names each with its reason.
+- **The search keeps solves that never converged, and this is where they stop.** The page's
+  solve takes what eight Newton steps reach and trims it to the tile's digits, and at the
+  home view the "period-15 copy" plain Go used to land on was one of those: `|z₁₅|` is 0.375
+  there, and Newton from it lands on the period-3 nucleus 0.125 away. The reading polishes
+  every nucleus first, which is also what the period-2,508 one needed (the page's solve had
+  stopped half a percent of a size off it), and refuses one that moves more than a size.
+- **What it costs.** A copy's reading is the nucleus's own pass and two or three Newton passes a
+  root, which at depth is about three nucleus-solve steps: 0.15 s natively at period 95,000
+  (tangle 1e-22) and 0.6 s at 205,000 (1e-54), three times the old reading. A dive reads in
+  rounds of the pool and stops once the rung rule's answer is settled, which a refusal never
+  is: at tangle 1e-54, where Go refuses on the budget, the press took 14.2 s against 9.1 s.
+  ⚠ **Degree six is where it is slow**: five roots, 2.6 to 5 s natively per copy at 1e-22.
+  §12 of the crate README has the table.
 
 **A copy is framed by its measured body** *(Matt, find_minibrots_bulbs_ckpt145)*. The
 preview tile is already drawn at eight periods, and before it is coloured its lanes say
@@ -2627,12 +2634,14 @@ times; a pasted Multibrot 3 link refused on the Mandelbrot plane, a pasted Mande
 drawn into A's thumbnail and dived from in 0.7 s; a thumbnail click and then two Ctrl+Z,
 each one step.
 
-⚠ **Two of the four copies _save those minibrots_ keeps near the home view are not
-minibrots** — the period-15 one plain Go lands on first, and a period-2,508 one: both frame
-the main cardioid's edge, so the search's copy-or-bulb reading takes some nuclei on that edge
-for copies. Plain Go lands on the same period-15 frame, byte for byte, so this is the
-engine's reading and not the batch's; it was kept as it is, since this checkpoint changes no
-engine.
+**Only copies are landed on** *(dive_primitive_only_ckpt154)*. Two of the four "copies"
+*save those minibrots* kept near the home view framed the main cardioid's edge: a
+period-2,508 satellite (a 57-bulb on period 44) and a "period-15 copy" that was no nucleus at
+all, an unconverged solve plain Go landed on first. The root test (*Find minibrots* above)
+reads both as not copies. Now plain Go from home lands on the period-48 copy at
+−0.7097 + 0.3519i in 0.7 s, and *save* keeps the period-28 and period-48 copies, saying that
+two nuclei were left out. The dive reads its search in rounds and stops once the rung rule's
+answer cannot change.
 
 #### Keep diving *(keep_diving_ckpt154, 2026-09-27; fresh draws since dive_slots_ckpt154)*
 

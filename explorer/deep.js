@@ -1777,10 +1777,11 @@ export function mount(host) {
       const found = await nucleiNear(deep, target, generation);
       if (found === null || generation !== pass) return;
 
+      const left = leftOutSaid(found);
       if (found.length === 0) {
         minibrotSide = side;
         els.minibrotNote.hidden = false;
-        els.minibrotNote.textContent = "No minibrot was found in this view.";
+        els.minibrotNote.textContent = `No minibrot was found in this view.${left}`;
         return;
       }
 
@@ -1802,7 +1803,8 @@ export function mount(host) {
         (lost === 0
           ? ""
           : ` ${lost} of them ${lost === 1 ? "sits" : "sit"} deeper than a link can spell a ` +
-            "center for, so they are listed without one.");
+            "center for, so they are listed without one.") +
+        left;
 
       let tile = 0;
       for (const nucleus of reachable) {
@@ -1861,7 +1863,7 @@ export function mount(host) {
    * `prefix` leads the Render line's words, and `phase` names the Dive block's share of its
    * bar as the search moves from the probe to the walk.
    */
-  async function nucleiNear(deep, target, generation, { prefix = "", phase = null, budget, want } = {}) {
+  async function nucleiNear(deep, target, generation, { prefix = "", phase = null, budget, want, enough } = {}) {
     const grid = host.grid();
     const shareOf = (step) => (step.total > 0 ? step.done / step.total : null);
     if (phase !== null) running.divePhase = phase.probe;
@@ -1890,6 +1892,7 @@ export function mount(host) {
       tileSamples: TILE.width,
       ...(budget === undefined ? {} : { budget }),
       ...(want === undefined ? {} : { want }),
+      ...(enough === undefined ? {} : { enough }),
       onStep: (step) => {
         if (generation !== pass) return;
         activity(`${prefix}${looking} · ${said_step(step)}`, shareOf(step));
@@ -2158,6 +2161,20 @@ export function mount(host) {
     );
   }
 
+  /**
+   * **What the root test could not read**, as a sentence the status line appends, each one
+   * logged with its reason *(dive_primitive_only_ckpt154)*. `nuclei::classify` calls a nucleus
+   * a copy only where every root it has was solved and none collapsed; a reading it could not
+   * finish is not a copy and is never landed on or listed, and this is where that is said
+   * rather than hidden. Empty where nothing was left out.
+   */
+  function leftOutSaid(found) {
+    const left = found?.unresolved ?? [];
+    for (const one of left) log("nucleus left out", one);
+    if (left.length === 0) return "";
+    return ` Left out ${left.length === 1 ? "one nucleus" : `${count(left.length)} nuclei`} the root test could not read.`;
+  }
+
   /** Of `list`, the nucleus nearest `of`'s centre in the larger coordinate, or `null`. */
   function nearest(list, of) {
     let best = null;
@@ -2294,20 +2311,25 @@ export function mount(host) {
         factor === 1
           ? near
           : { ...near, w: deepLink.widthOf(wide), maxiter: policyCap(wide), capFrom: "width" };
+      const asked = searched;
       found = await nucleiNear(deep, searched, generation, {
         prefix: factor === 1 ? prefix : `${prefix}${factor} times wider · `,
         phase: { probe: "probe", search: "search" },
         budget: 24,
         want: 12,
+        // The rung rule's answer is settled once every copy larger than the one it takes has
+        // been read, so the reading stops there (`renderer.nuclei`'s `enough`).
+        enough: (list) => deep.pick(asked, list, rungs, periods).index != null,
       });
       if (found === null) return null;
       picked = deep.pick(searched, found, rungs, periods);
       if (!picked.ok) throw new Error(picked.why);
       if (picked.refusal !== "over_budget") break;
     }
+    const left = leftOutSaid(found);
     if (picked.index === null) {
       return {
-        why: refusalSaid(picked, where, landing),
+        why: refusalSaid(picked, where, landing) + left,
         refusal: picked.refusal,
         // The budget is this place's to fail only where the count is: a random wallpaper,
         // on either side, may fit where this one did not.
@@ -2383,7 +2405,7 @@ export function mount(host) {
     const said =
       `${planeWords(here)[0].toUpperCase()}${planeWords(here).slice(1)} · a period-${count(copy.period)} ` +
       `copy ${exponent(copy.size)} across near ${where}, rung ${depth + 1} · landed ${landed}${placed} · ` +
-      `${count(answer.cap)} iterations.`;
+      `${count(answer.cap)} iterations.${left}`;
     const next = request.landing === "mapped" ? [] : [...rungs, copy];
     return { frame, chain: { place: placeOf(frame), rungs: next, depth: depth + 1 }, said };
   }
@@ -2428,7 +2450,10 @@ export function mount(host) {
       copies.push(found[picked.index]);
       offered[picked.index] = { ...offered[picked.index], kind: "bulb" };
     }
-    if (copies.length === 0) return { why: refusalSaid(refused, from.where, "center"), refusal: refused.refusal };
+    const left = leftOutSaid(found);
+    if (copies.length === 0) {
+      return { why: refusalSaid(refused, from.where, "center") + left, refusal: refused.refusal };
+    }
     running.divePhase = "land";
     enterStage("landing");
     const landings = [];
@@ -2452,8 +2477,8 @@ export function mount(host) {
         `largest · framed at its center · ${count(answer.cap)} iterations.`;
       landings.push({ frame, said });
     }
-    if (landings.length === 0) return { why: `No copy near ${from.where} could be framed.` };
-    return { landings, where: from.where, random: from.random };
+    if (landings.length === 0) return { why: `No copy near ${from.where} could be framed.${left}` };
+    return { landings, where: from.where, random: from.random, left };
   }
 
   /**
@@ -2688,7 +2713,7 @@ export function mount(host) {
     const saved = batch.landings.length;
     diveSaid =
       `Saved ${saved === 1 ? "one copy" : `the ${saved} largest copies`} near ${batch.where} to ` +
-      "Dive results" + (results === null ? "." : `, which holds ${results}.`);
+      "Dive results" + (results === null ? "." : `, which holds ${results}.`) + (batch.left ?? "");
     return { landed: true, complete: true, results, saved: batch.landings.length };
   }
 

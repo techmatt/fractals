@@ -919,19 +919,19 @@ pub extern "C" fn newton_step(request_ptr: *const u8, request_len: usize) -> *mu
     }))
 }
 
-/// **A copy or a bulb**: [`nuclei::classify`] on one solved nucleus
-/// *(find_minibrots_bulbs_ckpt145)*.
+/// **A copy, a bulb, or neither said**: [`nuclei::classify`] on one solved nucleus
+/// *(find_minibrots_bulbs_ckpt145; the root test since dive_primitive_only_ckpt154)*.
 ///
-/// One request per nucleus rather than one per Newton step, as [`newton_step`] is,
-/// because the chain it solves is a handful of periods each a divisor of this one:
-/// the whole reading costs about what the nucleus's own solve did, and a reader who
+/// One request per nucleus rather than one per Newton step, as [`newton_step`] is:
+/// a copy's reading is a handful of passes at its period per cusp, and a reader who
 /// cancels loses at most that.
 ///
 /// Takes `{"c_re":"…","c_im":"…","period":n,"limbs":k,"degree":d,"size_log2":x}`
-/// and returns `{"ok":true,"kind":"copy"|"bulb","parent":q,"m":m,"chain":[…],
-/// "solves":n,"rooted":x,"primitive":b}` — `parent` and `m` zero on a copy; `rooted`
-/// is [`nuclei::rooted`]'s reading, `null` where it was not taken (no parent named,
-/// or above degree two) or where the root is not primitive, which `primitive` says.
+/// and returns `{"ok":true,"kind":"copy"|"bulb"|"unresolved","parent":q,"m":m,
+/// "reason":"…"|null,"cusps":n,"steps":n}` — `parent` and `m` zero unless a bulb;
+/// `reason` [`nuclei::Unresolved::reason`] where the root test could not be carried
+/// out, which the page treats as **not a copy**. `size_log2` is accepted and unread:
+/// the reading measures the component's size from its own orbit.
 #[unsafe(no_mangle)]
 pub extern "C" fn classify_nucleus(request_ptr: *const u8, request_len: usize) -> *mut u8 {
     const KNOWN: &[&str] = &["c_re", "c_im", "period", "limbs", "degree", "size_log2"];
@@ -983,29 +983,17 @@ pub extern "C" fn classify_nucleus(request_ptr: *const u8, request_len: usize) -
             Ok(nuclei::classify(&nucleus, degree))
         });
     report(read.map(|reading| {
-        let (kind, parent, m) = match reading.kind {
-            nuclei::Kind::Copy => ("copy", 0, 0),
-            nuclei::Kind::Bulb { parent, m } => ("bulb", parent, m),
-        };
-        let chain: Vec<String> = reading.chain.iter().map(u32::to_string).collect();
-        // JSON has no infinity, so a root that is not primitive is said as a flag.
-        let (rooted, primitive) = match reading.rooted {
-            Some(off) if off.is_finite() => (format!("{off:e}"), true),
-            Some(_) => ("null".to_string(), false),
-            None => ("null".to_string(), true),
+        let (kind, parent, m, reason) = match reading.kind {
+            nuclei::Kind::Copy => ("copy", 0, 0, "null".to_string()),
+            nuclei::Kind::Bulb { parent, m } => ("bulb", parent, m, "null".to_string()),
+            nuclei::Kind::Unresolved(why) => ("unresolved", 0, 0, format!("\"{}\"", why.reason())),
         };
         format!(
             concat!(
-                r#"{{"ok":true,"kind":"{}","parent":{},"m":{},"chain":[{}],"#,
-                r#""solves":{},"rooted":{},"primitive":{}}}"#
+                r#"{{"ok":true,"kind":"{}","parent":{},"m":{},"reason":{},"#,
+                r#""cusps":{},"steps":{}}}"#
             ),
-            kind,
-            parent,
-            m,
-            chain.join(","),
-            reading.solves,
-            rooted,
-            primitive,
+            kind, parent, m, reason, reading.cusps, reading.steps,
         )
     }))
 }

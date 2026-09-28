@@ -399,6 +399,22 @@ function spawn(module) {
  * compiled, which costs a few milliseconds; it is fed the held orbit again the next time a
  * request needs it, and that is the whole cost of being able to stop anything.
  */
+/**
+ * **Copies first, and bulbs only where there is no copy** *(find_minibrots_bulbs_ckpt145)*, of
+ * the entries that have been read, largest first and at most `want` of them. An entry the root
+ * test could not finish is neither and is never offered; `unresolved` on the list says how many
+ * and why *(dive_primitive_only_ckpt154)*, and an entry never read is not counted at all.
+ */
+function offered(distinct, want) {
+  const copies = distinct.filter((nucleus) => nucleus.kind === "copy");
+  const bulbs = distinct.filter((nucleus) => nucleus.kind === "bulb");
+  const list = (copies.length > 0 ? copies : bulbs).slice(0, want);
+  list.unresolved = distinct
+    .filter((nucleus) => nucleus.kind === "unresolved")
+    .map((nucleus) => ({ period: nucleus.period, reason: nucleus.reason }));
+  return list;
+}
+
 export class DeepRenderer {
   constructor(module, planner, workers, shading) {
     this.module = module;
@@ -574,7 +590,9 @@ export class DeepRenderer {
       off_re: found.map((one) => off(one, "x")),
       off_im: found.map((one) => off(one, "y")),
       size_log2: found.map((one) => one.sizeLog2),
-      copy: found.map((one) => (one.kind === "bulb" ? 0 : 1)),
+      // A copy only where the root test said so: a bulb and an unresolved reading are both
+      // "not a copy" to the rung rule (dive_primitive_only_ckpt154).
+      copy: found.map((one) => (one.kind === "copy" ? 1 : 0)),
       rung_re: rungs.map((one) => off(one, "x")),
       rung_im: rungs.map((one) => off(one, "y")),
       rung_size_log2: rungs.map((one) => one.sizeLog2),
@@ -782,7 +800,12 @@ export class DeepRenderer {
    *
    * Resolves with `null` where a newer generation started, as everything here does.
    */
-  async nuclei(view, width, height, { supersample = 1, tileSamples = 316, budget = 12, want = 6, onStep } = {}) {
+  async nuclei(
+    view,
+    width,
+    height,
+    { supersample = 1, tileSamples = 316, budget = 12, want = 6, enough = null, onStep } = {},
+  ) {
     this.cancel();
     const generation = this.generation;
     const reference = await this.#reference(view, width, height, supersample, null, {
@@ -842,22 +865,41 @@ export class DeepRenderer {
     // were bulbs — but a bulb is not a copy. Every distinct nucleus is read, not only the
     // first `want`, because a list of copies is filled from all of them; `perturb-wasm`'s
     // `nuclei::classify` is the reading and `nuclei::copies_first` the same rule natively.
+    // **A reading the root test could not finish is neither** *(dive_primitive_only_ckpt154)*:
+    // it is never offered, and `unresolved` says how many were left out and why.
+    //
+    // **Read in rounds where the caller can stop early** *(dive_primitive_only_ckpt154)*. The
+    // root test is two or three orbits of the period a root, `d − 1` roots, so at depth a
+    // reading is more than the solve that found the nucleus. A dive's rung rule takes the
+    // first acceptable copy largest first, so `enough`, given the list the entries read so
+    // far make, says when the rest cannot change its answer: every entry larger than the
+    // one it takes has been read. Unread entries are left out of the list, as neither.
     let read = 0;
-    const readings = this.slots.map((slot, index) => {
-      const mine = distinct.filter((_, at) => at % this.slots.length === index);
-      return this.#classifyEach(slot, mine, limbs, degree, generation, () =>
-        onStep?.({ phase: "classify", done: ++read, total: distinct.length }),
+    const readRound = (round) =>
+      Promise.all(
+        this.slots.map((slot, index) => {
+          const mine = round.filter((_, at) => at % this.slots.length === index);
+          return this.#classifyEach(slot, mine, limbs, degree, generation, () =>
+            onStep?.({ phase: "classify", done: ++read, total: distinct.length }),
+          );
+        }),
       );
-    });
-    await Promise.all(readings);
+    if (enough === null) {
+      await readRound(distinct);
+    } else {
+      for (let from = 0; from < distinct.length; from += this.slots.length) {
+        await readRound(distinct.slice(from, from + this.slots.length));
+        if (generation !== this.generation) return null;
+        if (enough(offered(distinct.slice(0, from + this.slots.length), want))) break;
+      }
+    }
     if (generation !== this.generation) return null;
-    const copies = distinct.filter((nucleus) => nucleus.kind === "copy");
-    return (copies.length > 0 ? copies : distinct).slice(0, want);
+    return offered(distinct, want);
   }
 
-  /** Every nucleus in this lane read as a copy or a bulb, on this worker, in turn. A
-   *  reading the module refuses leaves its nucleus a copy, which is what the list offered
-   *  before there was a reading at all. */
+  /** Every nucleus in this lane read as a copy, a bulb or unresolved, on this worker, in
+   *  turn. A reading the module refuses is unresolved: it used to leave its nucleus a copy,
+   *  and a dive lands only on what the root test called one. */
   async #classifyEach(slot, mine, limbs, degree, generation, onRead) {
     for (const nucleus of mine) {
       if (generation !== this.generation) return;
@@ -873,9 +915,10 @@ export class DeepRenderer {
         }),
       });
       const reading = reply?.reading ?? null;
-      nucleus.kind = reading?.ok ? reading.kind : "copy";
+      nucleus.kind = reading?.ok ? reading.kind : "unresolved";
       nucleus.parent = reading?.ok ? reading.parent : 0;
       nucleus.m = reading?.ok ? reading.m : 0;
+      nucleus.reason = reading?.ok ? reading.reason : (reading?.why ?? "the reading was refused");
       onRead();
     }
   }

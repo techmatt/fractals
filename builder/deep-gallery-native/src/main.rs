@@ -127,6 +127,7 @@ fn kind_name(kind: nuclei::Kind) -> &'static str {
     match kind {
         nuclei::Kind::Copy => "copy",
         nuclei::Kind::Bulb { .. } => "bulb",
+        nuclei::Kind::Unresolved(_) => "unresolved",
     }
 }
 
@@ -375,17 +376,18 @@ fn main() {
                 residual: 0.0,
             };
             let reading = nuclei::classify(&nucleus, degree);
-            let (parent, m) = match reading.kind {
-                nuclei::Kind::Bulb { parent, m } => (parent, m),
-                nuclei::Kind::Copy => (0, 0),
+            let (parent, m, reason) = match reading.kind {
+                nuclei::Kind::Bulb { parent, m } => (parent, m, "null".to_string()),
+                nuclei::Kind::Copy => (0, 0, "null".to_string()),
+                nuclei::Kind::Unresolved(why) => (0, 0, format!("\"{}\"", why.reason())),
             };
-            let chain: Vec<String> = reading.chain.iter().map(u32::to_string).collect();
             println!(
-                "{{\"kind\":\"{}\",\"parent\":{},\"m\":{},\"chain\":[{}]}}",
+                "{{\"kind\":\"{}\",\"parent\":{},\"m\":{},\"reason\":{},\"cusps\":{}}}",
                 kind_name(reading.kind),
                 parent,
                 m,
-                chain.join(",")
+                reason,
+                reading.cusps
             );
         }
         "twin" => {

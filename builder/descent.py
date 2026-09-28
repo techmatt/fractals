@@ -18,8 +18,8 @@ Every number comes from `builder/deep-gallery-native`, which is `perturb-wasm`'s
 natively:
 
 - each location's nucleus is `search`'s nucleus nearest the frame's centre, **refused** where
-  it is a bulb (`classify`, Find minibrots' test) or where no nucleus is within an eighth of
-  the frame;
+  it is not a copy (`classify`, Find minibrots' root test) or where no nucleus is within an
+  eighth of the frame;
 - `s_A` is `orient`'s complex scale, from the nucleus's own derivatives: `1/(d·l^{1/(D−1)})`;
 - the twin's copy is `twin`'s multiple-shooting solve, because first-order `c_A + s_A·c_B` is
   only right to the tuning's nonlinearity — a thousandth of the offset, which on the test
@@ -230,7 +230,8 @@ def nucleus_of(location: Location) -> Copy:
     kind = _kind(copy, location.degree)
     if kind != "copy":
         raise DescentError(
-            f"{location.link}: the nucleus at the centre, period {copy.period}, is a bulb"
+            f"{location.link}: the nucleus at the centre, period {copy.period}, is not a copy"
+            f" ({kind})"
         )
     return copy
 

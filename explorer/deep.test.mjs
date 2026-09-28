@@ -828,7 +828,7 @@ function classify(request) {
   return JSON.parse(text);
 }
 
-test("the committed module reads the anchor as a copy and a bulb on pin 10's copy as a bulb", { skip }, () => {
+test("the committed module reads the anchor as a copy, a bulb on pin 10's copy as a bulb, and the home view's two as not copies", { skip }, () => {
   const anchor = classify({
     c_re: ANCHOR.center_re,
     c_im: ANCHOR.center_im,
@@ -839,8 +839,8 @@ test("the committed module reads the anchor as a copy and a bulb on pin 10's cop
   });
   assert.equal(anchor.ok, true, anchor.why);
   assert.equal(anchor.kind, "copy");
-  // The law alone named period 33 as its parent; the root test is what refused it.
-  assert.ok(anchor.rooted > 1, `rooted ${anchor.rooted}`);
+  assert.equal(anchor.reason, null);
+  assert.equal(anchor.cusps, 1);
   const bulb = classify({
     c_re: "-0.057412939209682502",
     c_im: "0.669186045946984554",
@@ -851,6 +851,15 @@ test("the committed module reads the anchor as a copy and a bulb on pin 10's cop
   });
   assert.equal(bulb.ok, true, bulb.why);
   assert.deepEqual([bulb.kind, bulb.parent, bulb.m], ["bulb", 179, 7]);
+  // The home view's two, as the page sent them (dive_primitive_only_ckpt154): a 57-bulb on
+  // period 44, and a solve that never converged, which is not a copy and says why.
+  const home = (c_re, c_im, period, size_log2) =>
+    classify({ c_re, c_im, period, limbs: 4, degree: 2, size_log2 });
+  const satellite = home("-0.75936056493699", "0.07103618418549", 2508, -21.126383684402732);
+  assert.deepEqual([satellite.kind, satellite.parent, satellite.m], ["bulb", 44, 57]);
+  const stray = home("-0.17771144", "0.632926556", 15, -5.8829623565480516);
+  assert.equal(stray.kind, "unresolved");
+  assert.match(stray.reason, /not a nucleus/);
 });
 
 test("a copy framed at the fallback width holds its body near a quarter of the height", { skip }, () => {

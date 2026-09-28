@@ -1273,11 +1273,9 @@ converge with `K`. Those are almost certainly bulbs attached to the main compone
 than copies of the set — their periods are Fibonacci numbers (610, 987, 1,597, …), which is
 what the bulbs nearest a golden-mean boundary point have — and the renormalisation says
 nothing about a bulb. The search could not tell the two apart at any degree until
-find_minibrots_bulbs_ckpt145, which added `nuclei::classify`: the wallpapers repository's
-bulb law over the chain of components a nucleus sits near, with a root test this crate
-adds at degree two because the law alone misreads high-`m` copies (the audit anchor among
-them).
-The list now offers copies first and bulbs only where a view holds no copy;
+find_minibrots_bulbs_ckpt145, which added `nuclei::classify`; since
+dive_primitive_only_ckpt154 that reading is the root test of §12.
+The list offers copies first and bulbs only where a view holds no copy;
 `explorer/README.md`'s *Find minibrots* has the numbers.
 
 ### 11. The dive *(deep_dive_block_ckpt154, 2026-09-27)*
@@ -1367,13 +1365,70 @@ default rustc is 1.98.1 now and builds this crate to 320,887 bytes; the committe
 built on 1.96.0, which is the toolchain CI pins from the engine's manifest, so a rebuild here
 is `RUSTUP_TOOLCHAIN=1.96.0 python -m builder explorer --perturb`.
 
+### 12. Copy or bulb, by the root *(dive_primitive_only_ckpt154, 2026-09-28)*
+
+**The test.** A component of period `p` is a satellite if and only if, at its root, the
+cycle point has a lower period `q | p`; a copy's root cycle point keeps period `p`. At degree
+`d` a component has `d − 1` points of multiplier one, and every one is solved.
+`nuclei::classify`:
+
+1. **Nucleus.** Polished by Newton where its next step is over 1e-12 of its size (the page's
+   solve stops at a view-sized tolerance, half a percent of the period-2,508 bulb at the home
+   view). Refused as *not a nucleus* where `|z_p|` is over 1e-3 of the copy's `z` scale
+   `|s_z| = |A|^{−1/(d−1)}`, or where the polish moved it more than a size.
+2. **Roots.** Newton on `f^p(z) = z`, `(f^p)′(z) = 1`, in the nucleus's fixed point, with
+   `∂/∂z`, `∂/∂c`, `∂²/∂z²` and `∂²/∂z∂c` carried as mantissa and exponent. It starts at the
+   cusp the renormalization gives, `w = d^{−1/(d−1)}ζ`, `C = w(1 − 1/d)`, so a deep copy's
+   first step is already under 1e-10 of its size.
+3. **Literal test at a regular root.** A copy's root is regular and converges quadratically
+   (`QUADRATIC`); there `|f^q(z) − z|` under 1e-3 `|s_z|` for a proper divisor `q` is a
+   collapse. On every copy measured the smallest is 1.5 `|s_z|` or more.
+4. **Collapse test at a singular root.** A satellite's root is singular; `c` converges at
+   about 0.35 a step and `z` only as `|Δc|^{1/m}`. So at `ROOT_CONVERGED` (1e-10 of the size)
+   the centroid of the cycle point's `f^q`-orbit is taken: it is `q`-periodic and its
+   multiplier's `m`-th power is one (both under 1e-6) exactly where the cycle collapses.
+   Satellites read 1e-12 or less; the nearest copy, 0.66.
+5. **Anything else is unresolved** — escaped, singular, wandered more than eight sizes, or
+   unconverged in 48 steps — and the page treats it as not a copy, counts it, and logs why.
+
+**Fixtures** (`nuclei.rs` tests): bulbs — the period-2 disc, both period-3 bulbs, the
+period-4 and airship doublings, a 7-bulb on a deep period-179 copy, and at degrees three to
+six a 3-bulb, a doubling and a 7-bulb on the island, a 5-bulb, and a 5- and a 7-bulb; copies —
+the airship, two antenna copies, the anchor, the home view's periods 28 and 48, each degree's
+island and one more copy at degrees four to six. Home-view cases as the page sends them:
+period 2,508 is a 57-bulb on period 44; "period 15" is not a nucleus (`|z₁₅|` = 0.375 there;
+Newton lands on the period-3 nucleus 0.125 away). The old chain reading had also called the
+period-10 and period-28 doublings at the home view, and a degree-six 5-bulb, copies.
+
+**Cost**, native, per nucleus, this box under another prompt's load (solve = one Newton step
+at the period):
+
+| frame | period | one solve step | old reading | root test |
+|---|--:|--:|--:|--:|
+| tangle 1e-22, degree 2 | 89,265–99,396 | 0.04 s | 0.05 s | 0.14–0.16 s (3 passes) |
+| tangle 1e-54, degree 2 | 205,425–219,615 | 0.17–0.18 s | 0.20 s | 0.58–0.62 s (3 passes) |
+| tangle 1e-22, degree 6 | 62,608–93,912 | 0.15–0.23 s | — | 2.6–5.0 s (16–21 passes) |
+| home view | ≤ 2,508 | — | ms | ms; 0.03 s for the 2,508 bulb |
+
+⚠ **Degree six is where it becomes slow**: five roots at three passes each. What was done:
+the literal test rides the Newton passes (a cursor over the divisors, one compare a step),
+the collapse test runs only where the root is not regular, the polish only where the nucleus
+needs it, and a dive reads in rounds of the pool and stops once the rung rule is settled. On
+the served page at tangle 1e-54 the classify phase of a Go went from 0.9 s to 5.9 s for 23
+nuclei, a refusal that must read them all. No pre-filter is used: one may only reject, which
+saves nothing on the copies the cost is spent on, and none was measured to be safe.
+
+**Module**: 346,064 bytes raw and 128,978 gzipped, from 313,157 and 117,312. `Wide`'s
+operations are `#[inline(never)]` (9.5 KB for 2–5% of speed) and `pass` takes a `dyn`
+callback rather than a generic one (11.5 KB).
+
 ## Running it
 
 ```text
 cargo fmt   --check                                    # the formatting, held: the
                                                        #   crate is rustfmt-clean and
                                                        #   stays that way
-cargo test  --release                                  # 80 unit tests and six
+cargo test  --release                                  # 81 unit tests and six
                                                        #   cheap pins, about a second
 cargo test  --release --test oracle -- --ignored --nocapture   # the ladders, ~30 s
 cargo test  --release --test probe  -- --ignored --nocapture   # the three-way probes
