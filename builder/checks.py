@@ -170,6 +170,13 @@ was raise, and every check after it went unrun.
   readers take a key named twice with one value and refuse one named with two, so a
   repeat in a record is a writer that appended where it should have set.
   `repeats.py` has the story. A named skip for the next-door half.
+- **deep** — the Deep tab's two baked lists, its gallery (`explorer/deep-gallery.jsonl`)
+  and Random dives (`explorer/random-dives.jsonl`), each held to its tiles: every row a
+  deep link, no link twice, a tile named by the row's FNV-1a for every row and no tile no
+  row names, every tile tracked, since an untracked tile is one the local build serves and
+  Pages does not, and each tile the Deep gallery's 316×178 where Pillow is here. Random
+  dives also holds no place twice, a plane and a centre, which is the promise its builder
+  makes. `builder/random_dives.py` says why a place and not only a link.
 """
 
 import json
@@ -184,6 +191,7 @@ from . import (
     agreement,
     coloring,
     dashes,
+    deep_gallery,
     explorer,
     figures,
     formulas,
@@ -198,6 +206,7 @@ from . import (
     picker,
     picks,
     prose,
+    random_dives,
     readmes,
     recipes,
     records,
@@ -1046,6 +1055,66 @@ def endings_rows() -> list[str]:
     return [row for row in completed.stdout.split(LF) if row]
 
 
+def check_deep() -> list[str]:
+    """The Deep tab's gallery and Random dives, each held to its tiles (see the docstring)."""
+    problems = []
+    can_measure = images.available()
+    tracked = set(
+        subprocess.run(
+            ["git", "ls-files", "--", "explorer/deep-gallery", "explorer/random-dives"],
+            cwd=SITE_ROOT,
+            capture_output=True,
+            text=True,
+            check=False,
+        ).stdout.splitlines()
+    )
+    size = (deep_gallery.THUMB["width"], deep_gallery.THUMB["height"])
+    for record, tiles in (
+        (deep_gallery.REGISTER, deep_gallery.THUMBS),
+        (random_dives.RECORD, random_dives.TILES),
+    ):
+        shown = _shown(record)
+        if not record.exists():
+            problems.append(f"{shown}: missing")
+            continue
+        links: list[str] = []
+        for number, line in enumerate(record.read_text(encoding="utf-8").splitlines(), 1):
+            if not line.strip():
+                continue
+            link = str(json.loads(line).get("link", ""))
+            if not link.startswith("dv="):
+                problems.append(f"{shown} line {number}: not a deep link")
+                continue
+            links.append(link)
+        seen: set[str] = set()
+        for link in links:
+            if link in seen:
+                problems.append(f"{shown}: {link[:60]}… recorded twice")
+            seen.add(link)
+        if record == random_dives.RECORD:
+            places: dict[tuple[str, str, str], str] = {}
+            for link in links:
+                place = random_dives.frame_key(link)
+                if place in places and places[place] != link:
+                    problems.append(f"{shown}: {place[0]} at {place[1]}, {place[2]} twice")
+                places[place] = link
+        named = {f"{deep_gallery.fnv(link)}.webp" for link in links}
+        on_disk = {path.name for path in tiles.iterdir()} if tiles.is_dir() else set()
+        for name in sorted(named - on_disk):
+            problems.append(f"{_shown(tiles / name)}: missing, and its row is in {shown}")
+        for name in sorted(on_disk - named):
+            problems.append(f"{_shown(tiles / name)}: no row in {shown} names it")
+        for name in sorted(named & on_disk):
+            path = tiles / name
+            relative = path.relative_to(SITE_ROOT).as_posix()
+            if relative not in tracked:
+                problems.append(f"{relative}: not tracked, so Pages would not serve it")
+            if can_measure and images.dimensions(path) != size:
+                actual = images.dimensions(path)
+                problems.append(f"{relative}: {actual[0]}x{actual[1]}, not {size[0]}x{size[1]}")
+    return problems
+
+
 def check_endings() -> list[str]:
     """No tracked file has drifted to CRLF on disk.
 
@@ -1274,6 +1343,7 @@ def run_all() -> Report:
             "packs": packs.problems(with_checkout=figures.stores_available()),
             "readmes": readmes.problems(with_checkout=figures.stores_available()),
             "repeats": repeats.problems(with_checkout=figures.stores_available()),
+            "deep": check_deep(),
         },
         skips(),
     )

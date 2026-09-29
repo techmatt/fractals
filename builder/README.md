@@ -9,7 +9,7 @@ Python. A build is done here and reviewed in a diff.
 python -m builder build     regenerate gallery pages, the gallery index, thumbnails,
                             the contents rail every page carries, and the short
                             links under go/ from go/redirects.jsonl
-python -m builder check     twenty-seven named checks: links, page sync, contents, figure
+python -m builder check     twenty-eight named checks: links, page sync, contents, figure
                             blocks, seat panels, landings, one location to one figure,
                             explorer links, the atlas record, each atlas link against
                             its picture, the explorer's bake, embedded links, the
@@ -17,7 +17,8 @@ python -m builder check     twenty-seven named checks: links, page sync, content
                             editorial pointer, theme, banned vocabulary, em-dashes, line
                             endings, the site's icon, display formulas, short links,
                             the wallpaper packs record, both root READMEs' links,
-                            no key named twice in a stored link
+                            no key named twice in a stored link, the Deep tab's
+                            gallery and Random dives held to their tiles
 python -m builder packs [--import]  the Wallpaper packs record, or import it from next door
 python -m builder figure ID print a figure's markup block, to paste into an article page
 python -m builder figures [--all]   what is still to make, grouped by page

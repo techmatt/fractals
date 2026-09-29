@@ -32,6 +32,7 @@ from .paths import SITE_ROOT, site_pages
 RECORDS = (
     "explorer/links.jsonl",
     "explorer/deep-gallery.jsonl",
+    "explorer/random-dives.jsonl",
     "article/figure-recipes.jsonl",
     "article/figures.jsonl",
     "assets/images/galleries/*/*.jsonl",
