@@ -500,6 +500,11 @@ def _parser() -> argparse.ArgumentParser:
     started.add_argument(
         "--replace", action="store_true", help="land a redraw of a figure already on the page"
     )
+    started.add_argument(
+        "--placeholders",
+        action="store_true",
+        help="draw the pink gallery's placeholder seats once, into its list, and draw nothing",
+    )
 
     commands.add_parser("icons", help="record the site's icon recipe and draw the icon set from it")
 
@@ -1220,6 +1225,8 @@ def _land_split(identifier: str, drawn, maker, *, replace: bool, landing: bool) 
             row["band"] = panel.band
         if panel.deep:
             row["deep"] = panel.deep
+        if panel.link:
+            row["link"] = panel.link
         if panel.go:
             row["go"] = panel.go
         rows.append(row)
@@ -1479,15 +1486,21 @@ def _do_front(options: argparse.Namespace) -> int:
 
 
 def _do_start(options: argparse.Namespace) -> int:
-    """Draw the Start here page's figures, and optionally land them. All split."""
+    """Draw the Start here page's figures, and optionally land them. All split.
+
+    Landing the pink gallery writes its picks' links into `article/figure-recipes.jsonl`
+    before the row is filled, for the reason `_do_deep` gives.
+    """
+    if options.placeholders:
+        for line in start_module.draw_placeholders():
+            print(line)
+        return 0
+    landing = bool(options.place or options.replace)
     for identifier in options.id or list(start_module.MAKERS):
-        _land_split(
-            identifier,
-            start_module.draw(identifier),
-            start_module,
-            replace=options.replace,
-            landing=bool(options.place or options.replace),
-        )
+        drawn = start_module.draw(identifier)
+        if landing:
+            start_module.keep(identifier)
+        _land_split(identifier, drawn, start_module, replace=options.replace, landing=landing)
     return 0
 
 

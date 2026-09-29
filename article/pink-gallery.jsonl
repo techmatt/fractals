@@ -1,0 +1,16 @@
+{"schema": 1, "kind": "pick", "link": "v=4&f=julia5&cx=0.5562314365770176&cy=-0.003715288780965526&m=tia&x=-0.6409912289788903&y=-0.05001306525927271&w=0.0001675648485438725&p=Rose%20Furnace&level=band_autolevel/v1:0.27635646655677676,0.8567028248091421,1.0155381637152383,0.27635646655677676,0.8629886965307019", "from": "Matt's daughter"}
+{"schema": 1, "kind": "pick", "link": "v=4&f=julia&cx=-0.7488551646997019&cy=-0.13572339871672048&m=smooth_mean_angle&weight=0.751&x=0.2188710009797077&y=0.2136533250082849&w=0.01665991033810206&p=Ultraviolet%20Siren&phase=0.545098", "from": "Matt's daughter"}
+{"schema": 1, "kind": "pick", "link": "v=4&f=julia4&cx=-0.8000969197766781&cy=0.07666925698290561&m=tia&x=0.19452143712062242&y=-0.42589400136861216&w=0.2492067823119563&p=Petal%20Dusk&level=band_autolevel/v1:0.2959242841628112,0.85465718469003,1.021051841790062,0.2959242841628112,0.8629886965307019", "from": "Matt's daughter"}
+{"schema": 1, "kind": "pick", "link": "v=4&m=tia&x=-0.7584991918510186&y=0.07291901041941652&w=0.000004066138283982155&p=RdPu&phase=0.884441&mirror=1", "from": "Matt's daughter"}
+{"schema": 1, "kind": "pick", "link": "v=4&x=-0.056703850480536507&y=0.6689946803923973&w=0.0000000021132721900905024&p=Petal%20Dusk&phase=0.046639&level=band_autolevel/v1:0.2958367414372542,0.8390717419257583,1.1785094930375575,0.2958367414372542,0.8629886965307019", "from": "Matt's daughter"}
+{"schema": 1, "kind": "pick", "link": "v=4&f=julia5&cx=-0.6226382469365616&cy=-0.5135943327134359&m=smooth_stripe&x=-0.15093067797515455&y=0.027881343215849987&w=0.00014168057071793777&p=PuRd&phase=0.212646&mirror=1", "from": "a picture Matt shared, julia5_smooth_stripe_PuRd_2560x1440.png, by the v=3 link stamped in it"}
+{"schema": 1, "kind": "pick", "link": "dv=3&f=multibrot3&x=-0.52761208899843436174030347&y=0.42876929984673822517892006&w=3.87e-19&n=132184&p=Rose%20Furnace&phase=0.877&scale=absolute&lambda=0&period=0.303", "from": "a picture Matt shared, JuliaPick2.png, by the Deep-tab link stamped in it"}
+{"schema": 1, "kind": "pick", "link": "v=4&m=smooth_stripe&x=0.2863105097588509&y=-0.48128350505110695&w=0.00009487290451631547&p=Rose%20Furnace&phase=0.823334&level=band_autolevel/v1:0.31447678072380586,0.7424453082665601,1.25741286605903,0.31447678072380586,0.8629886965307019", "from": "a picture Matt shared, mandelbrot_smooth_stripe_Rose-Furnace_3200x1800.png, by the v=3 link stamped in it"}
+{"schema": 1, "kind": "pick", "link": "v=4&m=smooth_mean_angle&weight=0.85&x=-0.8034886620324753&y=0.18325559833816926&w=0.0000040798268822631505&p=Orchid%20Furnace", "from": "Matt's daughter"}
+{"schema": 1, "kind": "placeholder", "seat": "20260922T014213Z|1ec297e128cc1556"}
+{"schema": 1, "kind": "placeholder", "seat": "20260922T014213Z|523af200a371b1af"}
+{"schema": 1, "kind": "placeholder", "seat": "20260922T014213Z|8dfee077866bb9b1"}
+{"schema": 1, "kind": "placeholder", "seat": "20260922T014213Z|4a75d35a0f3935d1"}
+{"schema": 1, "kind": "placeholder", "seat": "20260922T014213Z|3d18ef0bb9207808"}
+{"schema": 1, "kind": "placeholder", "seat": "20260922T014213Z|3191f9eea411392c"}
+{"schema": 1, "kind": "placeholder", "seat": "20260922T014213Z|1c7511eb105a1a49"}

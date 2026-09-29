@@ -77,6 +77,16 @@ replaced and the autolevel stamp dropped — the operator never ran on the new m
 `source` names the seat it was taken from, the map it replaced, and how the new one was
 drawn. It is the only copy of that choice, so the maker reads it and `--fill` never touches
 it; the row is written once, by hand, when the choice is made.
+
+## Link panels
+
+A sixth, `link` *(start_pink_gallery_ckpt155)*: one row per panel drawn from a **shallow**
+explorer link somebody chose, keyed `<figure id>#<panel>` under the stamp `link` the way a
+deep row is. The recipe is the link in the explorer's canonical spelling, the grid and the
+supersample, and the maker drew the picture with `fractal-engine render-link` from exactly
+that string, so the link a panel carries is read off this row and never derived. The first
+are the picks on Start here's pink gallery, whose list is `article/pink-gallery.jsonl`;
+the maker writes these rows when it lands the figure, and `--fill` never touches them.
 """
 
 from __future__ import annotations
@@ -92,7 +102,17 @@ RECIPES = ARTICLE_DIR / "figure-recipes.jsonl"
 
 #: What a row's `kind` may say: a seat of a recorded tentative gallery, or a bare row of
 #: the candidate ledger that was never seated.
-SEAT, CANDIDATE, DEEP, ICON, RECOLOR = "seat", "candidate", "deep", "icon", "recolor"
+SEAT, CANDIDATE, DEEP, ICON, RECOLOR, LINK = (
+    "seat",
+    "candidate",
+    "deep",
+    "icon",
+    "recolor",
+    "link",
+)
+
+#: The kinds whose rows a maker writes as it lands a figure, keyed `<figure id>#<panel>`.
+DRAWN = (DEEP, LINK)
 
 #: What a candidate row writes where a seat row writes its stamp. The same word
 #: `picks.CANDIDATE_STAMP` spells, and spelled out rather than left empty so a provenance
@@ -135,7 +155,7 @@ def load_all(path: Path | None = None) -> dict[str, Held]:
     held: dict[str, Held] = {}
     for row in records.read(path):
         kind = row.kind
-        if kind not in (SEAT, CANDIDATE, DEEP, ICON, RECOLOR):
+        if kind not in (SEAT, CANDIDATE, DEEP, ICON, RECOLOR, LINK):
             raise RecipeError(f"{row.where}: {kind!r} is not a kind this store carries")
         recipe = row.optional_mapping("recipe")
         if recipe is None:
@@ -193,8 +213,9 @@ def cited(registry: dict | None = None) -> list[str]:
     wanted: list[str] = []
     for figure in registry.values():
         for panel in figure.panels:
-            if panel.deep and panel.deep not in wanted:
-                wanted.append(panel.deep)
+            for drawn in (panel.deep, panel.link):
+                if drawn and drawn not in wanted:
+                    wanted.append(drawn)
         for source in figure.sources:
             for key in source.keys:
                 if source.kind == figures.GALLERY_SEAT:
@@ -220,11 +241,11 @@ def fill() -> list[str]:
 
     held = load_all()
     wanted = cited()
-    # A deep panel's row is its maker's to write; nothing next door can answer for one.
+    # A deep or link panel's row is its maker's to write; nothing next door can answer for one.
     missing = [
         identifier
         for identifier in wanted
-        if identifier not in held and not identifier.startswith(f"{DEEP}{SEPARATOR}")
+        if identifier not in held and identifier.partition(SEPARATOR)[0] not in DRAWN
     ]
     lines = [f"{RECIPES.name}: {len(held)} rows held, {len(wanted)} cited, {len(missing)} missing"]
     if not missing:
@@ -281,6 +302,8 @@ def problems() -> list[str]:
         + (
             "`python -m builder deep <figure> --replace`"
             if identifier.startswith(f"{DEEP}{SEPARATOR}")
+            else "`python -m builder start <figure> --replace`"
+            if identifier.startswith(f"{LINK}{SEPARATOR}")
             else "`python -m builder recipes --fill`"
         )
         for identifier in cited()
@@ -295,13 +318,14 @@ def summary() -> list[str]:
     deep = sum(1 for one in held.values() if one.kind == DEEP)
     icons = sum(1 for one in held.values() if one.kind == ICON)
     recolored = sum(1 for one in held.values() if one.kind == RECOLOR)
+    linked = sum(1 for one in held.values() if one.kind == LINK)
     unseated = sum(1 for one in held.values() if one.kind == SEAT and not one.seat)
     stamps = sorted({one.stamp for one in held.values() if one.kind == SEAT})
-    bare = len(held) - seated - deep - icons - recolored
+    bare = len(held) - seated - deep - icons - recolored - linked
     lines = [
         f"{RECIPES.name}: {len(held)} rows — {seated} seats over {len(stamps)} recorded "
         f"galleries, {bare} bare candidates, {deep} deep panels, {recolored} recolored "
-        f"panels, {icons} icon",
+        f"panels, {linked} link panels, {icons} icon",
     ]
     if unseated:
         lines.append(f"  {unseated} carry a recipe and no seat row: the record was never tracked")
@@ -312,28 +336,32 @@ def summary() -> list[str]:
 
 
 def keep_deep(rows: dict[str, dict]) -> None:
-    """Land or rewrite the deep rows one figure's panels stand on, keyed as the panels are.
+    """Land or rewrite the deep rows one figure's panels stand on, keyed as the panels are."""
+    keep_drawn(DEEP, rows, "drawn here by builder.deep_figures: the link is the whole recipe")
 
-    Every other row keeps its place; a figure's deep rows are replaced whole, so a redraw
-    with fewer panels leaves none behind.
+
+def keep_drawn(kind: str, rows: dict[str, dict], read: str, figure: str | None = None) -> None:
+    """Land or rewrite one kind of maker-written row for a figure, keyed as its panels are.
+
+    Every other row keeps its place; a figure's rows of this kind are replaced whole, so a
+    redraw with fewer of them leaves none behind. `figure` names the figure outright for a
+    redraw that now has none of this kind to name it by.
     """
     held = load_all()
     figures_touched = {key.partition(SEPARATOR)[2].partition("#")[0] for key in rows}
+    if figure is not None:
+        figures_touched.add(figure)
     kept = {
         identifier: one
         for identifier, one in held.items()
-        if not (one.kind == DEEP and one.key.partition("#")[0] in figures_touched)
+        if not (one.kind == kind and one.key.partition("#")[0] in figures_touched)
     }
     for identifier, recipe in rows.items():
         stamp, _, key = identifier.partition(SEPARATOR)
+        if stamp != kind:
+            raise RecipeError(f"{identifier}: a {kind} row is stamped {kind}")
         kept[identifier] = Held(
-            stamp=stamp,
-            key=key,
-            kind=DEEP,
-            recipe=recipe,
-            source={},
-            seat={},
-            read="drawn here by builder.deep_figures: the link is the whole recipe",
+            stamp=stamp, key=key, kind=kind, recipe=recipe, source={}, seat={}, read=read
         )
     write_all(kept)
 

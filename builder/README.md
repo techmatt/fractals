@@ -315,9 +315,18 @@ page's lead links to it too.
 
 Its figures are `builder/start.py`, `python -m builder start`. **Every picture on it is new
 to the site**: the seats, candidates and walk nodes behind them were drawn from places
-`builder.frames` says no figure already stands on. `start-families`, `start-gallery` and
-`start-pink-gallery` are seats named in `picks` on their rows, a seeded draw over the
-`final139_*` general, magenta and rose collections; `start-modes` is two locations of the
+`builder.frames` says no figure already stands on. `start-families` and `start-gallery`
+are seats named in `picks` on their rows, a seeded draw over the `final139_*` general
+collection. `start-pink-gallery` is a list instead *(start_pink_gallery_ckpt155)*:
+`article/pink-gallery.jsonl` holds the picks Matt's daughter made, as explorer links, and
+then placeholder seats of the magenta collection that `start --placeholders` drew once,
+seeded. The figure takes every pick in order and fills its other cells from the
+placeholders, so **a new pick is one row appended to the list** followed by
+`python -m builder start start-pink-gallery --replace`, and it takes the first remaining
+placeholder's cell. A pick is drawn from its link alone: a shallow link by
+`fractal-engine render-link`, kept in `figure-recipes.jsonl` as a `link` row, and a
+Deep-tab link by `deep_figures.draw_link`, kept as a `deep` row; the panel names that row
+and its link is read off it, never derived. `start-modes` is two locations of the
 candidate ledger, each as the neutral frame and then four real candidates there in smooth,
 tia, threads and stripe, named as candidate keys in `rows`; `start-walk` is one descent of
 `overnight_harvest_ckpt123` frozen in the module, a plane walk to a minibrot and then the

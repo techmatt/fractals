@@ -346,8 +346,24 @@ def _panel_links(
         ]
 
     found = []
-    held = _deep_recipes() if any(panel.deep for panel in figure.panels) else {}
+    held = _deep_recipes() if any(panel.deep or panel.link for panel in figure.panels) else {}
     for identifier, panel in pictured:
+        if panel.link:
+            # **A link panel's link is its recipe too** (start_pink_gallery_ckpt155): a
+            # shallow link somebody chose, stored canonical and drawn by `render-link` from
+            # exactly that string, so it is read here for the deep panel's reason.
+            recipe = held.get(panel.link)
+            if recipe is None:
+                found.append(
+                    _refused(
+                        identifier,
+                        "incomplete_provenance",
+                        f"figure-recipes.jsonl holds no {panel.link}",
+                    )
+                )
+                continue
+            found.append(Link(identifier, recipe["link"], None, None, f"link {panel.link}"))
+            continue
         if panel.deep:
             # **A deep panel's link is its recipe, and is read rather than derived**
             # (deep_figures_ckpt145). The maker drew the picture from exactly this string,
@@ -408,13 +424,13 @@ def _panel_links(
 
 
 def _deep_recipes() -> dict[str, dict]:
-    """Every deep panel's recipe in the site's store, by the key a panel names it with."""
+    """Every deep or link panel's recipe in the site's store, by the key a panel names it with."""
     from . import recipes
 
     return {
         identifier: one.recipe
         for identifier, one in recipes.load_all().items()
-        if one.kind == recipes.DEEP
+        if one.kind in recipes.DRAWN
     }
 
 

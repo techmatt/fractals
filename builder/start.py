@@ -20,20 +20,31 @@ is drawn here is the pair of linked pictures under it, each the explorer's arriv
 of the video's short links (`video_links`).
 
 These are placeholders Matt adjusts. The seats were drawn by a seeded shuffle, not chosen
-for how they look, and each row's provenance says so; `start-pink-gallery` in particular
-stands in for his daughter's own picks.
+for how they look, and each row's provenance says so.
+
+`start-pink-gallery` is the exception, and it is a list rather than a draw
+*(start_pink_gallery_ckpt155)*: `article/pink-gallery.jsonl` holds the picks Matt's
+daughter made, as the explorer links she chose them at, and then placeholder seats of the
+magenta collection. The figure takes every pick in order and fills the rest of its twelve
+cells from the placeholders, so a pick appended to the list takes the first remaining
+placeholder's cell and nothing else moves. A pick is drawn from its link and nothing else;
+the link lands in `article/figure-recipes.jsonl` beside the seats (`link` for a shallow
+one, `deep` for a Deep-tab one), which is what the panel's own link is read from.
 """
 
 from __future__ import annotations
 
 import json
+import random
+from collections import Counter
 from urllib.parse import parse_qs
 
-from . import deep_figures, go, links, records, renders, sheets
+from . import deep_figures, frames, go, links, recipes, records, renders, sheets
 from . import families as families_module
 from . import figures as figures_module
 from . import picks as picks_module
 from .locations import Made, Split, neutral_spec, panel_path, panels
+from .paths import ARTICLE_DIR
 
 #: Which figure is drawn by what, in page order.
 FAMILIES, WALK, MODES, GALLERY, PINK, VIDEO = (
@@ -66,10 +77,9 @@ GRID_COLUMNS = 4
 GRID_SEATS = 12
 
 #: The recorded galleries these were drawn from: the `final139_*` solves `builder/seats.py`
-#: names for the general, magenta and rose collections.
+#: names for the general and magenta collections.
 GENERAL_STAMP = "20260922T012627Z"
 MAGENTA_STAMP = "20260922T014213Z"
-ROSE_STAMP = "20260922T012745Z"
 
 #: The four renderings a location is shown in, in the page's own words' order.
 MODE_ROW = ("smooth", "tia", "threads", "stripe")
@@ -90,12 +100,29 @@ GALLERY_DRAW = (
     "start-gallery takes twelve seats of the general collection, at most two of any one "
     "rendering mode, hue family or partition.",
 )
+#: The pink gallery's list: the picks, then the placeholders that fill what they leave.
+PINK_LIST = ARTICLE_DIR / "pink-gallery.jsonl"
+PICK, PLACEHOLDER = "pick", "placeholder"
+
+#: How the placeholders were drawn, once, by `draw_placeholders`: this many seats of the
+#: magenta collection, in this seed's shuffle. More than the list needed on the day, so
+#: that a pick appended later has a placeholder to take the cell of.
+PLACEHOLDER_SEED = 20260928
+PLACEHOLDERS = 7
+PLACEHOLDER_CAPS = {"mode": 2, "partition": 2}
 PINK_DRAW = (
-    *DRAW,
-    "start-pink-gallery takes six seats of the magenta collection and then six of the rose "
-    "collection, at most two of any one rendering mode or partition in each. It is a "
-    "placeholder for the gallery Matt's daughter chose.",
+    f"Which placeholders: a seeded shuffle (seed {PLACEHOLDER_SEED}) of the magenta "
+    f"collection's seats ({MAGENTA_STAMP}), by builder.start.draw_placeholders, taking the "
+    f"first {PLACEHOLDERS} that clear the rejections, at most two of any one rendering mode "
+    "or partition: a seat whose place (centre and width, as builder.frames reduces it) any "
+    "other figure on the site stands on, or whose key another figure cites; a seat whose "
+    "run recorded that the autolevel operator acted without recording the curve; a place a "
+    "pick or an earlier placeholder already took. Nothing here was chosen for how it looks, "
+    "and the list holds more of them than the figure draws.",
 )
+
+#: A deep pick is drawn at the Deep figures' supersample, and a shallow one at a seat's.
+PINK_RENDER = picks_module.PANEL_RENDER
 
 
 class StartError(RuntimeError):
@@ -188,13 +215,260 @@ def gallery() -> Split:
     return _grid(GALLERY, GALLERY_DRAW, (GENERAL_STAMP,))
 
 
+def pink_list() -> list[dict]:
+    """The pink gallery's list as it stands: picks and placeholders, in the list's order."""
+    found = []
+    for row in records.read(PINK_LIST):
+        if row.kind == PICK:
+            found.append({"kind": PICK, "link": row.text("link"), "from": row.text("from")})
+        elif row.kind == PLACEHOLDER:
+            seat = row.text("seat")
+            if picks_module.split(seat)[0] != MAGENTA_STAMP:
+                raise StartError(f"{row.where}: a placeholder is a magenta seat, not {seat}")
+            found.append({"kind": PLACEHOLDER, "seat": seat})
+        else:
+            raise StartError(f"{row.where}: {row.kind!r} is neither {PICK} nor {PLACEHOLDER}")
+    return found
+
+
+def pink_tiles() -> list[dict]:
+    """The twelve cells: every pick in order, then as many placeholders as are left."""
+    listed = pink_list()
+    chosen = [one for one in listed if one["kind"] == PICK]
+    spare = [one for one in listed if one["kind"] == PLACEHOLDER]
+    if len(chosen) > GRID_SEATS:
+        raise StartError(f"{PINK_LIST.name} holds {len(chosen)} picks for {GRID_SEATS} cells")
+    tiles = chosen + spare[: GRID_SEATS - len(chosen)]
+    if len(tiles) < GRID_SEATS:
+        raise StartError(
+            f"{PINK_LIST.name}: {len(chosen)} picks and {len(spare)} placeholders do not fill "
+            f"{GRID_SEATS} cells — `python -m builder start --placeholders` draws more"
+        )
+    return tiles
+
+
+def _read_links(queries: list[str]) -> list[dict]:
+    """Each pick as the explorer's own reader answers it, refused unless canonical."""
+    answers = go.read({str(index): query for index, query in enumerate(queries)})
+    found = []
+    for index, query in enumerate(queries):
+        answer = answers[str(index)]
+        if not answer.get("ok"):
+            raise StartError(f"the explorer refuses {query}: {answer.get('error')}")
+        if answer.get("canonical") != query:
+            raise StartError(
+                f"{PINK_LIST.name} holds a link the explorer spells otherwise; write "
+                f"{answer.get('canonical')} for {query}"
+            )
+        found.append(answer)
+    return found
+
+
+def _link_fields(query: str) -> dict[str, str]:
+    return {key: values[0] for key, values in parse_qs(query).items()}
+
+
+def _link_family(fields: dict[str, str]) -> dict:
+    """The family a link names, in the engine's own shape: no `f` is the Mandelbrot set."""
+    name = fields.get("f", "mandelbrot")
+    if name == "mandelbrot":
+        return {"kind": "mandelbrot"}
+    for kind in ("julia", "multibrot"):
+        if name.startswith(kind):
+            family = {"kind": kind, "degree": int(name.removeprefix(kind) or 2)}
+            if kind == "julia":
+                family["c"] = [fields["cx"], fields["cy"]]
+            return family
+    raise StartError(f"a pick in family {name!r}, which this figure has no words for")
+
+
+def _pick_line(index: int, pick: dict, how: str) -> str:
+    """One pick as a provenance line: its place in the words `frames` reads, then the link."""
+    fields = _link_fields(pick["link"])
+    family = _link_family(fields)
+    words = family["kind"]
+    if "degree" in family:
+        words += f" degree {family['degree']}"
+    if "c" in family:
+        words += f", c = {family['c'][0]} + {family['c'][1]}i"
+    shade = "".join(f", {key} {fields[key]}" for key in LINK_SHADE_KEYS if key in fields)
+    return (
+        f"panel {index}, a pick ({pick['from']}): {words}, centre {fields['x']} + "
+        f"{fields['y']}i, width {fields['w']}, mode {fields.get('m', 'smooth')}, "
+        + ("colormap" if index == 1 else "palette")
+        + f" {fields['p']}{shade}; the link, whole: {pick['link']}; {how}."
+    )
+
+
+#: What a landing writes into `article/figure-recipes.jsonl`: each pick's recipe row, by the
+#: kind of row it is, as the last draw left them.
+_KEPT: dict[str, dict[str, dict]] = {}
+
+
 def pink_gallery() -> Split:
-    """Six seats of the magenta collection and six of the rose, unlabelled."""
-    wanted = picks_module.picks_of(PINK)
-    stamps = [picks_module.split(one)[0] for one in wanted]
-    if stamps != [MAGENTA_STAMP] * 6 + [ROSE_STAMP] * 6:
-        raise StartError(f"{PINK} is six magenta seats and then six rose seats")
-    return _grid(PINK, PINK_DRAW, (MAGENTA_STAMP, ROSE_STAMP))
+    """Twelve cells off `article/pink-gallery.jsonl`: the picks, then placeholder seats."""
+    tiles = pink_tiles()
+    chosen = [tile for tile in tiles if tile["kind"] == PICK]
+    queries = [tile["link"] for tile in chosen]
+    answers = dict(zip(queries, _read_links(queries), strict=True))
+    seats = [tile["seat"] for tile in tiles if tile["kind"] == PLACEHOLDER]
+    resolved = dict(zip(seats, picks_module.resolve(seats), strict=True)) if seats else {}
+    size = panels(GRID_COLUMNS)
+    catalog = renders.mode_catalog()
+    made: list[Made] = []
+    lines: list[str] = []
+    kept: dict[str, dict[str, dict]] = {recipes.LINK: {}, recipes.DEEP: {}}
+    for index, tile in enumerate(tiles, start=1):
+        key = f"{PINK}#{index}"
+        if tile["kind"] == PLACEHOLDER:
+            pick = resolved[tile["seat"]]
+            picture = picks_module.panel(pick, f"{PINK}-{index}-{pick.alias}", catalog)
+            made.append(
+                Made(
+                    sheets.save(sheets.fitted(picture, size), panel_path(PINK, index), quiet=True),
+                    alt=picks_module.panel_alt(pick),
+                    seat=pick.identifier,
+                )
+            )
+            lines.append(
+                f"panel {index}, a placeholder: "
+                + picks_module.frame_line(pick, representative=index == 1)
+            )
+            continue
+        query = tile["link"]
+        if answers[query].get("deep"):
+            drawn = deep_figures.draw_link(query, *PINK_RENDER, DEEP_SUPERSAMPLE, f"{PINK}-{index}")
+            picture, kind, supersample = drawn.path, recipes.DEEP, DEEP_SUPERSAMPLE
+            how = (
+                f"cap {drawn.maxiter}; drawn by builder.deep_figures.draw_link, the Deep tab's "
+                f"own renderer and shader, at {PINK_RENDER[0]}x{PINK_RENDER[1]} supersample "
+                f"{DEEP_SUPERSAMPLE}, {drawn.seconds:.0f} s, and fitted"
+            )
+        else:
+            picture = panel_path(PINK, index).with_name(f"{PINK}-{index}-link.png")
+            report = renders.render_link(query, picture, PINK_RENDER, SHALLOW_SUPERSAMPLE)
+            kind, supersample = recipes.LINK, SHALLOW_SUPERSAMPLE
+            how = (
+                f"cap {report['maxiter']} (the depth policy); drawn by `fractal-engine "
+                f"render-link` at {PINK_RENDER[0]}x{PINK_RENDER[1]} supersample "
+                f"{SHALLOW_SUPERSAMPLE}, and fitted"
+            )
+        kept[kind][f"{kind}{recipes.SEPARATOR}{key}"] = {
+            "link": query,
+            "resolution": list(PINK_RENDER),
+            "supersample": supersample,
+            "maker": f"{__name__}:pink_gallery",
+        }
+        fields = _link_fields(query)
+        family = picks_module.family_name(_link_family(fields))
+        mode = picks_module.mode_words(fields.get("m", "smooth"))
+        made.append(
+            Made(
+                sheets.save(sheets.fitted(picture, size), panel_path(PINK, index), quiet=True),
+                alt=f"A wallpaper drawn in {mode}, in the {family} family.",
+                **{kind: f"{kind}{recipes.SEPARATOR}{key}"},
+            )
+        )
+        lines.append(_pick_line(index, tile, how))
+    _KEPT[PINK] = kept
+    head = [
+        f"builder.start:pink_gallery — {GRID_SEATS} panels at {size[0]}x{size[1]}, "
+        f"{GRID_COLUMNS} across, landed one file a panel, filled in order from "
+        f"article/{PINK_LIST.name}: every pick the list holds, in its order, then the first "
+        "placeholders the cells still need. A pick is an explorer link somebody chose and is "
+        "drawn from that link and nothing else, and the link is kept in "
+        "article/figure-recipes.jsonl under link|<figure>#<panel> for a shallow one and "
+        "deep|<figure>#<panel> for a Deep-tab one. A placeholder is a seat of the magenta "
+        "collection drawn from its ledger recipe exactly as builder.picks draws one.",
+    ]
+    if seats:
+        head += [picks_module.autolevel_line(list(resolved.values())), *PINK_DRAW]
+    return Split(made, head + lines, GRID_COLUMNS)
+
+
+def keep(identifier: str) -> None:
+    """Write the pink gallery's pick rows into `article/figure-recipes.jsonl`, as it lands."""
+    if identifier != PINK:
+        return
+    kept = _KEPT[PINK]
+    recipes.keep_drawn(
+        recipes.LINK,
+        kept[recipes.LINK],
+        "chosen by a person as an explorer link, drawn here by builder.start with "
+        "`fractal-engine render-link`: the link is the whole recipe",
+        figure=PINK,
+    )
+    recipes.keep_drawn(
+        recipes.DEEP,
+        kept[recipes.DEEP],
+        "chosen by a person as a Deep-tab link, drawn here by builder.deep_figures: the link "
+        "is the whole recipe",
+        figure=PINK,
+    )
+
+
+def draw_placeholders() -> list[str]:
+    """Draw the placeholder seats once and append them to the list; see `PINK_DRAW`.
+
+    Refuses a list that already holds placeholders, because a second draw would be a
+    second answer to a question the list has already recorded.
+    """
+    listed = pink_list() if PINK_LIST.is_file() else []
+    if any(one["kind"] == PLACEHOLDER for one in listed):
+        raise StartError(f"{PINK_LIST.name} already holds its placeholders")
+    registry = figures_module.load_all()
+    others = {key: figure for key, figure in registry.items() if key != PINK}
+    taken = set(frames.resolve(others)["places"])
+    cited = {
+        key
+        for figure in others.values()
+        for source in figure.sources
+        if source.kind == figures_module.GALLERY_SEAT
+        for key in source.keys
+    }
+    for one in listed:
+        fields = _link_fields(one["link"])
+        taken.add(frames.place(fields["x"], fields["y"], fields["w"]))
+    rows = picks_module.seats(MAGENTA_STAMP)
+    pool = [
+        row
+        for key, row in sorted(rows.items())
+        if f"{MAGENTA_STAMP}{picks_module.PICK_SEPARATOR}{key}" not in cited
+    ]
+    random.Random(PLACEHOLDER_SEED).shuffle(pool)
+    counts = {name: Counter() for name in PLACEHOLDER_CAPS}
+    drawn: list[str] = []
+    lines = [f"{len(pool)} magenta seats no other figure cites, shuffled by {PLACEHOLDER_SEED}"]
+    for row in pool:
+        if len(drawn) == PLACEHOLDERS:
+            break
+        spot = frames.place_of_location_key(row["location"])
+        identifier = f"{MAGENTA_STAMP}{picks_module.PICK_SEPARATOR}{row['key']}"
+        if spot in taken:
+            lines.append(f"  refused {identifier}: its place is taken")
+            continue
+        (pick,) = picks_module.resolve([identifier])
+        if picks_module.run_stamp(pick).way == picks_module.UNRECOVERABLE:
+            lines.append(f"  refused {identifier}: its autolevel curve is not on record")
+            continue
+        seen = {"mode": pick.mode, "partition": row["partition"]}
+        if any(counts[name][seen[name]] >= cap for name, cap in PLACEHOLDER_CAPS.items()):
+            lines.append(f"  passed over {identifier}: {seen} is at its cap")
+            continue
+        for name in PLACEHOLDER_CAPS:
+            counts[name][seen[name]] += 1
+        taken.add(spot)
+        drawn.append(identifier)
+        lines.append(f"  took {identifier} ({pick.mode}, {row['partition']})")
+    if len(drawn) < PLACEHOLDERS:
+        raise StartError(f"only {len(drawn)} magenta seats clear the rejections")
+    body = "".join(
+        json.dumps({"schema": records.SCHEMA, "kind": PLACEHOLDER, "seat": one}) + "\n"
+        for one in drawn
+    )
+    with PINK_LIST.open("a", encoding="utf-8", newline="\n") as handle:
+        handle.write(body)
+    return lines
 
 
 # ----------------------------------------------------------------------- the walk figure
@@ -557,12 +831,20 @@ MAKERS = {
 }
 
 #: The figures whose panels are gallery seats named in `picks`.
-SEATED = (GALLERY, PINK)
+SEATED = (GALLERY,)
 
 
 def sources(identifier: str) -> list[dict]:
     if identifier in (FAMILIES, VIDEO):
         return [{"kind": figures_module.SYNTHETIC, "keys": []}]
+    if identifier == PINK:
+        # The placeholders the cells draw are seats; a pick has nothing next door behind it.
+        tiles = pink_tiles()
+        seats = [tile["seat"] for tile in tiles if tile["kind"] == PLACEHOLDER]
+        found = [{"kind": figures_module.GALLERY_SEAT, "keys": seats}] if seats else []
+        if len(seats) < len(tiles):
+            found.append({"kind": figures_module.SYNTHETIC, "keys": []})
+        return found
     if identifier in SEATED:
         return [{"kind": figures_module.GALLERY_SEAT, "keys": picks_module.picks_of(identifier)}]
     if identifier == MODES:
@@ -580,6 +862,9 @@ def recipe(identifier: str) -> dict:
     if identifier == VIDEO:
         # The targets the pictures were drawn at, which the register may later move.
         args = {"links": _targets()}
+    elif identifier == PINK:
+        # The list is the one place the picks live; the row names it rather than copying it.
+        args = {"list": f"article/{PINK_LIST.name}"}
     else:
         args = {} if identifier in (WALK, FAMILIES) else _args(identifier)
     return {"maker": f"{__name__}:{MAKERS[identifier].__name__}", "args": args}

@@ -349,6 +349,10 @@ class Panel:
     #: Deep-tab link it was drawn from and the grid, which is all a deep panel is. See
     #: `builder/deep_figures.py`.
     deep: str | None = None
+    #: A shallow-link panel's key in `article/figure-recipes.jsonl`, `link|<figure id>#<panel>`:
+    #: the explorer link it was drawn from by `fractal-engine render-link`, read rather than
+    #: derived, the way a deep panel's is (start_pink_gallery_ckpt155).
+    link: str | None = None
     #: The short link a picture under a video's player opens, by its name in
     #: `go/redirects.jsonl`. See the module docstring.
     go: str | None = None
@@ -1020,6 +1024,7 @@ PANEL_FIELDS = (
     "ink",
     "band",
     "deep",
+    "link",
     "go",
     "blank",
 )
@@ -1075,7 +1080,7 @@ def _panel_rows(row: records.Record) -> tuple[Panel, ...]:
                 f"{row.where}: a panel names {', '.join(PANEL_REQUIRED)} — "
                 f"this one is missing {', '.join(missing)}"
             )
-        for name in ("file", "alt", "label", "seat", "deep", "go"):
+        for name in ("file", "alt", "label", "seat", "deep", "link", "go"):
             value = entry.get(name)
             if value is not None and (not isinstance(value, str) or not value.strip()):
                 raise records.RecordError(f"{row.where}: a panel's {name} is a non-empty string")
@@ -1112,10 +1117,10 @@ def _panel_rows(row: records.Record) -> tuple[Panel, ...]:
                 f"{row.where}: a panel's spec is the engine render spec its picture came "
                 "out of, and an engine render spec names a viewport"
             )
-        if sum(entry.get(name) is not None for name in ("spec", "seat", "deep", "go")) > 1:
+        if sum(entry.get(name) is not None for name in ("spec", "seat", "deep", "link", "go")) > 1:
             raise records.RecordError(
-                f"{row.where}: a panel is one record — a spec, a seat, a deep recipe or a "
-                "short link"
+                f"{row.where}: a panel is one record — a spec, a seat, a deep recipe, a "
+                "link recipe, or a short link"
             )
         if entry.get("go") is not None and not go.NAME.fullmatch(entry["go"]):
             raise records.RecordError(

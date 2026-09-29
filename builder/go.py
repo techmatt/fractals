@@ -138,9 +138,14 @@ def pages() -> dict[Path, str]:
 
 def parsed(redirects: list[Redirect]) -> dict[str, dict]:
     """Each target as the explorer's own reader answers it, by name."""
+    return read({redirect.name: redirect.query for redirect in redirects})
+
+
+def read(queries: dict[str, str]) -> dict[str, dict]:
+    """Any explorer queries as the explorer's own reader answers them, by the names given."""
     completed = subprocess.run(
         ["node", str(PARSER)],
-        input=json.dumps({redirect.name: redirect.query for redirect in redirects}),
+        input=json.dumps(queries),
         capture_output=True,
         text=True,
         encoding="utf-8",
