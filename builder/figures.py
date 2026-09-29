@@ -389,7 +389,9 @@ class Figure:
     stale_when: str | None
     reuse_reason: str | None
     note: str | None
-    caption_link: tuple[str, str] | None
+    #: `(href, words, inline)`: a sentence the caption ends with, or, where `inline`, words
+    #: of the caption itself linked where they stand.
+    caption_link: tuple[str, str, bool] | None
     panels: tuple[Panel, ...] = ()
     columns: int | None = None
     #: The piece a live figure mounts, by its name in `LIVE`; `None` for a picture.
@@ -584,7 +586,7 @@ def markup(figure: Figure, opened: dict[str, str] | None = None) -> str:
     ]
     if figure.caption or figure.caption_link is not None:
         lines.append(
-            f"{INDENT}  <figcaption>{_mark(figure)}{text(figure.caption)}"
+            f"{INDENT}  <figcaption>{_mark(figure)}{_caption_words(figure)}"
             f"{_caption_anchor(figure)}</figcaption>"
         )
     lines.append(f"{INDENT}</figure>")
@@ -596,11 +598,20 @@ def panel_id(identifier: str, index: int) -> str:
     return f"figure:{identifier}{PANEL_SEPARATOR}{index}"
 
 
+def _caption_words(figure: Figure) -> str:
+    """The caption as markup: its words, with an inline `caption_link` linked in place."""
+    if figure.caption_link is None or not figure.caption_link[2]:
+        return text(figure.caption)
+    href, words, _ = figure.caption_link
+    before, after = figure.caption.split(words, 1)
+    return f'{text(before)}<a href="{attribute(href)}">{text(words)}</a>{text(after)}'
+
+
 def _caption_anchor(figure: Figure) -> str:
     """The sentence a caption ends with where its row carries one, and nothing otherwise."""
-    if figure.caption_link is None:
+    if figure.caption_link is None or figure.caption_link[2]:
         return ""
-    href, words = figure.caption_link
+    href, words, _ = figure.caption_link
     return f' <a href="{attribute(href)}">{text(words)}</a>.'
 
 
@@ -1168,7 +1179,7 @@ def _band_fields(row: records.Record, band) -> None:
         )
 
 
-def _caption_link(row: records.Record) -> tuple[str, str] | None:
+def _caption_link(row: records.Record) -> tuple[str, str, bool] | None:
     """The one link a caption may end with, where the figure stands in for a page.
 
     **A caption is the caption and nothing else**, and that rule is not loosened here:
@@ -1178,15 +1189,22 @@ def _caption_link(row: records.Record) -> tuple[str, str] | None:
     are pictures and links on the tool page and nothing but marks here. The words are a
     sentence of their own and the block supplies the full stop, so there is one place the
     caption lives and the link is part of it.
+
+    **Or words of the caption itself**, with `"inline": true` *(deep_picks_prose_ckpt156)*:
+    a caption that refers to another part of the site, the Misiurewicz points under
+    `deep-multibrots`, links the words that name it where they first occur in it.
     """
     held = row.optional_mapping("caption_link")
     if held is None:
         return None
-    unknown = set(held) - {"href", "words"}
+    unknown = set(held) - {"href", "words", "inline"}
     if unknown:
         raise records.RecordError(
-            f"{row.where}: caption_link is href and words, not {', '.join(sorted(unknown))}"
+            f"{row.where}: caption_link is href, words and inline, not {', '.join(sorted(unknown))}"
         )
+    inline = held.get("inline", False)
+    if not isinstance(inline, bool):
+        raise records.RecordError(f"{row.where}: caption_link.inline is true or false")
     for key in ("href", "words"):
         if not isinstance(held.get(key), str) or not held[key]:
             raise records.RecordError(f"{row.where}: caption_link.{key} must be a non-empty string")
@@ -1194,7 +1212,11 @@ def _caption_link(row: records.Record) -> tuple[str, str] | None:
         raise records.RecordError(
             f"{row.where}: caption_link.href is relative and names a file — {held['href']!r}"
         )
-    return (held["href"], held["words"])
+    if inline and held["words"] not in (row.optional_text("caption") or ""):
+        raise records.RecordError(
+            f"{row.where}: an inline caption_link's words are words of the caption"
+        )
+    return (held["href"], held["words"], inline)
 
 
 def _sources(row: records.Record) -> tuple[Source, ...]:

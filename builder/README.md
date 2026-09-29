@@ -243,7 +243,7 @@ it in place, and what it writes is committed like any other change, under the 20
 | `assets/images/galleries/seated-candidates/*.webp`, one tile a seat | 6,299 files, 62.85 MB | `python -m builder seats` |
 | `explorer/palettes.bin`, every map's control points | 1.04 MB | `python -m builder explorer --palettes-only` |
 | every plane's atlas slot pictures, `assets/images/atlas/<plane>-*.webp` | 1,464 files, 27.47 MB | `python -m builder atlas --ingest` |
-| `explorer/deep-gallery/*.webp`, the Deep tab's gallery tiles, one a register row | 48 files, 0.62 MB (2026-09-27) | `python -m builder deep-gallery thumbs` |
+| `explorer/deep-gallery/*.webp`, the Deep tab's gallery tiles, one a register row | 105 files, 1.49 MB (2026-09-28) | `python -m builder deep-gallery thumbs` |
 | `explorer/judges/`, the ORT runtime and the render judge (the fine head is no longer placed, pre_closeout_website_ckpt140) | 4 files, 33.83 MB | `python -m builder walk` |
 
 **`palettes.bin` is not optional.** Served without the blob, the explorer's first fetch is a
@@ -1295,7 +1295,7 @@ whose counts run to tens rather than thousands use `period=0.5`, which bands les
 so a figure in another map writes that map's name after `colormap`. One figure uses one
 colouring, so a colour is one escape count across a strip, **with four exceptions**.
 `deep-final-colorings` is four colourings of one field, which is its point, the last in a
-map of its own. `deep-misiurewicz-pairs` uses one map to a row (below), and both of
+map of its own. `math-misiurewicz-pairs` uses one map to a row (below), and both of
 `deep-shallow-and-deep`'s links are Matt's as he gave them, and its shallow half carries a
 colouring of its own on the leveled scale *(PLACE_deep_zoom_v3_ckpt145)*, so across that
 pair a colour is not one escape count. And `deep-multibrots` is Matt's links, each also a Deep-gallery
@@ -1307,19 +1307,23 @@ the perturbation field agree pixel for pixel by eye, so the pair is a fair compa
 
 Landing is the standard split landing plus one step. A new figure needs a `pending` row
 whose block is on the page, then `deep <id> --place`, which writes the links before it
-heals the page. Seven figures and 39 drawn panels,
+heals the page. Eight figures and 61 drawn panels since `deep-random-dives`
+*(deep_picks_prose_ckpt156)*, whose 22 took about 18 minutes, the first third of it beside a
+gallery tile bake; before it, seven and 39,
 none blank, since `deep-multibrots` took its last frames *(deep_multibrots_final_rows_ckpt154)*:
 all ten took 3 min 13 s at below-normal priority, and only degree 5's Julia cell and degree
 6's pair changed. As pairs *(deep_multibrots_pairs_ckpt154)* its nine took 1 min 54 s. When it landed *(deep_multibrots_gallery_ckpt154)*
 with three blank cells, its seven took 8 min 47 s, the caps being 83k to 1.62M. It was six and 29 from
 when `deep-final-colorings` landed four colourings of the video's final frame
 *(deep_opening_palette_ckpt150)*, which took 140 s; the three drawn in deep_zoom_edits_ckpt145 took 177 s together on this
-machine, `deep-descent-pairs`' six took 53 s, and `deep-misiurewicz-pairs`' nine took 23 s.
+machine, `deep-descent-pairs`' six took 53 s, and `math-misiurewicz-pairs`' nine took 23 s.
 A redraw with `--replace` leaves the row's `caption` and `alt` as they were: a new caption
 in `WORDS` goes onto the row by hand, then `figure <id> --heal`.
 
-**`deep-misiurewicz-pairs` is scaled by derivation and its turn is measured**
-*(deep_misiurewicz_ckpt146)*. Three rows, each the whole Julia set at the Julia home, that
+**`math-misiurewicz-pairs` is scaled by derivation and its turn is measured**
+*(deep_misiurewicz_ckpt146)*. It sits on *Fractal math* since deep_picks_prose_ckpt156,
+which gave it that page's `math-` prefix; its tiles moved byte for byte, and `deep` still
+draws it. Three rows, each the whole Julia set at the Julia home, that
 set zoomed in at c, and the parameter plane zoomed in at c. At a Misiurewicz point the
 parameter plane at c + e looks like J_c at c + λe, λ = lim b_n/a_n, with a_n and b_n the
 orbit's derivatives in z and in c, at every degree. J_c is also self-similar about c by the
@@ -1365,7 +1369,8 @@ pixel at the link's own cap, and saved as WebP at `TILE_WEBP_QUALITY`. It lands 
 `explorer/deep-gallery/`, named by the 64-bit FNV-1a hash of the row's link, which
 `deep-gallery.js` computes the same way. The tiles are tracked, like every gallery asset since
 deploy_staged_assets_ckpt152 (see *What was staged, and is tracked since the deploy*). The
-first 31 took 2 min 54 s and total 394 KB.
+first 31 took 2 min 54 s and total 394 KB. The 57 added by deep_picks_prose_ckpt156, whose
+caps run to 1.98M, took 6 to 9 s each at the top of that range.
 
 A tile's field comes from `builder/deep-gallery-native/`, a small crate that uses
 `explorer/perturb-wasm` as an rlib, so it runs the arithmetic `perturb.wasm` runs, on every

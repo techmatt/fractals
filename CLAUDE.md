@@ -234,7 +234,7 @@ keeps the mechanics. **Every apply round ends by distilling that round's general
   of its own, needs its own per-panel view before its figure can be split.
 - **A figure's id opens with its page's prefix** — `overview-`, `escape-`, `render-`,
   `modes-`, `locations-`, `judges-`, `palette-`, `wallpapers-`, `gallery-`, `pipeline-`,
-  `atlas-`, `deep-`, `start-`, `packs-` — so a slug says where it
+  `atlas-`, `deep-`, `math-`, `start-`, `packs-` — so a slug says where it
   lives before anything looks it up. One prefix to a page and one page to a prefix, with
   the single carve-out that a page hanging off a section shares that section's prefix:
   `palette-generator-batch` sits on `palettes/make-your-own.html`. The front page's one

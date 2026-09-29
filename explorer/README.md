@@ -2814,6 +2814,9 @@ while the panel is hidden.
   `../explorer/?panel=deep:gallery`. It used to unfold the gallery as well; with nothing to
   unfold it reads like any other panel suffix, and like the atlas's plane it is not written
   back into the address bar. It keeps resolving because a URL is permanent.
+- **`panel=deep:random` opens the tab on Random dives** *(deep_picks_prose_ckpt156)*: the
+  switch pressed to its third list once the tab is mounted, which is what *Deep zoom*'s
+  Random dives section links. Not written back either.
 
 ### Dive results *(dive_slots_ckpt154, 2026-09-28)*
 

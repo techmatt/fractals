@@ -1,5 +1,8 @@
 """The figures of *Deep zoom*: deep frames drawn the way the Deep tab draws them.
 
+One of them, `math-misiurewicz-pairs`, sits on *Fractal math* (deep_picks_prose_ckpt156),
+and is drawn here because it is drawn the same way.
+
     python -m builder deep [ID ...] [--place] [--replace]
 
 ## One renderer, one shader, one link
@@ -46,7 +49,7 @@ the video is about it). The one is the shallow half of `deep-shallow-and-deep`, 
 is Matt's as he gave it, on the leveled scale. `lambda` and `period` are chosen per figure
 and written into the link, which is where the recipe records them. Panels of one strip
 share one colouring, so that one colour means one escape count across the strip, the way
-the video's frames do; that pair is one exception, and `deep-misiurewicz-pairs` the other:
+the video's frames do; that pair is one exception, and `math-misiurewicz-pairs` the other:
 one map to a row, so that its three rows read as three places, and one colouring across
 each row's three panels.
 """
@@ -758,6 +761,176 @@ MULTIBROTS = (
 )
 
 
+#: `deep-random-dives`: frames Matt picked by eye out of the dive candidate sheet,
+#: `artifacts/dive-reference/deep_minibrot_candidates/`, in the order he gave them
+#: (deep_picks_prose_ckpt156), each a link with its alt. Every one is a Deep-gallery row
+#: too. A review layout: he cuts it down to the picks later.
+RANDOM_DIVES = (
+    # 1
+    (
+        "dv=3&x=-1.10685140381517066062&y=0.23106546802664082708&w=6.678403934578866e-8"
+        "&n=34505&p=wallhaven_wallhaven-6d3zz6&phase=0.337&scale=absolute&period=211",
+        "A small black copy of the set in a ring of filigree, among spiral arms in orange, "
+        "cream, and deep purple.",
+    ),
+    # 2
+    (
+        "dv=3&f=multibrot6&x=-0.01348427880794043&y=-0.799535305497367589"
+        "&w=1.5092516670208472e-10&n=1041708&p=Ink%20%26%20Fuchsia%20Flare&phase=0.798"
+        "&scale=absolute&period=968",
+        "One large spiral of pink and violet filigree winding across blue and magenta fields.",
+    ),
+    # 3
+    (
+        "dv=3&x=-0.760865461414619226&y=-0.08340452614615933&w=1.375550829538444e-10"
+        "&n=1105104&p=Sapphire%20Bloom&phase=0.6459&scale=absolute&lambda=0&period=0.2459",
+        "Chains of small spirals in pink and white filigree over rose and dark blue.",
+    ),
+    # 4
+    (
+        "dv=3&x=-0.7607971832062992463&y=-0.083773837378705868&w=1.018576577000238e-11"
+        "&n=1272128&p=Chalcedony&phase=0.0281&scale=absolute&lambda=0&period=0.138",
+        "A single spiral of pale violet filigree coiling into the center over bands of purple "
+        "and white.",
+    ),
+    # 5
+    (
+        "dv=3&x=-0.76078776975524009076&y=-0.08399856407345915502&w=1.645453655102589e-12"
+        "&n=1402770&p=Sapphire%20%26%20Dusk%20Rose&phase=0.9247&scale=absolute&lambda=0"
+        "&period=0.2033",
+        "A lattice of tiny spirals in pink, blue, and plum, circling one center at the upper left.",
+    ),
+    # 6
+    (
+        "dv=3&f=multibrot4&x=0.4463033950079647086497582&y=0.6588029179532988243798215"
+        "&w=5.2944878815622146e-17&n=1984990&p=Three%20Coals&phase=0.363&scale=absolute"
+        "&lambda=0&period=0.314",
+        "A small black copy of the set ringed by petals of white and gray, inside a frame of "
+        "copper spirals on dark blue.",
+    ),
+    # 7
+    (
+        "dv=3&x=-0.7457678733494240262&y=-0.1642103703068078663&w=2.370620930576088e-11"
+        "&n=628120&p=fractal_flowers_abstract_104352_2560x1600&phase=0.7539&scale=absolute"
+        "&lambda=0&period=0.1201",
+        "A wide spiral of teal and gold filigree, its arms made of rows of smaller spirals.",
+    ),
+    # 8
+    (
+        "dv=3&x=-0.0776709452960969018&y=-0.6512996770923109953&w=2.6863422732810836e-11"
+        "&n=1166122&p=wallhaven_wallhaven-ym8rqk&phase=0.5111&scale=absolute&lambda=0.05"
+        "&period=0.4192",
+        "Spirals and seahorse tails of bright cyan filigree over deep blue.",
+    ),
+    # 9
+    (
+        "dv=3&f=multibrot4&x=0.31855587056847385730511&y=0.74958644645260082151206"
+        "&w=5.744783065446181e-15&n=1461060&p=cmr.arctic&phase=0.7235&mirror=1&scale=absolute"
+        "&lambda=0&period=0.2312",
+        "A small black copy of the set among swirls of pale blue and white filigree on dark blue.",
+    ),
+    # 10
+    (
+        "dv=3&f=multibrot3&x=-0.58413281594404725991481&y=0.59245849880966115110917"
+        "&w=4.794971575849025e-15&n=1607102&p=Ink%20%26%20Fuchsia%20Flare&phase=0.091"
+        "&scale=absolute&period=1870",
+        "A winding chain of spirals in pink and pale blue across a near-black ground.",
+    ),
+    # 11
+    (
+        "dv=3&x=-0.7602694194067223&y=-0.0850916213483412&w=1.822738412143914e-8&n=653864"
+        "&p=Deep%20Rose%20Vault&phase=0.0005&scale=absolute&lambda=0.2&period=1.958",
+        "A spiral of pink filigree beside diagonal bands of rose and dark crimson.",
+    ),
+    # 12
+    (
+        "dv=3&x=-0.7614765192305703339&y=-0.084139863749946807&w=1.5030082949263573e-11"
+        "&n=1781514&p=Bone%20and%20Deep%20Green&phase=0.621&scale=absolute&period=2160",
+        "One broad spiral of pale green filigree over mottled green.",
+    ),
+    # 13
+    (
+        "dv=3&f=multibrot4&x=0.3187017332589202844239&y=0.7500232686414711506565"
+        "&w=4.207768214798261e-14&n=1696175&p=fractal_stripes_bends_lines_116839_2560x1600"
+        "&phase=0.552&scale=absolute&lambda=0&period=0.796",
+        "Two spirals of cream filigree linked by chains of bulbs on rust and dark brown.",
+    ),
+    # 14
+    (
+        "dv=3&x=-0.749449505859123081945&y=0.094426240163924656299&w=5.03602929192567e-13"
+        "&n=1877888&p=cet_diverging_bwr_20_95_c54&phase=0.164&mirror=1&scale=absolute"
+        "&lambda=0&period=0.201",
+        "A small black copy of the set at the center of four-fold spiral arms in red, white, and "
+        "periwinkle.",
+    ),
+    # 15
+    (
+        "dv=3&f=multibrot3&x=-0.091789550132415001067&y=0.770122710433646015127"
+        "&w=5.844395282808642e-13&n=1028544&p=Terminal%20Flare&phase=0.681&scale=absolute"
+        "&lambda=0&period=0.41300000000000003",
+        "Clusters of bright green bulbs and small spirals across dark green.",
+    ),
+    # 16
+    (
+        "dv=3&x=-0.75758408380923538857197&y=0.07328134538816527418852"
+        "&w=3.2784160660311513e-15&n=1889893&p=Oranges&phase=0.3311&mirror=1&scale=absolute"
+        "&lambda=0&period=0.1482",
+        "A tiny copy of the set at the center of a star of cream and orange filigree, with "
+        "spirals at the corners.",
+    ),
+    # 17
+    (
+        "dv=3&f=multibrot4&x=0.312138766351392099293&y=0.731056127680956807067"
+        "&w=1.553375634706395e-13&n=849390&p=wallhaven_wallhaven-398e39&phase=0.286"
+        "&scale=absolute&lambda=0&period=0.417",
+        "The edge of a dark blue region lined with seahorse spirals, fading to pale violet on "
+        "the right.",
+    ),
+    # 18
+    (
+        "dv=3&x=-0.760549543071185066087&y=-0.082219706399314474819&w=4.032925369723819e-13"
+        "&n=1524096&p=Porcelain%20Field&phase=0.198&scale=absolute&lambda=0&period=0.362",
+        "Chains of pale blue seahorse spirals winding around dark navy pools on white.",
+    ),
+    # 19
+    (
+        "dv=3&x=-0.77679078923226478435788&y=-0.13725151766927482612954"
+        "&w=1.820858810725757e-15&n=1341018&p=Frost%20Orchid&phase=0.905&scale=absolute"
+        "&lambda=0&period=0.418",
+        "A small copy of the set at the center of six curling arms of violet filigree on purple.",
+    ),
+    # 20
+    (
+        "dv=3&f=multibrot4&x=0.31213976125339744219066241&y=0.73105983646816205201255312"
+        "&w=4.966992073558044e-18&n=1953050&p=commons_Julia_Fractal_rendered_in_Paint.NET"
+        "&phase=0.5585&scale=absolute&lambda=0&period=0.1848",
+        "A tiny copy of the set at the center of four spiral arms of gold filigree on red and "
+        "black.",
+    ),
+    # 21
+    (
+        "dv=3&x=-0.7483036568849465311964&y=0.0946553296363963240504&w=8.432864230490613e-14"
+        "&n=1679564&p=Three%20Coals&phase=0.261&scale=absolute&period=11200",
+        "A small black copy of the set in a cross of gold and copper filigree, with spirals at "
+        "its tips, on deep blue.",
+    ),
+    # 22
+    (
+        "dv=3&f=multibrot4&x=0.319026241595811702271&y=0.749325185668184107409"
+        "&w=1.6910500082259544e-13&n=1368217&p=wallhaven_wallhaven-45pqz1&phase=0.4479"
+        "&scale=absolute&lambda=0&period=0.1998",
+        "A small black copy of the set among spirals of mauve filigree on pale pink.",
+    ),
+)
+
+
+def _dive(link: str, alt: str) -> Frame:
+    """A picked dive, labelled by its plane."""
+    family = dict(part.split("=", 1) for part in link.split("&")).get("f", "")
+    degree = family.removeprefix("multibrot")
+    return _linked(link, f"Degree {degree}" if degree else "Mandelbrot set", alt)
+
+
 FIGURES = {
     "deep-f64-and-perturbation": Figure(
         (
@@ -897,7 +1070,7 @@ FIGURES = {
         "descents python -m builder descent builds from them; the constants are "
         "DESCENT_PLACES' and DESCENT_TWINS'",
     ),
-    "deep-misiurewicz-pairs": Figure(
+    "math-misiurewicz-pairs": Figure(
         tuple(frame for point in MISIUREWICZ for frame in _row(point)),
         3,
         (960, 540),
@@ -918,6 +1091,16 @@ FIGURES = {
         "that location's c right, each panel a Deep-tab link taken whole with its own "
         "colouring and cap. The links are MULTIBROTS', each a Deep-gallery row named in the "
         "comment beside it there",
+        maps="one to a panel",
+    ),
+    "deep-random-dives": Figure(
+        tuple(_dive(link, alt) for link, alt in RANDOM_DIVES),
+        3,
+        (960, 540),
+        2,
+        "frames picked by eye out of the dive candidate sheet, each panel a Deep-tab link "
+        "taken whole with its own colouring and cap. The links are RANDOM_DIVES', each also "
+        "a Deep-gallery row",
         maps="one to a panel",
     ),
 }
@@ -953,7 +1136,7 @@ WORDS = {
         "Two frames, A and B (top), each centered on a minibrot, and the four two-step "
         "descents built from them: A then A, A then B, B then A, and B then B.",
     ),
-    "deep-misiurewicz-pairs": (
+    "math-misiurewicz-pairs": (
         "Three rows at three Misiurewicz points, each the whole Julia set, that Julia set "
         "zoomed in at the point, and the parameter plane zoomed in at the same point.",
         "Three Misiurewicz points: one shallow on the Mandelbrot set (top) and two deep on "
@@ -968,8 +1151,13 @@ WORDS = {
         "Deep locations on the Mandelbrot set and the degree-3 to degree-6 multibrots (top "
         "to bottom). Each row shows a location on the parameter plane (left) and a view of "
         "the Julia set for that location's c (right). The neighborhoods look alike, much as "
-        "they do at the Misiurewicz points above, but these are not Misiurewicz points, and "
+        "they do at the Misiurewicz points, but these are not Misiurewicz points, and "
         "the two sides do not match exactly.",
+    ),
+    "deep-random-dives": (
+        "Twenty-two deep frames landed by random dives, on the Mandelbrot set and the "
+        "multibrots of degrees 3, 4, and 6.",
+        "Deep frames from random dives, picked by eye.",
     ),
 }
 

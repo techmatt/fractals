@@ -84,7 +84,8 @@ const DEFAULT_PANEL = "gallery";
  *  still opens its panel. `deep:gallery` is the form the article links the Deep tab's
  *  gallery with, and it opened the tab with the gallery unfolded until the gallery stopped
  *  folding *(explorer_nav_layout_ckpt145)*; it opens the tab now, which is where the gallery
- *  always is. Like the plane it is not written back. */
+ *  always is. `deep:random` opens the tab on Random dives, which the article links too
+ *  *(deep_picks_prose_ckpt156)*. Like the plane it is not written back. */
 const PANEL_AT = ":";
 
 /** Each Julia family's parameter plane: where its `c` is a point. Julia here goes one way
@@ -3490,8 +3491,9 @@ const tabs = [...document.querySelectorAll(".tab")];
  */
 function showPanel(asked) {
   // An older address may say which plane, after a colon; the view says that now. The Deep
-  // tab's `deep:gallery` opens the tab like any other suffix, its gallery being always open.
-  const [name] = String(asked).split(PANEL_AT);
+  // tab's `deep:gallery` opens the tab like any other suffix, its gallery being always open;
+  // `deep:random` opens it on Random dives.
+  const [name, list] = String(asked).split(PANEL_AT);
   const was = showing;
   showing = tabs.some((tab) => tab.dataset.panel === name) ? name : DEFAULT_PANEL;
   for (const tab of tabs) {
@@ -3562,6 +3564,7 @@ function showPanel(asked) {
     startDeep().then(() => {
       if (showing !== "deep") return;
       deep?.show();
+      if (list === "random") diveResults?.show("random");
       // A frame carried in on a Leveled colour comes in fitted to Absolute
       // *(absolute_fit_ckpt147)*, once its first stage lands; an Absolute one keeps its own.
       if (!deepOpening && deep?.enter(carryable()) && deep.view().shade.scale !== "absolute") {
