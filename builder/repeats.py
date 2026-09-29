@@ -40,6 +40,7 @@ RECORDS = (
     "builder/data/*.jsonl",
     "go/redirects.jsonl",
     "wallpaper-packs/packs.jsonl",
+    "tools-and-data/*.jsonl",
 )
 
 #: A query as a record or a page spells one: two or more `key=value` pairs.

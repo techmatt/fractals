@@ -151,7 +151,7 @@ def load_all() -> list[Section]:
 
 
 def rail(page: Path, sections: list[Section]) -> str:
-    """The rail as one page carries it: the two groups above the contents, fourteen
+    """The rail as one page carries it: the three groups above the contents, fourteen
     sections with this page's own headings open, and under them the places a reader leaves
     the article for.
 
@@ -164,6 +164,7 @@ def rail(page: Path, sections: list[Section]) -> str:
         '<nav class="contents-rail" aria-label="Contents">',
         *_start(page),
         *_packs(page),
+        *_tools(page),
         f'  <p class="rail-title"><a href="{home}">Contents</a></p>',
         '  <ol class="rail-sections">',
     ]
@@ -255,6 +256,27 @@ def _packs(page: Path) -> list[str]:
     ]
 
 
+#: The project's data and tools for other people to build on *(tools_and_data_ckpt156)*: the
+#: gallery's locations, the hand-made palettes, the judges, and the hand labels. Another peer
+#: of the start page, set the way *Wallpaper packs* is and right after it. The page is
+#: written by hand from its master, so it is among `hand_written`'s pages.
+TOOLS = SITE_ROOT / "tools-and-data" / "index.html"
+TOOLS_NAME = "Tools and data"
+
+
+def _tools(page: Path) -> list[str]:
+    """The rail's third group: its heading alone, a link to the Tools and data page."""
+    if not TOOLS.is_file():
+        return []
+    href = attribute(relative_href(page, TOOLS))
+    current = ' aria-current="page"' if page.resolve() == TOOLS.resolve() else ""
+    return [
+        '  <div class="rail-group">',
+        f'    <p class="rail-title"><a href="{href}"{current}>{text(TOOLS_NAME)}</a></p>',
+        "  </div>",
+    ]
+
+
 #: What the rail carries under the fourteen sections: the page that runs the engine, the
 #: code the article is about, and this site's own code, which is the explorer's
 #: *(front_and_start_ckpt147)*. The bar has a way to each of them too, and the bar is one
@@ -300,6 +322,6 @@ HANGING = ("palettes/make-your-own.html",)
 
 def hand_written(sections: list[Section]) -> list[Path]:
     """The pages a person writes and the builder only reaches into: index, the start page,
-    the sections, and the pages that hang off one."""
+    Tools and data, the sections, and the pages that hang off one."""
     hanging = [SITE_ROOT / page for page in HANGING]
-    return [SITE_INDEX, START, *(section.path for section in sections), *hanging]
+    return [SITE_INDEX, START, TOOLS, *(section.path for section in sections), *hanging]

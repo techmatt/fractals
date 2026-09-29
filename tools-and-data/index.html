@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="../assets/icons/favicon.ico" sizes="16x16 32x32 48x48">
+<link rel="apple-touch-icon" href="../assets/icons/apple-touch-icon.png">
+<link rel="manifest" href="../assets/icons/site.webmanifest">
+<title>Tools and data — Making Fractal Wallpapers</title>
+<link rel="stylesheet" href="../assets/css/site.css">
+</head>
+<body>
+<nav class="topbar">
+  <div class="topbar-inner">
+    <a class="topbar-site" href="../index.html">Making Fractal Wallpapers</a>
+    <span class="topbar-links"><a href="../wallpaper-packs/index.html">Wallpaper packs</a><a href="index.html">Tools and data</a><a href="https://github.com/techmatt/fractals">GitHub</a><a href="https://techmatt.github.io/">Matt Fisher</a></span>
+  </div>
+</nav>
+
+<div class="page">
+<!-- contents-rail:start — written by builder/. Run `python -m builder build`. -->
+<nav class="contents-rail" aria-label="Contents">
+  <div class="rail-group">
+    <p class="rail-title"><a href="../start-here.html">Start here</a></p>
+  </div>
+  <div class="rail-group">
+    <p class="rail-title"><a href="../wallpaper-packs/index.html">Wallpaper packs</a></p>
+  </div>
+  <div class="rail-group">
+    <p class="rail-title"><a href="index.html" aria-current="page">Tools and data</a></p>
+  </div>
+  <p class="rail-title"><a href="../index.html">Contents</a></p>
+  <ol class="rail-sections">
+    <li><a href="../article/overview.html">Overview</a></li>
+    <li><a href="../article/escape-time-fractals.html">Escape-time fractals</a></li>
+    <li><a href="../article/rendering-fundamentals.html">Rendering fundamentals</a></li>
+    <li><a href="../article/rendering-modes.html">Rendering modes</a></li>
+    <li><a href="../article/finding-good-locations.html">Finding good locations</a></li>
+    <li><a href="../article/training-judges.html">Training judges</a></li>
+    <li><a href="../article/color-palettes.html">Color palettes</a></li>
+    <li><a href="../article/finding-good-wallpapers.html">Finding good wallpapers</a></li>
+    <li><a href="../article/gallery-curation.html">Gallery curation</a></li>
+    <li><a href="../article/full-pipeline.html">Full pipeline</a></li>
+    <li><a href="../article/fractal-atlases.html">Fractal atlases</a></li>
+    <li><a href="../article/deep-zoom.html">Deep zoom rendering</a></li>
+    <li><a href="../article/other-artistic-techniques.html">Other artistic techniques</a></li>
+    <li><a href="../article/fractal-math.html">Fractal math</a></li>
+  </ol>
+  <ul class="rail-links">
+    <li><a href="../explorer/index.html">Fractal explorer</a></li>
+    <li><a href="https://github.com/techmatt/fractal-wallpapers">fractal-wallpapers on GitHub</a></li>
+    <li><a href="https://github.com/techmatt/fractals">fractals on GitHub</a></li>
+  </ul>
+</nav>
+<!-- contents-rail:end -->
+
+<div class="page-body">
+
+<header class="masthead">
+  <h1>Tools and data</h1>
+</header>
+
+<main>
+  <section class="prose">
+    <p>Besides the wallpapers, this project produced a few things that may be useful to
+    other people working with fractals.</p>
+
+    <h2 id="gallery-locations">Gallery locations</h2>
+
+    <p>Every picture in the wallpaper galleries is a place in a fractal and a complete
+    recipe for drawing it there. <a href="gallery-locations.jsonl">gallery-locations.jsonl</a>
+    holds all 6,299 of them, one JSON object a line: the fractal family, the center, width,
+    and iteration cap, the rendering mode, the palette and its settings, the collections the
+    picture belongs to, the wallpaper and gallery judges' scores, and a link that opens it in
+    the <a href="../explorer/index.html">fractal explorer</a>. The link is the whole recipe,
+    so the explorer, or <code>fractal-engine render-link</code> from
+    <a href="https://github.com/techmatt/fractal-wallpapers">fractal-wallpapers</a>, will
+    draw any of them again at any size. The file is licensed
+    <a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>, like the
+    wallpapers.</p>
+
+    <p>The explorer's Deep tab also holds a thousand
+    <a href="../explorer/index.html?panel=deep:random">Random dives</a>. They were found by a
+    procedural dive rather than picked or judged, so they are less useful as a list, and it
+    is easy to make more: <code>python -m builder random-dives --until N</code> in the
+    <a href="https://github.com/techmatt/fractals">fractals repository</a> lands new ones
+    until there are N. It needs Node and a Rust toolchain as well as Python.</p>
+
+    <h2 id="palettes">Palettes</h2>
+
+    <p><a href="hand-made-palettes.json">hand-made-palettes.json</a> holds the 495 palettes I
+    made for this project, as color stops. They are released under
+    <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0</a>, so you can use them
+    for anything, with no credit needed. Each one's name matches its strip on the
+    <a href="../palettes/all-palettes.html">palette library</a> page, and
+    <a href="../palettes/make-your-own.html">Make your own palettes</a> describes how they
+    were made. The rest of the library came from other sources and is not included.</p>
+
+    <h2 id="judges">Judges</h2>
+
+    <p>The four neural networks that rated locations and wallpapers, ordered the galleries,
+    and chose palettes are released with the fractal-wallpapers code under MIT, as
+    <a href="https://github.com/techmatt/fractal-wallpapers/releases/tag/weights-2026-09-14">weights-2026-09-14</a>.
+    Each is a MobileNetV4. Three of them take a picture, stretched to 384×224, and return the
+    probability that it would earn at least a 2, a 3, and a 4 on my 1-to-4 scale. The
+    palette judge reads a 224×224 squash of the picture and returns one score, which means
+    something only against the other palettes it's compared with. They were trained on
+    ordinary double-precision pictures, so read their scores on deep zooms with caution.
+    <a href="../article/training-judges.html">Training judges</a> describes how they were
+    made.</p>
+
+    <h2 id="hand-labels">Hand labels</h2>
+
+    <p>The ratings I gave while training the judges are in the fractal-wallpapers repository
+    under <a href="https://github.com/techmatt/fractal-wallpapers/tree/main/data">data</a>:
+    locations in data/labels, wallpapers in data/smooth_render and data/strange_render, and
+    gallery grades in data/gallery_grade. A wallpaper or gallery rating is stored with the
+    complete recipe of the picture it rates, and a location rating with the place and the
+    settings it was drawn at. Aesthetic ratings of fractals are rare, so they may be useful
+    on their own.</p>
+  </section>
+
+  <nav class="section-nav">
+    <p><a href="../index.html">Contents</a>
+    · Also: <a href="../wallpaper-packs/index.html">Wallpaper packs</a></p>
+  </nav>
+</main>
+
+<footer>
+  <p><a href="https://techmatt.github.io/">Matt Fisher</a>
+  · <a href="https://github.com/techmatt/fractal-wallpapers">fractal-wallpapers</a> · MIT</p>
+</footer>
+</div>
+</div>
+</body>
+</html>

@@ -15,8 +15,9 @@ no page made from them. `import`,
 that found the first set. `dive-candidates` lands deep candidates by the Dive block's own
 rules and lays them out as a numbered sheet to pick a figure from; `random-dives` lands the
 same way, in New coloring, into the Deep tab's Random dives record and its tiles.
+`tools-and-data` writes the two files the Tools and data page offers.
 `prose`, `review`, `explorer`, `locations`, `judges`, `picks`, `start`, `seats`, `phoenix-points`,
-`deep-gallery`, `growth` and `pipeline` are the
+`deep-gallery`, `growth`, `pipeline` and `tools-and-data` are the
 commands that reach outside the repository — for a full-size original, for the approved
 prose, for the Drive-synced review folder, and for the engine, the records and the
 judges next door.
@@ -67,6 +68,7 @@ from . import seats as seats_module
 from . import sections as sections_module
 from . import serve as serve_module
 from . import start as start_module
+from . import tools_and_data as tools_and_data_module
 from . import votes as votes_module
 from . import walk as walk_module
 from .paths import FIGURE_IMAGES_DIR, IMAGES_DIR, SITE_ROOT
@@ -609,6 +611,11 @@ def _parser() -> argparse.ArgumentParser:
         "export-order", help="the general thousand by likes, for `curate packs build --order`"
     )
     ordered.add_argument("--out", type=Path, required=True, help="the order file to write")
+
+    commands.add_parser(
+        "tools-and-data",
+        help="rewrite the Tools and data page's gallery locations and hand-made palettes",
+    )
 
     commands.add_parser(
         "phoenix-points",
@@ -1827,6 +1834,10 @@ def main(argv: list[str] | None = None) -> int:
             return _do_votes(options)
         if options.command == "phoenix-points":
             return _do_phoenix_points()
+        if options.command == "tools-and-data":
+            for line in tools_and_data_module.write():
+                print(line)
+            return 0
         if options.command == "deep-gallery":
             return _do_deep_gallery(options)
         if options.command == "dive-candidates":
@@ -1873,6 +1884,7 @@ def main(argv: list[str] | None = None) -> int:
         start_module.StartError,
         packs_module.PacksError,
         votes_module.VotesError,
+        tools_and_data_module.ToolsDataError,
         OSError,
     ) as error:
         print(f"error: {error}", file=sys.stderr)
