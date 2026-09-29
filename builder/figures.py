@@ -1455,6 +1455,13 @@ def place(
     with FIGURE_REGISTRY.open("w", encoding="utf-8", newline=LF) as handle:
         handle.write(LF.join(lines) + LF)
 
+    # The links are derived from the row just written, and written, before the page is
+    # healed: the block a landing writes carries the link registry's hrefs, so healing
+    # first put the old ones on the page and left a `figure <id> --heal` to be remembered
+    # (preclose_website_ckpt155, after start-pink-gallery landed with a stale href).
+    from . import links
+
+    links.write(links.derive())
     placed = load_all()[identifier]
     _heal(placed, was)
     return placed
@@ -1520,13 +1527,11 @@ BLOCK_END = f"{INDENT}</figure>"
 def reprint(figure: Figure) -> bool:
     """Rewrite the block a page carries for one figure, from the registry, in place.
 
-    The second pass `builder/README.md` lists under *still hand-done*. `place` heals with
-    the link as it stood **before** the redraw, so a figure whose links moved — every
-    split figure, whose one link becomes one per panel — lands on the page with the old
-    hrefs and needs the block printing again. That was a copy and paste, which is a step
-    somebody forgets and `check` then names on the next run; twenty figures of it is
-    twenty chances. This finds the block by its `data-figure`, which is the one part of it
-    that does not move, and swaps in what the row derives. It writes nothing else: it
+    `place` writes the link registry before it heals, so a landing no longer needs this;
+    it is for a block whose links moved without a landing — a `links --write` after a
+    record changed, or a caption edited on the row. This finds the block by its
+    `data-figure`, which is the one part of it that does not move, and swaps in what the
+    row derives. It writes nothing else: it
     cannot land a figure, cannot change a row, and a page already carrying the right block
     comes back untouched.
     """

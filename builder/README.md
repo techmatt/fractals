@@ -477,13 +477,13 @@ drawn into the tile and is an outline and a label colour now.
 absent constant is the origin to it — a different Phoenix set that draws a perfectly
 plausible picture. `families.home_spec` refuses one rather than leaving it to be noticed.
 
-**A split figure lands in two passes, and `figure <id> --heal` is the second.**
-`figures.place` heals the page with the link as it stood *before* the redraw, so a figure
-that became panels lands carrying the composite's single href. The order is
-`<maker> --replace`, then `links --write`, then `figure <id> --heal`, which finds the
-block by its `data-figure` and swaps in what the row derives. It writes nothing else — it
-cannot land a figure or change a row — and it is what `check` used to tell a person to do
-by hand.
+**A landing writes the links before the page** *(preclose_website_ckpt155)*.
+`figures.place` fills the row, runs the `links --write` derivation over it, and only then
+heals the block, so a figure that became panels, or whose representative panel moved,
+lands carrying its new hrefs in one pass. It used to heal first, with the link as it stood
+*before* the redraw, and every such landing owed a `figure <id> --heal` afterwards.
+`figure <id> --heal` stays for a block whose links moved without a landing: it finds the
+block by its `data-figure` and swaps in what the row derives, and writes nothing else.
 
 **A figure in bands is sections of that grid** *(figure_split_all_ckpt140)*. The staged
 sheets — the pipeline overview, the three bands, the rating scale, a mine's five modes —
@@ -974,7 +974,7 @@ is no longer tied to the icon. The link spells a gallery seat exactly, so the pa
 that seat and its link comes off it. It is the one registry figure on a **generated**
 page: `pages.gallery_index` derives the block from the registry the same way `check`
 does, so an edit is a registry edit and a `build`, and a redraw is `front packs-hero
---replace`, then `links --write`, then `build`. ⚠ `leads_its_page` reads the page on disk,
+--replace` (which writes the links itself), then `build`. ⚠ `leads_its_page` reads the page on disk,
 so a build that renames the figure writes it `loading="lazy"` the first time, because the
 old id still leads the old page; a second `build` settles it.
 
@@ -1306,8 +1306,8 @@ f64 figure at the widths f64 still resolves: the engine's colouring and the tab'
 the perturbation field agree pixel for pixel by eye, so the pair is a fair comparison.
 
 Landing is the standard split landing plus one step. A new figure needs a `pending` row
-whose block is on the page, then `deep <id> --place`, then `links --write`, then
-`figure <id> --heal`, the order *Still hand-done* names. Seven figures and 39 drawn panels,
+whose block is on the page, then `deep <id> --place`, which writes the links before it
+heals the page. Seven figures and 39 drawn panels,
 none blank, since `deep-multibrots` took its last frames *(deep_multibrots_final_rows_ckpt154)*:
 all ten took 3 min 13 s at below-normal priority, and only degree 5's Julia cell and degree
 6's pair changed. As pairs *(deep_multibrots_pairs_ckpt154)* its nine took 1 min 54 s. When it landed *(deep_multibrots_gallery_ckpt154)*
@@ -1463,9 +1463,9 @@ A run also stops after five units in a row raise (`ERRORS_IN_A_ROW`): an error n
 the estimate, so a failure that repeats, a crate that will not build, would otherwise spend
 the whole budget writing error records.
 Native calls time out at 600 s, and a mapped `land` and a `field` at 900 s. The run holds
-below-normal priority, which its children inherit. A seeded rerun repeats the choices and not
-the count: 240 s at seed 154 reproduced the first run's first 17 units field for field, link
-for link and tile byte for byte, and stopped there.
+below-normal priority, which its children inherit. A seeded rerun repeats the draws of one
+build of the crates and not the count, and nothing more: a change to what the native side
+classifies or lands changes what the same seed finds.
 
 **Outputs**, all under `--out` (default ignored `artifacts/dive-candidates/`; a relative path
 is read against the site root): `units.jsonl`, one record a unit, kept or dropped;
@@ -1477,14 +1477,19 @@ A tile's number is its place in that order, which is what a pick names, so a dir
 already has a `units.jsonl` is refused unless `--resume` is given, which numbers on from its
 last `uNNNN` and seeds at `--seed` plus the units already there.
 
-**`artifacts/dive-reference/` is the reference the Dive block's default loop should roughly
-match**: the 3-hour candidate run is the target look, with the mixture sheet beside it. It is
-ignored and never committed.
+**`artifacts/dive-reference/` is the reference look, not a replay.** The 3-hour candidate
+run, with the mixture sheet beside it, is what the Dive block's default loop should roughly
+look like: the spread of planes, depths, landings and colorings a reader meets pressing Go.
+It is not something a rerun reproduces. Seed 154 once gave back its first 17 units field for
+field, but the root test moved to perturbation around the nucleus's own orbit since
+(`63a0fd0`), so the same seed now classifies, and so lands, differently. Compare a new run
+with it by eye, never unit by unit. It is ignored and never committed.
 
 **The first sheet is `artifacts/dive-reference/deep_minibrot_candidates/`**: seed 154, 3 h, 957 units,
 817 kept (137 refused, 3 blank), 84 MB of tiles. Its tile numbers are the ones a figure's
-pick was named by. `--sheet` over a copy of its record numbers all 817 identically; only the
-title differs, which no longer spells the checkpoint. It needs Pillow, node and cargo, and it
+pick was named by, and its `units.jsonl` is the record of what each one was. `--sheet` over
+a copy of that record numbers all 817 identically; only the title differs, which no longer
+spells the checkpoint. The command needs Pillow, node and cargo, and it
 is no part of `build` or `check`. Its output is never committed. ⚠ The native crate is built
 when its binary is missing and never when it is stale, so after an edit to
 `perturb-wasm/src/dive.rs` run `cargo build --release` in `builder/deep-gallery-native` first.
@@ -1709,12 +1714,6 @@ Each of these is a step a person has to remember, and each has been forgotten on
   *no colormap is written down* rather than naming the map it could not carry, so the
   symptom is a missing link rather than an error. The builder writes the provenance that
   names the map; it could offer the missing name on the spot.
-- **After a re-pick the order is `picks --replace`, then `links --write`, then re-heal.**
-  `figures.place` heals the block using the link as it stood *before* the redraw, so a
-  figure whose representative panel changed lands with the old href and needs a second pass.
-  The second pass is `python -m builder figure <id>… --heal` since
-  `figure_split_all_ckpt140` — it used to be a copy and paste out of `figure <id>`, which
-  is the step `check` names and somebody forgets.
 - **Provenance spells the palette pass in words, not JSON.** `links.py` scans the prose for
   `mirror true` and a `palette gamma …` clause, and the JSON form reads to it as *no fold
   and every default* — which derives a link to the unmirrored picture, silently.

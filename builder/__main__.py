@@ -889,9 +889,9 @@ def _do_links(options: argparse.Namespace) -> int:
 def _do_figure(options: argparse.Namespace) -> int:
     """Print a figure's block, or write it onto its page over the one there.
 
-    `--heal` is the second pass a redraw needs when the *links* moved rather than the
-    picture: `figures.place` heals with the link as it stood before, so a figure that
-    became panels lands with the composite's single href and has to be printed again.
+    `--heal` is for a block whose *links* moved without a landing — a `links --write`
+    after a record changed, or a caption edited on the row. A landing needs no second
+    pass: `figures.place` writes the link registry before it heals the page.
     """
     registry = figures.load_all()
     for identifier in options.id:

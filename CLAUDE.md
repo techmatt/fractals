@@ -203,7 +203,13 @@ keeps the mechanics. **Every apply round ends by distilling that round's general
   its own; `builder/README.md` has the mechanics. **A panel may be blank**
   *(deep_multibrots_gallery_ckpt154)*: `"blank": true`, a size and a label and nothing else,
   a cell the arrangement asks for and no frame fills yet, with no picture, no record and no
-  link. `deep-multibrots` held the first and none is open now. **The arrangement and the pixels do not
+  link. `deep-multibrots` held the first and none is open now. **A panel may be a link**
+  *(start_pink_gallery_ckpt155)*: `"link": "link|<figure>#<n>"` names a `kind: "link"` row
+  in `article/figure-recipes.jsonl` holding a shallow explorer link verbatim, which is what
+  the panel is drawn from and opens at, read off that row and never derived — the shallow
+  sibling of `deep`, for a picture somebody chose as a link rather than a seat or a spec.
+  The pink gallery on Start here is its one user, and its picks are appended to
+  `article/pink-gallery.jsonl`. **The arrangement and the pixels do not
   change**: a panel is exactly the tile the sheet pasted, which is a thing to measure
   against the lossless composite in `artifacts/` rather than to assert.
 
