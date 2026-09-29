@@ -1307,9 +1307,9 @@ the perturbation field agree pixel for pixel by eye, so the pair is a fair compa
 
 Landing is the standard split landing plus one step. A new figure needs a `pending` row
 whose block is on the page, then `deep <id> --place`, which writes the links before it
-heals the page. Eight figures and 61 drawn panels since `deep-random-dives`
-*(deep_picks_prose_ckpt156)*, whose 22 took about 18 minutes, the first third of it beside a
-gallery tile bake; before it, seven and 39,
+heals the page. Eight figures and 55 drawn panels since `deep-random-dives`
+*(deep_picks_prose_ckpt156)*, whose first 22 took about 18 minutes, the first third of it beside
+a gallery tile bake, and which Matt cut to 16 the same day, a cached redraw; before it, seven and 39,
 none blank, since `deep-multibrots` took its last frames *(deep_multibrots_final_rows_ckpt154)*:
 all ten took 3 min 13 s at below-normal priority, and only degree 5's Julia cell and degree
 6's pair changed. As pairs *(deep_multibrots_pairs_ckpt154)* its nine took 1 min 54 s. When it landed *(deep_multibrots_gallery_ckpt154)*
