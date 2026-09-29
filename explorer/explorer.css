@@ -1668,8 +1668,8 @@ canvas.palette-final {
 .deep-group, .deep-details { display: none; }
 .viewer.is-deep .deep-group, .viewer.is-deep .deep-details { display: block; }
 
-/* The panel holds the tab's one sentence and nothing else, so there is no rule above it to
-   draw *(deep_caption_and_controls_right_ckpt141)*. */
+/* The tab's intro opens the panel, over the Dive block *(deep_micro_ckpt156)*, so there is no
+   rule above it to draw, the way the Phoenix tab's opens *(deep_caption_and_controls_right_ckpt141)*. */
 #deep-side-note { border-top: none; }
 
 /* The line over the controls holds a whole line of text while it is empty, not 1.2em: the
