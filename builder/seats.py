@@ -89,9 +89,11 @@ what is missing, and there are three ways that happens here.
   claims: an identity curve is the operator having measured and declined, and replaying
   one is not free — it costs a fraction of a level through the Oklab round trip — so a
   seat whose curve is identity needs no `level` key and has no gap for one.
-- **The iteration cap.** A recipe pins `maxiter`; a link carries a place, and the engine's
-  depth policy derives the cap from the width. Where the two differ the row says so, in
-  the words `links._settled` uses for a figure.
+- **The iteration cap.** A recipe pins `maxiter`, and since permalink v4 the link carries
+  it as `n` wherever the engine's depth policy would give another cap at that width
+  *(preclose_website_ckpt155; until then this was a gap on 421 seats)*. The row still
+  says so if the link's cap and the recipe's ever part, in the words `links._settled`
+  uses for a figure.
 - **A mode's curve.** A mode's identity here includes the curve it reads its field
   through, and the catalog fixes it; four of these seats read `smooth` through a `log`
   curve, which no key can say.
@@ -658,12 +660,15 @@ def derive() -> list[dict]:
     curves = links.catalog_curves()
 
     tones = {pick.key: tone(pick, stamps) for pick in resolved}
-    views = {
-        pick.key: links.ledger_view(
+    views = {}
+    for pick in resolved:
+        view = links.ledger_view(
             pick.recipe, level=tones[pick.key].curve if tones[pick.key].way == CURVED else None
         )
-        for pick in resolved
-    }
+        # The cap the seat was drawn at, which the link spells as `n` where the width
+        # policy gives another — `readmes` and `stamps` hold a seat's link to exactly this.
+        view["cap"] = pick.recipe.get("maxiter")
+        views[pick.key] = view
     emitted = links.emit(views)
 
     rows = []
