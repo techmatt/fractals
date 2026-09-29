@@ -2,7 +2,7 @@
 // stops, a random draw that lands nowhere is drawn again a bounded number of times, a press the
 // reader took the tab from is pressed again, Keep diving runs only where the next press can be
 // another picture, the landing mixture draws at the generator's shares, a pasted address is read down to its query, and Dive results is newest first and
-// gives its pictures back when cleared.
+// gives its pictures back when cleared; and Random dives reads its record and shuffles it.
 //
 //   node --test explorer/dives.test.mjs
 
@@ -201,4 +201,27 @@ test("Dive results is newest first, and Clear gives every picture back", () => {
 
 test("save those minibrots keeps about eight", () => {
   assert.ok(SAVE_COUNT >= 6 && SAVE_COUNT <= 10);
+});
+
+// Random dives (random_dives_ckpt155): the record is deep links alone, and the shuffle is a
+// permutation that leaves the record as it was.
+test("random dives reads deep links alone", async () => {
+  const { rowsOf } = await import("./random-dives.js");
+  assert.deepEqual(rowsOf('{"link": "dv=3&x=0&y=0&w=1e-20&n=5000"}\n\n'), [
+    { link: "dv=3&x=0&y=0&w=1e-20&n=5000" },
+  ]);
+  assert.throws(() => rowsOf('{"link": "v=4&x=0"}'), /line 1/);
+  assert.throws(() => rowsOf('{"link": "dv=3", "subject": "x"}'), /line 1/);
+});
+
+test("random dives shuffles a copy into every row once", async () => {
+  const { shuffled } = await import("./random-dives.js");
+  const rows = Array.from({ length: 50 }, (_, i) => ({ link: `dv=3&i=${i}` }));
+  let seed = 7;
+  const random = () => ((seed = (seed * 16807) % 2147483647) - 1) / 2147483646;
+  const out = shuffled(rows, random);
+  assert.equal(rows[0].link, "dv=3&i=0");
+  assert.equal(out.length, rows.length);
+  assert.deepEqual(new Set(out), new Set(rows));
+  assert.notDeepEqual(out, rows);
 });

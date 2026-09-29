@@ -209,14 +209,16 @@
       frames take longer to draw and are colored smooth only. Find minibrots finds
       tiny copies of the set worth diving into. For more, read
       <a href="../article/deep-zoom.html">Deep zoom rendering</a>.</p>
-      <!-- The lower panel shows one of two lists (dive_slots_ckpt154): the tab's gallery, or
-           Dive results, this session's landings, newest first. A landing never switches it. -->
-      <div class="deep-gallery" id="deep-gallery">
+      <!-- The lower panel shows one of three lists (dive_slots_ckpt154, random_dives_ckpt155):
+           the tab's gallery, Dive results, this session's landings, newest first, or Random
+           dives, a thousand landings shuffled for this page. A landing never switches it. -->
+      <div class="deep-gallery" id="deep-gallery" data-show="gallery">
         <div class="section-head deep-lower-head">
           <span class="deep-switch" role="group" aria-label="Show">
             <button type="button" id="deep-show-gallery" aria-pressed="true">Gallery</button>
             <button type="button" id="deep-show-results" aria-pressed="false">Dive results · <span
                   id="dive-results-count">0</span></button>
+            <button type="button" id="deep-show-random" aria-pressed="false">Random dives</button>
           </span>
           <button type="button" id="dive-results-clear" hidden>Clear</button>
         </div>
@@ -227,6 +229,9 @@
              aria-label="Dive results"></div>
         <p class="side-note" id="dive-results-note" hidden>Nothing yet. Every dive lands here,
         newest first, until the page is reloaded.</p>
+        <div class="deep-gallery-grid random-dives" id="random-dives-grid" role="group"
+             aria-label="Random dives"></div>
+        <p class="side-note" id="random-dives-note" hidden></p>
       </div>
     </div>
 

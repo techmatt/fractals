@@ -58,6 +58,9 @@ python -m builder dive-candidates [--budget-s S] [--seed N] [--out DIR] [--resum
                             [--sheet] [--port N]
                             land deep candidates by the Dive block's own rules for a
                             wall-clock budget, and lay them out as a numbered sheet
+python -m builder random-dives [--until N] [--budget-s S] [--seed N] [--port N]
+                            land dives the same way, in New coloring, into the Deep tab's
+                            Random dives record and a tile each (tracked), resuming
 python -m builder phoenix-points   choose the Phoenix tab's starting points from the
                             staged gallery's Phoenix seats; draw each whole set's tile and
                             its plane frame through the committed wasm; write the record
@@ -1475,6 +1478,48 @@ title differs, which no longer spells the checkpoint. It needs Pillow, node and 
 is no part of `build` or `check`. Its output is never committed. ⚠ The native crate is built
 when its binary is missing and never when it is stale, so after an edit to
 `perturb-wasm/src/dive.rs` run `cargo build --release` in `builder/deep-gallery-native` first.
+
+### Random dives
+
+*(random_dives_ckpt155.)* `python -m builder random-dives` (`builder/random_dives.py`) is
+`dive-candidates`' run, a subclass of its `Run`, landing into the Deep tab's **Random dives**
+rather than a sheet. The mixture above is unchanged — plane, start seat, `to`, `from`, rungs
+first, the retries and the one adaptive rule — and so is the rule that lands only on a true
+copy: `pick` offers what `nuclei::find` classified, and an unresolved nucleus is never landed
+on. Four things differ, and each is a keyword of `Run` whose default is `dive-candidates`'
+own, so that command's run does not move:
+
+- **New coloring on every landing**, as the page's arrival does. The coin a unit tosses for
+  its coloring is still tossed, so the draws before it come out of the generator as they
+  always have; the draws after it differ from a `dive-candidates` unit that lost the toss.
+- **The page's aliasing guard** (`explorer/aliasing.js`), which `dive_candidates_shade.mjs`
+  runs where a job says `guard`: the colouring laid over the landed field and its period
+  doubled, up to three times, while neighbouring pixels differ by over 35 levels. The tile's
+  field is 316 wide, which the guard reads pixel by pixel, about the spacing of the Deep tab's
+  284-wide quarter pass it was tuned on. A unit's record carries what it measured.
+- **The picture is the Deep gallery's tile**: `THUMB`, 316×178 at 2×2 samples a pixel, drawn
+  at that size rather than downscaled, and encoded by `images.write_rgba` at
+  `TILE_WEBP_QUALITY` exactly as `deep-gallery thumbs` encodes one. The all-interior and blank
+  tests read this picture, not a 640-wide one.
+- **No dive twice**: a landed frame whose plane and centre the record already holds is
+  refused before it is drawn, and a link or a frame the record holds is refused again at the
+  keep, both as `dropped: repeat`. A place is refused rather than only a link, because the
+  same copy in another palette is the same picture to somebody scrolling a grid.
+
+**What is tracked**: `explorer/random-dives.jsonl`, one `{"link"}` a dive, appended as each is
+kept, and `explorer/random-dives/`, a tile a row named by `deep_gallery.fnv` of the link —
+the Deep gallery's naming, so `deep-gallery.js`'s `tileName` finds either. The tile is
+written before its row. **What is not**: the run's log under `artifacts/random-dives/` —
+`units.jsonl`, every unit kept or dropped with the route that made it, which is each row's
+provenance; `heartbeat.log`, a line every 15 minutes; `choices.json`; and `index.html`, the
+candidate sheet of what was kept.
+
+**It resumes by being run again.** The rows already recorded count towards `--until` (1,000
+by default), the seed moves past the units the log holds (or past the rows, where the log is
+gone), every recorded frame and link is refused, and a tile no row names — a run stopped
+between its two writes — is removed on the way in. A run stops at `--until`, at `--budget-s`
+(12 h by default, so never first on the way to 1,000), at five errors in a row, or after
+`DRY` units in a row keep nothing (300), which is the mixture running out of new places.
 
 ### How the first set was found
 

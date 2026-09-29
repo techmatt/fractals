@@ -4177,10 +4177,21 @@ async function mountDeep() {
     });
     // The gallery under the tab's sentence: a tile is a deep link, through the door a saved
     // deep picture comes through.
-    const [gallery, results] = await Promise.all([import("./deep-gallery.js"), import("./dive-results.js")]);
+    const [gallery, results, random] = await Promise.all([
+      import("./deep-gallery.js"),
+      import("./dive-results.js"),
+      import("./random-dives.js"),
+    ]);
     gallery.mount({
       grid: at("deep-gallery-grid"),
       note: at("deep-gallery-note"),
+      context: deepContext,
+      open: (query) => openAny(query),
+    });
+    // Random dives fetches its record the first time the switch shows it, and not before.
+    const randomDives = random.mount({
+      grid: at("random-dives-grid"),
+      note: at("random-dives-note"),
       context: deepContext,
       open: (query) => openAny(query),
     });
@@ -4188,6 +4199,10 @@ async function mountDeep() {
       panel: at("deep-gallery"),
       showGallery: at("deep-show-gallery"),
       showResults: at("deep-show-results"),
+      showRandom: at("deep-show-random"),
+      onShow: (which) => {
+        if (which === "random") randomDives.load();
+      },
       count: at("dive-results-count"),
       clear: at("dive-results-clear"),
       grid: at("dive-results-grid"),

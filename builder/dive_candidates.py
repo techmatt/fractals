@@ -315,8 +315,31 @@ def last_unit(rows: list[dict]) -> int:
 
 
 class Run:
-    def __init__(self, out: Path, budget_s: float, seed: int, port: int, resume: bool):
+    """A run of units into `out`. The keywords are what `builder/random_dives.py` changes;
+    their defaults are this command's, and a run that passes none of them is this command's
+    run exactly."""
+
+    def __init__(
+        self,
+        out: Path,
+        budget_s: float,
+        seed: int,
+        port: int,
+        resume: bool,
+        *,
+        res: tuple[int, int] = RES,
+        ss: int = SS,
+        always_new: bool = False,
+        guard: bool = False,
+    ):
         self.out = out
+        self.res = res
+        self.ss = ss
+        #: New coloring on every landing. The coin a unit tosses for it is still tossed, so a
+        #: unit's other draws come out of the generator the way they always have.
+        self.always_new = always_new
+        #: The page's aliasing guard on a New coloring (`explorer/aliasing.js`).
+        self.guard = guard
         self.tiles = out / "tiles"
         self.work = out / "work"
         self.log = out / "units.jsonl"
@@ -341,7 +364,7 @@ class Run:
         self.dive = Dive(self.seats, self.rng)
         self.started = time.monotonic()
         self.durations: list[float] = []
-        self.kept = sum(1 for r in before if r.get("tile"))
+        self.kept = self.kept_before(before)
         self.dropped: dict[str, int] = {}
         for r in before:
             if r.get("dropped"):
@@ -361,6 +384,25 @@ class Run:
 
     def elapsed(self):
         return time.monotonic() - self.started
+
+    def kept_before(self, before: list[dict]) -> int:
+        """How many a resumed run has kept already."""
+        return sum(1 for r in before if r.get("tile"))
+
+    def refuse(self, record: dict, frame: dict) -> str | None:
+        """A reason to drop a landed frame before it is drawn, or `None`."""
+        return None
+
+    def finished(self) -> str | None:
+        """A reason to stop the run before its budget is spent, or `None`."""
+        return None
+
+    def keep(self, record: dict, image, uid: str) -> bool:
+        """Land a kept unit's picture and say whether it was kept: a numbered tile here."""
+        self.tiles.mkdir(parents=True, exist_ok=True)
+        image.save(self.tiles / f"{uid}.webp", quality=TILE_WEBP_QUALITY)
+        record["tile"] = f"tiles/{uid}.webp"
+        return True
 
     def pick_weighted(self, table):
         names = list(table)
@@ -431,7 +473,7 @@ class Run:
         # A center or halfway landing from this view goes down a few rungs first, so it lands
         # below the f64 floor rather than at a wallpaper's own depth.
         pre = self.rng.randint(*PRE_RUNGS) if to in ("center", "halfway") and frm == "view" else 0
-        colouring = self.rng.random() < 0.5
+        colouring = self.rng.random() < 0.5 or self.always_new
         start = self.dive.seat(plane)
         record = {
             "id": uid,
@@ -471,11 +513,15 @@ class Run:
         if max(canonical_len(frame["re"]), canonical_len(frame["im"])) > SPELLABLE:
             record["dropped"] = self.drop("refused: unspellable")
             return self.finish(record, route, started, False)
+        refused = self.refuse(record, frame)
+        if refused is not None:
+            record["dropped"] = self.drop(refused)
+            return self.finish(record, route, started, False)
         # The picture, natively.
         field = self.work / f"{uid}.f64"
         rgba = self.work / f"{uid}.rgba"
         jobs = self.work / f"{uid}.json"
-        res = f"{RES[0]}x{RES[1]}"
+        res = f"{self.res[0]}x{self.res[1]}"
         try:
             drawn = _native(
                 "field",
@@ -484,7 +530,7 @@ class Run:
                 im=frame["im"],
                 w=repr(frame["width"]),
                 res=res,
-                ss=SS,
+                ss=self.ss,
                 cap=frame["cap"],
                 out=field,
                 deg=PLANES[plane] if PLANES[plane] != 2 else None,
@@ -505,7 +551,7 @@ class Run:
                     timeout=NATIVE_TIMEOUT_S,
                     field=field,
                     res=res,
-                    ss=SS,
+                    ss=self.ss,
                     **{"cycles-pick": self.rng.random()},
                     pick=self.rng.random(),
                 )
@@ -518,6 +564,7 @@ class Run:
                     "lambda": rule["lambda"],
                     "period": rule["period"],
                     "phase": round(self.rng.random(), 3),
+                    "guard": self.guard,
                 }
                 record["rule"] = {
                     "cycles": rule["cycles"],
@@ -534,9 +581,9 @@ class Run:
                 "w": repr(frame["width"]),
                 "n": frame["cap"],
                 "field": str(field),
-                "width": RES[0],
-                "height": RES[1],
-                "ss": SS,
+                "width": self.res[0],
+                "height": self.res[1],
+                "ss": self.ss,
                 "out": str(rgba),
                 "colour": colour,
             }
@@ -551,7 +598,9 @@ class Run:
             out = json.loads(shaded.stdout)[0]
             record["link"] = out["link"]
             record["palette"] = out["palette"]
-            image = Image.frombytes("RGBA", RES, rgba.read_bytes()).convert("RGB")
+            if out.get("guard"):
+                record["guard"] = out["guard"]
+            image = Image.frombytes("RGBA", self.res, rgba.read_bytes()).convert("RGB")
         finally:
             for f in (field, jobs, rgba):
                 f.unlink(missing_ok=True)
@@ -560,9 +609,8 @@ class Run:
         if spread < BLANK_SPREAD:
             record["dropped"] = self.drop("blank")
             return self.finish(record, route, started, False)
-        self.tiles.mkdir(parents=True, exist_ok=True)
-        image.save(self.tiles / f"{uid}.webp", quality=TILE_WEBP_QUALITY)
-        record["tile"] = f"tiles/{uid}.webp"
+        if not self.keep(record, image, uid):
+            return self.finish(record, route, started, False)
         self.kept += 1
         return self.finish(record, route, started, True)
 
@@ -592,6 +640,10 @@ class Run:
         failed = 0
         try:
             while True:
+                reason = self.finished()
+                if reason is not None:
+                    self.beat(f"stop: {reason}")
+                    break
                 if failed >= ERRORS_IN_A_ROW:
                     self.beat(f"stop: {failed} units in a row raised, the last {self.last_error}")
                     break

@@ -3,13 +3,17 @@
 //   node builder/dive_candidates_shade.mjs jobs.json
 //
 // jobs.json: [{ id, deg, re, im, w, n, field, width, height, out,
-//               ss, colour: { kind: "keep", seat } | { kind: "new", palette, lambda, period, phase } }]
+//               ss, colour: { kind: "keep", seat } | { kind: "new", palette, lambda, period, phase,
+//                                                       guard? } }]
 //
 // "keep" is the starting seat's palette and recipe, carried across the floor as entering the
 // Deep tab carries it, and then fitted to Absolute on the landed field as the page's Fit (f)
 // does. "new" is New coloring: the rule's lambda and period, the drawn palette and phase, and
-// the Deep tab's fold on an open map. The link is emitted by `deep-link.js` and the field is
-// shaded through `engine.wasm` exactly as the tab shades it. Prints [{ id, link, palette }].
+// the Deep tab's fold on an open map. `guard` runs the page's aliasing guard (`aliasing.js`)
+// over the field before the period is written, as the page's New coloring does; `dive-candidates`
+// sends none and `random-dives` sends it. The link is emitted by `deep-link.js` and the field is
+// shaded through `engine.wasm` exactly as the tab shades it. Prints [{ id, link, palette,
+// guard? }], `guard` being the guard's `{ redraws, before, after }` where it ran.
 //
 // `deep_gallery_shade.mjs` cannot stand in for this: it canonicalizes a finished link, and has
 // neither Fit nor the fold.
@@ -23,6 +27,7 @@ import { shadeSpecOf } from "../explorer/deep-render.js";
 import * as shade from "../explorer/shade.js";
 import * as fitting from "../explorer/fit.js";
 import { SHADE_KEYS } from "../explorer/permalink.js";
+import * as aliasing from "../explorer/aliasing.js";
 
 const root = new URL("../explorer/", import.meta.url);
 install(new Uint8Array(readFileSync(new URL("palettes.bin", root))));
@@ -66,6 +71,7 @@ for (const job of JSON.parse(readFileSync(process.argv[2], "utf8"))) {
     supersample: job.ss ?? 1,
   };
   let next;
+  let guarded = null;
   if (job.colour.kind === "keep") {
     // Fit (f): Absolute sized to this picture, from Leveled as the recipe stands, or from
     // Leveled as the engine draws it where the recipe is Absolute already.
@@ -78,15 +84,25 @@ for (const job of JSON.parse(readFileSync(process.argv[2], "utf8"))) {
     }
   } else {
     next = { ...view.shade, scale: "absolute" };
+    // The Deep tab folds an open map on every palette change, New coloring's included.
+    const mirror = !PALETTES.get(job.colour.palette).cyclic;
+    let period = job.colour.period;
+    if (job.colour.guard) {
+      guarded = aliasing.guard(
+        field,
+        { lambda: job.colour.lambda, period, phase: job.colour.phase },
+        aliasing.tableOf(stopsOf(job.colour.palette), mirror),
+      );
+      period = guarded.period;
+    }
     for (const [key, value] of [
       ["lambda", job.colour.lambda],
-      ["period", job.colour.period],
+      ["period", period],
       ["phase", job.colour.phase],
     ]) {
       next = shade.withKey(next, key, String(value));
     }
-    // The Deep tab folds an open map on every palette change, New coloring's included.
-    next = { ...next, mirror: !PALETTES.get(job.colour.palette).cyclic };
+    next = { ...next, mirror };
   }
   view = { ...view, shade: next, level: null, capFrom: "tile" };
   const link = deepLink.emit(view);
@@ -98,6 +114,11 @@ for (const job of JSON.parse(readFileSync(process.argv[2], "utf8"))) {
   });
   const { image } = engine.shadeLevel(spec, lanes, 0);
   writeFileSync(job.out, image);
-  out.push({ id: job.id, link, palette: again.palette });
+  const said = { id: job.id, link, palette: again.palette };
+  if (guarded !== null) {
+    const { redraws, before, after } = guarded;
+    said.guard = { redraws, before, after };
+  }
+  out.push(said);
 }
 console.log(JSON.stringify(out));

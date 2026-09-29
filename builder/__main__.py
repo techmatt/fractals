@@ -13,7 +13,8 @@ published tentative record next door as a staged gallery — a record and its pi
 no page made from them. `import`,
 `deep-gallery` bakes the Deep tab's gallery tiles from its register, and runs the stages
 that found the first set. `dive-candidates` lands deep candidates by the Dive block's own
-rules and lays them out as a numbered sheet to pick a figure from.
+rules and lays them out as a numbered sheet to pick a figure from; `random-dives` lands the
+same way, in New coloring, into the Deep tab's Random dives record and its tiles.
 `prose`, `review`, `explorer`, `locations`, `judges`, `picks`, `start`, `seats`, `phoenix-points`,
 `deep-gallery`, `growth` and `pipeline` are the
 commands that reach outside the repository — for a full-size original, for the approved
@@ -59,6 +60,7 @@ from . import picks as picks_module
 from . import pipeline as pipeline_module
 from . import pool as pool_module
 from . import prose as prose_module
+from . import random_dives as random_dives_module
 from . import review as review_module
 from . import screenshots as screenshots_module
 from . import seats as seats_module
@@ -619,6 +621,38 @@ def _parser() -> argparse.ArgumentParser:
     )
     deep.add_argument(
         "args", nargs="*", help="descend: DEGREE COUNT SEED EXTRA; preview: FRAMES NAME"
+    )
+
+    random_dives = commands.add_parser(
+        "random-dives",
+        help="land dives by the candidate mixture into the Deep tab's Random dives, resuming",
+    )
+    random_dives.add_argument(
+        "--until",
+        type=int,
+        default=random_dives_module.DEFAULT_UNTIL,
+        help="stop once the record holds this many dives "
+        f"(default {random_dives_module.DEFAULT_UNTIL})",
+    )
+    random_dives.add_argument(
+        "--budget-s",
+        type=float,
+        default=random_dives_module.DEFAULT_BUDGET_S,
+        help="wall-clock seconds; no unit starts that is estimated to overrun it "
+        f"(default {random_dives_module.DEFAULT_BUDGET_S})",
+    )
+    random_dives.add_argument(
+        "--seed",
+        type=int,
+        default=random_dives_module.DEFAULT_SEED,
+        help="seeds every choice; a resumed run is seeded past the units its log holds "
+        f"(default {random_dives_module.DEFAULT_SEED})",
+    )
+    random_dives.add_argument(
+        "--port",
+        type=int,
+        default=serve_module.DEFAULT_PORT,
+        help=f"the port the log's sheet links open (default {serve_module.DEFAULT_PORT})",
     )
 
     dive = commands.add_parser(
@@ -1784,6 +1818,10 @@ def main(argv: list[str] | None = None) -> int:
             return _do_deep_gallery(options)
         if options.command == "dive-candidates":
             for line in dive_candidates_module.main(options):
+                print(line)
+            return 0
+        if options.command == "random-dives":
+            for line in random_dives_module.main(options):
                 print(line)
             return 0
         if options.command == "descent":

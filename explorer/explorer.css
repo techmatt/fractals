@@ -2040,10 +2040,10 @@ canvas.palette-final {
   color: var(--well-ink-dim);
 }
 .deep-gallery-subject:first-child { margin-top: 0; }
-/* The switch between the gallery and Dive results *(dive_slots_ckpt154)*: two buttons, the
-   lit one the list that is up, and Clear at the far end while Dive results is. The panel
-   carries `is-results` and the stylesheet shows the one list, so neither list's own code
-   has to know the other is there. */
+/* The switch between the gallery, Dive results and Random dives *(dive_slots_ckpt154,
+   random_dives_ckpt155)*: three buttons, the lit one the list that is up, and Clear at the
+   far end while Dive results is. The panel's `data-show` names the list and the stylesheet
+   shows it, so no list's own code has to know the others are there. */
 .deep-lower-head { display: flex; align-items: center; gap: 0.5rem; padding-block: 0.3rem; }
 .deep-switch { display: inline-flex; gap: 0.25rem; }
 .deep-lower-head button {
@@ -2063,11 +2063,14 @@ canvas.palette-final {
 #dive-results-count { font-variant-numeric: tabular-nums; }
 #dive-results-clear { margin-left: auto; font-weight: 400; }
 #dive-results-clear[hidden] { display: none; }
-.deep-gallery:not(.is-results) > .dive-results,
-.deep-gallery:not(.is-results) > #dive-results-note,
-.deep-gallery.is-results > #deep-gallery-grid,
-.deep-gallery.is-results > #deep-gallery-note { display: none; }
-#dive-results-note { padding: 0 var(--gutter); }
+.deep-gallery:not([data-show="results"]) > .dive-results,
+.deep-gallery:not([data-show="results"]) > #dive-results-note,
+.deep-gallery:not([data-show="random"]) > .random-dives,
+.deep-gallery:not([data-show="random"]) > #random-dives-note,
+.deep-gallery:not([data-show="gallery"]) > #deep-gallery-grid,
+.deep-gallery:not([data-show="gallery"]) > #deep-gallery-note { display: none; }
+#dive-results-note,
+#random-dives-note { padding: 0 var(--gutter); }
 /* **Two to a row** *(dive_mixture_ckpt154)*: a result is a picture to judge, and at the
    gallery's three it was too small to judge. A narrow panel wraps them to one. */
 .deep-gallery-grid.dive-results { grid-template-columns: repeat(auto-fill, minmax(min(100%, 12rem), 1fr)); }

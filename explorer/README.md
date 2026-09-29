@@ -155,6 +155,9 @@ deep-link.js          the deep link contract, its own beside the shallow one
 deep-gallery.js       the Deep tab's gallery: the register read, grouped and tiled
 deep-gallery.jsonl    its register: a subject and a deep link a row, `builder deep-gallery`
 deep-gallery/         a tile a row, `python -m builder deep-gallery thumbs`
+random-dives.js       the Deep tab's Random dives: the record read, shuffled once a page, tiled
+random-dives.jsonl    its record: a deep link a row, `python -m builder random-dives`
+random-dives/         a tile a row, named as deep-gallery/'s are, by the same command
 phoenix.js            the Phoenix tab: the Phoenix plane drawn live, and a click into its sets
 phoenix-points.json   the tab's starting points and its one style, `builder phoenix-points`; tiles in phoenix-points/
 paged-inflection/     PAGED: the Inflection tab, out of the working set — see below
@@ -2814,7 +2817,9 @@ while the panel is hidden.
 
 ### Dive results *(dive_slots_ckpt154, 2026-09-28)*
 
-**The Deep tab's lower panel carries a switch, _Gallery | Dive results · N_**, and Dive
+**The Deep tab's lower panel carries a switch, _Gallery | Dive results · N | Random dives_**
+(the third since random_dives_ckpt155; the panel's `data-show` names the list that is up, and
+the stylesheet shows it), and Dive
 results is this session's landings: every landing of the Dive block, from Go, from Keep
 diving and from *save those minibrots*, **newest first**. It looks like the gallery beside it
 — a tile a click opens through `openAny`, the door a deep link comes through — and each tile
@@ -2835,6 +2840,26 @@ deep entry) and a **Copy link** under it. `dive-results.js` is the panel and `Re
   off the canvas `landAside` drew it into, at 640 px as a WebP object URL (316 until
   dive_mixture_ckpt154) (`addDive` in
   `explorer.js`).
+
+### Random dives *(random_dives_ckpt155, 2026-09-28)*
+
+**The switch's third list is a thousand dives landed ahead of time**, by the process the
+Dive block's default loop was matched to: `python -m builder random-dives`, which is
+`dive-candidates`' mixture with New coloring and the aliasing guard on every landing, true
+copies only, and no place twice. `builder/README.md`'s *Random dives* has the run.
+
+- **A dive is its link.** `random-dives.jsonl` is one `{link}` a row and nothing else, and a
+  row's tile is `random-dives/<fnv>.webp`, 316×178, named by `deep-gallery.js`'s `tileName`.
+  No full-size picture is stored: a click opens the link through `openAny`, the door a Gallery
+  tile uses, and the tab draws the frame.
+- **Fetched when first shown.** The record is not asked for when the tab mounts, only the
+  first time the switch shows Random dives (`onShow` in `dive-results.js`), since most visits
+  to the tab never open it.
+- **Shuffled once a page** (`shuffled`, Fisher–Yates over `Math.random`), when the record
+  loads, and fixed from then until the page is reloaded: a reader who leaves the list and
+  comes back finds it where they left it.
+- **One grid, no More button.** All of it is laid out at once, the gallery's three to a row,
+  and every tile is a lazy `<img>`, so only what scrolls near the panel is fetched.
 
 ### Getting in and out
 

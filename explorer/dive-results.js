@@ -12,6 +12,11 @@
 // Go puts Dive results up at once, before the first result, since that is where it will land.
 // Nothing of it is stored: a reload is the end of it, and Clear, which asks nothing, is the
 // end of it sooner.
+//
+// **The switch has three lists since random_dives_ckpt155**: the Gallery, Dive results and
+// Random dives. The panel's `data-show` names the one that is up and the stylesheet shows it,
+// so no list's own code has to know the others are there; `onShow(which)` is how Random dives
+// learns it is wanted, and fetches its record then.
 
 import { Results } from "./dives.js";
 
@@ -23,22 +28,37 @@ import { Results } from "./dives.js";
  * Answers `{ show(which), add({ link, thumb, said, variant, width, height }), size }`, `thumb`
  * an object URL the list takes over and gives back when it is cleared.
  */
-export function mount({ panel, showGallery, showResults, count, clear, grid, note, open, saveMark, copy }) {
+export function mount({
+  panel,
+  showGallery,
+  showResults,
+  showRandom,
+  onShow,
+  count,
+  clear,
+  grid,
+  note,
+  open,
+  saveMark,
+  copy,
+}) {
   const results = new Results((thumb) => URL.revokeObjectURL(thumb));
+  const buttons = { gallery: showGallery, results: showResults, random: showRandom };
 
   function show(which) {
-    const onResults = which === "results";
-    panel.classList.toggle("is-results", onResults);
-    showGallery.setAttribute("aria-pressed", String(!onResults));
-    showResults.setAttribute("aria-pressed", String(onResults));
-    clear.hidden = !onResults || results.size === 0;
+    panel.dataset.show = which;
+    for (const [name, button] of Object.entries(buttons)) {
+      button.setAttribute("aria-pressed", String(name === which));
+    }
+    clear.hidden = which !== "results" || results.size === 0;
     panel.scrollTop = 0;
+    onShow?.(which);
   }
 
   function sync() {
     count.textContent = String(results.size);
     note.hidden = results.size > 0;
-    clear.hidden = !panel.classList.contains("is-results") || results.size === 0;
+    clear.hidden = panel.dataset.show !== "results" || results.size === 0;
   }
 
   function tileOf(row) {
@@ -86,8 +106,9 @@ export function mount({ panel, showGallery, showResults, count, clear, grid, not
     return cell;
   }
 
-  showGallery.addEventListener("click", () => show("gallery"));
-  showResults.addEventListener("click", () => show("results"));
+  for (const [name, button] of Object.entries(buttons)) {
+    button.addEventListener("click", () => show(name));
+  }
   clear.addEventListener("click", () => {
     results.clear();
     grid.replaceChildren();
