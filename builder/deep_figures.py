@@ -762,9 +762,9 @@ MULTIBROTS = (
 
 
 #: `deep-random-dives`: frames Matt picked by eye out of the dive candidate sheet,
-#: `artifacts/dive-reference/deep_minibrot_candidates/`, in the order he gave them
-#: (deep_picks_prose_ckpt156), each a link with its alt. Every one is a Deep-gallery row
-#: too. A review layout: he cuts it down to the picks later.
+#: `artifacts/dive-reference/deep_minibrot_candidates/` (deep_picks_prose_ckpt156), each a
+#: link with its alt: 22 as a review layout, then cut to 15 and reordered by him the same
+#: day. Every one is a Deep-gallery row too.
 RANDOM_DIVES = (
     # 1
     (
@@ -781,10 +781,10 @@ RANDOM_DIVES = (
     ),
     # 3
     (
-        "dv=3&x=-0.76078776975524009076&y=-0.08399856407345915502&w=1.645453655102589e-12"
-        "&n=1402770&p=Sapphire%20%26%20Dusk%20Rose&phase=0.9247&scale=absolute&lambda=0"
-        "&period=0.2033",
-        "A lattice of tiny spirals in pink, blue, and plum, circling one center at the upper left.",
+        "dv=3&x=-0.7483036568849465311964&y=0.0946553296363963240504&w=8.432864230490613e-14"
+        "&n=1679564&p=Three%20Coals&phase=0.261&scale=absolute&period=11200",
+        "A small black copy of the set in a cross of gold and copper filigree, with spirals at "
+        "its tips, on deep blue.",
     ),
     # 4
     (
@@ -803,32 +803,25 @@ RANDOM_DIVES = (
     ),
     # 6
     (
-        "dv=3&x=-0.0776709452960969018&y=-0.6512996770923109953&w=2.6863422732810836e-11"
-        "&n=1166122&p=wallhaven_wallhaven-ym8rqk&phase=0.5111&scale=absolute&lambda=0.05"
-        "&period=0.4192",
-        "Spirals and seahorse tails of bright cyan filigree over deep blue.",
-    ),
-    # 7
-    (
         "dv=3&f=multibrot4&x=0.31855587056847385730511&y=0.74958644645260082151206"
         "&w=5.744783065446181e-15&n=1461060&p=cmr.arctic&phase=0.7235&mirror=1&scale=absolute"
         "&lambda=0&period=0.2312",
         "A small black copy of the set among swirls of pale blue and white filigree on dark blue.",
     ),
-    # 8
+    # 7
     (
         "dv=3&f=multibrot3&x=-0.58413281594404725991481&y=0.59245849880966115110917"
         "&w=4.794971575849025e-15&n=1607102&p=Ink%20%26%20Fuchsia%20Flare&phase=0.091"
         "&scale=absolute&period=1870",
         "A winding chain of spirals in pink and pale blue across a near-black ground.",
     ),
-    # 9
+    # 8
     (
         "dv=3&x=-0.7614765192305703339&y=-0.084139863749946807&w=1.5030082949263573e-11"
         "&n=1781514&p=Bone%20and%20Deep%20Green&phase=0.621&scale=absolute&period=2160",
         "One broad spiral of pale green filigree over mottled green.",
     ),
-    # 10
+    # 9
     (
         "dv=3&x=-0.749449505859123081945&y=0.094426240163924656299&w=5.03602929192567e-13"
         "&n=1877888&p=cet_diverging_bwr_20_95_c54&phase=0.164&mirror=1&scale=absolute"
@@ -836,14 +829,14 @@ RANDOM_DIVES = (
         "A small black copy of the set at the center of four-fold spiral arms in red, white, and "
         "periwinkle.",
     ),
-    # 11
+    # 10
     (
         "dv=3&f=multibrot3&x=-0.091789550132415001067&y=0.770122710433646015127"
         "&w=5.844395282808642e-13&n=1028544&p=Terminal%20Flare&phase=0.681&scale=absolute"
         "&lambda=0&period=0.41300000000000003",
         "Clusters of bright green bulbs and small spirals across dark green.",
     ),
-    # 12
+    # 11
     (
         "dv=3&x=-0.75758408380923538857197&y=0.07328134538816527418852"
         "&w=3.2784160660311513e-15&n=1889893&p=Oranges&phase=0.3311&mirror=1&scale=absolute"
@@ -851,7 +844,7 @@ RANDOM_DIVES = (
         "A tiny copy of the set at the center of a star of cream and orange filigree, with "
         "spirals at the corners.",
     ),
-    # 13
+    # 12
     (
         "dv=3&f=multibrot4&x=0.312138766351392099293&y=0.731056127680956807067"
         "&w=1.553375634706395e-13&n=849390&p=wallhaven_wallhaven-398e39&phase=0.286"
@@ -859,20 +852,20 @@ RANDOM_DIVES = (
         "The edge of a dark blue region lined with seahorse spirals, fading to pale violet on "
         "the right.",
     ),
-    # 14
+    # 13
     (
         "dv=3&x=-0.760549543071185066087&y=-0.082219706399314474819&w=4.032925369723819e-13"
         "&n=1524096&p=Porcelain%20Field&phase=0.198&scale=absolute&lambda=0&period=0.362",
         "Chains of pale blue seahorse spirals winding around dark navy pools on white.",
     ),
-    # 15
+    # 14
     (
-        "dv=3&x=-0.7483036568849465311964&y=0.0946553296363963240504&w=8.432864230490613e-14"
-        "&n=1679564&p=Three%20Coals&phase=0.261&scale=absolute&period=11200",
-        "A small black copy of the set in a cross of gold and copper filigree, with spirals at "
-        "its tips, on deep blue.",
+        "dv=3&x=-0.76078776975524009076&y=-0.08399856407345915502&w=1.645453655102589e-12"
+        "&n=1402770&p=Sapphire%20%26%20Dusk%20Rose&phase=0.9247&scale=absolute&lambda=0"
+        "&period=0.2033",
+        "A lattice of tiny spirals in pink, blue, and plum, circling one center at the upper left.",
     ),
-    # 16
+    # 15
     (
         "dv=3&f=multibrot4&x=0.319026241595811702271&y=0.749325185668184107409"
         "&w=1.6910500082259544e-13&n=1368217&p=wallhaven_wallhaven-45pqz1&phase=0.4479"
@@ -1113,7 +1106,7 @@ WORDS = {
         "the two sides do not match exactly.",
     ),
     "deep-random-dives": (
-        "Sixteen deep frames landed by random dives, on the Mandelbrot set and the "
+        "Fifteen deep frames landed by random dives, on the Mandelbrot set and the "
         "multibrots of degrees 3 and 4.",
         "Deep frames from random dives, picked by eye.",
     ),
