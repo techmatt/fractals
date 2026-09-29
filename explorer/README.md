@@ -601,8 +601,8 @@ is one the gallery header carries: `general`, `general_2000`, `all`, a hue famil
 name the header does not carry lands on the general gallery, the way an unknown panel
 lands on the default. The address bar writes it while the Gallery tab shows a collection
 other than the general gallery, so a reload reopens the tab where it was. The article links
-to two: Full pipeline's "asked for a color" opens `blue`, and Start here's "final darker
-pink gallery" opens `magenta`.
+to one: Full pipeline's "asked for a color" opens `blue`. Start here's link to `magenta`
+went when its words became "final darker pink picks" (start_here_pink_wording_ckpt155).
 
 ### The screensaver *(gallery_screensaver_ckpt141, 2026-09-22)*
 
