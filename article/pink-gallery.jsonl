@@ -7,6 +7,7 @@
 {"schema": 1, "kind": "pick", "link": "dv=3&f=multibrot3&x=-0.52761208899843436174030347&y=0.42876929984673822517892006&w=3.87e-19&n=132184&p=Rose%20Furnace&phase=0.877&scale=absolute&lambda=0&period=0.303", "from": "a picture Matt shared, JuliaPick2.png, by the Deep-tab link stamped in it"}
 {"schema": 1, "kind": "pick", "link": "v=4&m=smooth_stripe&x=0.2863105097588509&y=-0.48128350505110695&w=0.00009487290451631547&p=Rose%20Furnace&phase=0.823334&level=band_autolevel/v1:0.31447678072380586,0.7424453082665601,1.25741286605903,0.31447678072380586,0.8629886965307019", "from": "a picture Matt shared, mandelbrot_smooth_stripe_Rose-Furnace_3200x1800.png, by the v=3 link stamped in it"}
 {"schema": 1, "kind": "pick", "link": "v=4&m=smooth_mean_angle&weight=0.85&x=-0.8034886620324753&y=0.18325559833816926&w=0.0000040798268822631505&p=Orchid%20Furnace", "from": "Matt's daughter"}
+{"schema": 1, "kind": "pick", "link": "v=4&f=julia5&cx=-0.7827852027862652&cy=0.666037775899293&m=tia&x=0.04288382585041761&y=0.16535480460240962&w=0.0472854418198274&p=Pale%20Fire%20Rose", "from": "Matt's daughter, julia5_tia_Pale-Fire-Rose_2560x1440.png, a picture Matt shared with no link in it, drawn at the link of rose seat 20260922T012745Z|851e5ccb86ce91f7"}
 {"schema": 1, "kind": "placeholder", "seat": "20260922T014213Z|1ec297e128cc1556"}
 {"schema": 1, "kind": "placeholder", "seat": "20260922T014213Z|523af200a371b1af"}
 {"schema": 1, "kind": "placeholder", "seat": "20260922T014213Z|8dfee077866bb9b1"}
