@@ -51,6 +51,7 @@ Each line is a `##` below, and the question it is the answer to.
 | **The link registry** | how a figure's link is derived, and what a refusal is called |
 | **Every pool is given back** | why a document's workers are terminated, and what it cost not to |
 | **What the last bug hunt covered** | what was exercised and came back clean, so a next hunt need not |
+| **The test suites** | what each of the node suites holds |
 | **Rebuilding** | the commands, and which of them need the sibling checkout |
 | **Next** | what is deliberately not here yet |
 
@@ -6188,6 +6189,70 @@ already public and matched, and the engine's fingerprint is unmoved.
   import. The bake was run as `RUSTUP_TOOLCHAIN=1.96.0 python -m builder explorer`, and
   the manifest's `rustc` records it.
 
+## The test suites
+
+Eighteen suites here and `atlas/atlas.test.mjs` beside them, on Node's own runner with
+nothing installed. `CLAUDE.md` and `.github/workflows/checks.yml` carry the command line.
+
+- `permalink.test.mjs` is the contract held to itself. A URL is the one permanent thing
+  this site emits, and it is worth a suite even though nothing else here has one.
+- `screensaver.test.mjs` holds the screensaver's pure parts: the interval table, the
+  overrun rule, the learned correction, and the bag it draws from.
+- `hold.test.mjs` holds Hold look's re-solve: a held Lambda or Period keeps the colour at
+  the reference value to the written rounding, and a drag back and forth comes home.
+- `fit.test.mjs` holds Fit: the absolute recipe it chooses runs the palette `PASSES` times
+  across Leveled's stretch, in a `λ` whose line is within a tenth of a turn of Leveled's
+  shape, in numbers the contract writes, leaning to the log only where the log is as good.
+- `dives.test.mjs` holds Keep diving's loop rule (a chain that runs out stops, a random
+  draw that lands nowhere presses again a bounded number of times, a press the reader took
+  the tab from is pressed again), which slots let Keep diving run, the landing mixture's
+  shares, how a pasted address is read, and Dive results to being newest first.
+- `aliasing.test.mjs` holds New coloring's aliasing guard: a smooth field keeps its
+  period, a field whose neighbours sit a turn apart has it lengthened a bounded number of
+  times, and a wide field is read at the quarter pass's spacing.
+- `period-range.test.mjs` holds the Period slider's travel: its left end is one cycle
+  across the frame's spread and its right end the aliasing limit, a quarter pass and a full
+  pass of one frame give one travel, and a Lambda move that keeps the cycles keeps the thumb.
+- `bands.test.mjs` is the pool held to the committed wasm: a band is a range of output
+  rows, so the pool decides where the frame is cut and never what is in it, and the sizes
+  it cuts at are the reader's machine's. It draws the anchor a few times over and takes a
+  few seconds.
+- `level.test.mjs` holds the module's own measurement of a picture's tone to the autolevel
+  operator's, and a curve the page derived to replaying to the bytes it drew, which is what
+  lets Copy link write five numbers. Its pixel case skips by name on a machine without the
+  decoded bases in `artifacts/level-derive/`.
+- `derive.test.mjs` holds the two derived parameters: a derived texture weight replays to
+  the bytes it drew, and a derived trap opacity lands the typical painted pixel where it
+  says it does.
+- `stops.test.mjs` holds the palette blob's reader to the planar, byte-delta layout the
+  bake writes. That layout is the same length as the interleaved one, so a wrong reader
+  would draw real colors from the wrong stops rather than fail. Its on-disk case skips by
+  name where `palettes.bin` is not baked.
+- `saved.test.mjs` holds the Saved tab's list to its promises: a stored value it cannot
+  read is an empty list and never a throw, one picture is one entry however its link was
+  spelled, and the cap evicts nothing.
+- `undo.test.mjs` holds the way back to the two rules that make one action one entry: a
+  commit on the picture already under the cursor refreshes it rather than pushing, which is
+  what collapses the second settle a measured pass makes, and a push drops whatever the cursor had ahead of it.
+- `zip.test.mjs` holds Download all's stored-zip writer to the format, read back through
+  its own central directory.
+- `stamp.test.mjs` holds the link a downloaded picture carries to going in without the
+  picture moving: a PNG built there is stamped and both inflate to the same raster, and the
+  stamp taken back out gives the original file byte for byte. Node has no JPEG decoder, so
+  that side is checked segment by segment here and pixel for pixel out of band.
+- `deep-fx.test.mjs` holds the Deep tab's coordinates to being exact where a double is
+  not: a thousand steps of 1e-30 land where one of 1e-27 does, and a difference is taken in
+  decimal where `f64` says zero.
+- `deep-link.test.mjs` holds the deep contract to itself and the shallow one to not having
+  moved. It also carries the paged Inflection tab's marker (`paged-inflection/README.md`):
+  `iv` is sorted by its own marker, and both live contracts refuse `iv` and `q` by name, so
+  a saved Inflection link is never drawn as the plain Julia set underneath it.
+- `deep.test.mjs` holds the seam between the two wasm modules, the one place on this page
+  where a mistake draws a plausible picture rather than raising: the lanes `perturb.wasm`
+  writes are the ones `engine.wasm` colours, `shade_level` cannot see the placeholder
+  viewport it is given, and the deep kernel's sample grid is the engine's, with a frame
+  nudged a tenth of a pixel as the control that proves the test has teeth.
+
 ## Rebuilding
 
 ```
@@ -6251,6 +6316,19 @@ than absorbs is the other direction: a name the record holds that the catalog ha
 away, or one the engine has demoted out of `production`, stops the bake by name. **A
 retuned mode still arrives on this page by rebuilding** — its identity line and its curve
 are the engine's — but now with a failing check to announce it rather than only a diff.
+
+**A formatting commit in either crate rebuilds its module and compares** *(deep_refactor_ckpt138
+and pre_closeout_ckpt138, 2026-09-20)*. The two crates on the same profile answered
+differently when each was brought to `cargo fmt` clean. `perturb-wasm`'s reformat alone
+moved `perturb.wasm` (the commit before it rebuilt byte for byte): `panic = "abort"` still
+embeds `#[track_caller]` line numbers, so a shifted line in `src/` is a shifted immediate,
+and the module came out the same length and a different file. So every source edit there,
+a comment that moves a line included, owes `python -m builder explorer --perturb` and the
+new bytes in `perturb.manifest.json`. `engine-wasm`'s reformat rebuilt to the identical
+763,343 bytes: three of its five hunks are inside `#[cfg(test)] mod tests`, and the one in
+shipped code, in `densify`, shifts every line after it by three, yet a probe that inserted
+three blank lines there on purpose rebuilt byte for byte too. Neither answer generalizes,
+which is why the rule is to rebuild and compare rather than to trust either.
 
 ## Next
 

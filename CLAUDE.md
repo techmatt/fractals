@@ -1,18 +1,13 @@
 # Working in fractal-website
 
-This repository is the public site for the fractal wallpapers project: the article —
-a tutorial on rendering escape-time fractals, finding views worth keeping, and
-training judges to pick between them — plus the finished wallpapers that make the case
-the article is arguing, in the explorer's Gallery tab and as downloadable wallpaper packs. It is served by GitHub Pages at
-`https://techmatt.github.io/fractals/`.
+This repository is the public site for the fractal wallpapers project, served by GitHub
+Pages at `https://techmatt.github.io/fractals/`. `README.md` says what the site is, what is
+where, how to serve it, and how it relates to the companion repository. That companion is
+`C:\Code\fractal-wallpapers` here; the article links into it per section, and nothing is
+copied across without being rewritten to read as prose.
 
-The companion code repository is `C:\Code\fractal-wallpapers`. The article links into it
-per section; nothing is copied across without being rewritten to read as prose.
-
-**It is read-only from here, with one carve-out** *(Matt, 2026-08-21, after
-`explorer_generalize` landed engine changes under the old rule; widened 2026-09-20, after
-the shade seam was made under an authorisation that lived in a manifest line rather than in
-this rule)*. A website prompt may make **minimal engine changes that serve the wasm
+**It is read-only from here, with one carve-out** *(Matt, 2026-08-21; widened
+2026-09-20)*. A website prompt may make **minimal engine changes that serve the wasm
 consumer**, and only where every one of these holds:
 
 - **zero behaviour, measured** — the pipeline's renders are byte-identical after the change
@@ -49,16 +44,13 @@ edit to the engine crate — the carve-out's included — rebuild it with `cargo
 before a maker draws. A stale binary does not look stale: it refuses a family it has never
 heard of, `phoenix_m` for one, which reads as a bug in the maker asking for it.
 
-**Read-only is not free of obligation, and `carriers.jsonl` is the standing example**
-*(2026-09-06)*. That repository dropped `fields` and `mean` from every carrier row to buy
-headroom under its 1 MiB history guard, and both are derived back at its own read — so
-nothing above its `palettes/carriers.py` knew. Nothing there knew about this repository
-either, and the library page's `dominant_hues` read `mean` straight off the file and broke
-on a `KeyError`. `builder/palettes.py`'s `carriers` now derives both on this side and says
-where the seam is. **A record next door with a consumer here is a schema with two readers**,
-and the second one is invisible from the first: a website prompt that finds a check red on a
-missing column should suspect a thinned record before it suspects its own page, and a change
-to that shape lands here as a failing `library` check and nowhere earlier.
+**A record next door with a consumer here is a schema with two readers**, and the second is
+invisible from the first. Read-only is not free of obligation: when that repository thins a
+record and derives the dropped fields back at its own read, nothing here knows.
+`carriers.jsonl` is the standing example, and `builder/palettes.py`'s `carriers` derives
+`fields` and `mean` on this side and says where the seam is. A website prompt that finds a
+check red on a missing column should suspect a thinned record before it suspects its own
+page; a change to that shape lands here as a failing `library` check and nowhere earlier.
 
 ## The naming rule
 
@@ -76,18 +68,17 @@ The naming rule above and the italic rule below are the two that touch markup an
 filenames, so they are stated here where a session meets them. `writing-guidance.md` on
 the synced drive is the authority for everything else the prose is held to.
 
-- **No italics for emphasis or to introduce a term** *(Matt, 2026-09-24, no_italics_ckpt147,
-  replacing the rule that italicized a term's first mention)*. He finds both patronizing,
-  the words-as-words kind most of all. Italics are kept only for math variables, titles of
-  works and quoted material, and the site had none of those set in italics when the rule
-  landed. That covers prose, captions, the explorer's text and the prose masters alike: a
-  master spells none of it with `*`. Anything else keeps an italic only where its
-  sentence genuinely misreads without one, and a prompt that keeps one names it.
-- **The Oxford comma, always** *(Matt, 2026-09-25, prose_micro_edits_ckpt148)*. In every
-  list of three or more, a comma comes before the final "and" or "or": in prose, captions,
-  alt text, and blurbs, and in the masters that hold them. It is prose's rule and never
-  code's, so an identifier, a link's text and a record's own name stay as they are spelled.
-  Nothing enforces it, which is why it is written down.
+- **No italics for emphasis or to introduce a term** *(Matt, 2026-09-24)*. He finds both
+  patronizing, the words-as-words kind most of all. Italics are kept only for math
+  variables, titles of works and quoted material. That covers prose, captions, the
+  explorer's text and the prose masters alike: a master spells none of it with `*`.
+  Anything else keeps an italic only where its sentence genuinely misreads without one,
+  and a prompt that keeps one names it.
+- **The Oxford comma, always** *(Matt, 2026-09-25)*. In every list of three or more, a
+  comma comes before the final "and" or "or": in prose, captions, alt text, and blurbs,
+  and in the masters that hold them. It is prose's rule and never code's, so an
+  identifier, a link's text and a record's own name stay as they are spelled. Nothing
+  enforces it, which is why it is written down.
 
 ## Where prose comes from
 
@@ -103,9 +94,8 @@ Two paths, and a page arrives by one of them.
   page is held to rather than what is reviewed.
 
 A master lives at the **root** of `prose\` on the synced drive. A superseded master is
-**trashed in Drive** when its replacement is placed; `prose\old\` held them until
-2026-09-04 and has been empty since. So a registry row naming a master that is not at the
-root is a stale row, and worth saying. A draft may arrive with a
+**trashed in Drive** when its replacement is placed, so a registry row naming a master that
+is not at the root is a stale row, and worth saying. A draft may arrive with a
 **verification list at its foot**, headed *VERIFY AT PLACEMENT*: every number, ratio,
 constant and file name the prose leans on. Placement is where that list is worked — each
 line checked against the source it names, the prose corrected where the source disagrees,
@@ -121,10 +111,10 @@ whitespace**; comparing raw bytes across the HTML/markdown boundary means nothin
 table is the one structure with a rule of its own: a master spells it
 `[TABLE: a | b | c]` / rows / `[/TABLE]`, the head comes out on both sides because a
 `<th>`'s words are the page's own, and the cells compare with a space between them so
-that a wrong number cannot hide inside a right one. A **display formula** is the other
-*(display_math_ckpt149)*: `$$ TeX $$` on its own line in the master, a
-`<div class="formula" data-tex="…">` on the page that `python -m builder formulas`
-typesets into inline SVG, and the TeX is what is compared. Inline math stays HTML.
+that a wrong number cannot hide inside a right one. A **display formula** is the other:
+`$$ TeX $$` on its own line in the master, a `<div class="formula" data-tex="…">` on the
+page that `python -m builder formulas` typesets into inline SVG, and the TeX is what is
+compared. Inline math stays HTML.
 
 ## Reviewing a page
 
@@ -156,16 +146,14 @@ keeps the mechanics. **Every apply round ends by distilling that round's general
 ## Locked conventions
 
 - **Plain static HTML and CSS, and JS where a page needs it. No framework, no
-  bundler, no npm.** *(Matt, 2026-08-21: the "no JS on the site" rule is rewritten to
-  "JS where needed" — the explorer is the first case.)* Article pages stay script-free
-  and open correctly from the filesystem; a page that is a tool may run code, and pays
-  for it by having to be served. What is committed is what is served, either way.
-  **The one script an article page may carry is a live figure's** *(atlas_live_ckpt146,
-  Matt's brief)*: a registry row with `live` derives a well plus one module script that
-  mounts a piece of the site over it (the Atlas panel, on Fractal atlases). Opened from
-  disk or with scripting off, the module never runs and the well says what would be there
-  and links to it, so the page still opens correctly from the filesystem. The script
-  comes from the registry, never from hand-written markup.
+  bundler, no npm.** Article pages stay script-free and open correctly from the
+  filesystem; a page that is a tool may run code, and pays for it by having to be served.
+  What is committed is what is served, either way. **The one script an article page may
+  carry is a live figure's**: a registry row with `live` derives a well plus one module
+  script that mounts a piece of the site over it (the Atlas panel, on Fractal atlases).
+  Opened from disk or with scripting off, the module never runs and the well says what
+  would be there and links to it, so the page still opens correctly from the filesystem.
+  The script comes from the registry, never from hand-written markup.
 - **The builder generates; it never becomes the site.** `builder/` is a small Python
   program that writes gallery and figure pages from the wallpaper project's records.
   Its output is committed HTML — the site never depends on the builder having run,
@@ -184,48 +172,32 @@ keeps the mechanics. **Every apply round ends by distilling that round's general
   open a backlog of it: no `TODO` about how a picture looks, no list of suspect figures in
   a record, no standing item in `docs/page-review.md`. A `TODO` the tree may carry is the
   other kind — a number to re-verify against a run that does not exist yet, which is a fact
-  somebody can check rather than a taste somebody has to have; the last one, on
-  `full-pipeline.html`, went with the passage it annotated in v4. What the repo tracks instead is what a machine
-  can decide — a `stale_when` that names an event, a `held_reason` that names what is
-  blocked, a `draft` note that says what re-bakes it, a `reuse_reason` a collision made
-  necessary — each of which fails or fires on its own. Where a figure pass leaves
-  something genuinely undecided, the row carries the collision and says it is not yet
-  judged, which is a state a check reads rather than a task somebody has to remember.
-- **A figure is split into panels unless the composite is the point** *(Matt, 2026-09-22)*.
-  A figure that is several rasters composited into one picture, with its labels drawn into
-  the pixels, spends most of what it is worth: one way into the explorer for however many
-  wallpapers, a label no reader can select and no screen reader can say, and a grid that
-  can only ever scale down whole. So the default is aggressive — one `<img>` per panel,
-  each a link at its own view, every drawn label HTML text — and what stays composited is
-  the figure whose meaning is the **juxtaposition itself** (a before-and-after pair, a grid
-  whose two axes are the claim) or whose panel count makes individual links silly (a
-  sixty-four-tile contact sheet). A split row carries `panels` and `columns` and no file of
-  its own; `builder/README.md` has the mechanics. **A panel may be blank**
-  *(deep_multibrots_gallery_ckpt154)*: `"blank": true`, a size and a label and nothing else,
-  a cell the arrangement asks for and no frame fills yet, with no picture, no record and no
-  link. `deep-multibrots` held the first and none is open now. **A panel may be a link**
-  *(start_pink_gallery_ckpt155)*: `"link": "link|<figure>#<n>"` names a `kind: "link"` row
-  in `article/figure-recipes.jsonl` holding a shallow explorer link verbatim, which is what
-  the panel is drawn from and opens at, read off that row and never derived — the shallow
-  sibling of `deep`, for a picture somebody chose as a link rather than a seat or a spec.
-  The pink gallery on Start here is its one user, and its picks are appended to
-  `article/pink-gallery.jsonl`. **The arrangement and the pixels do not
-  change**: a panel is exactly the tile the sheet pasted, which is a thing to measure
-  against the lossless composite in `artifacts/` rather than to assert.
-
-  **All twenty of the split verdicts are done** *(figure_split_all_ckpt140, 2026-09-22)*,
-  and the forty-two keeps stay composites. What a maker still draws into the pixels is
-  what the page cannot know where to put — a mark at a point of the plane, a box round the
-  region the next frame shows, a gradient strip that is the map a panel spends. Everything
-  else is elements: a label, a band's heading and its chips, the arrow between two bands,
-  and the coloured frame that ties a panel to a mark on another one. **One sheet could not
-  keep its pixels and was allowed to improve them**: `escape-families` composed three
-  640-wide tiles in a row and landed the sheet at 1344, and a downscale of a sheet puts no
-  tile on a pixel boundary — resampling one alone to the 437 it shipped at reads mean
-  absolute difference up to 7.5 of 255 — so its panels land at the 640 they were composed
-  at, which is byte for byte the tile that was pasted.
+  somebody can check rather than a taste somebody has to have. What the repo tracks instead
+  is what a machine can decide — a `stale_when` that names an event, a `held_reason` that
+  names what is blocked, a `draft` note that says what re-bakes it, a `reuse_reason` a
+  collision made necessary — each of which fails or fires on its own. Where a figure pass
+  leaves something genuinely undecided, the row carries the collision and says it is not
+  yet judged, which is a state a check reads rather than a task somebody has to remember.
+- **A figure is split into panels unless the composite is the point** *(Matt,
+  2026-09-22)*. One `<img>` per panel, each a link at its own view, every drawn label HTML
+  text. What stays composited is the figure whose meaning is the **juxtaposition itself**
+  (a before-and-after pair, a grid whose two axes are the claim) or whose panel count makes
+  individual links silly (a sixty-four-tile contact sheet). A split row carries `panels`
+  and `columns` and no file of its own; `builder/README.md` has the mechanics, including a
+  **blank** panel (`"blank": true`, a cell no frame fills yet) and a **link** panel
+  (`"link": "link|<figure>#<n>"`, naming a `kind: "link"` row in
+  `article/figure-recipes.jsonl` that holds a shallow explorer link verbatim, read off that
+  row and never derived). **The arrangement and the pixels do not change**: a panel is
+  exactly the tile the sheet pasted, which is a thing to measure against the lossless
+  composite in `artifacts/` rather than to assert. The one exception is `escape-families`,
+  whose panels land at the 640 they were composed at (`builder/families.py` says why).
+  What a maker still draws into the pixels is what the page cannot know where to put — a
+  mark at a point of the plane, a box round the region the next frame shows, a gradient
+  strip that is the map a panel spends. Everything else is elements: a label, a band's
+  heading and its chips, the arrow between two bands, and the coloured frame that ties a
+  panel to a mark on another one.
 - **A split figure's panels are linked from their record, never from the prose.** The
-  `colormap` rule above is what pays for a sheet being one link at its representative
+  `colormap` rule below is what pays for a sheet being one link at its representative
   panel, and it means every other panel's map is written in a way the link scanner does not
   read — run panel by panel it silently carries the representative's map onto all of them,
   which is a link that opens the right place in the wrong colour. So a panel is linkable
@@ -239,14 +211,12 @@ keeps the mechanics. **Every apply round ends by distilling that round's general
   the single carve-out that a page hanging off a section shares that section's prefix:
   `palette-generator-batch` sits on `palettes/make-your-own.html`. The front page's one
   picture is `index-hero`, on a row whose page is spelled `./index.html` — the slash a
-  bare name at the root lacks — and it has no caption. The Wallpaper
-  packs page's one picture is `packs-hero`, on `wallpaper-packs/index.html`, the other
-  figure with no caption *(packs_image_and_mid_ckpt152, replacing `galleries-icon-source`)*:
-  `packs-` is that page's prefix, and it is the one registry figure on a page the
-  builder generates rather than one a person writes. `deep-zoom`'s
-  prefix is `deep-`. The prose never uses that slug: a
-  reference from the text is **positional** (*the figure below*), because this site
-  numbers no figures and anchors none.
+  bare name at the root lacks — and it has no caption. The Wallpaper packs page's one
+  picture is `packs-hero`, on `wallpaper-packs/index.html`, the other figure with no
+  caption, and the one registry figure on a page the builder generates rather than one a
+  person writes. The prose never uses a figure's slug: a reference from the text is
+  **positional** (*the figure below*), because this site numbers no figures and anchors
+  none.
 - **Exactly one line of a figure's `provenance` puts the word `colormap` in front of a
   map's name.** That word is what `builder/explorer.py`'s `drawn_in` reads to say which
   maps the explorer owes a gradient to — `builder check`'s `bake` fails on a picture drawn
@@ -255,91 +225,53 @@ keeps the mechanics. **Every apply round ends by distilling that round's general
   instead. A sheet of eighty strips is one link at its representative panel; a row that
   writes `colormap` on every line asks the explorer to carry hundreds of gradients so that
   one figure could be opened at a picture it does not even show.
-- **What the explorer's picker offers is a committed record, never a derivation**
-  *(2026-08-25)*. `explorer/palettes.jsonl` names every map `palettes.js` is baked from and
-  which of them the picker lists. **77 are offered, and that number is frozen**; the total
-  is the record's to say and is not written down here, because it grows every time a
-  figure lands in a map the roster did not carry. `python -m builder explorer` reads the
-  names from it and the gradients from the library next door, and `check`'s `bake` holds
-  the committed module to being byte for byte what that produces. The bake used to ask the
-  library "which of you are curated", and a two-hundred-map drop next door answered
-  differently — a rebake nobody ran on purpose would have taken the picker from 77 entries
-  to 277. Widening it is an edit to the record.
-
-  **The studio's picker lists the whole library, and the guard is now about the library**
-  *(Matt, 2026-09-15, with `explorer_studio`)*. A single menu of names was the reason the
-  offered set had to be curated at all; the picker is a tab strip now — the maps this
-  pool actually seats, then a tab per hue family, then all of them behind a filter box —
-  and a thousand names laid out three ways is a picker rather than a list. So the page
-  reads no `offered` flag. The field stays on the record and stays baked: it is what the
-  old menu listed, the bake still holds the module to it, and a name that was offered is a
-  name that keeps resolving. What the guard protects is unchanged and is now stated of the
-  right thing — **which maps the page carries is the record's to say, never a derivation**,
-  and the 277-entry rebake would still be caught, because the blob and the index are held
-  to `palettes.jsonl` and not to a question asked of the library.
-
-  **And which maps Random palette may land on is a third field, imported** *(Matt,
-  2026-09-17)*. `random` is the list next door states in
-  `data/palettes/palettes_for_random_choice.csv` — **232**, the maps that seated more than
-  one wallpaper in the published record — brought in by `python -m builder explorer
-  --random` and frozen on the record like everything else there. It is not derived: that
-  file's own README says it is a reading of one publication rather than a standing rule,
-  so the threshold is that
-  project's to move and a moved list arrives here as a failing `bake`. It narrows one
-  button and nothing else — every map the roster carries is still a hand pick and still
-  resolves in a link.
-- **And so is which modes it offers** *(2026-09-01)*. `explorer/modes.jsonl` names the
-  modes `catalog.js` is baked from, in the order the picker shows them. **17 are offered,
-  and that number is frozen.** The bake reads the names from it and each mode's identity
-  line and curve from the engine catalog next door, so `catalog.js` reproduces byte for
-  byte the way `palettes.js` does and has no clock carve-out. This one broke the same way
-  the palettes did, from the other side: the bake asked the engine "which of you are
-  production", the engine promoted `tail_itinerary`, and the next rebake would have put a
-  nineteenth mode in front of a reader. It was 18 until 2026-09-04, when a mode this site
-  retired was struck from the record — the same edit in the other direction, and the
-  reason the number is stated here as a frozen count rather than as the engine's roster.
-  The list is written three times — the record, the
-  baked module, and `permalink.js`'s typed `MODES` — and both ties are checked, `bake`
-  holding the record to the module and `permalink.test.mjs` the module to the contract.
-
-  **The Render mode select lists fewer than that** *(explorer_palettes, 2026-09-16)*: the modes
-  the **published** gallery record seats, read off the same committed record. That is a
-  narrowing of what a control *lists* and not of what the page carries: the 17 are still
-  baked, still parsed, and still drawn when a link names one, which puts that mode in the
-  select for as long as its view is up. The gallery panel's mode chips were the same set
-  until the panel grew collections *(explorer_gallery_collections_ckpt129, 2026-09-17)*;
-  they tally whichever collection is chosen now, and an unpublished collection seating a
-  mode the published record does not is a chip and never a select entry.
-
-- **The gallery panel shows one collection, and the record is their union**
-  *(explorer_gallery_collections_ckpt129, 2026-09-17)*. `seated-candidates` is the
-  published record plus the nineteen collections next door — twelve hue families and seven
-  modes, whose sizes are that project's `curation/targets.py` — as one row per seat, with
-  `collections` naming each collection that seats it and where in that collection's
-  presentation order it stands — and, since pre_closeout_website_ckpt140, the same general
-  solve at n=2000, offered as *General gallery · 2000* beside the default 1000.
-  A **Collection** dropdown chooses one; the chips filter
-  what it chose, which is why the collection is not a chip row. ⚠ **The nineteen are
+- **Which maps the explorer carries is a committed record, never a derivation.**
+  `explorer/palettes.jsonl` names every map `palettes.js` is baked from; `python -m builder
+  explorer` reads the names from it and the gradients from the library next door, and
+  `check`'s `bake` holds the committed module and blob to being byte for byte what that
+  produces. Widening it is an edit to the record. The studio's picker lists every map it
+  carries, as tabs (the maps this pool seats, then a tab per hue family, then all of them
+  behind a filter box) *(Matt, 2026-09-15)*. Two fields on the record are frozen too:
+  `offered`, the **77** the old single menu listed, which the studio's tabbed picker no
+  longer reads but which stays baked, because a name that was offered is a name that keeps
+  resolving; and `random`, the **232** maps Random palette may land on, imported from next
+  door's `data/palettes/palettes_for_random_choice.csv` by `python -m builder explorer
+  --random` and never derived, since that project owns the threshold and a moved list
+  arrives here as a failing `bake`. `random` narrows one button and nothing else.
+  `explorer/README.md`'s *Rebuilding* has how the record came to be one.
+- **And so is which modes it carries.** `explorer/modes.jsonl` names the modes `catalog.js`
+  is baked from, in the order the picker shows them. **17, and that number is frozen**:
+  the bake reads each mode's identity line and curve from the engine catalog next door and
+  offers nothing the record does not name, so an engine promotion never reaches a reader
+  without an edit here. The list is written three times — the record, the baked module,
+  and `permalink.js`'s typed `MODES` — and both ties are checked, `bake` holding the record
+  to the module and `permalink.test.mjs` the module to the contract. **The Render mode
+  select lists fewer**: the modes the **published** gallery record seats, read off the same
+  committed record. The 17 are still baked, parsed, and drawn when a link names one, which
+  puts that mode in the select for as long as its view is up; the gallery panel's mode chips
+  tally whichever collection is chosen, and an unpublished collection seating a mode the
+  published record does not is a chip and never a select entry.
+- **The gallery panel shows one collection, and the record is their union.**
+  `seated-candidates` is the published record, the same general solve at n=2000, and the
+  nineteen collections next door (twelve hue families and seven modes, sized by that
+  project's `curation/targets.py`), one row per seat, with `collections` naming each
+  collection that seats it and its place in that collection's order. A **Collection**
+  dropdown chooses one and the chips filter what it chose. ⚠ **The nineteen are
   unpublished and Matt's word is that they are not final**, so `builder/seats.py`'s
   `COLLECTIONS` names a stamp per collection and refuses one whose solve was another
-  collection's — a re-solve is a re-pointing of that table, and `seats` removes the tiles
-  a repoint leaves unnamed. **The record is split by collection** *(explorer_slim_ckpt131)*:
-  `gallery.jsonl` is the header alone, carrying the Render mode select's roster as `modes`, and
-  each collection's rows are in the file its header entry names. The first frame waits on
-  the header and never the rows, and the panel fetches a collection when it first shows
-  it. **A staged gallery ships one
-  size and it is the tile**: 316 px WebP, about 10 KB, the only picture in the directory,
-  because the viewer draws the full picture on a click. `assets` asks a staged gallery for
-  no thumbnail because of it.
-- **A palette is shown by its display name and addressed by its own** *(explorer_palettes,
-  2026-09-16)*. `explorer/palette-names.json` is `{underlying: {name, source}}` and the only
-  place a display name lives; the underlying name is what links, Copy link, download
-  filenames, records and the bake spell. `source` is `authored` or `generated`, and
+  collection's; a re-solve is a re-pointing of that table, and `seats` removes the tiles a
+  repoint leaves unnamed. The record is split by collection: `gallery.jsonl` is the header
+  alone, and each collection's rows are in the file its header entry names. A staged
+  gallery ships one size and it is the tile, 316 px WebP; `builder/README.md` has the rest.
+- **A palette is shown by its display name and addressed by its own.**
+  `explorer/palette-names.json` is `{underlying: {name, source}}` and the only place a
+  display name lives; the underlying name is what links, Copy link, download filenames,
+  records and the bake spell. `source` is `authored` or `generated`, and
   `python -m builder explorer --names` fills missing entries and never rewrites an authored
-  one, so a hand-authored name is safe from it — a hand edit says `authored` beside it. The picker's
-  Popular list is `explorer/popular.json`. Its `pinned` and `dropped` are Matt's and edited
-  by hand (the same rule as a figure's tile); `--popular` fills the other places around
-  them under the rule `builder/picker.py` states, and never moves a pin.
+  one, so a hand-authored name is safe from it — a hand edit says `authored` beside it. The
+  picker's Popular list is `explorer/popular.json`. Its `pinned` and `dropped` are Matt's
+  and edited by hand (the same rule as a figure's tile); `--popular` fills the other places
+  around them under the rule `builder/picker.py` states, and never moves a pin.
 - **No location is reused across the site unless the repetition is intentional**
   *(Matt, 2026-09-01)*. A location gets one figure. Where the repetition is the point —
   a family's home view, which is its identity rather than anything the search found; a
@@ -352,7 +284,6 @@ keeps the mechanics. **Every apply round ends by distilling that round's general
   way, so a re-pick takes its excuse with it. Two figures at one centre and two widths
   are two locations to the check and one place to a reader, and that gap is a judgement
   call the record cannot make.
-
 - **Every figure records how it was made.** A figure's registry row carries a
   `provenance` list — one line per panel — and a line holds everything needed to draw
   that panel again: the family and its constants, the frame's centre and width, the
@@ -361,35 +292,25 @@ keeps the mechanics. **Every apply round ends by distilling that round's general
   "where did this picture come from?" a year later. A made figure without one is a
   failing `builder check`. Where a value is genuinely lost, the line says so — the
   record never guesses.
-- **A figure's maker is tracked, and lives in `builder/`** *(Matt, 2026-09-06)*. This
-  used to say the opposite — that the registry was the *only* place a picture's origin
-  survived, because the scripts that draw figures lived in ignored `scratch/`. That was
-  already untrue of most of them, and where it was true it cost: of fourteen figures
-  whose row named a script under `scratch/`, **thirteen of those scripts were gone**, and
-  `escape-julia-map` had to be patched pixel-wise rather than recomposed because the
-  program that drew it no longer existed. `provenance` is a record and not a program, and
-  a redraw off one is archaeology.
-
-  So a maker is a module in `builder/` with an entry in its own `SHEETS`, `MAKERS` or
+- **A figure's maker is tracked, and lives in `builder/`** *(Matt, 2026-09-06)*.
+  `provenance` is a record and not a program, and a redraw off one is archaeology. So a
+  maker is a module in `builder/` with an entry in its own `SHEETS`, `MAKERS` or
   `DIAGRAMS` table and a subcommand that draws it by figure id — `families`,
   `fundamentals`, `overview`, `diagram`, `locations`, `judges`, `palettes`, `pool`,
-  `picks`, `curation`, `growth`, `pipeline`, `atlas`, `front`, `deep`, `start`, `screenshot`. `scratch/` stays what it is for: the probes, sweeps and contact
-  sheets that *found* a choice. Once a choice is made, the program that acts on it is
-  committed. **All 61 of them are, as of 2026-09-06**, and a row naming a path under
-  `scratch/` is now a bug rather than a legacy.
-
-  Three rules come with it. **A maker addresses a location by its record** (its own
-  bullet below has the history) — the constants a search settled on are frozen into the
-  maker or read from a committed file, never re-derived at draw time. Where the answer to a search is
-  too big to write into the maker, it is a committed record beside it —
-  `builder/data/locations-walk-descent.json` is the one of those. **One encoder**: a
-  composed sheet goes through `images.land`, which downscales to `WEB_RES_MAX_WIDTH` and
-  encodes exactly the way `python -m builder import` does, so moving a maker into the
-  repository never rewrites the bytes of a picture that did not change — which is also
-  the test that a port is faithful, and **all fourteen recovered on 2026-09-06 came back
-  byte for byte identical**. And **these commands are no part of
-  `build` or `check`**, for `diagram`'s reason: text rasterizes through whatever font the
-  machine has, so two machines agree about the picture and not about its bytes.
+  `picks`, `curation`, `growth`, `pipeline`, `atlas`, `front`, `deep`, `start`,
+  `screenshot`. `scratch/` stays what it is for: the probes, sweeps and contact sheets
+  that *found* a choice. Once a choice is made, the program that acts on it is committed,
+  and a row naming a path under `scratch/` is a bug. Three rules come with it. **A maker
+  addresses a location by its record** (its own bullet below) — the constants a search
+  settled on are frozen into the maker or read from a committed file, never re-derived at
+  draw time; where the answer is too big to write into the maker, it is a committed record
+  beside it, as `builder/data/locations-walk-descent.json` is. **One encoder**: a composed
+  sheet goes through `images.land`, which downscales to `WEB_RES_MAX_WIDTH` and encodes
+  exactly the way `python -m builder import` does, so moving a maker into the repository
+  never rewrites the bytes of a picture that did not change — which is also the test that
+  a port is faithful. And **these commands are no part of `build` or `check`**, for
+  `diagram`'s reason: text rasterizes through whatever font the machine has, so two
+  machines agree about the picture and not about its bytes.
 - **The figure registry is `article/figures.jsonl`**, beside `sections.jsonl` and
   `prose.jsonl`. Every row says where it stands in `status` — `placed`, `pending`, `held`
   (registered and deliberately not on a page, with a `held_reason`) or `stale` (overtaken
@@ -398,18 +319,15 @@ keeps the mechanics. **Every apply round ends by distilling that round's general
   measurement that will be taken again; a `note` says what re-bakes it, and the caption
   carries a small `Draft` mark — every page here is a draft and says so nowhere, and this
   is the narrower claim, that a reader who copied a number off the picture would be
-  copying something with a shelf life). Every row also carries `sources`: a list of `{kind, keys}` naming the records
-  its pictures came out of, where **a key is a string that addresses a record by its own
-  name and an integer is refused at load**. `builder check` resolves every key against the
-  store its kind names — `run_row` against the curation release records and the
-  finished-render stores, `location` against the location label store and the walk
-  ledgers, `gallery_seat` against the recorded tentative gallery its stamp names,
-  `candidate` against the candidate ledger — and
-  says so and moves on where the wallpapers checkout is not configured.
+  copying something with a shelf life). Every row also carries `sources`: a list of
+  `{kind, keys}` naming the records its pictures came out of, where **a key is a string
+  that addresses a record by its own name and an integer is refused at load**.
+  `builder check` resolves every key against the store its kind names (`builder/README.md`
+  lists them) and says so and moves on where the wallpapers checkout is not configured.
   `docs/page-review.md` carries the page-by-page table of what is written, mastered,
   reviewed and held; nothing else keeps a copy of it.
-- **A figure may name its panels by tentative-gallery ID** *(2026-09-02)*. Matt picks
-  wallpapers off the curation browser by the alias under a tile; `builder/picks.py` turns
+- **A figure may name its panels by tentative-gallery ID.** Matt picks wallpapers off the
+  curation browser by the alias under a tile; `builder/picks.py` turns
   `<stamp>|<recipe key>` into a picture, so a re-pick is an edit to the `picks` list on the
   figure's own registry row followed by `python -m builder picks <id> --replace`, and
   nothing about the recipe is retyped. **The row is where the picks live** — the maker
@@ -419,15 +337,14 @@ keeps the mechanics. **Every apply round ends by distilling that round's general
   ledger **by a streamed lookup that stops as soon as it has its keys**. Never the pool —
   a solve may be running next door, and a figure prompt has no business loading what it
   is solving over.
-- **A maker addresses a location by its record, never by its position.** A rig that
-  resolves a stored pick through an index into a pool derived from the wallpaper
-  project's live data is drawing at a moving target: that pool grows, the index comes to
-  land somewhere else, and a rerun rewrites provenance under pictures that never changed
-  — the worst shape this can take, because nothing on the page looks wrong.
-  *(Matt, 2026-08-22, after eleven render lines across the four Rendering modes figures
-  were found rewritten that way.)* A choice freezes the family, the frame and the cap it
-  chose; the pool's own name for it survives as the note of where it was found, and a
-  rerun says out loud when that name has gone stale.
+- **A maker addresses a location by its record, never by its position** *(Matt,
+  2026-08-22)*. A rig that resolves a stored pick through an index into a pool derived from
+  the wallpaper project's live data is drawing at a moving target: that pool grows, the
+  index comes to land somewhere else, and a rerun rewrites provenance under pictures that
+  never changed — the worst shape this can take, because nothing on the page looks wrong.
+  A choice freezes the family, the frame and the cap it chose; the pool's own name for it
+  survives as the note of where it was found, and a rerun says out loud when that name has
+  gone stale.
 - **A white reading surface, and dark image wells.** Prose wants a page a reader can sit
   with; the wallpapers, most of them dark, want a mat rather than a white void to float
   in. So the dark treatment stays **local to the containers that hold pictures** and
@@ -460,30 +377,16 @@ keeps the mechanics. **Every apply round ends by distilling that round's general
 
 ## Layout
 
-```
-index.html      the article's front page and table of contents
-start-here.html the page a new reader is sent to first: the project in a few paragraphs,
-                in the rail above the contents and not one of them
-article/        one page per section, in reading order
-palettes/       the two pages that hang off Color palettes without being sections:
-                the palette library, generated from library.jsonl beside it; and the
-                palette prompt, hand-written
-wallpaper-packs/ finished work to download at full size, generated by the builder
-explorer/       the one page that runs code — the engine in wasm, and its link contract
-atlas/          the atlas: the frame the explorer's Atlas tab and Fractal atlases' live
-                figure both mount, over a per-partition record `builder/atlas.py` holds
-                to shape, and a redirect at the address the standalone page had until
-                2026-09-21
-go/             short links into the explorer, go/<name>/ for a video description:
-                one row of redirects.jsonl each, a page `build` writes from it, and
-                in neither the rail nor the contents
-assets/         css/, images/ — web-res only — and icons/, the site's icon set
-builder/        the Python page generator
-docs/           how this repository's workflows are run — the page-review loop
-scratch/        the probes and contact sheets a choice was found with, reports,
-                anything untracked (gitignored). Not the makers — those are in
-                builder/, per the locked convention above
-```
+`README.md`'s *What is where* is the map. What it leaves out:
+
+- `article/` holds exactly the fourteen ratified sections, in reading order; a page that
+  hangs off one lives in its own directory (below).
+- `go/` pages are in neither the rail nor the contents: one row of `redirects.jsonl` each,
+  and a page `build` writes from it.
+- `atlas/` also holds a redirect at the address the standalone atlas page had.
+- `docs/` is how this repository's workflows are run — the page-review loop.
+- `scratch/` is the probes and contact sheets a choice was found with, reports, and
+  anything untracked (gitignored). Not the makers — those are in `builder/`.
 
 ## How a page is put together
 
@@ -511,34 +414,31 @@ Wikipedia's shape: a sticky contents rail on the left, the reading column beside
   `atlas/embed.js`: one implementation with two callers, never a copy.
 
 **A page may hang off a section without being one.** The fourteen sections are ratified
-and `article/` holds exactly those fourteen; a page that belongs to a section but is not part of
-the reading order lives in its own directory and says so in the registries by naming
-itself with a slash — `palettes/make-your-own.html`. It carries the rail like any other
-page and the rail has no current entry on it, which is what the gallery pages already do.
+and `article/` holds exactly those fourteen; a page that belongs to a section but is not
+part of the reading order lives in its own directory and says so in the registries by
+naming itself with a slash — `palettes/make-your-own.html`. It carries the rail like any
+other page and the rail has no current entry on it, which is what the gallery pages
+already do.
 
 **The rail is derived, never typed.** `article/sections.jsonl` gives the reading order and
 which sections are `"status": "written"`; a rail entry's name is the page's own `<h1>`,
 and the entries that open under the current page are that page's prose `<h2>`s. Its title
 is the way back to the front page, and under the fourteen sections it carries the links
-that leave the article — the explorer and the code *(Matt, 2026-08-21)*, and this site's
-own code under it *(front_and_start_ckpt147)*. No entry marks a section written: the ✓ came
-off the rail and the front page together, and the flag stays in `sections.jsonl`. Above the title
-sits one group that is not a section, **Start here** *(start_here_ckpt146; a group since
-start_here_v2_ckpt147)*: a heading set like *Contents*, spelled by `sections.START_NAME`
-and linking to `start-here.html`, whose `<h1>` is the same two words *(since
-start_here_heading_ckpt147)*. On that page the group lists its four prose `<h2>`s as plain
-entries at one level; everywhere else it is the heading alone, which is when a section
-opens onto its headings too. The page sits at the root beside the front page, in no
-`sections.jsonl` row. Its peer sits under it, **Wallpaper packs** *(Matt,
-website_sweep_ckpt150_addendum1)*: a second group set the same way, spelled by
+that leave the article — the explorer and the code, and this site's own code under it. No
+entry marks a section written; the flag stays in `sections.jsonl`. Above the title sits
+one group that is not a section, **Start here**: a heading set like *Contents*, spelled by
+`sections.START_NAME` and linking to `start-here.html`, whose `<h1>` is the same two words.
+On that page the group lists its four prose `<h2>`s as plain entries at one level;
+everywhere else it is the heading alone, which is when a section opens onto its headings
+too. The page sits at the root beside the front page, in no `sections.jsonl` row. Its peer
+sits under it, **Wallpaper packs**: a second group set the same way, spelled by
 `sections.PACKS_NAME` and linking to `wallpaper-packs/index.html`, always the heading
 alone. Both are a `rail-group`; the masthead's own link to the packs stays. A prose
 `<h2>` also gets the id its rail entry links to, spelled from its own words by rule —
 a fragment is a permanent URL. `python -m builder build` writes the rail between two
 marker comments; `check`'s `contents` check re-derives the rail and the heading ids,
 holds the front page's typed contents list to having an entry per section, and fails on
-any drift. That check is tamper-tested: a renamed rail entry and a hand-edited heading id
-each produced exactly one problem and exit 1.
+any drift.
 
 **Two repositories are linked from every page, and each link says which.** The site bar's
 *GitHub* is this repository (`pages.SITE_REPO`), because a bar link named after the site is
@@ -550,49 +450,35 @@ picture go to `techmatt/fractal-wallpapers` (`pages.CODE_REPO`).
 The registry rule and the per-panel `provenance` requirement are locked conventions above.
 What a figure is made of:
 
-- **A render sheet is WebP at quality 88** *(website_webp_and_atlas_deprecate,
-  2026-09-21, replacing JPEG 4:4:4 at 88)*. The rule it replaces refused 4:2:0 by name,
-  because fractal renders are full of saturated edges, and lossy WebP is 4:2:0 always — so
-  the rule was put to the pictures instead of argued. The five figures whose chroma planes
-  carry the most high-frequency energy were laid beside their WebP at 1:1, and again at 4x
-  on the worst pixel of the worst of them, and the smear the old rule refuses is not there:
-  WebP's chroma downsample is not JPEG's box filter, and `render-supersample` — a figure
-  *about* single-pixel colour speckle — is the one that proves it. 54 figures, 21.88 MB to
-  13.53 MB. ⚠ **The committed WebP are transcodes of the JPEGs they replaced**, so a maker
-  rerun does *not* reproduce them byte for byte the way the one-encoder rule promises; it
-  lands one lossy step better, and the promise holds from that redraw on. `images.py`'s
-  `FIGURE_SUFFIX` is where the format is named, and no maker spells it.
+- **A render sheet is WebP at quality 88** *(2026-09-21)*. `images.py`'s `FIGURE_SUFFIX`
+  is where the format is named, no maker spells it, and the comment above it records why
+  4:2:0 WebP was accepted where 4:2:0 JPEG had been refused. ⚠ **The committed WebP are
+  transcodes of the JPEGs they replaced**, so a maker rerun does *not* reproduce them byte
+  for byte the way the one-encoder rule promises; it lands one lossy step better, and the
+  promise holds from that redraw on.
 - **A diagram is PNG**, and **an animation is an APNG** — which also carries a `.png`
   extension and sits in the **same plain `<img>` block** as everything else. No video
-  element, no script, no second markup path. **A video is not the site's to host**
-  *(start_video_embed_ckpt152)*: a registry row that says `video` names a YouTube id and
-  derives one `youtube-nocookie.com` `<iframe>`, lazy and 16:9, carrying no script of the
-  site's own. `start-video` on Start here is the one. Under its player it carries two
-  linked pictures *(start_video_links_ckpt152)*: panels that each name a short link in
-  `go` and link through `go/`, so `go/redirects.jsonl` stays the one source of a target,
-  and `check`'s `go` fails when the register moves on from the target a picture was drawn
-  at.
-- **A figure's caption is the caption and nothing else** *(Matt, 2026-08-21, replacing
-  the credit rule)*. It used to end with two sentences that were not about the picture: a
-  credit saying the engine drew it, identical under every render on the site, and the way
-  into the explorer written out as prose. Both are gone from `.figure`. A gallery tile
-  still carries its credit, which is where a reader meets a wallpaper without the article
-  around it.
-- **A caption is ranged left; a label under a picture is centred** *(Matt, 2026-08-22,
-  replacing the rule that centred a caption until it passed about three hundred
-  characters)*. A figure's caption is prose and is set flush left whatever its length,
-  held to the reading measure however wide the figure runs. The short name under a
-  gradient strip is a label rather than a caption, and centres. Both live in
-  `assets/css/site.css` and there is no per-figure knob: the `align` field a row used to
-  ask with is gone.
+  element, no script, no second markup path. **A video is not the site's to host**: a
+  registry row that says `video` names a YouTube id and derives one `youtube-nocookie.com`
+  `<iframe>`, lazy and 16:9, carrying no script of the site's own. `start-video` on Start
+  here is the one. Under its player it carries two linked pictures: panels that each name a
+  short link in `go` and link through `go/`, so `go/redirects.jsonl` stays the one source of
+  a target, and `check`'s `go` fails when the register moves on from the target a picture
+  was drawn at.
+- **A figure's caption is the caption and nothing else** *(Matt, 2026-08-21)*: no credit
+  saying the engine drew it, and no way into the explorer written out as prose. A gallery
+  tile still carries its credit, which is where a reader meets a wallpaper without the
+  article around it.
+- **A caption is ranged left; a label under a picture is centred** *(Matt, 2026-08-22)*. A
+  figure's caption is prose and is set flush left whatever its length, held to the reading
+  measure however wide the figure runs. The short name under a gradient strip is a label
+  rather than a caption, and centres. Both live in `assets/css/site.css` and there is no
+  per-figure knob.
 - **A label drawn into a sheet is centred under its tile, and one rule sizes it**
-  *(Matt, 2026-08-22)*. The labels a maker draws into the picture are past CSS's reach,
-  and every sheet used to name its own size — 13 here, 17 there, each chosen against the
-  sheet at the size it was composed at, which is not the size anybody reads it at. The
-  rule is `builder/sheets.py`'s `label_size`: the larger of a share of the tile's height
-  and a share of the composed sheet's width, the second being the floor that makes the
-  size mean the same thing on a sheet composed at 1316 and one at 2688. It steps down
-  where a line would run past its tile, and there is no per-figure size to pass.
+  *(Matt, 2026-08-22)*. The rule is `builder/sheets.py`'s `label_size`: the larger of a
+  share of the tile's height and a share of the composed sheet's width, so that the size
+  means the same thing on sheets composed at different widths. It steps down where a line
+  would run past its tile, and there is no per-figure size to pass.
 - **A figure may be registered before its asset exists**, with `"status": "pending"` and
   no file or size. The block it derives is a well saying what the picture will show, which
   is honest in a way an empty space or a broken image is not. `python -m builder figures`
@@ -649,171 +535,48 @@ node --test explorer/permalink.test.mjs explorer/bands.test.mjs explorer/level.t
 (cd explorer/perturb-wasm && cargo fmt --check) && (cd explorer/engine-wasm && cargo fmt --check) && (cd builder/deep-gallery-native && cargo fmt --check)
 ```
 
-**The third line is there so that a reformat can never arrive as a side effect**
-*(deep_refactor_ckpt138, 2026-09-20)*. `perturb-wasm` was 25 `rustfmt` diffs from clean
-across seven files, which meant a contributor who ran `cargo fmt` produced a repo-wide
-reformat — the state the formatting rule above says should never be possible. The reformat
-was taken deliberately, in a commit of its own, and this line is what holds it.
-**`engine-wasm` joined it** *(pre_closeout_ckpt138, 2026-09-20)*, its own eight diffs in
-`src/level.rs` taken the same way, so both crates are now held and neither can drift again.
-
-⚠ **A reformat moves `perturb.wasm`'s bytes** — `panic = "abort"` still embeds
-`#[track_caller]` line numbers, so a shifted line in `src/` is a shifted immediate — and the
-module is the same length and a different file. Measured, not supposed: the commit before
-the reformat rebuilt byte for byte, and the reformat alone did not. So a formatting commit
-in that crate owes a rebake like any other — and so does **every** source edit in
-`perturb-wasm`, a comment that moves a line included. `builder check`'s `bake` will not say
-so: it holds `palettes.js` and `catalog.js` and never rebuilds either module, so a
-`perturb.wasm` that no longer matches its crate is a green check. Rebuild with
-`python -m builder explorer --perturb` and name the new bytes in `perturb.manifest.json`.
-
-**`engine.wasm` did not move, and that is measured rather than assumed.** The same two
-crates on the same profile answered differently: `engine-wasm` reformatted and rebuilt to
-the identical 763,343 bytes. Three of its five hunks are inside `#[cfg(test)] mod tests` and
-are not compiled into the module at all; the one that is shipped code, in `densify`, shifts
-every line after it by three — and a probe that inserted three blank lines there on purpose
-rebuilt byte for byte too, so the insensitivity is the region's and not the hunk's luck.
-**Neither answer generalizes**, which is why both are written down: a formatting commit in
-either crate rebuilds its module and compares, and reports whichever it got.
+**The third line is there so that a reformat can never arrive as a side effect**; each
+crate's reformat was taken deliberately, in a commit of its own, and this line is what
+holds it. ⚠ **A formatting commit or any source edit in `perturb-wasm` moves
+`perturb.wasm`'s bytes** — a comment that moves a line included — and owes a rebake:
+`python -m builder explorer --perturb`, with the new bytes named in
+`perturb.manifest.json`. `builder check`'s `bake` will not say so: it holds `palettes.js`
+and `catalog.js` and never rebuilds either module, so a `perturb.wasm` that no longer
+matches its crate is a green check. **A formatting commit in `engine-wasm` rebuilds its
+module and compares too**, and reports whichever it got. `explorer/README.md`'s
+*Rebuilding* has the measurements behind both.
 
 The second line is the nineteen JavaScript suites, on Node's own runner with nothing
-installed. `permalink.test.mjs` is the contract held to itself — a URL is the one
-permanent thing this site emits, and it is worth a test suite even though nothing else
-here has one. `screensaver.test.mjs` holds the screensaver's pure parts: the interval
-table, the overrun rule, the learned correction and the bag it draws from. `hold.test.mjs`
-holds Hold look's re-solve: a held Lambda or Period keeps the colour at the reference value
-to the written rounding, and a drag back and forth comes home.
-`fit.test.mjs` holds Fit: the absolute recipe it chooses runs the palette `PASSES` times
-across Leveled's stretch, in a `λ` whose line is within a tenth of a turn of Leveled's
-shape, in numbers the contract writes, leaning to the log only where the log is as good.
-`dives.test.mjs` holds Keep diving's loop rule — a chain that runs out stops, a random draw
-that lands nowhere presses again a bounded number of times, a press the reader took the tab
-from is pressed again — which slots let Keep diving run, the landing mixture's shares, how a
-pasted address is read, and Dive results to being newest first. `aliasing.test.mjs` holds
-New coloring's aliasing guard: a smooth field keeps its period, a field whose neighbours sit
-a turn apart has it lengthened a bounded number of times, and a wide field is read at the
-quarter pass's spacing. `period-range.test.mjs` holds the Period slider's travel: its left
-end is one cycle across the frame's spread and its right end the aliasing limit, a quarter
-pass and a full pass of one frame give one travel, and a Lambda move that keeps the cycles
-keeps the thumb. `bands.test.mjs` is the pool held to the committed wasm: a band is a range
-of output rows, so the pool decides where the frame is cut and never what is in it, and
-the sizes it cuts at are the reader's machine's. It draws the anchor a few times over and
-takes a few seconds. `atlas.test.mjs` holds the atlas record to the same contract, and
-pins the one thing in that frame that could break in silence: the map the search's node
-views are drawn through and the explorer's own `DEFAULT_PALETTE` are the same map, which
-is the only reason a dot's picture and a dot's link agree. `level.test.mjs` holds the
-module's own measurement of a picture's tone to the autolevel operator's, and holds a
-curve the page derived to replaying to the bytes it drew, which is what lets Copy link
-write five numbers; its pixel case skips by name on a machine without the decoded bases
-in `artifacts/level-derive/`. `derive.test.mjs` holds the module's two derived
-parameters: a derived texture weight replays to the bytes it drew, and a derived trap
-opacity lands the typical painted pixel where it says it does. `stops.test.mjs` holds the
-palette blob's reader to the planar, byte-delta layout the bake writes. That layout is the
-same length as the interleaved one, so a wrong reader would draw real colors from the
-wrong stops rather than fail. Its on-disk case skips by name where `palettes.bin` is not
-baked. `saved.test.mjs` holds the Saved tab's list to its promises: a stored value it cannot
-read is an empty list and never a throw, one picture is one entry however its link was
-spelled, and the cap evicts nothing. `undo.test.mjs` holds the way back's list to the two
-rules that make one action one entry: a commit on the picture already under the cursor
-refreshes it rather than pushing, which is what collapses the second settle a measured pass
-makes, and a push drops whatever the cursor had ahead of it. `zip.test.mjs` holds Download all's stored-zip writer
-to the format, read back through its own central directory. `stamp.test.mjs` holds the link
-a downloaded picture carries to going in without the picture moving: a PNG built there is
-stamped and both inflate to the same raster, and the stamp taken back out gives the
-original file byte for byte. It cannot decode a browser's JPEG — node has no decoder and
-there is not going to be a dependency — so that side is checked segment by segment here and
-pixel for pixel out of band, which `explorer/README.md` records. The last three are the Deep
-tab's: `deep-fx.test.mjs` holds its coordinates to being exact where a double is not —
-a thousand steps of 1e-30 landing where one of 1e-27 does, and a difference taken in
-decimal where `f64` says zero; `deep-link.test.mjs` holds the deep contract to itself and
-**the shallow one to not having moved**; and `deep.test.mjs` holds the seam between the
-two wasm modules, which is the one place on this page where a mistake draws a plausible
-picture rather than raising — that the lanes `perturb.wasm` writes are the ones
-`engine.wasm` colours, that `shade_level` cannot see the placeholder viewport it is
-given, and that the deep kernel's sample grid is the engine's, with a frame nudged a
-tenth of a pixel as the control that proves the test has teeth. `deep-link.test.mjs` also
-carries the **paged** Inflection tab's marker, because a URL outlives a trial: the tab is
-out of the working set (`explorer/paged-inflection/README.md`) and its own suite went with
-it, and what stays behind is that `iv` is sorted by its own marker and that both live
-contracts refuse `iv` and `q` by name — which is what keeps a link somebody saved from ever
-being drawn as the plain Julia set underneath it.
+installed; `explorer/README.md`'s *The test suites* says what each holds, and
+`atlas/README.md` the atlas's.
 
 After touching placed prose, `python -m builder prose <page>` as well — see **Where prose
 comes from** above for what it holds together and why one edit has several sites.
 
-`builder check` is read-only, and it runs twenty-eight named checks. It resolves every
-internal link, refuses root-absolute and bare-directory hrefs, regenerates the gallery
-HTML and compares it byte for byte with what is committed, holds every figure block to
-its registry row, holds every made figure to being a block a redraw could land on —
-that is `landing`, whose subject is the derivation rather than the page, and the reason
-it is named here is that a redraw is refused by exactly this going wrong — holds every
-atlas slot's link to the recipe its thumbnail was drawn from, and draws a sample of them
-in the committed wasm beside their thumbnails — that is `agreement`, named here because
-every structural test was green while 28 of them opened at a weight none was drawn at
-*(ckpt141)* — rebakes the
-explorer's two generated modules and compares them with what is committed, holds the
-explorer link written into every full-size wallpaper to the contract whichever repository
-wrote the file — that is `stamps`, named here because the release writer next door is a
-second, Python author of the permalink and this is all that keeps it honest — holds every
-page's contents rail and prose heading ids to what the builder derives, sweeps the words
-a reader meets for em-dashes — that is `dashes`, mechanical since 2026-09-07, and it is
-named here because the rule it holds is `writing-guidance.md`'s rather than this file's —
-and sweeps
-`git ls-files --eol` for a tracked file that has drifted to CRLF on disk — that is
-`endings`, and it is named here because it is the one drift `git status` and `git diff`
-both report as nothing — holds the site's copy of the wallpaper coloring to next door's
-`coloring_of` on every seat the collection records name, which is `coloring` — and holds every served page to declaring the site's icon with the
-links `builder/icons.py` spells, which is `icons`, and every short link under
-`go/` to a target the explorer's own reader accepts and to the page its register row
-writes, which is `go` — and holds the Wallpaper packs record to the page's `[PACK]`
-markers and to what the project next door answers, which is `packs` — and holds every
-explorer link in both repositories' root READMEs to parsing as its own canonical spelling,
-and each strip thumbnail that is a seat to the contract's link for that seat's recipe,
-which is `readmes`, named here because a hand-written README link is the one explorer link
-no build derives *(readme_links_complete_ckpt154)* — and holds every explorer link a record,
-a served page or a root README stores to naming each key once, which is `repeats`
-*(duplicate_key_links_ckpt154)* — and holds the Deep tab's gallery and Random dives to
-their tiles, a tracked tile for every row and no row twice, which is `deep`
-*(random_dives_ckpt155)*. It also
-prints one note — never a failure — about the committed wasm module, described in
-`explorer/README.md`. The same commands run in CI
+`builder check` is read-only, and it runs twenty-eight named checks. `builder/checks.py`'s
+module docstring names every one and what it holds; `builder/README.md`'s *What `check`
+checks* has most of them at more length. It also prints one note — never a failure — about
+the committed wasm module, described in `explorer/README.md`. The same commands run in CI
 (`.github/workflows/checks.yml`), which is a check and not a deploy dependency, on Linux,
-macOS and Windows *(ci_matrix_ckpt152)*, with a `crates` job that builds the three Rust
-crates on the manifests' toolchain and reports each built wasm's hash beside the committed
-one without asserting it.
+macOS and Windows, with a `crates` job that builds the three Rust crates on the manifests'
+toolchain and reports each built wasm's hash beside the committed one without asserting it.
 
 **Every check runs on a bare clone, and what cannot run says so by name.** CI clones this
 repository alone, so a check that needs the wallpapers checkout is a check CI never makes.
-Nine of them want it — the next-door half of `stamps`, which holds the release writer's
-links to the explorer's own; the next-door half of `readmes`, which reads the wallpapers
-README and resolves the strips' seats; the next-door half of `repeats`, which reads the same
-README's links; `library`, which holds `palettes/library.jsonl` to the palette
-library next door; `bake`, which rebakes the explorer's modules; `seats`, which holds a
-panel to the picture its gallery ships; `coloring`, which holds the site's wallpaper
-coloring to the one next door; the source-key half of `figures`; and the next-door half of
-`packs`, which holds the Wallpaper packs record to what the project answers today and needs
-**the full set as well as the checkout** (`full_set_root` in `local.toml`, and there on
-disk) — and
-without it each reports a **named skip**: `skipped` rather than `ok`
-on its own line, and counted in the exit summary. Pillow's absence is the same shape, for pixel sizes. Never a crash before the
-other checks, and never a silent pass. *(This is a rule because it was broken: `check`
-built the palette library page straight off the checkout, so on a machine without one it
-raised before the first check, and CI's check step spent that whole time red for a reason
-that had nothing to do with the site.)* The one command that needs the checkout on that
-page's behalf is `python -m builder palettes --library`, which rewrites the record and
-lands any missing strip.
+Nine of them want it — the next-door halves of `stamps`, `readmes`, `repeats` and `packs`
+(which needs the full set as well: `full_set_root` in `local.toml`, and there on disk),
+`library`, `bake`, `seats`, `coloring`, and the source-key half of `figures` — and without
+it each reports a **named skip**: `skipped` rather than `ok` on its own line, and counted
+in the exit summary. Pillow's absence is the same shape, for pixel sizes. Never a crash
+before the other checks, and never a silent pass. The one command that needs the checkout
+on the palette library page's behalf is `python -m builder palettes --library`, which
+rewrites the record and lands any missing strip.
 
 **Which is why a checkpoint runs `check` here, not in CI.** A green CI says every check
-that a bare clone can ask came back clean; it says nothing about the palette record, the
-explorer's generated modules, whether a seat panel is still the picture its gallery
-ships, whether the release writer still spells the explorer's links, whether a README
-thumbnail still opens its seat or names a key twice, whether the site
-still colors a wallpaper the way the project does, whether the packs record is still what
-the project answers, or a single one of the source keys a figure cites, because those nine
-questions were skipped by name. Before a prompt is called done, run
-`python -m builder check` on this machine with the checkout configured and read the skip
-count in the exit summary — a run that reports skips is a run that answered part of the
-question.
+that a bare clone can ask came back clean, and nothing about the nine questions it
+skipped by name. Before a prompt is called done, run `python -m builder check` on this
+machine with the checkout configured and read the skip count in the exit summary — a run
+that reports skips is a run that answered part of the question.
 
 ## Friends' votes
 
@@ -877,19 +640,19 @@ Each prompt in this project ends the same way:
   the work is on `main` — no branches, no PRs, no waiting for approval, in this repo as
   in every repo of this project. The only exception is a very good reason not to, and
   that reason belongs in the report.
-- **Commit with a pathspec (`git commit -- <paths>`), never a bare `git commit` after staging**, because another prompt may have staged files in the same index.
+- **Commit with a pathspec (`git commit -- <paths>`), never a bare `git commit` after
+  staging**, because another prompt may have staged files in the same index.
 - **No commit ≥20 MB** — single blob or aggregate — without Matt's explicit prior
   confirmation. This repo carries images, so the aggregate half of that gate is the
   one that will bite: check the total added size of an image drop before staging it,
   not after.
-- **The gallery and library assets are tracked** *(Matt, deploy_staged_assets_ckpt152,
-  2026-09-26, lifting the staging rule)*. The Gallery tab's tiles, the atlas slot
-  pictures, the Deep tab's tiles, `explorer/palettes.bin` and the Walk tab's judges are
-  committed beside the records that name them, so what Pages serves is what the local
-  build serves. **A re-solve, a re-ingest or a rebake now shows up as a tracked diff**, and
-  it is committed like any other: it is subject to the 20 MB gate above, and a tile the
-  record stops naming is a deletion to commit, not a file to forget. `builder/README.md`'s
-  *What was staged* has the set and its sizes.
+- **The gallery and library assets are tracked** *(Matt, 2026-09-26)*. The Gallery tab's
+  tiles, the atlas slot pictures, the Deep tab's tiles, `explorer/palettes.bin` and the
+  Walk tab's judges are committed beside the records that name them, so what Pages serves
+  is what the local build serves. **A re-solve, a re-ingest or a rebake shows up as a
+  tracked diff**, and it is committed like any other: it is subject to the 20 MB gate
+  above, and a tile the record stops naming is a deletion to commit, not a file to forget.
+  `builder/README.md`'s *What was staged* has the set and its sizes.
 - **Prompts never land in the repo.** They live in
   `C:\Code\fractal-drive-sync\prompts\`; a working copy in this directory stays
   untracked.

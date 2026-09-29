@@ -83,7 +83,7 @@ so a preview opened from disk resets to 100% at every click. Over localhost the 
 site is one origin and the zoom holds. It serves the committed bytes and builds nothing.
 
 Install what it needs with `python -m pip install -r builder/requirements.txt`, in a
-virtualenv on any of the three platforms (the Installing section of the top-level README). CI runs
+virtualenv on any of the three platforms (the Running it locally section of the top-level README). CI runs
 `check` on Linux, macOS and Windows.
 
 **`check` runs on a bare clone.** Every check it makes runs against this repository and
@@ -800,6 +800,9 @@ python -m builder votes export-order --out FILE   the general thousand by likes,
 directory, and fails if the real store moved while it ran.
 
 ## What `check` checks
+
+`checks.py`'s module docstring is the complete list. The seven it has that this section
+does not yet cover are `dashes`, `stamps`, `go`, `packs`, `readmes`, `repeats`, and `deep`.
 
 - **links** — every internal `href` and `src` on every page resolves, and none is
   root-absolute. The site is served from `/fractals/`, so a rooted href works
