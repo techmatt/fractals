@@ -30,11 +30,15 @@ record and the gallery's collections are, and a clone reads the answer.
   the line says nothing about one: **a rebuild after the packs are built fills them in**,
   `--import` then `build`, with no prose change.
 - **The five pictures** are Gallery tab tiles, already tracked under
-  `assets/images/galleries/seated-candidates/`. A colour pack and the general one show
-  the first five seats of that collection's own page order (`curation/page_order.py`, as
-  the Gallery tab lays them out, which is each row's `collections` place). A best pack
-  shows the ranks the pack before it does not hold: Best 30 its ranks 1 to 5, Best 100
-  its 31 to 35, Best 200 its 101 to 105.
+  `assets/images/galleries/seated-candidates/`, and they are the friends' votes *(Matt,
+  packs_stage_voted_ckpt157)*: `ranking.previews` walks each pack in its staged order and
+  takes up to five seats that have a vote, are shown nowhere else on the site, and are no
+  earlier pack's preview (`builder/ranking.py` has the rules). Where fewer than five
+  qualify, the rest are empty in the record and the block draws each as a
+  `NEEDS_VOTES` cell. This is on purpose ahead of the zips: `--import` writes the picks
+  whether or not the packs have been rebuilt, so a best pack may preview a picture its
+  built zip does not hold yet. The import therefore needs the votes store as well as the
+  checkout and the full set.
 
 ## Links
 
@@ -45,11 +49,10 @@ that is nearly the picture is worse than none. The Gallery tab opens those anywa
 the view a tile opens is the view the reader explores (explorer_render_seams_ckpt153), and
 a page's figure is a claim about one picture.
 
-**Any repetition on this page is fine** *(Matt, packs_page_ckpt153)*: a pack's five are
-its own collection's opening, and the general gallery's first seat is also the cyan
-collection's. None of these blocks is a registry figure, so the `locations` check never
-sees them, and this is the blanket exception said once rather than a `reuse_reason` per
-pack.
+**No preview repeats on this page, or anywhere else on the site**: the picker refuses
+both, which is stricter than packs_page_ckpt153's blanket exception needed. None of these
+blocks is a registry figure, so the `locations` check never sees them, and `check` holds
+the no-repeat half itself.
 """
 
 from __future__ import annotations
@@ -59,7 +62,7 @@ import subprocess
 from dataclasses import dataclass
 from pathlib import Path
 
-from . import records, renders, seats, sections
+from . import records, renders, seats, sections, votes
 from .escape import attribute, text
 from .paths import GALLERIES_DIR, GALLERY_IMAGES_DIR, SITE_ROOT, relative_href
 from .settings import local
@@ -82,6 +85,9 @@ BUILT_KEY, BUILT_VARIABLE = "packs_root", "FRACTAL_WEBSITE_PACKS"
 
 #: How many pictures a pack's block shows.
 SHOWN = 5
+
+#: What a slot says that no voted seat filled.
+NEEDS_VOTES = "needs votes"
 
 #: The best packs, each the first K of the general rank, as next door cuts them.
 BEST = ("best-30", "best-100", "best-200")
@@ -220,7 +226,13 @@ def load() -> tuple[dict, dict[str, Pack]]:
             files.append(Download(str(one["file"]), int(one["pictures"]), size))
         if not files:
             raise records.RecordError(f"{row.where}: a pack needs at least one file")
-        loaded[name] = Pack(name, row.text("collection"), tuple(files), row.lines("thumbs"))
+        # Possibly empty: a pack with no voted seat to show is five "needs votes" cells.
+        thumbs = row.fields.get("thumbs")
+        if not isinstance(thumbs, list) or not all(
+            isinstance(key, str) and key.strip() for key in thumbs
+        ):
+            raise records.RecordError(f"{row.where}: thumbs must be a list of seat keys")
+        loaded[name] = Pack(name, row.text("collection"), tuple(files), tuple(thumbs))
     return header.fields, loaded
 
 
@@ -239,16 +251,6 @@ def collection_sizes() -> dict[str, int]:
     """Each collection's size as the Gallery tab's header records it."""
     head = records.read(seats.metadata_path())[0]
     return {one["name"]: int(one["seats"]) for one in head.fields.get("collections") or []}
-
-
-def opening(collection: str, rows: dict[str, dict]) -> list[str]:
-    """A collection's first `SHOWN` seats in its own page order."""
-    placed = sorted(
-        (row["collections"][collection], key)
-        for key, row in rows.items()
-        if collection in (row.get("collections") or {})
-    )
-    return [key for _, key in placed[:SHOWN]]
 
 
 # ------------------------------------------------------------------ the import, next door
@@ -299,6 +301,12 @@ def unaskable() -> str | None:
         return f"the full set is not configured here (`{FULL_KEY}` in local.toml)"
     if not root.is_dir():
         return f"{root} is configured as the full set, and is not there"
+    try:
+        store = votes.store_path()
+    except votes.VotesError:
+        return "the votes store is not configured here"
+    if not store.is_file():
+        return f"{store} is configured as the votes store, and is not there"
     return None
 
 
@@ -350,9 +358,11 @@ def current() -> dict[str, dict]:
 
 def derive() -> list[dict]:
     """The record, header first, as the project next door answers today."""
+    from . import ranking
+
     planned = current()
     general_parts = sorted(name for name in planned if name.startswith(f"{GENERAL}-"))
-    rows = seat_rows()
+    picked = ranking.previews(planned).previews
     out = [
         {
             "schema": records.SCHEMA,
@@ -361,20 +371,14 @@ def derive() -> list[dict]:
             "order_from": planned[BEST[0]]["order_from"],
         }
     ]
-    before = 0
     for name in marked():
         if name == GENERAL:
             parts = [planned[part] for part in general_parts]
-            thumbs = opening(GENERAL, rows)
-        elif name in BEST:
-            parts = [planned[name]]
-            thumbs = parts[0]["keys"][before : before + SHOWN]
-            before = len(parts[0]["keys"])
         else:
             if name not in planned:
                 raise PacksError(f"the prose places {name!r} and next door plans no such pack")
             parts = [planned[name]]
-            thumbs = opening(name, rows)
+        thumbs = picked[name].picks
         out.append(
             {
                 "schema": records.SCHEMA,
@@ -479,6 +483,15 @@ def block(page: Path, pack: Pack, rows: dict[str, dict]) -> str:
         lines.append(f'{pad}    <div class="figure-panel">')
         lines.append(f"{pad}      {figures._linked(picture, opened)}")
         lines.append(f"{pad}    </div>")
+    # A slot no voted seat filled: a figure's blank cell at a tile's shape, saying so.
+    width, height = seats.TILE_SIZE
+    for _ in range(SHOWN - len(pack.thumbs)):
+        lines.append(f'{pad}    <div class="figure-panel">')
+        lines.append(
+            f'{pad}      <div class="figure-blank pack-needs-votes" '
+            f'style="aspect-ratio: {width} / {height}">{text(NEEDS_VOTES)}</div>'
+        )
+        lines.append(f"{pad}    </div>")
     lines.append(f"{pad}  </div>")
     lines.append(f'{pad}  <ul class="pack-downloads">')
     for index, one in enumerate(pack.files):
@@ -530,10 +543,12 @@ def problems(*, with_checkout: bool) -> list[str]:
 
     The first half reads this repository alone and runs on a clone: every `[PACK]` the
     prose places has a row and every row a marker, the counts are the collections' sizes,
-    each picture is a seat whose tile is on disk, and a colour or general pack's five are
-    that collection's opening. The second half is the record being what `--import` would
-    write today, which needs the checkout and the full set, and says so by name where
-    either is missing.
+    each picture is a seat of the pack's collection whose tile is on disk, and no picture
+    is two packs' preview. The second half is the record being what `--import` would write
+    today, which needs the checkout, the full set, and the votes store, and says so by name
+    where one is missing. That half is what holds a preview to the rules: a vote, nowhere
+    else on the site, and (for a best pack) a member of the staged pack rather than of the
+    built zip, which the previews are deliberately ahead of.
     """
     found: list[str] = []
     where = "wallpaper-packs/packs.jsonl"
@@ -551,14 +566,18 @@ def problems(*, with_checkout: bool) -> list[str]:
     rows = seat_rows()
     sizes = collection_sizes()
     widths = {"best-30": 30, "best-100": 100, "best-200": 200}
+    previewed: dict[str, str] = {}
     for name, pack in loaded.items():
         total = sum(one.pictures for one in pack.files)
         wanted = widths.get(name, sizes.get(pack.collection))
         if total != wanted:
             found.append(f"{where}: {name} holds {total} pictures, and its collection {wanted}")
-        if len(pack.thumbs) != SHOWN:
-            found.append(f"{where}: {name} shows {len(pack.thumbs)} pictures, not {SHOWN}")
+        if len(pack.thumbs) > SHOWN:
+            found.append(f"{where}: {name} shows {len(pack.thumbs)} pictures, over {SHOWN}")
         for key in pack.thumbs:
+            if key in previewed:
+                found.append(f"{where}: {name}'s {key} is already {previewed[key]}'s preview")
+            previewed.setdefault(key, name)
             row = rows.get(key)
             if row is None:
                 found.append(f"{where}: {name}'s {key} is no seat of the Gallery tab's record")
@@ -566,8 +585,6 @@ def problems(*, with_checkout: bool) -> list[str]:
                 found.append(f"{where}: {name}'s {key} has no tile on disk")
             elif pack.collection not in row.get("collections", {}):
                 found.append(f"{where}: {name}'s {key} is not a seat of {pack.collection}")
-        if not pack.best and list(pack.thumbs) != opening(pack.collection, rows):
-            found.append(f"{where}: {name}'s pictures are not its collection's first {SHOWN}")
     if with_checkout and unaskable() is None:
         try:
             if derive() != committed_rows():
@@ -575,6 +592,6 @@ def problems(*, with_checkout: bool) -> list[str]:
                     f"{where}: not what the project next door answers today — "
                     "`python -m builder packs --import`, then `build`"
                 )
-        except (PacksError, renders.EngineError, OSError) as error:
+        except (PacksError, renders.EngineError, votes.VotesError, OSError) as error:
             found.append(f"{where}: next door could not be asked — {error}")
     return found

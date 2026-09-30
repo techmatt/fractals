@@ -794,6 +794,15 @@ a:hover { color: var(--ink); }
 .pack-explore { margin: 0.6rem 0 0; font-size: 0.875rem; }
 .figure .pack-explore a { color: var(--well-ink-dim); }
 .figure .pack-explore a:hover { color: var(--well-ink); }
+/* A preview slot no voted picture filled (packs_stage_voted_ckpt157): a figure's blank
+   cell at a tile's shape, with its words centred in it. */
+.pack-needs-votes {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--well-ink-dim);
+  font-size: 0.875rem;
+}
 
 /* A figure registered before its picture exists. Prose gets written before pictures get
    made, so the well stays where it will be and says what will fill it — a dashed hole

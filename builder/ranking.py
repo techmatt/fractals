@@ -20,8 +20,9 @@ order per collection.
 ## The five pictures
 
 `pick` walks a pack's members in staged order and takes the first `PREVIEWS` that pass
-three rules, which are Matt's first cut and are constants so he can tune them:
+four rules *(Matt, packs_stage_voted_ckpt157)*; the hue cap is a constant so he can tune it:
 
+- a seat nobody voted for is never a preview, so an unvoted seat is not walked at all;
 - a seat shown anywhere else on the site is skipped (`shown_on_site`: every figure panel
   and figure source key that is a seat, whatever the figure is for, since reuse is reuse);
 - a seat already chosen by an earlier pack on the page is skipped, walking the packs in
@@ -29,8 +30,15 @@ three rules, which are Matt's first cut and are constants so he can tune them:
 - no hue family takes more than `HUE_CAP` of a pack's five, except in a colour pack, which
   is one family by construction.
 
+**There is no fall-through.** Where fewer than five pass, the rest of the pack's slots stay
+empty, and the packs page draws each as a "needs votes" cell (`packs.NEEDS_VOTES`). These
+picks are the packs page's own five: `packs --import` writes them into the record through
+`previews`, the same walk `stage` makes, so the page shows them ahead of any zip rebuild,
+and a best pack's preview may be a picture its built zip does not hold yet.
+
 The pack page's own five pictures are not on the site for this purpose: they are what the
-staged picks replace.
+staged picks replace, and no `explorer/links.jsonl` row names one, so they never feed back
+into `shown_on_site`.
 
 ## The staging page
 
@@ -44,6 +52,7 @@ what each preview walk that reached it made of it.
 from __future__ import annotations
 
 import json
+import tempfile
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -95,17 +104,19 @@ def general_order(current: dict[str, dict]) -> list[str]:
     return [key for name in parts for key in current[name]["keys"]]
 
 
-def staged(scores: dict[str, int]) -> tuple[dict[str, list[str]], list[str]]:
+def staged(
+    scores: dict[str, int], current: dict[str, dict], order_file: Path
+) -> tuple[dict[str, list[str]], list[str]]:
     """Each pack on the page by name, members in staged order, and the general rank.
 
-    The general pack is its parts end to end, as the page names it once.
+    The general pack is its parts end to end, as the page names it once. `current` is
+    `packs.current()`, and the general rank is written to `order_file` for next door to read.
     """
-    current = packs.current()
     order = ranked(general_order(current), scores)
-    ORDER_FILE.parent.mkdir(parents=True, exist_ok=True)
-    ORDER_FILE.write_text("".join(key + LF for key in order), encoding="utf-8", newline=LF)
+    order_file.parent.mkdir(parents=True, exist_ok=True)
+    order_file.write_text("".join(key + LF for key in order), encoding="utf-8", newline=LF)
     # Read raw, never through `current()`: its built-wins merge puts the shipped order back.
-    planned = {pack["name"]: pack for pack in packs._asked(ORDER_FILE)["planned"]}
+    planned = {pack["name"]: pack for pack in packs._asked(order_file)["planned"]}
     out: dict[str, list[str]] = {}
     for name in packs.marked():
         if name == packs.GENERAL:
@@ -183,6 +194,11 @@ class Previews:
     def counts(self) -> dict[str, int]:
         return {why: sum(1 for said in self.skipped.values() if said == why) for why in REASONS}
 
+    @property
+    def empty(self) -> int:
+        """The slots no voted seat filled, which the page draws as "needs votes"."""
+        return PREVIEWS - len(self.picks)
+
 
 def pick(
     name: str,
@@ -190,15 +206,18 @@ def pick(
     hue: dict[str, str],
     on_site: set[str],
     taken: set[str],
+    scores: dict[str, int],
     *,
     capped: bool,
 ) -> Previews:
-    """A pack's `PREVIEWS`, walking `members` in order under the three rules."""
+    """At most `PREVIEWS` of a pack, walking its voted `members` in order under the rules."""
     chosen = Previews(name)
     per_hue: dict[str, int] = {}
     for key in members:
         if len(chosen.picks) == PREVIEWS:
             break
+        if not scores.get(key):
+            continue
         if key in on_site:
             chosen.skipped[key] = ON_SITE
         elif key in taken:
@@ -212,17 +231,54 @@ def pick(
 
 
 def pick_all(
-    order: dict[str, list[str]], hue: dict[str, str], on_site: set[str]
+    order: dict[str, list[str]], hue: dict[str, str], on_site: set[str], scores: dict[str, int]
 ) -> dict[str, Previews]:
     """Every pack's previews, in page order, none reused and none shown on the site."""
     taken: set[str] = set()
     out = {}
     for name in packs.marked():
         collection = packs.GENERAL if name in packs.BEST else name
-        chosen = pick(name, order[name], hue, on_site, taken, capped=collection == packs.GENERAL)
+        chosen = pick(
+            name, order[name], hue, on_site, taken, scores, capped=collection == packs.GENERAL
+        )
         taken.update(chosen.picks)
         out[name] = chosen
     return out
+
+
+@dataclass
+class Staging:
+    """One staging's answer: who voted, each pack's staged order, and what the walks took."""
+
+    who: dict[str, list[str]]
+    order: dict[str, list[str]]
+    rows: dict[str, dict]
+    site: dict[str, list[str]]
+    previews: dict[str, Previews]
+
+    @property
+    def scores(self) -> dict[str, int]:
+        return {key: len(names) for key, names in self.who.items()}
+
+
+def previews(current: dict[str, dict], order_file: Path | None = None) -> Staging:
+    """Rank and pick, with `current` as `packs.current()` answered it.
+
+    `order_file` is where the general rank is written for next door; left out, it is a
+    temporary file, which is how `packs --import` and `check` ask without writing anything
+    into the checkout.
+    """
+    who = voters()
+    scores = {key: len(names) for key, names in who.items()}
+    if order_file is None:
+        with tempfile.TemporaryDirectory() as scratch:
+            order, _ = staged(scores, current, Path(scratch) / "order.txt")
+    else:
+        order, _ = staged(scores, current, order_file)
+    rows = packs.seat_rows()
+    hue = {key: row["hue"] for key, row in rows.items()}
+    site = shown_on_site()
+    return Staging(who, order, rows, site, pick_all(order, hue, set(site), scores))
 
 
 # ------------------------------------------------------------------------------- the stage
@@ -233,14 +289,9 @@ def stage() -> list[str]:
     why = packs.unaskable()
     if why is not None:
         raise packs.PacksError(f"cannot stage the packs: {why}")
-    who = voters()
-    scores = {key: len(names) for key, names in who.items()}
-    order, general = staged(scores)
-    rows = packs.seat_rows()
-    hue = {key: row["hue"] for key, row in rows.items()}
-    site = shown_on_site()
-    previews = pick_all(order, hue, set(site))
-    _write(order, previews, rows, who, site)
+    staging = previews(packs.current(), ORDER_FILE)
+    order, scores, site = staging.order, staging.scores, staging.site
+    _write(order, staging.previews, staging.rows, staging.who, site)
 
     best = order[packs.BEST[-1]]
     lines = [f"page: {_served()} (under `python -m builder serve`)", f"order: {ORDER_FILE}"]
@@ -249,9 +300,12 @@ def stage() -> list[str]:
         f"by votes, {sum(1 for key in best if not scores.get(key))} by the tie-break; "
         f"{len(site)} seats shown on the site"
     )
-    for name, chosen in previews.items():
+    for name, chosen in staging.previews.items():
         skipped = ", ".join(f"{n} {why}" for why, n in chosen.counts().items() if n)
-        lines.append(f"  {name:<9} {' '.join(chosen.picks)}  skipped: {skipped or 'none'}")
+        lines.append(
+            f"  {name:<9} {' '.join(chosen.picks) or '-'}  empty: {chosen.empty}  "
+            f"skipped: {skipped or 'none'}"
+        )
     return lines
 
 
@@ -342,10 +396,11 @@ def _write(order, previews, rows, who, site) -> None:
             "<main>",
             '  <section class="prose">',
             "    <h1>Wallpaper packs, staged from the votes</h1>",
-            "    <p>STAGED, not published. Each pack's five are the picker's first cut: "
-            f"no seat shown elsewhere on the site, none reused on this page, and at most "
-            f"{HUE_CAP} of one hue family outside the color packs. Scores are votes, one per "
-            "voter; ties keep the order the packs ship in.</p>",
+            "    <p>STAGED. Each pack's five are the picker's, and the packs page's after "
+            "`packs --import`: only seats with a vote, no seat shown elsewhere on the site, "
+            f"none reused on this page, and at most {HUE_CAP} of one hue family outside the "
+            "color packs; a slot nothing fills needs votes. Scores are votes, one per voter; "
+            "ties keep the order the packs ship in.</p>",
             *blocks,
             *bands,
             "  </section>",

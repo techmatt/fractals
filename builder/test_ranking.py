@@ -15,21 +15,38 @@ class Ranking(unittest.TestCase):
         self.assertEqual(ranking.ranked(keys, {"d": 2, "b": 1, "e": 1}), ["d", "b", "e", "a", "c"])
         self.assertEqual(ranking.ranked(keys, {}), keys)
 
-    def test_the_three_rules(self):
+    def test_the_rules(self):
         members = [f"k{n}" for n in range(12)]
         hue = {key: "blue" for key in members} | {"k7": "red", "k8": "red", "k9": "green"}
-        chosen = ranking.pick("best-30", members, hue, {"k0"}, {"k1"}, capped=True)
+        scores = dict.fromkeys(members, 1)
+        chosen = ranking.pick("best-30", members, hue, {"k0"}, {"k1"}, scores, capped=True)
         self.assertEqual(chosen.picks, ["k2", "k3", "k7", "k8", "k9"])
         self.assertEqual(chosen.skipped["k0"], ranking.ON_SITE)
         self.assertEqual(chosen.skipped["k1"], ranking.EARLIER)
         self.assertEqual(chosen.skipped["k4"], ranking.HUE)
         self.assertEqual(chosen.counts(), {ranking.ON_SITE: 1, ranking.EARLIER: 1, ranking.HUE: 3})
         self.assertNotIn("k10", chosen.skipped, "the walk stops at the fifth pick")
+        self.assertEqual(chosen.empty, 0)
+
+    def test_no_fall_through_to_unvoted_seats(self):
+        members = [f"k{n}" for n in range(8)]
+        hue = dict.fromkeys(members, "blue")
+        scores = {"k0": 2, "k1": 1, "k2": 1}
+        chosen = ranking.pick("blue", members, hue, {"k1"}, set(), scores, capped=False)
+        self.assertEqual(chosen.picks, ["k0", "k2"])
+        self.assertEqual(chosen.empty, ranking.PREVIEWS - 2)
+        self.assertNotIn("k3", chosen.skipped, "an unvoted seat is not walked")
 
     def test_a_colour_pack_is_not_capped(self):
         members = [f"k{n}" for n in range(6)]
         chosen = ranking.pick(
-            "blue", members, dict.fromkeys(members, "blue"), set(), set(), capped=False
+            "blue",
+            members,
+            dict.fromkeys(members, "blue"),
+            set(),
+            set(),
+            dict.fromkeys(members, 1),
+            capped=False,
         )
         self.assertEqual(chosen.picks, members[: ranking.PREVIEWS])
 
@@ -38,7 +55,7 @@ class Ranking(unittest.TestCase):
         hues = ("red", "blue", "green", "teal")
         hue = {key: hues[n % len(hues)] for n, key in enumerate(members)}
         order = {name: members for name in packs.marked()}
-        chosen = ranking.pick_all(order, hue, set())
+        chosen = ranking.pick_all(order, hue, set(), dict.fromkeys(members, 1))
         picked = [key for one in chosen.values() for key in one.picks]
         self.assertEqual(len(picked), len(set(picked)))
         self.assertEqual(len(picked), ranking.PREVIEWS * len(packs.marked()))
