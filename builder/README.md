@@ -839,9 +839,10 @@ is a registry figure, so `locations` never reads them.
 **STAGING: `python -m builder packs stage`** *(packs_stage_ckpt157)* ranks the packs by the
 friends' votes and writes an untracked page, `artifacts/packs-stage/index.html` (served at
 `/artifacts/packs-stage/`), with each pack's staged five and the staged Best 200 marked with
-score, voters, and why a tile was passed over. Nothing it writes is published, and the packs
-page keeps its own five until the packs are rebuilt. `builder/ranking.py` holds the ranking
-and the picker, for the real rebuild to reuse:
+score, voters, and why a tile was passed over. Nothing `stage` writes is published, but the
+packs page shows the same five *(packs_stage_voted_ckpt157)*: `packs --import` asks the same
+walk (`ranking.previews`) and writes its picks into `packs.jsonl`, ahead of any zip rebuild.
+`builder/ranking.py` holds the ranking and the picker:
 
 - **The ranking** is votes (`votes.resolved`, one per voter per seat), ties in
   `packs.current()`'s order. The general thousand in that order is written to
@@ -851,11 +852,21 @@ and the picker, for the real rebuild to reuse:
   merge would put the shipped order back. **A colour pack's staged order is this module's
   alone**: `plan()` orders the general thousand by the file and shuffles each colour pack by
   its own seed, so shipping it needs next door to take an order per collection.
-- **The picker** walks each pack in page order and staged rank and takes `PREVIEWS` seats,
-  skipping any seat a figure shows (`shown_on_site`: panel links through `votes.match`, a
-  panel's `from` key, and a figure's source keys, whatever the figure is for), any seat an
-  earlier pack took, and a third of one hue family past `HUE_CAP`, which does not apply to a
-  colour pack. `python -m unittest builder.test_ranking` holds the three rules.
+- **The picker** walks each pack's voted seats in page order and staged rank and takes up
+  to `PREVIEWS`, skipping any seat a figure shows (`shown_on_site`: panel links through
+  `votes.match`, a panel's `from` key, and a figure's source keys, whatever the figure is
+  for), any seat an earlier pack took, and a third of one hue family past `HUE_CAP`, which
+  does not apply to a colour pack. There is no fall-through to unvoted seats: a slot nothing
+  fills is a "needs votes" cell. `python -m unittest builder.test_ranking` holds the rules.
+- **Hand picks** *(packs_preview_picks_ckpt157)*: `votes browse`'s **Pick previews** tab
+  (`/artifacts/votes/#pick`) puts four chips on every voted tile, for Best 30, Best 100, Best
+  200 and the main gallery, at most five a pack and no seat in two. A chip is solid where
+  the seat is in that pack's staged membership and dashed where not, and either may be
+  picked. **Copy picks** gives the JSON that is saved as the tracked
+  `wallpaper-packs/preview-picks.json`, and a pack it names shows exactly those picks,
+  unwalked; the colour packs walk on and never reuse one. `check`'s `packs` holds the file
+  to the record, to five a pack and no seat twice, and (with the store) to every pick having
+  a vote.
 
 ## Friends' votes live outside the repository, and make the packs' order
 
@@ -866,7 +877,7 @@ enters this repository**, because the repository is public and a friend's name i
 ```
 python -m builder votes ingest NAME --from FILE   append one friend's links, say what matched
 python -m builder votes status                    picks per friend
-python -m builder votes browse                    rewrite the local page, by person and by score
+python -m builder votes browse                    rewrite the local page: by person, by score, pick
 python -m builder votes export-order --out FILE   the general thousand by likes, for --order
 ```
 

@@ -36,6 +36,10 @@ picks are the packs page's own five: `packs --import` writes them into the recor
 `previews`, the same walk `stage` makes, so the page shows them ahead of any zip rebuild,
 and a best pack's preview may be a picture its built zip does not hold yet.
 
+**A best pack or the general one may be picked by hand instead** (`packs.PICKS`, written
+from `votes browse`'s pick mode): a pack it names takes those picks as they are, unwalked,
+and the colour packs walk on around them.
+
 The pack page's own five pictures are not on the site for this purpose: they are what the
 staged picks replace, and no `explorer/links.jsonl` row names one, so they never feed back
 into `shown_on_site`.
@@ -190,6 +194,8 @@ class Previews:
     name: str
     picks: list[str] = field(default_factory=list)
     skipped: dict[str, str] = field(default_factory=dict)
+    #: Read off `packs.PICKS` rather than walked.
+    by_hand: bool = False
 
     def counts(self) -> dict[str, int]:
         return {why: sum(1 for said in self.skipped.values() if said == why) for why in REASONS}
@@ -231,12 +237,24 @@ def pick(
 
 
 def pick_all(
-    order: dict[str, list[str]], hue: dict[str, str], on_site: set[str], scores: dict[str, int]
+    order: dict[str, list[str]],
+    hue: dict[str, str],
+    on_site: set[str],
+    scores: dict[str, int],
+    manual: dict[str, list[str]] | None = None,
 ) -> dict[str, Previews]:
-    """Every pack's previews, in page order, none reused and none shown on the site."""
-    taken: set[str] = set()
+    """Every pack's previews, in page order, none reused and none shown on the site.
+
+    A pack `manual` names takes that list as it is and is not walked; every pack after it
+    still skips what it holds.
+    """
+    manual = manual or {}
+    taken: set[str] = set().union(*manual.values())
     out = {}
     for name in packs.marked():
+        if name in manual:
+            out[name] = Previews(name, list(manual[name]), by_hand=True)
+            continue
         collection = packs.GENERAL if name in packs.BEST else name
         chosen = pick(
             name, order[name], hue, on_site, taken, scores, capped=collection == packs.GENERAL
@@ -278,7 +296,8 @@ def previews(current: dict[str, dict], order_file: Path | None = None) -> Stagin
     rows = packs.seat_rows()
     hue = {key: row["hue"] for key, row in rows.items()}
     site = shown_on_site()
-    return Staging(who, order, rows, site, pick_all(order, hue, set(site), scores))
+    chosen = pick_all(order, hue, set(site), scores, packs.manual())
+    return Staging(who, order, rows, site, chosen)
 
 
 # ------------------------------------------------------------------------------- the stage
@@ -302,10 +321,8 @@ def stage() -> list[str]:
     )
     for name, chosen in staging.previews.items():
         skipped = ", ".join(f"{n} {why}" for why, n in chosen.counts().items() if n)
-        lines.append(
-            f"  {name:<9} {' '.join(chosen.picks) or '-'}  empty: {chosen.empty}  "
-            f"skipped: {skipped or 'none'}"
-        )
+        how = "picked by hand" if chosen.by_hand else f"skipped: {skipped or 'none'}"
+        lines.append(f"  {name:<9} {' '.join(chosen.picks) or '-'}  empty: {chosen.empty}  {how}")
     return lines
 
 
@@ -326,7 +343,7 @@ def _tile(page, explorer, rank, row, names, marks, site) -> str:
             f'<span class="stage-where">shown in {len(figures_showing)} figure{many}: '
             f"{text(', '.join(figures_showing))}</span>"
         )
-    picked = " picked" if any(mark.startswith("preview") for mark in marks) else ""
+    picked = " picked" if any("preview of" in mark for mark in marks) else ""
     return (
         f'        <div class="stage-tile{picked}">'
         f'<a href="{attribute(explorer + "?" + row["link"])}" target="_blank">'
@@ -346,15 +363,17 @@ def _write(order, previews, rows, who, site) -> None:
             "",
         )
         skipped = ", ".join(f"{n} {why}" for why, n in chosen.counts().items() if n)
+        note = f"Skipped for a preview: {skipped or 'none'}."
+        if chosen.by_hand:
+            note = f"Picked by hand, in wallpaper-packs/{packs.PICKS.name}."
         blocks.append(block)
-        blocks.append(
-            f'      <p class="stage-note">Skipped for a preview: {text(skipped or "none")}.</p>'
-        )
+        blocks.append(f'      <p class="stage-note">{text(note)}</p>')
 
     walks: dict[str, list[str]] = {}
     for name, chosen in previews.items():
         for key in chosen.picks:
-            walks.setdefault(key, []).append(f"preview of {packs.title(name)}")
+            how = "hand-picked preview" if chosen.by_hand else "preview"
+            walks.setdefault(key, []).append(f"{how} of {packs.title(name)}")
         for key, why in chosen.skipped.items():
             walks.setdefault(key, []).append(f"{packs.title(name)}: {why}")
 

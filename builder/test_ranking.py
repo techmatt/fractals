@@ -60,6 +60,22 @@ class Ranking(unittest.TestCase):
         self.assertEqual(len(picked), len(set(picked)))
         self.assertEqual(len(picked), ranking.PREVIEWS * len(packs.marked()))
 
+    def test_hand_picks_replace_the_walk_and_are_never_reused(self):
+        members = [f"k{n:03}" for n in range(300)]
+        hue = dict.fromkeys(members, "blue")
+        order = {name: members for name in packs.marked()}
+        # Any voted seat, a member or not, and fewer than five is fewer than five.
+        manual = {"best-30": ["k000", "k299"], packs.GENERAL: ["k005"]}
+        chosen = ranking.pick_all(order, hue, {"k299"}, dict.fromkeys(members, 1), manual)
+        self.assertEqual(chosen["best-30"].picks, ["k000", "k299"])
+        self.assertTrue(chosen["best-30"].by_hand)
+        self.assertEqual(chosen["best-30"].empty, ranking.PREVIEWS - 2)
+        self.assertFalse(chosen["best-100"].by_hand)
+        walked = [
+            key for name in packs.marked() if name not in manual for key in chosen[name].picks
+        ]
+        self.assertFalse({"k000", "k005", "k299"} & set(walked))
+
 
 if __name__ == "__main__":
     unittest.main()

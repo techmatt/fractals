@@ -38,7 +38,10 @@ record and the gallery's collections are, and a clone reads the answer.
   `NEEDS_VOTES` cell. This is on purpose ahead of the zips: `--import` writes the picks
   whether or not the packs have been rebuilt, so a best pack may preview a picture its
   built zip does not hold yet. The import therefore needs the votes store as well as the
-  checkout and the full set.
+  checkout and the full set. **The best packs and the general one may be picked by hand
+  instead**: `wallpaper-packs/preview-picks.json` (`PICKS`), written from `votes browse`'s
+  pick mode, is those packs' preview wherever it names one, and the colour packs walk on,
+  never reusing a hand pick.
 
 ## Links
 
@@ -94,6 +97,12 @@ BEST = ("best-30", "best-100", "best-200")
 
 #: The general gallery's pack on this page, and the zips it is cut into next door.
 GENERAL = "general"
+
+#: Matt's own previews for the best packs and the general one, picked in `votes browse`'s
+#: pick mode and pasted back. Where a pack is named here, this list is its preview and the
+#: walk is not asked; a colour pack is never named here.
+PICKS = GALLERIES_DIR / "preview-picks.json"
+PICKED = (*BEST, GENERAL)
 
 #: A pack as the page names it. The master names none of them; these are what the
 #: prose around them already calls them.
@@ -234,6 +243,39 @@ def load() -> tuple[dict, dict[str, Pack]]:
             raise records.RecordError(f"{row.where}: thumbs must be a list of seat keys")
         loaded[name] = Pack(name, row.text("collection"), tuple(files), tuple(thumbs))
     return header.fields, loaded
+
+
+def manual() -> dict[str, list[str]]:
+    """The hand-picked previews by pack, none where there is no picks file.
+
+    Refuses a file that names a pack outside `PICKED`, holds more than `SHOWN` for one, or
+    names one seat twice; whether each is a voted seat is `problems`' to say, since that
+    needs the votes store and this does not.
+    """
+    if not PICKS.is_file():
+        return {}
+    try:
+        held = json.loads(PICKS.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as error:
+        raise PacksError(f"{PICKS.name}: {error}") from error
+    picks = held.get("packs") if isinstance(held, dict) else None
+    if held.get("kind") != "preview-picks" or not isinstance(picks, dict):
+        raise PacksError(f'{PICKS.name}: wants {{"kind": "preview-picks", "packs": {{...}}}}')
+    seen: dict[str, str] = {}
+    out: dict[str, list[str]] = {}
+    for name, keys in picks.items():
+        if name not in PICKED:
+            raise PacksError(f"{PICKS.name}: {name!r} is not one of {', '.join(PICKED)}")
+        if not isinstance(keys, list) or not all(isinstance(key, str) for key in keys):
+            raise PacksError(f"{PICKS.name}: {name} must be a list of seat keys")
+        if len(keys) > SHOWN:
+            raise PacksError(f"{PICKS.name}: {name} picks {len(keys)}, over {SHOWN}")
+        for key in keys:
+            if key in seen:
+                raise PacksError(f"{PICKS.name}: {key} is picked for {seen[key]} and {name}")
+            seen[key] = name
+        out[name] = list(keys)
+    return out
 
 
 def seat_rows() -> dict[str, dict]:
@@ -544,11 +586,14 @@ def problems(*, with_checkout: bool) -> list[str]:
     The first half reads this repository alone and runs on a clone: every `[PACK]` the
     prose places has a row and every row a marker, the counts are the collections' sizes,
     each picture is a seat of the pack's collection whose tile is on disk, and no picture
-    is two packs' preview. The second half is the record being what `--import` would write
+    is two packs' preview. A pack `PICKS` names shows exactly those picks, at most `SHOWN`,
+    and they may be any seat rather than the collection's, since Matt picks from every voted
+    tile. The second half is the record being what `--import` would write
     today, which needs the checkout, the full set, and the votes store, and says so by name
-    where one is missing. That half is what holds a preview to the rules: a vote, nowhere
-    else on the site, and (for a best pack) a member of the staged pack rather than of the
-    built zip, which the previews are deliberately ahead of.
+    where one is missing. That half is what holds a walked preview to the rules: a vote,
+    nowhere else on the site, and (for a best pack) a member of the staged pack rather than
+    of the built zip, which the previews are deliberately ahead of. A hand pick is held to
+    having a vote there, and to nothing else the walk asks.
     """
     found: list[str] = []
     where = "wallpaper-packs/packs.jsonl"
@@ -567,6 +612,17 @@ def problems(*, with_checkout: bool) -> list[str]:
     sizes = collection_sizes()
     widths = {"best-30": 30, "best-100": 100, "best-200": 200}
     previewed: dict[str, str] = {}
+    try:
+        picked = manual()
+    except PacksError as error:
+        found.append(str(error))
+        picked = {}
+    for name, keys in picked.items():
+        if name in loaded and list(loaded[name].thumbs) != keys:
+            found.append(
+                f"{where}: {name}'s pictures are not {PICKS.name}'s — "
+                "`python -m builder packs --import`, then `build`"
+            )
     for name, pack in loaded.items():
         total = sum(one.pictures for one in pack.files)
         wanted = widths.get(name, sizes.get(pack.collection))
@@ -583,10 +639,18 @@ def problems(*, with_checkout: bool) -> list[str]:
                 found.append(f"{where}: {name}'s {key} is no seat of the Gallery tab's record")
             elif not (GALLERY_IMAGES_DIR / seats.SLUG / row["file"]).is_file():
                 found.append(f"{where}: {name}'s {key} has no tile on disk")
-            elif pack.collection not in row.get("collections", {}):
+            elif name not in picked and pack.collection not in row.get("collections", {}):
+                # A hand pick may be any voted seat, a member of the pack or not.
                 found.append(f"{where}: {name}'s {key} is not a seat of {pack.collection}")
     if with_checkout and unaskable() is None:
         try:
+            from . import ranking
+
+            voted = set(ranking.voters())
+            for name, keys in picked.items():
+                for key in keys:
+                    if key not in voted:
+                        found.append(f"{PICKS.name}: {name}'s {key} has no vote")
             if derive() != committed_rows():
                 found.append(
                     f"{where}: not what the project next door answers today — "

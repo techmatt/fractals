@@ -427,20 +427,25 @@ def viewer_path() -> Path:
     return Path(stated) if stated is not None and stated.strip() else VIEWER
 
 
-def pack_order() -> tuple[dict[str, list[str]], list[str], str | None]:
+def pack_order() -> tuple[dict[str, list[str]], list[str], dict[str, list[str]], str | None]:
     """Which packs hold each seat, the general rank they ship in, and why not, if not.
 
     The general pack is cut into parts next door; the page names it once. The rank is the
-    parts end to end, which the best packs are the opening of.
+    parts end to end, which the best packs are the opening of. The third answer is the
+    pick mode's: each of the packs `packs.PICKED` names, in its staged membership.
     """
     from . import packs as site_packs
+    from . import ranking
 
     why = site_packs.unaskable()
     if why is not None:
-        return {}, [], why
+        return {}, [], {}, why
     held: dict[str, list[str]] = {}
     rank: list[str] = []
-    for name, pack in site_packs.current().items():
+    current = site_packs.current()
+    order = ranking.previews(current).order
+    staged = {name: order[name] for name in site_packs.PICKED}
+    for name, pack in current.items():
         general = name.startswith(f"{site_packs.GENERAL}-")
         shown = site_packs.GENERAL if general else name
         if general:
@@ -449,7 +454,7 @@ def pack_order() -> tuple[dict[str, list[str]], list[str], str | None]:
             names = held.setdefault(key, [])
             if shown not in names:
                 names.append(shown)
-    return held, rank, None
+    return held, rank, staged, None
 
 
 def browse() -> Path:
@@ -460,8 +465,14 @@ def browse() -> Path:
     picked = selections(rows)
     by_key = {row["key"]: row for row in seat_rows()}
     families = match("")["families"]
-    held, rank, why = pack_order()
+    from . import packs as site_packs
+
+    held, rank, staged, why = pack_order()
     ranked = {key: at for at, key in enumerate(rank)}
+    members = {name: set(keys) for name, keys in staged.items()}
+    # The pick mode opens on what the packs page shows today, hand-picked or walked.
+    _, loaded = site_packs.load()
+    shown = {name: list(loaded[name].thumbs) for name in site_packs.PICKED if name in loaded}
 
     def tie(key: str) -> int:
         return ranked.get(key, len(rank) + by_key[key]["collections"].get("all", 0))
@@ -480,6 +491,7 @@ def browse() -> Path:
             "who": sorted(friend for friend, keys in picked.items() if key in keys),
             "general": ORDER_COLLECTION in row["collections"],
             "packs": held.get(key, []),
+            "staged": [name for name in site_packs.PICKED if key in members.get(name, ())],
             "tie": tie(key),
         }
     people = {}
@@ -497,6 +509,15 @@ def browse() -> Path:
         "missed": missed(rows),
         "hues": list(HUES),
         "packs_note": why,
+        "pick": {
+            "packs": [
+                {"name": name, "chip": PICK_CHIPS[name], "title": site_packs.title(name)}
+                for name in site_packs.PICKED
+            ],
+            "limit": site_packs.SHOWN,
+            "shown": shown,
+            "file": f"wallpaper-packs/{site_packs.PICKS.name}",
+        },
         "gone": sorted({key for keys in picked.values() for key in keys if key not in by_key}),
     }
     path = viewer_path()
@@ -504,6 +525,10 @@ def browse() -> Path:
     blob = json.dumps(data, ensure_ascii=False).replace("</", "<\\/")
     path.write_text(PAGE.replace("__DATA__", blob), encoding="utf-8", newline=LF)
     return path
+
+
+#: The pick mode's chip for each pack it picks for.
+PICK_CHIPS = {"best-30": "30", "best-100": "100", "best-200": "200", "general": "Main"}
 
 
 def _tally(values) -> dict[str, int]:
@@ -561,6 +586,28 @@ PAGE = """<!doctype html>
   .small .grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 8px; }
   .yes { color: #7fd48a; }
   .no { color: #9aa3b2; }
+  .picks { position: sticky; top: 0; z-index: 2; background: var(--bg);
+    border-bottom: 1px solid #dfe3ea; padding: 8px 0; margin-bottom: 12px; }
+  .picks-row { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center;
+    margin: 4px 0; }
+  .picks-row b { min-width: 130px; }
+  .picks-row img { width: 80px; aspect-ratio: 316 / 178; object-fit: cover; border-radius: 3px;
+    cursor: pointer; }
+  .picks-row .slot { width: 80px; aspect-ratio: 316 / 178; border: 1px dashed #c9ceda;
+    border-radius: 3px; box-sizing: border-box; }
+  .picks-tools { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+  .picks-tools button { font: inherit; padding: 4px 12px; border-radius: 4px; cursor: pointer;
+    border: 1px solid #c9ceda; background: var(--bg); }
+  .picks-tools .copy { background: #2c6fd6; border-color: #2c6fd6; color: #fff; }
+  #pick-status { color: #b3261e; }
+  #pick-json { width: 100%; height: 150px; font: 12px ui-monospace, monospace; }
+  .toggle { font: 13px system-ui, sans-serif; border-radius: 10px; padding: 1px 9px;
+    cursor: pointer; background: transparent; color: #eef1f6; }
+  .toggle.member { border: 1px solid #eef1f6; }
+  .toggle.outside { border: 1px dashed #6b7381; color: #9aa3b2; }
+  .toggle[aria-pressed="true"] { background: #7fd48a; border: 1px solid #7fd48a; color: #10331a;
+    font-weight: 700; }
+  .tile.chosen { outline: 3px solid #7fd48a; }
 </style>
 </head>
 <body>
@@ -569,7 +616,9 @@ PAGE = """<!doctype html>
 <div class="bar tabs">
   <button id="tab-person" aria-pressed="true">By person</button>
   <button id="tab-score" aria-pressed="false">By score</button>
+  <button id="tab-pick" aria-pressed="false">Pick previews</button>
   <label>Friend <select id="friend"><option value="">everyone</option></select></label>
+  <label id="only-label" hidden><input type="checkbox" id="only"> picked only</label>
 </div>
 <main id="view"></main>
 <script>
@@ -683,21 +732,137 @@ function byScore(friend) {
   })));
   return grid;
 }
-let mode = "person";
+// ---- pick mode: Matt's own previews for the best packs and the main gallery, as JSON to
+// paste back into wallpaper-packs/preview-picks.json. At most `limit` a pack, no seat in two.
+const PICK = DATA.pick;
+const STORED = "packs-preview-picks";
+function fresh() {
+  const out = {};
+  for (const p of PICK.packs) out[p.name] = [...(PICK.shown[p.name] || [])];
+  return out;
+}
+let picks = fresh();
+try {
+  const kept = JSON.parse(localStorage.getItem(STORED) || "null");
+  if (kept && PICK.packs.every((p) => Array.isArray(kept[p.name]))) picks = kept;
+} catch (e) { /* no storage: start from the page */ }
+for (const p of PICK.packs) picks[p.name] = picks[p.name].filter((key) => DATA.tiles[key]);
+function save() {
+  try { localStorage.setItem(STORED, JSON.stringify(picks)); } catch (e) { /* fine */ }
+}
+function holder(key) {
+  return PICK.packs.find((p) => picks[p.name].includes(key))?.name;
+}
+function titleOf(name) { return PICK.packs.find((p) => p.name === name).title; }
+let status = "";
+function toggle(key, name) {
+  status = "";
+  const list = picks[name];
+  if (list.includes(key)) {
+    list.splice(list.indexOf(key), 1);
+  } else if (list.length >= PICK.limit) {
+    status = `${titleOf(name)} already has ${PICK.limit}: take one out first.`;
+  } else {
+    const other = holder(key);
+    if (other) picks[other].splice(picks[other].indexOf(key), 1);
+    list.push(key);
+  }
+  save();
+  draw();
+}
+function asJson() {
+  return JSON.stringify({ schema: 1, kind: "preview-picks", packs: picks }, null, 2) + "\\n";
+}
+function pickBar() {
+  const bar = el("div", "picks");
+  for (const p of PICK.packs) {
+    const row = el("div", "picks-row");
+    row.append(el("b", "", `${p.title} ${picks[p.name].length}/${PICK.limit}`));
+    for (const key of picks[p.name]) {
+      const img = el("img");
+      img.src = IMAGES + DATA.tiles[key].file;
+      img.title = `${key}: click to take out of ${p.title}`;
+      img.addEventListener("click", () => toggle(key, p.name));
+      row.append(img);
+    }
+    for (let n = picks[p.name].length; n < PICK.limit; n++) row.append(el("span", "slot"));
+    bar.append(row);
+  }
+  const tools = el("div", "picks-tools");
+  const copy = el("button", "copy", "Copy picks");
+  const reset = el("button", "", "Reset to the packs page");
+  const note = el("span", "", status);
+  note.id = "pick-status";
+  const legend = el("span", "why",
+    "Solid chip: in that pack's staged membership. Dashed: not, and pickable anyway.");
+  tools.append(copy, reset, note, legend);
+  bar.append(tools);
+  const out = el("textarea");
+  out.id = "pick-json";
+  out.readOnly = true;
+  out.hidden = true;
+  bar.append(out);
+  copy.addEventListener("click", async () => {
+    out.value = asJson();
+    out.hidden = false;
+    try {
+      await navigator.clipboard.writeText(out.value);
+      note.style.color = "#2e7d32";
+      note.textContent = `Copied. Paste it back for ${PICK.file}.`;
+    } catch (e) {
+      out.select();
+      note.textContent = "The clipboard refused: copy it from the box below.";
+    }
+  });
+  reset.addEventListener("click", () => { picks = fresh(); status = ""; save(); draw(); });
+  return bar;
+}
+function pickGrid(friend) {
+  const only = $("only").checked;
+  const keys = seated.filter((k) => (!friend || DATA.tiles[k].who.includes(friend)) &&
+    (!only || holder(k)));
+  keys.sort((a, b) => DATA.tiles[b].who.length - DATA.tiles[a].who.length ||
+    DATA.tiles[a].tie - DATA.tiles[b].tie);
+  const grid = el("div", "grid");
+  grid.append(...keys.map((key) => {
+    const box = tile(key, (meta, t) => {
+      meta.append(el("span", "count", `${t.who.length} ♥`));
+      for (const p of PICK.packs) {
+        const inside = t.staged.includes(p.name);
+        const chip = el("button", `toggle ${inside ? "member" : "outside"}`, p.chip);
+        chip.setAttribute("aria-pressed", String(picks[p.name].includes(key)));
+        chip.title = `${p.title}: ${inside ? "in" : "not in"} its staged membership`;
+        chip.addEventListener("click", () => toggle(key, p.name));
+        meta.append(chip);
+      }
+      meta.append(el("span", "chip", t.who.join(", ")));
+    });
+    if (holder(key)) box.classList.add("chosen");
+    return box;
+  }));
+  return grid;
+}
+let mode = location.hash === "#pick" ? "pick" : "person";
 function draw() {
   const friend = $("friend").value;
-  $("tab-person").setAttribute("aria-pressed", String(mode === "person"));
-  $("tab-score").setAttribute("aria-pressed", String(mode === "score"));
+  for (const name of ["person", "score", "pick"]) {
+    $(`tab-${name}`).setAttribute("aria-pressed", String(mode === name));
+  }
+  $("only-label").hidden = mode !== "pick";
   const view = $("view");
   if (mode === "person") {
     view.replaceChildren(...friends.filter((f) => !friend || f === friend).map(person));
-  } else {
+  } else if (mode === "score") {
     view.replaceChildren(byScore(friend));
+  } else {
+    view.replaceChildren(pickBar(), pickGrid(friend));
   }
 }
 $("tab-person").addEventListener("click", () => { mode = "person"; draw(); });
 $("tab-score").addEventListener("click", () => { mode = "score"; draw(); });
+$("tab-pick").addEventListener("click", () => { mode = "pick"; draw(); });
 $("friend").addEventListener("change", draw);
+$("only").addEventListener("change", draw);
 draw();
 </script>
 </body>
