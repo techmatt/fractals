@@ -870,6 +870,14 @@ python -m builder votes export-order --out FILE   the general thousand by likes,
   of the recipe, and about 1,500 gallery links gained it in gallery_tone_backfill_ckpt154.
   Everything else is exact. A link that matches nothing is stored with one of four reasons:
   `not a wallpaper`, `collection link` (Browse's grid), `deep view`, or `unparseable`.
+- **A seat's old spelling still names it** *(julia3_video_4k_ckpt157, addendum 1)*.
+  `data/seat-link-aliases.jsonl` holds the link each seat had before a fix re-derived it:
+  today the 17 Phoenix seats whose recipes named no constants and were linked at
+  c = p = 0 until `0d7d1bcb`. The reader matches an alias after every current seat, and
+  one that is another seat's recipe is said and never taken. **The store is never
+  rewritten for it**: `resolved` matches every stored miss again at read time, so `status`,
+  `browse`, `export-order` and `ingest` all count it, and `status` says how many it moved.
+  A future re-derivation that changes seat links adds its old spellings here.
 - **The page** is `browse`'s, `artifacts/votes/index.html`: ignored, so Pages never
   serves it, walked by no check, and served locally by `builder serve` at
   `/artifacts/votes/`. Every ingest rewrites it. **By person** gives each friend a hue bar

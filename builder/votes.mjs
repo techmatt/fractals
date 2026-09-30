@@ -12,11 +12,16 @@
 // runs at import; a change to one is a change to both.
 //
 //   node builder/votes.mjs < ask.json
-//   ask:    {text, seats: {key: link}, go: {name: target}}
+//   ask:    {text | links: [raw], seats: {key: link}, aliases: {key: [link]}, go: {name: target}}
 //   answer: {links: [{link, key} | {link, reason, detail}], ignored, unreadable_seats,
 //            families: {key: family}}
 //
 // `families` is each seat's fractal family as the parser reads it, which `browse` tallies.
+// `aliases` are spellings a seat's link had before a fix re-derived it
+// (`builder/data/seat-link-aliases.jsonl`): a friend who copied one still means that seat. They
+// are read after every seat, and one that is another seat's recipe is said, never taken.
+// `links`, in place of `text`, is raw links read as they are, which is how a stored entry is
+// matched again.
 
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
@@ -189,7 +194,22 @@ for (const [key, seatLink] of Object.entries(ask.seats)) {
     unreadable.push({ key, detail: error.message });
   }
 }
-const { raws, ignored } = linksIn(ask.text);
+for (const [key, spellings] of Object.entries(ask.aliases ?? {})) {
+  for (const spelling of spellings) {
+    try {
+      const recipe = recipeOf(spelling);
+      const held = byRecipe.get(recipe);
+      if (held === undefined) byRecipe.set(recipe, key);
+      else if (held !== key) unreadable.push({ key, detail: `an alias of seat ${held}'s recipe` });
+    } catch (error) {
+      if (!(error instanceof Error)) throw error;
+      unreadable.push({ key, detail: `alias: ${error.message}` });
+    }
+  }
+}
+const { raws, ignored } = Array.isArray(ask.links)
+  ? { raws: ask.links, ignored: 0 }
+  : linksIn(ask.text);
 process.stdout.write(
   JSON.stringify({
     links: raws.map((raw) => read(raw, byRecipe, ask.go ?? {})),

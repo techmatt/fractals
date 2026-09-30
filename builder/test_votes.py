@@ -166,6 +166,32 @@ class VotesTest(unittest.TestCase):
         ]
         self.assertEqual(votes.likes(rows), {key: 2})
 
+    def test_an_old_spelling_counts_for_its_seat(self):
+        key, (old,) = next(iter(votes.aliases().items()))
+        # Stored the way an ingest before the alias would have stored it: a miss.
+        self.store.parent.mkdir(parents=True)
+        row = {
+            "schema": 1,
+            "friend": "jason",
+            "at": "2026-09-30T00:00:00Z",
+            "links": [{"link": old, "reason": "not a wallpaper", "detail": "parses"}],
+        }
+        self.store.write_text(json.dumps(row) + "\n", encoding="utf-8", newline="\n")
+        stored = self.store.read_bytes()
+        rows = votes.resolved(votes.events())
+        self.assertEqual(votes.selections(rows), {"jason": {key}})
+        self.assertEqual(votes.missed(rows), {})
+        self.assertIn("1 stored entries", "\n".join(votes.status()))
+        page = votes.browse().read_text(encoding="utf-8")
+        self.assertIn(
+            key, json.loads(page.split("const DATA = ", 1)[1].split(";\n", 1)[0])["tiles"]
+        )
+        # Sent again, it is already theirs; and the store never moved.
+        lines = votes.ingest("jason", old)
+        self.assertIn("0 new to jason, 1 already theirs", lines[1])
+        self.assertEqual(self.store.read_bytes(), stored)
+        self.assertEqual(votes.match(old)["links"][0]["key"], key)
+
     def test_row_shape(self):
         now = datetime(2026, 9, 26, 12, 0, tzinfo=UTC)
         votes.ingest("jason", f"{self.plain[0]['link']} v=4&f=nosuchfamily", now=now)

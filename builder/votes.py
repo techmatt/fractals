@@ -30,6 +30,14 @@ Exact on the recipe as `permalink.js` parses and re-spells it, with `level` take
 is the tone curve a pass derived from the rest, and about 1,500 gallery links gained it
 after friends could have copied the link without it. No tolerance.
 
+**A seat's old spelling still names it** *(julia3_video_4k_ckpt157, addendum 1)*. Where a fix
+re-derives a seat's link, a friend may have copied the old one first. `data/seat-link-aliases.jsonl`
+keeps each such spelling beside its seat, and the reader matches it after every current seat.
+That is done at read time, never by rewriting the store: `resolved` matches every stored entry
+that named no seat again, against the seats and the aliases as they stand, so `status`,
+`browse`, `export-order` and `ingest` all count it, and the entry on disk keeps the reason it
+was given when it was sent.
+
 ## The page
 
 `artifacts/votes/index.html`, which is ignored, is walked by no check, and is served by
@@ -65,6 +73,8 @@ READER = SITE_ROOT / "builder" / "votes.mjs"
 SEATED = GALLERY_IMAGES_DIR / "seated-candidates"
 ALL_SEATS = SEATED / "all.jsonl"
 GO_REGISTER = SITE_ROOT / "go" / "redirects.jsonl"
+#: The spellings a seat's link had before a fix re-derived it, each beside its seat.
+ALIASES = SITE_ROOT / "builder" / "data" / "seat-link-aliases.jsonl"
 
 #: The local viewer: under ignored `artifacts/`, which `paths.UNSERVED_DIRS` keeps out of
 #: every check and `serve` still serves.
@@ -173,13 +183,26 @@ def _go() -> dict[str, str]:
     return {row["name"]: row["target"] for row in map(json.loads, filter(str.strip, lines))}
 
 
-def match(text: str) -> dict:
-    """Each link in `text`, with its seat's key or the reason there is none."""
+def aliases() -> dict[str, list[str]]:
+    """Each seat's old spellings, from `ALIASES`."""
+    lines = ALIASES.read_text(encoding="utf-8").splitlines() if ALIASES.is_file() else []
+    out: dict[str, list[str]] = {}
+    for row in map(json.loads, filter(str.strip, lines)):
+        out.setdefault(row["key"], []).append(row["link"])
+    return out
+
+
+def match(text: str = "", links: list[str] | None = None) -> dict:
+    """Each link in `text`, or each of `links` as it is, with its seat's key or the reason
+    there is none."""
     ask = {
         "text": text,
         "seats": {row["key"]: row["link"] for row in seat_rows()},
+        "aliases": aliases(),
         "go": _go(),
     }
+    if links is not None:
+        ask["links"] = links
     completed = subprocess.run(
         ["node", str(READER)],
         input=json.dumps(ask),
@@ -191,6 +214,36 @@ def match(text: str) -> dict:
     if completed.returncode != 0:
         raise VotesError(completed.stderr.strip() or f"votes.mjs exited {completed.returncode}")
     return json.loads(completed.stdout)
+
+
+def resolved(rows: list[dict]) -> list[dict]:
+    """The store's rows with every entry that named no seat matched again, in memory only.
+
+    An entry that matches now gains its seat's `key` and `rematched: true`; one that still
+    matches nothing is as it was stored. The store itself is never touched."""
+    raws = list(
+        dict.fromkeys(entry["link"] for row in rows for entry in row["links"] if "key" not in entry)
+    )
+    if not raws:
+        return rows
+    found = {entry["link"]: entry["key"] for entry in match(links=raws)["links"] if "key" in entry}
+    if not found:
+        return rows
+    out = []
+    for row in rows:
+        entries = [
+            dict(entry, key=found[entry["link"]], rematched=True)
+            if "key" not in entry and entry["link"] in found
+            else entry
+            for entry in row["links"]
+        ]
+        out.append(dict(row, links=entries))
+    return out
+
+
+def rematched(rows: list[dict]) -> int:
+    """How many stored entries `resolved` matched again."""
+    return sum(1 for row in rows for entry in row["links"] if entry.get("rematched"))
 
 
 # ------------------------------------------------------------------------------ ingest
@@ -211,7 +264,7 @@ def ingest(name: str, text: str, *, now: datetime | None = None) -> list[str]:
     if not entries:
         raise VotesError("no links in that text, so nothing was stored")
     path = store_path()
-    rows = events(path)
+    rows = resolved(events(path))
     before = selections(rows).get(friend, set())
     fresh = unstored(entries, before, {entry["link"] for entry in missed(rows).get(friend, [])})
     if fresh:
@@ -274,6 +327,7 @@ def status() -> list[str]:
     rows = events(path)
     if not rows:
         return [f"no votes yet ({path} is {'empty' if path.is_file() else 'not there'})"]
+    rows = resolved(rows)
     picked = selections(rows)
     unmatched = {friend: len(entries) for friend, entries in missed(rows).items()}
     sent: dict[str, int] = {}
@@ -292,6 +346,9 @@ def status() -> list[str]:
     lines.append(
         f"  {len(counted)} seats with a like; most liked: {max(counted.values(), default=0)}"
     )
+    again = rematched(rows)
+    if again:
+        lines.append(f"  {again} stored entries that named no seat match one now (aliases)")
     return lines
 
 
@@ -331,7 +388,7 @@ def export_order(out: Path) -> list[str]:
     full = site_packs.full_root()
     if full is None or not full.is_dir():
         raise VotesError(f"the full set is not here (`{site_packs.FULL_KEY}` in local.toml)")
-    counted = likes(events())
+    counted = likes(resolved(events()))
     general = {row["key"] for row in seat_rows() if ORDER_COLLECTION in row["collections"]}
     inside = {key: count for key, count in counted.items() if key in general}
     completed = subprocess.run(
@@ -399,7 +456,7 @@ def browse() -> Path:
     """Write the local page of everyone's picks, from the store as it stands."""
     from .palettes import HUES
 
-    rows = events()
+    rows = resolved(events())
     picked = selections(rows)
     by_key = {row["key"]: row for row in seat_rows()}
     families = match("")["families"]
