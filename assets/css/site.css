@@ -75,6 +75,9 @@
   /* What marks a judge in a stage's boxes. The same ink a mark on a picture uses — the
      first of `builder/theme.py`'s four — because a reader meets it as one colour. */
   --figure-judge: #ffc43d;
+  /* The air above and below a fold's summary line, which is a control the reader clicks
+     and wants a target taller than its own text. */
+  --fold-pad: 0.5rem;
 }
 
 *, *::before, *::after { box-sizing: border-box; }
@@ -289,6 +292,23 @@ footer > * {
 }
 
 .figure, .images .grid { max-width: none; }
+
+/* A fold: something a reader may open, shut until they do. The summary is one line of
+   prose between two rules, held to the measure like the paragraphs, with the browser's
+   own disclosure mark; what it opens onto runs to the full column, as a figure does. It
+   is a plain `<details>`, so it opens with scripting off and from the filesystem. */
+.prose > .fold { max-width: none; margin: 1em 0; }
+.fold > summary {
+  max-width: var(--measure);
+  padding: var(--fold-pad) 0;
+  border-top: 1px solid var(--rule);
+  border-bottom: 1px solid var(--rule);
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--ink);
+}
+.fold > summary:hover { color: var(--link); }
+.fold[open] > summary { margin-bottom: 1em; }
 
 /* A table in prose is a small scoreboard, not a layout: Wikipedia's rules and quiet
    header row, sized to the numbers rather than to the column. It stays inside the

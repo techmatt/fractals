@@ -7,8 +7,13 @@ location, wallpaper, palette, and gallery — each band that judge's 5th, 25th, 
 and 95th percentile over **its own population**, the score it gave printed under each
 picture as page text. Each example is shown the way its judge sees it: a location in the
 one neutral map the location judge reads, a candidate in its own finished colouring, a
-palette as the gradient strip of its map, and a gallery candidate drawn exactly as a
-gallery seat is drawn.
+palette as one place drawn in it, and a gallery candidate drawn exactly as a gallery seat
+is drawn.
+
+**The palette band is one set** *(deep_judges_fold_ckpt156)*. A palette score means
+something only against the other maps of its own set, so the band is one place drawn in
+five of one set's maps, at that set's own percentiles; a pooled range, which the band was
+first, set scores side by side that the judge never compared.
 
 ## Whose scores, and where they are written down
 
@@ -27,9 +32,8 @@ read streamed and never through a pool a solve might be holding:
   P(>=4), the column the pool's even-odds gate is on.
 * **palette** — `models/palette/seed2_listwise/scores/**.jsonl`, the shipped run's reading
   of the 377 real candidate sets it was accepted on: one utility per candidate map, `score`
-  aligned to `candidates`. A utility means something only against the other maps of its
-  own set; the population here is every (set, map) reading, pooled, because the brief is
-  the judge's whole range.
+  aligned to `candidates`, beside the set's place and grid. A utility means something only
+  against the other maps of its own set, so the population is one set's readings.
 * **gallery** — `artifacts/gallery_grade_head/pool_scores.jsonl`, the shipped fine head's
   reading of the pool it orders, latest row per key as that project's `read_pool_scores`
   takes it. The quantity is `p_ge4`, which is what that project calls `p_fine(>=4)`.
@@ -40,7 +44,8 @@ The percentile is **nearest-rank**: over a population of N sorted ascending, the
 the value at rank ceil(p/100 * N). The example is the member whose score is nearest that
 value, ties broken by the record's own name ascending; a member that cannot be drawn and
 linked exactly, or whose place another figure on the site already stands on, is skipped for
-the next-nearest, and the skips are counted in the record. `select()` is that search, run
+the next-nearest, and the skips are counted in the record. The palette band takes its set
+by `select_palette`'s rule instead. `select()` is that search, run
 once; its answer is frozen in `CHOSEN` below, because the populations grow and a figure
 re-picked at draw time would rewrite itself under a caption that had not changed.
 """
@@ -100,8 +105,6 @@ QUANTITY = {LOCATION: "P(≥3)", WALLPAPER: "P(≥4)", PALETTE: "score", GALLERY
 #: A picture panel: the house cell at five across, drawn at a seat's own geometry.
 PANEL = panels(COLUMNS)
 RENDER = picks_module.PANEL_RENDER
-#: A strip panel: the same width, at eight to one — the gradient, not a frame of a plane.
-STRIP = (PANEL[0], round(PANEL[0] / 8))
 
 # ---------------------------------------------------------------------- the frozen pick
 
@@ -250,60 +253,53 @@ CHOSEN: dict = {
         ],
     },
     PALETTE: {
-        "population": 11626,
-        "sets": 377,
+        "population": 377,
+        "set": "colorize-0000",
+        "batch": "2026-08-05_wallpaper_colorize_path_v1",
+        "partition": "mandelbrot",
+        "family": {"kind": "mandelbrot"},
+        "viewport": {
+            "center_re": "0.416430973537498134049060945005",
+            "center_im": "-0.327457679053278233172069084786",
+            "width": "1.9933817999999997e-09",
+        },
+        "mode": "smooth",
+        "curve": "linear",
+        "render": {"resolution": [640, 360], "supersample": 2, "maxiter": 40584},
+        "size": 32,
         "examples": [
             {
                 "percentile": 5,
-                "value": -1.2850761413574219,
-                "set": "colorize-0082",
-                "batch": "2026-08-05_wallpaper_colorize_path_v1",
-                "partition": "multibrot4",
-                "map": "795549-3840x2160-desktop-4k-fractal-background",
-                "score": -1.2850761413574219,
-                "skipped": [],
+                "value": -3.606534719467163,
+                "map": "silk-scarves-25",
+                "score": -3.606534719467163,
             },
             {
                 "percentile": 25,
-                "value": 1.5079575777053833,
-                "set": "minibrot-0113",
-                "batch": "2026-08-11_wallpaper_blind_minibrot_v1",
-                "partition": "multibrot3",
-                "map": "quiet-waiting-25",
-                "score": 1.5079575777053833,
-                "skipped": [],
+                "value": 0.604196310043335,
+                "map": "cet_rainbow_bgyrm_35_85_c71",
+                "score": 0.604196310043335,
             },
             {
                 "percentile": 50,
-                "value": 3.142144203186035,
-                "set": "minibrot-0159",
-                "batch": "2026-08-11_wallpaper_blind_minibrot_v1",
-                "partition": "mandelbrot",
-                "map": "dolphin-dance-25",
-                "score": 3.142144203186035,
-                "skipped": [],
+                "value": 2.6398069858551025,
+                "map": "RdYlGn",
+                "score": 2.6398069858551025,
             },
             {
                 "percentile": 75,
-                "value": 4.839202880859375,
-                "set": "minibrot-0137",
-                "batch": "2026-08-11_wallpaper_blind_minibrot_v1",
-                "partition": "multibrot3",
-                "map": "cmr.swamp",
-                "score": 4.839202880859375,
-                "skipped": [],
+                "value": 3.835376739501953,
+                "map": "Oranges",
+                "score": 3.835376739501953,
             },
             {
                 "percentile": 95,
-                "value": 8.145249366760254,
-                "set": "minibrot-0017",
-                "batch": "2026-08-11_wallpaper_blind_minibrot_v1",
-                "partition": "multibrot3",
-                "map": "gist_heat",
-                "score": 8.145249366760254,
-                "skipped": [],
+                "value": 5.8483452796936035,
+                "map": "OrRd",
+                "score": 5.8483452796936035,
             },
         ],
+        "skipped": [],
     },
     GALLERY: {
         "population": 62373,
@@ -420,28 +416,94 @@ def gallery_population() -> list[Member]:
     return [Member(float(row["p_ge4"]), key, row) for key, row in latest.items()]
 
 
-def palette_population() -> list[Member]:
-    """Every (set, map) reading of the shipped palette run, aligned by name, never position."""
+def palette_sets() -> list[dict]:
+    """The shipped palette run's sets, each whole, in the order of their names."""
     found = []
-    root = renders.data_file(*PALETTE_SCORES)
-    for path in sorted(root.rglob("*.jsonl")):
+    for path in sorted(renders.data_file(*PALETTE_SCORES).rglob("*.jsonl")):
         for row in _jsonl(path):
             if len(row["candidates"]) != len(row["score"]):
                 raise JudgesError(f"{path.name}: set {row['set']} scores a different list")
-            for name, score in zip(row["candidates"], row["score"], strict=True):
-                found.append(
-                    Member(
-                        float(score),
-                        f"{row['set']}|{name}",
-                        {
-                            "set": row["set"],
-                            "batch": row["source_batch"],
-                            "partition": row["partition"],
-                            "map": name,
-                        },
-                    )
-                )
-    return found
+            found.append(row)
+    return sorted(found, key=lambda row: row["set"])
+
+
+def palette_spec(row: dict, name: str, library: dict) -> dict:
+    """One candidate of a set as the palette judge saw it, in the fields a link reads.
+
+    Next door's `palette_sets.candidate_row`: the set's place, smooth on a linear curve at
+    the set's own cap, and the canonical palette pass — every knob the identity, folded
+    unless the map is cyclic. The grid is the set's own too, and `_palette_panels` draws at
+    it.
+    """
+    return {
+        "family": row["family"],
+        "viewport": row["viewport"],
+        "mode": row.get("mode", "smooth"),
+        "curve": row.get("curve", "linear"),
+        "colormap": name,
+        "palette": {"mirror": library[name].mirror},
+        "maxiter": row["render"]["maxiter"],
+    }
+
+
+def _in_set(row: dict) -> list[tuple[float, str]]:
+    """A set's readings, ascending, ties by the map's own name."""
+    pairs = zip(row["score"], row["candidates"], strict=True)
+    return sorted((float(score), name) for score, name in pairs)
+
+
+def select_palette(places: set, roster: dict, curves: dict) -> dict:
+    """The palette band's set: the first, by name, that can be shown whole.
+
+    Within a set the p-th example is its nearest-rank member, the reading at rank
+    ceil(p/100 * N) itself, so no nearness search is needed. A set is passed over where
+    another figure stands on its place, where one of its five maps is not in the library,
+    or where the explorer cannot open one of the five exactly.
+    """
+    library = palettes.library()
+    skipped = []
+    sets = palette_sets()
+    for row in sets:
+        spot = frames.place_of_viewport(row["viewport"])
+        if spot in places:
+            skipped.append(f"{row['set']}: another figure stands on its place")
+            continue
+        ordered = _in_set(row)
+        values = [nearest_rank([score for score, _ in ordered], p) for p in PERCENTILES]
+        chosen = [next(pair for pair in ordered if pair[0] == value) for value in values]
+        missing = [name for _, name in chosen if name not in library]
+        if missing:
+            skipped.append(f"{row['set']}: {', '.join(missing)} not in the library")
+            continue
+        why = next(
+            (
+                f"{name}: {refused}"
+                for _, name in chosen
+                if (refused := _refused_view(palette_spec(row, name, library), roster, curves))
+            ),
+            None,
+        )
+        if why:
+            skipped.append(f"{row['set']}: {why}")
+            continue
+        return {
+            "population": len(sets),
+            "set": row["set"],
+            "batch": row["source_batch"],
+            "partition": row["partition"],
+            "family": row["family"],
+            "viewport": row["viewport"],
+            "mode": row.get("mode", "smooth"),
+            "curve": row.get("curve", "linear"),
+            "render": row["render"],
+            "size": len(ordered),
+            "examples": [
+                {"percentile": p, "value": value, "map": name, "score": score}
+                for p, value, (score, name) in zip(PERCENTILES, values, chosen, strict=True)
+            ],
+            "skipped": skipped,
+        }
+    raise JudgesError("no palette set can be shown whole")
 
 
 def _taken() -> tuple[set, set]:
@@ -628,37 +690,7 @@ def select() -> dict:
         answer[judge] = {"population": len(members), "examples": picked}
         del members
 
-    members = palette_population()
-    library = palettes.library()
-    scores = sorted(one.score for one in members)
-    values = [nearest_rank(scores, p) for p in PERCENTILES]
-    chosen, used = [], set()
-    for percentile, value in zip(PERCENTILES, values, strict=True):
-        skipped = []
-        for member in by_nearness(members, value):
-            name = member.row["map"]
-            if name not in library:
-                skipped.append(f"{member.name}: not a map of the library, so no strip")
-                continue
-            if name in used:
-                skipped.append(f"{member.name}: that map is already in this band")
-                continue
-            used.add(name)
-            chosen.append(
-                {
-                    "percentile": percentile,
-                    "value": value,
-                    **member.row,
-                    "score": member.score,
-                    "skipped": skipped,
-                }
-            )
-            break
-    answer[PALETTE] = {
-        "population": len(members),
-        "sets": len({one.row["set"] for one in members}),
-        "examples": chosen,
-    }
+    answer[PALETTE] = select_palette(places, roster, curves)
     return answer
 
 
@@ -692,14 +724,14 @@ def _band(judge: str) -> dict:
 NOTES = {
     LOCATION: "P(≥3), over {population:,} places the walks offered it",
     WALLPAPER: "P(≥4), over {population:,} candidate pictures",
-    PALETTE: "Its score, over {population:,} palettes in {sets} sets it ranked",
+    PALETTE: "Its score, over one place drawn in the {size} palettes of one set",
     GALLERY: "P(≥4), over the {population:,} pictures in the pool it orders",
 }
 
 
 def _note(judge: str) -> str:
     held = CHOSEN[judge]
-    return NOTES[judge].format(population=held["population"], sets=held.get("sets"))
+    return NOTES[judge].format(population=held["population"], size=held.get("size"))
 
 
 def _family_words(family: dict) -> str:
@@ -827,33 +859,61 @@ def _tone_line(resolved: list) -> str:
 def _palette_panels(made: list[Made], lines: list[str]) -> None:
     examples = _examples(PALETTE)
     names = palettes.explorer_names()
+    library = palettes.library()
     held = CHOSEN[PALETTE]
+    view = held["viewport"]
+    grid = held["render"]
     lines.append(
         "Palette judge, band 3. Population: models/palette/seed2_listwise/scores/ next door, "
-        f"the shipped palette head's run, its reading of {held['sets']} real candidate sets, "
-        f"{held['population']:,} (set, map) utilities pooled; a utility is only comparable "
-        "inside its own set. Quantity: the head's `score`, aligned to `candidates` by name. "
-        "Skipped: a map that is not in the library next door, or one already in this band. "
-        f"Each panel is that map's strip, drawn by `fractal-wallpapers palettes strip` at "
-        f"{STRIP[0]}x{STRIP[1]}, folded unless the map is cyclic; no render of a plane."
+        f"the shipped palette head's run, its reading of {held['population']} real candidate "
+        f"sets; a score is only comparable inside its own set. The band is one set, "
+        f"{held['set']} of {held['batch']} ({held['partition']}), {held['size']} candidate "
+        "maps on one place, each panel the set's own nearest-rank member at that percentile "
+        "of the set's own scores. The set is the first by name that another figure does not "
+        "stand on, whose five maps are all in the library, and that the explorer opens "
+        f"exactly; {len(held['skipped'])} set(s) before it were passed over"
+        + (f" ({'; '.join(held['skipped'])})" if held["skipped"] else "")
+        + f". Every panel: {_family_words(held['family'])}, centre {view['center_re']} + "
+        f"{view['center_im']}i, width {view['width']}, mode {held['mode']}, curve "
+        f"{held['curve']}, maxiter {grid['maxiter']}, drawn at the set's own "
+        f"{grid['resolution'][0]}x{grid['resolution'][1]}, supersample {grid['supersample']}, "
+        "through next door's canonical palette pass (palette_sets.candidate_row: gamma 1, "
+        "cycles 1, phase 0, no reverse, transfer value, no rolloff, folded unless the map is "
+        f"cyclic), and fitted to {PANEL[0]}x{PANEL[1]}: the picture the judge scored."
     )
+    place = {"family": held["family"], "viewport": view}
+    shown_in = picks_module.family_name(held["family"])
     for index, example in enumerate(examples):
         name = example["map"]
         shown = (names.get(name) or {}).get("name") or name
-        strip = palettes.strip(name, *STRIP)
+        spec = palette_spec(held, name, library)
+        # The engine takes a curve inside the mode's coloring, never beside it, and this is
+        # how `picks` hands it one: the spec a link reads, spelled the way a render reads.
+        drawn = {key: value for key, value in spec.items() if key not in ("mode", "curve")}
+        drawn["coloring"] = renders.wallpaper_coloring({**spec, "mode_params": {}})
+        picture = renders.Cache().render(
+            f"{ID}-palette-{example['percentile']}",
+            drawn,
+            tuple(grid["resolution"]),
+            supersample=grid["supersample"],
+        )
         made.append(
             Made(
-                sheets.save(sheets.fitted(strip, STRIP), panel_path(ID, len(made) + 1), quiet=True),
-                alt=f"The {shown} palette, as a strip of its colors.",
+                sheets.save(
+                    sheets.fitted(picture.path, PANEL), panel_path(ID, len(made) + 1), quiet=True
+                ),
+                alt=f"The same {shown_in} location, drawn in the {shown} palette.",
                 label=score_text(PALETTE, example["score"]),
                 note=shown,
+                spec=spec,
                 band=_band(PALETTE) if index == 0 else None,
             )
         )
+        folded = "folded" if library[name].mirror else "unfolded, cyclic"
         lines.append(
-            f"Palette panel {index + 1}, palette {name} ({shown}), a candidate of set "
-            f"{example['set']} of {example['batch']}, drawn as a strip; "
-            f"{_percentile_words(example)}."
+            f"Palette panel {index + 1}, {_family_words(place['family'])}, centre "
+            f"{view['center_re']} + {view['center_im']}i, width {view['width']}: palette "
+            f"{name} ({shown}), {folded}; {_percentile_words({**example, 'skipped': []})}."
         )
 
 
@@ -863,7 +923,8 @@ def make() -> Split:
     lines = [
         f"builder.tools_judges:make — four bands of {COLUMNS} panels, one band per judge, each "
         f"its {', '.join(f'{p}th' for p in PERCENTILES)} percentile over its own recorded "
-        "readings, landed one file a panel. Percentiles are nearest-rank: the value at rank "
+        "readings (the palette judge's over one set's, the only readings it compares), "
+        "landed one file a panel. Percentiles are nearest-rank: the value at rank "
         "ceil(p/100 * N) of the N readings sorted ascending. The example is the member whose "
         "score is nearest that value, ties by the record's own name ascending, skipping a "
         "member that cannot be drawn and linked exactly or whose place another figure "

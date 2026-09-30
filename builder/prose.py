@@ -57,6 +57,11 @@ _MASTER_COMMENT = re.compile(r"<!--.*?-->", re.S)
 # `[FIGURE: id]`, `[FIGURE id]`, `[PACK name]`, which the Wallpaper packs master places
 # the way the others place a figure, and `[VIDEO name]`, which Deep zoom videos' does.
 _MASTER_FIGURE = re.compile(r"^\[(?:FIGURE:?|PACK|VIDEO) ?.*?\]$", re.M)
+# A fold: `[FOLD: summary]` on a line of its own opens one and `[/FOLD]` closes it. The
+# summary is the page's `<summary>`, words a reader clicks, so it is prose and is compared;
+# the two marker lines are not. What sits between them is whatever the master already says.
+_MASTER_FOLD = re.compile(r"^\[FOLD: (.*?)\]$", re.M)
+_MASTER_FOLD_END = re.compile(r"^\[/FOLD\]$", re.M)
 _MASTER_TABLE = re.compile(r"^\[TABLE:[^\]]*\]\n(.*?)^\[/TABLE\]$", re.S | re.M)
 _MASTER_PENDING = re.compile(r"\[PENDING —.*?\]", re.S)
 _MASTER_BULLET = re.compile(r"^- ", re.M)
@@ -277,6 +282,8 @@ def words_of_master(text: str, divergences: tuple[Divergence, ...] = ()) -> str:
     text = _MASTER_EDITORIAL.sub("", text)
     text = _MASTER_COMMENT.sub("", text)
     text = _MASTER_FIGURE.sub("", text)
+    text = _MASTER_FOLD.sub(r"\1", text)
+    text = _MASTER_FOLD_END.sub("", text)
     text = _MASTER_TABLE.sub(lambda found: found.group(1).replace("|", " "), text)
     text = _MASTER_PENDING.sub("", text)
     text = _MASTER_BULLET.sub("", text)
@@ -375,12 +382,14 @@ BULLET = "bullet"
 CODE = "code"
 ROW = "row"
 FIGURE = "figure"
+#: A fold's `<summary>`: the words that open it, which the review doc marks as a fold's.
+FOLD = "fold"
 
 
 class _Reader(HTMLParser):
     """A page's prose section, read into blocks in the order a reader meets them."""
 
-    _BLOCKS = {"h2": HEADING, "p": PARAGRAPH, "li": BULLET, "pre": CODE}
+    _BLOCKS = {"h2": HEADING, "p": PARAGRAPH, "li": BULLET, "pre": CODE, "summary": FOLD}
 
     def __init__(self) -> None:
         super().__init__(convert_charrefs=True)

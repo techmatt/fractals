@@ -190,27 +190,27 @@
           <div class="figure-stage" style="--figure-across: 5">
             <header class="figure-band">
               <p class="figure-band-title">Palette judge</p>
-              <p class="figure-band-note">Its score, over 11,626 palettes in 377 sets it ranked</p>
+              <p class="figure-band-note">Its score, over one place drawn in the 32 palettes of one set</p>
             </header>
           <div class="figure-panel">
-            <img src="../assets/images/figures/tools-judges-11.webp" width="248" height="31" alt="The Amber Glass palette, as a strip of its colors." loading="lazy">
-            <p class="figure-label">score −1.285<span class="figure-note">Amber Glass</span></p>
+            <a class="figure-open" href="../explorer/index.html?v=4&amp;x=0.416430973537498134049060945005&amp;y=-0.327457679053278233172069084786&amp;w=1.9933817999999997e-09&amp;p=silk-scarves-25" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/tools-judges-11.webp" width="248" height="140" alt="The same Mandelbrot location, drawn in the Lemon Ember palette." loading="lazy"><span class="figure-open-mark" aria-hidden="true">↗</span></a>
+            <p class="figure-label">score −3.607<span class="figure-note">Lemon Ember</span></p>
           </div>
           <div class="figure-panel">
-            <img src="../assets/images/figures/tools-judges-12.webp" width="248" height="31" alt="The Seafoam Gold palette, as a strip of its colors." loading="lazy">
-            <p class="figure-label">score 1.508<span class="figure-note">Seafoam Gold</span></p>
+            <a class="figure-open" href="../explorer/index.html?v=4&amp;x=0.416430973537498134049060945005&amp;y=-0.327457679053278233172069084786&amp;w=1.9933817999999997e-09&amp;p=cet_rainbow_bgyrm_35_85_c71&amp;mirror=1" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/tools-judges-12.webp" width="248" height="140" alt="The same Mandelbrot location, drawn in the Chartreuse Marigold palette." loading="lazy"><span class="figure-open-mark" aria-hidden="true">↗</span></a>
+            <p class="figure-label">score 0.604<span class="figure-note">Chartreuse Marigold</span></p>
           </div>
           <div class="figure-panel">
-            <img src="../assets/images/figures/tools-judges-13.webp" width="248" height="31" alt="The Cobalt Ice palette, as a strip of its colors." loading="lazy">
-            <p class="figure-label">score 3.142<span class="figure-note">Cobalt Ice</span></p>
+            <a class="figure-open" href="../explorer/index.html?v=4&amp;x=0.416430973537498134049060945005&amp;y=-0.327457679053278233172069084786&amp;w=1.9933817999999997e-09&amp;p=RdYlGn&amp;mirror=1" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/tools-judges-13.webp" width="248" height="140" alt="The same Mandelbrot location, drawn in the Mint Poppy palette." loading="lazy"><span class="figure-open-mark" aria-hidden="true">↗</span></a>
+            <p class="figure-label">score 2.640<span class="figure-note">Mint Poppy</span></p>
           </div>
           <div class="figure-panel">
-            <img src="../assets/images/figures/tools-judges-14.webp" width="248" height="31" alt="The Mint Verdigris palette, as a strip of its colors." loading="lazy">
-            <p class="figure-label">score 4.839<span class="figure-note">Mint Verdigris</span></p>
+            <a class="figure-open" href="../explorer/index.html?v=4&amp;x=0.416430973537498134049060945005&amp;y=-0.327457679053278233172069084786&amp;w=1.9933817999999997e-09&amp;p=Oranges&amp;mirror=1" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/tools-judges-14.webp" width="248" height="140" alt="The same Mandelbrot location, drawn in the Amber Brick palette." loading="lazy"><span class="figure-open-mark" aria-hidden="true">↗</span></a>
+            <p class="figure-label">score 3.835<span class="figure-note">Amber Brick</span></p>
           </div>
           <div class="figure-panel">
-            <img src="../assets/images/figures/tools-judges-15.webp" width="248" height="31" alt="The Cardinal Lantern palette, as a strip of its colors." loading="lazy">
-            <p class="figure-label">score 8.145<span class="figure-note">Cardinal Lantern</span></p>
+            <a class="figure-open" href="../explorer/index.html?v=4&amp;x=0.416430973537498134049060945005&amp;y=-0.327457679053278233172069084786&amp;w=1.9933817999999997e-09&amp;p=OrRd&amp;mirror=1" title="open in fractal explorer" aria-label="open in fractal explorer"><img src="../assets/images/figures/tools-judges-15.webp" width="248" height="140" alt="The same Mandelbrot location, drawn in the Coral Ember palette." loading="lazy"><span class="figure-open-mark" aria-hidden="true">↗</span></a>
+            <p class="figure-label">score 5.848<span class="figure-note">Coral Ember</span></p>
           </div>
           </div>
           <div class="figure-stage" style="--figure-across: 5">
@@ -248,8 +248,9 @@
     <a href="https://github.com/techmatt/fractal-wallpapers/releases/tag/weights-2026-09-14">weights-2026-09-14</a>.
     Each is a MobileNetV4. Three of them take a picture, stretched to 384×224, and return the
     probability that it would earn at least a 2, a 3, and a 4 on my 1-to-4 scale. The
-    palette judge reads a 224×224 squash of the picture and returns one score, which means
-    something only against the other palettes it's compared with. They were trained on
+    palette judge works differently: for each place, it scores the place drawn in each of a
+    set of candidate palettes, and its score only means something against the others in
+    that set. They were trained on
     ordinary double-precision pictures, so read their scores on deep zooms with caution.
     <a href="../article/training-judges.html">Training judges</a> describes how they were
     made.</p>

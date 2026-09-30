@@ -292,9 +292,10 @@ preparation, and `docs/page-review.md`'s *Leftovers* carries it.
 
 `article/` holds exactly the fourteen ratified sections, and `check` refuses an HTML file
 there that `sections.jsonl` does not list. A page that belongs to a section without being
-part of the reading order — the palette library, the palette prompt — lives in its own
-directory and is named with a slash wherever a registry names a page:
-`palettes/make-your-own.html`. `paths.carrier_path` is the one place that resolves the
+part of the reading order — the palette library, the palette prompt, and Deep zoom videos,
+which collects every deep zoom video off Deep zoom — lives in its own directory and is
+named with a slash wherever a registry names a page: `palettes/make-your-own.html`,
+`deep-zoom/videos.html`. `paths.carrier_path` is the one place that resolves the
 two spellings, and a bare file name still means an article section, which is what every
 row said before these pages existed.
 
@@ -363,7 +364,9 @@ heading and each with the rule it drew by in its own docstring and provenance.
 `tools-atlas` (`tools_atlas.py`) is the atlas plates; `tools-palettes` (`tools_palettes.py`)
 the hand-made palettes as strips, by hue family and then mean Oklab lightness; `tools-judges`
 (`tools_judges.py`) five examples at each judge's 5th to 95th percentile over its own
-population; `tools-labels` (`tools_labels.py`) four seeded-random pictures at each of Matt's
+population, the palette judge's being one set, since its scores compare only inside one
+(one place in five of the set's maps; `select_palette` takes the first set by name that
+stands on no other figure's place); `tools-labels` (`tools_labels.py`) four seeded-random pictures at each of Matt's
 ratings.
 
 ## The contents rail is derived, never kept
@@ -1029,6 +1032,36 @@ z<sub>0</sub>, ε in running text are `<sub>`, `<sup>` and Unicode on both sides
 before. `formulas.py` says why the renderer is MathJax fetched into `artifacts/` rather
 than anything installed, and what the picture is held to.
 
+**A fold is a figure a reader opens** *(deep_judges_fold_ckpt156)*: a `<details
+class="fold">` in the prose, shut by default, whose `<summary>` is one line of prose and
+whose body is whatever the master puts between the markers — today one figure block,
+derived from the registry like any other. In the master it is three lines of their own:
+
+```
+[FOLD: The top 15 of the 817 according to each judge]
+
+[FIGURE: deep-judges-top15]
+
+[/FOLD]
+```
+
+The summary's words are the page's own, so `prose` compares them: the page keeps them
+between the `<summary>` tags, and the master's `[FOLD: …]` line reduces to them and its
+`[/FOLD]` to nothing. On the page it is indented like a paragraph, with the figure block
+inside it at the block's usual six spaces:
+
+```html
+    <details class="fold">
+      <summary>The top 15 of the 817 according to each judge</summary>
+      <figure class="figure figure-split" data-figure="deep-judges-top15">…</figure>
+    </details>
+```
+
+A fold never holds an `<h2>`, so the rail and `check`'s `contents` never see one, and it
+needs no script: an article page still opens from the filesystem. `site.css` styles it
+(`.fold`, `--fold-pad`); the review doc prints the summary as `[FOLD: …]`, the master's
+own spelling, so a reviewer knows those words open something.
+
 `review.py` is the other half: `python -m builder review <page>` writes a `.docx` of the
 page's prose as served, plus its figure captions by slug, into the synced `review/`
 folder, where Matt marks it up in Google Docs. `--read` diffs the marked-up copy against
@@ -1368,6 +1401,22 @@ its comment has the method. **One map to a row**, which is this figure's excepti
 one colouring per figure, so the figure's header line names three maps after `colormap`.
 That is safe here because a deep panel's link comes from its recipe row and never from
 that word.
+
+**`deep-judges-top15` is a study's scores, drawn** *(deep_judges_fold_ckpt156)*. It sits
+in a fold under `deep-random-dives`: four bands of 3 by 5, Matt's 15 and then the
+location, wallpaper, and gallery judges' top 15 of the 817 dive candidates. No judge is run
+here. `judge_deep_ckpt156` scored every candidate next door, and its scores are promoted into
+`builder/data/deep-judges-scores.jsonl` by `deep --judge-scores <its folder>`, which
+refuses where the study's neutral links are not the maker's rule; `builder/deep_judges.py`
+reads that record, ranks each judge's column (ties by frame id), and draws every panel
+through `draw_link` at 640 by 360 at 2x2, the grid the judges read. The location band is
+each frame's **neutral** link — the frame, its cap, `p=twilight_shifted&scale=leveled` —
+because the Deep contract's defaults are the location judge's recipe, so that band links
+to exactly the picture it scored; the other judge bands are the frame's own link, the
+absolute colouring they scored. Matt's band is `RANDOM_DIVES`, so pick 3, which he
+recoloured, is in his colouring there and in the candidate's in the judge bands.
+`deep_judges.readout()` recomputes the page's numbers from the record. `deep` still draws
+it: `deep_figures.draw` hands that one id across.
 
 ## The Deep tab's gallery
 

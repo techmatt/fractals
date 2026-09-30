@@ -198,6 +198,9 @@ def _prose_paragraphs(page: str, blocks: list[prose.Block], registry: dict) -> l
             written.append(Paragraph(NORMAL, f"| {block.text} |", links))
         elif block.kind == prose.CODE:
             written.append(Paragraph(CODE, block.text, links))
+        elif block.kind == prose.FOLD:
+            # Spelled as the master spells it, so a reviewer sees these words open a fold.
+            written.append(Paragraph(NORMAL, f"[FOLD: {block.text}]", links))
         else:
             written.append(Paragraph(NORMAL, block.text, links))
     return written

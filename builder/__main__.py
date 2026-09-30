@@ -459,6 +459,12 @@ def _parser() -> argparse.ArgumentParser:
     deeper.add_argument(
         "--replace", action="store_true", help="land a redraw of a figure already on the page"
     )
+    deeper.add_argument(
+        "--judge-scores",
+        type=Path,
+        metavar="FOLDER",
+        help="promote judge_deep_ckpt156's scores into builder/data/deep-judges-scores.jsonl",
+    )
 
     descended = commands.add_parser(
         "descent", help="an automatic minibrot descent's keyframe record, from explorer links"
@@ -1480,6 +1486,12 @@ def _do_deep(options: argparse.Namespace) -> int:
     Landing writes each deep panel's link into `article/figure-recipes.jsonl` before the
     row is filled, because that store is where the panel's recipe — and so its link — lives.
     """
+    if options.judge_scores is not None:
+        from . import deep_judges
+
+        for line in deep_judges.promote(options.judge_scores):
+            print(line)
+        return 0
     landing = bool(options.place or options.replace)
     for identifier in options.id or list(deep_figures_module.IDS):
         drawn = deep_figures_module.draw(identifier)

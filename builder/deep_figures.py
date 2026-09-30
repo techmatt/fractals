@@ -1141,8 +1141,12 @@ PAGE_VIDEOS = {
     ),
 }
 
-#: Every figure this module draws: the frames, then the videos' pictures.
-IDS = (*FIGURES, VIDEO, *PAGE_VIDEOS)
+#: The judges' fold under `deep-random-dives`, drawn by `builder/deep_judges.py` out of a record
+#: of its own and through `draw_link` like every figure here.
+JUDGES = "deep-judges-top15"
+
+#: Every figure this module draws: the frames, then the videos' pictures, then the judges'.
+IDS = (*FIGURES, VIDEO, *PAGE_VIDEOS, JUDGES)
 
 #: What each figure's deep panels were drawn as, between `draw` and `keep`.
 _DRAWN: dict[str, dict[int, Drawn]] = {}
@@ -1160,8 +1164,10 @@ def draw(identifier: str) -> Split:
     The deep panels are drawn first, because an f64 panel is drawn at its perturbation
     twin's settled cap: the two pictures then differ in the arithmetic and nothing else.
     """
-    from . import renders, start
+    from . import deep_judges, renders, start
 
+    if identifier == JUDGES:
+        return deep_judges.draw()
     if identifier == VIDEO:
         return start.linked_pictures(VIDEO, VIDEO_LINKS, "the Deep zoom video's player")
     if identifier in PAGE_VIDEOS:
@@ -1283,8 +1289,11 @@ def _f64_spec(frame: Frame, cap: int) -> dict:
 
 def keep(identifier: str) -> None:
     """Write one figure's deep rows into `article/figure-recipes.jsonl`, as it is landed."""
-    from . import recipes
+    from . import deep_judges, recipes
 
+    if identifier == JUDGES:
+        deep_judges.keep()
+        return
     if identifier == VIDEO or identifier in PAGE_VIDEOS:
         # Its pictures are short links, and what they were drawn at is the row's recipe.
         return
@@ -1305,6 +1314,10 @@ def keep(identifier: str) -> None:
 def recipe(identifier: str) -> dict:
     if identifier not in IDS:
         raise DeepFigureError(f"{identifier} is not drawn by builder.deep_figures")
+    if identifier == JUDGES:
+        from . import deep_judges
+
+        return deep_judges.recipe()
     if identifier == VIDEO or identifier in PAGE_VIDEOS:
         from . import start
 
