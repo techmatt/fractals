@@ -177,11 +177,11 @@ PROSE: tuple[tuple[str, str], ...] = (
     ("h2", "The deep gallery"),
     (
         "p",
-        "Most of this work went into wallpapers in the shallow parts of the Mandelbrot set, "
-        'but as <a href="../article/deep-zoom.html">Deep zoom rendering</a> shows, shallow '
-        "wallpapers are a good way to find excellent deep locations. Here are 28 wallpapers I "
-        "picked by hand, made with the random dives described in "
-        '<a href="../article/deep-zoom.html#random-dives">Random dives</a>.',
+        "Most of this work focuses on finding wallpapers in the shallow parts of the "
+        'Mandelbrot set, but as <a href="../article/deep-zoom.html">deep zoom rendering</a> '
+        "shows, shallow wallpapers can be used to find excellent deep locations. Here are 28 "
+        "wallpapers I picked by hand following the "
+        '<a href="../article/deep-zoom.html#random-dives">random dive approach</a>:',
     ),
     ("pack", DEEP),
     ("h2", "Color galleries"),
