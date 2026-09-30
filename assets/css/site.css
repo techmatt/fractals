@@ -166,6 +166,13 @@ body {
    bar that overflows drags the whole page sideways with it. */
 .topbar-links { display: flex; flex-wrap: wrap; gap: 0 1.1rem; }
 
+/* Under a finger the bar's links are taller: wrapped onto three lines on a phone, they
+   were three rows of 22-pixel targets with nothing between them. Asked of the pointer and
+   not of the width, so the bar a mouse sees is the one line it always was. */
+@media (pointer: coarse) {
+  .topbar a { display: inline-block; padding: 0.2rem 0; }
+}
+
 /* The contents rail. Ten sections in reading order, the current one open to its own
    headings; the builder writes it, so it cannot fall behind the article. Dark ink and
    no underlines: a column of ten blue links reads as a link list, not as contents. */

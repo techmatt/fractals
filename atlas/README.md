@@ -80,6 +80,19 @@ box**, watched with a `ResizeObserver`, and the host's size is its page's own ar
 The one-way flow is deliberate — a host that shrank to its figure and a frame fitted to that
 host would be each other's input, and a pixel of rounding would chase itself.
 
+**`fit` may be a function** *(phone_support_ckpt157)*, asked at every fit. The studio's
+panel is a box the page has sized while it stands beside the canvas, and a column that
+scrolls once it is stacked under it on a phone, where nothing sizes its height but the
+frame; so the studio answers `"box"` or `"width"` by its own breakpoint. With a fixed
+`"box"` the frame was never fitted on a phone at all, and sat over the tab's note.
+
+**A finger's first tap on a mark is its hover** *(phone_support_ckpt157)*. A touchscreen
+has no hover, and a tap used to open the mark at once, so the three slots could never be
+looked at. A tap on a mark the slots are not showing fills them and goes nowhere; a tap
+on the mark they are showing opens it, as a click does. Whether they were showing it is
+read at the `pointerdown`, because the browser's stand-in `mouseenter` lands before the
+click. A mouse is unchanged.
+
 **It does not open from `file://`**, for the reasons `explorer/README.md` spells out.
 `python -m builder serve` puts this tree on localhost.
 

@@ -38,7 +38,15 @@
   </div>
 </div>
 
-<main class="studio" id="studio" hidden>
+<main class="studio" id="studio" data-section="side" hidden>
+
+  <!-- Stacked under the canvas, on a phone or in a narrow window, one of the two panels
+       shows at a time and this chooses which (phone_support_ckpt157). Beside the canvas it
+       is not on the page. `data-section` on the studio names the one showing. -->
+  <div class="section-switch" id="section-switch" role="group" aria-label="What is under the picture">
+    <button type="button" data-section="side" aria-pressed="true">Pictures</button>
+    <button type="button" data-section="controls" aria-pressed="false">Controls</button>
+  </div>
 
   <section class="side" aria-label="Pictures to open">
     <div class="side-head">
@@ -363,6 +371,7 @@
             <button type="button" id="deep-root" aria-keyshortcuts="R">Root (r)</button>
             <button type="button" id="deep-minibrots"
                     title="Tiny copies of the set in and around this view, largest first. Click one to go to it.">Find minibrots</button>
+            <button type="button" id="deep-reset" disabled>Reset to link</button>
             <button type="button" id="deep-origin" hidden
                     title="The frame widens to the square root of its width.">Same view at z = 0</button>
             <button type="button" id="deep-back">Shallow mode</button>

@@ -256,6 +256,31 @@ const boxButton = document.getElementById("view-box");
  *  so it is kept in step with the shallow one rather than being a second state. */
 const deepBoxButton = document.getElementById("deep-box");
 
+/** Whether the two panels are stacked under the canvas rather than beside it: the
+ *  stylesheet's `--studio-stack`, which a media query cannot read off a custom property. */
+const STACKED = window.matchMedia("(max-width: 60rem)");
+
+// ------------------------------------------------------------------- the section switch
+//
+// Stacked, one of the two panels shows under the canvas and this chooses which
+// *(phone_support_ckpt157)*: `side`, the tabs and their pictures, or `controls`, everything
+// the viewer has under its canvas. The studio's `data-section` is the whole of the state
+// and the stylesheet does the rest, so beside the canvas — where the switch is not on the
+// page — it means nothing and costs nothing. Nothing else moves it: a tile opened from
+// Pictures draws on the canvas above it, which is the point of keeping the canvas in view.
+const sectionButtons = [...document.querySelectorAll("#section-switch button")];
+
+function showSection(name) {
+  studio.dataset.section = name;
+  for (const button of sectionButtons) {
+    button.setAttribute("aria-pressed", String(button.dataset.section === name));
+  }
+}
+
+for (const button of sectionButtons) {
+  button.addEventListener("click", () => showSection(button.dataset.section));
+}
+
 let renderer = null;
 let contract = null;
 /** The Deep tab's contract context: the same palette set, and the two numbers neither
@@ -1993,7 +2018,7 @@ function restore(entry) {
   if (link.isDeep(`?${query}`)) {
     deepOpening = true;
     showPanel("deep");
-    arriveDeep(() => deep?.open(query)).catch((error) => {
+    arriveDeep(() => deep?.open(query, { restoring: true })).catch((error) => {
       restoring = null;
       console.warn("a step back could not reopen a deep picture", error);
     });
@@ -2722,8 +2747,14 @@ let fitWanted = false;
 function fitUnlessStated(query) {
   arrival.disarm();
   fitWanted = !new URLSearchParams(query).has("scale");
+  linkFit = true;
   landFit();
 }
+
+/** Whether the fit waiting, or the one last taken, is a link's arrival rather than a frame
+ *  carried in from the viewer. A link's fitted picture is what the link opens as, so the
+ *  Deep tab's Reset to link is told when it lands (`deep.anchorHere`). */
+let linkFit = false;
 
 /** Take a waiting fit off the Deep tab's picture, if that picture is of its frame now. */
 function landFit() {
@@ -2739,6 +2770,7 @@ function landFit() {
   fitWanted = false;
   holding = null;
   tint({ shade: next });
+  if (linkFit) deep.anchorHere();
   // The Leveled quarter pass it fitted is not a picture of its own in the way back.
   rememberInPlaceOf(of);
   // After the tint, which disarms: this fit is the page's, and it may want finishing.
@@ -2774,6 +2806,7 @@ function landRefit() {
   const of = keyOf(currentQuery());
   holding = null;
   tint({ shade: next });
+  if (linkFit) deep.anchorHere();
   // The tint writes the deep view at once, so the link here is the refitted picture's.
   rememberInPlaceOf(of);
 }
@@ -3022,6 +3055,9 @@ function rebuild() {
   syncPlane();
   syncToggles();
   stage.style.aspectRatio = `${view.aspect.across} / ${view.aspect.down}`;
+  // The same shape as a number, for the stacked layout: a stage whose height is capped
+  // there takes its width from the cap, which a stylesheet cannot work out of a ratio.
+  stage.style.setProperty("--stage-aspect", String(view.aspect.across / view.aspect.down));
 }
 
 // ------------------------------------------------------------------- what was opened
@@ -3615,6 +3651,7 @@ function showPanel(asked) {
       if (!deepOpening && deep?.enter(carryable()) && deep.view().shade.scale !== "absolute") {
         arrival.disarm();
         fitWanted = true;
+        linkFit = false;
         landFit();
       }
       deepOpening = false;
@@ -4179,6 +4216,7 @@ async function mountDeep() {
         minibrotList: at("minibrot-list"),
         minibrotNote: at("minibrot-note"),
         root: at("deep-root"),
+        reset: at("deep-reset"),
         back: at("deep-back"),
         diveA: at("dive-a"),
         diveB: at("dive-b"),
@@ -4214,6 +4252,8 @@ async function mountDeep() {
       readLink,
       plateOf,
       openLink: (query) => openAny(query),
+      // The picture a link reduces to, which is what Reset to link is greyed on.
+      keyOf,
       newColoring,
       onLanded: addDive,
       showDiveResults: () => diveResults?.show("results"),
@@ -4277,6 +4317,9 @@ async function startAtlas() {
     atlasFrame = await mount(host, {
       base: new URL("../atlas/", import.meta.url),
       plane: planeOf(view.family),
+      // Beside the canvas the panel is a box the page has sized; stacked under it the panel
+      // is a column that scrolls, as wide as the window and as tall as what is in it.
+      fit: () => (STACKED.matches ? "width" : "box"),
       onPlane: (name) => {
         const family = atlasFrame.record.partitions.find((one) => one.partition === name)?.family;
         if (family === undefined || !openFamily(family)) syncPlane();
@@ -4403,12 +4446,18 @@ canvas.addEventListener("pointerdown", (event) => {
     return;
   }
   canvas.setPointerCapture(event.pointerId);
+  // A first finger starts from nothing: a pointer whose release never arrived would
+  // otherwise be counted as the other half of a pinch for as long as the page is open.
+  if (event.isPrimary) {
+    pointers.clear();
+    pinch = null;
+  }
   pointers.set(event.pointerId, canvasPoint(event));
   if (pointers.size === 1) {
     drag = { from: canvasPoint(event), at: canvasPoint(event) };
   } else if (pointers.size === 2) {
     drag = null;
-    pinch = { spread: spread(), width: view.w.value };
+    pinch = { spread: spread(), mid: middle() };
   }
 });
 
@@ -4438,7 +4487,16 @@ canvas.addEventListener("pointermove", (event) => {
   if (!pointers.has(event.pointerId)) return;
   pointers.set(event.pointerId, canvasPoint(event));
   if (pinch !== null && pointers.size === 2) {
-    preview(0, 0, spread() / pinch.spread);
+    // The picture scaled about the point the fingers took hold of, and carried with them:
+    // what was under their middle at the press is under their middle now.
+    const scale = spread() / pinch.spread;
+    const mid = middle();
+    const held = pinchHeld(mid);
+    preview(
+      mid.x - grid.width / 2 - (held.x - grid.width / 2) * scale,
+      mid.y - grid.height / 2 - (held.y - grid.height / 2) * scale,
+      scale,
+    );
     return;
   }
   if (drag === null) return;
@@ -4448,17 +4506,32 @@ canvas.addEventListener("pointermove", (event) => {
 
 function release(event) {
   if (!pointers.has(event.pointerId)) return;
+  // **The pinch is measured before the lifted finger is forgotten**
+  // *(phone_support_ckpt157)*. `spread` reads two pointers, and this used to delete the one
+  // that lifted first and then ask: it threw on the `undefined` second, every time, before
+  // `pinch` was cleared. So a pinch never zoomed, and it left `pinch` set for good — after
+  // which every one-finger pan slid the picture and then threw here as well, with the view
+  // never moved and nothing drawn. One two-finger touch broke panning until a reload, which
+  // is what "a pan does not always re-render" was on a phone.
+  const pinched =
+    pinch !== null && pointers.size === 2
+      ? { ratio: spread() / pinch.spread, mid: middle(), held: pinchHeld(middle()) }
+      : null;
   pointers.delete(event.pointerId);
   // Read once and clear: every path below this but the zero-length one ends in a draw.
   const wasSlid = slid;
   slid = false;
   if (pinch !== null) {
-    const ratio = spread() / pinch.spread;
     pinch = null;
     pointers.clear();
     drag = null;
     // A pinch refused at the zoom-out stop has to put back the picture it scaled.
-    if (Number.isFinite(ratio) && ratio > 0 && zoomAbout(grid.width / 2, grid.height / 2, 1 / ratio)) {
+    if (
+      pinched !== null &&
+      Number.isFinite(pinched.ratio) &&
+      pinched.ratio > 0 &&
+      pinchTo(pinched.held, pinched.mid, 1 / pinched.ratio)
+    ) {
       return;
     }
     if (deepOwns()) {
@@ -4519,6 +4592,47 @@ canvas.addEventListener("pointercancel", release);
 function spread() {
   const [a, b] = [...pointers.values()];
   return Math.hypot(a.x - b.x, a.y - b.y);
+}
+
+/** The point midway between the two fingers of a pinch, in canvas pixels. */
+function middle() {
+  const [a, b] = [...pointers.values()];
+  return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+}
+
+/** The point of the picture a pinch holds on to: where its fingers' middle was at the
+ *  press, which the viewer carries along with them. The Deep tab zooms about where the
+ *  middle is now and pans nothing, since its zoom is exact arithmetic about one point. */
+function pinchHeld(mid) {
+  return deepOwns() ? mid : pinch.mid;
+}
+
+/**
+ * End a pinch: the width scaled by `factor`, with the point of the plane that was under
+ * `held` put under `to`. Returns whether the view moved.
+ *
+ * `zoomAbout` with a pan in it, and the same refusals: a wheel notch holds its anchor where
+ * it is on the canvas, and two fingers move theirs.
+ */
+function pinchTo(held, to, factor) {
+  if (deepOwns()) return deep.zoom(to.x, to.y, factor);
+  const anchor = planeAt(held.x, held.y);
+  const width = view.w.value * factor;
+  if (tooDeep(width)) return false;
+  const height = width * (grid.height / grid.width);
+  const centre = outwardHeld(
+    {
+      x: anchor.x - (to.x / grid.width - 0.5) * width,
+      y: anchor.y - (0.5 - to.y / grid.height) * height,
+    },
+    width,
+  );
+  if (centre === null) return false;
+  const before = view;
+  moveTo(centre.x, centre.y, centre.w);
+  reproject(before);
+  draw();
+  return true;
 }
 
 canvas.addEventListener(
@@ -5906,6 +6020,9 @@ async function main() {
   if (named.length > 0) {
     anchor = { query: link.emit(view, contract), opts: {}, at: pictureKey(view) };
   }
+  // Stacked, a link to a picture opens on that picture's controls, and a bare page or one
+  // that names only a panel opens on the pictures to choose from.
+  showSection(named.length > 0 ? "controls" : "side");
 
   document.getElementById("provenance").textContent =
     `${PROVENANCE.count} palettes and ${IDENTITIES.size} render modes, taken from ` +

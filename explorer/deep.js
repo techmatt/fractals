@@ -370,6 +370,18 @@ export function mount(host) {
    * inventing one would be putting a fact in front of a reader that nobody knows.
    */
   let cameFrom = null;
+  /**
+   * The link the tab was last opened at, which is what Reset to link goes back to
+   * *(phone_support_ckpt157, addendum 1)*: `{ query, place, at }`, the link as it arrived,
+   * the frame it names, and the picture key it reduces to. `null` until a link arrives.
+   *
+   * The viewer's `anchor`, for this tab: the last thing that arrived and not the last thing
+   * on the screen, so a pan, a dive or a Julia set leaves it alone, and so does a step back,
+   * which puts a picture back rather than opening one. `at` moves once after the link does:
+   * a link that leaves its colour unstated is fitted on arrival, and that fitted picture is
+   * what the link opens as (`anchorHere`).
+   */
+  let anchor = null;
 
   /**
    * How many fields are kept.
@@ -3532,6 +3544,14 @@ export function mount(host) {
     els.minibrots.disabled = downloading || running?.upto === "minibrots";
     els.minibrots.textContent = running?.upto === "minibrots" ? "Looking…" : "Find minibrots";
     els.root.disabled = downloading || atRoot();
+    // Greyed where it would change nothing, as the viewer's is: no link has arrived, or the
+    // picture up is the one the link opened.
+    els.reset.disabled =
+      downloading || anchor === null || host.keyOf(deepLink.emit(view)) === anchor.at;
+    els.reset.title =
+      anchor === null
+        ? "No link has been opened in the Deep tab, so there is nothing to go back to."
+        : "Back to the picture this link opened at: its frame, its iteration cap and its palette.";
     els.origin.disabled =
       downloading || (julia && fx.isZero(view.x.dec) && fx.isZero(view.y.dec));
     // **Shallow mode fades where the frame cannot cross**, by `host.resolves` — the viewer's
@@ -3808,6 +3828,14 @@ export function mount(host) {
   );
   els.origin.addEventListener("click", interrupting(toOrigin));
   els.minibrots.addEventListener("click", interrupting(() => findMinibrots()));
+  // Reset to link: the link again, through the door it came in by, so the reset is exactly
+  // what opening it was, the arrival's fit included.
+  els.reset.addEventListener(
+    "click",
+    interrupting(() => {
+      if (anchor !== null) host.openLink(anchor.query);
+    }),
+  );
 
   // The Dive block. Go is faded rather than disabled where a landing is greyed, so its title
   // says why; a press on it then does nothing but say so in the status line.
@@ -4013,13 +4041,23 @@ export function mount(host) {
      *  alone, which is what this always did. Either way the pass is committed rather than
      *  auto — a link is a press — so Cancel is there for it. **It does not probe the cap**
      *  *(ckpt141)*: a link that names one is drawn at it, pinned, and one that names none
-     *  is drawn at the width's, as the auto pass draws it; Render is what asks for more. */
-    open(query) {
+     *  is drawn at the width's, as the auto pass draws it; Render is what asks for more.
+     *
+     *  **`restoring` is a step back through this door**, and it moves no anchor: Reset to
+     *  link goes back to what arrived, and an undo is not an arrival. */
+    open(query, { restoring = false } = {}) {
       let next = deepLink.parse(`?${query}`, context);
       // A link with no cap reads the engine's policy until the kernel is up; once it is,
       // the width's cap is the kernel's — which is what a held field was drawn at.
       if (renderer !== null && next.capFrom === "width") {
         next = { ...next, maxiter: renderer.maxiter(next.w.value) };
+      }
+      if (!restoring) {
+        anchor = {
+          query,
+          place: deepLink.fieldKey({ ...next, maxiter: 0 }, 1, 1),
+          at: host.keyOf(deepLink.emit(next)),
+        };
       }
       // A link says where it points and not where its writer was standing.
       cameFrom = null;
@@ -4059,6 +4097,14 @@ export function mount(host) {
       host.say("");
       host.showState("stopped");
       render(autoRender ? "screen" : "preview", { probe: false });
+    },
+
+    /** The arrival's fit landed on the link's own frame: the fitted picture is the one the
+     *  link opens as, so it is the one Reset to link is greyed on. */
+    anchorHere() {
+      if (anchor === null || deepLink.fieldKey({ ...view, maxiter: 0 }, 1, 1) !== anchor.place) return;
+      anchor.at = host.keyOf(deepLink.emit(view));
+      syncControls();
     },
 
     /** A colour control moved. The field is kept, so this never re-iterates. The picture up

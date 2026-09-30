@@ -272,7 +272,10 @@ function contentBox(node) {
  *   follow the frame *(atlas_live_ckpt146)*, which is an article column: nothing there
  *   sizes a box's height but what is in it. The flow is still one way — the frame reads
  *   the width and never the height, and the host's height reads the frame and never
- *   reaches back — so a host that grows with its frame is not the frame's input.
+ *   reaches back — so a host that grows with its frame is not the frame's input. **Or a
+ *   function returning one of the two**, asked at every fit *(phone_support_ckpt157)*: the
+ *   studio's panel is a sized box beside its canvas and a column that scrolls under it on a
+ *   phone, and which of the two it is changes with the window.
  * - **`least`** (default `LEAST`) — the narrowest plate the frame will draw, in CSS
  *   pixels. A phone's article column is narrower than the studio's floor, and a frame
  *   wider than its column is a page that scrolls sideways.
@@ -297,7 +300,8 @@ export async function mount(host, options = {}) {
   const onPick = options.onPick;
   const navigates = onPick === undefined;
   const slotMark = options.slotMark;
-  const byWidth = options.fit === "width";
+  const byWidth = () =>
+    (typeof options.fit === "function" ? options.fit() : options.fit) === "width";
   const least = options.least ?? LEAST;
   const miniatures = options.miniatures ?? false;
 
@@ -452,6 +456,8 @@ export async function mount(host, options = {}) {
   };
 
   let hovering = null;
+  /** The mark a finger is pressing and whether the slots already showed it, or `null`. */
+  let tapped = null;
   const nodes = new Map();
   const settle = () => show(hovering);
 
@@ -488,7 +494,20 @@ export async function mount(host, options = {}) {
       node.addEventListener("focus", enter);
       node.addEventListener("mouseleave", leave);
       node.addEventListener("blur", leave);
+      // **A finger has no hover, so its first tap is one** *(phone_support_ckpt157)*. A tap
+      // on a mark the slots are not showing fills them and goes nowhere; a tap on the mark
+      // they are showing opens it, as a click does. Whether they were showing it is read at
+      // the press, because the browser's stand-in `mouseenter` lands before the click.
+      node.addEventListener("pointerdown", (event) => {
+        tapped = event.pointerType === "touch" ? { dot, shown: showing === dot } : null;
+      });
       node.addEventListener("click", (event) => {
+        const tap = tapped;
+        tapped = null;
+        if (tap !== null && tap.dot === dot && !tap.shown) {
+          enter();
+          return;
+        }
         // A mark is a place, and the one of its three pictures a place is worth opening at
         // is the wallpaper. The other two are what a picker would go to the slots for.
         if (!navigates) {
@@ -573,12 +592,13 @@ export async function mount(host, options = {}) {
 
   const refit = (force = false) => {
     const box = contentBox(host);
-    if (box.width <= 0 || (box.height <= 0 && !byWidth)) return fitted;
+    const wide = byWidth();
+    if (box.width <= 0 || (box.height <= 0 && !wide)) return fitted;
     // What the strip of planes takes is its own before the frame divides up what is left;
     // it is laid out by the page's own stylesheet and is no part of the rectangle the
     // plate's aspect describes.
     const spare = planes.offsetHeight;
-    const room = byWidth ? Infinity : Math.max(least * ratio, box.height - spare);
+    const room = wide ? Infinity : Math.max(least * ratio, box.height - spare);
     const width = Math.max(least, Math.floor(Math.min(box.width, room / ratio, most)));
     if (width === fitted.width && !force) return fitted;
 

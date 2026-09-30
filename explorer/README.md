@@ -11,7 +11,9 @@ place the search kept — and on the right the viewer that draws whichever one i
 Same URL, same keys, and every link written before it still opens the same picture.
 
 **It targets the desktop** *(Matt, 2026-09-19)*: where a choice is between a reader at a
-desk with a pointer and a large screen and one on a phone, it is made for the first.
+desk with a pointer and a large screen and one on a phone, it is made for the first. A
+phone still gets a layout of its own and working touch, to a bar of reasonable
+*(phone_support_ckpt157)*: *On a phone*, below.
 
 **A feature has to be a clear win** *(Matt, 2026-09-20)*. Complexity is a cost to the person
 using a tool, so a control, a panel or a mode joins the page only where what it gives
@@ -31,6 +33,7 @@ Each line is a `##` below, and the question it is the answer to.
 |---|---|
 | **What is here** | which file does what, and what a reader downloads |
 | **The studio** | how the left panel and the viewer share one page and one URL |
+| **On a phone** | what the page is below the stacking width, what a finger can do, and what is left |
 | **The box tool** | how a frame is named in two clicks, and why it commits like a wheel notch |
 | **The zoom-out stop** | how far out a gesture goes, and why a Julia plane goes further |
 | **The render bar** | what the bar on the Download row is measuring, and where its stops fall |
@@ -863,6 +866,81 @@ every special case it put there went with it (`isSession`, a row's `deep`, `grew
 landings collect in the Deep tab's own **Dive results** instead (*Dive results*, under the
 Deep tab, below).
 
+## On a phone *(phone_support_ckpt157, 2026-09-30)*
+
+Below `--studio-stack` (60rem: a phone, a narrow window) the two panels do not fit side by
+side. `explorer.css`'s last section, *stacked*, is the whole of the layout, and it is last
+because it changes rules from every section above it.
+
+**The canvas stays at the top and one panel shows under it.** The studio is a grid of four
+rows: the stage, the status line, a two-button **switch**, and whichever panel the switch
+chose, which is the page's one scroller. *Pictures* is the side panel (the tabs and what the
+open one holds) and *Controls* is everything the viewer has under its canvas. The canvas
+never scrolls away, because everything else on the page is a way of changing it: a tile
+tapped in Pictures draws above the grid it was tapped in. It replaced two half-height boxes
+that each scrolled on their own, which left the controls a slot 180 px tall on a 375×812
+phone and cut the tab row off at its fifth tab.
+
+- **`.viewer` is `display: contents` there**, so the stage, the status line and the
+  controls are the studio grid's own items and the switch can sit between the canvas and
+  the controls without the markup being reordered. The element keeps its classes, so every
+  `.viewer.is-deep` rule still reads. It has no box to answer a container query with, so
+  the two-column control grid asks the studio instead (`container-type` moves).
+- **The switch is `#section-switch`, and `data-section` on the studio is its whole state**
+  (`showSection` in `explorer.js`). Beside the canvas the switch is not on the page and the
+  attribute means nothing. A bare page, or one that names only a panel, opens on Pictures;
+  a link that names a picture opens on Controls. Nothing else moves it.
+- **A phone on its side** (landscape and under 34rem tall) puts the canvas on the left and
+  the chosen panel beside it, since the window is wide and very short.
+- **The side panel scrolls as one column.** Beside the canvas each list scrolls inside a
+  panel the window sized; stacked, the panel is as long as what is in it. The atlas frame
+  is fitted to the column's width alone there: `frame.js`'s `fit` may be a function, asked
+  at every fit, and the studio answers `"width"` while `STACKED` matches and `"box"`
+  otherwise. Before this the frame was never fitted on a phone and sat over the tab's note.
+- **The bar wraps.** It overlapped at 375 px: the name, the title and four links in one
+  unwrapped line. It is two lines on a phone, the name and Copy link over the three ways
+  out, and one line at any width that holds it.
+- **Under a finger the controls are taller** (`@media (pointer: coarse)`): buttons, selects
+  and boxes at 2rem, chips and palette tabs at 1.9rem, a checkbox at 1.25rem. Asked of the
+  pointer and not the width, so a narrow desktop window keeps the dense rows.
+
+**A finger pans and pinches, and one two-finger touch used to break panning for good.**
+`release` deleted the lifted pointer from `pointers` and then called `spread()`, which
+reads two: it threw on the missing second, every time, before `pinch` was cleared. So a
+pinch never zoomed, and `pinch` stayed set, after which every one-finger pan slid the
+picture and threw at the same line on release: the view never moved, nothing was drawn,
+and the render bar stayed red, until a reload. That was the phone's *a pan does not always
+re-render*. Reproduced over CDP with emulated touch (two pans redraw, one pinch, then no
+pan redraws and the console carries `Cannot read properties of undefined (reading 'x')`
+from `spread`); after the fix the same sequence zooms on the pinch and redraws every pan.
+The pinch is measured before the pointer is forgotten, and a first finger (`isPrimary`)
+starts from an empty `pointers`, so a pointer whose release never arrived cannot be counted
+as half of a pinch.
+
+**A pinch holds on to the point it took.** It used to zoom about the canvas's centre
+whatever was under the fingers. The plane point under the fingers' middle at the press is
+under their middle at the release, so two fingers zoom and pan in one gesture (`pinchTo`,
+and the preview scales about the same point). The Deep tab zooms about where the middle is
+now and pans nothing, since its zoom is exact arithmetic about one point (`deep.zoom`).
+
+**An atlas mark's first tap is its hover** (`frame.js`). A finger has no hover, so a tap on
+a mark the slots are not showing fills them and goes nowhere, and a tap on the mark they
+are showing opens it. The article's live figure gets the same, being the same frame.
+
+**What is left, deliberately.** The Phoenix plane has no pinch: its gestures are its own
+(`phoenix.js`), one pointer and a wheel, so a phone pans it and cannot zoom it; it would
+take the viewer's two-pointer bookkeeping again there, about forty lines. The Julia preview
+is a hover and stays one. An atlas mark is 18 px and they overlap, which a larger hit area
+would make worse. Section heads and readouts are 11 px. A 320 px phone's atlas frame
+overflows its column by the 24 px that `LEAST` is over it.
+
+**Photographing it.** Real device emulation over CDP, never a narrow window:
+`Emulation.setDeviceMetricsOverride` with `mobile: true`, `setTouchEmulationEnabled`, and
+`Input.dispatchTouchEvent` for the gestures. ⚠ Chrome's emulated touch does not survive a
+multi-touch sequence across a navigation: after one, no pointer event reaches the next
+document at all (measured with a capture listener on the canvas), which reads as the page
+ignoring touch. A harness takes a fresh browser after a pinch.
+
 ## The box tool *(Matt, explorer_box_zoom_and_download_row_ckpt140, 2026-09-22)*
 
 `b`, or `Box (b)` at the left of the Download row's toggles. **Click the center, move away
@@ -961,10 +1039,12 @@ picture said 2.0350. A wheel notch keeps scaling off the view's own width, delib
 a notch is a notch, and notches held down while a frame is pending should compound on the
 frame being asked for.
 
-**It is a mouse gesture.** The sizing is `pointermove` between two clicks, and a touchscreen
-sends no moves between taps — a second tap lands inside `BOX_LEAST` and cancels. That is the
-same line the Julia preview draws, and for the same reason; nothing on this page is only
-reachable through it.
+**It is a mouse gesture, and a finger gets a version of it.** The sizing is `pointermove`
+between two clicks, and a touchscreen sends no moves between taps, so two taps land inside
+`BOX_LEAST` and cancel. A press that drags does size the box, though, and the next tap
+takes it: press at the centre, drag out, lift, tap *(measured over emulated touch,
+phone_support_ckpt157)*. Nothing on this page is only reachable through it; a pinch is the
+phone's zoom.
 
 ## The zoom-out stop *(Matt, explorer_deep_polish_ckpt142, 2026-09-22)*
 
@@ -1371,7 +1451,8 @@ Found or Saved picture) or leaves the Walk tab for Gallery or Atlas. Back to the
 or coming back to the tab puts the walk view back. It is two horizontal strips, *The walk*
 above *Current candidates* *(walk_strip_ckpt132; the rule's two words, walk_tab_ckpt140)*,
 each scrolling right when it overflows and kept on its newest item. Where the window is short the picture gives up height so both strips are in
-sight (`--walk-room` in `explorer.css`); stacked on a phone the page scrolls instead.
+sight (`--walk-room` in `explorer.css`); stacked on a phone the strips are the Controls
+section under the canvas, and that section scrolls (*On a phone*).
 
 **The quarters have fixed colors**, bound to position. They are the same on the picture and
 on the strip's cards:
@@ -1760,8 +1841,18 @@ in both views (next section).
   and at x = 866, 295 wide, at 1200.
 - **The Julia button ends Navigation**, so the shallow view's Julia preview box sits
   directly after the button it previews: Box (b), Root (r), Find minibrots, Reset to seat,
-  Julia here (j) in the shallow view; Box (b), Root (r), Find minibrots, Same view at
-  z = 0, Shallow mode, Julia at this c (j) in Deep.
+  Julia here (j) in the shallow view; Box (b), Root (r), Find minibrots, Reset to link,
+  Same view at z = 0, Shallow mode, Julia at this c (j) in Deep.
+- **Deep has Reset to link** *(phone_support_ckpt157, addendum 1)*, where the shallow view
+  has Reset to seat, and in the same place in the row: one reset to a view. `deep.js` keeps
+  an `anchor`, the last link the tab was *opened* at (the address bar, a gallery or Dive
+  results tile, a saved picture, a slot's thumbnail), and the button opens that link again
+  through `host.openLink`, the door it came in by, so the reset is exactly what opening it
+  was, the arrival's fit included. A pan, a dive, a Julia set and a frame carried in from
+  the viewer leave the anchor alone, and so does a step back (`open`'s `restoring`). It is
+  greyed until a link arrives, and while the picture up is the one the link opened: a link
+  that leaves its colour unstated is fitted on arrival, and that fitted picture is the
+  anchor's (`anchorHere`, called where `landFit` and `landRefit` land a link's fit).
 - ***Back to the explorer* is *Shallow mode*, and it fades where the frame cannot cross.**
   The test is `host.resolves`, the viewer's own `resolvesShallow`, which asks the engine
   module and also refuses a Julia `c` a double cannot hold, so the rule is spelled once. It
@@ -1780,7 +1871,7 @@ in both views (next section).
   |---|---|
   | Box (b), both views | a download or Download all is running (`busy`) |
   | Root (r), both views | already at the plane's root; a download |
-  | Reset to seat / link | nothing was opened, or the view is already the one opened; a download |
+  | Reset to seat / link, both views | nothing was opened, or the view is already the one opened; a download |
   | Julia here (j) | a download (absent where the family has no Julia plane) |
   | Find minibrots, both views | its own search is running (*Looking…*); a download (absent on a Julia plane) |
   | Julia at this c / Back to the Mandelbrot set (j) | a download |
@@ -3449,7 +3540,8 @@ rather than measuring a new one.
 
 **The anchor does not move on a step back.** Reset to seat goes back to what *arrived*, and
 an undo is not an arrival — it is the reader taking back a move they made since. That is the
-only thing `openLink`'s `restoring` option changes, besides the sentence it hands the walk.
+only thing `openLink`'s `restoring` option changes, besides the sentence it hands the walk;
+the Deep tab's `open` takes the same option for its own Reset to link.
 Everything else it does is wanted, which is how stepping back onto a gallery tile puts the
 tile's mark back with the picture: the options a picture was opened
 with come off the anchor at commit time, where the settled picture **is** the anchor's, so a
