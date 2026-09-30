@@ -427,8 +427,9 @@ and the entries that open under the current page are that page's prose `<h2>`s. 
 is the way back to the front page, and under the fourteen sections it carries the links
 that leave the article — the explorer and the code, and this site's own code under it. No
 entry marks a section written; the flag stays in `sections.jsonl`. Above the title sit
-four groups that are not sections — **Start here**, **Wallpaper packs**, **Tools and
-data**, and **Deep zoom videos** — each a `rail-group` spelled by a `sections.*_NAME`;
+four headings that are not sections — **Start here**, **Wallpaper packs**, **Tools and
+data**, and **Deep zoom videos** — each spelled by a `sections.*_NAME`, in two
+`rail-group`s: Start here alone, then the other three with no rule between them;
 `builder/README.md`'s *The contents rail is derived, never kept* has each. A prose
 `<h2>` also gets the id its rail entry links to, spelled from its own words by rule —
 a fragment is a permanent URL. `python -m builder build` writes the rail between two

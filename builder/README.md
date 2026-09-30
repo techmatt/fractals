@@ -344,12 +344,12 @@ by `deep_figures.draw_link`, the Deep tab's own renderer and shader.
 *(tools_and_data_ckpt156; figures tools_figures_ckpt156.)* `tools-and-data/index.html` is a
 top-level page like the packs page: hand-written, placed verbatim from `Tools and data v1.md`
 and held to it by `python -m builder prose`, in `sections.hand_written`, so `build` owns its
-rail and heading ids. It is the rail's **third group** — `sections.TOOLS` / `TOOLS_NAME`,
+rail and heading ids. It is the rail's **third heading** — `sections.TOOLS` / `TOOLS_NAME`,
 set like Start here and Wallpaper packs, after the packs and before Contents — and the site
 bar's *Tools and data* link sits between *Wallpaper packs* and *GitHub* (`pages.topbar`
 takes its href). *Deep zoom videos* follows it in both places *(videos_nav_ckpt156)*: the
-rail's **fourth group** (`sections.VIDEOS` / `VIDEOS_NAME`), and a bar link after *Tools and
-data*. The explorer's studio bar does not carry it: that bar is one row that never wraps,
+rail's **fourth heading** (`sections.VIDEOS` / `VIDEOS_NAME`), and a bar link after *Tools
+and data*. The explorer's studio bar does not carry it: that bar is one row that never wraps,
 and at 375 px a fourth link squeezes every label onto two or three lines under the title.
 
 Its two data files are written by **`python -m builder tools-and-data`**
@@ -390,9 +390,11 @@ between them and gives each prose `<h2>` the id its rail entry links to, derived
 heading's own words; `check` re-derives both and compares. A fragment is a permanent URL,
 so it is spelled by rule rather than by hand.
 
-**Four groups sit above the rail's title, and none is a section.** Each is a `rail-group`,
-a heading set like *Contents*, spelled by a constant in `builder/sections.py` and linking to
-its page, in this order:
+**Four headings sit above the rail's title, in two groups, and none is a section.** Each
+heading is set like *Contents*, spelled by a constant in `builder/sections.py` and links to
+its page. **Start here** is a `rail-group` of its own; the other three share one
+*(website_micro_ckpt157)*, so the only rules above the contents are the one under Start
+here and the one above *Contents*, and the rail reads as three parts. In this order:
 
 - **Start here** (`START_NAME`, `start-here.html`, whose `<h1>` is the same two words). On
   that page the group lists its prose `<h2>`s as plain entries at one level; everywhere

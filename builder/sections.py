@@ -151,7 +151,7 @@ def load_all() -> list[Section]:
 
 
 def rail(page: Path, sections: list[Section]) -> str:
-    """The rail as one page carries it: the four groups above the contents, fourteen
+    """The rail as one page carries it: the two groups above the contents, fourteen
     sections with this page's own headings open, and under them the places a reader leaves
     the article for.
 
@@ -163,9 +163,7 @@ def rail(page: Path, sections: list[Section]) -> str:
     lines = [
         '<nav class="contents-rail" aria-label="Contents">',
         *_start(page),
-        *_packs(page),
-        *_tools(page),
-        *_videos(page),
+        *_take_away(page),
         f'  <p class="rail-title"><a href="{home}">Contents</a></p>',
         '  <ol class="rail-sections">',
     ]
@@ -237,24 +235,17 @@ def _start(page: Path) -> list[str]:
 
 
 #: The finished wallpapers, downloadable at full size *(website_sweep_ckpt150_addendum1,
-#: Matt)*. A peer of the start page rather than a section, so it is the rail's second group,
-#: set the way *Start here* is, between that group and the contents. The masthead keeps its
-#: own link to the same page. The page is generated, and has no prose headings to open.
+#: Matt)*. A peer of the start page rather than a section, so it opens the rail's second
+#: group, set the way *Start here* is, between that group and the contents. The masthead
+#: keeps its own link to the same page. The page is generated, and has no prose headings to
+#: open.
 PACKS = SITE_ROOT / "wallpaper-packs" / "index.html"
 PACKS_NAME = "Wallpaper packs"
 
 
 def _packs(page: Path) -> list[str]:
-    """The rail's second group: its heading alone, a link to the wallpaper packs."""
-    if not PACKS.is_file():
-        return []
-    href = attribute(relative_href(page, PACKS))
-    current = ' aria-current="page"' if page.resolve() == PACKS.resolve() else ""
-    return [
-        '  <div class="rail-group">',
-        f'    <p class="rail-title"><a href="{href}"{current}>{text(PACKS_NAME)}</a></p>',
-        "  </div>",
-    ]
+    """The take-away group's first heading: a link to the wallpaper packs."""
+    return _heading(page, PACKS, PACKS_NAME)
 
 
 #: The project's data and tools for other people to build on *(tools_and_data_ckpt156)*: the
@@ -266,37 +257,44 @@ TOOLS_NAME = "Tools and data"
 
 
 def _tools(page: Path) -> list[str]:
-    """The rail's third group: its heading alone, a link to the Tools and data page."""
-    if not TOOLS.is_file():
-        return []
-    href = attribute(relative_href(page, TOOLS))
-    current = ' aria-current="page"' if page.resolve() == TOOLS.resolve() else ""
-    return [
-        '  <div class="rail-group">',
-        f'    <p class="rail-title"><a href="{href}"{current}>{text(TOOLS_NAME)}</a></p>',
-        "  </div>",
-    ]
+    """The take-away group's second heading: a link to the Tools and data page."""
+    return _heading(page, TOOLS, TOOLS_NAME)
 
 
 #: Every deep zoom video the project has made, collected on a page hanging off Deep zoom
-#: rendering *(videos_nav_ckpt156)*. It stays among `HANGING`'s pages, and it is the rail's
-#: fourth group all the same, set the way *Tools and data* is and right after it: the videos
-#: are what a reader comes back for, and the section they hang off is ten entries down.
+#: rendering *(videos_nav_ckpt156)*. It stays among `HANGING`'s pages, and it is in the rail
+#: above the contents all the same, set the way *Tools and data* is and right after it: the
+#: videos are what a reader comes back for, and the section they hang off is ten entries down.
 VIDEOS = SITE_ROOT / "deep-zoom" / "videos.html"
 VIDEOS_NAME = "Deep zoom videos"
 
 
 def _videos(page: Path) -> list[str]:
-    """The rail's fourth group: its heading alone, a link to the Deep zoom videos page."""
-    if not VIDEOS.is_file():
+    """The take-away group's third heading: a link to the Deep zoom videos page."""
+    return _heading(page, VIDEOS, VIDEOS_NAME)
+
+
+def _heading(page: Path, target: Path, name: str) -> list[str]:
+    """One heading of the take-away group, a link to its page, or nothing where the page
+    is not there."""
+    if not target.is_file():
         return []
-    href = attribute(relative_href(page, VIDEOS))
-    current = ' aria-current="page"' if page.resolve() == VIDEOS.resolve() else ""
-    return [
-        '  <div class="rail-group">',
-        f'    <p class="rail-title"><a href="{href}"{current}>{text(VIDEOS_NAME)}</a></p>',
-        "  </div>",
-    ]
+    href = attribute(relative_href(page, target))
+    current = ' aria-current="page"' if page.resolve() == target.resolve() else ""
+    return [f'    <p class="rail-title"><a href="{href}"{current}>{text(name)}</a></p>']
+
+
+def _take_away(page: Path) -> list[str]:
+    """The rail's second group: the three pages a reader takes something away from, as
+    three headings with no rule between them *(website_micro_ckpt157)*.
+
+    Each was a group of its own, ruled off from the next, which read as four peers above
+    the contents. The rail is three parts now: Start here, these, and the contents.
+    """
+    headings = [*_packs(page), *_tools(page), *_videos(page)]
+    if not headings:
+        return []
+    return ['  <div class="rail-group">', *headings, "  </div>"]
 
 
 #: What the rail carries under the fourteen sections: the page that runs the engine, the
