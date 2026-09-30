@@ -859,10 +859,15 @@ walk (`ranking.previews`) and writes its picks into `packs.jsonl`, ahead of any 
   its membership even from outside the thousand, and a pick for Best K is in every larger
   best pack (`packs.forced`). Each pack keeps its K, the forced members displacing its
   lowest-ranked, and orders by score; an outside member is ranked in `order.txt` by its own
-  score, after the seats it ties with, and the general parts leave it out, so they stay the
-  thousand. A best pack's row in `packs.jsonl` lists its `forced`, and `check`'s `packs`
-  holds a best pack's previews to that membership. **A Main gallery pick is not forced**:
-  one outside the thousand is shown and not added, and `stage` names it.
+  score, after the seats it ties with. **The main gallery's zips grow past the thousand**
+  *(Matt, packs_best_rebuild_ckpt157 addendum 1)*: its three parts hold the thousand and
+  every hand pick from outside it, a Main gallery pick included, opening with the best
+  packs (each what it adds to the last) so all three nest in part 1, then the rest in rank
+  order. The Gallery tab, the solve records and every other view stay the thousand. A pack's
+  row in `packs.jsonl` lists its `forced`, and `check`'s `packs` holds every hand-picked
+  preview to its pack's membership and the main gallery's count to the thousand plus them.
+  The thousand's tie-break is the seeded plan's order, never the built parts', so that a
+  staging never ranks over its own last rebuild.
 - **The picker** walks each pack's voted seats in page order and staged rank and takes up
   to `PREVIEWS`, skipping any seat a figure shows (`shown_on_site`: panel links through
   `votes.match`, a panel's `from` key, and a figure's source keys, whatever the figure is

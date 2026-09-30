@@ -24,7 +24,8 @@ anything this repository holds. So the answer is imported, the same way the pale
 record and the gallery's collections are, and a clone reads the answer.
 
 - **Counts** are `packs.plan()`'s, which are the collections' sizes in
-  `curation/targets.py`, with the general thousand cut 334, 333 and 333.
+  `curation/targets.py`. The main gallery's parts are the thousand and every hand pick
+  from outside it, cut into three as evenly as they go (packs_best_rebuild_ckpt157).
 - **Sizes** are `packs.json`'s, which `curate packs build` writes beside the zips, and
   only for an entry that says `complete`. Until the zips are built there is no size and
   the line says nothing about one: **a rebuild after the packs are built fills them in**,
@@ -159,7 +160,8 @@ PROSE: tuple[tuple[str, str], ...] = (
     ("h2", "The main gallery"),
     (
         "p",
-        "All thousand pictures, the best 200 are in part 1.",
+        "A thousand diverse fractal wallpapers, made with the method described in "
+        '<a href="../article/full-pipeline.html">Full pipeline</a>.',
     ),
     ("pack", GENERAL),
     ("h2", "Color galleries"),
@@ -293,6 +295,8 @@ def forced(picked: dict[str, list[str]] | None = None) -> dict[str, list[str]]:
     even from outside the thousand, and a pick for Best K is in every larger best pack, so
     the nesting holds. Next door's `packs.plan()` takes this as `--forced` and does the
     displacing; the keys here are in pick order, and the plan puts them in rank order.
+    `GENERAL` is the Main gallery's own picks: those from outside the thousand join its
+    zips, as every best pack's outside picks do (packs_best_rebuild_ckpt157 addendum 1).
     """
     picked = manual() if picked is None else picked
     out: dict[str, list[str]] = {}
@@ -300,6 +304,7 @@ def forced(picked: dict[str, list[str]] | None = None) -> dict[str, list[str]]:
     for name in BEST:
         held = held + [key for key in picked.get(name, []) if key not in held]
         out[name] = list(held)
+    out[GENERAL] = list(picked.get(GENERAL, []))
     return out
 
 
@@ -623,18 +628,18 @@ def prose_section(page: Path, figure_block, back: str) -> str:
 def problems(*, with_checkout: bool) -> list[str]:
     """The record against the prose, the Gallery tab's record, and (here) next door.
 
-    The first half reads this repository alone and runs on a clone: every `[PACK]` the
-    prose places has a row and every row a marker, the counts are the collections' sizes,
-    each picture is a seat of the pack's collection whose tile is on disk, and no picture
-    is two packs' preview. A pack `PICKS` names shows exactly those picks, at most `SHOWN`.
-    A best pack's are its members by being forced (its row's `forced`, held to `forced()`),
-    and the Main gallery's may be any voted seat, since the thousand is not widened for
-    one. The second half is the record being what `--import` would write
-    today, which needs the checkout, the full set, and the votes store, and says so by name
-    where one is missing. That half is what holds a walked preview to the rules: a vote,
-    nowhere else on the site, and (for a best pack) a member of the staged pack rather than
-    of the built zip, which the previews are deliberately ahead of. A hand pick is held to
-    having a vote there, and to nothing else the walk asks.
+    The first half reads this repository alone and runs on a clone: every `[PACK]` the prose
+    places has a row and every row a marker, the counts are the collections' sizes, each
+    picture is a seat of the pack's collection whose tile is on disk, and no picture is two
+    packs' preview. A pack `PICKS` names shows exactly those picks, at most `SHOWN`. Every
+    hand pick is a member by being forced (its row's `forced`, held to `forced()`): a best
+    pack's picks join it, and the main gallery's zips hold the thousand plus every hand pick
+    from outside it, which is what its count is held to. The second half is the record being
+    what `--import` would write today, which needs the checkout, the full set, and the votes
+    store, and says so by name where one is missing. That half is what holds a walked
+    preview to the rules: a vote, nowhere else on the site, and (for a best pack) a member
+    of the staged pack rather than of the built zip, which the previews are deliberately
+    ahead of. A hand pick is held to having a vote there, and to nothing else the walk asks.
     """
     found: list[str] = []
     where = "wallpaper-packs/packs.jsonl"
@@ -667,6 +672,8 @@ def problems(*, with_checkout: bool) -> list[str]:
     for name, pack in loaded.items():
         total = sum(one.pictures for one in pack.files)
         wanted = widths.get(name, sizes.get(pack.collection))
+        if name == GENERAL and wanted is not None:
+            wanted += len(pack.forced)
         if total != wanted:
             found.append(f"{where}: {name} holds {total} pictures, and its collection {wanted}")
         if len(pack.thumbs) > SHOWN:
@@ -680,21 +687,24 @@ def problems(*, with_checkout: bool) -> list[str]:
                 found.append(f"{where}: {name}'s {key} is no seat of the Gallery tab's record")
             elif not (GALLERY_IMAGES_DIR / seats.SLUG / row["file"]).is_file():
                 found.append(f"{where}: {name}'s {key} has no tile on disk")
-            elif (
-                (name != GENERAL or name not in picked)
-                and pack.collection not in row.get("collections", {})
-                and key not in pack.forced
-            ):
-                # A best pack's membership is its collection's first K and its forced
-                # members, so its picks are always members. A Main gallery pick may lie
-                # outside the thousand, which stays the thousand (packs_forced_members_ckpt157).
+            elif pack.collection not in row.get("collections", {}) and key not in pack.forced:
+                # A pack's membership is its collection's (a best pack's first K) and its
+                # forced members, so a hand pick is always a member.
                 found.append(f"{where}: {name}'s {key} is no member of {name}")
     wanted_forced = forced(picked)
-    for name in BEST:
+    # The main gallery's zips take every hand pick from outside the thousand, whichever
+    # pack it was picked for (packs_best_rebuild_ckpt157 addendum 1).
+    wanted_forced[GENERAL] = [
+        key
+        for keys in wanted_forced.values()
+        for key in keys
+        if GENERAL not in rows.get(key, {}).get("collections", {})
+    ]
+    for name in (*BEST, GENERAL):
         if name in loaded and set(loaded[name].forced) != set(wanted_forced[name]):
             found.append(
-                f"{where}: {name}'s forced members are not {PICKS.name}'s picks for it and "
-                "every smaller best pack — `python -m builder packs --import`, then `build`"
+                f"{where}: {name}'s forced members are not what {PICKS.name} makes them — "
+                "`python -m builder packs --import`, then `build`"
             )
     if with_checkout and unaskable() is None:
         try:
