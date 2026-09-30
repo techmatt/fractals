@@ -34,7 +34,6 @@
 // the page's Copy link copies what is on screen: a preview's seat, or the collection.
 
 import * as gallery from "./gallery.js";
-import { familyName, modeName } from "./names.js";
 import { PREVIEW_DIVISOR, shadeApart } from "./render.js";
 import { sizeFor } from "./screensaver.js";
 
@@ -56,6 +55,26 @@ const AHEAD = "50%";
 
 /** The family a link that names none is drawing, which is the contract's first. */
 const HOME_FAMILY = "mandelbrot";
+
+/** The degree words the family row reads a numbered family with. */
+const DEGREES = { 3: "Cubic", 4: "Quartic", 5: "Quintic", 6: "Sextic" };
+
+/**
+ * What a reader calls each family: `Mandelbrot`, `Cubic Multibrot`, `Quartic Julia`,
+ * `Phoenix`. A rule over the contract's one shape for a family name — a word, and a degree
+ * where the family is one of a numbered series — so a family the contract gains is named
+ * without an edit here, and one it cannot read is shown as its own name.
+ */
+export function familyName(family) {
+  if (family === "phoenix") return "Phoenix";
+  if (family === "phoenix_plane") return "Phoenix plane";
+  const parts = /^([a-z]+)(\d*)$/.exec(family);
+  if (parts === null) return family;
+  const word = parts[1][0].toUpperCase() + parts[1].slice(1);
+  if (parts[2] === "") return word;
+  const degree = DEGREES[parts[2]];
+  return degree === undefined ? `${word} ${parts[2]}` : `${degree} ${word}`;
+}
 
 /** The family a seat's link draws — its `f`, or the contract's first where it names none. */
 export function familyOf(seat) {
@@ -273,7 +292,7 @@ export function install(host) {
       }
     }
     const row = (field, options) => gallery.chipRow(rows[field], counts[field], wanted[field], fill, { field, ...options });
-    row("mode", { label: "no render mode", name: modeName });
+    row("mode", { label: "no render mode" });
     rows.hueHead.textContent = cutOn === null ? gallery.HUE_HEADS.dominant : gallery.HUE_HEADS.contains;
     row("hue", { swatches: true });
     row("family", { name: familyName });

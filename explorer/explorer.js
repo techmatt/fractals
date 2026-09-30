@@ -50,7 +50,6 @@ import * as screensaver from "./screensaver.js";
 import * as browse from "./browse.js";
 import * as dives from "./dives.js";
 import { Trail } from "./undo.js";
-import { familyName, modeName } from "./names.js";
 import { heldOut, stopOf } from "./outermost.js";
 import {
   PREVIEW_DIVISOR,
@@ -132,9 +131,8 @@ function onItsPlane(someView) {
  * produces is the atlas record's `slot_labels`, which is where a reader meets these words
  * elsewhere on this page; it is derived here rather than read from there because the atlas
  * is mounted only when its panel is first opened, and a button is named at load. Details'
- * Family select names a family by `names.js`'s `familyName`, which keeps the degree this
- * drops, and its value is the family's own name: shown by a display name, addressed by its
- * own, the same split the palettes make.
+ * Family select still spells a family the way a link spells it, which is the same split
+ * the palettes make: shown by a display name, addressed by its own.
  */
 function planeName(family) {
   // The Phoenix pair is named by what each is: the set by the recurrence's own name, and
@@ -1824,7 +1822,7 @@ function updateReadout() {
   const cap = held ?? renderer.maxiter(view.w.value);
   const level = view.level === null ? "" : `  ·  levels by ${view.level.operator}`;
   readout.textContent =
-    `${bothNamesOf(view.palette)}  ·  ${modeName(view.mode)}  ·  ` +
+    `${bothNamesOf(view.palette)}  ·  ${view.mode}  ·  ` +
     `${view.aspect.across}:${view.aspect.down}  ·  ${cap} iterations ` +
     `${held === null ? "at this width" : "held by this view"}${level}`;
   syncCoordinates();
@@ -2025,14 +2023,13 @@ function stepTrail(direction) {
 
 // ------------------------------------------------------------------- the controls
 
-/** Fill a select with names, showing each by `shown` and what it is for where that is known.
- *  The value is always the name itself, which is what a link spells. */
-function fill(select, names, titles, shown = (name) => name) {
+/** Fill a select with names, showing what each one is for where that is known. */
+function fill(select, names, titles) {
   select.replaceChildren();
   for (const name of names) {
     const option = document.createElement("option");
     option.value = name;
-    option.textContent = shown(name);
+    option.textContent = name;
     if (titles && titles.get(name)) option.title = titles.get(name);
     select.append(option);
   }
@@ -3000,7 +2997,7 @@ function syncLevel() {
 function syncModes() {
   const wanted = listedModes(view.mode);
   const showing = [...modePicker.options].map((option) => option.value);
-  if (wanted.join() !== showing.join()) fill(modePicker, wanted, IDENTITIES, modeName);
+  if (wanted.join() !== showing.join()) fill(modePicker, wanted, IDENTITIES);
   modePicker.value = view.mode;
 }
 
@@ -5859,7 +5856,7 @@ async function main() {
     deepCap: (width) => renderer.maxiter(width),
   };
 
-  fill(familyPicker, link.FAMILIES, null, familyName);
+  fill(familyPicker, link.FAMILIES);
   makeSaved();
 
   // **A deep link is read by the deep contract and never by the shallow one.** The marker

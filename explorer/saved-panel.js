@@ -29,7 +29,6 @@ import { FORMATS, encode, estimate, fileNameOf, hand, pictureOf, withinLimits } 
 import { Renderer } from "./render.js";
 import { MAX } from "./saved.js";
 import { Zip } from "./zip.js";
-import { modeName } from "./names.js";
 
 /** A tile's picture: the gallery's tile size, so the three grids read as one. */
 const TILE = { width: 316, height: 178 };
@@ -75,7 +74,7 @@ export function mount(host) {
    *  of it and tells a reader nothing: what makes it worth keeping is the depth. */
   function describeView(view) {
     if (view.deep) return `deep · ${view.said}`;
-    return `${modeName(view.mode)} · ${planeName(view.family)}`;
+    return `${view.mode} · ${planeName(view.family)}`;
   }
 
   function fill() {
@@ -117,7 +116,7 @@ export function mount(host) {
       tile.title = view.deep
         ? `Deep, on ${planeName(view.family)}: ${view.said}, in ${shownName(view.palette)}. ` +
           "Opens in the Deep tab."
-        : `${modeName(view.mode)} in ${shownName(view.palette)} on ${planeName(view.family)}`;
+        : `${view.mode} in ${shownName(view.palette)} on ${planeName(view.family)}`;
       image.alt = view.deep ? "" : tile.title;
       // **A deep picture is not drawn here.** There is no thumbnail of one without the
       // perturbation kernel and a wait of seconds to minutes a tile, so the tab labels it
