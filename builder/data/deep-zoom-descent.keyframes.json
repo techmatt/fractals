@@ -92,9 +92,102 @@
     "interior": [0, 0, 0],
     "note": "index = frac(g(nu) / L + phase). One mapping of nu for every keyframe: nothing here depends on depth.",
     "mappings": {
-      "linear": { "g": "nu", "L": 600, "phase": 0.1, "why": "a compromise: no one L serves both ends, since nu spans about 4 across the top frame and 2e4 across the bottom one; at 600 the top is one colour outside the boundary and the deep spirals shade toward texture" },
-      "log": { "g": "ln nu", "L": 0.25, "phase": 0, "why": "about 2.4 cycles across the top frame, 5 across the target, and about 1 across the flattest middle frames (k6 to k12)" },
-      "power": { "g": "nu^alpha", "alpha": 0.3, "L": 0.6, "phase": 0, "why": "between linear and log: at alpha 0.4 the top frame lost its bands, and lower than 0.3 approaches log" }
+      "linear": {
+        "g": "nu",
+        "L": 600,
+        "phase": 0.1,
+        "why": "a compromise: no one L serves both ends, since nu spans about 4 across the top frame and 2e4 across the bottom one; at 600 the top is one colour outside the boundary and the deep spirals shade toward texture"
+      },
+      "log": {
+        "g": "ln nu",
+        "L": 0.25,
+        "phase": 0,
+        "why": "about 2.4 cycles across the top frame, 5 across the target, and about 1 across the flattest middle frames (k6 to k12)"
+      },
+      "power": {
+        "g": "nu^alpha",
+        "alpha": 0.3,
+        "L": 0.6,
+        "phase": 0,
+        "why": "between linear and log: at alpha 0.4 the top frame lost its bands, and lower than 0.3 approaches log"
+      }
+    }
+  },
+  "variants": {
+    "4k60": {
+      "note": "deep_zoom_video_ckpt156: the log L0.25 glowdon descent at the double-descent 4k60 master's settings, 1.25 times its rate with the easing's shape kept, holding 1 s at the start and 7 s on the final frame (the holds are written times 1.25 because speedup divides them). Fields at twice the grid so that a 3840x2160 frame is never enlarged, at caps by the measured rule. `zoom_fields.mjs --variant 4k60` draws it into artifacts/deep-zoom/4k60/fields/ and `zoom.py --variant 4k60` colours and encodes it.",
+      "grid": [7680, 4320],
+      "supersample": 1,
+      "video": {
+        "resolution": [3840, 2160],
+        "fps": 60,
+        "speedup": 1.25,
+        "hold_start": 1.25,
+        "hold_end": 8.75
+      },
+      "encode": {
+        "crf": 12
+      },
+      "probe": [480, 270],
+      "cap": {
+        "share": 0.00001,
+        "headroom": 2
+      },
+      "frames": [
+        { "k": 0, "maxiter": 2000000, "need": 76772, "was": 63534, "black_was": 0.000262, "black": 0, "interior": 0, "nu_max": 77806 },
+        { "k": 1, "maxiter": 2000000, "need": 84955, "was": 62334, "black_was": 0.000224, "black": 0, "interior": 0, "nu_max": 89002 },
+        { "k": 2, "maxiter": 2000000, "need": 70275, "was": 61134, "black_was": 0.0000849, "black": 0, "interior": 0, "nu_max": 70849 },
+        { "k": 3, "maxiter": 2000000, "need": 66459, "was": 59934, "black_was": 0.0000463, "black": 0, "interior": 0, "nu_max": 75673 },
+        { "k": 4, "maxiter": 2000000, "need": 58865, "was": 58734, "black_was": 0.0000154, "black": 0, "interior": 0, "nu_max": 61296 },
+        { "k": 5, "maxiter": 2000000, "need": 45524, "was": 57534, "black_was": 0, "black": 0, "interior": 0, "nu_max": 54742 },
+        { "k": 6, "maxiter": 2000000, "need": 45109, "was": 56334, "black_was": 0, "black": 0, "interior": 0, "nu_max": 51948 },
+        { "k": 7, "maxiter": 2000000, "need": 27473, "was": 55134, "black_was": 0, "black": 0, "interior": 0, "nu_max": 35819 },
+        { "k": 8, "maxiter": 2000000, "need": 28742, "was": 53934, "black_was": 0.00000772, "black": 0, "interior": 0, "nu_max": 69249 },
+        { "k": 9, "maxiter": 2000000, "need": 19158, "was": 52734, "black_was": 0, "black": 0, "interior": 0, "nu_max": 30228 },
+        { "k": 10, "maxiter": 2000000, "need": 21853, "was": 51534, "black_was": 0, "black": 0, "interior": 0, "nu_max": 22170 },
+        { "k": 11, "maxiter": 2000000, "need": 15596, "was": 50334, "black_was": 0, "black": 0, "interior": 0, "nu_max": 16425 },
+        { "k": 12, "maxiter": 2000000, "need": 17721, "was": 49134, "black_was": 0, "black": 0, "interior": 0, "nu_max": 24221 },
+        { "k": 13, "maxiter": 2000000, "need": 50554, "was": 47934, "black_was": 0.0000154, "black": 0, "interior": 0, "nu_max": 60705 },
+        { "k": 14, "maxiter": 2000000, "need": 98365, "was": 46734, "black_was": 0.000995, "black": 0, "interior": 0, "nu_max": 424033 },
+        { "k": 15, "maxiter": 2000000, "need": 116412, "was": 45534, "black_was": 0.00372, "black": 0, "interior": 0.0001, "nu_max": 179087 },
+        { "k": 16, "maxiter": 2000000, "need": 204895, "was": 44334, "black_was": 0.00509, "black": 0, "interior": 0.0001, "nu_max": 327482 },
+        { "k": 17, "maxiter": 2000000, "need": 1479573, "was": 43134, "black_was": 0.0313, "black": 0, "interior": 0.0108, "nu_max": 1493594 },
+        { "k": 18, "maxiter": 2000000, "need": 1889413, "was": 41934, "black_was": 0.0509, "black": 0, "interior": 0.1062, "nu_max": 1892359 },
+        { "k": 19, "maxiter": 2000000, "need": 1994844, "was": 40734, "black_was": 0.0604, "black": 0, "interior": 0.32, "nu_max": 1999625 },
+        { "k": 20, "maxiter": 2000000, "need": 1941139, "was": 39534, "black_was": 0.0352, "black": 0, "interior": 0.5985, "nu_max": 1975372 },
+        { "k": 21, "maxiter": 2000000, "need": 1902377, "was": 38334, "black_was": 0.0164, "black": 0, "interior": 0.7171, "nu_max": 1952999 },
+        { "k": 22, "maxiter": 2000000, "need": 1568599, "was": 37134, "black_was": 0.0102, "black": 0, "interior": 0.7074, "nu_max": 1578275 },
+        { "k": 23, "maxiter": 2000000, "need": 1685868, "was": 35934, "black_was": 0.00764, "black": 0, "interior": 0.5804, "nu_max": 1775893 },
+        { "k": 24, "maxiter": 2000000, "need": 1821783, "was": 34734, "black_was": 0.00434, "black": 0, "interior": 0.3134, "nu_max": 1976092 },
+        { "k": 25, "maxiter": 2000000, "need": 687394, "was": 33534, "black_was": 0.00135, "black": 0, "interior": 0.0832, "nu_max": 860819 },
+        { "k": 26, "maxiter": 2000000, "need": 743924, "was": 32334, "black_was": 0.000401, "black": 0, "interior": 0.0208, "nu_max": 1404018 },
+        { "k": 27, "maxiter": 2000000, "need": 148226, "was": 31134, "black_was": 0.0001, "black": 0, "interior": 0.0052, "nu_max": 731375 },
+        { "k": 28, "maxiter": 2000000, "need": 35076, "was": 29934, "black_was": 0.0000154, "black": 0, "interior": 0.0013, "nu_max": 251800 },
+        { "k": 29, "maxiter": 2000000, "need": 10361, "was": 28734, "black_was": 0, "black": 0, "interior": 0.0003, "nu_max": 12240 },
+        { "k": 30, "maxiter": 2000000, "need": 11401, "was": 27534, "black_was": 0, "black": 0, "interior": 0.0001, "nu_max": 11859 },
+        { "k": 31, "maxiter": 2000000, "need": 9037, "was": 26334, "black_was": 0, "black": 0, "interior": 0, "nu_max": 9117 },
+        { "k": 32, "maxiter": 2000000, "need": 11511, "was": 25134, "black_was": 0, "black": 0, "interior": 0, "nu_max": 14689 },
+        { "k": 33, "maxiter": 2000000, "need": 7958, "was": 23934, "black_was": 0, "black": 0, "interior": 0, "nu_max": 9107 },
+        { "k": 34, "maxiter": 2000000, "need": 7640, "was": 22734, "black_was": 0, "black": 0, "interior": 0, "nu_max": 7838 },
+        { "k": 35, "maxiter": 2000000, "need": 8399, "was": 21534, "black_was": 0, "black": 0, "interior": 0, "nu_max": 8524 },
+        { "k": 36, "maxiter": 2000000, "need": 9900, "was": 20334, "black_was": 0, "black": 0, "interior": 0, "nu_max": 11026 },
+        { "k": 37, "maxiter": 2000000, "need": 10694, "was": 19134, "black_was": 0, "black": 0, "interior": 0, "nu_max": 17627 },
+        { "k": 38, "maxiter": 2000000, "need": 136586, "was": 17934, "black_was": 0.000556, "black": 0, "interior": 0.0108, "nu_max": 211151 },
+        { "k": 39, "maxiter": 2000000, "need": 1465370, "was": 16734, "black_was": 0.00715, "black": 0, "interior": 0.2197, "nu_max": 1638185 },
+        { "k": 40, "maxiter": 2000000, "need": 848014, "was": 15534, "black_was": 0.00366, "black": 0, "interior": 0.3595, "nu_max": 891172 },
+        { "k": 41, "maxiter": 2000000, "need": 1356710, "was": 14334, "black_was": 0.00238, "black": 0, "interior": 0.4358, "nu_max": 1708293 },
+        { "k": 42, "maxiter": 2000000, "need": 1455026, "was": 13134, "black_was": 0.0019, "black": 0, "interior": 0.7047, "nu_max": 1708517 },
+        { "k": 43, "maxiter": 1105624, "need": 552812, "was": 11934, "black_was": 0.000887, "black": 0, "interior": 0.8506, "nu_max": 730362 },
+        { "k": 44, "maxiter": 858456, "need": 429228, "was": 10734, "black_was": 0.000571, "black": 0, "interior": 0.9221, "nu_max": 501568 },
+        { "k": 45, "maxiter": 329034, "need": 164517, "was": 9534, "black_was": 0.000262, "black": 0.00000772, "interior": 0.9544, "nu_max": 367210 },
+        { "k": 46, "maxiter": 305168, "need": 61261, "was": 8334, "black_was": 0.000231, "black": 0, "interior": 0.9641, "nu_max": 173044 },
+        { "k": 47, "maxiter": 305168, "need": 26363, "was": 7134, "black_was": 0.000154, "black": 0, "interior": 0.9544, "nu_max": 33643 },
+        { "k": 48, "maxiter": 305168, "need": 152584, "was": 5934, "black_was": 0.000208, "black": 0, "interior": 0.8517, "nu_max": 201387 },
+        { "k": 49, "maxiter": 294814, "need": 147407, "was": 4734, "black_was": 0.000154, "black": 0.00000772, "interior": 0.559, "nu_max": 434886 },
+        { "k": 50, "maxiter": 80286, "need": 40143, "was": 3534, "black_was": 0.000108, "black": 0.00000772, "interior": 0.1736, "nu_max": 196277 },
+        { "k": 51, "maxiter": 12974, "need": 6487, "was": 2334, "black_was": 0.0000231, "black": 0, "interior": 0.0435, "nu_max": 9449 }
+      ],
+      "probe_ceiling": 2000000
     }
   }
 }
