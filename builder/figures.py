@@ -130,7 +130,7 @@ MADE = (PLACED, STALE, DRAFT)
 #: Where a figure's pictures came from, as a kind and the keys that address them.
 #:
 #: - `run_row` — a curation release record, `<run>|release|<candidate>`, or a
-#:   finished-render label row, `<head>/<batch>.jsonl:<line>`.
+#:   finished-render label row, `<head>/<batch>.jsonl:<line>` (a gallery grade included).
 #: - `location` — a location label row, `labels/<batch>.jsonl:<line>`, or a walk
 #:   ledger, `<ledger>/walk.jsonl` with `#<node_id>` where one node is meant.
 #: - `gallery_seat` — a seat of a recorded tentative gallery, `<stamp>|<recipe key>`.
@@ -1618,7 +1618,9 @@ KEY_FORMS = {
     CANDIDATE: ("<recipe key>  → artifacts/curation/candidate_ledger/rows.jsonl",),
 }
 
-FINISHED_HEADS = ("smooth_render", "strange_render")
+#: The label stores whose rows are whole pictures. `gallery_grade` is the same shape as the
+#: other two with its rating in `grade` (tools_bands_ckpt156); a key here is a line count.
+FINISHED_HEADS = ("smooth_render", "strange_render", "gallery_grade")
 
 
 class _Stores:

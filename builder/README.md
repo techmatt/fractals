@@ -363,11 +363,15 @@ the wallpapers checkout:
 heading and each with the rule it drew by in its own docstring and provenance.
 `tools-atlas` (`tools_atlas.py`) is the atlas plates; `tools-palettes` (`tools_palettes.py`)
 the hand-made palettes as strips, by hue family and then mean Oklab lightness; `tools-judges`
-(`tools_judges.py`) five examples at each judge's 5th to 95th percentile over its own
-population, the palette judge's being one set, since its scores compare only inside one
-(one place in five of the set's maps; `select_palette` takes the first set by name that
-stands on no other figure's place); `tools-labels` (`tools_labels.py`) four seeded-random pictures at each of Matt's
-ratings.
+(`tools_judges.py`) one picture per predicted class for the location, wallpaper and gallery
+judges — a seeded pick from the 70th to 90th percentile of P(=k) among the members whose
+most likely class is k, the class probabilities being differences of the recorded P(≥2),
+P(≥3) and P(≥4) — then the palette judge's one set, since its scores compare only inside
+one (one place in five of the set's maps; `select_palette` takes the first set by name that
+stands on no other figure's place); `tools-labels` (`tools_labels.py`) three bands, places
+(`data/labels`), wallpapers (`smooth_render` and `strange_render`) and gallery pictures
+(`gallery_grade`), each four seeded-random pictures at each of Matt's ratings. A
+`gallery_grade` row is a `run_row` key like the other two finished-render stores.
 
 ## The contents rail is derived, never kept
 

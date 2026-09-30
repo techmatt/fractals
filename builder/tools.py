@@ -9,10 +9,10 @@ each figure shows what the section offers *(tools_figures_ckpt156)*:
   its plane on the explorer's Atlas tab (`builder/tools_atlas.py`);
 * `tools-palettes`, **Palettes** — every hand-made palette as a thin strip, by hue family in
   the wheel's order and then by mean lightness (`builder/tools_palettes.py`);
-* `tools-judges`, **Judges** — five examples across each judge's range of scores, shown the
-  way that judge sees them (`builder/tools_judges.py`);
+* `tools-judges`, **Judges** — one picture per class each scoring judge predicts, and the
+  palette judge's one set, shown the way that judge sees them (`builder/tools_judges.py`);
 * `tools-labels`, **Hand labels** — four seeded-random pictures at each of Matt's four
-  ratings (`builder/tools_labels.py`).
+  ratings, for places, wallpapers and gallery pictures (`builder/tools_labels.py`).
 
 Each figure's maker is its own module, because the four share nothing but the page; this
 one is the table `builder/__main__.py` drives, in the shape every other page's maker has.
