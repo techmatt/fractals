@@ -423,7 +423,9 @@ export function mount(host) {
   }
 
   slider.addEventListener("input", () => setP(Number(slider.value)));
-  box.addEventListener("change", () => setP(Number(box.value)));
+  // A cleared box is no number, and never the zero `Number("")` makes of it: that moved the
+  // plane to `p = 0` on a slip of the delete key (link_fidelity_ckpt157).
+  box.addEventListener("change", () => setP(box.value.trim() === "" ? NaN : Number(box.value)));
 
   // ---------------------------------------------------------------------- the gestures
 

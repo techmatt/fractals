@@ -958,27 +958,28 @@ def _frame(fields: dict, record: dict | None) -> dict | None:
     return {"x": fields["centre"][0], "y": fields["centre"][1], "w": fields["width"][0]}
 
 
+#: What a Phoenix recipe means by a constant it does not name: the engine's own serde
+#: defaults, `FamilySpec::Phoenix`'s `phoenix_c`, `phoenix_p` and `origin`, so that
+#: `{"kind": "phoenix"}` alone is the classic Ushiki set, and spelled as the engine's own
+#: spec test spells the classic. **Never the origin for `c` and `p`**
+#: *(link_fidelity_ckpt157)*: that was the default here, and seventeen gallery seats whose
+#: recipes named no constants linked to `c = p = 0`, a plain disk, under pictures of the
+#: classic set — Matt's black Phoenix link was one of them, opened and zoomed.
+PHOENIX_DEFAULTS = {"c": ("0.5667", "0.0"), "p": ("-0.5", "0.0"), "z_prev": ("0", "0")}
+
+
 def _constants(family: str, fields: dict, record: dict | None) -> dict:
-    """A family's own constants, as decimal strings. Absent means the origin."""
-    if record is not None:
-        held = record["family"]
-        pair = {
-            "cx": held.get("c", ["0", "0"])[0],
-            "cy": held.get("c", ["0", "0"])[1],
-            "px": held.get("p", ["0", "0"])[0],
-            "py": held.get("p", ["0", "0"])[1],
-            "zx": (held.get("z_prev") or ["0", "0"])[0],
-            "zy": (held.get("z_prev") or ["0", "0"])[1],
-        }
-    else:
-        pair = {
-            "cx": fields.get("c", ("0", "0"))[0],
-            "cy": fields.get("c", ("0", "0"))[1],
-            "px": fields.get("p", ("0", "0"))[0],
-            "py": fields.get("p", ("0", "0"))[1],
-            "zx": fields.get("z_prev", ("0", "0"))[0],
-            "zy": fields.get("z_prev", ("0", "0"))[1],
-        }
+    """A family's own constants, as decimal strings.
+
+    Absent means what the engine takes it to mean: a Phoenix constant its classic default
+    (`PHOENIX_DEFAULTS`), and a Julia `c` the origin, which the engine refuses to assume
+    and a link therefore never meets."""
+    held = record["family"] if record is not None else fields
+    absent = PHOENIX_DEFAULTS if family == "phoenix" else {}
+    pair = {}
+    for name, keys in (("c", ("cx", "cy")), ("p", ("px", "py")), ("z_prev", ("zx", "zy"))):
+        spelled = held.get(name) or absent.get(name, ("0", "0"))
+        pair[keys[0]], pair[keys[1]] = spelled[0], spelled[1]
     if family.startswith("julia"):
         return {"cx": pair["cx"], "cy": pair["cy"]}
     if family == "phoenix":
