@@ -1392,6 +1392,29 @@ python builder/zoom.py --record builder/data/julia3-descent.keyframes.json --var
 where the file is `{"name": N, "points": [...]}` and `N` names the output. The julia3
 proposals (`scratch/julia3_palette_ckpt157/`) are schedules in exactly this form.
 
+⚠ **A depth schedule makes colours flow over structure, and a `nu` curve does not**
+*(julia3_curve_ckpt157)*. A schedule moves `L`, the phase and `lambda` with the frame's
+width, so a point already on screen changes colour as the zoom passes it, and all three
+scheduled julia3 previews flowed where the unscheduled baseline did not (Matt). Under one
+fixed function of `nu` a point's colour depends on its own `nu` and nothing else, so nothing
+on screen is ever recoloured.
+
+**The `knee` mapping is that curve for a descent whose `nu` changes character.** Above
+`knee` it is the link's own `absolute` at `lambda = 1`, `g = nu − 1`; below it
+`g = (knee − 1) + knee · T_lambda(nu / knee)`, the same Box–Cox, which meets the line in
+value and in slope, so the curve is monotone and C¹. `L` and `phase` are the record's
+`absolute` ones unless it names a `knee` mapping of its own, so **every frame whose `nu` is
+all above the knee is the link's colouring to the bit**: on julia3's 1920×1080 fields that is
+k00–k07 at `knee = 10000` and k00–k16 at `knee = 5000`, SHA for SHA. Two knobs: `--knee`,
+where the low end hands over to the line, and `--lambda`, how busy the low end is: 0 is a
+log joined to a line and the busiest, and it calms as it rises to 1, which is `absolute`
+itself. The two are not independent, since the turns a frame gets under the knee scale with
+the knee. It takes no schedule.
+
+```
+python builder/zoom.py --record builder/data/julia3-descent.keyframes.json --variant preview video --mapping knee --knee 10000 --lambda 0.254
+```
+
 `deep-descent-pairs` colours a twin the other way round: its counts are about `p_A` times
 its source's, so under `lambda=0` it is its source shifted by `ln p_A`, and taking that off
 the phase puts the twin in its source's colours.

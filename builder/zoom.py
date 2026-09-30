@@ -14,7 +14,13 @@ no levelling, so a place two keyframes share is the same colour in both. The ind
 - `power`: `g = nu ** alpha`, `0 < alpha < 1`, whose cycles lengthen as `nu` grows;
 - `absolute`: `g = T_lambda(nu)`, the engine's Box–Cox compression, `(nu ** lambda - 1) /
   lambda` and `ln nu` at zero: the explorer's `scale=absolute`, whose `period` is `L`, so
-  that a link's colour is carried here exactly.
+  that a link's colour is carried here exactly;
+- `knee`: the link's own `absolute` at `lambda = 1` above a `knee`, `g = nu - 1`, and below
+  it `g = (knee - 1) + knee * T_lambda(nu / knee)`, the same Box–Cox joined where both the
+  value and the slope agree. `lambda = 0` is a log joined to a line; nearer one, the low end
+  is calmer. `L` and `phase` are the record's `absolute` ones unless it names a `knee` of
+  its own, so every frame whose `nu` is all above the knee is the link's colouring exactly
+  (julia3_curve_ckpt157).
 
 The palette is the engine's own, lifted once by `zoom_palette.mjs`; the interior is black.
 
@@ -25,6 +31,8 @@ points, and then `L`, `phase` and `lambda` are functions of the frame's width: `
 constant past either end. A scheduled mapping colours each video frame from the fields at
 that frame's own width, so the two keyframes it blends always agree; `colour` then writes
 each keyframe at its own width, which is what its PNG is used for (a sheet, a still).
+**A schedule makes colour flow**: structure already on screen is recoloured as the width
+passes it. `knee` is the answer that does not, being one function of `nu` again.
 
     python builder/zoom.py stats                     nu and band widths per keyframe
     python builder/zoom.py colour --mapping log      keyframe PNGs for one mapping
@@ -54,7 +62,7 @@ from PIL import Image
 HERE = Path(__file__).resolve().parent
 RECORD = HERE / "data" / "deep-zoom-descent.keyframes.json"
 TABLE_SIZE = 65536
-MAPPINGS = ("linear", "log", "power", "absolute")
+MAPPINGS = ("linear", "log", "power", "absolute", "knee")
 #: The encode every video gets unless its record, its variant or a flag says otherwise: the
 #: double-descent `4k60` master's (double_descent_4k_ckpt148), taken as the baseline by
 #: video_defaults_ckpt151. The profile, the 4:2:0 and the BT.709 tags are in `encode_command`
@@ -132,9 +140,24 @@ def read_field(record: dict, k: int) -> np.ndarray:
 
 def mapping_of(record: dict, args: argparse.Namespace) -> dict:
     """The record's defaults for one mapping, with any flag given laid over them."""
-    chosen = dict(record["colour"]["mappings"][args.mapping])
+    mappings = record["colour"]["mappings"]
+    if args.mapping == "knee" and "knee" not in mappings:
+        # The knee's line is the link's own colouring, so it is read off `absolute`; the
+        # Box–Cox under it starts as a log.
+        link = mappings.get("absolute")
+        if link is None or link.get("lambda", 1) != 1:
+            raise SystemExit("knee: the record needs a knee mapping, or an absolute at lambda 1")
+        chosen = {"L": link["L"], "phase": link.get("phase", 0), "lambda": 0.0}
+    else:
+        chosen = dict(mappings[args.mapping])
     chosen["kind"] = args.mapping
-    for key, flag in (("L", "L"), ("alpha", "alpha"), ("phase", "phase"), ("lambda", "lam")):
+    for key, flag in (
+        ("L", "L"),
+        ("alpha", "alpha"),
+        ("phase", "phase"),
+        ("lambda", "lam"),
+        ("knee", "knee"),
+    ):
         value = getattr(args, flag, None)
         if value is not None:
             chosen[key] = value
@@ -152,6 +175,13 @@ def mapping_of(record: dict, args: argparse.Namespace) -> dict:
         raise SystemExit("power: alpha must be in (0, 1)")
     if args.mapping == "absolute" and not 0 <= chosen.get("lambda", 1) <= 1:
         raise SystemExit("absolute: lambda must be in [0, 1]")
+    if args.mapping == "knee":
+        if not chosen.get("knee") or chosen["knee"] <= 0:
+            raise SystemExit("knee: --knee must be positive")
+        if not 0 <= chosen.get("lambda", 0) <= 1:
+            raise SystemExit("knee: lambda must be in [0, 1]")
+        if chosen.get("schedule"):
+            raise SystemExit("knee: one function of nu, so it takes no schedule")
     return chosen
 
 
@@ -187,6 +217,8 @@ def mapping_name(m: dict) -> str:
         parts.append(f"a{m['alpha']:g}")
     if m["kind"] == "absolute" and m.get("lambda", 1) != 1:
         parts.append(f"l{m['lambda']:g}")
+    if m["kind"] == "knee":
+        parts += [f"k{m['knee']:g}", f"l{m.get('lambda', 0):g}"]
     if m.get("schedule"):
         parts.append(m.get("schedule_name", "scheduled"))
     if m["phase"]:
@@ -209,6 +241,14 @@ def g_of(nu: np.ndarray, m: dict) -> np.ndarray:
         if lam == 0:
             return np.log(np.maximum(nu, 1e-9))
         return (np.power(np.maximum(nu, 0.0), lam) - 1.0) / lam
+    if m["kind"] == "knee":
+        # Above the knee, `absolute` at lambda 1 as it is computed there, so the two agree to
+        # the bit; below it the Box–Cox of nu/knee, scaled to meet that line's value and slope.
+        knee, lam = m["knee"], m.get("lambda", 0)
+        ratio = np.maximum(nu, 1e-9) / knee
+        low = np.log(ratio) if lam == 0 else (np.power(ratio, lam) - 1.0) / lam
+        line = (np.power(np.maximum(nu, 0.0), 1.0) - 1.0) / 1.0
+        return np.where(nu >= knee, line, (knee - 1.0) + knee * low)
     return np.power(np.maximum(nu, 0.0), m["alpha"])
 
 
@@ -582,7 +622,10 @@ def main(argv: list[str] | None = None) -> None:
         p.add_argument("--mapping", choices=MAPPINGS, required=True)
         p.add_argument("--L", type=float, help="the cycle length, in units of g")
         p.add_argument("--alpha", type=float, help="power only: the exponent")
-        p.add_argument("--lambda", dest="lam", type=float, help="absolute only: Box-Cox lambda")
+        p.add_argument(
+            "--lambda", dest="lam", type=float, help="absolute, knee: the Box-Cox lambda"
+        )
+        p.add_argument("--knee", type=float, help="knee only: the nu the line starts at")
         p.add_argument(
             "--schedule",
             type=Path,
