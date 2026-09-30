@@ -1116,7 +1116,7 @@ WORDS = {
 #: double descent (`start.linked_pictures`): the short link each opens, by its name in
 #: `go/redirects.jsonl`, and the label under it. The midpoint is Matt's shallow link and the
 #: final frame is `FINAL_FRAME` at the video's target (publish_prep_ckpt154). The player
-#: itself is not up yet, so the row names no `video` (`figures.Figure.awaiting_video`).
+#: is up since mobile_followups_ckpt157's addendum: the row names its `video`.
 VIDEO = "deep-zoom-video"
 VIDEO_LINKS = (("seahorse-mid", "Midway"), ("seahorse-end", "Final frame"))
 
