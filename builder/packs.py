@@ -44,6 +44,11 @@ record and the gallery's collections are, and a clone reads the answer.
   pick mode, is those packs' preview wherever it names one, and the colour packs walk on,
   never reusing a hand pick. **A best pack's hand picks are also its members** (`forced`,
   packs_forced_members_ckpt157), even from outside the thousand, and its row lists them.
+- **The deep gallery is the exception to all of the above** (`DEEP`, deep_pack_ckpt157):
+  its members are deep links, which never enter the pipeline next door, so its row is
+  `deep_pack.row()`, read off the tracked `builder/data/deep-pack.jsonl`, and its five
+  pictures are that record's seeded picks. `marked()` is the seat packs and leaves it out;
+  `placed()` is every marker. `builder/deep_pack.py` has the renders and the rules.
 
 ## Links
 
@@ -67,7 +72,7 @@ import subprocess
 from dataclasses import dataclass
 from pathlib import Path
 
-from . import records, renders, seats, sections, votes
+from . import deep_pack, records, renders, seats, sections, votes
 from .escape import attribute, text
 from .paths import GALLERIES_DIR, GALLERY_IMAGES_DIR, SITE_ROOT, relative_href
 from .settings import local
@@ -106,6 +111,10 @@ GENERAL = "general"
 PICKS = GALLERIES_DIR / "preview-picks.json"
 PICKED = (*BEST, GENERAL)
 
+#: The deep gallery: deep views, which never enter the pipeline next door, so its row is
+#: made on this side (`builder/deep_pack.py`) and every seat rule here passes it by.
+DEEP = "deep-gallery"
+
 #: A pack as the page names it. The master names none of them; these are what the
 #: prose around them already calls them.
 TITLES = {
@@ -113,6 +122,7 @@ TITLES = {
     "best-100": "Best 100",
     "best-200": "Best 200",
     GENERAL: "Main gallery",
+    DEEP: "Deep gallery",
 }
 
 #: What the download line is, and what the explorer line under it is.
@@ -164,6 +174,16 @@ PROSE: tuple[tuple[str, str], ...] = (
         '<a href="../article/full-pipeline.html">Full pipeline</a>.',
     ),
     ("pack", GENERAL),
+    ("h2", "The deep gallery"),
+    (
+        "p",
+        "Most of this work went into wallpapers in the shallow parts of the Mandelbrot set, "
+        'but as <a href="../article/deep-zoom.html">Deep zoom rendering</a> shows, shallow '
+        "wallpapers are a good way to find excellent deep locations. Here are 28 wallpapers I "
+        "picked by hand, made with the random dives described in "
+        '<a href="../article/deep-zoom.html#random-dives">Random dives</a>.',
+    ),
+    ("pack", DEEP),
     ("h2", "Color galleries"),
     ("p", "Each of these is its own gallery, chosen for one family of colors."),
     ("pack", "rose"),
@@ -182,9 +202,14 @@ PROSE: tuple[tuple[str, str], ...] = (
 )
 
 
-def marked() -> list[str]:
+def placed() -> list[str]:
     """Every pack the prose places, in page order."""
     return [value for kind, value in PROSE if kind == "pack"]
+
+
+def marked() -> list[str]:
+    """Every pack of seats the prose places, in page order: all but the deep gallery."""
+    return [name for name in placed() if name != DEEP]
 
 
 def title(name: str) -> str:
@@ -220,6 +245,10 @@ class Pack:
     def best(self) -> bool:
         return self.name in BEST
 
+    @property
+    def deep(self) -> bool:
+        return self.name == DEEP
+
 
 def load() -> tuple[dict, dict[str, Pack]]:
     """The record's header fields and its packs, by name, in record order."""
@@ -250,7 +279,11 @@ def load() -> tuple[dict, dict[str, Pack]]:
         if not isinstance(forced, list) or not all(isinstance(key, str) for key in forced):
             raise records.RecordError(f"{row.where}: forced must be a list of seat keys")
         loaded[name] = Pack(
-            name, row.text("collection"), tuple(files), tuple(thumbs), tuple(forced)
+            name,
+            "" if name == DEEP else row.text("collection"),
+            tuple(files),
+            tuple(thumbs),
+            tuple(forced),
         )
     return header.fields, loaded
 
@@ -456,7 +489,10 @@ def derive() -> list[dict]:
             "order_from": planned[BEST[0]]["order_from"],
         }
     ]
-    for name in marked():
+    for name in placed():
+        if name == DEEP:
+            out.append(deep_pack.row())
+            continue
         if name == GENERAL:
             parts = [planned[part] for part in general_parts]
         else:
@@ -557,6 +593,9 @@ def block(page: Path, pack: Pack, rows: dict[str, dict]) -> str:
     ]
     alt = f"A wallpaper from the {title(pack.name)} pack."
     for key in pack.thumbs:
+        if pack.deep:
+            lines += _deep_panel(page, key, alt, pad)
+            continue
         row = rows[key]
         src = relative_href(page, GALLERY_IMAGES_DIR / seats.SLUG / row["file"])
         picture = (
@@ -587,13 +626,31 @@ def block(page: Path, pack: Pack, rows: dict[str, dict]) -> str:
             f"{download_label(pack, index)}</a></li>"
         )
     lines.append(f"{pad}  </ul>")
-    if not pack.best:
+    if not pack.best and not pack.deep:
         lines.append(
             f'{pad}  <p class="pack-explore"><a href="{attribute(explore_href(page, pack))}">'
             f"{text(EXPLORE)}</a></p>"
         )
     lines.append(f"{pad}</figure>")
     return LF.join(lines)
+
+
+def _deep_panel(page: Path, key: str, alt: str, pad: str) -> list[str]:
+    """One deep gallery preview: its tile, linked at its member's own deep link."""
+    from . import deep_gallery, figures
+
+    width, height = deep_gallery.THUMB["width"], deep_gallery.THUMB["height"]
+    picture = (
+        f'<img src="{attribute(deep_pack.tile_href(page, key))}" width="{width}" '
+        f'height="{height}" alt="{attribute(alt)}" loading="lazy">'
+    )
+    explorer = relative_href(page, SITE_ROOT / "explorer" / "index.html")
+    opened = f"{explorer}?{deep_pack.link_of(key)}"
+    return [
+        f'{pad}    <div class="figure-panel">',
+        f"{pad}      {figures._linked(picture, opened)}",
+        f"{pad}    </div>",
+    ]
 
 
 def prose_section(page: Path, figure_block, back: str) -> str:
@@ -649,10 +706,10 @@ def problems(*, with_checkout: bool) -> list[str]:
         return [str(error)]
     if header.get("release") != RELEASE:
         found.append(f"{where}: release {header.get('release')!r}, the page links {RELEASE}")
-    placed = marked()
-    if list(loaded) != placed:
+    markers = placed()
+    if list(loaded) != markers:
         found.append(
-            f"{where}: rows {list(loaded)} and the prose's [PACK] markers {placed} disagree"
+            f"{where}: rows {list(loaded)} and the prose's [PACK] markers {markers} disagree"
         )
     rows = seat_rows()
     sizes = collection_sizes()
@@ -670,6 +727,19 @@ def problems(*, with_checkout: bool) -> list[str]:
                 "`python -m builder packs --import`, then `build`"
             )
     for name, pack in loaded.items():
+        if pack.deep:
+            # Deep recipes, not seats: held to this side's own record, on any clone.
+            found += deep_pack.problems()
+            if committed_rows()[1 + list(loaded).index(name)] != deep_pack.row():
+                found.append(
+                    f"{where}: {name} is not what builder/data/deep-pack.jsonl says — "
+                    "`python -m builder packs --import`, then `build`"
+                )
+            for key in pack.thumbs:
+                if key in previewed:
+                    found.append(f"{where}: {name}'s {key} is already {previewed[key]}'s preview")
+                previewed.setdefault(key, name)
+            continue
         total = sum(one.pictures for one in pack.files)
         wanted = widths.get(name, sizes.get(pack.collection))
         if name == GENERAL and wanted is not None:

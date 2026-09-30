@@ -117,8 +117,13 @@ def out_dir(out: Path | None) -> Path:
 def below_normal() -> None:
     """Below-normal priority for this process, which its children inherit on Windows."""
     if sys.platform == "win32":
-        kernel = ctypes.windll.kernel32
-        kernel.SetPriorityClass(kernel.GetCurrentProcess(), 0x4000)
+        # Typed, because the pseudo-handle -1 truncated to a C int is no handle on 64-bit
+        # Windows, and the untyped call failed silently (deep_pack_ckpt157).
+        kernel = ctypes.WinDLL("kernel32", use_last_error=True)
+        kernel.GetCurrentProcess.restype = ctypes.c_void_p
+        kernel.SetPriorityClass.argtypes = (ctypes.c_void_p, ctypes.c_uint32)
+        if not kernel.SetPriorityClass(kernel.GetCurrentProcess(), 0x4000):
+            raise OSError(ctypes.get_last_error(), "SetPriorityClass failed")
 
 
 def cap_for_width(w: float) -> int:
