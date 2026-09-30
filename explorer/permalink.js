@@ -568,6 +568,7 @@ const KEY_WORDS = {
   scale: ["scale", "scales"],
   lambda: ["lambda", "lambdas"],
   period: ["period", "periods"],
+  knee: ["Straighten iter knee", "Straighten iter knees"],
   panel: ["panel", "panels"],
   every: ["screensaver interval", "screensaver intervals"],
   collection: ["gallery collection", "gallery collections"],
@@ -834,6 +835,18 @@ export const SHADE_KEYS = [
     fallback: 1,
     same: (a, b) => a === b,
   },
+  // Later still *(explorer_knee_ckpt157)*, and the one key whose default is no value at
+  // all: `null` is off, the engine's `knee: None`, so a link without it draws exactly what
+  // it drew before the key existed. A shade built before the key has none, which is off.
+  // Read and written only under the absolute scale — see `kneeUnder`.
+  {
+    key: "knee",
+    control: "knee",
+    read: (text) => positive(text, wordsFor("knee")),
+    write: (value) => (value === null || value === undefined ? "" : number(value)),
+    fallback: null,
+    same: (a, b) => (a ?? null) === (b ?? null),
+  },
 ];
 
 /**
@@ -886,6 +899,17 @@ export const LEVEL_KEY = {
  */
 export function levelUnder(shade, level) {
   return shade.scale === "absolute" ? LEVEL_KEY.fallback : level;
+}
+
+/**
+ * The shade with its knee kept under `absolute` and turned off under `leveled`
+ * *(explorer_knee_ckpt157)*: the mirror of `levelUnder`. The knee bends the absolute
+ * scale's compression and a leveled picture never reads it, so a link carrying one under
+ * `leveled` is read — a malformed knee is still refused — and then dropped, and `emit` never
+ * writes one there. Both contracts and the engine's `link.rs` do this, so none disagree.
+ */
+export function kneeUnder(shade) {
+  return shade.scale === "absolute" ? shade : { ...shade, knee: null };
 }
 
 /**
@@ -956,7 +980,8 @@ export function shadeKey(key) {
 export function defaultShade() {
   const shade = {};
   for (const spec of SHADE_KEYS) {
-    shade[spec.key] = typeof spec.fallback === "object" ? { ...spec.fallback } : spec.fallback;
+    const fallback = spec.fallback;
+    shade[spec.key] = fallback !== null && typeof fallback === "object" ? { ...fallback } : fallback;
   }
   return shade;
 }
@@ -1079,11 +1104,12 @@ export function parse(search, context) {
   const curveText = params.get(CURVE_KEY);
   const curve = heldCurve(mode, curveText === null ? null : readCurve(curveText), context);
 
-  const shade = defaultShade();
+  const read = defaultShade();
   for (const spec of SHADE_KEYS) {
     const text = params.get(spec.key);
-    if (text !== null) shade[spec.key] = spec.read(text);
+    if (text !== null) read[spec.key] = spec.read(text);
   }
+  const shade = kneeUnder(read);
   if (shade.mirror && context.palettes.get(palette).cyclic) {
     throw new PermalinkError(foldedCycle(palette));
   }
@@ -1154,8 +1180,9 @@ export function emit(view, context) {
     parts.push(`a=${view.aspect.across}:${view.aspect.down}`);
   }
   parts.push(`p=${encode(view.palette)}`);
+  const shade = kneeUnder(view.shade);
   for (const spec of SHADE_KEYS) {
-    const value = view.shade[spec.key];
+    const value = shade[spec.key];
     if (spec.same(value, spec.fallback)) continue;
     parts.push(`${spec.key}=${encode(spec.write(value))}`);
   }

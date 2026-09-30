@@ -17,6 +17,11 @@
 //
 // `deep_gallery_shade.mjs` cannot stand in for this: it canonicalizes a finished link, and has
 // neither Fit nor the fold.
+//
+// **Straighten iter is left off here on purpose** (explorer_knee_ckpt157): the candidates and
+// the random dives were drawn before the page turned it on for a fit from Leveled and for New
+// coloring, and a rerun redraws those pictures as they were made. So what this draws is not
+// what the page's Fit or New coloring gives the same frame today.
 
 import { readFileSync, writeFileSync } from "node:fs";
 import { load } from "../explorer/bench/engine.mjs";

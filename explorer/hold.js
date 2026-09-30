@@ -35,15 +35,27 @@ export const PERIOD_FIGURES = 4;
  *  rounding as well. */
 export const PHASE_PLACES = 4;
 
-/** The engine's compression of one value, in `f64`. */
-export function compress(nu, lambda) {
+/**
+ * The engine's compression of one value, in `f64`: `Palette::absolute_value`.
+ *
+ * With a `knee` *(explorer_knee_ckpt157, Straighten iter)* it is the knee mapping: `ν − 1`
+ * at and above the knee, and `(knee − 1) + knee · T_λ(ν / knee)` below it, which meets that
+ * line in value and slope. `null` is off, and the plain Box–Cox it always was. Every module
+ * here that reads the absolute scale's `g` reads it through this, knee and all.
+ */
+export function compress(nu, lambda, knee = null) {
   const value = Math.max(nu, FLOOR);
+  if (knee === null || knee === undefined) return boxCox(value, lambda);
+  return value >= knee ? boxCox(value, 1) : knee - 1 + knee * boxCox(value / knee, lambda);
+}
+
+function boxCox(value, lambda) {
   return lambda === 0 ? Math.log(value) : (value ** lambda - 1) / lambda;
 }
 
 /** Where in the gradient `nu` lands, in `[0, 1)`. */
-export function colourAt(nu, { lambda, period, phase }) {
-  return wrap(compress(nu, lambda) / period + phase);
+export function colourAt(nu, { lambda, period, phase, knee = null }) {
+  return wrap(compress(nu, lambda, knee) / period + phase);
 }
 
 function wrap(turns) {
@@ -95,12 +107,13 @@ export function anchor(shade, nu) {
 }
 
 /**
- * `next` — a recipe whose Lambda or Period just moved — with Phase re-solved so that the
- * colour `held` names is still where it was. Lambda and Period are returned as they came.
+ * `next` — a recipe whose Lambda, Period or knee just moved — with Phase re-solved so that
+ * the colour `held` names is still where it was. The rest is returned as it came.
  */
 export function resolve(next, held) {
   const { nu } = held;
-  const phase = places(wrap(held.colour - compress(nu, next.lambda) / next.period), PHASE_PLACES);
+  const g = compress(nu, next.lambda, next.knee ?? null);
+  const phase = places(wrap(held.colour - g / next.period), PHASE_PLACES);
   return { ...next, phase: phase >= 1 ? 0 : phase };
 }
 

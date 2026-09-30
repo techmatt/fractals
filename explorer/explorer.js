@@ -165,6 +165,8 @@ const SHADE_TIPS = {
     "Compresses the field before anything else: 1 leaves it as it is, 0 takes its log, and between the two is a power.",
   period:
     "How much of the compressed field one pass through the palette covers. The slider runs from one pass across this picture to the edge of aliasing; the box takes any period.",
+  knee:
+    "Above this iteration count one pass through the palette is Period iterations; below it, Lambda compresses them. It is one fixed curve, so a zoom never recolors what is already on screen.",
 };
 
 /** The two halves of the scale switch, as their tooltips say them. */
@@ -2380,7 +2382,29 @@ function buildShade() {
     group.append(label);
     held.group = group;
 
-    if (control.control === "number") {
+    if (control.control === "knee") {
+      // Straighten iter: a tick box for on and off, and the knee's number beside it. Off is
+      // no knee at all, which is what a link without the key draws; ticking it opens the knee
+      // at `shade.STRAIGHTEN`'s, and a typed knee moves it. See `shade.js`.
+      const flag = document.createElement("input");
+      flag.type = "checkbox";
+      flag.id = `shade-${control.key}`;
+      flag.className = "flag";
+      const box = document.createElement("input");
+      box.type = "number";
+      box.id = `shade-${control.key}-value`;
+      box.className = "param";
+      box.step = control.step;
+      box.min = "0";
+      box.setAttribute("aria-label", `${control.label} knee`);
+      flag.addEventListener("change", () =>
+        setShade(control.key, flag.checked ? box.value.trim() || String(shade.STRAIGHTEN.knee) : ""),
+      );
+      box.addEventListener("change", () => setShade(control.key, box.value.trim()));
+      group.append(flag, box);
+      held.flag = flag;
+      held.box = box;
+    } else if (control.control === "number") {
       if (control.slider !== null) {
         // A slider for the travel and the box beside it for the exact number. The slider
         // recolours as it moves wherever a recolour is cheap; under a direct trap every
@@ -2470,6 +2494,9 @@ function buildShade() {
   // Hold look sits after Period, beside the two controls it changes the meaning of, and is
   // shown under Absolute alone: see `holding`.
   shadeWidgets.get("period").group.after(holdGroup);
+  // Straighten iter sits under the absolute scale's own numbers, after Lambda and Period and
+  // their Hold look: it bends what those two mean, and is the last thing on the row they share.
+  holdGroup.after(shadeWidgets.get("knee").group);
 }
 
 /** The one action on the Palette header. It is disabled with nothing to put back, and its
@@ -2521,7 +2548,7 @@ let holding = null;
 /** Lambda, Period and Phase as one string, which is how a hold knows the recipe in front of
  *  it is the one it wrote rather than one something else moved. */
 function holdSpelling(recipe) {
-  return ["lambda", "period", "phase"].map((key) => shade.spelling(recipe, key)).join("|");
+  return ["lambda", "period", "phase", "knee"].map((key) => shade.spelling(recipe, key)).join("|");
 }
 
 /**
@@ -2541,10 +2568,16 @@ function holdSpelling(recipe) {
  */
 function held(subject, key, next) {
   if (subject.shade.scale !== "absolute") return next;
-  if (key !== "lambda" && key !== "period") return next;
+  if (key !== "lambda" && key !== "period" && key !== "knee") return next;
+  // Straighten iter turned on brings its Lambda with it: the two are one pair
+  // (`shade.STRAIGHTEN`), and the knee alone at a fitted log would be the busiest low end
+  // there is. Turned off, or moved, it leaves Lambda where it is.
+  if (key === "knee" && subject.shade.knee == null && next.knee !== null) {
+    next = { ...next, lambda: shade.STRAIGHTEN.lambda };
+  }
   const field = shownField();
-  // Held or not, a moved Lambda brings Period with it — see `keptCycles`.
-  if (key === "lambda") next = keptCycles(subject, next, field);
+  // Held or not, a moved Lambda or knee brings Period with it — see `keptCycles`.
+  if (key === "lambda" || key === "knee") next = keptCycles(subject, next, field);
   if (!holdToggle.checked) return next;
   const nu = hold.reference(field);
   if (nu === null) return next;
@@ -2582,11 +2615,20 @@ let cycling = null;
 function keptCycles(subject, next, field) {
   const frame = shownFrame();
   if (field === null || field === undefined || frame === null) return next;
-  const spelled = (recipe) => `${shade.spelling(recipe, "lambda")}|${shade.spelling(recipe, "period")}`;
+  const spelled = (recipe) =>
+    ["lambda", "period", "knee"].map((key) => shade.spelling(recipe, key)).join("|");
   if (cycling === null || cycling.frame !== frame || cycling.wrote !== spelled(subject.shade)) {
     cycling = { from: subject.shade, frame, wrote: null };
   }
-  const period = travel.rescaled(field, cycling.from.period, cycling.from.lambda, next.lambda);
+  const { from } = cycling;
+  const period = travel.rescaled(
+    field,
+    from.period,
+    from.lambda,
+    next.lambda,
+    from.knee ?? null,
+    next.knee ?? null,
+  );
   const moved = shade.withKey(next, "period", String(period));
   cycling.wrote = spelled(moved);
   return moved;
@@ -2600,7 +2642,7 @@ function shownFrame() {
 
 /**
  * The Period slider's travel, and the frame and Lambda it was measured for:
- * `{ frame, lambda, resolution, range }`, or `null` where there is nothing to measure
+ * `{ frame, lambda, knee, resolution, range }`, or `null` where there is nothing to measure
  * *(Matt, period_slider_ckpt155)*.
  */
 let periodAnchor = null;
@@ -2627,14 +2669,21 @@ function anchorPeriod() {
     periodAnchor = null;
     return;
   }
-  const lambda = tinting().shade.lambda;
+  const { lambda, knee = null } = tinting().shade;
   const resolution = field.width * (field.supersample ?? 1);
   const was = periodAnchor;
-  if (was !== null && was.frame === frame && was.lambda === lambda && was.resolution >= resolution) {
+  if (
+    was !== null &&
+    was.frame === frame &&
+    was.lambda === lambda &&
+    was.knee === knee &&
+    was.resolution >= resolution
+  ) {
     return;
   }
-  const range = travel.rangeOf(field, lambda, grid.width);
-  periodAnchor = range === null ? null : { frame, lambda, resolution, range };
+  // The travel is in `g`'s units, and Straighten iter's knee bends `g`: measured through it.
+  const range = travel.rangeOf(field, lambda, grid.width, knee);
+  periodAnchor = range === null ? null : { frame, lambda, knee, resolution, range };
 }
 
 /** The travel a slider sits on: the frame's, for Period, where there is one. */
@@ -2692,25 +2741,44 @@ function shownField() {
  *
  * `from` is the recipe fitted *from*, where it is not `subject`'s own: the arrival refit
  * fits to the Leveled recipe the arrival fitted to, so it is the same fit taken again.
+ *
+ * **Straighten iter** *(explorer_knee_ckpt157)*: `straighten` turns it on at `shade.STRAIGHTEN`
+ * for a fit from Leveled, which is the explorer putting a view on the absolute scale itself;
+ * without it a fit from Leveled leaves the knee off. Under Absolute the fit keeps whatever knee
+ * the recipe has. Where a knee is on, the fit holds its Lambda and sizes Period and Phase off
+ * the knee mapping (`fit.js`'s `straight`).
  */
-function fitted(subject, from = subject) {
+function fitted(subject, from = subject, { straighten = false } = {}) {
   const absolute = from.shade.scale === "absolute";
   const target = absolute ? { ...from.shade, lambda: 1, phase: 0 } : from.shade;
-  const found = fitting.fit(shownField(), target, subject.mode ?? "smooth", subject.curve ?? null);
+  let straight = null;
+  if (!absolute && straighten) straight = { ...shade.STRAIGHTEN };
+  else if (absolute && subject.shade.knee != null) {
+    straight = { knee: subject.shade.knee, lambda: subject.shade.lambda };
+  }
+  const found = fitting.fit(
+    shownField(),
+    target,
+    subject.mode ?? "smooth",
+    subject.curve ?? null,
+    straight,
+  );
   if (found === null) return null;
-  let next = { ...subject.shade, scale: "absolute" };
+  let next = { ...subject.shade, scale: "absolute", knee: straight?.knee ?? null };
   for (const key of ["lambda", "period", "phase"]) next = shade.withKey(next, key, String(found[key]));
   return next;
 }
 
 /** `next`, a scale just switched, with the fit applied where the switch is from Leveled to
  *  Absolute and there is a picture to fit. A switch the reader made settles any fit that was
- *  still waiting on a frame. */
+ *  still waiting on a frame. **The switch to Absolute turns Straighten iter on**, fitted or
+ *  not; the switch to Leveled turns it off, since Leveled never reads it. */
 function switched(subject, next) {
   fitWanted = false;
-  if (next.scale !== "absolute" || subject.shade.scale === "absolute") return next;
-  const fit = fitted(subject);
-  if (fit === null) return next;
+  if (next.scale !== "absolute") return link.kneeUnder(next);
+  if (subject.shade.scale === "absolute") return next;
+  const fit = fitted(subject, subject, { straighten: true });
+  if (fit === null) return shade.straightened(next);
   holding = null;
   return fit;
 }
@@ -2765,7 +2833,10 @@ function landFit() {
     fitWanted = false;
     return;
   }
-  const next = fitted(subject);
+  // A frame carried in from the viewer is the explorer putting it on Absolute, and turns
+  // Straighten iter on; a link's arrival is the link's own picture, and a link that names no
+  // knee has none.
+  const next = fitted(subject, subject, { straighten: !linkFit });
   if (next === null) return;
   const of = keyOf(currentQuery());
   fitWanted = false;
@@ -2802,7 +2873,8 @@ function landRefit() {
   arrivalFrom = null;
   const subject = deep.view();
   if (from === null || subject.shade.scale !== "absolute") return;
-  const next = fitted(subject, from);
+  // The same fit as the arrival's, knee and all.
+  const next = fitted(subject, from, { straighten: subject.shade.knee != null });
   if (next === null) return;
   const of = keyOf(currentQuery());
   holding = null;
@@ -2830,6 +2902,11 @@ function syncShade() {
         button.setAttribute("aria-checked", String(choice === text));
         button.disabled = busy;
       }
+    } else if (control.control === "knee") {
+      // Off shows the knee it would open at, greyed, so the box never reads as empty.
+      held.flag.checked = text !== "";
+      held.box.value = text === "" ? String(shade.STRAIGHTEN.knee) : text;
+      held.box.disabled = text === "";
     } else if (control.control === "number") {
       held.box.value = text;
       // The box keeps the number the link said; the slider sits where `shade.js` puts it.
@@ -5579,15 +5656,37 @@ async function colouringOf(field, subject, deepFrame) {
   let next = { ...subject.shade, scale: "absolute" };
   const phase = Number(Math.random().toFixed(3));
   const mirror = PALETTES.get(name).cyclic ? false : deepFrame ? true : next.mirror;
+  // **Straighten iter** *(explorer_knee_ckpt157)*: a colour New coloring moves from Leveled
+  // is the explorer's own new Absolute work and turns it on at its defaults; one already on
+  // Absolute keeps its knee, on or off, and its Lambda with it. Where a knee is on the rule's
+  // λ does not apply, and the period is the rule's own — the 3rd-to-97th-percentile spread
+  // over its cycles, at three figures — taken over the knee mapping's `g`.
+  let knee = subject.shade.scale !== "absolute" ? shade.STRAIGHTEN.knee : (next.knee ?? null);
+  let lambda =
+    knee === null ? rule.lambda : subject.shade.scale !== "absolute" ? shade.STRAIGHTEN.lambda : next.lambda;
+  let period = rule.period;
+  if (knee !== null) {
+    const measured = travel.measure(field);
+    const spread = measured === null ? null : travel.spreadOf(measured, lambda, knee);
+    // A sliver of outside the rule could colour and the travel cannot measure: the rule's own
+    // colouring, knee off, rather than a refusal the knee-less page never gave.
+    if (spread === null) {
+      knee = null;
+      lambda = rule.lambda;
+    } else {
+      period = Number((spread / rule.cycles).toPrecision(3));
+    }
+  }
   // **The aliasing guard** *(dive_mixture_ckpt154)*: the colouring laid over the field it was
   // sized to, and its period lengthened where neighbouring pixels come out too far apart.
   const guarded = aliasing.guard(
     field,
-    { lambda: rule.lambda, period: rule.period, phase },
+    { lambda, period, phase, knee },
     aliasing.tableOf(stopsOf(name), mirror),
   );
+  next = { ...next, knee };
   for (const [key, value] of [
-    ["lambda", rule.lambda],
+    ["lambda", lambda],
     ["period", guarded.period],
     ["phase", phase],
   ]) {

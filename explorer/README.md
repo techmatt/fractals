@@ -1753,7 +1753,7 @@ carries over or the link they open, and the two sets of a degree are one recurre
 ways rather than two families, which is what *Julia at this c* below is about. Fractional
 degrees and Phoenix are not drawn: `audit_deep_families_ckpt140` found perturbation fails on
 exactly the branch-cut seam the fractional family exists to show, and Phoenix needs a second
-delta lane. The tab's side note says which families it draws. Palette, the ten shade keys and
+delta lane. The tab's side note says which families it draws. Palette, the eleven shade keys and
 Autolevel work exactly as they do everywhere else, because a deep field **is** a smooth
 field: one `f64` a sample with `NaN` for the interior, in the layout `compute_band`
 produces, so `shade_level` colours it without being told which kernel drew it.
@@ -3107,7 +3107,7 @@ digits. Widening `permalink.js` would have moved three of its own rulings at onc
 is echoed as written and read as a double, that the cap is emphatically **not** a key, and
 that `f` and `m` say what is being drawn. Every shallow link ever written is held by those.
 
-What is shared is shared rather than copied: the ten shade keys, the `level` operator and
+What is shared is shared rather than copied: the eleven shade keys, the `level` operator and
 the two encoders come from `permalink.js` by import. They are the engine's palette recipe
 and a URL's escaping rule, neither of which has anything to do with how deep the view is.
 
@@ -3897,6 +3897,14 @@ this crate now reaches the specialization through the engine rather than beside 
   to 13.4 s with every pixel byte-identical**, which is the shape of regression a byte check
   cannot see. Forced, it is 6.4 s, and the classic Phoenix went from 0.67 s to 0.49 s, so it
   was paying the same call before. Inlining is inside the carve-out.
+- **`Palette::knee` and `Palette::absolute_value` are new** *(explorer_knee_ckpt157,
+  2026-09-30; wallpapers `5f9b42d`)*: Straighten iter's knee, an `Option<f64>`, and the one
+  function every absolute colouring now places a value by. A new signature, which the
+  carve-out allows because the prompt was sent for the seam. Absent is off and is omitted
+  from a serialized recipe, so no recipe key, render key or cache name moves. Zero
+  behaviour, measured: **the 540-render identity battery byte-identical** before and after
+  (`fractal-wallpapers identity`), and this module's knee-less shades identical to the build
+  before it. Engine tests 254 unmoved, two added.
 
 Two things about the port are unchanged and still worth knowing:
 
@@ -3974,7 +3982,7 @@ family, a degree, a constant, a mode, a mode parameter and a palette recipe have
 one spelling on this boundary, and adding a family to the engine is not adding an export.
 `FamilySpec`, `Palette` and `Colormap`'s kind are deserialized as the engine's own types,
 which is why a constant crosses as the decimal string it was written as, and why the
-permalink's ten shade keys are handed over as they stand — they *are* the engine's
+permalink's eleven shade keys are handed over as they stand — they *are* the engine's
 palette recipe, and translating between two spellings of one thing is how they drift.
 
 **`plan` is asked first, and the page holds no second opinion.** It answers how many lanes
@@ -5570,7 +5578,7 @@ v · f · cx · cy · px · py · zx · zy · m · the mode's parameters · curv
   opened" and not "can any gallery seat be" — and 444 distinct maps are seated in the
   general record alone. A link arriving on an unoffered map draws it, and the picker
   shows that map for as long as it is the one on the screen.
-- **The ten shade keys** are the engine's own `Palette` recipe, one key per real engine
+- **The eleven shade keys** are the engine's own `Palette` recipe, one key per real engine
   parameter, at the engine's defaults, handed to the module exactly as they are read
   here. They were **link-only** for two drafts and are not any more — see *The controls
   for the recipe* below.
@@ -5587,6 +5595,7 @@ v · f · cx · cy · px · py · zx · zy · m · the mode's parameters · curv
 | `scale` | `leveled` | `leveled` · `absolute` |
 | `lambda` | `1` | number in `[0, 1]` |
 | `period` | `1` | positive number |
+| `knee` | absent (off) | positive number, read under `scale=absolute` only |
 
 `transfer` and `rolloff` are **tagged**: a kind, and its one parameter after a colon
 where it takes one. A kind that takes no parameter is refused if given one, and a kind
@@ -5613,6 +5622,21 @@ American, *leveled*, by the site's rule for anything a reader meets.
 bump `v` for a published key, but `scale` arrived in palette_modes_ckpt143 and was never
 pushed, so no link anybody saved carries both. `permalink.test.mjs` and
 `deep-link.test.mjs` hold it.
+
+**`knee` came last, and cost no version either** *(explorer_knee_ckpt157, 2026-09-30)*. It
+is the engine's `Palette::knee`, and the page calls it **Straighten iter** (its section is
+*Straighten iter*, after *The controls for the recipe*). **Absent is off**, the one shade key whose
+default is no value at all (`null` in a parsed shade, `None` in the engine), so every link
+written before it draws exactly what it drew; a shade built before the key, with no `knee`
+on it at all, is off too. Where it is on the link spells it, always, after `period`:
+`…&scale=absolute&lambda=0.157&period=1870&knee=5000`. It bends the absolute scale's
+compression and nothing else — `ν − 1` at and above the knee, `(knee − 1) + knee · T_λ(ν /
+knee)` below it, joined in value and slope, so `period` is the line's period — and a
+leveled picture never reads it, so **under `scale=leveled` a link's `knee` is read and then
+dropped**, the mirror of `level` under absolute: `kneeUnder` in `permalink.js`, called by
+both contracts, and `read_shade` / `emit_shade` in the engine's `link.rs`, which the
+fixture holds to them. The pipeline never emits it, like `scale`, `lambda` and `period`:
+its recipe whitelist is seven keys.
 
 ### `level`, and a gallery seat's own colour
 
@@ -5654,7 +5678,7 @@ it would be replaying a decision no run ever took. That test reads a coloring ki
 lives in the engine's mode catalog, and a fourth copy of that catalog in `permalink.js`
 is a fourth thing to keep in step.
 
-**It is not one of the ten shade keys and must not become one.** Those ten *are* the
+**It is not one of the eleven shade keys and must not become one.** Those eleven *are* the
 engine's `Palette` recipe and are handed to the module as a unit; `level` is a separate
 operator and crosses beside them, and the module curves the stops before it bakes them.
 It is on the **colour** side of the field cache for the same reason every shade key is:
@@ -5907,8 +5931,9 @@ recipe** group. What is worth writing down is the shape rather than the widgets:
 - **Scale is a switch, and it swaps the row** *(palette_modes_ckpt143)*. *Leveled |
   Absolute* opens the shade row, two halves of one pill, the way the Render mode select
   decides which of a mode's parameters are shown: under Leveled the row is Phase, Gamma,
-  Cycles, Transfer and Lambda; under Absolute it is Fit, Phase, Lambda, Period and Hold
-  look (*Fit* and *Hold look* below; the switch from Leveled fits), and Gamma,
+  Cycles, Transfer and Lambda; under Absolute it is Fit, Phase, Lambda, Period, Hold look
+  and Straighten iter (*Fit*, *Hold look* and *Straighten iter* below; the switch from
+  Leveled fits, and turns Straighten iter on), and Gamma,
   Cycles and Transfer are hidden and kept, so switching back finds them as they were.
   **Phase comes straight after the switch in both** *(Matt, palette_absolute_tidy_ckpt144)*,
   because it is the one control the two scales share; the row's order is the page's, and
@@ -6109,7 +6134,69 @@ recipe** group. What is worth writing down is the shape rather than the widgets:
   that gallery wallpapers made with it open with it on, and that anywhere else it starts
   off and levels the view from its own picture when turned on.
 
-### The rules the keys are read under
+### Straighten iter *(explorer_knee_ckpt157, 2026-09-30)*
+
+**One fixed curve of `ν` under the absolute scale, a Box–Cox below a knee and exactly
+linear above it** — `builder/zoom.py`'s `knee` mapping, which the julia3 descent was coloured
+with, brought into both tabs. A zoom's depth schedule recolours structure already on the
+screen as the frame moves; a curve of `ν` alone never does, and the knee makes that curve
+calm at the shallow end without compressing the deep end at all. The formula has **one
+home**, the engine's `Palette::absolute_value`, which `place_absolute` reads, so the page
+and zoom.py are both its callers: zoom.py hands a knee frame to `engine.wasm` through
+`builder/zoom_shade.mjs` with the Deep tab's own spec. The JavaScript that sizes an absolute
+recipe to a frame (`hold.compress`, and through it `fit.js`, `period-range.js` and
+`aliasing.js`) reads `g` through the same mapping, knee and all.
+
+- **The control** is a tick box and the knee's number, **Straighten iter**, the last thing
+  on the Absolute row, after Hold look, and shown under Absolute alone. It is the one shade
+  control not named for its key (`shade.js` says why): the link says `knee`. Unticked is
+  off, which is no `knee` in the link; ticked it opens at `shade.STRAIGHTEN`'s knee, 5000,
+  and the box moves it. Off, the box shows 5000 greyed. On a phone it is one more `.group`
+  in a `.bar` that wraps, with the coarse-pointer sizes every flag and box already has, so
+  `phone_support_ckpt157`'s layout needed nothing.
+- **On by default wherever the explorer puts a view on the absolute scale itself**: the
+  switch from Leveled, New coloring from a Leveled colour, and the Deep tab's arrival from
+  the viewer. Each writes `shade.STRAIGHTEN`, knee 5000 and its `λ`, and the fit that comes
+  with it holds that `λ` and sizes Period and Phase off the knee mapping (`fit.js`'s
+  `straight`). **A link is never given one**: a link without `knee` is off and draws what it
+  drew, the Deep tab's arrival fit of a link that names no `scale` included. Once a view is
+  on Absolute the knee is the reader's: Fit and New coloring keep it on or off as it is, and
+  the switch to Leveled turns it off, since Leveled never reads it.
+- **The `λ` is the knee's partner.** At `λ = 1` the knee is the line all the way down and
+  does nothing, so ticking it on brings `shade.STRAIGHTEN`'s `λ` with it; moving Lambda
+  afterwards moves only the low end's shape. Turning it off leaves Lambda where it is.
+- **The pair is knee 5000 and `λ = 0.1`**, chosen on a contact sheet (`scratch/
+  explorer_knee_ckpt157/`, ignored): three home views, two seahorse frames, two shallow
+  julia3 frames, julia3's Midway, s5 and Final, and two Mandelbrot deep frames, each fitted
+  fresh knee off and at knee 5000 with `λ` 0, 0.1, 0.157, 0.25, 0.35 and 0.5. **On a fresh
+  fit `λ` hardly matters**: a frame wholly below the knee is an affine map of `T_λ(ν)`,
+  which the fit's period and phase absorb, so λ 0 to 0.157 draw the same shallow pictures
+  (0.35 and up wash the outer field into one colour); a deep frame straddling the knee spans
+  `ν/knee` of about 0.7 to 1, where every `T_λ` is nearly a line; and the julia3 Final is all
+  above it. Against the knee-off fit the knee is a clear gain deep: the Mandelbrot minibrot
+  at w 1.5e-17 falls from 22.5 to 13 on the aliasing guard's roughness, julia3's Final from
+  41.8 to 38.8. **What `λ` decides is a recipe fitted shallow and held down a zoom**, the
+  knee's reason to exist. Turns across the deep frame's stretch, where a fit lays 7:
+
+  | fitted at → held to | off | λ 0 | 0.1 | 0.157 | 0.25 |
+  | --- | --- | --- | --- | --- | --- |
+  | julia3 w 1.7e-2 → Final | 1.5 | 5.2 | 7.7 | 9.6 | 13.7 |
+  | julia3 w 1.7e-2 → Midway | 8.6 | 10.3 | 14.1 | 16.8 | 22.5 |
+  | Mandelbrot home → minibrot | 5.4 | 13.0 | 22.2 | 30.1 | 49.1 |
+
+  Knee off, the held julia3 descent goes nearly flat; 0.1 lands on the fit's own seven, and
+  0.157, julia3's hand-picked value, is already a third busier. 0.1 is on the fit's 0.05
+  grid as well, a number a reader could type.
+- **Period keeps moving in cycles across the frame.** The knee bends `g`, so it is a move of
+  the same kind as a moved Lambda: `keptCycles` rescales Period to keep the cycles across the
+  frame's spread when the knee is turned on, off or moved, Hold look re-solves Phase for the
+  colour at `ν_m`, and the Period slider's travel is measured through the knee and cached on
+  it (`anchorPeriod`).
+- **A deep frame above the knee is untouched by it.** At and above the knee the mapping is
+  `ν − 1` spelled as the knee-less `λ = 1` spells it, so a frame whose values all lie above
+  it is that picture to the bit — the julia3 Final frame (`ν` from 12,364) draws the same
+  SHA with and without `knee=5000`.
+
 
 - **An unknown key is refused.** A typo that silently rendered the default view would look
   exactly like the link working.

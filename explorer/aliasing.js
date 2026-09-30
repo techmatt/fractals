@@ -70,8 +70,8 @@ export function tableOf(map, mirror = false) {
 
 /**
  * The mean colour difference between neighbouring pixels of `field` coloured by `shade`
- * (`{ lambda, period, phase }`) through `table`, or `null` where fewer than a hundred pairs of
- * neighbours are both outside the set.
+ * (`{ lambda, period, phase, knee }`, the knee `null` or absent for off) through `table`, or
+ * `null` where fewer than a hundred pairs of neighbours are both outside the set.
  *
  * `field` is either tab's — `{ values, width, height, supersample }`, lane 0 read as the
  * `width·ss × height·ss` grid, `NaN` inside the set. A pixel's colour is the mean of its
@@ -86,7 +86,12 @@ export function roughness(field, shade, table) {
   const columns = Math.floor((field.width - 1) / step) + 1;
   const rows = Math.floor((field.height - 1) / step) + 1;
   const colours = new Float32Array(columns * rows * 3).fill(Number.NaN);
-  const recipe = { lambda: shade.lambda, period: shade.period, phase: shade.phase ?? 0 };
+  const recipe = {
+    lambda: shade.lambda,
+    period: shade.period,
+    phase: shade.phase ?? 0,
+    knee: shade.knee ?? null,
+  };
   for (let row = 0; row < rows; row += 1) {
     for (let column = 0; column < columns; column += 1) {
       let r = 0;

@@ -581,7 +581,11 @@ const TYPED = {
   scale: ["absolute"],
   lambda: ["0", "0.3"],
   period: ["600", "0.25"],
+  knee: ["5000", "1234.5"],
 };
+
+/** Where a key is read at all: the knee under the absolute scale alone (`kneeUnder`). */
+const UNDER = { knee: "&scale=absolute" };
 
 test("every shade key has a control, and it opens at the engine's own default", () => {
   assert.deepEqual(
@@ -611,8 +615,9 @@ test("every shade key round-trips from its control, through a link, back to its 
   // The whole property, key by key: what a reader types into a control is what the
   // address bar carries, and a link somebody sends back shows the same thing in the
   // same control. `viridis` because it is sequential — a cyclic map refuses the fold.
-  const base = parse(`v=${VERSION}&p=viridis`, CONTEXT);
   for (const spec of SHADE_KEYS) {
+    const base = parse(`v=${VERSION}&p=viridis${UNDER[spec.key] ?? ""}`, CONTEXT);
+    const already = shade.chosen(base.shade);
     for (const typed of TYPED[spec.key]) {
       const where = `${spec.key}=${typed}`;
       const view = { ...base, shade: shade.withKey(base.shade, spec.key, typed) };
@@ -620,7 +625,7 @@ test("every shade key round-trips from its control, through a link, back to its 
       assert.match(emitted, new RegExp(`(^|&)${spec.key}=`), where);
       const back = parse(emitted, CONTEXT);
       assert.equal(shade.spelling(back.shade, spec.key), typed, where);
-      assert.deepEqual(shade.chosen(back.shade), [spec.key], where);
+      assert.deepEqual(shade.chosen(back.shade), [...already, spec.key], where);
       // And the reason a control can be instant: not one of the seven is on the field
       // side of the cache, so every one of them re-shades what is already computed.
       assert.equal(
@@ -636,8 +641,8 @@ test("a direct trap is the one mode shape a shade key re-iterates under", () => 
   // Those four composite gradient samples as they iterate and have no field to
   // recolour, so their key carries the recipe — the same ruling the palette picker
   // already pays there, and the reason the page says so under the strip.
-  const trap = parse(`v=${VERSION}&m=direct_trap_ring&p=viridis`, CONTEXT);
   for (const spec of SHADE_KEYS) {
+    const trap = parse(`v=${VERSION}&m=direct_trap_ring&p=viridis${UNDER[spec.key] ?? ""}`, CONTEXT);
     const moved = { ...trap, shade: shade.withKey(trap.shade, spec.key, TYPED[spec.key][0]) };
     assert.notEqual(
       fieldKey(moved, CONTEXT, 640, 360, true),
@@ -661,6 +666,9 @@ test("a control out of range is refused in the contract's own words", () => {
   assert.throws(() => shade.withKey(view.shade, "scale", "relative"), /The scale is leveled or absolute/);
   assert.throws(() => shade.withKey(view.shade, "lambda", "1.5"), /The lambda has to be between 0 and 1/);
   assert.throws(() => shade.withKey(view.shade, "period", "0"), /The period has to be more than 0/);
+  assert.throws(() => shade.withKey(view.shade, "knee", "0"), /The Straighten iter knee has to be more than 0/);
+  // The knee alone is turned off by an empty box, which is how its control spells off.
+  assert.equal(shade.withKey({ ...view.shade, knee: 5000 }, "knee", "").knee, null);
   assert.throws(() => shade.withKey(view.shade, "sweep", "1"), /no shade key called sweep/);
 });
 
@@ -1011,7 +1019,8 @@ test("the scale switch swaps which shade controls are shown, and keeps what it h
       (control) => control.key,
     );
   assert.deepEqual(shown(view.shade), ["gamma", "cycles", "phase", "reverse", "mirror", "transfer", "scale", "lambda"]);
-  assert.deepEqual(shown(absolute), ["phase", "reverse", "mirror", "scale", "lambda", "period"]);
+  assert.deepEqual(shown(absolute), ["phase", "reverse", "mirror", "scale", "lambda", "period", "knee"]);
+  assert.equal(shade.CONTROLS.find((control) => control.key === "knee").label, "Straighten iter");
   assert.equal(absolute.gamma, 1.5);
   // Period's slider travels in cycles over the frame's range, one cycle at the left and the
   // aliasing limit at the right; a period past either end parks the thumb there, and every
@@ -1039,6 +1048,26 @@ test("the three scale keys ride a link only when set, and never bump v", () => {
   assert.deepEqual([back.shade.scale, back.shade.lambda, back.shade.period], ["absolute", 0, 0.25]);
   assert.equal(emit(back, CONTEXT), emit(parse(emit(back, CONTEXT), CONTEXT), CONTEXT));
   assert.match(emit(back, CONTEXT), /&scale=absolute&lambda=0&period=0\.25/);
+});
+
+test("the knee rides a link only under absolute, is off without it, and never bumps v", () => {
+  // Off is no knee at all, so every link written before the key draws as it did.
+  const plain = parse(`v=${VERSION}&p=viridis&scale=absolute&period=1870`, CONTEXT);
+  assert.equal(plain.shade.knee, null);
+  assert.doesNotMatch(emit(plain, CONTEXT), /knee=/);
+  const text = `v=${VERSION}&p=viridis&phase=0.091&scale=absolute&lambda=0.157&period=1870&knee=5000`;
+  const on = parse(text, CONTEXT);
+  assert.equal(on.shade.knee, 5000);
+  assert.equal(emit(on, CONTEXT), text);
+  assert.equal(canonicalize(text, CONTEXT), text);
+  // Under leveled it is read — a malformed one is still refused — and then dropped.
+  const leveled = parse(`v=${VERSION}&p=viridis&knee=5000`, CONTEXT);
+  assert.equal(leveled.shade.knee, null);
+  assert.doesNotMatch(emit(leveled, CONTEXT), /knee=/);
+  assert.throws(() => parse(`v=${VERSION}&p=viridis&knee=0`, CONTEXT), /Straighten iter knee/);
+  // A view built before the key, with no knee on its shade at all, is off too.
+  const { knee: _, ...older } = on.shade;
+  assert.doesNotMatch(emit({ ...on, shade: older }, CONTEXT), /knee=/);
 });
 
 test("under the absolute scale a tone curve is read, then dropped from the link", () => {

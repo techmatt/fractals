@@ -80,6 +80,25 @@ test("a travel is never shorter than MIN_RATIO nor longer than MAX_RATIO", () =>
   assert.ok(quiet.sparse / quiet.dense <= travel.MAX_RATIO * (1 + 1e-9));
 });
 
+test("a knee bends the travel, and above it the travel is the line's", () => {
+  // A deep frame, every ν above the knee: the knee at any λ is the line, λ = 1.
+  const deepField = fieldOf(300, 200, (column, row) => 12000 + column * 3 + row * 2);
+  assert.deepEqual(travel.rangeOf(deepField, 0.157, 300, 5000), travel.rangeOf(deepField, 1, 300));
+  // A shallow one, every ν below it: the knee's `g` there is `knee · T_λ(ν / knee)` shifted,
+  // so both ends are the plain `T_λ` travel scaled by `knee^(1 − λ)`.
+  const shallow = fieldOf(300, 200, (column, row) => 20 + column * 0.5 + row * 0.3);
+  const bent = travel.rangeOf(shallow, 0.157, 300, 5000);
+  const plain = travel.rangeOf(shallow, 0.157, 300);
+  const scale = 5000 ** (1 - 0.157);
+  assert.ok(Math.abs(bent.sparse / (plain.sparse * scale) - 1) < 1e-9);
+  assert.ok(Math.abs(bent.dense / (plain.dense * scale) - 1) < 1e-9);
+  // Straighten iter turned on keeps the cycles across the spread, as a Lambda move does.
+  const period = travel.rescaled(shallow, 2.5, 0, 0.157, null, 5000);
+  const measured = travel.measure(shallow);
+  const cycles = (lambda, knee, p) => travel.spreadOf(measured, lambda, knee) / p;
+  assert.ok(Math.abs(cycles(0.157, 5000, period) / cycles(0, null, 2.5) - 1) < 1e-3);
+});
+
 test("nothing to measure is no travel", () => {
   assert.equal(travel.rangeOf(null, 1, 100), null);
   assert.equal(travel.rangeOf(fieldOf(40, 20, () => 1, () => true), 1, 40), null);

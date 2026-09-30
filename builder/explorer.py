@@ -356,6 +356,14 @@ ENGINE_CHANGES = [
     "file (sha256 753053ec…a064e0), and the fingerprint is unmoved (5d97e76bb16be71d). The "
     "one seam the engine lacks, the paged-out inflection pre-map in derive::probe_row, is "
     "inflect::probe_row here, over the engine's own derive::probe_pixel.",
+    "coloring::Palette gains knee, an Option<f64>, with Palette::absolute_value, which "
+    "place_absolute now reads: under the absolute scale nu - 1 at and above the knee and "
+    "(knee - 1) + knee * T_lambda(nu / knee) below it, one fixed curve of nu joined C1, for "
+    "the explorer's Straighten iter; link.rs reads and writes knee under scale=absolute only. "
+    "explorer_knee_ckpt157 was sent for the seam and to change the Palette signature. Absent "
+    "is off and is omitted from a serialized recipe, so no recipe key, render key or cache "
+    "name moves. 540 renders of the identity battery byte-identical before and after, engine "
+    "tests 254 unmoved plus two new.",
 ]
 
 _RUSTC_VERSION = re.compile(r"^rustc (\S+ \([0-9a-f]+ \d{4}-\d{2}-\d{2}\))")

@@ -117,6 +117,18 @@ test("under the absolute scale the deep contract drops the curve too", () => {
   assert.match(deep.emit(view), /scale=absolute/);
 });
 
+test("the knee rides a deep link under absolute and is dropped under leveled", () => {
+  const on = "dv=3&x=-0.5&y=0&w=2e-11&n=48551&p=inferno&phase=0.091&scale=absolute&lambda=0.157&period=1870&knee=5000";
+  const view = deep.parse(`?${on}`, context);
+  assert.equal(view.shade.knee, 5000);
+  assert.equal(deep.emit(view), on);
+  assert.equal(deep.canonicalize(`?${on}`, context), on);
+  const leveled = on.replace("scale=absolute", "scale=leveled");
+  assert.equal(deep.parse(`?${leveled}`, context).shade.knee, null);
+  assert.equal(deep.canonicalize(`?${leveled}`, context), leveled.replace("&knee=5000", ""));
+  assert.throws(() => deep.parse(`?${on.replace("knee=5000", "knee=-1")}`, context), link.PermalinkError);
+});
+
 test("a Leveled deep view writes its scale, and a link that names none keeps naming none", () => {
   // deep_leveled_link_and_recolour_ckpt150: a deep link with no `scale` is fitted to
   // Absolute on arrival, so a Leveled view's own link has to say Leveled to reopen it.

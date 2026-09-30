@@ -1116,6 +1116,8 @@ def _shade(fields: dict, record: dict | None) -> dict:
         "scale": "leveled",
         "lambda": 1.0,
         "period": 1.0,
+        # Straighten iter (explorer_knee_ckpt157): off, which the link omits.
+        "knee": None,
     }
     if record is not None:
         shade.update({key: value for key, value in record["recipe"].items() if key in shade})

@@ -1012,6 +1012,7 @@ SHADE_DEFAULTS = {
     "scale": "leveled",
     "lambda": 1.0,
     "period": 1.0,
+    "knee": None,
 }
 
 #: Where `curate atlas --plane <partition>` writes, inside the wallpapers checkout: one

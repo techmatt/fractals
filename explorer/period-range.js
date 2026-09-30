@@ -143,10 +143,12 @@ function percentile(sorted, p) {
 }
 
 /** The robust spread of `T_λ(ν)`, falling back to the whole range where the percentiles meet,
- *  or `null` where the frame is one value. */
-export function spreadOf(measured, lambda) {
-  let spread = compress(measured.high, lambda) - compress(measured.low, lambda);
-  if (!(spread > 0)) spread = compress(measured.most, lambda) - compress(measured.least, lambda);
+ *  or `null` where the frame is one value. A `knee` reads it through the knee mapping
+ *  (`hold.compress`), as every function here does that takes one; `null` is off. */
+export function spreadOf(measured, lambda, knee = null) {
+  const g = (nu) => compress(nu, lambda, knee);
+  let spread = g(measured.high) - g(measured.low);
+  if (!(spread > 0)) spread = g(measured.most) - g(measured.least);
   return spread > 0 ? spread : null;
 }
 
@@ -159,12 +161,12 @@ export function spreadOf(measured, lambda) {
  * Where more than half the pairs do not change at all — a mode whose field is flat in
  * places — the median of the ones that do stands in, and `null` where none do.
  */
-export function stepOf(measured, lambda, shownWidth = measured.width) {
+export function stepOf(measured, lambda, shownWidth = measured.width, knee = null) {
   const changes = new Float64Array(measured.first.length);
   let moving = 0;
   for (let index = 0; index < changes.length; index += 1) {
     const change = Math.abs(
-      compress(measured.first[index], lambda) - compress(measured.second[index], lambda),
+      compress(measured.first[index], lambda, knee) - compress(measured.second[index], lambda, knee),
     );
     changes[index] = change;
     if (change > 0) moving += 1;
@@ -182,11 +184,11 @@ export function stepOf(measured, lambda, shownWidth = measured.width) {
  * The travel for a frame under `λ`: `{ sparse, dense }`, the periods at its two ends, with
  * `sparse > dense` — or `null` where the frame gives no measurement.
  */
-export function rangeOf(field, lambda, shownWidth) {
+export function rangeOf(field, lambda, shownWidth, knee = null) {
   const measured = measure(field);
   if (measured === null) return null;
-  const spread = spreadOf(measured, lambda);
-  const step = stepOf(measured, lambda, shownWidth ?? measured.width);
+  const spread = spreadOf(measured, lambda, knee);
+  const step = stepOf(measured, lambda, shownWidth ?? measured.width, knee);
   if (spread === null && step === null) return null;
   let sparse = spread ?? step / DENSE_TURNS * MIN_RATIO;
   let dense = step === null ? sparse / MAX_RATIO : step / DENSE_TURNS;
@@ -213,13 +215,14 @@ export function periodAt(range, position) {
 /**
  * **A moved Lambda brings Period with it**, so the number of cycles across the frame's spread
  * holds: `period · spread(λ′) / spread(λ)`, at four figures. `period` where the frame gives
- * no spread to hold.
+ * no spread to hold. The knee is a move of the same kind, so `fromKnee` and `toKnee` name the
+ * knee on either side of it (Straighten iter turned on, off, or moved), `null` for off.
  */
-export function rescaled(field, period, from, to) {
+export function rescaled(field, period, from, to, fromKnee = null, toKnee = null) {
   const measured = measure(field);
   if (measured === null) return period;
-  const before = spreadOf(measured, from);
-  const after = spreadOf(measured, to);
+  const before = spreadOf(measured, from, fromKnee);
+  const after = spreadOf(measured, to, toKnee);
   if (before === null || after === null) return period;
   return Number(((period * after) / before).toPrecision(PERIOD_FIGURES));
 }

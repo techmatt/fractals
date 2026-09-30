@@ -46,6 +46,7 @@ import {
   encode,
   encodeCurve,
   foldedCycle,
+  kneeUnder,
   levelUnder,
   readCap,
   readQuery,
@@ -229,11 +230,12 @@ export function parse(search, context) {
     throw new PermalinkError(`This link names a palette the explorer doesn't carry: ${palette}.`);
   }
 
-  const shade = defaultShade();
+  const read = defaultShade();
   for (const spec of SHADE_KEYS) {
     const text = params.get(spec.key);
-    if (text !== null) shade[spec.key] = spec.read(text);
+    if (text !== null) read[spec.key] = spec.read(text);
   }
+  const shade = kneeUnder(read);
   if (shade.mirror && context.palettes.get(palette).cyclic) {
     throw new PermalinkError(foldedCycle(palette));
   }
@@ -359,8 +361,9 @@ export function emit(view, { scaleStated = true } = {}) {
     parts.push(`a=${view.aspect.across}:${view.aspect.down}`);
   }
   parts.push(`p=${encode(view.palette)}`);
+  const shade = kneeUnder(view.shade);
   for (const spec of SHADE_KEYS) {
-    const value = view.shade[spec.key];
+    const value = shade[spec.key];
     const stated = spec.key === "scale" && scaleStated;
     if (!stated && spec.same(value, spec.fallback)) continue;
     parts.push(`${spec.key}=${encode(spec.write(value))}`);

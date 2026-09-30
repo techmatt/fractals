@@ -740,7 +740,7 @@ def _targets(named=VIDEO_LINKS) -> dict[str, str]:
 
 
 #: The palette keys a link may spell after its map, in the order a provenance line gives them.
-LINK_SHADE_KEYS = ("phase", "scale", "lambda", "period")
+LINK_SHADE_KEYS = ("phase", "scale", "lambda", "period", "knee")
 
 
 def _link_words(query: str) -> str:

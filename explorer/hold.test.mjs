@@ -26,6 +26,36 @@ test("compress is the engine's Box–Cox, the log at zero and ν − 1 at one", 
   assert.equal(hold.compress(-3, 0.5), hold.compress(0, 0.5));
 });
 
+test("with a knee, compress is ν − 1 above it and a Box–Cox of ν/knee below, joined C¹", () => {
+  const knee = 5000;
+  for (const lambda of [0, 0.157, 0.5, 1]) {
+    // Above, the knee-less λ = 1 to the bit, whatever λ says.
+    for (const nu of [5000, 12364.5, 1.6e6]) assert.equal(hold.compress(nu, lambda, knee), hold.compress(nu, 1));
+    for (const nu of [1, 250.9, 4999]) {
+      const low = lambda === 0 ? Math.log(nu / knee) : ((nu / knee) ** lambda - 1) / lambda;
+      assert.equal(hold.compress(nu, lambda, knee), knee - 1 + knee * low);
+    }
+    const slope = (hold.compress(knee, lambda, knee) - hold.compress(knee - 1e-3, lambda, knee)) / 1e-3;
+    assert.ok(Math.abs(slope - 1) < 1e-3, `λ ${lambda}: slope ${slope}`);
+  }
+  // Off is the plain compression, `null` or absent.
+  assert.equal(hold.compress(250.9, 0.157, null), hold.compress(250.9, 0.157));
+  assert.equal(
+    hold.colourAt(9000, { lambda: 0.157, period: 1870, phase: 0.091, knee }),
+    hold.colourAt(9000, { lambda: 1, period: 1870, phase: 0.091 }),
+  );
+});
+
+test("a held knee keeps the colour at ν_m, knee on or off", () => {
+  const start = { ...LOG, lambda: 0.157, period: 1870, phase: 0.091, knee: 5000 };
+  const anchor = hold.anchor(start, 800);
+  for (const knee of [null, 1000, 5000, 20000]) {
+    const moved = hold.resolve({ ...start, knee }, anchor);
+    assert.equal(moved.knee, knee);
+    assert.ok(apart(hold.colourAt(800, moved), anchor.colour) < 1e-4, `knee ${knee}`);
+  }
+});
+
 test("a held Period keeps the colour at ν_m and leaves Lambda alone", () => {
   const start = { ...LOG, lambda: 0.3, period: 2, phase: 1.6666666666666667 };
   const anchor = hold.anchor(start, 500);

@@ -19,10 +19,16 @@ no levelling, so a place two keyframes share is the same colour in both. The ind
   it `g = (knee - 1) + knee * T_lambda(nu / knee)`, the same Box–Cox joined where both the
   value and the slope agree. `lambda = 0` is a log joined to a line; nearer one, the low end
   is calmer. `L` and `phase` are the record's `absolute` ones unless it names a `knee` of
-  its own, so every frame whose `nu` is all above the knee is the link's colouring exactly
-  (julia3_curve_ckpt157).
+  its own (julia3_curve_ckpt157). **It is coloured by the engine, not here**
+  (explorer_knee_ckpt157): the formula's one home is `Palette::absolute_value`, the
+  explorer's Straighten iter, and `engine_colour` hands the field to `engine.wasm` through
+  `zoom_shade.mjs` with the Deep tab's own spec — so a knee frame is the picture the link
+  `scale=absolute&lambda=…&period=L&phase=…&knee=…` draws of that field, byte for byte.
 
-The palette is the engine's own, lifted once by `zoom_palette.mjs`; the interior is black.
+The palette is the engine's own, lifted once by `zoom_palette.mjs` into a 65536-entry table
+for every mapping but `knee`; the interior is black. The table snaps where the engine
+interpolates its 4096 entries, so a table mapping differs from the engine's own colouring by
+one level on about half a percent of pixels (measured on julia3 under `absolute`).
 
 **A schedule** is the one exception to "one fixed function" (julia3_palette_ckpt157). A
 mapping may carry `schedule`, a list of `{"w": width, "L": …, "phase": …, "lambda": …}`
@@ -52,6 +58,7 @@ import math
 import os
 import subprocess
 import sys
+import tempfile
 import time
 from concurrent.futures import ProcessPoolExecutor
 from pathlib import Path
@@ -242,14 +249,41 @@ def g_of(nu: np.ndarray, m: dict) -> np.ndarray:
             return np.log(np.maximum(nu, 1e-9))
         return (np.power(np.maximum(nu, 0.0), lam) - 1.0) / lam
     if m["kind"] == "knee":
-        # Above the knee, `absolute` at lambda 1 as it is computed there, so the two agree to
-        # the bit; below it the Box–Cox of nu/knee, scaled to meet that line's value and slope.
-        knee, lam = m["knee"], m.get("lambda", 0)
-        ratio = np.maximum(nu, 1e-9) / knee
-        low = np.log(ratio) if lam == 0 else (np.power(ratio, lam) - 1.0) / lam
-        line = (np.power(np.maximum(nu, 0.0), 1.0) - 1.0) / 1.0
-        return np.where(nu >= knee, line, (knee - 1.0) + knee * low)
+        # The knee has one home, the engine's `Palette::absolute_value`, and `colour` hands
+        # it there whole (`engine_colour`); a second copy here is what that rules out.
+        raise ValueError("knee: coloured by engine.wasm, not by g_of")
     return np.power(np.maximum(nu, 0.0), m["alpha"])
+
+
+def engine_colour(nu: np.ndarray, m: dict, interior) -> np.ndarray:
+    """The field in colour exactly as the explorer's Deep tab colours it: `zoom_shade.mjs`,
+    which hands it to the committed `engine.wasm` with `shadeSpecOf`'s spec — the absolute
+    scale at `period = L`, `phase`, `lambda` and the `knee` (explorer_knee_ckpt157). So the
+    knee's formula is the engine's alone, and a link with these keys is this picture."""
+    field = np.ascontiguousarray(nu, dtype="<f8")
+    rows, cols = field.shape
+    scratch = zoom_dir(m["record"]) / "shade"
+    scratch.mkdir(parents=True, exist_ok=True)
+    with tempfile.TemporaryDirectory(dir=scratch) as held:
+        source, out = Path(held) / "field.f64", Path(held) / "field.rgb"
+        field.tofile(source)
+        command = ["node", str(HERE / "zoom_shade.mjs"), m["palette"]]
+        for flag, value in (
+            ("--field", source),
+            ("--width", cols),
+            ("--height", rows),
+            ("--period", repr(float(m["L"]))),
+            ("--phase", repr(float(m["phase"]))),
+            ("--lambda", repr(float(m.get("lambda", 0)))),
+            ("--knee", repr(float(m["knee"]))),
+            ("--out", out),
+        ):
+            command += [flag, str(value)]
+        command += ["--mirror"] * m["mirror"] + ["--reverse"] * m["reverse"]
+        subprocess.run(command, check=True)
+        rgb = np.fromfile(out, dtype=np.uint8).reshape(rows, cols, 3)
+    rgb[np.isnan(nu)] = interior
+    return rgb
 
 
 def palette_table(m: dict) -> np.ndarray:
@@ -269,6 +303,8 @@ def colour(
 ) -> np.ndarray:
     """The field in colour; a scheduled mapping is read at `width`, the frame's own."""
     m = params_at(m, width)
+    if m["kind"] == "knee":
+        return engine_colour(nu, m, interior)
     inside = np.isnan(nu)
     g = g_of(np.where(inside, 1.0, nu), m)
     index = np.mod(g / m["L"] + m["phase"], 1.0)

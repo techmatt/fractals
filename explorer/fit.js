@@ -123,8 +123,14 @@ function percentile(sorted, p) {
  * transfer it remaps, being a reshaping of the same stretch by where the picture moves.
  * `held` is the view's own curve where it holds one (permalink `curve`), which is the
  * curve Leveled reads the base through in place of the mode's.
+ *
+ * `straight` is Straighten iter *(explorer_knee_ckpt157)*: `{ knee, lambda }`, or `null` for
+ * off. Where it is given the absolute side is the knee mapping at that `λ` and nothing else —
+ * the `λ` is the knee's partner and not a shape question for the fit to answer, since the
+ * knee is there to hold one curve of `ν` still across a zoom — so the line is fitted at that
+ * one `λ` and the period and phase are sized off the knee mapping's `g`.
  */
-export function fitSorted(sorted, shade, mode = null, held = null) {
+export function fitSorted(sorted, shade, mode = null, held = null, straight = null) {
   if (sorted === null || sorted.length < MIN_SAMPLES) return null;
   if (!(sorted[sorted.length - 1] > sorted[0])) return null;
 
@@ -152,10 +158,14 @@ export function fitSorted(sorted, shade, mode = null, held = null) {
   for (const turn of target) targetMean += turn;
   targetMean /= QUANTILES;
 
+  const knee = straight?.knee ?? null;
+  const lambdas =
+    straight === null
+      ? Array.from({ length: LAMBDA_STEPS + 1 }, (_, step) => step / LAMBDA_STEPS)
+      : [straight.lambda];
   const lines = [];
-  for (let step = 0; step <= LAMBDA_STEPS; step += 1) {
-    const lambda = step / LAMBDA_STEPS;
-    const x = nus.map((nu) => compress(nu, lambda));
+  for (const lambda of lambdas) {
+    const x = nus.map((nu) => compress(nu, lambda, knee));
     let xMean = 0;
     for (const value of x) xMean += value;
     xMean /= QUANTILES;
@@ -181,7 +191,7 @@ export function fitSorted(sorted, shade, mode = null, held = null) {
   // The line's slope is Leveled's; its period is `PASSES` turns across the stretch. Where
   // the stretch has no width — nearly the whole frame one value — the fitted line's own
   // reach across the quantiles stands in for it.
-  const x = (nu) => compress(nu, best.lambda);
+  const x = (nu) => compress(nu, best.lambda, knee);
   let bottom = x(percentile(sorted, CLIP_LOW));
   let reach = x(percentile(sorted, CLIP_HIGH)) - bottom;
   if (!(reach > 0)) {
@@ -199,8 +209,8 @@ export function fitSorted(sorted, shade, mode = null, held = null) {
 }
 
 /** `fitSorted` over a field as either tab holds it. */
-export function fit(field, shade, mode = null, held = null) {
-  return fitSorted(samples(field), shade, mode, held);
+export function fit(field, shade, mode = null, held = null, straight = null) {
+  return fitSorted(samples(field), shade, mode, held, straight);
 }
 
 /**

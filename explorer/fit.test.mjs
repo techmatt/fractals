@@ -119,6 +119,23 @@ test("Leveled's phase carries across", () => {
   assert.ok(Math.abs(d - 0.25) < 1e-3);
 });
 
+test("with Straighten iter the fit holds its λ and sizes the knee mapping PASSES times", () => {
+  const straight = { knee: 5000, lambda: 0.157 };
+  for (const sorted of [DEEP, SHALLOW]) {
+    const found = fit.fitSorted(sorted, LEVELED, null, null, straight);
+    assert.equal(found.lambda, 0.157);
+    const at = (p) => sorted[Math.round((p / 100) * (sorted.length - 1))];
+    const g = (nu) => compress(nu, 0.157, 5000);
+    const turns = (g(at(fit.CLIP_HIGH)) - g(at(fit.CLIP_LOW))) / found.period;
+    assert.ok(Math.abs(turns / fit.PASSES - 1) < 1e-3, `turns ${turns}`);
+  }
+  // A deep frame lies above the knee, where the knee is the line: the fit there is λ = 1's.
+  const deep = fit.fitSorted(DEEP, LEVELED, null, null, straight);
+  const line = fit.fitSorted(DEEP, LEVELED, null, null, { knee: 5000, lambda: 1 });
+  assert.equal(deep.period, line.period);
+  assert.equal(deep.phase, line.phase);
+});
+
 test("a frame with nothing to fit is no fit", () => {
   assert.equal(fit.fitSorted(null, LEVELED), null);
   assert.equal(fit.fitSorted(new Float64Array(10).fill(3), LEVELED), null);

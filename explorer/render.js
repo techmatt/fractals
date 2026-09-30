@@ -1538,7 +1538,14 @@ export function rampSpecOf(view, colormap, samples, { direct = false, curved = f
     viewport: {},
     resolution: [samples, 3],
     mode: "smooth",
-    palette: { ...recipe, transfer: { kind: "value" }, scale: "leveled", lambda: 1, period: 1 },
+    palette: {
+      ...recipe,
+      transfer: { kind: "value" },
+      scale: "leveled",
+      lambda: 1,
+      period: 1,
+      knee: null,
+    },
     colormap,
   };
   // `curved` says the map handed in has the curve on it already — the very stops the

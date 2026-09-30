@@ -1411,6 +1411,18 @@ log joined to a line and the busiest, and it calms as it rises to 1, which is `a
 itself. The two are not independent, since the turns a frame gets under the knee scale with
 the knee. It takes no schedule.
 
+**The knee is coloured by the engine, and is the explorer's Straighten iter**
+*(explorer_knee_ckpt157)*. Its formula has one home, `Palette::absolute_value` in the
+engine's `coloring.rs`, and `zoom.py`'s `engine_colour` hands a knee frame's field to the
+committed `engine.wasm` through `zoom_shade.mjs`, with the Deep tab's own spec
+(`shadeSpecOf`); `g_of` refuses `knee` rather than keep a second copy. So a knee frame is
+exactly what the link `…&scale=absolute&lambda=<λ>&period=<L>&knee=<knee>` draws of that
+field — measured on julia3's Midway and Final frames, SHA for SHA. The other mappings still
+go through the 65536-entry table, which snaps where the engine interpolates, so the knee's
+PNGs moved from julia3_curve_ckpt157's by at most one level on 0.34–0.47% of pixels (k00,
+k16, k17, k36, k50 and k63 of the p480 fields), and "the link's colouring to the bit" above
+the knee is now the engine's own rather than the table's.
+
 ```
 python builder/zoom.py --record builder/data/julia3-descent.keyframes.json --variant preview video --mapping knee --knee 10000 --lambda 0.254
 ```

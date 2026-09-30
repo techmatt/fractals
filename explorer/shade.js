@@ -83,6 +83,13 @@ import * as travel from "./period-range.js";
  * the whole palette sliding at a deep `ν`. Held (`hold.js`), the same step moves it 0.003 to
  * 0.005 of a turn there and 0.010 to 0.024 on a shallow frame: small and visible, which is
  * what a linear 0 to 1 at one step a pixel of the 8rem slider gives.
+ *
+ * **Straighten iter is the one control not named for its key** *(Matt, explorer_knee_ckpt157)*.
+ * The link says `knee=5000`, and a reader meets a box of that name beside Rolloff's knee,
+ * which is a different thing; the brief named it for what it does to the iteration count, so
+ * `label` says so here and the key keeps its engine name in the link. It is a tick box and
+ * the knee's number beside it: unticked is off, no `knee` in the link, and ticking it opens
+ * the knee at `STRAIGHTEN.knee`. Absolute's alone, like Period.
  */
 const PRESENTATION = {
   gamma: { step: 0.05, slider: { min: -2, max: 2, step: 0.02, scale: "log" }, under: ["leveled"] },
@@ -99,7 +106,29 @@ const PRESENTATION = {
     slider: { min: 0, max: travel.STEPS, step: 1, scale: "cycles" },
     under: ["absolute"],
   },
+  knee: { step: "any", label: "Straighten iter", under: ["absolute"] },
 };
+
+/**
+ * **What Straighten iter opens at, and the Lambda that goes with it** *(Matt,
+ * explorer_knee_ckpt157)*: the knee and the `λ` the explorer writes wherever it puts a view
+ * on the absolute scale itself — the switch from Leveled, a New coloring from Leveled, and the
+ * Deep tab's arrival from the viewer. A link that names no knee is never given one.
+ *
+ * The knee is the brief's 5000. The two are a pair, because at `λ = 1` the knee does nothing
+ * and the `λ` is all of what it does below the knee. **0.1, not julia3's 0.157**: on a fresh
+ * fit every `λ` from 0 to 0.157 draws the same picture, shallow home views to deep minibrots,
+ * and what tells them apart is a recipe fitted shallow and then held while zooming, which is
+ * what the knee is for. Fitted on julia3 at w 1.7e-2 and held to its final frame, 0.1 runs
+ * 7.7 turns across the stretch, the fit's own 7; 0.157 runs 9.6, and 0.25 13.7.
+ * `explorer/README.md`'s *Straighten iter* has the contact sheet and the table.
+ */
+export const STRAIGHTEN = { knee: 5000, lambda: 0.1 };
+
+/** `recipe` with Straighten iter on at its defaults — the knee and its `λ` together. */
+export function straightened(recipe) {
+  return { ...recipe, knee: STRAIGHTEN.knee, lambda: STRAIGHTEN.lambda };
+}
 
 /**
  * One row per shade key, in the contract's own order: the widget, its words, and for a
@@ -116,7 +145,7 @@ export const CONTROLS = SHADE_KEYS.map((spec) => {
   return {
     key: spec.key,
     control: spec.control,
-    label: spec.key[0].toUpperCase() + spec.key.slice(1),
+    label: shown.label ?? spec.key[0].toUpperCase() + spec.key.slice(1),
     step: shown.step,
     slider: shown.slider ?? null,
     offered: shown.offered ?? true,
@@ -152,7 +181,11 @@ export function spelling(shade, key) {
  * thing, and the page never has to phrase a refusal of its own.
  */
 export function withKey(shade, key, text) {
-  return { ...shade, [key]: shadeKey(key).read(text) };
+  const spec = shadeKey(key);
+  // A key whose default is no value at all — the knee — is turned off by an empty box, which
+  // is what its control spells off as. Every other key refuses an empty box, as a link does.
+  if (spec.fallback === null && text === "") return { ...shade, [key]: null };
+  return { ...shade, [key]: spec.read(text) };
 }
 
 /**
