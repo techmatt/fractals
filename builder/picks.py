@@ -201,18 +201,29 @@ RECIPE_AGREEMENT = "mean absolute difference 3.0-5.5 of 255, codec floor 1.4-2.8
 #: `gallery-output` and `overview-pipeline` stand on panels drawn in it, and their alt text
 #: and provenance leads say smooth. A record's recipe clause still spells the engine's own
 #: `mode exp_smoothing`, because that is what draws the picture again.
+#:
+#: **And it is the explorer's too** *(preclose_website_ckpt156)*. The studio names a mode
+#: by these words wherever a reader meets one — the Mode select, the gallery's mode chips
+#: and collections, a Saved tile, an atlas slot — and a link still spells the engine's
+#: name. `builder.explorer` bakes them into `catalog.js` as `WORDS`, and refuses a mode the
+#: explorer's roster offers with no wording here, so every one of the seventeen has one. A
+#: gallery tile's alt text reads them too, through `builder.seats.alt_text`.
 MODE_WORDS = {
     "smooth": "smooth",
     "tia": "triangle-inequality average",
     "stripe": "stripe average",
     "exp_smoothing": "smooth",
+    "gaussian_int": "lattice trap",
+    "trap_circle": "circle trap",
     "curvature": "curvature",
     "smooth_curvature": "curvature over smooth",
     "smooth_stripe": "stripe over smooth",
     "smooth_mean_angle": "trap spread angle over smooth",
     "smooth_angle_min": "closest trap angle over smooth",
+    "smooth_trap_circle": "circle trap over smooth",
     "threads": "cross trap over smooth",
     "itinerary": "orbit itinerary",
+    "direct_trap_ring": "ring trap",
     "direct_trap_lines": "line trap",
     "direct_trap_screen": "screened trap",
     "direct_trap_multiply": "multiplied trap",

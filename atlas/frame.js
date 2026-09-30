@@ -32,6 +32,7 @@
 // into a canvas. That is also why a page carrying a frame has to be served — a browser
 // will not load a module, or a `.wasm`, over `file://`.
 
+import { modeName } from "../explorer/names.js";
 import { withKeys } from "../explorer/permalink.js";
 import { contractOf, opened } from "./links.js";
 import { load } from "./record.js";
@@ -179,7 +180,7 @@ function typeset(node, text) {
 function titleOf(label, slot, named) {
   return [
     `${label}: ${slot.what ?? SOURCE[slot.source] ?? slot.source ?? "a render"}`,
-    `${slot.mode} · ${named(slot.colormap)}`,
+    `${modeName(slot.mode)} · ${named(slot.colormap)}`,
   ].join("\n");
 }
 
@@ -439,7 +440,10 @@ export async function mount(host, options = {}) {
       node.title = titleOf(label, slot, named);
       image.hidden = false;
       image.src = new URL(`../assets/images/atlas/${slot.file}`, base);
-      image.alt = `${slot.mode} through ${named(slot.colormap)}, at the ${name} view of this place`;
+      // The slot by its label, the plane's own word (`Multibrot 3`, `Julia`), never by the
+      // record's key for it; the gallery slot's word is a common noun mid-sentence.
+      const at = label === GALLERY_LABEL ? label.toLowerCase() : label;
+      image.alt = `${modeName(slot.mode)} through ${named(slot.colormap)}, at the ${at} view of this place`;
     }
   };
 

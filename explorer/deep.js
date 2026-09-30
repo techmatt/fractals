@@ -2222,7 +2222,7 @@ export function mount(host) {
     const seat = await host.randomSeat(family);
     if (seat === null) return null;
     const carried = carry(seat.view);
-    return carried === null ? null : { key: seat.key, view: carried };
+    return carried === null ? null : { key: seat.key, words: seat.words, view: carried };
   }
 
   /** A slot's fixed frame, in a sentence. */
@@ -2240,7 +2240,7 @@ export function mount(host) {
       const seat = await seatOf(family);
       if (generation !== pass) return null;
       if (seat === null) return { why: "No wallpaper in the gallery is on this plane.", permanent: true };
-      return { near: seat.view, where: `wallpaper ${seat.key}`, random: true };
+      return { near: seat.view, where: seat.words, random: true };
     }
     if (a.view !== null) return { near: a.view, where: slotWords(a), random: false };
     // A descent Keep diving carries on off-screen reads a live A as its own last landing.
@@ -2308,7 +2308,7 @@ export function mount(host) {
       if (generation !== pass) return null;
       if (seat === null) return { why: "No wallpaper in the gallery is on this plane.", permanent: true };
       into = seat.view;
-      intoWords = `wallpaper ${seat.key}`;
+      intoWords = seat.words;
     } else if (action === "into" && b.mode !== "none") {
       into = b.view;
       intoWords = slotWords(b);

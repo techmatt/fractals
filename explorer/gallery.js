@@ -40,6 +40,7 @@
 // gallery is one of two things the side panel can show.
 
 import { colorOf } from "./hues.js";
+import { modeName, modeWords } from "./names.js";
 
 /** The staged gallery this panel shows, by the slug that is its directory's name. */
 const SLUG = "seated-candidates";
@@ -63,12 +64,41 @@ const GENERAL_AXIS = "general";
  *  gallery, listed after the other two, and its option says *all* where theirs say a size. */
 const ALL = "all";
 
+/** The axis a collection cut on one render mode is named by. Its name is the mode's, and
+ *  the dropdown shows it by the mode's words. */
+const MODE_AXIS = "mode";
+
 /** What the dropdown groups each axis under. The general collections stand alone. */
 const AXIS_LABELS = { family: "Color family", mode: "Render mode" };
 
 /** The axis a collection cut on one hue family is named by, which is the one the hue chips
  *  change their question inside. */
 export const FAMILY_AXIS = "family";
+
+/**
+ * A seat in words a reader can use to find it *(preclose_website_ckpt156)*: its place in
+ * the first collection that seats it, in the header's order — `wallpaper 37 of the general
+ * gallery of 1000`, `wallpaper 5 of the azure collection`. The general galleries come first
+ * in that order, so a seat they hold is named by them; every seat is in at least one
+ * collection besides `all`, whose order is only the union's and names nothing.
+ *
+ * A place is one past the record's, which counts from zero, so it is the tile a reader
+ * counts to in the Gallery tab with that collection chosen. Where the seat names no
+ * collection at all it is still "a gallery wallpaper" and never its key.
+ */
+export function seatWords(seat, collections) {
+  for (const one of collections) {
+    if (one.name === ALL) continue;
+    const at = seat.collections?.[one.name];
+    if (at === undefined) continue;
+    const where =
+      one.axis === GENERAL_AXIS
+        ? `the general gallery of ${one.seats}`
+        : `the ${one.axis === MODE_AXIS ? modeWords(one.name) : one.name} collection`;
+    return `wallpaper ${at + 1} of ${where}`;
+  }
+  return "a gallery wallpaper";
+}
 
 /** What the hue row is called when it tallies which family leads each picture, and what it
  *  is called when it tallies which families are merely in one. */
@@ -368,7 +398,7 @@ export function collectionOptions(collection, collections) {
     option.append(
       one.axis === GENERAL_AXIS
         ? `General gallery · ${one.name === ALL ? "all" : count}`
-        : `${one.name} · ${count}`,
+        : `${one.axis === MODE_AXIS ? modeName(one.name) : one.name} · ${count}`,
     );
     const label = AXIS_LABELS[one.axis];
     if (label === undefined) {
@@ -591,8 +621,8 @@ export function install({
   }
 
   /** A chip row over one of `wanted`'s sets, which refills the grid — `chipRow`. */
-  function chipsInto(host, field, counts, label = null, swatches = false) {
-    chipRow(host, counts, wanted[field], fill, { field, label, swatches });
+  function chipsInto(host, field, counts, label = null, swatches = false, name = null) {
+    chipRow(host, counts, wanted[field], fill, { field, label, swatches, name });
   }
 
   /**
@@ -645,7 +675,7 @@ export function install({
       for (const value of preset.modes ?? []) if (modesHere.has(value)) wanted.mode.add(value);
       if (preset.hue && held(row).has(preset.hue)) wanted.hue.add(preset.hue);
     }
-    chipsInto(modes, "mode", modeRow, "no render mode");
+    chipsInto(modes, "mode", modeRow, "no render mode", false, modeName);
     if (hueHead) hueHead.textContent = cutOn === null ? HUE_HEADS.dominant : HUE_HEADS.contains;
     chipsInto(hues, "hue", row, null, true);
     fill();

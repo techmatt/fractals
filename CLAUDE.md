@@ -425,28 +425,20 @@ which sections are `"status": "written"`; a rail entry's name is the page's own 
 and the entries that open under the current page are that page's prose `<h2>`s. Its title
 is the way back to the front page, and under the fourteen sections it carries the links
 that leave the article — the explorer and the code, and this site's own code under it. No
-entry marks a section written; the flag stays in `sections.jsonl`. Above the title sits
-one group that is not a section, **Start here**: a heading set like *Contents*, spelled by
-`sections.START_NAME` and linking to `start-here.html`, whose `<h1>` is the same two words.
-On that page the group lists its four prose `<h2>`s as plain entries at one level;
-everywhere else it is the heading alone, which is when a section opens onto its headings
-too. The page sits at the root beside the front page, in no `sections.jsonl` row. Its peer
-sits under it, **Wallpaper packs**: a second group set the same way, spelled by
-`sections.PACKS_NAME` and linking to `wallpaper-packs/index.html`, always the heading
-alone. A third sits under that, **Tools and data** (`sections.TOOLS_NAME`,
-`tools-and-data/index.html`), set the same way; `builder/README.md`'s *Tools and data*
-has the page, its generated data (`python -m builder tools-and-data`) and its figures. A
-fourth sits under that, **Deep zoom videos** (`sections.VIDEOS_NAME`,
-`deep-zoom/videos.html`), set the same way although the page hangs off Deep zoom rendering
-and stays in `sections.HANGING`. All four are a `rail-group`. The site bar links the packs,
-Tools and data and Deep zoom videos, in that order, and `pages.topbar` spells it for the
-generated pages; the explorer's studio bar carries only the first two, because it cannot wrap
-and a third link does not fit at 375 px. A prose
+entry marks a section written; the flag stays in `sections.jsonl`. Above the title sit
+four groups that are not sections — **Start here**, **Wallpaper packs**, **Tools and
+data**, and **Deep zoom videos** — each a `rail-group` spelled by a `sections.*_NAME`;
+`builder/README.md`'s *The contents rail is derived, never kept* has each. A prose
 `<h2>` also gets the id its rail entry links to, spelled from its own words by rule —
 a fragment is a permanent URL. `python -m builder build` writes the rail between two
 marker comments; `check`'s `contents` check re-derives the rail and the heading ids,
 holds the front page's typed contents list to having an entry per section, and fails on
 any drift.
+
+**The site bar is derived the same way, and never typed.** `pages.topbar(page)` is the one
+spelling of its links; `build` writes it on every page that carries it, generated or
+hand-written, and `check`'s `bar` holds each to it. A bar link is an edit to `pages.topbar`
+and a `build`, never to a page.
 
 **Two repositories are linked from every page, and each link says which.** The site bar's
 *GitHub* is this repository (`pages.SITE_REPO`), because a bar link named after the site is
@@ -562,7 +554,7 @@ installed; `explorer/README.md`'s *The test suites* says what each holds, and
 After touching placed prose, `python -m builder prose <page>` as well — see **Where prose
 comes from** above for what it holds together and why one edit has several sites.
 
-`builder check` is read-only, and it runs twenty-eight named checks. `builder/checks.py`'s
+`builder check` is read-only, and it runs twenty-nine named checks. `builder/checks.py`'s
 module docstring names every one and what it holds; `builder/README.md`'s *What `check`
 checks* has most of them at more length. It also prints one note — never a failure — about
 the committed wasm module, described in `explorer/README.md`. The same commands run in CI

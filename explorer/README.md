@@ -2672,7 +2672,8 @@ coloring are exactly what they were.
   landing's search round its view and its shooting the next tenth, and the pass the second
   half (`DIVE_SPANS`). **The status line states provenance and nothing of it enters the
   link**: the plane, the copy's period and size, where it was found (this view, the pinned or
-  pasted view, or a wallpaper by its key), the rung, the landing, the turn and the twin that
+  pasted view, or a wallpaper by its place in a collection — `wallpaper 37 of the general
+  gallery of 1000`, never its key, which a reader can do nothing with), the rung, the landing, the turn and the twin that
   placed it, and the cap.
 - **Go has no key** *(Matt, deep_multibrots_gallery_ckpt154)*, and `g` is unbound.
 

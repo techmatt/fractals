@@ -1,4 +1,4 @@
-// Drive Chrome over CDP (puppeteer-core) through every configuration of bench.html.
+// Drive Chrome over CDP (puppeteer-core) through every configuration of the bench page.
 // Starts its own two servers (plain = what GitHub Pages gives; isolated = COOP/COEP).
 // Usage: node web/browser-run.mjs [--tag label] [--headful] [--only render]
 // Writes results/chrome-<ep>-<mode>-<set>-<variant>.json
@@ -18,6 +18,14 @@ const arg = (name, fallback) => {
 };
 const tag = arg("tag", "");
 const only = arg("only", "");
+
+// The page is written here rather than tracked: see `bench.mjs`'s head for why.
+fs.mkdirSync(path.join(LAB, "artifacts"), { recursive: true });
+fs.writeFileSync(
+  path.join(LAB, "artifacts", "bench.html"),
+  '<!doctype html>\n<meta charset="utf-8">\n<title>judges bench</title>\n' +
+    '<pre id="log"></pre>\n<script type="module" src="../web/bench.mjs"></script>\n',
+);
 
 const servers = [
   spawn(PY, [path.join(LAB, "lab", "serve.py"), "8731"], { stdio: "ignore" }),
@@ -54,7 +62,7 @@ for (const c of configs) {
   const port = c.mode === "mt" ? 8732 : 8731;
   const threads = c.mode === "st" ? 1 : 0;
   const url =
-    `http://127.0.0.1:${port}/web/bench.html?set=${c.set}&variant=${c.variant}&ep=${c.ep}` +
+    `http://127.0.0.1:${port}/artifacts/bench.html?set=${c.set}&variant=${c.variant}&ep=${c.ep}` +
     `&threads=${threads}&prep=${c.source ?? "pil"}`;
   // A fresh browser (so a fresh temporary profile) per configuration: no HTTP cache, no
   // compiled wasm, no GPU shader cache carried over — so create_ms and first_run_ms are cold.

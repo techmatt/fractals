@@ -54,6 +54,9 @@ was raise, and every check after it went unrun.
 - **contents** — every hand-written page carries the contents rail the builder derives,
   every prose heading carries the id its own words give it, and the front page's contents
   list marks the same sections done that `sections.jsonl` calls written.
+- **bar** — every hand-written page carries the site bar `pages.topbar` spells, and so
+  does every other served page that carries one: one spelling of the bar's links, which
+  `build` writes the way it writes the rail. The explorer's studio bar is its own.
 - **assets** — every image the metadata names exists at the size it claims, every
   thumbnail is current, and no orphan file is left in a gallery directory. A **staged**
   gallery is held to the same things once its pictures are here, bar the thumbnail — its
@@ -1317,6 +1320,7 @@ def run_all() -> Report:
             "links": check_links(),
             "pages": check_pages(loaded, article),
             "contents": check_contents(article),
+            "bar": pages.topbar_problems(sections.hand_written(article)),
             "figures": check_figures(),
             "seats": check_seats(),
             "landing": check_landing(),

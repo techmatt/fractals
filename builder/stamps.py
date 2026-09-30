@@ -208,8 +208,11 @@ def _next_door(base: str | None) -> list[str]:
     answer = seats._program(PROGRAM, "spelling the seats' links next door", ask=ask)
 
     # A seat read through a curve its mode's catalog does not give it: the contract spells
-    # it as `curve`, and the release writer next door, which has no such key, refuses. That
-    # refusal is the agreement, not a difference.
+    # it as `curve`, and a release writer next door that has no such key refuses. That
+    # refusal is the agreement, not a difference. Next door is learning the key
+    # (preclose_website_ckpt156 found it in its working tree), so a writer that does spell
+    # the seat is held to the contract's spelling like any other seat, and either state of
+    # that repository is green.
     curves = links.catalog_curves()
 
     def unsayable(recipe: dict) -> bool:
@@ -225,14 +228,7 @@ def _next_door(base: str | None) -> list[str]:
     for pick in resolved:
         ours = emitted[pick.key]
         theirs = answer["spelled"][pick.key]
-        if unsayable(pick.recipe):
-            if theirs["query"] is not None:
-                found.append(
-                    f"seat {pick.key} reads {pick.recipe['mode']} through a "
-                    f"{pick.recipe.get('curve')} curve, which explorer_link has no key for, and "
-                    "it "
-                    f"spells {theirs['query']}"
-                )
+        if unsayable(pick.recipe) and theirs["query"] is None:
             continue
         if ours.get("ok") and theirs["query"] != ours["link"]:
             found.append(

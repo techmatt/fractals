@@ -6,14 +6,15 @@ the one the metadata gives. That is what makes `check`'s regenerate-and-compare 
 check rather than a coin toss.
 """
 
+import re
 from pathlib import Path
 
-from . import figures, icons, links, packs
+from . import figures, icons, links, packs, records
 from . import palettes as palettes_module
 from . import sections as sections_module
 from .escape import attribute, text
 from .galleries import Gallery
-from .paths import GALLERIES_DIR, SITE_ROOT, relative_href
+from .paths import GALLERIES_DIR, SITE_ROOT, relative_href, site_pages
 
 #: What a block's lines are joined with. Named because these pages are assembled inside
 #: f-strings, and a bare escape inside one is a character nobody can see in a diff.
@@ -57,28 +58,74 @@ def gallery_page_path(gallery: Gallery):
     return GALLERIES_DIR / f"{gallery.slug}.html"
 
 
-def topbar(home: str, galleries_index: str, tools: str, videos: str) -> str:
+def topbar(page: Path) -> str:
     """The site bar every page carries: back to the front page, to the wallpaper packs, the
     tools and data, and the deep zoom videos, out to this site's own source and to the
     author's homepage — this site is one project of several living under it.
 
-    Every href is passed in already relative to the page that will hold it — the bar is
-    the same line everywhere, and only its depth differs.
+    The one spelling of it *(preclose_website_ckpt156)*. A generated page gets it from its
+    shell and a hand-written page gets it from `build`, which replaces the `<nav>` the page
+    carries; `check`'s `bar` holds every page to it. The bar is the same line everywhere,
+    and only its depth differs, which `relative_href` spells from the page.
     """
+
+    def href(target: Path) -> str:
+        return attribute(relative_href(page, target))
+
     return "\n".join(
         [
             '<nav class="topbar">',
             '  <div class="topbar-inner">',
-            f'    <a class="topbar-site" href="{attribute(home)}">{text(SITE_TITLE)}</a>',
+            f'    <a class="topbar-site" href="{href(SITE_ROOT / index_path())}">'
+            f"{text(SITE_TITLE)}</a>",
             '    <span class="topbar-links"><a href="'
-            f'{attribute(galleries_index)}">Wallpaper packs</a><a href="{attribute(tools)}">'
-            f'{text(sections_module.TOOLS_NAME)}</a><a href="{attribute(videos)}">'
-            f'{text(sections_module.VIDEOS_NAME)}</a><a href="{SITE_REPO}">GitHub</a>'
-            f'<a href="{AUTHOR_SITE}">Matt Fisher</a></span>',
+            f'{href(GALLERIES_DIR / index_path())}">{text(sections_module.PACKS_NAME)}</a>'
+            f'<a href="{href(sections_module.TOOLS)}">{text(sections_module.TOOLS_NAME)}</a>'
+            f'<a href="{href(sections_module.VIDEOS)}">{text(sections_module.VIDEOS_NAME)}</a>'
+            f'<a href="{SITE_REPO}">GitHub</a><a href="{AUTHOR_SITE}">Matt Fisher</a></span>',
             "  </div>",
             "</nav>",
         ]
     )
+
+
+#: The bar a page carries, from its opening tag to its closing one. What `build` replaces
+#: and what `check` reads; no page nests a `<nav>` inside it.
+_BAR = re.compile(r'<nav class="topbar">.*?</nav>', re.S)
+
+
+def with_topbar(page: Path, page_html: str) -> str:
+    """The page with its site bar replaced by today's."""
+    if _BAR.search(page_html) is None:
+        raise records.RecordError(
+            f"{page.relative_to(SITE_ROOT).as_posix()}: no site bar — the page skeleton "
+            'carries `<nav class="topbar">` right after `<body>`'
+        )
+    return _BAR.sub(lambda _: topbar(page), page_html, count=1)
+
+
+def topbar_problems(hand_written: list[Path]) -> list[str]:
+    """`check`'s `bar`: every hand-written page carries today's bar, and so does any other
+    served page that carries one at all.
+
+    The generated pages are `pages`'s to hold, whole, so a bar there that is not today's is
+    already a failure; they are read again here only so that this check means every page.
+    The explorer, the atlas redirect and the `go/` redirects carry none, and are not asked to.
+    """
+    found = []
+    must = set(hand_written)
+    for path in site_pages():
+        with path.open(encoding="utf-8", newline="") as handle:
+            html = handle.read()
+        if path not in must and _BAR.search(html) is None:
+            continue
+        try:
+            if with_topbar(path, html) != html:
+                shown = path.relative_to(SITE_ROOT).as_posix()
+                found.append(f"{shown}: its site bar is not today's — run `build`")
+        except records.RecordError as error:
+            found.append(str(error))
+    return found
 
 
 def _shell(
@@ -177,7 +224,6 @@ def gallery_page(gallery: Gallery, sections: list[sections_module.Section]) -> s
     """The HTML for one gallery."""
     page = gallery_page_path(gallery)
     css = relative_href(page, SITE_ROOT / "assets" / "css" / "site.css")
-    article = relative_href(page, SITE_ROOT / "index.html")
 
     header = _masthead(f'<a href="{index_path()}">Wallpaper packs</a>', gallery.title)
 
@@ -216,12 +262,7 @@ def gallery_page(gallery: Gallery, sections: list[sections_module.Section]) -> s
         page=page,
         title=f"{gallery.title} — Making Fractal Wallpapers",
         css=css,
-        bar=topbar(
-            article,
-            index_path(),
-            relative_href(page, sections_module.TOOLS),
-            relative_href(page, sections_module.VIDEOS),
-        ),
+        bar=topbar(page),
         rail=sections_module.block(page, sections),
         header=header,
         blocks=["\n".join(intro), _grid(tiles)],
@@ -273,12 +314,7 @@ def gallery_index(galleries: list[Gallery], sections: list[sections_module.Secti
         page=page,
         title="Wallpaper packs — Making Fractal Wallpapers",
         css=css,
-        bar=topbar(
-            article,
-            index_path(),
-            relative_href(page, sections_module.TOOLS),
-            relative_href(page, sections_module.VIDEOS),
-        ),
+        bar=topbar(page),
         rail=sections_module.block(page, sections),
         header=header,
         blocks=blocks,
@@ -331,12 +367,7 @@ def library_page(sections: list[sections_module.Section]) -> str:
         page=page,
         title=f"{palettes_module.LIBRARY_TITLE} — {SITE_TITLE}",
         css=relative_href(page, SITE_ROOT / "assets" / "css" / "site.css"),
-        bar=topbar(
-            relative_href(page, SITE_ROOT / "index.html"),
-            relative_href(page, GALLERIES_DIR / "index.html"),
-            relative_href(page, sections_module.TOOLS),
-            relative_href(page, sections_module.VIDEOS),
-        ),
+        bar=topbar(page),
         rail=sections_module.block(page, sections),
         header=_masthead(
             f'<a href="{attribute(article)}">Color palettes</a>', palettes_module.LIBRARY_TITLE

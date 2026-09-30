@@ -608,8 +608,11 @@ def alt_text(mode: str, hue: str) -> str:
     record: what drew the picture, and the family its colour reading puts it in. Every
     seat has one — see *Every seat has a family* at the top — so there is no second
     sentence for a tile that does not.
+
+    The mode is in `picks.MODE_WORDS`' words, the ones the explorer shows beside the tile
+    and a figure's panel carries, never the engine's own spelling *(preclose_website_ckpt156)*.
     """
-    return f"A wallpaper drawn in {mode}, in the {hue} family."
+    return f"A wallpaper drawn in {picks.mode_words(mode)}, in the {hue} family."
 
 
 def union() -> tuple[list[tuple[str, dict]], dict[str, dict[str, int]]]:

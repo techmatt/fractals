@@ -7,9 +7,9 @@ Python. A build is done here and reviewed in a diff.
 
 ```
 python -m builder build     regenerate gallery pages, the gallery index, thumbnails,
-                            the contents rail every page carries, and the short
-                            links under go/ from go/redirects.jsonl
-python -m builder check     twenty-eight named checks: links, page sync, contents, figure
+                            the contents rail and site bar every page carries, and the
+                            short links under go/ from go/redirects.jsonl
+python -m builder check     twenty-nine named checks: links, page sync, contents, bar, figure
                             blocks, seat panels, landings, one location to one figure,
                             explorer links, the atlas record, each atlas link against
                             its picture, the explorer's bake, embedded links, the
@@ -388,6 +388,35 @@ Every page carries the rail between two marker comments. `build` writes what sit
 between them and gives each prose `<h2>` the id its rail entry links to, derived from the
 heading's own words; `check` re-derives both and compares. A fragment is a permanent URL,
 so it is spelled by rule rather than by hand.
+
+**Four groups sit above the rail's title, and none is a section.** Each is a `rail-group`,
+a heading set like *Contents*, spelled by a constant in `builder/sections.py` and linking to
+its page, in this order:
+
+- **Start here** (`START_NAME`, `start-here.html`, whose `<h1>` is the same two words). On
+  that page the group lists its prose `<h2>`s as plain entries at one level; everywhere
+  else it is the heading alone, which is when a section opens onto its headings too.
+- **Wallpaper packs** (`PACKS_NAME`, `wallpaper-packs/index.html`), always the heading alone.
+- **Tools and data** (`TOOLS_NAME`, `tools-and-data/index.html`), the same; *Tools and data
+  is a page of downloads* above has the page.
+- **Deep zoom videos** (`VIDEOS_NAME`, `deep-zoom/videos.html`), the same, although the
+  page hangs off Deep zoom rendering and stays in `sections.HANGING`.
+
+The site bar links the last three, in that order. The explorer's studio bar carries only
+the first two of those: it is one row that never wraps, and a third link does not fit at
+375 px.
+
+**The site bar is written the same way** *(preclose_website_ckpt156)*. `pages.topbar(page)`
+is the one spelling of its links — the front page, Wallpaper packs, Tools and data, Deep
+zoom videos, GitHub, Matt Fisher — with every internal href spelled relative to the page.
+A generated page gets it from `pages._shell`; a hand-written page (everything in
+`sections.hand_written`) gets it from `build`, which replaces the `<nav class="topbar">`
+element the page carries, so the element itself is the marker. `check`'s `bar` holds every
+hand-written page to carrying exactly today's bar, and any other served page that carries
+one at all. The explorer's studio bar is its own markup and is not this bar, and the `go/`
+and atlas redirects carry none. A new page starts with an empty `<nav class="topbar"></nav>`
+after `<body>` and the next `build` fills it in. A link added to the bar is an edit to
+`pages.topbar` and a `build`, never to a page.
 
 The front page's contents list is prose and stays hand-written, and `check` holds it to
 having an entry for every section in `sections.jsonl`. Neither it nor the rail marks which
@@ -859,6 +888,8 @@ does not yet cover are `dashes`, `stamps`, `go`, `packs`, `readmes`, `repeats`, 
 - **contents** — every hand-written page carries today's rail, every prose heading carries
   the id its words give it, every article page is listed in `sections.jsonl`, and the
   front page marks the same sections done that the registry calls written.
+- **bar** — every hand-written page carries `pages.topbar`'s site bar exactly, and so does
+  every other served page that carries one.
 - **figures** — every figure block matches its registry row; every row names the page
   that actually carries it; every registered file exists at the size it claims, a pending
   figure excepted until its asset lands; and a recipe naming a maker inside `builder`
@@ -1001,8 +1032,8 @@ resolving the seat. The files are tracked; the master is in the render cache.
 
 **Every served page declares it, and the lines are the builder's.** `icons.head(page)` is
 three `<link>`s spelled relative to the page. A generated page gets them from
-`pages._shell`; every other page `paths.site_pages` finds, the explorer, the atlas frame
-and the judges bench included, gets them from `build`, which replaces the run of icon
+`pages._shell`; every other page `paths.site_pages` finds, the explorer and the atlas frame
+included, gets them from `build`, which replaces the run of icon
 links in its `<head>` the way it replaces the rail between its markers. A new page starts
 with `<link rel="icon" href="data:,">` on a line of its own and the next `build` fills it
 in. There is no `/favicon.ico` at the origin root and cannot be one: the site is a
@@ -1422,8 +1453,10 @@ That is safe here because a deep panel's link comes from its recipe row and neve
 that word.
 
 **`deep-judges-top15` is a study's scores, drawn** *(deep_judges_fold_ckpt156)*. It sits
-in a fold under `deep-random-dives`: four bands of 3 by 5, Matt's 15 and then the
-location, wallpaper, and gallery judges' top 15 of the 817 dive candidates. No judge is run
+in a fold under `deep-random-dives`: three bands of 3 by 5, the location, wallpaper, and
+gallery judges' top 15 of the 817 dive candidates, each panel starred where it is one of
+Matt's 15. His 15 are not a band of their own *(deep_fold_micro_ckpt156)*: they are
+`deep-random-dives`, directly above the fold, and the caption points there. No judge is run
 here. `judge_deep_ckpt156` scored every candidate next door, and its scores are promoted into
 `builder/data/deep-judges-scores.jsonl` by `deep --judge-scores <its folder>`, which
 refuses where the study's neutral links are not the maker's rule; `builder/deep_judges.py`
@@ -1431,9 +1464,10 @@ reads that record, ranks each judge's column (ties by frame id), and draws every
 through `draw_link` at 640 by 360 at 2x2, the grid the judges read. The location band is
 each frame's **neutral** link — the frame, its cap, `p=twilight_shifted&scale=leveled` —
 because the Deep contract's defaults are the location judge's recipe, so that band links
-to exactly the picture it scored; the other judge bands are the frame's own link, the
-absolute colouring they scored. Matt's band is `RANDOM_DIVES`, so pick 3, which he
-recoloured, is in his colouring there and in the candidate's in the judge bands.
+to exactly the picture it scored; the other two bands are the frame's own link, the
+absolute colouring they scored. A star is a frame of `RANDOM_DIVES`; pick 3, which Matt
+recoloured, is in his colouring in the figure above and in the candidate's in the judge
+bands.
 `deep_judges.readout()` recomputes the page's numbers from the record. `deep` still draws
 it: `deep_figures.draw` hands that one id across.
 

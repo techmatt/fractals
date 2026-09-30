@@ -24,9 +24,15 @@ lab/serve.py       local server, optionally cross-origin isolated
 web/resize.mjs     PIL's bicubic resize, ported to JS byte for byte
 web/core.mjs       the benchmark, shared by Node and the browser
 web/node-run.mjs   onnxruntime-node (CPU, DirectML)
-web/bench.html     one configuration in onnxruntime-web
+web/bench.mjs      one configuration in onnxruntime-web, the bench page's script
 web/browser-run.mjs  Chrome over CDP through every configuration
 ```
+
+**The bench page is not tracked** *(preclose_website_ckpt156)*. Pages serves this
+repository whole, and `web/bench.html` was a page on the public site that only works under
+`lab/serve.py` with `node_modules` installed. `browser-run.mjs` now writes the page — two
+lines that load `web/bench.mjs` — to the ignored `artifacts/bench.html` each run, and drives
+Chrome at it there; `lab/retime.py` reaches it the same way it always did.
 
 **What is tracked and what is not.** Tracked, about 658 KB (2026-09-19): the scripts, `samples.jsonl`, the raw
 readings in `results/`, the tables and reference readings in `measured/`, and `REPORT.md`.

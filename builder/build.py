@@ -51,15 +51,16 @@ def _thumbs(gallery: galleries.Gallery) -> list[str]:
 
 
 def _hand_written(article: list[sections.Section]) -> list[str]:
-    """The two things the builder owns inside a hand-written page.
+    """The three things the builder owns inside a hand-written page.
 
     The prose is nobody's business but the writer's. The contents rail between the
     markers is derived from all fourteen pages at once, and a prose `<h2>` gets the id its
-    rail entry links to — both would be a chore to keep by hand and neither is prose.
+    rail entry links to — both would be a chore to keep by hand and neither is prose. The
+    site bar is `pages.topbar`'s, the one spelling the generated pages use too.
     """
     changed = []
     for path in sections.hand_written(article):
-        page = sections.read_page(path)
+        page = pages.with_topbar(path, sections.read_page(path))
         written = _write_page(
             path, sections.with_rail(path, sections.with_heading_ids(page), article)
         )

@@ -1,15 +1,12 @@
-<!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<link rel="icon" href="../../../assets/icons/favicon.ico" sizes="16x16 32x32 48x48">
-<link rel="apple-touch-icon" href="../../../assets/icons/apple-touch-icon.png">
-<link rel="manifest" href="../../../assets/icons/site.webmanifest">
-<title>judges bench</title>
-</head>
-<body>
-<pre id="log"></pre>
-<script type="module">
+// The bench page's script: one configuration of onnxruntime-web per page load.
+//
+// There is no bench page in the tracked tree *(preclose_website_ckpt156)*. This repository
+// is served whole by Pages, and a page that only works under `lab/serve.py` with
+// `node_modules` installed was a broken page on the public site. `web/browser-run.mjs`
+// writes the page, two lines that load this module, to `artifacts/bench.html` — ignored,
+// unserved, and at the depth this module's document-relative fetches assume — before it
+// starts its servers. Module imports resolve against this file; `fetch` and `location`
+// resolve against that page, one level under the lab root either way.
 // One configuration per page load: ?set=render|fine3|fused &variant=fp32|fp16|fp16w
 // &ep=webgpu|wasm &threads=N &prep=pil|js. Result lands on window.__result.
 import * as ort from "../node_modules/onnxruntime-web/dist/ort.all.min.mjs";
@@ -94,6 +91,3 @@ try {
   window.__result = { error: String(e?.message ?? e).slice(0, 400) };
   log("ERROR " + window.__result.error);
 }
-</script>
-</body>
-</html>
