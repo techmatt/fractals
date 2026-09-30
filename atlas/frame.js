@@ -72,6 +72,13 @@ const MOST_UPSCALE = 1.6;
 /** The narrowest plate worth drawing a hundred and fifty marks on. */
 const LEAST = 320;
 
+/** The narrowest plate a column on a phone may give the frame, which both callers pass as
+ *  `least` where the frame is fitted to a column's width: the article's well, and the
+ *  studio's panel stacked under its canvas. `LEAST` is wider than a 320 px phone's column,
+ *  and the narrowest column this site is read in is about 240 inside a figure's well,
+ *  which is where a frame of three slots over a plate still reads. */
+export const COLUMN_LEAST = 220;
+
 /** The committed module, instantiated for `plan` and nothing else. */
 async function planner(base) {
   const response = await fetch(new URL("../explorer/engine.wasm", base));
@@ -278,7 +285,10 @@ function contentBox(node) {
  *   phone, and which of the two it is changes with the window.
  * - **`least`** (default `LEAST`) — the narrowest plate the frame will draw, in CSS
  *   pixels. A phone's article column is narrower than the studio's floor, and a frame
- *   wider than its column is a page that scrolls sideways.
+ *   wider than its column is a page that scrolls sideways. **Or a function returning
+ *   one**, asked at every fit as `fit` is *(mobile_followups_ckpt157)*: the studio's panel
+ *   keeps the floor beside its canvas and takes `COLUMN_LEAST` stacked under it, where a
+ *   320 px phone's column is 296.
  * - **`miniatures`** (default `false`) — whether each plane chip carries a small picture of
  *   its plate beside its label *(atlas_v2_ckpt146)*, so a reader who has not met `z⁴` yet
  *   sees which set a chip opens. The article's page asks for them; the studio does not, and
@@ -302,7 +312,8 @@ export async function mount(host, options = {}) {
   const slotMark = options.slotMark;
   const byWidth = () =>
     (typeof options.fit === "function" ? options.fit() : options.fit) === "width";
-  const least = options.least ?? LEAST;
+  const leastOf = () =>
+    (typeof options.least === "function" ? options.least() : options.least) ?? LEAST;
   const miniatures = options.miniatures ?? false;
 
   const plan = await planner(base);
@@ -430,7 +441,7 @@ export async function mount(host, options = {}) {
       if (slot !== undefined && slot.plane !== undefined) node.classList.add(FROM[slot.plane]);
       if (slot === undefined) {
         if (navigates) node.removeAttribute("href");
-        node.title = dot === null ? `${label}: hover a mark on the plane` : `${label}: none`;
+        node.title = dot === null ? `${label}: hover or tap a mark on the plane` : `${label}: none`;
         image.hidden = true;
         image.removeAttribute("src");
         image.alt = "";
@@ -598,6 +609,7 @@ export async function mount(host, options = {}) {
     // it is laid out by the page's own stylesheet and is no part of the rectangle the
     // plate's aspect describes.
     const spare = planes.offsetHeight;
+    const least = leastOf();
     const room = wide ? Infinity : Math.max(least * ratio, box.height - spare);
     const width = Math.max(least, Math.floor(Math.min(box.width, room / ratio, most)));
     if (width === fitted.width && !force) return fitted;

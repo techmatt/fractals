@@ -775,6 +775,21 @@ a:hover { color: var(--ink); }
 }
 .figure a.pack-download:hover,
 .figure a.pack-download:focus-visible { background: var(--well-ink); color: var(--well); }
+/* On a phone the button stays on one line (mobile_followups_ckpt157). Seventeen of the
+   eighteen wrapped at 375 px: the words want about 280 px at the button's size and the
+   list is 301 wide less the padding. So the list is a container, and under a phone's
+   width the type is a share of it, with the padding in its own ems so the two shrink
+   together: 16 px at 375 and 13 at 320. A pack in several parts is wider than any of that
+   (363 px of words), so there its count goes, and the button reads part and size. */
+.pack-downloads { container-type: inline-size; }
+@container (max-width: 24rem) {
+  .figure a.pack-download {
+    padding: 0.5em 1em;
+    font-size: min(1.0625rem, 5.3cqi);
+    white-space: nowrap;
+  }
+  .pack-download-count { display: none; }
+}
 .pack-explore { margin: 0.6rem 0 0; font-size: 0.875rem; }
 .figure .pack-explore a { color: var(--well-ink-dim); }
 .figure .pack-explore a:hover { color: var(--well-ink); }

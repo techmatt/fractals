@@ -15,7 +15,8 @@
 // goes, in the same tab as every other figure link. The studio's panel is a box its page
 // has sized; an article column sizes nothing but width, so the frame is fitted to the width
 // (`fit: "width"`) and the well's height follows it. And a phone's column is narrower than
-// the studio's floor, so the floor is the column's (`least`). Colouring, the chips, the
+// the studio's floor, so the floor is the column's (`least`, the frame's own
+// `COLUMN_LEAST`, which the studio's stacked panel takes too). Colouring, the chips, the
 // slots, the hover and the linger are the frame's, which is why they are the tab's too.
 //
 // The well keeps what the builder wrote until the frame is actually in it: a line saying
@@ -26,11 +27,6 @@
 /** How far ahead of the viewport a well starts loading, so it is drawn by the time it is
  *  scrolled to without the page paying for a frame nobody has reached. */
 const AHEAD = "600px 0px";
-
-/** The narrowest plate an article column may give the frame. The studio's floor is 320,
- *  and the narrowest phone column this site is read in is about 240 inside the figure's
- *  well, which is where a frame of three slots over a plate still reads. */
-const LEAST = 220;
 
 /** The frame's stylesheet, loaded once and awaited, because the frame measures its strip
  *  of planes when it is fitted and an unstyled strip measures wrong. */
@@ -51,9 +47,9 @@ async function start(host) {
   const note = host.querySelector(".figure-live-note");
   host.classList.add("is-loading");
   try {
-    const [{ mount }] = await Promise.all([import("./frame.js"), stylesheet()]);
+    const [{ mount, COLUMN_LEAST }] = await Promise.all([import("./frame.js"), stylesheet()]);
     note?.remove();
-    await mount(host, { fit: "width", least: LEAST, linger: true, miniatures: true });
+    await mount(host, { fit: "width", least: COLUMN_LEAST, linger: true, miniatures: true });
   } catch (error) {
     // Whatever did not load, the well goes back to what the builder wrote.
     console.warn("the atlas could not be mounted", error);

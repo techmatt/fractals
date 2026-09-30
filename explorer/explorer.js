@@ -51,6 +51,7 @@ import * as browse from "./browse.js";
 import * as dives from "./dives.js";
 import { Trail } from "./undo.js";
 import { heldOut, stopOf } from "./outermost.js";
+import { tracker } from "./pointers.js";
 import {
   PREVIEW_DIVISOR,
   Renderer,
@@ -4313,13 +4314,16 @@ async function startAtlas() {
   const host = document.getElementById("atlas-host");
   const note = document.getElementById("atlas-note");
   try {
-    const { mount } = await import("../atlas/frame.js");
+    const { mount, COLUMN_LEAST } = await import("../atlas/frame.js");
     atlasFrame = await mount(host, {
       base: new URL("../atlas/", import.meta.url),
       plane: planeOf(view.family),
       // Beside the canvas the panel is a box the page has sized; stacked under it the panel
       // is a column that scrolls, as wide as the window and as tall as what is in it.
       fit: () => (STACKED.matches ? "width" : "box"),
+      // And stacked, the column may be narrower than the frame's own floor: a 320 px phone
+      // gives it 296, and the frame used to run 24 px past it.
+      least: () => (STACKED.matches ? COLUMN_LEAST : undefined),
       onPlane: (name) => {
         const family = atlasFrame.record.partitions.find((one) => one.partition === name)?.family;
         if (family === undefined || !openFamily(family)) syncPlane();
@@ -4376,9 +4380,10 @@ for (const tab of tabs) {
 
 // ------------------------------------------------------------------- the gestures
 
-const pointers = new Map();
+/** The pointers down on the canvas and the pinch two of them make: `pointers.js`, which
+ *  the Phoenix plane shares. */
+const touches = tracker();
 let drag = null;
-let pinch = null;
 /** Whether the canvas is showing a slid or scaled preview rather than a settled picture.
  *  `release` needs it for the one path out of a gesture that draws nothing. */
 let slid = false;
@@ -4406,7 +4411,7 @@ canvas.addEventListener("pointerdown", (event) => {
   if (locked()) return;
   // **The box tool takes the press before the gestures do**, and takes it on the press
   // rather than the release: a click that also started a drag would slide the picture out
-  // from under a box being drawn on it. Neither `pointers` nor `drag` is touched while it
+  // from under a box being drawn on it. Neither `touches` nor `drag` is touched while it
   // is armed, so nothing is left half-set when it is cancelled.
   //
   // A right-click or a shift-click starts one where none is running. It is the *centring*
@@ -4446,18 +4451,12 @@ canvas.addEventListener("pointerdown", (event) => {
     return;
   }
   canvas.setPointerCapture(event.pointerId);
-  // A first finger starts from nothing: a pointer whose release never arrived would
-  // otherwise be counted as the other half of a pinch for as long as the page is open.
-  if (event.isPrimary) {
-    pointers.clear();
-    pinch = null;
-  }
-  pointers.set(event.pointerId, canvasPoint(event));
-  if (pointers.size === 1) {
+  // A first finger starts from nothing, which is the tracker's to see to.
+  const began = touches.press(event.pointerId, canvasPoint(event), event.isPrimary);
+  if (began === "drag") {
     drag = { from: canvasPoint(event), at: canvasPoint(event) };
-  } else if (pointers.size === 2) {
+  } else if (began === "pinch") {
     drag = null;
-    pinch = { spread: spread(), mid: middle() };
   }
 });
 
@@ -4484,14 +4483,14 @@ canvas.addEventListener("pointermove", (event) => {
     repaintBox();
     return;
   }
-  if (!pointers.has(event.pointerId)) return;
-  pointers.set(event.pointerId, canvasPoint(event));
-  if (pinch !== null && pointers.size === 2) {
+  if (!touches.move(event.pointerId, canvasPoint(event))) return;
+  const pinched = touches.pinched();
+  if (pinched !== null) {
     // The picture scaled about the point the fingers took hold of, and carried with them:
     // what was under their middle at the press is under their middle now.
-    const scale = spread() / pinch.spread;
-    const mid = middle();
-    const held = pinchHeld(mid);
+    const scale = pinched.ratio;
+    const mid = pinched.mid;
+    const held = pinchHeld(pinched);
     preview(
       mid.x - grid.width / 2 - (held.x - grid.width / 2) * scale,
       mid.y - grid.height / 2 - (held.y - grid.height / 2) * scale,
@@ -4505,32 +4504,28 @@ canvas.addEventListener("pointermove", (event) => {
 });
 
 function release(event) {
-  if (!pointers.has(event.pointerId)) return;
   // **The pinch is measured before the lifted finger is forgotten**
-  // *(phone_support_ckpt157)*. `spread` reads two pointers, and this used to delete the one
-  // that lifted first and then ask: it threw on the `undefined` second, every time, before
-  // `pinch` was cleared. So a pinch never zoomed, and it left `pinch` set for good — after
-  // which every one-finger pan slid the picture and then threw here as well, with the view
-  // never moved and nothing drawn. One two-finger touch broke panning until a reload, which
-  // is what "a pan does not always re-render" was on a phone.
-  const pinched =
-    pinch !== null && pointers.size === 2
-      ? { ratio: spread() / pinch.spread, mid: middle(), held: pinchHeld(middle()) }
-      : null;
-  pointers.delete(event.pointerId);
+  // *(phone_support_ckpt157)*, which is `lift`'s to do now. A pinch is measured off two
+  // pointers, and this used to delete the one that lifted first and then ask: it threw on
+  // the `undefined` second, every time, before the pinch was cleared. So a pinch never
+  // zoomed, and it stayed set for good — after which every one-finger pan slid the picture
+  // and then threw here as well, with the view never moved and nothing drawn. One
+  // two-finger touch broke panning until a reload, which is what "a pan does not always
+  // re-render" was on a phone.
+  const lifted = touches.lift(event.pointerId);
+  if (lifted === null) return;
   // Read once and clear: every path below this but the zero-length one ends in a draw.
   const wasSlid = slid;
   slid = false;
-  if (pinch !== null) {
-    pinch = null;
-    pointers.clear();
+  if (lifted.pinch) {
+    const pinched = lifted.measured;
     drag = null;
     // A pinch refused at the zoom-out stop has to put back the picture it scaled.
     if (
       pinched !== null &&
       Number.isFinite(pinched.ratio) &&
       pinched.ratio > 0 &&
-      pinchTo(pinched.held, pinched.mid, 1 / pinched.ratio)
+      pinchTo(pinchHeld(pinched), pinched.mid, 1 / pinched.ratio)
     ) {
       return;
     }
@@ -4544,6 +4539,7 @@ function release(event) {
   if (drag === null) return;
   const dx = drag.at.x - drag.from.x;
   const dy = drag.at.y - drag.from.y;
+  const liftedAt = drag.at;
   drag = null;
   // **A click enters the Julia set the preview is showing** — and only while it is
   // showing, which is what keeps the gesture from surprising anybody: the reader is
@@ -4556,10 +4552,33 @@ function release(event) {
     juliaTo(link.coordinateOf(previewed.cx), link.coordinateOf(previewed.cy));
     return;
   }
+  // **A finger's tap is its hover** *(mobile_followups_ckpt157)*. A finger has nothing to
+  // rest on the plane, so with the preview switched on a tap that does not move offers its
+  // point to the card, the way a resting mouse does, and the card is then what a second
+  // tap enters at. A tap did nothing at all before this, so nothing is taken from it; the
+  // slop is a mouse click's, because a finger is never quite still either, and the pixel
+  // or two it slid the picture by is put back.
+  if (
+    event.type === "pointerup" &&
+    event.pointerType !== "mouse" &&
+    Math.abs(dx) <= CLICK_SLOP &&
+    Math.abs(dy) <= CLICK_SLOP &&
+    juliaCard?.enabled() &&
+    previewable()
+  ) {
+    if (wasSlid) draw();
+    const shown = juliaCard.showing();
+    if (shown !== null && onCard(event)) {
+      juliaTo(link.coordinateOf(shown.cx), link.coordinateOf(shown.cy));
+    } else {
+      tapPreview(liftedAt);
+    }
+    return;
+  }
   // **A gesture that slid the picture and then measured zero has to put it back.** A
   // plain click measures zero too and is the case the comment above describes — nothing
   // was slid there, so nothing is owed. But a *second* press during a drag arrives with
-  // the mouse's own pointer id, which leaves `pointers` at one and resets `drag` to a
+  // the mouse's own pointer id, which leaves the tracker at one and resets `drag` to a
   // fresh zero-length one under the moves that have already slid the canvas. Returning
   // there left the slid preview on the screen for good, with the dot still reading
   // `rendering` and the view never having moved — a picture that is not the link beside
@@ -4589,22 +4608,11 @@ function release(event) {
 canvas.addEventListener("pointerup", release);
 canvas.addEventListener("pointercancel", release);
 
-function spread() {
-  const [a, b] = [...pointers.values()];
-  return Math.hypot(a.x - b.x, a.y - b.y);
-}
-
-/** The point midway between the two fingers of a pinch, in canvas pixels. */
-function middle() {
-  const [a, b] = [...pointers.values()];
-  return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
-}
-
 /** The point of the picture a pinch holds on to: where its fingers' middle was at the
  *  press, which the viewer carries along with them. The Deep tab zooms about where the
  *  middle is now and pans nothing, since its zoom is exact arithmetic about one point. */
-function pinchHeld(mid) {
-  return deepOwns() ? mid : pinch.mid;
+function pinchHeld(pinched) {
+  return deepOwns() ? pinched.mid : pinched.held;
 }
 
 /**
@@ -4659,10 +4667,15 @@ canvas.addEventListener(
 // box beside Autolevel is ticked** *(explorer_ui_text_ckpt139)*, and the tick lasts the
 // session rather than the browser.
 
-/** Whether this is a machine with a pointer that hovers. The preview is a mouse gesture
- *  and there is nothing here for touch: a finger has no hover, and the tap that would
- *  stand in for one is the pan. */
+/** Whether this is a machine with a pointer that hovers, which is what the card follows
+ *  there. A finger has no hover, and its tap stands in for one: `tapPreview`, below. */
 const HOVERS = window.matchMedia?.("(hover: hover) and (pointer: fine)")?.matches ?? false;
+
+/** The card's own box: a tap that lands on it enters the set it shows. */
+const juliaCardBox = document.getElementById("julia-preview");
+
+/** Whether a finger has been told what its card is for, which it is told once a visit. */
+let tapTold = false;
 
 /** How far a mouse may travel between press and release and still be a click rather than
  *  a very short pan, in canvas pixels. A hand on a mouse is never quite still, and
@@ -4682,17 +4695,17 @@ const CLICK_SLOP = 4;
 let hoverAt = null;
 
 /** Whether the preview may be showing at all: a parameter plane, drawn by the studio
- *  itself, with nothing in the middle of happening. */
+ *  itself, with nothing in the middle of happening. Whether there is a pointer to show it
+ *  under is the caller's: a mouse move asks `HOVERS` as well, and a tap has just happened. */
 function previewable() {
   return (
-    HOVERS &&
     view !== null &&
     view.family in JULIA_OF &&
     !busy &&
     !deepOwns() &&
     walkLayers === null &&
     drag === null &&
-    pinch === null &&
+    !touches.pinching &&
     // Both want the same click, and the box tool asked for it first.
     box === null
   );
@@ -4715,16 +4728,22 @@ function hoverPreview(event) {
   // enter at — the click would be eaten by the gesture that is supposed to make it. A
   // drag that actually moves the view takes the card with it through `changed`, and a
   // press that does not move is the click.
-  if (drag !== null || pinch !== null) return;
+  if (drag !== null || touches.pinching) return;
   if (event.pointerType !== undefined && event.pointerType !== "mouse") {
     juliaCard.hide();
     return;
   }
-  if (!previewable()) {
+  if (!HOVERS || !previewable()) {
     juliaCard.hide();
     return;
   }
-  const at = canvasPoint(event);
+  // Under a mouse the card is the size a mouse aims with.
+  juliaCardBox.classList.remove("is-tapped");
+  offerPreview(canvasPoint(event));
+}
+
+/** Offer the point of the plane at a canvas position to the card. */
+function offerPreview(at) {
   const c = planeAt(at.x, at.y);
   juliaCard.at({
     cx: c.x,
@@ -4734,10 +4753,49 @@ function hoverPreview(event) {
   });
 }
 
+/**
+ * A finger tapped the plane at `at`, with the preview switched on: the card shows that
+ * point's Julia set, and the card is what enters it *(mobile_followups_ckpt157)*.
+ *
+ * **The card, and not a second tap on the plane**, because a second tap is never where the
+ * first one was: it would be a new `c`, and the picture on the card is what was chosen. So
+ * a tap that lands where the card is showing enters (`onCard`, read in `release`).
+ *
+ * **The card still takes no pointer events.** The first cut let a card a finger raised
+ * take the press itself, and on a 320 px phone the card is half the canvas: a pan that
+ * began on it went nowhere (measured, the touch harness at 320x568). So the press goes
+ * through to the canvas as it does under a mouse, a drag or a pinch that starts on the
+ * card is a drag or a pinch, and only a tap that does not move is read against the card's
+ * box. `is-tapped` is what sizes the card for a finger. A pan, a pinch or any other move
+ * of the view takes the card away, as it does under a mouse, and a tap elsewhere moves it.
+ */
+function tapPreview(at) {
+  juliaCardBox.classList.add("is-tapped");
+  offerPreview(at);
+  if (!tapTold) {
+    tapTold = true;
+    say("Tap the preview to open that Julia set.");
+  }
+}
+
+/** Whether a pointer event on the canvas fell where the card is showing. */
+function onCard(event) {
+  if (juliaCardBox.hidden) return false;
+  const box = juliaCardBox.getBoundingClientRect();
+  return (
+    event.clientX >= box.left &&
+    event.clientX <= box.right &&
+    event.clientY >= box.top &&
+    event.clientY <= box.bottom
+  );
+}
+
 canvas.addEventListener("pointermove", hoverPreview);
-canvas.addEventListener("pointerleave", () => {
+canvas.addEventListener("pointerleave", (event) => {
   hoverAt = null;
-  juliaCard?.hide();
+  // A lifted finger leaves the canvas too, and the card its tap raised is not the hover's
+  // to take away.
+  if (event.pointerType === "mouse") juliaCard?.hide();
 });
 
 // --------------------------------------------------------- a picture dropped back

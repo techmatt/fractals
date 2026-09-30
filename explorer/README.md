@@ -167,6 +167,7 @@ phoenix-points.json   the tab's starting points and its one style, `builder phoe
 paged-inflection/     PAGED: the Inflection tab, out of the working set — see below
 undo.js               the way back: the pictures shown, and the cursor into them
 outermost.js          how far out a gesture may zoom, and how the frame settles onto home
+pointers.js           the pointers down on a canvas and the pinch two of them make
 saved.js              the Saved list: one localStorage value of links, and the save mark
 saved-panel.js        the Saved tab: tiles drawn from their links, import, export, Download all
 zip.js                a stored (uncompressed) zip writer, for Download all
@@ -927,12 +928,29 @@ now and pans nothing, since its zoom is exact arithmetic about one point (`deep.
 a mark the slots are not showing fills them and goes nowhere, and a tap on the mark they
 are showing opens it. The article's live figure gets the same, being the same frame.
 
-**What is left, deliberately.** The Phoenix plane has no pinch: its gestures are its own
-(`phoenix.js`), one pointer and a wheel, so a phone pans it and cannot zoom it; it would
-take the viewer's two-pointer bookkeeping again there, about forty lines. The Julia preview
-is a hover and stays one. An atlas mark is 18 px and they overlap, which a larger hit area
-would make worse. Section heads and readouts are 11 px. A 320 px phone's atlas frame
-overflows its column by the 24 px that `LEAST` is over it.
+**The bookkeeping is `pointers.js`, and two canvases use it** *(mobile_followups_ckpt157)*.
+Which pointers are down, where each is, and what the pair measured when the second landed
+is one small module with a suite of its own, and the order that was the bug above lives in
+its `lift`. The viewer's `pointers`, `pinch`, `spread` and `middle` went into it unchanged
+in behavior.
+
+**The Phoenix plane pinches** (`phoenix.js`, on that tracker). It was one pointer and a
+wheel, so a phone could pan it and not zoom it. A second finger ends the drag, the width
+follows the fingers' spread, and the plane point they took is carried under their middle;
+the plane's own `slide` draws it, since it already scales the last picture to any frame.
+Out, it stops where the wheel stops (`heldOut`), and a pinch refused there puts the frame
+back. A pinch is never the click.
+
+**The Julia preview has a tap** (*The Julia preview under the pointer*, below).
+
+**The Atlas tab's frame fits a 320 px phone.** Stacked, its column is the window less the
+gutters, 296 px at 320, and the frame's own floor is 320, so it ran 24 px past. `least`
+may be a function now, as `fit` is, and the studio answers the frame's `COLUMN_LEAST` while
+it is stacked and the floor beside its canvas.
+
+**What is left, deliberately.** An atlas mark is 18 px and they overlap, which a larger hit
+area would make worse. Section heads and readouts are 11 px. The Phoenix tab's Preview box
+does nothing under a finger, and wants nothing: a tap there already opens the set.
 
 **Photographing it.** Real device emulation over CDP, never a narrow window:
 `Emulation.setDeviceMetricsOverride` with `mobile: true`, `setTouchEmulationEnabled`, and
@@ -1198,9 +1216,21 @@ reload and a link, and a visit that did not is never handed it. The checkbox mov
 the Details fold with it, and sits beside the button it previews, because a setting nobody
 has switched on has to be somewhere a reader can see.
 
-**Desktop pointer only.** `(hover: hover) and (pointer: fine)`, and a `pointerType` of
-`mouse` on the event itself. A finger has no hover, and the tap that would stand in for one
-is the pan.
+**A mouse hovers, and a finger taps** *(mobile_followups_ckpt157)*. The hover is
+`(hover: hover) and (pointer: fine)` and a `pointerType` of `mouse` on the event itself. It
+used to be the whole of it, on the reading that the tap that would stand in for a hover is
+the pan. It is not: a one-finger press that does not move did nothing at all, so with the
+box ticked it offers its point to the card (`tapPreview`), within the mouse click's slop.
+The card is then what enters: a second tap on the plane would be a new `c` and not the
+picture on the card, so a tap that lands where the card is showing enters the set on it
+(`onCard`). The card itself still takes no pointer events. The first cut let it take the
+press, and on a 320 px phone it is half the canvas, so a pan that began on it went nowhere
+(the touch harness at 320x568 failed on exactly that); now a drag or a pinch that starts on
+the card reaches the plane, and only a tap that does not move is read against its box.
+`is-tapped` sizes the card and its × for a finger. A pan, a pinch or any move of the view
+takes it away, as under a mouse, and `pointerleave` hides it for a mouse only, because a
+lifted finger leaves the canvas too. The status line says *Tap the preview to open that Julia set.* once a visit.
+Before this the box showed on a phone and did nothing.
 
 ## The walk *(walk_tab_ckpt131, 2026-09-18)*
 
@@ -3306,7 +3336,8 @@ list, where `j` and Back work on it exactly as on Mandelbrot (see the view toggl
 - **The left pane is the plane, drawn live.** `phoenix.js` draws `phoenix_plane` on a small
   pool of its own (`Renderer.over`), so it never cancels the picture on the right. The
   atlas's plate could not be reused: it is a picture rendered once next door, and this one
-  has to redraw whenever `p` moves. Wheel zooms about the pointer and a drag pans, sliding
+  has to redraw whenever `p` moves. Wheel zooms about the pointer, a drag pans and two
+  fingers pinch *(mobile_followups_ckpt157)*, each sliding
   the last picture under the hand until the new one lands; **Whole plane** goes back to the
   measured home and keeps `p`. It draws nothing while the tab is hidden. The frame and `p`
   are this browser tab's session (`explorer.phoenix-plane`), and the preview's flag has its
@@ -6298,9 +6329,12 @@ already public and matched, and the engine's fingerprint is unmoved.
 
 ## The test suites
 
-Eighteen suites here and `atlas/atlas.test.mjs` beside them, on Node's own runner with
+Nineteen suites here and `atlas/atlas.test.mjs` beside them, on Node's own runner with
 nothing installed. `CLAUDE.md` and `.github/workflows/checks.yml` carry the command line.
 
+- `pointers.test.mjs` holds the pointer bookkeeping the viewer and the Phoenix plane share:
+  a lift measures the pinch before it forgets the pointer and leaves nothing behind, a first
+  finger starts from nothing, and a third finger measures nothing.
 - `permalink.test.mjs` is the contract held to itself. A URL is the one permanent thing
   this site emits, and it is worth a suite even though nothing else here has one.
 - `screensaver.test.mjs` holds the screensaver's pure parts: the interval table, the

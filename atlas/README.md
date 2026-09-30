@@ -55,7 +55,8 @@ the keyboard.
 gallery slot goes, in the same tab. It passes `fit: "width"`, because an article column
 sizes nothing but width: the frame reads the host's width alone and the host's height
 follows the frame, which is still one-way. And it passes `least`, the narrowest plate it
-may draw, because a phone's column is narrower than the studio's 320. And it passes
+may draw, because a phone's column is narrower than the studio's 320: the frame's own
+`COLUMN_LEAST`, which the studio passes too while its panel is a column. And it passes
 `miniatures` *(atlas_v2_ckpt146)*: each plane chip carries a 64-pixel grey miniature of its
 plate beside its label, `assets/images/atlas/miniature-<partition>.png`, because a reader of
 the article meets the chips before the planes have names to them. The studio's chips stay
@@ -85,6 +86,10 @@ panel is a box the page has sized while it stands beside the canvas, and a colum
 scrolls once it is stacked under it on a phone, where nothing sizes its height but the
 frame; so the studio answers `"box"` or `"width"` by its own breakpoint. With a fixed
 `"box"` the frame was never fitted on a phone at all, and sat over the tab's note.
+
+**And so may `least`** *(mobile_followups_ckpt157)*. The floor is 320 beside the canvas
+and `COLUMN_LEAST` stacked under it, where a 320 px phone's column is 296 and the frame ran
+24 px past it. An empty slot's tooltip says *hover or tap a mark on the plane*.
 
 **A finger's first tap on a mark is its hover** *(phone_support_ckpt157)*. A touchscreen
 has no hover, and a tap used to open the mark at once, so the three slots could never be

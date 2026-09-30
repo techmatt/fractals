@@ -408,16 +408,37 @@ def _count(pictures: int) -> str:
     return "1 wallpaper" if pictures == 1 else f"{pictures:,} wallpapers"
 
 
-def download_words(pack: Pack, index: int) -> str:
-    """One download line's words: which part where there are several, count, size."""
+def _download_terms(pack: Pack, index: int) -> list[str]:
+    """One download line's terms: which part where there are several, count, size."""
     lead = DOWNLOAD
     if len(pack.files) > 1:
         lead = f"{DOWNLOAD} part {index + 1} of {len(pack.files)}"
     one = pack.files[index]
-    words = [lead, _count(one.pictures)]
+    terms = [lead, _count(one.pictures)]
     if one.bytes is not None:
-        words.append(size(one.bytes))
-    return " · ".join(words)
+        terms.append(size(one.bytes))
+    return terms
+
+
+def download_words(pack: Pack, index: int) -> str:
+    """One download line's words: which part where there are several, count, size."""
+    return " · ".join(_download_terms(pack, index))
+
+
+def download_label(pack: Pack, index: int) -> str:
+    """One download line as the button's markup: the same words, escaped.
+
+    A pack in several parts says which part, and that makes its line too long for a phone's
+    column at any size worth reading: 363 px of words at the button's 17, in a list 301
+    wide at 375. So its count sits in a span the stylesheet hides where the list is narrow
+    (`.pack-download-count`), and the button there reads part and size. The words are the
+    same everywhere else, and a one-file pack has no span because it fits without one.
+    """
+    lead, count, *rest = _download_terms(pack, index)
+    if len(pack.files) == 1:
+        return text(download_words(pack, index))
+    tail = "".join(f" · {term}" for term in rest)
+    return f'{text(lead)}<span class="pack-download-count">{text(f" · {count}")}</span>{text(tail)}'
 
 
 def explore_href(page: Path, pack: Pack) -> str:
@@ -455,7 +476,7 @@ def block(page: Path, pack: Pack, rows: dict[str, dict]) -> str:
     for index, one in enumerate(pack.files):
         lines.append(
             f'{pad}    <li><a class="pack-download" href="{attribute(one.href)}">'
-            f"{text(download_words(pack, index))}</a></li>"
+            f"{download_label(pack, index)}</a></li>"
         )
     lines.append(f"{pad}  </ul>")
     if not pack.best:

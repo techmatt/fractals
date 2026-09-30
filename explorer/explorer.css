@@ -1153,6 +1153,14 @@ summary.section-head:focus-visible { outline: 2px solid var(--well-link); outlin
   padding: 0.3rem;
 }
 .julia-preview.is-right { left: auto; right: 0.5rem; }
+/* A card a finger raised *(mobile_followups_ckpt157)*. A tap where it is showing enters
+   the set on it, and that tap is the canvas's, read against the card's box: the card takes
+   no pointer events here either, so a pan or a pinch that starts on it still reaches the
+   plane. It is a thing to tap, so it is a little larger than the card a mouse aims with,
+   and no wider than a phone on its side has canvas for; its × is a finger's size.
+   `explorer.js` puts the class on at a tap and takes it off under a mouse. */
+.julia-preview.is-tapped .julia-preview-off { width: 1.75rem; height: 1.75rem; font-size: 1rem; }
+.julia-preview.is-tapped .julia-preview-picture { width: min(20rem, 40vw, 45vh); }
 
 /* A share of the stage rather than the 320px it is drawn at, so the card is the same size
    against the picture on every display, and it never grows past a quarter of the canvas. */

@@ -94,8 +94,8 @@
       <p class="side-note place-key">Every place the search kept, marked on the plane it
       came out of. <span class="key-mandelbrot">Blue</span> is a location on the parameter
       plane itself; <span class="key-julia">red</span> is a location on the dynamical plane
-      of the point it sits on. Hover a mark to fill the three pictures, and click one to open
-      it here. For more, read <a href="../article/fractal-atlases.html">Fractal
+      of the point it sits on. Hover or tap a mark to fill the three pictures, and click one
+      to open it here. For more, read <a href="../article/fractal-atlases.html">Fractal
       atlases</a>.</p>
       <div class="atlas-host" id="atlas-host"></div>
       <p class="side-note" id="atlas-note"></p>
@@ -319,9 +319,10 @@
   <section class="viewer" aria-label="The view">
     <div class="stage" id="stage">
       <canvas id="canvas" tabindex="0" aria-label="The fractal at the current family, render mode and view"></canvas>
-      <!-- The Julia set of the point under the pointer, on a parameter plane. A hover
-           affordance and nothing a reader can reach any other way, so it is out of the
-           accessibility tree: Julia here (j) is the button it previews. -->
+      <!-- The Julia set of the point under the pointer, on a parameter plane: a hover under
+           a mouse, and under a finger a tap, after which the card itself is tapped to enter.
+           Nothing a reader can reach any other way, so it is out of the accessibility tree:
+           Julia here (j) is the button it previews. -->
       <div class="julia-preview is-right" id="julia-preview" hidden aria-hidden="true">
         <canvas class="julia-preview-picture" id="julia-preview-picture" width="320" height="180"></canvas>
         <p class="julia-preview-said"><span id="julia-preview-c"></span><span
@@ -422,7 +423,7 @@
             <span class="group level" id="julia-preview-group">
               <label for="julia-preview-on">Julia preview</label>
               <input type="checkbox" id="julia-preview-on" class="flag"
-                     title="On a parameter plane, shows the Julia set under the pointer; a click there opens it.">
+                     title="On a parameter plane, shows the Julia set under the pointer or a tap. A click there opens it; after a tap, tap the preview.">
             </span>
           </div>
         </div>

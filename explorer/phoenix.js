@@ -22,8 +22,10 @@
 // What a click opens is the viewer's: its mode and its palette.
 //
 // **It is the viewer's gestures, a size smaller.** The wheel zooms about the pointer, a
-// drag pans, a press that does not move is the click. The frame and `p` are this browser
-// tab's session, so Back to Phoenix plane finds the plane where the click left it.
+// drag pans, two fingers pinch *(mobile_followups_ckpt157)*, and a press that does not move
+// is the click. Which pointers are down is `pointers.js`, the viewer's own bookkeeping. The
+// frame and `p` are this browser tab's session, so Back to Phoenix plane finds the plane
+// where the click left it.
 //
 // The preview card is `julia-preview.js`, mounted a second time over this plane with its
 // own flag: the same machinery at one sample a pixel, off until the box says otherwise.
@@ -43,6 +45,7 @@
 
 import * as juliaPreview from "./julia-preview.js";
 import { heldOut, stopOf } from "./outermost.js";
+import { tracker } from "./pointers.js";
 import { Renderer } from "./render.js";
 
 /** Where the frame and `p` are kept between visits to the tab, in this session. */
@@ -120,6 +123,10 @@ export function mount(host) {
   /** A press in progress: where it started, the frame it started on, and whether it has
    *  moved far enough to be a drag. */
   let drag = null;
+  /** The pointers down on the plane, and a pinch in progress: the frame it started on and
+   *  the point of the plane its fingers took hold of. */
+  const touches = tracker();
+  let pinch = null;
 
   /** The starting point the reader last chose, marked while the plane is at its `p`, and
    *  let go by any other way of choosing a place. */
@@ -146,7 +153,7 @@ export function mount(host) {
     viewFor: (cx, cy) => ({ ...setOf(cx, cy, current()), ...style }),
     deriving: () => false,
     quiet: () => !drawing,
-    live: () => shown && drag === null && style !== null,
+    live: () => shown && drag === null && pinch === null && style !== null,
     say,
   });
 
@@ -420,13 +427,48 @@ export function mount(host) {
 
   // ---------------------------------------------------------------------- the gestures
 
+  /** Where a pointer is on the canvas, in CSS pixels. */
+  const pointOf = (event) => ({ x: event.offsetX, y: event.offsetY });
+
+  /** The frame a pinch has reached: the width scaled by the fingers' spread, with the point
+   *  of the plane they took hold of carried under their middle, so two fingers zoom and pan
+   *  in one gesture as they do on the viewer. */
+  function pinchedTo(from, { ratio, mid }) {
+    const w = from.frame.w / ratio;
+    const height = (w * 9) / 16;
+    return {
+      x: from.anchor.x - (mid.x / canvas.clientWidth - 0.5) * w,
+      y: from.anchor.y + (mid.y / canvas.clientHeight - 0.5) * height,
+      w,
+    };
+  }
+
   canvas.addEventListener("pointerdown", (event) => {
     if (event.button !== 0) return;
     canvas.setPointerCapture(event.pointerId);
-    drag = { x: event.offsetX, y: event.offsetY, frame: { ...frame }, moved: false };
+    const began = touches.press(event.pointerId, pointOf(event), event.isPrimary);
+    if (began === "drag") {
+      pinch = null;
+      drag = { x: event.offsetX, y: event.offsetY, frame: { ...frame }, moved: false };
+    } else if (began === "pinch") {
+      // A second finger ends the drag where it has got to, and a pinch is never the click.
+      drag = null;
+      const { mid } = touches.pinched();
+      pinch = { frame: { ...frame }, anchor: planeAt(mid.x, mid.y) };
+      canvas.classList.add("is-dragging");
+      preview.hide();
+    }
   });
 
   canvas.addEventListener("pointermove", (event) => {
+    if (touches.move(event.pointerId, pointOf(event)) && pinch !== null) {
+      const now = touches.pinched();
+      if (now !== null && Number.isFinite(now.ratio) && now.ratio > 0) {
+        frame = pinchedTo(pinch, now);
+        slide();
+      }
+      return;
+    }
     if (drag !== null) {
       const dx = event.offsetX - drag.x;
       const dy = event.offsetY - drag.y;
@@ -452,6 +494,27 @@ export function mount(host) {
   });
 
   function release(event, cancelled) {
+    const lifted = touches.lift(event.pointerId);
+    if (lifted?.pinch) {
+      const was = pinch;
+      pinch = null;
+      drag = null;
+      canvas.classList.remove("is-dragging");
+      if (was === null) return;
+      const now = lifted.measured;
+      const asked =
+        now !== null && Number.isFinite(now.ratio) && now.ratio > 0 ? pinchedTo(was, now) : null;
+      // Out, no further than the wheel may go, and a pinch refused at the stop puts back
+      // the frame it started on.
+      const to =
+        asked !== null && asked.w > was.frame.w
+          ? heldOut(asked, was.frame, stopOf(home(), true))
+          : asked;
+      frame = to ?? was.frame;
+      slide();
+      schedule();
+      return;
+    }
     if (drag === null) return;
     const was = drag;
     drag = null;
