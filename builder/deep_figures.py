@@ -1136,7 +1136,7 @@ PAGE_VIDEOS = {
         "the seahorse-valley player on Deep zoom videos",
     ),
     "deep-videos-julia3-descent": (
-        ((None, "Midway"), ("julia3-end", "Final frame")),
+        (("julia3-mid", "Midway"), ("julia3-end", "Final frame")),
         "the degree-3 Julia player on Deep zoom videos",
     ),
 }

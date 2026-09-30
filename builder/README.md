@@ -1448,6 +1448,23 @@ the knee is now the engine's own rather than the table's.
 python builder/zoom.py --record builder/data/julia3-descent.keyframes.json --variant preview video --mapping knee --knee 10000 --lambda 0.254
 ```
 
+**The knee is the default style for zoom videos** *(Matt; julia3_video_4k_ckpt157)*. The
+julia3 record's own `knee` mapping is the chosen cut, k5000-calm (`knee = 5000`,
+`lambda = 0.157`, the link's `L = 1870` and phase 0.091), so `--mapping knee` takes it with
+no flags, and `go/julia3-mid` and `go/julia3-end` spell the same keys. Its `4k60` variant is
+the final video at the seahorse master's pacing (1.2 s a halving, 1 s and 7 s holds). Its caps
+are the measured rule's `need`, kept per frame as `rule`, with every keyframe raised to the
+explicit ceiling. The rule alone left k63 at 2,132 over a probe maximum of 2,089, which is a
+cap jump waiting at 256 times the probe's samples. On a 100%-escaped descent a cap costs only
+the iterations a sample uses, so the ceiling is free. No flag does the raise: the variant's
+note says what was done, and a second `--undercap` would put the rule's caps back.
+
+```
+node builder/zoom_fields.mjs --record builder/data/julia3-descent.keyframes.json --variant 4k60 --undercap
+node builder/zoom_fields.mjs --record builder/data/julia3-descent.keyframes.json --variant 4k60
+python builder/zoom.py --record builder/data/julia3-descent.keyframes.json --variant 4k60 video --mapping knee --workers 4
+```
+
 `deep-descent-pairs` colours a twin the other way round: its counts are about `p_A` times
 its source's, so under `lambda=0` it is its source shifted by `ln p_A`, and taking that off
 the phase puts the twin in its source's colours.
