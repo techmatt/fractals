@@ -435,8 +435,13 @@ sits under it, **Wallpaper packs**: a second group set the same way, spelled by
 `sections.PACKS_NAME` and linking to `wallpaper-packs/index.html`, always the heading
 alone. A third sits under that, **Tools and data** (`sections.TOOLS_NAME`,
 `tools-and-data/index.html`), set the same way; `builder/README.md`'s *Tools and data*
-has the page, its generated data (`python -m builder tools-and-data`) and its figures. All
-three are a `rail-group`; the masthead's own links to the packs and to Tools and data stay. A prose
+has the page, its generated data (`python -m builder tools-and-data`) and its figures. A
+fourth sits under that, **Deep zoom videos** (`sections.VIDEOS_NAME`,
+`deep-zoom/videos.html`), set the same way although the page hangs off Deep zoom rendering
+and stays in `sections.HANGING`. All four are a `rail-group`. The site bar links the packs,
+Tools and data and Deep zoom videos, in that order, and `pages.topbar` spells it for the
+generated pages; the explorer's studio bar carries only the first two, because it cannot wrap
+and a third link does not fit at 375 px. A prose
 `<h2>` also gets the id its rail entry links to, spelled from its own words by rule —
 a fragment is a permanent URL. `python -m builder build` writes the rail between two
 marker comments; `check`'s `contents` check re-derives the rail and the heading ids,

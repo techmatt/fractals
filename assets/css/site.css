@@ -169,9 +169,10 @@ body {
 /* The contents rail. Ten sections in reading order, the current one open to its own
    headings; the builder writes it, so it cannot fall behind the article. Dark ink and
    no underlines: a column of ten blue links reads as a link list, not as contents. */
-/* Above the contents, two peers under headings of their own set like theirs: the page a
-   new reader is sent to first, and the wallpaper packs. Each is ruled off, the way the
-   links under the contents are, because neither is one of the sections. On the start page
+/* Above the contents, four peers under headings of their own set like theirs: the page a
+   new reader is sent to first, the wallpaper packs, the tools and data, and the deep zoom
+   videos. Each is ruled off, the way the links under the contents are, because none is
+   one of the sections. On the start page
    its group lists its headings as plain entries; elsewhere a group is the heading alone. */
 .rail-group {
   margin: 0 0 1rem;

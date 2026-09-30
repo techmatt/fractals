@@ -346,7 +346,10 @@ and held to it by `python -m builder prose`, in `sections.hand_written`, so `bui
 rail and heading ids. It is the rail's **third group** — `sections.TOOLS` / `TOOLS_NAME`,
 set like Start here and Wallpaper packs, after the packs and before Contents — and the site
 bar's *Tools and data* link sits between *Wallpaper packs* and *GitHub* (`pages.topbar`
-takes its href).
+takes its href). *Deep zoom videos* follows it in both places *(videos_nav_ckpt156)*: the
+rail's **fourth group** (`sections.VIDEOS` / `VIDEOS_NAME`), and a bar link after *Tools and
+data*. The explorer's studio bar does not carry it: that bar is one row that never wraps,
+and at 375 px a fourth link squeezes every label onto two or three lines under the title.
 
 Its two data files are written by **`python -m builder tools-and-data`**
 (`builder/tools_and_data.py`, whose module docstring is the field-by-field reference), from

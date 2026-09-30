@@ -57,10 +57,10 @@ def gallery_page_path(gallery: Gallery):
     return GALLERIES_DIR / f"{gallery.slug}.html"
 
 
-def topbar(home: str, galleries_index: str, tools: str) -> str:
-    """The site bar every page carries: back to the front page, to the wallpaper packs and
-    the tools and data, out to this site's own source and to the author's homepage — this
-    site is one project of several living under it.
+def topbar(home: str, galleries_index: str, tools: str, videos: str) -> str:
+    """The site bar every page carries: back to the front page, to the wallpaper packs, the
+    tools and data, and the deep zoom videos, out to this site's own source and to the
+    author's homepage — this site is one project of several living under it.
 
     Every href is passed in already relative to the page that will hold it — the bar is
     the same line everywhere, and only its depth differs.
@@ -72,7 +72,8 @@ def topbar(home: str, galleries_index: str, tools: str) -> str:
             f'    <a class="topbar-site" href="{attribute(home)}">{text(SITE_TITLE)}</a>',
             '    <span class="topbar-links"><a href="'
             f'{attribute(galleries_index)}">Wallpaper packs</a><a href="{attribute(tools)}">'
-            f'{text(sections_module.TOOLS_NAME)}</a><a href="{SITE_REPO}">GitHub</a>'
+            f'{text(sections_module.TOOLS_NAME)}</a><a href="{attribute(videos)}">'
+            f'{text(sections_module.VIDEOS_NAME)}</a><a href="{SITE_REPO}">GitHub</a>'
             f'<a href="{AUTHOR_SITE}">Matt Fisher</a></span>',
             "  </div>",
             "</nav>",
@@ -215,7 +216,12 @@ def gallery_page(gallery: Gallery, sections: list[sections_module.Section]) -> s
         page=page,
         title=f"{gallery.title} — Making Fractal Wallpapers",
         css=css,
-        bar=topbar(article, index_path(), relative_href(page, sections_module.TOOLS)),
+        bar=topbar(
+            article,
+            index_path(),
+            relative_href(page, sections_module.TOOLS),
+            relative_href(page, sections_module.VIDEOS),
+        ),
         rail=sections_module.block(page, sections),
         header=header,
         blocks=["\n".join(intro), _grid(tiles)],
@@ -267,7 +273,12 @@ def gallery_index(galleries: list[Gallery], sections: list[sections_module.Secti
         page=page,
         title="Wallpaper packs — Making Fractal Wallpapers",
         css=css,
-        bar=topbar(article, index_path(), relative_href(page, sections_module.TOOLS)),
+        bar=topbar(
+            article,
+            index_path(),
+            relative_href(page, sections_module.TOOLS),
+            relative_href(page, sections_module.VIDEOS),
+        ),
         rail=sections_module.block(page, sections),
         header=header,
         blocks=blocks,
@@ -324,6 +335,7 @@ def library_page(sections: list[sections_module.Section]) -> str:
             relative_href(page, SITE_ROOT / "index.html"),
             relative_href(page, GALLERIES_DIR / "index.html"),
             relative_href(page, sections_module.TOOLS),
+            relative_href(page, sections_module.VIDEOS),
         ),
         rail=sections_module.block(page, sections),
         header=_masthead(

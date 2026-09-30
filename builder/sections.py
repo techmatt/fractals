@@ -151,7 +151,7 @@ def load_all() -> list[Section]:
 
 
 def rail(page: Path, sections: list[Section]) -> str:
-    """The rail as one page carries it: the three groups above the contents, fourteen
+    """The rail as one page carries it: the four groups above the contents, fourteen
     sections with this page's own headings open, and under them the places a reader leaves
     the article for.
 
@@ -165,6 +165,7 @@ def rail(page: Path, sections: list[Section]) -> str:
         *_start(page),
         *_packs(page),
         *_tools(page),
+        *_videos(page),
         f'  <p class="rail-title"><a href="{home}">Contents</a></p>',
         '  <ol class="rail-sections">',
     ]
@@ -273,6 +274,27 @@ def _tools(page: Path) -> list[str]:
     return [
         '  <div class="rail-group">',
         f'    <p class="rail-title"><a href="{href}"{current}>{text(TOOLS_NAME)}</a></p>',
+        "  </div>",
+    ]
+
+
+#: Every deep zoom video the project has made, collected on a page hanging off Deep zoom
+#: rendering *(videos_nav_ckpt156)*. It stays among `HANGING`'s pages, and it is the rail's
+#: fourth group all the same, set the way *Tools and data* is and right after it: the videos
+#: are what a reader comes back for, and the section they hang off is ten entries down.
+VIDEOS = SITE_ROOT / "deep-zoom" / "videos.html"
+VIDEOS_NAME = "Deep zoom videos"
+
+
+def _videos(page: Path) -> list[str]:
+    """The rail's fourth group: its heading alone, a link to the Deep zoom videos page."""
+    if not VIDEOS.is_file():
+        return []
+    href = attribute(relative_href(page, VIDEOS))
+    current = ' aria-current="page"' if page.resolve() == VIDEOS.resolve() else ""
+    return [
+        '  <div class="rail-group">',
+        f'    <p class="rail-title"><a href="{href}"{current}>{text(VIDEOS_NAME)}</a></p>',
         "  </div>",
     ]
 
