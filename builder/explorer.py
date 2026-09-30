@@ -364,6 +364,13 @@ ENGINE_CHANGES = [
     "is off and is omitted from a serialized recipe, so no recipe key, render key or cache "
     "name moves. 540 renders of the identity battery byte-identical before and after, engine "
     "tests 254 unmoved plus two new.",
+    "link::ShallowView gains curve and link::DeepView gains scale_stated, with link::with_curve, "
+    "which render-link applies to its resolved coloring: link.rs reads and writes the site's "
+    "curve key and keeps a deep link's stated leveled scale, and fixtures/link-cases.json "
+    "regenerates at 703 cases. link_fidelity_ckpt157's addendum was sent for the seam. Nothing "
+    "this crate calls moved: 540 renders of the identity battery byte-identical before and "
+    "after, engine tests 256 unmoved plus one new; this module does not call link and its "
+    "bytes are unmoved by it.",
 ]
 
 _RUSTC_VERSION = re.compile(r"^rustc (\S+ \([0-9a-f]+ \d{4}-\d{2}-\d{2}\))")

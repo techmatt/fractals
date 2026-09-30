@@ -291,7 +291,12 @@ export function familySpecOf(family, constants) {
  * translating between two spellings of one thing is how they drift apart. `level`
  * is not one of the seven and is handed over beside them, under the operator's own
  * field names: it is a separate operator that curves the ramp before the recipe is
- * spent on it, and a key in the wrong object would be refused by the module.
+ * spent on it, and a key in the wrong object would be refused by the module. Measured,
+ * not assumed *(link_fidelity_ckpt157)*: serde does not honour `Palette`'s own
+ * `deny_unknown_fields` beside the `flatten` its `bake` carries, but the flatten hands
+ * every key `Palette` has no field for to `Bake`, whose `deny_unknown_fields` refuses it —
+ * so a module older than a key refuses that key (`unknown field` knee, from the module
+ * before explorer_knee_ckpt157) rather than drawing without it.
  *
  * The colormap is left out of a field pass that does not need it. Only the direct
  * traps read the gradient while they iterate; for every other mode the map is a

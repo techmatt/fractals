@@ -3313,6 +3313,9 @@ bench/deep-stall.mjs  a colour change reaches the canvas through every pass, can
 bench/recolour-race.mjs  the other: at rest, the canvas is a fresh load of the address
                    bar, and a colour the reader set is still set, whenever it was set
                    and whatever the tab drew before it
+bench/link-fidelity.mjs  and a third: every tab driven through its common actions, and
+                   after each the address, what Copy link copied and what Save kept,
+                   each a fresh load that redraws the same canvas (link_fidelity_ckpt157)
 perturb.wasm       generated: the perturbation kernel, compiled
 perturb.manifest.json  generated: what perturb.wasm was built from
 perturb-wasm/      the crate that produces it
@@ -4433,7 +4436,28 @@ node explorer/bench/families.mjs [generic.wasm]     # every family, smooth, at i
 node explorer/bench/cut.mjs                         # one frame, cut into 1 to 410 bands
 node explorer/bench/level.mjs                       # the tone operator, by a map's stops
 node explorer/bench/curves.mjs [other.wasm]         # every map x four curves, one hash
+PORT=8000 node explorer/bench/link-fidelity.mjs     # every tab: a link is its picture
 ```
+
+**`link-fidelity.mjs` asks the invariant a black Phoenix link broke** *(link_fidelity_ckpt157)*:
+for every way a view is reached, the link it writes redraws the same canvas. Two headless
+browsers: one is driven through each tab — a Gallery tile, an Atlas slot on three planes
+including Phoenix, a Walk's found tile, a Deep tile, all eight Phoenix keypoints, a click
+on the plane at a slider's `p`, a cleared and a typed `p` box, a click through the preview,
+Saved — and pan, zoom, Box, the mode, the palette, Julia here and Back; then every mode
+the contract lists by a link and a pan, over every family in turn. After each step the
+driven page comes to rest, Copy link is pressed, and the other browser opens the address
+fresh; the canvases are compared exactly and then as block means, `recolour-race.mjs`'s
+rule. It asserts, with a non-zero exit, and it is no part of `builder check`: it needs a
+browser and about ten minutes. `--only=phoenix,saved` narrows it, `--no-walk` skips the
+walk's run.
+
+The Phoenix link that started it was right about its own picture: `c = p = 0` is a disk,
+and the frame sat inside it. It was the gallery seat's link that was wrong — seventeen seats
+whose recipes named no Phoenix constants were given the origin for them where the engine
+means the classic set (`builder/links.py`'s `PHOENIX_DEFAULTS`) — which is why the sweep
+compares what a page writes against a fresh load of it, and a record against its own tile
+is `stamps`' and `seats`' question rather than this one's.
 
 **The page, in a real browser with a real pool.** `explorer/bench/page.mjs` drives the
 committed page in headless Chrome over CDP and splits the wall time from an input to a
