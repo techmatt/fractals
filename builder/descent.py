@@ -38,6 +38,12 @@ frame that fits; where none fits — and inside a twin every copy's period is a 
 `arg(s_A)`; the record carries it. At degree `D` the scale is defined up to a `(D−1)`-th root
 of unity, the Multibrot set's own symmetry, and `--branch` picks which twin.
 
+**A Julia link** (`julia`, `julia3` … `julia6`) has no copies to descend by, so it is
+taken as it is: one link, its frame the target, a keyframe at every halving up to the
+Julia home view. The record carries its `c` as `julia_re` and `julia_im`, text as the link
+spells it, and the `anchor` `deep-render.js`'s `anchorOf` would choose, since every
+keyframe shares the target's centre (julia3_palette_ckpt157).
+
 ## The record
 
 `data/<name>.keyframes.json`, in the shape of `data/deep-zoom-descent.keyframes.json` so that
@@ -59,7 +65,7 @@ from urllib.parse import parse_qs, urlsplit
 
 import numpy as np
 
-from .deep_gallery import EXPLICIT_CEILING, DeepGalleryError, _native
+from .deep_gallery import EXPLICIT_CEILING, DeepGalleryError, _anchor, _native
 
 HERE = Path(__file__).resolve().parent
 DATA = HERE / "data"
@@ -82,6 +88,11 @@ HOME = {
     5: (0.0, 3.6),
     6: (-0.09, 4.3),
 }
+#: The Julia families a descent may run in, and their degrees: the Deep tab's dynamical planes.
+JULIA = {"julia": 2, "julia3": 3, "julia4": 4, "julia5": 5, "julia6": 6}
+#: Their home view, `(centre re, width)`: `engine.wasm`'s `plan` answers the same frame at
+#: every degree and whatever the `c` (read 2026-09-30, degrees 2 to 6 at two constants).
+JULIA_HOME = (0.0, 3.0)
 
 #: The field grid the movie's keyframes are drawn at, twice the video's own size so that a
 #: frame is only ever area-filtered down, and the video: 3840x2160 at 60 fps, the double-descent
@@ -132,6 +143,9 @@ class Location:
     y: str
     w: float
     palette: str | None
+    jre: str | None = None
+    jim: str | None = None
+    query: dict | None = None
 
 
 @dataclass
@@ -158,12 +172,37 @@ def parse(link: str) -> Location:
     query = urlsplit(link).query if "?" in link else link
     q = {key: values[0] for key, values in parse_qs(query).items()}
     family = q.get("f", "mandelbrot")
-    if family not in FAMILIES:
-        raise DescentError(f"{family}: a descent runs in a parameter plane of degree 2 to 6")
-    for key in ("x", "y", "w"):
+    if family not in FAMILIES and family not in JULIA:
+        raise DescentError(
+            f"{family}: a descent runs in a Multibrot or Julia plane of degree 2 to 6"
+        )
+    for key in ("x", "y", "w") + (("cx", "cy") if family in JULIA else ()):
         if key not in q:
             raise DescentError(f"{link}: the link names no `{key}`")
-    return Location(link, family, FAMILIES[family], q["x"], q["y"], float(q["w"]), q.get("p"))
+    degree = FAMILIES.get(family) or JULIA[family]
+    return Location(
+        link, family, degree, q["x"], q["y"], float(q["w"]), q.get("p"), q.get("cx"), q.get("cy"), q
+    )
+
+
+def julia_descent(link: str) -> dict:
+    """A Julia link's descent: no chain, one stage, the link's own frame, and its `c`."""
+    location = parse(link)
+    frame = {"re": location.x, "im": location.y, "jre": location.jre, "jim": location.jim}
+    return {
+        "degree": location.degree,
+        "family": location.family,
+        "palette": location.palette,
+        "branch": None,
+        "chain": [],
+        "final": {"re": location.x, "im": location.y},
+        "julia": {"re": location.jre, "im": location.jim, "anchor": _anchor(frame)},
+        "query": location.query,
+        "stages": [{"name": "target", "width": location.w}],
+        "notes": [
+            "a Julia link, taken as it is: no chain and no copies, so no stage but the target"
+        ],
+    }
 
 
 def _limbs(size_log2: float) -> int:
@@ -289,6 +328,8 @@ def _fits(period: int) -> bool:
 def descend(links: list[str], branch: int = 0) -> dict:
     """The chain's stages, each with its frame, its copy and what was measured on the way."""
     locations = [parse(link) for link in links]
+    if any(loc.jre is not None for loc in locations):
+        raise DescentError("a Julia descent is one link, taken as it is, with no chain")
     if len({loc.family for loc in locations}) > 1:
         raise DescentError("every location must be the same family: " + ", ".join(links))
     degree = locations[0].degree
@@ -398,9 +439,11 @@ def descend(links: list[str], branch: int = 0) -> dict:
 # ------------------------------------------------------------------------------ the record
 
 
-def _needed(degree: int, cx: float, cy: float, aspect: float) -> tuple[float, dict]:
+def _needed(
+    degree: int, cx: float, cy: float, aspect: float, julia: bool = False
+) -> tuple[float, dict]:
     """The width that holds the family's home frame whole, centred where the descent is."""
-    hx, hw = HOME[degree]
+    hx, hw = JULIA_HOME if julia else HOME[degree]
     hh = hw * aspect
     re = [hx - hw / 2, hx + hw / 2]
     im = [-hh / 2, hh / 2]
@@ -408,9 +451,10 @@ def _needed(degree: int, cx: float, cy: float, aspect: float) -> tuple[float, di
     return need, {"re": re, "im": im}
 
 
-def _settle(re: str, im: str, width: float, degree: int) -> dict:
+def _settle(re: str, im: str, width: float, degree: int, julia: dict | None = None) -> dict:
+    c = {"jre": julia["re"], "jim": julia["im"], "anchor": julia["anchor"]} if julia else {}
     return _native(
-        "settle", re=re, im=im, w=f"{width:.17g}", deg=degree, res=f"{GRID[0]}x{GRID[1]}"
+        "settle", re=re, im=im, w=f"{width:.17g}", deg=degree, res=f"{GRID[0]}x{GRID[1]}", **c
     )
 
 
@@ -419,9 +463,10 @@ def record(descent: dict, name: str, links: list[str], log=print) -> dict:
     first width that holds the home view, the stages named on their nearest keyframe."""
     degree = descent["degree"]
     centre = descent["final"]
+    julia = descent.get("julia")
     cx, cy = float(centre["re"]), float(centre["im"])
     aspect = GRID[1] / GRID[0]
-    need, fit = _needed(degree, cx, cy, aspect)
+    need, fit = _needed(degree, cx, cy, aspect, julia=julia is not None)
     stages = [{"name": "home", "width": need}, *descent["stages"]]
     target = stages[-1]["width"]
     count = math.ceil(math.log2(need / target)) + 1
@@ -432,7 +477,7 @@ def record(descent: dict, name: str, links: list[str], log=print) -> dict:
     frames = []
     for k in range(count):
         width = target * 2.0**k
-        settled = _settle(centre["re"], centre["im"], width, degree)
+        settled = _settle(centre["re"], centre["im"], width, degree, julia)
         floor = max((s["cap_floor"] for s in stages if s["cap_floor"] and s["k"] >= k), default=0)
         frame = {
             "k": k,
@@ -453,8 +498,31 @@ def record(descent: dict, name: str, links: list[str], log=print) -> dict:
     family = descent["family"]
     f = "" if family == "mandelbrot" else f"&f={family}"
     palette = descent["palette"] or "glowdon"
+    c = f"&cx={julia['re']}&cy={julia['im']}" if julia else ""
     link = (
-        f"explorer/index.html?dv=3{f}&x={centre['re']}&y={centre['im']}&w={target:.6g}&p={palette}"
+        f"explorer/index.html?dv=3{f}{c}&x={centre['re']}&y={centre['im']}&w={target:.6g}"
+        f"&p={palette}"
+    )
+    mappings = {
+        "linear": {"g": "nu", "L": 600, "phase": 0},
+        "log": {"g": "ln nu", "L": 0.25, "phase": 0},
+        "power": {"g": "nu^alpha", "alpha": 0.3, "L": 0.6, "phase": 0},
+    }
+    q = descent.get("query") or {}
+    if q.get("scale") == "absolute":
+        # The link's own colour, where it is the explorer's Absolute: one function of `nu`
+        # already, so the video can carry it as it is.
+        mappings["absolute"] = {
+            "g": "T_lambda(nu)",
+            "lambda": float(q.get("lambda", 1)),
+            "L": float(q.get("period", 1)),
+            "phase": float(q.get("phase", 0)),
+            "why": "the link's own scale=absolute colour, as the explorer draws it",
+        }
+    own = (
+        {"julia_re": julia["re"], "julia_im": julia["im"], "anchor": julia["anchor"]}
+        if julia
+        else {}
     )
     return {
         "schema": 1,
@@ -469,6 +537,7 @@ def record(descent: dict, name: str, links: list[str], log=print) -> dict:
         "center_im": centre["im"],
         "target_width": target,
         "degree": degree,
+        **own,
         "family": family,
         "mode": "smooth",
         "palette": palette,
@@ -496,11 +565,7 @@ def record(descent: dict, name: str, links: list[str], log=print) -> dict:
             "interior": [0, 0, 0],
             "note": "index = frac(g(nu) / L + phase). The log mapping's L and phase are Hold "
             "look's, set by `python -m builder descent --colour`.",
-            "mappings": {
-                "linear": {"g": "nu", "L": 600, "phase": 0},
-                "log": {"g": "ln nu", "L": 0.25, "phase": 0},
-                "power": {"g": "nu^alpha", "alpha": 0.3, "L": 0.6, "phase": 0},
-            },
+            "mappings": mappings,
         },
     }
 
@@ -626,6 +691,8 @@ def stills(name: str) -> Path:
     from . import zoom
 
     rec = json.loads((DATA / f"{name}.keyframes.json").read_text(encoding="utf-8"))
+    if "julia_re" in rec:
+        raise DescentError(f"{name}: a Julia descent has no stages or twin to show")
     out_dir = zoom.zoom_dir(name) / "stills"
     out_dir.mkdir(parents=True, exist_ok=True)
     m = dict(rec["colour"]["mappings"]["log"], kind="log", palette=rec["palette"])
@@ -715,9 +782,12 @@ def main(options: argparse.Namespace) -> list[str]:
     links = options.links
     if not links:
         raise DescentError("a descent needs at least one link")
-    if len(links) == 1:
-        links = [links[0], links[0]]
-    descent = descend(links, options.branch)
+    if len(links) == 1 and parse(links[0]).jre is not None:
+        descent = julia_descent(links[0])
+    else:
+        if len(links) == 1:
+            links = [links[0], links[0]]
+        descent = descend(links, options.branch)
     lines = [json.dumps(descent, indent=1)]
     if options.dry_run:
         return lines

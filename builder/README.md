@@ -1349,6 +1349,41 @@ python builder/zoom.py --record builder/data/<name>.keyframes.json video --mappi
 ⚠ **The base is now the big render.** At the favicon seat's depth, `4k60`'s fields were 18 GB
 and 25.8 h. Point `artifacts/<name>` at a larger disk before the fields start, as `4k60` did.
 
+**A Julia link is a descent too** *(julia3_palette_ckpt157)*. One `julia`, `julia3` …
+`julia6` link, `cx` and `cy` required, is taken as it is: there are no copies to descend by,
+so there is no chain, one stage (`target`, the link's frame), and a keyframe at every halving
+up to the first width that holds the Julia home view, centre 0 and width 3 at every degree
+and every `c` (`engine.wasm`'s `plan`, read 2026-09-30). The record carries `julia_re`,
+`julia_im` (text, as the link spells them) and `anchor`, chosen as `deep-render.js`'s
+`anchorOf` chooses it, and `zoom_fields.mjs`'s `baseSpec` hands all three to `perturb.wasm`
+as `deepSpecOf` does; the native `settle` takes them as `--jre`, `--jim` and `--anchor`. A
+record without them is drawn byte for byte as before. `data/julia3-descent.keyframes.json` is
+`go/julia3-end`'s descent: 64 keyframes from 8.8 to 9.6e-19, 100% escaped at every depth.
+
+**A link's own Absolute colour rides into the record** where it has one: `scale=absolute`
+adds an `absolute` mapping, `g = T_lambda(nu)`, the engine's Box–Cox (`(nu^lambda − 1)/lambda`,
+`ln nu` at 0), with the link's `period` as `L`, so the video's last frame is the link's own
+colouring. Redrawn through `deep_figures.mjs` at 864×486 ss2 and coloured this way, the
+`julia3-end` field lands within a mean 13.6 levels of the committed panel, which is the
+shading and WebP's loss.
+
+**A mapping may carry a `schedule`**, the one exception to one fixed function of `nu`: points
+`{w, L, phase, lambda}` over the frame's width, interpolated in `log2 w` (`L` in its log), so
+the colouring can follow a descent whose `nu` changes character with depth. The julia3 descent
+is why: its p0.5–p99.5 stretch of `nu` is about 300–450 down to 8e-6 and about 10,000–12,000
+below 1.3e-7, so `period=1870`, right for the target, is a fifth of one turn across the
+opening. A scheduled mapping is coloured **per video frame, at that frame's width**, from the
+fields themselves (`zoom.py`'s `Fields` and `composite_scheduled`), so the two keyframes a
+frame blends always agree; `colour` and `sheet` write each keyframe at its own width. A
+schedule can also be laid over a mapping for one run:
+
+```
+python builder/zoom.py --record builder/data/julia3-descent.keyframes.json --variant preview video --mapping absolute --schedule <file.json>
+```
+
+where the file is `{"name": N, "points": [...]}` and `N` names the output. The julia3
+proposals (`scratch/julia3_palette_ckpt157/`) are schedules in exactly this form.
+
 `deep-descent-pairs` colours a twin the other way round: its counts are about `p_A` times
 its source's, so under `lambda=0` it is its source shifted by `ln p_A`, and taking that off
 the phase puts the twin in its source's colours.

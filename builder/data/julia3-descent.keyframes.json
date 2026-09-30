@@ -1,0 +1,170 @@
+{
+  "schema": 1,
+  "name": "julia3-descent",
+  "note": "An automatic minibrot descent's recipe, written by `python -m builder descent`: the chain it was asked for, the stages it found, and a keyframe at every halving centred on the last copy. `zoom_fields.mjs --record` draws the fields and `zoom.py --record` colours and encodes them; `builder/README.md` has the commands.",
+  "links": [
+    "explorer/?dv=3&f=julia3&cx=-0.58413281594404725991481&cy=0.59245849880966115110917&x=-0.584132815944058992898512215843141062&y=0.5924584988096639248232840130634390744&w=9.56660258469484e-19&n=1607102&p=Ink%20%26%20Fuchsia%20Flare&phase=0.091&scale=absolute&period=1870"
+  ],
+  "link": "explorer/index.html?dv=3&f=julia3&cx=-0.58413281594404725991481&cy=0.59245849880966115110917&x=-0.584132815944058992898512215843141062&y=0.5924584988096639248232840130634390744&w=9.5666e-19&p=Ink & Fuchsia Flare",
+  "center_re": "-0.584132815944058992898512215843141062",
+  "center_im": "0.5924584988096639248232840130634390744",
+  "target_width": 9.56660258469484e-19,
+  "degree": 3,
+  "julia_re": "-0.58413281594404725991481",
+  "julia_im": "0.59245849880966115110917",
+  "anchor": "parameter",
+  "family": "julia3",
+  "mode": "smooth",
+  "palette": "Ink & Fuchsia Flare",
+  "branch": null,
+  "chain": [],
+  "stages": [
+    {
+      "name": "home",
+      "width": 5.106519106878805,
+      "k": 62,
+      "cap_floor": null
+    },
+    {
+      "name": "target",
+      "width": 9.56660258469484e-19,
+      "k": 0,
+      "cap_floor": null
+    }
+  ],
+  "notes": [
+    "a Julia link, taken as it is: no chain and no copies, so no stage but the target"
+  ],
+  "fit": {
+    "note": "The family's home view, from engine.wasm's plan.",
+    "re": [-1.5, 1.5],
+    "im": [-0.84375, 0.84375]
+  },
+  "keyframes": {
+    "rule": "w_k = target_width * 2^k, k = 0 up to the first width that holds the home view",
+    "grid": [7680, 4320],
+    "supersample": 1,
+    "cap_rule": "the Deep tab's settle (deep-gallery-native settle, policy::settle), raised at every stage frame and each keyframe deeper to 32 periods of that stage's copy, under cap::EXPLICIT_CEILING; then, as the floor, measured by zoom_fields.mjs's capRule over the probe (kept as `was`)",
+    "probe": [480, 270],
+    "cap": {
+      "share": 1e-05,
+      "headroom": 2
+    },
+    "frames": [
+      { "k": 0, "width": 9.56660258469484e-19, "maxiter": 77732, "settled": 77732, "probe_mean": 14209, "escaped": 1.0, "stage": "target" },
+      { "k": 1, "width": 1.913320516938968e-18, "maxiter": 76532, "settled": 76532, "probe_mean": 13637, "escaped": 1.0 },
+      { "k": 2, "width": 3.826641033877936e-18, "maxiter": 75332, "settled": 75332, "probe_mean": 13870, "escaped": 1.0 },
+      { "k": 3, "width": 7.653282067755872e-18, "maxiter": 74132, "settled": 74132, "probe_mean": 12975, "escaped": 1.0 },
+      { "k": 4, "width": 1.5306564135511744e-17, "maxiter": 72932, "settled": 72932, "probe_mean": 12539, "escaped": 1.0 },
+      { "k": 5, "width": 3.061312827102349e-17, "maxiter": 71732, "settled": 71732, "probe_mean": 12833, "escaped": 1.0 },
+      { "k": 6, "width": 6.122625654204698e-17, "maxiter": 70532, "settled": 70532, "probe_mean": 13125, "escaped": 1.0 },
+      { "k": 7, "width": 1.2245251308409395e-16, "maxiter": 69332, "settled": 69332, "probe_mean": 12000, "escaped": 1.0 },
+      { "k": 8, "width": 2.449050261681879e-16, "maxiter": 68132, "settled": 68132, "probe_mean": 11721, "escaped": 1.0 },
+      { "k": 9, "width": 4.898100523363758e-16, "maxiter": 66932, "settled": 66932, "probe_mean": 11762, "escaped": 1.0 },
+      { "k": 10, "width": 9.796201046727516e-16, "maxiter": 65732, "settled": 65732, "probe_mean": 11982, "escaped": 1.0 },
+      { "k": 11, "width": 1.9592402093455032e-15, "maxiter": 64532, "settled": 64532, "probe_mean": 10785, "escaped": 1.0 },
+      { "k": 12, "width": 3.9184804186910065e-15, "maxiter": 63332, "settled": 63332, "probe_mean": 8984, "escaped": 1.0 },
+      { "k": 13, "width": 7.836960837382013e-15, "maxiter": 62132, "settled": 62132, "probe_mean": 7367, "escaped": 1.0 },
+      { "k": 14, "width": 1.5673921674764026e-14, "maxiter": 60932, "settled": 60932, "probe_mean": 6397, "escaped": 1.0 },
+      { "k": 15, "width": 3.134784334952805e-14, "maxiter": 59732, "settled": 59732, "probe_mean": 6222, "escaped": 1.0 },
+      { "k": 16, "width": 6.26956866990561e-14, "maxiter": 58532, "settled": 58532, "probe_mean": 6042, "escaped": 1.0 },
+      { "k": 17, "width": 1.253913733981122e-13, "maxiter": 57332, "settled": 57332, "probe_mean": 5890, "escaped": 1.0 },
+      { "k": 18, "width": 2.507827467962244e-13, "maxiter": 56132, "settled": 56132, "probe_mean": 6223, "escaped": 1.0 },
+      { "k": 19, "width": 5.015654935924488e-13, "maxiter": 54932, "settled": 54932, "probe_mean": 5734, "escaped": 1.0 },
+      { "k": 20, "width": 1.0031309871848977e-12, "maxiter": 53732, "settled": 53732, "probe_mean": 5273, "escaped": 1.0 },
+      { "k": 21, "width": 2.0062619743697953e-12, "maxiter": 52532, "settled": 52532, "probe_mean": 4665, "escaped": 1.0 },
+      { "k": 22, "width": 4.012523948739591e-12, "maxiter": 51332, "settled": 51332, "probe_mean": 4843, "escaped": 1.0 },
+      { "k": 23, "width": 8.025047897479181e-12, "maxiter": 50132, "settled": 50132, "probe_mean": 4149, "escaped": 1.0 },
+      { "k": 24, "width": 1.6050095794958362e-11, "maxiter": 48932, "settled": 48932, "probe_mean": 2939, "escaped": 1.0 },
+      { "k": 25, "width": 3.2100191589916725e-11, "maxiter": 47732, "settled": 47732, "probe_mean": 2491, "escaped": 1.0 },
+      { "k": 26, "width": 6.420038317983345e-11, "maxiter": 46532, "settled": 46532, "probe_mean": 2482, "escaped": 1.0 },
+      { "k": 27, "width": 1.284007663596669e-10, "maxiter": 45332, "settled": 45332, "probe_mean": 2173, "escaped": 1.0 },
+      { "k": 28, "width": 2.568015327193338e-10, "maxiter": 44132, "settled": 44132, "probe_mean": 2029, "escaped": 1.0 },
+      { "k": 29, "width": 5.136030654386676e-10, "maxiter": 42932, "settled": 42932, "probe_mean": 1806, "escaped": 1.0 },
+      { "k": 30, "width": 1.0272061308773352e-09, "maxiter": 41732, "settled": 41732, "probe_mean": 2166, "escaped": 1.0 },
+      { "k": 31, "width": 2.0544122617546704e-09, "maxiter": 40532, "settled": 40532, "probe_mean": 2105, "escaped": 1.0 },
+      { "k": 32, "width": 4.108824523509341e-09, "maxiter": 39332, "settled": 39332, "probe_mean": 2215, "escaped": 1.0 },
+      { "k": 33, "width": 8.217649047018682e-09, "maxiter": 38132, "settled": 38132, "probe_mean": 1957, "escaped": 1.0 },
+      { "k": 34, "width": 1.6435298094037363e-08, "maxiter": 36932, "settled": 36932, "probe_mean": 1807, "escaped": 1.0 },
+      { "k": 35, "width": 3.2870596188074726e-08, "maxiter": 35732, "settled": 35732, "probe_mean": 2266, "escaped": 1.0 },
+      { "k": 36, "width": 6.574119237614945e-08, "maxiter": 34532, "settled": 34532, "probe_mean": 2944, "escaped": 1.0 },
+      { "k": 37, "width": 1.314823847522989e-07, "maxiter": 33332, "settled": 33332, "probe_mean": 2735, "escaped": 1.0 },
+      { "k": 38, "width": 2.629647695045978e-07, "maxiter": 32132, "settled": 32132, "probe_mean": 1531, "escaped": 1.0 },
+      { "k": 39, "width": 5.259295390091956e-07, "maxiter": 30932, "settled": 30932, "probe_mean": 985, "escaped": 1.0 },
+      { "k": 40, "width": 1.0518590780183912e-06, "maxiter": 29732, "settled": 29732, "probe_mean": 492, "escaped": 1.0 },
+      { "k": 41, "width": 2.1037181560367825e-06, "maxiter": 28532, "settled": 28532, "probe_mean": 232, "escaped": 1.0 },
+      { "k": 42, "width": 4.207436312073565e-06, "maxiter": 27332, "settled": 27332, "probe_mean": 144, "escaped": 1.0 },
+      { "k": 43, "width": 8.41487262414713e-06, "maxiter": 26132, "settled": 26132, "probe_mean": 134, "escaped": 1.0 },
+      { "k": 44, "width": 1.682974524829426e-05, "maxiter": 24932, "settled": 24932, "probe_mean": 134, "escaped": 1.0 },
+      { "k": 45, "width": 3.365949049658852e-05, "maxiter": 23732, "settled": 23732, "probe_mean": 129, "escaped": 1.0 },
+      { "k": 46, "width": 6.731898099317704e-05, "maxiter": 22532, "settled": 22532, "probe_mean": 116, "escaped": 1.0 },
+      { "k": 47, "width": 0.00013463796198635408, "maxiter": 21332, "settled": 21332, "probe_mean": 80, "escaped": 1.0 },
+      { "k": 48, "width": 0.00026927592397270816, "maxiter": 20132, "settled": 20132, "probe_mean": 62, "escaped": 1.0 },
+      { "k": 49, "width": 0.0005385518479454163, "maxiter": 18932, "settled": 18932, "probe_mean": 57, "escaped": 1.0 },
+      { "k": 50, "width": 0.0010771036958908326, "maxiter": 17732, "settled": 17732, "probe_mean": 60, "escaped": 1.0 },
+      { "k": 51, "width": 0.0021542073917816653, "maxiter": 16532, "settled": 16532, "probe_mean": 77, "escaped": 1.0 },
+      { "k": 52, "width": 0.0043084147835633305, "maxiter": 15332, "settled": 15332, "probe_mean": 79, "escaped": 1.0 },
+      { "k": 53, "width": 0.008616829567126661, "maxiter": 14132, "settled": 14132, "probe_mean": 93, "escaped": 1.0 },
+      { "k": 54, "width": 0.017233659134253322, "maxiter": 12932, "settled": 12932, "probe_mean": 110, "escaped": 1.0 },
+      { "k": 55, "width": 0.034467318268506644, "maxiter": 11732, "settled": 11732, "probe_mean": 115, "escaped": 1.0 },
+      { "k": 56, "width": 0.06893463653701329, "maxiter": 10532, "settled": 10532, "probe_mean": 91, "escaped": 1.0 },
+      { "k": 57, "width": 0.13786927307402658, "maxiter": 9332, "settled": 9332, "probe_mean": 64, "escaped": 1.0 },
+      { "k": 58, "width": 0.27573854614805315, "maxiter": 8132, "settled": 8132, "probe_mean": 50, "escaped": 1.0 },
+      { "k": 59, "width": 0.5514770922961063, "maxiter": 6932, "settled": 6932, "probe_mean": 31, "escaped": 1.0 },
+      { "k": 60, "width": 1.1029541845922126, "maxiter": 5732, "settled": 5732, "probe_mean": 29, "escaped": 1.0 },
+      { "k": 61, "width": 2.2059083691844252, "maxiter": 4532, "settled": 4532, "probe_mean": 20, "escaped": 1.0 },
+      { "k": 62, "width": 4.4118167383688505, "maxiter": 3332, "settled": 3332, "probe_mean": 12, "escaped": 1.0, "stage": "home" },
+      { "k": 63, "width": 8.823633476737701, "maxiter": 2132, "settled": 2132, "probe_mean": 5, "escaped": 1.0 }
+    ]
+  },
+  "video": {
+    "resolution": [3840, 2160],
+    "fps": 60,
+    "seconds_per_halving": 1.5,
+    "hold_start": 1,
+    "hold_end": 3,
+    "ease_seconds": 2,
+    "ease_note": "The zoom's speed in halvings per second rises from zero to 1/seconds_per_halving over ease_seconds along a raised cosine, and falls back the same way at the end.",
+    "feather": 0.08,
+    "feather_note": "The inner keyframe's edge fades over this share of its own width."
+  },
+  "variants": {
+    "preview": {
+      "note": "A half-size preview of this record's video: the same widths, caps, path, speed and colouring, at 1920x1080 fields and a 960x540 video. `zoom_fields.mjs --variant preview` and `zoom.py --variant preview` draw it under `<zoom dir>/preview/`.",
+      "grid": [1920, 1080],
+      "supersample": 1,
+      "video": {
+        "resolution": [960, 540]
+      }
+    }
+  },
+  "colour": {
+    "interior": [0, 0, 0],
+    "note": "index = frac(g(nu) / L + phase). The log mapping's L and phase are Hold look's, set by `python -m builder descent --colour`.",
+    "mappings": {
+      "linear": {
+        "g": "nu",
+        "L": 600,
+        "phase": 0
+      },
+      "log": {
+        "g": "ln nu",
+        "L": 0.25,
+        "phase": 0
+      },
+      "power": {
+        "g": "nu^alpha",
+        "alpha": 0.3,
+        "L": 0.6,
+        "phase": 0
+      },
+      "absolute": {
+        "g": "T_lambda(nu)",
+        "lambda": 1.0,
+        "L": 1870.0,
+        "phase": 0.091,
+        "why": "the link's own scale=absolute colour, as the explorer draws it"
+      }
+    }
+  }
+}

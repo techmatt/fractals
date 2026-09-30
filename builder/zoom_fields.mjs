@@ -114,6 +114,13 @@ function baseSpec(record, width, keyframes = record.keyframes) {
   };
   if (keyframes.supersample > 1) spec.supersample = keyframes.supersample;
   if (record.degree !== 2) spec.degree = record.degree;
+  // A Julia record's `c` and anchor, spelled as `deep-render.js`'s `deepSpecOf` spells them:
+  // every keyframe shares the target's centre, so one anchor serves them all.
+  if (record.julia_re !== undefined) {
+    spec.julia_re = record.julia_re;
+    spec.julia_im = record.julia_im;
+    spec.anchor = record.anchor;
+  }
   return spec;
 }
 

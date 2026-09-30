@@ -11,9 +11,20 @@ no levelling, so a place two keyframes share is the same colour in both. The ind
 
 - `linear`: `g = nu`;
 - `log`: `g = ln nu`;
-- `power`: `g = nu ** alpha`, `0 < alpha < 1`, whose cycles lengthen as `nu` grows.
+- `power`: `g = nu ** alpha`, `0 < alpha < 1`, whose cycles lengthen as `nu` grows;
+- `absolute`: `g = T_lambda(nu)`, the engine's Box–Cox compression, `(nu ** lambda - 1) /
+  lambda` and `ln nu` at zero: the explorer's `scale=absolute`, whose `period` is `L`, so
+  that a link's colour is carried here exactly.
 
 The palette is the engine's own, lifted once by `zoom_palette.mjs`; the interior is black.
+
+**A schedule** is the one exception to "one fixed function" (julia3_palette_ckpt157). A
+mapping may carry `schedule`, a list of `{"w": width, "L": …, "phase": …, "lambda": …}`
+points, and then `L`, `phase` and `lambda` are functions of the frame's width: `L` and
+`lambda` interpolated linearly in `log2 w` (`L` in its log), `phase` linearly, held
+constant past either end. A scheduled mapping colours each video frame from the fields at
+that frame's own width, so the two keyframes it blends always agree; `colour` then writes
+each keyframe at its own width, which is what its PNG is used for (a sheet, a still).
 
     python builder/zoom.py stats                     nu and band widths per keyframe
     python builder/zoom.py colour --mapping log      keyframe PNGs for one mapping
@@ -43,7 +54,7 @@ from PIL import Image
 HERE = Path(__file__).resolve().parent
 RECORD = HERE / "data" / "deep-zoom-descent.keyframes.json"
 TABLE_SIZE = 65536
-MAPPINGS = ("linear", "log", "power")
+MAPPINGS = ("linear", "log", "power", "absolute")
 #: The encode every video gets unless its record, its variant or a flag says otherwise: the
 #: double-descent `4k60` master's (double_descent_4k_ckpt148), taken as the baseline by
 #: video_defaults_ckpt151. The profile, the 4:2:0 and the BT.709 tags are in `encode_command`
@@ -123,10 +134,14 @@ def mapping_of(record: dict, args: argparse.Namespace) -> dict:
     """The record's defaults for one mapping, with any flag given laid over them."""
     chosen = dict(record["colour"]["mappings"][args.mapping])
     chosen["kind"] = args.mapping
-    for key in ("L", "alpha", "phase"):
-        value = getattr(args, key, None)
+    for key, flag in (("L", "L"), ("alpha", "alpha"), ("phase", "phase"), ("lambda", "lam")):
+        value = getattr(args, flag, None)
         if value is not None:
             chosen[key] = value
+    if getattr(args, "schedule", None) is not None:
+        laid = json.loads(args.schedule.read_text(encoding="utf-8"))
+        chosen["schedule"] = laid["points"]
+        chosen["schedule_name"] = laid["name"]
     chosen["palette"] = args.palette or record["palette"]
     chosen["record"] = record["name"]
     chosen["mirror"] = bool(args.mirror)
@@ -135,7 +150,34 @@ def mapping_of(record: dict, args: argparse.Namespace) -> dict:
         raise SystemExit(f"{args.mapping}: L must be positive")
     if args.mapping == "power" and not 0 < chosen.get("alpha", 0) < 1:
         raise SystemExit("power: alpha must be in (0, 1)")
+    if args.mapping == "absolute" and not 0 <= chosen.get("lambda", 1) <= 1:
+        raise SystemExit("absolute: lambda must be in [0, 1]")
     return chosen
+
+
+def params_at(m: dict, width: float | None) -> dict:
+    """The mapping as it stands at a frame this wide: itself, or its schedule read there."""
+    points = m.get("schedule")
+    if not points or width is None:
+        return m
+    points = sorted(points, key=lambda p: -p["w"])  # home first, as the descent runs
+    at = math.log2(width)
+    xs = [math.log2(p["w"]) for p in points]
+    out = dict(m)
+    if at >= xs[0]:
+        lo, hi, t = points[0], points[0], 0.0
+    elif at <= xs[-1]:
+        lo, hi, t = points[-1], points[-1], 0.0
+    else:
+        i = next(i for i in range(len(xs) - 1) if xs[i] >= at >= xs[i + 1])
+        lo, hi = points[i], points[i + 1]
+        t = (xs[i] - at) / (xs[i] - xs[i + 1])
+    out["L"] = math.exp((1 - t) * math.log(lo["L"]) + t * math.log(hi["L"]))
+    out["phase"] = (1 - t) * lo.get("phase", 0) + t * hi.get("phase", 0)
+    if "lambda" in lo or "lambda" in hi:
+        low, high = lo.get("lambda", m.get("lambda", 1)), hi.get("lambda", m.get("lambda", 1))
+        out["lambda"] = (1 - t) * low + t * high
+    return out
 
 
 def mapping_name(m: dict) -> str:
@@ -143,6 +185,10 @@ def mapping_name(m: dict) -> str:
     parts = [m["kind"], f"L{m['L']:g}"]
     if m["kind"] == "power":
         parts.append(f"a{m['alpha']:g}")
+    if m["kind"] == "absolute" and m.get("lambda", 1) != 1:
+        parts.append(f"l{m['lambda']:g}")
+    if m.get("schedule"):
+        parts.append(m.get("schedule_name", "scheduled"))
     if m["phase"]:
         parts.append(f"p{m['phase']:g}")
     parts.append(
@@ -157,6 +203,12 @@ def g_of(nu: np.ndarray, m: dict) -> np.ndarray:
     if m["kind"] == "log":
         # nu can dip under one right at the bailout; the log is taken of what it is.
         return np.log(np.maximum(nu, 1e-9))
+    if m["kind"] == "absolute":
+        # The engine's `Palette::compress`: below zero is zero's, and zero's log is its floor.
+        lam = m.get("lambda", 1)
+        if lam == 0:
+            return np.log(np.maximum(nu, 1e-9))
+        return (np.power(np.maximum(nu, 0.0), lam) - 1.0) / lam
     return np.power(np.maximum(nu, 0.0), m["alpha"])
 
 
@@ -172,7 +224,11 @@ def palette_table(m: dict) -> np.ndarray:
     return np.fromfile(path, dtype=np.uint8).reshape(TABLE_SIZE, 3)
 
 
-def colour(nu: np.ndarray, m: dict, table: np.ndarray, interior) -> np.ndarray:
+def colour(
+    nu: np.ndarray, m: dict, table: np.ndarray, interior, width: float | None = None
+) -> np.ndarray:
+    """The field in colour; a scheduled mapping is read at `width`, the frame's own."""
+    m = params_at(m, width)
     inside = np.isnan(nu)
     g = g_of(np.where(inside, 1.0, nu), m)
     index = np.mod(g / m["L"] + m["phase"], 1.0)
@@ -185,7 +241,8 @@ def colour(nu: np.ndarray, m: dict, table: np.ndarray, interior) -> np.ndarray:
 def _colour_one(job: tuple) -> str:
     record, k, m, out = job
     table = palette_table(m)
-    rgb = colour(read_field(record, k), m, table, record["colour"]["interior"])
+    width = next(f["width"] for f in record["keyframes"]["frames"] if f["k"] == k)
+    rgb = colour(read_field(record, k), m, table, record["colour"]["interior"], width)
     Image.fromarray(rgb, "RGB").save(out, compress_level=1)
     return out.name
 
@@ -243,8 +300,9 @@ def sheet(record: dict, m: dict, picks: list[int]) -> Path:
     """Chosen keyframes at a quarter size, side by side, for a choice of L."""
     table = palette_table(m)
     tiles = []
+    widths = {f["k"]: f["width"] for f in record["keyframes"]["frames"]}
     for k in picks:
-        rgb = colour(read_field(record, k), m, table, record["colour"]["interior"])
+        rgb = colour(read_field(record, k), m, table, record["colour"]["interior"], widths[k])
         tiles.append(Image.fromarray(rgb).resize((960, 540), Image.Resampling.BOX))
     cols = min(3, len(tiles))
     rows = math.ceil(len(tiles) / cols)
@@ -353,6 +411,66 @@ def composite(frames: Keyframes, s: float, size: tuple[int, int], feather: float
     return np.clip(frame + 0.5, 0, 255).astype(np.uint8)
 
 
+class Fields:
+    """The `nu` fields a scheduled mapping composites from, read as needed and dropped once
+    passed: `Keyframes`'s shape, with the colouring left to each video frame."""
+
+    def __init__(self, record: dict, m: dict):
+        self.record = record
+        self.m = m
+        self.table = palette_table(m)
+        self.interior = record["colour"]["interior"]
+        self.top = len(record["keyframes"]["frames"]) - 1
+        self.target = record["target_width"]
+        self.held: dict[int, np.ndarray] = {}
+
+    def get(self, k: int) -> np.ndarray:
+        if k not in self.held:
+            self.held[k] = read_field(self.record, k)
+            for old in [key for key in self.held if key > k + 1]:
+                del self.held[old]
+        return self.held[k]
+
+    def crop(self, k: int, box: tuple[float, float, float, float], size, width: float):
+        """The part of keyframe `k` inside `box` (field pixels), coloured at the frame's
+        `width` and area-filtered to `size`: what `Keyframes` does, colour first."""
+        nu = self.get(k)
+        x0, y0 = max(0, math.floor(box[0])), max(0, math.floor(box[1]))
+        x1, y1 = min(nu.shape[1], math.ceil(box[2])), min(nu.shape[0], math.ceil(box[3]))
+        rgb = colour(nu[y0:y1, x0:x1], self.m, self.table, self.interior, width)
+        inner = (box[0] - x0, box[1] - y0, box[2] - x0, box[3] - y0)
+        return Image.fromarray(rgb).resize(size, Image.Resampling.BOX, box=inner)
+
+
+def composite_scheduled(fields: Fields, s: float, size: tuple[int, int], feather: float):
+    """`composite`, for a scheduled mapping: both keyframes coloured at this frame's width."""
+    out_w, out_h = size
+    j = min(int(math.floor(s)), fields.top)
+    zoom = 2.0 ** (s - j)
+    width = fields.target * 2.0 ** (fields.top - s)
+    outer = fields.get(fields.top - j)
+    kh, kw = outer.shape
+    hw, hh = kw / 2 / zoom, kh / 2 / zoom
+    base = fields.crop(fields.top - j, (kw / 2 - hw, kh / 2 - hh, kw / 2 + hw, kh / 2 + hh),
+                       size, width)  # fmt: skip
+    k_inner = fields.top - j - 1
+    if k_inner < 0:
+        return np.asarray(base)
+    ih, iw = fields.get(k_inner).shape
+    x0 = out_w / 2 * (1 - zoom / 2)
+    y0 = out_h / 2 * (1 - zoom / 2)
+    x1, y1 = out_w - x0, out_h - y0
+    px0, py0, px1, py1 = math.ceil(x0), math.ceil(y0), math.floor(x1), math.floor(y1)
+    scale = iw / (x1 - x0)
+    src = ((px0 - x0) * scale, (py0 - y0) * scale, (px1 - x0) * scale, (py1 - y0) * scale)
+    patch = fields.crop(k_inner, src, (px1 - px0, py1 - py0), width)
+    mask = feather_mask(px1 - px0, py1 - py0, feather * (x1 - x0))[..., None]
+    frame = np.asarray(base).astype(np.float32)
+    region = frame[py0:py1, px0:px1]
+    frame[py0:py1, px0:px1] = region + (np.asarray(patch, np.float32) - region) * mask
+    return np.clip(frame + 0.5, 0, 255).astype(np.uint8)
+
+
 def ffmpeg_exe() -> str:
     try:
         import imageio_ffmpeg
@@ -361,10 +479,14 @@ def ffmpeg_exe() -> str:
     return imageio_ffmpeg.get_ffmpeg_exe()
 
 
-def still(record: dict, directory: Path, s: float, out: Path) -> None:
+def still(record: dict, directory: Path, s: float, out: Path, m: dict | None = None) -> None:
     """The one frame `s` halvings down, as a PNG: what a before-and-after pair is made of."""
     video = record["video"]
-    frame = composite(Keyframes(directory, record), s, tuple(video["resolution"]), video["feather"])
+    size = tuple(video["resolution"])
+    if m is not None and m.get("schedule"):
+        frame = composite_scheduled(Fields(record, m), s, size, video["feather"])
+    else:
+        frame = composite(Keyframes(directory, record), s, size, video["feather"])
     out.parent.mkdir(parents=True, exist_ok=True)
     Image.fromarray(frame).save(out)
     print(out)
@@ -411,12 +533,15 @@ def encode(
     crf: int | None = None,
     preset: str | None = None,
     span: tuple[float, float] | None = None,
+    m: dict | None = None,
 ) -> None:
     """Composite every frame of the schedule, or only those whose `s` lies in `span`, and
-    encode them with `encode_command`."""
+    encode them with `encode_command`. A scheduled mapping `m` composites from the fields."""
     video = record["video"]
     size = tuple(video["resolution"])
-    frames = Keyframes(directory, record)
+    scheduled = m is not None and bool(m.get("schedule"))
+    frames = Fields(record, m) if scheduled else Keyframes(directory, record)
+    draw = composite_scheduled if scheduled else composite
     plan = schedule(record)
     if span is not None:
         plan = [s for s in plan if span[0] <= s <= span[1]]
@@ -425,7 +550,7 @@ def encode(
     started = time.perf_counter()
     with subprocess.Popen(command, stdin=subprocess.PIPE) as encoder:
         for i, s in enumerate(plan):
-            encoder.stdin.write(composite(frames, s, size, video["feather"]).tobytes())
+            encoder.stdin.write(draw(frames, s, size, video["feather"]).tobytes())
             if i % 600 == 0:
                 print(
                     f"  frame {i}/{len(plan)} s={s:.2f} {time.perf_counter() - started:.0f}s",
@@ -457,6 +582,13 @@ def main(argv: list[str] | None = None) -> None:
         p.add_argument("--mapping", choices=MAPPINGS, required=True)
         p.add_argument("--L", type=float, help="the cycle length, in units of g")
         p.add_argument("--alpha", type=float, help="power only: the exponent")
+        p.add_argument("--lambda", dest="lam", type=float, help="absolute only: Box-Cox lambda")
+        p.add_argument(
+            "--schedule",
+            type=Path,
+            help='a JSON {"name": N, "points": [{"w", "L", "phase", "lambda"}, ...]} laid over '
+            "the mapping's own schedule",
+        )
         p.add_argument("--phase", type=float)
         p.add_argument("--palette", help="a palette name from explorer/palettes.js")
         p.add_argument("--mirror", action="store_true")
@@ -484,19 +616,21 @@ def main(argv: list[str] | None = None) -> None:
         sheet(record, m, [int(k) for k in args.keys.split(",")])
         return
     only = [int(k) for k in args.only.split(",")] if args.only else None
-    if args.command in ("colour", "video"):
+    # A scheduled mapping's video is coloured frame by frame from the fields, so the video
+    # command skips the keyframe PNGs it would not read.
+    if args.command == "colour" or (args.command == "video" and not m.get("schedule")):
         directory = colour_all(record, m, args.workers, only)
     suffix = f"_{record['variant']}" if record.get("variant") else ""
     if args.command == "still":
         name = f"{record['name']}_{mapping_name(m)}{suffix}_s{args.s:g}.png"
-        still(record, directory, args.s, args.out or variant_dir(record) / "stills" / name)
+        still(record, directory, args.s, args.out or variant_dir(record) / "stills" / name, m)
     if args.command in ("encode", "video"):
-        if not directory.exists():
+        if not m.get("schedule") and not directory.exists():
             raise SystemExit(f"{directory} is not coloured yet: run colour first")
         video = variant_dir(record) / "video"
         out = args.out or video / f"{record['name']}_{mapping_name(m)}{suffix}.mp4"
         span = tuple(float(v) for v in args.span.split(",")) if args.span else None
-        encode(record, directory, out, args.crf, args.preset, span)
+        encode(record, directory, out, args.crf, args.preset, span, m)
 
 
 if __name__ == "__main__":
