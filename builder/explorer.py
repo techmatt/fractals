@@ -350,7 +350,7 @@ ENGINE_CHANGES = [
     "unmoved plus three new; the three anchors 0.99x to 1.01x; itinerary at the Mandelbrot "
     "anchor 11.05 s to 1.17 s natively, julia6 homes 19x to 31x in the orbit modes.",
     "autolevel, derive, and mode::tune, set, and params_of were ALREADY pub (render_link "
-    "phase 1, 778b55f), and are named here because this crate now imports them in place of "
+    "phase 1, 7a0729c), and are named here because this crate now imports them in place of "
     "its own level.rs, derive.rs, and lib.rs copies; engine_wasm_import_ckpt151. Nothing was "
     "changed next door for it: engine/ has no diff, the native release binary is the same "
     "file (sha256 753053ec…a064e0), and the fingerprint is unmoved (5d97e76bb16be71d). The "

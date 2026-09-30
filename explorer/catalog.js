@@ -16,7 +16,7 @@ export const PROVENANCE = {
   "constants_from": "data/anchors.jsonl",
   "modes_from": "fractal-engine modes",
   "roster_from": "modes.jsonl",
-  "wallpapers_commit": "aa2611bebb9abc9592362a121b6b3f5ac19fa7dd"
+  "wallpapers_commit": "9e516e064e7b389c0a4f191a428d3c901489b87c"
 };
 
 export const MODES = new Map([

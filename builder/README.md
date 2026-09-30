@@ -818,6 +818,12 @@ It needs two untracked settings, `full_set_root` and `packs_root` in `local.toml
 `https://github.com/techmatt/fractals/releases/latest/download/<file>`, which 404 until
 the zips are uploaded.
 
+**The release's tag was re-pointed once, on 2026-09-30, and no zip moved**: a history
+rewrite gave every commit a new id, and `wallpapers-2026-09-29` was force-updated to the
+rewritten commit carrying the same `packs.jsonl`, `packs.py`, and packs page. **Deleting a
+tag drops its release to a draft**, and these links 404 until it is republished, so a tag
+is only ever force-updated in the same push as the branch.
+
 **A rebuild after the packs are built fills the sizes in.** Until `packs_root` holds a
 `packs.json`, no download line shows a size and none says one is coming. Once
 `curate packs build` has written the zips, `python -m builder packs --import` then
@@ -1654,7 +1660,7 @@ run, with the mixture sheet beside it, is what the Dive block's default loop sho
 look like: the spread of planes, depths, landings and colorings a reader meets pressing Go.
 It is not something a rerun reproduces. Seed 154 once gave back its first 17 units field for
 field, but the root test moved to perturbation around the nucleus's own orbit since
-(`63a0fd0`), so the same seed now classifies, and so lands, differently. Compare a new run
+(`411a5d2`), so the same seed now classifies, and so lands, differently. Compare a new run
 with it by eye, never unit by unit. It is ignored and never committed.
 
 **The first sheet is `artifacts/dive-reference/deep_minibrot_candidates/`**: seed 154, 3 h, 957 units,

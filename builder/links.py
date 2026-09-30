@@ -987,7 +987,7 @@ def _constants(family: str, fields: dict, record: dict | None) -> dict:
 
 
 #: What the candidate ledger calls a screened composite's drawn texture weight: next door's
-#: `engine_spec.TEXTURE_WEIGHT`, written into `mode_params` since `9c615d6`.
+#: `engine_spec.TEXTURE_WEIGHT`, written into `mode_params` since `658eb81`.
 LEDGER_TEXTURE_WEIGHT = "texture_weight"
 
 

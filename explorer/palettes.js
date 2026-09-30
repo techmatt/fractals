@@ -51,7 +51,7 @@ export const PROVENANCE = {
     "release": "20260922T012627Z"
   },
   "source": "data/palettes/*.json",
-  "wallpapers_commit": "e1f287ec391563e3d293991c1b41fccccac57eca"
+  "wallpapers_commit": "6e82b6bd189599cdb62bb3c8987d713855a32f4e"
 };
 
 export const DEFAULT_PALETTE = "twilight_shifted";

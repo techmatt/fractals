@@ -244,7 +244,7 @@ for (const [i, c] of cases.entries()) {
         findings.push({ ...row, why: `same link, different raster: ${hash} vs ${hash2}` });
       }
       // A stopped dot with an empty stat line is what a refusal looks like since
-      // `a4cf6cd` — the line is taken back rather than left claiming work — so what
+      // `8e295d9` — the line is taken back rather than left claiming work — so what
       // makes it a finding is a stopped dot with *nothing said anywhere*.
       if (s.dot === "stopped" && !s.stats && !s.status && !s.noticeUp) {
         findings.push({ ...row, why: "drew nothing and said nothing: dot stopped, no stats, no sentence" });

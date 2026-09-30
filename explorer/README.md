@@ -3800,6 +3800,11 @@ never a failure: the module is committed and the site serves it whichever commit
 from, and a clone with no wallpaper project beside it — CI, every time — says nothing at
 all.
 
+**CI does fail on it, in another job**: `checks.yml`'s `crates` job checks the wallpaper
+project out at `wallpapers_commit` to compile against, so a pin naming a commit GitHub no
+longer has is red on all three platforms. A rewrite of that repository's history owes a
+re-stamp here from its commit map, pushed after the rewritten history is up.
+
 **The committed module rebuilds to its own bytes**, on this machine and this toolchain —
 `cargo build --release --target wasm32-unknown-unknown` and `engine.wasm` agree byte for
 byte, checked. It is not a check anything runs and it is not promised across machines,
@@ -3873,7 +3878,7 @@ what that table is buying, so the engine depends on the attribute for its own re
 this crate now reaches the specialization through the engine rather than beside it.
 
 - **`Family::PhoenixM`, `PHOENIX_PLANE` and `FamilySpec::PhoenixM` are new**
-  *(phoenix_tab_ckpt140, 2026-09-22; wallpapers `756c241`)*: the Phoenix recurrence over
+  *(phoenix_tab_ckpt140, 2026-09-22; wallpapers `76e2308`)*: the Phoenix recurrence over
   its parameter plane, spec kind `phoenix_m`, `p` defaulting to the classic −0.5. A new
   signature, which the carve-out allows because the prompt was sent for the seam. Its home
   row is measured by the ignored test that reproduces the five multibrot rows to the bit:
@@ -5307,7 +5312,7 @@ in that mode. `TEXTURE_DEFAULT` in `explorer.js` writes it into `view.params`, s
 carries `weight=0.5` and the contract is unmoved: a v3 link that leaves `weight` out still
 derives, and a seat still opens at the weight it was drawn at. That is its recorded
 `texture_weight` for a seat mined after the weight was drawn per candidate (next door's
-`9c615d6`), carried as `weight` by `links.ledger_view`, and the catalog's 0.85 for every
+`658eb81`), carried as `weight` by `links.ledger_view`, and the catalog's 0.85 for every
 seat mined before it, because that is the picture its tile shows. `threads` settles at 0.5
 already and is left alone.
 
@@ -6271,7 +6276,7 @@ belong to.
   up and the dot stopped, or drew a picture whose address bar is a fixed point.
 - **Impatience**, 23 of 25 bursts settled with the canvas matching its own link, verified by
   reopening in a second browser and comparing rasters. The two that did not were the drag
-  bug (`f83b199`) and a burst that inherited its state.
+  bug (`3b8daf2`) and a burst that inherited its state.
 - **The way back** across zoom, pan, mode, palette, phase and a minibrot returns both the link
   and the raster; forty steps past each end move nothing.
 - **Files** — stamped PNG and JPEG reopen; plain PNG, text, JSON, empty, 50 MB and a corrupted

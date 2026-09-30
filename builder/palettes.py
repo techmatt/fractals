@@ -253,7 +253,7 @@ def carriers() -> list[dict]:
     rule's own tiebreak.
 
     Verified against the last copy of the file that still carried both columns —
-    `fractal-wallpapers` b140f37, whose 3,665 rows the drop left otherwise untouched:
+    `fractal-wallpapers` 059a2fb, whose 3,665 rows the drop left otherwise untouched:
     **3,665 of 3,665 means and 10,995 of 10,995 (row, field) reads**, no exception. That
     is the same count that repository re-verified before it dropped them, arrived at from
     the other side.
