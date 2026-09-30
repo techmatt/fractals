@@ -1248,6 +1248,8 @@ def _land_split(identifier: str, drawn, maker, *, replace: bool, landing: bool) 
             row["ink"] = panel.ink
         if panel.band:
             row["band"] = panel.band
+        if panel.group:
+            row["group"] = panel.group
         if panel.deep:
             row["deep"] = panel.deep
         if panel.link:

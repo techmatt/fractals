@@ -22,10 +22,11 @@ Three bands, top to bottom, one per kind of hand label the Tools and data page o
   is refused: the row does not carry that curve, so neither a redraw nor a link could be
   the picture that was graded.
 
-Each band is eight across and two down, ratings 1 to 4 left to right, each rating a 2×2
-block. A band has one heading and a grid has one column count, so the rating is the label
-under every tile rather than a heading over each block; it also survives the grid
-reflowing on a narrow screen.
+Each band is four groups, ratings 1 to 4 left to right, each a 2×2 block with its rating
+said once under it *(tools_labels_groups_ckpt156)*. A group wraps whole, so on a narrow
+screen a block moves to the next line and never splits. The panels run rating by rating,
+since a group is the panels between it and the next; within a block the four picks read
+two across in the order the draw took them.
 
 **Only Matt's rows.** A row carries its `labeler`: `matt` for everything the labelling rig
 wrote since each store existed, and `null` for the rows imported from the corpus before
@@ -386,12 +387,8 @@ def _rows() -> dict[str, dict[int, list[dict]]]:
 
 
 def _order(found: dict[int, list[dict]]) -> list[tuple[int, dict]]:
-    """One band's panels in reading order: two rows of eight, each rating a 2×2 block."""
-    ordered = []
-    for top in range(0, PER_RATING, BLOCK):
-        for rating in RATINGS:
-            ordered += [(rating, row) for row in found[rating][top : top + BLOCK]]
-    return ordered
+    """One band's panels in group order: rating by rating, each a 2×2 block."""
+    return [(rating, row) for rating in RATINGS for row in found[rating]]
 
 
 def _family_words(family: dict) -> str:
@@ -469,8 +466,8 @@ def make() -> Split:
     lines = [
         f"builder.tools_labels:make — three bands of {len(RATINGS) * PER_RATING} panels at "
         f"{size[0]}x{size[1]}, {COLUMNS} across and {PER_RATING // BLOCK} down, landed one file "
-        f"a panel: in each band a rating is a {BLOCK}x{BLOCK} block, ratings 1 to 4 left to "
-        "right, and each panel is labelled with its rating. Places are rows of data/labels "
+        f"a panel: in each band a rating is a {BLOCK}x{BLOCK} group, ratings 1 to 4 left to "
+        "right, labelled once with its rating. Places are rows of data/labels "
         f"drawn fresh at {RENDER[0]}x{RENDER[1]}, supersample 3, mode smooth, in the neutral "
         f"map {renders.COLORMAP}, at the row's own cap. Wallpapers (data/smooth_render and "
         "data/strange_render) and gallery pictures (data/gallery_grade) are each one row drawn "
@@ -502,9 +499,13 @@ def make() -> Split:
                 Made(
                     sheets.save(sheets.fitted(picture, size), panel_path(ID, index), quiet=True),
                     alt=_alt(band, rating, row),
-                    label=str(rating),
                     spec=panel_spec(band, row),
                     band={"title": TITLES[band], "columns": COLUMNS} if position == 0 else None,
+                    group=(
+                        {"label": str(rating), "columns": BLOCK}
+                        if position % PER_RATING == 0
+                        else None
+                    ),
                 )
             )
             lines.append(_line(index, band, rating, row))

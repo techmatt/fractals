@@ -69,6 +69,10 @@
      inside a band: a sheet drew a clear hand-off there and three grids run together
      without one. */
   --figure-band-gap: 1.25rem;
+  /* The air between two groups inside a band, against --figure-gap between the tiles of
+     one: enough that a 2×2 block reads as a block. Four blocks of two across still fit
+     the wide column, where the panels' slack leaves about 6.5rem for three of these. */
+  --figure-group-gap: 1.25rem;
   /* The width of the store a flow figure draws between two stages, above the breakpoint:
      narrow, because a store holds rather than does, and wide enough for a count. */
   --figure-pool: 7.5rem;
@@ -584,6 +588,47 @@ a:hover { color: var(--ink); }
   color: var(--well-ink-dim);
 }
 .figure-block-judge { border-color: var(--figure-judge); color: var(--figure-judge); }
+
+/* A band in **groups**: blocks with a count across of their own and one label each,
+   which wrap as whole blocks — a narrow column moves a block to the next line and never
+   splits one. The band is a grid of block-wide tracks: a track's floor is the widest
+   block's panels at the band's own panel floor, so at the article's width the blocks
+   stand in one row, a block that wraps alone keeps its neighbours' size rather than
+   filling the line, and `min(100%, …)` keeps a phone's one block inside the column. The
+   stage passes its widest block as `--group-across`; each block passes its own. */
+.figure-stage.figure-grouped {
+  gap: var(--figure-group-gap);
+  grid-template-columns: repeat(
+    auto-fit,
+    minmax(
+      min(
+        100%,
+        calc(
+          var(--group-across) * var(--figure-panel) + (var(--group-across) - 1) * var(--figure-gap)
+        )
+      ),
+      1fr
+    )
+  );
+}
+/* The heading keeps the tile gap under it, as an ungrouped band's does. */
+.figure-grouped > .figure-band { margin-bottom: calc(var(--figure-gap) - var(--figure-group-gap)); }
+.figure-group {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: repeat(var(--group-across), minmax(0, 1fr));
+  align-content: start;
+  gap: var(--figure-gap);
+}
+.figure-group-label {
+  grid-column: 1 / -1;
+  margin: 0.1rem 0 0.1rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--well-ink);
+  text-align: center;
+}
 
 /* The step from one band to the next. `aria-hidden`, because the band titles already
    say the order and a screen reader gains nothing from *down arrow* between them. */

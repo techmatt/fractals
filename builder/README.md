@@ -370,7 +370,8 @@ P(≥3) and P(≥4) — then the palette judge's one set, since its scores compa
 one (one place in five of the set's maps; `select_palette` takes the first set by name that
 stands on no other figure's place); `tools-labels` (`tools_labels.py`) three bands, places
 (`data/labels`), wallpapers (`smooth_render` and `strange_render`) and gallery pictures
-(`gallery_grade`), each four seeded-random pictures at each of Matt's ratings. A
+(`gallery_grade`), each four seeded-random pictures at each of Matt's ratings, a rating a
+2×2 group labelled once. A
 `gallery_grade` row is a `run_row` key like the other two finished-render stores.
 
 ## The contents rail is derived, never kept
@@ -540,6 +541,16 @@ right once the rail is shown and stack below that breakpoint, which is `site.css
 `.figure-flow` inside the one media query the rail already owns, so the breakpoint is not
 written twice. `pipeline-overview` is the one flow figure, its counts are the pools' and
 stages' notes, and they are page text rather than pixels.
+
+**A band may be groups** *(tools_labels_groups_ckpt156)*: a panel's `group` is
+`{label, columns}` and opens a block that runs until the next group or band, with its own
+count across and its label said once, under it. A group lives inside a band, and a band
+with any opens one at its first panel. The band is then a grid of block-wide tracks, as
+wide as its widest group at the band's panel floor, with `--figure-group-gap` between the
+blocks against `--figure-gap` inside one. So a block never splits: the column narrows from
+four blocks in a row to three and a fourth, which keeps its neighbours' size rather than
+filling the line, and to one. `tools-labels` is the one grouped figure — a rating a 2×2
+block, which is why its panels run rating by rating rather than row by row.
 
 **The grid's arrangement is the composite's, and that is a stylesheet rule.** The markup
 passes one thing in, `--figure-across`, which is a count; `site.css` works the floor out

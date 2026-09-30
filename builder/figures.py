@@ -333,6 +333,10 @@ class Panel:
     several grids down one sheet with a hand-off drawn between them, and a band is that
     said in elements — which is also the only way a stage three across can sit above one
     four across, since a grid has one column count and a sheet had none.
+
+    `group` opens a **block inside a band** *(tools_labels_groups_ckpt156)*: a label said
+    once for the panels it holds and a column count of its own, where a label under every
+    tile would say the same word four times. A group runs until the next group or band.
     """
 
     file: str | None
@@ -346,6 +350,8 @@ class Panel:
     wide: bool = False
     ink: str | None = None
     band: dict | None = None
+    #: A group opens at this panel: `{label, columns}`. Only inside a band.
+    group: dict | None = None
     #: A deep panel's key in `article/figure-recipes.jsonl`, `<figure id>#<panel>`: the
     #: Deep-tab link it was drawn from and the grid, which is all a deep panel is. See
     #: `builder/deep_figures.py`.
@@ -763,6 +769,10 @@ def _panels(figure: Figure, opened: dict[str, str]) -> str:
     hand-off to the next one. A band may be a different number across from its
     neighbours — the pipeline's three stages are three, four and three — so the grid is
     the section's and the figure's `columns` is what a band that names none inherits.
+
+    **A band may be groups of that**: a block with its own count across and its label
+    once, under it. The groups wrap as whole blocks, so a narrow column drops a group to
+    the next line rather than splitting one.
     """
     lazy = "" if leads_its_page(figure) else ' loading="lazy"'
     staged = any(panel.band for panel in figure.panels)
@@ -772,12 +782,31 @@ def _panels(figure: Figure, opened: dict[str, str]) -> str:
     lines = [f'{INDENT}  <div class="{outer}" style="--figure-across: {figure.columns}">']
     depth = 4 if staged else 2
     open_stage = False
+    open_group: str | None = None
+
+    def close_group() -> None:
+        nonlocal open_group
+        if open_group is not None:
+            lines.append(f'{INDENT}        <p class="figure-group-label">{text(open_group)}</p>')
+            lines.append(f"{INDENT}      </div>")
+            open_group = None
+
     for index, panel in enumerate(figure.panels, start=1):
         if panel.band:
+            close_group()
             if open_stage:
                 lines.append(f"{INDENT}    </div>")
-            lines.extend(_band(panel.band, figure.columns))
+            block = _widest_group(figure.panels[index - 1 :])
+            lines.extend(_band(panel.band, figure.columns, block))
             open_stage = True
+            depth = 4 if block is None else 6
+        if panel.group:
+            close_group()
+            lines.append(
+                f'{INDENT}      <div class="figure-group" '
+                f'style="--group-across: {panel.group["columns"]}">'
+            )
+            open_group = panel.group["label"]
         pad = INDENT + " " * depth
         if panel.blank:
             # A held-open cell: the panel's shape as a dashed well, and its label under it.
@@ -807,6 +836,7 @@ def _panels(figure: Figure, opened: dict[str, str]) -> str:
         if panel.label:
             lines.append(f'{pad}  <p class="figure-label">{_label(panel)}</p>')
         lines.append(f"{pad}</div>")
+    close_group()
     if open_stage:
         lines.append(f"{INDENT}    </div>")
     lines.append(f"{INDENT}  </div>")
@@ -828,7 +858,22 @@ def _label(panel: Panel) -> str:
     return f"{text(panel.label)}{quiet}"
 
 
-def _band(band: dict, default_columns: int | None) -> list[str]:
+def _widest_group(panels: tuple[Panel, ...]) -> int | None:
+    """The most panels across any group of the band opening at `panels[0]` runs, if any.
+
+    It sizes the band's tracks: every block stands in a track that wide, so a block that
+    wraps alone onto a line keeps the size its neighbours have rather than filling it.
+    """
+    widest = None
+    for offset, panel in enumerate(panels):
+        if offset and panel.band:
+            break
+        if panel.group:
+            widest = max(widest or 0, panel.group["columns"])
+    return widest
+
+
+def _band(band: dict, default_columns: int | None, block: int | None = None) -> list[str]:
     """One band's hand-off, heading and the section its panels stand in.
 
     A band may open with the **pool** the stage before it filled *(place_full_pipeline_v6)*:
@@ -853,7 +898,13 @@ def _band(band: dict, default_columns: int | None) -> list[str]:
     # everything between `<section class="prose">` and the first `</section>` after it, so
     # a band that closed a section here would take seven of this page's eight rail entries
     # with it. Found by `check`, which is what that check is for.
-    lines.append(f'{INDENT}    <div class="figure-stage" style="--figure-across: {across}">')
+    if block is None:
+        lines.append(f'{INDENT}    <div class="figure-stage" style="--figure-across: {across}">')
+    else:
+        lines.append(
+            f'{INDENT}    <div class="figure-stage figure-grouped" '
+            f'style="--figure-across: {across}; --group-across: {block}">'
+        )
     lines.append(f'{INDENT}      <header class="figure-band">')
     lines.append(f'{INDENT}        <p class="figure-band-title">{text(band["title"])}</p>')
     if band.get("note"):
@@ -1038,6 +1089,7 @@ PANEL_FIELDS = (
     "wide",
     "ink",
     "band",
+    "group",
     "deep",
     "link",
     "go",
@@ -1107,6 +1159,7 @@ def _panel_rows(row: records.Record) -> tuple[Panel, ...]:
                     f"{row.where}: a panel's note is a non-empty string, or a list of them"
                 )
         _band_fields(row, entry.get("band"))
+        _group_fields(row, entry.get("group"))
         for name in ("width", "height"):
             value = entry[name]
             if not isinstance(value, int) or isinstance(value, bool) or value <= 0:
@@ -1146,7 +1199,39 @@ def _panel_rows(row: records.Record) -> tuple[Panel, ...]:
         held["wide"] = bool(held["wide"])
         held["blank"] = blank
         found.append(Panel(**held))
+    _groups_in_bands(row, found)
     return tuple(found)
+
+
+def _group_fields(row: records.Record, group) -> None:
+    """A group is a label said once and a count across, and nothing else."""
+    if group is None:
+        return
+    if not isinstance(group, dict) or set(group) != {"label", "columns"}:
+        raise records.RecordError(f"{row.where}: a panel's group is {{label, columns}}")
+    if not isinstance(group["label"], str) or not group["label"].strip():
+        raise records.RecordError(f"{row.where}: a group's label is a non-empty string")
+    across = group["columns"]
+    if not isinstance(across, int) or isinstance(across, bool) or across < 1:
+        raise records.RecordError(f"{row.where}: a group's columns is a positive integer")
+
+
+def _groups_in_bands(row: records.Record, panels: list[Panel]) -> None:
+    """A group lives inside a band, and a band with groups is groups from its first panel.
+
+    A panel standing loose beside the blocks would sit in a flex row the stylesheet lays
+    out for blocks, which is a layout nobody designed.
+    """
+    grouped = None
+    for panel in panels:
+        if panel.band:
+            grouped = panel.group is not None
+        elif grouped is None and panel.group:
+            raise records.RecordError(f"{row.where}: a group opens inside a band, and none is open")
+        elif grouped is False and panel.group:
+            raise records.RecordError(
+                f"{row.where}: a band with groups opens its first group at its first panel"
+            )
 
 
 def _band_fields(row: records.Record, band) -> None:
