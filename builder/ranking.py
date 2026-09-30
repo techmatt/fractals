@@ -13,10 +13,13 @@ in. The general thousand in that order is written as an order file, and next doo
 `packs.plan()` is asked with it, so the general parts and the best packs are cut the way
 `curate packs build --order FILE` would cut them rather than by a restatement here.
 
-**A colour pack's staged order is not one next door can ship yet.** `plan()` takes the
-order file for the general thousand only and draws each colour pack's own seeded shuffle,
-so the colour order here is this module's alone until the project next door takes an
-order per collection.
+**Every staged pack is one next door can ship** *(packs_forced_members_ckpt157)*.
+`staged` writes three inputs beside the order file: `forced.json`, each best pack's forced
+members (`packs.forced`: Matt's hand picks, which join the pack even from outside the
+thousand, displacing its lowest-ranked), with an outside one ranked in the order file by
+its own score; and `orders/<colour>.txt`, each colour pack's rank. `plan()` is asked over
+all three, and every pack it answers is held to this module's ranking, so a rebuild off
+those files reproduces the staging.
 
 ## The five pictures
 
@@ -82,6 +85,10 @@ STAGE_DIR = SITE_ROOT / "artifacts" / "packs-stage"
 STAGE_PAGE = STAGE_DIR / "index.html"
 ORDER_FILE = STAGE_DIR / "order.txt"
 
+#: Beside the order file, the other two inputs `curate packs build` takes as staged.
+FORCED_NAME = "forced.json"
+ORDERS_NAME = "orders"
+
 LF = "\n"
 
 
@@ -109,34 +116,63 @@ def general_order(current: dict[str, dict]) -> list[str]:
     return [key for name in parts for key in current[name]["keys"]]
 
 
+def _lines(path: Path, keys: list[str]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text("".join(key + LF for key in keys), encoding="utf-8", newline=LF)
+
+
 def staged(
-    scores: dict[str, int], current: dict[str, dict], order_file: Path
+    scores: dict[str, int],
+    current: dict[str, dict],
+    order_file: Path,
+    forced: dict[str, list[str]] | None = None,
 ) -> tuple[dict[str, list[str]], list[str]]:
     """Each pack on the page by name, members in staged order, and the general rank.
 
     The general pack is its parts end to end, as the page names it once. `current` is
-    `packs.current()`, and the general rank is written to `order_file` for next door to read.
+    `packs.current()`. Three inputs are written for next door, the forms `curate packs
+    build` takes: the general rank to `order_file`, with any forced best-pack member from
+    outside the thousand ranked among them by its own score (after the seats it ties
+    with, which have a shipped order to break the tie and it does not); `forced` as
+    `forced.json` beside it; and each colour pack's rank as `orders/<colour>.txt`. The
+    answer is `plan()`'s over all three, held here to this module's own ranking pack by
+    pack, so a rebuild off those files ships exactly what is staged.
     """
-    order = ranked(general_order(current), scores)
-    order_file.parent.mkdir(parents=True, exist_ok=True)
-    order_file.write_text("".join(key + LF for key in order), encoding="utf-8", newline=LF)
+    forced = packs.forced() if forced is None else forced
+    thousand = ranked(general_order(current), scores)
+    outside = [key for keys in forced.values() for key in keys if key not in set(thousand)]
+    outside = list(dict.fromkeys(outside))
+    order = ranked(thousand + outside, scores)
+    _lines(order_file, order)
+    forced_file = order_file.parent / FORCED_NAME
+    forced_file.write_text(json.dumps(forced, indent=1) + LF, encoding="utf-8", newline=LF)
+    orders_dir = order_file.parent / ORDERS_NAME
+    colours = [name for name in packs.marked() if name != packs.GENERAL and name not in packs.BEST]
+    for stale in orders_dir.glob("*.txt") if orders_dir.is_dir() else []:
+        if stale.stem not in colours:
+            stale.unlink()
+    for name in colours:
+        _lines(orders_dir / f"{name}.txt", ranked(current[name]["keys"], scores))
     # Read raw, never through `current()`: its built-wins merge puts the shipped order back.
-    planned = {pack["name"]: pack for pack in packs._asked(order_file)["planned"]}
+    asked = packs._asked(order_file, forced_file, orders_dir)["planned"]
+    planned = {pack["name"]: pack for pack in asked}
+    position = {key: at for at, key in enumerate(order)}
     out: dict[str, list[str]] = {}
     for name in packs.marked():
         if name == packs.GENERAL:
             out[name] = general_order(planned)
+            wanted = thousand
         elif name in packs.BEST:
             out[name] = planned[name]["keys"]
+            size = len(current[name]["keys"])
+            pinned = set(forced.get(name, []))
+            rest = [key for key in thousand if key not in pinned][: size - len(pinned)]
+            wanted = sorted(pinned | set(rest), key=position.__getitem__)
         else:
-            out[name] = ranked(current[name]["keys"], scores)
-        ships = general_order(current) if name == packs.GENERAL else current[name]["keys"]
-        if name in packs.BEST:
-            ships = order[: len(current[name]["keys"])]
-        if set(out[name]) != set(ships):
-            raise packs.PacksError(f"staged {name} is not the members {name} ships")
-    if out[packs.GENERAL] != order:
-        raise packs.PacksError("next door's plan did not keep the staged general order")
+            out[name] = planned[name]["keys"]
+            wanted = ranked(current[name]["keys"], scores)
+        if out[name] != wanted:
+            raise packs.PacksError(f"next door's plan of {name} is not the staged {name}")
     return out, order
 
 
@@ -274,6 +310,8 @@ class Staging:
     rows: dict[str, dict]
     site: dict[str, list[str]]
     previews: dict[str, Previews]
+    #: Each best pack's forced members, in its staged order.
+    forced: dict[str, list[str]] = field(default_factory=dict)
 
     @property
     def scores(self) -> dict[str, int]:
@@ -289,16 +327,20 @@ def previews(current: dict[str, dict], order_file: Path | None = None) -> Stagin
     """
     who = voters()
     scores = {key: votes.score(names) for key, names in who.items()}
+    forced = packs.forced()
     if order_file is None:
         with tempfile.TemporaryDirectory() as scratch:
-            order, _ = staged(scores, current, Path(scratch) / "order.txt")
+            order, _ = staged(scores, current, Path(scratch) / "order.txt", forced)
     else:
-        order, _ = staged(scores, current, order_file)
+        order, _ = staged(scores, current, order_file, forced)
     rows = packs.seat_rows()
     hue = {key: row["hue"] for key, row in rows.items()}
     site = shown_on_site()
     chosen = pick_all(order, hue, set(site), scores, packs.manual())
-    return Staging(who, order, rows, site, chosen)
+    ranked_forced = {
+        name: [key for key in order[name] if key in set(keys)] for name, keys in forced.items()
+    }
+    return Staging(who, order, rows, site, chosen, ranked_forced)
 
 
 # ------------------------------------------------------------------------------- the stage
@@ -314,7 +356,28 @@ def stage() -> list[str]:
     _write(order, staging.previews, staging.rows, staging.who, site)
 
     best = order[packs.BEST[-1]]
-    lines = [f"page: {_served()} (under `python -m builder serve`)", f"order: {ORDER_FILE}"]
+    lines = [
+        f"page: {_served()} (under `python -m builder serve`)",
+        f"order: {ORDER_FILE}",
+        f"forced: {ORDER_FILE.parent / FORCED_NAME}",
+        f"colour orders: {ORDER_FILE.parent / ORDERS_NAME}",
+    ]
+    thousand = order[packs.GENERAL]
+    for name in packs.BEST:
+        size = len(order[name])
+        pinned = set(staging.forced.get(name, []))
+        displaced = [key for key in thousand[:size] if key not in order[name]]
+        outside = [key for key in order[name] if key not in set(thousand)]
+        lines.append(
+            f"  {name:<9} forced {' '.join(staging.forced.get(name, [])) or '-'} "
+            f"({len(outside)} outside the thousand); displaced {' '.join(displaced) or '-'}"
+        )
+        if len(displaced) > len(pinned):
+            raise packs.PacksError(f"{name} displaced more than it was forced")
+    strays = [key for key in staging.previews[packs.GENERAL].picks if key not in set(thousand)]
+    lines.append(
+        f"  Main gallery picks outside the thousand, shown and not added: {' '.join(strays) or '-'}"
+    )
     lines.append(
         f"{sum(1 for key in best if scores.get(key))} of {packs.title(packs.BEST[-1])} ranked "
         f"by votes, {sum(1 for key in best if not scores.get(key))} by the tie-break; "
@@ -378,23 +441,22 @@ def _write(order, previews, rows, who, site) -> None:
         for key, why in chosen.skipped.items():
             walks.setdefault(key, []).append(f"{packs.title(name)}: {why}")
 
+    # Each best pack's band is what it adds to the one before, at its rank within the
+    # pack: a forced member ranks by its own score, so the smaller pack is not a prefix.
     bands = []
-    best = order[packs.BEST[-1]]
-    start = 0
+    before: set[str] = set()
     for name in packs.BEST:
-        end = len(order[name])
         tiles = [
             _tile(page, explorer, rank, rows[key], who.get(key, []), walks.get(key, []), site)
-            for rank, key in enumerate(best[start:end], start + 1)
+            for rank, key in enumerate(order[name], 1)
+            if key not in before
         ]
-        heading = (
-            packs.title(name) if start == 0 else f"{packs.title(name)}: ranks {start + 1} to {end}"
-        )
+        heading = packs.title(name) if not before else f"{packs.title(name)}: what it adds"
         bands.append(f"      <h2>{text(heading)}</h2>")
         bands.append('      <div class="stage-grid">')
         bands.extend(tiles)
         bands.append("      </div>")
-        start = end
+        before = set(order[name])
 
     css = relative_href(page, SITE_ROOT / "assets" / "css" / "site.css")
     body = LF.join(

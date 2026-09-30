@@ -849,9 +849,20 @@ walk (`ranking.previews`) and writes its picks into `packs.jsonl`, ahead of any 
   `artifacts/packs-stage/order.txt`, the file `curate packs build --order` takes, and next
   door's `plan()` is asked with it (`packs._asked(order)`), so the parts and the best packs
   are cut by its definitions. It is read raw, never through `current()`, whose built-wins
-  merge would put the shipped order back. **A colour pack's staged order is this module's
-  alone**: `plan()` orders the general thousand by the file and shuffles each colour pack by
-  its own seed, so shipping it needs next door to take an order per collection.
+  merge would put the shipped order back. **Every staged pack is one next door can ship**
+  *(packs_forced_members_ckpt157)*: beside `order.txt`, `stage` writes `forced.json` (each
+  best pack's forced members, below) and `orders/<colour>.txt` (each colour pack's rank, in
+  `order.txt`'s form), which are `curate packs build`'s `--forced` and `--orders`, and every
+  pack `plan()` answers over the three is held to this module's own ranking or `stage`
+  refuses. A rebuild off those three files ships what is staged.
+- **Forced members** *(Matt, packs_forced_members_ckpt157)*: a best pack's hand picks are in
+  its membership even from outside the thousand, and a pick for Best K is in every larger
+  best pack (`packs.forced`). Each pack keeps its K, the forced members displacing its
+  lowest-ranked, and orders by score; an outside member is ranked in `order.txt` by its own
+  score, after the seats it ties with, and the general parts leave it out, so they stay the
+  thousand. A best pack's row in `packs.jsonl` lists its `forced`, and `check`'s `packs`
+  holds a best pack's previews to that membership. **A Main gallery pick is not forced**:
+  one outside the thousand is shown and not added, and `stage` names it.
 - **The picker** walks each pack's voted seats in page order and staged rank and takes up
   to `PREVIEWS`, skipping any seat a figure shows (`shown_on_site`: panel links through
   `votes.match`, a panel's `from` key, and a figure's source keys, whatever the figure is

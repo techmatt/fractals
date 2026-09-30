@@ -41,7 +41,8 @@ record and the gallery's collections are, and a clone reads the answer.
   checkout and the full set. **The best packs and the general one may be picked by hand
   instead**: `wallpaper-packs/preview-picks.json` (`PICKS`), written from `votes browse`'s
   pick mode, is those packs' preview wherever it names one, and the colour packs walk on,
-  never reusing a hand pick.
+  never reusing a hand pick. **A best pack's hand picks are also its members** (`forced`,
+  packs_forced_members_ckpt157), even from outside the thousand, and its row lists them.
 
 ## Links
 
@@ -210,6 +211,8 @@ class Pack:
     collection: str
     files: tuple[Download, ...]
     thumbs: tuple[str, ...]
+    #: A best pack's forced members: seats it holds whatever their rank (`forced`).
+    forced: tuple[str, ...] = ()
 
     @property
     def best(self) -> bool:
@@ -241,7 +244,12 @@ def load() -> tuple[dict, dict[str, Pack]]:
             isinstance(key, str) and key.strip() for key in thumbs
         ):
             raise records.RecordError(f"{row.where}: thumbs must be a list of seat keys")
-        loaded[name] = Pack(name, row.text("collection"), tuple(files), tuple(thumbs))
+        forced = row.fields.get("forced", [])
+        if not isinstance(forced, list) or not all(isinstance(key, str) for key in forced):
+            raise records.RecordError(f"{row.where}: forced must be a list of seat keys")
+        loaded[name] = Pack(
+            name, row.text("collection"), tuple(files), tuple(thumbs), tuple(forced)
+        )
     return header.fields, loaded
 
 
@@ -278,6 +286,23 @@ def manual() -> dict[str, list[str]]:
     return out
 
 
+def forced(picked: dict[str, list[str]] | None = None) -> dict[str, list[str]]:
+    """Each best pack's forced members: its own hand picks and every smaller pack's.
+
+    *(Matt, packs_forced_members_ckpt157)* A best pack's preview picks join its membership
+    even from outside the thousand, and a pick for Best K is in every larger best pack, so
+    the nesting holds. Next door's `packs.plan()` takes this as `--forced` and does the
+    displacing; the keys here are in pick order, and the plan puts them in rank order.
+    """
+    picked = manual() if picked is None else picked
+    out: dict[str, list[str]] = {}
+    held: list[str] = []
+    for name in BEST:
+        held = held + [key for key in picked.get(name, []) if key not in held]
+        out[name] = list(held)
+    return out
+
+
 def seat_rows() -> dict[str, dict]:
     """Every seat row of the Gallery tab's record, by recipe key."""
     directory = seats.directory()
@@ -305,8 +330,10 @@ from pathlib import Path
 
 from fractal_wallpapers.curation import packs
 
-full, built, order = Path(sys.argv[1]), sys.argv[2], sys.argv[3]
+full, built, order, forced, orders = Path(sys.argv[1]), *sys.argv[2:6]
 manifest = Path(built) / packs.MANIFEST_NAME if built else None
+forced = packs.read_forced(Path(forced)) if forced else None
+orders = packs.read_orders(Path(orders)) if orders else None
 held = json.loads(manifest.read_text("utf-8"))["packs"] if manifest and manifest.is_file() else []
 print(json.dumps({
     "planned": [
@@ -316,8 +343,9 @@ print(json.dumps({
             "file": pack.file_name(),
             "keys": pack.keys,
             "order_from": pack.order_from,
+            "forced": pack.forced,
         }
-        for pack in packs.plan(full, Path(order) if order else None)
+        for pack in packs.plan(full, Path(order) if order else None, forced=forced, orders=orders)
     ],
     "built": held,
 }))
@@ -352,8 +380,15 @@ def unaskable() -> str | None:
     return None
 
 
-def _asked(order: Path | None = None) -> dict:
-    """`plan()` and `packs.json` as next door answers, the plan ranked by `order` if given."""
+def _asked(
+    order: Path | None = None, forced: Path | None = None, orders: Path | None = None
+) -> dict:
+    """`plan()` and `packs.json` as next door answers.
+
+    The plan is ranked by `order` if given, with `forced` (a JSON of forced best-pack
+    members) and `orders` (a directory of `<collection>.txt`) passed through as
+    `curate packs build` takes them.
+    """
     root = full_root()
     built = built_root()
     completed = subprocess.run(
@@ -364,6 +399,8 @@ def _asked(order: Path | None = None) -> dict:
             str(root),
             str(built) if built is not None else "",
             str(order.resolve()) if order is not None else "",
+            str(forced.resolve()) if forced is not None else "",
+            str(orders.resolve()) if orders is not None else "",
         ],
         capture_output=True,
         text=True,
@@ -404,7 +441,8 @@ def derive() -> list[dict]:
 
     planned = current()
     general_parts = sorted(name for name in planned if name.startswith(f"{GENERAL}-"))
-    picked = ranking.previews(planned).previews
+    staging = ranking.previews(planned)
+    picked = staging.previews
     out = [
         {
             "schema": records.SCHEMA,
@@ -421,19 +459,21 @@ def derive() -> list[dict]:
                 raise PacksError(f"the prose places {name!r} and next door plans no such pack")
             parts = [planned[name]]
         thumbs = picked[name].picks
-        out.append(
-            {
-                "schema": records.SCHEMA,
-                "kind": "pack",
-                "name": name,
-                "collection": parts[0]["collection"],
-                "files": [
-                    {"file": part["file"], "pictures": len(part["keys"]), "bytes": part["bytes"]}
-                    for part in parts
-                ],
-                "thumbs": thumbs,
-            }
-        )
+        row = {
+            "schema": records.SCHEMA,
+            "kind": "pack",
+            "name": name,
+            "collection": parts[0]["collection"],
+            "files": [
+                {"file": part["file"], "pictures": len(part["keys"]), "bytes": part["bytes"]}
+                for part in parts
+            ],
+            "thumbs": thumbs,
+        }
+        if staging.forced.get(name):
+            # What makes a best pack's membership more than its collection's first K.
+            row["forced"] = staging.forced[name]
+        out.append(row)
     return out
 
 
@@ -586,9 +626,10 @@ def problems(*, with_checkout: bool) -> list[str]:
     The first half reads this repository alone and runs on a clone: every `[PACK]` the
     prose places has a row and every row a marker, the counts are the collections' sizes,
     each picture is a seat of the pack's collection whose tile is on disk, and no picture
-    is two packs' preview. A pack `PICKS` names shows exactly those picks, at most `SHOWN`,
-    and they may be any seat rather than the collection's, since Matt picks from every voted
-    tile. The second half is the record being what `--import` would write
+    is two packs' preview. A pack `PICKS` names shows exactly those picks, at most `SHOWN`.
+    A best pack's are its members by being forced (its row's `forced`, held to `forced()`),
+    and the Main gallery's may be any voted seat, since the thousand is not widened for
+    one. The second half is the record being what `--import` would write
     today, which needs the checkout, the full set, and the votes store, and says so by name
     where one is missing. That half is what holds a walked preview to the rules: a vote,
     nowhere else on the site, and (for a best pack) a member of the staged pack rather than
@@ -639,9 +680,22 @@ def problems(*, with_checkout: bool) -> list[str]:
                 found.append(f"{where}: {name}'s {key} is no seat of the Gallery tab's record")
             elif not (GALLERY_IMAGES_DIR / seats.SLUG / row["file"]).is_file():
                 found.append(f"{where}: {name}'s {key} has no tile on disk")
-            elif name not in picked and pack.collection not in row.get("collections", {}):
-                # A hand pick may be any voted seat, a member of the pack or not.
-                found.append(f"{where}: {name}'s {key} is not a seat of {pack.collection}")
+            elif (
+                (name != GENERAL or name not in picked)
+                and pack.collection not in row.get("collections", {})
+                and key not in pack.forced
+            ):
+                # A best pack's membership is its collection's first K and its forced
+                # members, so its picks are always members. A Main gallery pick may lie
+                # outside the thousand, which stays the thousand (packs_forced_members_ckpt157).
+                found.append(f"{where}: {name}'s {key} is no member of {name}")
+    wanted_forced = forced(picked)
+    for name in BEST:
+        if name in loaded and set(loaded[name].forced) != set(wanted_forced[name]):
+            found.append(
+                f"{where}: {name}'s forced members are not {PICKS.name}'s picks for it and "
+                "every smaller best pack — `python -m builder packs --import`, then `build`"
+            )
     if with_checkout and unaskable() is None:
         try:
             from . import ranking
