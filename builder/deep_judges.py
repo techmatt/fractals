@@ -1,4 +1,4 @@
-"""`deep-judges-top15`: each shallow judge's top 15 of the dive candidates, beside Matt's 15.
+"""`deep-judges-top15`: each shallow judge's top 15 of the dive candidates, starring Matt's 15.
 
     python -m builder deep deep-judges-top15 [--place] [--replace]
     python -m builder deep --judge-scores <folder>
@@ -30,10 +30,11 @@ A judge's ranking is its reading, highest first, ties broken by the frame's id a
 
 ## The figure
 
-Four bands, three across and five deep: Matt's 15 in figure order, then the location,
-wallpaper and gallery judges' top 15, each labelled by its rank and starred where it is one of
-the 15. **Every panel is a Deep-tab link and draws exactly its picture**, at the grid the
-judges read, 640 by 360 at 2x2:
+Three bands, three across and five deep: the location, wallpaper and gallery judges' top 15,
+each labelled by its rank and starred where it is one of Matt's 15. Those 15 are not a band of
+their own *(deep_fold_micro_ckpt156)*: they are `deep-random-dives`, the figure directly above
+the fold, and the caption points there rather than showing them twice. **Every panel is a
+Deep-tab link and draws exactly its picture**, at the grid the judges read, 640 by 360 at 2x2:
 
 * the wallpaper and gallery bands are the frame's own link, the absolute colouring those
   judges scored;
@@ -41,9 +42,9 @@ judges read, 640 by 360 at 2x2:
   `scale=leveled` and nothing else — which the Deep contract spells exactly, because its
   defaults (cycles 1, phase 0, no mirror, the 0.5/99.5 stretch, black interior) are the
   location judge's own recipe (`judge_deep_ckpt156`'s report, *Render*);
-* Matt's band is `deep_figures.RANDOM_DIVES`, the links of the figure above it. Fourteen are
-  the candidate's link; pick 3 was recoloured by Matt, so the wallpaper and gallery bands,
-  which show what was scored, carry it in the candidate's colouring instead.
+* a starred panel is one of `deep_figures.RANDOM_DIVES`, the links of the figure above.
+  Fourteen are the candidate's link; pick 3 was recoloured by Matt, so the wallpaper and
+  gallery bands, which show what was scored, carry it in the candidate's colouring instead.
 
 The panels are drawn by `deep_figures.draw_link`, the renderer and shader every deep figure
 goes through, so no second drawing exists.
@@ -74,7 +75,6 @@ PLACE = ("f", "cx", "cy", "x", "y", "w", "n")
 LOCATION, WALLPAPER, GALLERY = "location", "wallpaper", "gallery"
 JUDGES = (LOCATION, WALLPAPER, GALLERY)
 TITLES = {
-    "picks": "My picks",
     LOCATION: "Location judge",
     WALLPAPER: "Wallpaper judge",
     GALLERY: "Gallery judge",
@@ -82,8 +82,8 @@ TITLES = {
 STAR = "★"
 
 #: Each panel's alt, by the frame's id in the record and the picture it is: `colour` for the
-#: frame's own link, `neutral` for the location judge's. Matt's band reads its alts off
-#: `RANDOM_DIVES`, beside its links.
+#: frame's own link, `neutral` for the location judge's. A pick drawn in its own link reads
+#: its alt off `RANDOM_DIVES`, beside its link.
 ALTS: dict[tuple[str, str], str] = {
     ("u0351", "colour"): "Rows of spirals in coral, cream, and brown filigree over orange-red.",
     ("u0482", "colour"): "A small black copy of the set in a ring of pale gold filigree, among "
@@ -301,13 +301,8 @@ def readout(record: list[dict] | None = None) -> dict:
 
 
 def _bands(record: list[dict]) -> list[tuple[str, list[tuple[str, str, str, str | None]]]]:
-    """Each band's panels as (frame id, link, picture, label): picks first, then the judges."""
-    by_pick = {row["pick"]: row for row in record if row["pick"]}
-    picks = [
-        (by_pick[n]["id"], link, "pick", None)
-        for n, (link, _) in enumerate(deep_figures.RANDOM_DIVES, start=1)
-    ]
-    bands = [("picks", picks)]
+    """Each judge's band as (frame id, link, picture, label), in `JUDGES` order."""
+    bands = []
     for judge in JUDGES:
         chosen = []
         for rank, row in enumerate(ranking(record, judge)[:TOP], start=1):
@@ -370,7 +365,7 @@ def draw() -> Split:
             if frame.degree != 2:
                 family = f"family multibrot, degree {frame.degree}"
             lines.append(
-                f"panel {index}, {TITLES[band]}, {label or f'pick {picks[identifier]}'}, frame "
+                f"panel {index}, {TITLES[band]}, {label}, frame "
                 f"{identifier}: Deep tab, {family}, centre {frame.x} + {frame.y}i, width "
                 f"{frame.w}, cap {one.maxiter} named by the link, palette "
                 f"{deep_figures._colour_words(frame.colour)}; recipe {key}"
@@ -380,10 +375,11 @@ def draw() -> Split:
     said = readout(record)
     head = (
         f"builder.deep_judges:draw — the {said['frames']} frames of the dive candidate sheet as "
-        "judge_deep_ckpt156 scored them, read off builder/data/deep-judges-scores.jsonl: Matt's "
-        f"{said['picks']} (deep_figures.RANDOM_DIVES, the links of deep-random-dives), then the "
+        "judge_deep_ckpt156 scored them, read off builder/data/deep-judges-scores.jsonl: the "
         f"location, wallpaper and gallery judges' top {TOP}, ranked by the record's location, "
-        "wallpaper and gallery columns, ties by frame id. The location band is each frame's "
+        "wallpaper and gallery columns, ties by frame id, starred where a frame is one of Matt's "
+        f"{said['picks']} (deep_figures.RANDOM_DIVES, the links of deep-random-dives, which the "
+        "fold no longer repeats as a band of its own). The location band is each frame's "
         f"neutral link ({NEUTRAL} on the frame and its cap); the others are the frame's own "
         f"link. Every panel {width}x{height}, supersample {SUPERSAMPLE}, the grid the judges "
         f"read, drawn in {', '.join(words[:-1])} and {words[-1]}, one to a panel. A Deep-tab "
