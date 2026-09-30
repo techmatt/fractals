@@ -678,8 +678,8 @@ colours, straight into
 `assets/images/figures/`. It is deliberately a separate command from `build` and is not
 part of `check`: type is rasterized through whatever font the machine has, so two machines
 agree about the picture and not about its bytes. `overview-pipeline` looks like a third
-and is not one — it is a composed sheet with four real renders in it, made by a rig under
-ignored `scratch/`, which is what its `recipe` and its `sources` say. Every other figure
+and is not one — it is a composed sheet with real renders in it, made by
+`builder/overview.py`, which is what its `recipe` and its `sources` say. Every other figure
 asset arrived through `import`.
 
 **A screenshot is a figure of the site itself** *(deep_zoom_v4_place_ckpt154)*.
@@ -1132,8 +1132,9 @@ previous location's picture. `render-supersample` shipped that way once — the 
 was the stale half, so the page carried the right provenance over the wrong pixels, which
 is the failure shape nothing on the page reveals.
 
-The rigs that compose the article's figures live in `scratch/` and are untracked — that
-is what `scratch/` is for — but everything they used to re-implement is here now, and a
+The makers that compose the article's figures live here too, one module per page with its
+own `SHEETS`, `MAKERS` or `DIAGRAMS` table, and the `recipe` of every row with a picture
+names one. `scratch/` keeps only the probes and contact sheets that found a choice, so a
 figure made a year ago can be redrawn without reconstructing the session that made it.
 
 ## The deep zoom video is a tool, not a figure

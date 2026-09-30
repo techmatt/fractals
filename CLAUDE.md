@@ -257,7 +257,7 @@ keeps the mechanics. **Every apply round ends by distilling that round's general
   project's `curation/targets.py`), one row per seat, with `collections` naming each
   collection that seats it and its place in that collection's order. A **Collection**
   dropdown chooses one and the chips filter what it chose. ⚠ **The nineteen are
-  unpublished and Matt's word is that they are not final**, so `builder/seats.py`'s
+  unpublished, and Matt's word is that their sizes are essentially final**, so `builder/seats.py`'s
   `COLLECTIONS` names a stamp per collection and refuses one whose solve was another
   collection's; a re-solve is a re-pointing of that table, and `seats` removes the tiles a
   repoint leaves unnamed. The record is split by collection: `gallery.jsonl` is the header
