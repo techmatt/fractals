@@ -249,15 +249,16 @@ keeps the mechanics. **Every apply round ends by distilling that round's general
   select lists fewer**: the modes the **published** gallery record seats, read off the same
   committed record. The 17 are still baked, parsed, and drawn when a link names one, which
   puts that mode in the select for as long as its view is up; the gallery panel's mode chips
-  tally whichever collection is chosen, and an unpublished collection seating a mode the
+  tally whichever collection is chosen, and another collection seating a mode the
   published record does not is a chip and never a select entry.
 - **The gallery panel shows one collection, and the record is their union.**
   `seated-candidates` is the published record, the same general solve at n=2000, and the
   nineteen collections next door (twelve hue families and seven modes, sized by that
   project's `curation/targets.py`), one row per seat, with `collections` naming each
   collection that seats it and its place in that collection's order. A **Collection**
-  dropdown chooses one and the chips filter what it chose. ⚠ **The nineteen are
-  unpublished, and Matt's word is that their sizes are essentially final**, so `builder/seats.py`'s
+  dropdown chooses one and the chips filter what it chose. ⚠ **All twenty-one
+  records are published next door (ckpt156), and Matt's word is that their sizes are
+  essentially final**, so `builder/seats.py`'s
   `COLLECTIONS` names a stamp per collection and refuses one whose solve was another
   collection's; a re-solve is a re-pointing of that table, and `seats` removes the tiles a
   repoint leaves unnamed. The record is split by collection: `gallery.jsonl` is the header

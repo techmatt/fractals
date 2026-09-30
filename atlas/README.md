@@ -290,10 +290,10 @@ instantiated for that one export, which is exactly what `builder/emit.mjs` and
 ## Where the record came from, and how to rebuild it
 
 `atlas.jsonl`'s method row names it: the record the seats were read out of, the live
-judge, and the fine bar the population was cut at. The record is not a published one and
-**nothing next door is published any more**: since `atlas_refresh_ckpt139` it is
-`20260922T012627Z`, the `final139_general` solve — mining is closed and the twenty
-`final139_*` records of 2026-09-22 are that project's only saved set — and it is the
+judge, and the fine bar the population was cut at. Since `atlas_refresh_ckpt139` it is
+`20260922T012627Z`, the `final139_general` solve — mining is closed, the twenty-one records
+of 2026-09-22 are that project's only saved set, and **all of them are published** since
+ckpt156 — and it is the
 general collection of the staged gallery too, which is why `--make` takes its stamp from
 `builder/seats.py`'s `STAMP` when none is given. Its `tally`
 is the census the maker took, from places queued to dots drawn and seated, and each

@@ -477,8 +477,8 @@ whole reason a mark's picture and a mark's link agree.
 The stub now carries one figure, `atlas-places`: the plate with its marks and nothing else,
 registered `draft` because every count in its caption is a reading of that record. **Its
 four counts were re-baked onto it 2026-09-21** (`leftovers_rebake_ckpt140`): 112 marks
-thinned from 1,300, 60 blue and 52 red, became 113 from 1,369, 58 and 55. It stays a draft
-because those twenty records are not published. Its
+thinned from 1,300, 60 blue and 52 red, became 113 from 1,369, 58 and 55. It was held a
+draft because those records were not published then; all twenty-one are since ckpt156. Its
 caption ends with a link to the tool page, which is what `caption_link` on a registry row
 is for — a figure that is a still of something a reader can go and use, and not the way
 into the explorer, which is a mark on the corner of the picture. The section's own prose is

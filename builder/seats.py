@@ -114,11 +114,10 @@ from .paths import GALLERY_IMAGES_DIR, GALLERY_METADATA_NAME, SITE_ROOT
 #: second solve writes a second stamp, and a staged gallery that re-pointed itself would
 #: replace a thousand committed rows without anybody deciding to.
 #:
-#: **Since `atlas_refresh_ckpt139` (2026-09-21) it is the `final139_general` solve**, and
-#: nothing next door is published at all: mining is closed, the twenty `final139_*` records
-#: of 2026-09-22 01:26–01:51Z are the only saved set there, and `tentative.PUBLISHED` is
-#: empty. So the header's `published` comes back empty, which is what that project now
-#: says, and every read here names a stamp because `tentative.latest()` refuses.
+#: **Since `atlas_refresh_ckpt139` (2026-09-21) it is the `final139_general` solve.** Mining
+#: is closed and the twenty-one records of 2026-09-22 are the only saved set next door; they
+#: went unpublished until ckpt156, when `tentative.PUBLISHED` came to list all of them, so
+#: the header's `published` now reads true throughout. Every read here still names a stamp.
 #:
 #: It was `20260919T171003Z` from `site_rebase_ckpt132` until then, and the record before
 #: that was published. The batch this one belongs to records no n=2000 comparison.
@@ -148,12 +147,13 @@ ALL = "all"
 #: order; then the three thin ones — `green`, `cyan`, `lime` — the families whose stock
 #: ran short at the old target; then the seven modes, the three smooth-family composites last.
 #:
-#: ⚠ **None of the twenty is published, and now nothing is.** They are the `final139_*`
-#: batch of 2026-09-22 01:26–01:51Z — mining closed, and these are the semi-final galleries
-#: (`atlas_refresh_ckpt139` repointed every line here from the pinned records of
+#: **All twenty-one are published** *(final_website_ckpt156, 2026-09-29)*: the saved set was
+#: published next door this checkpoint, so `tentative.PUBLISHED` names every stamp here. They
+#: are the `final139_*` batch of 2026-09-22 01:26–01:51Z and `final140_general2000` — mining
+#: closed (`atlas_refresh_ckpt139` repointed every line here from the pinned records of
 #: 2026-09-19, which have been deleted next door along with every other saved solve). All
-#: twenty carry `data/curation/pins.json` seated first. Matt's word on the collections is
-#: that they are not final, so a re-solve is a re-pointing of this table, and
+#: carry `data/curation/pins.json` seated first. Matt's word on the collections is that their
+#: sizes are essentially final; a re-solve is still a re-pointing of this table, and
 #: `_collection_stamp` refuses a stamp whose solve was not that collection's so a mistyped
 #: line cannot seat one family's pictures under another's name.
 #: A stamp that leaves the keep list next door is a `seats` run that refuses once it is
@@ -765,7 +765,9 @@ def header(rows: list[dict]) -> dict:
                 if name in MODE_COLLECTIONS
                 else "family",
                 "stamp": stamps.get(name),
-                "published": stamps.get(name) in published,
+                "published": stamps.get(name) in published
+                if name != ALL
+                else all(stamp in published for stamp in stamps.values()),
                 "seats": held[name],
                 "ordered_on": orders[name][1],
                 "file": collection_file(name),
@@ -791,7 +793,8 @@ def header(rows: list[dict]) -> dict:
             "rows are in the file its entry names, in that collection's presentation order, "
             "so a seat in several collections is a row in each. all is no record of its "
             "own and carries no stamp: it is every other collection's seats once each, in "
-            "the order curation.page_order gives that union itself. modes is every mode the "
+            "the order curation.page_order gives that union itself, and published where "
+            "every record it unions is. modes is every mode the "
             "general collection seats. "
             "The seat's mode and hue family come from the first record that seats it, and "
             "where that record files the seat under no family — its picture is dominant in "

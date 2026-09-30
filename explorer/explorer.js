@@ -3239,8 +3239,8 @@ function indexSeats(rows, name) {
       continue;
     }
     seatsByPlace.set(`${placeOf(seated)}|${seated.mode}`, seated.params);
-    // What a trap mode is most often drawn at is read off the published gallery alone, so
-    // an unpublished collection cannot move a default somebody has already seen — and off
+    // What a trap mode is most often drawn at is read off the general gallery alone, so
+    // another collection cannot move a default somebody has already seen — and off
     // the whole of it, which is its own file.
     if (name !== gallery.GENERAL) continue;
     const key = link.DERIVED[seated.mode];

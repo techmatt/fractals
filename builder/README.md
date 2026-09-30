@@ -187,9 +187,10 @@ half-landed directory is a real problem and reads as one.
 tentative records, the general n=1000 solve, the same solve at n=2000
 *(pre_closeout_website_ckpt140)*, and the nineteen collections solved beside them (twelve hue
 families and seven modes), as one union of 6,299 seats, each row saying which collections
-seat it and where *(site_rebase_ckpt132, 2026-09-19)*. None of them is published. The
-header's `published` is asked of the project next door's `tentative.PUBLISHED` rather than
-assumed. `COLLECTIONS` hand-lists them as (name, stamp) pairs, `MODE_COLLECTIONS` says which
+seat it and where *(site_rebase_ckpt132, 2026-09-19)*. All twenty-one are published: the
+saved set was published next door at ckpt156, and nothing had been before. The header's
+`published` is asked of the project next door's `tentative.PUBLISHED` rather than assumed,
+and the `all` union reads true where every record it unions does. `COLLECTIONS` hand-lists them as (name, stamp) pairs, `MODE_COLLECTIONS` says which
 are modes and `GENERAL_COLLECTIONS` which are the general gallery at a size, so a re-solve is
 an edit to that table. A stamp is refused unless its solve was that collection's:
 `final139_<collection>` for all but `general_2000`, whose solve `SOLVE_NAMES` spells whole as

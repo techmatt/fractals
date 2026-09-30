@@ -93,7 +93,7 @@ def kept_seats() -> dict:
     distinct: set[str] = set()
     records = []
     general = None
-    for stamp in tentative.KEPT_UNPUBLISHED:
+    for stamp in tentative.kept():
         directory = tentative.gallery_dir(stamp)
         name = json.loads((directory / "manifest.json").read_text(encoding="utf-8"))["solve"][
             "name"
